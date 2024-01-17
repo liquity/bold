@@ -1,0 +1,125 @@
+name: test contracts
+
+defaults:
+  run:
+    working-directory: contracts
+
+env:
+  FOUNDRY_PROFILE: ci
+  CI: true
+  FORCE_COLOR: true
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/contracts.yml"
+      - "contracts/**"
+  pull_request:
+    paths:
+      - ".github/workflows/contracts.yml"
+      - "contracts/**"
+
+jobs:
+  test-foundry:
+    strategy:
+      fail-fast: true
+
+    name: Foundry tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Run Forge tests
+        run: |
+          forge test -vvv
+        id: test
+
+  coverage-foundry:
+    name: Foundry coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Run Forge coverage
+        run: |
+          forge coverage --report lcov
+        id: coverage
+
+      - name: Install lcov
+        run: sudo apt-get -y install lcov
+
+      - name: Filter out tests from coverage
+        run: |
+          lcov --remove lcov.info -o lcov.info 'src/test/*'
+        id: coverage_filter
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          base-path: ./contracts/
+          # Potential improvement to include merge with hardhat tests: https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/e91c3100c29d2913d175df4b3d1790d6a057d36e/solidity/coverage.sh
+          path-to-lcov: ./contracts/lcov.info
+          debug: true
+
+  console-logs:
+    name: Check we didn’t forget to remove console imports
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Check console imports
+        working-directory: contracts
+        run: >-
+          ! grep -R console src | grep import | grep -v "://" | grep -v TestContracts | grep -v ExternalContracts  | grep -v "\.t\.sol"
+
+  test-hardhat:
+    name: Hardhat tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Test contracts
+        run: yarn test
