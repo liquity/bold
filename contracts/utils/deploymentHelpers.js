@@ -17,9 +17,9 @@ const PriceFeedMock = artifacts.require("./PriceFeedMock.sol");
 //   "../node_modules/@openzeppelin/contracts/build/contracts/ERC20.json"
 // );
 
-//const LQTYStaking = artifacts.require("./LQTYStaking.sol");
-//const LQTYToken = artifacts.require("./LQTYToken.sol");
-//const CommunityIssuance = artifacts.require("./CommunityIssuance.sol");
+const LQTYTokenMock = artifacts.require("./LQTYTokenMock.sol");
+const LQTYStakingMock = artifacts.require("./LQTYStakingMock.sol");
+const CommunityIssuanceMock = artifacts.require("./CommunityIssuanceMock.sol");
 
 //const LQTYTokenTester = artifacts.require("./LQTYTokenTester.sol");
 //const CommunityIssuanceTester = artifacts.require("./CommunityIssuanceTester.sol");
@@ -32,18 +32,7 @@ const maxBytes32 = "0x" + "f".repeat(64);
 
 class DeploymentHelper {
   static async deployLiquityCore() {
-    const cmdLineArgs = process.argv;
-    const frameworkPath = cmdLineArgs[1];
-    // console.log(`Framework used:  ${frameworkPath}`)
-    let contracts;
-
-    if (frameworkPath.includes("hardhat")) {
-      contracts = await this.deployLiquityCoreHardhat();
-    } else if (frameworkPath.includes("truffle")) {
-      contracts = await this.deployLiquityCoreTruffle();
-    }
-
-    return contracts;
+    return await this.deployLiquityCoreHardhat();
   }
 
   static async deployLQTYContracts(
@@ -51,23 +40,11 @@ class DeploymentHelper {
     lpRewardsAddress,
     multisigAddress
   ) {
-    const cmdLineArgs = process.argv;
-    const frameworkPath = cmdLineArgs[1];
-    // console.log(`Framework used:  ${frameworkPath}`)
-
-    if (frameworkPath.includes("hardhat")) {
-      return this.deployLQTYContractsHardhat(
-        bountyAddress,
-        lpRewardsAddress,
-        multisigAddress
-      );
-    } else if (frameworkPath.includes("truffle")) {
-      return this.deployLQTYContractsTruffle(
-        bountyAddress,
-        lpRewardsAddress,
-        multisigAddress
-      );
-    }
+    return this.deployLQTYContractsHardhat(
+      bountyAddress,
+      lpRewardsAddress,
+      multisigAddress
+    );
   }
 
   static async deployLiquityCoreHardhat() {
@@ -135,34 +112,24 @@ class DeploymentHelper {
     return coreContracts;
   }
 
-  // static async deployLQTYContractsHardhat(
-  //   bountyAddress,
-  //   lpRewardsAddress,
-  //   multisigAddress
-  // ) {
-    // const lqtyStaking = await LQTYStaking.new();
-    // const communityIssuance = await CommunityIssuance.new();
+  static async deployLQTYContractsHardhat() {
+    const lqtyStaking = await LQTYStakingMock.new();
+    const communityIssuance = await CommunityIssuanceMock.new();
 
-    // LQTYStaking.setAsDeployed(lqtyStaking);
-    // CommunityIssuance.setAsDeployed(communityIssuance);
+    LQTYStakingMock.setAsDeployed(lqtyStaking);
+    CommunityIssuanceMock.setAsDeployed(communityIssuance);
 
     // Deploy LQTY Token, passing Community Issuance and Factory addresses to the constructor
-  //   const lqtyToken = await LQTYToken.new(
-  //     communityIssuance.address,
-  //     lqtyStaking.address,
-  //     bountyAddress,
-  //     lpRewardsAddress,
-  //     multisigAddress
-  //   );
-  //   LQTYToken.setAsDeployed(lqtyToken);
+    const lqtyToken = await LQTYTokenMock.new();
+    LQTYTokenMock.setAsDeployed(lqtyToken);
 
-  //   const LQTYContracts = {
-  //     lqtyStaking,
-  //     communityIssuance,
-  //     lqtyToken,
-  //   };
-  //   return LQTYContracts;
-  // }
+    const LQTYContracts = {
+      lqtyStaking,
+      communityIssuance,
+      lqtyToken,
+    };
+    return LQTYContracts;
+  }
 
   // static async deployLQTYTesterContractsHardhat(
   //   bountyAddress,
@@ -193,74 +160,6 @@ class DeploymentHelper {
   //   return LQTYContracts;
   // }
 
-  static async deployLiquityCoreTruffle() {
-    //const stETH = await ERC20.new("Staked ETH", "stETH");
-    const priceFeed = await PriceFeedMock.new();
-    const stabilityPool = await StabilityPool.new(
-      priceFeed,
-      activePool,
-      troveManager
-    );
-    const boldToken = await BoldToken.new(
-      stabilityPool,
-      borrowerOperations.address
-    );
-    // TODO: setAsDeployed all above?
-
-    // Borrowing contracts
-    const priceFeedTestnet = await PriceFeedTestnet.new();
-    const sortedTroves = await SortedTroves.new();
-    const troveManager = await TroveManager.new();
-    const activePool = await ActivePool.new();
-    const gasPool = await GasPool.new();
-    const defaultPool = await DefaultPool.new();
-    const collSurplusPool = await CollSurplusPool.new();
-    const functionCaller = await FunctionCaller.new();
-    const borrowerOperations = await BorrowerOperations.new();
-    const hintHelpers = await HintHelpers.new();
-    const coreContracts = {
-      priceFeedTestnet,
-      boldToken,
-      sortedTroves,
-      troveManager,
-      activePool,
-      stabilityPool,
-      gasPool,
-      defaultPool,
-      collSurplusPool,
-      functionCaller,
-      borrowerOperations,
-      hintHelpers,
-    };
-    return coreContracts;
-  }
-
-  // static async deployLQTYContractsTruffle(
-  //   bountyAddress,
-  //   lpRewardsAddress,
-  //   multisigAddress
-  // ) {
-  //   const lqtyStaking = await lqtyStaking.new();
-  //   const communityIssuance = await CommunityIssuance.new();
-
-  //   /* Deploy LQTY Token, passing Community Issuance,  LQTYStaking, and Factory addresses 
-  //   to the constructor  */
-  //   const lqtyToken = await LQTYToken.new(
-  //     communityIssuance.address,
-  //     lqtyStaking.address,
-  //     bountyAddress,
-  //     lpRewardsAddress,
-  //     multisigAddress
-  //   );
-
-  //   const LQTYContracts = {
-  //     lqtyStaking,
-  //     communityIssuance,
-  //     lqtyToken,
-  //   };
-  //   return LQTYContracts;
-  // }
-
   static async deployBoldToken(contracts) {
     contracts.boldToken = await BoldToken.new(
       contracts.reserve,
@@ -282,7 +181,15 @@ class DeploymentHelper {
 
   // Connect contracts to their dependencies
   static async connectCoreContracts(contracts, LQTYContracts) {
-    await contracts.stabilityPool.setAddresses(contracts.boldToken.address);
+    await contracts.stabilityPool.setAddresses(
+      contracts.borrowerOperations.address,
+      contracts.troveManager.address,
+      contracts.activePool.address,
+      contracts.boldToken.address,
+      contracts.sortedTroves.address,
+      contracts.priceFeedTestnet.address,
+      LQTYContracts.communityIssuance.address,
+    );
     // set TroveManager addr in SortedTroves
     await contracts.sortedTroves.setParams(
       maxBytes32,
@@ -334,7 +241,6 @@ class DeploymentHelper {
       contracts.stabilityPool.address,
       contracts.defaultPool.address,
       //contracts.stETH.address,
-      contracts.collSurplusPool.address
     );
 
     await contracts.defaultPool.setAddresses(
@@ -347,7 +253,6 @@ class DeploymentHelper {
       contracts.borrowerOperations.address,
       contracts.troveManager.address,
       contracts.activePool.address,
-      contracts.activePool.address
     );
 
     // set contracts in HintHelpers

@@ -871,19 +871,22 @@ class TestHelper {
       const price = await contracts.priceFeedTestnet.getPrice();
       extraParams.value = ICR.mul(totalDebt).div(price);
     }
-    await contracts.stETH.approve(
-      contracts.borrowerOperations.address,
-      extraParams.value,
-      { from: extraParams.from }
-    );
+    // await contracts.stETH.approve(
+    //   contracts.borrowerOperations.address,
+    //   extraParams.value,
+    //   { from: extraParams.from }
+    // );
 
     const tx = await contracts.borrowerOperations.openTrove(
       maxFeePercentage,
       lusdAmount,
-      extraParams.value, // TODO: this is the stETH value - ensure its still working
+      //extraParams.value, // TODO: this is the stETH value - ensure its still working
       upperHint,
       lowerHint,
-      { from: extraParams.from }
+      {
+        from: extraParams.from,
+        value: extraParams.value,
+      }
     );
 
     return {

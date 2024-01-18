@@ -85,14 +85,9 @@ contract("SortedTroves", async (accounts) => {
       contracts = await deploymentHelper.deployLiquityCore();
       contracts.troveManager = await TroveManagerTester.new();
       contracts.boldToken = await BoldToken.new(
-        contracts.reserve.address,
+        contracts.troveManager.address,
         contracts.stabilityPool.address,
         contracts.borrowerOperations.address
-      );
-      const LQTYContracts = await deploymentHelper.deployLQTYContracts(
-        bountyAddress,
-        lpRewardsAddress,
-        multisig
       );
 
       priceFeed = contracts.priceFeedTestnet;
@@ -101,11 +96,9 @@ contract("SortedTroves", async (accounts) => {
       borrowerOperations = contracts.borrowerOperations;
       boldToken = contracts.boldToken;
 
+      const LQTYContracts = await deploymentHelper.deployLQTYContracts();
       await deploymentHelper.connectCoreContracts(contracts, LQTYContracts);
-      await deploymentHelper.connectLQTYContractsToCore(
-        LQTYContracts,
-        contracts
-      );
+
       await fundAccounts(
         [
           owner,
