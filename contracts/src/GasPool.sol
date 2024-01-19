@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.18;
 
+import './Interfaces/IGasPool.sol';
 
 /**
  * The purpose of this contract is to hold Bold tokens for gas compensation:
@@ -13,6 +13,6 @@ pragma solidity 0.8.18;
  * 50 Bold debt on the trove is cancelled.
  * See this issue for more context: https://github.com/liquity/dev/issues/186
  */
-contract GasPool {
+contract GasPool is IGasPool {
     // do nothing, as the core contracts have permission to send to and burn from this address
 }
