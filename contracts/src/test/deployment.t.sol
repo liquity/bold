@@ -65,7 +65,7 @@ contract Deployment is DevTestSetup {
 
     // Active Pool
 
-    function testActivePoolHasCorrectActivePoolAddress() public {
+    function testActivePoolHasCorrectStabilityPoolAddress() public {
         address stabilityPoolAddress = address(stabilityPool);
         address recordedStabilityPoolAddress = activePool.stabilityPoolAddress();
         assertEq(stabilityPoolAddress, recordedStabilityPoolAddress);
@@ -131,13 +131,13 @@ contract Deployment is DevTestSetup {
 
     // Sorted Troves
 
-    function testSortedTrovesHasCorrectTroveManagerAddress() public {
+    function testSortedTrovesHasCorrectBorrowerOperationsAddress() public {
         address borrowerOperationsAddress = address(borrowerOperations);
         address recordedBorrowerOperationsAddress = sortedTroves.borrowerOperationsAddress();
         assertEq(borrowerOperationsAddress, recordedBorrowerOperationsAddress);
     }
 
-    function testSortedTrovesHasCorrectBorrowerOperationsAddress() public {
+    function testSortedTrovesHasCorrectTroveManagerAddress() public {
         address troveManagerAddress = address(troveManager);
         address recordedTroveManagerAddress = address(sortedTroves.troveManager());
         assertEq(troveManagerAddress, recordedTroveManagerAddress);

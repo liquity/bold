@@ -6,12 +6,13 @@ import "../../Interfaces/IActivePool.sol";
 import "../../Interfaces/IBoldToken.sol";
 import "../../Interfaces/IBorrowerOperations.sol";
 import "../../Interfaces/ICollSurplusPool.sol";
-import "../../Interfaces/IGasPool.sol";
 import "../../Interfaces/IDefaultPool.sol";
 import "../../Interfaces/IPriceFeed.sol";
 import "../../Interfaces/ISortedTroves.sol";
 import "../../Interfaces/IStabilityPool.sol";
 import "../../Interfaces/ITroveManager.sol";
+
+import "../../GasPool.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -35,13 +36,14 @@ contract BaseTest is Test {
     IActivePool activePool;
     IBorrowerOperations borrowerOperations;
     ICollSurplusPool collSurplusPool;
-    IGasPool gasPool;
     IDefaultPool defaultPool;
     IPriceFeed priceFeed;
     ISortedTroves sortedTroves;
     IStabilityPool stabilityPool;
     ITroveManager troveManager;
     IBoldToken boldToken;
+
+    GasPool gasPool;
 
     function createAccounts() public {
         address[10] memory tempAccounts;
