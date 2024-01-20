@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
+import "../../Interfaces/IPriceFeedTestnet.sol";
+
 import "../../ActivePool.sol";
 import "../../BoldToken.sol";
 import "../../BorrowerOperations.sol";
@@ -18,6 +20,9 @@ import "../../TroveManager.sol";
 import "./BaseTest.sol";
 
 contract DevTestSetup is BaseTest {
+
+    IPriceFeedTestnet priceFeed;
+
     function setUp() public virtual {
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);

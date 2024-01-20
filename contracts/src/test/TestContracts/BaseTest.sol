@@ -37,7 +37,6 @@ contract BaseTest is Test {
     IBorrowerOperations borrowerOperations;
     ICollSurplusPool collSurplusPool;
     IDefaultPool defaultPool;
-    IPriceFeed priceFeed;
     ISortedTroves sortedTroves;
     IStabilityPool stabilityPool;
     ITroveManager troveManager;
@@ -60,7 +59,6 @@ contract BaseTest is Test {
         console.log("CollSurplusPool addr: ", address(collSurplusPool));
         console.log("DefaultPool addr: ", address(defaultPool));
         console.log("GasPool addr: ", address(gasPool));
-        console.log("PriceFeed addr: ", address(priceFeed));
         console.log("SortedTroves addr: ", address(sortedTroves));
         console.log("StabilityPool addr: ", address(stabilityPool));
         console.log("TroveManager addr: ", address(troveManager));
