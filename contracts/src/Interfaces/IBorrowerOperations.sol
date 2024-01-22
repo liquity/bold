@@ -2,8 +2,16 @@
 
 pragma solidity 0.8.18;
 
+import "./ILiquityBase.sol";
+import "./ITroveManager.sol";
+import "./IPriceFeed.sol";
+import "./ISortedTroves.sol";
+
 // Common interface for the Trove Manager.
-interface IBorrowerOperations {
+interface IBorrowerOperations is ILiquityBase {
+    function troveManager() external view returns (ITroveManager);
+    function sortedTroves() external view returns (ISortedTroves);
+
     function setAddresses(
         address _troveManagerAddress,
         address _activePoolAddress,

@@ -257,8 +257,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         checkContract(_priceFeedAddress);
         checkContract(_boldTokenAddress);
         checkContract(_sortedTrovesAddress);
-        checkContract(_lqtyTokenAddress);
-        checkContract(_lqtyStakingAddress);
 
         borrowerOperationsAddress = _borrowerOperationsAddress;
         activePool = IActivePool(_activePoolAddress);

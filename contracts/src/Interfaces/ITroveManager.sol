@@ -5,6 +5,7 @@ pragma solidity 0.8.18;
 import "./ILiquityBase.sol";
 import "./IStabilityPool.sol";
 import "./IBoldToken.sol";
+import "./ISortedTroves.sol";
 import "./ILQTYToken.sol";
 import "./ILQTYStaking.sol";
 
@@ -29,6 +30,8 @@ interface ITroveManager is ILiquityBase {
     function boldToken() external view returns (IBoldToken);
     function lqtyToken() external view returns (ILQTYToken);
     function lqtyStaking() external view returns (ILQTYStaking);
+    function sortedTroves() external view returns(ISortedTroves);
+    function borrowerOperationsAddress() external view returns (address);
 
     function getTroveOwnersCount() external view returns (uint);
 

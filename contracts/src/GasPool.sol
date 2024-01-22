@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.8.18;
-
 
 /**
  * The purpose of this contract is to hold Bold tokens for gas compensation:

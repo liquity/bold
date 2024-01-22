@@ -2,6 +2,12 @@
 
 pragma solidity 0.8.18;
 
+import "./IActivePool.sol";
+import "./ILiquityBase.sol";
+import "./IBorrowerOperations.sol";
+import "./IBoldToken.sol";
+import "./ITroveManager.sol";
+
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
  *
@@ -33,7 +39,11 @@ pragma solidity 0.8.18;
  * Please see the system Readme for an overview:
  * https://github.com/liquity/dev/blob/main/README.md#lqty-issuance-to-stability-providers
  */
-interface IStabilityPool {
+interface IStabilityPool is ILiquityBase {
+    function borrowerOperations() external view returns (IBorrowerOperations);
+    function boldToken() external view returns (IBoldToken);
+    function troveManager() external view returns (ITroveManager);
+
     /*
      * Called only once on init, to set addresses of other Liquity contracts
      * Callable only by owner, renounces ownership at the end

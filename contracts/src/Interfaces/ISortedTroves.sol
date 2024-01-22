@@ -2,8 +2,13 @@
 
 pragma solidity 0.8.18;
 
+import "./ITroveManager.sol";
+
 // Common interface for the SortedTroves Doubly Linked List.
 interface ISortedTroves {
+    function borrowerOperationsAddress() external view returns (address);
+    function troveManager() external view returns (ITroveManager);
+
     function setParams(uint256 _size, address _TroveManagerAddress, address _borrowerOperationsAddress) external;
 
     function insert(address _id, uint256 _ICR, address _prevId, address _nextId) external;
