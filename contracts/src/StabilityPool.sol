@@ -145,14 +145,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
    // --- Data structures ---
 
-    struct FrontEnd {
-        uint kickbackRate;
-        bool registered;
-    }
-
     struct Deposit {
         uint initialValue;
-        address frontEndTag;
     }
 
     struct Snapshots {
@@ -165,10 +159,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
     mapping (address => Deposit) public deposits;  // depositor address -> Deposit struct
     mapping (address => Snapshots) public depositSnapshots;  // depositor address -> snapshots struct
-
-    mapping (address => FrontEnd) public frontEnds;  // front end address -> FrontEnd struct
-    mapping (address => uint) public frontEndStakes; // front end address -> last recorded total deposits, tagged with that front end
-    mapping (address => Snapshots) public frontEndSnapshots; // front end address -> snapshots struct
 
     /*  Product 'P': Running product by which to multiply an initial deposit, in order to find the current compounded deposit,
     * after a series of liquidations have occurred, each of which cancel some Bold debt with the deposit.
@@ -219,13 +209,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     event EpochUpdated(uint128 _currentEpoch);
     event ScaleUpdated(uint128 _currentScale);
 
-    event FrontEndRegistered(address indexed _frontEnd, uint _kickbackRate);
-    event FrontEndTagSet(address indexed _depositor, address indexed _frontEnd);
-
     event DepositSnapshotUpdated(address indexed _depositor, uint _P, uint _S);
-    event FrontEndSnapshotUpdated(address indexed _frontEnd, uint _P);
     event UserDepositChanged(address indexed _depositor, uint _newDeposit);
-    event FrontEndStakeChanged(address indexed _frontEnd, uint _newFrontEndStake, address _depositor);
 
     event ETHGainWithdrawn(address indexed _depositor, uint _ETH, uint _boldLoss);
     event EtherSent(address _to, uint _amount);
@@ -281,30 +266,19 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     // --- External Depositor Functions ---
 
     /*  provideToSP():
-    *
-    * - Tags the deposit with the provided front end tag param, if it's a new deposit
-    * - Sends depositor's accumulated ETH to depositor
-    * - Increases deposit and tagged front end's stake, and takes new snapshots for each.
+    * - Calculates depositor's ETH gain
+    * - Calculates the compounded deposit
+    * - Increases deposit, and takes new snapshots of accumulators P and S
+    * - Sends depositor's accumulated ETH gains to depositor
     */
-    function provideToSP(uint _amount, address _frontEndTag) external override {
-        _requireFrontEndIsRegisteredOrZero(_frontEndTag);
-        _requireFrontEndNotRegistered(msg.sender);
+    function provideToSP(uint _amount) external override {
         _requireNonZeroAmount(_amount);
 
         uint initialDeposit = deposits[msg.sender].initialValue;
 
-        if (initialDeposit == 0) {_setFrontEndTag(msg.sender, _frontEndTag);}
         uint depositorETHGain = getDepositorETHGain(msg.sender);
         uint compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         uint boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
-
-        address frontEnd = deposits[msg.sender].frontEndTag;
-
-        // Update front end stake
-        uint compoundedFrontEndStake = getCompoundedFrontEndStake(frontEnd);
-        uint newFrontEndStake = compoundedFrontEndStake + _amount;
-        _updateFrontEndStakeAndSnapshots(frontEnd, newFrontEndStake);
-        emit FrontEndStakeChanged(frontEnd, newFrontEndStake, msg.sender);
 
         _sendBoldtoStabilityPool(msg.sender, _amount);
 
@@ -318,11 +292,11 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
      }
 
     /*  withdrawFromSP():
-    *
-    * - Removes the deposit's front end tag if it is a full withdrawal
-    * - Decreases deposit and tagged front end's stake, and takes new snapshots for each.
-    *
-    * If _amount > userDeposit, the user withdraws all of their compounded deposit.
+    * - Calculates depositor's ETH gain
+    * - Calculates the compounded deposit
+    * - Sends the requested BOLD withdrawal to depositor 
+    * - (If _amount > userDeposit, the user withdraws all of their compounded deposit)
+    * - Decreases deposit by withdrawn amount and takes new snapshots of accumulators P and S
     */
     function withdrawFromSP(uint _amount) external override {
         if (_amount !=0) {_requireNoUnderCollateralizedTroves();}
@@ -334,14 +308,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         uint BoldtoWithdraw = LiquityMath._min(_amount, compoundedBoldDeposit);
         uint boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
-
-        address frontEnd = deposits[msg.sender].frontEndTag;
-        
-        // Update front end stake
-        uint compoundedFrontEndStake = getCompoundedFrontEndStake(frontEnd);
-        uint newFrontEndStake = compoundedFrontEndStake - BoldtoWithdraw;
-        _updateFrontEndStakeAndSnapshots(frontEnd, newFrontEndStake);
-        emit FrontEndStakeChanged(frontEnd, newFrontEndStake, msg.sender);
 
         _sendBoldToDepositor(msg.sender, BoldtoWithdraw);
 
@@ -355,10 +321,11 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         _sendETHGainToDepositor(depositorETHGain);
     }
 
-    /* withdrawETHGainToTrove:
+    /* withdrawETHGainToTrove():
     * - Transfers the depositor's entire ETH gain from the Stability Pool to the caller's trove
     * - Leaves their compounded deposit in the Stability Pool
-    * - Updates snapshots for deposit and tagged front end stake */
+    * - Takes new snapshots of accumulators P and S 
+    */
     function withdrawETHGainToTrove(address _upperHint, address _lowerHint) external override {
         uint initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
@@ -369,14 +336,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
         uint compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         uint boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
-
-        address frontEnd = deposits[msg.sender].frontEndTag;
-
-        // Update front end stake
-        uint compoundedFrontEndStake = getCompoundedFrontEndStake(frontEnd);
-        uint newFrontEndStake = compoundedFrontEndStake;
-        _updateFrontEndStakeAndSnapshots(frontEnd, newFrontEndStake);
-        emit FrontEndStakeChanged(frontEnd, newFrontEndStake, msg.sender);
 
         _updateDepositAndSnapshots(msg.sender, compoundedBoldDeposit);
 
@@ -526,7 +485,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         emit StabilityPoolBoldBalanceUpdated(newTotalBoldDeposits);
     }
 
-    // --- Reward calculator functions for depositor and front end ---
+    // --- Reward calculator functions for depositor ---
 
     /* Calculates the ETH gain earned by the deposit since its last snapshots were taken.
     * Given by the formula:  E = d0 * (S - S(0))/P(0)
@@ -563,7 +522,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         return ETHGain;
     }
 
-    // --- Compounded deposit and compounded front end stake ---
+    // --- Compounded deposit ---
 
     /*
     * Return the user's compounded deposit. Given by the formula:  d = d0 * P/P(0)
@@ -577,23 +536,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
         uint compoundedDeposit = _getCompoundedStakeFromSnapshots(initialDeposit, snapshots);
         return compoundedDeposit;
-    }
-
-    /*
-    * Return the front end's compounded stake. Given by the formula:  D = D0 * P/P(0)
-    * where P(0) is the depositor's snapshot of the product P, taken at the last time
-    * when one of the front end's tagged deposits updated their deposit.
-    *
-    * The front end's compounded stake is equal to the sum of its depositors' compounded deposits.
-    */
-    function getCompoundedFrontEndStake(address _frontEnd) public view override returns (uint) {
-        uint frontEndStake = frontEndStakes[_frontEnd];
-        if (frontEndStake == 0) { return 0; }
-
-        Snapshots memory snapshots = frontEndSnapshots[_frontEnd];
-
-        uint compoundedFrontEndStake = _getCompoundedStakeFromSnapshots(frontEndStake, snapshots);
-        return compoundedFrontEndStake;
     }
 
     // Internal function, used to calculcate compounded deposits and compounded front end stakes.
@@ -670,33 +612,12 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         _decreaseBold(BoldWithdrawal);
     }
 
-    // --- External Front End functions ---
-
-    // Front end makes a one-time selection of kickback rate upon registering
-    function registerFrontEnd(uint _kickbackRate) external override {
-        _requireFrontEndNotRegistered(msg.sender);
-        _requireUserHasNoDeposit(msg.sender);
-        _requireValidKickbackRate(_kickbackRate);
-
-        frontEnds[msg.sender].kickbackRate = _kickbackRate;
-        frontEnds[msg.sender].registered = true;
-
-        emit FrontEndRegistered(msg.sender, _kickbackRate);
-    }
-
     // --- Stability Pool Deposit Functionality ---
-
-    function _setFrontEndTag(address _depositor, address _frontEndTag) internal {
-        deposits[_depositor].frontEndTag = _frontEndTag;
-        emit FrontEndTagSet(_depositor, _frontEndTag);
-    }
-
 
     function _updateDepositAndSnapshots(address _depositor, uint _newValue) internal {
         deposits[_depositor].initialValue = _newValue;
 
         if (_newValue == 0) {
-            delete deposits[_depositor].frontEndTag;
             delete depositSnapshots[_depositor];
             emit DepositSnapshotUpdated(_depositor, 0, 0);
             return;
@@ -715,27 +636,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         depositSnapshots[_depositor].epoch = currentEpochCached;
 
         emit DepositSnapshotUpdated(_depositor, currentP, currentS);
-    }
-
-    function _updateFrontEndStakeAndSnapshots(address _frontEnd, uint _newValue) internal {
-        frontEndStakes[_frontEnd] = _newValue;
-
-        if (_newValue == 0) {
-            delete frontEndSnapshots[_frontEnd];
-            emit FrontEndSnapshotUpdated(_frontEnd, 0);
-            return;
-        }
-
-        uint128 currentScaleCached = currentScale;
-        uint128 currentEpochCached = currentEpoch;
-        uint currentP = P;
-
-        // Record new snapshots of the latest running product P
-        frontEndSnapshots[_frontEnd].P = currentP;
-        frontEndSnapshots[_frontEnd].scale = currentScaleCached;
-        frontEndSnapshots[_frontEnd].epoch = currentEpochCached;
-
-        emit FrontEndSnapshotUpdated(_frontEnd, currentP);
     }
 
     // --- 'require' functions ---
@@ -775,15 +675,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     function _requireUserHasETHGain(address _depositor) internal view {
         uint ETHGain = getDepositorETHGain(_depositor);
         require(ETHGain > 0, "StabilityPool: caller must have non-zero ETH Gain");
-    }
-
-    function _requireFrontEndNotRegistered(address _address) internal view {
-        require(!frontEnds[_address].registered, "StabilityPool: must not already be a registered front end");
-    }
-
-     function _requireFrontEndIsRegisteredOrZero(address _address) internal view {
-        require(frontEnds[_address].registered || _address == address(0),
-            "StabilityPool: Tag must be a registered front end, or the zero address");
     }
 
     function  _requireValidKickbackRate(uint _kickbackRate) internal pure {

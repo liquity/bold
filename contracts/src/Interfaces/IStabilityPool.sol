@@ -45,53 +45,31 @@ interface IStabilityPool is ILiquityBase {
         address _sortedTrovesAddress,
         address _priceFeedAddress
     ) external;
+  
+    /*  provideToSP():
+    * - Calculates depositor's ETH gain
+    * - Calculates the compounded deposit
+    * - Increases deposit, and takes new snapshots of accumulators P and S
+    * - Sends depositor's accumulated ETH gains to depositor
+    */
+    function provideToSP(uint _amount) external;
 
-    /*
-     * Initial checks:
-     * - Frontend is registered or zero address
-     * - Sender is not a registered frontend
-     * - _amount is not zero
-     * ---
-     * - Tags the deposit with the provided front end tag param, if it's a new deposit
-     * - Sends depositor's accumulated ETH gains to depositor
-     * - Increases deposit and tagged front end's stake, and takes new snapshots for each.
-     */
-    function provideToSP(uint _amount, address _frontEndTag) external;
-
-    /*
-     * Initial checks:
-     * - _amount is zero or there are no under collateralized troves left in the system
-     * - User has a non zero deposit
-     * ---
-     * - Removes the deposit's front end tag if it is a full withdrawal
-     * - Sends all depositor's accumulated ETH gains to depositor
-     * - Decreases deposit and tagged front end's stake, and takes new snapshots for each.
-     *
-     * If _amount > userDeposit, the user withdraws all of their compounded deposit.
-     */
+   
+    /*  withdrawFromSP():
+    * - Calculates depositor's ETH gain
+    * - Calculates the compounded deposit
+    * - Sends the requested BOLD withdrawal to depositor 
+    * - (If _amount > userDeposit, the user withdraws all of their compounded deposit)
+    * - Decreases deposit by withdrawn amount and takes new snapshots of accumulators P and S
+    */
     function withdrawFromSP(uint _amount) external;
 
-    /*
-     * Initial checks:
-     * - User has a non zero deposit
-     * - User has an open trove
-     * - User has some ETH gain
-     * ---
-     * - Transfers the depositor's entire ETH gain from the Stability Pool to the caller's trove
-     * - Leaves their compounded deposit in the Stability Pool
-     * - Updates snapshots for deposit and tagged front end stake
-     */
+    /* withdrawETHGainToTrove():
+    * - Transfers the depositor's entire ETH gain from the Stability Pool to the caller's trove
+    * - Leaves their compounded deposit in the Stability Pool
+    * - Takes new snapshots of accumulators P and S 
+    */
     function withdrawETHGainToTrove(address _upperHint, address _lowerHint) external;
-
-    /*
-     * Initial checks:
-     * - Frontend (sender) not already registered
-     * - User (sender) has no deposit
-     * - _kickbackRate is in the range [0, 100%]
-     * ---
-     * Front end makes a one-time selection of kickback rate upon registering
-     */
-    function registerFrontEnd(uint _kickbackRate) external;
 
     /*
      * Initial checks:
@@ -123,13 +101,6 @@ interface IStabilityPool is ILiquityBase {
      * Return the user's compounded deposit.
      */
     function getCompoundedBoldDeposit(address _depositor) external view returns (uint);
-
-    /*
-     * Return the front end's compounded stake.
-     *
-     * The front end's compounded stake is equal to the sum of its depositors' compounded deposits.
-     */
-    function getCompoundedFrontEndStake(address _frontEnd) external view returns (uint);
 
     /*
      * Fallback function

@@ -37,8 +37,6 @@ contract BasicOps is DevTestSetup {
         assertEq(trovesCount, 1);
     }
 
-    // adjustTrove
-
     function testAdjustTrove() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
@@ -115,10 +113,7 @@ contract BasicOps is DevTestSetup {
         uint256 price = priceFeed.fetchPrice();
 
         // Check CR_A < MCR and TCR > CCR
-        console.log(troveManager.getCurrentICR(A, price), "A ICR");
         assertLt(troveManager.getCurrentICR(A, price), MCR);
-
-        console.log(troveManager.getTCR(price) , "TCR");
         assertGt(troveManager.getTCR(price), CCR);
 
         uint256 trovesCount = troveManager.getTroveOwnersCount();
@@ -131,34 +126,32 @@ contract BasicOps is DevTestSetup {
         assertEq(trovesCount, 1);
     }
 
-    // SP deposit
     function testSPDeposit() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
         borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
 
         // A makes an SP deposit
-        stabilityPool.provideToSP(100e18, ZERO_ADDRESS);
+        stabilityPool.provideToSP(100e18);
 
         // time passes
         vm.warp(block.timestamp + 7 days);
 
         // A tops up their SP deposit
-        stabilityPool.provideToSP(100e18, ZERO_ADDRESS);
+        stabilityPool.provideToSP(100e18);
 
         // Check A's balance decreased and SP deposit increased
         assertEq(boldToken.balanceOf(A), 1800e18);
         assertEq(stabilityPool.getCompoundedBoldDeposit(A), 200e18);
     }
 
-    // SP withdraw
     function testSPWithdrawal() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
         borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
 
         // A makes an SP deposit
-        stabilityPool.provideToSP(100e18, ZERO_ADDRESS);
+        stabilityPool.provideToSP(100e18);
 
         // time passes
         vm.warp(block.timestamp + 7 days);
