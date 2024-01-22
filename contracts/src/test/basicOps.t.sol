@@ -101,7 +101,35 @@ contract BasicOps is DevTestSetup {
         assertLt(coll_2, coll_1);
     }
 
-    // liquidate
+    function testLiquidation() public {
+        priceFeed.setPrice(2000e18);
+        vm.startPrank(A);
+        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+        vm.stopPrank();
+
+        vm.startPrank(B);
+        borrowerOperations.openTrove{value: 10 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+
+       // Price drops
+        priceFeed.setPrice(1200e18);
+        uint256 price = priceFeed.fetchPrice();
+
+        // Check CR_A < MCR and TCR > CCR
+        console.log(troveManager.getCurrentICR(A, price), "A ICR");
+        assertLt(troveManager.getCurrentICR(A, price), MCR);
+
+        console.log(troveManager.getTCR(price) , "TCR");
+        assertGt(troveManager.getTCR(price), CCR);
+
+        uint256 trovesCount = troveManager.getTroveOwnersCount();
+        assertEq(trovesCount, 2);
+
+        troveManager.liquidate(A);
+
+        // Check Troves count reduced by 1
+        trovesCount = troveManager.getTroveOwnersCount();
+        assertEq(trovesCount, 1);
+    }
 
     // SP deposit
 

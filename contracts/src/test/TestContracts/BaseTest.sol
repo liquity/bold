@@ -30,7 +30,10 @@ contract BaseTest is Test {
 
     uint256 public constant MAX_UINT256 = type(uint256).max;
     uint256 public constant SECONDS_IN_1_YEAR = 31536000; // 60*60*24*365
+    uint256 MCR = 110e16;
+    uint256 CCR = 150e16;
     address public constant ZERO_ADDRESS = address(0);
+
 
     // Core contracts
     IActivePool activePool;
