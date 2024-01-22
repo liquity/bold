@@ -33,6 +33,8 @@ interface ITroveManager is ILiquityBase {
     function sortedTroves() external view returns(ISortedTroves);
     function borrowerOperationsAddress() external view returns (address);
 
+    function BOOTSTRAP_PERIOD() external view returns (uint256);
+    
     function getTroveOwnersCount() external view returns (uint);
 
     function getTroveFromTroveOwnersArray(uint _index) external view returns (address);

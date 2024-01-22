@@ -34,7 +34,7 @@ contract DevTestSetup is BaseTest {
             (accountsList[0], accountsList[1], accountsList[2], accountsList[3], accountsList[4], accountsList[5]);
 
         // Give some StETH to test accounts
-        uint256 initialETHAmount = 2000e18;
+        uint256 initialETHAmount = 10_000e18;
         deal(A, initialETHAmount);
         deal(B, initialETHAmount);
         deal(C, initialETHAmount);
