@@ -132,6 +132,46 @@ contract BasicOps is DevTestSetup {
     }
 
     // SP deposit
+    function testSPDeposit() public {
+        priceFeed.setPrice(2000e18);
+        vm.startPrank(A);
+        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+
+        // A makes an SP deposit
+        stabilityPool.provideToSP(100e18, ZERO_ADDRESS);
+
+        // time passes
+        vm.warp(block.timestamp + 7 days);
+
+        // A tops up their SP deposit
+        stabilityPool.provideToSP(100e18, ZERO_ADDRESS);
+
+        // Check A's balance decreased and SP deposit increased
+        assertEq(boldToken.balanceOf(A), 1800e18);
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 200e18);
+    }
 
     // SP withdraw
+    function testSPWithdrawal() public {
+        priceFeed.setPrice(2000e18);
+        vm.startPrank(A);
+        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+
+        // A makes an SP deposit
+        stabilityPool.provideToSP(100e18, ZERO_ADDRESS);
+
+        // time passes
+        vm.warp(block.timestamp + 7 days);
+
+        // Check A's balance decreased and SP deposit increased
+        assertEq(boldToken.balanceOf(A), 1900e18);
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 100e18);
+
+        // A tops up their SP deposit
+        stabilityPool.withdrawFromSP(100e18);
+
+        // Check A's balance increased and SP deposit decreased to 0
+        assertEq(boldToken.balanceOf(A), 2000e18);
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 0);
+    }
 }

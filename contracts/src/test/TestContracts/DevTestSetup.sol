@@ -107,8 +107,7 @@ contract DevTestSetup is BaseTest {
             address(activePool),
             address(boldToken),
             address(sortedTroves),
-            address(priceFeed), 
-            ZERO_ADDRESS // No Community Issuance
+            address(priceFeed)
         );
 
         activePool.setAddresses(
