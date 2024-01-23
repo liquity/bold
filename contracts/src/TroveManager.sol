@@ -93,7 +93,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     * L_ETH and L_boldDebt track the sums of accumulated liquidation rewards per unit staked. During its lifetime, each stake earns:
     *
     * An ETH gain of ( stake * [L_ETH - L_ETH(0)] )
-    * A BoldDebt increase  of ( stake * [L_boldDebt - L_boldDebt(0)] )
+    * A boldDebt increase  of ( stake * [L_boldDebt - L_boldDebt(0)] )
     *
     * Where L_ETH(0) and L_boldDebt(0) are snapshots of L_ETH and L_boldDebt for the active Trove taken at the instant the stake was made
     */
@@ -104,7 +104,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     mapping (address => RewardSnapshot) public rewardSnapshots;
 
     // Object containing the ETH and Bold snapshots for a given active trove
-    struct RewardSnapshot { uint ETH; uint BoldDebt;}
+    struct RewardSnapshot { uint ETH; uint boldDebt;}
 
     // Array of all active trove addresses - used to to compute an approximate hint off-chain, for the sorted list insertion
     address[] public TroveOwners;
@@ -122,7 +122,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
 
     struct LocalVariables_OuterLiquidationFunction {
         uint price;
-        uint BoldInStabPool;
+        uint boldInStabPool;
         bool recoveryModeAtStart;
         uint liquidatedDebt;
         uint liquidatedColl;
@@ -508,14 +508,14 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         LiquidationTotals memory totals;
 
         vars.price = priceFeed.fetchPrice();
-        vars.BoldInStabPool = stabilityPoolCached.getTotalBoldDeposits();
+        vars.boldInStabPool = stabilityPoolCached.getTotalBoldDeposits();
         vars.recoveryModeAtStart = _checkRecoveryMode(vars.price);
 
         // Perform the appropriate liquidation sequence - tally the values, and obtain their totals
         if (vars.recoveryModeAtStart) {
-            totals = _getTotalsFromLiquidateTrovesSequence_RecoveryMode(contractsCache, vars.price, vars.BoldInStabPool, _n);
+            totals = _getTotalsFromLiquidateTrovesSequence_RecoveryMode(contractsCache, vars.price, vars.boldInStabPool, _n);
         } else { // if !vars.recoveryModeAtStart
-            totals = _getTotalsFromLiquidateTrovesSequence_NormalMode(contractsCache.activePool, contractsCache.defaultPool, vars.price, vars.BoldInStabPool, _n);
+            totals = _getTotalsFromLiquidateTrovesSequence_NormalMode(contractsCache.activePool, contractsCache.defaultPool, vars.price, vars.boldInStabPool, _n);
         }
 
         require(totals.totalDebtInSequence > 0, "TroveManager: nothing to liquidate");
@@ -650,14 +650,14 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         LiquidationTotals memory totals;
 
         vars.price = priceFeed.fetchPrice();
-        vars.BoldInStabPool = stabilityPoolCached.getTotalBoldDeposits();
+        vars.boldInStabPool = stabilityPoolCached.getTotalBoldDeposits();
         vars.recoveryModeAtStart = _checkRecoveryMode(vars.price);
 
         // Perform the appropriate liquidation sequence - tally values and obtain their totals.
         if (vars.recoveryModeAtStart) {
-            totals = _getTotalFromBatchLiquidate_RecoveryMode(activePoolCached, defaultPoolCached, vars.price, vars.BoldInStabPool, _troveArray);
+            totals = _getTotalFromBatchLiquidate_RecoveryMode(activePoolCached, defaultPoolCached, vars.price, vars.boldInStabPool, _troveArray);
         } else {  //  if !vars.recoveryModeAtStart
-            totals = _getTotalsFromBatchLiquidate_NormalMode(activePoolCached, defaultPoolCached, vars.price, vars.BoldInStabPool, _troveArray);
+            totals = _getTotalsFromBatchLiquidate_NormalMode(activePoolCached, defaultPoolCached, vars.price, vars.boldInStabPool, _troveArray);
         }
 
         require(totals.totalDebtInSequence > 0, "TroveManager: nothing to liquidate");
@@ -1087,7 +1087,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
 
     function _updateTroveRewardSnapshots(address _borrower) internal {
         rewardSnapshots[_borrower].ETH = L_ETH;
-        rewardSnapshots[_borrower].BoldDebt = L_boldDebt;
+        rewardSnapshots[_borrower].boldDebt = L_boldDebt;
         emit TroveSnapshotsUpdated(L_ETH, L_boldDebt);
     }
 
@@ -1107,7 +1107,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     
     // Get the borrower's pending accumulated Bold reward, earned by their stake
     function getPendingBoldDebtReward(address _borrower) public view override returns (uint) {
-        uint snapshotBoldDebt = rewardSnapshots[_borrower].BoldDebt;
+        uint snapshotBoldDebt = rewardSnapshots[_borrower].boldDebt;
         uint rewardPerUnitStaked = L_boldDebt - snapshotBoldDebt;
 
         if ( rewardPerUnitStaked == 0 || Troves[_borrower].status != Status.active) { return 0; }
@@ -1211,18 +1211,18 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
         */
         uint ETHNumerator = _coll * DECIMAL_PRECISION + lastETHError_Redistribution;
-        uint BoldDebtNumerator = _debt * DECIMAL_PRECISION + lastBoldDebtError_Redistribution;
+        uint boldDebtNumerator = _debt * DECIMAL_PRECISION + lastBoldDebtError_Redistribution;
 
         // Get the per-unit-staked terms
         uint ETHRewardPerUnitStaked = ETHNumerator / totalStakes;
-        uint BoldDebtRewardPerUnitStaked = BoldDebtNumerator / totalStakes;
+        uint boldDebtRewardPerUnitStaked = boldDebtNumerator / totalStakes;
 
         lastETHError_Redistribution = ETHNumerator - ETHRewardPerUnitStaked * totalStakes;
-        lastBoldDebtError_Redistribution = BoldDebtNumerator - BoldDebtRewardPerUnitStaked * totalStakes;
+        lastBoldDebtError_Redistribution = boldDebtNumerator - boldDebtRewardPerUnitStaked * totalStakes;
 
         // Add per-unit-staked terms to the running totals
         L_ETH = L_ETH + ETHRewardPerUnitStaked;
-        L_boldDebt = L_boldDebt + BoldDebtRewardPerUnitStaked;
+        L_boldDebt = L_boldDebt + boldDebtRewardPerUnitStaked;
 
         emit LTermsUpdated(L_ETH, L_boldDebt);
 
@@ -1248,7 +1248,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         Troves[_borrower].debt = 0;
 
         rewardSnapshots[_borrower].ETH = 0;
-        rewardSnapshots[_borrower].BoldDebt = 0;
+        rewardSnapshots[_borrower].boldDebt = 0;
 
         _removeTroveOwner(_borrower, TroveOwnersArrayLength);
         sortedTroves.remove(_borrower);
