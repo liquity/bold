@@ -56,7 +56,7 @@ contract BaseTest is Test {
         accountsList = tempAccounts;
     }
 
-    function logContractAddresses() public {
+    function logContractAddresses() view public {
         console.log("ActivePool addr: ", address(activePool));
         console.log("BorrowerOps addr: ", address(borrowerOperations));
         console.log("CollSurplusPool addr: ", address(collSurplusPool));
