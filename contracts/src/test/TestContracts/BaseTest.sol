@@ -30,14 +30,16 @@ contract BaseTest is Test {
 
     uint256 public constant MAX_UINT256 = type(uint256).max;
     uint256 public constant SECONDS_IN_1_YEAR = 31536000; // 60*60*24*365
+    uint256 MCR = 110e16;
+    uint256 CCR = 150e16;
     address public constant ZERO_ADDRESS = address(0);
+
 
     // Core contracts
     IActivePool activePool;
     IBorrowerOperations borrowerOperations;
     ICollSurplusPool collSurplusPool;
     IDefaultPool defaultPool;
-    IPriceFeed priceFeed;
     ISortedTroves sortedTroves;
     IStabilityPool stabilityPool;
     ITroveManager troveManager;
@@ -60,7 +62,6 @@ contract BaseTest is Test {
         console.log("CollSurplusPool addr: ", address(collSurplusPool));
         console.log("DefaultPool addr: ", address(defaultPool));
         console.log("GasPool addr: ", address(gasPool));
-        console.log("PriceFeed addr: ", address(priceFeed));
         console.log("SortedTroves addr: ", address(sortedTroves));
         console.log("StabilityPool addr: ", address(stabilityPool));
         console.log("TroveManager addr: ", address(troveManager));

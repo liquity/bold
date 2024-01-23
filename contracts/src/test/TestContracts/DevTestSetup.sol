@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
+import "./Interfaces/IPriceFeedTestnet.sol";
+
 import "../../ActivePool.sol";
 import "../../BoldToken.sol";
 import "../../BorrowerOperations.sol";
@@ -10,7 +12,7 @@ import "../../DefaultPool.sol";
 import "../../GasPool.sol";
 import "../../HintHelpers.sol";
 import "../../MultiTroveGetter.sol";
-import "../../OldTestContracts/PriceFeedTestnet.sol";
+import "../../TestContracts/PriceFeedTestnet.sol";
 import "../../SortedTroves.sol";
 import "../../StabilityPool.sol";
 import "../../TroveManager.sol";
@@ -18,6 +20,9 @@ import "../../TroveManager.sol";
 import "./BaseTest.sol";
 
 contract DevTestSetup is BaseTest {
+
+    IPriceFeedTestnet priceFeed;
+
     function setUp() public virtual {
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
@@ -29,7 +34,7 @@ contract DevTestSetup is BaseTest {
             (accountsList[0], accountsList[1], accountsList[2], accountsList[3], accountsList[4], accountsList[5]);
 
         // Give some StETH to test accounts
-        uint256 initialETHAmount = 2000e18;
+        uint256 initialETHAmount = 10_000e18;
         deal(A, initialETHAmount);
         deal(B, initialETHAmount);
         deal(C, initialETHAmount);
@@ -102,8 +107,7 @@ contract DevTestSetup is BaseTest {
             address(activePool),
             address(boldToken),
             address(sortedTroves),
-            address(priceFeed), 
-            ZERO_ADDRESS // No Community Issuance
+            address(priceFeed)
         );
 
         activePool.setAddresses(

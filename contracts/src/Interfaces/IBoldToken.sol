@@ -6,6 +6,8 @@ import "../Dependencies/IERC20.sol";
 import "../Dependencies/IERC2612.sol";
 
 interface IBoldToken is IERC20, IERC2612 { 
+    function deploymentStartTime() external view returns (uint256);
+    
     function mint(address _account, uint256 _amount) external;
 
     function burn(address _account, uint256 _amount) external;

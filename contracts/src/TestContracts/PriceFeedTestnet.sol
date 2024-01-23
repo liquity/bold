@@ -2,13 +2,13 @@
 
 pragma solidity 0.8.18;
 
-import "../Interfaces/IPriceFeed.sol";
+import "../test/TestContracts/Interfaces/IPriceFeedTestnet.sol";
 
 /*
 * PriceFeed placeholder for testnet and development. The price is simply set manually and saved in a state 
 * variable. The contract does not connect to a live Chainlink price feed. 
 */
-contract PriceFeedTestnet is IPriceFeed {
+contract PriceFeedTestnet is IPriceFeedTestnet {
     event LastGoodPriceUpdated(uint _lastGoodPrice);
 
     uint256 private _price = 200 * 1e18;

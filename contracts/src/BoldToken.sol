@@ -46,6 +46,8 @@ contract BoldToken is CheckContract, IBoldToken {
     
     mapping (address => uint256) private _nonces;
     
+    uint256 public deploymentStartTime;
+
     // User data for Bold token
     mapping (address => uint256) private _balances;
     mapping (address => mapping (address => uint256)) private _allowances;  
@@ -88,6 +90,8 @@ contract BoldToken is CheckContract, IBoldToken {
         _HASHED_VERSION = hashedVersion;
         _CACHED_CHAIN_ID = _chainID();
         _CACHED_DOMAIN_SEPARATOR = _buildDomainSeparator(_TYPE_HASH, hashedName, hashedVersion);
+
+        deploymentStartTime = block.timestamp;
     }
 
     // --- Functions for intra-Liquity calls ---

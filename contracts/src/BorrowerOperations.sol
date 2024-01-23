@@ -168,8 +168,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         vars.netDebt = _boldAmount;
 
         if (!isRecoveryMode) {
-            vars.BoldFee = _triggerBorrowingFee(contractsCache.troveManager, contractsCache.boldToken, _boldAmount, _maxFeePercentage);
-            vars.netDebt = vars.netDebt + vars.BoldFee;
+            // TODO: implement interest rate charges
         }
         _requireAtLeastMinNetDebt(vars.netDebt);
 
@@ -274,8 +273,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // If the adjustment incorporates a debt increase and system is in Normal Mode, then trigger a borrowing fee
         if (_isDebtIncrease && !isRecoveryMode) { 
-            vars.BoldFee = _triggerBorrowingFee(contractsCache.troveManager, contractsCache.boldToken, _boldChange, _maxFeePercentage);
-            vars.netDebtChange = vars.netDebtChange + vars.BoldFee; // The raw debt change includes the fee
+            // TODO: implement interest rate charges
         }
 
         vars.debt = contractsCache.troveManager.getTroveDebt(_borrower);
@@ -360,19 +358,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     }
 
     // --- Helper functions ---
-
-    function _triggerBorrowingFee(ITroveManager _troveManager, IBoldToken _boldToken, uint _boldAmount, uint _maxFeePercentage) internal returns (uint) {
-        _troveManager.decayBaseRateFromBorrowing(); // decay the baseRate state variable
-        uint BoldFee = _troveManager.getBorrowingFee(_boldAmount);
-
-        _requireUserAcceptsFee(BoldFee, _boldAmount, _maxFeePercentage);
-        
-        // Send fee to LQTY staking contract
-        lqtyStaking.increaseF_bold(BoldFee);
-        _boldToken.mint(lqtyStakingAddress, BoldFee);
-
-        return BoldFee;
-    }
 
     function _getUSDValue(uint _coll, uint _price) internal pure returns (uint) {
         uint usdValue = _price * _coll / DECIMAL_PRECISION;
