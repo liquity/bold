@@ -160,7 +160,7 @@ contract BasicOps is DevTestSetup {
         assertEq(boldToken.balanceOf(A), 1900e18);
         assertEq(stabilityPool.getCompoundedBoldDeposit(A), 100e18);
 
-        // A tops up their SP deposit
+        // A withdraws their full SP deposit
         stabilityPool.withdrawFromSP(100e18);
 
         // Check A's balance increased and SP deposit decreased to 0

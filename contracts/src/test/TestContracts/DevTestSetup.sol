@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-import "../../Interfaces/IPriceFeedTestnet.sol";
+import "./Interfaces/IPriceFeedTestnet.sol";
 
 import "../../ActivePool.sol";
 import "../../BoldToken.sol";
@@ -12,7 +12,7 @@ import "../../DefaultPool.sol";
 import "../../GasPool.sol";
 import "../../HintHelpers.sol";
 import "../../MultiTroveGetter.sol";
-import "../../OldTestContracts/PriceFeedTestnet.sol";
+import "../../TestContracts/PriceFeedTestnet.sol";
 import "../../SortedTroves.sol";
 import "../../StabilityPool.sol";
 import "../../TroveManager.sol";
