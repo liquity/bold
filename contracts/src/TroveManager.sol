@@ -71,6 +71,8 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         uint stake;
         Status status;
         uint128 arrayIndex;
+        uint256 annualInterestRate; 
+        // TODO: optimize this struct packing for gas reduction, which may break v1 tests that assume a certain order of properties
     }
 
     mapping (address => Trove) public Troves;
@@ -1062,12 +1064,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         }
     }
 
-    // Update borrower's snapshots of L_ETH and L_boldDebt to reflect the current values
-    function updateTroveRewardSnapshots(address _borrower) external override {
-        _requireCallerIsBorrowerOperations();
-       return _updateTroveRewardSnapshots(_borrower);
-    }
-
     function _updateTroveRewardSnapshots(address _borrower) internal {
         rewardSnapshots[_borrower].ETH = L_ETH;
         rewardSnapshots[_borrower].boldDebt = L_boldDebt;
@@ -1229,6 +1225,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         Troves[_borrower].status = closedStatus;
         Troves[_borrower].coll = 0;
         Troves[_borrower].debt = 0;
+        Troves[_borrower].annualInterestRate = 0;
 
         rewardSnapshots[_borrower].ETH = 0;
         rewardSnapshots[_borrower].boldDebt = 0;
@@ -1507,11 +1504,22 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         return Troves[_borrower].coll;
     }
 
+    function getTroveAnnualInterestRate(address _borrower) external view returns (uint) {
+        return Troves[_borrower].annualInterestRate;
+    }
+
     // --- Trove property setters, called by BorrowerOperations ---
 
-    function setTroveStatus(address _borrower, uint _num) external override {
+    function setTrovePropertiesOnOpen(address _borrower, uint256 _coll, uint256 _debt, uint256 _annualInterestRate) external returns (uint256) {
         _requireCallerIsBorrowerOperations();
-        Troves[_borrower].status = Status(_num);
+        // TODO: optimize gas for writing to this struct
+        Troves[_borrower].status = Status.active;
+        Troves[_borrower].coll = _coll;
+        Troves[_borrower].debt = _debt;
+        Troves[_borrower].annualInterestRate = _annualInterestRate;
+
+        _updateTroveRewardSnapshots(_borrower);
+        return _updateStakeAndTotalStakes(_borrower);
     }
 
     function increaseTroveColl(address _borrower, uint _collIncrease) external override returns (uint) {
@@ -1540,5 +1548,10 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         uint newDebt = Troves[_borrower].debt - _debtDecrease;
         Troves[_borrower].debt = newDebt;
         return newDebt;
+    }
+
+    function changeAnnualInterestRate(address _borrower, uint256 _newAnnualInterestRate) external returns (uint256) {
+        _requireCallerIsBorrowerOperations();
+        Troves[_borrower].annualInterestRate = _newAnnualInterestRate;
     }
 }

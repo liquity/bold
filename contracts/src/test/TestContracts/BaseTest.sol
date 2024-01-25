@@ -56,7 +56,46 @@ contract BaseTest is Test {
         accountsList = tempAccounts;
     }
 
-    function logContractAddresses() view public {
+    function openTroveNoHints100pctMaxFee(
+        address _account, 
+        uint256 _coll, 
+        uint256 _boldAmount, 
+        uint256 _annualInterestRate
+    ) 
+    public 
+    {
+        vm.startPrank(_account);
+        borrowerOperations.openTrove{value: _coll}(1e18, _boldAmount, ZERO_ADDRESS, ZERO_ADDRESS, _annualInterestRate);
+        vm.stopPrank();
+    }
+
+
+    // (uint _maxFeePercentage, uint _collWithdrawal, uint _boldChange, bool _isDebtIncrease)
+    function adjustTrove100pctMaxFee(
+        address _account, 
+        uint256 _collChange,
+        uint256 _boldChange, 
+        bool _isCollIncrease,
+        bool _isDebtIncrease
+    ) 
+    public 
+    {
+        vm.startPrank(_account);
+        if (_isCollIncrease) {
+            borrowerOperations.adjustTrove{value: _collChange}(1e18, 0, _boldChange,  _isDebtIncrease);
+        } else {
+            borrowerOperations.adjustTrove(1e18, _collChange, _boldChange,  _isDebtIncrease);
+        }
+        vm.stopPrank();
+    }
+
+    function changeInterestRateNoHints(address _account, uint256 _newAnnualInterestRate) public {
+        vm.startPrank(_account);
+        borrowerOperations.adjustTroveInterestRate(_newAnnualInterestRate, ZERO_ADDRESS, ZERO_ADDRESS);
+        vm.stopPrank();
+    }
+
+    function logContractAddresses() public view {
         console.log("ActivePool addr: ", address(activePool));
         console.log("BorrowerOps addr: ", address(borrowerOperations));
         console.log("CollSurplusPool addr: ", address(collSurplusPool));

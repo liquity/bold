@@ -8,23 +8,6 @@ import "../BorrowerOperations.sol";
 for testing the parent's internal functions. */
 contract BorrowerOperationsTester is BorrowerOperations {
 
-    function getNewICRFromTroveChange
-    (
-        uint _coll, 
-        uint _debt, 
-        uint _collChange, 
-        bool isCollIncrease, 
-        uint _debtChange, 
-        bool isDebtIncrease, 
-        uint _price
-    ) 
-    external
-    pure
-    returns (uint)
-    {
-        return _getNewICRFromTroveChange(_coll, _debt, _collChange, isCollIncrease, _debtChange, isDebtIncrease, _price);
-    }
-
     function getNewTCRFromTroveChange
     (
         uint _collChange, 
@@ -49,12 +32,11 @@ contract BorrowerOperationsTester is BorrowerOperations {
         address _borrower, 
         uint _collWithdrawal, 
         uint _debtChange, 
-        bool _isDebtIncrease, 
-        address _upperHint,
-        address _lowerHint)
+        bool _isDebtIncrease
+    )
         external 
     {
-        _adjustTrove(_borrower, _collWithdrawal, _debtChange, _isDebtIncrease, _upperHint, _lowerHint, 0);
+        _adjustTrove(_borrower, _collWithdrawal, _debtChange, _isDebtIncrease, 0);
     }
 
 
