@@ -46,7 +46,6 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(sortedTroves.getNext(D), B);
         assertEq(sortedTroves.getPrev(D), ZERO_ADDRESS); // head
 
-
         // C opens. Expect to be inserted between B and D
         openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  interestRate_C);
         assertEq(sortedTroves.getNext(C), B);
@@ -102,7 +101,6 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveManager.getTroveAnnualInterestRate(B), 5e17);
         assertEq(troveManager.getTroveAnnualInterestRate(C), 5e17);
 
-
         changeInterestRateNoHints(A, 0);
         assertEq(troveManager.getTroveAnnualInterestRate(A), 0);
 
@@ -149,7 +147,6 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(sortedTroves.getNext(D), E);
         assertEq(sortedTroves.getPrev(D), ZERO_ADDRESS);
 
-
         // A sets rate to 6%, moves up 2 positions - expect [C:0%, B:2%, E:5%, A:6%, D:7%]
         changeInterestRateNoHints(A, 6e17);
         assertEq(sortedTroves.getNext(A), E);
@@ -166,7 +163,6 @@ contract InterestRateBasic is DevTestSetup {
         openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  4e17);
         openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  5e17);
 
-
         // Check A's neighbors
         assertEq(sortedTroves.getNext(A), ZERO_ADDRESS); // tail
         assertEq(sortedTroves.getPrev(A), B);
@@ -177,7 +173,6 @@ contract InterestRateBasic is DevTestSetup {
         // Check A's neighbors unchanged
         assertEq(sortedTroves.getNext(A), ZERO_ADDRESS); // tail
         assertEq(sortedTroves.getPrev(A), B);
-
 
         // Check C's neighbors
         assertEq(sortedTroves.getNext(C), B);
