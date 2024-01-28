@@ -7,8 +7,6 @@ import "./Interfaces/IStabilityPool.sol";
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ISortedTroves.sol";
-import "./Interfaces/ILQTYToken.sol";
-import "./Interfaces/ILQTYStaking.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
@@ -29,10 +27,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     ICollSurplusPool collSurplusPool;
 
     IBoldToken public override boldToken;
-
-    ILQTYToken public override lqtyToken;
-
-    ILQTYStaking public override lqtyStaking;
 
     // A doubly linked list of Troves, sorted by their sorted by their collateral ratios
     ISortedTroves public sortedTroves;
@@ -172,7 +166,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         IActivePool activePool;
         IDefaultPool defaultPool;
         IBoldToken boldToken;
-        ILQTYStaking lqtyStaking;
         ISortedTroves sortedTroves;
         ICollSurplusPool collSurplusPool;
         address gasPoolAddress;
@@ -207,8 +200,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     event GasPoolAddressChanged(address _gasPoolAddress);
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
-    event LQTYTokenAddressChanged(address _lqtyTokenAddress);
-    event LQTYStakingAddressChanged(address _lqtyStakingAddress);
 
     event Liquidation(uint _liquidatedDebt, uint _liquidatedColl, uint _collGasCompensation, uint _boldGasCompensation);
     event Redemption(uint _attemptedBoldAmount, uint _actualBoldAmount, uint _ETHSent, uint _ETHFee);
@@ -241,9 +232,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
         address _boldTokenAddress,
-        address _sortedTrovesAddress,
-        address _lqtyTokenAddress,
-        address _lqtyStakingAddress
+        address _sortedTrovesAddress
     )
         external
         override
@@ -268,8 +257,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         priceFeed = IPriceFeed(_priceFeedAddress);
         boldToken = IBoldToken(_boldTokenAddress);
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
-        lqtyToken = ILQTYToken(_lqtyTokenAddress);
-        lqtyStaking = ILQTYStaking(_lqtyStakingAddress);
 
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
         emit ActivePoolAddressChanged(_activePoolAddress);
@@ -280,8 +267,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         emit PriceFeedAddressChanged(_priceFeedAddress);
         emit BoldTokenAddressChanged(_boldTokenAddress);
         emit SortedTrovesAddressChanged(_sortedTrovesAddress);
-        emit LQTYTokenAddressChanged(_lqtyTokenAddress);
-        emit LQTYStakingAddressChanged(_lqtyStakingAddress);
 
         _renounceOwnership();
     }
@@ -496,7 +481,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
             activePool,
             defaultPool,
             IBoldToken(address(0)),
-            ILQTYStaking(address(0)),
             sortedTroves,
             ICollSurplusPool(address(0)),
             address(0)
@@ -937,7 +921,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
             activePool,
             defaultPool,
             boldToken,
-            lqtyStaking,
             sortedTroves,
             collSurplusPool,
             gasPoolAddress

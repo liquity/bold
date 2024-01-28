@@ -36,7 +36,7 @@
     "@types/mocha": ">=9.1.0",
     "chai": "^4.2.0",
     "decimal.js": "^10.4.3",
-    "hardhat": "^2.14.0",
+    "hardhat": "^2.19.4",
     "hardhat-gas-reporter": "^1.0.8",
     "solidity-coverage": "^0.8.1",
     "ts-node": ">=8.0.0",
