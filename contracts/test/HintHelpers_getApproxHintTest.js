@@ -96,21 +96,14 @@ contract("HintHelpers", async (accounts) => {
       contracts.stabilityPool.address,
       contracts.borrowerOperations.address
     );
-    const LQTYContracts = await deploymentHelper.deployLQTYContracts(
-      bountyAddress,
-      lpRewardsAddress,
-      multisig
-    );
-
+   
     sortedTroves = contracts.sortedTroves;
     troveManager = contracts.troveManager;
     borrowerOperations = contracts.borrowerOperations;
     hintHelpers = contracts.hintHelpers;
     priceFeed = contracts.priceFeedTestnet;
 
-    await deploymentHelper.connectCoreContracts(contracts, LQTYContracts);
-    await deploymentHelper.connectLQTYContracts(LQTYContracts);
-    await deploymentHelper.connectLQTYContractsToCore(LQTYContracts, contracts);
+    await deploymentHelper.connectCoreContracts(contracts);
 
     numAccounts = 10;
 

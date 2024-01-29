@@ -34,18 +34,13 @@ contract("CollSurplusPool", async (accounts) => {
       contracts.stabilityPool.address,
       contracts.borrowerOperations.address
     );
-    const LQTYContracts = await deploymentHelper.deployLQTYContracts(
-      bountyAddress,
-      lpRewardsAddress,
-      multisig
-    );
+    
 
     priceFeed = contracts.priceFeedTestnet;
     collSurplusPool = contracts.collSurplusPool;
     borrowerOperations = contracts.borrowerOperations;
 
-    await deploymentHelper.connectCoreContracts(contracts, LQTYContracts);
-    await deploymentHelper.connectLQTYContractsToCore(LQTYContracts, contracts);
+    await deploymentHelper.connectCoreContracts(contracts);
   });
 
   it("CollSurplusPool::getETH(): Returns the ETH balance of the CollSurplusPool after redemption", async () => {

@@ -27,7 +27,7 @@ const assertRevert = th.assertRevert;
  *
  */
 
-contract.only("BorrowerOperations", async (accounts) => {
+contract("BorrowerOperations", async (accounts) => {
   const [
     owner,
     alice,
