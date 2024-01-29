@@ -335,9 +335,9 @@ class TestHelper {
    * given the requested Bold amomunt in openTrove, returns the total debt
    * So, it adds the gas compensation and the borrowing fee
    */
-  static async getOpenTroveTotalDebt(contracts, lusdAmount) {
-    const fee = await contracts.troveManager.getBorrowingFee(lusdAmount);
-    const compositeDebt = await this.getCompositeDebt(contracts, lusdAmount);
+  static async getOpenTroveTotalDebt(contracts, boldAmount) {
+    const fee = await contracts.troveManager.getBorrowingFee(boldAmount);
+    const compositeDebt = await this.getCompositeDebt(contracts, boldAmount);
     return compositeDebt.add(fee);
   }
 
@@ -364,9 +364,9 @@ class TestHelper {
   }
 
   // Adds the borrowing fee
-  static async getAmountWithBorrowingFee(contracts, lusdAmount) {
-    const fee = await contracts.troveManager.getBorrowingFee(lusdAmount);
-    return lusdAmount.add(fee);
+  static async getAmountWithBorrowingFee(contracts, boldAmount) {
+    const fee = await contracts.troveManager.getBorrowingFee(boldAmount);
+    return boldAmount.add(fee);
   }
 
   // Adds the redemption fee
@@ -408,9 +408,9 @@ class TestHelper {
         const liquidatedDebt = liquidationTx.logs[i].args[0];
         const liquidatedColl = liquidationTx.logs[i].args[1];
         const collGasComp = liquidationTx.logs[i].args[2];
-        const lusdGasComp = liquidationTx.logs[i].args[3];
+        const boldGasComp = liquidationTx.logs[i].args[3];
 
-        return [liquidatedDebt, liquidatedColl, collGasComp, lusdGasComp];
+        return [liquidatedDebt, liquidatedColl, collGasComp, boldGasComp];
       }
     }
     throw "The transaction logs do not contain a liquidation event";
@@ -861,12 +861,12 @@ class TestHelper {
     )
     // Only needed for non-zero borrow fee: .add(this.toBN(1)); // add 1 to avoid rounding issues
 
-    const lusdAmount = MIN_DEBT.add(extraBoldAmount);
+    const boldAmount = MIN_DEBT.add(extraBoldAmount);
 
     if (!ICR && !extraParams.value) ICR = this.toBN(this.dec(15, 17)); // 150%
     else if (typeof ICR == "string") ICR = this.toBN(ICR);
 
-    const totalDebt = await this.getOpenTroveTotalDebt(contracts, lusdAmount);
+    const totalDebt = await this.getOpenTroveTotalDebt(contracts, boldAmount);
     const netDebt = await this.getActualDebtFromComposite(totalDebt, contracts);
 
     if (ICR) {
@@ -881,7 +881,7 @@ class TestHelper {
 
     const tx = await contracts.borrowerOperations.openTrove(
       maxFeePercentage,
-      lusdAmount,
+      boldAmount,
       //extraParams.value, // TODO: this is the stETH value - ensure its still working
       upperHint,
       lowerHint,
@@ -892,7 +892,7 @@ class TestHelper {
     );
 
     return {
-      lusdAmount,
+      boldAmount,
       netDebt,
       totalDebt,
       ICR,
@@ -903,15 +903,15 @@ class TestHelper {
 
   static async withdrawBold(
     contracts,
-    { maxFeePercentage, lusdAmount, ICR, upperHint, lowerHint, extraParams }
+    { maxFeePercentage, boldAmount, ICR, upperHint, lowerHint, extraParams }
   ) {
     if (!maxFeePercentage) maxFeePercentage = this._100pct;
     if (!upperHint) upperHint = this.ZERO_ADDRESS;
     if (!lowerHint) lowerHint = this.ZERO_ADDRESS;
 
     assert(
-      !(lusdAmount && ICR) && (lusdAmount || ICR),
-      "Specify either lusd amount or target ICR, but not both"
+      !(boldAmount && ICR) && (boldAmount || ICR),
+      "Specify either bold amount or target ICR, but not both"
     );
 
     let increasedTotalDebt;
@@ -927,27 +927,27 @@ class TestHelper {
         "ICR is already greater than or equal to target"
       );
       increasedTotalDebt = targetDebt.sub(debt);
-      lusdAmount = await this.getNetBorrowingAmount(
+      boldAmount = await this.getNetBorrowingAmount(
         contracts,
         increasedTotalDebt
       );
     } else {
       increasedTotalDebt = await this.getAmountWithBorrowingFee(
         contracts,
-        lusdAmount
+        boldAmount
       );
     }
 
     await contracts.borrowerOperations.withdrawBold(
       maxFeePercentage,
-      lusdAmount,
+      boldAmount,
       upperHint,
       lowerHint,
       extraParams
     );
 
     return {
-      lusdAmount,
+      boldAmount,
       increasedTotalDebt,
     };
   }

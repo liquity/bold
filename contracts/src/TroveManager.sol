@@ -1360,14 +1360,16 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     }
 
     function getRedemptionRateWithDecay() public view override returns (uint) {
-        return _calcRedemptionRate(_calcDecayedBaseRate());
+        return 0;
+        // return _calcRedemptionRate(_calcDecayedBaseRate());
     }
 
     function _calcRedemptionRate(uint _baseRate) internal pure returns (uint) {
-        return LiquityMath._min(
-            REDEMPTION_FEE_FLOOR + _baseRate,
-            DECIMAL_PRECISION // cap at a maximum of 100%
-        );
+        return 0;
+        // return LiquityMath._min(
+        //     REDEMPTION_FEE_FLOOR + _baseRate,
+        //     DECIMAL_PRECISION // cap at a maximum of 100%
+        // );
     }
 
     function _getRedemptionFee(uint _ETHDrawn) internal view returns (uint) {
@@ -1379,9 +1381,10 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     }
 
     function _calcRedemptionFee(uint _redemptionRate, uint _ETHDrawn) internal pure returns (uint) {
-        uint redemptionFee = _redemptionRate * _ETHDrawn / DECIMAL_PRECISION;
-        require(redemptionFee < _ETHDrawn, "TroveManager: Fee would eat up all returned collateral");
-        return redemptionFee;
+        return 0;
+        // uint redemptionFee = _redemptionRate * _ETHDrawn / DECIMAL_PRECISION;
+        // require(redemptionFee < _ETHDrawn, "TroveManager: Fee would eat up all returned collateral");
+        // return redemptionFee;
     }
 
     // --- Borrowing fee functions ---
