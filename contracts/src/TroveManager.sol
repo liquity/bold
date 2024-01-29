@@ -1395,10 +1395,11 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     }
 
     function _calcBorrowingRate(uint _baseRate) internal pure returns (uint) {
-        return LiquityMath._min(
-            BORROWING_FEE_FLOOR + _baseRate,
-            MAX_BORROWING_FEE
-        );
+        return 0;
+        // return LiquityMath._min(
+        //     BORROWING_FEE_FLOOR + _baseRate,
+        //     MAX_BORROWING_FEE
+        // );
     }
 
     function getBorrowingFee(uint _boldDebt) external view override returns (uint) {
@@ -1412,7 +1413,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     function _calcBorrowingFee(uint _borrowingRate, uint _boldDebt) internal pure returns (uint) {
         return _borrowingRate * _boldDebt / DECIMAL_PRECISION;
     }
-
 
     // Updates the baseRate state variable based on time elapsed since the last redemption or Bold borrowing operation.
     function decayBaseRateFromBorrowing() external override {

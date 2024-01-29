@@ -857,14 +857,15 @@ class TestHelper {
         contracts,
         await contracts.borrowerOperations.MIN_NET_DEBT()
       )
-    ).add(this.toBN(1)); // add 1 to avoid rounding issues
+    )
+    // Only needed for non-zero borrow fee: .add(this.toBN(1)); // add 1 to avoid rounding issues
+
     const lusdAmount = MIN_DEBT.add(extraLUSDAmount);
 
     if (!ICR && !extraParams.value) ICR = this.toBN(this.dec(15, 17)); // 150%
     else if (typeof ICR == "string") ICR = this.toBN(ICR);
 
     const totalDebt = await this.getOpenTroveTotalDebt(contracts, lusdAmount);
-
     const netDebt = await this.getActualDebtFromComposite(totalDebt, contracts);
 
     if (ICR) {

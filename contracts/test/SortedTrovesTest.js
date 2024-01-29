@@ -96,8 +96,7 @@ contract("SortedTroves", async (accounts) => {
       borrowerOperations = contracts.borrowerOperations;
       boldToken = contracts.boldToken;
 
-      const LQTYContracts = await deploymentHelper.deployLQTYContracts();
-      await deploymentHelper.connectCoreContracts(contracts, LQTYContracts);
+      await deploymentHelper.connectCoreContracts(contracts);
 
       await fundAccounts(
         [
