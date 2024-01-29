@@ -11,7 +11,7 @@ import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 
-import "forge-std/console.sol";
+// import "forge-std/console.sol";
 
 
 contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOperations {

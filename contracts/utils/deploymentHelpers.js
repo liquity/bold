@@ -10,6 +10,7 @@ const FunctionCaller = artifacts.require("./TestContracts/FunctionCaller.sol");
 const BorrowerOperations = artifacts.require("./BorrowerOperations.sol");
 const HintHelpers = artifacts.require("./HintHelpers.sol");
 const BoldToken = artifacts.require("./BoldToken.sol");
+const BoldTokenTester = artifacts.require("./TestContracts/BoldTokenTester.sol");
 const StabilityPool = artifacts.require("./StabilityPool.sol");
 const PriceFeedMock = artifacts.require("./PriceFeedMock.sol");
 // const ERC20 = artifacts.require(
@@ -100,15 +101,14 @@ class DeploymentHelper {
     return contracts;
   }
 
-  // TODO: do we need this?
-  // static async deployBoldTokenTester(contracts) {
-  //   contracts.boldToken = await BoldTokenTester.new(
-  //     contracts.troveManager.address,
-  //     contracts.stabilityPool.address,
-  //     contracts.borrowerOperations.address
-  //   );
-  //   return contracts;
-  // }
+  static async deployBoldTokenTester(contracts) {
+    contracts.boldToken = await BoldTokenTester.new(
+      contracts.troveManager.address,
+      contracts.stabilityPool.address,
+      contracts.borrowerOperations.address
+    );
+    return contracts;
+  }
 
   // Connect contracts to their dependencies
   static async connectCoreContracts(contracts) {
