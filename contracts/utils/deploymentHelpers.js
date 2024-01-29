@@ -49,7 +49,6 @@ class DeploymentHelper {
     const functionCaller = await FunctionCaller.new();
     const hintHelpers = await HintHelpers.new();
       
-  
     // // Needed?
     // const price = await priceFeed.getPrice();
     // const uint128Max = web3.utils.toBN(
@@ -94,8 +93,8 @@ class DeploymentHelper {
 
   static async deployBoldToken(contracts) {
     contracts.boldToken = await BoldToken.new(
-      contracts.reserve,
-      contracts.stabilityPool,
+      contracts.troveManager.address,
+      contracts.stabilityPool.address,
       contracts.borrowerOperations.address
     );
     return contracts;

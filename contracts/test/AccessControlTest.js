@@ -35,9 +35,6 @@ contract(
     let functionCaller;
     let borrowerOperations;
 
-    let lqtyStaking;
-    let lqtyToken;
-
     before(async () => {
       coreContracts = await deploymentHelper.deployLiquityCore();
       coreContracts.troveManager = await TroveManagerTester.new();
