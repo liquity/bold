@@ -55,22 +55,13 @@ contract(
         contracts.stabilityPool.address,
         contracts.borrowerOperations.address
       );
-      const LQTYContracts = await deploymentHelper.deployLQTYContracts(
-        bountyAddress,
-        lpRewardsAddress,
-        multisig
-      );
-
+    
       troveManager = contracts.troveManager;
       stabilityPool = contracts.stabilityPool;
       priceFeed = contracts.priceFeedTestnet;
       sortedTroves = contracts.sortedTroves;
 
-      await deploymentHelper.connectCoreContracts(contracts, LQTYContracts);
-      await deploymentHelper.connectLQTYContractsToCore(
-        LQTYContracts,
-        contracts
-      );
+      await deploymentHelper.connectCoreContracts(contracts);
     });
 
     context("Batch liquidations", () => {
@@ -93,10 +84,10 @@ contract(
 
         await openTrove({
           ICR: toBN(dec(340, 16)),
-          extraLUSDAmount: totalLiquidatedDebt,
+          extraBoldAmount: totalLiquidatedDebt,
           extraParams: { from: whale },
         });
-        await stabilityPool.provideToSP(totalLiquidatedDebt, ZERO_ADDRESS, {
+        await stabilityPool.provideToSP(totalLiquidatedDebt, {
           from: whale,
         });
 
@@ -166,7 +157,7 @@ contract(
         } = await setup();
 
         const spEthBefore = await stabilityPool.getETH();
-        const spLusdBefore = await stabilityPool.getTotalLUSDDeposits();
+        const spLusdBefore = await stabilityPool.getTotalBoldDeposits();
 
         const tx = await troveManager.batchLiquidateTroves([alice, carol]);
 
@@ -179,7 +170,7 @@ contract(
         assert.equal((await troveManager.Troves(carol))[3], "3");
 
         const spEthAfter = await stabilityPool.getETH();
-        const spLusdAfter = await stabilityPool.getTotalLUSDDeposits();
+        const spLusdAfter = await stabilityPool.getTotalBoldDeposits();
 
         // liquidate collaterals with the gas compensation fee subtracted
         const expectedCollateralLiquidatedA = th.applyLiquidationFee(
@@ -187,11 +178,11 @@ contract(
         );
         const expectedCollateralLiquidatedC = th.applyLiquidationFee(C_coll);
         // Stability Pool gains
-        const expectedGainInLUSD = expectedCollateralLiquidatedA
+        const expectedGainInBold = expectedCollateralLiquidatedA
           .mul(price)
           .div(mv._1e18BN)
           .sub(A_totalDebt);
-        const realGainInLUSD = spEthAfter
+        const realGainInBold = spEthAfter
           .sub(spEthBefore)
           .mul(price)
           .div(mv._1e18BN)
@@ -205,11 +196,11 @@ contract(
         assert.equal(
           spLusdBefore.sub(spLusdAfter).toString(),
           A_totalDebt.toString(),
-          "Stability Pool LUSD doesn’t match"
+          "Stability Pool Bold doesn’t match"
         );
         assert.equal(
-          realGainInLUSD.toString(),
-          expectedGainInLUSD.toString(),
+          realGainInBold.toString(),
+          expectedGainInBold.toString(),
           "Stability Pool gains don’t match"
         );
       });
@@ -233,10 +224,10 @@ contract(
 
         await openTrove({
           ICR: toBN(dec(310, 16)),
-          extraLUSDAmount: totalLiquidatedDebt,
+          extraBoldAmount: totalLiquidatedDebt,
           extraParams: { from: whale },
         });
-        await stabilityPool.provideToSP(totalLiquidatedDebt, ZERO_ADDRESS, {
+        await stabilityPool.provideToSP(totalLiquidatedDebt, {
           from: whale,
         });
 
@@ -290,10 +281,10 @@ contract(
 
         await openTrove({
           ICR: toBN(dec(300, 16)),
-          extraLUSDAmount: totalLiquidatedDebt,
+          extraBoldAmount: totalLiquidatedDebt,
           extraParams: { from: whale },
         });
-        await stabilityPool.provideToSP(totalLiquidatedDebt, ZERO_ADDRESS, {
+        await stabilityPool.provideToSP(totalLiquidatedDebt, {
           from: whale,
         });
 
