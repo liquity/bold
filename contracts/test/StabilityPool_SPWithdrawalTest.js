@@ -1395,7 +1395,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       // price drops by 50%
       await priceFeed.setPrice(dec(100, 18));
 
-      // Defaulter 1 liquidated.  Value of P updated to  to 9999999, i.e. in decimal, ~1e-10
+      // Defaulter 1 liquidated.  Value of P updated to 1e13
       const txL1 = await troveManager.liquidate(defaulter_1, { from: owner });
       th.logBN("P", await stabilityPool.P()); // P = 0.000009999999999999, i.e. 1 wei less than expected
       assert.equal(await stabilityPool.P(), dec(1, 13))  // P decreases. Expect P = 1e(18-5) = 1e13
@@ -1497,7 +1497,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await boldToken.transfer(alice, dec(10000, 18), { from: whale })
       await stabilityPool.provideToSP(dec(10000, 18), { from: alice })
 
-      // Defaulter 1 liquidated. 
+      // Defaulter 1 liquidated.  P updated to 1e13
       const txL1 = await troveManager.liquidate(defaulter_1, { from: owner });
       assert.isTrue(txL1.receipt.status)
       th.logBN("P", await stabilityPool.P()) // P  0.000009999999999999, 1 wei less than expecteed
@@ -1704,7 +1704,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await boldToken.transfer(alice, dec(10000, 18), { from: whale })
       await stabilityPool.provideToSP(dec(10000, 18), { from: alice })
 
-      // Defaulter 1 liquidated. 
+      // Defaulter 1 liquidated.  P updated to 1e13
       const txL1 = await troveManager.liquidate(defaulter_1, { from: owner });
       assert.isTrue(txL1.receipt.status)
       th.logBN("P", await stabilityPool.P());  // P = 0.000009999999999999, 1 wei less than expected
