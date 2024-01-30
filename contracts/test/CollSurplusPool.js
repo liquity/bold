@@ -22,8 +22,8 @@ contract("CollSurplusPool", async (accounts) => {
 
   let contracts;
 
-  const getOpenTroveLUSDAmount = async (totalDebt) =>
-    th.getOpenTroveLUSDAmount(contracts, totalDebt);
+  const getOpenTroveBoldAmount = async (totalDebt) =>
+    th.getOpenTroveBoldAmount(contracts, totalDebt);
   const openTrove = async (params) => th.openTrove(contracts, params);
 
   beforeEach(async () => {
@@ -55,7 +55,7 @@ contract("CollSurplusPool", async (accounts) => {
       extraParams: { from: B },
     });
     await openTrove({
-      extraLUSDAmount: B_netDebt,
+      extraBoldAmount: B_netDebt,
       extraParams: { from: A, value: dec(3000, "ether") },
     });
 
@@ -110,7 +110,7 @@ contract("CollSurplusPool", async (accounts) => {
       value: B_coll,
     });
     await openTrove({
-      extraLUSDAmount: B_netDebt,
+      extraBoldAmount: B_netDebt,
       extraParams: { from: A, value: dec(3000, "ether") },
     });
 
