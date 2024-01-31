@@ -55,7 +55,7 @@ contract(
 
       for (account of accounts.slice(0, 10)) {
         await th.openTrove(coreContracts, {
-          extraLUSDAmount: toBN(dec(20000, 18)),
+          extraBoldAmount: toBN(dec(20000, 18)),
           ICR: toBN(dec(2, 18)),
           extraParams: { from: account },
         });
@@ -235,7 +235,7 @@ contract(
         }
       });
 
-      // increaseLUSD
+      // increaseBold
       it("increaseBoldDebt(): reverts when called by an account that is not BO nor TroveM", async () => {
         // Attempt call from alice
         try {
@@ -251,7 +251,7 @@ contract(
         }
       });
 
-      // decreaseLUSD
+      // decreaseBold
       it("decreaseBoldDebt(): reverts when called by an account that is not BO nor TroveM nor SP", async () => {
         // Attempt call from alice
         try {
@@ -300,7 +300,7 @@ contract(
         }
       });
 
-      // increaseLUSD
+      // increaseBold
       it("increaseBoldDebt(): reverts when called by an account that is not TroveManager", async () => {
         // Attempt call from alice
         try {
@@ -313,8 +313,8 @@ contract(
         }
       });
 
-      // decreaseLUSD
-      it("decreaseLUSD(): reverts when called by an account that is not TroveManager", async () => {
+      // decreaseBold
+      it("decreaseBold(): reverts when called by an account that is not TroveManager", async () => {
         // Attempt call from alice
         try {
           const txAlice = await defaultPool.decreaseBoldDebt(100, {

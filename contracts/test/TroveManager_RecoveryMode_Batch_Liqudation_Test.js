@@ -157,7 +157,7 @@ contract(
         } = await setup();
 
         const spEthBefore = await stabilityPool.getETH();
-        const spLusdBefore = await stabilityPool.getTotalBoldDeposits();
+        const spBoldBefore = await stabilityPool.getTotalBoldDeposits();
 
         const tx = await troveManager.batchLiquidateTroves([alice, carol]);
 
@@ -170,7 +170,7 @@ contract(
         assert.equal((await troveManager.Troves(carol))[3], "3");
 
         const spEthAfter = await stabilityPool.getETH();
-        const spLusdAfter = await stabilityPool.getTotalBoldDeposits();
+        const spBoldAfter = await stabilityPool.getTotalBoldDeposits();
 
         // liquidate collaterals with the gas compensation fee subtracted
         const expectedCollateralLiquidatedA = th.applyLiquidationFee(
@@ -186,7 +186,7 @@ contract(
           .sub(spEthBefore)
           .mul(price)
           .div(mv._1e18BN)
-          .sub(spLusdBefore.sub(spLusdAfter));
+          .sub(spBoldBefore.sub(spBoldAfter));
 
         assert.equal(
           spEthAfter.sub(spEthBefore).toString(),
@@ -194,7 +194,7 @@ contract(
           "Stability Pool ETH doesn’t match"
         );
         assert.equal(
-          spLusdBefore.sub(spLusdAfter).toString(),
+          spBoldBefore.sub(spBoldAfter).toString(),
           A_totalDebt.toString(),
           "Stability Pool Bold doesn’t match"
         );

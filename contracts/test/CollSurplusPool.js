@@ -97,14 +97,14 @@ contract("CollSurplusPool", async (accounts) => {
 
     // open trove from NonPayable proxy contract
     const B_coll = toBN(dec(60, 18));
-    const B_lusdAmount = toBN(dec(3000, 18));
+    const B_boldAmount = toBN(dec(3000, 18));
     const B_netDebt = await th.getAmountWithBorrowingFee(
       contracts,
-      B_lusdAmount
+      B_boldAmount
     );
     const openTroveData = th.getTransactionData(
       "openTrove(uint256,uint256,address,address)",
-      ["0xde0b6b3a7640000", web3.utils.toHex(B_lusdAmount), B, B]
+      ["0xde0b6b3a7640000", web3.utils.toHex(B_boldAmount), B, B]
     );
     await nonPayable.forward(borrowerOperations.address, openTroveData, {
       value: B_coll,

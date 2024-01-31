@@ -30,7 +30,7 @@ contract('StabilityPool', async accounts => {
     assert.equal(recordedETHBalance, 0)
   })
 
-  it('getTotalBoldDeposits(): gets the recorded LUSD balance', async () => {
+  it('getTotalBoldDeposits(): gets the recorded BOLD balance', async () => {
     const recordedETHBalance = await stabilityPool.getTotalBoldDeposits()
     assert.equal(recordedETHBalance, 0)
   })
@@ -53,39 +53,39 @@ contract('ActivePool', async accounts => {
     assert.equal(recordedETHBalance, 0)
   })
 
-  it('getBoldDebt(): gets the recorded LUSD balance', async () => {
+  it('getBoldDebt(): gets the recorded BOLD balance', async () => {
     const recordedETHBalance = await activePool.getBoldDebt()
     assert.equal(recordedETHBalance, 0)
   })
  
-  it('increaseBoldDebt(): increases the recorded LUSD balance by the correct amount', async () => {
-    const recordedLUSD_balanceBefore = await activePool.getBoldDebt()
-    assert.equal(recordedLUSD_balanceBefore, 0)
+  it('increaseBoldDebt(): increases the recorded BOLD balance by the correct amount', async () => {
+    const recordedBold_balanceBefore = await activePool.getBoldDebt()
+    assert.equal(recordedBold_balanceBefore, 0)
 
     // await activePool.increaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
     const increaseBoldDebtData = th.getTransactionData('increaseBoldDebt(uint256)', ['0x64'])
     const tx = await mockBorrowerOperations.forward(activePool.address, increaseBoldDebtData)
     assert.isTrue(tx.receipt.status)
-    const recordedLUSD_balanceAfter = await activePool.getBoldDebt()
-    assert.equal(recordedLUSD_balanceAfter, 100)
+    const recordedBold_balanceAfter = await activePool.getBoldDebt()
+    assert.equal(recordedBold_balanceAfter, 100)
   })
   // Decrease
-  it('decreaseBoldDebt(): decreases the recorded LUSD balance by the correct amount', async () => {
+  it('decreaseBoldDebt(): decreases the recorded BOLD balance by the correct amount', async () => {
     // start the pool on 100 wei
     //await activePool.increaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
     const increaseBoldDebtData = th.getTransactionData('increaseBoldDebt(uint256)', ['0x64'])
     const tx1 = await mockBorrowerOperations.forward(activePool.address, increaseBoldDebtData)
     assert.isTrue(tx1.receipt.status)
 
-    const recordedLUSD_balanceBefore = await activePool.getBoldDebt()
-    assert.equal(recordedLUSD_balanceBefore, 100)
+    const recordedBold_balanceBefore = await activePool.getBoldDebt()
+    assert.equal(recordedBold_balanceBefore, 100)
 
     //await activePool.decreaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
     const decreaseBoldDebtData = th.getTransactionData('decreaseBoldDebt(uint256)', ['0x64'])
     const tx2 = await mockBorrowerOperations.forward(activePool.address, decreaseBoldDebtData)
     assert.isTrue(tx2.receipt.status)
-    const recordedLUSD_balanceAfter = await activePool.getBoldDebt()
-    assert.equal(recordedLUSD_balanceAfter, 0)
+    const recordedBold_balanceAfter = await activePool.getBoldDebt()
+    assert.equal(recordedBold_balanceAfter, 0)
   })
 
   // send raw ether
@@ -131,46 +131,46 @@ contract('DefaultPool', async accounts => {
     await defaultPool.setAddresses(mockTroveManager.address, mockActivePool.address)
   })
 
-  it('getETH(): gets the recorded LUSD balance', async () => {
+  it('getETH(): gets the recorded BOLD balance', async () => {
     const recordedETHBalance = await defaultPool.getETH()
     assert.equal(recordedETHBalance, 0)
   })
 
-  it('getBoldDebt(): gets the recorded LUSD balance', async () => {
+  it('getBoldDebt(): gets the recorded BOLD balance', async () => {
     const recordedETHBalance = await defaultPool.getBoldDebt()
     assert.equal(recordedETHBalance, 0)
   })
  
-  it('increaseBold(): increases the recorded LUSD balance by the correct amount', async () => {
-    const recordedLUSD_balanceBefore = await defaultPool.getBoldDebt()
-    assert.equal(recordedLUSD_balanceBefore, 0)
+  it('increaseBold(): increases the recorded BOLD balance by the correct amount', async () => {
+    const recordedBold_balanceBefore = await defaultPool.getBoldDebt()
+    assert.equal(recordedBold_balanceBefore, 0)
 
     // await defaultPool.increaseBoldDebt(100, { from: mockTroveManagerAddress })
     const increaseBoldDebtData = th.getTransactionData('increaseBoldDebt(uint256)', ['0x64'])
     const tx = await mockTroveManager.forward(defaultPool.address, increaseBoldDebtData)
     assert.isTrue(tx.receipt.status)
 
-    const recordedLUSD_balanceAfter = await defaultPool.getBoldDebt()
-    assert.equal(recordedLUSD_balanceAfter, 100)
+    const recordedBold_balanceAfter = await defaultPool.getBoldDebt()
+    assert.equal(recordedBold_balanceAfter, 100)
   })
   
-  it('decreaseBold(): decreases the recorded LUSD balance by the correct amount', async () => {
+  it('decreaseBold(): decreases the recorded BOLD balance by the correct amount', async () => {
     // start the pool on 100 wei
     //await defaultPool.increaseBoldDebt(100, { from: mockTroveManagerAddress })
     const increaseBoldDebtData = th.getTransactionData('increaseBoldDebt(uint256)', ['0x64'])
     const tx1 = await mockTroveManager.forward(defaultPool.address, increaseBoldDebtData)
     assert.isTrue(tx1.receipt.status)
 
-    const recordedLUSD_balanceBefore = await defaultPool.getBoldDebt()
-    assert.equal(recordedLUSD_balanceBefore, 100)
+    const recordedBold_balanceBefore = await defaultPool.getBoldDebt()
+    assert.equal(recordedBold_balanceBefore, 100)
 
     // await defaultPool.decreaseBoldDebt(100, { from: mockTroveManagerAddress })
     const decreaseBoldDebtData = th.getTransactionData('decreaseBoldDebt(uint256)', ['0x64'])
     const tx2 = await mockTroveManager.forward(defaultPool.address, decreaseBoldDebtData)
     assert.isTrue(tx2.receipt.status)
 
-    const recordedLUSD_balanceAfter = await defaultPool.getBoldDebt()
-    assert.equal(recordedLUSD_balanceAfter, 0)
+    const recordedBold_balanceAfter = await defaultPool.getBoldDebt()
+    assert.equal(recordedBold_balanceAfter, 0)
   })
 
   // send raw ether
