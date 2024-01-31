@@ -123,3 +123,34 @@ jobs:
 
       - name: Test contracts
         run: yarn test
+
+  coverage-hardhat:
+    name: Hardhat coverage
+    runs-on: ubuntu-latest
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'coverage') }}
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: yarn
+        env:
+          # Workaround for https://github.com/actions/setup-node/issues/317
+          FORCE_COLOR: 0
+
+      - run: yarn install --immutable
+
+      - name: Test contract coverage
+        run: yarn coverage
+        continue-on-error: true
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./packages/contracts/coverage/lcov.info
