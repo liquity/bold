@@ -7,8 +7,6 @@ import "./Interfaces/IStabilityPool.sol";
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ISortedTroves.sol";
-import "./Interfaces/ILQTYToken.sol";
-import "./Interfaces/ILQTYStaking.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
@@ -29,10 +27,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     ICollSurplusPool collSurplusPool;
 
     IBoldToken public override boldToken;
-
-    ILQTYToken public override lqtyToken;
-
-    ILQTYStaking public override lqtyStaking;
 
     // A doubly linked list of Troves, sorted by their sorted by their collateral ratios
     ISortedTroves public sortedTroves;
@@ -172,7 +166,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         IActivePool activePool;
         IDefaultPool defaultPool;
         IBoldToken boldToken;
-        ILQTYStaking lqtyStaking;
         ISortedTroves sortedTroves;
         ICollSurplusPool collSurplusPool;
         address gasPoolAddress;
@@ -207,8 +200,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     event GasPoolAddressChanged(address _gasPoolAddress);
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
-    event LQTYTokenAddressChanged(address _lqtyTokenAddress);
-    event LQTYStakingAddressChanged(address _lqtyStakingAddress);
 
     event Liquidation(uint _liquidatedDebt, uint _liquidatedColl, uint _collGasCompensation, uint _boldGasCompensation);
     event Redemption(uint _attemptedBoldAmount, uint _actualBoldAmount, uint _ETHSent, uint _ETHFee);
@@ -241,9 +232,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
         address _boldTokenAddress,
-        address _sortedTrovesAddress,
-        address _lqtyTokenAddress,
-        address _lqtyStakingAddress
+        address _sortedTrovesAddress
     )
         external
         override
@@ -268,8 +257,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         priceFeed = IPriceFeed(_priceFeedAddress);
         boldToken = IBoldToken(_boldTokenAddress);
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
-        lqtyToken = ILQTYToken(_lqtyTokenAddress);
-        lqtyStaking = ILQTYStaking(_lqtyStakingAddress);
 
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
         emit ActivePoolAddressChanged(_activePoolAddress);
@@ -280,8 +267,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         emit PriceFeedAddressChanged(_priceFeedAddress);
         emit BoldTokenAddressChanged(_boldTokenAddress);
         emit SortedTrovesAddressChanged(_sortedTrovesAddress);
-        emit LQTYTokenAddressChanged(_lqtyTokenAddress);
-        emit LQTYStakingAddressChanged(_lqtyStakingAddress);
 
         _renounceOwnership();
     }
@@ -496,7 +481,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
             activePool,
             defaultPool,
             IBoldToken(address(0)),
-            ILQTYStaking(address(0)),
             sortedTroves,
             ICollSurplusPool(address(0)),
             address(0)
@@ -937,7 +921,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
             activePool,
             defaultPool,
             boldToken,
-            lqtyStaking,
             sortedTroves,
             collSurplusPool,
             gasPoolAddress
@@ -1377,14 +1360,16 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     }
 
     function getRedemptionRateWithDecay() public view override returns (uint) {
-        return _calcRedemptionRate(_calcDecayedBaseRate());
+        return 0;
+        // return _calcRedemptionRate(_calcDecayedBaseRate());
     }
 
     function _calcRedemptionRate(uint _baseRate) internal pure returns (uint) {
-        return LiquityMath._min(
-            REDEMPTION_FEE_FLOOR + _baseRate,
-            DECIMAL_PRECISION // cap at a maximum of 100%
-        );
+        return 0;
+        // return LiquityMath._min(
+        //     REDEMPTION_FEE_FLOOR + _baseRate,
+        //     DECIMAL_PRECISION // cap at a maximum of 100%
+        // );
     }
 
     function _getRedemptionFee(uint _ETHDrawn) internal view returns (uint) {
@@ -1396,9 +1381,10 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     }
 
     function _calcRedemptionFee(uint _redemptionRate, uint _ETHDrawn) internal pure returns (uint) {
-        uint redemptionFee = _redemptionRate * _ETHDrawn / DECIMAL_PRECISION;
-        require(redemptionFee < _ETHDrawn, "TroveManager: Fee would eat up all returned collateral");
-        return redemptionFee;
+        return 0;
+        // uint redemptionFee = _redemptionRate * _ETHDrawn / DECIMAL_PRECISION;
+        // require(redemptionFee < _ETHDrawn, "TroveManager: Fee would eat up all returned collateral");
+        // return redemptionFee;
     }
 
     // --- Borrowing fee functions ---
@@ -1412,10 +1398,11 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     }
 
     function _calcBorrowingRate(uint _baseRate) internal pure returns (uint) {
-        return LiquityMath._min(
-            BORROWING_FEE_FLOOR + _baseRate,
-            MAX_BORROWING_FEE
-        );
+        return 0;
+        // return LiquityMath._min(
+        //     BORROWING_FEE_FLOOR + _baseRate,
+        //     MAX_BORROWING_FEE
+        // );
     }
 
     function getBorrowingFee(uint _boldDebt) external view override returns (uint) {
@@ -1429,7 +1416,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     function _calcBorrowingFee(uint _borrowingRate, uint _boldDebt) internal pure returns (uint) {
         return _borrowingRate * _boldDebt / DECIMAL_PRECISION;
     }
-
 
     // Updates the baseRate state variable based on time elapsed since the last redemption or Bold borrowing operation.
     function decayBaseRateFromBorrowing() external override {

@@ -81,9 +81,7 @@ contract DevTestSetup is BaseTest {
             address(collSurplusPool),
             address(priceFeed),
             address(boldToken),
-            address(sortedTroves),
-            ZERO_ADDRESS, // No LQTY token
-            ZERO_ADDRESS // No LQTY staking
+            address(sortedTroves)
         );
 
         // set contracts in BorrowerOperations 
@@ -96,8 +94,7 @@ contract DevTestSetup is BaseTest {
             address(collSurplusPool),
             address(priceFeed),
             address(sortedTroves),
-            address(boldToken),
-            ZERO_ADDRESS // No LQTY staking
+            address(boldToken)
         );
 
         // set contracts in the Pools

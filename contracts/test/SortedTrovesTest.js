@@ -96,8 +96,7 @@ contract("SortedTroves", async (accounts) => {
       borrowerOperations = contracts.borrowerOperations;
       boldToken = contracts.boldToken;
 
-      const LQTYContracts = await deploymentHelper.deployLQTYContracts();
-      await deploymentHelper.connectCoreContracts(contracts, LQTYContracts);
+      await deploymentHelper.connectCoreContracts(contracts);
 
       await fundAccounts(
         [
@@ -179,7 +178,7 @@ contract("SortedTroves", async (accounts) => {
     it("contains(): returns false for addresses that opened and then closed a trove", async () => {
       await openTrove({
         ICR: toBN(dec(1000, 18)),
-        extraLUSDAmount: toBN(dec(3000, 18)),
+        extraBoldAmount: toBN(dec(3000, 18)),
         extraParams: { from: whale },
       });
 
@@ -218,7 +217,7 @@ contract("SortedTroves", async (accounts) => {
     it("contains(): returns true for addresses that opened, closed and then re-opened a trove", async () => {
       await openTrove({
         ICR: toBN(dec(1000, 18)),
-        extraLUSDAmount: toBN(dec(3000, 18)),
+        extraBoldAmount: toBN(dec(3000, 18)),
         extraParams: { from: whale },
       });
 

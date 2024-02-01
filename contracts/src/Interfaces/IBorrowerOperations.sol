@@ -21,8 +21,7 @@ interface IBorrowerOperations is ILiquityBase {
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
         address _sortedTrovesAddress,
-        address _boldTokenAddress,
-        address _lqtyStakingAddress
+        address _boldTokenAddress
     ) external;
 
     function openTrove(uint _maxFee, uint _boldAmount, address _upperHint, address _lowerHint) external payable;

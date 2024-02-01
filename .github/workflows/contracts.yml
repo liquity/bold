@@ -28,7 +28,7 @@ jobs:
     name: Foundry tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -48,54 +48,13 @@ jobs:
           forge test -vvv
         id: test
 
-  coverage-foundry:
-    name: Foundry coverage
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-
-      - name: Run Forge build
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
-
-      - name: Run Forge coverage
-        run: |
-          forge coverage --report lcov
-        id: coverage
-
-      - name: Install lcov
-        run: sudo apt-get -y install lcov
-
-      - name: Filter out tests from coverage
-        run: |
-          lcov --remove lcov.info -o lcov.info 'src/test/*'
-        id: coverage_filter
-
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          base-path: ./contracts/
-          # Potential improvement to include merge with hardhat tests: https://github.com/hyperlane-xyz/hyperlane-monorepo/blob/e91c3100c29d2913d175df4b3d1790d6a057d36e/solidity/coverage.sh
-          path-to-lcov: ./contracts/lcov.info
-          debug: true
-
   console-logs:
     name: Check we didn’t forget to remove console imports
     runs-on: ubuntu-latest
 
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -110,7 +69,7 @@ jobs:
 
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -121,5 +80,96 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
       - name: Test contracts
         run: yarn test
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Foundry
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Run Forge coverage
+        run: |
+          forge coverage --report lcov --report-file lcov_foundry.info
+        id: coverage
+
+      - name: Install lcov
+        run: sudo apt-get -y install lcov
+
+      #- name: Filter out tests from coverage
+      #  run: |
+      #    lcov --remove lcov_foundry.info -o lcov_foundry.info 'src/test/*'
+      #  id: coverage_filter
+
+      # Hardhat
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: yarn
+          cache-dependency-path: "./contracts/yarn.lock"
+        env:
+          # Workaround for https://github.com/actions/setup-node/issues/317
+          FORCE_COLOR: 0
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: harhdat coverage
+        run: yarn coverage
+        continue-on-error: true
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      # Merge
+      - name: Merge coverage reports
+        id: coverage_merge
+        run: |
+          lcov \
+              --rc lcov_branch_coverage=1 \
+              --add-tracefile lcov_foundry.info \
+              --add-tracefile coverage/lcov.info \
+              --output-file lcov_merged.info
+
+      # Filter
+      - name: Filter out tests from coverage
+        run: |
+          lcov --remove lcov_merged.info -o lcov_merged.info \
+              'src/test/*' \
+              'src/TestContracts/*' \
+              'src/OldTestContracts/*' \
+              'src/Dependencies/*' \
+              'src/Interfaces/*'
+        id: coverage_filter
+
+      # Send to coveralls
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          base-path: ./contracts/
+          path-to-lcov: ./contracts/lcov_merged.info
+          debug: true
+
