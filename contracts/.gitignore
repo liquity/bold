@@ -16,3 +16,6 @@ docs/
 artifacts
 cache_hardhat
 node_modules
+
+coverage/
+coverage.json
