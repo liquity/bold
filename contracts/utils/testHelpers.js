@@ -851,7 +851,7 @@ class TestHelper {
       extraBoldAmount = this.toBN(extraBoldAmount);
     if (!upperHint) upperHint = this.ZERO_ADDRESS;
     if (!lowerHint) lowerHint = this.ZERO_ADDRESS;
-
+    if (!extraParams.annualInterestRate) extraParams.annualInterestRate = 0;
 
     const MIN_DEBT = (
       await this.getNetBorrowingAmount(
@@ -885,6 +885,7 @@ class TestHelper {
       //extraParams.value, // TODO: this is the stETH value - ensure its still working
       upperHint,
       lowerHint,
+      extraParams.annualInterestRate,
       {
         from: extraParams.from,
         value: extraParams.value,
@@ -903,11 +904,9 @@ class TestHelper {
 
   static async withdrawBold(
     contracts,
-    { maxFeePercentage, boldAmount, ICR, upperHint, lowerHint, extraParams }
+    { maxFeePercentage, boldAmount, ICR, extraParams }
   ) {
     if (!maxFeePercentage) maxFeePercentage = this._100pct;
-    if (!upperHint) upperHint = this.ZERO_ADDRESS;
-    if (!lowerHint) lowerHint = this.ZERO_ADDRESS;
 
     assert(
       !(boldAmount && ICR) && (boldAmount || ICR),
@@ -941,8 +940,6 @@ class TestHelper {
     await contracts.borrowerOperations.withdrawBold(
       maxFeePercentage,
       boldAmount,
-      upperHint,
-      lowerHint,
       extraParams
     );
 

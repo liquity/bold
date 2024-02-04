@@ -79,6 +79,7 @@ contract("TroveManager", async (accounts) => {
       await getOpenTroveBoldAmount(dec(1, 31)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
+      0,
       { from: A, value: dec(2, 29) }
     );
 
@@ -88,6 +89,7 @@ contract("TroveManager", async (accounts) => {
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
+      0,
       { from: B, value: dec(4, 28) }
     );
     await borrowerOperations.openTrove(
@@ -95,6 +97,7 @@ contract("TroveManager", async (accounts) => {
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
+      0,
       { from: C, value: dec(4, 28) }
     );
     await borrowerOperations.openTrove(
@@ -102,6 +105,7 @@ contract("TroveManager", async (accounts) => {
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
+      0,
       { from: D, value: dec(4, 28) }
     );
     await borrowerOperations.openTrove(
@@ -109,6 +113,7 @@ contract("TroveManager", async (accounts) => {
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
+      0,
       { from: E, value: dec(4, 28) }
     );
     await borrowerOperations.openTrove(
@@ -116,6 +121,7 @@ contract("TroveManager", async (accounts) => {
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
+      0,
       { from: F, value: dec(4, 28) }
     );
 
@@ -127,6 +133,7 @@ contract("TroveManager", async (accounts) => {
         await getOpenTroveBoldAmount(dec(1, 22)),
         ZERO_ADDRESS,
         ZERO_ADDRESS,
+        0,
         { from: account, value: dec(2, 20) }
       );
     }
@@ -158,8 +165,6 @@ contract("TroveManager", async (accounts) => {
       0,
       1,
       false,
-      ZERO_ADDRESS,
-      ZERO_ADDRESS,
       { from: B }
     ); // B repays 1 wei
     console.log(`B stake after A1: ${(await troveManager.Troves(B))[2]}`);
@@ -181,8 +186,6 @@ contract("TroveManager", async (accounts) => {
         0,
         1,
         false,
-        ZERO_ADDRESS,
-        ZERO_ADDRESS,
         { from: B }
       ); // A repays 1 wei
       console.log(

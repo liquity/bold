@@ -103,8 +103,8 @@ contract("CollSurplusPool", async (accounts) => {
       B_boldAmount
     );
     const openTroveData = th.getTransactionData(
-      "openTrove(uint256,uint256,address,address)",
-      ["0xde0b6b3a7640000", web3.utils.toHex(B_boldAmount), B, B]
+      "openTrove(uint256,uint256,address,address,uint256)",
+      ["0xde0b6b3a7640000",  web3.utils.toHex(B_boldAmount), B, B, "0x0"]
     );
     await nonPayable.forward(borrowerOperations.address, openTroveData, {
       value: B_coll,

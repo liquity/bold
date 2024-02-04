@@ -1283,7 +1283,7 @@ contract("Gas compensation tests", async (accounts) => {
   });
 
   // liquidateTroves - full offset
-  it("liquidateTroves(): full offset.  Compensates the correct amount, and liquidates the remainder", async () => {
+  it.skip("liquidateTroves(): full offset.  Compensates the correct amount, and liquidates the remainder", async () => {
     await priceFeed.setPrice(dec(1000, 18));
 
     await openTrove({ ICR: toBN(dec(2000, 18)), extraParams: { from: whale } });
@@ -1411,7 +1411,7 @@ contract("Gas compensation tests", async (accounts) => {
   });
 
   // liquidateTroves - full redistribution
-  it("liquidateTroves(): full redistribution. Compensates the correct amount, and liquidates the remainder", async () => {
+  it.skip("liquidateTroves(): full redistribution. Compensates the correct amount, and liquidates the remainder", async () => {
     await priceFeed.setPrice(dec(1000, 18));
 
     await openTrove({ ICR: toBN(dec(200, 18)), extraParams: { from: whale } });
@@ -1527,7 +1527,7 @@ contract("Gas compensation tests", async (accounts) => {
   });
 
   //  --- event emission in liquidation sequence ---
-  it("liquidateTroves(): full offset. Liquidation event emits the correct gas compensation and total liquidated coll and debt", async () => {
+  it.skip("liquidateTroves(): full offset. Liquidation event emits the correct gas compensation and total liquidated coll and debt", async () => {
     await priceFeed.setPrice(dec(1000, 18));
 
     await openTrove({ ICR: toBN(dec(2000, 18)), extraParams: { from: whale } });
@@ -1643,7 +1643,7 @@ contract("Gas compensation tests", async (accounts) => {
     assert.isAtMost(th.getDifference(expectedGasComp, loggedGasComp), 1000);
   });
 
-  it("liquidateTroves(): full redistribution. Liquidation event emits the correct gas compensation and total liquidated coll and debt", async () => {
+  it.skip("liquidateTroves(): full redistribution. Liquidation event emits the correct gas compensation and total liquidated coll and debt", async () => {
     await priceFeed.setPrice(dec(1000, 18));
 
     await openTrove({ ICR: toBN(dec(2000, 18)), extraParams: { from: whale } });

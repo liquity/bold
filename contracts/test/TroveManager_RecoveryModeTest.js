@@ -139,7 +139,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     const recoveryMode_Before = await th.checkRecoveryMode(contracts);
     assert.isTrue(recoveryMode_Before);
 
-    await borrowerOperations.addColl(alice, alice, { from: alice, value: "1" });
+    await borrowerOperations.addColl({ from: alice, value: "1" });
 
     const recoveryMode_After = await th.checkRecoveryMode(contracts);
     assert.isTrue(recoveryMode_After);
@@ -154,9 +154,9 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     const recoveryMode_Before = await th.checkRecoveryMode(contracts);
     assert.isFalse(recoveryMode_Before);
 
-    await borrowerOperations.withdrawColl(_1_Ether, alice, alice, {
+    await borrowerOperations.withdrawColl(_1_Ether, {
       from: alice,
-    });
+   });
 
     const recoveryMode_After = await th.checkRecoveryMode(contracts);
     assert.isFalse(recoveryMode_After);
@@ -180,7 +180,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     const recoveryMode_Before = await th.checkRecoveryMode(contracts);
     assert.isTrue(recoveryMode_Before);
 
-    await borrowerOperations.addColl(alice, alice, {
+    await borrowerOperations.addColl({
       from: alice,
       value: A_coll,
     });
@@ -1663,8 +1663,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     const bob_Coll_Before = (await troveManager.Troves(bob))[1];
     const bob_Debt_Before = (await troveManager.Troves(bob))[0];
 
-    // confirm Bob is last trove in list, and has >110% ICR
-    assert.equal((await sortedTroves.getLast()).toString(), bob);
+    // confirm Bob has >110% ICR
     assert.isTrue((await troveManager.getCurrentICR(bob, price)).gt(mv._MCR));
 
     // L1: Try to liquidate Bob. Nothing happens
@@ -1712,8 +1711,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     const carol_Coll_Before = (await troveManager.Troves(carol))[1];
     const carol_Debt_Before = (await troveManager.Troves(carol))[0];
 
-    // Confirm Carol is last trove in list, and has >110% ICR
-    assert.equal(await sortedTroves.getLast(), carol);
+    // Confirm Carol has >110% ICR
     assert.isTrue((await troveManager.getCurrentICR(carol, price)).gt(mv._MCR));
 
     // L2: Try to liquidate Carol. Nothing happens
@@ -2216,19 +2214,20 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.equal((await boldToken.balanceOf(carol)).toString(), C_boldAmount);
   });
 
-  it("liquidate(), with 110% < ICR < TCR, can claim collateral, re-open, be reedemed and claim again", async () => {
+  // TODO: test relies on specific redemption behavior, so rewrite in Solidity after we've finalized new redemption logic
+  it.skip("liquidate(), with 110% < ICR < TCR, can claim collateral, re-open, be reedemed and claim again", async () => {
     // --- SETUP ---
     // Alice withdraws up to 1500 Bold of debt, resulting in ICRs of 266%.
-    // Bob withdraws up to 480 Bold of debt, resulting in ICR of 240%. Bob has lowest ICR.
+    // Bob withdraws up to 480 Bold of debt, resulting in ICR of 240%. Bob has lowest interest rate.
     const { collateral: B_coll, totalDebt: B_totalDebt } = await openTrove({
       ICR: toBN(dec(240, 16)),
       extraBoldAmount: dec(480, 18),
-      extraParams: { from: bob },
+      extraParams: { from: bob, annualInterestRate: 0 },
     });
     const { collateral: A_coll } = await openTrove({
       ICR: toBN(dec(266, 16)),
       extraBoldAmount: B_totalDebt,
-      extraParams: { from: alice },
+      extraParams: { from: alice }, annualInterestRate: th.toBN(dec(5,17)) // 50% interest rate
     });
 
     // Alice deposits Bold in the Stability Pool
@@ -2281,18 +2280,18 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
       web3.currentProvider
     );
 
-    // Bob re-opens the trove, price 200, total debt 80 Bold, ICR = 120% (lowest one)
+    // Bob re-opens the trove, price 200, total debt 80 Bold, ICR = 120%, 0 interest rate (lowest one)
     // Dennis redeems 30, so Bob has a surplus of (200 * 0.48 - 30) / 200 = 0.33 ETH
     await priceFeed.setPrice("200000000000000000000");
     const { collateral: B_coll_2, netDebt: B_netDebt_2 } = await openTrove({
       ICR: toBN(dec(150, 16)),
       extraBoldAmount: dec(480, 18),
-      extraParams: { from: bob, value: bob_remainingCollateral },
+      extraParams: { from: bob, value: bob_remainingCollateral, annualInterestRate: 0}
     });
     const { collateral: D_coll } = await openTrove({
       ICR: toBN(dec(266, 16)),
       extraBoldAmount: B_netDebt_2,
-      extraParams: { from: dennis },
+      extraParams: { from: dennis }, annualInterestRate: th.toBN(dec(5,17))
     });
     await th.redeemCollateral(dennis, contracts, B_netDebt_2, GAS_PRICE);
     price = await priceFeed.getPrice();
@@ -2428,7 +2427,9 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
 
   // --- liquidateTroves ---
 
-  it("liquidateTroves(): With all ICRs > 110%, Liquidates Troves until system leaves recovery mode", async () => {
+  // TODO: delete these tests when we delete liquidateTroves(), since we no will no longer liquidate sequentially
+
+  it.skip("liquidateTroves(): With all ICRs > 110%, Liquidates Troves until system leaves recovery mode", async () => {
     // make 8 Troves accordingly
     // --- SETUP ---
 
@@ -2577,7 +2578,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.isFalse(await sortedTroves.contains(harry));
   });
 
-  it("liquidateTroves(): Liquidates Troves until 1) system has left recovery mode AND 2) it reaches a Trove with ICR >= 110%", async () => {
+  it.skip("liquidateTroves(): Liquidates Troves until 1) system has left recovery mode AND 2) it reaches a Trove with ICR >= 110%", async () => {
     // make 6 Troves accordingly
     // --- SETUP ---
     const { totalDebt: B_totalDebt } = await openTrove({
@@ -2702,7 +2703,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.isFalse(await sortedTroves.contains(freddy));
   });
 
-  it("liquidateTroves(): liquidates only up to the requested number of undercollateralized troves", async () => {
+  it.skip("liquidateTroves(): liquidates only up to the requested number of undercollateralized troves", async () => {
     await openTrove({
       ICR: toBN(dec(300, 16)),
       extraParams: { from: whale, value: dec(300, "ether") },
@@ -2777,7 +2778,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.isTrue(erin_isInSortedList);
   });
 
-  it("liquidateTroves(): does nothing if n = 0", async () => {
+  it.skip("liquidateTroves(): does nothing if n = 0", async () => {
     await openTrove({
       ICR: toBN(dec(200, 16)),
       extraBoldAmount: dec(100, 18),
@@ -2827,7 +2828,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.equal(TCR_Before, TCR_After);
   });
 
-  it("liquidateTroves(): closes every Trove with ICR < MCR, when n > number of undercollateralized troves", async () => {
+  it.skip("liquidateTroves(): closes every Trove with ICR < MCR, when n > number of undercollateralized troves", async () => {
     // --- SETUP ---
     await openTrove({
       ICR: toBN(dec(300, 16)),
@@ -2895,7 +2896,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.equal((await troveManager.Troves(freddy))[3].toString(), "3");
   });
 
-  it("liquidateTroves(): a liquidation sequence containing Pool offsets increases the TCR", async () => {
+  it.skip("liquidateTroves(): a liquidation sequence containing Pool offsets increases the TCR", async () => {
     // Whale provides 500 Bold to SP
     await openTrove({
       ICR: toBN(dec(200, 16)),
@@ -2979,7 +2980,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.isTrue(TCR_After.gte(TCR_Before));
   });
 
-  it("liquidateTroves(): A liquidation sequence of pure redistributions decreases the TCR, due to gas compensation, but up to 0.5%", async () => {
+  it.skip("liquidateTroves(): A liquidation sequence of pure redistributions decreases the TCR, due to gas compensation, but up to 0.5%", async () => {
     const { collateral: W_coll, totalDebt: W_totalDebt } = await openTrove({
       ICR: toBN(dec(250, 16)),
       extraBoldAmount: dec(500, 18),
@@ -3097,7 +3098,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     );
   });
 
-  it("liquidateTroves(): liquidates based on entire/collateral debt (including pending rewards), not raw collateral/debt", async () => {
+  it.skip("liquidateTroves(): liquidates based on entire/collateral debt (including pending rewards), not raw collateral/debt", async () => {
     await openTrove({ ICR: toBN(dec(400, 16)), extraParams: { from: alice } });
     await openTrove({ ICR: toBN(dec(220, 16)), extraParams: { from: bob } });
     await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: carol } });
@@ -3171,7 +3172,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.equal((await troveManager.Troves(carol))[3].toString(), "3");
   });
 
-  it("liquidateTroves(): does nothing if all troves have ICR > 110% and Stability Pool is empty", async () => {
+  it.skip("liquidateTroves(): does nothing if all troves have ICR > 110% and Stability Pool is empty", async () => {
     await openTrove({ ICR: toBN(dec(222, 16)), extraParams: { from: alice } });
     await openTrove({ ICR: toBN(dec(250, 16)), extraParams: { from: bob } });
     await openTrove({ ICR: toBN(dec(285, 16)), extraParams: { from: carol } });
@@ -3219,7 +3220,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.equal(listSize_Before, listSize_After);
   });
 
-  it("liquidateTroves(): emits liquidation event with correct values when all troves have ICR > 110% and Stability Pool covers a subset of troves", async () => {
+  it.skip("liquidateTroves(): emits liquidation event with correct values when all troves have ICR > 110% and Stability Pool covers a subset of troves", async () => {
     // Troves to be absorbed by SP
     const { collateral: F_coll, totalDebt: F_totalDebt } = await openTrove({
       ICR: toBN(dec(222, 16)),
@@ -3350,7 +3351,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     );
   });
 
-  it("liquidateTroves():  emits liquidation event with correct values when all troves have ICR > 110% and Stability Pool covers a subset of troves, including a partial", async () => {
+  it.skip("liquidateTroves():  emits liquidation event with correct values when all troves have ICR > 110% and Stability Pool covers a subset of troves, including a partial", async () => {
     // Troves to be absorbed by SP
     const { collateral: F_coll, totalDebt: F_totalDebt } = await openTrove({
       ICR: toBN(dec(222, 16)),
@@ -3508,7 +3509,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     );
   });
 
-  it("liquidateTroves(): does not affect the liquidated user's token balances", async () => {
+  it.skip("liquidateTroves(): does not affect the liquidated user's token balances", async () => {
     await openTrove({ ICR: toBN(dec(300, 16)), extraParams: { from: whale } });
 
     // D, E, F open troves that will fall below MCR when price drops to 100
@@ -3556,7 +3557,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.equal((await boldToken.balanceOf(freddy)).toString(), boldAmountF);
   });
 
-  it("liquidateTroves(): Liquidating troves at 100 < ICR < 110 with SP deposits correctly impacts their SP deposit and ETH gain", async () => {
+  it.skip("liquidateTroves(): Liquidating troves at 100 < ICR < 110 with SP deposits correctly impacts their SP deposit and ETH gain", async () => {
     // Whale provides Bold to the SP
     const { boldAmount: W_boldAmount } = await openTrove({
       ICR: toBN(dec(300, 16)),
@@ -3756,7 +3757,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     );
   });
 
-  it("liquidateTroves(): Liquidating troves at ICR <=100% with SP deposits does not alter their deposit or ETH gain", async () => {
+  it.skip("liquidateTroves(): Liquidating troves at ICR <=100% with SP deposits does not alter their deposit or ETH gain", async () => {
     // Whale provides 400 Bold to the SP
     await openTrove({
       ICR: toBN(dec(300, 16)),
@@ -3862,7 +3863,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.equal(bob_ETHGain_After, "0");
   });
 
-  it("liquidateTroves() with a non fullfilled liquidation: non liquidated trove remains active", async () => {
+   it.skip("liquidateTroves() with a non fullfilled liquidation: non liquidated trove remains active", async () => {
     const { totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(196, 16)),
       extraParams: { from: alice },
@@ -3920,7 +3921,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.equal((await troveManager.Troves(carol))[3].toString(), "1"); // check Status is active
   });
 
-  it("liquidateTroves() with a non fullfilled liquidation: non liquidated trove remains in TroveOwners Array", async () => {
+   it.skip("liquidateTroves() with a non fullfilled liquidation: non liquidated trove remains in TroveOwners Array", async () => {
     const { totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(210, 16)),
       extraParams: { from: alice },
@@ -3989,7 +3990,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.equal(addressIdx.toString(), idxOnStruct);
   });
 
-  it("liquidateTroves() with a non fullfilled liquidation: still can liquidate further troves after the non-liquidated, emptied pool", async () => {
+   it.skip("liquidateTroves() with a non fullfilled liquidation: still can liquidate further troves after the non-liquidated, emptied pool", async () => {
     const { totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(196, 16)),
       extraParams: { from: alice },
@@ -4059,7 +4060,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.isTrue(await sortedTroves.contains(erin));
   });
 
-  it("liquidateTroves() with a non fullfilled liquidation: still can liquidate further troves after the non-liquidated, non emptied pool", async () => {
+   it.skip("liquidateTroves() with a non fullfilled liquidation: still can liquidate further troves after the non-liquidated, non emptied pool", async () => {
     const { totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(196, 16)),
       extraParams: { from: alice },
@@ -4130,7 +4131,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     assert.isTrue(await sortedTroves.contains(erin));
   });
 
-  it("liquidateTroves() with a non fullfilled liquidation: total liquidated coll and debt is correct", async () => {
+   it.skip("liquidateTroves() with a non fullfilled liquidation: total liquidated coll and debt is correct", async () => {
     const { collateral: A_coll, totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(196, 16)),
       extraParams: { from: alice },
@@ -4200,7 +4201,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     );
   });
 
-  it("liquidateTroves() with a non fullfilled liquidation: emits correct liquidation event values", async () => {
+   it.skip("liquidateTroves() with a non fullfilled liquidation: emits correct liquidation event values", async () => {
     const { collateral: A_coll, totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(210, 16)),
       extraParams: { from: alice },
@@ -4314,7 +4315,7 @@ contract("TroveManager - in Recovery Mode", async (accounts) => {
     );
   });
 
-  it("liquidateTroves() with a non fullfilled liquidation: ICR of non liquidated trove does not change", async () => {
+   it.skip("liquidateTroves() with a non fullfilled liquidation: ICR of non liquidated trove does not change", async () => {
     const { totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(196, 16)),
       extraParams: { from: alice },

@@ -478,6 +478,8 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     * Liquidate a sequence of troves. Closes a maximum number of n under-collateralized Troves,
     * starting from the one with the lowest collateral ratio in the system, and moving upwards
     */
+    // TODO: remove this liquidation function, since with ordering by interest rate, it is now redundant: there's no guarantee
+    // the bottom of the list has Troves with CR < MCR.
     function liquidateTroves(uint _n) external override {
         ContractsCache memory contractsCache = ContractsCache(
             activePool,
