@@ -37,8 +37,6 @@ interface ITroveManager is ILiquityBase {
 
     function liquidate(address _borrower) external;
 
-    function liquidateTroves(uint _n) external;
-
     function batchLiquidateTroves(address[] calldata _troveArray) external;
 
     function redeemCollateral(
