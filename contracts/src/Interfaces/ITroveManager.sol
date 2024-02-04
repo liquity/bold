@@ -79,14 +79,6 @@ interface ITroveManager is ILiquityBase {
 
     function getRedemptionFeeWithDecay(uint _ETHDrawn) external view returns (uint);
 
-    function getBorrowingRate() external view returns (uint);
-    function getBorrowingRateWithDecay() external view returns (uint);
-
-    function getBorrowingFee(uint BoldDebt) external view returns (uint);
-    function getBorrowingFeeWithDecay(uint _boldDebt) external view returns (uint);
-
-    function decayBaseRateFromBorrowing() external;
-
     function getTroveStatus(address _borrower) external view returns (uint);
     
     function getTroveStake(address _borrower) external view returns (uint);

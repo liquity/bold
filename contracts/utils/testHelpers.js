@@ -336,7 +336,7 @@ class TestHelper {
    * So, it adds the gas compensation and the borrowing fee
    */
   static async getOpenTroveTotalDebt(contracts, boldAmount) {
-    const fee = await contracts.troveManager.getBorrowingFee(boldAmount);
+    const fee = this.toBN(0);
     const compositeDebt = await this.getCompositeDebt(contracts, boldAmount);
     return compositeDebt.add(fee);
   }
@@ -355,18 +355,12 @@ class TestHelper {
 
   // Subtracts the borrowing fee
   static async getNetBorrowingAmount(contracts, debtWithFee) {
-    const borrowingRate =
-      await contracts.troveManager.getBorrowingRateWithDecay();
-
-    return this.toBN(debtWithFee)
-      .mul(MoneyValues._1e18BN)
-      .div(MoneyValues._1e18BN.add(borrowingRate));
+    return this.toBN(debtWithFee);
   }
 
   // Adds the borrowing fee
   static async getAmountWithBorrowingFee(contracts, boldAmount) {
-    const fee = await contracts.troveManager.getBorrowingFee(boldAmount);
-    return boldAmount.add(fee);
+    return boldAmount;
   }
 
   // Adds the redemption fee

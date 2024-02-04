@@ -3859,9 +3859,7 @@ contract("BorrowerOperations", async (accounts) => {
       });
 
       // Get the expected debt based on the Bold request (adding fee and liq. reserve on top)
-      const expectedDebt = BoldRequest.add(
-        await troveManager.getBorrowingFee(BoldRequest)
-      ).add(BOLD_GAS_COMPENSATION);
+      const expectedDebt = BoldRequest.add(BOLD_GAS_COMPENSATION);
 
       const debt_After = await getTroveEntireDebt(alice);
       const coll_After = await getTroveEntireColl(alice);

@@ -1386,49 +1386,6 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         // return redemptionFee;
     }
 
-    // --- Borrowing fee functions ---
-
-    function getBorrowingRate() public view override returns (uint) {
-        return _calcBorrowingRate(baseRate);
-    }
-
-    function getBorrowingRateWithDecay() public view override returns (uint) {
-        return _calcBorrowingRate(_calcDecayedBaseRate());
-    }
-
-    function _calcBorrowingRate(uint _baseRate) internal pure returns (uint) {
-        return 0;
-        // return LiquityMath._min(
-        //     BORROWING_FEE_FLOOR + _baseRate,
-        //     MAX_BORROWING_FEE
-        // );
-    }
-
-    function getBorrowingFee(uint _boldDebt) external view override returns (uint) {
-        return _calcBorrowingFee(getBorrowingRate(), _boldDebt);
-    }
-
-    function getBorrowingFeeWithDecay(uint _boldDebt) external view override returns (uint) {
-        return _calcBorrowingFee(getBorrowingRateWithDecay(), _boldDebt);
-    }
-
-    function _calcBorrowingFee(uint _borrowingRate, uint _boldDebt) internal pure returns (uint) {
-        return _borrowingRate * _boldDebt / DECIMAL_PRECISION;
-    }
-
-    // Updates the baseRate state variable based on time elapsed since the last redemption or Bold borrowing operation.
-    function decayBaseRateFromBorrowing() external override {
-        _requireCallerIsBorrowerOperations();
-
-        uint decayedBaseRate = _calcDecayedBaseRate();
-        assert(decayedBaseRate <= DECIMAL_PRECISION);  // The baseRate can decay to 0
-
-        baseRate = decayedBaseRate;
-        emit BaseRateUpdated(decayedBaseRate);
-
-        _updateLastFeeOpTime();
-    }
-
     // --- Internal fee functions ---
 
     // Update the last fee operation time only if time passed >= decay interval. This prevents base rate griefing.
