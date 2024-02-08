@@ -1816,9 +1816,9 @@ contract("TroveManager", async (accounts) => {
     await borrowerOperations.repayBold(dec(1, 18), { from: E });
 
     // Check C is the only trove that has pending rewards
-    assert.isTrue(await troveManager.hasPendingRewards(C));
-    assert.isFalse(await troveManager.hasPendingRewards(D));
-    assert.isFalse(await troveManager.hasPendingRewards(E));
+    assert.isTrue(await troveManager.hasRedistributionGains(C));
+    assert.isFalse(await troveManager.hasRedistributionGains(D));
+    assert.isFalse(await troveManager.hasRedistributionGains(E));
 
     // Check C's pending coll and debt rewards are <= the coll and debt in the DefaultPool
     const pendingETH_C = await troveManager.getPendingETHReward(C);
@@ -5083,8 +5083,8 @@ contract("TroveManager", async (accounts) => {
     assert.equal(C_Status, "0"); // non-existent
   });
 
-  it("hasPendingRewards(): Returns false it trove is not active", async () => {
-    assert.isFalse(await troveManager.hasPendingRewards(alice));
+  it("hasRedistributionGains(): Returns false it trove is not active", async () => {
+    assert.isFalse(await troveManager.hasRedistributionGains(alice));
   });
 });
 

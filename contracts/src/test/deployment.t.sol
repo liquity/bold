@@ -15,6 +15,7 @@ contract Deployment is DevTestSetup {
         assertNotEq(address(sortedTroves), address(0));
         assertNotEq(address(stabilityPool), address(0));
         assertNotEq(address(troveManager), address(0));
+        assertNotEq(address(mockInterestRouter), address(0));
         logContractAddresses();
     }
 
@@ -61,6 +62,12 @@ contract Deployment is DevTestSetup {
         address stabilityPoolAddress = address(stabilityPool);
         address recordedStabilityPoolAddress = address(troveManager.stabilityPool());
         assertEq(stabilityPoolAddress, recordedStabilityPoolAddress);
+    }
+
+     function testTroveManagerHasCorrectInterestRouterAddress() public {
+        address interestRouter = address(mockInterestRouter);
+        address recordedInterestRouterAddress = address(troveManager.interestRouter());
+        assertEq(interestRouter, recordedInterestRouterAddress);
     }
 
     // Active Pool

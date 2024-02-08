@@ -16,6 +16,7 @@ import "../../TestContracts/PriceFeedTestnet.sol";
 import "../../SortedTroves.sol";
 import "../../StabilityPool.sol";
 import "../../TroveManager.sol";
+import "../../MockInterestRouter.sol";
 
 import "./BaseTest.sol";
 
@@ -63,6 +64,7 @@ contract DevTestSetup is BaseTest {
         stabilityPool = new StabilityPool();
         troveManager = new TroveManager();    
         boldToken = new BoldToken(address(troveManager), address(stabilityPool), address(borrowerOperations));
+        mockInterestRouter = new MockInterestRouter();
 
         // Connect contracts
         sortedTroves.setParams(
@@ -81,7 +83,8 @@ contract DevTestSetup is BaseTest {
             address(collSurplusPool),
             address(priceFeed),
             address(boldToken),
-            address(sortedTroves)
+            address(sortedTroves),
+            address(mockInterestRouter)
         );
 
         // set contracts in BorrowerOperations 

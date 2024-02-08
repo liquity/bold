@@ -24,6 +24,18 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveManager.getTroveAnnualInterestRate(D), 1e18);
     }
 
+    function testOpenTroveSetsTroveLastDebtUpdateTime() public {
+        priceFeed.setPrice(2000e18);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(A), 0);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(B), 0);
+
+        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  0);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+
+        vm.warp(block.timestamp + 1000);
+        openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  1);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(B), block.timestamp);   
+    }
     function testOpenTroveInsertsToCorrectPositionInSortedList() public {
         priceFeed.setPrice(2000e18);
 
@@ -155,17 +167,18 @@ contract InterestRateBasic is DevTestSetup {
     function testAdjustTroveDoesNotChangeListPositions() public {
         priceFeed.setPrice(2000e18);
 
+    
         // Troves opened in ascending order of interest rate
         openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  1e17);
         openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  2e17);
         openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  3e17);
         openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  4e17);
         openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  5e17);
-
+       
         // Check A's neighbors
         assertEq(sortedTroves.getNext(A), ZERO_ADDRESS); // tail
         assertEq(sortedTroves.getPrev(A), B);
-
+     
         // Adjust A's coll + debt
         adjustTrove100pctMaxFee(A, 10 ether, 5000e18, true, true);
 

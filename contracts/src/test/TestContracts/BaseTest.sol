@@ -11,7 +11,7 @@ import "../../Interfaces/IPriceFeed.sol";
 import "../../Interfaces/ISortedTroves.sol";
 import "../../Interfaces/IStabilityPool.sol";
 import "../../Interfaces/ITroveManager.sol";
-
+import "../../Interfaces/IInterestRouter.sol";
 import "../../GasPool.sol";
 
 import "forge-std/Test.sol";
@@ -34,7 +34,6 @@ contract BaseTest is Test {
     uint256 CCR = 150e16;
     address public constant ZERO_ADDRESS = address(0);
 
-
     // Core contracts
     IActivePool activePool;
     IBorrowerOperations borrowerOperations;
@@ -46,6 +45,7 @@ contract BaseTest is Test {
     IBoldToken boldToken;
 
     GasPool gasPool;
+    IInterestRouter mockInterestRouter;
 
     function createAccounts() public {
         address[10] memory tempAccounts;
@@ -92,6 +92,18 @@ contract BaseTest is Test {
     function changeInterestRateNoHints(address _account, uint256 _newAnnualInterestRate) public {
         vm.startPrank(_account);
         borrowerOperations.adjustTroveInterestRate(_newAnnualInterestRate, ZERO_ADDRESS, ZERO_ADDRESS);
+        vm.stopPrank();
+    }
+
+    function makeSPDeposit(address _account, uint256 _amount) public {
+        vm.startPrank(_account);
+        stabilityPool.provideToSP(_amount);
+        vm.stopPrank();
+    }
+
+    function makeSPWithdrawal(address _account, uint256 _amount) public {
+        vm.startPrank(_account);
+        stabilityPool.withdrawFromSP(_amount);
         vm.stopPrank();
     }
 
