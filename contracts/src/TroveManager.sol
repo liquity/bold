@@ -1396,6 +1396,7 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
 
     // --- Aggregate interest operations ---
     function mintAggInterest(int256 debtChange) public {
+        _requireCallerIsBOorSP();
         uint256 aggInterest = calcPendingAggInterest();
         // Mint the new BOLD interest to a mock interest router that would split it and send it onward to SP, LP staking, etc.
         // TODO: implement interest routing and SP Bold reward tracking
@@ -1472,6 +1473,11 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
 
     function _requireCallerIsBorrowerOperations() internal view {
         require(msg.sender == borrowerOperationsAddress, "TroveManager: Caller is not the BorrowerOperations contract");
+    }
+
+    function _requireCallerIsBOorSP() internal view {
+        require(msg.sender == borrowerOperationsAddress || msg.sender == address(stabilityPool),
+        "TroveManager: Caller is not the BO or SP");
     }
 
     function _requireTroveIsActive(address _borrower) internal view {
