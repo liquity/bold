@@ -285,6 +285,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     function provideToSP(uint _amount) external override {
         _requireNonZeroAmount(_amount);
 
+        troveManager.mintAggInterest(0);
+
         uint initialDeposit = deposits[msg.sender].initialValue;
 
         uint depositorETHGain = getDepositorETHGain(msg.sender);
@@ -313,6 +315,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         // TODO: if (_amount !=0) {_requireNoUnderCollateralizedTroves();}
         uint initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
+
+        troveManager.mintAggInterest(0);
 
         uint depositorETHGain = getDepositorETHGain(msg.sender);
 
