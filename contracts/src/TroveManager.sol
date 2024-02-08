@@ -1395,7 +1395,17 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
     }
 
     // --- Aggregate interest operations ---
-    function mintAggInterest(int256 debtChange) public {
+
+    // This function is called inside all state-changing user ops: borrower ops, liquidations, redemptions and SP deposits/withdrawals. 
+    // Some user ops trigger debt changes to Trove(s), in which case _troveDebtChange will be non-zero.
+    // The _troveDebtChange is the sum of: 
+    // - Any composite debt change to a Trove from a borrower op
+    // - Any debt increase due to a Trove's redistribution gaisn being applied.
+    // It does NOT include the Trove's pending individual interest. This is because aggregate interest and individual interest are tracked 
+    // separately, in parallel.  
+    //That is, the aggregate recorded debt is incremented by the aggregate pending interest.
+
+        function mintAggInterest(int256 _troveDebtChange) public {
         _requireCallerIsBOorSP();
         uint256 aggInterest = calcPendingAggInterest();
         // Mint the new BOLD interest to a mock interest router that would split it and send it onward to SP, LP staking, etc.
@@ -1403,7 +1413,7 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
         if (aggInterest > 0) {boldToken.mint(address(interestRouter), aggInterest);}
     
         // TODO: cleaner way to deal with debt changes that can be positive or negative?
-        aggRecordedDebt = addUint256ToInt256(aggRecordedDebt + aggInterest, debtChange);
+        aggRecordedDebt = addUint256ToInt256(aggRecordedDebt + aggInterest, _troveDebtChange);
         // assert(aggRecordedDebt > 0) // This should never be negative. If all principal debt were repaid, it should be 0, and if all
         lastAggUpdateTime = block.timestamp;
     }

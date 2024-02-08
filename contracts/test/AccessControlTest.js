@@ -78,11 +78,11 @@ contract(
     });
 
     describe("TroveManager", async (accounts) => {
-      // applyPendingRewards
-      it("applyPendingRewards(): reverts when called by an account that is not BorrowerOperations", async () => {
+      // getAndApplyRedistributionGains
+      it("getAndApplyRedistributionGains(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await troveManager.applyPendingRewards(bob, {
+          const txAlice = await troveManager.getAndApplyRedistributionGains(bob, {
             from: alice,
           });
         } catch (err) {
