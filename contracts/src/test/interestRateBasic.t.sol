@@ -21,6 +21,18 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveManager.getTroveAnnualInterestRate(D_Id), 1e18);
     }
 
+    function testOpenTroveSetsTroveLastDebtUpdateTime() public {
+        priceFeed.setPrice(2000e18);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(A), 0);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(B), 0);
+
+        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  0);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+
+        vm.warp(block.timestamp + 1000);
+        openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  1);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(B), block.timestamp);
+    }
     function testOpenTroveInsertsToCorrectPositionInSortedList() public {
         priceFeed.setPrice(2000e18);
 
@@ -31,7 +43,7 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate_D = 3e17;
         uint256 interestRate_E = 4e17;
 
-        // B and D open 
+        // B and D open
         uint256 B_Id = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  interestRate_B);
         uint256 D_Id = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  interestRate_D);
 
@@ -62,7 +74,7 @@ contract InterestRateBasic is DevTestSetup {
 
     function testRevertWhenOpenTroveWithInterestRateGreaterThanMax() public {
         priceFeed.setPrice(2000e18);
-    
+
         vm.startPrank(A);
         vm.expectRevert();
         borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 1e18 + 1);
@@ -115,7 +127,7 @@ contract InterestRateBasic is DevTestSetup {
         uint256 C_Id = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  3e17);
         uint256 D_Id = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  4e17);
         uint256 E_Id = openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  5e17);
-        
+
         // Check initial sorted list order - expect [A:10%, B:02%, C:30%, D:40%, E:50%]
         // A
         assertEq(sortedTroves.getNext(A_Id), 0); // tail
@@ -132,7 +144,7 @@ contract InterestRateBasic is DevTestSetup {
         // E
         assertEq(sortedTroves.getNext(E_Id), D_Id);
         assertEq(sortedTroves.getPrev(E_Id), 0); // head
-    
+
         // C sets rate to 0%, moves to tail - expect [C:0%, A:10%, B:20%, D:40%, E:50%]
         changeInterestRateNoHints(C, C_Id, 0);
         assertEq(sortedTroves.getNext(C_Id), 0);
@@ -147,10 +159,11 @@ contract InterestRateBasic is DevTestSetup {
         changeInterestRateNoHints(A, A_Id, 6e17);
         assertEq(sortedTroves.getNext(A_Id), E_Id);
         assertEq(sortedTroves.getPrev(A_Id), D_Id);
-    } 
+    }
 
     function testAdjustTroveDoesNotChangeListPositions() public {
         priceFeed.setPrice(2000e18);
+
 
         // Troves opened in ascending order of interest rate
         uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  1e17);

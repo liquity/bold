@@ -12,7 +12,7 @@ import "../../Interfaces/ISortedTroves.sol";
 import "../../Interfaces/IStabilityPool.sol";
 import "../../Interfaces/ITroveManager.sol";
 import "./PriceFeedTestnet.sol";
-
+import "../../Interfaces/IInterestRouter.sol";
 import "../../GasPool.sol";
 
 import "forge-std/Test.sol";
@@ -36,7 +36,6 @@ contract BaseTest is Test {
     uint256 CCR = 150e16;
     address public constant ZERO_ADDRESS = address(0);
 
-
     // Core contracts
     IActivePool activePool;
     IBorrowerOperations borrowerOperations;
@@ -49,6 +48,7 @@ contract BaseTest is Test {
     IPriceFeedTestnet priceFeed;
 
     GasPool gasPool;
+    IInterestRouter mockInterestRouter;
 
     function createAccounts() public {
         address[10] memory tempAccounts;
@@ -60,11 +60,11 @@ contract BaseTest is Test {
     }
 
     function openTroveNoHints100pctMaxFee(
-        address _account, 
-        uint256 _coll, 
-        uint256 _boldAmount, 
+        address _account,
+        uint256 _coll,
+        uint256 _boldAmount,
         uint256 _annualInterestRate
-    ) 
+    )
         public
         returns (uint256)
     {
@@ -93,11 +93,11 @@ contract BaseTest is Test {
         address _account,
         uint256 _troveId,
         uint256 _collChange,
-        uint256 _boldChange, 
+        uint256 _boldChange,
         bool _isCollIncrease,
         bool _isDebtIncrease
-    ) 
-    public 
+    )
+    public
     {
         vm.startPrank(_account);
         borrowerOperations.adjustTrove(_troveId, 1e18, _collChange, _isCollIncrease, _boldChange,  _isDebtIncrease);
@@ -114,6 +114,18 @@ contract BaseTest is Test {
         uint256 price = priceFeed.getPrice();
         bool recoveryMode = troveManager.checkRecoveryMode(price);
         assertEq(recoveryMode, _enabled);
+    }
+
+    function makeSPDeposit(address _account, uint256 _amount) public {
+        vm.startPrank(_account);
+        stabilityPool.provideToSP(_amount);
+        vm.stopPrank();
+    }
+
+    function makeSPWithdrawal(address _account, uint256 _amount) public {
+        vm.startPrank(_account);
+        stabilityPool.withdrawFromSP(_amount);
+        vm.stopPrank();
     }
 
     function logContractAddresses() public view {

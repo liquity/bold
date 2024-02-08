@@ -95,7 +95,7 @@ contract BoldToken is CheckContract, IBoldToken {
     // --- Functions for intra-Liquity calls ---
 
     function mint(address _account, uint256 _amount) external override {
-        _requireCallerIsBorrowerOperations();
+        _requireCallerIsBOorTM();
         _mint(_account, _amount);
     }
 
@@ -258,8 +258,10 @@ contract BoldToken is CheckContract, IBoldToken {
         );
     }
 
-    function _requireCallerIsBorrowerOperations() internal view {
-        require(msg.sender == borrowerOperationsAddress, "BoldToken: Caller is not BorrowerOperations");
+    function _requireCallerIsBOorTM() internal view {
+        require(msg.sender == borrowerOperationsAddress ||
+            msg.sender == troveManagerAddress,
+            "BoldToken: Caller is not BO or TM");
     }
 
     function _requireCallerIsBOorTroveMorSP() internal view {

@@ -11,6 +11,7 @@ const HintHelpers = artifacts.require("./HintHelpers.sol");
 const BoldToken = artifacts.require("./BoldToken.sol");
 const StabilityPool = artifacts.require("./StabilityPool.sol");
 const PriceFeedMock = artifacts.require("./PriceFeedMock.sol");
+const MockInterestRouter = artifacts.require("./MockInterestRouter.sol");
 const ERC20 = artifacts.require("./ERC20MinterMock.sol");
 //  "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol"
 //  "../node_modules/@openzeppelin/contracts/build/contracts/ERC20PresetMinterPauser.json"
@@ -46,6 +47,7 @@ class DeploymentHelper {
       stabilityPool.address,
       borrowerOperations.address
     );
+    const mockInterestRouter = await MockInterestRouter.new();
 
     const hintHelpers = await HintHelpers.new();
       
@@ -59,7 +61,7 @@ class DeploymentHelper {
     // );
 
     // TODO: setAsDeployed all above?
-
+    
     BoldToken.setAsDeployed(boldToken);
     DefaultPool.setAsDeployed(defaultPool);
     PriceFeedTestnet.setAsDeployed(priceFeedTestnet);
@@ -71,6 +73,7 @@ class DeploymentHelper {
     CollSurplusPool.setAsDeployed(collSurplusPool);
     BorrowerOperations.setAsDeployed(borrowerOperations);
     HintHelpers.setAsDeployed(hintHelpers);
+    MockInterestRouter.setAsDeployed(mockInterestRouter);
 
     const coreContracts = {
       WETH,
@@ -84,7 +87,8 @@ class DeploymentHelper {
       defaultPool,
       collSurplusPool,
       borrowerOperations,
-      hintHelpers
+      hintHelpers,
+      mockInterestRouter
     };
     return coreContracts;
   }
@@ -110,7 +114,8 @@ class DeploymentHelper {
         contracts.collSurplusPool.address,
         contracts.priceFeedTestnet.address,
         contracts.boldToken.address,
-        contracts.sortedTroves.address
+        contracts.sortedTroves.address,
+        contracts.mockInterestRouter.address
       );
 
     await contracts.stabilityPool.setAddresses(
