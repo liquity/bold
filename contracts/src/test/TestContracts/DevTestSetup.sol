@@ -63,7 +63,7 @@ contract DevTestSetup is BaseTest {
         sortedTroves = new SortedTroves();
         stabilityPool = new StabilityPool();
         troveManager = new TroveManager();    
-        boldToken = new BoldToken(address(troveManager), address(stabilityPool), address(borrowerOperations));
+        boldToken = new BoldToken(address(troveManager), address(stabilityPool), address(borrowerOperations), address(activePool));
         mockInterestRouter = new MockInterestRouter();
 
         // Connect contracts
@@ -83,8 +83,7 @@ contract DevTestSetup is BaseTest {
             address(collSurplusPool),
             address(priceFeed),
             address(boldToken),
-            address(sortedTroves),
-            address(mockInterestRouter)
+            address(sortedTroves)
         );
 
         // set contracts in BorrowerOperations 
@@ -114,7 +113,9 @@ contract DevTestSetup is BaseTest {
             address(borrowerOperations),
             address(troveManager),
             address(stabilityPool),
-            address(defaultPool)
+            address(defaultPool),
+            address(boldToken),
+            address(mockInterestRouter)
         );
 
         defaultPool.setAddresses(

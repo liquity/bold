@@ -64,11 +64,11 @@ contract Deployment is DevTestSetup {
         assertEq(stabilityPoolAddress, recordedStabilityPoolAddress);
     }
 
-     function testTroveManagerHasCorrectInterestRouterAddress() public {
-        address interestRouter = address(mockInterestRouter);
-        address recordedInterestRouterAddress = address(troveManager.interestRouter());
-        assertEq(interestRouter, recordedInterestRouterAddress);
-    }
+    //  function testTroveManagerHasCorrectInterestRouterAddress() public {
+    //     address interestRouter = address(mockInterestRouter);
+    //     address recordedInterestRouterAddress = address(troveManager.interestRouter());
+    //     assertEq(interestRouter, recordedInterestRouterAddress);
+    // }
 
     // Active Pool
 

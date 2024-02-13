@@ -11,7 +11,7 @@ import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 
-// import "forge-std/console.sol";
+import "forge-std/console2.sol";
 
 
 contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOperations {
@@ -42,8 +42,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint collChange;
         uint netDebtChange;
         bool isCollIncrease;
-        uint debt;
-        uint coll;
+        uint entireDebt;
+        uint entireColl;
         uint oldICR;
         uint newICR;
         uint newTCR;
@@ -149,6 +149,9 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         LocalVariables_openTrove memory vars;
 
         vars.price = priceFeed.fetchPrice();
+
+        // --- Checks ---
+        
         bool isRecoveryMode = _checkRecoveryMode(vars.price);
 
         _requireValidAnnualInterestRate(_annualInterestRate);
@@ -167,8 +170,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         vars.compositeDebt = _getCompositeDebt(vars.netDebt);
         assert(vars.compositeDebt > 0);
 
-        troveManager.mintAggInterest(int256(vars.compositeDebt));
-
         vars.ICR = LiquityMath._computeCR(msg.value, vars.compositeDebt, vars.price);
 
         if (isRecoveryMode) {
@@ -178,6 +179,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             uint newTCR = _getNewTCRFromTroveChange(msg.value, true, vars.compositeDebt, true, vars.price);  // bools: coll increase, debt increase
             _requireNewTCRisAboveCCR(newTCR); 
         }
+
+        // --- Effects & interactions --- 
+
+        activePool.mintAggInterest(int256(vars.compositeDebt));
 
         // Set the stored Trove properties
         vars.stake = contractsCache.troveManager.setTrovePropertiesOnOpen(
@@ -286,27 +291,27 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             // TODO: implement interest rate charges
         }
 
-        (vars.debt, vars.coll, , , ) = contractsCache.troveManager.getEntireDebtAndColl(_borrower);
+        (vars.entireDebt, vars.entireColl, , , ) = contractsCache.troveManager.getEntireDebtAndColl(_borrower);
     
         // Get the trove's old ICR before the adjustment, and what its new ICR will be after the adjustment
-        vars.oldICR = LiquityMath._computeCR(vars.coll, vars.debt, vars.price);
+        vars.oldICR = LiquityMath._computeCR(vars.entireColl, vars.entireDebt, vars.price);
         vars.newICR = _getNewICRFromTroveChange(
-            vars.coll, 
-            vars.debt, 
+            vars.entireColl, 
+            vars.entireDebt, 
             vars.collChange, 
             vars.isCollIncrease, 
             vars.netDebtChange, 
             _isDebtIncrease, 
             vars.price
         );
-        assert(_collWithdrawal <= vars.coll); 
+        assert(_collWithdrawal <= vars.entireColl); 
         // Check the adjustment satisfies all conditions for the current system mode
         _requireValidAdjustmentInCurrentMode(isRecoveryMode, _collWithdrawal, _isDebtIncrease, vars);
             
         // When the adjustment is a debt repayment, check it's a valid amount and that the caller has enough Bold
         if (!_isDebtIncrease && _boldChange > 0) {
-            _requireAtLeastMinNetDebt(_getNetDebt(vars.debt) - vars.netDebtChange);
-            _requireValidBoldRepayment(vars.debt, vars.netDebtChange);
+            _requireAtLeastMinNetDebt(_getNetDebt(vars.entireDebt) - vars.netDebtChange);
+            _requireValidBoldRepayment(vars.entireDebt, vars.netDebtChange);
             _requireSufficientBoldBalance(contractsCache.boldToken, _borrower, vars.netDebtChange);
         }
 
@@ -319,7 +324,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         emit BoldBorrowingFeePaid(msg.sender,  vars.BoldFee);
 
         // Use the unmodified _boldChange here, as we don't send the fee to the user
-        //TODO: any macro changes due to interest rates here? 
+        //TODO: the _boldChange passed here should include both the borrower's debt adjustment plus interest applied. i.e. 
+        // it should be the change in their recorded debt.
         _moveTokensAndETHfromAdjustment(
             contractsCache.activePool,
             contractsCache.boldToken,
@@ -337,33 +343,48 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         IActivePool activePoolCached = activePool;
         IBoldToken boldTokenCached = boldToken;
 
+        // --- Checks ---
+
         _requireTroveisActive(troveManagerCached, msg.sender);
         uint price = priceFeed.fetchPrice();
         _requireNotInRecoveryMode(price);
 
-        // TODO: apply individual and aggregate pending interest, and take snapshots of current timestamp.
+        uint256 initialWeightedRecordedTroveDebt = troveManager.getTroveWeightedRecordedDebt(msg.sender);
 
+        // TODO: gas optimization of pending rewards. We don't need to actually update stored Trove debt & coll properties here, since we'll
+        // zero them at the end. Currently, since we apply gains first, the following calls to getTroveColl and getTroveDebt 
+        // return values with redistribution gains included. When we gas-optimize, this won't be true and we
+        // should change the total debt and coll calculations.
         troveManagerCached.getAndApplyRedistributionGains(msg.sender);
 
-        uint coll = troveManagerCached.getTroveColl(msg.sender);
-        uint debt = troveManagerCached.getTroveDebt(msg.sender);
+        uint entireTroveColl = troveManagerCached.getTroveColl(msg.sender);
+        uint256 pendingTroveInterest = troveManager.calcPendingTroveInterest(msg.sender);
+        uint256 recordedTroveDebt = troveManager.getTroveDebt(msg.sender);
+        uint256 entireTroveDebt = recordedTroveDebt + pendingTroveInterest; 
+       
+        // The borrower must repay their entire debt, including pending interest and redist. gains
+        _requireSufficientBoldBalance(boldTokenCached, msg.sender, entireTroveDebt - BOLD_GAS_COMPENSATION);
 
-        _requireSufficientBoldBalance(boldTokenCached, msg.sender, debt - BOLD_GAS_COMPENSATION);
-
-        uint newTCR = _getNewTCRFromTroveChange(coll, false, debt, false, price);
+        // The TCR always includes this Trove's pending interest, so we must subtract the Trove's entire debt here
+        uint newTCR = _getNewTCRFromTroveChange(entireTroveColl, false, entireTroveDebt, false, price);
         _requireNewTCRisAboveCCR(newTCR);
 
-        troveManagerCached.removeStake(msg.sender);
-        troveManagerCached.closeTrove(msg.sender);
+        // --- Effects and interactions ---
 
+        // The aggregate recorded debt increases by the pending aggregate interest, and decrease by the Trove's entire debt (including its pending interest), 
+        // since the pending aggregate interest also includes the pending interest for this individual Trove.
+        activePool.mintAggInterest(-int256(entireTroveDebt));
+
+        troveManagerCached.removeStake(msg.sender);
+        troveManagerCached.closeTrove(msg.sender, initialWeightedRecordedTroveDebt);
         emit TroveUpdated(msg.sender, 0, 0, 0, BorrowerOperation.closeTrove);
 
-        // Burn the repaid Bold from the user's balance and the gas compensation from the Gas Pool
-        _repayBold(activePoolCached, boldTokenCached, msg.sender, debt - BOLD_GAS_COMPENSATION);
+        // Remove only the Trove's *recorded* debt here, excluding the pending interest, since the state variable updated by this function (ActivePool.boldDebt)
+        // tracks only the sum of recorded debts.
+        _repayBold(activePoolCached, boldTokenCached, msg.sender, recordedTroveDebt - BOLD_GAS_COMPENSATION);
         _repayBold(activePoolCached, boldTokenCached, gasPoolAddress, BOLD_GAS_COMPENSATION);
-
         // Send the collateral back to the user
-        activePoolCached.sendETH(msg.sender, coll);
+        activePoolCached.sendETH(msg.sender, entireTroveColl);
     }
 
     /**
@@ -639,11 +660,14 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     {
         uint totalColl = getEntireSystemColl();
         uint totalDebt = getEntireSystemDebt();
+        console2.log(totalDebt, "BO:totalSystemDebt");
+        console2.log(totalColl, "BO:totalSystemColl");
 
         totalColl = _isCollIncrease ? totalColl + _collChange : totalColl - _collChange;
         totalDebt = _isDebtIncrease ? totalDebt + _debtChange : totalDebt - _debtChange;
 
         uint newTCR = LiquityMath._computeCR(totalColl, totalDebt, _price);
+        console2.log(newTCR, "BO:newTCR");
         return newTCR;
     }
 

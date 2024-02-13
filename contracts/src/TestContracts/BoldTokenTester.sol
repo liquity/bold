@@ -11,11 +11,13 @@ contract BoldTokenTester is BoldToken {
     constructor( 
         address _troveManagerAddress,
         address _stabilityPoolAddress,
-        address _borrowerOperationsAddress
+        address _borrowerOperationsAddress,
+        address _activePoolAddress
     ) BoldToken(
         _troveManagerAddress,
         _stabilityPoolAddress,
-        _borrowerOperationsAddress
+        _borrowerOperationsAddress,
+        _activePoolAddress
     ) {}
 
     function unprotectedMint(address _account, uint256 _amount) external {
