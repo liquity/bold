@@ -8,7 +8,6 @@ import "./ILiquityBase.sol";
 import "./IStabilityPool.sol";
 import "./IBoldToken.sol";
 import "./ISortedTroves.sol";
-import "./IInterestRouter.sol";
 
 // Common interface for the Trove Manager.
 interface ITroveManager is IERC721, ILiquityBase {
@@ -21,23 +20,17 @@ interface ITroveManager is IERC721, ILiquityBase {
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
         address _boldTokenAddress,
-        address _sortedTrovesAddress,
-        address _mockInterestRouterAddress
+        address _sortedTrovesAddress
     ) external;
 
     function stabilityPool() external view returns (IStabilityPool);
     function boldToken() external view returns (IBoldToken);
     function sortedTroves() external view returns(ISortedTroves);
     function borrowerOperationsAddress() external view returns (address);
-    function interestRouter() external view returns (IInterestRouter);
 
     function BOOTSTRAP_PERIOD() external view returns (uint256);
 
     // function BOLD_GAS_COMPENSATION() external view returns (uint256);
-
-    function lastAggUpdateTime() external view returns (uint256);
-    function aggRecordedDebt() external view returns (uint256);
-    function aggWeightedDebtSum() external view returns (uint256);
 
     function getTroveIdsCount() external view returns (uint);
 
@@ -59,8 +52,6 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function addTroveIdToArray(uint256 _troveId) external returns (uint index);
 
-    function mintAggInterest(int256 _debtChange) external;
-
     function getPendingETHReward(uint256 _troveId) external view returns (uint);
 
     function getPendingBoldDebtReward(uint256 _troveId) external view returns (uint);
@@ -68,8 +59,8 @@ interface ITroveManager is IERC721, ILiquityBase {
      function hasRedistributionGains(address _borrower) external view returns (bool);
 
     function getEntireDebtAndColl(uint256 _troveId) external view returns (
-        uint debt,
-        uint coll,
+        uint entireDebt,
+        uint entireColl,
         uint pendingBoldDebtReward,
         uint pendingETHReward,
         uint pendingBoldInterest
@@ -77,7 +68,7 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function getAndApplyRedistributionGains(address _borrower) external;
 
-    function closeTrove(address _troveId) external;
+    function closeTrove(uint256 _troveId, uint256 _weightedRecordedTroveDebt) external;
 
     function removeStake(uint256 _troveId) external;
 
@@ -92,14 +83,17 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function getTroveDebt(uint256 _troveId) external view returns (uint);
 
+    function getTroveWeightedRecordedDebt(address _borrower) external returns (uint256);
+
     function getTroveColl(uint256 _troveId) external view returns (uint);
 
+    function calcPendingTroveInterest(uint256 _troveId) external view returns (uint256);
     function getTroveAnnualInterestRate(uint256 _troveId) external view returns (uint);
 
     function TroveAddManagers(uint256 _troveId) external view returns (address);
     function TroveRemoveManagers(uint256 _troveId) external view returns (address);
 
-    function getTroveLastDebtUpdateTime(address _borrower) external view returns (uint);
+    function getTroveLastDebtUpdateTime(uint256 _troveId) external view returns (uint);
 
     function setTrovePropertiesOnOpen(address _owner, uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _annualInterestRate) external returns (uint256);
 
@@ -121,6 +115,4 @@ interface ITroveManager is IERC721, ILiquityBase {
     function checkRecoveryMode(uint _price) external view returns (bool);
 
     function checkTroveIsActive(uint256 _troveId) external view returns (bool);
-
-    function calcPendingAggInterest() external view returns (uint256);
 }

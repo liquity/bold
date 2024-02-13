@@ -4,12 +4,17 @@ pragma solidity 0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import './Interfaces/IActivePool.sol';
+import './Interfaces/IBoldToken.sol';
+import "./Interfaces/IInterestRouter.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 import './Interfaces/IDefaultPool.sol';
 import './Interfaces/IActivePool.sol';
 
 // import "forge-std/console.sol";
+
+import "forge-std/console2.sol";
 
 /*
  * The Active Pool holds the ETH collateral and Bold debt (but not Bold tokens) for all active troves.
@@ -28,8 +33,28 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     address public troveManagerAddress;
     address public stabilityPoolAddress;
     address public defaultPoolAddress;
+
+    IBoldToken boldToken;
+
+    IInterestRouter public interestRouter;
+
+    uint256 constant public SECONDS_IN_ONE_YEAR = 31536000; // 60 * 60 * 24 * 365,
+
     uint256 internal ETHBalance;  // deposited ether tracker
+
+    // Sum of individual recorded Trove debts. Updated only at individual Trove operations.
     uint256 internal boldDebt;
+
+    // Aggregate recorded debt tracker. Updated whenever a Trove's debt is touched AND whenever the aggregate pending interest is minted.
+    uint256 public aggRecordedDebt;
+
+    /* Sum of individual recorded Trove debts weighted by their respective chosen interest rates.
+    * Updated at individual Trove operations.
+    */
+    uint256 public aggWeightedDebtSum;
+
+    // Last time at which the aggregate recorded debt and weighted sum were updated
+    uint256 public lastAggUpdateTime;
 
     // --- Events ---
 
@@ -46,13 +71,16 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         ETH = IERC20(_ETHAddress);
     }
 
+
     // --- Contract setters ---
 
     function setAddresses(
         address _borrowerOperationsAddress,
         address _troveManagerAddress,
         address _stabilityPoolAddress,
-        address _defaultPoolAddress
+        address _defaultPoolAddress,
+        address _boldTokenAddress,
+        address _interestRouterAddress
     )
         external
         onlyOwner
@@ -61,11 +89,15 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         checkContract(_troveManagerAddress);
         checkContract(_stabilityPoolAddress);
         checkContract(_defaultPoolAddress);
+        checkContract(_boldTokenAddress);
+        checkContract(_interestRouterAddress);
 
         borrowerOperationsAddress = _borrowerOperationsAddress;
         troveManagerAddress = _troveManagerAddress;
         stabilityPoolAddress = _stabilityPoolAddress;
         defaultPoolAddress = _defaultPoolAddress;
+        boldToken = IBoldToken(_boldTokenAddress);
+        interestRouter = IInterestRouter(_interestRouterAddress);
 
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
         emit TroveManagerAddressChanged(_troveManagerAddress);
@@ -91,6 +123,15 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
     function getBoldDebt() external view override returns (uint) {
         return boldDebt;
+    }
+
+    function calcPendingAggInterest() public view returns (uint256) {
+        return aggWeightedDebtSum * (block.timestamp - lastAggUpdateTime) / SECONDS_IN_ONE_YEAR / 1e18;
+    }
+
+    // Returns sum of agg.recorded debt plus agg. pending interest. Excludes pending redist. gains.
+    function getTotalActiveDebt() public view returns (uint256) {
+        return aggRecordedDebt + calcPendingAggInterest();
     }
 
     // --- Pool functionality ---
@@ -143,6 +184,48 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         emit ActivePoolBoldDebtUpdated(boldDebt);
     }
 
+    function increaseAggWeightedDebtSum(uint256 _debt, uint256 _annualInterestRate) external {
+        _requireCallerIsTroveManager();
+        aggWeightedDebtSum += _debt * _annualInterestRate;
+    }
+
+    function decreaseAggWeightedDebtSum(uint256 _weightedRecordedTroveDebt) external {
+        aggWeightedDebtSum -= _weightedRecordedTroveDebt;
+    }
+
+    // --- Aggregate interest operations ---
+
+    // This function is called inside all state-changing user ops: borrower ops, liquidations, redemptions and SP deposits/withdrawals.
+    // Some user ops trigger debt changes to Trove(s), in which case _troveDebtChange will be non-zero.
+    // The _troveDebtChange is the sum of:
+    // - Any composite debt change to a Trove from a borrower op
+    // - Any debt increase due to a Trove's redistribution gaisn being applied.
+    // It does NOT include the Trove's pending individual interest. This is because aggregate interest and individual interest are tracked
+    // separately, in parallel.
+    //That is, the aggregate recorded debt is incremented by the aggregate pending interest.
+    function mintAggInterest(int256 _troveDebtChange) public {
+        _requireCallerIsBOorSP();
+        uint256 aggInterest = calcPendingAggInterest();
+        // Mint the new BOLD interest to a mock interest router that would split it and send it onward to SP, LP staking, etc.
+        // TODO: implement interest routing and SP Bold reward tracking
+        if (aggInterest > 0) {boldToken.mint(address(interestRouter), aggInterest);}
+
+        // TODO: cleaner way to deal with debt changes that can be positive or negative?
+        aggRecordedDebt = addUint256ToInt256(aggRecordedDebt + aggInterest, _troveDebtChange);
+
+        // assert(aggRecordedDebt > 0) // This should never be negative. If all principal debt were repaid, it should be 0, and if all
+        lastAggUpdateTime = block.timestamp;
+    }
+
+    function addUint256ToInt256(uint256 _x, int256 _y) internal returns (uint256) {
+        // Assumption: _x + _y > 0. Will revert otherwise.
+        if (_y >= 0) {
+            return _x + uint256(_y);
+        } else {
+            return (_x - uint256(-_y));
+        }
+    }
+
     // --- 'require' functions ---
 
     function _requireCallerIsBorrowerOperationsOrDefaultPool() internal view {
@@ -165,6 +248,11 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
             msg.sender == borrowerOperationsAddress ||
             msg.sender == troveManagerAddress,
             "ActivePool: Caller is neither BorrowerOperations nor TroveManager");
+    }
+
+    function _requireCallerIsBOorSP() internal view {
+        require(msg.sender == borrowerOperationsAddress || msg.sender == stabilityPoolAddress,
+            "ActivePool: Caller is not the BO or SP");
     }
 
     function _requireCallerIsTroveManager() internal view {

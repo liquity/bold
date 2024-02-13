@@ -128,6 +128,18 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
+    function closeTrove(address _account) public {
+        vm.startPrank(_account);
+        borrowerOperations.closeTrove();
+        vm.stopPrank();
+    }
+
+    function transferBold(address _from, address _to, uint256 _amount) public {
+        vm.startPrank(_from);
+        boldToken.transfer(_to, boldToken.balanceOf(_from));
+        vm.stopPrank();
+    }
+
     function logContractAddresses() public view {
         console.log("ActivePool addr: ", address(activePool));
         console.log("BorrowerOps addr: ", address(borrowerOperations));
