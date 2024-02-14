@@ -1,4 +1,4 @@
-const StabilityPool = artifacts.require("./StabilityPool.sol")
+const StabilityPool = artifacts.require("src/StabilityPool.sol")
 const ActivePool = artifacts.require("./ActivePool.sol")
 const DefaultPool = artifacts.require("./DefaultPool.sol")
 const NonPayable = artifacts.require("./NonPayable.sol")
