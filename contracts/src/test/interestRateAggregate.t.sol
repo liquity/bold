@@ -12,12 +12,12 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(activePool.calcPendingAggInterest(), 0);
 
         openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  0); 
-        // assertEq(activePool.lastAggUpdateTime(), block.timestamp);
-        // assertEq(activePool.calcPendingAggInterest(), 0);
+        assertEq(activePool.lastAggUpdateTime(), block.timestamp);
+        assertEq(activePool.calcPendingAggInterest(), 0);
 
-        // openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  5e17);
-        // assertEq(activePool.lastAggUpdateTime(), block.timestamp);
-        // assertEq(activePool.calcPendingAggInterest(), 0);
+        openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  5e17);
+        assertEq(activePool.lastAggUpdateTime(), block.timestamp);
+        assertEq(activePool.calcPendingAggInterest(), 0);
     }
 
     // calcPendingAggInterest returns 0 with no recorded aggregate debt
@@ -56,7 +56,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     // TODO: create additional fuzz test
-    function testCalcPendingInterestReturnsCorrectInterestForGivenPeriod() public {
+    function testCalcPendingAggInterestReturnsCorrectInterestForGivenPeriod() public {
         priceFeed.setPrice(2000e18);
         uint256 _duration = 1 days;
 
@@ -75,6 +75,84 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 expectedPendingAggInterest = expectedTroveDebt * 2 * 5e17 * _duration / SECONDS_IN_1_YEAR / 1e18;
     
         assertEq(expectedPendingAggInterest, activePool.calcPendingAggInterest());
+    }
+
+    // --- calcPendingTroveInterest
+
+    // returns 0 for non-existent trove
+      function testCalcPendingTroveInterestReturns0When0AggRecordedDebt() public {
+        priceFeed.setPrice(2000e18);
+
+        assertEq(troveManager.calcPendingTroveInterest(A), 0);
+
+        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  25e16); 
+        openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  75e16); 
+
+        vm.warp(block.timestamp + 1 days);
+
+        // A sends Bold to B so B can cover their interest and close their Trove
+        transferBold(A, B, boldToken.balanceOf(A));
+
+        closeTrove(B);
+
+        assertEq(troveManager.calcPendingTroveInterest(B), 0);
+    }
+    // returns 0 for 0 time passed
+
+    function testCalcPendingTroveInterestReturns0For0TimePassed() public {
+        priceFeed.setPrice(2000e18);
+
+        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  25e16); 
+        assertEq(troveManager.calcPendingTroveInterest(A), 0);
+
+        vm.warp(block.timestamp +  1 days);
+
+        openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  75e16); 
+        assertEq(troveManager.calcPendingTroveInterest(B), 0);
+    }
+
+    function testCalcPendingTroveInterestReturns0For0InterestRate() public {
+        priceFeed.setPrice(2000e18);
+
+        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  0); 
+
+        assertEq(troveManager.calcPendingTroveInterest(A), 0);
+
+        vm.warp(block.timestamp +  1 days);
+
+        assertEq(troveManager.calcPendingTroveInterest(A), 0);
+    }
+
+    // TODO: create additional corresponding fuzz test
+    function testCalcPendingTroveInterestReturnsCorrectInterestForGivenPeriod() public {
+        priceFeed.setPrice(2000e18);
+
+        uint256 annualRate_A = 1e18;
+        uint256 annualRate_B = 37e16;
+        uint256 debtRequest_A = 2000e18;
+        uint256 debtRequest_B = 2500e18;
+
+        uint256 duration = 42 days;
+
+        openTroveNoHints100pctMaxFee(A,  2 ether, debtRequest_A,  annualRate_A); 
+        uint256 debt_A = troveManager.getTroveDebt(A);
+        assertGt(debt_A, 0);
+        assertEq(troveManager.calcPendingTroveInterest(A), 0);
+
+        vm.warp(block.timestamp +  duration);
+
+        uint256 expectedInterest_A = annualRate_A * debt_A * duration / 1e18 / SECONDS_IN_1_YEAR;
+        assertEq(troveManager.calcPendingTroveInterest(A), expectedInterest_A);
+       
+        openTroveNoHints100pctMaxFee(B,  2 ether, debtRequest_B,  annualRate_B); 
+        uint256 debt_B = troveManager.getTroveDebt(B);
+        assertGt(debt_B, 0);
+        assertEq(troveManager.calcPendingTroveInterest(B), 0);
+
+        vm.warp(block.timestamp +  duration);
+
+        uint256 expectedInterest_B = annualRate_B * debt_B * duration / 1e18 / SECONDS_IN_1_YEAR;
+        assertEq(troveManager.calcPendingTroveInterest(B), expectedInterest_B);
     }
 
     // --- mintAggInterest ---
@@ -639,6 +717,8 @@ contract InterestRateAggregate is DevTestSetup {
 
     // TODO:
     // getEntireDebt and getTCR basic tests, for pending agg interest
+
+    // get
 
 
 
