@@ -287,7 +287,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         troveManagerCached.changeAnnualInterestRate(_troveId, _newAnnualInterestRate);
     }
-
+    
     /*
     * _adjustTrove(): Alongside a debt change, this function can perform either a collateral top-up or a collateral withdrawal.
     */
