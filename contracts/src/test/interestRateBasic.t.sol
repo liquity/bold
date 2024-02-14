@@ -111,7 +111,6 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveManager.getTroveAnnualInterestRate(C), 1e18);
     }
 
-    // TODO: test adjusting interest rates correctly orders sorted list
     function testAdjustTroveInterestRateInsertsToCorrectPositionInSortedList() public {
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  1e17);
@@ -120,7 +119,7 @@ contract InterestRateBasic is DevTestSetup {
         openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  4e17);
         openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  5e17);
         
-        // Check initial sorted list order - expect [A:1%, B:2%, C:3%, D:4%, E:5%]
+        // Check initial sorted list order - expect [A:10%, B:02%, C:30%, D:40%, E:50%]
         // A
         assertEq(sortedTroves.getNext(A), ZERO_ADDRESS); // tail
         assertEq(sortedTroves.getPrev(A), B);
@@ -137,17 +136,17 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(sortedTroves.getNext(E), D);
         assertEq(sortedTroves.getPrev(E), ZERO_ADDRESS); // head
     
-        // C sets rate to 0%, moves to tail - expect [C:0%, A:1%, B:2%, D:4%, E:5%]
+        // C sets rate to 0%, moves to tail - expect [C:0%, A:10%, B:20%, D:40%, E:50%]
         changeInterestRateNoHints(C, 0);
         assertEq(sortedTroves.getNext(C), ZERO_ADDRESS);
         assertEq(sortedTroves.getPrev(C), A);
 
-        // D sets rate to 7%, moves to head - expect [C:0%, A:1%, B:2%, E:5%, D:7%]
+        // D sets rate to 7%, moves to head - expect [C:0%, A:10%, B:20%, E:50%, D:70%]
         changeInterestRateNoHints(D, 7e17);
         assertEq(sortedTroves.getNext(D), E);
         assertEq(sortedTroves.getPrev(D), ZERO_ADDRESS);
 
-        // A sets rate to 6%, moves up 2 positions - expect [C:0%, B:2%, E:5%, A:6%, D:7%]
+        // A sets rate to 6%, moves up 2 positions - expect [C:0%, B:20%, E:50%, A:60%, D:70%]
         changeInterestRateNoHints(A, 6e17);
         assertEq(sortedTroves.getNext(A), E);
         assertEq(sortedTroves.getPrev(A), D);
@@ -192,7 +191,7 @@ contract InterestRateBasic is DevTestSetup {
         // Adjust E's coll + debt
         adjustTrove100pctMaxFee(E, 10 ether, 5000e18, true, true);
 
-        // Check C's neighbors unchanged
+        // Check E's neighbors unchanged
         assertEq(sortedTroves.getNext(E), D);
         assertEq(sortedTroves.getPrev(E), ZERO_ADDRESS); // head
     }

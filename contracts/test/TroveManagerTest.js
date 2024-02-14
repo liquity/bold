@@ -1241,7 +1241,7 @@ contract("TroveManager", async (accounts) => {
   // TODO: revisit the relevance of this test since it relies on liquidateTroves(), which now no longer works due to ordering by interest rate.
   // Can we achieve / test the same thing using another liquidation function?
 
-  it.skip("batchLiquidateTroves(): liquidates a Trove that a) was skipped in a previous liquidation and b) has pending rewards", async () => {
+  it("batchLiquidateTroves(): liquidates a Trove that a) was skipped in a previous liquidation and b) has pending rewards", async () => {
     // A, B, C, D, E open troves
     await openTrove({ ICR: toBN(dec(300, 16)), extraParams: { from: C } });
     await openTrove({ ICR: toBN(dec(364, 16)), extraParams: { from: D } });
@@ -1277,7 +1277,7 @@ contract("TroveManager", async (accounts) => {
     assert.isTrue(ICR_C.gt(TCR));
 
     // Attempt to liquidate B and C, which skips C in the liquidation since it is immune
-    const liqTxBC = await troveManager.liquidateTroves(2);
+    const liqTxBC = await troveManager.batchLiquidateTroves([B,C]);
     assert.isTrue(liqTxBC.receipt.status);
     assert.isFalse(await sortedTroves.contains(B));
     assert.isTrue(await sortedTroves.contains(C));
@@ -1286,8 +1286,8 @@ contract("TroveManager", async (accounts) => {
 
     // // All remaining troves D and E repay a little debt, applying their pending rewards
     assert.isTrue((await sortedTroves.getSize()).eq(toBN("3")));
-    await borrowerOperations.repayBold(dec(1, 18), D, D, { from: D });
-    await borrowerOperations.repayBold(dec(1, 18), E, E, { from: E });
+    await borrowerOperations.repayBold(dec(1, 18), { from: D });
+    await borrowerOperations.repayBold(dec(1, 18), { from: E });
 
     // Check C is the only trove that has pending rewards
     assert.isTrue(await troveManager.hasPendingRewards(C));

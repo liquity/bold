@@ -232,6 +232,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     }
 
     function adjustTroveInterestRate(uint _newAnnualInterestRate, address _upperHint, address _lowerHint) external {
+        // TODO: Delegation functionality
         _requireValidAnnualInterestRate(_newAnnualInterestRate);
         ITroveManager troveManagerCached = troveManager;
         _requireTroveisActive(troveManagerCached, msg.sender);
