@@ -242,14 +242,24 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         ITroveManager troveManagerCached = troveManager;
         _requireTroveisActive(troveManagerCached, msg.sender);
 
-        // TODO: apply individual and aggregate pending interest, and take snapshots of current timestamp.
-        // TODO: determine how applying pending interest should interact / be sequenced with applying pending rewards from redistributions. 
+        uint256 initialWeightedRecordedTroveDebt = troveManager.getTroveWeightedRecordedDebt(msg.sender);
 
-        troveManagerCached.getAndApplyRedistributionGains(msg.sender);
+        (, uint256 redistDebtGain) = troveManagerCached.getAndApplyRedistributionGains(msg.sender);
+
+        // No debt is issued/repaid, so ActivePool.aggRecordedDebt increases only the redistribution gain 
+        activePool.mintAggInterest(int256(redistDebtGain));
+
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(msg.sender);
+        uint256 recordedTroveDebt = troveManager.getTroveDebt(msg.sender);
+        uint256 entireTroveDebt = recordedTroveDebt + accruedTroveInterest; 
 
         sortedTroves.reInsert(msg.sender, _newAnnualInterestRate, _upperHint, _lowerHint);
 
-        troveManagerCached.changeAnnualInterestRate(msg.sender, _newAnnualInterestRate);
+        // Update Trove recorded debt and interest-weighted debt sum
+        troveManager.updateTroveDebtAndInterest(msg.sender, initialWeightedRecordedTroveDebt, entireTroveDebt, _newAnnualInterestRate);
+
+        // Increase the active Pool's recorded debt only by the Trove's accrued interest, since we have already applied pending redist. gains.
+        activePool.increaseRecordedDebtSum(accruedTroveInterest);
     }
     
     /*
@@ -277,7 +287,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // Confirm the operation is either a borrower adjusting their own trove, or a pure ETH transfer from the Stability Pool to a trove
         assert(msg.sender == _borrower || (msg.sender == stabilityPoolAddress && msg.value > 0 && _boldChange == 0));
 
-        // TODO: apply individual and aggregate pending interest, and take snapshots of current timestamp.
+        // TODO: apply individual and aggregate accrued interest, and take snapshots of current timestamp.
 
         contractsCache.troveManager.getAndApplyRedistributionGains(_borrower);
 
@@ -350,39 +360,44 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireNotInRecoveryMode(price);
 
         uint256 initialWeightedRecordedTroveDebt = troveManager.getTroveWeightedRecordedDebt(msg.sender);
+        uint256 initialRecordedTroveDebt = troveManager.getTroveDebt(msg.sender);
 
         // TODO: gas optimization of pending rewards. We don't need to actually update stored Trove debt & coll properties here, since we'll
         // zero them at the end. Currently, since we apply gains first, the following calls to getTroveColl and getTroveDebt 
         // return values with redistribution gains included. When we gas-optimize, this won't be true and we
-        // should change the total debt and coll calculations.
-        troveManagerCached.getAndApplyRedistributionGains(msg.sender);
+        // may need to change the total debt and coll calculations.
+        ( , uint256 redistDebtGain) = troveManagerCached.getAndApplyRedistributionGains(msg.sender);
 
         uint entireTroveColl = troveManagerCached.getTroveColl(msg.sender);
-        uint256 pendingTroveInterest = troveManager.calcPendingTroveInterest(msg.sender);
-        uint256 recordedTroveDebt = troveManager.getTroveDebt(msg.sender);
-        uint256 entireTroveDebt = recordedTroveDebt + pendingTroveInterest; 
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(msg.sender);
+        uint256 entireTroveDebt = initialRecordedTroveDebt + redistDebtGain + accruedTroveInterest; 
        
-        // The borrower must repay their entire debt, including pending interest and redist. gains
+        // The borrower must repay their entire debt including accrued interest and redist. gains (and less the gas comp.)
         _requireSufficientBoldBalance(boldTokenCached, msg.sender, entireTroveDebt - BOLD_GAS_COMPENSATION);
 
-        // The TCR always includes this Trove's pending interest, so we must subtract the Trove's entire debt here
+        // The TCR always includes A Trove's redist. gain and accrued interest, so we must use the Trove's entire debt here
         uint newTCR = _getNewTCRFromTroveChange(entireTroveColl, false, entireTroveDebt, false, price);
         _requireNewTCRisAboveCCR(newTCR);
 
         // --- Effects and interactions ---
 
-        // The aggregate recorded debt increases by the pending aggregate interest, and decrease by the Trove's entire debt (including its pending interest), 
-        // since the pending aggregate interest also includes the pending interest for this individual Trove.
-        activePool.mintAggInterest(-int256(entireTroveDebt));
+        // Remove the Trove's initial recorded debt plus its accrued interest from ActivePool.aggRecordedDebt, 
+        // but *don't* remove the redistribution gains, since these were not yet incorporated into the sum. 
+        activePool.mintAggInterest(-int256(initialRecordedTroveDebt + accruedTroveInterest));
 
         troveManagerCached.removeStake(msg.sender);
         troveManagerCached.closeTrove(msg.sender, initialWeightedRecordedTroveDebt);
         emit TroveUpdated(msg.sender, 0, 0, 0, BorrowerOperation.closeTrove);
 
-        // Remove only the Trove's *recorded* debt here, excluding the pending interest, since the state variable updated by this function (ActivePool.boldDebt)
-        // tracks only the sum of recorded debts.
-        _repayBold(activePoolCached, boldTokenCached, msg.sender, recordedTroveDebt - BOLD_GAS_COMPENSATION);
-        _repayBold(activePoolCached, boldTokenCached, gasPoolAddress, BOLD_GAS_COMPENSATION);
+        // Remove only the Trove's latest recorded debt (inc. redist. gains) from ActivePool.recordedDebtSum, 
+        // i.e. exclude the accrued interest.
+        // TODO: If/when redist. gains are gas-optimized, exclude these too.
+        activePool.decreaseRecordedDebtSum(initialRecordedTroveDebt + redistDebtGain);
+        // Burn the 200 BOLD gas compensation
+        boldToken.burn(gasPoolAddress, BOLD_GAS_COMPENSATION);
+        // Burn the remainder of the Trove's entire debt from the user
+        boldToken.burn(msg.sender, entireTroveDebt - BOLD_GAS_COMPENSATION);
+       
         // Send the collateral back to the user
         activePoolCached.sendETH(msg.sender, entireTroveColl);
     }
@@ -456,7 +471,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         if (_isDebtIncrease) {
             _withdrawBold(_activePool, _boldToken, _borrower, _boldChange, _netDebtChange);
         } else {
-            _repayBold(_activePool, _boldToken, _borrower, _boldChange);
+            // TODO: burn entire debt, not recorded debt
+            _repayBold(_activePool, _boldToken, _borrower, _boldChange, _boldChange);
         }
 
         if (_isCollIncrease) {
@@ -474,14 +490,14 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     // Issue the specified amount of Bold to _account and increases the total active debt (_netDebtIncrease potentially includes a BoldFee)
     function _withdrawBold(IActivePool _activePool, IBoldToken _boldToken, address _account, uint _boldAmount, uint _netDebtIncrease) internal {
-        _activePool.increaseBoldDebt(_netDebtIncrease);
+        _activePool.increaseRecordedDebtSum(_netDebtIncrease);
         _boldToken.mint(_account, _boldAmount);
     }
 
     // Burn the specified amount of Bold from _account and decreases the total active debt
-    function _repayBold(IActivePool _activePool, IBoldToken _boldToken, address _account, uint _bold) internal {
-        _activePool.decreaseBoldDebt(_bold);
-        _boldToken.burn(_account, _bold);
+    function _repayBold(IActivePool _activePool, IBoldToken _boldToken, address _account, uint _recordedTroveDebt, uint256 _entireTroveDebt) internal {
+        _activePool.decreaseRecordedDebtSum(_recordedTroveDebt);
+        _boldToken.burn(_account, _entireTroveDebt);
     }
 
     // --- 'Require' wrapper functions ---

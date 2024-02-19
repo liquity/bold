@@ -69,7 +69,7 @@ interface ITroveManager is ILiquityBase {
         uint pendingBoldInterest
     );
 
-    function getAndApplyRedistributionGains(address _borrower) external;
+    function getAndApplyRedistributionGains(address _borrower) external returns (uint256, uint256);
 
     function closeTrove(address _borrower, uint256 _weightedRecordedTroveDebt) external;
 
@@ -90,7 +90,7 @@ interface ITroveManager is ILiquityBase {
 
     function getTroveColl(address _borrower) external view returns (uint);
 
-    function calcPendingTroveInterest(address _borrower) external view returns (uint256);
+    function calcTroveAccruedInterest(address _borrower) external view returns (uint256);
 
     function getTroveAnnualInterestRate(address _borrower) external view returns (uint);
 
@@ -106,7 +106,12 @@ interface ITroveManager is ILiquityBase {
 
     function decreaseTroveDebt(address _borrower, uint _collDecrease) external returns (uint); 
 
-    function changeAnnualInterestRate(address _borrower, uint256 _newAnnualInterestRate) external;
+    function updateTroveDebtAndInterest(
+        address _borrower, 
+        uint256 _oldWeightedRecordedTroveDebt, 
+        uint256 _entireTroveDebt, 
+        uint256 _newAnnualInterestRate
+    ) external;
 
     function getTCR(uint _price) external view returns (uint);
 

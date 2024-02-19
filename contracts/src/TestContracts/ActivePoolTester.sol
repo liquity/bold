@@ -7,7 +7,7 @@ import "../ActivePool.sol";
 contract ActivePoolTester is ActivePool {
     
     function unprotectedIncreaseBoldDebt(uint _amount) external {
-        boldDebt  = boldDebt + _amount;
+        recordedDebtSum  = recordedDebtSum + _amount;
     }
 
     function unprotectedPayable() external payable {

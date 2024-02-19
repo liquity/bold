@@ -102,6 +102,8 @@ contract InterestRateBasic is DevTestSetup {
         borrowerOperations.adjustTroveInterestRate(42e18, ZERO_ADDRESS, ZERO_ADDRESS);
     }
 
+    // --- adjustTroveInterestRate ---
+
     function testAdjustTroveInterestRateSetsCorrectNewRate() public {
         priceFeed.setPrice(2000e18);
 
@@ -121,6 +123,20 @@ contract InterestRateBasic is DevTestSetup {
 
         changeInterestRateNoHints(C, 1e18);
         assertEq(troveManager.getTroveAnnualInterestRate(C), 1e18);
+    }
+
+    function testAdjustTroveInterestRateSetsTroveLastDebtUpdateTimeToNow() public {
+        priceFeed.setPrice(2000e18);
+
+        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
+
+        vm.warp(block.timestamp + 1 days);
+
+        assertLt(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+
+        changeInterestRateNoHints(A, 75e16);
+
+        assertEq(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
     }
 
     function testAdjustTroveInterestRateInsertsToCorrectPositionInSortedList() public {
@@ -167,7 +183,6 @@ contract InterestRateBasic is DevTestSetup {
     function testAdjustTroveDoesNotChangeListPositions() public {
         priceFeed.setPrice(2000e18);
 
-    
         // Troves opened in ascending order of interest rate
         openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  1e17);
         openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  2e17);
