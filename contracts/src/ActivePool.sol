@@ -43,7 +43,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     uint256 internal ETHBalance;  // deposited ether tracker
 
     // Sum of individual recorded Trove debts. Updated only at individual Trove operations.
-    uint256 internal boldDebt;
+    uint256 internal recordedDebtSum;
 
     // Aggregate recorded debt tracker. Updated whenever a Trove's debt is touched AND whenever the aggregate pending interest is minted.
     uint256 public aggRecordedDebt;
@@ -63,7 +63,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     event EtherSent(address _to, uint _amount);
     event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event ActivePoolBoldDebtUpdated(uint _boldDebt);
+    event ActivePoolBoldDebtUpdated(uint _recordedDebtSum);
     event ActivePoolETHBalanceUpdated(uint _ETHBalance);
 
     constructor(address _ETHAddress) {
@@ -121,8 +121,8 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         return ETHBalance;
     }
 
-    function getBoldDebt() external view override returns (uint) {
-        return boldDebt;
+    function getRecordedDebtSum() external view override returns (uint) {
+        return recordedDebtSum;
     }
 
     function calcPendingAggInterest() public view returns (uint256) {
@@ -172,37 +172,33 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         emit ActivePoolETHBalanceUpdated(newETHBalance);
     }
 
-    function increaseBoldDebt(uint _amount) external override {
+    function increaseRecordedDebtSum(uint _amount) external override {
         _requireCallerIsBOorTroveM();
-        boldDebt  = boldDebt + _amount;
-        emit ActivePoolBoldDebtUpdated(boldDebt);
+        uint256 newRecordedDebtSum = recordedDebtSum + _amount;
+        recordedDebtSum  = newRecordedDebtSum;
+        emit ActivePoolBoldDebtUpdated(newRecordedDebtSum);
     }
 
-    function decreaseBoldDebt(uint _amount) external override {
+    function decreaseRecordedDebtSum(uint _amount) external override {
         _requireCallerIsBOorTroveMorSP();
-        boldDebt = boldDebt - _amount;
-        emit ActivePoolBoldDebtUpdated(boldDebt);
+        uint256 newRecordedDebtSum = recordedDebtSum - _amount;
+        recordedDebtSum = newRecordedDebtSum;
+        emit ActivePoolBoldDebtUpdated(newRecordedDebtSum);
     }
 
-    function increaseAggWeightedDebtSum(uint256 _debt, uint256 _annualInterestRate) external {
+    function changeAggWeightedDebtSum(uint256 _oldWeightedRecordedTroveDebt, uint256 _newTroveWeightedRecordedTroveDebt) external {
         _requireCallerIsTroveManager();
-        aggWeightedDebtSum += _debt * _annualInterestRate;
-    }
-
-    function decreaseAggWeightedDebtSum(uint256 _weightedRecordedTroveDebt) external {
-        aggWeightedDebtSum -= _weightedRecordedTroveDebt;
+        // TODO: Currently 2 SLOADs - more gas efficient way? Use ints?
+        aggWeightedDebtSum -= _oldWeightedRecordedTroveDebt;
+        aggWeightedDebtSum += _newTroveWeightedRecordedTroveDebt;
     }
 
     // --- Aggregate interest operations ---
 
     // This function is called inside all state-changing user ops: borrower ops, liquidations, redemptions and SP deposits/withdrawals.
     // Some user ops trigger debt changes to Trove(s), in which case _troveDebtChange will be non-zero.
-    // The _troveDebtChange is the sum of:
-    // - Any composite debt change to a Trove from a borrower op
-    // - Any debt increase due to a Trove's redistribution gaisn being applied.
-    // It does NOT include the Trove's pending individual interest. This is because aggregate interest and individual interest are tracked
-    // separately, in parallel.
-    //That is, the aggregate recorded debt is incremented by the aggregate pending interest.
+    // The aggregate recorded debt is incremented by the aggregate pending interest, plus the _troveDebtChange.
+    // The _troveDebtChange results from the borrower repaying/drawing debt and redistribution gains being applied.
     function mintAggInterest(int256 _troveDebtChange) public {
         _requireCallerIsBOorSP();
         uint256 aggInterest = calcPendingAggInterest();
@@ -212,8 +208,9 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
         // TODO: cleaner way to deal with debt changes that can be positive or negative?
         aggRecordedDebt = addUint256ToInt256(aggRecordedDebt + aggInterest, _troveDebtChange);
+        // assert(aggRecordedDebt >= 0) // This should never be negative. If all aggregate interest was applied
+        // and all Trove debts were repaid, it should become 0.
 
-        // assert(aggRecordedDebt > 0) // This should never be negative. If all principal debt were repaid, it should be 0, and if all
         lastAggUpdateTime = block.timestamp;
     }
 
