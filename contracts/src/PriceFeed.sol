@@ -122,7 +122,7 @@ contract PriceFeed is Ownable, CheckContract, BaseMath, IPriceFeed {
     * it uses the last good price seen by Liquity.
     *
     */
-    function fetchPrice() external override returns (uint) {
+    function fetchPrice() external override returns (uint _lastGoodPrice) {
         // Get current and previous price data from Chainlink, and current price data from Tellor
         ChainlinkResponse memory chainlinkResponse = _getCurrentChainlinkResponse();
         ChainlinkResponse memory prevChainlinkResponse = _getPrevChainlinkResponse(chainlinkResponse.roundId, chainlinkResponse.decimals);

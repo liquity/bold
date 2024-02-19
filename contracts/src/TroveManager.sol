@@ -1311,7 +1311,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         // return _calcRedemptionRate(_calcDecayedBaseRate());
     }
 
-    function _calcRedemptionRate(uint _baseRate) internal pure returns (uint) {
+    function _calcRedemptionRate(uint /* _baseRate */) internal pure returns (uint) {
         return 0;
         // return LiquityMath._min(
         //     REDEMPTION_FEE_FLOOR + _baseRate,
@@ -1327,7 +1327,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         return _calcRedemptionFee(getRedemptionRateWithDecay(), _ETHDrawn);
     }
 
-    function _calcRedemptionFee(uint _redemptionRate, uint _ETHDrawn) internal pure returns (uint) {
+    function _calcRedemptionFee(uint /* _redemptionRate */, uint /* _ETHDrawn */) internal pure returns (uint) {
         return 0;
         // uint redemptionFee = _redemptionRate * _ETHDrawn / DECIMAL_PRECISION;
         // require(redemptionFee < _ETHDrawn, "TroveManager: Fee would eat up all returned collateral");
@@ -1457,7 +1457,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         return newDebt;
     }
 
-    function changeAnnualInterestRate(address _borrower, uint256 _newAnnualInterestRate) external returns (uint256) {
+    function changeAnnualInterestRate(address _borrower, uint256 _newAnnualInterestRate) external {
         _requireCallerIsBorrowerOperations();
         Troves[_borrower].annualInterestRate = _newAnnualInterestRate;
     }
