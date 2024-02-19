@@ -1238,6 +1238,532 @@ contract("TroveManager", async (accounts) => {
   });
 
   // --- batchLiquidateTroves() ---
+
+  it("batchLiquidateTroves(): liquidates based on entire/collateral debt (including pending rewards), not raw collateral/debt", async () => {
+    await openTrove({ ICR: toBN(dec(400, 16)), extraParams: { from: alice } });
+    await openTrove({ ICR: toBN(dec(221, 16)), extraParams: { from: bob } });
+    await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: carol } });
+    await openTrove({
+      ICR: toBN(dec(200, 16)),
+      extraParams: { from: defaulter_1 },
+    });
+
+    // Price drops
+    await priceFeed.setPrice(dec(100, 18));
+    const price = await priceFeed.getPrice();
+
+    const alice_ICR_Before = await troveManager.getCurrentICR(alice, price);
+    const bob_ICR_Before = await troveManager.getCurrentICR(bob, price);
+    const carol_ICR_Before = await troveManager.getCurrentICR(carol, price);
+
+    /* Before liquidation: 
+    Alice ICR: = (2 * 100 / 100) = 200%
+    Bob ICR: (1 * 100 / 90.5) = 110.5%
+    Carol ICR: (1 * 100 / 100 ) =  100%
+
+    Therefore Alice and Bob above the MCR, Carol is below */
+    assert.isTrue(alice_ICR_Before.gte(mv._MCR));
+    assert.isTrue(bob_ICR_Before.gte(mv._MCR));
+    assert.isTrue(carol_ICR_Before.lte(mv._MCR));
+
+    // Liquidate defaulter. 30 Bold and 0.3 ETH is distributed uniformly between A, B and C. Each receive 10 Bold, 0.1 ETH
+    await troveManager.liquidate(defaulter_1);
+
+    const alice_ICR_After = await troveManager.getCurrentICR(alice, price);
+    const bob_ICR_After = await troveManager.getCurrentICR(bob, price);
+    const carol_ICR_After = await troveManager.getCurrentICR(carol, price);
+
+    /* After liquidation: 
+
+    Alice ICR: (1.0995 * 100 / 60) = 183.25%
+    Bob ICR:(1.0995 * 100 / 100.5) =  109.40%
+    Carol ICR: (1.0995 * 100 / 110 ) 99.95%
+
+    Check Alice is above MCR, Bob below, Carol below. */
+    assert.isTrue(alice_ICR_After.gte(mv._MCR));
+    assert.isTrue(bob_ICR_After.lte(mv._MCR));
+    assert.isTrue(carol_ICR_After.lte(mv._MCR));
+
+    /* Though Bob's true ICR (including pending rewards) is below the MCR, check that Bob's raw coll and debt has not changed */
+    const bob_Coll = (await troveManager.Troves(bob))[1];
+    const bob_Debt = (await troveManager.Troves(bob))[0];
+
+    const bob_rawICR = bob_Coll.mul(toBN(dec(100, 18))).div(bob_Debt);
+    assert.isTrue(bob_rawICR.gte(mv._MCR));
+
+    // Whale enters system, pulling it into Normal Mode
+    await openTrove({
+      ICR: toBN(dec(10, 18)),
+      extraBoldAmount: dec(1, 24),
+      extraParams: { from: whale },
+    });
+
+    // Confirm system is not in Recovery Mode
+    assert.isFalse(await th.checkRecoveryMode(contracts));
+
+    //liquidate A, B, C
+    await troveManager.batchLiquidateTroves([alice, bob, carol]);
+
+    // Check A stays active, B and C get liquidated
+    assert.isTrue(await sortedTroves.contains(alice));
+    assert.isFalse(await sortedTroves.contains(bob));
+    assert.isFalse(await sortedTroves.contains(carol));
+
+    // check trove statuses - A active (1),  B and C closed by liquidation (3)
+    assert.equal((await troveManager.Troves(alice))[3].toString(), "1");
+    assert.equal((await troveManager.Troves(bob))[3].toString(), "3");
+    assert.equal((await troveManager.Troves(carol))[3].toString(), "3");
+  });
+
+  it("batchLiquidateTroves():  liquidates troves with ICR < MCR", async () => {
+    await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale } });
+
+    // A, B, C open troves that will remain active when price drops to 100
+    await openTrove({ ICR: toBN(dec(220, 16)), extraParams: { from: alice } });
+    await openTrove({ ICR: toBN(dec(230, 16)), extraParams: { from: bob } });
+    await openTrove({ ICR: toBN(dec(240, 16)), extraParams: { from: carol } });
+
+    // D, E, F open troves that will fall below MCR when price drops to 100
+    await openTrove({ ICR: toBN(dec(218, 16)), extraParams: { from: dennis } });
+    await openTrove({ ICR: toBN(dec(216, 16)), extraParams: { from: erin } });
+    await openTrove({ ICR: toBN(dec(210, 16)), extraParams: { from: flyn } });
+
+    // Check list size is 7
+    assert.equal((await sortedTroves.getSize()).toString(), "7");
+
+    // Price drops
+    await priceFeed.setPrice(dec(100, 18));
+    const price = await priceFeed.getPrice();
+
+    const alice_ICR = await troveManager.getCurrentICR(alice, price);
+    const bob_ICR = await troveManager.getCurrentICR(bob, price);
+    const carol_ICR = await troveManager.getCurrentICR(carol, price);
+    const dennis_ICR = await troveManager.getCurrentICR(dennis, price);
+    const erin_ICR = await troveManager.getCurrentICR(erin, price);
+    const flyn_ICR = await troveManager.getCurrentICR(flyn, price);
+
+    // Check A, B, C have ICR above MCR
+    assert.isTrue(alice_ICR.gte(mv._MCR));
+    assert.isTrue(bob_ICR.gte(mv._MCR));
+    assert.isTrue(carol_ICR.gte(mv._MCR));
+
+    // Check D, E, F have ICR below MCR
+    assert.isTrue(dennis_ICR.lte(mv._MCR));
+    assert.isTrue(erin_ICR.lte(mv._MCR));
+    assert.isTrue(flyn_ICR.lte(mv._MCR));
+
+    // Confirm system is not in Recovery Mode
+    assert.isFalse(await th.checkRecoveryMode(contracts));
+
+    //Liquidate sequence
+    await troveManager.batchLiquidateTroves([alice, bob, carol, dennis, erin, flyn, whale]);
+
+    // check list size reduced to 4
+    assert.equal((await sortedTroves.getSize()).toString(), "4");
+
+    // Check Whale and A, B, C remain in the system
+    assert.isTrue(await sortedTroves.contains(whale));
+    assert.isTrue(await sortedTroves.contains(alice));
+    assert.isTrue(await sortedTroves.contains(bob));
+    assert.isTrue(await sortedTroves.contains(carol));
+
+    // Check D, E, F have been removed
+    assert.isFalse(await sortedTroves.contains(dennis));
+    assert.isFalse(await sortedTroves.contains(erin));
+    assert.isFalse(await sortedTroves.contains(flyn));
+  });
+
+  it("batchLiquidateTroves(): does not affect the liquidated user's token balances", async () => {
+    await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale } });
+
+    // D, E, F open troves that will fall below MCR when price drops to 100
+    await openTrove({ ICR: toBN(dec(218, 16)), extraParams: { from: dennis } });
+    await openTrove({ ICR: toBN(dec(216, 16)), extraParams: { from: erin } });
+    await openTrove({ ICR: toBN(dec(210, 16)), extraParams: { from: flyn } });
+
+    const D_balanceBefore = await boldToken.balanceOf(dennis);
+    const E_balanceBefore = await boldToken.balanceOf(erin);
+    const F_balanceBefore = await boldToken.balanceOf(flyn);
+
+    // Check list size is 4
+    assert.equal((await sortedTroves.getSize()).toString(), "4");
+
+    // Price drops
+    await priceFeed.setPrice(dec(100, 18));
+    const price = await priceFeed.getPrice();
+
+    // Confirm system is not in Recovery Mode
+    assert.isFalse(await th.checkRecoveryMode(contracts));
+
+    //Liquidate sequence
+    await troveManager.batchLiquidateTroves([dennis, erin, flyn, whale]);
+
+    // check list size reduced to 1
+    assert.equal((await sortedTroves.getSize()).toString(), "1");
+
+    // Check Whale remains in the system
+    assert.isTrue(await sortedTroves.contains(whale));
+
+    // Check D, E, F have been removed
+    assert.isFalse(await sortedTroves.contains(dennis));
+    assert.isFalse(await sortedTroves.contains(erin));
+    assert.isFalse(await sortedTroves.contains(flyn));
+
+    // Check token balances of users whose troves were liquidated, have not changed
+    assert.equal(
+      (await boldToken.balanceOf(dennis)).toString(),
+      D_balanceBefore
+    );
+    assert.equal((await boldToken.balanceOf(erin)).toString(), E_balanceBefore);
+    assert.equal((await boldToken.balanceOf(flyn)).toString(), F_balanceBefore);
+  });
+
+  it("batchLiquidateTroves(): A liquidation sequence containing Pool offsets increases the TCR", async () => {
+    // Whale provides 500 Bold to SP
+    await openTrove({
+      ICR: toBN(dec(100, 18)),
+      extraBoldAmount: toBN(dec(500, 18)),
+      extraParams: { from: whale },
+    });
+    await stabilityPool.provideToSP(dec(500, 18), {
+      from: whale,
+    });
+
+    await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: alice } });
+    await openTrove({ ICR: toBN(dec(28, 18)), extraParams: { from: bob } });
+    await openTrove({ ICR: toBN(dec(8, 18)), extraParams: { from: carol } });
+    await openTrove({ ICR: toBN(dec(80, 18)), extraParams: { from: dennis } });
+
+    await openTrove({
+      ICR: toBN(dec(199, 16)),
+      extraParams: { from: defaulter_1 },
+    });
+    await openTrove({
+      ICR: toBN(dec(156, 16)),
+      extraParams: { from: defaulter_2 },
+    });
+    await openTrove({
+      ICR: toBN(dec(183, 16)),
+      extraParams: { from: defaulter_3 },
+    });
+    await openTrove({
+      ICR: toBN(dec(166, 16)),
+      extraParams: { from: defaulter_4 },
+    });
+
+    assert.isTrue(await sortedTroves.contains(defaulter_1));
+    assert.isTrue(await sortedTroves.contains(defaulter_2));
+    assert.isTrue(await sortedTroves.contains(defaulter_3));
+    assert.isTrue(await sortedTroves.contains(defaulter_4));
+
+    assert.equal((await sortedTroves.getSize()).toString(), "9");
+
+    // Price drops
+    await priceFeed.setPrice(dec(100, 18));
+
+    const TCR_Before = await th.getTCR(contracts);
+
+    // Check pool has 500 Bold
+    assert.equal(
+      (await stabilityPool.getTotalBoldDeposits()).toString(),
+      dec(500, 18)
+    );
+
+    // Confirm system is not in Recovery Mode
+    assert.isFalse(await th.checkRecoveryMode(contracts));
+
+    // Liquidate troves
+    await troveManager.batchLiquidateTroves([alice, bob, carol, dennis, defaulter_1, defaulter_2, defaulter_3, defaulter_4, whale]);
+
+    // Check pool has been emptied by the liquidations
+    assert.equal((await stabilityPool.getTotalBoldDeposits()).toString(), "0");
+
+    // Check all defaulters have been liquidated
+    assert.isFalse(await sortedTroves.contains(defaulter_1));
+    assert.isFalse(await sortedTroves.contains(defaulter_2));
+    assert.isFalse(await sortedTroves.contains(defaulter_3));
+    assert.isFalse(await sortedTroves.contains(defaulter_4));
+
+    // check system sized reduced to 5 troves
+    assert.equal((await sortedTroves.getSize()).toString(), "5");
+
+    // Check that the liquidation sequence has improved the TCR
+    const TCR_After = await th.getTCR(contracts);
+    assert.isTrue(TCR_After.gte(TCR_Before));
+  });
+
+  it("batchLiquidateTroves(): A liquidation sequence of pure redistributions decreases the TCR, due to gas compensation, but up to 0.5%", async () => {
+    const { collateral: W_coll, totalDebt: W_debt } = await openTrove({
+      ICR: toBN(dec(100, 18)),
+      extraParams: { from: whale },
+    });
+    const { collateral: A_coll, totalDebt: A_debt } = await openTrove({
+      ICR: toBN(dec(4, 18)),
+      extraParams: { from: alice },
+    });
+    const { collateral: B_coll, totalDebt: B_debt } = await openTrove({
+      ICR: toBN(dec(28, 18)),
+      extraParams: { from: bob },
+    });
+    const { collateral: C_coll, totalDebt: C_debt } = await openTrove({
+      ICR: toBN(dec(8, 18)),
+      extraParams: { from: carol },
+    });
+    const { collateral: D_coll, totalDebt: D_debt } = await openTrove({
+      ICR: toBN(dec(80, 18)),
+      extraParams: { from: dennis },
+    });
+
+    const { collateral: d1_coll, totalDebt: d1_debt } = await openTrove({
+      ICR: toBN(dec(199, 16)),
+      extraParams: { from: defaulter_1 },
+    });
+    const { collateral: d2_coll, totalDebt: d2_debt } = await openTrove({
+      ICR: toBN(dec(156, 16)),
+      extraParams: { from: defaulter_2 },
+    });
+    const { collateral: d3_coll, totalDebt: d3_debt } = await openTrove({
+      ICR: toBN(dec(183, 16)),
+      extraParams: { from: defaulter_3 },
+    });
+    const { collateral: d4_coll, totalDebt: d4_debt } = await openTrove({
+      ICR: toBN(dec(166, 16)),
+      extraParams: { from: defaulter_4 },
+    });
+
+    const totalCollNonDefaulters = W_coll.add(A_coll)
+      .add(B_coll)
+      .add(C_coll)
+      .add(D_coll);
+    const totalCollDefaulters = d1_coll.add(d2_coll).add(d3_coll).add(d4_coll);
+    const totalColl = totalCollNonDefaulters.add(totalCollDefaulters);
+    const totalDebt = W_debt.add(A_debt)
+      .add(B_debt)
+      .add(C_debt)
+      .add(D_debt)
+      .add(d1_debt)
+      .add(d2_debt)
+      .add(d3_debt)
+      .add(d4_debt);
+
+    assert.isTrue(await sortedTroves.contains(defaulter_1));
+    assert.isTrue(await sortedTroves.contains(defaulter_2));
+    assert.isTrue(await sortedTroves.contains(defaulter_3));
+    assert.isTrue(await sortedTroves.contains(defaulter_4));
+
+    assert.equal((await sortedTroves.getSize()).toString(), "9");
+
+    // Price drops
+    const price = toBN(dec(100, 18));
+    await priceFeed.setPrice(price);
+
+    const TCR_Before = await th.getTCR(contracts);
+    assert.isAtMost(
+      th.getDifference(TCR_Before, totalColl.mul(price).div(totalDebt)),
+      1000
+    );
+
+    // Check pool is empty before liquidation
+    assert.equal((await stabilityPool.getTotalBoldDeposits()).toString(), "0");
+
+    // Confirm system is not in Recovery Mode
+    assert.isFalse(await th.checkRecoveryMode(contracts));
+
+    // Liquidate
+    await troveManager.batchLiquidateTroves([alice, bob, carol, dennis, defaulter_1, defaulter_2, defaulter_3, defaulter_4, whale]);
+
+    // Check all defaulters have been liquidated
+    assert.isFalse(await sortedTroves.contains(defaulter_1));
+    assert.isFalse(await sortedTroves.contains(defaulter_2));
+    assert.isFalse(await sortedTroves.contains(defaulter_3));
+    assert.isFalse(await sortedTroves.contains(defaulter_4));
+
+    // check system sized reduced to 5 troves
+    assert.equal((await sortedTroves.getSize()).toString(), "5");
+
+    // Check that the liquidation sequence has reduced the TCR
+    const TCR_After = await th.getTCR(contracts);
+    // ((100+1+7+2+20)+(1+2+3+4)*0.995)*100/(2050+50+50+50+50+101+257+328+480)
+    assert.isAtMost(
+      th.getDifference(
+        TCR_After,
+        totalCollNonDefaulters
+          .add(th.applyLiquidationFee(totalCollDefaulters))
+          .mul(price)
+          .div(totalDebt)
+      ),
+      1000
+    );
+    assert.isTrue(TCR_Before.gte(TCR_After));
+    assert.isTrue(TCR_After.gte(TCR_Before.mul(toBN(995)).div(toBN(1000))));
+  });
+
+  it("batchLiquidateTroves(): Liquidating troves with SP deposits correctly impacts their SP deposit and ETH gain", async () => {
+    // Whale provides 400 Bold to the SP
+    const whaleDeposit = toBN(dec(40000, 18));
+    await openTrove({
+      ICR: toBN(dec(100, 18)),
+      extraBoldAmount: whaleDeposit,
+      extraParams: { from: whale },
+    });
+    await stabilityPool.provideToSP(whaleDeposit, {
+      from: whale,
+    });
+
+    const A_deposit = toBN(dec(10000, 18));
+    const B_deposit = toBN(dec(30000, 18));
+    const { collateral: A_coll, totalDebt: A_debt } = await openTrove({
+      ICR: toBN(dec(2, 18)),
+      extraBoldAmount: A_deposit,
+      extraParams: { from: alice },
+    });
+    const { collateral: B_coll, totalDebt: B_debt } = await openTrove({
+      ICR: toBN(dec(2, 18)),
+      extraBoldAmount: B_deposit,
+      extraParams: { from: bob },
+    });
+    const { collateral: C_coll, totalDebt: C_debt } = await openTrove({
+      ICR: toBN(dec(2, 18)),
+      extraParams: { from: carol },
+    });
+
+    const liquidatedColl = A_coll.add(B_coll).add(C_coll);
+    const liquidatedDebt = A_debt.add(B_debt).add(C_debt);
+
+    // A, B provide 100, 300 to the SP
+    await stabilityPool.provideToSP(A_deposit, { from: alice });
+    await stabilityPool.provideToSP(B_deposit, { from: bob });
+
+    assert.equal((await sortedTroves.getSize()).toString(), "4");
+
+    // Price drops
+    await priceFeed.setPrice(dec(100, 18));
+
+    // Check 800 Bold in Pool
+    const totalDeposits = whaleDeposit.add(A_deposit).add(B_deposit);
+    assert.equal(
+      (await stabilityPool.getTotalBoldDeposits()).toString(),
+      totalDeposits
+    );
+
+    // Confirm system is not in Recovery Mode
+    assert.isFalse(await th.checkRecoveryMode(contracts));
+
+    // Liquidate
+    await troveManager.batchLiquidateTroves([alice, bob, carol, whale]);
+
+    // Check all defaulters have been liquidated
+    assert.isFalse(await sortedTroves.contains(alice));
+    assert.isFalse(await sortedTroves.contains(bob));
+    assert.isFalse(await sortedTroves.contains(carol));
+
+    // check system sized reduced to 1 troves
+    assert.equal((await sortedTroves.getSize()).toString(), "1");
+
+    /* Prior to liquidation, SP deposits were:
+    Whale: 400 Bold
+    Alice: 100 Bold
+    Bob:   300 Bold
+    Carol: 0 Bold
+
+    Total Bold in Pool: 800 Bold
+
+    Then, liquidation hits A,B,C: 
+
+    Total liquidated debt = 150 + 350 + 150 = 650 Bold
+    Total liquidated ETH = 1.1 + 3.1 + 1.1 = 5.3 ETH
+
+    whale bold loss: 650 * (400/800) = 325 bold
+    alice bold loss:  650 *(100/800) = 81.25 bold
+    bob bold loss: 650 * (300/800) = 243.75 bold
+
+    whale remaining deposit: (400 - 325) = 75 bold
+    alice remaining deposit: (100 - 81.25) = 18.75 bold
+    bob remaining deposit: (300 - 243.75) = 56.25 bold
+
+    whale eth gain: 5*0.995 * (400/800) = 2.4875 eth
+    alice eth gain: 5*0.995 *(100/800) = 0.621875 eth
+    bob eth gain: 5*0.995 * (300/800) = 1.865625 eth
+
+    Total remaining deposits: 150 Bold
+    Total ETH gain: 4.975 ETH */
+
+    // Check remaining Bold Deposits and ETH gain, for whale and depositors whose troves were liquidated
+    const whale_Deposit_After = await stabilityPool.getCompoundedBoldDeposit(
+      whale
+    );
+    const alice_Deposit_After = await stabilityPool.getCompoundedBoldDeposit(
+      alice
+    );
+    const bob_Deposit_After = await stabilityPool.getCompoundedBoldDeposit(bob);
+
+    const whale_ETHGain = await stabilityPool.getDepositorETHGain(whale);
+    const alice_ETHGain = await stabilityPool.getDepositorETHGain(alice);
+    const bob_ETHGain = await stabilityPool.getDepositorETHGain(bob);
+
+    assert.isAtMost(
+      th.getDifference(
+        whale_Deposit_After,
+        whaleDeposit.sub(liquidatedDebt.mul(whaleDeposit).div(totalDeposits))
+      ),
+      100000
+    );
+    assert.isAtMost(
+      th.getDifference(
+        alice_Deposit_After,
+        A_deposit.sub(liquidatedDebt.mul(A_deposit).div(totalDeposits))
+      ),
+      100000
+    );
+    assert.isAtMost(
+      th.getDifference(
+        bob_Deposit_After,
+        B_deposit.sub(liquidatedDebt.mul(B_deposit).div(totalDeposits))
+      ),
+      100000
+    );
+
+    assert.isAtMost(
+      th.getDifference(
+        whale_ETHGain,
+        th
+          .applyLiquidationFee(liquidatedColl)
+          .mul(whaleDeposit)
+          .div(totalDeposits)
+      ),
+      100000
+    );
+    assert.isAtMost(
+      th.getDifference(
+        alice_ETHGain,
+        th.applyLiquidationFee(liquidatedColl).mul(A_deposit).div(totalDeposits)
+      ),
+      100000
+    );
+    assert.isAtMost(
+      th.getDifference(
+        bob_ETHGain,
+        th.applyLiquidationFee(liquidatedColl).mul(B_deposit).div(totalDeposits)
+      ),
+      100000
+    );
+
+    // Check total remaining deposits and ETH gain in Stability Pool
+    const total_BoldinSP = (
+      await stabilityPool.getTotalBoldDeposits()
+    ).toString();
+    const total_ETHinSP = (await stabilityPool.getETH()).toString();
+
+    assert.isAtMost(
+      th.getDifference(total_BoldinSP, totalDeposits.sub(liquidatedDebt)),
+      1000
+    );
+    assert.isAtMost(
+      th.getDifference(total_ETHinSP, th.applyLiquidationFee(liquidatedColl)),
+      1000
+    );
+  });
+
   // TODO: revisit the relevance of this test since it relies on liquidateTroves(), which now no longer works due to ordering by interest rate.
   // Can we achieve / test the same thing using another liquidation function?
 
