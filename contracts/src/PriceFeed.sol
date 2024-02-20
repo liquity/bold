@@ -18,7 +18,7 @@ import "./Dependencies/LiquityMath.sol";
 * switching oracles based on oracle failures, timeouts, and conditions for returning to the primary
 * Chainlink oracle.
 */
-contract PriceFeed is Ownable, CheckContract, BaseMath, IPriceFeed {
+contract PriceFeed is LiquityMath, Ownable, CheckContract, IPriceFeed {
     string constant public NAME = "PriceFeed";
 
     AggregatorV3Interface public priceAggregator;  // Mainnet Chainlink aggregator
@@ -364,8 +364,8 @@ contract PriceFeed is Ownable, CheckContract, BaseMath, IPriceFeed {
         uint currentScaledPrice = _scaleChainlinkPriceByDigits(uint256(_currentResponse.answer), _currentResponse.decimals);
         uint prevScaledPrice = _scaleChainlinkPriceByDigits(uint256(_prevResponse.answer), _prevResponse.decimals);
 
-        uint minPrice = LiquityMath._min(currentScaledPrice, prevScaledPrice);
-        uint maxPrice = LiquityMath._max(currentScaledPrice, prevScaledPrice);
+        uint minPrice = _min(currentScaledPrice, prevScaledPrice);
+        uint maxPrice = _max(currentScaledPrice, prevScaledPrice);
 
         /*
         * Use the larger price as the denominator:
@@ -423,8 +423,8 @@ contract PriceFeed is Ownable, CheckContract, BaseMath, IPriceFeed {
         uint scaledTellorPrice = _scaleTellorPriceByDigits(_tellorResponse.value);
 
         // Get the relative price difference between the oracles. Use the lower price as the denominator, i.e. the reference for the calculation.
-        uint minPrice = LiquityMath._min(scaledTellorPrice, scaledChainlinkPrice);
-        uint maxPrice = LiquityMath._max(scaledTellorPrice, scaledChainlinkPrice);
+        uint minPrice = _min(scaledTellorPrice, scaledChainlinkPrice);
+        uint maxPrice = _max(scaledTellorPrice, scaledChainlinkPrice);
         uint percentPriceDifference = (maxPrice - minPrice) * DECIMAL_PRECISION / minPrice;
 
         /*

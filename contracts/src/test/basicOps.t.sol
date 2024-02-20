@@ -2,7 +2,7 @@ pragma solidity 0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 
-contract BasicOps is DevTestSetup {
+contract BasicOps is LiquityMath, DevTestSetup {
 
     function testOpenTrove() public {
         priceFeed.setPrice(2000e18);
@@ -79,7 +79,7 @@ contract BasicOps is DevTestSetup {
 
         uint256 expectedColl_A = troveManager.getTroveColl(A) - expectedCollReduction;
         uint256 expectedDebt_A = troveManager.getTroveDebt(A) - redemptionAmount;
-        uint256 expectedNICR = LiquityMath._computeNominalCR(expectedColl_A,expectedDebt_A); 
+        uint256 expectedNICR = _computeNominalCR(expectedColl_A,expectedDebt_A);
       
         // B redeems 1k BOLD
         troveManager.redeemCollateral(

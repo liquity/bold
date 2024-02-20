@@ -306,7 +306,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint depositorETHGain = getDepositorETHGain(msg.sender);
 
         uint compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
-        uint BoldtoWithdraw = LiquityMath._min(_amount, compoundedBoldDeposit);
+        uint BoldtoWithdraw = _min(_amount, compoundedBoldDeposit);
         uint boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
 
         _sendBoldToDepositor(msg.sender, BoldtoWithdraw);

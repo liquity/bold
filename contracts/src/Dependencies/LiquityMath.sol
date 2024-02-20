@@ -2,10 +2,10 @@
 
 pragma solidity 0.8.18;
 
+import "./BaseMath.sol";
 
-library LiquityMath {
-    uint internal constant DECIMAL_PRECISION = 1e18;
 
+contract LiquityMath is BaseMath {
     /* Precision for Nominal ICR (independent of price). Rationale for the value:
      *
      * - Making it “too high” could lead to overflows.

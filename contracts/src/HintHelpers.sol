@@ -93,7 +93,7 @@ contract HintHelpers is LiquityBase, Ownable, CheckContract {
 
             if (netBoldDebt > remainingBold) {
                 if (netBoldDebt > MIN_NET_DEBT) {
-                    uint maxRedeemableBold = LiquityMath._min(remainingBold, netBoldDebt - MIN_NET_DEBT);
+                    uint maxRedeemableBold = _min(remainingBold, netBoldDebt - MIN_NET_DEBT);
 
                     uint ETH = troveManager.getTroveColl(currentTroveuser)
                         + troveManager.getPendingETHReward(currentTroveuser);
@@ -102,7 +102,7 @@ contract HintHelpers is LiquityBase, Ownable, CheckContract {
                     uint newDebt = netBoldDebt - maxRedeemableBold;
 
                     uint compositeDebt = _getCompositeDebt(newDebt);
-                    partialRedemptionHintNICR = LiquityMath._computeNominalCR(newColl, compositeDebt);
+                    partialRedemptionHintNICR = _computeNominalCR(newColl, compositeDebt);
 
                     remainingBold = remainingBold - maxRedeemableBold;
                 }
@@ -138,7 +138,7 @@ contract HintHelpers is LiquityBase, Ownable, CheckContract {
         }
 
         hintAddress = sortedTroves.getLast();
-        diff = LiquityMath._getAbsoluteDifference(_CR, troveManager.getNominalICR(hintAddress));
+        diff = _getAbsoluteDifference(_CR, troveManager.getNominalICR(hintAddress));
         latestRandomSeed = _inputRandomSeed;
 
         uint i = 1;
@@ -151,7 +151,7 @@ contract HintHelpers is LiquityBase, Ownable, CheckContract {
             uint currentNICR = troveManager.getNominalICR(currentAddress);
 
             // check if abs(current - CR) > abs(closest - CR), and update closest if current is closer
-            uint currentDiff = LiquityMath._getAbsoluteDifference(currentNICR, _CR);
+            uint currentDiff = _getAbsoluteDifference(currentNICR, _CR);
 
             if (currentDiff < diff) {
                 diff = currentDiff;
@@ -162,10 +162,10 @@ contract HintHelpers is LiquityBase, Ownable, CheckContract {
     }
 
     function computeNominalCR(uint _coll, uint _debt) external pure returns (uint) {
-        return LiquityMath._computeNominalCR(_coll, _debt);
+        return _computeNominalCR(_coll, _debt);
     }
 
     function computeCR(uint _coll, uint _debt, uint _price) external pure returns (uint) {
-        return LiquityMath._computeCR(_coll, _debt, _price);
+        return _computeCR(_coll, _debt, _price);
     }
 }
