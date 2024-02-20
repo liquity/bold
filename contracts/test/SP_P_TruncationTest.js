@@ -150,6 +150,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
         await getOpenTroveBoldAmount(dec(100000, 18)),
         whale,
         whale,
+        0,
         { from: whale, value: dec(100000, "ether") }
       );
       await boldToken.transfer(A, dec(50000, 18), { from: whale });
@@ -161,6 +162,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
           await getBoldAmountForDesiredDebt(2000),
           account,
           account,
+          0,
           { from: account, value: dec(15, "ether") }
         );
         assert.isTrue(
@@ -245,6 +247,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
         await getOpenTroveBoldAmount(dec(100000, 18)),
         whale,
         whale,
+        0,
         { from: whale, value: dec(100000, "ether") }
       );
       await boldToken.transfer(A, dec(50000, 18), { from: whale });
@@ -256,6 +259,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
           await getBoldAmountForDesiredDebt(2000),
           account,
           account,
+          0,
           { from: account, value: dec(15, "ether") }
         );
         assert.isTrue(
@@ -351,6 +355,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
         await getOpenTroveBoldAmount(dec(100000, 18)),
         whale,
         whale,
+        0,
         { from: whale, value: dec(100000, "ether") }
       );
       await boldToken.transfer(A, dec(50000, 18), { from: whale });
@@ -362,6 +367,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
           await getBoldAmountForDesiredDebt(2000),
           account,
           account,
+          0,
           { from: account, value: dec(15, "ether") }
         );
         assert.isTrue(
@@ -459,6 +465,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
         await getOpenTroveBoldAmount(dec(100000, 18)),
         whale,
         whale,
+        0,
         { from: whale, value: dec(100000, "ether") }
       );
       await boldToken.transfer(A, dec(50000, 18), { from: whale });
@@ -470,6 +477,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
           await getBoldAmountForDesiredDebt(2000),
           account,
           account,
+          0,
           { from: account, value: dec(15, "ether") }
         );
         assert.isTrue(
@@ -576,6 +584,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
         await getOpenTroveBoldAmount(dec(100000, 18)),
         whale,
         whale,
+        0,
         { from: whale, value: dec(100000, "ether") }
       );
       await boldToken.transfer(A, dec(50000, 18), { from: whale });
@@ -587,6 +596,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
           await getBoldAmountForDesiredDebt(2000),
           account,
           account,
+          0,
           { from: account, value: dec(15, "ether") }
         );
         assert.isTrue(

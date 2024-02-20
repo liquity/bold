@@ -12,32 +12,23 @@ import "./Dependencies/CheckContract.sol";
 * A sorted doubly linked list with nodes sorted in descending order.
 *
 * Nodes map to active Troves in the system - the ID property is the address of a Trove owner.
-* Nodes are ordered according to their current nominal individual collateral ratio (NICR),
-* which is like the ICR but without the price, i.e., just collateral / debt.
+* Nodes are ordered according to the borrower's chosen annual interest rate.
 *
 * The list optionally accepts insert position hints.
 *
-* NICRs are computed dynamically at runtime, and not stored on the Node. This is because NICRs of active Troves
-* change dynamically as liquidation events occur.
+* The annual interest rate is stored on the Trove struct in TroveManager, not directly on the Node.
 *
-* The list relies on the fact that liquidation events preserve ordering: a liquidation decreases the NICRs of all active Troves,
-* but maintains their order. A node inserted based on current NICR will maintain the correct position,
-* relative to it's peers, as rewards accumulate, as long as it's raw collateral and debt have not changed.
-* Thus, Nodes remain sorted by current NICR.
-*
-* Nodes need only be re-inserted upon a Trove operation - when the owner adds or removes collateral or debt
-* to their position.
+* A node need only be re-inserted when the borrower adjusts their interest rate. Interest rate order is preserved 
+* under all other system operations.
 *
 * The list is a modification of the following audited SortedDoublyLinkedList:
 * https://github.com/livepeer/protocol/blob/master/contracts/libraries/SortedDoublyLL.sol
 *
-*
-* Changes made in the Liquity implementation:
+* Changes made in the Bold implementation:
 *
 * - Keys have been removed from nodes
 *
-* - Ordering checks for insertion are performed by comparing an NICR argument to the current NICR, calculated at runtime.
-*   The list relies on the property that ordering by ICR is maintained as the ETH:USD price varies.
+* - Ordering checks for insertion are performed by comparing an interest rate argument to the Trove's current interest rate.
 *
 * - Public functions with parameters have been made internal to save gas, and given an external wrapper function for external access
 */
@@ -46,7 +37,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
 
     event TroveManagerAddressChanged(address _troveManagerAddress);
     event BorrowerOperationsAddressChanged(address _borrowerOperationsAddress);
-    event NodeAdded(address _id, uint _NICR);
+    event NodeAdded(address _id, uint _annualInterestRate);
     event NodeRemoved(address _id);
 
     address public borrowerOperationsAddress;
@@ -56,14 +47,14 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     // Information for a node in the list
     struct Node {
         bool exists;
-        address nextId;                  // Id of next node (smaller NICR) in the list
-        address prevId;                  // Id of previous node (larger NICR) in the list
+        address nextId;                  // Id of next node (smaller interest rate) in the list
+        address prevId;                  // Id of previous node (larger interest rate) in the list
     }
 
     // Information for the list
     struct Data {
-        address head;                        // Head of the list. Also the node in the list with the largest NICR
-        address tail;                        // Tail of the list. Also the node in the list with the smallest NICR
+        address head;                        // Head of the list. Also the node in the list with the largest interest rate
+        address tail;                        // Tail of the list. Also the node in the list with the smallest interest rate
         uint256 maxSize;                     // Maximum size of the list
         uint256 size;                        // Current size of the list
         mapping (address => Node) nodes;     // Track the corresponding ids for each node in the list
@@ -92,35 +83,33 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     /*
      * @dev Add a node to the list
      * @param _id Node's id
-     * @param _NICR Node's NICR
+     * @param _annualInterestRate Node's annual interest rate
      * @param _prevId Id of previous node for the insert position
      * @param _nextId Id of next node for the insert position
      */
 
-    function insert (address _id, uint256 _NICR, address _prevId, address _nextId) external override {
+    function insert (address _id, uint256 _annualInterestRate, address _prevId, address _nextId) external override {
         ITroveManager troveManagerCached = troveManager;
 
         _requireCallerIsBOorTroveM(troveManagerCached);
-        _insert(troveManagerCached, _id, _NICR, _prevId, _nextId);
+        _insert(troveManagerCached, _id, _annualInterestRate, _prevId, _nextId);
     }
 
-    function _insert(ITroveManager _troveManager, address _id, uint256 _NICR, address _prevId, address _nextId) internal {
+    function _insert(ITroveManager _troveManager, address _id, uint256 _annualInterestRate, address _prevId, address _nextId) internal {
         // List must not be full
         require(!isFull(), "SortedTroves: List is full");
         // List must not already contain node
         require(!contains(_id), "SortedTroves: List already contains the node");
         // Node id must not be null
         require(_id != address(0), "SortedTroves: Id cannot be zero");
-        // NICR must be non-zero
-        require(_NICR > 0, "SortedTroves: NICR must be positive");
 
         address prevId = _prevId;
         address nextId = _nextId;
 
-        if (!_validInsertPosition(_troveManager, _NICR, prevId, nextId)) {
+        if (!_validInsertPosition(_troveManager, _annualInterestRate, prevId, nextId)) {
             // Sender's hint was not a valid insert position
             // Use sender's hint to find a valid insert position
-            (prevId, nextId) = _findInsertPosition(_troveManager, _NICR, prevId, nextId);
+            (prevId, nextId) = _findInsertPosition(_troveManager, _annualInterestRate, prevId, nextId);
         }
 
          data.nodes[_id].exists = true;
@@ -148,7 +137,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         }
 
         data.size = data.size + 1;
-        emit NodeAdded(_id, _NICR);
+        emit NodeAdded(_id, _annualInterestRate);
     }
 
     function remove(address _id) external override {
@@ -198,25 +187,23 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     }
 
     /*
-     * @dev Re-insert the node at a new position, based on its new NICR
+     * @dev Re-insert the node at a new position, based on its new annual interest rate
      * @param _id Node's id
-     * @param _newNICR Node's new NICR
+     * @param _newAnnualInterestRate Node's new annual interest rate
      * @param _prevId Id of previous node for the new insert position
      * @param _nextId Id of next node for the new insert position
      */
-    function reInsert(address _id, uint256 _newNICR, address _prevId, address _nextId) external override {
+    function reInsert(address _id, uint256 _newAnnualInterestRate, address _prevId, address _nextId) external override {
         ITroveManager troveManagerCached = troveManager;
 
         _requireCallerIsBOorTroveM(troveManagerCached);
         // List must contain the node
         require(contains(_id), "SortedTroves: List does not contain the id");
-        // NICR must be non-zero
-        require(_newNICR > 0, "SortedTroves: NICR must be positive");
 
         // Remove node from the list
         _remove(_id);
 
-        _insert(troveManagerCached, _id, _newNICR, _prevId, _nextId);
+        _insert(troveManagerCached, _id, _newAnnualInterestRate, _prevId, _nextId);
     }
 
     /*
@@ -255,21 +242,21 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     }
 
     /*
-     * @dev Returns the first node in the list (node with the largest NICR)
+     * @dev Returns the first node in the list (node with the largest annual interest rate)
      */
     function getFirst() external view override returns (address) {
         return data.head;
     }
 
     /*
-     * @dev Returns the last node in the list (node with the smallest NICR)
+     * @dev Returns the last node in the list (node with the smallest annual interest rate)
      */
     function getLast() external view override returns (address) {
         return data.tail;
     }
 
     /*
-     * @dev Returns the next node (with a smaller NICR) in the list for a given node
+     * @dev Returns the next node (with a smaller interest rate) in the list for a given node
      * @param _id Node's id
      */
     function getNext(address _id) external view override returns (address) {
@@ -277,7 +264,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     }
 
     /*
-     * @dev Returns the previous node (with a larger NICR) in the list for a given node
+     * @dev Returns the previous node (with a larger interest rate) in the list for a given node
      * @param _id Node's id
      */
     function getPrev(address _id) external view override returns (address) {
@@ -285,42 +272,42 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     }
 
     /*
-     * @dev Check if a pair of nodes is a valid insertion point for a new node with the given NICR
-     * @param _NICR Node's NICR
+     * @dev Check if a pair of nodes is a valid insertion point for a new node with the given interest rate
+     * @param _annualInterestRate Node's annual interest rate
      * @param _prevId Id of previous node for the insert position
      * @param _nextId Id of next node for the insert position
      */
-    function validInsertPosition(uint256 _NICR, address _prevId, address _nextId) external view override returns (bool) {
-        return _validInsertPosition(troveManager, _NICR, _prevId, _nextId);
+    function validInsertPosition(uint256 _annualInterestRate, address _prevId, address _nextId) external view override returns (bool) {
+        return _validInsertPosition(troveManager, _annualInterestRate, _prevId, _nextId);
     }
 
-    function _validInsertPosition(ITroveManager _troveManager, uint256 _NICR, address _prevId, address _nextId) internal view returns (bool) {
+    function _validInsertPosition(ITroveManager _troveManager, uint256 _annualInterestRate, address _prevId, address _nextId) internal view returns (bool) {
         if (_prevId == address(0) && _nextId == address(0)) {
             // `(null, null)` is a valid insert position if the list is empty
             return isEmpty();
         } else if (_prevId == address(0)) {
             // `(null, _nextId)` is a valid insert position if `_nextId` is the head of the list
-            return data.head == _nextId && _NICR >= _troveManager.getNominalICR(_nextId);
+            return data.head == _nextId && _annualInterestRate >= _troveManager.getTroveAnnualInterestRate(_nextId);
         } else if (_nextId == address(0)) {
             // `(_prevId, null)` is a valid insert position if `_prevId` is the tail of the list
-            return data.tail == _prevId && _NICR <= _troveManager.getNominalICR(_prevId);
+            return data.tail == _prevId && _annualInterestRate <= _troveManager.getTroveAnnualInterestRate(_prevId);
         } else {
-            // `(_prevId, _nextId)` is a valid insert position if they are adjacent nodes and `_NICR` falls between the two nodes' NICRs
+            // `(_prevId, _nextId)` is a valid insert position if they are adjacent nodes and `_annualInterestRate` falls between the two nodes' interest rates
             return data.nodes[_prevId].nextId == _nextId &&
-                   _troveManager.getNominalICR(_prevId) >= _NICR &&
-                   _NICR >= _troveManager.getNominalICR(_nextId);
+                   _troveManager.getTroveAnnualInterestRate(_prevId) >= _annualInterestRate &&
+                   _annualInterestRate >= _troveManager.getTroveAnnualInterestRate(_nextId);
         }
     }
 
     /*
-     * @dev Descend the list (larger NICRs to smaller NICRs) to find a valid insert position
+     * @dev Descend the list (larger interest rates to smaller interest rates) to find a valid insert position
      * @param _troveManager TroveManager contract, passed in as param to save SLOAD’s
-     * @param _NICR Node's NICR
+     * @param _annualInterestRate Node's annual interest rate
      * @param _startId Id of node to start descending the list from
      */
-    function _descendList(ITroveManager _troveManager, uint256 _NICR, address _startId) internal view returns (address, address) {
+    function _descendList(ITroveManager _troveManager, uint256 _annualInterestRate, address _startId) internal view returns (address, address) {
         // If `_startId` is the head, check if the insert position is before the head
-        if (data.head == _startId && _NICR >= _troveManager.getNominalICR(_startId)) {
+        if (data.head == _startId && _annualInterestRate >= _troveManager.getTroveAnnualInterestRate(_startId)) {
             return (address(0), _startId);
         }
 
@@ -328,7 +315,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         address nextId = data.nodes[prevId].nextId;
 
         // Descend the list until we reach the end or until we find a valid insert position
-        while (prevId != address(0) && !_validInsertPosition(_troveManager, _NICR, prevId, nextId)) {
+        while (prevId != address(0) && !_validInsertPosition(_troveManager, _annualInterestRate, prevId, nextId)) {
             prevId = data.nodes[prevId].nextId;
             nextId = data.nodes[prevId].nextId;
         }
@@ -337,14 +324,14 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     }
 
     /*
-     * @dev Ascend the list (smaller NICRs to larger NICRs) to find a valid insert position
+     * @dev Ascend the list (smaller interest rates to larger interest rates) to find a valid insert position
      * @param _troveManager TroveManager contract, passed in as param to save SLOAD’s
-     * @param _NICR Node's NICR
+     * @param _annualInterestRate Node's annual interest rate
      * @param _startId Id of node to start ascending the list from
      */
-    function _ascendList(ITroveManager _troveManager, uint256 _NICR, address _startId) internal view returns (address, address) {
+    function _ascendList(ITroveManager _troveManager, uint256 _annualInterestRate, address _startId) internal view returns (address, address) {
         // If `_startId` is the tail, check if the insert position is after the tail
-        if (data.tail == _startId && _NICR <= _troveManager.getNominalICR(_startId)) {
+        if (data.tail == _startId && _annualInterestRate <= _troveManager.getTroveAnnualInterestRate(_startId)) {
             return (_startId, address(0));
         }
 
@@ -352,7 +339,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         address prevId = data.nodes[nextId].prevId;
 
         // Ascend the list until we reach the end or until we find a valid insertion point
-        while (nextId != address(0) && !_validInsertPosition(_troveManager, _NICR, prevId, nextId)) {
+        while (nextId != address(0) && !_validInsertPosition(_troveManager, _annualInterestRate, prevId, nextId)) {
             nextId = data.nodes[nextId].prevId;
             prevId = data.nodes[nextId].prevId;
         }
@@ -361,45 +348,45 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     }
 
     /*
-     * @dev Find the insert position for a new node with the given NICR
-     * @param _NICR Node's NICR
+     * @dev Find the insert position for a new node with the given interest rate
+     * @param _annualInterestRate Node's annual interest rate
      * @param _prevId Id of previous node for the insert position
      * @param _nextId Id of next node for the insert position
      */
-    function findInsertPosition(uint256 _NICR, address _prevId, address _nextId) external view override returns (address, address) {
-        return _findInsertPosition(troveManager, _NICR, _prevId, _nextId);
+    function findInsertPosition(uint256 _annualInterestRate, address _prevId, address _nextId) external view override returns (address, address) {
+        return _findInsertPosition(troveManager, _annualInterestRate, _prevId, _nextId);
     }
 
-    function _findInsertPosition(ITroveManager _troveManager, uint256 _NICR, address _prevId, address _nextId) internal view returns (address, address) {
+    function _findInsertPosition(ITroveManager _troveManager, uint256 _annualInterestRate, address _prevId, address _nextId) internal view returns (address, address) {
         address prevId = _prevId;
         address nextId = _nextId;
 
         if (prevId != address(0)) {
-            if (!contains(prevId) || _NICR > _troveManager.getNominalICR(prevId)) {
-                // `prevId` does not exist anymore or now has a smaller NICR than the given NICR
+            if (!contains(prevId) || _annualInterestRate > _troveManager.getTroveAnnualInterestRate(prevId)) {
+                // `prevId` does not exist anymore or now has a smaller interest rate than the given interest rate
                 prevId = address(0);
             }
         }
 
         if (nextId != address(0)) {
-            if (!contains(nextId) || _NICR < _troveManager.getNominalICR(nextId)) {
-                // `nextId` does not exist anymore or now has a larger NICR than the given NICR
+            if (!contains(nextId) || _annualInterestRate < _troveManager.getTroveAnnualInterestRate(nextId)) {
+                // `nextId` does not exist anymore or now has a larger interest rate than the given interest rate
                 nextId = address(0);
             }
         }
 
         if (prevId == address(0) && nextId == address(0)) {
             // No hint - descend list starting from head
-            return _descendList(_troveManager, _NICR, data.head);
+            return _descendList(_troveManager, _annualInterestRate, data.head);
         } else if (prevId == address(0)) {
             // No `prevId` for hint - ascend list starting from `nextId`
-            return _ascendList(_troveManager, _NICR, nextId);
+            return _ascendList(_troveManager, _annualInterestRate, nextId);
         } else if (nextId == address(0)) {
             // No `nextId` for hint - descend list starting from `prevId`
-            return _descendList(_troveManager, _NICR, prevId);
+            return _descendList(_troveManager, _annualInterestRate, prevId);
         } else {
             // Descend list starting from `prevId`
-            return _descendList(_troveManager, _NICR, prevId);
+            return _descendList(_troveManager, _annualInterestRate, prevId);
         }
     }
 

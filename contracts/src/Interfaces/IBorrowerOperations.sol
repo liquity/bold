@@ -24,23 +24,25 @@ interface IBorrowerOperations is ILiquityBase {
         address _boldTokenAddress
     ) external;
 
-    function openTrove(uint _maxFee, uint _boldAmount, address _upperHint, address _lowerHint) external payable;
+    function openTrove(uint _maxFee, uint _boldAmount, address _upperHint, address _lowerHint, uint256 _annualInterestRate) external payable;
 
-    function addColl(address _upperHint, address _lowerHint) external payable;
+    function addColl() external payable;
 
-    function moveETHGainToTrove(address _user, address _upperHint, address _lowerHint) external payable;
+    function moveETHGainToTrove(address _user) external payable;
 
-    function withdrawColl(uint _amount, address _upperHint, address _lowerHint) external;
+    function withdrawColl(uint _amount) external;
 
-    function withdrawBold(uint _maxFee, uint _amount, address _upperHint, address _lowerHint) external;
+    function withdrawBold(uint _maxFee, uint _amount) external;
 
-    function repayBold(uint _amount, address _upperHint, address _lowerHint) external;
+    function repayBold(uint _amount) external;
 
     function closeTrove() external;
 
-    function adjustTrove(uint _maxFee, uint _collWithdrawal, uint _debtChange, bool isDebtIncrease, address _upperHint, address _lowerHint) external payable;
+    function adjustTrove(uint _maxFee, uint _collWithdrawal, uint _debtChange, bool isDebtIncrease) external payable;
 
     function claimCollateral() external;
 
     function getCompositeDebt(uint _debt) external pure returns (uint);
+
+    function adjustTroveInterestRate(uint _newAnnualInterestRate, address _upperHint, address _lowerHint) external;
 }

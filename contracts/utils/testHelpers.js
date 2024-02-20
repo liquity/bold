@@ -336,9 +336,7 @@ class TestHelper {
    * So, it adds the gas compensation and the borrowing fee
    */
   static async getOpenTroveTotalDebt(contracts, boldAmount) {
-    const fee = await contracts.troveManager.getBorrowingFee(boldAmount);
-    const compositeDebt = await this.getCompositeDebt(contracts, boldAmount);
-    return compositeDebt.add(fee);
+    return(await this.getCompositeDebt(contracts, boldAmount));
   }
 
   /*
@@ -354,19 +352,15 @@ class TestHelper {
   }
 
   // Subtracts the borrowing fee
+  // TODO: remove this, since we won't use the old borrow fee scheme
   static async getNetBorrowingAmount(contracts, debtWithFee) {
-    const borrowingRate =
-      await contracts.troveManager.getBorrowingRateWithDecay();
-
-    return this.toBN(debtWithFee)
-      .mul(MoneyValues._1e18BN)
-      .div(MoneyValues._1e18BN.add(borrowingRate));
+    return this.toBN(debtWithFee);
   }
 
   // Adds the borrowing fee
+  // TODO: remove this, since we won't use the old borrow fee scheme
   static async getAmountWithBorrowingFee(contracts, boldAmount) {
-    const fee = await contracts.troveManager.getBorrowingFee(boldAmount);
-    return boldAmount.add(fee);
+    return boldAmount;
   }
 
   // Adds the redemption fee
@@ -851,7 +845,7 @@ class TestHelper {
       extraBoldAmount = this.toBN(extraBoldAmount);
     if (!upperHint) upperHint = this.ZERO_ADDRESS;
     if (!lowerHint) lowerHint = this.ZERO_ADDRESS;
-
+    if (!extraParams.annualInterestRate) extraParams.annualInterestRate = 0;
 
     const MIN_DEBT = (
       await this.getNetBorrowingAmount(
@@ -885,6 +879,7 @@ class TestHelper {
       //extraParams.value, // TODO: this is the stETH value - ensure its still working
       upperHint,
       lowerHint,
+      extraParams.annualInterestRate,
       {
         from: extraParams.from,
         value: extraParams.value,
@@ -903,11 +898,9 @@ class TestHelper {
 
   static async withdrawBold(
     contracts,
-    { maxFeePercentage, boldAmount, ICR, upperHint, lowerHint, extraParams }
+    { maxFeePercentage, boldAmount, ICR, extraParams }
   ) {
     if (!maxFeePercentage) maxFeePercentage = this._100pct;
-    if (!upperHint) upperHint = this.ZERO_ADDRESS;
-    if (!lowerHint) lowerHint = this.ZERO_ADDRESS;
 
     assert(
       !(boldAmount && ICR) && (boldAmount || ICR),
@@ -941,8 +934,6 @@ class TestHelper {
     await contracts.borrowerOperations.withdrawBold(
       maxFeePercentage,
       boldAmount,
-      upperHint,
-      lowerHint,
       extraParams
     );
 

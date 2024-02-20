@@ -306,22 +306,22 @@ contract("SortedTroves", async (accounts) => {
     it("Finds the correct insert position given two addresses that loosely bound the correct position", async () => {
       await priceFeed.setPrice(dec(100, 18));
 
-      // NICR sorted in descending order
+      //  Inserted in descending order of interest rate
       await openTrove({
         ICR: toBN(dec(500, 18)),
         extraParams: { from: whale },
       });
-      await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: A } });
-      await openTrove({ ICR: toBN(dec(5, 18)), extraParams: { from: B } });
-      await openTrove({ ICR: toBN(dec(250, 16)), extraParams: { from: C } });
-      await openTrove({ ICR: toBN(dec(166, 16)), extraParams: { from: D } });
-      await openTrove({ ICR: toBN(dec(125, 16)), extraParams: { from: E } });
+      await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: A, annualInterestRate: toBN(dec(1,18))}}); // 100% interest rate
+      await openTrove({ ICR: toBN(dec(5, 18)), extraParams: { from: B , annualInterestRate: toBN(dec(75, 16))}}); // 75% interest rate
+      await openTrove({ ICR: toBN(dec(250, 16)), extraParams: { from: C, annualInterestRate: toBN(dec(5, 17))}}); // 50% interest rate
+      await openTrove({ ICR: toBN(dec(166, 16)), extraParams: { from: D, annualInterestRate: toBN(dec(25,16))}}); // 25% interest rate
+      await openTrove({ ICR: toBN(dec(125, 16)), extraParams: { from: E, annualInterestRate: toBN(dec(1, 16))}}); // 1% interest rate
 
-      // Expect a trove with NICR 300% to be inserted between B and C
-      const targetNICR = dec(3, 18);
+      // Expect a trove with 60% interest rate to be inserted between B and C
+      const targetAnnualIRate = toBN(dec(60, 16));
 
       // Pass addresses that loosely bound the right postiion
-      const hints = await sortedTroves.findInsertPosition(targetNICR, A, E);
+      const hints = await sortedTroves.findInsertPosition(targetAnnualIRate, A, E);
 
       // Expect the exact correct insert hints have been returned
       assert.equal(hints[0], B);
@@ -329,7 +329,7 @@ contract("SortedTroves", async (accounts) => {
 
       // The price doesn’t affect the hints
       await priceFeed.setPrice(dec(500, 18));
-      const hints2 = await sortedTroves.findInsertPosition(targetNICR, A, E);
+      const hints2 = await sortedTroves.findInsertPosition(targetAnnualIRate, A, E);
 
       // Expect the exact correct insert hints have been returned
       assert.equal(hints2[0], B);
@@ -338,7 +338,7 @@ contract("SortedTroves", async (accounts) => {
   });
 
   describe("SortedTroves with mock dependencies", () => {
-    let sortedTrovesTester;
+    let sortedTrovesTester; 
 
     beforeEach(async () => {
       sortedTroves = await SortedTroves.new();
@@ -352,6 +352,7 @@ contract("SortedTroves", async (accounts) => {
         await th.assertRevert(
           sortedTroves.setParams(
             0,
+            // The SortedTrovesTester is being used here as both a wrapper for SortedTroves and a mock TroveManager.
             sortedTrovesTester.address,
             sortedTrovesTester.address
           ),
@@ -393,13 +394,6 @@ contract("SortedTroves", async (accounts) => {
         );
       });
 
-      it("insert(): fails if NICR is zero", async () => {
-        await th.assertRevert(
-          sortedTrovesTester.insert(alice, 0, alice, alice),
-          "SortedTroves: NICR must be positive"
-        );
-      });
-
       it("remove(): fails if id is not in the list", async () => {
         await th.assertRevert(
           sortedTrovesTester.remove(alice),
@@ -411,22 +405,6 @@ contract("SortedTroves", async (accounts) => {
         await th.assertRevert(
           sortedTrovesTester.reInsert(alice, 1, alice, alice),
           "SortedTroves: List does not contain the id"
-        );
-      });
-
-      it("reInsert(): fails if new NICR is zero", async () => {
-        await sortedTrovesTester.insert(alice, 1, alice, alice);
-        assert.isTrue(
-          await sortedTroves.contains(alice),
-          "list should contain element"
-        );
-        await th.assertRevert(
-          sortedTrovesTester.reInsert(alice, 0, alice, alice),
-          "SortedTroves: NICR must be positive"
-        );
-        assert.isTrue(
-          await sortedTroves.contains(alice),
-          "list should contain element"
         );
       });
 
