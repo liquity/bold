@@ -8,6 +8,9 @@ const accountsList = accounts.accountsList;
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
+  paths: {
+    sources: "./src",
+  },
   solidity: {
     compilers: [
       {
