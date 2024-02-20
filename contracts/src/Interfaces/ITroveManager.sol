@@ -37,8 +37,6 @@ interface ITroveManager is ILiquityBase {
 
     function liquidate(address _borrower) external;
 
-    function liquidateTroves(uint _n) external;
-
     function batchLiquidateTroves(address[] calldata _troveArray) external;
 
     function redeemCollateral(
@@ -52,8 +50,6 @@ interface ITroveManager is ILiquityBase {
     ) external; 
 
     function updateStakeAndTotalStakes(address _borrower) external returns (uint);
-
-    function updateTroveRewardSnapshots(address _borrower) external;
 
     function addTroveOwnerToArray(address _borrower) external returns (uint index);
 
@@ -81,14 +77,6 @@ interface ITroveManager is ILiquityBase {
 
     function getRedemptionFeeWithDecay(uint _ETHDrawn) external view returns (uint);
 
-    function getBorrowingRate() external view returns (uint);
-    function getBorrowingRateWithDecay() external view returns (uint);
-
-    function getBorrowingFee(uint BoldDebt) external view returns (uint);
-    function getBorrowingFeeWithDecay(uint _boldDebt) external view returns (uint);
-
-    function decayBaseRateFromBorrowing() external;
-
     function getTroveStatus(address _borrower) external view returns (uint);
     
     function getTroveStake(address _borrower) external view returns (uint);
@@ -97,7 +85,9 @@ interface ITroveManager is ILiquityBase {
 
     function getTroveColl(address _borrower) external view returns (uint);
 
-    function setTroveStatus(address _borrower, uint num) external;
+    function getTroveAnnualInterestRate(address _borrower) external view returns (uint);
+
+    function setTrovePropertiesOnOpen(address _borrower, uint256 _coll, uint256 _debt, uint256 _annualInterestRate) external returns (uint256);
 
     function increaseTroveColl(address _borrower, uint _collIncrease) external returns (uint);
 
@@ -106,6 +96,8 @@ interface ITroveManager is ILiquityBase {
     function increaseTroveDebt(address _borrower, uint _debtIncrease) external returns (uint); 
 
     function decreaseTroveDebt(address _borrower, uint _collDecrease) external returns (uint); 
+
+    function changeAnnualInterestRate(address _borrower, uint256 _newAnnualInterestRate) external;
 
     function getTCR(uint _price) external view returns (uint);
 

@@ -69,7 +69,7 @@ interface IStabilityPool is ILiquityBase {
     * - Leaves their compounded deposit in the Stability Pool
     * - Takes new snapshots of accumulators P and S 
     */
-    function withdrawETHGainToTrove(address _upperHint, address _lowerHint) external;
+    function withdrawETHGainToTrove() external;
 
     /*
      * Initial checks:

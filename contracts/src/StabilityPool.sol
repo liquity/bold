@@ -326,7 +326,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * - Leaves their compounded deposit in the Stability Pool
     * - Takes new snapshots of accumulators P and S 
     */
-    function withdrawETHGainToTrove(address _upperHint, address _lowerHint) external override {
+    function withdrawETHGainToTrove() external override {
         uint initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
         _requireUserHasTrove(msg.sender);
@@ -349,7 +349,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         emit StabilityPoolETHBalanceUpdated(ETH);
         emit EtherSent(msg.sender, depositorETHGain);
 
-        borrowerOperations.moveETHGainToTrove{ value: depositorETHGain }(msg.sender, _upperHint, _lowerHint);
+        borrowerOperations.moveETHGainToTrove{ value: depositorETHGain }(msg.sender);
     }
 
     // --- Liquidation functions ---
