@@ -138,7 +138,7 @@ jobs:
         run: yarn install --frozen-lockfile
 
       - name: harhdat coverage
-        run: yarn coverage
+        run: mv foundry.toml _foundry.toml && yarn coverage && mv _foundry.toml foundry.toml
         continue-on-error: true
         env:
           NODE_OPTIONS: --max-old-space-size=4096
