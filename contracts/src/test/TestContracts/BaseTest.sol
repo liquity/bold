@@ -65,7 +65,7 @@ contract BaseTest is Test {
     public 
     {
         vm.startPrank(_account);
-        borrowerOperations.openTrove{value: _coll}(1e18, _boldAmount, ZERO_ADDRESS, ZERO_ADDRESS, _annualInterestRate);
+        borrowerOperations.openTrove(1e18, _coll, _boldAmount, ZERO_ADDRESS, ZERO_ADDRESS, _annualInterestRate);
         vm.stopPrank();
     }
 
@@ -81,11 +81,7 @@ contract BaseTest is Test {
     public 
     {
         vm.startPrank(_account);
-        if (_isCollIncrease) {
-            borrowerOperations.adjustTrove{value: _collChange}(1e18, 0, _boldChange,  _isDebtIncrease);
-        } else {
-            borrowerOperations.adjustTrove(1e18, _collChange, _boldChange,  _isDebtIncrease);
-        }
+        borrowerOperations.adjustTrove(1e18, _collChange, _isCollIncrease, _boldChange,  _isDebtIncrease);
         vm.stopPrank();
     }
 

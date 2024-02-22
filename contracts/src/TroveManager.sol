@@ -1158,7 +1158,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         // Transfer coll and debt from ActivePool to DefaultPool
         _activePool.decreaseBoldDebt(_debt);
         _defaultPool.increaseBoldDebt(_debt);
-        _activePool.sendETH(address(_defaultPool), _coll);
+        _activePool.sendETHToDefaultPool(_coll);
     }
 
     function closeTrove(address _borrower) external override {

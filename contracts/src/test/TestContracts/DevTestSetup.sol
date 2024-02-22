@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
+import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+
 import "./Interfaces/IPriceFeedTestnet.sol";
 
 import "../../ActivePool.sol";
@@ -50,17 +52,19 @@ contract DevTestSetup is BaseTest {
         assertEq(E.balance, initialETHAmount);
         assertEq(F.balance, initialETHAmount);
 
+        IERC20 WETH = new ERC20("Wrapped ETH", "WETH");
+
         // TODO: optimize deployment order & constructor args & connector functions
         
         // Deploy all contracts
-        activePool = new ActivePool();
-        borrowerOperations = new BorrowerOperations();
-        collSurplusPool = new CollSurplusPool();
-        defaultPool = new DefaultPool();
+        activePool = new ActivePool(address(WETH));
+        borrowerOperations = new BorrowerOperations(address(WETH));
+        collSurplusPool = new CollSurplusPool(address(WETH));
+        defaultPool = new DefaultPool(address(WETH));
         gasPool = new GasPool();
         priceFeed = new PriceFeedTestnet();
         sortedTroves = new SortedTroves();
-        stabilityPool = new StabilityPool();
+        stabilityPool = new StabilityPool(address(WETH));
         troveManager = new TroveManager();    
         boldToken = new BoldToken(address(troveManager), address(stabilityPool), address(borrowerOperations));
 

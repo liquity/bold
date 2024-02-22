@@ -10,7 +10,7 @@ contract BasicOps is DevTestSetup {
         assertEq(trovesCount, 0);
 
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
+        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
 
         trovesCount = troveManager.getTroveOwnersCount();
         assertEq(trovesCount, 1);
@@ -19,11 +19,11 @@ contract BasicOps is DevTestSetup {
      function testCloseTrove() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
+        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
+        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
 
         uint256 trovesCount = troveManager.getTroveOwnersCount();
         assertEq(trovesCount, 2);
@@ -40,7 +40,7 @@ contract BasicOps is DevTestSetup {
     function testAdjustTrove() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
+        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
 
         // Check Trove coll and debt
         uint256 debt_1 = troveManager.getTroveDebt(A);
@@ -49,7 +49,7 @@ contract BasicOps is DevTestSetup {
         assertGt(coll_1, 0);
  
         // Adjust trove
-        borrowerOperations.adjustTrove{value: 1 ether}(1e18, 0,  500e18,  true);
+        borrowerOperations.adjustTrove(1e18, 1e18, true, 500e18,  true);
 
         // Check coll and debt altered
         uint256 debt_2 = troveManager.getTroveDebt(A);
@@ -61,7 +61,7 @@ contract BasicOps is DevTestSetup {
     function testRedeem() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 5 ether}(1e18, 5_000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
+        borrowerOperations.openTrove(1e18, 5e18, 5_000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
         vm.stopPrank();
 
         uint256 debt_1 = troveManager.getTroveDebt(A);
@@ -70,7 +70,7 @@ contract BasicOps is DevTestSetup {
         assertGt(coll_1, 0);
 
         vm.startPrank(B);
-        borrowerOperations.openTrove{value: 5 ether}(1e18, 4_000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
+        borrowerOperations.openTrove(1e18, 5e18, 4_000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
         
         vm.warp(block.timestamp + troveManager.BOOTSTRAP_PERIOD() + 1);
 
@@ -102,11 +102,11 @@ contract BasicOps is DevTestSetup {
     function testLiquidation() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
+        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
-        borrowerOperations.openTrove{value: 10 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
+        borrowerOperations.openTrove(1e18, 10e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
 
        // Price drops
         priceFeed.setPrice(1200e18);
@@ -129,7 +129,7 @@ contract BasicOps is DevTestSetup {
     function testSPDeposit() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
+        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
 
         // A makes an SP deposit
         stabilityPool.provideToSP(100e18);
@@ -148,7 +148,7 @@ contract BasicOps is DevTestSetup {
     function testSPWithdrawal() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
+        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
 
         // A makes an SP deposit
         stabilityPool.provideToSP(100e18);
