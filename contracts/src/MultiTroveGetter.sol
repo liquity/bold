@@ -78,7 +78,8 @@ contract MultiTroveGetter {
                 _troves[idx].coll,
                 _troves[idx].stake,
                 /* status */,
-                /* arrayIndex */
+                /* arrayIndex */,
+                /* annualInterestRate */
             ) = troveManager.Troves(currentTroveowner);
             (
                 _troves[idx].snapshotETH,
@@ -107,7 +108,8 @@ contract MultiTroveGetter {
                 _troves[idx].coll,
                 _troves[idx].stake,
                 /* status */,
-                /* arrayIndex */
+                /* arrayIndex */,
+                /* annualInterestRate */
             ) = troveManager.Troves(currentTroveowner);
             (
                 _troves[idx].snapshotETH,

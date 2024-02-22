@@ -523,7 +523,7 @@ contract(
 
       // Bob adds 1 ETH to his trove
       const addedColl1 = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl(B, B, { from: B, value: addedColl1 });
+      await borrowerOperations.addColl({ from: B, value: addedColl1 });
 
       // Liquidate C
       const txC = await troveManager.liquidate(C);
@@ -566,7 +566,7 @@ contract(
 
       // Bob adds 1 ETH to his trove
       const addedColl2 = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl(B, B, { from: B, value: addedColl2 });
+      await borrowerOperations.addColl({ from: B, value: addedColl2 });
 
       // Liquidate E
       const txE = await troveManager.liquidate(E);
@@ -681,7 +681,7 @@ contract(
       assert.isAtMost(getDifference(E_expectedPendingETH_1, E_ETHGain_1), 1e8);
 
       // // Bob adds 1 ETH to his trove
-      await borrowerOperations.addColl(B, B, {
+      await borrowerOperations.addColl( {
         from: B,
         value: dec(1, "ether"),
       });
@@ -733,7 +733,7 @@ contract(
       assert.isAtMost(getDifference(E_expectedPendingETH_2, E_ETHGain_2), 1e8);
 
       // // Bob adds 1 ETH to his trove
-      await borrowerOperations.addColl(B, B, {
+      await borrowerOperations.addColl( {
         from: B,
         value: dec(1, "ether"),
       });
@@ -807,7 +807,7 @@ contract(
 
       //Bob adds ETH to his trove
       const addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl(bob, bob, {
+      await borrowerOperations.addColl({
         from: bob,
         value: addedColl,
       });
@@ -816,8 +816,6 @@ contract(
       await borrowerOperations.withdrawBold(
         th._100pct,
         await getNetBorrowingAmount(A_totalDebt),
-        alice,
-        alice,
         { from: alice }
       );
 
@@ -886,7 +884,7 @@ contract(
 
       //Bob adds ETH to his trove
       const addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl(bob, bob, {
+      await borrowerOperations.addColl({
         from: bob,
         value: addedColl,
       });
@@ -1033,7 +1031,7 @@ contract(
 
       //Carol adds 1 ETH to her trove, brings it to 1992.01 total coll
       const C_addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl(carol, carol, {
+      await borrowerOperations.addColl({
         from: carol,
         value: dec(1, "ether"),
       });
@@ -1201,15 +1199,15 @@ contract(
     bringing them to 2.995, 2.995, 1992.01 total coll each. */
 
       const addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl(alice, alice, {
+      await borrowerOperations.addColl( {
         from: alice,
         value: addedColl,
       });
-      await borrowerOperations.addColl(bob, bob, {
+      await borrowerOperations.addColl( {
         from: bob,
         value: addedColl,
       });
-      await borrowerOperations.addColl(carol, carol, {
+      await borrowerOperations.addColl({
         from: carol,
         value: addedColl,
       });
@@ -1346,7 +1344,7 @@ contract(
 
       //Bob withdraws 0.5 ETH from his trove
       const withdrawnColl = toBN(dec(500, "finney"));
-      await borrowerOperations.withdrawColl(withdrawnColl, bob, bob, {
+      await borrowerOperations.withdrawColl(withdrawnColl, {
         from: bob,
       });
 
@@ -1354,8 +1352,6 @@ contract(
       await borrowerOperations.withdrawBold(
         th._100pct,
         await getNetBorrowingAmount(A_totalDebt),
-        alice,
-        alice,
         { from: alice }
       );
 
@@ -1428,7 +1424,7 @@ contract(
 
       //Bob  withdraws 0.5 ETH from his trove
       const withdrawnColl = toBN(dec(500, "finney"));
-      await borrowerOperations.withdrawColl(withdrawnColl, bob, bob, {
+      await borrowerOperations.withdrawColl(withdrawnColl, {
         from: bob,
       });
 
@@ -1595,7 +1591,7 @@ contract(
 
       //Carol wthdraws 1 ETH from her trove, brings it to 1990.01 total coll
       const C_withdrawnColl = toBN(dec(1, "ether"));
-      await borrowerOperations.withdrawColl(C_withdrawnColl, carol, carol, {
+      await borrowerOperations.withdrawColl(C_withdrawnColl,  {
         from: carol,
       });
 
@@ -1758,13 +1754,13 @@ contract(
       /* Alice, Bob, Carol each withdraw 0.5 ETH to their troves, 
     bringing them to 1.495, 1.495, 1990.51 total coll each. */
       const withdrawnColl = toBN(dec(500, "finney"));
-      await borrowerOperations.withdrawColl(withdrawnColl, alice, alice, {
+      await borrowerOperations.withdrawColl(withdrawnColl, {
         from: alice,
       });
-      await borrowerOperations.withdrawColl(withdrawnColl, bob, bob, {
+      await borrowerOperations.withdrawColl(withdrawnColl, {
         from: bob,
       });
-      await borrowerOperations.withdrawColl(withdrawnColl, carol, carol, {
+      await borrowerOperations.withdrawColl(withdrawnColl,  {
         from: carol,
       });
 
@@ -1983,14 +1979,14 @@ contract(
 
       //Bob adds 1 ETH to his trove
       const B_addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl(bob, bob, {
+      await borrowerOperations.addColl( {
         from: bob,
         value: B_addedColl,
       });
 
       //Carol  withdraws 1 ETH from her trove
       const C_withdrawnColl = toBN(dec(1, "ether"));
-      await borrowerOperations.withdrawColl(C_withdrawnColl, carol, carol, {
+      await borrowerOperations.withdrawColl(C_withdrawnColl, {
         from: carol,
       });
 
@@ -2077,7 +2073,7 @@ contract(
 
       // D tops up
       const D_addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl(dennis, dennis, {
+      await borrowerOperations.addColl({
         from: dennis,
         value: D_addedColl,
       });
@@ -2274,14 +2270,14 @@ contract(
 
       // Bob adds 11.33909 ETH to his trove
       const B_addedColl = toBN("11339090000000000000");
-      await borrowerOperations.addColl(bob, bob, {
+      await borrowerOperations.addColl( {
         from: bob,
         value: B_addedColl,
       });
 
       // Carol withdraws 15 ETH from her trove
       const C_withdrawnColl = toBN(dec(15, "ether"));
-      await borrowerOperations.withdrawColl(C_withdrawnColl, carol, carol, {
+      await borrowerOperations.withdrawColl(C_withdrawnColl, {
         from: carol,
       });
 
@@ -2370,7 +2366,7 @@ contract(
 
       // D tops up
       const D_addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl(dennis, dennis, {
+      await borrowerOperations.addColl({
         from: dennis,
         value: D_addedColl,
       });
