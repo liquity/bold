@@ -1,6 +1,6 @@
 # BOLD App
 
-## Requirements:
+## Requirements
 
 - [Node.js](https://nodejs.org/)
 - [pnpm](https://pnpm.io/)
@@ -13,7 +13,7 @@ cd bold
 pnpm install
 ````
 
-## Scripts:
+## Scripts
 
 ```sh
 pnpm dev     # run the development server
