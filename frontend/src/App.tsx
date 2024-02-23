@@ -1,12 +1,13 @@
 import { Web3Provider } from ":src/context/web3";
 import { Home } from ":src/screens/Home";
+import { ThemeProvider } from ":src/theme";
 
-function App() {
+export default function App() {
   return (
     <Web3Provider>
-      <Home />
+      <ThemeProvider>
+        <Home />
+      </ThemeProvider>
     </Web3Provider>
   );
 }
-
-export default App;
