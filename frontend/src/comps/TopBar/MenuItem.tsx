@@ -13,11 +13,14 @@ export function MenuItem({
   label: string;
 }) {
   const { color } = useTheme();
-  // const color = pathname.startsWith(href) ? palette.sky : palette.blue;
+
+  // const selected = pathname.startsWith(href)
+  const selected = false;
+
   return (
     <a href={href}>
       <div
-        aria-selected={true}
+        aria-selected={selected}
         className={css({
           display: "flex",
           alignItems: "center",
@@ -34,7 +37,7 @@ export function MenuItem({
         })}
       >
         {label}
-        <Icon color={color("accent")} />
+        <Icon color={color(selected ? "accent" : "content")} />
       </div>
     </a>
   );
