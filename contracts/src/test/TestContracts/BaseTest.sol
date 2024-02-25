@@ -134,9 +134,22 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
+    function withdrawBold100pctMaxFee(address _account, uint256 _debtIncrease) public {
+        vm.startPrank(_account);
+        borrowerOperations.withdrawBold(1e18, _debtIncrease); 
+        vm.stopPrank();
+    }
+
+    function repayBold(address _account, uint256 _debtDecrease) public {
+        vm.startPrank(_account);
+        borrowerOperations.repayBold(_debtDecrease); 
+        vm.stopPrank();
+    }
+
+
     function transferBold(address _from, address _to, uint256 _amount) public {
         vm.startPrank(_from);
-        boldToken.transfer(_to, boldToken.balanceOf(_from));
+        boldToken.transfer(_to, _amount);
         vm.stopPrank();
     }
 

@@ -18,7 +18,7 @@ interface IActivePool {
     function aggWeightedDebtSum() external view returns (uint256);
     function calcPendingAggInterest() external view returns (uint256);
     
-    function mintAggInterest(int256 _troveDebtChange) external;
+    function mintAggInterest(uint256 _troveDebtIncrease, uint256 _troveDebtDecrease) external;
     function changeAggWeightedDebtSum(
         uint256 _oldWeightedRecordedTroveDebt, 
         uint256 _newTroveWeightedRecordedTroveDebt

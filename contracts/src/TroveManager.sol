@@ -1370,58 +1370,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         return recordedDebt * annualInterestRate * (block.timestamp - lastDebtUpdateTime) / SECONDS_IN_ONE_YEAR / 1e18;
     }
 
-    // TODO: make this purely for existing Trove touches which alter coll or debt. // TODO: How about redemptions and liqs?
-    // function _applyInterestAndRedistributionGains(
-    //     address _borrower,
-    //     uint256 _debtChange,
-    //     uint256 _mintedAggInterest,
-    //     uint256, _pendingTroveInterest,
-    //     uint256 _annualInterestRate,
-    //     uint256 _pendingCollGain,
-    //     uint256 _pendingDebtGain
-    // )
-    //     internal
-    // {
-    //     uint256 oldRecordedDebt = Troves[_borrower].debt;
-
-    //     // uint256 pendingTroveInterest = _calcTroveAccruedInterest(oldRecordedDebt, annualInterestRate, Troves[_borrower].lastDebtUpdateTime);
-
-    //     // Apply all changes to the Trove's state
-    //     Troves[_borrower].coll = Troves[_borrower].coll + _pendingCollGain;
-    //     uint256 newRecordedDebt = oldRecordedDebt + pendingTroveInterest + debtChange + _pendingDebtGain;
-    //     Troves[borrower].debt = newRecordedDebt;
-
-    //     _updateTroveRewardSnapshots(_borrower);
-
-    //     // Record the Trove’s latest individual update time
-    //     Troves[borrower].lastDebtUpdateTime = block.timestamp;
-
-    //     // Update aggregate recorded debt
-    //     aggRecordedDebt += debtChange + _pendingDebtGain  + _mintedAggInterest; // we don't add the Trove's fresh interest here, since this aggregate recorded debt gets updated with minted interest separately.
-    //     assert(lastAggUpdateTime == block.timestamp); // Confirm there's no aggregate accrued interest
-
-    //     // Update aggregate weighted debt sum
-    //     uint256 annualInterestRate = Troves[borrower].annualInterestRate;
-    //     uint256 oldWeightedRecordedDebt = oldTroveRecordedDebt * annualInterestRate;
-    //     uint256 newWeightedRecordedDebt = newRecordedDebt * annualInterestRate;
-    //     aggWeightedDebtSum = aggWeightedDebtSum - oldWeightedRecordedDebt + newWeightedRecordedDebt;
-
-    //     // Transfer redistribution gains from DefaultPool to ActivePool
-    //     _movePendingTroveRewardsToActivePool(_activePool, _defaultPool, _pendingDebtGain, _pendingCollGain);
-
-    //     emit TroveUpdated(
-    //         _borrower,
-    //         Troves[_borrower].debt,
-    //         Troves[_borrower].coll,
-    //         Troves[_borrower].stake,
-    //         Troves[_borrower].lastDebtUpdateTime
-    //         TroveManagerOperation.getAndApplyRedistributionGains
-    //     );
-    // }
-
-    // function updateAggAndTroveRecordedDebt
-    // // TODO: bake in getAndApplyRedistributionGains in gas-efficient way
-
     // --- 'require' wrapper functions ---
 
     function _requireCallerIsBorrowerOperations() internal view {
@@ -1486,7 +1434,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         return Troves[_troveId].debt;
     }
 
-    function getTroveWeightedRecordedDebt(address _borrower) public returns (uint256) {
+    function getTroveWeightedRecordedDebt(address _borrower) public view returns (uint256) {
         return Troves[_borrower].debt * Troves[_borrower].annualInterestRate;
     }
 
@@ -1519,25 +1467,32 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         Troves[_troveId].status = Status.active;
         Troves[_troveId].coll = _coll;
 
-        _updateTroveDebtAndInterest(_troveId, 0, _debt, _annualInterestRate);
+        _updateTroveDebtAndInterest(_troveId, _debt, _annualInterestRate);
 
-        _updateTroveRewardSnapshots(_borrower);
+        _updateTroveRewardSnapshots(_troveId);
 
         // Record the Trove's stake (for redistributions) and update the total stakes
         return _updateStakeAndTotalStakes(_troveId);
     }
 
-    function updateTroveDebtAndInterest(address _borrower, uint256 _oldWeightedRecordedTroveDebt, uint256 _entireTroveDebt, uint256 _newAnnualInterestRate) external {
+    function updateTroveDebtAndInterest(uint256 _troveId, uint256 _entireTroveDebt, uint256 _newAnnualInterestRate) external {
         _requireCallerIsBorrowerOperations();
-        _updateTroveDebtAndInterest(_borrower, _oldWeightedRecordedTroveDebt, _entireTroveDebt, _newAnnualInterestRate);
+        _updateTroveDebtAndInterest(_troveId, _entireTroveDebt, _newAnnualInterestRate);
     }
 
-    function _updateTroveDebtAndInterest(address _borrower, uint256 _oldWeightedRecordedTroveDebt, uint256 _entireTroveDebt, uint256 _newAnnualInterestRate) public {
-        Troves[_borrower].debt = _entireTroveDebt;
-        Troves[_borrower].annualInterestRate = _newAnnualInterestRate;
-        Troves[_borrower].lastDebtUpdateTime = uint64(block.timestamp);
+    function _updateTroveDebtAndInterest(uint256 _troveId, uint256 _entireTroveDebt, uint256 _newAnnualInterestRate) internal {
+        _updateTroveDebt(_troveId, _entireTroveDebt);
+        Troves[_troveId].annualInterestRate = _newAnnualInterestRate;
+    }
 
-        activePool.changeAggWeightedDebtSum(_oldWeightedRecordedTroveDebt, _entireTroveDebt * _newAnnualInterestRate);
+    function updateTroveDebt(uint256 _troveId, uint256 _entireTroveDebt) external {
+        _requireCallerIsBorrowerOperations();
+        _updateTroveDebt(_troveId, _entireTroveDebt);
+    }
+
+    function _updateTroveDebt(uint256 _troveId, uint256 _entireTroveDebt) internal {
+        Troves[_troveId].debt = _entireTroveDebt;
+        Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
     }
 
     function increaseTroveColl(address _sender, uint256 _troveId, uint _collIncrease) external override returns (uint) {

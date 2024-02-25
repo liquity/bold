@@ -109,12 +109,9 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function changeAnnualInterestRate(uint256 _troveId, uint256 _newAnnualInterestRate) external;
 
-    function updateTroveDebtAndInterest(
-        uint256 _troveId,
-        uint256 _oldWeightedRecordedTroveDebt,
-        uint256 _entireTroveDebt,
-        uint256 _newAnnualInterestRate
-    ) external;
+    function updateTroveDebtAndInterest(uint256 _troveId, uint256 _entireTroveDebt, uint256 _newAnnualInterestRate) external;
+
+    function updateTroveDebt(uint256 _troveId, uint256 _entireTroveDebt) external;
 
     function setAddManager(address _sender, uint256 _troveId, address _manager) external;
     function setRemoveManager(address _sender, uint256 _troveId, address _manager) external;

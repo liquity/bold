@@ -43,13 +43,16 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     uint256 internal ETHBalance;  // deposited ether tracker
 
     // Sum of individual recorded Trove debts. Updated only at individual Trove operations.
+    // "G" in the spec.
     uint256 internal recordedDebtSum;
 
     // Aggregate recorded debt tracker. Updated whenever a Trove's debt is touched AND whenever the aggregate pending interest is minted.
+    // "D" in the spec.
     uint256 public aggRecordedDebt;
 
     /* Sum of individual recorded Trove debts weighted by their respective chosen interest rates.
     * Updated at individual Trove operations.
+    * "S" in the spec.
     */
     uint256 public aggWeightedDebtSum;
 
@@ -187,40 +190,37 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     }
 
     function changeAggWeightedDebtSum(uint256 _oldWeightedRecordedTroveDebt, uint256 _newTroveWeightedRecordedTroveDebt) external {
-        _requireCallerIsTroveManager();
-        // TODO: Currently 2 SLOADs - more gas efficient way? Use ints?
-        aggWeightedDebtSum -= _oldWeightedRecordedTroveDebt;
-        aggWeightedDebtSum += _newTroveWeightedRecordedTroveDebt;
+        _requireCallerIsBOorTroveM();
+        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        uint256 newAggWeightedDebtSum = aggWeightedDebtSum + _newTroveWeightedRecordedTroveDebt; // 1 SLOAD
+        newAggWeightedDebtSum -= _oldWeightedRecordedTroveDebt;
+        aggWeightedDebtSum = newAggWeightedDebtSum; // 1 SSTORE
     }
 
     // --- Aggregate interest operations ---
 
     // This function is called inside all state-changing user ops: borrower ops, liquidations, redemptions and SP deposits/withdrawals.
     // Some user ops trigger debt changes to Trove(s), in which case _troveDebtChange will be non-zero.
-    // The aggregate recorded debt is incremented by the aggregate pending interest, plus the _troveDebtChange.
-    // The _troveDebtChange results from the borrower repaying/drawing debt and redistribution gains being applied.
-    function mintAggInterest(int256 _troveDebtChange) public {
+    // The aggregate recorded debt is incremented by the aggregate pending interest, plus the net Trove Debt Change.
+    // The net Trove debt change consists of the sum of a) any debt issued/repaid and b) any redistribution debt gain applied in the encapsulating operation.
+    // It does *not* include the Trove's individual accrued interest - this gets accounted for in the aggregate accrued interest.
+    // The net Trove debt change could be positive or negative in a repayment (depending on whether its redistribution gain or repayment amount is larger),
+    // so this function accepts both the increase and the decrease to avoid using (and converting to/from) signed ints.
+    function mintAggInterest(uint256 _troveDebtIncrease, uint256 _troveDebtDecrease) public {
         _requireCallerIsBOorSP();
         uint256 aggInterest = calcPendingAggInterest();
         // Mint the new BOLD interest to a mock interest router that would split it and send it onward to SP, LP staking, etc.
         // TODO: implement interest routing and SP Bold reward tracking
         if (aggInterest > 0) {boldToken.mint(address(interestRouter), aggInterest);}
 
-        // TODO: cleaner way to deal with debt changes that can be positive or negative?
-        aggRecordedDebt = addUint256ToInt256(aggRecordedDebt + aggInterest, _troveDebtChange);
-        // assert(aggRecordedDebt >= 0) // This should never be negative. If all aggregate interest was applied
+        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        uint256 newAggRecordedDebt = aggRecordedDebt + aggInterest + _troveDebtIncrease; // 1 SLOAD
+        newAggRecordedDebt -=_troveDebtDecrease;
+        aggRecordedDebt = newAggRecordedDebt; // 1 SSTORE
+        // assert(aggRecordedDebt >= 0) // This should never be negative. If all redistribution gians and all aggregate interest was applied
         // and all Trove debts were repaid, it should become 0.
 
         lastAggUpdateTime = block.timestamp;
-    }
-
-    function addUint256ToInt256(uint256 _x, int256 _y) internal returns (uint256) {
-        // Assumption: _x + _y > 0. Will revert otherwise.
-        if (_y >= 0) {
-            return _x + uint256(_y);
-        } else {
-            return (_x - uint256(-_y));
-        }
     }
 
     // --- 'require' functions ---
