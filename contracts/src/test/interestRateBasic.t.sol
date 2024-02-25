@@ -24,7 +24,7 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveManager.getTroveAnnualInterestRate(D), 1e18);
     }
 
-    function testOpenTroveSetsTroveLastDebtUpdateTime() public {
+    function testOpenTroveSetsTroveLastDebtUpdateTimeToNow() public {
         priceFeed.setPrice(2000e18);
         assertEq(troveManager.getTroveLastDebtUpdateTime(A), 0);
         assertEq(troveManager.getTroveLastDebtUpdateTime(B), 0);
@@ -223,4 +223,20 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(sortedTroves.getNext(E), D);
         assertEq(sortedTroves.getPrev(E), ZERO_ADDRESS); // head
     }
+
+    // --- withdrawBold ---
+
+    function testWithdrawBoldSetsTroveLastDebtUpdateTimeToNow() public {
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, 2000e18,  0);
+
+        vm.warp(block.timestamp + 1 days);
+
+        assertLt(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+
+        // // A draws more debt
+        withdrawBold100pctMaxFee(A, 500e18);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);   
+    }
 }
+   
