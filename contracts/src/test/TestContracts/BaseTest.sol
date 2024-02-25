@@ -146,6 +146,17 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
+    function addColl(address _account, uint256 _collIncrease) public {
+        vm.startPrank(_account);
+        borrowerOperations.addColl{value: _collIncrease}(); 
+        vm.stopPrank();
+    }
+
+    function withdrawColl(address _account, uint256 _collDecrease) public {
+        vm.startPrank(_account);
+        borrowerOperations.withdrawColl(_collDecrease); 
+        vm.stopPrank();
+    }
 
     function transferBold(address _from, address _to, uint256 _amount) public {
         vm.startPrank(_from);
