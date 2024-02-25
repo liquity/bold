@@ -1130,10 +1130,244 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(activePool.aggWeightedDebtSum(), aggWeightedDebtSum_1 - oldRecordedWeightedDebt + expectedNewRecordedWeightedDebt);
     }
 
+    //  --- addColl tests ---
 
-    // TODO: pure collateral adjustment opps
+    function testAddCollWithNoPendingRewardIncreasesAggRecordedDebtByPendingAggInterest() public {
+        uint256 troveDebtRequest = 3000e18;
+        uint256 collIncrease = 1 ether;
+
+        // A opens Trove 
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  25e16); 
+
+        // fast-forward time
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 aggRecordedDebt_1 = activePool.aggRecordedDebt();
+        assertGt(aggRecordedDebt_1, 0);
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        // A  adds coll
+        addColl(A, collIncrease);
+
+        assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest);
+    }
+
+    function testAddCollReducesPendingAggInterestTo0() public {
+        uint256 troveDebtRequest = 3000e18;
+        uint256 collIncrease = 1 ether;
+
+        // A opens Trove
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  25e16); 
+
+        vm.warp(block.timestamp + 1 days);
+
+        assertGt(activePool.calcPendingAggInterest(), 0);
+
+        // A adds coll
+        addColl(A, collIncrease);
+
+        assertEq(activePool.calcPendingAggInterest(), 0);
+    }
+
+    function testAddCollUpdatesLastAggUpdateTimeToNow() public {
+        uint256 troveDebtRequest = 3000e18;
+        uint256 collIncrease = 1 ether;
+        
+        // A opens Trove 
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  25e16); 
+        
+        // fast-forward time
+        vm.warp(block.timestamp + 1 days);
+
+        assertGt(activePool.lastAggUpdateTime(), 0);
+        assertLt(activePool.lastAggUpdateTime(), block.timestamp);
+
+        // A adds coll
+        addColl(A, collIncrease);
+
+        // Check last agg update time increased to now
+        assertEq(activePool.lastAggUpdateTime(), block.timestamp);
+    }
+
+    function testAddCollWithNoPendingDebtRewardIncreasesRecordedDebtSumByTrovesAccruedInterest() public {
+        uint256 troveDebtRequest = 3000e18;
+        uint256 collIncrease = 1 ether;
+
+        // A opens Trove 
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  25e16); 
+
+        // fast-forward time
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 pendingRedistDebtGain = troveManager.getPendingBoldDebtReward(A);
+        assertEq(pendingRedistDebtGain, 0);
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(A);
+        assertGt(accruedTroveInterest, 0);
+
+        // Get current recorded active debt
+        uint256 recordedDebtSum_1 = activePool.getRecordedDebtSum();
+
+        // A adds coll
+        addColl(A, collIncrease);
+
+        // Check recorded debt sum increases by the accrued interest plus debt change
+        assertEq(activePool.getRecordedDebtSum(), recordedDebtSum_1 + accruedTroveInterest);
+    }
+
+    function testAddCollAdjustsWeightedDebtSumCorrectly() public {
+        uint256 troveDebtRequest = 3000e18;
+        uint256 collIncrease = 1 ether;
+        uint256 interestRate = 25e16;
+
+        // A opens Trove 
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate); 
+        
+        uint256 oldRecordedWeightedDebt = troveManager.getTroveWeightedRecordedDebt(A);
+
+        // fast-forward time
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 aggWeightedDebtSum_1 = activePool.aggWeightedDebtSum();
+        assertGt(aggWeightedDebtSum_1, 0);
+
+        // A adds coll
+        addColl(A, collIncrease);
+
+        (uint256 entireTroveDebt, , , , ) = troveManager.getEntireDebtAndColl(A);
+        uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;
+
+        // Weighted debt should have increased due to interest being applied
+        assertGt(expectedNewRecordedWeightedDebt, oldRecordedWeightedDebt);
+
+        // Expect weighted sum decreases by the old and increases by the new individual weighted Trove debt.
+        assertEq(activePool.aggWeightedDebtSum(), aggWeightedDebtSum_1 - oldRecordedWeightedDebt + expectedNewRecordedWeightedDebt);
+    }
+
+    // --- withdrawColl ---
+
+    function testWithdrawCollWithNoPendingRewardIncreasesAggRecordedDebtByPendingAggInterest() public {
+        uint256 troveDebtRequest = 2000e18;
+        uint256 collDecrease = 1 ether;
+
+        // A opens Trove 
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  25e16); 
+
+        // fast-forward time
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 aggRecordedDebt_1 = activePool.aggRecordedDebt();
+        assertGt(aggRecordedDebt_1, 0);
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        // A  withdraws coll
+        withdrawColl(A, collDecrease);
+
+        assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest);
+    }
+
+    function testWithdrawCollReducesPendingAggInterestTo0() public {
+        uint256 troveDebtRequest = 2000e18;
+        uint256 collDecrease = 1 ether;
+
+        // A opens Trove
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  25e16); 
+
+        vm.warp(block.timestamp + 1 days);
+
+        assertGt(activePool.calcPendingAggInterest(), 0);
+
+         // A  withdraws coll
+        withdrawColl(A, collDecrease);
+
+        assertEq(activePool.calcPendingAggInterest(), 0);
+    }
+
+    function testWithdrawCollUpdatesLastAggUpdateTimeToNow() public {
+        uint256 troveDebtRequest = 2000e18;
+        uint256 collDecrease = 1 ether;
+        
+        // A opens Trove 
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  25e16); 
+        
+        // fast-forward time
+        vm.warp(block.timestamp + 1 days);
+
+        assertGt(activePool.lastAggUpdateTime(), 0);
+        assertLt(activePool.lastAggUpdateTime(), block.timestamp);
+
+        // A withdraw coll
+        withdrawColl(A, collDecrease);
+
+        // Check last agg update time increased to now
+        assertEq(activePool.lastAggUpdateTime(), block.timestamp);
+    }
+
+    function testWithdrawCollWithNoPendingDebtRewardIncreasesRecordedDebtSumByTrovesAccruedInterest() public {
+        uint256 troveDebtRequest = 2000e18;
+        uint256 collDecrease = 1 ether;
+
+        // A opens Trove 
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  25e16); 
+
+        // fast-forward time
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 pendingRedistDebtGain = troveManager.getPendingBoldDebtReward(A);
+        assertEq(pendingRedistDebtGain, 0);
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(A);
+        assertGt(accruedTroveInterest, 0);
+
+        // Get current recorded active debt
+        uint256 recordedDebtSum_1 = activePool.getRecordedDebtSum();
+
+        // A withdraw coll
+        withdrawColl(A, collDecrease);
+
+        // Check recorded debt sum increases by the accrued interest plus debt change
+        assertEq(activePool.getRecordedDebtSum(), recordedDebtSum_1 + accruedTroveInterest);
+    }
+
+    function testWithdrawCollAdjustsWeightedDebtSumCorrectly() public {
+        uint256 troveDebtRequest = 2000e18;
+        uint256 collDecrease = 1 ether;
+        uint256 interestRate = 25e16;
+
+        // A opens Trove 
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate); 
+        
+        uint256 oldRecordedWeightedDebt = troveManager.getTroveWeightedRecordedDebt(A);
+
+        // fast-forward time
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 aggWeightedDebtSum_1 = activePool.aggWeightedDebtSum();
+        assertGt(aggWeightedDebtSum_1, 0);
+
+        // A withdraw coll
+        withdrawColl(A, collDecrease);
+
+        (uint256 entireTroveDebt, , , , ) = troveManager.getEntireDebtAndColl(A);
+        uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;
+
+        // Weighted debt should have increased due to interest being applied
+        assertGt(expectedNewRecordedWeightedDebt, oldRecordedWeightedDebt);
+
+        // Expect weighted sum decreases by the old and increases by the new individual weighted Trove debt.
+        assertEq(activePool.aggWeightedDebtSum(), aggWeightedDebtSum_1 - oldRecordedWeightedDebt + expectedNewRecordedWeightedDebt);
+    }
+
     // TODO: mixed collateral & debt adjustment opps
     // TODO: tests with pending debt redist. gain >0
-
-
 }
