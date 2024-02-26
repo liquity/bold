@@ -99,6 +99,8 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function setTrovePropertiesOnOpen(address _owner, uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _annualInterestRate) external returns (uint256);
 
+    function troveIsStale(address _borrower) external view returns (bool);
+
     function increaseTroveColl(address _sender, uint256 _troveId, uint _collIncrease) external returns (uint);
 
     function decreaseTroveColl(address _sender, uint256 _troveId, uint _collDecrease) external returns (uint);

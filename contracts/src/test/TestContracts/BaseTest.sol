@@ -158,6 +158,12 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
+    function applyTroveInterestPermissionless(address _from, address _borrower) public {
+        vm.startPrank(_from);
+        borrowerOperations.applyTroveInterestPermissionless(_borrower); 
+        vm.stopPrank();
+    }
+
     function transferBold(address _from, address _to, uint256 _amount) public {
         vm.startPrank(_from);
         boldToken.transfer(_to, _amount);

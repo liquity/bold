@@ -1215,7 +1215,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A adds coll
         addColl(A, collIncrease);
 
-        // Check recorded debt sum increases by the accrued interest plus debt change
+        // Check recorded debt sum increases by the accrued interest
         assertEq(activePool.getRecordedDebtSum(), recordedDebtSum_1 + accruedTroveInterest);
     }
 
@@ -1334,7 +1334,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A withdraw coll
         withdrawColl(A, collDecrease);
 
-        // Check recorded debt sum increases by the accrued interest plus debt change
+        // Check recorded debt sum increases by the accrued interest
         assertEq(activePool.getRecordedDebtSum(), recordedDebtSum_1 + accruedTroveInterest);
     }
 
@@ -1367,7 +1367,136 @@ contract InterestRateAggregate is DevTestSetup {
         // Expect weighted sum decreases by the old and increases by the new individual weighted Trove debt.
         assertEq(activePool.aggWeightedDebtSum(), aggWeightedDebtSum_1 - oldRecordedWeightedDebt + expectedNewRecordedWeightedDebt);
     }
+    
+    // --- applyTroveInterestPermissionless ---
+
+    function testApplyTroveInterestPermissionlessWithNoPendingRewardIncreasesAggRecordedDebtByPendingAggInterest() public {
+        uint256 troveDebtRequest = 2000e18;
+
+        // A opens Trove 
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  25e16); 
+
+        // fast-forward past such that trove is Stale
+        vm.warp(block.timestamp + 90 days + 1);
+        // Confirm Trove is stale
+        assertTrue(troveManager.troveIsStale(A));
+
+        uint256 aggRecordedDebt_1 = activePool.aggRecordedDebt();
+        assertGt(aggRecordedDebt_1, 0);
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        // B applies A's pending interest
+        applyTroveInterestPermissionless(B, A);
+
+        assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest);
+    }
+
+    function testApplyTroveInterestPermissionlessReducesPendingAggInterestTo0() public {
+        uint256 troveDebtRequest = 2000e18;
+        uint256 collDecrease = 1 ether;
+
+        // A opens Trove
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  25e16); 
+
+        // fast-forward time such that trove is Stale
+        vm.warp(block.timestamp + 90 days + 1);
+        // Confirm Trove is stale
+        assertTrue(troveManager.troveIsStale(A));
+
+        assertGt(activePool.calcPendingAggInterest(), 0);
+
+        // B applies A's pending interest
+        applyTroveInterestPermissionless(B, A);
+
+        assertEq(activePool.calcPendingAggInterest(), 0);
+    }
+
+    function testApplyTroveInterestPermissionlessUpdatesLastAggUpdateTimeToNow() public {
+        uint256 troveDebtRequest = 2000e18;
+        
+        // A opens Trove 
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  25e16); 
+        
+        // fast-forward time such that trove is Stale
+        vm.warp(block.timestamp + 90 days + 1);
+        // Confirm Trove is stale
+        assertTrue(troveManager.troveIsStale(A));
+
+        assertGt(activePool.lastAggUpdateTime(), 0);
+        assertLt(activePool.lastAggUpdateTime(), block.timestamp);
+
+        // B applies A's pending interest
+        applyTroveInterestPermissionless(B, A);
+
+        // Check last agg update time increased to now
+        assertEq(activePool.lastAggUpdateTime(), block.timestamp);
+    }
+
+    function testApplyTroveInterestPermissionlessWithNoPendingDebtRewardIncreasesRecordedDebtSumByTrovesAccruedInterest() public {
+        uint256 troveDebtRequest = 2000e18;
+
+        // A opens Trove 
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  25e16); 
+
+        // fast-forward time such that trove is Stale
+        vm.warp(block.timestamp + 90 days + 1);
+        // Confirm Trove is stale
+        assertTrue(troveManager.troveIsStale(A));
+
+        uint256 pendingRedistDebtGain = troveManager.getPendingBoldDebtReward(A);
+        assertEq(pendingRedistDebtGain, 0);
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(A);
+        assertGt(accruedTroveInterest, 0);
+
+        // Get current recorded active debt
+        uint256 recordedDebtSum_1 = activePool.getRecordedDebtSum();
+
+        // B applies A's pending interest
+        applyTroveInterestPermissionless(B, A);
+
+        // Check recorded debt sum increases by the accrued interest
+        assertEq(activePool.getRecordedDebtSum(), recordedDebtSum_1 + accruedTroveInterest);
+    }
+
+    function testApplyTroveInterestPermissionlessAdjustsWeightedDebtSumCorrectly() public {
+        uint256 troveDebtRequest = 2000e18;
+        uint256 interestRate = 25e16;
+
+        // A opens Trove 
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate); 
+        
+        uint256 oldRecordedWeightedDebt = troveManager.getTroveWeightedRecordedDebt(A);
+
+        // fast-forward time such that trove is Stale
+        vm.warp(block.timestamp + 90 days + 1);
+        // Confirm Trove is stale
+        assertTrue(troveManager.troveIsStale(A));
+
+        uint256 aggWeightedDebtSum_1 = activePool.aggWeightedDebtSum();
+        assertGt(aggWeightedDebtSum_1, 0);
+
+        // B applies A's pending interest
+        applyTroveInterestPermissionless(B, A);
+
+        (uint256 entireTroveDebt, , , , ) = troveManager.getEntireDebtAndColl(A);
+        uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;
+
+        // Weighted debt should have increased due to interest being applied
+        assertGt(expectedNewRecordedWeightedDebt, oldRecordedWeightedDebt);
+
+        // Expect weighted sum decreases by the old and increases by the new individual weighted Trove debt.
+        assertEq(activePool.aggWeightedDebtSum(), aggWeightedDebtSum_1 - oldRecordedWeightedDebt + expectedNewRecordedWeightedDebt);
+    }
 
     // TODO: mixed collateral & debt adjustment opps
     // TODO: tests with pending debt redist. gain >0
+    // TODO: tests that show total debt and TCR doesnt change under user ops
+    // TODO: Basic TCR getter tests
+    // TODO: Test total debt invariant holds i.e. (D + S * delta_T) == sum_of_all_entire_trove_debts.
 }
