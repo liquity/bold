@@ -35,6 +35,7 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
 
     uint constant public SECONDS_IN_ONE_MINUTE = 60;
     uint256 constant public SECONDS_IN_ONE_YEAR = 31536000; // 60 * 60 * 24 * 365,
+    uint256 constant public STALE_TROVE_DURATION = 7776000; // 90 days: 60*60*24*90 = 7776000
 
     /*
      * Half-life of 12h. 12h = 720 min
@@ -1459,6 +1460,10 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
 
     function getTroveLastDebtUpdateTime(address _borrower) external view returns (uint) {
         return Troves[_borrower].lastDebtUpdateTime;
+    }
+
+    function troveIsStale(address _borrower) external view returns (bool) {
+        return block.timestamp - Troves[_borrower].lastDebtUpdateTime > STALE_TROVE_DURATION;
     }
 
     // --- Trove property setters, called by BorrowerOperations ---

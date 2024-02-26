@@ -96,6 +96,8 @@ interface ITroveManager is ILiquityBase {
 
     function getTroveLastDebtUpdateTime(address _borrower) external view returns (uint);
 
+    function troveIsStale(address _borrower) external view returns (bool);
+
     function setTrovePropertiesOnOpen(address _borrower, uint256 _coll, uint256 _debt, uint256 _annualInterestRate) external returns (uint256);
 
     function increaseTroveColl(address _borrower, uint _collIncrease) external returns (uint);
