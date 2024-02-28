@@ -14,7 +14,7 @@ import "../../DefaultPool.sol";
 import "../../GasPool.sol";
 import "../../HintHelpers.sol";
 import "../../MultiTroveGetter.sol";
-import "../../TestContracts/PriceFeedTestnet.sol";
+import "./PriceFeedTestnet.sol";
 import "../../SortedTroves.sol";
 import "../../StabilityPool.sol";
 import "../../TroveManager.sol";

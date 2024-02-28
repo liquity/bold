@@ -11,6 +11,7 @@ import "../../Interfaces/IPriceFeed.sol";
 import "../../Interfaces/ISortedTroves.sol";
 import "../../Interfaces/IStabilityPool.sol";
 import "../../Interfaces/ITroveManager.sol";
+import "./PriceFeedTestnet.sol";
 
 import "../../GasPool.sol";
 
@@ -44,6 +45,7 @@ contract BaseTest is Test {
     IStabilityPool stabilityPool;
     ITroveManager troveManager;
     IBoldToken boldToken;
+    IPriceFeedTestnet priceFeed;
 
     GasPool gasPool;
 

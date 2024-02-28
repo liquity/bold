@@ -2,7 +2,8 @@
 
 pragma solidity 0.8.18;
 
-import "../Interfaces/ISortedTroves.sol";
+import "../../Interfaces/ISortedTroves.sol";
+
 
 // Used as both a wrapper for SortedTroves functions and a mock TroveManager.
 contract SortedTrovesTester {

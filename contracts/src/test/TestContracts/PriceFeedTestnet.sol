@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.18;
 
-import "../test/TestContracts/Interfaces/IPriceFeedTestnet.sol";
+import "./Interfaces/IPriceFeedTestnet.sol";
 
 /*
 * PriceFeed placeholder for testnet and development. The price is simply set manually and saved in a state 
@@ -16,7 +16,7 @@ contract PriceFeedTestnet is IPriceFeedTestnet {
     // --- Functions ---
 
     // View price getter for simplicity in tests
-    function getPrice() external view returns (uint256) {
+    function getPrice() external view override returns (uint256) {
         return _price;
     }
 
