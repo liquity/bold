@@ -1,63 +1,94 @@
-import { css } from ":panda/css";
 import { palette } from ":src/colors";
 import { a, useSpring, useTransition } from "@react-spring/web";
+import * as stylex from "@stylexjs/stylex";
 import { useId } from "react";
+
+const defaultValues = [
+  5,
+  8,
+  9.2,
+  14,
+  15,
+  16.1,
+  18,
+  18.4,
+  18.4,
+  20,
+  20.7,
+  23,
+  24,
+  25.3,
+  28,
+  31,
+  33,
+  36.8,
+  40,
+  42,
+  44,
+  45,
+  46,
+  47,
+  48,
+  49,
+  44,
+  41,
+  36.8,
+  34,
+  31,
+  29,
+  28,
+  26,
+  25.3,
+  24,
+  22,
+  20,
+  17,
+  14,
+  12,
+  11,
+  10,
+  10,
+  6.9,
+  5.75,
+  5.75,
+  2.3,
+  13.8,
+  13.8,
+  2.3,
+].map((value) => value / 49);
+
+const styles = stylex.create({
+  main: {
+    position: "relative",
+    display: "flex",
+    width: "100%",
+  },
+  svg: {
+    width: "100%",
+    height: "auto",
+  },
+  bar: {
+    transformOrigin: "0 100%",
+  },
+  gradient: {
+    display: "none",
+    position: "absolute",
+    zIndex: 1,
+    inset: 0,
+    background: `
+      linear-gradient(
+        90deg,
+        #FFEB81 0%,
+        #BEEC86 26%,
+        #63D77D 55%
+      )
+    `,
+  },
+});
 
 export function PercentageBars({
   activeIndex = Math.floor(49 / 2),
-  values = [
-    5,
-    8,
-    9.2,
-    14,
-    15,
-    16.1,
-    18,
-    18.4,
-    18.4,
-    20,
-    20.7,
-    23,
-    24,
-    25.3,
-    28,
-    31,
-    33,
-    36.8,
-    40,
-    42,
-    44,
-    45,
-    46,
-    47,
-    48,
-    49,
-    44,
-    41,
-    36.8,
-    34,
-    31,
-    29,
-    28,
-    26,
-    25.3,
-    24,
-    22,
-    20,
-    17,
-    14,
-    12,
-    11,
-    10,
-    10,
-    6.9,
-    5.75,
-    5.75,
-    2.3,
-    13.8,
-    13.8,
-    2.3,
-  ].map((value) => value / 49),
+  values = defaultValues,
 }: {
   activeIndex?: number;
   values?: number[];
@@ -92,22 +123,15 @@ export function PercentageBars({
 
   return (
     <div
-      className={css({
-        position: "relative",
-        display: "flex",
-        width: "100%",
-        height,
-      })}
+      style={{ height }}
+      {...stylex.props(styles.main)}
     >
       <svg
         width={width}
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         preserveAspectRatio="none"
-        className={css({
-          width: "100%",
-          height: "auto",
-        })}
+        {...stylex.props(styles.svg)}
       >
         <mask id={revealMaskId}>
           <a.rect
@@ -130,10 +154,8 @@ export function PercentageBars({
               width={barWidth}
               x={index * barWidth + index * gapWidth}
               y={(1 - value) * height}
-              className={css({
-                transformOrigin: "0 100%",
-              })}
               style={props}
+              {...stylex.props(styles.bar)}
             />
           ))}
         </mask>
@@ -163,22 +185,7 @@ export function PercentageBars({
           />
         </g>
       </svg>
-      <div
-        className={css({
-          display: "none",
-          position: "absolute",
-          zIndex: 1,
-          inset: 0,
-          background: `
-            linear-gradient(
-              90deg,
-              #FFEB81 0%,
-              #BEEC86 26%,
-              #63D77D 55%
-            )
-          `,
-        })}
-      />
+      <div {...stylex.props(styles.gradient)} />
     </div>
   );
 }

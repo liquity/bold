@@ -1,7 +1,7 @@
 import type { SpringConfig } from "@react-spring/web";
 
-import { css } from ":panda/css";
 import { a, useSprings } from "@react-spring/web";
+import * as stylex from "@stylexjs/stylex";
 
 const objects: {
   color: string;
@@ -144,6 +144,16 @@ const objects: {
   },
 ];
 
+const styles = stylex.create({
+  main: {
+    display: "flex",
+    position: "relative",
+    width: 34,
+    height: 48,
+    overflow: "hidden",
+  },
+});
+
 export function Logo() {
   const [springs] = useSprings(objects.length, (index) => ({
     config: objects[index].config,
@@ -153,23 +163,13 @@ export function Logo() {
   }));
 
   return (
-    <a.div
-      className={css({
-        display: "flex",
-        position: "relative",
-        width: 34,
-        height: 48,
-        overflow: "hidden",
-      })}
-    >
+    <a.div {...stylex.props(styles.main)}>
       {springs.map((spring, index) => {
         return (
           <a.div
             key={index}
-            className={css({
-              position: "absolute",
-            })}
             style={{
+              position: "absolute",
               top: objects[index].y,
               left: objects[index].x,
               width: objects[index].w,

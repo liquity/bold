@@ -21,8 +21,7 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      ":src/*": ["./src/*"],
-      ":panda/*": ["./styled-system/*"]
+      ":src/*": ["./src/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

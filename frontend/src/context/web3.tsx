@@ -1,12 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 import { createConfig, WagmiProvider } from "wagmi";
-import { localhost, mainnet } from "wagmi/chains";
+// import { localhost, mainnet } from "wagmi/chains";
 import { WALLET_CONNECT_PROJECT_ID } from "../env";
+
+// const chains = [mainnet, localhost] as const;
 
 const wagmiConfig = createConfig(
   getDefaultConfig({
-    chains: [mainnet, localhost],
+    // chains,
     walletConnectProjectId: WALLET_CONNECT_PROJECT_ID,
     appName: "Bold",
   }),

@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-import { css } from ":panda/css";
 import { a, useSpring } from "@react-spring/web";
 
 export type IconProps = {
@@ -18,9 +17,7 @@ function IconBase({ children }: { children: ReactNode }) {
     <svg
       width="56"
       height="56"
-      className={css({
-        overflow: "visible",
-      })}
+      style={{ overflow: "visible" }}
     >
       {children}
     </svg>

@@ -1,15 +1,17 @@
-import { css } from ":panda/css";
+import * as stylex from "@stylexjs/stylex";
 import { IconAccount, IconStats } from "./icons";
 import { MenuItem } from "./MenuItem";
 
+const styles = stylex.create({
+  main: {
+    display: "flex",
+    alignItems: "center",
+  },
+});
+
 export function Actions() {
   return (
-    <div
-      className={css({
-        display: "flex",
-        alignItems: "center",
-      })}
-    >
+    <div {...stylex.props(styles.main)}>
       <MenuItem
         Icon={IconStats}
         href="/stats"
