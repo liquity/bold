@@ -676,6 +676,73 @@ contract InterestRateBasic is DevTestSetup {
 
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
     }
-}
 
-// commit + next: liqs apply interest
+    // --- withdrawETHGainToTrove tests ---
+
+     function testWithdrawETHGainToTroveSetsTroveLastDebtUpdateTimeToNow() public {
+       _setupForWithdrawETHGainToTrove();
+
+        // Fast-forward time
+        vm.warp(block.timestamp + 1 days);
+
+        assertLt(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+
+        // A withdraws ETH gain to Trove
+        withdrawETHGainToTrove(A);
+
+        assertEq(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+    }
+
+    function testWithdrawETHGainToTroveReducesTroveAccruedInterestTo0() public {
+        _setupForWithdrawETHGainToTrove();
+
+       // Fast-forward time
+       vm.warp(block.timestamp + 1 days);
+
+        assertGt(troveManager.calcTroveAccruedInterest(A), 0);
+
+        // A withdraws ETH gain to Trove
+        withdrawETHGainToTrove(A);
+
+        assertEq(troveManager.calcTroveAccruedInterest(A), 0);
+    }
+
+    function testWithdrawETHGainToTroveDoesntChangeEntireTroveDebt() public {
+        _setupForWithdrawETHGainToTrove();
+
+        // // Fast-forward time
+        // vm.warp(block.timestamp + 90 days);
+
+        // (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(A);
+        // assertGt(entireTroveDebt_1, 0);
+
+        // console.log(troveManager.getCurrentICR(A, 1000e18), "A ICR before");
+        // // A withdraws ETH gain to Trove
+        // withdrawETHGainToTrove(A);
+
+        // console.log(troveManager.getCurrentICR(A, 1000e18), "A ICR after");
+
+        // (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(A);
+        // console.log(entireTroveDebt_2, "entireTroveDebt_2");
+        // console.log(entireTroveDebt_1, "entireTroveDebt_1");
+
+        // assertEq(entireTroveDebt_2, entireTroveDebt_1);
+    }
+
+    function testWithdrawETHGainToTroveIncreasesRecordedTroveDebtByAccruedInterest() public {
+        _setupForWithdrawETHGainToTrove();
+
+        // Fast-forward time
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(A);
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(A);
+
+        // A withdraws ETH gain to Trove
+        withdrawETHGainToTrove(A);
+
+        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(A);
+
+        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
+    }
+}

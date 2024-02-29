@@ -170,6 +170,18 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
+    function liquidate(address _from, address _borrower) public {
+        vm.startPrank(_from);
+        troveManager.liquidate(_borrower);
+        vm.stopPrank();
+    }
+
+    function withdrawETHGainToTrove(address _from) public {
+        vm.startPrank(_from);
+        stabilityPool.withdrawETHGainToTrove();
+        vm.stopPrank();
+    }
+
     function logContractAddresses() public view {
         console.log("ActivePool addr: ", address(activePool));
         console.log("BorrowerOps addr: ", address(borrowerOperations));
@@ -180,5 +192,18 @@ contract BaseTest is Test {
         console.log("StabilityPool addr: ", address(stabilityPool));
         console.log("TroveManager addr: ", address(troveManager));
         console.log("BoldToken addr: ", address(boldToken));
+    }
+
+    function abs(uint256 x, uint256 y) public pure returns (uint256) {
+        return x > y ? x - y : y - x;
+    }
+
+    function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin) public {
+        assertApproximatelyEqual(_x, _y, _margin, "");
+    }
+
+    function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin, string memory _reason) public {
+        uint256 diff = abs(_x, _y);
+        assertLe(diff, _margin, _reason);
     }
 }

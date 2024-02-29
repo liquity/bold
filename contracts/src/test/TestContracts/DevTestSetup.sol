@@ -54,7 +54,7 @@ contract DevTestSetup is BaseTest {
         WETH = new ERC20("Wrapped ETH", "WETH");
 
         // TODO: optimize deployment order & constructor args & connector functions
-        
+
         // Deploy all contracts
         activePool = new ActivePool(address(WETH));
         borrowerOperations = new BorrowerOperations(address(WETH));
@@ -64,14 +64,14 @@ contract DevTestSetup is BaseTest {
         priceFeed = new PriceFeedTestnet();
         sortedTroves = new SortedTroves();
         stabilityPool = new StabilityPool(address(WETH));
-        troveManager = new TroveManager();    
+        troveManager = new TroveManager();
         boldToken = new BoldToken(address(troveManager), address(stabilityPool), address(borrowerOperations), address(activePool));
         mockInterestRouter = new MockInterestRouter();
 
         // Connect contracts
         sortedTroves.setParams(
             MAX_UINT256,
-            address(troveManager),  
+            address(troveManager),
             address(borrowerOperations)
         );
 
@@ -88,7 +88,7 @@ contract DevTestSetup is BaseTest {
             address(sortedTroves)
         );
 
-        // set contracts in BorrowerOperations 
+        // set contracts in BorrowerOperations
         borrowerOperations.setAddresses(
             address(troveManager),
             address(activePool),
@@ -136,5 +136,42 @@ contract DevTestSetup is BaseTest {
         for(uint256 i = 0; i < 6; i++) { // A to F
             giveAndApproveETH(accountsList[i], initialETHAmount);
         }
+    }
+
+    function _setupForWithdrawETHGainToTrove() internal {
+        uint256 troveDebtRequest_A = 2000e18;
+        uint256 troveDebtRequest_B = 3000e18;
+        uint256 troveDebtRequest_C = 4500e18;
+        uint256 interestRate = 5e16; // 5%
+
+        uint256 price = 2000e18;
+        priceFeed.setPrice(price);
+
+        openTroveNoHints100pctMaxFee(A,  5 ether, troveDebtRequest_A, interestRate);
+        openTroveNoHints100pctMaxFee(B,  5 ether, troveDebtRequest_B, interestRate);
+        openTroveNoHints100pctMaxFee(C,  5 ether, troveDebtRequest_C, interestRate);
+
+        console.log(troveManager.getTCR(price), "TCR");
+        console.log(troveManager.getCurrentICR(C, price), "C CR");
+
+        // A and B deposit to SP
+        makeSPDeposit(A, troveDebtRequest_A);
+        makeSPDeposit(B, troveDebtRequest_B);
+
+        // Price drops, C becomes liquidateable
+        price = 1025e18;
+        priceFeed.setPrice(price);
+
+        console.log(troveManager.getTCR(price), "TCR before liq");
+        console.log(troveManager.getCurrentICR(C, price), "C CR before liq");
+
+        assertFalse(troveManager.checkRecoveryMode(price));
+        assertLt(troveManager.getCurrentICR(C, price), troveManager.MCR());
+
+        // A liquidates C
+        liquidate(A, C);
+
+        // check A has an ETH gain
+        assertGt(stabilityPool.getDepositorETHGain(A), 0);
     }
 }

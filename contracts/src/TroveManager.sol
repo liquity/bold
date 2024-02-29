@@ -13,7 +13,7 @@ import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 
-import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
 contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveManager {
     string constant public NAME = "TroveManager"; // TODO
@@ -957,8 +957,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         uint pendingETHReward = getPendingETHReward(_troveId);
         uint pendingBoldDebtReward = getPendingBoldDebtReward(_troveId);
 
+        uint256 accruedTroveInterest = calcTroveAccruedInterest(_borrower);
+
         uint currentETH = Troves[_troveId].coll + pendingETHReward;
-        uint currentBoldDebt = Troves[_troveId].debt + pendingBoldDebtReward;
+        uint currentBoldDebt = Troves[_troveId].debt + pendingBoldDebtReward + accruedTroveInterest;
 
         return (currentETH, currentBoldDebt);
     }

@@ -201,7 +201,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
     // This function is called inside all state-changing user ops: borrower ops, liquidations, redemptions and SP deposits/withdrawals.
     // Some user ops trigger debt changes to Trove(s), in which case _troveDebtChange will be non-zero.
-    // The aggregate recorded debt is incremented by the aggregate pending interest, plus the net Trove Debt Change.
+    // The aggregate recorded debt is incremented by the aggregate pending interest, plus the net Trove debt change.
     // The net Trove debt change consists of the sum of a) any debt issued/repaid and b) any redistribution debt gain applied in the encapsulating operation.
     // It does *not* include the Trove's individual accrued interest - this gets accounted for in the aggregate accrued interest.
     // The net Trove debt change could be positive or negative in a repayment (depending on whether its redistribution gain or repayment amount is larger),
