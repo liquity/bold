@@ -11,7 +11,7 @@ import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 
-import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
 contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
     string constant public NAME = "TroveManager";
@@ -987,8 +987,10 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
         uint pendingETHReward = getPendingETHReward(_borrower);
         uint pendingBoldDebtReward = getPendingBoldDebtReward(_borrower);
 
+        uint256 accruedTroveInterest = calcTroveAccruedInterest(_borrower);
+
         uint currentETH = Troves[_borrower].coll + pendingETHReward;
-        uint currentBoldDebt = Troves[_borrower].debt + pendingBoldDebtReward;
+        uint currentBoldDebt = Troves[_borrower].debt + pendingBoldDebtReward + accruedTroveInterest;
 
         return (currentETH, currentBoldDebt);
     }

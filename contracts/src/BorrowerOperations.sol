@@ -11,8 +11,7 @@ import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 
-import "forge-std/console2.sol";
-
+// import "forge-std/console2.sol";
 
 contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOperations {
     string constant public NAME = "BorrowerOperations";
@@ -273,8 +272,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         vars.price = priceFeed.fetchPrice();
 
-        uint256 initialWeightedRecordedTroveDebt = contractsCache.troveManager.getTroveWeightedRecordedDebt(msg.sender);
-        uint256 annualInterestRate = contractsCache.troveManager.getTroveAnnualInterestRate(msg.sender);
+        uint256 initialWeightedRecordedTroveDebt = contractsCache.troveManager.getTroveWeightedRecordedDebt(_borrower);
+        uint256 annualInterestRate = contractsCache.troveManager.getTroveAnnualInterestRate(_borrower);
 
         // --- Checks ---
 
@@ -294,7 +293,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // Get the collChange based on whether or not ETH was sent in the transaction
         (vars.collChange, vars.isCollIncrease) = _getCollChange(msg.value, _collWithdrawal);
 
-        (vars.entireDebt, vars.entireColl, vars.redistDebtGain, , vars.accruedTroveInterest) = contractsCache.troveManager.getEntireDebtAndColl(msg.sender);
+        (vars.entireDebt, vars.entireColl, vars.redistDebtGain, , vars.accruedTroveInterest) = contractsCache.troveManager.getEntireDebtAndColl(_borrower);
 
         // Get the trove's old ICR before the adjustment, and what its new ICR will be after the adjustment
         vars.oldICR = LiquityMath._computeCR(vars.entireColl, vars.entireDebt, vars.price);
@@ -323,17 +322,17 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         contractsCache.troveManager.getAndApplyRedistributionGains(_borrower);
 
         if (_isDebtIncrease) {
-            // Incresae Trove debt by the drawn debt + redist. gain
+            // Increase Trove debt by the drawn debt + redist. gain
             activePool.mintAggInterest(_boldChange + vars.redistDebtGain, 0);
         } else {
             // Increase Trove debt by redist. gain and decrease by the repaid debt
             activePool.mintAggInterest(vars.redistDebtGain, _boldChange);
         }
 
-        // Update the Trove's recorded debt and coll
+        // Update the Trove's recorded coll and debt
         vars.newEntireColl = _updateTroveCollFromAdjustment(contractsCache.troveManager, _borrower, vars.collChange, vars.isCollIncrease);
         vars.newEntireDebt = _updateTroveDebtFromAdjustment(contractsCache.troveManager, _borrower, vars.entireDebt, _boldChange, _isDebtIncrease);
-       
+        
         vars.stake = contractsCache.troveManager.updateStakeAndTotalStakes(_borrower);
 
         emit TroveUpdated(_borrower, vars.newEntireDebt, vars.newEntireColl, vars.stake, BorrowerOperation.adjustTrove);
@@ -342,7 +341,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _moveTokensAndETHfromAdjustment(
             contractsCache.activePool,
             contractsCache.boldToken,
-            msg.sender,
+            _borrower,
             vars.collChange,
             vars.isCollIncrease,
             _boldChange,
