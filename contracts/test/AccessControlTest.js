@@ -1,5 +1,6 @@
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
+const { fundAccounts } = require("../utils/fundAccounts.js");
 const TroveManagerTester = artifacts.require("TroveManagerTester");
 
 const th = testHelpers.TestHelper;
@@ -53,7 +54,10 @@ contract(
 
       await deploymentHelper.connectCoreContracts(coreContracts);
 
-      for (account of accounts.slice(0, 10)) {
+
+      await fundAccounts(accounts.slice(0, 10), coreContracts.WETH);
+
+      for (const account of accounts.slice(0, 10)) {
         await th.openTrove(coreContracts, {
           extraBoldAmount: toBN(dec(20000, 18)),
           ICR: toBN(dec(2, 18)),
@@ -68,6 +72,7 @@ contract(
         try {
           const tx1 = await borrowerOperations.moveETHGainToTrove(
             bob,
+            1,
             { from: bob }
           );
         } catch (err) {
@@ -207,6 +212,20 @@ contract(
         }
       });
 
+      // sendETHToDefaultPool
+      it("sendETHToDefaultPool(): reverts when called by an account that is not TroveManager", async () => {
+        // Attempt call from alice
+        try {
+          const txAlice = await activePool.sendETHToDefaultPool(100, { from: alice });
+        } catch (err) {
+          assert.include(err.message, "revert");
+          assert.include(
+            err.message,
+            "ActivePool: Caller is not TroveManager"
+          );
+        }
+      });
+
       // increaseBold
       it("increaseBoldDebt(): reverts when called by an account that is not BO nor TroveM", async () => {
         // Attempt call from alice
@@ -239,15 +258,11 @@ contract(
         }
       });
 
-      // fallback (payment)
-      it("fallback(): reverts when called by an account that is not Borrower Operations nor Default Pool", async () => {
+      // receiveETH (payment)
+      it("receiveETH(): reverts when called by an account that is not Borrower Operations nor Default Pool", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await web3.eth.sendTransaction({
-            from: alice,
-            to: activePool.address,
-            value: 100,
-          });
+          await activePool.receiveETH(100, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           assert.include(
@@ -298,15 +313,11 @@ contract(
         }
       });
 
-      // fallback (payment)
-      it("fallback(): reverts when called by an account that is not the Active Pool", async () => {
+      // receiveETH (payment)
+      it("receiveETH(): reverts when called by an account that is not the Active Pool", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await web3.eth.sendTransaction({
-            from: alice,
-            to: defaultPool.address,
-            value: 100,
-          });
+          await defaultPool.receiveETH(100, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           assert.include(
@@ -334,15 +345,11 @@ contract(
 
       // --- onlyActivePool ---
 
-      // fallback (payment)
-      it("fallback(): reverts when called by an account that is not the Active Pool", async () => {
+      // receiveETH (payment)
+      it("receiveETH(): reverts when called by an account that is not the Active Pool", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await web3.eth.sendTransaction({
-            from: alice,
-            to: stabilityPool.address,
-            value: 100,
-          });
+          await stabilityPool.receiveETH(100, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           assert.include(

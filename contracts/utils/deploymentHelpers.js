@@ -6,17 +6,15 @@ const ActivePool = artifacts.require("./ActivePool.sol");
 const DefaultPool = artifacts.require("./DefaultPool.sol");
 const GasPool = artifacts.require("./GasPool.sol");
 const CollSurplusPool = artifacts.require("./CollSurplusPool.sol");
-const FunctionCaller = artifacts.require("./TestContracts/FunctionCaller.sol");
 const BorrowerOperations = artifacts.require("./BorrowerOperations.sol");
 const HintHelpers = artifacts.require("./HintHelpers.sol");
 const BoldToken = artifacts.require("./BoldToken.sol");
-const BoldTokenTester = artifacts.require("./TestContracts/BoldTokenTester.sol");
 const StabilityPool = artifacts.require("./StabilityPool.sol");
 const PriceFeedMock = artifacts.require("./PriceFeedMock.sol");
-// const ERC20 = artifacts.require(
-// //  "@openzeppelin/contracts/token/ERC20/ERC20.sol"
-//   "../node_modules/@openzeppelin/contracts/build/contracts/ERC20.json"
-// );
+const ERC20 = artifacts.require("./ERC20MinterMock.sol");
+//  "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol"
+//  "../node_modules/@openzeppelin/contracts/build/contracts/ERC20PresetMinterPauser.json"
+//);
 
 const { web3, ethers } = require("hardhat");
 const { accountsList } = require("../hardhatAccountsList2k.js");
@@ -30,16 +28,18 @@ class DeploymentHelper {
   }
 
   static async deployLiquityCoreHardhat() {
+    const WETH = await ERC20.new("WETH", "WETH");
+
     // Borrowing contracts
-    const activePool = await ActivePool.new();
-    const borrowerOperations = await BorrowerOperations.new();
-    const collSurplusPool = await CollSurplusPool.new();
-    const defaultPool = await DefaultPool.new();
+    const activePool = await ActivePool.new(WETH.address);
+    const borrowerOperations = await BorrowerOperations.new(WETH.address);
+    const collSurplusPool = await CollSurplusPool.new(WETH.address);
+    const defaultPool = await DefaultPool.new(WETH.address);
     const gasPool = await GasPool.new();
     const priceFeedTestnet = await PriceFeedTestnet.new();
     const priceFeed = await PriceFeedMock.new();
     const sortedTroves = await SortedTroves.new();
-    const stabilityPool = await StabilityPool.new();
+    const stabilityPool = await StabilityPool.new(WETH.address);
     const troveManager = await TroveManager.new();
     const boldToken = await BoldToken.new(
       troveManager.address,
@@ -47,7 +47,6 @@ class DeploymentHelper {
       borrowerOperations.address
     );
 
-    const functionCaller = await FunctionCaller.new();
     const hintHelpers = await HintHelpers.new();
       
     // // Needed?
@@ -70,12 +69,11 @@ class DeploymentHelper {
     StabilityPool.setAsDeployed(stabilityPool);
     GasPool.setAsDeployed(gasPool);
     CollSurplusPool.setAsDeployed(collSurplusPool);
-    FunctionCaller.setAsDeployed(functionCaller);
     BorrowerOperations.setAsDeployed(borrowerOperations);
     HintHelpers.setAsDeployed(hintHelpers);
 
     const coreContracts = {
-      //stETH,
+      WETH,
       priceFeedTestnet,
       boldToken,
       sortedTroves,
@@ -85,7 +83,6 @@ class DeploymentHelper {
       gasPool,
       defaultPool,
       collSurplusPool,
-      functionCaller,
       borrowerOperations,
       hintHelpers
     };
@@ -94,15 +91,6 @@ class DeploymentHelper {
 
   static async deployBoldToken(contracts) {
     contracts.boldToken = await BoldToken.new(
-      contracts.troveManager.address,
-      contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
-    );
-    return contracts;
-  }
-
-  static async deployBoldTokenTester(contracts) {
-    contracts.boldToken = await BoldTokenTester.new(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
       contracts.borrowerOperations.address
@@ -138,14 +126,6 @@ class DeploymentHelper {
       maxBytes32,
       contracts.troveManager.address,
       contracts.borrowerOperations.address
-    );
-
-    // set contract addresses in the FunctionCaller
-    await contracts.functionCaller.setTroveManagerAddress(
-      contracts.troveManager.address
-    );
-    await contracts.functionCaller.setSortedTrovesAddress(
-      contracts.sortedTroves.address
     );
 
     // set contracts in BorrowerOperations

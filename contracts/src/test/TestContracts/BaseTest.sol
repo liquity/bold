@@ -28,6 +28,7 @@ contract BaseTest is Test {
     address public D;
     address public E;
     address public F;
+    address public G;
 
     uint256 public constant MAX_UINT256 = type(uint256).max;
     uint256 public constant SECONDS_IN_1_YEAR = 31536000; // 60*60*24*365
@@ -91,6 +92,12 @@ contract BaseTest is Test {
         vm.startPrank(_account);
         borrowerOperations.adjustTroveInterestRate(_newAnnualInterestRate, ZERO_ADDRESS, ZERO_ADDRESS);
         vm.stopPrank();
+    }
+
+    function checkRecoveryMode(bool _enabled) public {
+        uint256 price = priceFeed.getPrice();
+        bool recoveryMode = troveManager.checkRecoveryMode(price);
+        assertEq(recoveryMode, _enabled);
     }
 
     function logContractAddresses() public view {

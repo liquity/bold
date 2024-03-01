@@ -4,6 +4,25 @@ import "./TestContracts/DevTestSetup.sol";
 
 contract BasicOps is DevTestSetup {
 
+    function testOpenTroveFailsWithoutAllowance() public {
+        priceFeed.setPrice(2000e18);
+
+        vm.startPrank(G);
+        vm.expectRevert("ERC20: insufficient allowance");
+        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
+        vm.stopPrank();
+    }
+
+    function testOpenTroveFailsWithoutBalance() public {
+        priceFeed.setPrice(2000e18);
+
+        vm.startPrank(G);
+        WETH.approve(address(borrowerOperations), 2e18);
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 0);
+        vm.stopPrank();
+    }
+
     function testOpenTrove() public {
         priceFeed.setPrice(2000e18);
         uint256 trovesCount = troveManager.getTroveOwnersCount();
