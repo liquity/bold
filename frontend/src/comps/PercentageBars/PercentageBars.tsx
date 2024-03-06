@@ -1,4 +1,6 @@
-import { palette } from ":src/colors";
+"use client";
+
+import { palette } from "@/src/colors";
 import { a, useSpring, useTransition } from "@react-spring/web";
 import * as stylex from "@stylexjs/stylex";
 import { useId } from "react";

@@ -1,9 +1,11 @@
+"use client";
+
 import type { SpringConfig } from "@react-spring/web";
 
 import { a, useSprings } from "@react-spring/web";
 import * as stylex from "@stylexjs/stylex";
 
-const objects: {
+type Illustration = {
   color: string;
   w: number;
   h: number;
@@ -19,7 +21,9 @@ const objects: {
   };
   config?: SpringConfig;
   delay?: number;
-}[] = [
+};
+
+const illustration: Illustration[] = [
   {
     // big rectangle
     color: "#121B44",
@@ -155,31 +159,28 @@ const styles = stylex.create({
 });
 
 export function Logo() {
-  const [springs] = useSprings(objects.length, (index) => ({
-    config: objects[index].config,
-    from: objects[index].from,
-    to: objects[index].to,
-    delay: objects[index].delay,
+  const [springs] = useSprings(illustration.length, (index) => ({
+    config: illustration[index].config,
+    from: illustration[index].from,
+    to: illustration[index].to,
+    delay: illustration[index].delay,
   }));
-
   return (
     <a.div {...stylex.props(styles.main)}>
-      {springs.map((spring, index) => {
-        return (
-          <a.div
-            key={index}
-            style={{
-              position: "absolute",
-              top: objects[index].y,
-              left: objects[index].x,
-              width: objects[index].w,
-              height: objects[index].h,
-              background: objects[index].color,
-              ...spring,
-            }}
-          />
-        );
-      })}
+      {springs.map((spring, index) => (
+        <a.div
+          key={index}
+          style={{
+            position: "absolute",
+            top: illustration[index].y,
+            left: illustration[index].x,
+            width: illustration[index].w,
+            height: illustration[index].h,
+            background: illustration[index].color,
+            ...spring,
+          }}
+        />
+      ))}
     </a.div>
   );
 }

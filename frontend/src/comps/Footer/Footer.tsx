@@ -1,5 +1,7 @@
-import { palette } from ":src/colors";
+import { palette } from "@/src/colors";
 import * as stylex from "@stylexjs/stylex";
+import Image from "next/image";
+import Link from "next/link";
 import logo from "./footer-logo.svg";
 
 const links = [
@@ -49,17 +51,17 @@ export function Footer() {
   return (
     <footer {...stylex.props(styles.main)}>
       <div>
-        <a
+        <Link
           href="/"
           {...stylex.props(styles.logo)}
         >
-          <img
+          <Image
             alt="Bold"
             height={32}
             src={logo}
             width={82}
           />
-        </a>
+        </Link>
       </div>
       <div {...stylex.props(styles.linksWrapper)}>
         <ul {...stylex.props(styles.links)}>

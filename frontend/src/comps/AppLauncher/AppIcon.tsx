@@ -1,8 +1,11 @@
+"use client";
+
 import type { ReactNode } from "react";
 
 import { a, useSpring } from "@react-spring/web";
+import { match } from "ts-pattern";
 
-export type IconProps = {
+type IconProps = {
   state: "initial" | "idle" | "active";
 };
 
@@ -12,19 +15,21 @@ export const springConfig = {
   friction: 40,
 };
 
-function IconBase({ children }: { children: ReactNode }) {
-  return (
-    <svg
-      width="56"
-      height="56"
-      style={{ overflow: "visible" }}
-    >
-      {children}
-    </svg>
-  );
+export function AppIcon({
+  iconType,
+  state,
+}: {
+  iconType: "borrow" | "leverage" | "earn";
+  state: IconProps["state"];
+}) {
+  return match(iconType)
+    .with("borrow", () => <AppIconBorrow state={state} />)
+    .with("leverage", () => <AppIconLeverage state={state} />)
+    .with("earn", () => <AppIconEarn state={state} />)
+    .exhaustive();
 }
 
-export function AppIconBorrow({ state }: IconProps) {
+function AppIconBorrow({ state }: IconProps) {
   const { t1, t2 } = useSpring({
     t1: state === "active"
       ? "translate(36 0) scale(1.1)"
@@ -62,7 +67,7 @@ export function AppIconBorrow({ state }: IconProps) {
   );
 }
 
-export function AppIconLeverage({ state }: IconProps) {
+function AppIconLeverage({ state }: IconProps) {
   const { t1, t2 } = useSpring({
     t1: state === "active"
       ? "translate(0 56) scale(0)"
@@ -101,7 +106,7 @@ export function AppIconLeverage({ state }: IconProps) {
   );
 }
 
-export function AppIconEarn({ state }: IconProps) {
+function AppIconEarn({ state }: IconProps) {
   const { squareT, squareRadius, circleT } = useSpring({
     squareT: state === "active" ? "scale(1.4)" : "scale(1)",
     squareRadius: state === "active" ? "28" : "0",
@@ -127,5 +132,17 @@ export function AppIconEarn({ state }: IconProps) {
         style={{ transformOrigin: "50% 50%" }}
       />
     </IconBase>
+  );
+}
+
+function IconBase({ children }: { children: ReactNode }) {
+  return (
+    <svg
+      width="56"
+      height="56"
+      style={{ overflow: "visible" }}
+    >
+      {children}
+    </svg>
   );
 }

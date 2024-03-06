@@ -1,5 +1,8 @@
-import { Logo } from ":src/comps/Logo/Logo";
+"use client";
+
+import { Logo } from "@/src/comps/Logo/Logo";
 import * as stylex from "@stylexjs/stylex";
+import Link from "next/link";
 import { Actions } from "./Actions";
 import { Menu } from "./Menu";
 
@@ -22,12 +25,12 @@ const styles = stylex.create({
 export function TopBar() {
   return (
     <div {...stylex.props(styles.main)}>
-      <a
+      <Link
         href="/"
         {...stylex.props(styles.logo)}
       >
         <Logo />
-      </a>
+      </Link>
       <Menu />
       <Actions />
     </div>

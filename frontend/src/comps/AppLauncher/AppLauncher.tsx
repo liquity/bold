@@ -1,9 +1,46 @@
-import type { IconProps } from "./AppIcon";
+"use client";
 
 import { a, useSpring } from "@react-spring/web";
 import * as stylex from "@stylexjs/stylex";
+import Link from "next/link";
 import { useState } from "react";
-import { AppIconBorrow, AppIconEarn, AppIconLeverage, springConfig } from "./AppIcon";
+import { AppIcon, springConfig } from "./AppIcon";
+
+type AppData = readonly [
+  label: string,
+  description: string,
+  href: string,
+  bg: string,
+  fg: string,
+  iconType: "borrow" | "leverage" | "earn",
+];
+
+const apps: AppData[] = [
+  [
+    "Borrow",
+    "Borrow BOLD stablecoin against ETH and staked ETH at a rate that you set",
+    "/borrow",
+    "#121B44",
+    "#FFFFFF",
+    "borrow",
+  ],
+  [
+    "Leverage",
+    "Multiply your ETH and staked ETH at a funding rate that you set",
+    "/leverage",
+    "#63D77D",
+    "#121B44",
+    "leverage",
+  ],
+  [
+    "Earn",
+    "Deposit BOLD and earn real yield",
+    "/earn",
+    "#405AE5",
+    "#FFFFFF",
+    "earn",
+  ],
+];
 
 const styles = stylex.create({
   main: {
@@ -60,42 +97,6 @@ const styles = stylex.create({
   },
 });
 
-type AppData = readonly [
-  label: string,
-  description: string,
-  href: string,
-  bg: string,
-  fg: string,
-  Icon: (props: IconProps) => JSX.Element,
-];
-
-const apps: AppData[] = [
-  [
-    "Borrow",
-    "Borrow BOLD stablecoin against ETH and staked ETH at a rate that you set",
-    "/borrow",
-    "#121B44",
-    "#FFFFFF",
-    AppIconBorrow,
-  ],
-  [
-    "Leverage",
-    "Multiply your ETH and staked ETH at a funding rate that you set",
-    "/leverage",
-    "#63D77D",
-    "#121B44",
-    AppIconLeverage,
-  ],
-  [
-    "Earn",
-    "Deposit BOLD and earn real yield",
-    "/earn",
-    "#405AE5",
-    "#FFFFFF",
-    AppIconEarn,
-  ],
-];
-
 export function AppLauncher() {
   const [highlighted, setHighlighted] = useState<AppData | null>(null);
 
@@ -134,7 +135,7 @@ function AppCard({
   highlighted: boolean;
   onHighlightChange: (highlighted: boolean) => void;
 }) {
-  const [label, description, href, bg, fg, Icon] = app;
+  const [label, description, href, bg, fg, iconType] = app;
 
   const { titleT, arrowT } = useSpring({
     titleT: highlighted ? "scale(1.2)" : "scale(1)",
@@ -143,7 +144,7 @@ function AppCard({
   });
 
   return (
-    <a
+    <Link
       href={href}
       onMouseEnter={() => onHighlightChange(true)}
       onMouseLeave={() => onHighlightChange(false)}
@@ -159,7 +160,10 @@ function AppCard({
         {...stylex.props(styles.cardIn)}
       >
         <div>
-          <Icon state={highlighted ? "active" : "idle"} />
+          <AppIcon
+            iconType={iconType}
+            state={highlighted ? "active" : "idle"}
+          />
         </div>
         <div {...stylex.props(styles.content)}>
           <h1 {...stylex.props(styles.title)}>
@@ -181,7 +185,7 @@ function AppCard({
           </p>
         </div>
       </a.section>
-    </a>
+    </Link>
   );
 }
 

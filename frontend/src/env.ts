@@ -12,4 +12,4 @@ export type Env = z.infer<typeof EnvSchema>;
 
 export const {
   WALLET_CONNECT_PROJECT_ID,
-} = EnvSchema.parse(import.meta.env);
+} = EnvSchema.parse(process.env);

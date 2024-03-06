@@ -1,7 +1,9 @@
 import type { ComponentType } from "react";
 
-import { useTheme } from ":src/theme";
+import { useTheme } from "@/src/theme";
 import * as stylex from "@stylexjs/stylex";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const styles = stylex.create({
   main: {
@@ -15,6 +17,8 @@ const styles = stylex.create({
       default: null,
       ":active": "0 1px",
     },
+    cursor: "pointer",
+    userSelect: "none",
   },
   selected: {
     color: "accent",
@@ -27,24 +31,26 @@ export function MenuItem({
   label,
 }: {
   Icon: ComponentType<{ color: string }>;
-  href: string;
+  href?: string;
   label: string;
 }) {
   const { color } = useTheme();
 
-  // const selected = pathname.startsWith(href)
-  const selected = false;
+  const pathname = usePathname();
+  const selected = Boolean(href && pathname.startsWith(href));
 
-  return (
-    <a href={href}>
-      <div
-        aria-selected={selected}
-        {...stylex.props(styles.main)}
-        style={{ color: color(selected ? "accent" : "content") }}
-      >
-        {label}
-        <Icon color={color(selected ? "accent" : "content")} />
-      </div>
-    </a>
+  const item = (
+    <div
+      aria-selected={selected}
+      {...stylex.props(styles.main)}
+      style={{ color: color(selected ? "accent" : "content") }}
+    >
+      {label}
+      <Icon color={color(selected ? "accent" : "content")} />
+    </div>
   );
+
+  return href
+    ? <Link href={href}>{item}</Link>
+    : item;
 }

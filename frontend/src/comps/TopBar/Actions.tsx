@@ -19,7 +19,6 @@ export function Actions() {
       />
       <MenuItem
         Icon={IconAccount}
-        href="/account"
         label="Account"
       />
     </div>
