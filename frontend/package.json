@@ -7,7 +7,6 @@
     "dev": "rm -rf ./.next && next dev",
     "fmt": "dprint fmt **/*.{ts,tsx,js,json,html,md}",
     "lint": "next lint",
-    "start": "next start",
     "test": "vitest"
   },
   "dependencies": {
