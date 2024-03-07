@@ -19,3 +19,5 @@ node_modules
 
 coverage/
 coverage.json
+mochaOutput.json
+testMatrix.json

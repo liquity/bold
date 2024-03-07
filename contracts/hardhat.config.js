@@ -1,6 +1,7 @@
 require("@nomicfoundation/hardhat-foundry");
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomiclabs/hardhat-truffle5");
+require("solidity-coverage");
 
 const accounts = require("./hardhatAccountsList2k.js");
 const accountsList = accounts.accountsList;
