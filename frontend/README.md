@@ -17,6 +17,14 @@ cd bold
 pnpm install
 ```
 
+## Environment
+
+Create `.env.local` from the `.env` file and fill in the required values.
+
+```sh
+cp .env .env.local
+```
+
 ## Scripts
 
 ```sh
