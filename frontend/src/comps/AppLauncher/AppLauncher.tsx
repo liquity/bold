@@ -1,7 +1,7 @@
 "use client";
 
+import { css } from "@/styled-system/css";
 import { a, useSpring } from "@react-spring/web";
-import * as stylex from "@stylexjs/stylex";
 import Link from "next/link";
 import { useState } from "react";
 import { AppIcon, springConfig } from "./AppIcon";
@@ -42,61 +42,6 @@ const apps: AppData[] = [
   ],
 ];
 
-const styles = stylex.create({
-  main: {
-    display: "grid",
-    width: "100%",
-    height: 464,
-  },
-  card: {
-    outline: "none",
-    ":active": {
-      translate: "0 2px",
-    },
-    ":focus-visible": {
-      zIndex: 2,
-      outlineOffset: 0,
-      outlineColor: "#FFFFFF",
-    },
-  },
-  cardIn: {
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    width: "100%",
-    height: "100%",
-    padding: 32,
-  },
-  content: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 24,
-  },
-  title: {
-    display: "flex",
-    justifyContent: "space-between",
-    fontSize: 24,
-    fontWeight: 600,
-  },
-  titleIn: {
-    display: "flex",
-    alignItems: "center",
-    height: "100%",
-    transformOrigin: "0% 50%",
-  },
-  titleArrow: {
-    display: "flex",
-    alignItems: "center",
-    height: "100%",
-    transformOrigin: "100% 50%",
-  },
-  description: {
-    width: 240,
-    height: 80,
-    fontSize: 16,
-  },
-});
-
 export function AppLauncher() {
   const [highlighted, setHighlighted] = useState<AppData | null>(null);
 
@@ -110,7 +55,11 @@ export function AppLauncher() {
   return (
     <a.div
       style={{ gridTemplateColumns }}
-      {...stylex.props(styles.main)}
+      className={css({
+        display: "grid",
+        width: "100%",
+        height: 464,
+      })}
     >
       {apps.map((app) => (
         <AppCard
@@ -150,14 +99,31 @@ function AppCard({
       onMouseLeave={() => onHighlightChange(false)}
       onFocus={() => onHighlightChange(true)}
       onBlur={() => onHighlightChange(false)}
-      {...stylex.props(styles.card)}
+      className={css({
+        outline: "none",
+        _active: {
+          translate: "0 2px",
+        },
+        _focusVisible: {
+          zIndex: 2,
+          outlineOffset: 0,
+          outlineColor: "#FFFFFF",
+        },
+      })}
     >
       <a.section
         style={{
           color: fg,
           backgroundColor: bg,
         }}
-        {...stylex.props(styles.cardIn)}
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          width: "100%",
+          height: "100%",
+          padding: 32,
+        })}
       >
         <div>
           <AppIcon
@@ -165,22 +131,51 @@ function AppCard({
             state={highlighted ? "active" : "idle"}
           />
         </div>
-        <div {...stylex.props(styles.content)}>
-          <h1 {...stylex.props(styles.title)}>
+        <div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            gap: 24,
+          })}
+        >
+          <h1
+            className={css({
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 24,
+              fontWeight: 600,
+            })}
+          >
             <a.div
               style={{ transform: titleT }}
-              {...stylex.props(styles.titleIn)}
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                height: "100%",
+                transformOrigin: "0% 50%",
+              })}
             >
               {label}
             </a.div>
             <a.div
               style={{ transform: arrowT }}
-              {...stylex.props(styles.titleArrow)}
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                height: "100%",
+                transformOrigin: "100% 50%",
+              })}
             >
               <Arrow color={fg} />
             </a.div>
           </h1>
-          <p {...stylex.props(styles.description)}>
+          <p
+            className={css({
+              width: 240,
+              height: 80,
+              fontSize: 16,
+            })}
+          >
             {description}
           </p>
         </div>

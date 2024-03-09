@@ -1,5 +1,5 @@
 import { palette } from "@/src/colors";
-import * as stylex from "@stylexjs/stylex";
+import { css } from "@/styled-system/css";
 import Image from "next/image";
 import Link from "next/link";
 import logo from "./footer-logo.svg";
@@ -10,50 +10,28 @@ const links = [
   ["Privacy Policy", "https://example.org"],
 ];
 
-const styles = stylex.create({
-  main: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    height: 120,
-  },
-  logo: {
-    display: "flex",
-    alignItems: "center",
-    height: 64,
-    paddingRight: 16,
-    ":active": {
-      translate: "0 1px",
-    },
-  },
-  linksWrapper: {
-    display: "flex",
-    alignItems: "center",
-  },
-  links: {
-    display: "flex",
-    gap: 16,
-  },
-  link: {
-    display: "flex",
-    alignItems: "center",
-    padding: 8,
-    ":active": {
-      translate: "0 1px",
-    },
-  },
-  lastLink: {
-    paddingRight: 0,
-  },
-});
-
 export function Footer() {
   return (
-    <footer {...stylex.props(styles.main)}>
+    <footer
+      className={css({
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        height: 120,
+      })}
+    >
       <div>
         <Link
           href="/"
-          {...stylex.props(styles.logo)}
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            height: 64,
+            paddingRight: 16,
+            _active: {
+              translate: "0 1px",
+            },
+          })}
         >
           <Image
             alt="Bold"
@@ -63,19 +41,36 @@ export function Footer() {
           />
         </Link>
       </div>
-      <div {...stylex.props(styles.linksWrapper)}>
-        <ul {...stylex.props(styles.links)}>
-          {links.map(([label, href], index) => (
+      <div
+        className={css({
+          display: "flex",
+          alignItems: "center",
+        })}
+      >
+        <ul
+          className={css({
+            display: "flex",
+            gap: 16,
+          })}
+        >
+          {links.map(([label, href]) => (
             <li key={label + href}>
               <a
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: palette.rain }}
-                {...stylex.props(
-                  styles.link,
-                  index === links.length - 1 && styles.lastLink,
-                )}
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  padding: 8,
+                  _lastOfType: {
+                    paddingRight: 0,
+                  },
+                  _active: {
+                    translate: "0 1px",
+                  },
+                })}
               >
                 {label}
               </a>

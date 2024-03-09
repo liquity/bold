@@ -2,8 +2,8 @@
 
 import type { SpringConfig } from "@react-spring/web";
 
+import { css } from "@/styled-system/css";
 import { a, useSprings } from "@react-spring/web";
-import * as stylex from "@stylexjs/stylex";
 
 type Illustration = {
   color: string;
@@ -148,16 +148,6 @@ const illustration: Illustration[] = [
   },
 ];
 
-const styles = stylex.create({
-  main: {
-    display: "flex",
-    position: "relative",
-    width: 34,
-    height: 48,
-    overflow: "hidden",
-  },
-});
-
 export function Logo() {
   const [springs] = useSprings(illustration.length, (index) => ({
     config: illustration[index].config,
@@ -166,7 +156,15 @@ export function Logo() {
     delay: illustration[index].delay,
   }));
   return (
-    <a.div {...stylex.props(styles.main)}>
+    <a.div
+      className={css({
+        display: "flex",
+        position: "relative",
+        width: 34,
+        height: 48,
+        overflow: "hidden",
+      })}
+    >
       {springs.map((spring, index) => (
         <a.div
           key={index}

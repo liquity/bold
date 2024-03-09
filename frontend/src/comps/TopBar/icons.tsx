@@ -2,25 +2,23 @@ import type { ReactNode } from "react";
 
 function IconBase({
   children,
-  color = "#121B44",
+  color = "currentColor",
 }: {
   children: ReactNode;
-  color: string;
+  color?: string;
 }) {
   return (
     <svg
       width="16"
       height="16"
-      style={{
-        fill: color,
-      }}
+      style={{ fill: color }}
     >
       {children}
     </svg>
   );
 }
 
-export function IconEarn({ color }: { color: string }) {
+export function IconEarn({ color }: { color?: string }) {
   return (
     <IconBase color={color}>
       <path
@@ -32,7 +30,7 @@ export function IconEarn({ color }: { color: string }) {
   );
 }
 
-export function IconBold({ color }: { color: string }) {
+export function IconBold({ color }: { color?: string }) {
   return (
     <IconBase color={color}>
       <path d="M1 1L6 1L1 6L1 1Z" />
@@ -44,7 +42,7 @@ export function IconBold({ color }: { color: string }) {
   );
 }
 
-export function IconBorrow({ color }: { color: string }) {
+export function IconBorrow({ color }: { color?: string }) {
   return (
     <IconBase color={color}>
       <path d="M5.94975 12.9497C4.63699 14.2625 2.85652 15 1 15L1 1C2.85652 1 4.63699 1.7375 5.94975 3.05025C7.2625 4.36301 8 6.14349 8 8C8 9.85652 7.2625 11.637 5.94975 12.9497Z" />
@@ -53,7 +51,7 @@ export function IconBorrow({ color }: { color: string }) {
   );
 }
 
-export function IconPortfolio({ color }: { color: string }) {
+export function IconPortfolio({ color }: { color?: string }) {
   return (
     <IconBase color={color}>
       <rect x="1.25" y="1.98145" width="4.939" height="5.22395" />
@@ -64,7 +62,7 @@ export function IconPortfolio({ color }: { color: string }) {
   );
 }
 
-export function IconAccount({ color }: { color: string }) {
+export function IconAccount({ color }: { color?: string }) {
   return (
     <IconBase color={color}>
       <circle cx="8.45455" cy="5.45455" r="4.45455" />
@@ -73,7 +71,7 @@ export function IconAccount({ color }: { color: string }) {
   );
 }
 
-export function IconStats({ color }: { color: string }) {
+export function IconStats({ color }: { color?: string }) {
   return (
     <IconBase color={color}>
       <rect x="1" y="11" width="4" height="4" />

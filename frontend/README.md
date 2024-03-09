@@ -19,11 +19,17 @@ pnpm install
 
 ## Environment
 
-Create `.env.local` from the `.env` file and fill in the required values.
+Create `.env.local` from the `.env` file and fill in the required values (see the description of each variable below).
 
 ```sh
 cp .env .env.local
 ```
+
+See [./src/env.ts](./src/env.ts) for details about how the environment variables are being imported by the app.
+
+### `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`
+
+A WalletConnect project ID which can be obtained by [creating a WalletConnect project](https://cloud.walletconnect.com/app).
 
 ## Scripts
 

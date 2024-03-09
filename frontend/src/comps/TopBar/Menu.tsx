@@ -1,13 +1,15 @@
 import type { ComponentType } from "react";
 
-import * as stylex from "@stylexjs/stylex";
+import { css } from "@/styled-system/css";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { IconBold, IconBorrow, IconEarn, IconPortfolio } from "./icons";
 import { MenuItem } from "./MenuItem";
 
 const menuItems: [
   string,
   string,
-  ComponentType<{ color: string }>,
+  ComponentType<{}>,
 ][] = [
   ["Borrow", "/borrow", IconBorrow],
   ["Earn", "/earn", IconEarn],
@@ -15,25 +17,26 @@ const menuItems: [
   ["Portfolio", "/portfolio", IconPortfolio],
 ];
 
-const styles = stylex.create({
-  main: {
-    display: "flex",
-    alignItems: "center",
-    height: "100%",
-  },
-});
-
 export function Menu() {
+  const pathname = usePathname();
   return (
     <nav>
-      <ul {...stylex.props(styles.main)}>
+      <ul
+        className={css({
+          display: "flex",
+          alignItems: "center",
+          height: "100%",
+        })}
+      >
         {menuItems.map(([label, href, Icon]) => (
           <li key={label + href}>
-            <MenuItem
-              Icon={Icon}
-              href={href}
-              label={label}
-            />
+            <Link href={href}>
+              <MenuItem
+                icon={<Icon />}
+                label={label}
+                selected={pathname.startsWith(href)}
+              />
+            </Link>
           </li>
         ))}
       </ul>

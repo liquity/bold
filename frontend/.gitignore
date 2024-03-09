@@ -24,3 +24,7 @@
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# panda
+/styled-system/
+/styled-system-static/
