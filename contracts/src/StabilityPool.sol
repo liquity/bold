@@ -310,7 +310,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * - Decreases deposit by withdrawn amount and takes new snapshots of accumulators P and S
     */
     function withdrawFromSP(uint _amount) external override {
-        if (_amount !=0) {_requireNoUnderCollateralizedTroves();}
+        // TODO: if (_amount !=0) {_requireNoUnderCollateralizedTroves();}
         uint initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
 
@@ -337,10 +337,10 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * - Leaves their compounded deposit in the Stability Pool
     * - Takes new snapshots of accumulators P and S 
     */
-    function withdrawETHGainToTrove() external override {
+    function withdrawETHGainToTrove(uint256 _troveId) external override {
         uint initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
-        _requireUserHasTrove(msg.sender);
+        _requireTroveIsActive(_troveId);
         _requireUserHasETHGain(msg.sender);
 
         uint depositorETHGain = getDepositorETHGain(msg.sender);
@@ -361,7 +361,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         emit StabilityPoolETHBalanceUpdated(newETHBalance);
         emit EtherSent(msg.sender, depositorETHGain);
 
-        borrowerOperations.moveETHGainToTrove(msg.sender, depositorETHGain);
+        borrowerOperations.moveETHGainToTrove(/* msg.sender,  */_troveId, depositorETHGain);
     }
 
     // --- Liquidation functions ---
@@ -674,12 +674,14 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         require(msg.sender == address(troveManager), "StabilityPool: Caller is not TroveManager");
     }
 
+    /* TODO
     function _requireNoUnderCollateralizedTroves() internal {
         uint price = priceFeed.fetchPrice();
-        address lowestTrove = sortedTroves.getLast();
+        uint256 lowestTroveId = sortedTroves.getLast();
         uint ICR = troveManager.getCurrentICR(lowestTrove, price);
         require(ICR >= MCR, "StabilityPool: Cannot withdraw while there are troves with ICR < MCR");
     }
+    */
 
     function _requireUserHasDeposit(uint _initialDeposit) internal pure {
         require(_initialDeposit > 0, 'StabilityPool: User must have a non-zero deposit');
@@ -694,8 +696,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         require(_amount > 0, 'StabilityPool: Amount must be non-zero');
     }
 
-    function _requireUserHasTrove(address _depositor) internal view {
-        require(troveManager.getTroveStatus(_depositor) == 1, "StabilityPool: caller must have an active trove to withdraw ETHGain to");
+    function _requireTroveIsActive(uint256 _troveId) internal view {
+        require(troveManager.checkTroveIsActive(_troveId), "StabilityPool: trove must be active to withdraw ETHGain to");
     }
 
     function _requireUserHasETHGain(address _depositor) internal view {

@@ -14,24 +14,24 @@ contract SortedTrovesTester {
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
     }
 
-    function insert(address _id, uint256 _annualInterestRate, address _prevId, address _nextId) external {
+    function insert(uint256 _id, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external {
         sortedTroves.insert(_id, _annualInterestRate, _prevId, _nextId);
     }
 
-    function remove(address _id) external {
+    function remove(uint256 _id) external {
         sortedTroves.remove(_id);
     }
 
-    function reInsert(address _id, uint256 _newAnnualInterestRate, address _prevId, address _nextId) external {
+    function reInsert(uint256 _id, uint256 _newAnnualInterestRate, uint256 _prevId, uint256 _nextId) external {
         sortedTroves.reInsert(_id, _newAnnualInterestRate, _prevId, _nextId);
     }
 
     // --- Mock TroveManager functions ---
-    function getTroveAnnualInterestRate(address) external pure returns (uint) {
+    function getTroveAnnualInterestRate(uint256) external pure returns (uint) {
         return 1;
     }
 
-    // function getCurrentICR(address, uint) external pure returns (uint) {
+    // function getCurrentICR(uint256, uint) external pure returns (uint) {
     //     return 1;
     // }
 }

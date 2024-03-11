@@ -83,9 +83,9 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
 
-    event TroveCreated(address indexed _borrower, uint arrayIndex);
-    event TroveUpdated(address indexed _borrower, uint _debt, uint _coll, uint stake, BorrowerOperation operation);
-    event BoldBorrowingFeePaid(address indexed _borrower, uint _boldFee);
+    event TroveCreated(address indexed _owner, uint256 _troveId, uint256 _arrayIndex);
+    event TroveUpdated(uint256 indexed _troveId, uint _debt, uint _coll, uint stake, BorrowerOperation operation);
+    event BoldBorrowingFeePaid(uint256 indexed _troveId, uint _boldFee);
 
     constructor(address _ETHAddress) {
         checkContract(_ETHAddress);
@@ -150,7 +150,20 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     // --- Borrower Trove Operations ---
 
-    function openTrove(uint _maxFeePercentage, uint256 _ETHAmount, uint _boldAmount, address _upperHint, address _lowerHint, uint256 _annualInterestRate) external override {
+    function openTrove(
+        address _owner,
+        uint256 _ownerIndex,
+        uint _maxFeePercentage,
+        uint256 _ETHAmount,
+        uint _boldAmount,
+        uint256 _upperHint,
+        uint256 _lowerHint,
+        uint256 _annualInterestRate
+    )
+        external
+        override
+        returns (uint256)
+    {
         ContractsCache memory contractsCache = ContractsCache(troveManager, activePool, boldToken);
         LocalVariables_openTrove memory vars;
 
@@ -159,7 +172,9 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         _requireValidAnnualInterestRate(_annualInterestRate);
         _requireValidMaxFeePercentage(_maxFeePercentage, isRecoveryMode);
-        _requireTroveisNotActive(contractsCache.troveManager, msg.sender);
+
+        uint256 troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
+        _requireTroveisNotActive(contractsCache.troveManager, troveId);
 
         // TODO: apply aggregate pending interest, and take snapshot of current timestamp.
 
@@ -185,17 +200,18 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _requireNewTCRisAboveCCR(newTCR); 
         }
 
-        // Set the stored Trove properties
+        // Set the stored Trove properties and mint the NFT
         vars.stake = contractsCache.troveManager.setTrovePropertiesOnOpen(
-            msg.sender, 
+            _owner,
+            troveId,
             _ETHAmount,
             vars.compositeDebt, 
             _annualInterestRate
         );
 
-        sortedTroves.insert(msg.sender, _annualInterestRate, _upperHint, _lowerHint);
-        vars.arrayIndex = contractsCache.troveManager.addTroveOwnerToArray(msg.sender);
-        emit TroveCreated(msg.sender, vars.arrayIndex);
+        sortedTroves.insert(troveId, _annualInterestRate, _upperHint, _lowerHint);
+        vars.arrayIndex = contractsCache.troveManager.addTroveIdToArray(troveId);
+        emit TroveCreated(_owner, troveId, vars.arrayIndex);
 
         // Pull ETH tokens from sender and move them to the Active Pool
         _pullETHAndSendToActivePool(contractsCache.activePool, _ETHAmount);
@@ -204,60 +220,82 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // Move the Bold gas compensation to the Gas Pool
         _withdrawBold(contractsCache.activePool, contractsCache.boldToken, gasPoolAddress, BOLD_GAS_COMPENSATION, BOLD_GAS_COMPENSATION);
 
-        emit TroveUpdated(msg.sender, vars.compositeDebt, _ETHAmount, vars.stake, BorrowerOperation.openTrove);
-        emit BoldBorrowingFeePaid(msg.sender, vars.BoldFee);
+        emit TroveUpdated(troveId, vars.compositeDebt, _ETHAmount, vars.stake, BorrowerOperation.openTrove);
+        emit BoldBorrowingFeePaid(troveId, vars.BoldFee);
+
+        return troveId;
     }
 
     // Send ETH as collateral to a trove
-    function addColl(uint256 _ETHAmount) external override {
-        _adjustTrove(msg.sender, _ETHAmount, true, 0, false, 0);
+    function addColl(uint256 _troveId, uint256 _ETHAmount) external override {
+        _adjustTrove(_troveId, _ETHAmount, true, 0, false, 0);
     }
 
     // Send ETH as collateral to a trove. Called by only the Stability Pool.
-    function moveETHGainToTrove(address _borrower, uint256 _ETHAmount) external override {
+    function moveETHGainToTrove(uint256 _troveId, uint256 _ETHAmount) external override {
         _requireCallerIsStabilityPool();
-        _adjustTrove(_borrower, _ETHAmount, true, 0, false, 0);
+        // TODO: check owner?
+        _adjustTrove(_troveId, _ETHAmount, true, 0, false, 0);
     }
 
     // Withdraw ETH collateral from a trove
-    function withdrawColl(uint _collWithdrawal) external override {
-        _adjustTrove(msg.sender, _collWithdrawal, false, 0, false, 0);
+    function withdrawColl(uint256 _troveId, uint _collWithdrawal) external override {
+        _adjustTrove(_troveId, _collWithdrawal, false, 0, false, 0);
     }
 
     // Withdraw Bold tokens from a trove: mint new Bold tokens to the owner, and increase the trove's debt accordingly
-    function withdrawBold(uint _maxFeePercentage, uint _boldAmount ) external override {
-        _adjustTrove(msg.sender, 0, false, _boldAmount, true, _maxFeePercentage);
+    function withdrawBold(uint256 _troveId, uint _maxFeePercentage, uint _boldAmount ) external override {
+        _adjustTrove(_troveId, 0, false, _boldAmount, true, _maxFeePercentage);
     }
 
     // Repay Bold tokens to a Trove: Burn the repaid Bold tokens, and reduce the trove's debt accordingly
-    function repayBold(uint _boldAmount) external override {
-        _adjustTrove(msg.sender, 0, false, _boldAmount, false, 0);
+    function repayBold(uint256 _troveId, uint _boldAmount) external override {
+        _adjustTrove(_troveId, 0, false, _boldAmount, false, 0);
     }
 
-    function adjustTrove(uint _maxFeePercentage, uint _collChange, bool _isCollIncrease, uint _boldChange, bool _isDebtIncrease) external override {
-        _adjustTrove(msg.sender, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxFeePercentage);
+    function adjustTrove(
+        uint256 _troveId,
+        uint _maxFeePercentage,
+        uint _collChange,
+        bool _isCollIncrease,
+        uint _boldChange,
+        bool _isDebtIncrease
+    )
+        external
+        override
+    {
+        _adjustTrove(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxFeePercentage);
     }
 
-    function adjustTroveInterestRate(uint _newAnnualInterestRate, address _upperHint, address _lowerHint) external {
+    function adjustTroveInterestRate(uint256 _troveId, uint _newAnnualInterestRate, uint256 _upperHint, uint256 _lowerHint) external {
         // TODO: Delegation functionality
         _requireValidAnnualInterestRate(_newAnnualInterestRate);
         ITroveManager troveManagerCached = troveManager;
-        _requireTroveisActive(troveManagerCached, msg.sender);
+        _requireTroveisActive(troveManagerCached, _troveId);
 
         // TODO: apply individual and aggregate pending interest, and take snapshots of current timestamp.
         // TODO: determine how applying pending interest should interact / be sequenced with applying pending rewards from redistributions. 
 
-        troveManagerCached.applyPendingRewards(msg.sender);
+        troveManagerCached.applyPendingRewards(_troveId);
 
-        sortedTroves.reInsert(msg.sender, _newAnnualInterestRate, _upperHint, _lowerHint);
+        sortedTroves.reInsert(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint);
 
-        troveManagerCached.changeAnnualInterestRate(msg.sender, _newAnnualInterestRate);
+        troveManagerCached.changeAnnualInterestRate(_troveId, _newAnnualInterestRate);
     }
 
     /*
     * _adjustTrove(): Alongside a debt change, this function can perform either a collateral top-up or a collateral withdrawal. 
     */
-    function _adjustTrove(address _borrower, uint _collChange, bool _isCollIncrease, uint _boldChange, bool _isDebtIncrease, uint _maxFeePercentage) internal {
+    function _adjustTrove(
+        uint256 _troveId,
+        uint _collChange,
+        bool _isCollIncrease,
+        uint _boldChange,
+        bool _isDebtIncrease,
+        uint _maxFeePercentage
+    )
+        internal
+    {
         ContractsCache memory contractsCache = ContractsCache(troveManager, activePool, boldToken);
         LocalVariables_adjustTrove memory vars;
 
@@ -272,14 +310,19 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _requireNonZeroDebtChange(_boldChange);
         }
         _requireNonZeroAdjustment(_collChange, _boldChange);
-        _requireTroveisActive(contractsCache.troveManager, _borrower);
+        _requireTroveisActive(contractsCache.troveManager, _troveId);
 
-        // Confirm the operation is either a borrower adjusting their own trove, or a pure ETH transfer from the Stability Pool to a trove
-        assert(msg.sender == _borrower || (msg.sender == stabilityPoolAddress && _isCollIncrease && _boldChange == 0));
+        // Confirm the operation is either a borrower adjusting their own trove, or a pure repayment (it can be “on behalf”), or an ETH transfer from the Stability Pool to a trove
+        address borrower = contractsCache.troveManager.ownerOf(_troveId);
+        assert(
+            msg.sender == borrower ||
+            (! _isDebtIncrease && ! _isCollIncrease && _collChange == 0) ||
+            (msg.sender == stabilityPoolAddress && _isCollIncrease && _boldChange == 0)
+        );
 
         // TODO: apply individual and aggregate pending interest, and take snapshots of current timestamp.
 
-        contractsCache.troveManager.applyPendingRewards(_borrower);
+        contractsCache.troveManager.applyPendingRewards(_troveId);
 
         vars.netDebtChange = _boldChange;
 
@@ -288,8 +331,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             // TODO: implement interest rate charges
         }
 
-        vars.debt = contractsCache.troveManager.getTroveDebt(_borrower);
-        vars.coll = contractsCache.troveManager.getTroveColl(_borrower);
+        vars.debt = contractsCache.troveManager.getTroveDebt(_troveId);
+        vars.coll = contractsCache.troveManager.getTroveColl(_troveId);
         
         // Get the trove's old ICR before the adjustment, and what its new ICR will be after the adjustment
         vars.oldICR = LiquityMath._computeCR(vars.coll, vars.debt, vars.price);
@@ -303,20 +346,20 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         if (!_isDebtIncrease && _boldChange > 0) {
             _requireAtLeastMinNetDebt(_getNetDebt(vars.debt) - vars.netDebtChange);
             _requireValidBoldRepayment(vars.debt, vars.netDebtChange);
-            _requireSufficientBoldBalance(contractsCache.boldToken, _borrower, vars.netDebtChange);
+            _requireSufficientBoldBalance(contractsCache.boldToken, msg.sender, vars.netDebtChange);
         }
 
-        (vars.newColl, vars.newDebt) = _updateTroveFromAdjustment(contractsCache.troveManager, _borrower, _collChange, _isCollIncrease, vars.netDebtChange, _isDebtIncrease);
-        vars.stake = contractsCache.troveManager.updateStakeAndTotalStakes(_borrower);
+        (vars.newColl, vars.newDebt) = _updateTroveFromAdjustment(contractsCache.troveManager, _troveId, _collChange, _isCollIncrease, vars.netDebtChange, _isDebtIncrease);
+        vars.stake = contractsCache.troveManager.updateStakeAndTotalStakes(_troveId);
 
-        emit TroveUpdated(_borrower, vars.newDebt, vars.newColl, vars.stake, BorrowerOperation.adjustTrove);
-        emit BoldBorrowingFeePaid(msg.sender,  vars.BoldFee);
+        emit TroveUpdated(_troveId, vars.newDebt, vars.newColl, vars.stake, BorrowerOperation.adjustTrove);
+        emit BoldBorrowingFeePaid(_troveId,  vars.BoldFee);
 
         // Use the unmodified _boldChange here, as we don't send the fee to the user
         _moveTokensAndETHfromAdjustment(
             contractsCache.activePool,
             contractsCache.boldToken,
-            msg.sender,
+            borrower,
             _collChange,
             _isCollIncrease,
             _boldChange,
@@ -325,31 +368,32 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         );
     }
 
-    function closeTrove() external override {
+    function closeTrove(uint256 _troveId) external override {
         ITroveManager troveManagerCached = troveManager;
         IActivePool activePoolCached = activePool;
         IBoldToken boldTokenCached = boldToken;
 
-        _requireTroveisActive(troveManagerCached, msg.sender);
+        _requireCallerIsBorrower(troveManagerCached, _troveId);
+        _requireTroveisActive(troveManagerCached, _troveId);
         uint price = priceFeed.fetchPrice();
         _requireNotInRecoveryMode(price);
 
         // TODO: apply individual and aggregate pending interest, and take snapshots of current timestamp.
 
-        troveManagerCached.applyPendingRewards(msg.sender);
+        troveManagerCached.applyPendingRewards(_troveId);
 
-        uint coll = troveManagerCached.getTroveColl(msg.sender);
-        uint debt = troveManagerCached.getTroveDebt(msg.sender);
+        uint coll = troveManagerCached.getTroveColl(_troveId);
+        uint debt = troveManagerCached.getTroveDebt(_troveId);
 
         _requireSufficientBoldBalance(boldTokenCached, msg.sender, debt - BOLD_GAS_COMPENSATION);
 
         uint newTCR = _getNewTCRFromTroveChange(coll, false, debt, false, price);
         _requireNewTCRisAboveCCR(newTCR);
 
-        troveManagerCached.removeStake(msg.sender);
-        troveManagerCached.closeTrove(msg.sender);
+        troveManagerCached.removeStake(_troveId);
+        troveManagerCached.closeTrove(_troveId);
 
-        emit TroveUpdated(msg.sender, 0, 0, 0, BorrowerOperation.closeTrove);
+        emit TroveUpdated(_troveId, 0, 0, 0, BorrowerOperation.closeTrove);
 
         // Burn the repaid Bold from the user's balance and the gas compensation from the Gas Pool
         _repayBold(activePoolCached, boldTokenCached, msg.sender, debt - BOLD_GAS_COMPENSATION);
@@ -362,9 +406,12 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     /**
      * Claim remaining collateral from a redemption or from a liquidation with ICR > MCR in Recovery Mode
      */
-    function claimCollateral() external override {
+    function claimCollateral(uint256 _troveId) external override {
+        address owner = troveManager.ownerOf(_troveId);
+        require(owner == msg.sender, "BO: Only owner can claim trove collateral");
+
         // send ETH from CollSurplus Pool to owner
-        collSurplusPool.claimColl(msg.sender);
+        collSurplusPool.claimColl(msg.sender, _troveId);
     }
 
     // --- Helper functions ---
@@ -379,7 +426,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     function _updateTroveFromAdjustment
     (
         ITroveManager _troveManager,
-        address _borrower,
+        uint256 _troveId,
         uint _collChange,
         bool _isCollIncrease,
         uint _debtChange,
@@ -388,10 +435,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         internal
         returns (uint, uint)
     {
-        uint newColl = (_isCollIncrease) ? _troveManager.increaseTroveColl(_borrower, _collChange)
-                                        : _troveManager.decreaseTroveColl(_borrower, _collChange);
-        uint newDebt = (_isDebtIncrease) ? _troveManager.increaseTroveDebt(_borrower, _debtChange)
-                                        : _troveManager.decreaseTroveDebt(_borrower, _debtChange);
+        uint newColl = (_isCollIncrease) ? _troveManager.increaseTroveColl(_troveId, _collChange)
+                                        : _troveManager.decreaseTroveColl(_troveId, _collChange);
+        uint newDebt = (_isDebtIncrease) ? _troveManager.increaseTroveDebt(_troveId, _debtChange)
+                                        : _troveManager.decreaseTroveDebt(_troveId, _debtChange);
 
         return (newColl, newDebt);
     }
@@ -445,21 +492,21 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     // --- 'Require' wrapper functions ---
 
-    function _requireCallerIsBorrower(address _borrower) internal view {
-        require(msg.sender == _borrower, "BorrowerOps: Caller must be the borrower for a withdrawal");
+    function _requireCallerIsBorrower(ITroveManager _troveManager , uint256 _troveId) internal view {
+        require(msg.sender == _troveManager.ownerOf(_troveId), "BorrowerOps: Caller must be the borrower for a withdrawal");
     }
 
     function _requireNonZeroAdjustment(uint _collChange, uint _boldChange) internal pure {
         require(_collChange != 0 || _boldChange != 0, "BorrowerOps: There must be either a collateral change or a debt change");
     }
 
-    function _requireTroveisActive(ITroveManager _troveManager, address _borrower) internal view {
-        uint status = _troveManager.getTroveStatus(_borrower);
+    function _requireTroveisActive(ITroveManager _troveManager, uint256 _troveId) internal view {
+        uint status = _troveManager.getTroveStatus(_troveId);
         require(status == 1, "BorrowerOps: Trove does not exist or is closed");
     }
 
-    function _requireTroveisNotActive(ITroveManager _troveManager, address _borrower) internal view {
-        uint status = _troveManager.getTroveStatus(_borrower);
+    function _requireTroveisNotActive(ITroveManager _troveManager, uint256 _troveId) internal view {
+        uint status = _troveManager.getTroveStatus(_troveId);
         require(status != 1, "BorrowerOps: Trove is active");
     }
 

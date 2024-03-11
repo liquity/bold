@@ -53,8 +53,8 @@ contract TroveManagerTester is TroveManager {
         return _getNetDebt(_debtVal);
     }
 
-    function callInternalRemoveTroveOwner(address _troveOwner) external {
-        uint troveOwnersArrayLength = TroveOwners.length;
-        _removeTroveOwner(_troveOwner, troveOwnersArrayLength);
+    function callInternalRemoveTroveId(uint256 _troveId) external {
+        uint troveOwnersArrayLength = TroveIds.length;
+        _removeTroveId(_troveId, troveOwnersArrayLength);
     }
 }

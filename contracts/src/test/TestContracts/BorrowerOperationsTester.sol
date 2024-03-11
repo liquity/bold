@@ -48,7 +48,7 @@ contract BorrowerOperationsTester is BorrowerOperations {
 
     function callInternalAdjustLoan
     (
-        address _borrower, 
+        uint256 _troveId,
         uint _collWithdrawal, 
         uint _debtChange, 
         bool _isDebtIncrease
@@ -56,6 +56,6 @@ contract BorrowerOperationsTester is BorrowerOperations {
         external 
     {
         // TODO: Add coll increase
-        _adjustTrove(_borrower, _collWithdrawal, false, _debtChange, _isDebtIncrease, 0);
+        _adjustTrove(_troveId, _collWithdrawal, false, _debtChange, _isDebtIncrease, 0);
     }
 }

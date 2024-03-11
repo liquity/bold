@@ -22,7 +22,7 @@ contract CollSurplusPool is Ownable, CheckContract, ICollSurplusPool {
     // deposited ether tracker
     uint256 internal ETHBalance;
     // Collateral surplus claimable by trove owners
-    mapping (address => uint) internal balances;
+    mapping (uint256 => uint) internal balances;
 
     // --- Events ---
 
@@ -30,7 +30,7 @@ contract CollSurplusPool is Ownable, CheckContract, ICollSurplusPool {
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event ActivePoolAddressChanged(address _newActivePoolAddress);
 
-    event CollBalanceUpdated(address indexed _account, uint _newBalance);
+    event CollBalanceUpdated(uint256 indexed _troveId, uint _newBalance);
     event EtherSent(address _to, uint _amount);
 
     constructor(address _ETHAddress) {
@@ -70,29 +70,29 @@ contract CollSurplusPool is Ownable, CheckContract, ICollSurplusPool {
         return ETHBalance;
     }
 
-    function getCollateral(address _account) external view override returns (uint) {
-        return balances[_account];
+    function getCollateral(uint256 _troveId) external view override returns (uint) {
+        return balances[_troveId];
     }
 
     // --- Pool functionality ---
 
-    function accountSurplus(address _account, uint _amount) external override {
+    function accountSurplus(uint256 _troveId, uint _amount) external override {
         _requireCallerIsTroveManager();
 
-        uint newAmount = balances[_account] + _amount;
-        balances[_account] = newAmount;
+        uint newAmount = balances[_troveId] + _amount;
+        balances[_troveId] = newAmount;
         ETHBalance = ETHBalance + _amount;
 
-        emit CollBalanceUpdated(_account, newAmount);
+        emit CollBalanceUpdated(_troveId, newAmount);
     }
 
-    function claimColl(address _account) external override {
+    function claimColl(address _account, uint256 _troveId) external override {
         _requireCallerIsBorrowerOperations();
-        uint claimableColl = balances[_account];
+        uint claimableColl = balances[_troveId];
         require(claimableColl > 0, "CollSurplusPool: No collateral available to claim");
 
-        balances[_account] = 0;
-        emit CollBalanceUpdated(_account, 0);
+        balances[_troveId] = 0;
+        emit CollBalanceUpdated(_troveId, 0);
 
         ETHBalance = ETHBalance - claimableColl;
         emit EtherSent(_account, claimableColl);
