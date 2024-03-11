@@ -54,7 +54,7 @@ interface IStabilityPool is ILiquityBase {
     */
     function provideToSP(uint _amount) external;
 
-   
+
     /*  withdrawFromSP():
     * - Calculates depositor's ETH gain
     * - Calculates the compounded deposit
@@ -80,6 +80,21 @@ interface IStabilityPool is ILiquityBase {
      * Only called by liquidation functions in the TroveManager.
      */
     function offset(uint _debt, uint _coll) external;
+
+    /* setETHSellIntent():
+     * Opt-in swap facility liquidation gains
+     */
+    function setETHSellIntent(uint256 _ethAmount, uint256 _priceDiscount) external;
+
+    /* buyETH():
+     * Swap ETH to Bold using opt-in swap facility liquidation gains, from one depositor
+     */
+    function buyETH(address _depositor, uint256 _ethAmount) external;
+
+    /* buyETHBatch():
+     * Swap ETH to Bold using opt-in swap facility liquidation gains, from multiple depositors
+     */
+    function buyETHBatch(address[] calldata _depositors, uint256 _ethAmount) external;
 
     /*
      * Returns the total amount of ETH held by the pool, accounted in an internal variable instead of `balance`,
