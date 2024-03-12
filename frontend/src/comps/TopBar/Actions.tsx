@@ -14,11 +14,20 @@ export function Actions() {
         alignItems: "center",
       })}
     >
-      <Link href="/stats">
+      {
+        /*<Link href="/stats">
         <MenuItem
           icon={<IconStats />}
           selected={pathname.startsWith("/stats")}
           label="Stats"
+        />
+      </Link>*/
+      }
+      <Link href="/contracts">
+        <MenuItem
+          icon={<IconStats />}
+          selected={pathname.startsWith("/contracts")}
+          label="Contracts"
         />
       </Link>
       <AccountButton />
