@@ -27,6 +27,17 @@ cp .env .env.local
 
 See [./src/env.ts](./src/env.ts) for details about how the environment variables are being imported by the app.
 
+### `NEXT_PUBLIC_CHAIN_ID`
+
+The Ethereum network to connect to.
+
+Supports the following IDs:
+
+- `1` (mainnet)
+- `31337` (hardhat)
+
+Defaults to `1` (mainnet) if the chain ID is not supported.
+
 ### `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`
 
 A WalletConnect project ID which can be obtained by [creating a WalletConnect project](https://cloud.walletconnect.com/app).
