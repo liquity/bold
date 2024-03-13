@@ -45,9 +45,10 @@ A WalletConnect project ID which can be obtained by [creating a WalletConnect pr
 ## Scripts
 
 ```sh
-pnpm dev     # run the development server
-pnpm build   # build the static app in out/
-pnpm fmt     # format the code
-pnpm lint    # lint the code
-pnpm test    # run the tests
+pnpm dev                    # run the development server
+pnpm build                  # build the static app in out/
+pnpm fmt                    # format the code
+pnpm lint                   # lint the code
+pnpm test                   # run the tests
+pnpm update-liquity-abis    # build the contracts and update the ABIs
 ```
