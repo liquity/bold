@@ -11,18 +11,15 @@ import { hardhat, mainnet } from "wagmi/chains";
 
 const [chains, transports] = match(CHAIN_ID)
   // Hardhat
-  .with(31337, () =>
-    [
-      [hardhat],
-      { [hardhat.id]: http("http://localhost:8545") },
-    ] as const)
+  .with(31337, () => ([
+    [hardhat],
+    { [hardhat.id]: http("http://localhost:8545") },
+  ] as const))
   // Default to mainnet
-  .otherwise(() =>
-    [
-      [mainnet],
-      { [mainnet.id]: http() },
-    ] as const
-  );
+  .otherwise(() => ([
+    [mainnet],
+    { [mainnet.id]: http() },
+  ] as const));
 
 const wagmiConfig = createConfig(
   getDefaultConfig({
