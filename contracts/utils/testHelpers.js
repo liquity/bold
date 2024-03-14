@@ -41,7 +41,7 @@ class TestHelper {
 
     if (scale == "ether") {
       zerosCount = 18;
-    } else if (scale == "finney") zerosCount = 15;
+    } else if (scale == "finney") { zerosCount = 15; }
     else {
       zerosCount = scale;
     }

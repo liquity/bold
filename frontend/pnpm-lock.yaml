@@ -14,6 +14,9 @@ dependencies:
   connectkit:
     specifier: ^1.7.2
     version: 1.7.2(@babel/core@7.24.0)(@tanstack/react-query@5.25.0)(react-dom@18.2.0)(react-is@18.2.0)(react@18.2.0)(viem@2.7.20)(wagmi@2.5.7)
+  dnum:
+    specifier: ^2.11.0
+    version: 2.11.0
   dprint:
     specifier: ^0.45.0
     version: 0.45.0
@@ -6168,6 +6171,12 @@ packages:
       path-type: 4.0.0
     dev: true
 
+  /dnum@2.11.0:
+    resolution: {integrity: sha512-JaVo6HlaVC3xHqoKmiiqTqk2/z2khBmkQTaPw78WkDsJESVX0zPPAhQ3Zv/QKx4L18LkbbPHg6pKl5vdQA5YEA==}
+    dependencies:
+      from-exponential: 1.1.1
+    dev: false
+
   /doctrine@2.1.0:
     resolution: {integrity: sha512-35mSku4ZXK0vfCuHEDAwt55dg2jNajHZ1odvF+8SSr82EsZY4QmXfuWso8oEd8zRhVObSN18aM0CjSdoBX7zIw==}
     engines: {node: '>=0.10.0'}
@@ -7174,6 +7183,10 @@ packages:
   /fresh@0.5.2:
     resolution: {integrity: sha512-zJ2mQYM18rEFOudeV4GShTGIQ7RbzA7ozbU9I/XBpm7kqgMywgmylMwXHxZJmkVoYkna9d2pVXVXPdYTP9ej8Q==}
     engines: {node: '>= 0.6'}
+    dev: false
+
+  /from-exponential@1.1.1:
+    resolution: {integrity: sha512-VBE7f5OVnYwdgB3LHa+Qo29h8qVpxhVO9Trlc+AWm+/XNAgks1tAwMFHb33mjeiof77GglsJzeYF7OqXrROP/A==}
     dev: false
 
   /fs-extra@11.2.0:
