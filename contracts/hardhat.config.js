@@ -2,8 +2,16 @@ require("@nomicfoundation/hardhat-foundry");
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomiclabs/hardhat-truffle5");
 
-const accounts = require("./hardhatAccountsList2k.js");
-const accountsList = accounts.accountsList;
+function accounts() {
+  const { accountsList } = require("./hardhatAccountsList2k.js");
+  const balanceStr = process.env.ACCOUNTS_BALANCE?.trim();
+  return balanceStr
+    ? accountsList.map((account) => ({
+      ...account,
+      balance: String(BigInt(balanceStr) * 10n ** 18n),
+    }))
+    : accountsList;
+}
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -22,7 +30,7 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      accounts: accountsList,
+      accounts: accounts(),
       gas: 10000000,
       blockGasLimit: 15000000,
       gasPrice: 20000000000,
