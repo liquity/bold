@@ -1878,7 +1878,7 @@ contract InterestRateAggregate is DevTestSetup {
     // TODO: Basic TCR and ICR getter tests
     // TODO: Test total debt invariant holds i.e. (D + S * delta_T) == sum_of_all_entire_trove_debts.
 
-    // --- batchLiquidateTroves (Normal Mode) ---
+    // --- batchLiquidateTroves (Normal Mode, offset) ---
 
     function testBatchLiquidateTrovesPureOffsetChangesAggRecordedInterestCorrectly() public {
         _setupForBatchLiquidateTrovesPureOffset();
@@ -1917,7 +1917,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest - recordedDebtInLiq - accruedInterestInLiq);
     }
 
-   function testBatchLiquidateTrovesReducesAggPendingInterestTo0() public {
+    function testBatchLiquidateTrovesPureOffsetReducesAggPendingInterestTo0() public {
         _setupForBatchLiquidateTrovesPureOffset();
 
         // fast-forward time so interest accrues
@@ -1934,9 +1934,8 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(activePool.calcPendingAggInterest(), 0);
     }
 
-
     // Mints interest to Router
-    function testBatchLiquidateTrovesMintsAggInterestToRouter() public {
+    function testBatchLiquidateTrovesPureOffsetMintsAggInterestToRouter() public {
         _setupForBatchLiquidateTrovesPureOffset();
 
         // fast-forward time so interest accrues
@@ -1959,7 +1958,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(boldBalRouter_2, pendingAggInterest);
     }
 
-    function testBatchLiquidateTrovesUpdatesLastAggInterestUpdateTimeToNow() public {
+    function testBatchLiquidateTrovesPureOffsetUpdatesLastAggInterestUpdateTimeToNow() public {
         _setupForBatchLiquidateTrovesPureOffset();
 
         // fast-forward time so interest accrues
@@ -1980,7 +1979,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     // Removes liq'd troves' weighted recorded debts from the weighted recorded debt sum
-    function testBatchLiquidateTrovesRemovesLiquidatedTrovesWeightedRecordedDebtsFromWeightedRecordedDebtSum() public {
+    function testBatchLiquidateTrovesPureOffsetRemovesLiquidatedTrovesWeightedRecordedDebtsFromWeightedRecordedDebtSum() public {
          _setupForBatchLiquidateTrovesPureOffset();
 
         // fast-forward time so interest accrues
@@ -2011,7 +2010,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(activePool.aggWeightedDebtSum(), aggWeightedDebtSum_1 - (weightedTroveDebt_C + weightedTroveDebt_D));
     }
 
-    function testBatchLiquidateTrovesWithNoRedistGainRemovesLiquidatedTrovesRecordedDebtsFromRecordedDebtSum() public {
+    function testBatchLiquidateTrovesPureOffsetWithNoRedistGainRemovesLiquidatedTrovesRecordedDebtsFromRecordedDebtSum() public {
         _setupForBatchLiquidateTrovesPureOffset();
 
         // fast-forward time so interest accrues
@@ -2034,5 +2033,206 @@ contract InterestRateAggregate is DevTestSetup {
 
         // Check recorded debt sum reduced by C and D's recorded debt
         assertEq(activePool.getRecordedDebtSum(), recordedDebtSum_1 - (recordedTroveDebt_C + recordedTroveDebt_D));
+    }
+
+    // ---  // --- batchLiquidateTroves (Normal Mode, redistribution) ---
+
+    function testBatchLiquidateTrovesPureRedistChangesAggRecordedInterestCorrectly() public {
+        _setupForBatchLiquidateTrovesPureRedist();
+
+        // fast-forward time so interest accrues
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 aggRecordedDebt_1 = activePool.aggRecordedDebt();
+        assertGt(aggRecordedDebt_1, 0);
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+    
+        uint256 recordedDebt_C = troveManager.getTroveDebt(C);
+        uint256 recordedDebt_D = troveManager.getTroveDebt(D);
+        assertGt(recordedDebt_C, 0);
+        assertGt(recordedDebt_D, 0);
+        uint256 recordedDebtInLiq = recordedDebt_C + recordedDebt_D;
+        
+        uint256 accruedInterest_C = troveManager.calcTroveAccruedInterest(C);
+        uint256 accruedInterest_D = troveManager.calcTroveAccruedInterest(D);
+        assertGt(accruedInterest_C, 0);
+        assertGt(accruedInterest_D, 0);
+        uint256 accruedInterestInLiq = accruedInterest_C + accruedInterest_D;
+       
+        // A liquidates C and D
+        address[] memory trovesToLiq = new address[](2); 
+        trovesToLiq[0] = C;
+        trovesToLiq[1] = D;
+        batchLiquidateTroves(A, trovesToLiq);
+        // Check for redist. gains
+        assertTrue(troveManager.hasRedistributionGains(A));
+
+        // Check both Troves were closed by liquidation
+        assertEq(troveManager.getTroveStatus(C), 3);
+        assertEq(troveManager.getTroveStatus(D), 3);
+    
+        // // changes agg. recorded debt by: agg_accrued_interest - liq'd_troves_recorded_trove_debts - liq'd_troves_accrued_interest
+        assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest - recordedDebtInLiq - accruedInterestInLiq);
+    }
+
+    function testBatchLiquidateTrovesPureRedistReducesAggPendingInterestTo0() public {
+        _setupForBatchLiquidateTrovesPureRedist();
+
+        // fast-forward time so interest accrues
+        vm.warp(block.timestamp + 1 days);
+
+        assertGt(activePool.calcPendingAggInterest(), 0);
+
+        // A liquidates C and D
+        address[] memory trovesToLiq = new address[](2); 
+        trovesToLiq[0] = C;
+        trovesToLiq[1] = D;
+        batchLiquidateTroves(A, trovesToLiq);
+        // Check for redist. gains
+        assertTrue(troveManager.hasRedistributionGains(A));
+
+        assertEq(activePool.calcPendingAggInterest(), 0);
+    }
+
+    // Mints interest to Router
+    function testBatchLiquidateTrovesPureRedistMintsAggInterestToRouter() public {
+        _setupForBatchLiquidateTrovesPureRedist();
+
+        // fast-forward time so interest accrues
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 boldBalRouter_1 = boldToken.balanceOf(address(mockInterestRouter));
+        assertEq(boldBalRouter_1, 0);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+       // A liquidates C and D
+        address[] memory trovesToLiq = new address[](2); 
+        trovesToLiq[0] = C;
+        trovesToLiq[1] = D;
+        batchLiquidateTroves(A, trovesToLiq);
+        // Check for redist. gains
+        assertTrue(troveManager.hasRedistributionGains(A));
+
+        // Check I-router Bold bal has increased as expected from liquidation
+        uint256 boldBalRouter_2 = boldToken.balanceOf(address(mockInterestRouter));
+        assertEq(boldBalRouter_2, pendingAggInterest);
+    }
+
+    function testBatchLiquidateTrovesPureRedistUpdatesLastAggInterestUpdateTimeToNow() public {
+        _setupForBatchLiquidateTrovesPureRedist();
+
+        // fast-forward time so interest accrues
+        vm.warp(block.timestamp + 1 days);
+
+        assertGt(activePool.lastAggUpdateTime(), 0);
+        assertLt(activePool.lastAggUpdateTime(), block.timestamp);
+
+        // A liquidates C and D
+        address[] memory trovesToLiq = new address[](2); 
+        trovesToLiq[0] = C;
+        trovesToLiq[1] = D;
+        batchLiquidateTroves(A, trovesToLiq);
+        // Check for redist. gains
+        assertTrue(troveManager.hasRedistributionGains(A));
+
+        // Check last agg update time increased to now
+        assertEq(activePool.lastAggUpdateTime(), block.timestamp);
+
+    }
+
+    // Removes liq'd troves' weighted recorded debts from the weighted recorded debt sum
+    function testBatchLiquidateTrovesPureRedistRemovesLiquidatedTrovesWeightedRecordedDebtsFromWeightedRecordedDebtSum() public {
+        _setupForBatchLiquidateTrovesPureRedist();
+
+        // fast-forward time so interest accrues
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 recordedTroveDebt_C = troveManager.getTroveDebt(C);
+        uint256 annualInterestRate_C = troveManager.getTroveAnnualInterestRate(C);
+        assertGt(recordedTroveDebt_C, 0);
+        assertGt(annualInterestRate_C, 0);
+        uint256 weightedTroveDebt_C = recordedTroveDebt_C * annualInterestRate_C;
+
+        uint256 recordedTroveDebt_D = troveManager.getTroveDebt(D);
+        uint256 annualInterestRate_D = troveManager.getTroveAnnualInterestRate(D);
+        assertGt(recordedTroveDebt_D, 0);
+        assertGt(annualInterestRate_D, 0);
+        uint256 weightedTroveDebt_D = recordedTroveDebt_D * annualInterestRate_D;
+        
+        uint256 aggWeightedDebtSum_1 = activePool.aggWeightedDebtSum();
+        assertGt(aggWeightedDebtSum_1, 0);
+
+        // A liquidates C and D
+        address[] memory trovesToLiq = new address[](2); 
+        trovesToLiq[0] = C;
+        trovesToLiq[1] = D;
+        batchLiquidateTroves(A, trovesToLiq);
+        // Check for redist. gains
+        assertTrue(troveManager.hasRedistributionGains(A));
+
+        // Check weighted recorded debt sum reduced by C and D's weighted recorded debt
+        assertEq(activePool.aggWeightedDebtSum(), aggWeightedDebtSum_1 - (weightedTroveDebt_C + weightedTroveDebt_D));
+    }
+
+    function testBatchLiquidateTrovesPureRedistWithNoRedistGainRemovesLiquidatedTrovesRecordedDebtsFromRecordedDebtSum() public {
+        _setupForBatchLiquidateTrovesPureRedist();
+
+        // fast-forward time so interest accrues
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 recordedTroveDebt_C = troveManager.getTroveDebt(C);
+        assertGt(recordedTroveDebt_C, 0);
+    
+        uint256 recordedTroveDebt_D = troveManager.getTroveDebt(D);
+        assertGt(recordedTroveDebt_D, 0);
+        
+        uint256 recordedDebtSum_1 = activePool.getRecordedDebtSum();
+
+        // A liquidates C and D
+        address[] memory trovesToLiq = new address[](2); 
+        trovesToLiq[0] = C;
+        trovesToLiq[1] = D;
+        batchLiquidateTroves(A, trovesToLiq);
+        // Check for redist. gains
+        assertTrue(troveManager.hasRedistributionGains(A));
+
+        // Check recorded debt sum reduced by C and D's recorded debt
+        assertEq(activePool.getRecordedDebtSum(), recordedDebtSum_1 - (recordedTroveDebt_C + recordedTroveDebt_D));
+    }
+
+    function testBatchLiquidateTrovesPureRedistWithNoRedistGainAddsLiquidatedTrovesEntireDebtsToDefaultPoolDebtSum() public {
+         _setupForBatchLiquidateTrovesPureRedist();
+
+        // fast-forward time so interest accrues
+        vm.warp(block.timestamp + 1 days);
+
+        uint256 recordedTroveDebt_C = troveManager.getTroveDebt(C);
+        uint256 accruedInterest_C = troveManager.calcTroveAccruedInterest(C);
+        assertGt(recordedTroveDebt_C, 0);
+        assertGt(accruedInterest_C, 0);
+    
+        uint256 recordedTroveDebt_D = troveManager.getTroveDebt(D);
+        uint256 accruedInterest_D = troveManager.calcTroveAccruedInterest(C);
+        assertGt(recordedTroveDebt_D, 0);
+        assertGt(accruedInterest_D, 0);
+
+        uint256 debtInLiq = recordedTroveDebt_C + accruedInterest_C + recordedTroveDebt_D + accruedInterest_D;
+        
+        uint256 defaultPoolDebt = defaultPool.getBoldDebt();
+        assertEq(defaultPoolDebt, 0);
+
+        // A liquidates C and D
+        address[] memory trovesToLiq = new address[](2); 
+        trovesToLiq[0] = C;
+        trovesToLiq[1] = D;
+        batchLiquidateTroves(A, trovesToLiq);
+        // Check for redist. gains
+        assertTrue(troveManager.hasRedistributionGains(A));
+
+        // Check recorded debt sum reduced by C and D's entire debts
+        assertEq(defaultPool.getBoldDebt(), debtInLiq);
     }
 }
