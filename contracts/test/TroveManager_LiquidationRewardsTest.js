@@ -66,7 +66,8 @@ contract(
       contracts.boldToken = await BoldToken.new(
         contracts.troveManager.address,
         contracts.stabilityPool.address,
-        contracts.borrowerOperations.address
+        contracts.borrowerOperations.address,
+        contracts.activePool.address
       );
       
       priceFeed = contracts.priceFeedTestnet;
@@ -1513,7 +1514,7 @@ contract(
           .sub(withdrawnColl)
           .add(th.applyLiquidationFee(D_coll))
       );
-      const entireSystemDebt = (await activePool.getBoldDebt()).add(
+      const entireSystemDebt = (await activePool.getRecordedDebtSum()).add(
         await defaultPool.getBoldDebt()
       );
       th.assertIsApproximatelyEqual(

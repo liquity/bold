@@ -45,7 +45,8 @@ class DeploymentHelper {
     const boldToken = await BoldToken.new(
       troveManager.address,
       stabilityPool.address,
-      borrowerOperations.address
+      borrowerOperations.address,
+      activePool.address
     );
     const mockInterestRouter = await MockInterestRouter.new();
 
@@ -100,7 +101,8 @@ class DeploymentHelper {
     contracts.boldToken = await BoldToken.new(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
+      contracts.borrowerOperations.address,
+      contracts.activePool.address
     );
     return contracts;
   }
@@ -109,7 +111,8 @@ class DeploymentHelper {
     contracts.boldToken = await BoldTokenTester.new(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
+      contracts.borrowerOperations.address,
+      contracts.activePool.address
     );
     return contracts;
   }
@@ -126,8 +129,7 @@ class DeploymentHelper {
         contracts.collSurplusPool.address,
         contracts.priceFeedTestnet.address,
         contracts.boldToken.address,
-        contracts.sortedTroves.address,
-        contracts.mockInterestRouter.address
+        contracts.sortedTroves.address
       );
 
     await contracts.stabilityPool.setAddresses(
@@ -172,6 +174,8 @@ class DeploymentHelper {
       contracts.troveManager.address,
       contracts.stabilityPool.address,
       contracts.defaultPool.address,
+      contracts.boldToken.address,
+      contracts.mockInterestRouter.address
       //contracts.stETH.address,
     );
 

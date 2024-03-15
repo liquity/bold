@@ -69,9 +69,13 @@ interface ITroveManager is ILiquityBase {
         uint pendingBoldInterest
     );
 
+    function getTroveEntireDebt(address _borrower) external view returns (uint256);
+
+    function getTroveEntireColl(address _borrower) external view returns (uint256);
+
     function getAndApplyRedistributionGains(address _borrower) external returns (uint256, uint256);
 
-    function closeTrove(address _borrower, uint256 _weightedRecordedTroveDebt) external;
+    function closeTrove(address _borrower) external;
 
     function removeStake(address _borrower) external;
 
