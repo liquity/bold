@@ -13,9 +13,36 @@
 
 ```sh
 git clone git@github.com:liquity/bold.git
-cd bold
+cd bold/frontend
 pnpm install
 ```
+
+## How to develop
+
+Run the Hardhat Network local node:
+
+```sh
+cd bold/contracts
+ACCOUNTS_BALANCE=1000 pnpm hardhat node # ACCOUNTS_BALANCE=1000 is optional but nicer than the default values in the UI
+```
+
+Deploy the contracts:
+
+```sh
+cd bold/contracts
+pnpm hardhat run --network localhost utils/deploymentDev.js
+```
+
+Run the development server:
+
+```sh
+cd bold/frontend
+pnpm dev
+```
+
+You can now open <http://localhost:3000/> in your browser.
+
+See also `contracts/hardhatAccountsList2k.js` to import the accounts into MetaMask (the deployment script opens troves for the first six accounts).
 
 ## Environment
 
@@ -41,6 +68,10 @@ Defaults to `1` (mainnet) if the chain ID is not supported.
 ### `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`
 
 A WalletConnect project ID which can be obtained by [creating a WalletConnect project](https://cloud.walletconnect.com/app).
+
+### `NEXT_PUBLIC_CONTRACT_…`
+
+Addresses of the Liquity contracts.
 
 ## Scripts
 
