@@ -55,16 +55,10 @@ function AccountDetails() {
   const balance = useBalance({ address: address ?? ADDRESS_ZERO });
   const boldBalance = useBoldBalance(address ?? ADDRESS_ZERO);
   const rewards = useRewards(address ?? ADDRESS_ZERO);
-
   return (
     <Card
       title="Account"
       action={match({ address, data: [balance, boldBalance, rewards] })
-        .when(({ data }) => (
-          data.some(({ status }) => (
-            status === "pending"
-          ))
-        ), () => null)
         .with({ address: P.string }, () => ({
           label: "Disconnect",
           onClick: disconnect,
@@ -75,8 +69,14 @@ function AccountDetails() {
         }))}
     >
       {match({ address, data: [balance, boldBalance, rewards] })
-        .when(({ data }) => data.some(({ status }) => status === "pending"), () => <div>loading…</div>)
-        .when(({ data }) => data.some(({ status }) => status === "error"), () => <div>error</div>)
+        .when(
+          ({ address, data }) => address && data.some(({ status }) => status === "pending"),
+          () => <div>loading…</div>,
+        )
+        .when(
+          ({ address, data }) => address && data.some(({ status }) => status === "error"),
+          () => <div>error</div>,
+        )
         .with(
           {
             address: P.string,
@@ -102,27 +102,15 @@ function AccountDetails() {
               />
               <CardRow
                 name="BOLD Balance"
-                value={
-                  <span>
-                    {dn.format([boldBalance.data, 18], 2)} BOLD
-                  </span>
-                }
+                value={`${dn.format([boldBalance.data, 18], 2)} BOLD`}
               />
               <CardRow
                 name="Rewards ETH"
-                value={
-                  <span>
-                    {dn.format(rewards.data.eth, 2)} ETH
-                  </span>
-                }
+                value={`${dn.format(rewards.data.eth, 2)} ETH`}
               />
               <CardRow
                 name="Rewards BOLD"
-                value={
-                  <span>
-                    {dn.format(rewards.data.bold, 2)} BOLD
-                  </span>
-                }
+                value={`${dn.format(rewards.data.bold, 2)} BOLD`}
               />
             </>
           ),
@@ -149,14 +137,17 @@ function TroveDetails() {
   return (
     <Card
       title="Trove"
-      action={match(troveDetails.data?.status)
+      action={match([troveDetails.data?.status, address])
         .with(
-          P.union(
-            "nonExistent",
-            "closedByOwner",
-            "closedByRedemption",
-            "closedByLiquidation",
-          ),
+          [
+            P.union(
+              "nonExistent",
+              "closedByOwner",
+              "closedByRedemption",
+              "closedByLiquidation",
+            ),
+            P.not(undefined),
+          ],
           () => ({
             label: "Open Trove",
             onClick: () => {
@@ -165,7 +156,7 @@ function TroveDetails() {
             },
           }),
         )
-        .with("active", () => ({
+        .with(["active", P.not(undefined)], () => ({
           label: "Close Trove",
           onClick: () => {
             const data = closeTrove();
@@ -174,10 +165,10 @@ function TroveDetails() {
         }))
         .otherwise(() => null)}
     >
-      {match(troveDetails)
-        .with({ status: "pending" }, () => "loading…")
-        .with({ status: "error" }, () => "error")
-        .with({ status: "success", data: P.not(undefined) }, ({ data }) => (
+      {match([troveDetails, address])
+        .with([{ status: "pending" }, P.not(undefined)], () => "loading…")
+        .with([{ status: "error" }, P.not(undefined)], () => "error")
+        .with([{ status: "success", data: P.not(undefined) }, P.not(undefined)], ([{ data }]) => (
           <>
             <CardRow name="Status" value={data.status} />
             <CardRow name="Stake" value={dn.format(data.stake) + " ETH"} />
@@ -211,6 +202,18 @@ function Liquity2Info() {
             <CardRow
               name="Total Debt"
               value={dn.format(data.totalDebt) + " BOLD"}
+            />
+            <CardRow
+              name={
+                <>
+                  <abbr title="Total Collateral Ratio">TCR</abbr> ($4k/ETH)
+                </>
+              }
+              value={dn.format(dn.mul(data.tcr, 100n), 2) + "%"}
+            />
+            <CardRow
+              name="Redemption Rate"
+              value={dn.format(dn.mul(data.redemptionRate, 100n), 2) + "%"}
             />
           </>
         ))
@@ -250,7 +253,7 @@ function Card({
   return (
     <div
       className={css({
-        height: 380,
+        height: 400,
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
@@ -261,6 +264,7 @@ function Card({
     >
       <div
         className={css({
+          flexGrow: 1,
           display: "flex",
           flexDirection: "column",
           gap: 40,
@@ -324,7 +328,13 @@ function CardRow({
         height: 32,
       })}
     >
-      <div>{name}</div>
+      <div
+        className={css({
+          whiteSpace: "nowrap",
+        })}
+      >
+        {name}
+      </div>
       <div>{value}</div>
     </div>
   );

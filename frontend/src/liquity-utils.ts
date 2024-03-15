@@ -24,6 +24,8 @@ type LiquityInfo = {
   trovesCount: number;
   totalCollateral: Dnum;
   totalDebt: Dnum;
+  tcr: Dnum;
+  redemptionRate: Dnum;
 };
 
 type Rewards = {
@@ -135,9 +137,10 @@ export function useCloseTrove(address: Address) {
   const { writeContract } = useWriteContract();
   return () => (
     writeContract({
-      ...TroveManagerContract,
+      ...BorrowerOperationsContract,
       functionName: "closeTrove",
-      args: [address],
+      args: [],
+      account: address,
     })
   );
 }
@@ -204,6 +207,16 @@ export function useLiquity2Info() {
         functionName: "getEntireSystemDebt",
         args: [],
       },
+      {
+        ...TroveManagerContract,
+        functionName: "getTCR",
+        args: [4_000n * 10n ** 18n],
+      },
+      {
+        ...TroveManagerContract,
+        functionName: "getRedemptionRate",
+        args: [],
+      },
     ],
   });
 
@@ -216,8 +229,10 @@ export function useLiquity2Info() {
 
   const data: LiquityInfo = {
     trovesCount: Number(read.data[0]),
-    totalCollateral: [read.data[1] ?? 0n, 18],
-    totalDebt: [read.data[2] ?? 0n, 18],
+    totalCollateral: [read.data[1], 18],
+    totalDebt: [read.data[2], 18],
+    tcr: [read.data[3], 18],
+    redemptionRate: [read.data[4], 18],
   };
 
   return {
