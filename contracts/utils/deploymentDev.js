@@ -10,12 +10,12 @@ async function main() {
 
   // list of [debt, coll] tuples
   const trovesParams = [
-    [1800n * 10n ** 18n, 20n * 10n ** 18n],
-    [2800n * 10n ** 18n, 32n * 10n ** 18n],
-    [4000n * 10n ** 18n, 30n * 10n ** 18n],
-    [6000n * 10n ** 18n, 65n * 10n ** 18n],
-    [5000n * 10n ** 18n, 50n * 10n ** 18n],
-    [2400n * 10n ** 18n, 37n * 10n ** 18n],
+    [1_800n, 20n],
+    [2_800n, 32n],
+    [4_000n, 30n],
+    [6_000n, 65n],
+    [5_000n, 50n],
+    [2_400n, 37n],
   ];
 
   // open troves
@@ -23,13 +23,13 @@ async function main() {
     const account = await accounts[index].getAddress();
     return contracts.borrowerOperations.openTrove(
       String(100n * 10n ** 16n), // 100%
-      String(debt),
+      String(debt * 10n ** 18n),
       account,
       account,
       String(5n * 10n ** 16n), // 5%
       {
         from: account,
-        value: String(coll),
+        value: String(coll * 10n ** 18n),
       },
     );
   }));
@@ -41,8 +41,6 @@ async function main() {
     contractsLog.push([contractName, contract.address]);
     namesWidth = Math.max(namesWidth, contractName.length);
   }
-
-  console.log("args", process.argv[1]);
 
   console.log("");
   console.log("Core contracts deployed.");
