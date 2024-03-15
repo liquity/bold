@@ -63,12 +63,8 @@ async function main() {
 }
 
 function envVarContract(name, address) {
-  return `NEXT_PUBLIC_CONTRACT${
-    name.replace(
-      /[A-Z]/g,
-      (letter) => `_${letter.toLowerCase()}`,
-    ).toUpperCase()
-  }=${address}`;
+  const envVarEnd = name.replace(/[A-Z]/g, (s) => "_" + s);
+  return `NEXT_PUBLIC_CONTRACT${envVarEnd.toUpperCase()}=${address}`;
 }
 
 main()
