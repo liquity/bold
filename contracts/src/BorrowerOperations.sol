@@ -434,13 +434,16 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         contractsCache.activePool.mintAggInterest(0, initialRecordedTroveDebt + accruedTroveInterest);
 
         contractsCache.troveManager.removeStake(_troveId);
-        contractsCache.troveManager.closeTrove(_troveId, initialWeightedRecordedTroveDebt);
+        contractsCache.troveManager.closeTrove(_troveId);
         emit TroveUpdated(_troveId, 0, 0, 0, BorrowerOperation.closeTrove);
 
         // Remove only the Trove's latest recorded debt (inc. redist. gains) from the recorded debt tracker,
         // i.e. exclude the accrued interest since it has not been added.
         // TODO: If/when redist. gains are gas-optimized, exclude them from here too.
         contractsCache.activePool.decreaseRecordedDebtSum(initialRecordedTroveDebt + debtRedistGain);
+
+        // Remove Trove's weighted debt from the weighted sum
+        activePool.changeAggWeightedDebtSum(initialWeightedRecordedTroveDebt, 0);
 
         // Burn the 200 BOLD gas compensation
         contractsCache.boldToken.burn(gasPoolAddress, BOLD_GAS_COMPENSATION);
@@ -822,6 +825,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         totalDebt = _isDebtIncrease ? totalDebt + _debtChange : totalDebt - _debtChange;
 
         uint newTCR = LiquityMath._computeCR(totalColl, totalDebt, _price);
+
         return newTCR;
     }
 

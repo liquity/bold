@@ -185,7 +185,9 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     function decreaseRecordedDebtSum(uint _amount) external override {
         _requireCallerIsBOorTroveMorSP();
         uint256 newRecordedDebtSum = recordedDebtSum - _amount;
+
         recordedDebtSum = newRecordedDebtSum;
+
         emit ActivePoolBoldDebtUpdated(newRecordedDebtSum);
     }
 
@@ -207,7 +209,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     // The net Trove debt change could be positive or negative in a repayment (depending on whether its redistribution gain or repayment amount is larger),
     // so this function accepts both the increase and the decrease to avoid using (and converting to/from) signed ints.
     function mintAggInterest(uint256 _troveDebtIncrease, uint256 _troveDebtDecrease) public {
-        _requireCallerIsBOorSP();
+        _requireCallerIsBOorTroveMorSP();
         uint256 aggInterest = calcPendingAggInterest();
         // Mint the new BOLD interest to a mock interest router that would split it and send it onward to SP, LP staking, etc.
         // TODO: implement interest routing and SP Bold reward tracking
@@ -245,11 +247,6 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
             msg.sender == borrowerOperationsAddress ||
             msg.sender == troveManagerAddress,
             "ActivePool: Caller is neither BorrowerOperations nor TroveManager");
-    }
-
-    function _requireCallerIsBOorSP() internal view {
-        require(msg.sender == borrowerOperationsAddress || msg.sender == stabilityPoolAddress,
-            "ActivePool: Caller is not the BO or SP");
     }
 
     function _requireCallerIsTroveManager() internal view {

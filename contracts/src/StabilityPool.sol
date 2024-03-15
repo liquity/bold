@@ -488,8 +488,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         IActivePool activePoolCached = activePool;
 
         // Cancel the liquidated Bold debt with the Bold in the stability pool
-        // TODO: double-check we are removing the right debt sum here in a liquidation
-        activePoolCached.decreaseRecordedDebtSum(_debtToOffset);
         _decreaseBold(_debtToOffset);
 
         // Burn the debt that was successfully offset

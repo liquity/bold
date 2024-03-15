@@ -182,6 +182,14 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
+    function batchLiquidateTroves(address _from, address[] memory _trovesList) public {
+        vm.startPrank(_from);
+        console.log(_trovesList[0], "trove 0 to liq");
+        console.log(_trovesList[1], "trove 1 to liq");
+        troveManager.batchLiquidateTroves(_trovesList);
+        vm.stopPrank();
+    }
+
     function logContractAddresses() public view {
         console.log("ActivePool addr: ", address(activePool));
         console.log("BorrowerOps addr: ", address(borrowerOperations));
