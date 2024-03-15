@@ -33,6 +33,8 @@ cd bold/contracts
 pnpm hardhat run --network localhost utils/deploymentDev.js
 ```
 
+Copy the addresses of the deployed contracts to the `.env.local` file.
+
 Run the development server:
 
 ```sh
@@ -43,6 +45,17 @@ pnpm dev
 You can now open <http://localhost:3000/> in your browser.
 
 See also `contracts/hardhatAccountsList2k.js` to import the accounts into MetaMask (the deployment script opens troves for the first six accounts).
+
+## Scripts
+
+```sh
+pnpm dev                    # run the development server
+pnpm build                  # build the static app in out/
+pnpm fmt                    # format the code
+pnpm lint                   # lint the code
+pnpm test                   # run the tests
+pnpm update-liquity-abis    # build the contracts and update the ABIs
+```
 
 ## Environment
 
@@ -72,14 +85,3 @@ A WalletConnect project ID which can be obtained by [creating a WalletConnect pr
 ### `NEXT_PUBLIC_CONTRACT_…`
 
 Addresses of the Liquity contracts.
-
-## Scripts
-
-```sh
-pnpm dev                    # run the development server
-pnpm build                  # build the static app in out/
-pnpm fmt                    # format the code
-pnpm lint                   # lint the code
-pnpm test                   # run the tests
-pnpm update-liquity-abis    # build the contracts and update the ABIs
-```
