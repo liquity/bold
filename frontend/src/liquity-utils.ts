@@ -20,6 +20,17 @@ type TroveDetails = {
   interestRate: Dnum;
 };
 
+type LiquityInfo = {
+  trovesCount: number;
+  totalCollateral: Dnum;
+  totalDebt: Dnum;
+};
+
+type Rewards = {
+  eth: Dnum;
+  bold: Dnum;
+};
+
 function troveStatusFromNumber(value: number): TroveStatus {
   return match<number, TroveStatus>(value)
     .with(0, () => "nonExistent")
@@ -137,4 +148,80 @@ export function useBoldBalance(address: Address) {
     functionName: "balanceOf",
     args: [address],
   });
+}
+
+export function useRewards(address: Address) {
+  const read = useReadContracts({
+    allowFailure: false,
+    contracts: [
+      {
+        ...TroveManagerContract,
+        functionName: "getPendingETHReward",
+        args: [address],
+      },
+      {
+        ...TroveManagerContract,
+        functionName: "getPendingBoldDebtReward",
+        args: [address],
+      },
+    ],
+  });
+
+  if (!read.data || read.status !== "success") {
+    return {
+      ...read,
+      data: undefined,
+    };
+  }
+
+  const data: Rewards = {
+    eth: [read.data[0] ?? 0n, 18],
+    bold: [read.data[1] ?? 0n, 18],
+  };
+
+  return {
+    ...read,
+    data,
+  };
+}
+
+export function useLiquity2Info() {
+  const read = useReadContracts({
+    allowFailure: false,
+    contracts: [
+      {
+        ...TroveManagerContract,
+        functionName: "getTroveOwnersCount",
+        args: [],
+      },
+      {
+        ...TroveManagerContract,
+        functionName: "getEntireSystemColl",
+        args: [],
+      },
+      {
+        ...TroveManagerContract,
+        functionName: "getEntireSystemDebt",
+        args: [],
+      },
+    ],
+  });
+
+  if (!read.data || read.status !== "success") {
+    return {
+      ...read,
+      data: undefined,
+    };
+  }
+
+  const data: LiquityInfo = {
+    trovesCount: Number(read.data[0]),
+    totalCollateral: [read.data[1] ?? 0n, 18],
+    totalDebt: [read.data[2] ?? 0n, 18],
+  };
+
+  return {
+    ...read,
+    data,
+  };
 }

@@ -1,4 +1,7 @@
+import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
 import { InputField } from "@/src/comps/InputField/InputField";
+import { CONTRACT_BORROWER_OPERATIONS } from "@/src/env";
+import { useAccount, useWriteContract } from "wagmi";
 import { Contract } from "./Contract";
 import { ContractAction } from "./ContractAction";
 
@@ -18,7 +21,23 @@ export function ContractBorrowerOperations() {
 }
 
 function CloseTrove() {
-  return <ContractAction title="Close Trove" />;
+  const account = useAccount();
+  const { writeContract } = useWriteContract();
+  return (
+    <ContractAction
+      title="Close Trove"
+      onSubmit={() => {
+        if (account.address) {
+          writeContract({
+            abi: BorrowerOperations,
+            address: CONTRACT_BORROWER_OPERATIONS,
+            functionName: "closeTrove",
+            args: [],
+          });
+        }
+      }}
+    />
+  );
 }
 
 function AdjustTroveInterestRate() {
@@ -76,8 +95,29 @@ function WithdrawBold() {
 }
 
 function OpenTrove() {
+  const account = useAccount();
+  const { writeContract } = useWriteContract();
   return (
-    <ContractAction title="Open Trove">
+    <ContractAction
+      title="Open Trove"
+      onSubmit={() => {
+        if (account.address) {
+          writeContract({
+            abi: BorrowerOperations,
+            address: CONTRACT_BORROWER_OPERATIONS,
+            functionName: "openTrove",
+            args: [
+              100n * 10n ** 16n, // 100%
+              1800n * 10n ** 18n, // 1800 BOLD
+              account.address,
+              account.address,
+              5n * 10n ** 16n, // 5%
+            ],
+            value: 20n * 10n ** 18n, // 20 ETH
+          });
+        }
+      }}
+    >
       <InputField label="Max Fee Percentage" />
       <InputField label="BOLD Amount" />
       <InputField label="Upper Hint" />

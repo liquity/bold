@@ -3,7 +3,14 @@
 import type { ReactNode } from "react";
 
 import { ADDRESS_ZERO, shortenAddress } from "@/src/eth-utils";
-import { useBoldBalance, useCloseTrove, useOpenTrove, useTroveDetails } from "@/src/liquity-utils";
+import {
+  useBoldBalance,
+  useCloseTrove,
+  useLiquity2Info,
+  useOpenTrove,
+  useRewards,
+  useTroveDetails,
+} from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { useModal } from "connectkit";
 import * as dn from "dnum";
@@ -47,61 +54,80 @@ function AccountDetails() {
   const { address } = useAccount();
   const balance = useBalance({ address: address ?? ADDRESS_ZERO });
   const boldBalance = useBoldBalance(address ?? ADDRESS_ZERO);
-
-  const isLoading = balance.status === "pending" || boldBalance.status === "pending";
-  const isError = balance.status === "error" || boldBalance.status === "error";
+  const rewards = useRewards(address ?? ADDRESS_ZERO);
 
   return (
     <Card
       title="Account"
-      action={address
-        ? {
+      action={match({ address, data: [balance, boldBalance, rewards] })
+        .when(({ data }) => (
+          data.some(({ status }) => (
+            status === "pending"
+          ))
+        ), () => null)
+        .with({ address: P.string }, () => ({
           label: "Disconnect",
           onClick: disconnect,
-        }
-        : {
+        }))
+        .otherwise(() => ({
           label: "Connect Wallet",
           onClick: () => setOpen(true),
-        }}
+        }))}
     >
-      {isLoading
-        ? <div>loading…</div>
-        : isError
-        ? <div>error</div>
-        : address && (
-          <div>
-            {[
-              [
-                "Address",
-                <span title={address}>{shortenAddress(address, 4)}</span>,
-              ] as const,
-              [
-                "ETH Balance",
-                <span title={dn.format([balance.data?.value ?? 0n, 18])}>
-                  {dn.format([balance.data?.value ?? 0n, 18], 2)}
-                </span>,
-              ] as const,
-              [
-                "BOLD Balance",
-                <span>{dn.format([boldBalance.data, 18], 2)}</span>,
-              ] as const,
-            ].map(([label, value]) => (
-              <div
-                key={label}
-                className={css({
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 80,
-                  height: 32,
-                })}
-              >
-                <div>{label}</div>
-                <div>{value}</div>
-              </div>
-            ))}
-          </div>
-        )}
+      {match({ address, data: [balance, boldBalance, rewards] })
+        .when(({ data }) => data.some(({ status }) => status === "pending"), () => <div>loading…</div>)
+        .when(({ data }) => data.some(({ status }) => status === "error"), () => <div>error</div>)
+        .with(
+          {
+            address: P.string,
+            data: [
+              { status: "success" },
+              { status: "success" },
+              { status: "success" },
+            ],
+          },
+          ({ address, data: [balance, boldBalance, rewards] }) => (
+            <>
+              <CardRow
+                name="Address"
+                value={<span title={address}>{shortenAddress(address, 4)}</span>}
+              />
+              <CardRow
+                name="ETH Balance"
+                value={
+                  <span title={dn.format([balance.data?.value ?? 0n, 18])}>
+                    {dn.format([balance.data?.value ?? 0n, 18], 2)} ETH
+                  </span>
+                }
+              />
+              <CardRow
+                name="BOLD Balance"
+                value={
+                  <span>
+                    {dn.format([boldBalance.data, 18], 2)} BOLD
+                  </span>
+                }
+              />
+              <CardRow
+                name="Rewards ETH"
+                value={
+                  <span>
+                    {dn.format(rewards.data.eth, 2)} ETH
+                  </span>
+                }
+              />
+              <CardRow
+                name="Rewards BOLD"
+                value={
+                  <span>
+                    {dn.format(rewards.data.bold, 2)} BOLD
+                  </span>
+                }
+              />
+            </>
+          ),
+        )
+        .otherwise(() => null)}
     </Card>
   );
 }
@@ -146,57 +172,49 @@ function TroveDetails() {
             console.log("closeTrove", data);
           },
         }))
-        .otherwise(() => undefined)}
+        .otherwise(() => null)}
     >
       {match(troveDetails)
         .with({ status: "pending" }, () => "loading…")
         .with({ status: "error" }, () => "error")
         .with({ status: "success", data: P.not(undefined) }, ({ data }) => (
-          <div>
-            {[
-              ["Status", data.status],
-              ["Stake", dn.format(data.stake) + " ETH"],
-              ["Debt", dn.format(data.debt) + " BOLD"],
-              ["Collateral", dn.format(data.collateral) + " ETH"],
-              ["Interest Rate", dn.format(dn.mul(data.interestRate, 100)) + "%"],
-            ].map(([label, value]) => (
-              <div
-                key={label}
-                className={css({
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 80,
-                  height: 32,
-                })}
-              >
-                <div>{label}</div>
-                <div>{value}</div>
-              </div>
-            ))}
-          </div>
+          <>
+            <CardRow name="Status" value={data.status} />
+            <CardRow name="Stake" value={dn.format(data.stake) + " ETH"} />
+            <CardRow name="Debt" value={dn.format(data.debt) + " BOLD"} />
+            <CardRow name="Collateral" value={dn.format(data.collateral) + " ETH"} />
+            <CardRow name="Interest Rate" value={dn.format(dn.mul(data.interestRate, 100)) + "%"} />
+          </>
         ))
-        .otherwise(() => "a")}
+        .otherwise(() => null)}
     </Card>
   );
 }
 
 function Liquity2Info() {
+  const liquity2Info = useLiquity2Info();
   return (
     <Card title="Liquity v2">
-      <div>
-        <div
-          className={css({
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 80,
-            height: 32,
-          })}
-        >
-          loading…
-        </div>
-      </div>
+      {match(liquity2Info)
+        .with({ status: "error" }, () => "error")
+        .with({ status: "pending" }, () => "loading…")
+        .with({ status: "success" }, ({ data }) => (
+          <>
+            <CardRow
+              name="Troves Count"
+              value={data.trovesCount}
+            />
+            <CardRow
+              name="Total Collateral"
+              value={dn.format(data.totalCollateral) + " ETH"}
+            />
+            <CardRow
+              name="Total Debt"
+              value={dn.format(data.totalDebt) + " BOLD"}
+            />
+          </>
+        ))
+        .otherwise(() => null)}
     </Card>
   );
 }
@@ -222,7 +240,7 @@ function Card({
   children,
   title,
 }: {
-  action?: {
+  action?: null | {
     label: string;
     onClick: () => void;
   };
@@ -255,7 +273,9 @@ function Card({
         >
           {title}
         </h1>
-        {children}
+        <div>
+          {children}
+        </div>
       </div>
       {action && (
         <div
@@ -283,6 +303,29 @@ function Card({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function CardRow({
+  name,
+  value,
+}: {
+  name: ReactNode;
+  value: ReactNode;
+}) {
+  return (
+    <div
+      className={css({
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 80,
+        height: 32,
+      })}
+    >
+      <div>{name}</div>
+      <div>{value}</div>
     </div>
   );
 }
