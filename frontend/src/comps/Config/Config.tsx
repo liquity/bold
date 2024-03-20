@@ -65,7 +65,9 @@ export const ConfigContext = createContext<{
 
 export function Config({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<Config>(() => {
-    const storedConfig = localStorage.getItem("liquity2:config");
+    const storedConfig = typeof localStorage !== "undefined"
+      ? localStorage.getItem("liquity2:config")
+      : null;
     if (storedConfig) {
       try {
         return ConfigSchema.parse(JSON.parse(storedConfig));
@@ -77,7 +79,9 @@ export function Config({ children }: { children: ReactNode }) {
   });
 
   const setAndSaveConfig = useCallback((config: Config) => {
-    localStorage.setItem("liquity2:config", JSON.stringify(config));
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("liquity2:config", JSON.stringify(config));
+    }
     setConfig(config);
   }, []);
 
