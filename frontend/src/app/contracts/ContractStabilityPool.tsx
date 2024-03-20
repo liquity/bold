@@ -1,4 +1,5 @@
-import { InputField } from "@/src/comps/InputField/InputField";
+import { FormField } from "@/src/comps/FormField/FormField";
+import { TextInput } from "@/src/comps/Input/TextInput";
 import { Contract } from "./Contract";
 import { ContractAction } from "./ContractAction";
 
@@ -15,7 +16,9 @@ export function ContractStabilityPool() {
 function ProvideToSp() {
   return (
     <ContractAction title="Provide to SP">
-      <InputField label="Amount" />
+      <FormField label="Amount">
+        <TextInput />
+      </FormField>
     </ContractAction>
   );
 }
@@ -23,11 +26,16 @@ function ProvideToSp() {
 function WithdrawFromSp() {
   return (
     <ContractAction title="Withdraw from SP">
-      <InputField label="Amount" />
+      <FormField label="Amount">
+        <TextInput />
+      </FormField>
     </ContractAction>
   );
 }
 
 function WithdrawEthGainToTrove() {
-  return <ContractAction title="Withdraw ETH Gain to Trove" />;
+  return (
+    <ContractAction title="Withdraw ETH Gain to Trove">
+    </ContractAction>
+  );
 }

@@ -1,14 +1,17 @@
 import type { ReactNode } from "react";
 
 import { Button } from "@/src/comps/Button/Button";
+import { TextButton } from "@/src/comps/Button/TextButton";
 import { css } from "@/styled-system/css";
 
 export function ContractAction({
   children,
+  onFillExample,
   onSubmit,
   title,
 }: {
   children?: ReactNode;
+  onFillExample?: () => void;
   onSubmit?: () => void;
   title: string;
 }) {
@@ -23,13 +26,27 @@ export function ContractAction({
         background: "#F7F7FF",
       })}
     >
-      <h1
+      <div
         className={css({
-          fontSize: 32,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         })}
       >
-        {title}
-      </h1>
+        <h1
+          className={css({
+            fontSize: 32,
+          })}
+        >
+          {title}
+        </h1>
+        {onFillExample && (
+          <TextButton
+            label="Example"
+            onClick={onFillExample}
+          />
+        )}
+      </div>
       <form
         onSubmit={e => {
           e.preventDefault();
