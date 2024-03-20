@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
+import { Config } from "@/src/comps/Config/Config";
 import { Ethereum } from "@/src/comps/Ethereum/Ethereum";
 import { Inter } from "next/font/google";
 
@@ -23,11 +24,13 @@ export default function Layout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Ethereum>
-          <AppLayout>
-            {children}
-          </AppLayout>
-        </Ethereum>
+        <Config>
+          <Ethereum>
+            <AppLayout>
+              {children}
+            </AppLayout>
+          </Ethereum>
+        </Config>
       </body>
     </html>
   );
