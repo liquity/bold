@@ -1,20 +1,20 @@
-import { isAddress } from "@/src/eth-utils";
 import z from "zod";
+import { zAddress } from "./zod-utils";
 
 export const EnvSchema = z.object({
   CHAIN_ID: z.string(),
-  CONTRACT_ACTIVE_POOL: zContractAddress("ACTIVE_POOL"),
-  CONTRACT_BOLD_TOKEN: zContractAddress("BOLD_TOKEN"),
-  CONTRACT_BORROWER_OPERATIONS: zContractAddress("BORROWER_OPERATIONS"),
-  CONTRACT_COLL_SURPLUS_POOL: zContractAddress("COLL_SURPLUS_POOL"),
-  CONTRACT_DEFAULT_POOL: zContractAddress("DEFAULT_POOL"),
-  CONTRACT_FUNCTION_CALLER: zContractAddress("FUNCTION_CALLER"),
-  CONTRACT_GAS_POOL: zContractAddress("GAS_POOL"),
-  CONTRACT_HINT_HELPERS: zContractAddress("HINT_HELPERS"),
-  CONTRACT_PRICE_FEED_TESTNET: zContractAddress("PRICE_FEED_TESTNET"),
-  CONTRACT_SORTED_TROVES: zContractAddress("SORTED_TROVES"),
-  CONTRACT_STABILITY_POOL: zContractAddress("STABILITY_POOL"),
-  CONTRACT_TROVE_MANAGER: zContractAddress("TROVE_MANAGER"),
+  CONTRACT_ACTIVE_POOL: zAddress(),
+  CONTRACT_BOLD_TOKEN: zAddress(),
+  CONTRACT_BORROWER_OPERATIONS: zAddress(),
+  CONTRACT_COLL_SURPLUS_POOL: zAddress(),
+  CONTRACT_DEFAULT_POOL: zAddress(),
+  CONTRACT_FUNCTION_CALLER: zAddress(),
+  CONTRACT_GAS_POOL: zAddress(),
+  CONTRACT_HINT_HELPERS: zAddress(),
+  CONTRACT_PRICE_FEED_TESTNET: zAddress(),
+  CONTRACT_SORTED_TROVES: zAddress(),
+  CONTRACT_STABILITY_POOL: zAddress(),
+  CONTRACT_TROVE_MANAGER: zAddress(),
   WALLET_CONNECT_PROJECT_ID: z.string(),
 }).transform((val) => ({
   ...val,
@@ -54,16 +54,3 @@ export const {
   CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_CONTRACT_TROVE_MANAGER,
   WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 });
-
-function zContractAddress(envName: string) {
-  return z.string().transform((value: string, { addIssue }) => {
-    if (!isAddress(value)) {
-      addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `NEXT_PUBLIC_${envName} is not a valid Ethereum address`,
-      });
-      return z.NEVER;
-    }
-    return value;
-  });
-}
