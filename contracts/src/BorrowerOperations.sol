@@ -228,29 +228,29 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     // Send ETH as collateral to a trove
     function addColl(uint256 _troveId, uint256 _ETHAmount) external override {
-        _adjustTrove(_troveId, _ETHAmount, true, 0, false, 0);
+        _adjustTrove(msg.sender, _troveId, _ETHAmount, true, 0, false, 0);
     }
 
     // Send ETH as collateral to a trove. Called by only the Stability Pool.
-    function moveETHGainToTrove(uint256 _troveId, uint256 _ETHAmount) external override {
+    function moveETHGainToTrove(address _sender, uint256 _troveId, uint256 _ETHAmount) external override {
         _requireCallerIsStabilityPool();
         // TODO: check owner?
-        _adjustTrove(_troveId, _ETHAmount, true, 0, false, 0);
+        _adjustTrove(_sender, _troveId, _ETHAmount, true, 0, false, 0);
     }
 
     // Withdraw ETH collateral from a trove
     function withdrawColl(uint256 _troveId, uint _collWithdrawal) external override {
-        _adjustTrove(_troveId, _collWithdrawal, false, 0, false, 0);
+        _adjustTrove(msg.sender, _troveId, _collWithdrawal, false, 0, false, 0);
     }
 
     // Withdraw Bold tokens from a trove: mint new Bold tokens to the owner, and increase the trove's debt accordingly
     function withdrawBold(uint256 _troveId, uint _maxFeePercentage, uint _boldAmount ) external override {
-        _adjustTrove(_troveId, 0, false, _boldAmount, true, _maxFeePercentage);
+        _adjustTrove(msg.sender, _troveId, 0, false, _boldAmount, true, _maxFeePercentage);
     }
 
     // Repay Bold tokens to a Trove: Burn the repaid Bold tokens, and reduce the trove's debt accordingly
     function repayBold(uint256 _troveId, uint _boldAmount) external override {
-        _adjustTrove(_troveId, 0, false, _boldAmount, false, 0);
+        _adjustTrove(msg.sender, _troveId, 0, false, _boldAmount, false, 0);
     }
 
     function adjustTrove(
@@ -264,7 +264,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         external
         override
     {
-        _adjustTrove(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxFeePercentage);
+        _adjustTrove(msg.sender, _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxFeePercentage);
     }
 
     function adjustTroveInterestRate(uint256 _troveId, uint _newAnnualInterestRate, uint256 _upperHint, uint256 _lowerHint) external {
@@ -287,6 +287,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     * _adjustTrove(): Alongside a debt change, this function can perform either a collateral top-up or a collateral withdrawal. 
     */
     function _adjustTrove(
+        address _sender,
         uint256 _troveId,
         uint _collChange,
         bool _isCollIncrease,
@@ -312,13 +313,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireNonZeroAdjustment(_collChange, _boldChange);
         _requireTroveisActive(contractsCache.troveManager, _troveId);
 
-        // Confirm the operation is either a borrower adjusting their own trove, or a pure repayment (it can be “on behalf”), or an ETH transfer from the Stability Pool to a trove
-        address borrower = contractsCache.troveManager.ownerOf(_troveId);
-        assert(
-            msg.sender == borrower ||
-            (! _isDebtIncrease && ! _isCollIncrease && _collChange == 0) ||
-            (msg.sender == stabilityPoolAddress && _isCollIncrease && _boldChange == 0)
-        );
+        // Confirm the operation is an ETH transfer if coming from the Stability Pool to a trove
+        assert((msg.sender != stabilityPoolAddress || (_isCollIncrease && _boldChange == 0)));
 
         // TODO: apply individual and aggregate pending interest, and take snapshots of current timestamp.
 
@@ -349,7 +345,17 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _requireSufficientBoldBalance(contractsCache.boldToken, msg.sender, vars.netDebtChange);
         }
 
-        (vars.newColl, vars.newDebt) = _updateTroveFromAdjustment(contractsCache.troveManager, _troveId, _collChange, _isCollIncrease, vars.netDebtChange, _isDebtIncrease);
+        (vars.newColl, vars.newDebt) = _updateTroveFromAdjustment(
+            contractsCache.troveManager,
+            _sender,
+            _troveId,
+            vars.coll,
+            _collChange,
+            _isCollIncrease,
+            vars.debt,
+            vars.netDebtChange,
+            _isDebtIncrease
+        );
         vars.stake = contractsCache.troveManager.updateStakeAndTotalStakes(_troveId);
 
         emit TroveUpdated(_troveId, vars.newDebt, vars.newColl, vars.stake, BorrowerOperation.adjustTrove);
@@ -359,7 +365,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _moveTokensAndETHfromAdjustment(
             contractsCache.activePool,
             contractsCache.boldToken,
-            borrower,
+            contractsCache.troveManager,
+            _troveId,
             _collChange,
             _isCollIncrease,
             _boldChange,
@@ -403,6 +410,14 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         activePoolCached.sendETH(msg.sender, coll);
     }
 
+    function setAddManager(uint256 _troveId, address _manager) external {
+        troveManager.setAddManager(msg.sender, _troveId, _manager);
+    }
+
+    function setRemoveManager(uint256 _troveId, address _manager) external {
+        troveManager.setRemoveManager(msg.sender, _troveId, _manager);
+    }
+
     /**
      * Claim remaining collateral from a redemption or from a liquidation with ICR > MCR in Recovery Mode
      */
@@ -426,19 +441,35 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     function _updateTroveFromAdjustment
     (
         ITroveManager _troveManager,
+        address _sender,
         uint256 _troveId,
+        uint256 _coll,
         uint _collChange,
         bool _isCollIncrease,
+        uint256 _debt,
         uint _debtChange,
         bool _isDebtIncrease
     )
         internal
         returns (uint, uint)
     {
-        uint newColl = (_isCollIncrease) ? _troveManager.increaseTroveColl(_troveId, _collChange)
-                                        : _troveManager.decreaseTroveColl(_troveId, _collChange);
-        uint newDebt = (_isDebtIncrease) ? _troveManager.increaseTroveDebt(_troveId, _debtChange)
-                                        : _troveManager.decreaseTroveDebt(_troveId, _debtChange);
+        uint256 newColl;
+        uint256 newDebt;
+
+        if (_collChange > 0) {
+            newColl = (_isCollIncrease) ?
+                _troveManager.increaseTroveColl(_sender, _troveId, _collChange) :
+                _troveManager.decreaseTroveColl(_sender, _troveId, _collChange);
+        } else {
+            newColl = _coll;
+        }
+        if (_debtChange > 0) {
+            newDebt = (_isDebtIncrease) ?
+                _troveManager.increaseTroveDebt(_sender, _troveId, _debtChange) :
+                _troveManager.decreaseTroveDebt(_sender, _troveId, _debtChange);
+        } else {
+            newDebt = _debt;
+        }
 
         return (newColl, newDebt);
     }
@@ -447,7 +478,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     (
         IActivePool _activePool,
         IBoldToken _boldToken,
-        address _borrower,
+        ITroveManager _troveManager,
+        uint256 _troveId,
         uint _collChange,
         bool _isCollIncrease,
         uint _boldChange,
@@ -457,17 +489,19 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         internal
     {
         if (_isDebtIncrease) {
-            _withdrawBold(_activePool, _boldToken, _borrower, _boldChange, _netDebtChange);
+            address borrower = _troveManager.ownerOf(_troveId);
+            _withdrawBold(_activePool, _boldToken, borrower, _boldChange, _netDebtChange);
         } else {
-            _repayBold(_activePool, _boldToken, _borrower, _boldChange);
+            _repayBold(_activePool, _boldToken, msg.sender, _boldChange);
         }
 
         if (_isCollIncrease) {
             // Pull ETH tokens from sender and move them to the Active Pool
             _pullETHAndSendToActivePool(_activePool, _collChange);
         } else {
+            address borrower = _troveManager.ownerOf(_troveId);
             // Pull ETH from Active Pool and decrease its recorded ETH balance
-            _activePool.sendETH(_borrower, _collChange);
+            _activePool.sendETH(borrower, _collChange);
         }
     }
 

@@ -28,7 +28,7 @@ interface IBorrowerOperations is ILiquityBase {
 
     function addColl(uint256 _troveId, uint256 _ETHAmount) external;
 
-    function moveETHGainToTrove(uint256 _troveId, uint256 _ETHAmount) external;
+    function moveETHGainToTrove(address _sender, uint256 _troveId, uint256 _ETHAmount) external;
 
     function withdrawColl(uint256 _troveId, uint _amount) external;
 
@@ -41,6 +41,9 @@ interface IBorrowerOperations is ILiquityBase {
     function adjustTrove(uint256 _troveId, uint _maxFee, uint _collChange, bool _isCollIncrease, uint _debtChange, bool isDebtIncrease) external;
 
     function claimCollateral(uint256 _troveId) external;
+
+    function setAddManager(uint256 _troveId, address _manager) external;
+    function setRemoveManager(uint256 _troveId, address _manager) external;
 
     // TODO: addRepayWhitelistedAddress?(see github issue #64)
 

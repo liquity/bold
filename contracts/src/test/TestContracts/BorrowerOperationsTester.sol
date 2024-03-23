@@ -56,6 +56,6 @@ contract BorrowerOperationsTester is BorrowerOperations {
         external 
     {
         // TODO: Add coll increase
-        _adjustTrove(_troveId, _collWithdrawal, false, _debtChange, _isDebtIncrease, 0);
+        _adjustTrove(msg.sender, _troveId, _collWithdrawal, false, _debtChange, _isDebtIncrease, 0);
     }
 }
