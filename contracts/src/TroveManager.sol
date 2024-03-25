@@ -365,8 +365,11 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
         singleLiquidation.entireTroveColl,
         vars.pendingDebtReward,
         vars.pendingCollReward, ) = getEntireDebtAndColl(_borrower);
-
+        
         singleLiquidation.weightedRecordedTroveDebt = getTroveWeightedRecordedDebt(_borrower);
+
+        //TODO - GAS: We already read this inside getEntireDebtAndColl - so add it to the returned vals?
+        singleLiquidation.recordedTroveDebt = Troves[_borrower].debt;
 
         singleLiquidation.collGasCompensation = _getCollGasCompensation(singleLiquidation.entireTroveColl);
         singleLiquidation.BoldGasCompensation = BOLD_GAS_COMPENSATION;
@@ -410,7 +413,13 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
             assert(_boldInStabPool != 0);
 
             _removeStake(_borrower);
-            singleLiquidation = _getCappedOffsetVals(singleLiquidation.entireTroveDebt, singleLiquidation.entireTroveColl, _price);
+            singleLiquidation = _getCappedOffsetVals(
+                singleLiquidation.entireTroveDebt, 
+                singleLiquidation.entireTroveColl, 
+                singleLiquidation.recordedTroveDebt,
+                singleLiquidation.weightedRecordedTroveDebt,
+                _price
+            );
 
             _closeTrove(_borrower, Status.closedByLiquidation);
             if (singleLiquidation.collSurplus > 0) {
@@ -424,7 +433,6 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
             LiquidationValues memory zeroVals;
             return zeroVals;
         }
-
         return singleLiquidation;
     }
 
@@ -471,6 +479,8 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
     (
         uint _entireTroveDebt,
         uint _entireTroveColl,
+        uint256 _recordedTroveDebt,
+        uint256 _weightedRecordedTroveDebt,
         uint _price
     )
         internal
@@ -479,6 +489,8 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
     {
         singleLiquidation.entireTroveDebt = _entireTroveDebt;
         singleLiquidation.entireTroveColl = _entireTroveColl;
+        singleLiquidation.recordedTroveDebt = _recordedTroveDebt;
+        singleLiquidation.weightedRecordedTroveDebt = _weightedRecordedTroveDebt;
         uint cappedCollPortion = _entireTroveDebt * MCR / _price;
 
         singleLiquidation.collGasCompensation = _getCollGasCompensation(cappedCollPortion);
@@ -680,7 +692,7 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
                 uint TCR = LiquityMath._computeCR(vars.entireSystemColl, vars.entireSystemDebt, _price);
 
                 singleLiquidation = _liquidateRecoveryMode(_activePool, _defaultPool, vars.user, vars.ICR, vars.remainingBoldInStabPool, TCR, _price);
-
+               
                 // Update aggregate trackers
                 vars.remainingBoldInStabPool = vars.remainingBoldInStabPool - singleLiquidation.debtToOffset;
                 vars.entireSystemDebt = vars.entireSystemDebt - singleLiquidation.debtToOffset;
@@ -790,7 +802,6 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
         uint _partialRedemptionHintNICR
     )
         internal returns (SingleRedemptionValues memory singleRedemption)
-
     {
         // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove minus the liquidation reserve
         singleRedemption.BoldLot = LiquityMath._min(_maxBoldamount, Troves[_borrower].debt - BOLD_GAS_COMPENSATION);
@@ -826,7 +837,6 @@ contract TroveManager is LiquityBase, ITroveManager, Ownable, CheckContract {
 
             _contractsCache.sortedTroves.reInsert(_borrower, newNICR, _upperPartialRedemptionHint, _lowerPartialRedemptionHint);
 
-            // TODO: update aggregate weighted sum with new reduced debt
             Troves[_borrower].debt = newDebt;
             Troves[_borrower].coll = newColl;
             _updateStakeAndTotalStakes(_borrower);

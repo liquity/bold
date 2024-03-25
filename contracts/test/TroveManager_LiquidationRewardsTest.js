@@ -1398,7 +1398,7 @@ contract(
     it("redistribution: A,B,C Open. Liq(C). B withdraws coll. D Opens. Liq(D). Distributes correct rewards.", async () => {
       // A, B, C open troves
       const { collateral: A_coll, totalDebt: A_totalDebt } = await openTrove({
-        ICR: toBN(dec(400, 16)),
+        ICR: toBN(dec(500, 16)),
         extraParams: { from: alice },
       });
       const { collateral: B_coll, totalDebt: B_totalDebt } = await openTrove({
@@ -1407,13 +1407,15 @@ contract(
         extraParams: { from: bob },
       });
       const { collateral: C_coll, totalDebt: C_totalDebt } = await openTrove({
-        ICR: toBN(dec(200, 16)),
+        ICR: toBN(dec(110, 16)),
         extraBoldAmount: dec(110, 18),
         extraParams: { from: carol },
       });
 
-      // Price drops to 100 $/E
-      await priceFeed.setPrice(dec(100, 18));
+      // Price drops to 110 $/E
+      const liqPrice = th.toBN(dec(190, 18))
+      await priceFeed.setPrice(liqPrice);
+      assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
 
       // Liquidate Carol
       const txC = await troveManager.liquidate(carol);
@@ -1431,36 +1433,21 @@ contract(
 
       // D opens trove
       const { collateral: D_coll, totalDebt: D_totalDebt } = await openTrove({
-        ICR: toBN(dec(200, 16)),
+        ICR: toBN(dec(110, 16)),
         extraBoldAmount: dec(110, 18),
         extraParams: { from: dennis },
       });
 
-      // Price drops to 100 $/E
-      await priceFeed.setPrice(dec(100, 18));
+      // Price drops again
+      await priceFeed.setPrice(liqPrice);
+      assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
 
       // Liquidate D
       const txA = await troveManager.liquidate(dennis);
       assert.isTrue(txA.receipt.status);
       assert.isFalse(await sortedTroves.contains(dennis));
 
-      /* Bob rewards:
-     L1: 0.4975 ETH, 55 Bold
-     L2: (0.9975/2.495)*0.995 = 0.3978 ETH , 110*(0.9975/2.495)= 43.98 BoldDebt
-
-    coll: (1 + 0.4975 - 0.5 + 0.3968) = 1.3953 ETH
-    debt: (110 + 55 + 43.98 = 208.98 BoldDebt 
-
-     Alice rewards:
-    L1 0.4975, 55 Bold
-    L2 (1.4975/2.495)*0.995 = 0.5972 ETH, 110*(1.4975/2.495) = 66.022 BoldDebt
-
-    coll: (1 + 0.4975 + 0.5972) = 2.0947 ETH
-    debt: (50 + 55 + 66.022) = 171.022 Bold Debt
-
-    totalColl: 3.49 ETH
-    totalDebt 380 Bold (Includes 50 in each trove for gas compensation)
-    */
+    
       const bob_Coll = (await troveManager.Troves(bob))[1]
         .add(await troveManager.getPendingETHReward(bob))
         .toString();
@@ -1517,6 +1504,7 @@ contract(
       const entireSystemDebt = (await activePool.getRecordedDebtSum()).add(
         await defaultPool.getBoldDebt()
       );
+
       th.assertIsApproximatelyEqual(
         entireSystemDebt,
         A_totalDebt.add(B_totalDebt).add(C_totalDebt).add(D_totalDebt)
