@@ -434,6 +434,8 @@ contract("TroveManager", async (accounts) => {
       100
     );
 
+    assert.isTrue(await sortedTroves.contains(bob));
+    th.logBN("bob icr", await troveManager.getCurrentICR(bob, await priceFeed.getPrice()));
     // Bob now withdraws Bold, bringing his ICR to 1.11
     const { increasedTotalDebt: B_increasedTotalDebt } = await withdrawBold({
       ICR: toBN(dec(111, 16)),

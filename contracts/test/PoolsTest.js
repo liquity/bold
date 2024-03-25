@@ -62,12 +62,12 @@ contract('ActivePool', async accounts => {
     assert.equal(recordedETHBalance, 0)
   })
  
-  it('increaseBoldDebt(): increases the recorded BOLD balance by the correct amount', async () => {
+  it('increaseRecordedDebtSum(): increases the recorded BOLD balance by the correct amount', async () => {
     const recordedBold_balanceBefore = await activePool.getRecordedDebtSum()
     assert.equal(recordedBold_balanceBefore, 0)
 
     // await activePool.increaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
-    const increaseBoldDebtData = th.getTransactionData('increaseBoldDebt(uint256)', ['0x64'])
+    const increaseBoldDebtData = th.getTransactionData('increaseRecordedDebtSum(uint256)', ['0x64'])
     const tx = await mockBorrowerOperations.forward(activePool.address, increaseBoldDebtData)
     assert.isTrue(tx.receipt.status)
     const recordedBold_balanceAfter = await activePool.getRecordedDebtSum()
@@ -77,7 +77,7 @@ contract('ActivePool', async accounts => {
   it('decreaseBoldDebt(): decreases the recorded BOLD balance by the correct amount', async () => {
     // start the pool on 100 wei
     //await activePool.increaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
-    const increaseBoldDebtData = th.getTransactionData('increaseBoldDebt(uint256)', ['0x64'])
+    const increaseBoldDebtData = th.getTransactionData('increaseRecordedDebtSum(uint256)', ['0x64'])
     const tx1 = await mockBorrowerOperations.forward(activePool.address, increaseBoldDebtData)
     assert.isTrue(tx1.receipt.status)
 
@@ -85,7 +85,7 @@ contract('ActivePool', async accounts => {
     assert.equal(recordedBold_balanceBefore, 100)
 
     //await activePool.decreaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
-    const decreaseBoldDebtData = th.getTransactionData('decreaseBoldDebt(uint256)', ['0x64'])
+    const decreaseBoldDebtData = th.getTransactionData('decreaseRecordedDebtSum(uint256)', ['0x64'])
     const tx2 = await mockBorrowerOperations.forward(activePool.address, decreaseBoldDebtData)
     assert.isTrue(tx2.receipt.status)
     const recordedBold_balanceAfter = await activePool.getRecordedDebtSum()

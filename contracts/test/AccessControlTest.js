@@ -231,7 +231,7 @@ contract(
       it("increaseBoldDebt(): reverts when called by an account that is not BO nor TroveM", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await activePool.increaseBoldDebt(100, {
+          const txAlice = await activePool.increaseRecordedDebtSum(100, {
             from: alice,
           });
         } catch (err) {
@@ -247,7 +247,7 @@ contract(
       it("decreaseBoldDebt(): reverts when called by an account that is not BO nor TroveM nor SP", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await activePool.decreaseBoldDebt(100, {
+          const txAlice = await activePool.decreaseRecordedDebtSum(100, {
             from: alice,
           });
         } catch (err) {

@@ -389,6 +389,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
 
         singleLiquidation.weightedRecordedTroveDebt = getTroveWeightedRecordedDebt(_borrower);
 
+        //TODO - GAS: We already read this inside getEntireDebtAndColl - so add it to the returned vals?
+        singleLiquidation.recordedTroveDebt = Troves[_borrower].debt;
+
         singleLiquidation.collGasCompensation = _getCollGasCompensation(singleLiquidation.entireTroveColl);
         singleLiquidation.BoldGasCompensation = BOLD_GAS_COMPENSATION;
         vars.collToLiquidate = singleLiquidation.entireTroveColl - singleLiquidation.collGasCompensation;
@@ -431,7 +434,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
             assert(_boldInStabPool != 0);
 
             _removeStake(_troveId);
-            singleLiquidation = _getCappedOffsetVals(singleLiquidation.entireTroveDebt, singleLiquidation.entireTroveColl, _price);
+            singleLiquidation = _getCappedOffsetVals(
+                singleLiquidation.entireTroveDebt,
+                singleLiquidation.entireTroveColl,
+                singleLiquidation.recordedTroveDebt,
+                singleLiquidation.weightedRecordedTroveDebt,
+                _price
+            );
 
             _closeTrove(_troveId, Status.closedByLiquidation);
             if (singleLiquidation.collSurplus > 0) {
@@ -445,7 +454,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
             LiquidationValues memory zeroVals;
             return zeroVals;
         }
-
         return singleLiquidation;
     }
 
@@ -492,6 +500,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
     (
         uint _entireTroveDebt,
         uint _entireTroveColl,
+        uint256 _recordedTroveDebt,
+        uint256 _weightedRecordedTroveDebt,
         uint _price
     )
         internal
@@ -500,6 +510,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
     {
         singleLiquidation.entireTroveDebt = _entireTroveDebt;
         singleLiquidation.entireTroveColl = _entireTroveColl;
+        singleLiquidation.recordedTroveDebt = _recordedTroveDebt;
+        singleLiquidation.weightedRecordedTroveDebt = _weightedRecordedTroveDebt;
         uint cappedCollPortion = _entireTroveDebt * MCR / _price;
 
         singleLiquidation.collGasCompensation = _getCollGasCompensation(cappedCollPortion);
@@ -808,7 +820,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         uint _price
     )
         internal returns (SingleRedemptionValues memory singleRedemption)
-
     {
         // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove minus the liquidation reserve
         singleRedemption.BoldLot = LiquityMath._min(_maxBoldamount, Troves[_troveId].debt - BOLD_GAS_COMPENSATION);
