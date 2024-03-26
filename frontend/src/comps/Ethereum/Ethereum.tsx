@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import type { Chain } from "wagmi/chains";
 
 import { useConfig } from "@/src/comps/Config/Config";
 import { WALLET_CONNECT_PROJECT_ID } from "@/src/env";
@@ -18,16 +19,20 @@ export function Ethereum({ children }: { children: ReactNode }) {
 
   const wagmiConfig = useMemo(() => {
     const [chains, transports] = match(config.chainId)
+      .returnType<[
+        [Chain, ...Chain[]],
+        Record<string, ReturnType<typeof http>>,
+      ]>()
       // Hardhat
-      .with(31337, () => ([
+      .with(31337, () => [
         [hardhat],
         { [hardhat.id]: http("http://localhost:8545") },
-      ] as const))
-      // Default to mainnet
-      .otherwise(() => ([
+      ])
+      // Defaults to mainnet
+      .otherwise(() => [
         [mainnet],
         { [mainnet.id]: http() },
-      ] as const));
+      ]);
 
     return createConfig(
       getDefaultConfig({
