@@ -1,16 +1,24 @@
+"use client";
+
 import { palette } from "@/src/colors";
+import { TextButton } from "@/src/comps/Button/TextButton";
+import { useConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
 import { css } from "@/styled-system/css";
 import Image from "next/image";
 import Link from "next/link";
+
 import logo from "./footer-logo.svg";
 
-const links = [
-  ["Liquity", "https://liquity.org"],
-  ["Disclaimer", "https://example.org"],
-  ["Privacy Policy", "https://example.org"],
-];
-
 export function Footer() {
+  const { open: openConfigModal } = useConfigModal();
+
+  const links: Array<[string, string | (() => void)]> = [
+    ["Liquity", "https://liquity.org"],
+    ["Disclaimer", "https://example.org"],
+    // ["Privacy Policy", "https://example.org"],
+    ["Settings", openConfigModal],
+  ];
+
   return (
     <footer
       className={css({
@@ -53,27 +61,38 @@ export function Footer() {
             gap: 16,
           })}
         >
-          {links.map(([label, href]) => (
+          {links.map(([label, href], index) => (
             <li key={label + href}>
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: palette.rain }}
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  padding: 8,
-                  _lastOfType: {
-                    paddingRight: 0,
-                  },
-                  _active: {
-                    translate: "0 1px",
-                  },
-                })}
-              >
-                {label}
-              </a>
+              {typeof href === "string"
+                ? (
+                  <Link
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      padding: 8,
+                      paddingRight: index === links.length - 1 ? 0 : 8,
+                      _active: {
+                        translate: "0 1px",
+                      },
+                    })}
+                    style={{ color: palette.rain }}
+                  >
+                    {label}
+                  </Link>
+                )
+                : (
+                  <TextButton
+                    label={label}
+                    onClick={href}
+                    style={{
+                      padding: 8,
+                      color: palette.rain,
+                    }}
+                  />
+                )}
             </li>
           ))}
         </ul>
