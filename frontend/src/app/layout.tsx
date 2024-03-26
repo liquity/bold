@@ -6,7 +6,9 @@ import type { ReactNode } from "react";
 
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import { Config } from "@/src/comps/Config/Config";
+import { ConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
 import { Ethereum } from "@/src/comps/Ethereum/Ethereum";
+import { RootEntryPoint } from "@/src/comps/Root/Root";
 import { Inter } from "next/font/google";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -24,13 +26,17 @@ export default function Layout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Config>
-          <Ethereum>
-            <AppLayout>
-              {children}
-            </AppLayout>
-          </Ethereum>
-        </Config>
+        <RootEntryPoint>
+          <Config>
+            <Ethereum>
+              <ConfigModal>
+                <AppLayout>
+                  {children}
+                </AppLayout>
+              </ConfigModal>
+            </Ethereum>
+          </Config>
+        </RootEntryPoint>
       </body>
     </html>
   );
