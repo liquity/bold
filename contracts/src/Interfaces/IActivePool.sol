@@ -9,8 +9,16 @@ interface IActivePool {
     function borrowerOperationsAddress() external view returns (address);
     function troveManagerAddress() external view returns (address);
     function interestRouter() external view returns (IInterestRouter);
+    function setAddresses(
+        address _borrowerOperationsAddress,
+        address _troveManagerAddress,
+        address _stabilityPoolAddress,
+        address _defaultPoolAddress,
+        address _boldTokenAddress,
+        address _interestRouterAddress
+    ) external;
 
-    function getETH() external view returns (uint256);
+    function getETHBalance() external view returns (uint256);
     function getRecordedDebtSum() external view returns (uint256);
     function getTotalActiveDebt() external view returns (uint256);
     function lastAggUpdateTime() external view returns (uint256);
@@ -27,12 +35,5 @@ interface IActivePool {
     function decreaseRecordedDebtSum(uint256 _amount) external;
     function sendETH(address _account, uint _amount) external;
     function sendETHToDefaultPool(uint _amount) external;
-    function setAddresses(
-        address _borrowerOperationsAddress,
-        address _troveManagerAddress,
-        address _stabilityPoolAddress,
-        address _defaultPoolAddress,
-        address _boldTokenAddress,
-        address _interestRouterAddress
-    ) external;
+    function receiveETH(uint256 _amount) external;
 }

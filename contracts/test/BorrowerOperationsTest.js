@@ -2303,9 +2303,6 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         { from: alice }
       );
-      
-      const debtAfter = await getTroveEntireDebt(alice);
-      const collAfter = await getTroveEntireColl(alice);
 
       const debtAfter = await getTroveEntireDebt(aliceTroveId);
       const collAfter = await getTroveEntireColl(aliceTroveId);
@@ -3403,7 +3400,7 @@ contract("BorrowerOperations", async (accounts) => {
       assert.equal(bob_BoldDebtRewardSnapshot_Before, 0);
 
       const defaultPool_ETH = await defaultPool.getETHBalance();
-      const defaultPool_BoldDebt = await defaultPool.getRecordedDebtSum();
+      const defaultPool_BoldDebt = await defaultPool.getBoldDebt();
 
       // Carol's liquidated coll (1 ETH) and drawn debt should have entered the Default Pool
       assert.isAtMost(th.getDifference(defaultPool_ETH, liquidatedColl_C), 100);
@@ -3422,7 +3419,7 @@ contract("BorrowerOperations", async (accounts) => {
 
       const defaultPool_ETH_afterAliceCloses = await defaultPool.getETHBalance();
       const defaultPool_BoldDebt_afterAliceCloses =
-        await defaultPool.getRecordedDebtSum();
+        await defaultPool.getBoldDebt();
 
       assert.isAtMost(
         th.getDifference(
@@ -3455,7 +3452,7 @@ contract("BorrowerOperations", async (accounts) => {
 
       const defaultPool_ETH_afterBobCloses = await defaultPool.getETHBalance();
       const defaultPool_BoldDebt_afterBobCloses =
-        await defaultPool.getRecordedDebtSum();
+        await defaultPool.getBoldDebt();
 
       assert.isAtMost(
         th.getDifference(defaultPool_ETH_afterBobCloses, 0),

@@ -59,6 +59,14 @@ contract BaseTest is Test {
         accountsList = tempAccounts;
     }
 
+    function addressToTroveId(address _owner, uint256 _ownerIndex) public pure returns (uint256) {
+        return uint256(keccak256(abi.encode(_owner, _ownerIndex)));
+    }
+
+    function addressToTroveId(address _owner) public pure returns (uint256) {
+        return addressToTroveId(_owner, 0);
+    }
+
     function openTroveNoHints100pctMaxFee(
         address _account,
         uint256 _coll,
@@ -128,39 +136,39 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function closeTrove(address _account) public {
+    function closeTrove(address _account, uint256 _troveId) public {
         vm.startPrank(_account);
-        borrowerOperations.closeTrove();
+        borrowerOperations.closeTrove(_troveId);
         vm.stopPrank();
     }
 
-    function withdrawBold100pctMaxFee(address _account, uint256 _debtIncrease) public {
+    function withdrawBold100pctMaxFee(address _account, uint256 _troveId, uint256 _debtIncrease) public {
         vm.startPrank(_account);
-        borrowerOperations.withdrawBold(1e18, _debtIncrease); 
+        borrowerOperations.withdrawBold(_troveId, 1e18, _debtIncrease);
         vm.stopPrank();
     }
 
-    function repayBold(address _account, uint256 _debtDecrease) public {
+    function repayBold(address _account, uint256 _troveId, uint256 _debtDecrease) public {
         vm.startPrank(_account);
-        borrowerOperations.repayBold(_debtDecrease); 
+        borrowerOperations.repayBold(_troveId, _debtDecrease);
         vm.stopPrank();
     }
 
-    function addColl(address _account, uint256 _collIncrease) public {
+    function addColl(address _account, uint256 _troveId, uint256 _collIncrease) public {
         vm.startPrank(_account);
-        borrowerOperations.addColl{value: _collIncrease}(); 
+        borrowerOperations.addColl(_troveId, _collIncrease);
         vm.stopPrank();
     }
 
-    function withdrawColl(address _account, uint256 _collDecrease) public {
+    function withdrawColl(address _account, uint256 _troveId, uint256 _collDecrease) public {
         vm.startPrank(_account);
-        borrowerOperations.withdrawColl(_collDecrease); 
+        borrowerOperations.withdrawColl(_troveId, _collDecrease);
         vm.stopPrank();
     }
 
-    function applyTroveInterestPermissionless(address _from, address _borrower) public {
+    function applyTroveInterestPermissionless(address _from, uint256 _troveId) public {
         vm.startPrank(_from);
-        borrowerOperations.applyTroveInterestPermissionless(_borrower); 
+        borrowerOperations.applyTroveInterestPermissionless(_troveId);
         vm.stopPrank();
     }
 
@@ -170,19 +178,19 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function liquidate(address _from, address _borrower) public {
+    function liquidate(address _from, uint256 _troveId) public {
         vm.startPrank(_from);
-        troveManager.liquidate(_borrower);
+        troveManager.liquidate(_troveId);
         vm.stopPrank();
     }
 
-    function withdrawETHGainToTrove(address _from) public {
+    function withdrawETHGainToTrove(address _from, uint256 _troveId) public {
         vm.startPrank(_from);
-        stabilityPool.withdrawETHGainToTrove();
+        stabilityPool.withdrawETHGainToTrove(_troveId);
         vm.stopPrank();
     }
 
-    function batchLiquidateTroves(address _from, address[] memory _trovesList) public {
+    function batchLiquidateTroves(address _from, uint256[] memory _trovesList) public {
         vm.startPrank(_from);
         console.log(_trovesList[0], "trove 0 to liq");
         console.log(_trovesList[1], "trove 1 to liq");

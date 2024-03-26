@@ -8,31 +8,32 @@ contract InterestRateBasic is DevTestSetup {
     function testOpenTroveSetsInterestRate() public {
         priceFeed.setPrice(2000e18);
 
-        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  0);
-        assertEq(troveManager.getTroveAnnualInterestRate(A_Id), 0);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  0);
+        assertEq(troveManager.getTroveAnnualInterestRate(ATroveId), 0);
 
-        uint256 B_Id = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  1);
-        assertEq(troveManager.getTroveAnnualInterestRate(B_Id), 1);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  1);
+        assertEq(troveManager.getTroveAnnualInterestRate(BTroveId), 1);
 
-        uint256 C_Id = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  37e16);
-        assertEq(troveManager.getTroveAnnualInterestRate(C_Id), 37e16);
+        uint256 CTroveId = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  37e16);
+        assertEq(troveManager.getTroveAnnualInterestRate(CTroveId), 37e16);
 
-        uint256 D_Id = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  1e18);
-        assertEq(troveManager.getTroveAnnualInterestRate(D_Id), 1e18);
+        uint256 DTroveId = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  1e18);
+        assertEq(troveManager.getTroveAnnualInterestRate(DTroveId), 1e18);
     }
 
     function testOpenTroveSetsTroveLastDebtUpdateTimeToNow() public {
         priceFeed.setPrice(2000e18);
-        assertEq(troveManager.getTroveLastDebtUpdateTime(A), 0);
-        assertEq(troveManager.getTroveLastDebtUpdateTime(B), 0);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(addressToTroveId(A)), 0);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(addressToTroveId(B)), 0);
 
-        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  0);
-        assertEq(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  0);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
         vm.warp(block.timestamp + 1000);
-        openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  1);
-        assertEq(troveManager.getTroveLastDebtUpdateTime(B), block.timestamp);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  1);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(BTroveId), block.timestamp);
     }
+
     function testOpenTroveInsertsToCorrectPositionInSortedList() public {
         priceFeed.setPrice(2000e18);
 
@@ -44,31 +45,31 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate_E = 4e17;
 
         // B and D open
-        uint256 B_Id = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  interestRate_B);
-        uint256 D_Id = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  interestRate_D);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  interestRate_B);
+        uint256 DTroveId = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  interestRate_D);
 
         // Check initial list order - expect [B, D]
         // B
-        assertEq(sortedTroves.getNext(B_Id), 0); // tail
-        assertEq(sortedTroves.getPrev(B_Id), D_Id);
+        assertEq(sortedTroves.getNext(BTroveId), 0); // tail
+        assertEq(sortedTroves.getPrev(BTroveId), DTroveId);
         // D
-        assertEq(sortedTroves.getNext(D_Id), B_Id);
-        assertEq(sortedTroves.getPrev(D_Id), 0); // head
+        assertEq(sortedTroves.getNext(DTroveId), BTroveId);
+        assertEq(sortedTroves.getPrev(DTroveId), 0); // head
 
         // C opens. Expect to be inserted between B and D
-        uint256 C_Id = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  interestRate_C);
-        assertEq(sortedTroves.getNext(C_Id), B_Id);
-        assertEq(sortedTroves.getPrev(C_Id), D_Id);
+        uint256 CTroveId = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  interestRate_C);
+        assertEq(sortedTroves.getNext(CTroveId), BTroveId);
+        assertEq(sortedTroves.getPrev(CTroveId), DTroveId);
 
         // A opens. Expect to be inserted at the tail, below B
-        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  interestRate_A);
-        assertEq(sortedTroves.getNext(A_Id), 0);
-        assertEq(sortedTroves.getPrev(A_Id), B_Id);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  interestRate_A);
+        assertEq(sortedTroves.getNext(ATroveId), 0);
+        assertEq(sortedTroves.getPrev(ATroveId), BTroveId);
 
         // E opens. Expect to be inserted at the head, above D
-        uint256 E_Id = openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  interestRate_E);
-        assertEq(sortedTroves.getNext(E_Id), D_Id);
-        assertEq(sortedTroves.getPrev(E_Id), 0);
+        uint256 ETroveId = openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  interestRate_E);
+        assertEq(sortedTroves.getNext(ETroveId), DTroveId);
+        assertEq(sortedTroves.getPrev(ETroveId), 0);
     }
 
 
@@ -87,16 +88,16 @@ contract InterestRateBasic is DevTestSetup {
         priceFeed.setPrice(2000e18);
 
         // A opens Trove with valid annual interest rate ...
-        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  37e16);
-        assertEq(troveManager.getTroveAnnualInterestRate(A_Id), 37e16);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  37e16);
+        assertEq(troveManager.getTroveAnnualInterestRate(ATroveId), 37e16);
 
         // ... then tries to adjust it to an invalid value
         vm.startPrank(A);
         vm.expectRevert();
-        borrowerOperations.adjustTroveInterestRate(A_Id, 1e18 + 1, 0, 0);
+        borrowerOperations.adjustTroveInterestRate(ATroveId, 1e18 + 1, 0, 0);
 
         vm.expectRevert();
-        borrowerOperations.adjustTroveInterestRate(A_Id, 42e18, 0, 0);
+        borrowerOperations.adjustTroveInterestRate(ATroveId, 42e18, 0, 0);
     }
 
     // --- adjustTroveInterestRate ---
@@ -105,168 +106,168 @@ contract InterestRateBasic is DevTestSetup {
         priceFeed.setPrice(2000e18);
 
         // A, B, C opens Troves with valid annual interest rates
-        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
-        uint256 B_Id = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  5e17);
-        uint256 C_Id = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  5e17);
-        assertEq(troveManager.getTroveAnnualInterestRate(A_Id), 5e17);
-        assertEq(troveManager.getTroveAnnualInterestRate(B_Id), 5e17);
-        assertEq(troveManager.getTroveAnnualInterestRate(C_Id), 5e17);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  5e17);
+        uint256 CTroveId = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  5e17);
+        assertEq(troveManager.getTroveAnnualInterestRate(ATroveId), 5e17);
+        assertEq(troveManager.getTroveAnnualInterestRate(BTroveId), 5e17);
+        assertEq(troveManager.getTroveAnnualInterestRate(CTroveId), 5e17);
 
-        changeInterestRateNoHints(A, A_Id, 0);
-        assertEq(troveManager.getTroveAnnualInterestRate(A_Id), 0);
+        changeInterestRateNoHints(A, ATroveId, 0);
+        assertEq(troveManager.getTroveAnnualInterestRate(ATroveId), 0);
 
-        changeInterestRateNoHints(B, B_Id, 6e17);
-        assertEq(troveManager.getTroveAnnualInterestRate(B_Id), 6e17);
+        changeInterestRateNoHints(B, BTroveId, 6e17);
+        assertEq(troveManager.getTroveAnnualInterestRate(BTroveId), 6e17);
 
-        changeInterestRateNoHints(C, C_Id, 1e18);
-        assertEq(troveManager.getTroveAnnualInterestRate(C_Id), 1e18);
+        changeInterestRateNoHints(C, CTroveId, 1e18);
+        assertEq(troveManager.getTroveAnnualInterestRate(CTroveId), 1e18);
     }
 
     function testAdjustTroveInterestRateSetsTroveLastDebtUpdateTimeToNow() public {
         priceFeed.setPrice(2000e18);
 
-        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
 
         vm.warp(block.timestamp + 1 days);
 
-        assertLt(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+        assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
-        changeInterestRateNoHints(A, 75e16);
+        changeInterestRateNoHints(A, ATroveId, 75e16);
 
-        assertEq(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
     }
 
     function testAdjustTroveInterestRateSetsReducesPendingInterestTo0() public {
         priceFeed.setPrice(2000e18);
 
-        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
 
         vm.warp(block.timestamp + 1 days);
 
-        assertGt(troveManager.calcTroveAccruedInterest(A), 0);
+        assertGt(troveManager.calcTroveAccruedInterest(ATroveId), 0);
 
-        changeInterestRateNoHints(A, 75e16);
+        changeInterestRateNoHints(A, ATroveId, 75e16);
 
-        assertEq(troveManager.calcTroveAccruedInterest(A), 0);
+        assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
     function testAdjustTroveInterestRateDoesNotChangeEntireTroveDebt() public {
         priceFeed.setPrice(2000e18);
 
-        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(A);
+        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
-        changeInterestRateNoHints(A, 75e16);
+        changeInterestRateNoHints(A, ATroveId, 75e16);
 
-        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(A);
+        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
         assertEq(entireTroveDebt_1, entireTroveDebt_2);
     }
 
     function testAdjustTroveInterestRateNoRedistGainsIncreasesRecordedDebtByAccruedInterest() public {
         priceFeed.setPrice(2000e18);
 
-        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
 
         vm.warp(block.timestamp + 1 days);
 
-        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(A);
+        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
         assertGt(recordedTroveDebt_1, 0);
 
-        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(A);
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
 
-        changeInterestRateNoHints(A, 75e16);
+        changeInterestRateNoHints(A, ATroveId, 75e16);
 
-        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(A);
+        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
     }
 
     function testAdjustTroveInterestRateInsertsToCorrectPositionInSortedList() public {
         priceFeed.setPrice(2000e18);
-        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  1e17);
-        uint256 B_Id = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  2e17);
-        uint256 C_Id = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  3e17);
-        uint256 D_Id = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  4e17);
-        uint256 E_Id = openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  5e17);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  1e17);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  2e17);
+        uint256 CTroveId = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  3e17);
+        uint256 DTroveId = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  4e17);
+        uint256 ETroveId = openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  5e17);
 
         // Check initial sorted list order - expect [A:10%, B:02%, C:30%, D:40%, E:50%]
         // A
-        assertEq(sortedTroves.getNext(A_Id), 0); // tail
-        assertEq(sortedTroves.getPrev(A_Id), B_Id);
+        assertEq(sortedTroves.getNext(ATroveId), 0); // tail
+        assertEq(sortedTroves.getPrev(ATroveId), BTroveId);
         // B
-        assertEq(sortedTroves.getNext(B_Id), A_Id);
-        assertEq(sortedTroves.getPrev(B_Id), C_Id);
+        assertEq(sortedTroves.getNext(BTroveId), ATroveId);
+        assertEq(sortedTroves.getPrev(BTroveId), CTroveId);
         // C
-        assertEq(sortedTroves.getNext(C_Id), B_Id);
-        assertEq(sortedTroves.getPrev(C_Id), D_Id);
+        assertEq(sortedTroves.getNext(CTroveId), BTroveId);
+        assertEq(sortedTroves.getPrev(CTroveId), DTroveId);
         // D
-        assertEq(sortedTroves.getNext(D_Id), C_Id);
-        assertEq(sortedTroves.getPrev(D_Id), E_Id);
+        assertEq(sortedTroves.getNext(DTroveId), CTroveId);
+        assertEq(sortedTroves.getPrev(DTroveId), ETroveId);
         // E
-        assertEq(sortedTroves.getNext(E_Id), D_Id);
-        assertEq(sortedTroves.getPrev(E_Id), 0); // head
+        assertEq(sortedTroves.getNext(ETroveId), DTroveId);
+        assertEq(sortedTroves.getPrev(ETroveId), 0); // head
 
         // C sets rate to 0%, moves to tail - expect [C:0%, A:10%, B:20%, D:40%, E:50%]
-        changeInterestRateNoHints(C, C_Id, 0);
-        assertEq(sortedTroves.getNext(C_Id), 0);
-        assertEq(sortedTroves.getPrev(C_Id), A_Id);
+        changeInterestRateNoHints(C, CTroveId, 0);
+        assertEq(sortedTroves.getNext(CTroveId), 0);
+        assertEq(sortedTroves.getPrev(CTroveId), ATroveId);
 
         // D sets rate to 7%, moves to head - expect [C:0%, A:10%, B:20%, E:50%, D:70%]
-        changeInterestRateNoHints(D, D_Id, 7e17);
-        assertEq(sortedTroves.getNext(D_Id), E_Id);
-        assertEq(sortedTroves.getPrev(D_Id), 0);
+        changeInterestRateNoHints(D, DTroveId, 7e17);
+        assertEq(sortedTroves.getNext(DTroveId), ETroveId);
+        assertEq(sortedTroves.getPrev(DTroveId), 0);
 
         // A sets rate to 6%, moves up 2 positions - expect [C:0%, B:20%, E:50%, A:60%, D:70%]
-        changeInterestRateNoHints(A, A_Id, 6e17);
-        assertEq(sortedTroves.getNext(A_Id), E_Id);
-        assertEq(sortedTroves.getPrev(A_Id), D_Id);
+        changeInterestRateNoHints(A, ATroveId, 6e17);
+        assertEq(sortedTroves.getNext(ATroveId), ETroveId);
+        assertEq(sortedTroves.getPrev(ATroveId), DTroveId);
     }
 
     function testAdjustTroveDoesNotChangeListPositions() public {
         priceFeed.setPrice(2000e18);
 
         // Troves opened in ascending order of interest rate
-        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  1e17);
-        uint256 B_Id = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  2e17);
-        uint256 C_Id = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  3e17);
-        uint256 D_Id = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  4e17);
-        uint256 E_Id = openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  5e17);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  1e17);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  2e17);
+        uint256 CTroveId = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  3e17);
+        uint256 DTroveId = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  4e17);
+        uint256 ETroveId = openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  5e17);
 
         // Check A's neighbors
-        assertEq(sortedTroves.getNext(A_Id), 0); // tail
-        assertEq(sortedTroves.getPrev(A_Id), B_Id);
+        assertEq(sortedTroves.getNext(ATroveId), 0); // tail
+        assertEq(sortedTroves.getPrev(ATroveId), BTroveId);
 
         // Adjust A's coll + debt
-        adjustTrove100pctMaxFee(A, A_Id, 10 ether, 5000e18, true, true);
+        adjustTrove100pctMaxFee(A, ATroveId, 10 ether, 5000e18, true, true);
 
         // Check A's neighbors unchanged
-        assertEq(sortedTroves.getNext(A_Id), 0); // tail
-        assertEq(sortedTroves.getPrev(A_Id), B_Id);
+        assertEq(sortedTroves.getNext(ATroveId), 0); // tail
+        assertEq(sortedTroves.getPrev(ATroveId), BTroveId);
 
         // Check C's neighbors
-        assertEq(sortedTroves.getNext(C_Id), B_Id);
-        assertEq(sortedTroves.getPrev(C_Id), D_Id);
+        assertEq(sortedTroves.getNext(CTroveId), BTroveId);
+        assertEq(sortedTroves.getPrev(CTroveId), DTroveId);
 
         // Adjust C's coll + debt
-        adjustTrove100pctMaxFee(C, C_Id, 10 ether, 5000e18, true, true);
+        adjustTrove100pctMaxFee(C, CTroveId, 10 ether, 5000e18, true, true);
 
         // Check C's neighbors unchanged
-        assertEq(sortedTroves.getNext(C_Id), B_Id);
-        assertEq(sortedTroves.getPrev(C_Id), D_Id);
+        assertEq(sortedTroves.getNext(CTroveId), BTroveId);
+        assertEq(sortedTroves.getPrev(CTroveId), DTroveId);
 
         // Check E's neighbors
-        assertEq(sortedTroves.getNext(E_Id), D_Id);
-        assertEq(sortedTroves.getPrev(E_Id), 0); // head
+        assertEq(sortedTroves.getNext(ETroveId), DTroveId);
+        assertEq(sortedTroves.getPrev(ETroveId), 0); // head
 
         // Adjust E's coll + debt
-        adjustTrove100pctMaxFee(E, E_Id, 10 ether, 5000e18, true, true);
+        adjustTrove100pctMaxFee(E, ETroveId, 10 ether, 5000e18, true, true);
 
         // Check E's neighbors unchanged
-        assertEq(sortedTroves.getNext(E_Id), D_Id);
-        assertEq(sortedTroves.getPrev(E_Id), 0); // head
+        assertEq(sortedTroves.getNext(ETroveId), DTroveId);
+        assertEq(sortedTroves.getPrev(ETroveId), 0); // head
     }
 
     // --- withdrawBold ---
@@ -284,7 +285,7 @@ contract InterestRateBasic is DevTestSetup {
         assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
         // A draws more debt
-        withdrawBold100pctMaxFee(ATroveId, boldWithdrawal);
+        withdrawBold100pctMaxFee(A, ATroveId, boldWithdrawal);
         assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
     }
 
@@ -294,16 +295,16 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 boldWithdrawal = 500e18;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        assertGt(troveManager.calcTroveAccruedInterest(A), 0);
+        assertGt(troveManager.calcTroveAccruedInterest(ATroveId), 0);
 
         // A draws more debt
-        withdrawBold100pctMaxFee(A, boldWithdrawal);
+        withdrawBold100pctMaxFee(A, ATroveId, boldWithdrawal);
 
-        assertEq(troveManager.calcTroveAccruedInterest(A), 0);
+        assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
     function testWithdrawBoldIncreasesEntireTroveDebtByWithdrawnAmount() public {
@@ -312,17 +313,17 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 boldWithdrawal = 500e18;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(A);
+        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // A draws more debt
-        withdrawBold100pctMaxFee(A, boldWithdrawal);
+        withdrawBold100pctMaxFee(A, ATroveId, boldWithdrawal);
 
-        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(A);
+        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
 
         assertEq(entireTroveDebt_2, entireTroveDebt_1 + boldWithdrawal);
     }
@@ -333,17 +334,17 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 boldWithdrawal = 500e18;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(A);
-        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(A);
+        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
 
         // A draws more debt
-        withdrawBold100pctMaxFee(A, boldWithdrawal);
+        withdrawBold100pctMaxFee(A, ATroveId, boldWithdrawal);
 
-        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(A);
+        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
 
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest + boldWithdrawal);
     }
@@ -356,16 +357,16 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 boldRepayment = 500e18;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest,  interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        assertLt(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+        assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
         // A repays bold
-        repayBold(A, boldRepayment);
+        repayBold(A, ATroveId, boldRepayment);
 
-        assertEq(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
     }
 
     function testRepayBoldReducesTroveAccruedInterestTo0() public {
@@ -374,16 +375,16 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 boldRepayment = 500e18;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        assertGt(troveManager.calcTroveAccruedInterest(A), 0);
+        assertGt(troveManager.calcTroveAccruedInterest(ATroveId), 0);
 
         // A repays bold
-        repayBold(A, boldRepayment);
+        repayBold(A, ATroveId, boldRepayment);
 
-        assertEq(troveManager.calcTroveAccruedInterest(A), 0);
+        assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
     function testRepayBoldReducesEntireTroveDebtByRepaidAmount() public {
@@ -392,17 +393,17 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 boldRepayment = 500e18;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(A);
+        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // A repays bold
-        repayBold(A, boldRepayment);
+        repayBold(A, ATroveId, boldRepayment);
 
-        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(A);
+        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
 
 
         assertEq(entireTroveDebt_2, entireTroveDebt_1 - boldRepayment);
@@ -414,17 +415,17 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 boldRepayment = 500e18;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(A);
-        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(A);
+        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
 
         // A repays bold
-        repayBold(A, boldRepayment);
+        repayBold(A, ATroveId, boldRepayment);
 
-        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(A);
+        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
 
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest - boldRepayment);
     }
@@ -444,7 +445,7 @@ contract InterestRateBasic is DevTestSetup {
         assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
         // A adds coll
-        addColl(ATroveId, collIncrease);
+        addColl(A, ATroveId, collIncrease);
 
         assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
     }
@@ -455,16 +456,16 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 collIncrease = 1 ether;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        assertGt(troveManager.calcTroveAccruedInterest(A), 0);
+        assertGt(troveManager.calcTroveAccruedInterest(ATroveId), 0);
 
         // A adds coll
-        addColl(A, collIncrease);
+        addColl(A, ATroveId, collIncrease);
 
-        assertEq(troveManager.calcTroveAccruedInterest(A), 0);
+        assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
     function testAddCollDoesntChangeEntireTroveDebt() public {
@@ -473,17 +474,17 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 collIncrease = 1 ether;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(A);
+        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // A adds coll
-        addColl(A, collIncrease);
+        addColl(A, ATroveId, collIncrease);
 
-        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(A);
+        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
 
         assertEq(entireTroveDebt_2, entireTroveDebt_1);
     }
@@ -494,17 +495,17 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 collIncrease = 1 ether;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(A);
-        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(A);
+        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
 
         // A adds coll
-        addColl(A, collIncrease);
+        addColl(A, ATroveId, collIncrease);
 
-        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(A);
+        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
 
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
     }
@@ -517,16 +518,16 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 collDecrease = 1 ether;
 
-        openTroveNoHints100pctMaxFee(A, 3 ether, troveDebtRequest,  interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 3 ether, troveDebtRequest,  interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        assertLt(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+        assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
         // A withdraws coll
-        withdrawColl(A, collDecrease);
+        withdrawColl(A, ATroveId, collDecrease);
 
-        assertEq(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
     }
 
     function testWithdrawCollReducesTroveAccruedInterestTo0() public {
@@ -535,16 +536,16 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 collDecrease = 1 ether;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        assertGt(troveManager.calcTroveAccruedInterest(A), 0);
+        assertGt(troveManager.calcTroveAccruedInterest(ATroveId), 0);
 
         // A withdraws coll
-        withdrawColl(A, collDecrease);
+        withdrawColl(A, ATroveId, collDecrease);
 
-        assertEq(troveManager.calcTroveAccruedInterest(A), 0);
+        assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
     function testWithdrawCollDoesntChangeEntireTroveDebt() public {
@@ -553,17 +554,17 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 collDecrease = 1 ether;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(A);
+        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
          assertGt(entireTroveDebt_1, 0);
 
         // A withdraws coll
-        withdrawColl(A, collDecrease);
+        withdrawColl(A, ATroveId, collDecrease);
 
-        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(A);
+        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
 
         assertEq(entireTroveDebt_2, entireTroveDebt_1);
     }
@@ -574,17 +575,17 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
         uint256 collDecrease = 1 ether;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
-        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(A);
-        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(A);
+        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
 
         // A withdraws coll
-        withdrawColl(A, collDecrease);
+        withdrawColl(A, ATroveId, collDecrease);
 
-        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(A);
+        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
 
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
     }
@@ -596,19 +597,19 @@ contract InterestRateBasic is DevTestSetup {
         uint256 troveDebtRequest = 2000e18;
         uint256 interestRate = 25e16;
 
-        openTroveNoHints100pctMaxFee(A, 3 ether, troveDebtRequest,  interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 3 ether, troveDebtRequest,  interestRate);
 
         // Fast-forward time such that trove is Stale
         vm.warp(block.timestamp + 90 days + 1);
         // Confirm Trove is stale
-        assertTrue(troveManager.troveIsStale(A));
+        assertTrue(troveManager.troveIsStale(ATroveId));
 
-        assertLt(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+        assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, A);
+        applyTroveInterestPermissionless(B, ATroveId);
 
-        assertEq(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
     }
 
     function testApplyTroveInterestPermissionlessReducesTroveAccruedInterestTo0() public {
@@ -616,19 +617,19 @@ contract InterestRateBasic is DevTestSetup {
         uint256 troveDebtRequest = 2000e18;
         uint256 interestRate = 25e16;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         // Fast-forward time such that trove is Stale
         vm.warp(block.timestamp + 90 days + 1);
         // Confirm Trove is stale
-        assertTrue(troveManager.troveIsStale(A));
+        assertTrue(troveManager.troveIsStale(ATroveId));
 
-        assertGt(troveManager.calcTroveAccruedInterest(A), 0);
+        assertGt(troveManager.calcTroveAccruedInterest(ATroveId), 0);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, A);
+        applyTroveInterestPermissionless(B, ATroveId);
 
-        assertEq(troveManager.calcTroveAccruedInterest(A), 0);
+        assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
     function testApplyTroveInterestPermissionlessDoesntChangeEntireTroveDebt() public {
@@ -636,20 +637,20 @@ contract InterestRateBasic is DevTestSetup {
         uint256 troveDebtRequest = 2000e18;
         uint256 interestRate = 25e16;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
        // Fast-forward time such that trove is Stale
         vm.warp(block.timestamp + 90 days + 1);
         // Confirm Trove is stale
-        assertTrue(troveManager.troveIsStale(A));
+        assertTrue(troveManager.troveIsStale(ATroveId));
 
-        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(A);
+        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
          assertGt(entireTroveDebt_1, 0);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, A);
+        applyTroveInterestPermissionless(B, ATroveId);
 
-        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(A);
+        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
 
         assertEq(entireTroveDebt_2, entireTroveDebt_1);
     }
@@ -659,20 +660,20 @@ contract InterestRateBasic is DevTestSetup {
         uint256 troveDebtRequest = 2000e18;
         uint256 interestRate = 25e16;
 
-        openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
 
         // Fast-forward time such that trove is Stale
         vm.warp(block.timestamp + 90 days + 1);
         // Confirm Trove is stale
-        assertTrue(troveManager.troveIsStale(A));
+        assertTrue(troveManager.troveIsStale(ATroveId));
 
-        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(A);
-        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(A);
+        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, A);
+        applyTroveInterestPermissionless(B, ATroveId);
 
-        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(A);
+        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
 
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
     }
@@ -680,31 +681,31 @@ contract InterestRateBasic is DevTestSetup {
     // --- withdrawETHGainToTrove tests ---
 
      function testWithdrawETHGainToTroveSetsTroveLastDebtUpdateTimeToNow() public {
-       _setupForWithdrawETHGainToTrove();
+       (uint256 ATroveId,,) = _setupForWithdrawETHGainToTrove();
 
         // Fast-forward time
         vm.warp(block.timestamp + 1 days);
 
-        assertLt(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+        assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
         // A withdraws ETH gain to Trove
-        withdrawETHGainToTrove(A);
+        withdrawETHGainToTrove(A, ATroveId);
 
-        assertEq(troveManager.getTroveLastDebtUpdateTime(A), block.timestamp);
+        assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
     }
 
     function testWithdrawETHGainToTroveReducesTroveAccruedInterestTo0() public {
-        _setupForWithdrawETHGainToTrove();
+        (uint256 ATroveId,,) = _setupForWithdrawETHGainToTrove();
 
        // Fast-forward time
        vm.warp(block.timestamp + 1 days);
 
-        assertGt(troveManager.calcTroveAccruedInterest(A), 0);
+        assertGt(troveManager.calcTroveAccruedInterest(ATroveId), 0);
 
         // A withdraws ETH gain to Trove
-        withdrawETHGainToTrove(A);
+        withdrawETHGainToTrove(A, ATroveId);
 
-        assertEq(troveManager.calcTroveAccruedInterest(A), 0);
+        assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
     function testWithdrawETHGainToTroveDoesntChangeEntireTroveDebt() public {
@@ -713,16 +714,16 @@ contract InterestRateBasic is DevTestSetup {
         // // Fast-forward time
         // vm.warp(block.timestamp + 90 days);
 
-        // (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(A);
+        // (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
         // assertGt(entireTroveDebt_1, 0);
 
         // console.log(troveManager.getCurrentICR(A, 1000e18), "A ICR before");
         // // A withdraws ETH gain to Trove
-        // withdrawETHGainToTrove(A);
+        // withdrawETHGainToTrove(A, ATroveId);
 
         // console.log(troveManager.getCurrentICR(A, 1000e18), "A ICR after");
 
-        // (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(A);
+        // (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
         // console.log(entireTroveDebt_2, "entireTroveDebt_2");
         // console.log(entireTroveDebt_1, "entireTroveDebt_1");
 
@@ -730,18 +731,18 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testWithdrawETHGainToTroveIncreasesRecordedTroveDebtByAccruedInterest() public {
-        _setupForWithdrawETHGainToTrove();
+        (uint256 ATroveId,,) = _setupForWithdrawETHGainToTrove();
 
         // Fast-forward time
         vm.warp(block.timestamp + 90 days + 1);
 
-        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(A);
-        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(A);
+        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
 
         // A withdraws ETH gain to Trove
-        withdrawETHGainToTrove(A);
+        withdrawETHGainToTrove(A, ATroveId);
 
-        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(A);
+        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
 
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
     }

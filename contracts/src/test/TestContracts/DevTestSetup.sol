@@ -138,7 +138,7 @@ contract DevTestSetup is BaseTest {
         }
     }
 
-    function _setupForWithdrawETHGainToTrove() internal {
+    function _setupForWithdrawETHGainToTrove() internal returns (uint256, uint256, uint256) {
         uint256 troveDebtRequest_A = 2000e18;
         uint256 troveDebtRequest_B = 3000e18;
         uint256 troveDebtRequest_C = 4500e18;
@@ -147,12 +147,12 @@ contract DevTestSetup is BaseTest {
         uint256 price = 2000e18;
         priceFeed.setPrice(price);
 
-        openTroveNoHints100pctMaxFee(A,  5 ether, troveDebtRequest_A, interestRate);
-        openTroveNoHints100pctMaxFee(B,  5 ether, troveDebtRequest_B, interestRate);
-        openTroveNoHints100pctMaxFee(C,  5 ether, troveDebtRequest_C, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  5 ether, troveDebtRequest_A, interestRate);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  5 ether, troveDebtRequest_B, interestRate);
+        uint256 CTroveId = openTroveNoHints100pctMaxFee(C,  5 ether, troveDebtRequest_C, interestRate);
 
         console.log(troveManager.getTCR(price), "TCR");
-        console.log(troveManager.getCurrentICR(C, price), "C CR");
+        console.log(troveManager.getCurrentICR(CTroveId, price), "C CR");
 
         // A and B deposit to SP
         makeSPDeposit(A, troveDebtRequest_A);
@@ -163,19 +163,21 @@ contract DevTestSetup is BaseTest {
         priceFeed.setPrice(price);
 
         console.log(troveManager.getTCR(price), "TCR before liq");
-        console.log(troveManager.getCurrentICR(C, price), "C CR before liq");
+        console.log(troveManager.getCurrentICR(CTroveId, price), "C CR before liq");
 
         assertFalse(troveManager.checkRecoveryMode(price));
-        assertLt(troveManager.getCurrentICR(C, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(CTroveId, price), troveManager.MCR());
 
         // A liquidates C
-        liquidate(A, C);
+        liquidate(A, CTroveId);
 
         // check A has an ETH gain
         assertGt(stabilityPool.getDepositorETHGain(A), 0);
+
+        return (ATroveId, BTroveId, CTroveId);
     }
 
-    function _setupForBatchLiquidateTrovesPureOffset() internal {
+    function _setupForBatchLiquidateTrovesPureOffset() internal returns (uint256, uint256, uint256, uint256) {
         uint256 troveDebtRequest_A = 2000e18;
         uint256 troveDebtRequest_B = 3000e18;
         uint256 troveDebtRequest_C = 2250e18;
@@ -185,13 +187,13 @@ contract DevTestSetup is BaseTest {
         uint256 price = 2000e18;
         priceFeed.setPrice(price);
 
-        openTroveNoHints100pctMaxFee(A,  5 ether, troveDebtRequest_A, interestRate);
-        openTroveNoHints100pctMaxFee(B,  5 ether, troveDebtRequest_B, interestRate);
-        openTroveNoHints100pctMaxFee(C,  25e17, troveDebtRequest_C, interestRate);
-        openTroveNoHints100pctMaxFee(D,  25e17, troveDebtRequest_D, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  5 ether, troveDebtRequest_A, interestRate);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  5 ether, troveDebtRequest_B, interestRate);
+        uint256 CTroveId = openTroveNoHints100pctMaxFee(C,  25e17, troveDebtRequest_C, interestRate);
+        uint256 DTroveId = openTroveNoHints100pctMaxFee(D,  25e17, troveDebtRequest_D, interestRate);
 
         // console.log(troveManager.getTCR(price), "TCR");
-        // console.log(troveManager.getCurrentICR(C, price), "C CR");
+        // console.log(troveManager.getCurrentICR(CTroveId, price), "C CR");
 
         // A and B deposit to SP
         makeSPDeposit(A, troveDebtRequest_A);
@@ -202,11 +204,13 @@ contract DevTestSetup is BaseTest {
         priceFeed.setPrice(price);
 
         assertFalse(troveManager.checkRecoveryMode(price));
-        assertLt(troveManager.getCurrentICR(C, price), troveManager.MCR());
-        assertLt(troveManager.getCurrentICR(D, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(CTroveId, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(DTroveId, price), troveManager.MCR());
+
+        return (ATroveId, BTroveId, CTroveId, DTroveId);
     }
 
-        function _setupForBatchLiquidateTrovesPureRedist() internal {
+    function _setupForBatchLiquidateTrovesPureRedist() internal returns (uint256, uint256, uint256, uint256) {
         uint256 troveDebtRequest_A = 2000e18;
         uint256 troveDebtRequest_B = 3000e18;
         uint256 troveDebtRequest_C = 2250e18;
@@ -216,17 +220,19 @@ contract DevTestSetup is BaseTest {
         uint256 price = 2000e18;
         priceFeed.setPrice(price);
 
-        openTroveNoHints100pctMaxFee(A,  5 ether, troveDebtRequest_A, interestRate); 
-        openTroveNoHints100pctMaxFee(B,  5 ether, troveDebtRequest_B, interestRate); 
-        openTroveNoHints100pctMaxFee(C,  25e17, troveDebtRequest_C, interestRate);
-        openTroveNoHints100pctMaxFee(D,  25e17, troveDebtRequest_D, interestRate); 
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  5 ether, troveDebtRequest_A, interestRate);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  5 ether, troveDebtRequest_B, interestRate);
+        uint256 CTroveId = openTroveNoHints100pctMaxFee(C,  25e17, troveDebtRequest_C, interestRate);
+        uint256 DTroveId = openTroveNoHints100pctMaxFee(D,  25e17, troveDebtRequest_D, interestRate);
 
         // Price drops, C and D become liquidateable 
         price = 1050e18;
         priceFeed.setPrice(price);
 
         assertFalse(troveManager.checkRecoveryMode(price));
-        assertLt(troveManager.getCurrentICR(C, price), troveManager.MCR());
-        assertLt(troveManager.getCurrentICR(D, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(CTroveId, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(DTroveId, price), troveManager.MCR());
+
+        return (ATroveId, BTroveId, CTroveId, DTroveId);
     }
 }

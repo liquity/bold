@@ -387,10 +387,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         vars.pendingDebtReward,
         vars.pendingCollReward, ) = getEntireDebtAndColl(_troveId);
 
-        singleLiquidation.weightedRecordedTroveDebt = getTroveWeightedRecordedDebt(_borrower);
+        singleLiquidation.weightedRecordedTroveDebt = getTroveWeightedRecordedDebt(_troveId);
 
         //TODO - GAS: We already read this inside getEntireDebtAndColl - so add it to the returned vals?
-        singleLiquidation.recordedTroveDebt = Troves[_borrower].debt;
+        singleLiquidation.recordedTroveDebt = Troves[_troveId].debt;
 
         singleLiquidation.collGasCompensation = _getCollGasCompensation(singleLiquidation.entireTroveColl);
         singleLiquidation.BoldGasCompensation = BOLD_GAS_COMPENSATION;
@@ -833,7 +833,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
 
         // TODO: zombi troves
         if (newDebt == BOLD_GAS_COMPENSATION) {
-            uint256 weightedRecordedTroveDebt = getTroveWeightedRecordedDebt(_borrower);
             // No debt left in the Trove (except for the liquidation reserve), therefore the trove gets closed
             _removeStake(_troveId);
             _closeTrove(_troveId, Status.closedByRedemption);
@@ -991,7 +990,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         uint pendingETHReward = getPendingETHReward(_troveId);
         uint pendingBoldDebtReward = getPendingBoldDebtReward(_troveId);
 
-        uint256 accruedTroveInterest = calcTroveAccruedInterest(_borrower);
+        uint256 accruedTroveInterest = calcTroveAccruedInterest(_troveId);
 
         uint currentETH = Troves[_troveId].coll + pendingETHReward;
         uint currentBoldDebt = Troves[_troveId].debt + pendingBoldDebtReward + accruedTroveInterest;
@@ -1073,7 +1072,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         return pendingBoldDebtReward;
     }
 
-    function hasRedistributionGains(address _troveId) public view override returns (bool) {
+    function hasRedistributionGains(uint256 _troveId) public view override returns (bool) {
         /*
         * A Trove has redistribution gains if its snapshot is less than the current rewards per-unit-staked sum:
         * this indicates that rewards have occured since the snapshot was made, and the user therefore has
@@ -1403,11 +1402,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
 
     // TODO: analyze precision loss in interest functions and decide upon the minimum granularity
     // (per-second, per-block, etc)
-    function calcTroveAccruedInterest(address _borrower) public view returns (uint256) {
-        uint256 recordedDebt = Troves[_borrower].debt;
+    function calcTroveAccruedInterest(uint256 _troveId) public view returns (uint256) {
+        uint256 recordedDebt = Troves[_troveId].debt;
         // convert annual interest to per-second and multiply by the principal
-        uint256 annualInterestRate = Troves[_borrower].annualInterestRate;
-        uint256 lastDebtUpdateTime = Troves[_borrower].lastDebtUpdateTime;
+        uint256 annualInterestRate = Troves[_troveId].annualInterestRate;
+        uint256 lastDebtUpdateTime = Troves[_troveId].lastDebtUpdateTime;
 
         return recordedDebt * annualInterestRate * (block.timestamp - lastDebtUpdateTime) / SECONDS_IN_ONE_YEAR / 1e18;
     }
@@ -1476,8 +1475,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         return Troves[_troveId].debt;
     }
 
-    function getTroveWeightedRecordedDebt(address _borrower) public view returns (uint256) {
-        return Troves[_borrower].debt * Troves[_borrower].annualInterestRate;
+    function getTroveWeightedRecordedDebt(uint256 _troveId) public view returns (uint256) {
+        return Troves[_troveId].debt * Troves[_troveId].annualInterestRate;
     }
 
     function getTroveColl(uint256 _troveId) external view override returns (uint) {
@@ -1488,12 +1487,12 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         return Troves[_troveId].annualInterestRate;
     }
 
-    function getTroveLastDebtUpdateTime(address _borrower) external view returns (uint) {
-        return Troves[_borrower].lastDebtUpdateTime;
+    function getTroveLastDebtUpdateTime(uint256 _troveId) external view returns (uint) {
+        return Troves[_troveId].lastDebtUpdateTime;
     }
 
-    function troveIsStale(address _borrower) external view returns (bool) {
-        return block.timestamp - Troves[_borrower].lastDebtUpdateTime > STALE_TROVE_DURATION;
+    function troveIsStale(uint256 _troveId) external view returns (bool) {
+        return block.timestamp - Troves[_troveId].lastDebtUpdateTime > STALE_TROVE_DURATION;
     }
 
     // --- Trove property setters, called by BorrowerOperations ---
@@ -1517,6 +1516,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
 
         _updateTroveRewardSnapshots(_troveId);
 
+        // mint ERC721
+        // TODO: Should we use safeMint? I guess not
+        _mint(_owner, _troveId);
+
         // Record the Trove's stake (for redistributions) and update the total stakes
         return _updateStakeAndTotalStakes(_troveId);
     }
@@ -1531,8 +1534,18 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         Troves[_troveId].annualInterestRate = _newAnnualInterestRate;
     }
 
-    function updateTroveDebt(uint256 _troveId, uint256 _entireTroveDebt) external {
+    function updateTroveDebtFromInterestApplication(uint256 _troveId, uint256 _entireTroveDebt) external {
         _requireCallerIsBorrowerOperations();
+        _updateTroveDebt(_troveId, _entireTroveDebt);
+    }
+
+    function updateTroveDebt(address _sender, uint256 _troveId, uint256 _entireTroveDebt, bool _isDebtIncrease) external {
+        _requireCallerIsBorrowerOperations();
+        if (_isDebtIncrease) {
+            _requireIsOwnerOrRemoveManager(_troveId, _sender);
+        } else {
+            _requireIsOwnerOrAddManager(_troveId, _sender);
+        }
         _updateTroveDebt(_troveId, _entireTroveDebt);
     }
 
@@ -1541,40 +1554,15 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
     }
 
-    function increaseTroveColl(address _sender, uint256 _troveId, uint _collIncrease) external override returns (uint) {
+    function updateTroveColl(address _sender, uint256 _troveId, uint256 _entireTroveColl, bool _isCollIncrease) external override {
         _requireCallerIsBorrowerOperations();
-        _requireIsOwnerOrAddManager(_troveId, _sender);
+        if (_isCollIncrease) {
+            _requireIsOwnerOrAddManager(_troveId, _sender);
+        } else {
+            _requireIsOwnerOrRemoveManager(_troveId, _sender);
+        }
 
-        uint newColl = Troves[_troveId].coll + _collIncrease;
-        Troves[_troveId].coll = newColl;
-        return newColl;
-    }
-
-    function decreaseTroveColl(address _sender, uint256 _troveId, uint _collDecrease) external override returns (uint) {
-        _requireCallerIsBorrowerOperations();
-        _requireIsOwnerOrRemoveManager(_troveId, _sender);
-
-        uint newColl = Troves[_troveId].coll - _collDecrease;
-        Troves[_troveId].coll = newColl;
-        return newColl;
-    }
-
-    function increaseTroveDebt(address _sender, uint256 _troveId, uint _debtIncrease) external override returns (uint) {
-        _requireCallerIsBorrowerOperations();
-        _requireIsOwnerOrRemoveManager(_troveId, _sender);
-
-        uint newDebt = Troves[_troveId].debt + _debtIncrease;
-        Troves[_troveId].debt = newDebt;
-        return newDebt;
-    }
-
-    function decreaseTroveDebt(address _sender, uint256 _troveId, uint _debtDecrease) external override returns (uint) {
-        _requireCallerIsBorrowerOperations();
-        _requireIsOwnerOrAddManager(_troveId, _sender);
-
-        uint newDebt = Troves[_troveId].debt - _debtDecrease;
-        Troves[_troveId].debt = newDebt;
-        return newDebt;
+        Troves[_troveId].coll = _entireTroveColl;
     }
 
     function changeAnnualInterestRate(uint256 _troveId, uint256 _newAnnualInterestRate) external {

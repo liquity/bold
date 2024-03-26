@@ -2308,7 +2308,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
 
     // Dennis redeems 40, hits Bob (lowest ICR) so Bob has a surplus of (200 * 1 - 40) / 200 = 0.8 ETH
     await th.redeemCollateral(dennis, contracts, B_netDebt);
-    const price = await priceFeed.getPrice();
+    price = await priceFeed.getPrice();
     const bob_surplus = B_coll.sub(B_netDebt.mul(mv._1e18BN).div(price));
     th.assertIsApproximatelyEqual(
       await collSurplusPool.getCollateral(bob),

@@ -219,7 +219,7 @@ contract("TroveManager", async (accounts) => {
       await contracts.WETH.balanceOf(defaultPool.address)
     ).toString();
     const defaultPool_BoldDebt_Before = (
-      await defaultPool.getRecordedDebtSum()
+      await defaultPool.getBoldDebt()
     ).toString();
 
     assert.equal(defaultPool_ETH_Before, "0");
@@ -241,7 +241,7 @@ contract("TroveManager", async (accounts) => {
       await contracts.WETH.balanceOf(defaultPool.address)
     ).toString();
     const defaultPool_BoldDebt_After = (
-      await defaultPool.getRecordedDebtSum()
+      await defaultPool.getBoldDebt()
     ).toString();
 
     const defaultPool_ETH = th.applyLiquidationFee(B_collateral);
@@ -434,7 +434,7 @@ contract("TroveManager", async (accounts) => {
       100
     );
 
-    assert.isTrue(await sortedTroves.contains(bob));
+    assert.isTrue(await sortedTroves.contains(bobTroveId));
     th.logBN("bob icr", await troveManager.getCurrentICR(bob, await priceFeed.getPrice()));
     // Bob now withdraws Bold, bringing his ICR to 1.11
     const { increasedTotalDebt: B_increasedTotalDebt } = await withdrawBold({
@@ -1138,15 +1138,15 @@ contract("TroveManager", async (accounts) => {
 
     // Liquidate A, B and C
     const activeBoldDebt_0 = await activePool.getRecordedDebtSum();
-    const defaultBoldDebt_0 = await defaultPool.getRecordedDebtSum();
+    const defaultBoldDebt_0 = await defaultPool.getBoldDebt();
 
     await troveManager.liquidate(aliceTroveId);
     const activeBoldDebt_A = await activePool.getRecordedDebtSum();
-    const defaultBoldDebt_A = await defaultPool.getRecordedDebtSum();
+    const defaultBoldDebt_A = await defaultPool.getBoldDebt();
 
     await troveManager.liquidate(bobTroveId);
     const activeBoldDebt_B = await activePool.getRecordedDebtSum();
-    const defaultBoldDebt_B = await defaultPool.getRecordedDebtSum();
+    const defaultBoldDebt_B = await defaultPool.getBoldDebt();
 
     await troveManager.liquidate(carolTroveId);
 
@@ -1851,7 +1851,7 @@ contract("TroveManager", async (accounts) => {
     const pendingETH_C = await troveManager.getPendingETHReward(CTroveId);
     const pendingBoldDebt_C = await troveManager.getPendingBoldDebtReward(CTroveId);
     const defaultPoolETH = await defaultPool.getETHBalance();
-    const defaultPoolBoldDebt = await defaultPool.getRecordedDebtSum();
+    const defaultPoolBoldDebt = await defaultPool.getBoldDebt();
     assert.isTrue(pendingETH_C.lte(defaultPoolETH));
     assert.isTrue(pendingBoldDebt_C.lte(defaultPoolBoldDebt));
     //Check only difference is dust
@@ -4398,7 +4398,7 @@ contract("TroveManager", async (accounts) => {
 
     // Check total Bold supply
     const activeBold = await activePool.getRecordedDebtSum();
-    const defaultBold = await defaultPool.getRecordedDebtSum();
+    const defaultBold = await defaultPool.getBoldDebt();
 
     const totalBoldSupply = activeBold.add(defaultBold);
     th.assertIsApproximatelyEqual(totalBoldSupply, totalDebt);

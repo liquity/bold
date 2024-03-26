@@ -145,11 +145,11 @@ contract(
         }
       });
 
-      // increaseTroveColl
-      it("increaseTroveColl(): reverts when called by an account that is not BorrowerOperations", async () => {
+      // updateTroveColl
+      it("updateTroveColl(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await troveManager.increaseTroveColl(bob, th.addressToTroveId(bob), 100, {
+          const txAlice = await troveManager.updateTroveColl(bob, th.addressToTroveId(bob), 100, true, {
             from: alice,
           });
         } catch (err) {
@@ -158,37 +158,11 @@ contract(
         }
       });
 
-      // decreaseTroveColl
-      it("decreaseTroveColl(): reverts when called by an account that is not BorrowerOperations", async () => {
+      // updateTroveDebt
+      it("updateTroveDebt(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await troveManager.decreaseTroveColl(bob, th.addressToTroveId(bob), 100, {
-            from: alice,
-          });
-        } catch (err) {
-          assert.include(err.message, "revert");
-          // assert.include(err.message, "Caller is not the BorrowerOperations contract")
-        }
-      });
-
-      // increaseTroveDebt
-      it("increaseTroveDebt(): reverts when called by an account that is not BorrowerOperations", async () => {
-        // Attempt call from alice
-        try {
-          const txAlice = await troveManager.increaseTroveDebt(bob, th.addressToTroveId(bob), 100, {
-            from: alice,
-          });
-        } catch (err) {
-          assert.include(err.message, "revert");
-          // assert.include(err.message, "Caller is not the BorrowerOperations contract")
-        }
-      });
-
-      // decreaseTroveDebt
-      it("decreaseTroveDebt(): reverts when called by an account that is not BorrowerOperations", async () => {
-        // Attempt call from alice
-        try {
-          const txAlice = await troveManager.decreaseTroveDebt(bob, th.addressToTroveId(bob), 100, {
+          const txAlice = await troveManager.updateTroveDebt(bob, th.addressToTroveId(bob), 100, true, {
             from: alice,
           });
         } catch (err) {
