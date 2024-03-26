@@ -50,6 +50,33 @@ contract BaseTest is Test {
     GasPool gasPool;
     IInterestRouter mockInterestRouter;
 
+    // Structs for use in test where we need to bi-pass "stack-too-deep" errors
+    struct TroveDebtRequests {
+        uint256 A;
+        uint256 B;
+        uint256 C;
+    }
+
+    struct TroveCollAmounts {
+        uint256 A;
+        uint256 B;
+        uint256 C;
+    }
+
+    struct TroveInterestRates {
+        uint256 A;
+        uint256 B;
+        uint256 C;
+    }
+
+    struct TroveAccruedInterests {
+        uint256 A;
+        uint256 B;
+        uint256 C;
+    }
+
+    // --- functions ---
+
     function createAccounts() public {
         address[10] memory tempAccounts;
         for (uint256 i = 0; i < accounts.getAccountsCount(); i++) {

@@ -80,7 +80,7 @@ contract InterestRateAggregate is DevTestSetup {
     // --- calcTroveAccruedInterest
 
     // returns 0 for non-existent trove
-      function testCalcPendingTroveInterestReturns0When0AggRecordedDebt() public {
+      function testCalcTroveAccruedInterestReturns0When0AggRecordedDebt() public {
         priceFeed.setPrice(2000e18);
 
         assertEq(troveManager.calcTroveAccruedInterest(addressToTroveId(A)), 0);
@@ -99,7 +99,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
     // returns 0 for 0 time passed
 
-    function testCalcPendingTroveInterestReturns0For0TimePassed() public {
+    function testCalcTroveAccruedInterestReturns0For0TimePassed() public {
         priceFeed.setPrice(2000e18);
 
         uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  25e16);
@@ -111,7 +111,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(BTroveId), 0);
     }
 
-    function testCalcPendingTroveInterestReturns0For0InterestRate() public {
+    function testCalcTroveAccruedInterestReturns0For0InterestRate() public {
         priceFeed.setPrice(2000e18);
 
         uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  0);
@@ -124,7 +124,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     // TODO: create additional corresponding fuzz test
-    function testCalcPendingTroveInterestReturnsCorrectInterestForGivenPeriod() public {
+    function testCalcTroveAccruedInterestReturnsCorrectInterestForGivenPeriod() public {
         priceFeed.setPrice(2000e18);
 
         uint256 annualRate_A = 1e18;
@@ -954,9 +954,6 @@ contract InterestRateAggregate is DevTestSetup {
         // Check recorded debt sum increases by the pending interest
         assertEq(activePool.getRecordedDebtSum(), recordedDebtSum_1 + pendingInterest);
     }
-
-    // TODO: getEntireDebt and getTCR basic tests
-
 
     // --- withdrawBold tests ---
 
@@ -1870,12 +1867,6 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(activePool.getRecordedDebtSum(), recordedDebt_1  - oldTroveRecordedDebt + newTroveRecordedDebt);
     }
 
-    // TODO: mixed collateral & debt adjustment opps
-    // TODO: tests with pending debt redist. gain >0
-    // TODO: tests that show total debt change under user ops
-    // TODO: Basic TCR and ICR getter tests
-    // TODO: Test total debt invariant holds i.e. (D + S * delta_T) == sum_of_all_entire_trove_debts.
-
     // --- batchLiquidateTroves (Normal Mode, offset) ---
 
     function testBatchLiquidateTrovesPureOffsetChangesAggRecordedInterestCorrectly() public {
@@ -2233,4 +2224,176 @@ contract InterestRateAggregate is DevTestSetup {
         // Check recorded debt sum reduced by C and D's entire debts
         assertEq(defaultPool.getBoldDebt(), debtInLiq);
     }
+
+    // --- TCR tests ---
+
+    function testGetTCRReturnsMaxUint256ForEmptySystem() public {
+        uint256 price = priceFeed.fetchPrice();
+        console.log(price);
+        uint256 TCR = troveManager.getTCR(price);
+
+        assertEq(TCR, MAX_UINT256);
+    }
+
+    function testGetTCRReturnsICRofTroveForSystemWithOneTrove() public {
+        uint256 price = priceFeed.fetchPrice();
+        uint256 troveDebtRequest = 2000e18;
+        uint256 coll = 20 ether;
+        uint256 interestRate = 25e16;
+
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, coll, troveDebtRequest, interestRate);
+
+        uint256 compositeDebt = troveDebtRequest + borrowerOperations.BOLD_GAS_COMPENSATION();
+        uint256 expectedICR = coll * price / compositeDebt;
+        assertEq(expectedICR, troveManager.getCurrentICR(ATroveId, price));
+
+        assertEq(expectedICR,troveManager.getTCR(price));
+    }
+
+    function testGetTCRReturnsSizeWeightedRatioForSystemWithMultipleTroves() public {
+        uint256 price = priceFeed.fetchPrice();
+        console.log(price, "price");
+        uint256 troveDebtRequest_A = 2000e18;
+        uint256 troveDebtRequest_B = 3000e18;
+        uint256 troveDebtRequest_C = 5000e18;
+        uint256 coll_A = 20 ether;
+        uint256 coll_B = 30 ether;
+        uint256 coll_C = 40 ether;
+        uint256 interestRate = 25e16;
+
+        openTroveNoHints100pctMaxFee(A, coll_A, troveDebtRequest_A, interestRate);
+        openTroveNoHints100pctMaxFee(B, coll_B, troveDebtRequest_B, interestRate); 
+        openTroveNoHints100pctMaxFee(C, coll_C, troveDebtRequest_C, interestRate); 
+
+        uint256 compositeDebt_A = troveDebtRequest_A + borrowerOperations.BOLD_GAS_COMPENSATION();
+        uint256 compositeDebt_B = troveDebtRequest_B + borrowerOperations.BOLD_GAS_COMPENSATION();
+        uint256 compositeDebt_C = troveDebtRequest_C + borrowerOperations.BOLD_GAS_COMPENSATION();
+
+        uint256 sizeWeightedCR = (coll_A + coll_B + coll_C) * price / (compositeDebt_A + compositeDebt_B + compositeDebt_C);
+
+        assertEq(sizeWeightedCR, troveManager.getTCR(price));
+    }
+
+    function testGetTCRIncorporatesTroveInterestForSystemWithSingleTrove() public {
+        uint256 price = priceFeed.fetchPrice();
+        uint256 troveDebtRequest = 2000e18;
+        uint256 coll = 20 ether;
+        uint256 interestRate = 25e16;
+
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, coll, troveDebtRequest, interestRate);
+
+        // Fast-forward time 
+        vm.warp(block.timestamp + 14 days);
+        
+        uint256 troveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
+        assertGt(troveInterest, 0);
+
+        uint256 compositeDebt = troveDebtRequest + borrowerOperations.BOLD_GAS_COMPENSATION() + troveInterest;
+        uint256 expectedICR = coll * price / compositeDebt;
+        assertEq(expectedICR, troveManager.getCurrentICR(ATroveId, price));
+
+        assertEq(expectedICR,troveManager.getTCR(price)); 
+    }
+
+    function testGetTCRIncorporatesAllTroveInterestForSystemWithMultipleTroves() public {
+        //uint256 price = priceFeed.fetchPrice();
+        //console.log(price, "price");
+
+        // Use structs to bi-pass "stack-too-deep" error
+        TroveDebtRequests memory troveDebtRequests;
+        TroveCollAmounts memory troveCollAmounts;
+        TroveInterestRates memory troveInterestRates;
+        TroveAccruedInterests memory troveInterests;
+
+        troveDebtRequests.A = 2000e18;
+        troveDebtRequests.B = 4000e18;
+        troveDebtRequests.C = 5000e18;
+        troveCollAmounts.A = 20 ether;
+        troveCollAmounts.B = 30 ether;
+        troveCollAmounts.C = 40 ether;
+
+        troveInterestRates.A = 25e16;
+        troveInterestRates.B = 25e16;
+        troveInterestRates.C = 25e16;
+
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  troveCollAmounts.A, troveDebtRequests.A,  troveInterestRates.A);
+        // Fast-forward time 
+        vm.warp(block.timestamp + 14 days);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  troveCollAmounts.B, troveDebtRequests.B,  troveInterestRates.B);
+        // Fast-forward time 
+        vm.warp(block.timestamp + 14 days);
+        uint256 CTroveId = openTroveNoHints100pctMaxFee(C,  troveCollAmounts.C, troveDebtRequests.C,  troveInterestRates.C);
+        // Fast-forward time 
+        vm.warp(block.timestamp + 14 days);
+
+        troveInterests.A = troveManager.calcTroveAccruedInterest(ATroveId);
+        assertGt(troveInterests.A, 0);
+        troveInterests.B = troveManager.calcTroveAccruedInterest(BTroveId);
+        assertGt(troveInterests.B, 0);
+        troveInterests.C = troveManager.calcTroveAccruedInterest(CTroveId);
+        assertGt(troveInterests.C, 0);
+
+        /*
+         * stack too deep
+        uint256 compositeDebt_A = troveDebtRequests.A + borrowerOperations.BOLD_GAS_COMPENSATION() + troveInterest_A;
+        uint256 compositeDebt_B = troveDebtRequests.B + borrowerOperations.BOLD_GAS_COMPENSATION() + troveInterest_B;
+        uint256 compositeDebt_C = troveDebtRequests.C + borrowerOperations.BOLD_GAS_COMPENSATION() + troveInterest_C;
+
+        uint256 expectedTCR = (troveCollAmounts.A + troveCollAmounts.B + troveCollAmounts.C) * price / (compositeDebt_A + compositeDebt_B + compositeDebt_C);
+        */
+        uint256 gasCompensation = borrowerOperations.BOLD_GAS_COMPENSATION();
+        uint256 expectedTCR = (troveCollAmounts.A + troveCollAmounts.B + troveCollAmounts.C) * priceFeed.fetchPrice() /
+            (troveDebtRequests.A + troveDebtRequests.B + troveDebtRequests.C + 3 * gasCompensation + troveInterests.A + troveInterests.B + troveInterests.C);
+
+        assertEq(expectedTCR, troveManager.getTCR(priceFeed.fetchPrice()));
+    }
+
+    // --- ICR tests ---
+
+    // - 0 for non-existent Trove
+
+    function testGetCurrentICRReturnsInfinityForNonExistentTrove() public {
+        uint256 price = priceFeed.fetchPrice();
+        uint256 ICR = troveManager.getCurrentICR(addressToTroveId(A), price);
+
+        assertEq(ICR, MAX_UINT256);
+    }
+
+    function testGetCurrentICRReturnsCorrectValueForNoInterest() public {
+        uint256 price = priceFeed.fetchPrice();
+        uint256 troveDebtRequest = 2000e18;
+        uint256 coll = 20 ether;
+        uint256 interestRate = 25e16;
+
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, coll, troveDebtRequest, interestRate);
+
+        uint256 compositeDebt = troveDebtRequest + borrowerOperations.BOLD_GAS_COMPENSATION();
+        uint256 expectedICR = coll * price / compositeDebt;
+        assertEq(expectedICR, troveManager.getCurrentICR(ATroveId, price));
+    }
+
+    function testGetCurrentICRReturnsCorrectValueWithAccruedInterest() public {
+        uint256 price = priceFeed.fetchPrice();
+        uint256 troveDebtRequest = 2000e18;
+        uint256 coll = 20 ether;
+        uint256 interestRate = 25e16;
+
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, coll, troveDebtRequest, interestRate);
+
+        // Fast-forward time 
+        vm.warp(block.timestamp + 14 days);
+
+        uint256 troveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
+        assertGt(troveInterest, 0);
+
+        uint256 compositeDebt = troveDebtRequest + borrowerOperations.BOLD_GAS_COMPENSATION() + troveInterest;
+        uint256 expectedICR = coll * price / compositeDebt;
+        assertEq(expectedICR, troveManager.getCurrentICR(ATroveId, price));
+    }
+
+    // TODO: mixed collateral & debt adjustment opps
+    // TODO: tests with pending debt redist. gain >0
+    // TODO: tests that show total debt change under user ops
+    // TODO: Test total debt invariant holds i.e. (D + S * delta_T) == sum_of_all_entire_trove_debts in 
+    // more complex sequences of borrower ops and time passing
 }
