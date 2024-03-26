@@ -713,23 +713,23 @@ contract InterestRateBasic is DevTestSetup {
     function testWithdrawETHGainToTroveDoesntChangeEntireTroveDebt() public {
         _setupForWithdrawETHGainToTrove();
 
-        // // Fast-forward time
-        // vm.warp(block.timestamp + 90 days);
+        // Fast-forward time
+        vm.warp(block.timestamp + 90 days);
 
-        // (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(A);
-        // assertGt(entireTroveDebt_1, 0);
+        (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(A);
+        assertGt(entireTroveDebt_1, 0);
        
-        // console.log(troveManager.getCurrentICR(A, 1000e18), "A ICR before");
-        // // A withdraws ETH gain to Trove
-        // withdrawETHGainToTrove(A);
+        console.log(troveManager.getCurrentICR(A, 1000e18), "A ICR before");
+        // A withdraws ETH gain to Trove
+        withdrawETHGainToTrove(A);
 
-        // console.log(troveManager.getCurrentICR(A, 1000e18), "A ICR after");
+        console.log(troveManager.getCurrentICR(A, 1000e18), "A ICR after");
 
-        // (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(A);
-        // console.log(entireTroveDebt_2, "entireTroveDebt_2");
-        // console.log(entireTroveDebt_1, "entireTroveDebt_1");
+        (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(A);
+        console.log(entireTroveDebt_2, "entireTroveDebt_2");
+        console.log(entireTroveDebt_1, "entireTroveDebt_1");
 
-        // assertEq(entireTroveDebt_2, entireTroveDebt_1);   
+        assertEq(entireTroveDebt_2, entireTroveDebt_1);   
     }
 
     function testWithdrawETHGainToTroveIncreasesRecordedTroveDebtByAccruedInterest() public {
