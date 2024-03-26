@@ -299,7 +299,7 @@ function Card({
               borderRadius: 16,
               cursor: "pointer",
               _active: {
-                transform: "translateY(1px)",
+                translate: "0 1px",
               },
             })}
           >
