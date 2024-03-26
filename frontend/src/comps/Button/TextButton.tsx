@@ -17,7 +17,7 @@ export function TextButton({
         color: "accent",
         cursor: "pointer",
         _active: {
-          transform: "translateY(1px)",
+          translate: "0 1px",
         },
       })}
     >

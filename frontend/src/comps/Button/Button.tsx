@@ -25,7 +25,7 @@ export function Button({
         borderRadius: 120,
         cursor: "pointer",
         _active: {
-          transform: "translateY(1px)",
+          translate: "0 1px",
         },
       })}
       style={{ maxWidth }}
