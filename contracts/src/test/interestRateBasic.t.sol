@@ -678,6 +678,30 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
     }
 
+    function testRevertApplyTroveInterestPermissionlessWhenTroveIsNotStale() public {
+        priceFeed.setPrice(2000e18);
+        uint256 troveDebtRequest = 2000e18;
+        uint256 interestRate = 25e16;
+
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  3 ether, troveDebtRequest, interestRate);
+
+        // No time passes. B tries to apply A's interest. expect revert
+        vm.startPrank(B);
+        vm.expectRevert();
+        borrowerOperations.applyTroveInterestPermissionless(ATroveId);
+        vm.stopPrank();
+
+        // Fast-forward time, but less than the staleness threshold
+        // TODO: replace "90 days" with troveManager.STALE_TROVE_DURATION() after conflicts are resolved
+        vm.warp(block.timestamp + 90 days - 1);
+
+        // B tries to apply A's interest. Expect revert
+        vm.startPrank(B);
+        vm.expectRevert();
+        borrowerOperations.applyTroveInterestPermissionless(ATroveId);
+        vm.stopPrank();
+    }
+
     // --- withdrawETHGainToTrove tests ---
 
      function testWithdrawETHGainToTroveSetsTroveLastDebtUpdateTimeToNow() public {
