@@ -12,9 +12,7 @@ import "./Dependencies/CheckContract.sol";
 import './Interfaces/IDefaultPool.sol';
 import './Interfaces/IActivePool.sol';
 
-// import "forge-std/console.sol";
-
-import "forge-std/console2.sol";
+//import "forge-std/console2.sol";
 
 /*
  * The Active Pool holds the ETH collateral and Bold debt (but not Bold tokens) for all active troves.
