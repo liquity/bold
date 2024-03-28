@@ -2,7 +2,10 @@
 
 set -e
 
+# Anvil default deployer
 DEFAULT_LOCAL_DEPLOYER="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+
+# Default Tenderly devnet flags, can be overriden by setting RPC_URL
 TENDERLY_DEVNET_FLAGS="--project project --template liquity2"
 
 if [ -f .env ]; then
