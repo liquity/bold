@@ -9,10 +9,30 @@ if [ -f .env ]; then
     source ./.env
 fi
 
-echo "" 1>&2
-
 FORGE_FLAGS=""
 INTRO=""
+
+function print_usage {
+    echo "" 1>&2
+    echo "Usage:" 1>&2
+    echo "" 1>&2
+    echo "  ./deploy.sh <local | tenderly-devnet | mainnet>" 1>&2
+    echo "" 1>&2
+    echo "Environment variables (can be set in a .env file):" 1>&2
+    echo "  " 1>&2
+    echo "  CHAIN_ID:           Chain ID to deploy to (optional)" 1>&2
+    echo "  RPC_URL:            RPC URL to use (optional)" 1>&2
+    echo "  DEPLOYER:           Address or private key to deploy with (optional with local)" 1>&2
+    echo "  DEPLOYER_PATH:      HD path to use with the ledger (optional, only used when DEPLOYER is an address)" 1>&2
+    echo "  ETHERSCAN_API_KEY:  Etherscan API key for contracts verification (mainnet only)" 1>&2
+    echo "  OPEN_DEMO_TROVES:   Set to 1 to open demo troves after deployment (defaults to 0, local only)" 1>&2
+    echo "" 1>&2
+}
+
+if [[ "$1" == "" ]]; then
+    print_usage
+    exit 0
+fi
 
 # ./deploy.sh local
 if [[ "$1" == "local" ]]; then
@@ -47,6 +67,7 @@ elif [[ "$1" == "mainnet" ]]; then
         export CHAIN_ID="1"
     fi
     if [[ -z "$RPC_URL" ]]; then
+        echo "" 1>&2
         echo "RPC_URL not set, please provide a valid RPC URL" 1>&2
         exit 1
     fi
@@ -55,19 +76,9 @@ elif [[ "$1" == "mainnet" ]]; then
     fi
 
 else
-    echo "Please provide a valid network. Usage:" 1>&2
-    echo "  " 1>&2
-    echo "  ./deploy.sh <local | tenderly-devnet | mainnet>" 1>&2
-    echo "  " 1>&2
-    echo "Environment variables (can be set in a .env file):" 1>&2
-    echo "  " 1>&2
-    echo "  CHAIN_ID:           Chain ID to deploy to (optional)" 1>&2
-    echo "  RPC_URL:            RPC URL to use (optional)" 1>&2
-    echo "  DEPLOYER:           Address or private key to deploy with (optional with local)" 1>&2
-    echo "  DEPLOYER_PATH:      HD path to use with the ledger (optional, only used when DEPLOYER is an address)" 1>&2
-    echo "  ETHERSCAN_API_KEY:  Etherscan API key for contracts verification (mainnet only)" 1>&2
-    echo "  OPEN_DEMO_TROVES:   Set to 1 to open demo troves after deployment (defaults to 0, local only)" 1>&2
-    echo "  " 1>&2
+    echo "" 1>&2
+    echo "Please provide a valid network." 1>&2
+    print_usage
     exit 1
 fi
 
@@ -81,7 +92,6 @@ fi
 
 # When DEPLOYER is an address, sign with ledger
 if [[ $(echo -n $DEPLOYER | wc -c) == 42 ]]; then
-    echo "Using --ledger"
     FORGE_FLAGS="$FORGE_FLAGS --ledger $DEPLOYER --sender $DEPLOYER"
 
     # If DEPLOYER_PATH is set, use it
@@ -95,6 +105,7 @@ if [[ -z "$OPEN_DEMO_TROVES" ]]; then
     export OPEN_DEMO_TROVES="0"
 fi
 
+echo "" 1>&2
 echo "$INTRO" 1>&2
 echo "" 1>&2
 echo "Environment:" 1>&2
