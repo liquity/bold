@@ -69,8 +69,7 @@ contract DevTestSetup is BaseTest {
         mockInterestRouter = new MockInterestRouter();
 
         // Connect contracts
-        sortedTroves.setParams(
-            MAX_UINT256,
+        sortedTroves.setAddresses(
             address(troveManager),
             address(borrowerOperations)
         );

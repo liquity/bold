@@ -402,7 +402,7 @@ contract(
           );
         } catch (err) {
           assert.include(err.message, "revert");
-          assert.include(err.message, " Caller is neither BO nor TroveM");
+          assert.include(err.message, " Caller is not BorrowerOperations");
         }
       });
 
@@ -432,7 +432,7 @@ contract(
           );
         } catch (err) {
           assert.include(err.message, "revert");
-          assert.include(err.message, "Caller is neither BO nor TroveM");
+          assert.include(err.message, "Caller is not BorrowerOperations");
         }
       });
     });

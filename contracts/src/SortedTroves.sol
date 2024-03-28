@@ -37,39 +37,45 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
 
     event TroveManagerAddressChanged(address _troveManagerAddress);
     event BorrowerOperationsAddressChanged(address _borrowerOperationsAddress);
-    event NodeAdded(uint256 _id, uint _annualInterestRate);
-    event NodeRemoved(uint256 _id);
 
     address public borrowerOperationsAddress;
-
     ITroveManager public troveManager;
 
     // Information for a node in the list
     struct Node {
         bool exists;
-        uint256 nextId;                  // Id of next node (smaller interest rate) in the list
-        uint256 prevId;                  // Id of previous node (larger interest rate) in the list
+        uint256 nextId;  // Id of next node (smaller interest rate) in the list
+        uint256 prevId;  // Id of previous node (larger interest rate) in the list
+        BatchId batchId; // Id of this node's batch manager, or zero in case of non-batched nodes
     }
 
-    // Information for the list
-    struct Data {
-        uint256 head;                        // Head of the list. Also the node in the list with the largest interest rate
-        uint256 tail;                        // Tail of the list. Also the node in the list with the smallest interest rate
-        uint256 maxSize;                     // Maximum size of the list
-        uint256 size;                        // Current size of the list
-        mapping (uint256 => Node) nodes;     // Track the corresponding ids for each node in the list
+    struct Batch {
+        uint256 head;
+        uint256 tail;
     }
 
-    Data public data;
+    struct Position {
+        uint256 prevId;
+        uint256 nextId;
+    }
+
+    // Current size of the list
+    uint256 public size;
+
+    // Stores the forward and reverse links of each node in the list.
+    // nodes[0] holds the head and tail of the list. This avoids the need for special handling
+    // when inserting into or removing from a terminal position (head or tail), inserting into
+    // an empty list or removing the element of a singleton list.
+    mapping (uint256 => Node) public nodes;
+
+    // Lookup batches by the address of their manager
+    mapping (BatchId => Batch) public batches;
 
     // --- Dependency setters ---
 
-    function setParams(uint256 _size, address _troveManagerAddress, address _borrowerOperationsAddress) external override onlyOwner {
-        require(_size > 0, "SortedTroves: Size can't be zero");
+    function setAddresses(address _troveManagerAddress, address _borrowerOperationsAddress) external override onlyOwner {
         checkContract(_troveManagerAddress);
         checkContract(_borrowerOperationsAddress);
-
-        data.maxSize = _size;
 
         troveManager = ITroveManager(_troveManagerAddress);
         borrowerOperationsAddress = _borrowerOperationsAddress;
@@ -80,179 +86,218 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         _renounceOwnership();
     }
 
-    /*
-     * @dev Add a node to the list
-     * @param _id Node's id
-     * @param _annualInterestRate Node's annual interest rate
-     * @param _prevId Id of previous node for the insert position
-     * @param _nextId Id of next node for the insert position
-     */
-
-    function insert (uint256 _id, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external override {
-        ITroveManager troveManagerCached = troveManager;
-
-        _requireCallerIsBOorTroveM(troveManagerCached);
-        _insert(troveManagerCached, _id, _annualInterestRate, _prevId, _nextId);
+    // Insert an entire list slice (such as a batch of Troves sharing the same interest rate)
+    // between adjacent nodes `_prevId` and `_nextId`.
+    // Can be used to insert a single node by passing its ID as both `_sliceHead` and `_sliceTail`.
+    function _insertSliceIntoVerifiedPosition(uint256 _sliceHead, uint256 _sliceTail, uint256 _prevId, uint256 _nextId) internal {
+        nodes[_prevId].nextId = _sliceHead;
+        nodes[_sliceHead].prevId = _prevId;
+        nodes[_sliceTail].nextId = _nextId;
+        nodes[_nextId].prevId = _sliceTail;
     }
 
-    function _insert(ITroveManager _troveManager, uint256 _id, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) internal {
-        // List must not be full
-        require(!isFull(), "SortedTroves: List is full");
-        // List must not already contain node
-        require(!contains(_id), "SortedTroves: List already contains the node");
-        // Node id must not be null
-        require(_id != 0, "SortedTroves: Id cannot be zero");
-
-        uint256 prevId = _prevId;
-        uint256 nextId = _nextId;
-
-        if (!_validInsertPosition(_troveManager, _annualInterestRate, prevId, nextId)) {
+    function _insertSlice(ITroveManager _troveManager, uint256 _sliceHead, uint256 _sliceTail, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) internal {
+        if (!_validInsertPosition(_troveManager, _annualInterestRate, _prevId, _nextId)) {
             // Sender's hint was not a valid insert position
             // Use sender's hint to find a valid insert position
-            (prevId, nextId) = _findInsertPosition(_troveManager, _annualInterestRate, prevId, nextId);
+            (_prevId, _nextId) = _findInsertPosition(_troveManager, _annualInterestRate, _prevId, _nextId);
         }
 
-         data.nodes[_id].exists = true;
-
-        if (prevId == 0 && nextId == 0) {
-            // Insert as head and tail
-            data.head = _id;
-            data.tail = _id;
-        } else if (prevId == 0) {
-            // Insert before `prevId` as the head
-            data.nodes[_id].nextId = data.head;
-            data.nodes[data.head].prevId = _id;
-            data.head = _id;
-        } else if (nextId == 0) {
-            // Insert after `nextId` as the tail
-            data.nodes[_id].prevId = data.tail;
-            data.nodes[data.tail].nextId = _id;
-            data.tail = _id;
-        } else {
-            // Insert at insert position between `prevId` and `nextId`
-            data.nodes[_id].nextId = nextId;
-            data.nodes[_id].prevId = prevId;
-            data.nodes[prevId].nextId = _id;
-            data.nodes[nextId].prevId = _id;
-        }
-
-        data.size = data.size + 1;
-        emit NodeAdded(_id, _annualInterestRate);
+        _insertSliceIntoVerifiedPosition(_sliceHead, _sliceTail, _prevId, _nextId);
     }
 
+    /*
+     * @dev Add a Trove to the list
+     * @param _id Trove's id
+     * @param _annualInterestRate Trove's annual interest rate
+     * @param _prevId Id of previous Trove for the insert position
+     * @param _nextId Id of next Trove for the insert position
+     */
+    function insert(uint256 _id, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external override {
+        _requireCallerIsBorrowerOperations();
+        require(!contains(_id), "SortedTroves: List already contains the node");
+        require(_id != 0, "SortedTroves: Id cannot be zero");
+
+        _insertSlice(troveManager, _id, _id, _annualInterestRate, _prevId, _nextId);
+        nodes[_id].exists = true;
+        ++size;
+    }
+
+    // Remove the entire slice between `_sliceHead` and `_sliceTail` from the list while keeping
+    // the removed nodes connected to each other, such that they can be reinserted into a different
+    // position with `_insertSlice()`.
+    // Can be used to remove a single node by passing its ID as both `_sliceHead` and `_sliceTail`.
+    function _removeSlice(uint256 _sliceHead, uint256 _sliceTail) internal {
+        nodes[nodes[_sliceHead].prevId].nextId = nodes[_sliceTail].nextId;
+        nodes[nodes[_sliceTail].nextId].prevId = nodes[_sliceHead].prevId;
+    }
+
+    /*
+     * @dev Remove a non-batched Trove from the list
+     * @param _id Trove's id
+     */
     function remove(uint256 _id) external override {
         _requireCallerIsTroveManager();
-        _remove(_id);
-    }
-
-    /*
-     * @dev Remove a node from the list
-     * @param _id Node's id
-     */
-    function _remove(uint256 _id) internal {
-        // List must contain the node
         require(contains(_id), "SortedTroves: List does not contain the id");
+        require(!isBatchedNode(_id), "SortedTroves: Must use removeFromBatch() to remove batched node");
 
-        if (data.size > 1) {
-            // List contains more than a single node
-            if (_id == data.head) {
-                // The removed node is the head
-                // Set head to next node
-                data.head = data.nodes[_id].nextId;
-                // Set prev pointer of new head to null
-                data.nodes[data.head].prevId = 0;
-            } else if (_id == data.tail) {
-                // The removed node is the tail
-                // Set tail to previous node
-                data.tail = data.nodes[_id].prevId;
-                // Set next pointer of new tail to null
-                data.nodes[data.tail].nextId = 0;
-            } else {
-                // The removed node is neither the head nor the tail
-                // Set next pointer of previous node to the next node
-                data.nodes[data.nodes[_id].prevId].nextId = data.nodes[_id].nextId;
-                // Set prev pointer of next node to the previous node
-                data.nodes[data.nodes[_id].nextId].prevId = data.nodes[_id].prevId;
-            }
-        } else {
-            // List contains a single node
-            // Set the head and tail to null
-            data.head = 0;
-            data.tail = 0;
-        }
-
-        delete data.nodes[_id];
-        data.size = data.size - 1;
-        emit NodeRemoved(_id);
+        _removeSlice(_id, _id);
+        delete nodes[_id];
+        --size;
     }
 
     /*
-     * @dev Re-insert the node at a new position, based on its new annual interest rate
-     * @param _id Node's id
-     * @param _newAnnualInterestRate Node's new annual interest rate
-     * @param _prevId Id of previous node for the new insert position
-     * @param _nextId Id of next node for the new insert position
+     * @dev Re-insert a non-batched Trove at a new position, based on its new annual interest rate
+     * @param _id Trove's id
+     * @param _newAnnualInterestRate Trove's new annual interest rate
+     * @param _prevId Id of previous Trove for the new insert position
+     * @param _nextId Id of next Trove for the new insert position
      */
     function reInsert(uint256 _id, uint256 _newAnnualInterestRate, uint256 _prevId, uint256 _nextId) external override {
-        ITroveManager troveManagerCached = troveManager;
-
-        _requireCallerIsBOorTroveM(troveManagerCached);
-        // List must contain the node
+        _requireCallerIsBorrowerOperations();
         require(contains(_id), "SortedTroves: List does not contain the id");
+        require(!isBatchedNode(_id), "SortedTroves: Must not reInsert() batched node");
 
-        // Remove node from the list
-        _remove(_id);
+        // The node being re-inserted can't be a valid hint, use its neighbours instead
+        if (_prevId == _id) {
+            _prevId = nodes[_id].prevId;
+        }
 
-        _insert(troveManagerCached, _id, _newAnnualInterestRate, _prevId, _nextId);
+        if (_nextId == _id) {
+            _nextId = nodes[_id].nextId;
+        }
+
+        _removeSlice(_id, _id);
+        _insertSlice(troveManager, _id, _id, _newAnnualInterestRate, _prevId, _nextId);
+    }
+
+    /*
+     * @dev Add a Trove to a Batch within the list
+     * @param _troveId Trove's id
+     * @param _batchId Batch's id
+     * @param _annualInterestRate Batch's annual interest rate
+     * @param _prevId Id of previous Trove for the insert position, in case the Batch is empty
+     * @param _nextId Id of next Trove for the insert position, in case the Batch is empty
+     */
+    function insertIntoBatch(uint256 _troveId, BatchId _batchId, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external override {
+        _requireCallerIsBorrowerOperations();
+        require(!contains(_troveId), "SortedTroves: List already contains the node");
+        require(_troveId != 0, "SortedTroves: Trove Id cannot be zero");
+        require(_batchId.isNotZero(), "SortedTroves: Batch Id cannot be zero");
+
+        uint256 batchTail = batches[_batchId].tail;
+
+        if (batchTail == 0) {
+            _insertSlice(troveManager, _troveId, _troveId, _annualInterestRate, _prevId, _nextId);
+            batches[_batchId].head = _troveId;
+        } else {
+            _insertSliceIntoVerifiedPosition(
+                _troveId,
+                _troveId,
+                batchTail,
+                nodes[batchTail].nextId
+            );
+        }
+
+        batches[_batchId].tail = _troveId;
+        nodes[_troveId].batchId = _batchId;
+        nodes[_troveId].exists = true;
+        ++size;
+    }
+
+    /*
+     * @dev Remove a batched Trove from the list
+     * @param _id Trove's id
+     */
+    function removeFromBatch(uint256 _id) external override {
+        BatchId batchId = nodes[_id].batchId;
+
+        _requireCallerIsTroveManager();
+        // batchId.isNotZero() implies that the list contains the node
+        require(batchId.isNotZero(), "SortedTroves: Must use remove() to remove non-batched node");
+
+        Batch memory batch = batches[batchId];
+
+        if (batch.head == _id && batch.tail == _id) {
+            // Remove singleton batch
+            delete batches[batchId];
+        } else if (batch.head == _id) {
+            batches[batchId].head = nodes[_id].nextId;
+        } else if (batch.tail == _id) {
+            batches[batchId].tail = nodes[_id].prevId;
+        }
+
+        _removeSlice(_id, _id);
+        delete nodes[_id];
+        --size;
+    }
+
+    /*
+     * @dev Re-insert an entire Batch of Troves at a new position, based on their new annual interest rate
+     * @param _id Batch's id
+     * @param _newAnnualInterestRate Trove's new annual interest rate
+     * @param _prevId Id of previous Trove for the new insert position
+     * @param _nextId Id of next Trove for the new insert position
+     */
+    function reInsertBatch(BatchId _id, uint256 _newAnnualInterestRate, uint256 _prevId, uint256 _nextId) external override {
+        Batch memory batch = batches[_id];
+
+        _requireCallerIsBorrowerOperations();
+        require(batch.head != 0, "SortedTroves: List does not contain the batch");
+
+        // No node within the re-inserted batch can be a valid hint, use surrounding nodes instead
+        if (nodes[_prevId].batchId.equals(_id)) {
+            _prevId = nodes[batch.head].prevId;
+        }
+
+        if (nodes[_nextId].batchId.equals(_id)) {
+            _nextId = nodes[batch.tail].nextId;
+        }
+
+        _removeSlice(batch.head, batch.tail);
+        _insertSlice(troveManager, batch.head, batch.tail, _newAnnualInterestRate, _prevId, _nextId);
     }
 
     /*
      * @dev Checks if the list contains a node
      */
     function contains(uint256 _id) public view override returns (bool) {
-        return data.nodes[_id].exists;
+        return nodes[_id].exists;
     }
 
     /*
-     * @dev Checks if the list is full
+     * @dev Checks whether the node is part of a batch
      */
-    function isFull() public view override returns (bool) {
-        return data.size == data.maxSize;
+    function isBatchedNode(uint256 _id) public view override returns (bool) {
+        return nodes[_id].batchId.isNotZero();
     }
 
     /*
      * @dev Checks if the list is empty
      */
     function isEmpty() public view override returns (bool) {
-        return data.size == 0;
+        return size == 0;
     }
 
     /*
      * @dev Returns the current size of the list
      */
     function getSize() external view override returns (uint256) {
-        return data.size;
-    }
-
-    /*
-     * @dev Returns the maximum size of the list
-     */
-    function getMaxSize() external view override returns (uint256) {
-        return data.maxSize;
+        return size;
     }
 
     /*
      * @dev Returns the first node in the list (node with the largest annual interest rate)
      */
     function getFirst() external view override returns (uint256) {
-        return data.head;
+        return nodes[0].nextId;
     }
 
     /*
      * @dev Returns the last node in the list (node with the smallest annual interest rate)
      */
     function getLast() external view override returns (uint256) {
-        return data.tail;
+        return nodes[0].prevId;
     }
 
     /*
@@ -260,7 +305,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _id Node's id
      */
     function getNext(uint256 _id) external view override returns (uint256) {
-        return data.nodes[_id].nextId;
+        return nodes[_id].nextId;
     }
 
     /*
@@ -268,7 +313,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _id Node's id
      */
     function getPrev(uint256 _id) external view override returns (uint256) {
-        return data.nodes[_id].prevId;
+        return nodes[_id].prevId;
     }
 
     /*
@@ -282,20 +327,49 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     }
 
     function _validInsertPosition(ITroveManager _troveManager, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) internal view returns (bool) {
-        if (_prevId == 0 && _nextId == 0) {
-            // `(null, null)` is a valid insert position if the list is empty
-            return isEmpty();
-        } else if (_prevId == 0) {
-            // `(null, _nextId)` is a valid insert position if `_nextId` is the head of the list
-            return data.head == _nextId && _annualInterestRate >= _troveManager.getTroveAnnualInterestRate(_nextId);
-        } else if (_nextId == 0) {
-            // `(_prevId, null)` is a valid insert position if `_prevId` is the tail of the list
-            return data.tail == _prevId && _annualInterestRate <= _troveManager.getTroveAnnualInterestRate(_prevId);
+        BatchId prevBatchId = nodes[_prevId].batchId;
+
+        // `(_prevId, _nextId)` is a valid insert position if:
+        return (
+            // they are adjacent nodes
+            nodes[_prevId].nextId == _nextId &&
+            nodes[_nextId].prevId == _prevId &&
+            (
+                // they aren't part of the same batch
+                prevBatchId.notEquals(nodes[_nextId].batchId) ||
+                prevBatchId.isZero()
+            ) &&
+            // `_annualInterestRate` falls between the two nodes' interest rates
+            (_prevId == 0 || _troveManager.getTroveAnnualInterestRate(_prevId) >= _annualInterestRate) &&
+            (_nextId == 0 || _annualInterestRate >= _troveManager.getTroveAnnualInterestRate(_nextId))
+        );
+    }
+
+    function _skipToBatchTail(uint256 _id) internal view returns (uint256) {
+        BatchId batchId = nodes[_id].batchId;
+        return batchId.isNotZero() ? batches[batchId].tail : _id;
+    }
+
+    function _skipToBatchHead(uint256 _id) internal view returns (uint256) {
+        BatchId batchId = nodes[_id].batchId;
+        return batchId.isNotZero() ? batches[batchId].head : _id;
+    }
+
+    function _descendOne(ITroveManager _troveManager, uint256 _annualInterestRate, Position memory _pos) internal view returns (bool found) {
+        if (_pos.nextId == 0 || _annualInterestRate >= _troveManager.getTroveAnnualInterestRate(_pos.nextId)) {
+            found = true;
         } else {
-            // `(_prevId, _nextId)` is a valid insert position if they are adjacent nodes and `_annualInterestRate` falls between the two nodes' interest rates
-            return data.nodes[_prevId].nextId == _nextId &&
-                   _troveManager.getTroveAnnualInterestRate(_prevId) >= _annualInterestRate &&
-                   _annualInterestRate >= _troveManager.getTroveAnnualInterestRate(_nextId);
+            _pos.prevId = _skipToBatchTail(_pos.nextId);
+            _pos.nextId = nodes[_pos.prevId].nextId;
+        }
+    }
+
+    function _ascendOne(ITroveManager _troveManager, uint256 _annualInterestRate, Position memory _pos) internal view returns (bool found) {
+        if (_pos.prevId == 0 || _troveManager.getTroveAnnualInterestRate(_pos.prevId) >= _annualInterestRate) {
+            found = true;
+        } else {
+            _pos.nextId = _skipToBatchHead(_pos.prevId);
+            _pos.prevId = nodes[_pos.nextId].prevId;
         }
     }
 
@@ -306,21 +380,10 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _startId Id of node to start descending the list from
      */
     function _descendList(ITroveManager _troveManager, uint256 _annualInterestRate, uint256 _startId) internal view returns (uint256, uint256) {
-        // If `_startId` is the head, check if the insert position is before the head
-        if (data.head == _startId && _annualInterestRate >= _troveManager.getTroveAnnualInterestRate(_startId)) {
-            return (0, _startId);
-        }
+        Position memory pos = Position(_startId, nodes[_startId].nextId);
 
-        uint256 prevId = _startId;
-        uint256 nextId = data.nodes[prevId].nextId;
-
-        // Descend the list until we reach the end or until we find a valid insert position
-        while (prevId != 0 && !_validInsertPosition(_troveManager, _annualInterestRate, prevId, nextId)) {
-            prevId = data.nodes[prevId].nextId;
-            nextId = data.nodes[prevId].nextId;
-        }
-
-        return (prevId, nextId);
+        while (!_descendOne(_troveManager, _annualInterestRate, pos)) {}
+        return (pos.prevId, pos.nextId);
     }
 
     /*
@@ -330,21 +393,32 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _startId Id of node to start ascending the list from
      */
     function _ascendList(ITroveManager _troveManager, uint256 _annualInterestRate, uint256 _startId) internal view returns (uint256, uint256) {
-        // If `_startId` is the tail, check if the insert position is after the tail
-        if (data.tail == _startId && _annualInterestRate <= _troveManager.getTroveAnnualInterestRate(_startId)) {
-            return (_startId, 0);
+        Position memory pos = Position(nodes[_startId].prevId, _startId);
+
+        while (!_ascendOne(_troveManager, _annualInterestRate, pos)) {}
+        return (pos.prevId, pos.nextId);
+    }
+
+    function _descendAndAscendList(
+        ITroveManager _troveManager,
+        uint256 _annualInterestRate,
+        uint256 _descentStartId,
+        uint256 _ascentStartId
+    ) internal view returns (uint256, uint256) {
+        Position memory descentPos = Position(_descentStartId, nodes[_descentStartId].nextId);
+        Position memory ascentPos = Position(nodes[_ascentStartId].prevId, _ascentStartId);
+
+        for (;;) {
+            if (_descendOne(_troveManager, _annualInterestRate, descentPos)) {
+                return (descentPos.prevId, descentPos.nextId);
+            }
+
+            if (_ascendOne(_troveManager, _annualInterestRate, ascentPos)) {
+                return (ascentPos.prevId, ascentPos.nextId);
+            }
         }
 
-        uint256 nextId = _startId;
-        uint256 prevId = data.nodes[nextId].prevId;
-
-        // Ascend the list until we reach the end or until we find a valid insertion point
-        while (nextId != 0 && !_validInsertPosition(_troveManager, _annualInterestRate, prevId, nextId)) {
-            nextId = data.nodes[nextId].prevId;
-            prevId = data.nodes[nextId].prevId;
-        }
-
-        return (prevId, nextId);
+        revert("Should not reach");
     }
 
     /*
@@ -357,36 +431,50 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         return _findInsertPosition(troveManager, _annualInterestRate, _prevId, _nextId);
     }
 
+    // This function is optimized under the assumption that only one of the original neighbours has been (re)moved.
+    // In other words, we assume that the correct position can be found close to one of the two.
+    // Nevertheless, the function will always find the correct position, regardless of hints or interference.
     function _findInsertPosition(ITroveManager _troveManager, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) internal view returns (uint256, uint256) {
-        uint256 prevId = _prevId;
-        uint256 nextId = _nextId;
-
-        if (prevId != 0) {
-            if (!contains(prevId) || _annualInterestRate > _troveManager.getTroveAnnualInterestRate(prevId)) {
-                // `prevId` does not exist anymore or now has a smaller interest rate than the given interest rate
-                prevId = 0;
-            }
-        }
-
-        if (nextId != 0) {
-            if (!contains(nextId) || _annualInterestRate < _troveManager.getTroveAnnualInterestRate(nextId)) {
-                // `nextId` does not exist anymore or now has a larger interest rate than the given interest rate
-                nextId = 0;
-            }
-        }
-
-        if (prevId == 0 && nextId == 0) {
-            // No hint - descend list starting from head
-            return _descendList(_troveManager, _annualInterestRate, data.head);
-        } else if (prevId == 0) {
-            // No `prevId` for hint - ascend list starting from `nextId`
-            return _ascendList(_troveManager, _annualInterestRate, nextId);
-        } else if (nextId == 0) {
-            // No `nextId` for hint - descend list starting from `prevId`
-            return _descendList(_troveManager, _annualInterestRate, prevId);
+        if (_prevId == 0) {
+            // The original correct position was found before the head of the list.
+            // Assuming minimal interference, the new correct position is still close to the head.
+            return _descendList(_troveManager, _annualInterestRate, 0);
         } else {
-            // Descend list starting from `prevId`
-            return _descendList(_troveManager, _annualInterestRate, prevId);
+            if (!contains(_prevId) || _annualInterestRate > _troveManager.getTroveAnnualInterestRate(_prevId)) {
+                // `prevId` does not exist anymore or now has a smaller interest rate than the given interest rate
+                _prevId = 0;
+            }
+        }
+
+        if (_nextId == 0) {
+            // The original correct position was found after the tail of the list.
+            // Assuming minimal interference, the new correct position is still close to the tail.
+            return _ascendList(_troveManager, _annualInterestRate, 0);
+        } else {
+            if (!contains(_nextId) || _annualInterestRate < _troveManager.getTroveAnnualInterestRate(_nextId)) {
+                // `nextId` does not exist anymore or now has a larger interest rate than the given interest rate
+                _nextId = 0;
+            }
+        }
+
+        if (_prevId == 0 && _nextId == 0) {
+            // Both original neighbours have been moved or removed.
+            // We default to descending the list, starting from the head.
+            //
+            // TODO: should we revert instead, so as not to waste the user's gas?
+            //       We are unlikely to recover.
+            return _descendList(_troveManager, _annualInterestRate, 0);
+        } else if (_prevId == 0) {
+            // No `prevId` for hint - ascend list starting from `nextId`
+            return _ascendList(_troveManager, _annualInterestRate, _skipToBatchHead(_nextId));
+        } else if (_nextId == 0) {
+            // No `nextId` for hint - descend list starting from `prevId`
+            return _descendList(_troveManager, _annualInterestRate, _skipToBatchTail(_prevId));
+        } else {
+            // The correct position is still somewhere between the 2 hints, so it's not obvious
+            // which of the 2 has been moved (assuming only one of them has been).
+            // We simultaneously descend & ascend in the hope that one of them is very close.
+            return _descendAndAscendList(_troveManager, _annualInterestRate, _skipToBatchTail(_prevId), _skipToBatchHead(_nextId));
         }
     }
 
@@ -396,8 +484,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         require(msg.sender == address(troveManager), "SortedTroves: Caller is not the TroveManager");
     }
 
-    function _requireCallerIsBOorTroveM(ITroveManager _troveManager) internal view {
-        require(msg.sender == borrowerOperationsAddress || msg.sender == address(_troveManager),
-                "SortedTroves: Caller is neither BO nor TroveM");
+    function _requireCallerIsBorrowerOperations() internal view {
+        require(msg.sender == borrowerOperationsAddress, "SortedTroves: Caller is not BorrowerOperations");
     }
 }
