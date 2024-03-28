@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 import { Root } from "@/src/comps/Root/Root";
-import { sleep } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import { a, useTransition } from "@react-spring/web";
 import FocusTrap from "focus-trap-react";
@@ -29,19 +28,11 @@ export function Modal({
       overlayOpacity: 0,
       transform: "scale3d(0.95, 0.95, 1)",
     },
-    enter: () => async (next) => {
-      const step1 = next({
-        overlayOpacity: 1,
-      });
-      await sleep(50);
-      await Promise.all([
-        step1,
-        next({
-          closeTransform: "scale3d(1, 1, 1)",
-          opacity: 1,
-          transform: "scale3d(1, 1, 1)",
-        }),
-      ]);
+    enter: {
+      closeTransform: "scale3d(1, 1, 1)",
+      opacity: 1,
+      overlayOpacity: 1,
+      transform: "scale3d(1, 1, 1)",
     },
     leave: {
       closeTransform: "scale3d(1, 1, 1)",
