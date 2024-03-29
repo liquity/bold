@@ -45,7 +45,7 @@ contract DeployLiquity2Script is Script {
 
         vm.stopBroadcast();
 
-        if (vm.envUint("OPEN_DEMO_TROVES") == 1) {
+        if (vm.envOr("OPEN_DEMO_TROVES", false)) {
             openDemoTroves();
         }
     }
