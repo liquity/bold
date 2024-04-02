@@ -1,5 +1,3 @@
-const Destructible = artifacts.require("./TestContracts/Destructible.sol");
-
 const MoneyValues = {
   negative_5e17: "-" + web3.utils.toWei("500", "finney"),
   negative_1e18: "-" + web3.utils.toWei("1", "ether"),
@@ -611,10 +609,11 @@ class TestHelper {
 
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
+        ETHAmount,
         BoldAmount,
         upperHint,
         lowerHint,
-        { from: account, value: ETHAmount }
+        { from: account }
       );
       const gas = this.gasUsed(tx);
       gasCostList.push(gas);
@@ -642,10 +641,11 @@ class TestHelper {
 
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
+        randCollAmount,
         BoldAmount,
         upperHint,
         lowerHint,
-        { from: account, value: randCollAmount }
+        { from: account }
       );
       const gas = this.gasUsed(tx);
       gasCostList.push(gas);
@@ -680,10 +680,11 @@ class TestHelper {
 
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
+        randCollAmount,
         proportionalBold,
         upperHint,
         lowerHint,
-        { from: account, value: randCollAmount }
+        { from: account }
       );
       const gas = this.gasUsed(tx);
       gasCostList.push(gas);
@@ -728,10 +729,11 @@ class TestHelper {
       const feeFloor = this.dec(5, 16);
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
+        randCollAmount,
         proportionalBold,
         upperHint,
         lowerHint,
-        { from: account, value: randCollAmount }
+        { from: account }
       );
 
       if (logging && tx.receipt.status) {
@@ -768,10 +770,11 @@ class TestHelper {
 
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
+        ETHAmount,
         randBoldAmount,
         upperHint,
         lowerHint,
-        { from: account, value: ETHAmount }
+        { from: account }
       );
       const gas = this.gasUsed(tx);
       gasCostList.push(gas);
@@ -816,10 +819,11 @@ class TestHelper {
 
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
+        ETHAmount,
         BoldAmountWei,
         upperHint,
         lowerHint,
-        { from: account, value: ETHAmount }
+        { account }
       );
       const gas = this.gasUsed(tx);
       gasCostList.push(gas);
@@ -873,8 +877,12 @@ class TestHelper {
     //   { from: extraParams.from }
     // );
 
+    // approve ERC20 ETH
+    await contracts.WETH.approve(contracts.borrowerOperations.address, extraParams.value, { from: extraParams.from });
+
     const tx = await contracts.borrowerOperations.openTrove(
       maxFeePercentage,
+      extraParams.value,
       boldAmount,
       //extraParams.value, // TODO: this is the stETH value - ensure its still working
       upperHint,
@@ -882,7 +890,6 @@ class TestHelper {
       extraParams.annualInterestRate,
       {
         from: extraParams.from,
-        value: extraParams.value,
       }
     );
 
@@ -894,6 +901,32 @@ class TestHelper {
       collateral: extraParams.value,
       tx,
     };
+  }
+
+  static async openTroveWrapper(
+    contracts,
+    maxFeePercentage,
+    boldAmount,
+    upperHint,
+    lowerHint,
+    annualInterestRate,
+    extraParams,
+  ){
+    // approve ERC20 ETH
+    await contracts.WETH.approve(contracts.borrowerOperations.address, extraParams.value, { from: extraParams.from });
+
+    const tx = await contracts.borrowerOperations.openTrove(
+      maxFeePercentage,
+      extraParams.value,
+      boldAmount,
+      upperHint,
+      lowerHint,
+      annualInterestRate,
+      {
+        from: extraParams.from,
+      }
+    );
+    return tx;
   }
 
   static async withdrawBold(
@@ -978,12 +1011,13 @@ class TestHelper {
       if (ETHChangeBN.gt(zero)) {
         tx = await contracts.borrowerOperations.adjustTrove(
           this._100pct,
-          0,
+          ETHChangeBN,
+          true,
           BoldChangeBN,
           isDebtIncrease,
           upperHint,
           lowerHint,
-          { from: account, value: ETHChangeBN }
+          { from: account }
         );
         // Withdraw ETH from trove
       } else if (ETHChangeBN.lt(zero)) {
@@ -991,6 +1025,7 @@ class TestHelper {
         tx = await contracts.borrowerOperations.adjustTrove(
           this._100pct,
           ETHChangeBN,
+          false,
           BoldChangeBN,
           isDebtIncrease,
           upperHint,
@@ -1042,12 +1077,13 @@ class TestHelper {
       if (ETHChangeBN.gt(zero)) {
         tx = await contracts.borrowerOperations.adjustTrove(
           this._100pct,
-          0,
+          ETHChangeBN,
+          true,
           BoldChangeBN,
           isDebtIncrease,
           upperHint,
           lowerHint,
-          { from: account, value: ETHChangeBN }
+          { from: account }
         );
         // Withdraw ETH from trove
       } else if (ETHChangeBN.lt(zero)) {
@@ -1055,6 +1091,7 @@ class TestHelper {
         tx = await contracts.borrowerOperations.adjustTrove(
           this._100pct,
           ETHChangeBN,
+          false,
           BoldChangeBN,
           isDebtIncrease,
           lowerHint,
@@ -1121,6 +1158,23 @@ class TestHelper {
       gasCostList.push(gas);
     }
     return this.getGasMetrics(gasCostList);
+  }
+
+  static async addCollWrapper(
+    contracts,
+    extraParams
+  ) {
+    // approve ERC20 ETH
+    await contracts.WETH.approve(contracts.borrowerOperations.address, extraParams.value, { from: extraParams.from });
+
+    const tx = await contracts.borrowerOperations.addColl(
+      extraParams.value,
+      {
+        from: extraParams.from,
+      }
+    );
+    return tx;
+
   }
 
   static async withdrawColl_allAccounts(accounts, contracts, amount) {
@@ -1450,10 +1504,11 @@ class TestHelper {
 
       await contracts.borrowerOperations.openTrove(
         this._100pct,
+        coll,
         "200000000000000000000",
         account,
         account,
-        { from: account, value: coll }
+        { from: account }
       );
 
       amountFinney += 10;
@@ -1648,12 +1703,6 @@ class TestHelper {
   }
 
   // --- Misc. functions  ---
-
-  static async forceSendEth(from, receiver, value) {
-    const destructible = await Destructible.new();
-    await web3.eth.sendTransaction({ to: destructible.address, from, value });
-    await destructible.destruct(receiver);
-  }
 
   static hexToParam(hexValue) {
     return ("0".repeat(64) + hexValue.slice(2)).slice(-64);

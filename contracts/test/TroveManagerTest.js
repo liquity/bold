@@ -1,7 +1,8 @@
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
+const { fundAccounts } = require("../utils/fundAccounts.js");
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol");
-const BoldTokenTester = artifacts.require("./BoldTokenTester.sol")
+const BoldToken = artifacts.require("./BoldToken.sol");
 
 const th = testHelpers.TestHelper;
 const dec = th.dec;
@@ -75,7 +76,7 @@ contract("TroveManager", async (accounts) => {
   beforeEach(async () => {
     contracts = await deploymentHelper.deployLiquityCore();
     contracts.troveManager = await TroveManagerTester.new();
-    contracts.boldToken = await BoldTokenTester.new(
+    contracts.boldToken = await BoldToken.new(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
       contracts.borrowerOperations.address
@@ -93,6 +94,28 @@ contract("TroveManager", async (accounts) => {
     hintHelpers = contracts.hintHelpers;
 
     await deploymentHelper.connectCoreContracts(contracts);
+    await fundAccounts([
+      owner,
+      alice,
+      bob,
+      carol,
+      dennis,
+      erin,
+      flyn,
+      graham,
+      harriet,
+      ida,
+      defaulter_1,
+      defaulter_2,
+      defaulter_3,
+      defaulter_4,
+      whale,
+      A,
+      B,
+      C,
+      D,
+      E,
+    ], contracts.WETH);
   });
 
   it("liquidate(): closes a Trove that has ICR < MCR", async () => {
@@ -141,9 +164,9 @@ contract("TroveManager", async (accounts) => {
     // --- TEST ---
 
     // check ActivePool ETH and Bold debt before
-    const activePool_ETH_Before = (await activePool.getETH()).toString();
+    const activePool_ETH_Before = (await activePool.getETHBalance()).toString();
     const activePool_RawEther_Before = (
-      await web3.eth.getBalance(activePool.address)
+      await contracts.WETH.balanceOf(activePool.address)
     ).toString();
     const activePool_BoldDebt_Before = (
       await activePool.getBoldDebt()
@@ -167,9 +190,9 @@ contract("TroveManager", async (accounts) => {
     await troveManager.liquidate(bob, { from: owner });
 
     // check ActivePool ETH and Bold debt
-    const activePool_ETH_After = (await activePool.getETH()).toString();
+    const activePool_ETH_After = (await activePool.getETHBalance()).toString();
     const activePool_RawEther_After = (
-      await web3.eth.getBalance(activePool.address)
+      await contracts.WETH.balanceOf(activePool.address)
     ).toString();
     const activePool_BoldDebt_After = (
       await activePool.getBoldDebt()
@@ -190,9 +213,9 @@ contract("TroveManager", async (accounts) => {
     // --- TEST ---
 
     // check DefaultPool ETH and Bold debt before
-    const defaultPool_ETH_Before = await defaultPool.getETH();
+    const defaultPool_ETH_Before = await defaultPool.getETHBalance();
     const defaultPool_RawEther_Before = (
-      await web3.eth.getBalance(defaultPool.address)
+      await contracts.WETH.balanceOf(defaultPool.address)
     ).toString();
     const defaultPool_BoldDebt_Before = (
       await defaultPool.getBoldDebt()
@@ -212,9 +235,9 @@ contract("TroveManager", async (accounts) => {
     await troveManager.liquidate(bob, { from: owner });
 
     // check after
-    const defaultPool_ETH_After = (await defaultPool.getETH()).toString();
+    const defaultPool_ETH_After = (await defaultPool.getETHBalance()).toString();
     const defaultPool_RawEther_After = (
-      await web3.eth.getBalance(defaultPool.address)
+      await contracts.WETH.balanceOf(defaultPool.address)
     ).toString();
     const defaultPool_BoldDebt_After = (
       await defaultPool.getBoldDebt()
@@ -1752,7 +1775,7 @@ contract("TroveManager", async (accounts) => {
     const total_BoldinSP = (
       await stabilityPool.getTotalBoldDeposits()
     ).toString();
-    const total_ETHinSP = (await stabilityPool.getETH()).toString();
+    const total_ETHinSP = (await stabilityPool.getETHBalance()).toString();
 
     assert.isAtMost(
       th.getDifference(total_BoldinSP, totalDeposits.sub(liquidatedDebt)),
@@ -1823,7 +1846,7 @@ contract("TroveManager", async (accounts) => {
     // Check C's pending coll and debt rewards are <= the coll and debt in the DefaultPool
     const pendingETH_C = await troveManager.getPendingETHReward(C);
     const pendingBoldDebt_C = await troveManager.getPendingBoldDebtReward(C);
-    const defaultPoolETH = await defaultPool.getETH();
+    const defaultPoolETH = await defaultPool.getETHBalance();
     const defaultPoolBoldDebt = await defaultPool.getBoldDebt();
     assert.isTrue(pendingETH_C.lte(defaultPoolETH));
     assert.isTrue(pendingBoldDebt_C.lte(defaultPoolBoldDebt));
@@ -2357,7 +2380,7 @@ contract("TroveManager", async (accounts) => {
       extraParams: { from: dennis },
     });
 
-    const dennis_ETHBalance_Before = toBN(await web3.eth.getBalance(dennis));
+    const dennis_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(dennis));
 
     const dennis_BoldBalance_Before = await boldToken.balanceOf(dennis);
 
@@ -2421,13 +2444,11 @@ contract("TroveManager", async (accounts) => {
     assert.equal(bob_debt_After, "0");
     assert.equal(carol_debt_After, "0");
 
-    const dennis_ETHBalance_After = toBN(await web3.eth.getBalance(dennis));
+    const dennis_ETHBalance_After = toBN(await contracts.WETH.balanceOf(dennis));
     const receivedETH = dennis_ETHBalance_After.sub(dennis_ETHBalance_Before);
 
     const expectedTotalETHDrawn = redemptionAmount.div(toBN(200)); // convert redemptionAmount Bold to ETH, at ETH:USD price 200
-    const expectedReceivedETH = expectedTotalETHDrawn
-      .sub(toBN(ETHFee))
-      .sub(toBN(th.gasUsed(redemptionTx) * GAS_PRICE)); // substract gas used for troveManager.redeemCollateral from expected received ETH
+    const expectedReceivedETH = expectedTotalETHDrawn .sub(toBN(ETHFee));
 
     // console.log("*********************************************************************************")
     // console.log("ETHFee: " + ETHFee)
@@ -2435,9 +2456,8 @@ contract("TroveManager", async (accounts) => {
     // console.log("GAS_USED: " + th.gasUsed(redemptionTx))
     // console.log("dennis_ETHBalance_After: " + dennis_ETHBalance_After)
     // console.log("expectedTotalETHDrawn: " + expectedTotalETHDrawn)
-    // console.log("recived  : " + receivedETH)
+    // console.log("received  : " + receivedETH)
     // console.log("expected : " + expectedReceivedETH)
-    // console.log("wanted :   " + expectedReceivedETH.sub(toBN(GAS_PRICE)))
     // console.log("*********************************************************************************")
     th.assertIsApproximatelyEqual(expectedReceivedETH, receivedETH);
 
@@ -2478,7 +2498,7 @@ contract("TroveManager", async (accounts) => {
       extraParams: { from: dennis },
     });
 
-    const dennis_ETHBalance_Before = toBN(await web3.eth.getBalance(dennis));
+    const dennis_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(dennis));
 
     const dennis_BoldBalance_Before = await boldToken.balanceOf(dennis);
 
@@ -2542,13 +2562,11 @@ contract("TroveManager", async (accounts) => {
     assert.equal(bob_debt_After, "0");
     assert.equal(carol_debt_After, "0");
 
-    const dennis_ETHBalance_After = toBN(await web3.eth.getBalance(dennis));
+    const dennis_ETHBalance_After = toBN(await contracts.WETH.balanceOf(dennis));
     const receivedETH = dennis_ETHBalance_After.sub(dennis_ETHBalance_Before);
 
     const expectedTotalETHDrawn = redemptionAmount.div(toBN(200)); // convert redemptionAmount Bold to ETH, at ETH:USD price 200
-    const expectedReceivedETH = expectedTotalETHDrawn
-      .sub(toBN(ETHFee))
-      .sub(toBN(th.gasUsed(redemptionTx) * GAS_PRICE)); // substract gas used for troveManager.redeemCollateral from expected received ETH
+    const expectedReceivedETH = expectedTotalETHDrawn.sub(toBN(ETHFee));
 
     th.assertIsApproximatelyEqual(expectedReceivedETH, receivedETH);
 
@@ -2589,7 +2607,7 @@ contract("TroveManager", async (accounts) => {
       extraParams: { from: dennis },
     });
 
-    const dennis_ETHBalance_Before = toBN(await web3.eth.getBalance(dennis));
+    const dennis_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(dennis));
 
     const dennis_BoldBalance_Before = await boldToken.balanceOf(dennis);
 
@@ -2653,13 +2671,11 @@ contract("TroveManager", async (accounts) => {
     assert.equal(bob_debt_After, "0");
     assert.equal(carol_debt_After, "0");
 
-    const dennis_ETHBalance_After = toBN(await web3.eth.getBalance(dennis));
+    const dennis_ETHBalance_After = toBN(await contracts.WETH.balanceOf(dennis));
     const receivedETH = dennis_ETHBalance_After.sub(dennis_ETHBalance_Before);
 
     const expectedTotalETHDrawn = redemptionAmount.div(toBN(200)); // convert redemptionAmount Bold to ETH, at ETH:USD price 200
-    const expectedReceivedETH = expectedTotalETHDrawn
-      .sub(toBN(ETHFee))
-      .sub(toBN(th.gasUsed(redemptionTx) * GAS_PRICE)); // substract gas used for troveManager.redeemCollateral from expected received ETH
+    const expectedReceivedETH = expectedTotalETHDrawn.sub(toBN(ETHFee));
 
     th.assertIsApproximatelyEqual(expectedReceivedETH, receivedETH);
 
@@ -2700,7 +2716,7 @@ contract("TroveManager", async (accounts) => {
       extraParams: { from: dennis },
     });
 
-    const dennis_ETHBalance_Before = toBN(await web3.eth.getBalance(dennis));
+    const dennis_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(dennis));
 
     const dennis_BoldBalance_Before = await boldToken.balanceOf(dennis);
 
@@ -2769,13 +2785,11 @@ contract("TroveManager", async (accounts) => {
     assert.equal(bob_debt_After, "0");
     assert.equal(carol_debt_After, "0");
 
-    const dennis_ETHBalance_After = toBN(await web3.eth.getBalance(dennis));
+    const dennis_ETHBalance_After = toBN(await contracts.WETH.balanceOf(dennis));
     const receivedETH = dennis_ETHBalance_After.sub(dennis_ETHBalance_Before);
 
     const expectedTotalETHDrawn = redemptionAmount.div(toBN(200)); // convert redemptionAmount Bold to ETH, at ETH:USD price 200
-    const expectedReceivedETH = expectedTotalETHDrawn
-      .sub(toBN(ETHFee))
-      .sub(toBN(th.gasUsed(redemptionTx) * GAS_PRICE)); // substract gas used for troveManager.redeemCollateral from expected received ETH
+    const expectedReceivedETH = expectedTotalETHDrawn.sub(toBN(ETHFee));
 
     th.assertIsApproximatelyEqual(expectedReceivedETH, receivedETH);
 
@@ -2961,21 +2975,21 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): performs partial redemption if resultant debt is > minimum net debt", async () => {
-    await borrowerOperations.openTrove(
+    await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(10000, 18)),
       A,
       A,
       { from: A, value: dec(1000, "ether") }
     );
-    await borrowerOperations.openTrove(
+    await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(20000, 18)),
       B,
       B,
       { from: B, value: dec(1000, "ether") }
     );
-    await borrowerOperations.openTrove(
+    await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(30000, 18)),
       C,
@@ -3015,21 +3029,21 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): doesn't perform partial redemption if resultant debt would be < minimum net debt", async () => {
-    await borrowerOperations.openTrove(
+    await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(6000, 18)),
       A,
       A,
       { from: A, value: dec(1000, "ether") }
     );
-    await borrowerOperations.openTrove(
+    await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(20000, 18)),
       B,
       B,
       { from: B, value: dec(1000, "ether") }
     );
-    await borrowerOperations.openTrove(
+    await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(30000, 18)),
       C,
@@ -3099,7 +3113,7 @@ contract("TroveManager", async (accounts) => {
       extraParams: { from: dennis },
     });
 
-    const dennis_ETHBalance_Before = toBN(await web3.eth.getBalance(dennis));
+    const dennis_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(dennis));
 
     const dennis_BoldBalance_Before = await boldToken.balanceOf(dennis);
 
@@ -3176,16 +3190,14 @@ contract("TroveManager", async (accounts) => {
     // got in the way, he would have needed to redeem 3 Bold to fully complete his redemption of 20 Bold.
     // This would have required a different hint, therefore he ended up with a partial redemption.
 
-    const dennis_ETHBalance_After = toBN(await web3.eth.getBalance(dennis));
+    const dennis_ETHBalance_After = toBN(await contracts.WETH.balanceOf(dennis));
     const receivedETH = dennis_ETHBalance_After.sub(dennis_ETHBalance_Before);
 
     // Expect only 17 worth of ETH drawn
     const expectedTotalETHDrawn = fullfilledRedemptionAmount
       .sub(frontRunRedepmtion)
       .div(toBN(200)); // redempted Bold converted to ETH, at ETH:USD price 200
-    const expectedReceivedETH = expectedTotalETHDrawn
-      .sub(ETHFee)
-      .sub(toBN(th.gasUsed(redemptionTx) * GAS_PRICE)); // substract gas used for troveManager.redeemCollateral from expected received ETH
+    const expectedReceivedETH = expectedTotalETHDrawn.sub(ETHFee);
 
     th.assertIsApproximatelyEqual(expectedReceivedETH, receivedETH);
 
@@ -3222,7 +3234,7 @@ contract("TroveManager", async (accounts) => {
 
     // --- TEST ---
 
-    const carol_ETHBalance_Before = toBN(await web3.eth.getBalance(carol));
+    const carol_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(carol));
 
     // skip bootstrapping phase
     await th.fastForwardTime(
@@ -3246,7 +3258,7 @@ contract("TroveManager", async (accounts) => {
 
     const ETHFee = th.getEmittedRedemptionValues(redemptionTx)[3];
 
-    const carol_ETHBalance_After = toBN(await web3.eth.getBalance(carol));
+    const carol_ETHBalance_After = toBN(await contracts.WETH.balanceOf(carol));
 
     const expectedTotalETHDrawn = toBN(amount).div(toBN(100)); // convert 100 Bold to ETH at ETH:USD price of 100
     const expectedReceivedETH = expectedTotalETHDrawn.sub(ETHFee);
@@ -3728,7 +3740,7 @@ contract("TroveManager", async (accounts) => {
 
     // Check the remaining Bold and ETH in Stability Pool after liquidation is non-zero
     const BoldinSP = await stabilityPool.getTotalBoldDeposits();
-    const ETHinSP = await stabilityPool.getETH();
+    const ETHinSP = await stabilityPool.getETHBalance();
     assert.isTrue(BoldinSP.gte(mv._zeroBN));
     assert.isTrue(ETHinSP.gte(mv._zeroBN));
 
@@ -3824,7 +3836,7 @@ contract("TroveManager", async (accounts) => {
 
     // Get active debt and coll before redemption
     const activePool_debt_before = await activePool.getBoldDebt();
-    const activePool_coll_before = await activePool.getETH();
+    const activePool_coll_before = await activePool.getETHBalance();
 
     th.assertIsApproximatelyEqual(activePool_debt_before, totalDebt);
     assert.equal(activePool_coll_before.toString(), totalColl);
@@ -3869,7 +3881,7 @@ contract("TroveManager", async (accounts) => {
     /* Check ActivePool coll reduced by $400 worth of Ether: at ETH:USD price of $200, this should be 2 ETH.
 
     therefore remaining ActivePool ETH should be 198 */
-    const activePool_coll_after = await activePool.getETH();
+    const activePool_coll_after = await activePool.getETHBalance();
     // console.log(`activePool_coll_after: ${activePool_coll_after}`)
     assert.equal(
       activePool_coll_after.toString(),
@@ -3924,7 +3936,7 @@ contract("TroveManager", async (accounts) => {
 
     // Get active debt and coll before redemption
     const activePool_debt_before = await activePool.getBoldDebt();
-    const activePool_coll_before = (await activePool.getETH()).toString();
+    const activePool_coll_before = (await activePool.getETHBalance()).toString();
 
     th.assertIsApproximatelyEqual(activePool_debt_before, totalDebt);
     assert.equal(activePool_coll_before, totalColl);
@@ -4132,7 +4144,7 @@ contract("TroveManager", async (accounts) => {
     const _950_Bold = "950000000000000000000";
 
     // Check Ether in activePool
-    const activeETH_0 = await activePool.getETH();
+    const activeETH_0 = await activePool.getETHBalance();
     assert.equal(activeETH_0, totalColl.toString());
 
     let firstRedemptionHint;
@@ -4172,7 +4184,7 @@ contract("TroveManager", async (accounts) => {
     ETH removed = (120/200) = 0.6 ETH
     Total active ETH = 280 - 0.6 = 279.4 ETH */
 
-    const activeETH_1 = await activePool.getETH();
+    const activeETH_1 = await activePool.getETHBalance();
     assert.equal(
       activeETH_1.toString(),
       activeETH_0.sub(toBN(_120_Bold).mul(mv._1e18BN).div(price))
@@ -4205,7 +4217,7 @@ contract("TroveManager", async (accounts) => {
     /* 373 Bold redeemed.  Expect $373 worth of ETH removed. At ETH:USD price of $200, 
     ETH removed = (373/200) = 1.865 ETH
     Total active ETH = 279.4 - 1.865 = 277.535 ETH */
-    const activeETH_2 = await activePool.getETH();
+    const activeETH_2 = await activePool.getETHBalance();
     assert.equal(
       activeETH_2.toString(),
       activeETH_1.sub(toBN(_373_Bold).mul(mv._1e18BN).div(price))
@@ -4238,7 +4250,7 @@ contract("TroveManager", async (accounts) => {
     /* 950 Bold redeemed.  Expect $950 worth of ETH removed. At ETH:USD price of $200, 
     ETH removed = (950/200) = 4.75 ETH
     Total active ETH = 277.535 - 4.75 = 272.785 ETH */
-    const activeETH_3 = (await activePool.getETH()).toString();
+    const activeETH_3 = (await activePool.getETHBalance()).toString();
     assert.equal(
       activeETH_3.toString(),
       activeETH_2.sub(toBN(_950_Bold).mul(mv._1e18BN).div(price))
@@ -4378,7 +4390,7 @@ contract("TroveManager", async (accounts) => {
       .add(B_totalDebt)
       .add(C_totalDebt);
 
-    const A_balanceBefore = toBN(await web3.eth.getBalance(A));
+    const A_balanceBefore = toBN(await contracts.WETH.balanceOf(A));
 
     // Check total Bold supply
     const activeBold = await activePool.getBoldDebt();
@@ -4389,7 +4401,7 @@ contract("TroveManager", async (accounts) => {
 
     // A redeems 9 Bold
     const redemptionAmount = toBN(dec(9, 18));
-    const gasUsed = await th.redeemCollateral(
+    await th.redeemCollateral(
       A,
       contracts,
       redemptionAmount,
@@ -4401,14 +4413,14 @@ contract("TroveManager", async (accounts) => {
     ETHDrawn = (9 / 200) = 0.045 ETH
     */
 
-    const A_balanceAfter = toBN(await web3.eth.getBalance(A));
+    const A_balanceAfter = toBN(await contracts.WETH.balanceOf(A));
 
     // check A's ETH balance has increased by 0.045 ETH minus gas
     const price = await priceFeed.getPrice();
     const ETHDrawn = redemptionAmount.mul(mv._1e18BN).div(price);
     th.assertIsApproximatelyEqual(
       A_balanceAfter.sub(A_balanceBefore),
-      ETHDrawn.sub(toBN(gasUsed * GAS_PRICE)), // subtract gas used for troveManager.redeemCollateral from expected received ETH
+      ETHDrawn,
       100000
     );
   });
@@ -4450,9 +4462,9 @@ contract("TroveManager", async (accounts) => {
       .add(C_netDebt)
       .add(toBN(dec(10, 18)));
 
-    const A_balanceBefore = toBN(await web3.eth.getBalance(A));
-    const B_balanceBefore = toBN(await web3.eth.getBalance(B));
-    const C_balanceBefore = toBN(await web3.eth.getBalance(C));
+    const A_balanceBefore = toBN(await contracts.WETH.balanceOf(A));
+    const B_balanceBefore = toBN(await contracts.WETH.balanceOf(B));
+    const C_balanceBefore = toBN(await contracts.WETH.balanceOf(C));
 
     // whale redeems 360 Bold.  Expect this to fully redeem A, B, C, and partially redeem D.
     await th.redeemCollateral(whale, contracts, redemptionAmount, GAS_PRICE);
@@ -4503,10 +4515,10 @@ contract("TroveManager", async (accounts) => {
       .add(C_netDebt)
       .add(toBN(dec(10, 18)));
 
-    const A_balanceBefore = toBN(await web3.eth.getBalance(A));
-    const B_balanceBefore = toBN(await web3.eth.getBalance(B));
-    const C_balanceBefore = toBN(await web3.eth.getBalance(C));
-    const D_balanceBefore = toBN(await web3.eth.getBalance(D));
+    const A_balanceBefore = toBN(await contracts.WETH.balanceOf(A));
+    const B_balanceBefore = toBN(await contracts.WETH.balanceOf(B));
+    const C_balanceBefore = toBN(await contracts.WETH.balanceOf(C));
+    const D_balanceBefore = toBN(await contracts.WETH.balanceOf(D));
 
     const A_collBefore = await troveManager.getTroveColl(A);
     const B_collBefore = await troveManager.getTroveColl(B);
@@ -4536,10 +4548,10 @@ contract("TroveManager", async (accounts) => {
     ETHDrawn from C = 130/200 = 0.65 ETH --> Surplus = (2-0.65) = 1.35
     */
 
-    const A_balanceAfter = toBN(await web3.eth.getBalance(A));
-    const B_balanceAfter = toBN(await web3.eth.getBalance(B));
-    const C_balanceAfter = toBN(await web3.eth.getBalance(C));
-    const D_balanceAfter = toBN(await web3.eth.getBalance(D));
+    const A_balanceAfter = toBN(await contracts.WETH.balanceOf(A));
+    const B_balanceAfter = toBN(await contracts.WETH.balanceOf(B));
+    const C_balanceAfter = toBN(await contracts.WETH.balanceOf(C));
+    const D_balanceAfter = toBN(await contracts.WETH.balanceOf(D));
 
     // Check A, B, C’s trove collateral balance is zero (fully redeemed-from troves)
     const A_collAfter = await troveManager.getTroveColl(A);
@@ -4561,7 +4573,7 @@ contract("TroveManager", async (accounts) => {
 
     // D is not closed, so cannot open trove
     await assertRevert(
-      borrowerOperations.openTrove(th._100pct, 0, ZERO_ADDRESS, ZERO_ADDRESS, {
+      th.openTroveWrapper(contracts,th._100pct, 0, ZERO_ADDRESS, ZERO_ADDRESS, {
         from: D,
         value: dec(10, 18),
       }),
@@ -4673,9 +4685,9 @@ contract("TroveManager", async (accounts) => {
     const { A_netDebt, A_coll, B_netDebt, B_coll, C_netDebt, C_coll } =
       await redeemCollateral3Full1Partial();
 
-    const A_balanceBefore = toBN(await web3.eth.getBalance(A));
-    const B_balanceBefore = toBN(await web3.eth.getBalance(B));
-    const C_balanceBefore = toBN(await web3.eth.getBalance(C));
+    const A_balanceBefore = toBN(await contracts.WETH.balanceOf(A));
+    const B_balanceBefore = toBN(await contracts.WETH.balanceOf(B));
+    const C_balanceBefore = toBN(await contracts.WETH.balanceOf(C));
 
     // CollSurplusPool endpoint cannot be called directly
     await assertRevert(
@@ -4683,37 +4695,23 @@ contract("TroveManager", async (accounts) => {
       "CollSurplusPool: Caller is not Borrower Operations"
     );
 
-    const A_GAS = th.gasUsed(
-      await borrowerOperations.claimCollateral({ from: A, gasPrice: GAS_PRICE })
-    );
-    const B_GAS = th.gasUsed(
-      await borrowerOperations.claimCollateral({ from: B, gasPrice: GAS_PRICE })
-    );
-    const C_GAS = th.gasUsed(
-      await borrowerOperations.claimCollateral({ from: C, gasPrice: GAS_PRICE })
-    );
-
-    const A_expectedBalance = A_balanceBefore.sub(toBN(A_GAS * GAS_PRICE));
-    const B_expectedBalance = B_balanceBefore.sub(toBN(B_GAS * GAS_PRICE));
-    const C_expectedBalance = C_balanceBefore.sub(toBN(C_GAS * GAS_PRICE));
-
-    const A_balanceAfter = toBN(await web3.eth.getBalance(A));
-    const B_balanceAfter = toBN(await web3.eth.getBalance(B));
-    const C_balanceAfter = toBN(await web3.eth.getBalance(C));
+    const A_balanceAfter = toBN(await contracts.WETH.balanceOf(A));
+    const B_balanceAfter = toBN(await contracts.WETH.balanceOf(B));
+    const C_balanceAfter = toBN(await contracts.WETH.balanceOf(C));
 
     const price = toBN(await priceFeed.getPrice());
 
     th.assertIsApproximatelyEqual(
       A_balanceAfter,
-      A_expectedBalance.add(A_coll.sub(A_netDebt.mul(mv._1e18BN).div(price)))
+      A_balanceBefore.add(A_coll.sub(A_netDebt.mul(mv._1e18BN).div(price)))
     );
     th.assertIsApproximatelyEqual(
       B_balanceAfter,
-      B_expectedBalance.add(B_coll.sub(B_netDebt.mul(mv._1e18BN).div(price)))
+      B_balanceBefore.add(B_coll.sub(B_netDebt.mul(mv._1e18BN).div(price)))
     );
     th.assertIsApproximatelyEqual(
       C_balanceAfter,
-      C_expectedBalance.add(C_coll.sub(C_netDebt.mul(mv._1e18BN).div(price)))
+      C_balanceBefore.add(C_coll.sub(C_netDebt.mul(mv._1e18BN).div(price)))
     );
   });
 
@@ -4756,39 +4754,25 @@ contract("TroveManager", async (accounts) => {
     assert.isTrue(B_collAfter.eq(B_coll));
     assert.isTrue(C_collAfter.eq(C_coll));
 
-    const A_balanceBefore = toBN(await web3.eth.getBalance(A));
-    const B_balanceBefore = toBN(await web3.eth.getBalance(B));
-    const C_balanceBefore = toBN(await web3.eth.getBalance(C));
+    const A_balanceBefore = toBN(await contracts.WETH.balanceOf(A));
+    const B_balanceBefore = toBN(await contracts.WETH.balanceOf(B));
+    const C_balanceBefore = toBN(await contracts.WETH.balanceOf(C));
 
-    const A_GAS = th.gasUsed(
-      await borrowerOperations.claimCollateral({ from: A, gasPrice: GAS_PRICE })
-    );
-    const B_GAS = th.gasUsed(
-      await borrowerOperations.claimCollateral({ from: B, gasPrice: GAS_PRICE })
-    );
-    const C_GAS = th.gasUsed(
-      await borrowerOperations.claimCollateral({ from: C, gasPrice: GAS_PRICE })
-    );
-
-    const A_expectedBalance = A_balanceBefore.sub(toBN(A_GAS * GAS_PRICE));
-    const B_expectedBalance = B_balanceBefore.sub(toBN(B_GAS * GAS_PRICE));
-    const C_expectedBalance = C_balanceBefore.sub(toBN(C_GAS * GAS_PRICE));
-
-    const A_balanceAfter = toBN(await web3.eth.getBalance(A));
-    const B_balanceAfter = toBN(await web3.eth.getBalance(B));
-    const C_balanceAfter = toBN(await web3.eth.getBalance(C));
+    const A_balanceAfter = toBN(await contracts.WETH.balanceOf(A));
+    const B_balanceAfter = toBN(await contracts.WETH.balanceOf(B));
+    const C_balanceAfter = toBN(await contracts.WETH.balanceOf(C));
 
     th.assertIsApproximatelyEqual(
       A_balanceAfter,
-      A_expectedBalance.add(A_surplus)
+      A_balanceBefore.add(A_surplus)
     );
     th.assertIsApproximatelyEqual(
       B_balanceAfter,
-      B_expectedBalance.add(B_surplus)
+      B_balanceBefore.add(B_surplus)
     );
     th.assertIsApproximatelyEqual(
       C_balanceAfter,
-      C_expectedBalance.add(C_surplus)
+      C_balanceBefore.add(C_surplus)
     );
   });
 

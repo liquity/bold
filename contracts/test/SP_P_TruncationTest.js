@@ -1,5 +1,6 @@
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
+const { fundAccounts } = require("../utils/fundAccounts.js");
 
 const th = testHelpers.TestHelper;
 const timeValues = testHelpers.TimeValues;
@@ -54,12 +55,14 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       await deploymentHelper.connectCoreContracts(contracts);
 
+      await fundAccounts([owner, whale, A, B, C, D, E, F, F1, F2, F3], contracts.WETH);
+
       await priceFeed.setPrice(dec(200, 18));
     });
 
     it.skip("1. Liquidation succeeds after P reduced to 1", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await borrowerOperations.openTrove(
+      await th.openTroveWrapper(contracts,
         th._100pct,
         await getOpenTroveBoldAmount(dec(100000, 18)),
         whale,
@@ -70,7 +73,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (account of [A, B, C]) {
-        await borrowerOperations.openTrove(
+        await th.openTroveWrapper(contracts,
           th._100pct,
           await getBoldAmountForDesiredDebt(2000),
           account,
@@ -145,7 +148,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("2. New deposits can be made after P reduced to 1", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await borrowerOperations.openTrove(
+      await th.openTroveWrapper(contracts,
         th._100pct,
         await getOpenTroveBoldAmount(dec(100000, 18)),
         whale,
@@ -157,7 +160,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (account of [A, B, C]) {
-        await borrowerOperations.openTrove(
+        await th.openTroveWrapper(contracts,
           th._100pct,
           await getBoldAmountForDesiredDebt(2000),
           account,
@@ -242,7 +245,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("3. Liquidation succeeds when P == 1 and liquidation has newProductFactor == 1e9", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await borrowerOperations.openTrove(
+      await th.openTroveWrapper(contracts,
         th._100pct,
         await getOpenTroveBoldAmount(dec(100000, 18)),
         whale,
@@ -254,7 +257,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (account of [A, B, C]) {
-        await borrowerOperations.openTrove(
+        await th.openTroveWrapper(contracts,
           th._100pct,
           await getBoldAmountForDesiredDebt(2000),
           account,
@@ -350,7 +353,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("4. Liquidation succeeds when P == 1 and liquidation has newProductFactor > 1e9", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await borrowerOperations.openTrove(
+      await th.openTroveWrapper(contracts,
         th._100pct,
         await getOpenTroveBoldAmount(dec(100000, 18)),
         whale,
@@ -362,7 +365,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (account of [A, B, C]) {
-        await borrowerOperations.openTrove(
+        await th.openTroveWrapper(contracts,
           th._100pct,
           await getBoldAmountForDesiredDebt(2000),
           account,
@@ -460,7 +463,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("5. Depositor have correct depleted stake after deposit at P == 1 and scale changing liq (with newProductFactor == 1e9)", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await borrowerOperations.openTrove(
+      await th.openTroveWrapper(contracts,
         th._100pct,
         await getOpenTroveBoldAmount(dec(100000, 18)),
         whale,
@@ -472,7 +475,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (account of [A, B, C]) {
-        await borrowerOperations.openTrove(
+        await th.openTroveWrapper(contracts,
           th._100pct,
           await getBoldAmountForDesiredDebt(2000),
           account,
@@ -579,7 +582,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("6. Depositor have correct depleted stake after deposit at P == 1 and scale changing liq (with newProductFactor > 1e9)", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await borrowerOperations.openTrove(
+      await th.openTroveWrapper(contracts,
         th._100pct,
         await getOpenTroveBoldAmount(dec(100000, 18)),
         whale,
@@ -591,7 +594,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (account of [A, B, C]) {
-        await borrowerOperations.openTrove(
+        await th.openTroveWrapper(contracts,
           th._100pct,
           await getBoldAmountForDesiredDebt(2000),
           account,

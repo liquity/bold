@@ -11,6 +11,7 @@ import "../../Interfaces/IPriceFeed.sol";
 import "../../Interfaces/ISortedTroves.sol";
 import "../../Interfaces/IStabilityPool.sol";
 import "../../Interfaces/ITroveManager.sol";
+import "./PriceFeedTestnet.sol";
 
 import "../../GasPool.sol";
 
@@ -27,6 +28,7 @@ contract BaseTest is Test {
     address public D;
     address public E;
     address public F;
+    address public G;
 
     uint256 public constant MAX_UINT256 = type(uint256).max;
     uint256 public constant SECONDS_IN_1_YEAR = 31536000; // 60*60*24*365
@@ -44,6 +46,7 @@ contract BaseTest is Test {
     IStabilityPool stabilityPool;
     ITroveManager troveManager;
     IBoldToken boldToken;
+    IPriceFeedTestnet priceFeed;
 
     GasPool gasPool;
 
@@ -65,7 +68,7 @@ contract BaseTest is Test {
     public 
     {
         vm.startPrank(_account);
-        borrowerOperations.openTrove{value: _coll}(1e18, _boldAmount, ZERO_ADDRESS, ZERO_ADDRESS, _annualInterestRate);
+        borrowerOperations.openTrove(1e18, _coll, _boldAmount, ZERO_ADDRESS, ZERO_ADDRESS, _annualInterestRate);
         vm.stopPrank();
     }
 
@@ -81,11 +84,7 @@ contract BaseTest is Test {
     public 
     {
         vm.startPrank(_account);
-        if (_isCollIncrease) {
-            borrowerOperations.adjustTrove{value: _collChange}(1e18, 0, _boldChange,  _isDebtIncrease);
-        } else {
-            borrowerOperations.adjustTrove(1e18, _collChange, _boldChange,  _isDebtIncrease);
-        }
+        borrowerOperations.adjustTrove(1e18, _collChange, _isCollIncrease, _boldChange,  _isDebtIncrease);
         vm.stopPrank();
     }
 
@@ -93,6 +92,12 @@ contract BaseTest is Test {
         vm.startPrank(_account);
         borrowerOperations.adjustTroveInterestRate(_newAnnualInterestRate, ZERO_ADDRESS, ZERO_ADDRESS);
         vm.stopPrank();
+    }
+
+    function checkRecoveryMode(bool _enabled) public {
+        uint256 price = priceFeed.getPrice();
+        bool recoveryMode = troveManager.checkRecoveryMode(price);
+        assertEq(recoveryMode, _enabled);
     }
 
     function logContractAddresses() public view {

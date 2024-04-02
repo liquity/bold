@@ -1,5 +1,6 @@
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
+const { fundAccounts } = require("../utils/fundAccounts.js");
 
 const th = testHelpers.TestHelper;
 const dec = th.dec;
@@ -81,6 +82,29 @@ contract(
       borrowerOperations = contracts.borrowerOperations;
 
       await deploymentHelper.connectCoreContracts(contracts);
+
+      await fundAccounts([
+        owner,
+        alice,
+        bob,
+        carol,
+        dennis,
+        erin,
+        freddy,
+        greta,
+        harry,
+        ida,
+        A,
+        B,
+        C,
+        D,
+        E,
+        whale,
+        defaulter_1,
+        defaulter_2,
+        defaulter_3,
+        defaulter_4,
+      ], contracts.WETH);
     });
 
     it("redistribution: A, B Open. B Liquidated. C, D Open. D Liquidated. Distributes correct rewards", async () => {
@@ -170,8 +194,8 @@ contract(
         1000
       );
 
-      const entireSystemColl = (await activePool.getETH())
-        .add(await defaultPool.getETH())
+      const entireSystemColl = (await activePool.getETHBalance())
+        .add(await defaultPool.getETHBalance())
         .toString();
       assert.equal(
         entireSystemColl,
@@ -289,8 +313,8 @@ contract(
       assert.isAtMost(th.getDifference(dennis_Coll, expected_D), 1000);
       assert.isAtMost(th.getDifference(erin_Coll, expected_E), 1000);
 
-      const entireSystemColl = (await activePool.getETH())
-        .add(await defaultPool.getETH())
+      const entireSystemColl = (await activePool.getETHBalance())
+        .add(await defaultPool.getETHBalance())
         .toString();
       assert.equal(
         entireSystemColl,
@@ -438,8 +462,8 @@ contract(
       );
       assert.isAtMost(th.getDifference(freddy_ETHReward, gainedETH), 1000);
 
-      const entireSystemColl = (await activePool.getETH())
-        .add(await defaultPool.getETH())
+      const entireSystemColl = (await activePool.getETHBalance())
+        .add(await defaultPool.getETHBalance())
         .toString();
       assert.isAtMost(
         th.getDifference(entireSystemColl, F_coll.add(gainedETH)),
@@ -523,7 +547,7 @@ contract(
 
       // Bob adds 1 ETH to his trove
       const addedColl1 = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl({ from: B, value: addedColl1 });
+      await th.addCollWrapper(contracts, { from: B, value: addedColl1 });
 
       // Liquidate C
       const txC = await troveManager.liquidate(C);
@@ -566,7 +590,7 @@ contract(
 
       // Bob adds 1 ETH to his trove
       const addedColl2 = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl({ from: B, value: addedColl2 });
+      await th.addCollWrapper(contracts, { from: B, value: addedColl2 });
 
       // Liquidate E
       const txE = await troveManager.liquidate(E);
@@ -681,7 +705,7 @@ contract(
       assert.isAtMost(getDifference(E_expectedPendingETH_1, E_ETHGain_1), 1e8);
 
       // // Bob adds 1 ETH to his trove
-      await borrowerOperations.addColl( {
+      await th.addCollWrapper(contracts,  {
         from: B,
         value: dec(1, "ether"),
       });
@@ -733,7 +757,7 @@ contract(
       assert.isAtMost(getDifference(E_expectedPendingETH_2, E_ETHGain_2), 1e8);
 
       // // Bob adds 1 ETH to his trove
-      await borrowerOperations.addColl( {
+      await th.addCollWrapper(contracts,  {
         from: B,
         value: dec(1, "ether"),
       });
@@ -807,7 +831,7 @@ contract(
 
       //Bob adds ETH to his trove
       const addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl({
+      await th.addCollWrapper(contracts, {
         from: bob,
         value: addedColl,
       });
@@ -884,7 +908,7 @@ contract(
 
       //Bob adds ETH to his trove
       const addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl({
+      await th.addCollWrapper(contracts, {
         from: bob,
         value: addedColl,
       });
@@ -1007,8 +1031,8 @@ contract(
       const carol_ETHReward_1 = await troveManager.getPendingETHReward(carol);
 
       //Expect 1000 + 1000*0.995 ETH in system now
-      const entireSystemColl_1 = (await activePool.getETH())
-        .add(await defaultPool.getETH())
+      const entireSystemColl_1 = (await activePool.getETHBalance())
+        .add(await defaultPool.getETHBalance())
         .toString();
       assert.equal(
         entireSystemColl_1,
@@ -1031,14 +1055,14 @@ contract(
 
       //Carol adds 1 ETH to her trove, brings it to 1992.01 total coll
       const C_addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl({
+      await th.addCollWrapper(contracts, {
         from: carol,
         value: dec(1, "ether"),
       });
 
       //Expect 1996 ETH in system now
-      const entireSystemColl_2 = (await activePool.getETH()).add(
-        await defaultPool.getETH()
+      const entireSystemColl_2 = (await activePool.getETHBalance()).add(
+        await defaultPool.getETHBalance()
       );
       th.assertIsApproximatelyEqual(
         entireSystemColl_2,
@@ -1119,8 +1143,8 @@ contract(
       assert.isAtMost(th.getDifference(carol_Coll, expected_C_coll), 1000);
 
       //Expect 3982.02 ETH in system now
-      const entireSystemColl_3 = (await activePool.getETH())
-        .add(await defaultPool.getETH())
+      const entireSystemColl_3 = (await activePool.getETHBalance())
+        .add(await defaultPool.getETHBalance())
         .toString();
       th.assertIsApproximatelyEqual(
         entireSystemColl_3,
@@ -1173,8 +1197,8 @@ contract(
       const carol_ETHReward_1 = await troveManager.getPendingETHReward(carol);
 
       //Expect 1995 ETH in system now
-      const entireSystemColl_1 = (await activePool.getETH())
-        .add(await defaultPool.getETH())
+      const entireSystemColl_1 = (await activePool.getETHBalance())
+        .add(await defaultPool.getETHBalance())
         .toString();
       assert.equal(
         entireSystemColl_1,
@@ -1199,22 +1223,22 @@ contract(
     bringing them to 2.995, 2.995, 1992.01 total coll each. */
 
       const addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl( {
+      await th.addCollWrapper(contracts,  {
         from: alice,
         value: addedColl,
       });
-      await borrowerOperations.addColl( {
+      await th.addCollWrapper(contracts,  {
         from: bob,
         value: addedColl,
       });
-      await borrowerOperations.addColl({
+      await th.addCollWrapper(contracts, {
         from: carol,
         value: addedColl,
       });
 
       //Expect 1998 ETH in system now
-      const entireSystemColl_2 = (await activePool.getETH())
-        .add(await defaultPool.getETH())
+      const entireSystemColl_2 = (await activePool.getETHBalance())
+        .add(await defaultPool.getETHBalance())
         .toString();
       th.assertIsApproximatelyEqual(
         entireSystemColl_2,
@@ -1297,8 +1321,8 @@ contract(
       assert.isAtMost(th.getDifference(carol_Coll, expected_C_coll), 1000);
 
       //Expect 3986.01 ETH in system now
-      const entireSystemColl_3 = (await activePool.getETH()).add(
-        await defaultPool.getETH()
+      const entireSystemColl_3 = (await activePool.getETHBalance()).add(
+        await defaultPool.getETHBalance()
       );
       th.assertIsApproximatelyEqual(
         entireSystemColl_3,
@@ -1503,8 +1527,8 @@ contract(
       assert.isAtMost(th.getDifference(alice_Coll, expected_A_coll), 1000);
       assert.isAtMost(th.getDifference(alice_BoldDebt, expected_A_debt), 10000);
 
-      const entireSystemColl = (await activePool.getETH()).add(
-        await defaultPool.getETH()
+      const entireSystemColl = (await activePool.getETHBalance()).add(
+        await defaultPool.getETHBalance()
       );
       th.assertIsApproximatelyEqual(
         entireSystemColl,
@@ -1567,8 +1591,8 @@ contract(
       const carol_ETHReward_1 = await troveManager.getPendingETHReward(carol);
 
       //Expect 1995 ETH in system now
-      const entireSystemColl_1 = (await activePool.getETH()).add(
-        await defaultPool.getETH()
+      const entireSystemColl_1 = (await activePool.getETHBalance()).add(
+        await defaultPool.getETHBalance()
       );
       th.assertIsApproximatelyEqual(
         entireSystemColl_1,
@@ -1596,8 +1620,8 @@ contract(
       });
 
       //Expect 1994 ETH in system now
-      const entireSystemColl_2 = (await activePool.getETH()).add(
-        await defaultPool.getETH()
+      const entireSystemColl_2 = (await activePool.getETHBalance()).add(
+        await defaultPool.getETHBalance()
       );
       th.assertIsApproximatelyEqual(
         entireSystemColl_2,
@@ -1678,8 +1702,8 @@ contract(
       assert.isAtMost(th.getDifference(carol_Coll, expected_C_coll), 1000);
 
       //Expect 3978.03 ETH in system now
-      const entireSystemColl_3 = (await activePool.getETH()).add(
-        await defaultPool.getETH()
+      const entireSystemColl_3 = (await activePool.getETHBalance()).add(
+        await defaultPool.getETHBalance()
       );
       th.assertIsApproximatelyEqual(
         entireSystemColl_3,
@@ -1729,8 +1753,8 @@ contract(
       const carol_ETHReward_1 = await troveManager.getPendingETHReward(carol);
 
       //Expect 1995 ETH in system now
-      const entireSystemColl_1 = (await activePool.getETH()).add(
-        await defaultPool.getETH()
+      const entireSystemColl_1 = (await activePool.getETHBalance()).add(
+        await defaultPool.getETHBalance()
       );
       th.assertIsApproximatelyEqual(
         entireSystemColl_1,
@@ -1806,8 +1830,8 @@ contract(
       );
 
       //Expect 1993.5 ETH in system now
-      const entireSystemColl_2 = (await activePool.getETH()).add(
-        await defaultPool.getETH()
+      const entireSystemColl_2 = (await activePool.getETHBalance()).add(
+        await defaultPool.getETHBalance()
       );
       th.assertIsApproximatelyEqual(
         entireSystemColl_2,
@@ -1890,8 +1914,8 @@ contract(
       assert.isAtMost(th.getDifference(carol_Coll_2, expected_C_coll), 1000);
 
       //Expect 3977.0325 ETH in system now
-      const entireSystemColl_3 = (await activePool.getETH()).add(
-        await defaultPool.getETH()
+      const entireSystemColl_3 = (await activePool.getETHBalance()).add(
+        await defaultPool.getETHBalance()
       );
       th.assertIsApproximatelyEqual(
         entireSystemColl_3,
@@ -1979,7 +2003,7 @@ contract(
 
       //Bob adds 1 ETH to his trove
       const B_addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl( {
+      await th.addCollWrapper(contracts,  {
         from: bob,
         value: B_addedColl,
       });
@@ -2073,7 +2097,7 @@ contract(
 
       // D tops up
       const D_addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl({
+      await th.addCollWrapper(contracts, {
         from: dennis,
         value: D_addedColl,
       });
@@ -2142,8 +2166,8 @@ contract(
       );
 
       // Check systemic collateral
-      const activeColl = (await activePool.getETH()).toString();
-      const defaultColl = (await defaultPool.getETH()).toString();
+      const activeColl = (await activePool.getETHBalance()).toString();
+      const defaultColl = (await defaultPool.getETHBalance()).toString();
 
       assert.isAtMost(
         th.getDifference(
@@ -2270,7 +2294,7 @@ contract(
 
       // Bob adds 11.33909 ETH to his trove
       const B_addedColl = toBN("11339090000000000000");
-      await borrowerOperations.addColl( {
+      await th.addCollWrapper(contracts,  {
         from: bob,
         value: B_addedColl,
       });
@@ -2366,7 +2390,7 @@ contract(
 
       // D tops up
       const D_addedColl = toBN(dec(1, "ether"));
-      await borrowerOperations.addColl({
+      await th.addCollWrapper(contracts, {
         from: dennis,
         value: D_addedColl,
       });
@@ -2438,8 +2462,8 @@ contract(
       );
 
       // Check systemic collateral
-      const activeColl = (await activePool.getETH()).toString();
-      const defaultColl = (await defaultPool.getETH()).toString();
+      const activeColl = (await activePool.getETHBalance()).toString();
+      const defaultColl = (await defaultPool.getETHBalance()).toString();
 
       assert.isAtMost(
         th.getDifference(

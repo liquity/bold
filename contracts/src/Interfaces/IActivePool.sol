@@ -11,6 +11,7 @@ interface IActivePool is IPool {
     function borrowerOperationsAddress() external view returns (address);
     function troveManagerAddress() external view returns (address);
     function sendETH(address _account, uint _amount) external;
+    function sendETHToDefaultPool(uint _amount) external;
     function setAddresses(
         address _borrowerOperationsAddress,
         address _troveManagerAddress,

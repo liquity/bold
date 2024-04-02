@@ -24,11 +24,11 @@ interface IBorrowerOperations is ILiquityBase {
         address _boldTokenAddress
     ) external;
 
-    function openTrove(uint _maxFee, uint _boldAmount, address _upperHint, address _lowerHint, uint256 _annualInterestRate) external payable;
+    function openTrove(uint _maxFee, uint256 _ETHAmount, uint _boldAmount, address _upperHint, address _lowerHint, uint256 _annualInterestRate) external;
 
-    function addColl() external payable;
+    function addColl(uint256 _ETHAmount) external;
 
-    function moveETHGainToTrove(address _user) external payable;
+    function moveETHGainToTrove(address _user, uint256 _ETHAmount) external;
 
     function withdrawColl(uint _amount) external;
 
@@ -38,7 +38,7 @@ interface IBorrowerOperations is ILiquityBase {
 
     function closeTrove() external;
 
-    function adjustTrove(uint _maxFee, uint _collWithdrawal, uint _debtChange, bool isDebtIncrease) external payable;
+    function adjustTrove(uint _maxFee, uint _collChange, bool _isCollIncrease, uint _debtChange, bool isDebtIncrease) external;
 
     function claimCollateral() external;
 
