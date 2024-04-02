@@ -5,7 +5,6 @@ const testHelpers = require("../utils/testHelpers.js");
 const BorrowerOperationsTester = artifacts.require(
   "./BorrowerOperationsTester.sol"
 );
-const NonPayable = artifacts.require("NonPayable.sol");
 const TroveManagerTester = artifacts.require("TroveManagerTester");
 
 const th = testHelpers.TestHelper;

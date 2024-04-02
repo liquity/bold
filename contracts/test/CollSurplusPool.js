@@ -1,7 +1,6 @@
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
 const { fundAccounts } = require("../utils/fundAccounts.js");
-const NonPayable = artifacts.require("NonPayable.sol");
 
 const th = testHelpers.TestHelper;
 const dec = th.dec;
