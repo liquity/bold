@@ -272,6 +272,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireValidAnnualInterestRate(_newAnnualInterestRate);
         ITroveManager troveManagerCached = troveManager;
         _requireTroveisActive(troveManagerCached, _troveId);
+        _requireIsOwner(_troveId);
 
         // TODO: apply individual and aggregate pending interest, and take snapshots of current timestamp.
         // TODO: determine how applying pending interest should interact / be sequenced with applying pending rewards from redistributions. 
@@ -422,8 +423,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
      * Claim remaining collateral from a redemption or from a liquidation with ICR > MCR in Recovery Mode
      */
     function claimCollateral(uint256 _troveId) external override {
-        address owner = troveManager.ownerOf(_troveId);
-        require(owner == msg.sender, "BO: Only owner can claim trove collateral");
+        _requireIsOwner(_troveId);
 
         // send ETH from CollSurplus Pool to owner
         collSurplusPool.claimColl(msg.sender, _troveId);
@@ -532,6 +532,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     function _requireNonZeroAdjustment(uint _collChange, uint _boldChange) internal pure {
         require(_collChange != 0 || _boldChange != 0, "BorrowerOps: There must be either a collateral change or a debt change");
+    }
+
+    function _requireIsOwner(uint256 _troveId) internal view {
+        require(troveManager.ownerOf(_troveId) == msg.sender, "BO: Only owner");
     }
 
     function _requireTroveisActive(ITroveManager _troveManager, uint256 _troveId) internal view {

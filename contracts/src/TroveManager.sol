@@ -889,8 +889,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
             _maxIterations--;
             // Save the uint256 of the Trove preceding the current one, before potentially modifying the list
             uint256 nextUserToCheck = contractsCache.sortedTroves.getPrev(currentTroveId);
-            // TODO: check ICR?
-            //getCurrentICR(currentTroveId, _price) < MCR
+            // Skip if ICR < 100%, to make sure that redemptions always improve the CR of hit Troves
+            if (getCurrentICR(currentTroveId, totals.price) < _100pct) {
+                currentTroveId = nextUserToCheck;
+                continue;
+            }
 
             _applyPendingRewards(contractsCache.activePool, contractsCache.defaultPool, currentTroveId);
 
@@ -1427,7 +1430,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         _updateTroveRewardSnapshots(_troveId);
 
         // mint ERC721
-        // TODO: Should we use safeMint? I guess not
         _mint(_owner, _troveId);
 
         return _updateStakeAndTotalStakes(_troveId);
