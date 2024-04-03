@@ -6,7 +6,6 @@ const BoldToken = artifacts.require("./BoldToken.sol");
 const ActivePool = artifacts.require("./ActivePool.sol");
 const DefaultPool = artifacts.require("./DefaultPool.sol");
 const StabilityPool = artifacts.require("./StabilityPool.sol");
-const FunctionCaller = artifacts.require("./FunctionCaller.sol");
 const BorrowerOperations = artifacts.require("./BorrowerOperations.sol");
 
 const LQTYStaking = artifacts.require("./LQTY/LQTYStaking.sol");
@@ -40,7 +39,6 @@ const coreContractABIs = [
   ActivePool,
   StabilityPool,
   DefaultPool,
-  FunctionCaller,
   HintHelpers,
 ];
 

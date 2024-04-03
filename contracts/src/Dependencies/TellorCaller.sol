@@ -17,7 +17,7 @@ import "./ITellor.sol";
 contract TellorCaller is ITellorCaller {
     ITellor public tellor;
 
-    constructor (address _tellorMasterAddress) public {
+    constructor (address _tellorMasterAddress) {
         tellor = ITellor(_tellorMasterAddress);
     }
 

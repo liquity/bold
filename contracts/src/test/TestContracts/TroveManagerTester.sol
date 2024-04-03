@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.18;
 
-import "../TroveManager.sol";
+import "../../TroveManager.sol";
 
 /* Tester contract inherits from TroveManager, and provides external functions 
 for testing the parent's internal functions. */

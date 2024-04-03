@@ -2,6 +2,8 @@
 
 pragma solidity 0.8.18;
 
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import './Interfaces/IBorrowerOperations.sol';
 import './Interfaces/IStabilityPool.sol';
 import './Interfaces/IBorrowerOperations.sol';
@@ -127,18 +129,18 @@ import "./Dependencies/CheckContract.sol";
  *
  */
 contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
+    using SafeERC20 for IERC20;
+
     string constant public NAME = "StabilityPool";
 
+    IERC20 public immutable ETH;
     IBorrowerOperations public borrowerOperations;
-
     ITroveManager public troveManager;
-
     IBoldToken public boldToken;
-
     // Needed to check if there are pending liquidations
     ISortedTroves public sortedTroves;
 
-    uint256 internal ETH;  // deposited ether tracker
+    uint256 internal ETHBalance;  // deposited ether tracker
 
     // Tracker for Bold held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
     uint256 internal totalBoldDeposits;
@@ -213,7 +215,13 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     event UserDepositChanged(address indexed _depositor, uint _newDeposit);
 
     event ETHGainWithdrawn(address indexed _depositor, uint _ETH, uint _boldLoss);
+    // TODO: Do we still need this, as we’ll likely have the ERC20 transfer event?
     event EtherSent(address _to, uint _amount);
+
+    constructor(address _ETHAddress) {
+        checkContract(_ETHAddress);
+        ETH = IERC20(_ETHAddress);
+    }
 
     // --- Contract setters ---
 
@@ -250,13 +258,16 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         emit SortedTrovesAddressChanged(_sortedTrovesAddress);
         emit PriceFeedAddressChanged(_priceFeedAddress);
 
+        // Allow funds movements between Liquity contracts
+        ETH.approve(_borrowerOperationsAddress, type(uint256).max);
+
         _renounceOwnership();
     }
 
     // --- Getters for public variables. Required by IPool interface ---
 
-    function getETH() external view override returns (uint) {
-        return ETH;
+    function getETHBalance() external view override returns (uint) {
+        return ETHBalance;
     }
 
     function getTotalBoldDeposits() external view override returns (uint) {
@@ -345,11 +356,12 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         emit ETHGainWithdrawn(msg.sender, depositorETHGain, boldLoss);
         emit UserDepositChanged(msg.sender, compoundedBoldDeposit);
 
-        ETH = ETH - depositorETHGain;
-        emit StabilityPoolETHBalanceUpdated(ETH);
+        uint256 newETHBalance = ETHBalance - depositorETHGain;
+        ETHBalance = newETHBalance;
+        emit StabilityPoolETHBalanceUpdated(newETHBalance);
         emit EtherSent(msg.sender, depositorETHGain);
 
-        borrowerOperations.moveETHGainToTrove{ value: depositorETHGain }(msg.sender);
+        borrowerOperations.moveETHGainToTrove(msg.sender, depositorETHGain);
     }
 
     // --- Liquidation functions ---
@@ -476,6 +488,9 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         // Burn the debt that was successfully offset
         boldToken.burn(address(this), _debtToOffset);
 
+        // Update internal ETH balance tracker
+        ETHBalance = ETHBalance + _collToAdd;
+        // Pull ETH from Active Pool
         activePoolCached.sendETH(address(this), _collToAdd);
     }
 
@@ -595,13 +610,24 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
     function _sendETHGainToDepositor(uint _amount) internal {
         if (_amount == 0) {return;}
-        uint newETH = ETH - _amount;
-        ETH = newETH;
-        emit StabilityPoolETHBalanceUpdated(newETH);
+        uint256 newETHBalance = ETHBalance - _amount;
+        ETHBalance = newETHBalance;
+        emit StabilityPoolETHBalanceUpdated(newETHBalance);
         emit EtherSent(msg.sender, _amount);
 
-        (bool success, ) = msg.sender.call{ value: _amount }("");
-        require(success, "StabilityPool: sending ETH failed");
+        ETH.safeTransfer(msg.sender, _amount);
+    }
+
+    function receiveETH(uint256 _amount) external {
+        _requireCallerIsActivePool();
+
+        uint256 newETHBalance = ETHBalance + _amount;
+        ETHBalance = newETHBalance;
+
+        // Pull ETH tokens from sender
+        ETH.safeTransferFrom(msg.sender, address(this), _amount);
+
+        emit StabilityPoolETHBalanceUpdated(newETHBalance);
     }
 
     // Send Bold to user and decrease Bold in Pool
@@ -679,13 +705,5 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
     function  _requireValidKickbackRate(uint _kickbackRate) internal pure {
         require (_kickbackRate <= DECIMAL_PRECISION, "StabilityPool: Kickback rate must be in range [0,1]");
-    }
-
-    // --- Fallback function ---
-
-    receive() external payable {
-        _requireCallerIsActivePool();
-        ETH = ETH + msg.value;
-        emit StabilityPoolETHBalanceUpdated(ETH);
     }
 }

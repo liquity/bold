@@ -2,11 +2,13 @@
 
 pragma solidity 0.8.18;
 
-import "../BorrowerOperations.sol";
+import "../../BorrowerOperations.sol";
 
 /* Tester contract inherits from BorrowerOperations, and provides external functions 
 for testing the parent's internal functions. */
 contract BorrowerOperationsTester is BorrowerOperations {
+
+    constructor(address _ETHAddress) BorrowerOperations(_ETHAddress) {}
 
     function getNewICRFromTroveChange
     (
@@ -53,9 +55,7 @@ contract BorrowerOperationsTester is BorrowerOperations {
     )
         external 
     {
-        _adjustTrove(_borrower, _collWithdrawal, _debtChange, _isDebtIncrease, 0);
+        // TODO: Add coll increase
+        _adjustTrove(_borrower, _collWithdrawal, false, _debtChange, _isDebtIncrease, 0);
     }
-
-    // Payable fallback function
-    receive() external payable { }
 }

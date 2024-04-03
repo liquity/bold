@@ -21,7 +21,7 @@ contract('All Liquity functions with onlyOwner modifier', async accounts => {
 
   before(async () => {
     contracts = await deploymentHelper.deployLiquityCore();
-    contracts.borrowerOperations = await BorrowerOperationsTester.new();
+    contracts.borrowerOperations = await BorrowerOperationsTester.new(contracts.WETH.address);
     contracts = await deploymentHelper.deployBoldToken(contracts);
 
     boldToken = contracts.boldToken;

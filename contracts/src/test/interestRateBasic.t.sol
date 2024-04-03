@@ -68,10 +68,10 @@ contract InterestRateBasic is DevTestSetup {
     
         vm.startPrank(A);
         vm.expectRevert();
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 1e18 + 1);
+        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 1e18 + 1);
 
-         vm.expectRevert();
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 42e18);
+        vm.expectRevert();
+        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 42e18);
     }
 
     function testRevertWhenAdjustInterestRateGreaterThanMax() public {

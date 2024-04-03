@@ -129,7 +129,7 @@ contract("SortedTroves", async (accounts) => {
           lpRewardsAddress,
           multisig,
         ],
-        contracts.stETH
+        contracts.WETH
       );
     });
 

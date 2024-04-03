@@ -1,5 +1,6 @@
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
+const { fundAccounts } = require("../utils/fundAccounts.js");
 
 const th = testHelpers.TestHelper;
 const { dec, toBN } = th;
@@ -36,6 +37,7 @@ contract("HintHelpers", async (accounts) => {
   const makeTrovesInParallel = async (accounts, n) => {
     activeAccounts = accounts.slice(0, n);
     // console.log(`number of accounts used is: ${activeAccounts.length}`)
+    await fundAccounts(activeAccounts, contracts.WETH);
     // console.time("makeTrovesInParallel")
     const openTrovepromises = activeAccounts.map((account, index) =>
       openTrove(account, index)
@@ -51,7 +53,7 @@ contract("HintHelpers", async (accounts) => {
   const openTrove = async (account, index) => {
     const amountFinney = 2000 + index * 10;
     const coll = web3.utils.toWei(amountFinney.toString(), "finney");
-    await borrowerOperations.openTrove(th._100pct, 0, account, account, {
+    await th.openTroveWrapper(contracts, th._100pct, 0, account, account, {
       from: account,
       value: coll,
     });
@@ -69,13 +71,14 @@ contract("HintHelpers", async (accounts) => {
 
   // Sequentially add coll and withdraw BOLD, 1 account at a time
   const makeTrovesInSequence = async (accounts, n) => {
-    activeAccounts = accounts.slice(0, n);
+    const activeAccounts = accounts.slice(0, n);
     // console.log(`number of accounts used is: ${activeAccounts.length}`)
 
     let ICR = 200;
 
     // console.time('makeTrovesInSequence')
     for (const account of activeAccounts) {
+      await contracts.WETH.mint(account, toBN(dec(1, 24)));
       const ICR_BN = toBN(ICR.toString().concat("0".repeat(16)));
       await th.openTrove(contracts, {
         extraBoldAmount: toBN(dec(10000, 18)),
@@ -104,6 +107,10 @@ contract("HintHelpers", async (accounts) => {
     priceFeed = contracts.priceFeedTestnet;
 
     await deploymentHelper.connectCoreContracts(contracts);
+
+    await fundAccounts([
+      owner, bountyAddress, lpRewardsAddress, multisig
+    ], contracts.WETH);
 
     numAccounts = 10;
 

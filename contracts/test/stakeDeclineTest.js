@@ -1,7 +1,8 @@
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
+const { fundAccounts } = require("../utils/fundAccounts.js");
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol");
-const BoldTokenTester = artifacts.require("./BoldTokenTester.sol");
+const BoldToken = artifacts.require("./BoldToken.sol");
 
 const th = testHelpers.TestHelper;
 const dec = th.dec;
@@ -50,11 +51,11 @@ contract("TroveManager", async (accounts) => {
   beforeEach(async () => {
     contracts = await deploymentHelper.deployLiquityCore();
     contracts.troveManager = await TroveManagerTester.new();
-    contracts.boldToken = await BoldTokenTester.new(
+    contracts.boldToken = await BoldToken.new(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
       contracts.borrowerOperations.address
-    )
+    );
 
     priceFeed = contracts.priceFeedTestnet;
     boldToken = contracts.boldToken;
@@ -68,13 +69,15 @@ contract("TroveManager", async (accounts) => {
     hintHelpers = contracts.hintHelpers;
 
     await deploymentHelper.connectCoreContracts(contracts);
+
+    await fundAccounts([owner, A, B, C, D, E, F], contracts.WETH);
   });
 
   it("A given trove's stake decline is negligible with adjustments and tiny liquidations", async () => {
     await priceFeed.setPrice(dec(100, 18));
 
     // Make 1 mega troves A at ~50% total collateral
-    await borrowerOperations.openTrove(
+    await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(1, 31)),
       ZERO_ADDRESS,
@@ -84,7 +87,7 @@ contract("TroveManager", async (accounts) => {
     );
 
     // Make 5 large troves B, C, D, E, F at ~10% total collateral
-    await borrowerOperations.openTrove(
+    await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
@@ -92,7 +95,7 @@ contract("TroveManager", async (accounts) => {
       0,
       { from: B, value: dec(4, 28) }
     );
-    await borrowerOperations.openTrove(
+    await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
@@ -100,7 +103,7 @@ contract("TroveManager", async (accounts) => {
       0,
       { from: C, value: dec(4, 28) }
     );
-    await borrowerOperations.openTrove(
+    await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
@@ -108,7 +111,7 @@ contract("TroveManager", async (accounts) => {
       0,
       { from: D, value: dec(4, 28) }
     );
-    await borrowerOperations.openTrove(
+    await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
@@ -116,7 +119,7 @@ contract("TroveManager", async (accounts) => {
       0,
       { from: E, value: dec(4, 28) }
     );
-    await borrowerOperations.openTrove(
+    await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
@@ -127,14 +130,16 @@ contract("TroveManager", async (accounts) => {
 
     // Make 10 tiny troves at relatively negligible collateral (~1e-9 of total)
     const tinyTroves = accounts.slice(10, 20);
-    for (account of tinyTroves) {
-      await borrowerOperations.openTrove(
+    const eth_amount = dec(2, 20);
+    for (const account of tinyTroves) {
+      await contracts.WETH.mint(account, eth_amount);
+      await th.openTroveWrapper(contracts,
         th._100pct,
         await getOpenTroveBoldAmount(dec(1, 22)),
         ZERO_ADDRESS,
         ZERO_ADDRESS,
         0,
-        { from: account, value: dec(2, 20) }
+        { from: account, value: eth_amount }
       );
     }
 
@@ -163,6 +168,7 @@ contract("TroveManager", async (accounts) => {
     await borrowerOperations.adjustTrove(
       th._100pct,
       0,
+      false,
       1,
       false,
       { from: B }
@@ -184,6 +190,7 @@ contract("TroveManager", async (accounts) => {
       await borrowerOperations.adjustTrove(
         th._100pct,
         0,
+        false,
         1,
         false,
         { from: B }

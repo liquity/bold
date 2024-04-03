@@ -1158,7 +1158,7 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
         // Transfer coll and debt from ActivePool to DefaultPool
         _activePool.decreaseBoldDebt(_debt);
         _defaultPool.increaseBoldDebt(_debt);
-        _activePool.sendETH(address(_defaultPool), _coll);
+        _activePool.sendETHToDefaultPool(_coll);
     }
 
     function closeTrove(address _borrower) external override {
@@ -1197,8 +1197,8 @@ contract TroveManager is LiquityBase, Ownable, CheckContract, ITroveManager {
     function _updateSystemSnapshots_excludeCollRemainder(IActivePool _activePool, uint _collRemainder) internal {
         totalStakesSnapshot = totalStakes;
 
-        uint activeColl = _activePool.getETH();
-        uint liquidatedColl = defaultPool.getETH();
+        uint activeColl = _activePool.getETHBalance();
+        uint liquidatedColl = defaultPool.getETHBalance();
         totalCollateralSnapshot = activeColl - _collRemainder + liquidatedColl;
 
         emit SystemSnapshotsUpdated(totalStakesSnapshot, totalCollateralSnapshot);

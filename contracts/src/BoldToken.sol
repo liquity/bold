@@ -157,8 +157,9 @@ contract BoldToken is CheckContract, IBoldToken {
     }
 
     // --- EIP 2612 Functionality ---
+    // TODO: remove and replace by openzeppelin implementation
 
-    function domainSeparator() public view override returns (bytes32) {    
+    function DOMAIN_SEPARATOR() public view override returns (bytes32) {
         if (_chainID() == _CACHED_CHAIN_ID) {
             return _CACHED_DOMAIN_SEPARATOR;
         } else {
@@ -181,7 +182,7 @@ contract BoldToken is CheckContract, IBoldToken {
     {            
         require(deadline >= block.timestamp, 'Bold: expired deadline');
         bytes32 digest = keccak256(abi.encodePacked('\x19\x01', 
-                         domainSeparator(), keccak256(abi.encode(
+                         DOMAIN_SEPARATOR(), keccak256(abi.encode(
                          _PERMIT_TYPEHASH, owner, spender, amount, 
                          _nonces[owner]++, deadline))));
         address recoveredAddress = ecrecover(digest, v, r, s);
@@ -296,9 +297,5 @@ contract BoldToken is CheckContract, IBoldToken {
 
     function version() external pure override returns (string memory) {
         return _VERSION;
-    }
-
-    function permitTypeHash() external pure override returns (bytes32) {
-        return _PERMIT_TYPEHASH;
     }
 }
