@@ -1,9 +1,9 @@
 const Decimal = require("decimal.js");
-const deploymentHelper = require("../utils/deploymentHelpers.js")
 const { BNConverter } = require("../utils/BNConverter.js")
 const testHelpers = require("../utils/testHelpers.js")
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol")
 const LiquityMathTester = artifacts.require("./LiquityMathTester.sol")
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
 const th = testHelpers.TestHelper
 const timeValues = testHelpers.TimeValues
@@ -12,15 +12,8 @@ const toBN = th.toBN
 const getDifference = th.getDifference
 
 contract('Fee arithmetic tests', async accounts => {
-  let contracts
-  let troveManagerTester
-  let mathTester
-
-  const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000)
-
   // see: https://docs.google.com/spreadsheets/d/1RbD8VGzq7xFgeK1GOkz_9bbKVIx-xkOz0VsVelnUFdc/edit#gid=0
   // Results array, maps seconds to expected hours passed output (rounded down to nearest hour).
-
   const secondsToMinutesRoundedDown = [
     [0, 0],
     [1, 0],
@@ -330,20 +323,21 @@ contract('Fee arithmetic tests', async accounts => {
     [919877008002166000, 85, 826094891277916],
   ]
 
-  before(async () => {
-    troveManagerTester = await TroveManagerTester.new()
-    TroveManagerTester.setAsDeployed(troveManagerTester)
+  const loadDeployAndFundFixture = createDeployAndFundFixture(accounts.slice(0, 20), {
+    afterDeploy: async () => {
+      const troveManagerTester = await TroveManagerTester.new()
+      TroveManagerTester.setAsDeployed(troveManagerTester)
 
-    mathTester = await LiquityMathTester.new()
-    LiquityMathTester.setAsDeployed(mathTester)
-  })
+      const mathTester = await LiquityMathTester.new()
+      LiquityMathTester.setAsDeployed(mathTester)
 
-  beforeEach(async () => {
-    contracts = await deploymentHelper.deployLiquityCore()
-    await deploymentHelper.connectCoreContracts(contracts)
-  })
+      return { mathTester, troveManagerTester }
+    }
+  });
 
   it("minutesPassedSinceLastFeeOp(): returns minutes passed for no time increase", async () => {
+    const { troveManagerTester } = await loadDeployAndFundFixture()
+
     await troveManagerTester.setLastFeeOpTimeToNow()
     const minutesPassed = await troveManagerTester.minutesPassedSinceLastFeeOp()
 
@@ -351,6 +345,8 @@ contract('Fee arithmetic tests', async accounts => {
   })
 
   it("minutesPassedSinceLastFeeOp(): returns minutes passed between time of last fee operation and current block.timestamp, rounded down to nearest minutes", async () => {
+    const { troveManagerTester } = await loadDeployAndFundFixture()
+
     for (testPair of secondsToMinutesRoundedDown) {
       await troveManagerTester.setLastFeeOpTimeToNow()
 
@@ -370,6 +366,8 @@ contract('Fee arithmetic tests', async accounts => {
   describe('Basic exponentiation', async accounts => {
     // for exponent = 0, returns 1
     it("decPow(): for exponent = 0, returns 1, regardless of base", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       const a = '0'
       const b = '1'
       const c = dec(1, 18)
@@ -400,6 +398,8 @@ contract('Fee arithmetic tests', async accounts => {
 
     // for exponent = 1, returns base
     it("decPow(): for exponent = 1, returns base, regardless of base", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       const a = '0'
       const b = '1'
       const c = dec(1, 18)
@@ -433,6 +433,8 @@ contract('Fee arithmetic tests', async accounts => {
 
     // for base = 0, returns 0 for any exponent other than 1
     it("decPow(): for base = 0, returns 0 for any exponent other than 0", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       const res_a = await mathTester.callDecPow(0, 1)
       const res_b = await mathTester.callDecPow(0, 3)
       const res_c = await mathTester.callDecPow(0, 17)
@@ -459,6 +461,8 @@ contract('Fee arithmetic tests', async accounts => {
 
     // for base = 1, returns 1 for any exponent
     it("decPow(): for base = 1, returns 1 for any exponent", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       const ONE = dec(1, 18)
       const res_a = await mathTester.callDecPow(ONE, 1)
       const res_b = await mathTester.callDecPow(ONE, 3)
@@ -487,6 +491,8 @@ contract('Fee arithmetic tests', async accounts => {
 
     // for exponent = 2, returns base**2
     it("decPow(): for exponent = 2, returns the square of the base", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       const a = dec(1, 18)  // 1
       const b = dec(15, 17)   // 1.5
       const c = dec(5, 17)  // 0.5
@@ -522,6 +528,8 @@ contract('Fee arithmetic tests', async accounts => {
     })
 
     it("decPow(): correct output for various bases and exponents", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       for (list of exponentiationResults) {
         const base = list[0].toString()
         const exponent = list[1].toString()
@@ -534,6 +542,8 @@ contract('Fee arithmetic tests', async accounts => {
     })
 
     it("decPow(): abs. error < 1e-9 for exponent = 7776000 (seconds in three months)", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       for (let i = 1; i <= 200; i++) {
         const exponent = timeValues.SECONDS_IN_ONE_MONTH * 3
 
@@ -560,6 +570,8 @@ contract('Fee arithmetic tests', async accounts => {
     })
 
     it("decPow(): abs. error < 1e-9 for exponent = 2592000 (seconds in one month)", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       for (let i = 1; i <= 200; i++) {
         const exponent = timeValues.SECONDS_IN_ONE_MONTH
 
@@ -586,6 +598,8 @@ contract('Fee arithmetic tests', async accounts => {
     })
 
     it("decPow(): abs. error < 1e-9 for exponent = 43200 (minutes in one month)", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       for (let i = 1; i <= 200; i++) {
         const exponent = timeValues.MINUTES_IN_ONE_MONTH
 
@@ -612,6 +626,8 @@ contract('Fee arithmetic tests', async accounts => {
     })
 
     it("decPow(): abs. error < 1e-9 for exponent = 525600 (minutes in one year)", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       for (let i = 1; i <= 200; i++) {
         const exponent = timeValues.MINUTES_IN_ONE_YEAR
 
@@ -638,6 +654,8 @@ contract('Fee arithmetic tests', async accounts => {
     })
 
     it("decPow(): abs. error < 1e-9 for exponent = 2628000 (minutes in five years)", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       for (let i = 1; i <= 200; i++) {
         const exponent = timeValues.MINUTES_IN_ONE_YEAR * 5
 
@@ -664,6 +682,8 @@ contract('Fee arithmetic tests', async accounts => {
     })
 
     it("decPow(): abs. error < 1e-9 for exponent = minutes in ten years", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       for (let i = 1; i <= 200; i++) {
         const exponent = timeValues.MINUTES_IN_ONE_YEAR * 10
 
@@ -690,6 +710,8 @@ contract('Fee arithmetic tests', async accounts => {
     })
 
     it("decPow(): abs. error < 1e-9 for exponent = minutes in one hundred years", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       for (let i = 1; i <= 200; i++) {
         const exponent = timeValues.MINUTES_IN_ONE_YEAR * 100
 
@@ -716,6 +738,8 @@ contract('Fee arithmetic tests', async accounts => {
     })
 
     it.skip("decPow(): overflow test: doesn't overflow for exponent = minutes in 1000 years", async () => {
+      const { mathTester } = await loadDeployAndFundFixture()
+
       const exponent = (timeValues.MINUTES_IN_ONE_YEAR * 1000) + 9
 
       // Test base = 0
