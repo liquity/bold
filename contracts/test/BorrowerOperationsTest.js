@@ -1,20 +1,13 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
-const testHelpers = require("../utils/testHelpers.js");
+const { TestHelper: th } = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
 const BorrowerOperationsTester = artifacts.require(
   "./BorrowerOperationsTester.sol"
 );
 const TroveManagerTester = artifacts.require("TroveManagerTester");
 
-const th = testHelpers.TestHelper;
-
 const dec = th.dec;
 const toBN = th.toBN;
-const mv = testHelpers.MoneyValues;
-const timeValues = testHelpers.TimeValues;
-
-const ZERO_ADDRESS = th.ZERO_ADDRESS;
 const assertRevert = th.assertRevert;
 
 contract("BorrowerOperations", async (accounts) => {
@@ -38,87 +31,47 @@ contract("BorrowerOperations", async (accounts) => {
     frontEnd_3,
   ] = accounts;
 
-  const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
+  const loadDeployAndFundFixture = createDeployAndFundFixture(accounts.slice(0, 17), {
+    async afterDeploy(contracts) {
+      contracts.borrowerOperations = await BorrowerOperationsTester.new(
+        contracts.WETH.address,
+      );
+      contracts.troveManager = await TroveManagerTester.new();
+    },
+    async afterConnect(contracts) {
+      const { borrowerOperations } = contracts;
+      return {
+        BOLD_GAS_COMPENSATION: await borrowerOperations.BOLD_GAS_COMPENSATION(),
+        MIN_NET_DEBT: await borrowerOperations.MIN_NET_DEBT(),
+        BORROWING_FEE_FLOOR: await borrowerOperations.BORROWING_FEE_FLOOR(),
 
-  let priceFeed;
-  let boldToken;
-  let sortedTroves;
-  let troveManager;
-  let activePool;
-  let stabilityPool;
-  let defaultPool;
-  let borrowerOperations;
-  let lqtyToken;
-
-  let contracts;
-
-  const getOpenTroveBoldAmount = async (totalDebt) =>
-    th.getOpenTroveBoldAmount(contracts, totalDebt);
-  const getNetBorrowingAmount = async (debtWithFee) =>
-    th.getNetBorrowingAmount(contracts, debtWithFee);
-  const getActualDebtFromComposite = async (compositeDebt) =>
-    th.getActualDebtFromComposite(compositeDebt, contracts);
-  const openTrove = async (params) => th.openTrove(contracts, params);
-  const getTroveEntireColl = async (trove) =>
-    th.getTroveEntireColl(contracts, trove);
-  const getTroveEntireDebt = async (trove) =>
-    th.getTroveEntireDebt(contracts, trove);
-  const getTroveStake = async (trove) => th.getTroveStake(contracts, trove);
-
-  let BOLD_GAS_COMPENSATION;
-  let MIN_NET_DEBT;
-  let BORROWING_FEE_FLOOR;
-
-  before(async () => {});
+        async getOpenTroveBoldAmount(totalDebt) {
+          return th.getOpenTroveBoldAmount(contracts, totalDebt);
+        },
+        async getNetBorrowingAmount(debtWithFee) {
+          return th.getNetBorrowingAmount(contracts, debtWithFee);
+        },
+        async openTrove(params) {
+          return th.openTrove(contracts, params);
+        },
+        async getTroveEntireColl(trove) {
+          return th.getTroveEntireColl(contracts, trove);
+        },
+        async getTroveEntireDebt(trove) {
+          return th.getTroveEntireDebt(contracts, trove);
+        },
+        async getTroveStake(trove) {
+          return th.getTroveStake(contracts, trove);
+        },
+      };
+    },
+  });
 
   const testCorpus = () => {
-    beforeEach(async () => {
-      contracts = await deploymentHelper.deployLiquityCore();
-      contracts.borrowerOperations = await BorrowerOperationsTester.new(contracts.WETH.address);
-      contracts.troveManager = await TroveManagerTester.new();
-      contracts = await deploymentHelper.deployBoldToken(contracts);
-
-      await deploymentHelper.connectCoreContracts(contracts);
-
-      priceFeed = contracts.priceFeedTestnet;
-      boldToken = contracts.boldToken;
-      sortedTroves = contracts.sortedTroves;
-      troveManager = contracts.troveManager;
-      activePool = contracts.activePool;
-      stabilityPool = contracts.stabilityPool;
-      defaultPool = contracts.defaultPool;
-      borrowerOperations = contracts.borrowerOperations;
-      hintHelpers = contracts.hintHelpers;
-
-      BOLD_GAS_COMPENSATION = await borrowerOperations.BOLD_GAS_COMPENSATION();
-      MIN_NET_DEBT = await borrowerOperations.MIN_NET_DEBT();
-      BORROWING_FEE_FLOOR = await borrowerOperations.BORROWING_FEE_FLOOR();
-
-      await fundAccounts([
-        owner,
-        alice,
-        bob,
-        carol,
-        dennis,
-        whale,
-        A,
-        B,
-        C,
-        D,
-        E,
-        F,
-        G,
-        H,
-        frontEnd_1,
-        frontEnd_2,
-        frontEnd_3,
-        bountyAddress,
-        lpRewardsAddress,
-        multisig,
-      ], contracts.WETH);
-    });
-
     it("addColl(): reverts when top-up would leave trove with ICR < MCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, troveManager } = contracts;
+
       // alice creates a Trove and adds first collateral
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: bob } });
@@ -144,6 +97,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("addColl(): Increases the activePool ETH and raw ether balance by correct amount", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { activePool } = contracts;
+
       const { collateral: aliceColl } = await openTrove({
         ICR: toBN(dec(2, 18)),
         extraParams: { from: alice },
@@ -175,6 +131,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("addColl(), active Trove: adds the correct collateral amount to the Trove", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { troveManager } = contracts;
+
       // alice creates a Trove and adds first collateral
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
 
@@ -201,6 +160,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("addColl(), active Trove: Trove is in sortedList before and after", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { sortedTroves } = contracts;
+
       // alice creates a Trove and adds first collateral
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
 
@@ -223,6 +185,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("addColl(), active Trove: updates the stake and updates the total stakes", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { troveManager } = contracts;
+
       //  Alice creates initial Trove with 1 ether
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
 
@@ -252,6 +217,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("addColl(), active Trove: applies pending rewards and updates user's L_ETH, L_boldDebt snapshots", async () => {
+      const { contracts, getTroveEntireColl, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, sortedTroves, troveManager } = contracts;
+
       // --- SETUP ---
 
       const { collateral: aliceCollBefore, totalDebt: aliceDebtBefore } =
@@ -423,6 +391,9 @@ contract("BorrowerOperations", async (accounts) => {
     // })
 
     it("addColl(), reverts if trove is non-existent or closed", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, sortedTroves, troveManager } = contracts;
+
       // A, B open troves
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } });
@@ -461,6 +432,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("addColl(): can add collateral in Recovery Mode", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, troveManager } = contracts;
+
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       const aliceCollBefore = await getTroveEntireColl(alice);
       assert.isFalse(await th.checkRecoveryMode(contracts));
@@ -483,6 +457,9 @@ contract("BorrowerOperations", async (accounts) => {
     // --- withdrawColl() ---
 
     it("withdrawColl(): reverts when withdrawal would leave trove with ICR < MCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed, troveManager } = contracts;
+
       // alice creates a Trove and adds first collateral
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: bob } });
@@ -506,6 +483,9 @@ contract("BorrowerOperations", async (accounts) => {
 
     // reverts when calling address does not have active trove
     it("withdrawColl(): reverts when calling address does not have active trove", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -539,6 +519,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawColl(): reverts when system is in Recovery Mode", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed } = contracts;
+
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } });
 
@@ -568,6 +551,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawColl(): reverts when requested ETH withdrawal is > the trove's collateral", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } });
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: carol } });
@@ -596,6 +582,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawColl(): reverts when withdrawal would bring the user's ICR < MCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: whale } });
 
       await openTrove({ ICR: toBN(dec(11, 17)), extraParams: { from: bob } }); // 110% ICR
@@ -613,6 +602,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawColl(): reverts if system is in Recovery Mode", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed } = contracts;
+
       // --- SETUP ---
 
       // A and B open troves at 150% ICR
@@ -640,6 +632,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawColl(): doesn’t allow a user to completely withdraw all collateral from their Trove (due to gas compensation)", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, sortedTroves, troveManager } = contracts;
+
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } });
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
 
@@ -661,6 +656,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawColl(): leaves the Trove active when the user withdraws less than all the collateral", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, sortedTroves, troveManager } = contracts;
+
       // Open Trove
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
 
@@ -683,6 +681,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawColl(): reduces the Trove's collateral by the correct amount", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, troveManager } = contracts;
+
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       const aliceCollBefore = await getTroveEntireColl(alice);
 
@@ -701,6 +702,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawColl(): reduces ActivePool ETH and raw ether by correct amount", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, borrowerOperations } = contracts;
+
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       const aliceCollBefore = await getTroveEntireColl(alice);
 
@@ -732,6 +736,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawColl(): updates the stake and updates the total stakes", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, troveManager } = contracts;
+
       //  Alice creates initial Trove with 2 ether
       await openTrove({
         ICR: toBN(dec(2, 18)),
@@ -766,6 +773,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawColl(): sends the correct amount of ETH to the user", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         ICR: toBN(dec(2, 18)),
         extraParams: { from: alice, value: dec(2, "ether") },
@@ -788,6 +798,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawColl(): applies pending rewards and updates user's L_ETH, L_boldDebt snapshots", async () => {
+      const { contracts, getTroveEntireColl, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed, troveManager } = contracts;
+
       // --- SETUP ---
       // Alice adds 15 ether, Bob adds 5 ether, Carol adds 1 ether
       await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: whale } });
@@ -927,6 +940,9 @@ contract("BorrowerOperations", async (accounts) => {
     // --- withdrawBold() ---
 
     it("withdrawBold(): reverts when withdrawal would leave trove with ICR < MCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed, troveManager } = contracts;
+
       // alice creates a Trove and adds first collateral
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: bob } });
@@ -953,6 +969,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawBold(): reverts when calling address does not have active trove", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } });
 
@@ -979,6 +998,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawBold(): reverts when requested withdrawal amount is zero Bold", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } });
 
@@ -1004,6 +1026,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawBold(): reverts when system is in Recovery Mode", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed } = contracts;
+
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } });
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: carol } });
@@ -1036,6 +1061,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawBold(): reverts when withdrawal would bring the trove's ICR < MCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(11, 17)), extraParams: { from: bob } });
 
@@ -1054,6 +1082,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawBold(): reverts when a withdrawal would cause the TCR of the system to fall below the CCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed } = contracts;
+
       await priceFeed.setPrice(dec(100, 18));
       const price = await priceFeed.getPrice();
 
@@ -1080,6 +1111,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawBold(): reverts if system is in Recovery Mode", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed } = contracts;
+
       // --- SETUP ---
       await openTrove({ ICR: toBN(dec(15, 17)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(15, 17)), extraParams: { from: bob } });
@@ -1104,6 +1138,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawBold(): increases the Trove's Bold debt by the correct amount", async () => {
+      const { contracts, getNetBorrowingAmount, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
 
       // check before
@@ -1126,6 +1163,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawBold(): increases Bold debt in ActivePool by correct amount", async () => {
+      const { contracts, getNetBorrowingAmount, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, borrowerOperations } = contracts;
+
       await openTrove({
         ICR: toBN(dec(10, 18)),
         extraParams: { from: alice, value: toBN(dec(100, "ether")) },
@@ -1154,6 +1194,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("withdrawBold(): increases user BoldToken balance by correct amount", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraParams: { value: toBN(dec(100, "ether")), from: alice },
       });
@@ -1180,6 +1223,9 @@ contract("BorrowerOperations", async (accounts) => {
 
     // --- repayBold() ---
     it("repayBold(): reverts when repayment would leave trove with ICR < MCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed, troveManager } = contracts;
+
       // alice creates a Trove and adds first collateral
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: bob } });
@@ -1204,6 +1250,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("repayBold(): Succeeds when it would leave trove with net debt >= minimum net debt", async () => {
+      const { MIN_NET_DEBT, contracts, getNetBorrowingAmount } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       // Make the Bold request 2 wei above min net debt to correct for floor division, and make net debt = min net debt + 1 wei
       await th.openTroveWrapper(contracts,
         th._100pct,
@@ -1229,6 +1278,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("repayBold(): reverts when it would leave trove with net debt < minimum net debt", async () => {
+      const { MIN_NET_DEBT, contracts, getNetBorrowingAmount } = await loadDeployAndFundFixture();
+      const { borrowerOperations, troveManager } = contracts;
+
       // Open the trove with min debt + 1 wei
       await th.openTroveWrapper(contracts,
         th._100pct,
@@ -1254,12 +1306,14 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): Reverts if repaid amount is greater than current debt", async () => {
+      const { BOLD_GAS_COMPENSATION, contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations } = contracts;
+
       const { totalDebt } = await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
         extraParams: { from: alice },
       });
-      BOLD_GAS_COMPENSATION = await borrowerOperations.BOLD_GAS_COMPENSATION();
       const repayAmount = totalDebt.sub(BOLD_GAS_COMPENSATION).add(toBN(1));
       await openTrove({
         extraBoldAmount: repayAmount,
@@ -1283,6 +1337,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("repayBold(): reverts when calling address does not have active trove", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1313,6 +1370,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("repayBold(): reverts when attempted repayment is > the debt of the trove", async () => {
+      const { contracts, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1345,6 +1405,9 @@ contract("BorrowerOperations", async (accounts) => {
 
     //repayBold: reduces Bold debt in Trove
     it("repayBold(): reduces the Trove's Bold debt by the correct amount", async () => {
+      const { contracts, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1374,6 +1437,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("repayBold(): decreases Bold debt in ActivePool by correct amount", async () => {
+      const { contracts, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1406,6 +1472,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("repayBold(): decreases user BoldToken balance by correct amount", async () => {
+      const { contracts, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1438,6 +1507,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("repayBold(): can repay debt in Recovery Mode", async () => {
+      const { contracts, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1473,6 +1545,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("repayBold(): Reverts if borrower has insufficient Bold balance to cover his debt repayment", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1511,6 +1586,9 @@ contract("BorrowerOperations", async (accounts) => {
     // --- adjustTrove() ---
 
     it("adjustTrove(): reverts when adjustment would leave trove with ICR < MCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed, troveManager } = contracts;
+
       // alice creates a Trove and adds first collateral
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: bob } });
@@ -1543,6 +1621,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): reverts when calling address has no active trove", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1586,6 +1667,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): reverts in Recovery Mode when the adjustment would reduce the TCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1664,6 +1748,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): collateral withdrawal reverts in Recovery Mode", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1696,6 +1783,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): debt increase that would leave ICR < 150% reverts in Recovery Mode", async () => {
+      const { contracts, getTroveEntireColl, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1747,6 +1837,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): debt increase that would reduce the ICR reverts in Recovery Mode", async () => {
+      const { contracts, getTroveEntireColl, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(3, 18)),
@@ -1838,6 +1931,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): A trove with ICR < CCR in Recovery Mode can adjust their trove to ICR > CCR", async () => {
+      const { contracts, getTroveEntireColl, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1892,6 +1988,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): A trove with ICR > CCR in Recovery Mode can improve their ICR", async () => {
+      const { contracts, getTroveEntireColl, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(3, 18)),
@@ -1946,6 +2045,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): reverts when change would cause the TCR of the system to fall below the CCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed } = contracts;
+
       await priceFeed.setPrice(dec(100, 18));
 
       await openTrove({ ICR: toBN(dec(15, 17)), extraParams: { from: alice } });
@@ -1973,6 +2075,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): reverts when Bold repaid is > debt of the trove", async () => {
+      const { BOLD_GAS_COMPENSATION, contracts, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations, troveManager } = contracts;
+
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       const bobOpenTx = (
         await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } })
@@ -2005,6 +2110,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): reverts when attempted ETH withdrawal is >= the trove's collateral", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } });
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: carol } });
@@ -2028,6 +2136,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): reverts when change would cause the ICR of the trove to fall below the MCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(100, 18)),
@@ -2067,6 +2178,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): With 0 coll change, doesnt change borrower's coll or ActivePool coll", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -2097,6 +2211,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): With 0 debt change, doesnt change borrower's debt or ActivePool debt", async () => {
+      const { contracts, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -2129,6 +2246,15 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): updates borrower's debt and coll with an increase in both", async () => {
+      const {
+        contracts,
+        getNetBorrowingAmount,
+        getTroveEntireColl,
+        getTroveEntireDebt,
+        openTrove,
+      } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2174,6 +2300,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): updates borrower's debt and coll with a decrease in both", async () => {
+      const { contracts, getTroveEntireColl, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2209,6 +2338,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): updates borrower's  debt and coll with coll increase, debt decrease", async () => {
+      const { contracts, getTroveEntireColl, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2254,6 +2386,10 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): updates borrower's debt and coll with coll decrease, debt increase", async () => {
+      const { contracts, getNetBorrowingAmount, getTroveEntireColl, getTroveEntireDebt, openTrove } =
+        await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2297,6 +2433,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): updates borrower's stake and totalStakes with a coll increase", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2336,6 +2475,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): updates borrower's stake and totalStakes with a coll decrease", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2373,6 +2515,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): changes BoldToken balance by the requested decrease", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2408,6 +2553,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): changes BoldToken balance by the requested increase", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2445,6 +2593,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): Changes the activePool ETH and raw ether balance by the requested decrease", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2489,6 +2640,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): Changes the activePool ETH and raw ether balance by the amount of ETH sent", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2535,6 +2689,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): Changes the Bold debt in ActivePool by requested decrease", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2571,6 +2728,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): Changes the Bold debt in ActivePool by requested increase", async () => {
+      const { contracts, getNetBorrowingAmount, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2606,6 +2766,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): new coll = 0 and new debt = 0 is not allowed, as gas compensation still counts toward ICR", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations, sortedTroves, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2639,6 +2802,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): Reverts if requested debt increase and amount is zero", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2659,6 +2825,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): Reverts if it’s zero adjustment", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2674,6 +2843,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): Reverts if requested coll withdrawal is greater than trove's collateral", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2711,6 +2883,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("adjustTrove(): Reverts if borrower has insufficient Bold balance to cover his debt repayment", async () => {
+      const { contracts, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2747,6 +2922,9 @@ contract("BorrowerOperations", async (accounts) => {
 
     // no need to test this with proxies
     it("Internal _adjustTrove(): reverts when op is a withdrawal and _borrower param is not the msg.sender", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2799,6 +2977,9 @@ contract("BorrowerOperations", async (accounts) => {
     // --- closeTrove() ---
 
     it("closeTrove(): reverts when it would lower the TCR below CCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations, priceFeed, troveManager } = contracts;
+
       await openTrove({
         ICR: toBN(dec(300, 16)),
         extraParams: { from: alice },
@@ -2823,6 +3004,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): reverts when calling address does not have active trove", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2844,6 +3028,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): reverts when system is in Recovery Mode", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations, priceFeed } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(100000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -2884,6 +3071,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): reduces a Trove's collateral to zero", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -2914,6 +3104,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): reduces a Trove's debt to zero", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -2944,6 +3137,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): sets Trove's stake to zero", async () => {
+      const { contracts, getTroveStake, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -2977,6 +3173,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): zero's the troves reward snapshots", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations, priceFeed, sortedTroves, troveManager } = contracts;
+
       // Dennis opens trove and transfers tokens to alice
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
@@ -3061,6 +3260,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): sets trove's status to closed and removes it from sorted troves list", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations, sortedTroves, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -3096,6 +3298,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): reduces ActivePool ETH and raw ether by correct amount", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -3139,6 +3344,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): reduces ActivePool debt by correct amount", async () => {
+      const { contracts, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -3174,6 +3382,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): updates the the total stakes", async () => {
+      const { contracts, getTroveStake, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -3226,6 +3437,9 @@ contract("BorrowerOperations", async (accounts) => {
 
     // TODO: wrap contracts.WETH.balanceOf to be able to go through proxies
     it("closeTrove(): sends the correct amount of ETH to the user", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -3260,6 +3474,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): subtracts the debt of the closed Trove from the Borrower's BoldToken balance", async () => {
+      const { BOLD_GAS_COMPENSATION, contracts, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -3294,6 +3511,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): applies pending rewards", async () => {
+      const { contracts, getTroveEntireColl, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations, defaultPool, priceFeed, troveManager } = contracts;
+
       // --- SETUP ---
       await openTrove({
         extraBoldAmount: toBN(dec(1000000, 18)),
@@ -3430,6 +3650,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("closeTrove(): reverts if borrower has insufficient Bold balance to repay his entire debt", async () => {
+      const { contracts, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(15000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -3463,6 +3686,9 @@ contract("BorrowerOperations", async (accounts) => {
 
     // TODO: use rawLogs instead of logs
     it("openTrove(): emits a TroveUpdated event with the correct collateral and debt", async () => {
+      const { contracts, getTroveEntireColl, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { troveManager } = contracts;
+
       const txA = (
         await openTrove({
           extraBoldAmount: toBN(dec(15000, 18)),
@@ -3571,6 +3797,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): Opens a trove with net debt >= minimum net debt", async () => {
+      const { MIN_NET_DEBT, contracts, getNetBorrowingAmount } = await loadDeployAndFundFixture();
+      const { sortedTroves } = contracts;
+
       // Add 1 wei to correct for rounding error in helper function
       const txA = await th.openTroveWrapper(contracts,
         th._100pct,
@@ -3596,7 +3825,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): reverts if net debt < minimum net debt", async () => {
-      const txAPromise = th.openTroveWrapper(contracts,th._100pct, 0, A, A, 0, {
+      const { MIN_NET_DEBT, contracts, getNetBorrowingAmount } = await loadDeployAndFundFixture();
+
+      const txAPromise = th.openTroveWrapper(contracts, th._100pct, 0, A, A, 0, {
         from: A,
         value: dec(100, 30),
       });
@@ -3624,6 +3855,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): reverts when system is in Recovery Mode and ICR < CCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(5000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -3655,6 +3889,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): reverts when trove ICR < MCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(5000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -3701,6 +3938,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): reverts when opening the trove would cause the TCR of the system to fall below the CCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed } = contracts;
+
       await priceFeed.setPrice(dec(100, 18));
 
       // Alice creates trove with 150% ICR.  System TCR = 150%.
@@ -3728,6 +3968,8 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): reverts if trove is already active", async () => {
+      const { openTrove } = await loadDeployAndFundFixture();
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -3770,6 +4012,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): Can open a trove with ICR == CCR when system is in Recovery Mode", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, sortedTroves, troveManager } = contracts;
+
       // --- SETUP ---
       //  Alice and Bob add coll and withdraw such  that the TCR is ~150%
       await openTrove({
@@ -3811,6 +4056,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): Reverts opening a trove with min debt when system is in Recovery Mode", async () => {
+      const { MIN_NET_DEBT, contracts, getNetBorrowingAmount, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed } = contracts;
+
       // --- SETUP ---
       //  Alice and Bob add coll and withdraw such  that the TCR is ~150%
       await openTrove({
@@ -3845,6 +4093,15 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): creates a new Trove and assigns the correct collateral and debt amount", async () => {
+      const {
+        BOLD_GAS_COMPENSATION,
+        MIN_NET_DEBT,
+        contracts,
+        getTroveEntireColl,
+        getTroveEntireDebt,
+      } = await loadDeployAndFundFixture();
+      const { troveManager } = contracts;
+
       const debt_Before = await getTroveEntireDebt(alice);
       const coll_Before = await getTroveEntireColl(alice);
       const status_Before = await troveManager.getTroveStatus(alice);
@@ -3880,6 +4137,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): adds Trove owner to TroveOwners array", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { troveManager } = contracts;
+
       const TroveOwnersCount_Before = (
         await troveManager.getTroveOwnersCount()
       ).toString();
@@ -3898,6 +4158,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): creates a stake and adds it to total stakes", async () => {
+      const { contracts, getTroveEntireColl, getTroveStake, openTrove } = await loadDeployAndFundFixture();
+      const { troveManager } = contracts;
+
       const aliceStakeBefore = await getTroveStake(alice);
       const totalStakesBefore = await troveManager.totalStakes();
 
@@ -3920,6 +4183,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): inserts Trove to Sorted Troves list", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { sortedTroves } = contracts;
+
       // Check before
       const aliceTroveInList_Before = await sortedTroves.contains(alice);
       const listIsEmpty_Before = await sortedTroves.isEmpty();
@@ -3940,6 +4206,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): Increases the activePool ETH and raw ether balance by correct amount", async () => {
+      const { contracts, getTroveEntireColl, openTrove } = await loadDeployAndFundFixture();
+      const { activePool } = contracts;
+
       const activePool_ETH_Before = await activePool.getETHBalance();
       const activePool_RawEther_Before = await contracts.WETH.balanceOf(
         activePool.address
@@ -3963,6 +4232,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): records up-to-date initial snapshots of L_ETH and L_boldDebt", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, troveManager } = contracts;
+
       // --- SETUP ---
 
       await openTrove({
@@ -4017,6 +4289,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): allows a user to open a Trove, then close it, then re-open it", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations, sortedTroves, troveManager } = contracts;
+
       // Open Troves
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
@@ -4067,6 +4342,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): increases the Trove's Bold debt by the correct amount", async () => {
+      const { contracts, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
+      const { troveManager } = contracts;
+
       // check before
       const alice_Trove_Before = await troveManager.Troves(alice);
       const debt_Before = alice_Trove_Before[0];
@@ -4088,6 +4366,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): increases Bold debt in ActivePool by the debt of the trove", async () => {
+      const { contracts, getTroveEntireDebt, openTrove } = await loadDeployAndFundFixture();
+      const { activePool } = contracts;
+
       const activePool_BoldDebt_Before = await activePool.getBoldDebt();
       assert.equal(activePool_BoldDebt_Before, 0);
 
@@ -4104,6 +4385,9 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): increases user BoldToken balance by correct amount", async () => {
+      const { contracts } = await loadDeployAndFundFixture();
+      const { boldToken } = contracts;
+
       // check before
       const alice_BoldTokenBalance_Before = await boldToken.balanceOf(alice);
       assert.equal(alice_BoldTokenBalance_Before, 0);
@@ -4127,6 +4411,9 @@ contract("BorrowerOperations", async (accounts) => {
     describe("getNewICRFromTroveChange() returns the correct ICR", async () => {
       // 0, 0
       it("collChange = 0, debtChange = 0", async () => {
+        const { contracts } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed } = contracts;
+
         price = await priceFeed.getPrice();
         const initialColl = dec(1, "ether");
         const initialDebt = dec(100, 18);
@@ -4149,6 +4436,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // 0, +ve
       it("collChange = 0, debtChange is positive", async () => {
+        const { contracts } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed } = contracts;
+
         price = await priceFeed.getPrice();
         const initialColl = dec(1, "ether");
         const initialDebt = dec(100, 18);
@@ -4171,6 +4461,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // 0, -ve
       it("collChange = 0, debtChange is negative", async () => {
+        const { contracts } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed } = contracts;
+
         price = await priceFeed.getPrice();
         const initialColl = dec(1, "ether");
         const initialDebt = dec(100, 18);
@@ -4193,6 +4486,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // +ve, 0
       it("collChange is positive, debtChange is 0", async () => {
+        const { contracts } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed } = contracts;
+
         price = await priceFeed.getPrice();
         const initialColl = dec(1, "ether");
         const initialDebt = dec(100, 18);
@@ -4215,6 +4511,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // -ve, 0
       it("collChange is negative, debtChange is 0", async () => {
+        const { contracts } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed } = contracts;
+
         price = await priceFeed.getPrice();
         const initialColl = dec(1, "ether");
         const initialDebt = dec(100, 18);
@@ -4237,6 +4536,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // -ve, -ve
       it("collChange is negative, debtChange is negative", async () => {
+        const { contracts } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed } = contracts;
+
         price = await priceFeed.getPrice();
         const initialColl = dec(1, "ether");
         const initialDebt = dec(100, 18);
@@ -4259,6 +4561,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // +ve, +ve
       it("collChange is positive, debtChange is positive", async () => {
+        const { contracts } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed } = contracts;
+
         price = await priceFeed.getPrice();
         const initialColl = dec(1, "ether");
         const initialDebt = dec(100, 18);
@@ -4281,6 +4586,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // +ve, -ve
       it("collChange is positive, debtChange is negative", async () => {
+        const { contracts } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed } = contracts;
+
         price = await priceFeed.getPrice();
         const initialColl = dec(1, "ether");
         const initialDebt = dec(100, 18);
@@ -4303,6 +4611,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // -ve, +ve
       it("collChange is negative, debtChange is positive", async () => {
+        const { contracts } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed } = contracts;
+
         price = await priceFeed.getPrice();
         const initialColl = dec(1, "ether");
         const initialDebt = dec(100, 18);
@@ -4327,6 +4638,9 @@ contract("BorrowerOperations", async (accounts) => {
     // --- getCompositeDebt ---
 
     it("getCompositeDebt(): returns debt + gas comp", async () => {
+      const { BOLD_GAS_COMPENSATION, contracts } = await loadDeployAndFundFixture();
+      const { borrowerOperations } = contracts;
+
       const res1 = await borrowerOperations.getCompositeDebt("0");
       assert.equal(res1, BOLD_GAS_COMPENSATION.toString());
 
@@ -4350,6 +4664,9 @@ contract("BorrowerOperations", async (accounts) => {
     describe("getNewTCRFromTroveChange() returns the correct TCR", async () => {
       // 0, 0
       it("collChange = 0, debtChange = 0", async () => {
+        const { contracts, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed, sortedTroves, troveManager } = contracts;
+
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
         const troveColl = toBN(dec(1000, "ether"));
         const troveTotalDebt = toBN(dec(100000, 18));
@@ -4403,6 +4720,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // 0, +ve
       it("collChange = 0, debtChange is positive", async () => {
+        const { contracts, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed, sortedTroves, troveManager } = contracts;
+
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
         const troveColl = toBN(dec(1000, "ether"));
         const troveTotalDebt = toBN(dec(100000, 18));
@@ -4456,6 +4776,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // 0, -ve
       it("collChange = 0, debtChange is negative", async () => {
+        const { contracts, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed, sortedTroves, troveManager } = contracts;
+
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
         const troveColl = toBN(dec(1000, "ether"));
         const troveTotalDebt = toBN(dec(100000, 18));
@@ -4508,6 +4831,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // +ve, 0
       it("collChange is positive, debtChange is 0", async () => {
+        const { contracts, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed, sortedTroves, troveManager } = contracts;
+
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
         const troveColl = toBN(dec(1000, "ether"));
         const troveTotalDebt = toBN(dec(100000, 18));
@@ -4561,6 +4887,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // -ve, 0
       it("collChange is negative, debtChange is 0", async () => {
+        const { contracts, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed, sortedTroves, troveManager } = contracts;
+
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
         const troveColl = toBN(dec(1000, "ether"));
         const troveTotalDebt = toBN(dec(100000, 18));
@@ -4615,6 +4944,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // -ve, -ve
       it("collChange is negative, debtChange is negative", async () => {
+        const { contracts, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed, sortedTroves, troveManager } = contracts;
+
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
         const troveColl = toBN(dec(1000, "ether"));
         const troveTotalDebt = toBN(dec(100000, 18));
@@ -4669,6 +5001,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // +ve, +ve
       it("collChange is positive, debtChange is positive", async () => {
+        const { contracts, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed, sortedTroves, troveManager } = contracts;
+
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
         const troveColl = toBN(dec(1000, "ether"));
         const troveTotalDebt = toBN(dec(100000, 18));
@@ -4723,6 +5058,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // +ve, -ve
       it("collChange is positive, debtChange is negative", async () => {
+        const { contracts, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed, sortedTroves, troveManager } = contracts;
+
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
         const troveColl = toBN(dec(1000, "ether"));
         const troveTotalDebt = toBN(dec(100000, 18));
@@ -4777,6 +5115,9 @@ contract("BorrowerOperations", async (accounts) => {
 
       // -ve, +ve
       it("collChange is negative, debtChange is positive", async () => {
+        const { contracts, getNetBorrowingAmount, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
+        const { borrowerOperations, priceFeed, sortedTroves, troveManager } = contracts;
+
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
         const troveColl = toBN(dec(1000, "ether"));
         const troveTotalDebt = toBN(dec(100000, 18));

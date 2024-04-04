@@ -1,15 +1,12 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
+
+const TroveManagerTester = artifacts.require("TroveManagerTester");
 
 const th = testHelpers.TestHelper;
 const dec = th.dec;
 const toBN = th.toBN;
 const getDifference = th.getDifference;
-const mv = testHelpers.MoneyValues;
-
-const TroveManagerTester = artifacts.require("TroveManagerTester");
-const BoldToken = artifacts.require("BoldToken");
 
 contract(
   "TroveManager - Redistribution reward calculations",
@@ -37,77 +34,23 @@ contract(
       defaulter_4,
     ] = accounts;
 
-    const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(
-      997,
-      1000
-    );
-
-    let priceFeed;
-    let boldToken;
-    let sortedTroves;
-    let troveManager;
-    let nameRegistry;
-    let activePool;
-    let stabilityPool;
-    let defaultPool;
-    let functionCaller;
-    let borrowerOperations;
-
-    let contracts;
-
-    const getOpenTroveBoldAmount = async (totalDebt) =>
-      th.getOpenTroveBoldAmount(contracts, totalDebt);
-    const getNetBorrowingAmount = async (debtWithFee) =>
-      th.getNetBorrowingAmount(contracts, debtWithFee);
-    const openTrove = async (params) => th.openTrove(contracts, params);
-
-    beforeEach(async () => {
-      contracts = await deploymentHelper.deployLiquityCore();
-      contracts.troveManager = await TroveManagerTester.new();
-      contracts.boldToken = await BoldToken.new(
-        contracts.troveManager.address,
-        contracts.stabilityPool.address,
-        contracts.borrowerOperations.address
-      );
-      
-      priceFeed = contracts.priceFeedTestnet;
-      boldToken = contracts.boldToken;
-      sortedTroves = contracts.sortedTroves;
-      troveManager = contracts.troveManager;
-      nameRegistry = contracts.nameRegistry;
-      activePool = contracts.activePool;
-      stabilityPool = contracts.stabilityPool;
-      defaultPool = contracts.defaultPool;
-      functionCaller = contracts.functionCaller;
-      borrowerOperations = contracts.borrowerOperations;
-
-      await deploymentHelper.connectCoreContracts(contracts);
-
-      await fundAccounts([
-        owner,
-        alice,
-        bob,
-        carol,
-        dennis,
-        erin,
-        freddy,
-        greta,
-        harry,
-        ida,
-        A,
-        B,
-        C,
-        D,
-        E,
-        whale,
-        defaulter_1,
-        defaulter_2,
-        defaulter_3,
-        defaulter_4,
-      ], contracts.WETH);
+    const loadDeployAndFundFixture = createDeployAndFundFixture(accounts.slice(0, 20), {
+      async afterDeploy(contracts) {
+        contracts.troveManager = await TroveManagerTester.new();
+      },
     });
 
     it("redistribution: A, B Open. B Liquidated. C, D Open. D Liquidated. Distributes correct rewards", async () => {
+      const { openTrove, contracts } = await loadDeployAndFundFixture();
+      const {
+        troveManager,
+        priceFeed,
+        activePool,
+        defaultPool,
+        boldToken,
+        sortedTroves,
+      } = contracts;
+
       // A, B open trove
       const { collateral: A_coll } = await openTrove({
         ICR: toBN(dec(400, 16)),
@@ -207,6 +150,9 @@ contract(
     });
 
     it("redistribution: A, B, C Open. C Liquidated. D, E, F Open. F Liquidated. Distributes correct rewards", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, boldToken, defaultPool, priceFeed, sortedTroves, troveManager } = contracts;
+
       // A, B C open troves
       const { collateral: A_coll } = await openTrove({
         ICR: toBN(dec(400, 16)),
@@ -330,6 +276,9 @@ contract(
     ////
 
     it("redistribution: Sequence of alternate opening/liquidation: final surviving trove has ETH from all previously liquidated troves", async () => {
+      const { openTrove, contracts } = await loadDeployAndFundFixture();
+      const { activePool, boldToken, defaultPool, priceFeed, sortedTroves, troveManager } = contracts;
+
       // A, B  open troves
       const { collateral: A_coll } = await openTrove({
         ICR: toBN(dec(400, 16)),
@@ -481,6 +430,9 @@ contract(
 
     // Test based on scenario in: https://docs.google.com/spreadsheets/d/1F5p3nZy749K5jwO-bwJeTsRoY7ewMfWIQ3QHtokxqzo/edit?usp=sharing
     it("redistribution: A,B,C,D,E open. Liq(A). B adds coll. Liq(C). B and D have correct coll and debt", async () => {
+      const { openTrove, contracts } = await loadDeployAndFundFixture();
+      const { troveManager, sortedTroves, priceFeed } = contracts;
+
       // A, B, C, D, E open troves
       const { collateral: A_coll } = await openTrove({
         ICR: toBN(dec(200, 16)),
@@ -625,6 +577,9 @@ contract(
 
     // Test based on scenario in: https://docs.google.com/spreadsheets/d/1F5p3nZy749K5jwO-bwJeTsRoY7ewMfWIQ3QHtokxqzo/edit?usp=sharing
     it("redistribution: A,B,C,D open. Liq(A). B adds coll. Liq(C). B and D have correct coll and debt", async () => {
+      const { openTrove, contracts } = await loadDeployAndFundFixture();
+      const { priceFeed, troveManager, sortedTroves } = contracts;
+
       // A, B, C, D, E open troves
       const { collateral: A_coll } = await openTrove({
         ICR: toBN(dec(200, 16)),
@@ -802,6 +757,9 @@ contract(
     });
 
     it("redistribution: A,B,C Open. Liq(C). B adds coll. Liq(A). B acquires all coll and debt", async () => {
+      const { openTrove, contracts, getNetBorrowingAmount } = await loadDeployAndFundFixture();
+      const { borrowerOperations, priceFeed, sortedTroves, troveManager } = contracts;
+
       // A, B, C open troves
       const { collateral: A_coll, totalDebt: A_totalDebt } = await openTrove({
         ICR: toBN(dec(400, 16)),
@@ -879,6 +837,9 @@ contract(
     });
 
     it("redistribution: A,B,C Open. Liq(C). B tops up coll. D Opens. Liq(D). Distributes correct rewards.", async () => {
+      const { openTrove, contracts } = await loadDeployAndFundFixture();
+      const { boldToken, priceFeed, sortedTroves, troveManager } = contracts;
+
       // A, B, C open troves
       const { collateral: A_coll, totalDebt: A_totalDebt } = await openTrove({
         ICR: toBN(dec(400, 16)),
@@ -993,6 +954,9 @@ contract(
     });
 
     it("redistribution: Trove with the majority stake tops up. A,B,C, D open. Liq(D). C tops up. E Enters, Liq(E). Distributes correct rewards", async () => {
+      const { openTrove, contracts } = await loadDeployAndFundFixture();
+      const { activePool, boldToken, defaultPool, priceFeed, sortedTroves, troveManager } = contracts;
+
       const _998_Ether = toBN("998000000000000000000");
       // A, B, C, D open troves
       const { collateral: A_coll } = await openTrove({
@@ -1159,6 +1123,9 @@ contract(
     });
 
     it("redistribution: Trove with the majority stake tops up. A,B,C, D open. Liq(D). A, B, C top up. E Enters, Liq(E). Distributes correct rewards", async () => {
+      const { openTrove, contracts } = await loadDeployAndFundFixture();
+      const { activePool, boldToken, defaultPool, priceFeed, sortedTroves, troveManager } = contracts;
+
       const _998_Ether = toBN("998000000000000000000");
       // A, B, C open troves
       const { collateral: A_coll } = await openTrove({
@@ -1339,6 +1306,9 @@ contract(
     // --- Trove withdraws collateral ---
 
     it("redistribution: A,B,C Open. Liq(C). B withdraws coll. Liq(A). B acquires all coll and debt", async () => {
+      const { openTrove, contracts, getNetBorrowingAmount } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations, troveManager, sortedTroves, priceFeed } = contracts;
+
       // A, B, C open troves
       const { collateral: A_coll, totalDebt: A_totalDebt } = await openTrove({
         ICR: toBN(dec(400, 16)),
@@ -1419,6 +1389,17 @@ contract(
     });
 
     it("redistribution: A,B,C Open. Liq(C). B withdraws coll. D Opens. Liq(D). Distributes correct rewards.", async () => {
+      const { openTrove, contracts } = await loadDeployAndFundFixture();
+      const {
+        activePool,
+        boldToken,
+        borrowerOperations,
+        defaultPool,
+        priceFeed,
+        sortedTroves,
+        troveManager,
+      } = contracts;
+
       // A, B, C open troves
       const { collateral: A_coll, totalDebt: A_totalDebt } = await openTrove({
         ICR: toBN(dec(400, 16)),
@@ -1553,6 +1534,17 @@ contract(
     });
 
     it("redistribution: Trove with the majority stake withdraws. A,B,C,D open. Liq(D). C withdraws some coll. E Enters, Liq(E). Distributes correct rewards", async () => {
+      const { openTrove, contracts } = await loadDeployAndFundFixture();
+      const {
+        activePool,
+        boldToken,
+        borrowerOperations,
+        defaultPool,
+        priceFeed,
+        sortedTroves,
+        troveManager,
+      } = contracts;
+
       const _998_Ether = toBN("998000000000000000000");
       // A, B, C, D open troves
       const { collateral: A_coll } = await openTrove({
@@ -1715,6 +1707,17 @@ contract(
     });
 
     it("redistribution: Trove with the majority stake withdraws. A,B,C,D open. Liq(D). A, B, C withdraw. E Enters, Liq(E). Distributes correct rewards", async () => {
+      const { openTrove, contracts } = await loadDeployAndFundFixture();
+      const {
+        activePool,
+        boldToken,
+        borrowerOperations,
+        defaultPool,
+        priceFeed,
+        sortedTroves,
+        troveManager,
+      } = contracts;
+
       const _998_Ether = toBN("998000000000000000000");
       // A, B, C, D open troves
       const { collateral: A_coll } = await openTrove({
@@ -1929,6 +1932,17 @@ contract(
     // For calculations of correct values used in test, see scenario 1:
     // https://docs.google.com/spreadsheets/d/1F5p3nZy749K5jwO-bwJeTsRoY7ewMfWIQ3QHtokxqzo/edit?usp=sharing
     it("redistribution, all operations: A,B,C open. Liq(A). D opens. B adds, C withdraws. Liq(B). E & F open. D adds. Liq(F). Distributes correct rewards", async () => {
+      const { openTrove, contracts } = await loadDeployAndFundFixture();
+      const {
+        activePool,
+        boldToken,
+        borrowerOperations,
+        defaultPool,
+        priceFeed,
+        sortedTroves,
+        troveManager,
+      } = contracts;
+
       // A, B, C open troves
       const { collateral: A_coll } = await openTrove({
         ICR: toBN(dec(200, 16)),
@@ -2220,6 +2234,17 @@ contract(
     // For calculations of correct values used in test, see scenario 2:
     // https://docs.google.com/spreadsheets/d/1F5p3nZy749K5jwO-bwJeTsRoY7ewMfWIQ3QHtokxqzo/edit?usp=sharing
     it("redistribution, all operations: A,B,C open. Liq(A). D opens. B adds, C withdraws. Liq(B). E & F open. D adds. Liq(F). Varying coll. Distributes correct rewards", async () => {
+      const { openTrove, contracts } = await loadDeployAndFundFixture();
+      const {
+        activePool,
+        boldToken,
+        defaultPool,
+        borrowerOperations,
+        troveManager,
+        sortedTroves,
+        priceFeed,
+      } = contracts;
+
       /* A, B, C open troves.
     A: 450 ETH
     B: 8901 ETH
