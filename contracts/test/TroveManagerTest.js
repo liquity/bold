@@ -1,3 +1,4 @@
+const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
 const { fundAccounts } = require("../utils/fundAccounts.js");
@@ -2407,10 +2408,7 @@ contract("TroveManager", async (accounts) => {
       );
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Dennis redeems 20 Bold
     // Don't pay for gas, as it makes it easier to calculate the received Ether
@@ -2525,10 +2523,7 @@ contract("TroveManager", async (accounts) => {
       );
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Dennis redeems 20 Bold
     // Don't pay for gas, as it makes it easier to calculate the received Ether
@@ -2634,10 +2629,7 @@ contract("TroveManager", async (accounts) => {
       );
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Dennis redeems 20 Bold
     // Don't pay for gas, as it makes it easier to calculate the received Ether
@@ -2748,10 +2740,7 @@ contract("TroveManager", async (accounts) => {
       );
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Dennis redeems 20 Bold
     // Don't pay for gas, as it makes it easier to calculate the received Ether
@@ -2848,10 +2837,7 @@ contract("TroveManager", async (accounts) => {
     });
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Flyn redeems collateral
     await troveManager.redeemCollateral(
@@ -2936,10 +2922,7 @@ contract("TroveManager", async (accounts) => {
     });
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Flyn redeems collateral with only two iterations
     await troveManager.redeemCollateral(
@@ -3008,10 +2991,7 @@ contract("TroveManager", async (accounts) => {
     await troveManager.setBaseRate(0);
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Bold redemption is 55000 US
     const BoldRedemption = dec(55000, 18);
@@ -3062,10 +3042,7 @@ contract("TroveManager", async (accounts) => {
     await troveManager.setBaseRate(0);
 
     // Skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Bold redemption is 55000 Bold
     const BoldRedemption = dec(55000, 18);
@@ -3150,10 +3127,7 @@ contract("TroveManager", async (accounts) => {
         );
 
       // skip bootstrapping phase
-      await th.fastForwardTime(
-        timeValues.SECONDS_IN_ONE_WEEK * 2,
-        web3.currentProvider
-      );
+      await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
       // Alice redeems 1 Bold from Carol's Trove
       await troveManager.redeemCollateral(
@@ -3241,10 +3215,7 @@ contract("TroveManager", async (accounts) => {
     const carol_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(carol));
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     const redemptionTx = await troveManager.redeemCollateral(
       amount,
@@ -3299,10 +3270,7 @@ contract("TroveManager", async (accounts) => {
     // --- TEST ---
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     await troveManager.redeemCollateral(
       A_debt,
@@ -3370,10 +3338,7 @@ contract("TroveManager", async (accounts) => {
     });
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     const tx = await troveManager.redeemCollateral(
       redemptionAmount,
@@ -3415,10 +3380,7 @@ contract("TroveManager", async (accounts) => {
     assert.isTrue(TCR.lt(toBN("1100000000000000000")));
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     await assertRevert(
       th.redeemCollateral(carolTroveId, contracts, GAS_PRICE, dec(270, 18)),
@@ -3443,10 +3405,7 @@ contract("TroveManager", async (accounts) => {
     await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: dennis } });
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Erin attempts to redeem with _amount = 0
     const redemptionTxPromise = troveManager.redeemCollateral(
@@ -3488,10 +3447,7 @@ contract("TroveManager", async (accounts) => {
     });
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     await assertRevert(
       th.redeemCollateralAndGetTxObject(
@@ -3538,10 +3494,7 @@ contract("TroveManager", async (accounts) => {
     });
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     await assertRevert(
       th.redeemCollateralAndGetTxObject(
@@ -3600,10 +3553,7 @@ contract("TroveManager", async (accounts) => {
     await troveManager.setBaseRate(0);
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Bold redemption is 27 USD: a redemption that incurs a fee of 27/(270 * 2) = 5%
     const attemptedBoldRedemption = expectedTotalSupply.div(toBN(10));
@@ -3749,10 +3699,7 @@ contract("TroveManager", async (accounts) => {
     assert.isTrue(ETHinSP.gte(mv._zeroBN));
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Erin redeems Bold
     await th.redeemCollateral(erin, contracts, redemptionAmount, th._100pct);
@@ -3848,10 +3795,7 @@ contract("TroveManager", async (accounts) => {
     const price = await priceFeed.getPrice();
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Erin attempts to redeem 400 Bold
     const { firstRedemptionHint, partialRedemptionHintNICR } =
@@ -3951,10 +3895,7 @@ contract("TroveManager", async (accounts) => {
     let partialRedemptionHintNICR;
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Erin tries to redeem 1000 Bold
     try {
@@ -4166,10 +4107,7 @@ contract("TroveManager", async (accounts) => {
       );
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     const redemption_1 = await troveManager.redeemCollateral(
       _120_Bold,
@@ -4338,10 +4276,7 @@ contract("TroveManager", async (accounts) => {
       );
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Bob attempts to redeem his ill-gotten 101 Bold, from a system that has 100 Bold outstanding debt
     try {
@@ -4365,10 +4300,7 @@ contract("TroveManager", async (accounts) => {
 
   it.skip("redeemCollateral(): a redemption sends the ETH remainder (ETHDrawn - gas) to the redeemer", async () => {
     // time fast-forwards 1 year, and multisig stakes 1 LQTY
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_YEAR,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_YEAR);
 
     const { totalDebt: W_totalDebt } = await openTrove({
       ICR: toBN(dec(20, 18)),
@@ -4431,10 +4363,7 @@ contract("TroveManager", async (accounts) => {
 
   it.skip("redeemCollateral(): a full redemption (leaving trove with 0 debt), closes the trove", async () => {
     // time fast-forwards 1 year, and multisig stakes 1 LQTY
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_YEAR,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_YEAR);
     
     const { netDebt: W_netDebt } = await openTrove({
       ICR: toBN(dec(20, 18)),
@@ -4484,10 +4413,7 @@ contract("TroveManager", async (accounts) => {
 
   const redeemCollateral3Full1Partial = async () => {
     // time fast-forwards 1 year, and multisig stakes 1 LQTY
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_YEAR,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_YEAR);
 
     const { netDebt: W_netDebt } = await openTrove({
       ICR: toBN(dec(20, 18)),
@@ -4627,10 +4553,7 @@ contract("TroveManager", async (accounts) => {
       .add(partialAmount);
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // whale redeems Bold.  Expect this to fully redeem A, B, C, and partially redeem 15 Bold from D.
     const redemptionTx = await th.redeemCollateralAndGetTxObject(
