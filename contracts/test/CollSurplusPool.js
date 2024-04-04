@@ -81,14 +81,14 @@ contract("CollSurplusPool", async (accounts) => {
 
   it("CollSurplusPool: claimColl(): Reverts if caller is not Borrower Operations", async () => {
     await th.assertRevert(
-      collSurplusPool.claimColl(A, { from: A }),
+      collSurplusPool.claimColl(A, th.addressToTroveId(A), { from: A }),
       "CollSurplusPool: Caller is not Borrower Operations"
     );
   });
 
   it("CollSurplusPool: claimColl(): Reverts if nothing to claim", async () => {
     await th.assertRevert(
-      borrowerOperations.claimCollateral({ from: A }),
+      borrowerOperations.claimCollateral(th.addressToTroveId(A), { from: A }),
       "CollSurplusPool: No collateral available to claim"
     );
   });

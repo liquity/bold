@@ -32,6 +32,7 @@ contract BaseTest is Test {
 
     uint256 public constant MAX_UINT256 = type(uint256).max;
     uint256 public constant SECONDS_IN_1_YEAR = 31536000; // 60*60*24*365
+    uint256 _100pct = 100e16;
     uint256 MCR = 110e16;
     uint256 CCR = 150e16;
     address public constant ZERO_ADDRESS = address(0);
@@ -65,17 +66,33 @@ contract BaseTest is Test {
         uint256 _boldAmount, 
         uint256 _annualInterestRate
     ) 
-    public 
+        public
+        returns (uint256)
+    {
+        return openTroveNoHints100pctMaxFeeWithIndex(_account, 0, _coll, _boldAmount, _annualInterestRate);
+    }
+
+    function openTroveNoHints100pctMaxFeeWithIndex(
+        address _account,
+        uint256 _index,
+        uint256 _coll,
+        uint256 _boldAmount,
+        uint256 _annualInterestRate
+    )
+        public
+        returns (uint256)
     {
         vm.startPrank(_account);
-        borrowerOperations.openTrove(1e18, _coll, _boldAmount, ZERO_ADDRESS, ZERO_ADDRESS, _annualInterestRate);
+        uint256 troveId = borrowerOperations.openTrove(_account, _index, 1e18, _coll, _boldAmount, 0, 0, _annualInterestRate);
         vm.stopPrank();
+        return troveId;
     }
 
 
     // (uint _maxFeePercentage, uint _collWithdrawal, uint _boldChange, bool _isDebtIncrease)
     function adjustTrove100pctMaxFee(
-        address _account, 
+        address _account,
+        uint256 _troveId,
         uint256 _collChange,
         uint256 _boldChange, 
         bool _isCollIncrease,
@@ -84,13 +101,13 @@ contract BaseTest is Test {
     public 
     {
         vm.startPrank(_account);
-        borrowerOperations.adjustTrove(1e18, _collChange, _isCollIncrease, _boldChange,  _isDebtIncrease);
+        borrowerOperations.adjustTrove(_troveId, 1e18, _collChange, _isCollIncrease, _boldChange,  _isDebtIncrease);
         vm.stopPrank();
     }
 
-    function changeInterestRateNoHints(address _account, uint256 _newAnnualInterestRate) public {
+    function changeInterestRateNoHints(address _account, uint256 _troveId, uint256 _newAnnualInterestRate) public {
         vm.startPrank(_account);
-        borrowerOperations.adjustTroveInterestRate(_newAnnualInterestRate, ZERO_ADDRESS, ZERO_ADDRESS);
+        borrowerOperations.adjustTroveInterestRate(_troveId, _newAnnualInterestRate, 0, 0);
         vm.stopPrank();
     }
 

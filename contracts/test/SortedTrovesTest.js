@@ -134,25 +134,25 @@ contract("SortedTroves", async (accounts) => {
     });
 
     it("contains(): returns true for addresses that have opened troves", async () => {
-      await openTrove({
+      const { troveId: aliceTroveId } = await openTrove({
         ICR: toBN(dec(150, 16)),
         extraParams: { from: alice },
       });
-      await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: bob } });
-      await openTrove({
+      const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: bob } });
+      const { troveId: carolTroveId } = await openTrove({
         ICR: toBN(dec(2000, 18)),
         extraParams: { from: carol },
       });
 
       // Confirm trove statuses became active
-      assert.equal((await troveManager.Troves(alice))[3], "1");
-      assert.equal((await troveManager.Troves(bob))[3], "1");
-      assert.equal((await troveManager.Troves(carol))[3], "1");
+      assert.equal((await troveManager.Troves(aliceTroveId))[3], "1");
+      assert.equal((await troveManager.Troves(bobTroveId))[3], "1");
+      assert.equal((await troveManager.Troves(carolTroveId))[3], "1");
 
       // Check sorted list contains troves
-      assert.isTrue(await sortedTroves.contains(alice));
-      assert.isTrue(await sortedTroves.contains(bob));
-      assert.isTrue(await sortedTroves.contains(carol));
+      assert.isTrue(await sortedTroves.contains(aliceTroveId));
+      assert.isTrue(await sortedTroves.contains(bobTroveId));
+      assert.isTrue(await sortedTroves.contains(carolTroveId));
     });
 
     it("contains(): returns false for addresses that have not opened troves", async () => {
@@ -182,12 +182,12 @@ contract("SortedTroves", async (accounts) => {
         extraParams: { from: whale },
       });
 
-      await openTrove({
+      const { troveId: aliceTroveId } = await openTrove({
         ICR: toBN(dec(150, 16)),
         extraParams: { from: alice },
       });
-      await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: bob } });
-      await openTrove({
+      const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: bob } });
+      const { troveId: carolTroveId } = await openTrove({
         ICR: toBN(dec(2000, 18)),
         extraParams: { from: carol },
       });
@@ -198,19 +198,19 @@ contract("SortedTroves", async (accounts) => {
       await boldToken.transfer(carol, dec(1000, 18), { from: whale });
 
       // A, B, C close troves
-      await borrowerOperations.closeTrove({ from: alice });
-      await borrowerOperations.closeTrove({ from: bob });
-      await borrowerOperations.closeTrove({ from: carol });
+      await borrowerOperations.closeTrove(aliceTroveId, { from: alice });
+      await borrowerOperations.closeTrove(bobTroveId, { from: bob });
+      await borrowerOperations.closeTrove(carolTroveId, { from: carol });
 
       // Confirm trove statuses became closed
-      assert.equal((await troveManager.Troves(alice))[3], "2");
-      assert.equal((await troveManager.Troves(bob))[3], "2");
-      assert.equal((await troveManager.Troves(carol))[3], "2");
+      assert.equal((await troveManager.Troves(aliceTroveId))[3], "2");
+      assert.equal((await troveManager.Troves(bobTroveId))[3], "2");
+      assert.equal((await troveManager.Troves(carolTroveId))[3], "2");
 
       // Check sorted list does not contain troves
-      assert.isFalse(await sortedTroves.contains(alice));
-      assert.isFalse(await sortedTroves.contains(bob));
-      assert.isFalse(await sortedTroves.contains(carol));
+      assert.isFalse(await sortedTroves.contains(aliceTroveId));
+      assert.isFalse(await sortedTroves.contains(bobTroveId));
+      assert.isFalse(await sortedTroves.contains(carolTroveId));
     });
 
     // true for addresses that opened -> closed -> opened a trove
@@ -221,12 +221,12 @@ contract("SortedTroves", async (accounts) => {
         extraParams: { from: whale },
       });
 
-      await openTrove({
+      const { troveId: aliceTroveId } = await openTrove({
         ICR: toBN(dec(150, 16)),
         extraParams: { from: alice },
       });
-      await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: bob } });
-      await openTrove({
+      const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: bob } });
+      const { troveId: carolTroveId } = await openTrove({
         ICR: toBN(dec(2000, 18)),
         extraParams: { from: carol },
       });
@@ -237,14 +237,14 @@ contract("SortedTroves", async (accounts) => {
       await boldToken.transfer(carol, dec(1000, 18), { from: whale });
 
       // A, B, C close troves
-      await borrowerOperations.closeTrove({ from: alice });
-      await borrowerOperations.closeTrove({ from: bob });
-      await borrowerOperations.closeTrove({ from: carol });
+      await borrowerOperations.closeTrove(aliceTroveId, { from: alice });
+      await borrowerOperations.closeTrove(bobTroveId, { from: bob });
+      await borrowerOperations.closeTrove(carolTroveId, { from: carol });
 
       // Confirm trove statuses became closed
-      assert.equal((await troveManager.Troves(alice))[3], "2");
-      assert.equal((await troveManager.Troves(bob))[3], "2");
-      assert.equal((await troveManager.Troves(carol))[3], "2");
+      assert.equal((await troveManager.Troves(aliceTroveId))[3], "2");
+      assert.equal((await troveManager.Troves(bobTroveId))[3], "2");
+      assert.equal((await troveManager.Troves(carolTroveId))[3], "2");
 
       await openTrove({
         ICR: toBN(dec(1000, 16)),
@@ -257,31 +257,31 @@ contract("SortedTroves", async (accounts) => {
       });
 
       // Confirm trove statuses became open again
-      assert.equal((await troveManager.Troves(alice))[3], "1");
-      assert.equal((await troveManager.Troves(bob))[3], "1");
-      assert.equal((await troveManager.Troves(carol))[3], "1");
+      assert.equal((await troveManager.Troves(aliceTroveId))[3], "1");
+      assert.equal((await troveManager.Troves(bobTroveId))[3], "1");
+      assert.equal((await troveManager.Troves(carolTroveId))[3], "1");
 
       // Check sorted list does  contain troves
-      assert.isTrue(await sortedTroves.contains(alice));
-      assert.isTrue(await sortedTroves.contains(bob));
-      assert.isTrue(await sortedTroves.contains(carol));
+      assert.isTrue(await sortedTroves.contains(aliceTroveId));
+      assert.isTrue(await sortedTroves.contains(bobTroveId));
+      assert.isTrue(await sortedTroves.contains(carolTroveId));
     });
 
     // false when list size is 0
     it("contains(): returns false when there are no troves in the system", async () => {
-      assert.isFalse(await sortedTroves.contains(alice));
-      assert.isFalse(await sortedTroves.contains(bob));
-      assert.isFalse(await sortedTroves.contains(carol));
+      assert.isFalse(await sortedTroves.contains(th.addressToTroveId(alice)));
+      assert.isFalse(await sortedTroves.contains(th.addressToTroveId(bob)));
+      assert.isFalse(await sortedTroves.contains(th.addressToTroveId(carol)));
     });
 
     // true when list size is 1 and the trove the only one in system
     it("contains(): true when list size is 1 and the trove the only one in system", async () => {
-      await openTrove({
+      const { troveId: aliceTroveId } = await openTrove({
         ICR: toBN(dec(150, 16)),
         extraParams: { from: alice },
       });
 
-      assert.isTrue(await sortedTroves.contains(alice));
+      assert.isTrue(await sortedTroves.contains(aliceTroveId));
     });
 
     // false when list size is 1 and trove is not in the system
@@ -291,7 +291,7 @@ contract("SortedTroves", async (accounts) => {
         extraParams: { from: alice },
       });
 
-      assert.isFalse(await sortedTroves.contains(bob));
+      assert.isFalse(await sortedTroves.contains(th.addressToTroveId(bob)));
     });
 
     // --- getMaxSize ---
@@ -311,29 +311,29 @@ contract("SortedTroves", async (accounts) => {
         ICR: toBN(dec(500, 18)),
         extraParams: { from: whale },
       });
-      await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: A, annualInterestRate: toBN(dec(1,18))}}); // 100% interest rate
-      await openTrove({ ICR: toBN(dec(5, 18)), extraParams: { from: B , annualInterestRate: toBN(dec(75, 16))}}); // 75% interest rate
-      await openTrove({ ICR: toBN(dec(250, 16)), extraParams: { from: C, annualInterestRate: toBN(dec(5, 17))}}); // 50% interest rate
+      const { troveId: ATroveId } = await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: A, annualInterestRate: toBN(dec(1,18))}}); // 100% interest rate
+      const { troveId: BTroveId } = await openTrove({ ICR: toBN(dec(5, 18)), extraParams: { from: B , annualInterestRate: toBN(dec(75, 16))}}); // 75% interest rate
+      const { troveId: CTroveId } = await openTrove({ ICR: toBN(dec(250, 16)), extraParams: { from: C, annualInterestRate: toBN(dec(5, 17))}}); // 50% interest rate
       await openTrove({ ICR: toBN(dec(166, 16)), extraParams: { from: D, annualInterestRate: toBN(dec(25,16))}}); // 25% interest rate
-      await openTrove({ ICR: toBN(dec(125, 16)), extraParams: { from: E, annualInterestRate: toBN(dec(1, 16))}}); // 1% interest rate
+      const { troveId: ETroveId } = await openTrove({ ICR: toBN(dec(125, 16)), extraParams: { from: E, annualInterestRate: toBN(dec(1, 16))}}); // 1% interest rate
 
       // Expect a trove with 60% interest rate to be inserted between B and C
       const targetAnnualIRate = toBN(dec(60, 16));
 
       // Pass addresses that loosely bound the right postiion
-      const hints = await sortedTroves.findInsertPosition(targetAnnualIRate, A, E);
+      const hints = await sortedTroves.findInsertPosition(targetAnnualIRate, ATroveId, ETroveId);
 
       // Expect the exact correct insert hints have been returned
-      assert.equal(hints[0], B);
-      assert.equal(hints[1], C);
+      assert.isTrue(hints[0].eq(toBN(BTroveId)));
+      assert.isTrue(hints[1].eq(toBN(CTroveId)));
 
       // The price doesn’t affect the hints
       await priceFeed.setPrice(dec(500, 18));
-      const hints2 = await sortedTroves.findInsertPosition(targetAnnualIRate, A, E);
+      const hints2 = await sortedTroves.findInsertPosition(targetAnnualIRate, ATroveId, ETroveId);
 
       // Expect the exact correct insert hints have been returned
-      assert.equal(hints2[0], B);
-      assert.equal(hints2[1], C);
+      assert.isTrue(hints2[0].eq(BTroveId));
+      assert.isTrue(hints2[1].eq(CTroveId));
     });
   });
 
@@ -389,34 +389,34 @@ contract("SortedTroves", async (accounts) => {
 
       it("insert(): fails if id is zero", async () => {
         await th.assertRevert(
-          sortedTrovesTester.insert(th.ZERO_ADDRESS, 1, alice, alice),
+          sortedTrovesTester.insert(toBN(0), 1, alice, alice),
           "SortedTroves: Id cannot be zero"
         );
       });
 
       it("remove(): fails if id is not in the list", async () => {
         await th.assertRevert(
-          sortedTrovesTester.remove(alice),
+          sortedTrovesTester.remove(th.addressToTroveId(alice)),
           "SortedTroves: List does not contain the id"
         );
       });
 
       it("reInsert(): fails if list doesn’t contain the node", async () => {
         await th.assertRevert(
-          sortedTrovesTester.reInsert(alice, 1, alice, alice),
+          sortedTrovesTester.reInsert(th.addressToTroveId(alice), 1, th.addressToTroveId(alice), th.addressToTroveId(alice)),
           "SortedTroves: List does not contain the id"
         );
       });
 
       it("findInsertPosition(): No prevId for hint - ascend list starting from nextId, result is after the tail", async () => {
-        await sortedTrovesTester.insert(alice, 1, alice, alice);
+        await sortedTrovesTester.insert(th.addressToTroveId(alice), 1, th.addressToTroveId(alice), th.addressToTroveId(alice));
         const pos = await sortedTroves.findInsertPosition(
           1,
-          th.ZERO_ADDRESS,
-          alice
+          toBN(0),
+          th.addressToTroveId(alice)
         );
-        assert.equal(pos[0], alice, "prevId result should be nextId param");
-        assert.equal(pos[1], th.ZERO_ADDRESS, "nextId result should be zero");
+        assert.isTrue(pos[0].eq(toBN(th.addressToTroveId(alice))), "prevId result should be nextId param");
+        assert.isTrue(pos[1].eq(toBN(0)), "nextId result should be zero");
       });
     });
   });

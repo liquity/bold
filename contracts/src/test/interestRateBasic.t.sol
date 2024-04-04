@@ -2,26 +2,23 @@ pragma solidity 0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 
+
 contract InterestRateBasic is DevTestSetup {
 
     function testOpenTroveSetsInterestRate() public {
         priceFeed.setPrice(2000e18);
-        assertEq(troveManager.getTroveAnnualInterestRate(A), 0);
-        assertEq(troveManager.getTroveAnnualInterestRate(B), 0);
-        assertEq(troveManager.getTroveAnnualInterestRate(C), 0);
-        assertEq(troveManager.getTroveAnnualInterestRate(D), 0);
 
-        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  0);
-        assertEq(troveManager.getTroveAnnualInterestRate(A), 0);
+        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  0);
+        assertEq(troveManager.getTroveAnnualInterestRate(A_Id), 0);
 
-        openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  1);
-        assertEq(troveManager.getTroveAnnualInterestRate(B), 1);
+        uint256 B_Id = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  1);
+        assertEq(troveManager.getTroveAnnualInterestRate(B_Id), 1);
 
-        openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  37e16);
-        assertEq(troveManager.getTroveAnnualInterestRate(C), 37e16);
+        uint256 C_Id = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  37e16);
+        assertEq(troveManager.getTroveAnnualInterestRate(C_Id), 37e16);
 
-        openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  1e18);
-        assertEq(troveManager.getTroveAnnualInterestRate(D), 1e18);
+        uint256 D_Id = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  1e18);
+        assertEq(troveManager.getTroveAnnualInterestRate(D_Id), 1e18);
     }
 
     function testOpenTroveInsertsToCorrectPositionInSortedList() public {
@@ -35,31 +32,31 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate_E = 4e17;
 
         // B and D open 
-        openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  interestRate_B);
-        openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  interestRate_D);
+        uint256 B_Id = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  interestRate_B);
+        uint256 D_Id = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  interestRate_D);
 
         // Check initial list order - expect [B, D]
         // B
-        assertEq(sortedTroves.getNext(B), ZERO_ADDRESS); // tail
-        assertEq(sortedTroves.getPrev(B), D);
+        assertEq(sortedTroves.getNext(B_Id), 0); // tail
+        assertEq(sortedTroves.getPrev(B_Id), D_Id);
         // D
-        assertEq(sortedTroves.getNext(D), B);
-        assertEq(sortedTroves.getPrev(D), ZERO_ADDRESS); // head
+        assertEq(sortedTroves.getNext(D_Id), B_Id);
+        assertEq(sortedTroves.getPrev(D_Id), 0); // head
 
         // C opens. Expect to be inserted between B and D
-        openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  interestRate_C);
-        assertEq(sortedTroves.getNext(C), B);
-        assertEq(sortedTroves.getPrev(C), D);
+        uint256 C_Id = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  interestRate_C);
+        assertEq(sortedTroves.getNext(C_Id), B_Id);
+        assertEq(sortedTroves.getPrev(C_Id), D_Id);
 
         // A opens. Expect to be inserted at the tail, below B
-        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  interestRate_A);
-        assertEq(sortedTroves.getNext(A), ZERO_ADDRESS); 
-        assertEq(sortedTroves.getPrev(A), B); 
+        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  interestRate_A);
+        assertEq(sortedTroves.getNext(A_Id), 0);
+        assertEq(sortedTroves.getPrev(A_Id), B_Id);
 
         // E opens. Expect to be inserted at the head, above D
-        openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  interestRate_E);
-        assertEq(sortedTroves.getNext(E), D); 
-        assertEq(sortedTroves.getPrev(E), ZERO_ADDRESS); 
+        uint256 E_Id = openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  interestRate_E);
+        assertEq(sortedTroves.getNext(E_Id), D_Id);
+        assertEq(sortedTroves.getPrev(E_Id), 0);
     }
 
 
@@ -68,131 +65,145 @@ contract InterestRateBasic is DevTestSetup {
     
         vm.startPrank(A);
         vm.expectRevert();
-        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 1e18 + 1);
+        borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 1e18 + 1);
 
         vm.expectRevert();
-        borrowerOperations.openTrove(1e18, 2e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS, 42e18);
+        borrowerOperations.openTrove(A, 1, 1e18, 2e18, 2000e18, 0, 0, 42e18);
+    }
+
+    function testRevertWhenAdjustInterestRateFromNonOwner() public {
+        priceFeed.setPrice(2000e18);
+
+        // A opens Trove
+        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  37e16);
+        assertEq(troveManager.getTroveAnnualInterestRate(A_Id), 37e16);
+
+        // B (who is not delegate) tries to adjust it
+        vm.startPrank(B);
+        vm.expectRevert("BO: Only owner");
+        borrowerOperations.adjustTroveInterestRate(A_Id, 40e16, 0, 0);
+        vm.stopPrank();
     }
 
     function testRevertWhenAdjustInterestRateGreaterThanMax() public {
         priceFeed.setPrice(2000e18);
 
         // A opens Trove with valid annual interest rate ...
-        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  37e16);
-        assertEq(troveManager.getTroveAnnualInterestRate(A), 37e16);
+        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  37e16);
+        assertEq(troveManager.getTroveAnnualInterestRate(A_Id), 37e16);
 
         // ... then tries to adjust it to an invalid value
         vm.startPrank(A);
         vm.expectRevert();
-        borrowerOperations.adjustTroveInterestRate(1e18 + 1, ZERO_ADDRESS, ZERO_ADDRESS);
+        borrowerOperations.adjustTroveInterestRate(A_Id, 1e18 + 1, 0, 0);
 
         vm.expectRevert();
-        borrowerOperations.adjustTroveInterestRate(42e18, ZERO_ADDRESS, ZERO_ADDRESS);
+        borrowerOperations.adjustTroveInterestRate(A_Id, 42e18, 0, 0);
     }
 
     function testAdjustTroveInterestRateSetsCorrectNewRate() public {
         priceFeed.setPrice(2000e18);
 
         // A, B, C opens Troves with valid annual interest rates
-        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
-        openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  5e17);
-        openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  5e17);
-        assertEq(troveManager.getTroveAnnualInterestRate(A), 5e17);
-        assertEq(troveManager.getTroveAnnualInterestRate(B), 5e17);
-        assertEq(troveManager.getTroveAnnualInterestRate(C), 5e17);
+        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  5e17);
+        uint256 B_Id = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  5e17);
+        uint256 C_Id = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  5e17);
+        assertEq(troveManager.getTroveAnnualInterestRate(A_Id), 5e17);
+        assertEq(troveManager.getTroveAnnualInterestRate(B_Id), 5e17);
+        assertEq(troveManager.getTroveAnnualInterestRate(C_Id), 5e17);
 
-        changeInterestRateNoHints(A, 0);
-        assertEq(troveManager.getTroveAnnualInterestRate(A), 0);
+        changeInterestRateNoHints(A, A_Id, 0);
+        assertEq(troveManager.getTroveAnnualInterestRate(A_Id), 0);
 
-        changeInterestRateNoHints(B, 6e17);
-        assertEq(troveManager.getTroveAnnualInterestRate(B), 6e17);
+        changeInterestRateNoHints(B, B_Id, 6e17);
+        assertEq(troveManager.getTroveAnnualInterestRate(B_Id), 6e17);
 
-        changeInterestRateNoHints(C, 1e18);
-        assertEq(troveManager.getTroveAnnualInterestRate(C), 1e18);
+        changeInterestRateNoHints(C, C_Id, 1e18);
+        assertEq(troveManager.getTroveAnnualInterestRate(C_Id), 1e18);
     }
 
     function testAdjustTroveInterestRateInsertsToCorrectPositionInSortedList() public {
         priceFeed.setPrice(2000e18);
-        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  1e17);
-        openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  2e17);
-        openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  3e17);
-        openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  4e17);
-        openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  5e17);
+        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  1e17);
+        uint256 B_Id = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  2e17);
+        uint256 C_Id = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  3e17);
+        uint256 D_Id = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  4e17);
+        uint256 E_Id = openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  5e17);
         
         // Check initial sorted list order - expect [A:10%, B:02%, C:30%, D:40%, E:50%]
         // A
-        assertEq(sortedTroves.getNext(A), ZERO_ADDRESS); // tail
-        assertEq(sortedTroves.getPrev(A), B);
+        assertEq(sortedTroves.getNext(A_Id), 0); // tail
+        assertEq(sortedTroves.getPrev(A_Id), B_Id);
         // B
-        assertEq(sortedTroves.getNext(B), A);
-        assertEq(sortedTroves.getPrev(B), C);
+        assertEq(sortedTroves.getNext(B_Id), A_Id);
+        assertEq(sortedTroves.getPrev(B_Id), C_Id);
         // C
-        assertEq(sortedTroves.getNext(C), B);
-        assertEq(sortedTroves.getPrev(C), D);
+        assertEq(sortedTroves.getNext(C_Id), B_Id);
+        assertEq(sortedTroves.getPrev(C_Id), D_Id);
         // D
-        assertEq(sortedTroves.getNext(D), C);
-        assertEq(sortedTroves.getPrev(D), E);
+        assertEq(sortedTroves.getNext(D_Id), C_Id);
+        assertEq(sortedTroves.getPrev(D_Id), E_Id);
         // E
-        assertEq(sortedTroves.getNext(E), D);
-        assertEq(sortedTroves.getPrev(E), ZERO_ADDRESS); // head
+        assertEq(sortedTroves.getNext(E_Id), D_Id);
+        assertEq(sortedTroves.getPrev(E_Id), 0); // head
     
         // C sets rate to 0%, moves to tail - expect [C:0%, A:10%, B:20%, D:40%, E:50%]
-        changeInterestRateNoHints(C, 0);
-        assertEq(sortedTroves.getNext(C), ZERO_ADDRESS);
-        assertEq(sortedTroves.getPrev(C), A);
+        changeInterestRateNoHints(C, C_Id, 0);
+        assertEq(sortedTroves.getNext(C_Id), 0);
+        assertEq(sortedTroves.getPrev(C_Id), A_Id);
 
         // D sets rate to 7%, moves to head - expect [C:0%, A:10%, B:20%, E:50%, D:70%]
-        changeInterestRateNoHints(D, 7e17);
-        assertEq(sortedTroves.getNext(D), E);
-        assertEq(sortedTroves.getPrev(D), ZERO_ADDRESS);
+        changeInterestRateNoHints(D, D_Id, 7e17);
+        assertEq(sortedTroves.getNext(D_Id), E_Id);
+        assertEq(sortedTroves.getPrev(D_Id), 0);
 
         // A sets rate to 6%, moves up 2 positions - expect [C:0%, B:20%, E:50%, A:60%, D:70%]
-        changeInterestRateNoHints(A, 6e17);
-        assertEq(sortedTroves.getNext(A), E);
-        assertEq(sortedTroves.getPrev(A), D);
+        changeInterestRateNoHints(A, A_Id, 6e17);
+        assertEq(sortedTroves.getNext(A_Id), E_Id);
+        assertEq(sortedTroves.getPrev(A_Id), D_Id);
     } 
 
     function testAdjustTroveDoesNotChangeListPositions() public {
         priceFeed.setPrice(2000e18);
 
         // Troves opened in ascending order of interest rate
-        openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  1e17);
-        openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  2e17);
-        openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  3e17);
-        openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  4e17);
-        openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  5e17);
+        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  1e17);
+        uint256 B_Id = openTroveNoHints100pctMaxFee(B,  2 ether, 2000e18,  2e17);
+        uint256 C_Id = openTroveNoHints100pctMaxFee(C,  2 ether, 2000e18,  3e17);
+        uint256 D_Id = openTroveNoHints100pctMaxFee(D,  2 ether, 2000e18,  4e17);
+        uint256 E_Id = openTroveNoHints100pctMaxFee(E,  2 ether, 2000e18,  5e17);
 
         // Check A's neighbors
-        assertEq(sortedTroves.getNext(A), ZERO_ADDRESS); // tail
-        assertEq(sortedTroves.getPrev(A), B);
+        assertEq(sortedTroves.getNext(A_Id), 0); // tail
+        assertEq(sortedTroves.getPrev(A_Id), B_Id);
 
         // Adjust A's coll + debt
-        adjustTrove100pctMaxFee(A, 10 ether, 5000e18, true, true);
+        adjustTrove100pctMaxFee(A, A_Id, 10 ether, 5000e18, true, true);
 
         // Check A's neighbors unchanged
-        assertEq(sortedTroves.getNext(A), ZERO_ADDRESS); // tail
-        assertEq(sortedTroves.getPrev(A), B);
+        assertEq(sortedTroves.getNext(A_Id), 0); // tail
+        assertEq(sortedTroves.getPrev(A_Id), B_Id);
 
         // Check C's neighbors
-        assertEq(sortedTroves.getNext(C), B);
-        assertEq(sortedTroves.getPrev(C), D);
+        assertEq(sortedTroves.getNext(C_Id), B_Id);
+        assertEq(sortedTroves.getPrev(C_Id), D_Id);
 
         // Adjust C's coll + debt
-        adjustTrove100pctMaxFee(C, 10 ether, 5000e18, true, true);
+        adjustTrove100pctMaxFee(C, C_Id, 10 ether, 5000e18, true, true);
 
         // Check C's neighbors unchanged
-        assertEq(sortedTroves.getNext(C), B);
-        assertEq(sortedTroves.getPrev(C), D);
+        assertEq(sortedTroves.getNext(C_Id), B_Id);
+        assertEq(sortedTroves.getPrev(C_Id), D_Id);
 
         // Check E's neighbors
-        assertEq(sortedTroves.getNext(E), D);
-        assertEq(sortedTroves.getPrev(E), ZERO_ADDRESS); // head
+        assertEq(sortedTroves.getNext(E_Id), D_Id);
+        assertEq(sortedTroves.getPrev(E_Id), 0); // head
 
         // Adjust E's coll + debt
-        adjustTrove100pctMaxFee(E, 10 ether, 5000e18, true, true);
+        adjustTrove100pctMaxFee(E, E_Id, 10 ether, 5000e18, true, true);
 
         // Check E's neighbors unchanged
-        assertEq(sortedTroves.getNext(E), D);
-        assertEq(sortedTroves.getPrev(E), ZERO_ADDRESS); // head
+        assertEq(sortedTroves.getNext(E_Id), D_Id);
+        assertEq(sortedTroves.getPrev(E_Id), 0); // head
     }
 }

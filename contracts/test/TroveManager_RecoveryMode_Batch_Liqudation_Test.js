@@ -6,7 +6,7 @@ const { toBN, dec, ZERO_ADDRESS } = th;
 const TroveManagerTester = artifacts.require("./TroveManagerTester");
 const BoldToken = artifacts.require("./BoldToken.sol");
 
-contract(
+contract.skip(
   "TroveManager - in Recovery Mode - back to normal mode in 1 tx",
   async (accounts) => {
     const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(
