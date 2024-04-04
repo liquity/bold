@@ -24,25 +24,30 @@ interface IBorrowerOperations is ILiquityBase {
         address _boldTokenAddress
     ) external;
 
-    function openTrove(uint _maxFee, uint256 _ETHAmount, uint _boldAmount, address _upperHint, address _lowerHint, uint256 _annualInterestRate) external;
+    function openTrove(address _owner, uint256 _ownerIndex, uint _maxFee, uint256 _ETHAmount, uint _boldAmount, uint256 _upperHint, uint256 _lowerHint, uint256 _annualInterestRate) external returns (uint256);
 
-    function addColl(uint256 _ETHAmount) external;
+    function addColl(uint256 _troveId, uint256 _ETHAmount) external;
 
-    function moveETHGainToTrove(address _user, uint256 _ETHAmount) external;
+    function moveETHGainToTrove(address _sender, uint256 _troveId, uint256 _ETHAmount) external;
 
-    function withdrawColl(uint _amount) external;
+    function withdrawColl(uint256 _troveId, uint _amount) external;
 
-    function withdrawBold(uint _maxFee, uint _amount) external;
+    function withdrawBold(uint256 _troveId, uint _maxFee, uint _amount) external;
 
-    function repayBold(uint _amount) external;
+    function repayBold(uint256 _troveId, uint _amount) external;
 
-    function closeTrove() external;
+    function closeTrove(uint256 _troveId) external;
 
-    function adjustTrove(uint _maxFee, uint _collChange, bool _isCollIncrease, uint _debtChange, bool isDebtIncrease) external;
+    function adjustTrove(uint256 _troveId, uint _maxFee, uint _collChange, bool _isCollIncrease, uint _debtChange, bool isDebtIncrease) external;
 
-    function claimCollateral() external;
+    function claimCollateral(uint256 _troveId) external;
+
+    function setAddManager(uint256 _troveId, address _manager) external;
+    function setRemoveManager(uint256 _troveId, address _manager) external;
+
+    // TODO: addRepayWhitelistedAddress?(see github issue #64)
 
     function getCompositeDebt(uint _debt) external pure returns (uint);
 
-    function adjustTroveInterestRate(uint _newAnnualInterestRate, address _upperHint, address _lowerHint) external;
+    function adjustTroveInterestRate(uint256 _troveId, uint _newAnnualInterestRate, uint256 _upperHint, uint256 _lowerHint) external;
 }

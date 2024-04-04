@@ -54,7 +54,7 @@ interface IStabilityPool is ILiquityBase {
     */
     function provideToSP(uint _amount) external;
 
-   
+
     /*  withdrawFromSP():
     * - Calculates depositor's ETH gain
     * - Calculates the compounded deposit
@@ -69,7 +69,7 @@ interface IStabilityPool is ILiquityBase {
     * - Leaves their compounded deposit in the Stability Pool
     * - Takes new snapshots of accumulators P and S 
     */
-    function withdrawETHGainToTrove() external;
+    function withdrawETHGainToTrove(uint256 _troveId) external;
 
     /*
      * Initial checks:

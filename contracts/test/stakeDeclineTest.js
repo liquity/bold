@@ -77,7 +77,7 @@ contract("TroveManager", async (accounts) => {
     await priceFeed.setPrice(dec(100, 18));
 
     // Make 1 mega troves A at ~50% total collateral
-    await th.openTroveWrapper(contracts,
+    const ATroveId = await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(1, 31)),
       ZERO_ADDRESS,
@@ -87,7 +87,7 @@ contract("TroveManager", async (accounts) => {
     );
 
     // Make 5 large troves B, C, D, E, F at ~10% total collateral
-    await th.openTroveWrapper(contracts,
+    const BTroveId = await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
@@ -148,7 +148,7 @@ contract("TroveManager", async (accounts) => {
     assert.isTrue(
       await troveManager.checkRecoveryMode(await priceFeed.getPrice())
     );
-    await troveManager.liquidate(A);
+    await troveManager.liquidate(ATroveId);
 
     console.log(
       `totalStakesSnapshot after L1: ${await troveManager.totalStakesSnapshot()}`
@@ -162,10 +162,11 @@ contract("TroveManager", async (accounts) => {
         B
       )}`
     );
-    console.log(`B stake after L1: ${(await troveManager.Troves(B))[2]}`);
+    console.log(`B stake after L1: ${(await troveManager.Troves(BTroveId))[2]}`);
 
     // adjust trove B 1 wei: apply rewards
     await borrowerOperations.adjustTrove(
+      BTroveId,
       th._100pct,
       0,
       false,
@@ -173,21 +174,22 @@ contract("TroveManager", async (accounts) => {
       false,
       { from: B }
     ); // B repays 1 wei
-    console.log(`B stake after A1: ${(await troveManager.Troves(B))[2]}`);
+    console.log(`B stake after A1: ${(await troveManager.Troves(BTroveId))[2]}`);
     console.log(`Snapshots ratio after A1: ${await getSnapshotsRatio()}`);
 
     // Loop over tiny troves, and alternately:
     // - Liquidate a tiny trove
     // - Adjust B's collateral by 1 wei
     for (let [idx, trove] of tinyTroves.entries()) {
-      await troveManager.liquidate(trove);
+      await troveManager.liquidate(th.addressToTroveId(trove));
       console.log(
-        `B stake after L${idx + 2}: ${(await troveManager.Troves(B))[2]}`
+        `B stake after L${idx + 2}: ${(await troveManager.Troves(BTroveId))[2]}`
       );
       console.log(
         `Snapshots ratio after L${idx + 2}: ${await getSnapshotsRatio()}`
       );
       await borrowerOperations.adjustTrove(
+        BTroveId,
         th._100pct,
         0,
         false,

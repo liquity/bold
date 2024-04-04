@@ -169,6 +169,10 @@ class TestHelper {
     return ICR;
   }
 
+  static addressToTroveId(address, index=0) {
+    return web3.utils.soliditySha3(web3.eth.abi.encodeParameters(['address', 'uint256'], [address, index]));
+  }
+
   static async ICRbetween100and110(account, troveManager, price) {
     const ICR = await troveManager.getCurrentICR(account, price);
     return ICR.gt(MoneyValues._ICR100) && ICR.lt(MoneyValues._MCR);
@@ -313,10 +317,18 @@ class TestHelper {
     return compositeDebt;
   }
 
+  static async getTroveEntireCollByAddress(contracts, account) {
+    return await this.getTroveEntireColl(contracts, this.addressToTroveId(account));
+  }
+
   static async getTroveEntireColl(contracts, trove) {
     return this.toBN(
       (await contracts.troveManager.getEntireDebtAndColl(trove))[1]
     );
+  }
+
+  static async getTroveEntireDebtByAddress(contracts, account) {
+    return await this.getTroveEntireDebt(contracts, this.addressToTroveId(account));
   }
 
   static async getTroveEntireDebt(contracts, trove) {
@@ -502,15 +514,19 @@ class TestHelper {
     return { upperHint, lowerHint };
   }
 
-  static async getEntireCollAndDebt(contracts, account) {
-    // console.log(`account: ${account}`)
-    const rawColl = (await contracts.troveManager.Troves(account))[1];
-    const rawDebt = (await contracts.troveManager.Troves(account))[0];
+  static async getEntireCollAndDebtByAddress(contracts, account) {
+    return await this.getEntireCollAndDebt(contracts, this.addressToTroveId(account));
+  }
+
+  static async getEntireCollAndDebt(contracts, troveId) {
+    // console.log(`troveId: ${troveId}`)
+    const rawColl = (await contracts.troveManager.Troves(troveId))[1];
+    const rawDebt = (await contracts.troveManager.Troves(troveId))[0];
     const pendingETHReward = await contracts.troveManager.getPendingETHReward(
-      account
+      troveId
     );
     const pendingBoldDebtReward =
-      await contracts.troveManager.getPendingBoldDebtReward(account);
+      await contracts.troveManager.getPendingBoldDebtReward(troveId);
     const entireColl = rawColl.add(pendingETHReward);
     const entireDebt = rawDebt.add(pendingBoldDebtReward);
 
@@ -835,6 +851,7 @@ class TestHelper {
   static async openTrove(
     contracts,
     {
+      troveIndex,
       maxFeePercentage,
       extraBoldAmount,
       upperHint,
@@ -843,6 +860,7 @@ class TestHelper {
       extraParams,
     }
   ) {
+    if (!troveIndex) troveIndex = 0;
     if (!maxFeePercentage) maxFeePercentage = this._100pct;
     if (!extraBoldAmount) extraBoldAmount = this.toBN(0);
     else if (typeof extraBoldAmount == "string")
@@ -881,6 +899,8 @@ class TestHelper {
     await contracts.WETH.approve(contracts.borrowerOperations.address, extraParams.value, { from: extraParams.from });
 
     const tx = await contracts.borrowerOperations.openTrove(
+      extraParams.from,
+      troveIndex,
       maxFeePercentage,
       extraParams.value,
       boldAmount,
@@ -893,7 +913,10 @@ class TestHelper {
       }
     );
 
+    const troveId = this.getTroveIdFromTx(tx);
+
     return {
+      troveId,
       boldAmount,
       netDebt,
       totalDebt,
@@ -916,6 +939,8 @@ class TestHelper {
     await contracts.WETH.approve(contracts.borrowerOperations.address, extraParams.value, { from: extraParams.from });
 
     const tx = await contracts.borrowerOperations.openTrove(
+      extraParams.from,
+      0,
       maxFeePercentage,
       extraParams.value,
       boldAmount,
@@ -926,14 +951,29 @@ class TestHelper {
         from: extraParams.from,
       }
     );
-    return tx;
+
+    const troveId = this.getTroveIdFromTx(tx);
+
+    return troveId;
+  }
+
+  static getTroveIdFromTx(tx) {
+    for (let i = 0; i < tx.logs.length; i++) {
+      if (tx.logs[i].event === "TroveCreated") {
+        const troveId = tx.logs[i].args['_troveId'];
+
+        return troveId;
+      }
+    }
+    throw "The transaction logs do not contain a trove creation event";
   }
 
   static async withdrawBold(
     contracts,
-    { maxFeePercentage, boldAmount, ICR, extraParams }
+    { troveId, maxFeePercentage, boldAmount, ICR, extraParams }
   ) {
     if (!maxFeePercentage) maxFeePercentage = this._100pct;
+    if (!troveId) troveId = this.addressToTroveId(extraParams.from);
 
     assert(
       !(boldAmount && ICR) && (boldAmount || ICR),
@@ -943,9 +983,7 @@ class TestHelper {
     let increasedTotalDebt;
     if (ICR) {
       assert(extraParams.from, "A from account is needed");
-      const { debt, coll } = await contracts.troveManager.getEntireDebtAndColl(
-        extraParams.from
-      );
+      const { debt, coll } = await contracts.troveManager.getEntireDebtAndColl(troveId);
       const price = await contracts.priceFeedTestnet.getPrice();
       const targetDebt = coll.mul(price).div(ICR);
       assert(
@@ -965,6 +1003,7 @@ class TestHelper {
     }
 
     await contracts.borrowerOperations.withdrawBold(
+      troveId,
       maxFeePercentage,
       boldAmount,
       extraParams
@@ -1167,7 +1206,10 @@ class TestHelper {
     // approve ERC20 ETH
     await contracts.WETH.approve(contracts.borrowerOperations.address, extraParams.value, { from: extraParams.from });
 
+    const troveId = this.addressToTroveId(extraParams.from);
+
     const tx = await contracts.borrowerOperations.addColl(
+      troveId,
       extraParams.value,
       {
         from: extraParams.from,
@@ -1456,36 +1498,8 @@ class TestHelper {
     maxFee = 0,
     gasPrice_toUse = 0
   ) {
-    const redemptionhint = await contracts.hintHelpers.getRedemptionHints(
-      BoldAmount,
-      price,
-      gasPrice_toUse
-    );
-
-    const firstRedemptionHint = redemptionhint[0];
-    const partialRedemptionNewICR = redemptionhint[1];
-
-    const { hintAddress: approxPartialRedemptionHint, latestRandomSeed } =
-      await contracts.hintHelpers.getApproxHint(
-        partialRedemptionNewICR,
-        50,
-        this.latestRandomSeed
-      );
-    this.latestRandomSeed = latestRandomSeed;
-
-    const exactPartialRedemptionHint =
-      await contracts.sortedTroves.findInsertPosition(
-        partialRedemptionNewICR,
-        approxPartialRedemptionHint,
-        approxPartialRedemptionHint
-      );
-
     const tx = await contracts.troveManager.redeemCollateral(
       BoldAmount,
-      firstRedemptionHint,
-      exactPartialRedemptionHint[0],
-      exactPartialRedemptionHint[1],
-      partialRedemptionNewICR,
       0,
       maxFee,
       { from: redeemer, gasPrice: gasPrice_toUse }

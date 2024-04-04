@@ -4,6 +4,11 @@ pragma solidity 0.8.18;
 
 import "./ITroveManager.sol";
 
+// TODO
+//type Id is uint256;
+//type Value is uint256;
+
+
 // Common interface for the SortedTroves Doubly Linked List.
 interface ISortedTroves {
     function borrowerOperationsAddress() external view returns (address);
@@ -11,13 +16,13 @@ interface ISortedTroves {
 
     function setParams(uint256 _size, address _TroveManagerAddress, address _borrowerOperationsAddress) external;
 
-    function insert(address _id, uint256 _ICR, address _prevId, address _nextId) external;
+    function insert(uint256 _id, uint256 _value, uint256 _prevId, uint256 _nextId) external;
 
-    function remove(address _id) external;
+    function remove(uint256 _id) external;
 
-    function reInsert(address _id, uint256 _newICR, address _prevId, address _nextId) external;
+    function reInsert(uint256 _id, uint256 _newValue, uint256 _prevId, uint256 _nextId) external;
 
-    function contains(address _id) external view returns (bool);
+    function contains(uint256 _id) external view returns (bool);
 
     function isFull() external view returns (bool);
 
@@ -27,15 +32,15 @@ interface ISortedTroves {
 
     function getMaxSize() external view returns (uint256);
 
-    function getFirst() external view returns (address);
+    function getFirst() external view returns (uint256);
 
-    function getLast() external view returns (address);
+    function getLast() external view returns (uint256);
 
-    function getNext(address _id) external view returns (address);
+    function getNext(uint256 _id) external view returns (uint256);
 
-    function getPrev(address _id) external view returns (address);
+    function getPrev(uint256 _id) external view returns (uint256);
 
-    function validInsertPosition(uint256 _ICR, address _prevId, address _nextId) external view returns (bool);
+    function validInsertPosition(uint256 _value, uint256 _prevId, uint256 _nextId) external view returns (bool);
 
-    function findInsertPosition(uint256 _ICR, address _prevId, address _nextId) external view returns (address, address);
+    function findInsertPosition(uint256 _value, uint256 _prevId, uint256 _nextId) external view returns (uint256, uint256);
 }
