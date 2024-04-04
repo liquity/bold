@@ -49,6 +49,13 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint newEntireDebt;
         uint newEntireColl;
         uint stake;
+        uint256 initialWeightedRecordedTroveDebt;
+        uint256 newWeightedTroveDebt;
+        uint256 annualInterestRate;
+        uint256 troveDebtIncrease;
+        uint256 troveDebtDecrease;
+        uint256 recordedDebtIncrease;
+        uint256 recordedDebtDecrease;
     }
 
     struct LocalVariables_openTrove {
@@ -202,7 +209,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // --- Effects & interactions ---
 
-        contractsCache.activePool.mintAggInterest(vars.compositeDebt, 0);
+        uint256 weightedRecordedTroveDebt = vars.compositeDebt * _annualInterestRate;
+        contractsCache.activePool.mintAggInterest(vars.compositeDebt, 0, vars.compositeDebt, 0, weightedRecordedTroveDebt, 0);
 
         // Set the stored Trove properties and mint the NFT
         vars.stake = contractsCache.troveManager.setTrovePropertiesOnOpen(
@@ -223,11 +231,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // Mint the requested _boldAmount to the borrower and mint the gas comp to the GasPool
         contractsCache.boldToken.mint(msg.sender, _boldAmount);
         contractsCache.boldToken.mint(gasPoolAddress, BOLD_GAS_COMPENSATION);
-
-        // Add the whole debt to the recorded debt tracker
-        contractsCache.activePool.increaseRecordedDebtSum(vars.compositeDebt);
-        // Add the whole weighted debt to the weighted recorded debt tracker
-        contractsCache.activePool.changeAggWeightedDebtSum(0, vars.compositeDebt * _annualInterestRate);
 
         emit TroveUpdated(troveId, vars.compositeDebt, _ETHAmount, vars.stake, BorrowerOperation.openTrove);
         emit BoldBorrowingFeePaid(troveId, vars.BoldFee); // TODO
@@ -315,8 +318,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         vars.price = priceFeed.fetchPrice();
 
-        uint256 initialWeightedRecordedTroveDebt = contractsCache.troveManager.getTroveWeightedRecordedDebt(_troveId);
-        uint256 annualInterestRate = contractsCache.troveManager.getTroveAnnualInterestRate(_troveId);
+        vars.initialWeightedRecordedTroveDebt = contractsCache.troveManager.getTroveWeightedRecordedDebt(_troveId);
+        vars.annualInterestRate = contractsCache.troveManager.getTroveAnnualInterestRate(_troveId);
 
         // --- Checks ---
 
@@ -364,14 +367,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         contractsCache.troveManager.getAndApplyRedistributionGains(_troveId);
 
-        if (_isDebtIncrease) {
-            // Increase Trove debt by the drawn debt + redist. gain
-            activePool.mintAggInterest(_boldChange + vars.redistDebtGain, 0);
-        } else {
-            // Increase Trove debt by redist. gain and decrease by the repaid debt
-            activePool.mintAggInterest(vars.redistDebtGain, _boldChange);
-        }
-
         // Update the Trove's recorded coll and debt
         vars.newEntireColl = _updateTroveCollFromAdjustment(
             contractsCache.troveManager,
@@ -393,6 +388,30 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         vars.stake = contractsCache.troveManager.updateStakeAndTotalStakes(_troveId);
 
+        vars.newWeightedTroveDebt = vars.newEntireDebt * vars.annualInterestRate;
+
+        if (_isDebtIncrease) {
+            // Increase Trove debt by the drawn debt + redist. gain
+            vars.troveDebtIncrease = _boldChange + vars.redistDebtGain;
+            vars.recordedDebtIncrease = _boldChange + vars.accruedTroveInterest;
+        } else {
+            // Increase Trove debt by redist. gain and decrease by the repaid debt
+            vars.troveDebtIncrease = vars.redistDebtGain;
+            vars.troveDebtDecrease = _boldChange;
+            
+            vars.recordedDebtIncrease = vars.accruedTroveInterest;
+            vars.recordedDebtDecrease = _boldChange;
+        }
+
+        activePool.mintAggInterest(
+            vars.troveDebtIncrease, 
+            vars.troveDebtDecrease, 
+            vars.recordedDebtIncrease, 
+            vars.recordedDebtDecrease, 
+            vars.newWeightedTroveDebt, 
+            vars.initialWeightedRecordedTroveDebt
+        );
+
         emit TroveUpdated(_troveId, vars.newEntireDebt, vars.newEntireColl, vars.stake, BorrowerOperation.adjustTrove);
         emit BoldBorrowingFeePaid(_troveId,  vars.BoldFee); // TODO
 
@@ -407,8 +426,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _isDebtIncrease,
             vars.accruedTroveInterest
         );
-
-        contractsCache.activePool.changeAggWeightedDebtSum(initialWeightedRecordedTroveDebt, vars.newEntireDebt * annualInterestRate);
     }
 
     function closeTrove(uint256 _troveId) external override {
@@ -445,19 +462,17 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // Remove the Trove's initial recorded debt plus its accrued interest from ActivePool.aggRecordedDebt,
         // but *don't* remove the redistribution gains, since these were not yet incorporated into the sum.
-        contractsCache.activePool.mintAggInterest(0, initialRecordedTroveDebt + accruedTroveInterest);
+        uint256 troveDebtDecrease = initialRecordedTroveDebt + accruedTroveInterest;
+        // Remove only the Trove's latest recorded debt (inc. redist. gains) from the recorded debt tracker,
+        // i.e. exclude the accrued interest since it has not been added.
+        // TODO: If/when redist. gains are gas-optimized, exclude them from here too.
+        uint256 recordedDebtSumDecrease = initialRecordedTroveDebt + debtRedistGain;
+
+        contractsCache.activePool.mintAggInterest(0, troveDebtDecrease, 0, recordedDebtSumDecrease, 0, initialWeightedRecordedTroveDebt);
 
         contractsCache.troveManager.removeStake(_troveId);
         contractsCache.troveManager.closeTrove(_troveId);
         emit TroveUpdated(_troveId, 0, 0, 0, BorrowerOperation.closeTrove);
-
-        // Remove only the Trove's latest recorded debt (inc. redist. gains) from the recorded debt tracker,
-        // i.e. exclude the accrued interest since it has not been added.
-        // TODO: If/when redist. gains are gas-optimized, exclude them from here too.
-        contractsCache.activePool.decreaseRecordedDebtSum(initialRecordedTroveDebt + debtRedistGain);
-
-        // Remove Trove's weighted debt from the weighted sum
-        activePool.changeAggWeightedDebtSum(initialWeightedRecordedTroveDebt, 0);
 
         // Burn the 200 BOLD gas compensation
         contractsCache.boldToken.burn(gasPoolAddress, BOLD_GAS_COMPENSATION);
@@ -478,7 +493,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         uint256 entireTroveDebt = _updateActivePoolTrackersNoDebtChange(contractsCache.troveManager, contractsCache.activePool, _troveId, annualInterestRate);
 
-        // Update Trove recorded debt and interest-weighted debt sum
+        // Update Trove recorded debt
         contractsCache.troveManager.updateTroveDebtFromInterestApplication(_troveId, entireTroveDebt);
     }
 
@@ -596,13 +611,13 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         internal
     {
         if (_isDebtIncrease) {
-            _activePool.increaseRecordedDebtSum(_boldChange + _accruedTroveInterest);
+            // _activePool.increaseRecordedDebtSum(_boldChange + _accruedTroveInterest);
             address borrower = _troveManager.ownerOf(_troveId);
             _boldToken.mint(borrower, _boldChange);
         } else {
             // TODO: Gas optimize this
-            _activePool.increaseRecordedDebtSum(_accruedTroveInterest);
-            _activePool.decreaseRecordedDebtSum(_boldChange);
+            // _activePool.increaseRecordedDebtSum(_accruedTroveInterest);
+            // _activePool.decreaseRecordedDebtSum(_boldChange);
 
             _boldToken.burn(msg.sender, _boldChange);
         }
@@ -639,19 +654,15 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         (, uint256 redistDebtGain) = _troveManager.getAndApplyRedistributionGains(_troveId);
 
-        // No debt is issued/repaid, so the net Trove debt change is purely the redistribution gain
-        _activePool.mintAggInterest(redistDebtGain, 0);
-
         uint256 accruedTroveInterest = _troveManager.calcTroveAccruedInterest(_troveId);
         uint256 recordedTroveDebt = _troveManager.getTroveDebt(_troveId);
         uint256 entireTroveDebt = recordedTroveDebt + accruedTroveInterest;
-
+        uint256 newWeightedTroveDebt = entireTroveDebt * _annualInterestRate;
         // Add only the Trove's accrued interest to the recorded debt tracker since we have already applied redist. gains.
-        // TODO: include redist. gains here if we gas-optimize them
-        _activePool.increaseRecordedDebtSum(accruedTroveInterest);
-        // Remove the old weighted recorded debt and and add the new one to the relevant tracker
-        _activePool.changeAggWeightedDebtSum(initialWeightedRecordedTroveDebt, entireTroveDebt * _annualInterestRate);
-
+        // No debt is issued/repaid, so the net Trove debt change is purely the redistribution gain
+        // TODO: also include redist. gains here in the recordedSumIncrease arg if we gas-optimize them
+        _activePool.mintAggInterest(redistDebtGain, 0, accruedTroveInterest, 0, newWeightedTroveDebt, initialWeightedRecordedTroveDebt);
+       
         return entireTroveDebt;
     }
 

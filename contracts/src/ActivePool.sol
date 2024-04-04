@@ -173,24 +173,26 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         emit ActivePoolETHBalanceUpdated(newETHBalance);
     }
 
-    function increaseRecordedDebtSum(uint _amount) external override {
-        _requireCallerIsBOorTroveM();
-        uint256 newRecordedDebtSum = recordedDebtSum + _amount;
-        recordedDebtSum  = newRecordedDebtSum;
+    function increaseRecordedDebtSum(uint256 _amount) external {
+        _requireCallerIsTroveManager();
+        _changeRecordedDebtSum(_amount, 0);
+    }
+
+    // TODO: remove this once we implement interest minting in redemptions
+    function decreaseRecordedDebtSum(uint256 _amount) external {
+        _requireCallerIsTroveManager();
+        _changeRecordedDebtSum(0, _amount);
+    }
+
+    function _changeRecordedDebtSum(uint256 _recordedDebtIncrease, uint256 _recordedDebtDecrease) internal {
+        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        uint256 newRecordedDebtSum = recordedDebtSum + _recordedDebtIncrease; // 1 SLOAD
+        newRecordedDebtSum -= _recordedDebtDecrease;
+        recordedDebtSum = newRecordedDebtSum; // 1 SSTORE
         emit ActivePoolBoldDebtUpdated(newRecordedDebtSum);
     }
 
-    function decreaseRecordedDebtSum(uint _amount) external override {
-        _requireCallerIsBOorTroveMorSP();
-        uint256 newRecordedDebtSum = recordedDebtSum - _amount;
-
-        recordedDebtSum = newRecordedDebtSum;
-
-        emit ActivePoolBoldDebtUpdated(newRecordedDebtSum);
-    }
-
-    function changeAggWeightedDebtSum(uint256 _oldWeightedRecordedTroveDebt, uint256 _newTroveWeightedRecordedTroveDebt) external {
-        _requireCallerIsBOorTroveM();
+    function _changeAggWeightedDebtSum( uint256 _newTroveWeightedRecordedTroveDebt, uint256 _oldWeightedRecordedTroveDebt) internal {
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
         uint256 newAggWeightedDebtSum = aggWeightedDebtSum + _newTroveWeightedRecordedTroveDebt; // 1 SLOAD
         newAggWeightedDebtSum -= _oldWeightedRecordedTroveDebt;
@@ -206,21 +208,42 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     // It does *not* include the Trove's individual accrued interest - this gets accounted for in the aggregate accrued interest.
     // The net Trove debt change could be positive or negative in a repayment (depending on whether its redistribution gain or repayment amount is larger),
     // so this function accepts both the increase and the decrease to avoid using (and converting to/from) signed ints.
-    function mintAggInterest(uint256 _troveDebtIncrease, uint256 _troveDebtDecrease) public {
-        _requireCallerIsBOorTroveMorSP();
-        uint256 aggInterest = calcPendingAggInterest();
-        // Mint the new BOLD interest to a mock interest router that would split it and send it onward to SP, LP staking, etc.
-        // TODO: implement interest routing and SP Bold reward tracking
-        if (aggInterest > 0) {boldToken.mint(address(interestRouter), aggInterest);}
-
+    function mintAggInterest(
+        uint256 _troveDebtIncrease, 
+        uint256 _troveDebtDecrease,
+        uint256 recordedSumIncrease,
+        uint256 recordedSumDecrease,
+        uint256 newWeightedRecordedTroveDebt,
+        uint256 oldWeightedRecordedTroveDebt
+    )
+    external 
+    {
+        _requireCallerIsBOorTroveM();
+    
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
-        uint256 newAggRecordedDebt = aggRecordedDebt + aggInterest + _troveDebtIncrease; // 1 SLOAD
+        uint256 newAggRecordedDebt = _mintAggInterestNoTroveChange() + _troveDebtIncrease; // 1 SLOAD
         newAggRecordedDebt -=_troveDebtDecrease;
         aggRecordedDebt = newAggRecordedDebt; // 1 SSTORE
         // assert(aggRecordedDebt >= 0) // This should never be negative. If all redistribution gians and all aggregate interest was applied
         // and all Trove debts were repaid, it should become 0.
 
+        _changeRecordedDebtSum(recordedSumIncrease, recordedSumDecrease);
+        _changeAggWeightedDebtSum(newWeightedRecordedTroveDebt, oldWeightedRecordedTroveDebt); 
+    }
+
+    function mintAggInterestNoTroveChange() external returns (uint256) {
+        _requireCallerIsSP();
+        aggRecordedDebt = _mintAggInterestNoTroveChange();
+    }
+
+    function _mintAggInterestNoTroveChange() internal returns (uint256) {
+        uint256 aggInterest = calcPendingAggInterest();
+        // Mint the new BOLD interest to a mock interest router that would split it and send it onward to SP, LP staking, etc.
+        // TODO: implement interest routing and SP Bold reward tracking
+        if (aggInterest > 0) {boldToken.mint(address(interestRouter), aggInterest);}
+
         lastAggUpdateTime = block.timestamp;
+        return aggRecordedDebt + aggInterest;
     }
 
     // --- 'require' functions ---
@@ -238,6 +261,11 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
             msg.sender == troveManagerAddress ||
             msg.sender == stabilityPoolAddress,
             "ActivePool: Caller is neither BorrowerOperations nor TroveManager nor StabilityPool");
+    }
+
+    function _requireCallerIsSP() internal view {
+        require(
+            msg.sender == stabilityPoolAddress, "ActivePool: Caller is not StabilityPool");
     }
 
     function _requireCallerIsBOorTroveM() internal view {

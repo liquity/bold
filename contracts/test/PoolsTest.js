@@ -41,15 +41,16 @@ contract('StabilityPool', async accounts => {
 
 contract('ActivePool', async accounts => {
 
-  let activePool, mockBorrowerOperations, WETH
+  let activePool, mockBorrowerOperations, mockTroveManager, WETH
 
   const [owner, alice] = accounts;
   beforeEach(async () => {
     WETH = await ERC20.new("WETH", "WETH");
     activePool = await ActivePool.new(WETH.address)
     mockBorrowerOperations = await NonPayableSwitch.new()
-    const dumbContractAddress = (await NonPayableSwitch.new()).address
-    await activePool.setAddresses(mockBorrowerOperations.address, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
+    mockTroveManager = await NonPayableSwitch.new()
+    const dumbContractAddress = (await NonPayable.new()).address
+    await activePool.setAddresses(mockBorrowerOperations.address, mockTroveManager.address, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
   })
 
   it('getETHBalance(): gets the recorded ETH balance', async () => {
@@ -68,17 +69,17 @@ contract('ActivePool', async accounts => {
 
     // await activePool.increaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
     const increaseBoldDebtData = th.getTransactionData('increaseRecordedDebtSum(uint256)', ['0x64'])
-    const tx = await mockBorrowerOperations.forward(activePool.address, increaseBoldDebtData)
+    const tx = await mockTroveManager.forward(activePool.address, increaseBoldDebtData)
     assert.isTrue(tx.receipt.status)
     const recordedBold_balanceAfter = await activePool.getRecordedDebtSum()
     assert.equal(recordedBold_balanceAfter, 100)
   })
   // Decrease
-  it('decreaseBoldDebt(): decreases the recorded BOLD balance by the correct amount', async () => {
+  it('decreaseRecordedDebtSum(): decreases the recorded BOLD balance by the correct amount', async () => {
     // start the pool on 100 wei
     //await activePool.increaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
     const increaseBoldDebtData = th.getTransactionData('increaseRecordedDebtSum(uint256)', ['0x64'])
-    const tx1 = await mockBorrowerOperations.forward(activePool.address, increaseBoldDebtData)
+    const tx1 = await mockTroveManager.forward(activePool.address, increaseBoldDebtData)
     assert.isTrue(tx1.receipt.status)
 
     const recordedBold_balanceBefore = await activePool.getRecordedDebtSum()
@@ -86,7 +87,7 @@ contract('ActivePool', async accounts => {
 
     //await activePool.decreaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
     const decreaseBoldDebtData = th.getTransactionData('decreaseRecordedDebtSum(uint256)', ['0x64'])
-    const tx2 = await mockBorrowerOperations.forward(activePool.address, decreaseBoldDebtData)
+    const tx2 = await mockTroveManager.forward(activePool.address, decreaseBoldDebtData)
     assert.isTrue(tx2.receipt.status)
     const recordedBold_balanceAfter = await activePool.getRecordedDebtSum()
     assert.equal(recordedBold_balanceAfter, 0)

@@ -157,48 +157,48 @@ contract InterestRateAggregate is DevTestSetup {
 
     // --- mintAggInterest ---
 
-    function testMintAggInterestRevertsWhenNotCalledByBOorSP() public {
+    function testMintAggInterestRevertsWhenNotCalledByBOorTM() public {
        // pass positive debt change
         uint256 debtChange = 37e18;
         vm.startPrank(A);
         vm.expectRevert();
-        activePool.mintAggInterest(debtChange, 0);
+        activePool.mintAggInterest(debtChange, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(borrowerOperations));  
-        activePool.mintAggInterest(debtChange, 0);
+        activePool.mintAggInterest(debtChange, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
-        vm.startPrank(address(stabilityPool));  
-        activePool.mintAggInterest(debtChange, 0);
+        vm.startPrank(address(troveManager));  
+        activePool.mintAggInterest(debtChange, 0, 0, 0, 0, 0);
         vm.stopPrank();
        
         // pass negative debt change
         vm.startPrank(A);
         vm.expectRevert();
-        activePool.mintAggInterest(0, debtChange);
+        activePool.mintAggInterest(0, debtChange, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(borrowerOperations));  
-        activePool.mintAggInterest(0, debtChange);
+        activePool.mintAggInterest(0, debtChange, 0, 0, 0, 0);
         vm.stopPrank();
 
-        vm.startPrank(address(stabilityPool));  
-        activePool.mintAggInterest(0, debtChange);
+        vm.startPrank(address(troveManager));  
+        activePool.mintAggInterest(0, debtChange, 0, 0, 0, 0);
         vm.stopPrank();
 
         // pass 0 debt change
         vm.startPrank(A);
         vm.expectRevert();
-        activePool.mintAggInterest(0, 0);
+        activePool.mintAggInterest(0, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(borrowerOperations));  
-        activePool.mintAggInterest(0, 0);
+        activePool.mintAggInterest(0, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
-        vm.startPrank(address(stabilityPool));  
-        activePool.mintAggInterest(0, 0);
+        vm.startPrank(address(troveManager));  
+        activePool.mintAggInterest(0, 0, 0, 0, 0, 0);
         vm.stopPrank();
     }
 
@@ -209,8 +209,10 @@ contract InterestRateAggregate is DevTestSetup {
         priceFeed.setPrice(2000e18);
         assertEq(activePool.aggRecordedDebt(), 0);
     
+        console.log("here 1");
         uint256 troveDebtRequest = 2000e18;
         openTroveNoHints100pctMaxFee(A,  2 ether, troveDebtRequest,  25e16); // 25% annual interest
+        console.log("here 2");
 
         // Check aggregate recorded debt increased to non-zero
         uint256 aggREcordedDebt_1 = activePool.aggRecordedDebt();
@@ -1370,6 +1372,9 @@ contract InterestRateAggregate is DevTestSetup {
 
         // Weighted debt should have increased due to interest being applied
         assertGt(expectedNewRecordedWeightedDebt, oldRecordedWeightedDebt);
+
+        console.log("expectedNewRecordedWeightedDebt", expectedNewRecordedWeightedDebt);
+        console.log("oldRecordedWeightedDebt", oldRecordedWeightedDebt);
 
         // Expect weighted sum decreases by the old and increases by the new individual weighted Trove debt.
         assertEq(activePool.aggWeightedDebtSum(), aggWeightedDebtSum_1 - oldRecordedWeightedDebt + expectedNewRecordedWeightedDebt);
