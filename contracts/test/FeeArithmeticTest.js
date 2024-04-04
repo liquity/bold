@@ -1,3 +1,4 @@
+const { time } = require('@nomicfoundation/hardhat-network-helpers')
 const Decimal = require("decimal.js");
 const deploymentHelper = require("../utils/deploymentHelpers.js")
 const { BNConverter } = require("../utils/BNConverter.js")
@@ -351,13 +352,12 @@ contract('Fee arithmetic tests', async accounts => {
   })
 
   it("minutesPassedSinceLastFeeOp(): returns minutes passed between time of last fee operation and current block.timestamp, rounded down to nearest minutes", async () => {
-    for (testPair of secondsToMinutesRoundedDown) {
+    for (const [seconds, expectedHoursPassed] of secondsToMinutesRoundedDown) {
       await troveManagerTester.setLastFeeOpTimeToNow()
 
-      const seconds = testPair[0]
-      const expectedHoursPassed = testPair[1]
-
-      await th.fastForwardTime(seconds, web3.currentProvider)
+      if (seconds > 0) {
+        await time.increase(seconds)
+      }
 
       const minutesPassed = await troveManagerTester.minutesPassedSinceLastFeeOp()
 
