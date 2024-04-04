@@ -1,7 +1,7 @@
 const StabilityPool = artifacts.require("./StabilityPool.sol")
 const ActivePool = artifacts.require("./ActivePool.sol")
 const DefaultPool = artifacts.require("./DefaultPool.sol")
-const NonPayable = artifacts.require("./NonPayable.sol")
+const NonPayableSwitch = artifacts.require("./NonPayableSwitch.sol")
 const ERC20 = artifacts.require("./ERC20MinterMock.sol");
 
 const testHelpers = require("../utils/testHelpers.js")
@@ -23,8 +23,8 @@ contract('StabilityPool', async accounts => {
   beforeEach(async () => {
     WETH = await ERC20.new("WETH", "WETH");
     stabilityPool = await StabilityPool.new(WETH.address)
-    const mockActivePoolAddress = (await NonPayable.new()).address
-    const dumbContractAddress = (await NonPayable.new()).address
+    const mockActivePoolAddress = (await NonPayableSwitch.new()).address
+    const dumbContractAddress = (await NonPayableSwitch.new()).address
     await stabilityPool.setAddresses(dumbContractAddress, dumbContractAddress, mockActivePoolAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
   })
 
@@ -47,8 +47,8 @@ contract('ActivePool', async accounts => {
   beforeEach(async () => {
     WETH = await ERC20.new("WETH", "WETH");
     activePool = await ActivePool.new(WETH.address)
-    mockBorrowerOperations = await NonPayable.new()
-    const dumbContractAddress = (await NonPayable.new()).address
+    mockBorrowerOperations = await NonPayableSwitch.new()
+    const dumbContractAddress = (await NonPayableSwitch.new()).address
     await activePool.setAddresses(mockBorrowerOperations.address, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
   })
 
@@ -139,8 +139,8 @@ contract('DefaultPool', async accounts => {
   beforeEach(async () => {
     WETH = await ERC20.new("WETH", "WETH");
     defaultPool = await DefaultPool.new(WETH.address)
-    mockTroveManager = await NonPayable.new()
-    mockActivePool = await NonPayable.new()
+    mockTroveManager = await NonPayableSwitch.new()
+    mockActivePool = await NonPayableSwitch.new()
     await mockActivePool.setETH(WETH.address)
     await defaultPool.setAddresses(mockTroveManager.address, mockActivePool.address)
   })

@@ -1,4 +1,4 @@
-const _1e36Str = "1000000000000000000000000000000000000"
+const _1e36Str = String(10n ** 36n)
 
 const accountsList = 
 

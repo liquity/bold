@@ -73,12 +73,20 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: actions/setup-node@v3
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3.0.0
         with:
-          node-version: 16
+          version: 8
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'pnpm'
+          cache-dependency-path: 'contracts/pnpm-lock.yaml'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -86,7 +94,7 @@ jobs:
           version: nightly
 
       - name: Test contracts
-        run: yarn test
+        run: pnpm test
 
   coverage:
     name: Coverage
@@ -125,20 +133,22 @@ jobs:
       #  id: coverage_filter
 
       # Hardhat
-      - uses: actions/setup-node@v3
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3.0.0
         with:
-          node-version: 16
-          cache: yarn
-          cache-dependency-path: "./contracts/yarn.lock"
-        env:
-          # Workaround for https://github.com/actions/setup-node/issues/317
-          FORCE_COLOR: 0
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'pnpm'
+          cache-dependency-path: 'contracts/pnpm-lock.yaml'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install
 
       - name: harhdat coverage
-        run: yarn coverage
+        run: pnpm coverage
         continue-on-error: true
         env:
           NODE_OPTIONS: --max-old-space-size=4096

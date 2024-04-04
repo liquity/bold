@@ -306,9 +306,4 @@ contract BoldToken is CheckContract, IBoldToken {
     function version() external pure override returns (string memory) {
         return _VERSION;
     }
-
-    // TODO: Do we need this?
-    function permitTypeHash() external pure override returns (bytes32) {
-        return _PERMIT_TYPEHASH;
-    }
 }

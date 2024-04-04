@@ -9,7 +9,7 @@ const timeValues = testHelpers.TimeValues;
 
 const TroveManagerTester = artifacts.require("TroveManagerTester");
 const BoldToken = artifacts.require("BoldToken");
-const NonPayable = artifacts.require("NonPayable.sol");
+const NonPayableSwitch = artifacts.require("NonPayableSwitch.sol");
 
 const ZERO = toBN("0");
 const ZERO_ADDRESS = th.ZERO_ADDRESS;
@@ -485,12 +485,12 @@ contract("StabilityPool", async (accounts) => {
 
       // --- TEST ---
 
-      const nonPayable = await NonPayable.new();
+      const nonPayable = await NonPayableSwitch.new();
       await boldToken.transfer(nonPayable.address, dec(250, 18), {
         from: whale,
       });
 
-      // NonPayable makes deposit #1: 150 Bold
+      // NonPayableSwitch makes deposit #1: 150 Bold
       const txData1 = th.getTransactionData("provideToSP(uint256)", [
         web3.utils.toHex(dec(150, 18)),
       ]);
@@ -501,7 +501,7 @@ contract("StabilityPool", async (accounts) => {
       );
       assert.isTrue(
         gain_0.eq(toBN(0)),
-        "NonPayable should not have accumulated gains"
+        "NonPayableSwitch should not have accumulated gains"
       );
 
       // price drops: defaulters' Troves fall below MCR, nonPayable and whale Trove remain active
@@ -516,10 +516,10 @@ contract("StabilityPool", async (accounts) => {
       );
       assert.isTrue(
         gain_1.gt(toBN(0)),
-        "NonPayable should have some accumulated gains"
+        "NonPayableSwitch should have some accumulated gains"
       );
 
-      // NonPayable tries to make deposit #2: 100Bold (which also attempts to withdraw ETH gain)
+      // NonPayableSwitch tries to make deposit #2: 100Bold (which also attempts to withdraw ETH gain)
       const txData2 = th.getTransactionData("provideToSP(uint256,address)", [
         web3.utils.toHex(dec(100, 18)),
         frontEnd_1,
