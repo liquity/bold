@@ -1631,31 +1631,6 @@ class TestHelper {
 
   // --- Time functions ---
 
-  static async fastForwardTime(seconds, currentWeb3Provider) {
-    await currentWeb3Provider.send(
-      {
-        id: 0,
-        jsonrpc: "2.0",
-        method: "evm_increaseTime",
-        params: [seconds],
-      },
-      (err) => {
-        if (err) console.log(err);
-      }
-    );
-
-    await currentWeb3Provider.send(
-      {
-        id: 0,
-        jsonrpc: "2.0",
-        method: "evm_mine",
-      },
-      (err) => {
-        if (err) console.log(err);
-      }
-    );
-  }
-
   static async getLatestBlockTimestamp(web3Instance) {
     const blockNumber = await web3Instance.eth.getBlockNumber();
     const block = await web3Instance.eth.getBlock(blockNumber);
