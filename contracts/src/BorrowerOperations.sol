@@ -184,8 +184,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
         _requireTroveisNotActive(contractsCache.troveManager, troveId);
 
-        vars.BoldFee; // TODO
-
         _requireAtLeastMinNetDebt(_boldAmount);
 
         // ICR is based on the composite debt, i.e. the requested Bold amount + Bold gas comp.
