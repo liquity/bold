@@ -1134,7 +1134,7 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(aliceDebtBefore.gt(toBN(0)));
 
       // check before
-      const activePool_Bold_Before = await activePool.getBoldDebt();
+      const activePool_Bold_Before = await activePool.getRecordedDebtSum();
       assert.isTrue(activePool_Bold_Before.eq(aliceDebtBefore));
 
       await borrowerOperations.withdrawBold(
@@ -1145,7 +1145,7 @@ contract("BorrowerOperations", async (accounts) => {
       );
 
       // check after
-      const activePool_Bold_After = await activePool.getBoldDebt();
+      const activePool_Bold_After = await activePool.getRecordedDebtSum();
       th.assertIsApproximatelyEqual(
         activePool_Bold_After,
         activePool_Bold_Before.add(toBN(dec(10000, 18)))
@@ -1389,7 +1389,7 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(aliceDebtBefore.gt(toBN("0")));
 
       // Check before
-      const activePool_Bold_Before = await activePool.getBoldDebt();
+      const activePool_Bold_Before = await activePool.getRecordedDebtSum();
       assert.isTrue(activePool_Bold_Before.gt(toBN("0")));
 
       await borrowerOperations.repayBold(
@@ -1399,7 +1399,7 @@ contract("BorrowerOperations", async (accounts) => {
       ); // Repays 1/10 her debt
 
       // check after
-      const activePool_Bold_After = await activePool.getBoldDebt();
+      const activePool_Bold_After = await activePool.getRecordedDebtSum();
       th.assertIsApproximatelyEqual(
         activePool_Bold_After,
         activePool_Bold_Before.sub(aliceDebtBefore.div(toBN(10)))
@@ -2121,7 +2121,7 @@ contract("BorrowerOperations", async (accounts) => {
       });
 
       const aliceDebtBefore = await getTroveEntireDebt(aliceTroveId);
-      const activePoolDebtBefore = await activePool.getBoldDebt();
+      const activePoolDebtBefore = await activePool.getRecordedDebtSum();
 
       assert.isTrue(aliceDebtBefore.gt(toBN("0")));
       assert.isTrue(aliceDebtBefore.eq(activePoolDebtBefore));
@@ -2140,7 +2140,7 @@ contract("BorrowerOperations", async (accounts) => {
       );
 
       const aliceDebtAfter = await getTroveEntireDebt(aliceTroveId);
-      const activePoolDebtAfter = await activePool.getBoldDebt();
+      const activePoolDebtAfter = await activePool.getRecordedDebtSum();
 
       assert.isTrue(aliceDebtAfter.eq(aliceDebtBefore));
       assert.isTrue(activePoolDebtAfter.eq(activePoolDebtBefore));
@@ -2575,7 +2575,7 @@ contract("BorrowerOperations", async (accounts) => {
         extraParams: { from: alice },
       });
 
-      const activePool_BoldDebt_Before = await activePool.getBoldDebt();
+      const activePool_BoldDebt_Before = await activePool.getRecordedDebtSum();
       assert.isTrue(activePool_BoldDebt_Before.gt(toBN("0")));
 
       // Alice adjusts trove - coll increase and debt decrease
@@ -2591,7 +2591,7 @@ contract("BorrowerOperations", async (accounts) => {
         { from: alice }
       );
 
-      const activePool_BoldDebt_After = await activePool.getBoldDebt();
+      const activePool_BoldDebt_After = await activePool.getRecordedDebtSum();
       assert.isTrue(
         activePool_BoldDebt_After.eq(
           activePool_BoldDebt_Before.sub(toBN(dec(30, 18)))
@@ -2611,7 +2611,7 @@ contract("BorrowerOperations", async (accounts) => {
         extraParams: { from: alice },
       });
 
-      const activePool_BoldDebt_Before = await activePool.getBoldDebt();
+      const activePool_BoldDebt_Before = await activePool.getRecordedDebtSum();
       assert.isTrue(activePool_BoldDebt_Before.gt(toBN("0")));
 
       // Alice adjusts trove - coll increase and debt increase
@@ -2627,7 +2627,7 @@ contract("BorrowerOperations", async (accounts) => {
         { from: alice }
       );
 
-      const activePool_BoldDebt_After = await activePool.getBoldDebt();
+      const activePool_BoldDebt_After = await activePool.getRecordedDebtSum();
 
       th.assertIsApproximatelyEqual(
         activePool_BoldDebt_After,
@@ -3077,7 +3077,7 @@ contract("BorrowerOperations", async (accounts) => {
         from: dennis,
       });
 
-      await priceFeed.setPrice(dec(200, 18));
+      await priceFeed.setPrice(dec(2000, 18));
 
       // Alice closes trove
       await borrowerOperations.closeTrove(aliceTroveId, { from: alice });
@@ -3190,7 +3190,7 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(aliceDebt.gt("0"));
 
       // Check before
-      const activePool_Debt_before = await activePool.getBoldDebt();
+      const activePool_Debt_before = await activePool.getRecordedDebtSum();
       assert.isTrue(activePool_Debt_before.eq(aliceDebt.add(dennisDebt)));
       assert.isTrue(activePool_Debt_before.gt(toBN("0")));
 
@@ -3203,7 +3203,7 @@ contract("BorrowerOperations", async (accounts) => {
       await borrowerOperations.closeTrove(aliceTroveId, { from: alice });
 
       // Check after
-      const activePool_Debt_After = (await activePool.getBoldDebt()).toString();
+      const activePool_Debt_After = (await activePool.getRecordedDebtSum()).toString();
       th.assertIsApproximatelyEqual(activePool_Debt_After, dennisDebt);
     });
 
@@ -4113,7 +4113,7 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): increases Bold debt in ActivePool by the debt of the trove", async () => {
-      const activePool_BoldDebt_Before = await activePool.getBoldDebt();
+      const activePool_BoldDebt_Before = await activePool.getRecordedDebtSum();
       assert.equal(activePool_BoldDebt_Before, 0);
 
       const { troveId: aliceTroveId } = await openTrove({
@@ -4124,7 +4124,7 @@ contract("BorrowerOperations", async (accounts) => {
       const aliceDebt = await getTroveEntireDebt(aliceTroveId);
       assert.isTrue(aliceDebt.gt(toBN("0")));
 
-      const activePool_BoldDebt_After = await activePool.getBoldDebt();
+      const activePool_BoldDebt_After = await activePool.getRecordedDebtSum();
       assert.isTrue(activePool_BoldDebt_After.eq(aliceDebt));
     });
 
@@ -4376,36 +4376,41 @@ contract("BorrowerOperations", async (accounts) => {
       // 0, 0
       it("collChange = 0, debtChange = 0", async () => {
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
-        const troveColl = toBN(dec(1000, "ether"));
-        const troveTotalDebt = toBN(dec(100000, 18));
-        const troveBoldAmount = await getOpenTroveBoldAmount(troveTotalDebt);
+        const bobColl = toBN(dec(1000, "ether"));
+        const whaleColl = toBN(dec(10000, "ether"));
+        const bobTotalDebt = toBN(dec(100000, 18));
+        const whaleTotalDebt = toBN(dec(2000, 18));
+        const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
+        const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
+
         await th.openTroveWrapper(contracts,
           th._100pct,
-          troveBoldAmount,
-          alice,
-          alice,
+          whaleBoldAmount,
+          whale,
+          whale,
           0,
-          { from: alice, value: troveColl }
+          { from: whale, value: whaleColl }
         );
         const bobTroveId = await th.openTroveWrapper(contracts,
           th._100pct,
-          troveBoldAmount,
+          bobBoldAmount,
           bob,
           bob,
           0,
-          { from: bob, value: troveColl }
+          { from: bob, value: bobColl }
         );
 
-        await priceFeed.setPrice(dec(100, 18));
+        const liqPrice = th.toBN(dec(100,18))
+        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        await priceFeed.setPrice(liqPrice);
+        // Confirm we are in Normal Mode
+        assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
 
         const liquidationTx = await troveManager.liquidate(bobTroveId);
         assert.isFalse(await sortedTroves.contains(bobTroveId));
 
         const [liquidatedDebt, liquidatedColl, gasComp] =
           th.getEmittedLiquidationValues(liquidationTx);
-
-        await priceFeed.setPrice(dec(200, 18));
-        const price = await priceFeed.getPrice();
 
         // --- TEST ---
         const collChange = 0;
@@ -4415,13 +4420,13 @@ contract("BorrowerOperations", async (accounts) => {
           true,
           debtChange,
           true,
-          price
+          liqPrice
         );
-
-        const expectedTCR = troveColl
+        
+        const expectedTCR = whaleColl
           .add(liquidatedColl)
-          .mul(price)
-          .div(troveTotalDebt.add(liquidatedDebt));
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4429,27 +4434,36 @@ contract("BorrowerOperations", async (accounts) => {
       // 0, +ve
       it("collChange = 0, debtChange is positive", async () => {
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
-        const troveColl = toBN(dec(1000, "ether"));
-        const troveTotalDebt = toBN(dec(100000, 18));
-        const troveBoldAmount = await getOpenTroveBoldAmount(troveTotalDebt);
+        const bobColl = toBN(dec(1000, "ether"));
+        const whaleColl = toBN(dec(10000, "ether"));
+        const bobTotalDebt = toBN(dec(100000, 18));
+        const whaleTotalDebt = toBN(dec(2000, 18));
+        const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
+        const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
+
         await th.openTroveWrapper(contracts,
           th._100pct,
-          troveBoldAmount,
-          alice,
-          alice,
+          whaleBoldAmount,
+          whale,
+          whale,
           0,
-          { from: alice, value: troveColl }
-        );
-        const bobTroveId = await th.openTroveWrapper(contracts,
-          th._100pct,
-          troveBoldAmount,
-          bob,
-          bob,
-          0,
-          { from: bob, value: troveColl }
+          { from: whale, value: whaleColl }
         );
 
-        await priceFeed.setPrice(dec(100, 18));
+        const bobTroveId = await th.openTroveWrapper(contracts,
+          th._100pct,
+          bobBoldAmount,
+          bob,
+          bob,
+          0,
+          { from: bob, value: bobColl }
+        );
+
+        const liqPrice = th.toBN(dec(100,18))
+        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        await priceFeed.setPrice(liqPrice);
+        // Confirm we are in Normal Mode
+        assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
 
         const liquidationTx = await troveManager.liquidate(bobTroveId);
         assert.isFalse(await sortedTroves.contains(bobTroveId));
@@ -4457,52 +4471,58 @@ contract("BorrowerOperations", async (accounts) => {
         const [liquidatedDebt, liquidatedColl, gasComp] =
           th.getEmittedLiquidationValues(liquidationTx);
 
-        await priceFeed.setPrice(dec(200, 18));
-        const price = await priceFeed.getPrice();
-
         // --- TEST ---
-        const collChange = 0;
-        const debtChange = dec(200, 18);
+        const collChange = th.toBN(0);
+        const debtChange = th.toBN(dec(100, 18))
         const newTCR = await borrowerOperations.getNewTCRFromTroveChange(
           collChange,
           true,
           debtChange,
           true,
-          price
+          liqPrice
         );
-
-        const expectedTCR = troveColl
+        
+        const expectedTCR = whaleColl
           .add(liquidatedColl)
-          .mul(price)
-          .div(troveTotalDebt.add(liquidatedDebt).add(toBN(debtChange)));
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
 
-      // 0, -ve
+      // 0, -ve 
       it("collChange = 0, debtChange is negative", async () => {
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
-        const troveColl = toBN(dec(1000, "ether"));
-        const troveTotalDebt = toBN(dec(100000, 18));
-        const troveBoldAmount = await getOpenTroveBoldAmount(troveTotalDebt);
+        const bobColl = toBN(dec(1000, "ether"));
+        const whaleColl = toBN(dec(10000, "ether"));
+        const bobTotalDebt = toBN(dec(100000, 18));
+        const whaleTotalDebt = toBN(dec(2000, 18));
+        const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
+        const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
+
         await th.openTroveWrapper(contracts,
           th._100pct,
-          troveBoldAmount,
-          alice,
-          alice,
+          whaleBoldAmount,
+          whale,
+          whale,
           0,
-          { from: alice, value: troveColl }
-        );
-        const bobTroveId = await th.openTroveWrapper(contracts,
-          th._100pct,
-          troveBoldAmount,
-          bob,
-          bob,
-          0,
-          { from: bob, value: troveColl }
+          { from: whale, value: whaleColl }
         );
 
-        await priceFeed.setPrice(dec(100, 18));
+        const bobTroveId = await th.openTroveWrapper(contracts,
+          th._100pct,
+          bobBoldAmount,
+          bob,
+          bob,
+          0,
+          { from: bob, value: bobColl }
+        );
+
+        const liqPrice = th.toBN(dec(100,18))
+        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        await priceFeed.setPrice(liqPrice);
+        // Confirm we are in Normal Mode
+        assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
 
         const liquidationTx = await troveManager.liquidate(bobTroveId);
         assert.isFalse(await sortedTroves.contains(bobTroveId));
@@ -4510,51 +4530,57 @@ contract("BorrowerOperations", async (accounts) => {
         const [liquidatedDebt, liquidatedColl, gasComp] =
           th.getEmittedLiquidationValues(liquidationTx);
 
-        await priceFeed.setPrice(dec(200, 18));
-        const price = await priceFeed.getPrice();
         // --- TEST ---
-        const collChange = 0;
-        const debtChange = dec(100, 18);
+        const collChange = th.toBN(0);
+        const debtChange = th.toBN(dec(100, 18))
         const newTCR = await borrowerOperations.getNewTCRFromTroveChange(
           collChange,
           true,
           debtChange,
           false,
-          price
+          liqPrice
         );
-
-        const expectedTCR = troveColl
+        
+        const expectedTCR = whaleColl
           .add(liquidatedColl)
-          .mul(price)
-          .div(troveTotalDebt.add(liquidatedDebt).sub(toBN(dec(100, 18))));
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
 
       // +ve, 0
-      it("collChange is positive, debtChange is 0", async () => {
+      it("collChange is positive, debtChange = 0", async () => {
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
-        const troveColl = toBN(dec(1000, "ether"));
-        const troveTotalDebt = toBN(dec(100000, 18));
-        const troveBoldAmount = await getOpenTroveBoldAmount(troveTotalDebt);
+        const bobColl = toBN(dec(1000, "ether"));
+        const whaleColl = toBN(dec(10000, "ether"));
+        const bobTotalDebt = toBN(dec(100000, 18));
+        const whaleTotalDebt = toBN(dec(2000, 18));
+        const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
+        const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
+
         await th.openTroveWrapper(contracts,
           th._100pct,
-          troveBoldAmount,
-          alice,
-          alice,
+          whaleBoldAmount,
+          whale,
+          whale,
           0,
-          { from: alice, value: troveColl }
+          { from: whale, value: whaleColl }
         );
         const bobTroveId = await th.openTroveWrapper(contracts,
           th._100pct,
-          troveBoldAmount,
+          bobBoldAmount,
           bob,
           bob,
           0,
-          { from: bob, value: troveColl }
+          { from: bob, value: bobColl }
         );
 
-        await priceFeed.setPrice(dec(100, 18));
+        const liqPrice = th.toBN(dec(100,18))
+        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        await priceFeed.setPrice(liqPrice);
+        // Confirm we are in Normal Mode
+        assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
 
         const liquidationTx = await troveManager.liquidate(bobTroveId);
         assert.isFalse(await sortedTroves.contains(bobTroveId));
@@ -4562,52 +4588,58 @@ contract("BorrowerOperations", async (accounts) => {
         const [liquidatedDebt, liquidatedColl, gasComp] =
           th.getEmittedLiquidationValues(liquidationTx);
 
-        await priceFeed.setPrice(dec(200, 18));
-        const price = await priceFeed.getPrice();
         // --- TEST ---
-        const collChange = dec(2, "ether");
-        const debtChange = 0;
+        const collChange = th.toBN(dec(100, 18));
+        const debtChange = th.toBN(0);
         const newTCR = await borrowerOperations.getNewTCRFromTroveChange(
           collChange,
           true,
           debtChange,
           true,
-          price
+          liqPrice
         );
-
-        const expectedTCR = troveColl
-          .add(liquidatedColl)
-          .add(toBN(collChange))
-          .mul(price)
-          .div(troveTotalDebt.add(liquidatedDebt));
+        
+        const expectedTCR = whaleColl
+          .add(liquidatedColl).add(collChange)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
 
       // -ve, 0
-      it("collChange is negative, debtChange is 0", async () => {
+      it("collChange is negative, debtChange = 0", async () => {
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
-        const troveColl = toBN(dec(1000, "ether"));
-        const troveTotalDebt = toBN(dec(100000, 18));
-        const troveBoldAmount = await getOpenTroveBoldAmount(troveTotalDebt);
+        const bobColl = toBN(dec(1000, "ether"));
+        const whaleColl = toBN(dec(10000, "ether"));
+        const bobTotalDebt = toBN(dec(100000, 18));
+        const whaleTotalDebt = toBN(dec(2000, 18));
+        const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
+        const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
+
         await th.openTroveWrapper(contracts,
           th._100pct,
-          troveBoldAmount,
-          alice,
-          alice,
+          whaleBoldAmount,
+          whale,
+          whale,
           0,
-          { from: alice, value: troveColl }
-        );
-        const bobTroveId = await th.openTroveWrapper(contracts,
-          th._100pct,
-          troveBoldAmount,
-          bob,
-          bob,
-          0,
-          { from: bob, value: troveColl }
+          { from: whale, value: whaleColl }
         );
 
-        await priceFeed.setPrice(dec(100, 18));
+        const bobTroveId = await th.openTroveWrapper(contracts,
+          th._100pct,
+          bobBoldAmount,
+          bob,
+          bob,
+          0,
+          { from: bob, value: bobColl }
+        );
+
+        const liqPrice = th.toBN(dec(100,18))
+        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        await priceFeed.setPrice(liqPrice);
+        // Confirm we are in Normal Mode
+        assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
 
         const liquidationTx = await troveManager.liquidate(bobTroveId);
         assert.isFalse(await sortedTroves.contains(bobTroveId));
@@ -4615,25 +4647,21 @@ contract("BorrowerOperations", async (accounts) => {
         const [liquidatedDebt, liquidatedColl, gasComp] =
           th.getEmittedLiquidationValues(liquidationTx);
 
-        await priceFeed.setPrice(dec(200, 18));
-        const price = await priceFeed.getPrice();
-
         // --- TEST ---
-        const collChange = dec(1, 18);
-        const debtChange = 0;
+        const collChange = th.toBN(dec(100, 18));
+        const debtChange = th.toBN(0);
         const newTCR = await borrowerOperations.getNewTCRFromTroveChange(
           collChange,
           false,
           debtChange,
           true,
-          price
+          liqPrice
         );
-
-        const expectedTCR = troveColl
-          .add(liquidatedColl)
-          .sub(toBN(dec(1, "ether")))
-          .mul(price)
-          .div(troveTotalDebt.add(liquidatedDebt));
+        
+        const expectedTCR = whaleColl
+          .add(liquidatedColl).sub(collChange)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4641,27 +4669,36 @@ contract("BorrowerOperations", async (accounts) => {
       // -ve, -ve
       it("collChange is negative, debtChange is negative", async () => {
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
-        const troveColl = toBN(dec(1000, "ether"));
-        const troveTotalDebt = toBN(dec(100000, 18));
-        const troveBoldAmount = await getOpenTroveBoldAmount(troveTotalDebt);
+        const bobColl = toBN(dec(1000, "ether"));
+        const whaleColl = toBN(dec(10000, "ether"));
+        const bobTotalDebt = toBN(dec(100000, 18));
+        const whaleTotalDebt = toBN(dec(2000, 18));
+        const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
+        const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
+
         await th.openTroveWrapper(contracts,
           th._100pct,
-          troveBoldAmount,
-          alice,
-          alice,
+          whaleBoldAmount,
+          whale,
+          whale,
           0,
-          { from: alice, value: troveColl }
-        );
-        const bobTroveId = await th.openTroveWrapper(contracts,
-          th._100pct,
-          troveBoldAmount,
-          bob,
-          bob,
-          0,
-          { from: bob, value: troveColl }
+          { from: whale, value: whaleColl }
         );
 
-        await priceFeed.setPrice(dec(100, 18));
+        const bobTroveId = await th.openTroveWrapper(contracts,
+          th._100pct,
+          bobBoldAmount,
+          bob,
+          bob,
+          0,
+          { from: bob, value: bobColl }
+        );
+
+        const liqPrice = th.toBN(dec(100,18))
+        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        await priceFeed.setPrice(liqPrice);
+        // Confirm we are in Normal Mode
+        assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
 
         const liquidationTx = await troveManager.liquidate(bobTroveId);
         assert.isFalse(await sortedTroves.contains(bobTroveId));
@@ -4669,25 +4706,21 @@ contract("BorrowerOperations", async (accounts) => {
         const [liquidatedDebt, liquidatedColl, gasComp] =
           th.getEmittedLiquidationValues(liquidationTx);
 
-        await priceFeed.setPrice(dec(200, 18));
-        const price = await priceFeed.getPrice();
-
         // --- TEST ---
-        const collChange = dec(1, 18);
-        const debtChange = dec(100, 18);
+        const collChange = th.toBN(dec(100, 18));
+        const debtChange = th.toBN(dec(100, 18));
         const newTCR = await borrowerOperations.getNewTCRFromTroveChange(
           collChange,
           false,
           debtChange,
           false,
-          price
+          liqPrice
         );
-
-        const expectedTCR = troveColl
-          .add(liquidatedColl)
-          .sub(toBN(dec(1, "ether")))
-          .mul(price)
-          .div(troveTotalDebt.add(liquidatedDebt).sub(toBN(dec(100, 18))));
+        
+        const expectedTCR = whaleColl
+          .add(liquidatedColl).sub(collChange)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4695,27 +4728,36 @@ contract("BorrowerOperations", async (accounts) => {
       // +ve, +ve
       it("collChange is positive, debtChange is positive", async () => {
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
-        const troveColl = toBN(dec(1000, "ether"));
-        const troveTotalDebt = toBN(dec(100000, 18));
-        const troveBoldAmount = await getOpenTroveBoldAmount(troveTotalDebt);
+        const bobColl = toBN(dec(1000, "ether"));
+        const whaleColl = toBN(dec(10000, "ether"));
+        const bobTotalDebt = toBN(dec(100000, 18));
+        const whaleTotalDebt = toBN(dec(2000, 18));
+        const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
+        const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
+
         await th.openTroveWrapper(contracts,
           th._100pct,
-          troveBoldAmount,
-          alice,
-          alice,
+          whaleBoldAmount,
+          whale,
+          whale,
           0,
-          { from: alice, value: troveColl }
-        );
-        const bobTroveId = await th.openTroveWrapper(contracts,
-          th._100pct,
-          troveBoldAmount,
-          bob,
-          bob,
-          0,
-          { from: bob, value: troveColl }
+          { from: whale, value: whaleColl }
         );
 
-        await priceFeed.setPrice(dec(100, 18));
+        const bobTroveId = await th.openTroveWrapper(contracts,
+          th._100pct,
+          bobBoldAmount,
+          bob,
+          bob,
+          0,
+          { from: bob, value: bobColl }
+        );
+
+        const liqPrice = th.toBN(dec(100,18))
+        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        await priceFeed.setPrice(liqPrice);
+        // Confirm we are in Normal Mode
+        assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
 
         const liquidationTx = await troveManager.liquidate(bobTroveId);
         assert.isFalse(await sortedTroves.contains(bobTroveId));
@@ -4723,25 +4765,21 @@ contract("BorrowerOperations", async (accounts) => {
         const [liquidatedDebt, liquidatedColl, gasComp] =
           th.getEmittedLiquidationValues(liquidationTx);
 
-        await priceFeed.setPrice(dec(200, 18));
-        const price = await priceFeed.getPrice();
-
         // --- TEST ---
-        const collChange = dec(1, "ether");
-        const debtChange = dec(100, 18);
+        const collChange = th.toBN(dec(100, 18));
+        const debtChange = th.toBN(dec(100, 18));
         const newTCR = await borrowerOperations.getNewTCRFromTroveChange(
           collChange,
           true,
           debtChange,
           true,
-          price
+          liqPrice
         );
-
-        const expectedTCR = troveColl
-          .add(liquidatedColl)
-          .add(toBN(dec(1, "ether")))
-          .mul(price)
-          .div(troveTotalDebt.add(liquidatedDebt).add(toBN(dec(100, 18))));
+        
+        const expectedTCR = whaleColl
+          .add(liquidatedColl).add(collChange)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4749,27 +4787,36 @@ contract("BorrowerOperations", async (accounts) => {
       // +ve, -ve
       it("collChange is positive, debtChange is negative", async () => {
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
-        const troveColl = toBN(dec(1000, "ether"));
-        const troveTotalDebt = toBN(dec(100000, 18));
-        const troveBoldAmount = await getOpenTroveBoldAmount(troveTotalDebt);
+        const bobColl = toBN(dec(1000, "ether"));
+        const whaleColl = toBN(dec(10000, "ether"));
+        const bobTotalDebt = toBN(dec(100000, 18));
+        const whaleTotalDebt = toBN(dec(2000, 18));
+        const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
+        const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
+
         await th.openTroveWrapper(contracts,
           th._100pct,
-          troveBoldAmount,
-          alice,
-          alice,
+          whaleBoldAmount,
+          whale,
+          whale,
           0,
-          { from: alice, value: troveColl }
-        );
-        const bobTroveId = await th.openTroveWrapper(contracts,
-          th._100pct,
-          troveBoldAmount,
-          bob,
-          bob,
-          0,
-          { from: bob, value: troveColl }
+          { from: whale, value: whaleColl }
         );
 
-        await priceFeed.setPrice(dec(100, 18));
+        const bobTroveId = await th.openTroveWrapper(contracts,
+          th._100pct,
+          bobBoldAmount,
+          bob,
+          bob,
+          0,
+          { from: bob, value: bobColl }
+        );
+
+        const liqPrice = th.toBN(dec(100,18))
+        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        await priceFeed.setPrice(liqPrice);
+        // Confirm we are in Normal Mode
+        assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
 
         const liquidationTx = await troveManager.liquidate(bobTroveId);
         assert.isFalse(await sortedTroves.contains(bobTroveId));
@@ -4777,53 +4824,58 @@ contract("BorrowerOperations", async (accounts) => {
         const [liquidatedDebt, liquidatedColl, gasComp] =
           th.getEmittedLiquidationValues(liquidationTx);
 
-        await priceFeed.setPrice(dec(200, 18));
-        const price = await priceFeed.getPrice();
-
         // --- TEST ---
-        const collChange = dec(1, "ether");
-        const debtChange = dec(100, 18);
+        const collChange = th.toBN(dec(100, 18));
+        const debtChange = th.toBN(dec(100, 18));
         const newTCR = await borrowerOperations.getNewTCRFromTroveChange(
           collChange,
           true,
           debtChange,
           false,
-          price
+          liqPrice
         );
-
-        const expectedTCR = troveColl
-          .add(liquidatedColl)
-          .add(toBN(dec(1, "ether")))
-          .mul(price)
-          .div(troveTotalDebt.add(liquidatedDebt).sub(toBN(dec(100, 18))));
+        
+        const expectedTCR = whaleColl
+          .add(liquidatedColl).add(collChange)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
 
-      // -ve, +ve
+      // ive, +ve
       it("collChange is negative, debtChange is positive", async () => {
         // --- SETUP --- Create a Liquity instance with an Active Pool and pending rewards (Default Pool)
-        const troveColl = toBN(dec(1000, "ether"));
-        const troveTotalDebt = toBN(dec(100000, 18));
-        const troveBoldAmount = await getOpenTroveBoldAmount(troveTotalDebt);
+        const bobColl = toBN(dec(1000, "ether"));
+        const whaleColl = toBN(dec(10000, "ether"));
+        const bobTotalDebt = toBN(dec(100000, 18));
+        const whaleTotalDebt = toBN(dec(2000, 18));
+        const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
+        const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
+
         await th.openTroveWrapper(contracts,
           th._100pct,
-          troveBoldAmount,
-          alice,
-          alice,
+          whaleBoldAmount,
+          whale,
+          whale,
           0,
-          { from: alice, value: troveColl }
-        );
-        const bobTroveId = await th.openTroveWrapper(contracts,
-          th._100pct,
-          troveBoldAmount,
-          bob,
-          bob,
-          0,
-          { from: bob, value: troveColl }
+          { from: whale, value: whaleColl }
         );
 
-        await priceFeed.setPrice(dec(100, 18));
+        const bobTroveId = await th.openTroveWrapper(contracts,
+          th._100pct,
+          bobBoldAmount,
+          bob,
+          bob,
+          0,
+          { from: bob, value: bobColl }
+        );
+
+        const liqPrice = th.toBN(dec(100,18))
+        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        await priceFeed.setPrice(liqPrice);
+        // Confirm we are in Normal Mode
+        assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
 
         const liquidationTx = await troveManager.liquidate(bobTroveId);
         assert.isFalse(await sortedTroves.contains(bobTroveId));
@@ -4831,25 +4883,21 @@ contract("BorrowerOperations", async (accounts) => {
         const [liquidatedDebt, liquidatedColl, gasComp] =
           th.getEmittedLiquidationValues(liquidationTx);
 
-        await priceFeed.setPrice(dec(200, 18));
-        const price = await priceFeed.getPrice();
-
         // --- TEST ---
-        const collChange = dec(1, 18);
-        const debtChange = await getNetBorrowingAmount(dec(200, 18));
+        const collChange = th.toBN(dec(100, 18));
+        const debtChange = th.toBN(dec(100, 18));
         const newTCR = await borrowerOperations.getNewTCRFromTroveChange(
           collChange,
           false,
           debtChange,
           true,
-          price
+          liqPrice
         );
-
-        const expectedTCR = troveColl
-          .add(liquidatedColl)
-          .sub(toBN(collChange))
-          .mul(price)
-          .div(troveTotalDebt.add(liquidatedDebt).add(toBN(debtChange)));
+        
+        const expectedTCR = whaleColl
+          .add(liquidatedColl).sub(collChange)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });

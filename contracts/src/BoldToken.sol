@@ -56,7 +56,9 @@ contract BoldToken is CheckContract, IBoldToken {
     address public immutable troveManagerAddress;
     address public immutable stabilityPoolAddress;
     address public immutable borrowerOperationsAddress;
+    address public immutable activePoolAddress;
     
+
     // --- Events ---
     event TroveManagerAddressChanged(address _troveManagerAddress);
     event StabilityPoolAddressChanged(address _newStabilityPoolAddress);
@@ -66,11 +68,13 @@ contract BoldToken is CheckContract, IBoldToken {
     ( 
         address _troveManagerAddress,
         address _stabilityPoolAddress,
-        address _borrowerOperationsAddress
+        address _borrowerOperationsAddress,
+        address _activePoolAddress
     ) {
         checkContract(_troveManagerAddress);
         checkContract(_stabilityPoolAddress);
         checkContract(_borrowerOperationsAddress);
+        checkContract(_activePoolAddress);
 
         troveManagerAddress = _troveManagerAddress;
         emit TroveManagerAddressChanged(_troveManagerAddress);
@@ -80,6 +84,8 @@ contract BoldToken is CheckContract, IBoldToken {
 
         borrowerOperationsAddress = _borrowerOperationsAddress;        
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
+
+        activePoolAddress = _activePoolAddress;
         
         bytes32 hashedName = keccak256(bytes(_NAME));
         bytes32 hashedVersion = keccak256(bytes(_VERSION));
@@ -95,7 +101,7 @@ contract BoldToken is CheckContract, IBoldToken {
     // --- Functions for intra-Liquity calls ---
 
     function mint(address _account, uint256 _amount) external override {
-        _requireCallerIsBorrowerOperations();
+        _requireCallerIsBOorAP();
         _mint(_account, _amount);
     }
 
@@ -258,8 +264,10 @@ contract BoldToken is CheckContract, IBoldToken {
         );
     }
 
-    function _requireCallerIsBorrowerOperations() internal view {
-        require(msg.sender == borrowerOperationsAddress, "BoldToken: Caller is not BorrowerOperations");
+    function _requireCallerIsBOorAP() internal view {
+        require(msg.sender == borrowerOperationsAddress ||
+            msg.sender == activePoolAddress,
+            "BoldToken: Caller is not BO or AP");
     }
 
     function _requireCallerIsBOorTroveMorSP() internal view {

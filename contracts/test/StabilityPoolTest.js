@@ -76,7 +76,8 @@ contract("StabilityPool", async (accounts) => {
       contracts.boldToken = await BoldToken.new(
         contracts.troveManager.address,
         contracts.stabilityPool.address,
-        contracts.borrowerOperations.address
+        contracts.borrowerOperations.address,
+        contracts.activePool.address
       );
 
       priceFeed = contracts.priceFeedTestnet;
@@ -714,7 +715,7 @@ contract("StabilityPool", async (accounts) => {
       assert.isFalse(await sortedTroves.contains(defaulter_1_TroveId));
       assert.isFalse(await sortedTroves.contains(defaulter_2_TroveId));
 
-      const activeDebt_Before = (await activePool.getBoldDebt()).toString();
+      const activeDebt_Before = (await activePool.getRecordedDebtSum()).toString();
       const defaultedDebt_Before = (await defaultPool.getBoldDebt()).toString();
       const activeColl_Before = (await activePool.getETHBalance()).toString();
       const defaultedColl_Before = (await defaultPool.getETHBalance()).toString();
@@ -729,7 +730,7 @@ contract("StabilityPool", async (accounts) => {
         dec(1000, 18)
       );
 
-      const activeDebt_After = (await activePool.getBoldDebt()).toString();
+      const activeDebt_After = (await activePool.getRecordedDebtSum()).toString();
       const defaultedDebt_After = (await defaultPool.getBoldDebt()).toString();
       const activeColl_After = (await activePool.getETHBalance()).toString();
       const defaultedColl_After = (await defaultPool.getETHBalance()).toString();
@@ -2026,7 +2027,7 @@ contract("StabilityPool", async (accounts) => {
       // Price rises
       await priceFeed.setPrice(dec(200, 18));
 
-      const activeDebt_Before = (await activePool.getBoldDebt()).toString();
+      const activeDebt_Before = (await activePool.getRecordedDebtSum()).toString();
       const defaultedDebt_Before = (await defaultPool.getBoldDebt()).toString();
       const activeColl_Before = (await activePool.getETHBalance()).toString();
       const defaultedColl_Before = (await defaultPool.getETHBalance()).toString();
@@ -2040,7 +2041,7 @@ contract("StabilityPool", async (accounts) => {
       await stabilityPool.withdrawFromSP(dec(30000, 18), { from: carol });
       assert.equal((await stabilityPool.deposits(carol)).toString(), "0");
 
-      const activeDebt_After = (await activePool.getBoldDebt()).toString();
+      const activeDebt_After = (await activePool.getRecordedDebtSum()).toString();
       const defaultedDebt_After = (await defaultPool.getBoldDebt()).toString();
       const activeColl_After = (await activePool.getETHBalance()).toString();
       const defaultedColl_After = (await defaultPool.getETHBalance()).toString();

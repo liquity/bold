@@ -14,6 +14,8 @@ import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 
+// import "forge-std/console2.sol";
+
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
  *
@@ -285,6 +287,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     function provideToSP(uint _amount) external override {
         _requireNonZeroAmount(_amount);
 
+        activePool.mintAggInterest(0, 0);
+
         uint initialDeposit = deposits[msg.sender].initialValue;
 
         uint depositorETHGain = getDepositorETHGain(msg.sender);
@@ -313,6 +317,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         // TODO: if (_amount !=0) {_requireNoUnderCollateralizedTroves();}
         uint initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
+
+        activePool.mintAggInterest(0, 0);
 
         uint depositorETHGain = getDepositorETHGain(msg.sender);
 
@@ -482,7 +488,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         IActivePool activePoolCached = activePool;
 
         // Cancel the liquidated Bold debt with the Bold in the stability pool
-        activePoolCached.decreaseBoldDebt(_debtToOffset);
         _decreaseBold(_debtToOffset);
 
         // Burn the debt that was successfully offset

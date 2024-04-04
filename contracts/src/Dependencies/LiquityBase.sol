@@ -9,11 +9,15 @@ import "../Interfaces/IDefaultPool.sol";
 import "../Interfaces/IPriceFeed.sol";
 import "../Interfaces/ILiquityBase.sol";
 
+//import "forge-std/console2.sol";
+
 /* 
 * Base contract for TroveManager, BorrowerOperations and StabilityPool. Contains global system constants and
 * common functions. 
 */
 contract LiquityBase is BaseMath, ILiquityBase {
+    // TODO: Pull all constants out into a separate base contract
+    
     uint constant public _100pct = 1000000000000000000; // 1e18 == 100%
 
     // Minimum collateral ratio for individual troves
@@ -65,9 +69,11 @@ contract LiquityBase is BaseMath, ILiquityBase {
     }
 
     function getEntireSystemDebt() public view returns (uint entireSystemDebt) {
-        uint activeDebt = activePool.getBoldDebt();
+        uint activeDebt = activePool.getTotalActiveDebt();
         uint closedDebt = defaultPool.getBoldDebt();
-
+        // console2.log("SYS::activeDebt", activeDebt);
+        // console2.log("SYS::closedDebt", closedDebt);
+    
         return activeDebt + closedDebt;
     }
 

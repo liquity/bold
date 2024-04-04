@@ -54,8 +54,9 @@ contract("TroveManager", async (accounts) => {
     contracts.boldToken = await BoldToken.new(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
-    );
+      contracts.borrowerOperations.address,
+      contracts.activePool.address
+    )
 
     priceFeed = contracts.priceFeedTestnet;
     boldToken = contracts.boldToken;

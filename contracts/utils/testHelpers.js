@@ -983,14 +983,14 @@ class TestHelper {
     let increasedTotalDebt;
     if (ICR) {
       assert(extraParams.from, "A from account is needed");
-      const { debt, coll } = await contracts.troveManager.getEntireDebtAndColl(troveId);
+      const { entireDebt, entireColl } = await contracts.troveManager.getEntireDebtAndColl(troveId);
       const price = await contracts.priceFeedTestnet.getPrice();
-      const targetDebt = coll.mul(price).div(ICR);
+      const targetDebt = entireColl.mul(price).div(ICR);
       assert(
-        targetDebt > debt,
+        targetDebt > entireDebt,
         "ICR is already greater than or equal to target"
       );
-      increasedTotalDebt = targetDebt.sub(debt);
+      increasedTotalDebt = targetDebt.sub(entireDebt);
       boldAmount = await this.getNetBorrowingAmount(
         contracts,
         increasedTotalDebt

@@ -84,11 +84,11 @@ contract(
     });
 
     describe("TroveManager", async (accounts) => {
-      // applyPendingRewards
-      it("applyPendingRewards(): reverts when called by an account that is not BorrowerOperations", async () => {
+      // getAndApplyRedistributionGains
+      it("getAndApplyRedistributionGains(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await troveManager.applyPendingRewards(th.addressToTroveId(bob), {
+          const txAlice = await troveManager.getAndApplyRedistributionGains(th.addressToTroveId(bob), {
             from: alice,
           });
         } catch (err) {
@@ -145,11 +145,11 @@ contract(
         }
       });
 
-      // increaseTroveColl
-      it("increaseTroveColl(): reverts when called by an account that is not BorrowerOperations", async () => {
+      // updateTroveColl
+      it("updateTroveColl(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await troveManager.increaseTroveColl(bob, th.addressToTroveId(bob), 100, {
+          const txAlice = await troveManager.updateTroveColl(bob, th.addressToTroveId(bob), 100, true, {
             from: alice,
           });
         } catch (err) {
@@ -158,37 +158,11 @@ contract(
         }
       });
 
-      // decreaseTroveColl
-      it("decreaseTroveColl(): reverts when called by an account that is not BorrowerOperations", async () => {
+      // updateTroveDebt
+      it("updateTroveDebt(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await troveManager.decreaseTroveColl(bob, th.addressToTroveId(bob), 100, {
-            from: alice,
-          });
-        } catch (err) {
-          assert.include(err.message, "revert");
-          // assert.include(err.message, "Caller is not the BorrowerOperations contract")
-        }
-      });
-
-      // increaseTroveDebt
-      it("increaseTroveDebt(): reverts when called by an account that is not BorrowerOperations", async () => {
-        // Attempt call from alice
-        try {
-          const txAlice = await troveManager.increaseTroveDebt(bob, th.addressToTroveId(bob), 100, {
-            from: alice,
-          });
-        } catch (err) {
-          assert.include(err.message, "revert");
-          // assert.include(err.message, "Caller is not the BorrowerOperations contract")
-        }
-      });
-
-      // decreaseTroveDebt
-      it("decreaseTroveDebt(): reverts when called by an account that is not BorrowerOperations", async () => {
-        // Attempt call from alice
-        try {
-          const txAlice = await troveManager.decreaseTroveDebt(bob, th.addressToTroveId(bob), 100, {
+          const txAlice = await troveManager.updateTroveDebt(bob, th.addressToTroveId(bob), 100, true, {
             from: alice,
           });
         } catch (err) {
@@ -231,7 +205,7 @@ contract(
       it("increaseBoldDebt(): reverts when called by an account that is not BO nor TroveM", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await activePool.increaseBoldDebt(100, {
+          const txAlice = await activePool.increaseRecordedDebtSum(100, {
             from: alice,
           });
         } catch (err) {
@@ -247,7 +221,7 @@ contract(
       it("decreaseBoldDebt(): reverts when called by an account that is not BO nor TroveM nor SP", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await activePool.decreaseBoldDebt(100, {
+          const txAlice = await activePool.decreaseRecordedDebtSum(100, {
             from: alice,
           });
         } catch (err) {

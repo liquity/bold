@@ -81,7 +81,8 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     contracts.boldToken = await BoldToken.new(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
+      contracts.borrowerOperations.address,
+      contracts.activePool.address
     );
   
     priceFeed = contracts.priceFeedTestnet;
@@ -1198,32 +1199,31 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
 
     // Check Recovery Mode is active
     assert.isTrue(await th.checkRecoveryMode(contracts));
-
-    // Check troves A-D are in range 110% < ICR < TCR
-    const ICR_A = await troveManager.getCurrentICR(alice, price);
-    const ICR_B = await troveManager.getCurrentICR(bob, price);
-    const ICR_C = await troveManager.getCurrentICR(carol, price);
-    const ICR_D = await troveManager.getCurrentICR(dennis, price);
-
-    assert.isTrue(ICR_A.gt(mv._MCR) && ICR_A.lt(TCR));
-    assert.isTrue(ICR_B.gt(mv._MCR) && ICR_B.lt(TCR));
-    assert.isTrue(ICR_C.gt(mv._MCR) && ICR_C.lt(TCR));
-    assert.isTrue(ICR_D.gt(mv._MCR) && ICR_D.lt(TCR));
-
+    
     // Troves are ordered by ICR, low to high: A, B, C, D.
 
-    // Liquidate out of ICR order: D, B, C.  Confirm Recovery Mode is active prior to each.
+    // Liquidate out of ICR order: D, B, C.  Prior to each, confirm that:
+    // - Recovery Mode is active
+    // - MCR < ICR < TCR
+    assert.isTrue(await th.checkRecoveryMode(contracts));
+    const ICR_D = await troveManager.getCurrentICR(dennis, price);
+    assert.isTrue(ICR_D.gt(mv._MCR));
+    assert.isTrue(ICR_D.lt(TCR));
     const liquidationTx_D = await troveManager.liquidate(dennis);
-
-    assert.isTrue(await th.checkRecoveryMode(contracts));
-    const liquidationTx_B = await troveManager.liquidate(bob);
-
-    assert.isTrue(await th.checkRecoveryMode(contracts));
-    const liquidationTx_C = await troveManager.liquidate(carol);
-
-    // Check transactions all succeeded
     assert.isTrue(liquidationTx_D.receipt.status);
+
+    assert.isTrue(await th.checkRecoveryMode(contracts));
+    const ICR_B = await troveManager.getCurrentICR(bob, price);
+    assert.isTrue(ICR_B.gt(mv._MCR));
+    assert.isTrue(ICR_B.lt(TCR));
+    const liquidationTx_B = await troveManager.liquidate(bob);
     assert.isTrue(liquidationTx_B.receipt.status);
+
+    assert.isTrue(await th.checkRecoveryMode(contracts));
+    const ICR_C = await troveManager.getCurrentICR(carol, price);
+    assert.isTrue(ICR_C.gt(mv._MCR));
+    assert.isTrue(ICR_C.lt(TCR));
+    const liquidationTx_C = await troveManager.liquidate(carol);
     assert.isTrue(liquidationTx_C.receipt.status);
 
     // Confirm troves D, B, C removed
@@ -2280,19 +2280,23 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     );
   });
 
-  it("liquidate(), with 110% < ICR < TCR, can claim collateral, after another claim from a redemption", async () => {
+  // TODO: Reassess this test once interest is correctly applied in redemptions
+  it.skip("liquidate(), with 110% < ICR < TCR, can claim collateral, after another claim from a redemption", async () => {
     // --- SETUP ---
     // Bob withdraws up to 90 Bold of debt, resulting in ICR of 222%
     const { collateral: B_coll, netDebt: B_netDebt } = await openTrove({
       ICR: toBN(dec(222, 16)),
       extraBoldAmount: dec(90, 18),
-      extraParams: { from: bob },
+      extraParams: { from: bob, annualInterestRate: toBN(dec(5,16)) }, // 5% interest (lowest)
     });
+    let price = await priceFeed.getPrice();
+    th.logBN("bob ICR start", await troveManager.getCurrentICR(bob, price))
+
     // Dennis withdraws to 150 Bold of debt, resulting in ICRs of 266%.
     const { collateral: D_coll } = await openTrove({
       ICR: toBN(dec(266, 16)),
       extraBoldAmount: B_netDebt,
-      extraParams: { from: dennis },
+      extraParams: { from: dennis, annualInterestRate: toBN(dec(10,16)) }, // 10% interest 
     });
 
     // --- TEST ---
@@ -2302,9 +2306,9 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       web3.currentProvider
     );
 
-    // Dennis redeems 40, so Bob has a surplus of (200 * 1 - 40) / 200 = 0.8 ETH
+    // Dennis redeems 40, hits Bob (lowest ICR) so Bob has a surplus of (200 * 1 - 40) / 200 = 0.8 ETH
     await th.redeemCollateral(dennis, contracts, B_netDebt);
-    let price = await priceFeed.getPrice();
+    price = await priceFeed.getPrice();
     const bob_surplus = B_coll.sub(B_netDebt.mul(mv._1e18BN).div(price));
     th.assertIsApproximatelyEqual(
       await collSurplusPool.getCollateral(bob),
@@ -2320,16 +2324,16 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       bob_balanceBefore.add(bob_surplus)
     );
 
-    // Bob re-opens the trove, price 200, total debt 250 Bold, ICR = 240% (lowest one)
+    // Bob re-opens the trove, price 200, total debt 250 Bold, interest = 5% (lowest one)
     const { collateral: B_coll_2, totalDebt: B_totalDebt_2 } = await openTrove({
       ICR: toBN(dec(240, 16)),
-      extraParams: { from: bob, value: _3_Ether },
+      extraParams: { from: bob, value: _3_Ether, annualInterestRate: th.toBN(dec(5, 16)) },
     });
-    // Alice deposits Bold in the Stability Pool
+    // Alice opens (20 % interest, highest) and deposits Bold in the Stability Pool
     await openTrove({
       ICR: toBN(dec(266, 16)),
       extraBoldAmount: B_totalDebt_2,
-      extraParams: { from: alice },
+      extraParams: { from: alice, annualInterestRate: th.toBN(dec(20, 16))},
     });
     await stabilityPool.provideToSP(B_totalDebt_2, {
       from: alice,
@@ -2339,12 +2343,14 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     await priceFeed.setPrice("100000000000000000000");
     price = await priceFeed.getPrice();
     const TCR = await th.getTCR(contracts);
+    th.logBN("TCR", TCR);
 
     const recoveryMode = await th.checkRecoveryMode(contracts);
     assert.isTrue(recoveryMode);
 
     // Check Bob's ICR is between 110 and TCR
     const bob_ICR = await troveManager.getCurrentICR(bob, price);
+    th.logBN("bob_ICR", bob_ICR);
     assert.isTrue(bob_ICR.gt(mv._MCR) && bob_ICR.lt(TCR));
     // debt is increased by fee, due to previous redemption
     const bob_debt = await troveManager.getTroveDebt(bob);

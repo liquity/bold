@@ -79,7 +79,8 @@ contract("TroveManager", async (accounts) => {
     contracts.boldToken = await BoldToken.new(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
+      contracts.borrowerOperations.address,
+      contracts.activePool.address
     )
 
     priceFeed = contracts.priceFeedTestnet;
@@ -169,7 +170,7 @@ contract("TroveManager", async (accounts) => {
       await contracts.WETH.balanceOf(activePool.address)
     ).toString();
     const activePool_BoldDebt_Before = (
-      await activePool.getBoldDebt()
+      await activePool.getRecordedDebtSum()
     ).toString();
 
     assert.equal(activePool_ETH_Before, A_collateral.add(B_collateral));
@@ -195,7 +196,7 @@ contract("TroveManager", async (accounts) => {
       await contracts.WETH.balanceOf(activePool.address)
     ).toString();
     const activePool_BoldDebt_After = (
-      await activePool.getBoldDebt()
+      await activePool.getRecordedDebtSum()
     ).toString();
 
     assert.equal(activePool_ETH_After, A_collateral);
@@ -433,6 +434,8 @@ contract("TroveManager", async (accounts) => {
       100
     );
 
+    assert.isTrue(await sortedTroves.contains(bobTroveId));
+    th.logBN("bob icr", await troveManager.getCurrentICR(bob, await priceFeed.getPrice()));
     // Bob now withdraws Bold, bringing his ICR to 1.11
     const { increasedTotalDebt: B_increasedTotalDebt } = await withdrawBold({
       ICR: toBN(dec(111, 16)),
@@ -1134,15 +1137,15 @@ contract("TroveManager", async (accounts) => {
     assert.isFalse(await th.checkRecoveryMode(contracts));
 
     // Liquidate A, B and C
-    const activeBoldDebt_0 = await activePool.getBoldDebt();
+    const activeBoldDebt_0 = await activePool.getRecordedDebtSum();
     const defaultBoldDebt_0 = await defaultPool.getBoldDebt();
 
     await troveManager.liquidate(aliceTroveId);
-    const activeBoldDebt_A = await activePool.getBoldDebt();
+    const activeBoldDebt_A = await activePool.getRecordedDebtSum();
     const defaultBoldDebt_A = await defaultPool.getBoldDebt();
 
     await troveManager.liquidate(bobTroveId);
-    const activeBoldDebt_B = await activePool.getBoldDebt();
+    const activeBoldDebt_B = await activePool.getRecordedDebtSum();
     const defaultBoldDebt_B = await defaultPool.getBoldDebt();
 
     await troveManager.liquidate(carolTroveId);
@@ -1840,9 +1843,9 @@ contract("TroveManager", async (accounts) => {
     await borrowerOperations.repayBold(ETroveId, dec(1, 18), { from: E });
 
     // Check C is the only trove that has pending rewards
-    assert.isTrue(await troveManager.hasPendingRewards(CTroveId));
-    assert.isFalse(await troveManager.hasPendingRewards(DTroveId));
-    assert.isFalse(await troveManager.hasPendingRewards(ETroveId));
+    assert.isTrue(await troveManager.hasRedistributionGains(CTroveId));
+    assert.isFalse(await troveManager.hasRedistributionGains(DTroveId));
+    assert.isFalse(await troveManager.hasRedistributionGains(ETroveId));
 
     // Check C's pending coll and debt rewards are <= the coll and debt in the DefaultPool
     const pendingETH_C = await troveManager.getPendingETHReward(CTroveId);
@@ -3836,7 +3839,7 @@ contract("TroveManager", async (accounts) => {
     const totalColl = W_coll.add(A_coll).add(B_coll).add(C_coll).add(D_coll);
 
     // Get active debt and coll before redemption
-    const activePool_debt_before = await activePool.getBoldDebt();
+    const activePool_debt_before = await activePool.getRecordedDebtSum();
     const activePool_coll_before = await activePool.getETHBalance();
 
     th.assertIsApproximatelyEqual(activePool_debt_before, totalDebt);
@@ -3873,7 +3876,7 @@ contract("TroveManager", async (accounts) => {
     );
 
     // Check activePool debt reduced by  400 Bold
-    const activePool_debt_after = await activePool.getBoldDebt();
+    const activePool_debt_after = await activePool.getRecordedDebtSum();
     assert.equal(
       activePool_debt_before.sub(activePool_debt_after),
       dec(400, 18)
@@ -3936,7 +3939,7 @@ contract("TroveManager", async (accounts) => {
     const totalColl = W_coll.add(A_coll).add(B_coll).add(C_coll).add(D_coll);
 
     // Get active debt and coll before redemption
-    const activePool_debt_before = await activePool.getBoldDebt();
+    const activePool_debt_before = await activePool.getRecordedDebtSum();
     const activePool_coll_before = (await activePool.getETHBalance()).toString();
 
     th.assertIsApproximatelyEqual(activePool_debt_before, totalDebt);
@@ -4319,7 +4322,7 @@ contract("TroveManager", async (accounts) => {
 
     const totalDebt = C_totalDebt.add(D_totalDebt);
     th.assertIsApproximatelyEqual(
-      (await activePool.getBoldDebt()).toString(),
+      (await activePool.getRecordedDebtSum()).toString(),
       totalDebt
     );
 
@@ -4394,7 +4397,7 @@ contract("TroveManager", async (accounts) => {
     const A_balanceBefore = toBN(await contracts.WETH.balanceOf(A));
 
     // Check total Bold supply
-    const activeBold = await activePool.getBoldDebt();
+    const activeBold = await activePool.getRecordedDebtSum();
     const defaultBold = await defaultPool.getBoldDebt();
 
     const totalBoldSupply = activeBold.add(defaultBold);
@@ -5068,8 +5071,8 @@ contract("TroveManager", async (accounts) => {
     assert.equal(C_Status, "0"); // non-existent
   });
 
-  it("hasPendingRewards(): Returns false it trove is not active", async () => {
-    assert.isFalse(await troveManager.hasPendingRewards(th.addressToTroveId(alice)));
+  it("hasRedistributionGains(): Returns false it trove is not active", async () => {
+    assert.isFalse(await troveManager.hasRedistributionGains(th.addressToTroveId(alice)));
   });
 });
 

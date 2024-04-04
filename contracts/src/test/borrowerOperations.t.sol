@@ -14,7 +14,7 @@ contract BorrowerOperationsTest is DevTestSetup {
 
         // Check she has more Bold than her trove debt
         uint256 aliceBal = boldToken.balanceOf(A);
-        (uint256 aliceDebt,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        (uint256 aliceDebt,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
         assertGe(aliceBal, aliceDebt, "Not enough balance");
 
         // check Recovery Mode
