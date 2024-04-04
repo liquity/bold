@@ -49,7 +49,7 @@ contract('ActivePool', async accounts => {
     activePool = await ActivePool.new(WETH.address)
     mockBorrowerOperations = await NonPayableSwitch.new()
     const dumbContractAddress = (await NonPayableSwitch.new()).address
-    await activePool.setAddresses(mockBorrowerOperations.address, dumbContractAddress, dumbContractAddress, dumbContractAddress)
+    await activePool.setAddresses(mockBorrowerOperations.address, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
   })
 
   it('getETHBalance(): gets the recorded ETH balance', async () => {
@@ -58,37 +58,37 @@ contract('ActivePool', async accounts => {
   })
 
   it('getBoldDebt(): gets the recorded BOLD balance', async () => {
-    const recordedETHBalance = await activePool.getBoldDebt()
+    const recordedETHBalance = await activePool.getRecordedDebtSum()
     assert.equal(recordedETHBalance, 0)
   })
  
-  it('increaseBoldDebt(): increases the recorded BOLD balance by the correct amount', async () => {
-    const recordedBold_balanceBefore = await activePool.getBoldDebt()
+  it('increaseRecordedDebtSum(): increases the recorded BOLD balance by the correct amount', async () => {
+    const recordedBold_balanceBefore = await activePool.getRecordedDebtSum()
     assert.equal(recordedBold_balanceBefore, 0)
 
     // await activePool.increaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
-    const increaseBoldDebtData = th.getTransactionData('increaseBoldDebt(uint256)', ['0x64'])
+    const increaseBoldDebtData = th.getTransactionData('increaseRecordedDebtSum(uint256)', ['0x64'])
     const tx = await mockBorrowerOperations.forward(activePool.address, increaseBoldDebtData)
     assert.isTrue(tx.receipt.status)
-    const recordedBold_balanceAfter = await activePool.getBoldDebt()
+    const recordedBold_balanceAfter = await activePool.getRecordedDebtSum()
     assert.equal(recordedBold_balanceAfter, 100)
   })
   // Decrease
   it('decreaseBoldDebt(): decreases the recorded BOLD balance by the correct amount', async () => {
     // start the pool on 100 wei
     //await activePool.increaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
-    const increaseBoldDebtData = th.getTransactionData('increaseBoldDebt(uint256)', ['0x64'])
+    const increaseBoldDebtData = th.getTransactionData('increaseRecordedDebtSum(uint256)', ['0x64'])
     const tx1 = await mockBorrowerOperations.forward(activePool.address, increaseBoldDebtData)
     assert.isTrue(tx1.receipt.status)
 
-    const recordedBold_balanceBefore = await activePool.getBoldDebt()
+    const recordedBold_balanceBefore = await activePool.getRecordedDebtSum()
     assert.equal(recordedBold_balanceBefore, 100)
 
     //await activePool.decreaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
-    const decreaseBoldDebtData = th.getTransactionData('decreaseBoldDebt(uint256)', ['0x64'])
+    const decreaseBoldDebtData = th.getTransactionData('decreaseRecordedDebtSum(uint256)', ['0x64'])
     const tx2 = await mockBorrowerOperations.forward(activePool.address, decreaseBoldDebtData)
     assert.isTrue(tx2.receipt.status)
-    const recordedBold_balanceAfter = await activePool.getBoldDebt()
+    const recordedBold_balanceAfter = await activePool.getRecordedDebtSum()
     assert.equal(recordedBold_balanceAfter, 0)
   })
 

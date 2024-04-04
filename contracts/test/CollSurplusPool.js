@@ -1,3 +1,4 @@
+const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
 const { fundAccounts } = require("../utils/fundAccounts.js");
@@ -32,10 +33,10 @@ contract("CollSurplusPool", async (accounts) => {
     contracts.boldToken = await BoldToken.new(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
+      contracts.borrowerOperations.address,
+      contracts.activePool.address
     );
     
-
     priceFeed = contracts.priceFeedTestnet;
     collSurplusPool = contracts.collSurplusPool;
     borrowerOperations = contracts.borrowerOperations;
@@ -64,10 +65,7 @@ contract("CollSurplusPool", async (accounts) => {
     });
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // At ETH:USD = 100, this redemption should leave 1 ether of coll surplus
     await th.redeemCollateralAndGetTxObject(A, contracts, B_netDebt);

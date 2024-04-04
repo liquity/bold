@@ -1,3 +1,4 @@
+const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
 const { fundAccounts } = require("../utils/fundAccounts.js");
@@ -76,7 +77,8 @@ contract("StabilityPool", async (accounts) => {
       contracts.boldToken = await BoldToken.new(
         contracts.troveManager.address,
         contracts.stabilityPool.address,
-        contracts.borrowerOperations.address
+        contracts.borrowerOperations.address,
+        contracts.activePool.address
       );
 
       priceFeed = contracts.priceFeedTestnet;
@@ -714,7 +716,7 @@ contract("StabilityPool", async (accounts) => {
       assert.isFalse(await sortedTroves.contains(defaulter_1_TroveId));
       assert.isFalse(await sortedTroves.contains(defaulter_2_TroveId));
 
-      const activeDebt_Before = (await activePool.getBoldDebt()).toString();
+      const activeDebt_Before = (await activePool.getRecordedDebtSum()).toString();
       const defaultedDebt_Before = (await defaultPool.getBoldDebt()).toString();
       const activeColl_Before = (await activePool.getETHBalance()).toString();
       const defaultedColl_Before = (await defaultPool.getETHBalance()).toString();
@@ -729,7 +731,7 @@ contract("StabilityPool", async (accounts) => {
         dec(1000, 18)
       );
 
-      const activeDebt_After = (await activePool.getBoldDebt()).toString();
+      const activeDebt_After = (await activePool.getRecordedDebtSum()).toString();
       const defaultedDebt_After = (await defaultPool.getBoldDebt()).toString();
       const activeColl_After = (await activePool.getETHBalance()).toString();
       const defaultedColl_After = (await defaultPool.getETHBalance()).toString();
@@ -1101,10 +1103,7 @@ contract("StabilityPool", async (accounts) => {
       await stabilityPool.provideToSP(dec(105, 18), { from: D });
 
       // time passes
-      await th.fastForwardTime(
-        timeValues.SECONDS_IN_ONE_HOUR,
-        web3.currentProvider
-      );
+      await time.increase(timeValues.SECONDS_IN_ONE_HOUR);
 
       // B deposits
       await stabilityPool.provideToSP(dec(5, 18), { from: B });
@@ -2026,7 +2025,7 @@ contract("StabilityPool", async (accounts) => {
       // Price rises
       await priceFeed.setPrice(dec(200, 18));
 
-      const activeDebt_Before = (await activePool.getBoldDebt()).toString();
+      const activeDebt_Before = (await activePool.getRecordedDebtSum()).toString();
       const defaultedDebt_Before = (await defaultPool.getBoldDebt()).toString();
       const activeColl_Before = (await activePool.getETHBalance()).toString();
       const defaultedColl_Before = (await defaultPool.getETHBalance()).toString();
@@ -2040,7 +2039,7 @@ contract("StabilityPool", async (accounts) => {
       await stabilityPool.withdrawFromSP(dec(30000, 18), { from: carol });
       assert.equal((await stabilityPool.deposits(carol)).toString(), "0");
 
-      const activeDebt_After = (await activePool.getBoldDebt()).toString();
+      const activeDebt_After = (await activePool.getRecordedDebtSum()).toString();
       const defaultedDebt_After = (await defaultPool.getBoldDebt()).toString();
       const activeColl_After = (await activePool.getETHBalance()).toString();
       const defaultedColl_After = (await defaultPool.getETHBalance()).toString();
@@ -2209,10 +2208,7 @@ contract("StabilityPool", async (accounts) => {
         await th.ICRbetween100and110(defaulter_1_TroveId, troveManager, price)
       );
 
-      await th.fastForwardTime(
-        timeValues.MINUTES_IN_ONE_WEEK,
-        web3.currentProvider
-      );
+      await time.increase(timeValues.MINUTES_IN_ONE_WEEK);
 
       // Liquidate d1
       await troveManager.liquidate(defaulter_1_TroveId);
@@ -2896,10 +2892,7 @@ contract("StabilityPool", async (accounts) => {
       await stabilityPool.provideToSP(dec(10000, 18), { from: E });
 
       // Fast-forward time and make a second deposit
-      await th.fastForwardTime(
-        timeValues.SECONDS_IN_ONE_HOUR,
-        web3.currentProvider
-      );
+      await time.increase(timeValues.SECONDS_IN_ONE_HOUR);
       await stabilityPool.provideToSP(dec(10000, 18), { from: E });
 
       // perform a liquidation to make 0 < P < 1, and S > 0
@@ -3007,10 +3000,7 @@ contract("StabilityPool", async (accounts) => {
       //  SETUP: Execute a series of operations to trigger ETH rewards for depositor A
 
       // Fast-forward time and make a second deposit
-      await th.fastForwardTime(
-        timeValues.SECONDS_IN_ONE_HOUR,
-        web3.currentProvider
-      );
+      await time.increase(timeValues.SECONDS_IN_ONE_HOUR);
       await stabilityPool.provideToSP(dec(100, 18), { from: A });
 
       // perform a liquidation to make 0 < P < 1, and S > 0
@@ -3710,10 +3700,7 @@ contract("StabilityPool", async (accounts) => {
       await stabilityPool.provideToSP(dec(40, 18), { from: D });
 
       // fastforward time, and E makes a deposit
-      await th.fastForwardTime(
-        timeValues.SECONDS_IN_ONE_HOUR,
-        web3.currentProvider
-      );
+      await time.increase(timeValues.SECONDS_IN_ONE_HOUR);
       await openTrove({
         extraBoldAmount: toBN(dec(3000, 18)),
         ICR: toBN(dec(2, 18)),

@@ -983,14 +983,14 @@ class TestHelper {
     let increasedTotalDebt;
     if (ICR) {
       assert(extraParams.from, "A from account is needed");
-      const { debt, coll } = await contracts.troveManager.getEntireDebtAndColl(troveId);
+      const { entireDebt, entireColl } = await contracts.troveManager.getEntireDebtAndColl(troveId);
       const price = await contracts.priceFeedTestnet.getPrice();
-      const targetDebt = coll.mul(price).div(ICR);
+      const targetDebt = entireColl.mul(price).div(ICR);
       assert(
-        targetDebt > debt,
+        targetDebt > entireDebt,
         "ICR is already greater than or equal to target"
       );
-      increasedTotalDebt = targetDebt.sub(debt);
+      increasedTotalDebt = targetDebt.sub(entireDebt);
       boldAmount = await this.getNetBorrowingAmount(
         contracts,
         increasedTotalDebt
@@ -1630,31 +1630,6 @@ class TestHelper {
   }
 
   // --- Time functions ---
-
-  static async fastForwardTime(seconds, currentWeb3Provider) {
-    await currentWeb3Provider.send(
-      {
-        id: 0,
-        jsonrpc: "2.0",
-        method: "evm_increaseTime",
-        params: [seconds],
-      },
-      (err) => {
-        if (err) console.log(err);
-      }
-    );
-
-    await currentWeb3Provider.send(
-      {
-        id: 0,
-        jsonrpc: "2.0",
-        method: "evm_mine",
-      },
-      (err) => {
-        if (err) console.log(err);
-      }
-    );
-  }
 
   static async getLatestBlockTimestamp(web3Instance) {
     const blockNumber = await web3Instance.eth.getBlockNumber();

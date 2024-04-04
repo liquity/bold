@@ -11,6 +11,7 @@ const HintHelpers = artifacts.require("./HintHelpers.sol");
 const BoldToken = artifacts.require("./BoldToken.sol");
 const StabilityPool = artifacts.require("./StabilityPool.sol");
 const PriceFeedMock = artifacts.require("./PriceFeedMock.sol");
+const MockInterestRouter = artifacts.require("./MockInterestRouter.sol");
 const ERC20 = artifacts.require("./ERC20MinterMock.sol");
 //  "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol"
 //  "../node_modules/@openzeppelin/contracts/build/contracts/ERC20PresetMinterPauser.json"
@@ -44,8 +45,10 @@ class DeploymentHelper {
     const boldToken = await BoldToken.new(
       troveManager.address,
       stabilityPool.address,
-      borrowerOperations.address
+      borrowerOperations.address,
+      activePool.address
     );
+    const mockInterestRouter = await MockInterestRouter.new();
 
     const hintHelpers = await HintHelpers.new();
       
@@ -59,7 +62,7 @@ class DeploymentHelper {
     // );
 
     // TODO: setAsDeployed all above?
-
+    
     BoldToken.setAsDeployed(boldToken);
     DefaultPool.setAsDeployed(defaultPool);
     PriceFeedTestnet.setAsDeployed(priceFeedTestnet);
@@ -71,6 +74,7 @@ class DeploymentHelper {
     CollSurplusPool.setAsDeployed(collSurplusPool);
     BorrowerOperations.setAsDeployed(borrowerOperations);
     HintHelpers.setAsDeployed(hintHelpers);
+    MockInterestRouter.setAsDeployed(mockInterestRouter);
 
     const coreContracts = {
       WETH,
@@ -84,7 +88,8 @@ class DeploymentHelper {
       defaultPool,
       collSurplusPool,
       borrowerOperations,
-      hintHelpers
+      hintHelpers,
+      mockInterestRouter
     };
     return coreContracts;
   }
@@ -93,7 +98,8 @@ class DeploymentHelper {
     contracts.boldToken = await BoldToken.new(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
+      contracts.borrowerOperations.address,
+      contracts.activePool.address
     );
     return contracts;
   }
@@ -147,6 +153,8 @@ class DeploymentHelper {
       contracts.troveManager.address,
       contracts.stabilityPool.address,
       contracts.defaultPool.address,
+      contracts.boldToken.address,
+      contracts.mockInterestRouter.address
       //contracts.stETH.address,
     );
 

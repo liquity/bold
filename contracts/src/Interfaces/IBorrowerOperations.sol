@@ -50,4 +50,6 @@ interface IBorrowerOperations is ILiquityBase {
     function getCompositeDebt(uint _debt) external pure returns (uint);
 
     function adjustTroveInterestRate(uint256 _troveId, uint _newAnnualInterestRate, uint256 _upperHint, uint256 _lowerHint) external;
+
+    function applyTroveInterestPermissionless(uint256 _troveId) external;
 }

@@ -29,7 +29,9 @@ interface ITroveManager is IERC721, ILiquityBase {
     function borrowerOperationsAddress() external view returns (address);
 
     function BOOTSTRAP_PERIOD() external view returns (uint256);
-    
+
+    // function BOLD_GAS_COMPENSATION() external view returns (uint256);
+
     function getTroveIdsCount() external view returns (uint);
 
     function getTroveFromTroveIdsArray(uint _index) external view returns (uint256);
@@ -50,20 +52,25 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function addTroveIdToArray(uint256 _troveId) external returns (uint index);
 
-    function applyPendingRewards(uint256 _troveId) external;
-
     function getPendingETHReward(uint256 _troveId) external view returns (uint);
 
     function getPendingBoldDebtReward(uint256 _troveId) external view returns (uint);
 
-    function hasPendingRewards(uint256 _troveId) external view returns (bool);
+     function hasRedistributionGains(uint256 _troveId) external view returns (bool);
 
     function getEntireDebtAndColl(uint256 _troveId) external view returns (
-        uint debt, 
-        uint coll, 
-        uint pendingBoldDebtReward, 
-        uint pendingETHReward
+        uint entireDebt,
+        uint entireColl,
+        uint pendingBoldDebtReward,
+        uint pendingETHReward,
+        uint pendingBoldInterest
     );
+
+    function getTroveEntireDebt(uint256 _troveId) external view returns (uint256);
+
+    function getTroveEntireColl(uint256 _troveId) external view returns (uint256);
+
+    function getAndApplyRedistributionGains(uint256 _troveId) external returns (uint256, uint256);
 
     function closeTrove(uint256 _troveId) external;
 
@@ -75,29 +82,37 @@ interface ITroveManager is IERC721, ILiquityBase {
     function getRedemptionFeeWithDecay(uint _ETHDrawn) external view returns (uint);
 
     function getTroveStatus(uint256 _troveId) external view returns (uint);
-    
+
     function getTroveStake(uint256 _troveId) external view returns (uint);
 
     function getTroveDebt(uint256 _troveId) external view returns (uint);
+
+    function getTroveWeightedRecordedDebt(uint256 _troveId) external returns (uint256);
 
     function getTroveColl(uint256 _troveId) external view returns (uint);
 
     function getTroveAnnualInterestRate(uint256 _troveId) external view returns (uint);
 
+    function calcTroveAccruedInterest(uint256 _troveId) external view returns (uint256);
+
     function TroveAddManagers(uint256 _troveId) external view returns (address);
     function TroveRemoveManagers(uint256 _troveId) external view returns (address);
 
+    function getTroveLastDebtUpdateTime(uint256 _troveId) external view returns (uint);
+
     function setTrovePropertiesOnOpen(address _owner, uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _annualInterestRate) external returns (uint256);
 
-    function increaseTroveColl(address _sender, uint256 _troveId, uint _collIncrease) external returns (uint);
-
-    function decreaseTroveColl(address _sender, uint256 _troveId, uint _collDecrease) external returns (uint);
-
-    function increaseTroveDebt(address _sender, uint256 _troveId, uint _debtIncrease) external returns (uint);
-
-    function decreaseTroveDebt(address _sender, uint256 _troveId, uint _collDecrease) external returns (uint);
+    function troveIsStale(uint256 _troveId) external view returns (bool);
 
     function changeAnnualInterestRate(uint256 _troveId, uint256 _newAnnualInterestRate) external;
+
+    function updateTroveDebtAndInterest(uint256 _troveId, uint256 _entireTroveDebt, uint256 _newAnnualInterestRate) external;
+
+    function updateTroveDebtFromInterestApplication(uint256 _troveId, uint256 _entireTroveDebt) external;
+
+    function updateTroveDebt(address _sender, uint256 _troveId, uint256 _entireTroveDebt, bool _isDebtIncrease) external;
+
+    function updateTroveColl(address _sender, uint256 _troveId, uint256 _entireTroveColl, bool _isCollIncrease) external;
 
     function setAddManager(address _sender, uint256 _troveId, address _manager) external;
     function setRemoveManager(address _sender, uint256 _troveId, address _manager) external;
