@@ -20,7 +20,7 @@ contract('Fee arithmetic tests', async accounts => {
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000)
 
   // see: https://docs.google.com/spreadsheets/d/1RbD8VGzq7xFgeK1GOkz_9bbKVIx-xkOz0VsVelnUFdc/edit#gid=0
-  // Results array, maps seconds to expected hours passed output (rounded down to nearest hour).
+  // Results array, maps seconds to expected minutes passed output (rounded down to nearest hour).
 
   const secondsToMinutesRoundedDown = [
     [0, 0],
@@ -352,7 +352,7 @@ contract('Fee arithmetic tests', async accounts => {
   })
 
   it("minutesPassedSinceLastFeeOp(): returns minutes passed between time of last fee operation and current block.timestamp, rounded down to nearest minutes", async () => {
-    for (const [seconds, expectedHoursPassed] of secondsToMinutesRoundedDown) {
+    for (const [seconds, expectedMinutesPassed] of secondsToMinutesRoundedDown) {
       await troveManagerTester.setLastFeeOpTimeToNow()
 
       if (seconds > 0) {
@@ -361,7 +361,7 @@ contract('Fee arithmetic tests', async accounts => {
 
       const minutesPassed = await troveManagerTester.minutesPassedSinceLastFeeOp()
 
-      assert.equal(expectedHoursPassed.toString(), minutesPassed.toString())
+      assert.equal(expectedMinutesPassed.toString(), minutesPassed.toString())
     }
   })
 
