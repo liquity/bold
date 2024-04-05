@@ -214,9 +214,8 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _id Trove's id
      */
     function removeFromBatch(uint256 _id) external override {
-        BatchId batchId = nodes[_id].batchId;
-
         _requireCallerIsTroveManager();
+        BatchId batchId = nodes[_id].batchId;
         // batchId.isNotZero() implies that the list contains the node
         require(batchId.isNotZero(), "SortedTroves: Must use remove() to remove non-batched node");
 
@@ -269,7 +268,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     /*
      * @dev Checks if the list is empty
      */
-    function isEmpty() public view override returns (bool) {
+    function isEmpty() external view override returns (bool) {
         return size == 0;
     }
 
@@ -335,7 +334,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
             ) &&
             // `_annualInterestRate` falls between the two nodes' interest rates
             (_prevId == 0 || _troveManager.getTroveAnnualInterestRate(_prevId) >= _annualInterestRate) &&
-            (_nextId == 0 || _annualInterestRate >= _troveManager.getTroveAnnualInterestRate(_nextId))
+            (_nextId == 0 || _annualInterestRate > _troveManager.getTroveAnnualInterestRate(_nextId))
         );
     }
 
@@ -350,7 +349,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     }
 
     function _descendOne(ITroveManager _troveManager, uint256 _annualInterestRate, Position memory _pos) internal view returns (bool found) {
-        if (_pos.nextId == 0 || _annualInterestRate >= _troveManager.getTroveAnnualInterestRate(_pos.nextId)) {
+        if (_pos.nextId == 0 || _annualInterestRate > _troveManager.getTroveAnnualInterestRate(_pos.nextId)) {
             found = true;
         } else {
             _pos.prevId = _skipToBatchTail(_pos.nextId);
@@ -434,7 +433,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
             // Assuming minimal interference, the new correct position is still close to the head.
             return _descendList(_troveManager, _annualInterestRate, 0);
         } else {
-            if (!contains(_prevId) || _annualInterestRate > _troveManager.getTroveAnnualInterestRate(_prevId)) {
+            if (!contains(_prevId) || _troveManager.getTroveAnnualInterestRate(_prevId) < _annualInterestRate) {
                 // `prevId` does not exist anymore or now has a smaller interest rate than the given interest rate
                 _prevId = 0;
             }
@@ -445,7 +444,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
             // Assuming minimal interference, the new correct position is still close to the tail.
             return _ascendList(_troveManager, _annualInterestRate, 0);
         } else {
-            if (!contains(_nextId) || _annualInterestRate < _troveManager.getTroveAnnualInterestRate(_nextId)) {
+            if (!contains(_nextId) || _annualInterestRate <= _troveManager.getTroveAnnualInterestRate(_nextId)) {
                 // `nextId` does not exist anymore or now has a larger interest rate than the given interest rate
                 _nextId = 0;
             }
