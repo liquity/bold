@@ -611,14 +611,9 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         internal
     {
         if (_isDebtIncrease) {
-            // _activePool.increaseRecordedDebtSum(_boldChange + _accruedTroveInterest);
             address borrower = _troveManager.ownerOf(_troveId);
             _boldToken.mint(borrower, _boldChange);
         } else {
-            // TODO: Gas optimize this
-            // _activePool.increaseRecordedDebtSum(_accruedTroveInterest);
-            // _activePool.decreaseRecordedDebtSum(_boldChange);
-
             _boldToken.burn(msg.sender, _boldChange);
         }
 
