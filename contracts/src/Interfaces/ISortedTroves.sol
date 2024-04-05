@@ -43,6 +43,6 @@ interface ISortedTroves {
     function borrowerOperationsAddress() external view returns (address);
     function troveManager() external view returns (ITroveManager);
     function size() external view returns (uint256);
-    function nodes(uint256 _id) external view returns (bool exists, uint256 nextId, uint256 prevId, BatchId batchId);
+    function nodes(uint256 _id) external view returns (uint256 nextId, uint256 prevId, BatchId batchId, bool exists);
     function batches(BatchId _id) external view returns (uint256 head, uint256 tail);
 }

@@ -43,10 +43,10 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
 
     // Information for a node in the list
     struct Node {
-        bool exists;
         uint256 nextId;  // Id of next node (smaller interest rate) in the list
         uint256 prevId;  // Id of previous node (larger interest rate) in the list
         BatchId batchId; // Id of this node's batch manager, or zero in case of non-batched nodes
+        bool exists;
     }
 
     struct Batch {
