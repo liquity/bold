@@ -390,7 +390,7 @@ contract(
     describe("SortedTroves", async (accounts) => {
       // --- onlyBorrowerOperations ---
       //     insert
-      it("insert(): reverts when called by an account that is not BorrowerOps or TroveM", async () => {
+      it("insert(): reverts when called by an account that is not BorrowerOps", async () => {
         // Attempt call from alice
         try {
           const txAlice = await sortedTroves.insert(
@@ -420,7 +420,7 @@ contract(
 
       // --- onlyTroveMorBM ---
       // reinsert
-      it("reinsert(): reverts when called by an account that is neither BorrowerOps nor TroveManager", async () => {
+      it("reinsert(): reverts when called by an account that is not BorrowerOps", async () => {
         // Attempt call from alice
         try {
           const txAlice = await sortedTroves.reInsert(
