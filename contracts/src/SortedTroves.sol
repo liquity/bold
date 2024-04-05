@@ -146,6 +146,20 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         --size;
     }
 
+    function _reInsertSlice(ITroveManager _troveManager, uint256 _sliceHead, uint256 _sliceTail, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) internal {
+        if (!_validInsertPosition(_troveManager, _annualInterestRate, _prevId, _nextId)) {
+            // Sender's hint was not a valid insert position
+            // Use sender's hint to find a valid insert position
+            (_prevId, _nextId) = _findInsertPosition(_troveManager, _annualInterestRate, _prevId, _nextId);
+        }
+
+        // Check that the new insert position isn't the same as the existing one
+        if (_nextId != _sliceHead && _prevId != _sliceTail) {
+            _removeSlice(_sliceHead, _sliceTail);
+            _insertSliceIntoVerifiedPosition(_sliceHead, _sliceTail, _prevId, _nextId);
+        }
+    }
+
     /*
      * @dev Re-insert a non-batched Trove at a new position, based on its new annual interest rate
      * @param _id Trove's id
@@ -158,17 +172,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         require(contains(_id), "SortedTroves: List does not contain the id");
         require(!isBatchedNode(_id), "SortedTroves: Must not reInsert() batched node");
 
-        // The node being re-inserted can't be a valid hint, use its neighbours instead
-        if (_prevId == _id) {
-            _prevId = nodes[_id].prevId;
-        }
-
-        if (_nextId == _id) {
-            _nextId = nodes[_id].nextId;
-        }
-
-        _removeSlice(_id, _id);
-        _insertSlice(troveManager, _id, _id, _newAnnualInterestRate, _prevId, _nextId);
+        _reInsertSlice(troveManager, _id, _id, _newAnnualInterestRate, _prevId, _nextId);
     }
 
     /*
@@ -245,17 +249,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         _requireCallerIsBorrowerOperations();
         require(batch.head != 0, "SortedTroves: List does not contain the batch");
 
-        // No node within the re-inserted batch can be a valid hint, use surrounding nodes instead
-        if (nodes[_prevId].batchId.equals(_id)) {
-            _prevId = nodes[batch.head].prevId;
-        }
-
-        if (nodes[_nextId].batchId.equals(_id)) {
-            _nextId = nodes[batch.tail].nextId;
-        }
-
-        _removeSlice(batch.head, batch.tail);
-        _insertSlice(troveManager, batch.head, batch.tail, _newAnnualInterestRate, _prevId, _nextId);
+        _reInsertSlice(troveManager, batch.head, batch.tail, _newAnnualInterestRate, _prevId, _nextId);
     }
 
     /*
