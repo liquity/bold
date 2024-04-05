@@ -61,7 +61,11 @@ contract("CollSurplusPool", async (accounts) => {
     });
     await openTrove({
       extraBoldAmount: B_netDebt,
-      extraParams: { from: A, value: dec(3000, "ether") },
+      extraParams: {
+        from: A,
+        value: dec(3000, "ether"),
+        annualInterestRate: toBN(1) // We want A to be further from redemption than B
+      },
     });
 
     // skip bootstrapping phase
