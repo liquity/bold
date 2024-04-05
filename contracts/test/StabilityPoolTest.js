@@ -1,3 +1,4 @@
+const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
 const { fundAccounts } = require("../utils/fundAccounts.js");
@@ -9,7 +10,7 @@ const timeValues = testHelpers.TimeValues;
 
 const TroveManagerTester = artifacts.require("TroveManagerTester");
 const BoldToken = artifacts.require("BoldToken");
-const NonPayable = artifacts.require("NonPayable.sol");
+const NonPayableSwitch = artifacts.require("NonPayableSwitch.sol");
 
 const ZERO = toBN("0");
 const ZERO_ADDRESS = th.ZERO_ADDRESS;
@@ -485,12 +486,12 @@ contract("StabilityPool", async (accounts) => {
 
       // --- TEST ---
 
-      const nonPayable = await NonPayable.new();
+      const nonPayable = await NonPayableSwitch.new();
       await boldToken.transfer(nonPayable.address, dec(250, 18), {
         from: whale,
       });
 
-      // NonPayable makes deposit #1: 150 Bold
+      // NonPayableSwitch makes deposit #1: 150 Bold
       const txData1 = th.getTransactionData("provideToSP(uint256)", [
         web3.utils.toHex(dec(150, 18)),
       ]);
@@ -501,7 +502,7 @@ contract("StabilityPool", async (accounts) => {
       );
       assert.isTrue(
         gain_0.eq(toBN(0)),
-        "NonPayable should not have accumulated gains"
+        "NonPayableSwitch should not have accumulated gains"
       );
 
       // price drops: defaulters' Troves fall below MCR, nonPayable and whale Trove remain active
@@ -516,10 +517,10 @@ contract("StabilityPool", async (accounts) => {
       );
       assert.isTrue(
         gain_1.gt(toBN(0)),
-        "NonPayable should have some accumulated gains"
+        "NonPayableSwitch should have some accumulated gains"
       );
 
-      // NonPayable tries to make deposit #2: 100Bold (which also attempts to withdraw ETH gain)
+      // NonPayableSwitch tries to make deposit #2: 100Bold (which also attempts to withdraw ETH gain)
       const txData2 = th.getTransactionData("provideToSP(uint256,address)", [
         web3.utils.toHex(dec(100, 18)),
         frontEnd_1,
@@ -1102,10 +1103,7 @@ contract("StabilityPool", async (accounts) => {
       await stabilityPool.provideToSP(dec(105, 18), { from: D });
 
       // time passes
-      await th.fastForwardTime(
-        timeValues.SECONDS_IN_ONE_HOUR,
-        web3.currentProvider
-      );
+      await time.increase(timeValues.SECONDS_IN_ONE_HOUR);
 
       // B deposits
       await stabilityPool.provideToSP(dec(5, 18), { from: B });
@@ -2210,10 +2208,7 @@ contract("StabilityPool", async (accounts) => {
         await th.ICRbetween100and110(defaulter_1_TroveId, troveManager, price)
       );
 
-      await th.fastForwardTime(
-        timeValues.MINUTES_IN_ONE_WEEK,
-        web3.currentProvider
-      );
+      await time.increase(timeValues.MINUTES_IN_ONE_WEEK);
 
       // Liquidate d1
       await troveManager.liquidate(defaulter_1_TroveId);
@@ -2897,10 +2892,7 @@ contract("StabilityPool", async (accounts) => {
       await stabilityPool.provideToSP(dec(10000, 18), { from: E });
 
       // Fast-forward time and make a second deposit
-      await th.fastForwardTime(
-        timeValues.SECONDS_IN_ONE_HOUR,
-        web3.currentProvider
-      );
+      await time.increase(timeValues.SECONDS_IN_ONE_HOUR);
       await stabilityPool.provideToSP(dec(10000, 18), { from: E });
 
       // perform a liquidation to make 0 < P < 1, and S > 0
@@ -3008,10 +3000,7 @@ contract("StabilityPool", async (accounts) => {
       //  SETUP: Execute a series of operations to trigger ETH rewards for depositor A
 
       // Fast-forward time and make a second deposit
-      await th.fastForwardTime(
-        timeValues.SECONDS_IN_ONE_HOUR,
-        web3.currentProvider
-      );
+      await time.increase(timeValues.SECONDS_IN_ONE_HOUR);
       await stabilityPool.provideToSP(dec(100, 18), { from: A });
 
       // perform a liquidation to make 0 < P < 1, and S > 0
@@ -3711,10 +3700,7 @@ contract("StabilityPool", async (accounts) => {
       await stabilityPool.provideToSP(dec(40, 18), { from: D });
 
       // fastforward time, and E makes a deposit
-      await th.fastForwardTime(
-        timeValues.SECONDS_IN_ONE_HOUR,
-        web3.currentProvider
-      );
+      await time.increase(timeValues.SECONDS_IN_ONE_HOUR);
       await openTrove({
         extraBoldAmount: toBN(dec(3000, 18)),
         ICR: toBN(dec(2, 18)),

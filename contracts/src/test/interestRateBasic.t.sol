@@ -84,6 +84,20 @@ contract InterestRateBasic is DevTestSetup {
         borrowerOperations.openTrove(A, 1, 1e18, 2e18, 2000e18, 0, 0, 42e18);
     }
 
+    function testRevertWhenAdjustInterestRateFromNonOwner() public {
+        priceFeed.setPrice(2000e18);
+
+        // A opens Trove
+        uint256 A_Id = openTroveNoHints100pctMaxFee(A,  2 ether, 2000e18,  37e16);
+        assertEq(troveManager.getTroveAnnualInterestRate(A_Id), 37e16);
+
+        // B (who is not delegate) tries to adjust it
+        vm.startPrank(B);
+        vm.expectRevert("BO: Only owner");
+        borrowerOperations.adjustTroveInterestRate(A_Id, 40e16, 0, 0);
+        vm.stopPrank();
+    }
+
     function testRevertWhenAdjustInterestRateGreaterThanMax() public {
         priceFeed.setPrice(2000e18);
 

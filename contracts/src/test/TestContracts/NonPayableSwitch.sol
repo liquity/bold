@@ -6,7 +6,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 // import "forge-std/console.sol";
 
 
-contract NonPayable {
+contract NonPayableSwitch {
     using SafeERC20 for IERC20;
 
     bool isPayable;
