@@ -1,13 +1,18 @@
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
-const testHelpers = require("../utils/testHelpers.js");
+const { 
+  MoneyValues: mv,
+  TestHelper: th,
+  TimeValues: timeValues,
+} = require("../utils/testHelpers.js");
 const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
-const th = testHelpers.TestHelper;
-const dec = th.dec;
-const toBN = th.toBN;
-const assertRevert = th.assertRevert;
-const mv = testHelpers.MoneyValues;
-const timeValues = testHelpers.TimeValues;
+const TroveManagerTester = artifacts.require("./TroveManagerTester.sol");
+
+const {
+  assertRevert,
+  dec,
+  toBN,
+} = th;
 
 const GAS_PRICE = 10000000;
 
@@ -46,42 +51,20 @@ contract("TroveManager", async (accounts) => {
   ] = accounts;
 
   const loadDeployAndFundFixture = createDeployAndFundFixture(accounts.slice(0, 20), {
-    afterConnect: async (contracts) => ({
-      async getOpenTroveBoldAmount(totalDebt) {
-        return th.getOpenTroveBoldAmount(contracts, totalDebt);
-      },
-      async getNetBorrowingAmount(debtWithFee) {
-        return th.getNetBorrowingAmount(contracts, debtWithFee);
-      },
-      async openTrove(params) {
-        return th.openTrove(contracts, params);
-      },
-      async withdrawBold(params) {
-        return th.withdrawBold(contracts, params);
-      },
-      async getActualDebtFromComposite(compositeDebt) {
-        return th.getActualDebtFromComposite(compositeDebt, contracts);
-      },
-      async getTroveEntireColl(trove) {
-        return th.getTroveEntireColl(contracts, trove);
-      },
-      async getTroveEntireDebt(trove) {
-        return th.getTroveEntireDebt(contracts, trove);
-      },
-      async getTroveStake(trove) {
-        return th.getTroveStake(contracts, trove);
-      },
-    }),
+    afterDeploy: async (contracts) => {
+      contracts.troveManager = await TroveManagerTester.new();
+      TroveManagerTester.setAsDeployed(contracts.troveManager);
+    }
   });
 
   it("liquidate(): closes a Trove that has ICR < MCR", async () => {
     const {
+      contracts,
       getNetBorrowingAmount,
       openTrove,
       withdrawBold,
-      contracts,
     } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves } = contracts;
+    const { priceFeed, sortedTroves, troveManager } = contracts;
 
     await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale } });
     const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: alice } });
@@ -416,7 +399,7 @@ contract("TroveManager", async (accounts) => {
     );
 
     assert.isTrue(await sortedTroves.contains(bobTroveId));
-    th.logBN("bob icr", await troveManager.getCurrentICR(bob, await priceFeed.getPrice()));
+    // th.logBN("bob icr", await troveManager.getCurrentICR(bob, await priceFeed.getPrice()));
     // Bob now withdraws Bold, bringing his ICR to 1.11
     const { increasedTotalDebt: B_increasedTotalDebt } = await withdrawBold({
       ICR: toBN(dec(111, 16)),

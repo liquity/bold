@@ -1,15 +1,18 @@
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const testHelpers = require("../utils/testHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
-const th = testHelpers.TestHelper;
-const dec = th.dec;
-const toBN = th.toBN;
-const mv = testHelpers.MoneyValues;
-const timeValues = testHelpers.TimeValues;
+const {
+  MoneyValues: mv,
+  TestHelper: th,
+  TimeValues: timeValues,
+} = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
+
+const {
+  assertRevert,
+  dec,
+  toBN,
+} = th;
 
 const TroveManagerTester = artifacts.require("TroveManagerTester");
-const BoldToken = artifacts.require("BoldToken");
 const NonPayableSwitch = artifacts.require("NonPayableSwitch.sol");
 
 const ZERO = toBN("0");
@@ -49,77 +52,22 @@ contract("StabilityPool", async (accounts) => {
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
 
   const frontEnds = [frontEnd_1, frontEnd_2, frontEnd_3];
-  let contracts;
-  let priceFeed;
-  let boldToken;
-  let sortedTroves;
-  let troveManager;
-  let activePool;
-  let stabilityPool;
-  let defaultPool;
-  let borrowerOperations;
 
-  let gasPriceInWei;
-
-  const getOpenTroveBoldAmount = async (totalDebt) =>
-    th.getOpenTroveBoldAmount(contracts, totalDebt);
-  const openTrove = async (params) => th.openTrove(contracts, params);
-  const assertRevert = th.assertRevert;
+  const loadDeployAndFundFixture = createDeployAndFundFixture(accounts.slice(0, 20), {
+    afterDeploy: async (contracts) => {
+      contracts.troveManager = await TroveManagerTester.new();
+      TroveManagerTester.setAsDeployed(contracts.troveManager);
+    }
+  });
 
   describe("Stability Pool Mechanisms", async () => {
-    before(async () => {
-      gasPriceInWei = await web3.eth.getGasPrice();
-    });
-
-    beforeEach(async () => {
-      contracts = await deploymentHelper.deployLiquityCore();
-      contracts.troveManager = await TroveManagerTester.new();
-      contracts.boldToken = await BoldToken.new(
-        contracts.troveManager.address,
-        contracts.stabilityPool.address,
-        contracts.borrowerOperations.address,
-        contracts.activePool.address
-      );
-
-      priceFeed = contracts.priceFeedTestnet;
-      boldToken = contracts.boldToken;
-      sortedTroves = contracts.sortedTroves;
-      troveManager = contracts.troveManager;
-      activePool = contracts.activePool;
-      stabilityPool = contracts.stabilityPool;
-      defaultPool = contracts.defaultPool;
-      borrowerOperations = contracts.borrowerOperations;
-      hintHelpers = contracts.hintHelpers;
-
-      await deploymentHelper.connectCoreContracts(contracts);
-
-      await fundAccounts([
-        owner,
-        defaulter_1,
-        defaulter_2,
-        defaulter_3,
-        whale,
-        alice,
-        bob,
-        carol,
-        dennis,
-        erin,
-        flyn,
-        A,
-        B,
-        C,
-        D,
-        E,
-        F,
-        frontEnd_1,
-        frontEnd_2,
-        frontEnd_3,
-      ], contracts.WETH);
-    });
 
     // --- provideToSP() ---
     // increases recorded Bold at Stability Pool
     it("provideToSP(): increases the Stability Pool Bold balance", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { stabilityPool } = contracts;
+
       // --- SETUP --- Give Alice a least 200
       await openTrove({
         extraBoldAmount: toBN(200),
@@ -139,6 +87,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): updates the user's deposit record in StabilityPool", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { stabilityPool } = contracts;
+
       // --- SETUP --- Give Alice a least 200
       await openTrove({
         extraBoldAmount: toBN(200),
@@ -162,6 +113,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): reduces the user's Bold balance by the correct amount", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, stabilityPool } = contracts;
+
       // --- SETUP --- Give Alice a least 200
       await openTrove({
         extraBoldAmount: toBN(200),
@@ -185,6 +139,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): increases totalBoldDeposits by correct amount", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { stabilityPool } = contracts;
+
       // --- SETUP ---
 
       // Whale opens Trove with 50 ETH, adds 2000 Bold to StabilityPool
@@ -202,6 +159,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): Correctly updates user snapshots of accumulated rewards per unit staked", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, priceFeed, sortedTroves, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
 
       // Whale opens Trove and deposits to SP
@@ -275,6 +235,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(), multiple deposits: updates user's deposit and snapshots", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       // Whale opens Trove and deposits to SP
       await openTrove({
@@ -392,6 +355,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): reverts if user tries to provide more than their Bold balance", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, stabilityPool } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -429,6 +395,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): reverts if user tries to provide 2^256-1 Bold, which exceeds their balance", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { stabilityPool } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -461,6 +430,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): reverts if cannot receive ETH Gain", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, troveManager, priceFeed, stabilityPool } = contracts;
+
       // --- SETUP ---
       // Whale deposits 1850 Bold in StabilityPool
       await openTrove({
@@ -532,6 +504,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): doesn't impact other users' deposits or ETH gains", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, sortedTroves, stabilityPool, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -657,6 +632,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): doesn't impact system debt, collateral or TCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, defaultPool, priceFeed, sortedTroves, stabilityPool, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -746,6 +724,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): doesn't impact any troves, including the caller's trove", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { troveManager, priceFeed, stabilityPool } = contracts;
+
       const { troveId: whaleTroveId } = await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -892,6 +873,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): doesn't protect the depositor's trove from liquidation", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, sortedTroves, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(2, 18)),
@@ -944,6 +928,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): providing 0 Bold reverts", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { stabilityPool } = contracts;
+
       // --- SETUP ---
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
@@ -992,6 +979,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(), new deposit: depositor does not receive ETH gains", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, stabilityPool } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -1068,6 +1058,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(), new deposit after past full withdrawal: depositor does not receive ETH gains", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, priceFeed, stabilityPool, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -1181,6 +1174,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("provideToSP(): reverts when amount is zero", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, stabilityPool } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -1228,6 +1224,9 @@ contract("StabilityPool", async (accounts) => {
     // --- withdrawFromSP ---
 
     it("withdrawFromSP(): reverts when user has no active deposit", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { stabilityPool } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(100, 18)),
         ICR: toBN(dec(2, 18)),
@@ -1272,6 +1271,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): partial retrieval - retrieves correct Bold amount and the entire ETH Gain, and updates deposit", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       // Whale deposits 185000 Bold in StabilityPool
       await openTrove({
@@ -1367,6 +1369,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): partial retrieval - leaves the correct amount of Bold in the Stability Pool", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       // Whale deposits 185000 Bold in StabilityPool
       await openTrove({
@@ -1438,6 +1443,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): full retrieval - leaves the correct amount of Bold in the Stability Pool", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       // Whale deposits 185000 Bold in StabilityPool
       await openTrove({
@@ -1529,6 +1537,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): Subsequent deposit and withdrawal attempt from same account, with no intermediate liquidations, withdraws zero ETH", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       // Whale deposits 1850 Bold in StabilityPool
       await openTrove({
@@ -1603,6 +1614,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): it correctly updates the user's Bold and ETH snapshots of entitled reward per unit staked", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       // Whale deposits 185000 Bold in StabilityPool
       await openTrove({
@@ -1664,6 +1678,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): decreases StabilityPool ETH", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       // Whale deposits 185000 Bold in StabilityPool
       await openTrove({
@@ -1734,6 +1751,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): All depositors are able to withdraw from the SP to their account", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, troveManager, stabilityPool } = contracts;
+
       // Whale opens trove
       await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: whale } });
 
@@ -1783,6 +1803,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): increases depositor's Bold token balance by the expected amount", async () => {
+      const { contracts, openTrove, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
+      const { boldToken, borrowerOperations, priceFeed, stabilityPool, troveManager } = contracts;
+
       // Whale opens trove
       await openTrove({
         extraBoldAmount: toBN(dec(100000, 18)),
@@ -1864,6 +1887,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): doesn't impact other users Stability deposits or ETH gains", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, sortedTroves, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(100000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -1970,6 +1996,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): doesn't impact system debt, collateral or TCR ", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, defaultPool, priceFeed, stabilityPool, sortedTroves, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(100000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2054,6 +2083,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): doesn't impact any troves, including the caller's trove", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, troveManager } = contracts;
+
       const { troveId: whaleTroveId } = await openTrove({
         extraBoldAmount: toBN(dec(100000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2180,6 +2212,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): succeeds when amount is 0 and system has an undercollateralized trove", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, sortedTroves, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(100, 18)),
         ICR: toBN(dec(2, 18)),
@@ -2240,6 +2275,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): withdrawing 0 Bold doesn't alter the caller's deposit or the total Bold in the Stability Pool", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { stabilityPool } = contracts;
+
       // --- SETUP ---
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
@@ -2296,6 +2334,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): withdrawing 0 ETH Gain does not alter the caller's ETH balance, their trove collateral, or the ETH  in the Stability Pool", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2379,6 +2420,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): Request to withdraw > caller's deposit only withdraws the caller's compounded deposit", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
@@ -2479,6 +2523,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): Request to withdraw 2^256-1 Bold only withdraws the caller's compounded deposit", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
@@ -2564,6 +2611,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(): caller can withdraw full deposit and ETH gain during Recovery Mode", async () => {
+      const { contracts, openTrove, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
+      const { boldToken, priceFeed, sortedTroves, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
 
       // Price doubles
@@ -2762,6 +2812,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("getDepositorETHGain(): depositor does not earn further ETH gains from liquidations while their compounded deposit == 0: ", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, sortedTroves, stabilityPool, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(1, 24)),
         ICR: toBN(dec(10, 18)),
@@ -2870,6 +2923,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(), full withdrawal: zero's depositor's snapshots", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, priceFeed, stabilityPool, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(1000000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -2978,6 +3034,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawFromSP(), reverts when initial deposit value is 0", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, sortedTroves, stabilityPool, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(100000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -3039,6 +3098,9 @@ contract("StabilityPool", async (accounts) => {
     // --- withdrawETHGainToTrove ---
 
     it("withdrawETHGainToTrove(): reverts when user has no active deposit", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, sortedTroves, stabilityPool, troveManager } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(100000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -3092,6 +3154,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawETHGainToTrove(): Applies BoldLoss to user's deposit, and redirects ETH reward to user's Trove", async () => {
+      const { contracts, openTrove  } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       // Whale deposits 185000 Bold in StabilityPool
       await openTrove({
@@ -3182,6 +3247,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawETHGainToTrove(): reverts if it would leave trove with ICR < MCR", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       // Whale deposits 1850 Bold in StabilityPool
       await openTrove({
@@ -3230,6 +3298,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawETHGainToTrove(): Subsequent deposit and withdrawal attempt from same account, with no intermediate liquidations, withdraws zero ETH", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       // Whale deposits 1850 Bold in StabilityPool
       await openTrove({
@@ -3301,6 +3372,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawETHGainToTrove(): decreases StabilityPool ETH and increases activePool ETH", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { activePool, priceFeed, stabilityPool, troveManager } = contracts;
+
       // --- SETUP ---
       // Whale deposits 185000 Bold in StabilityPool
       await openTrove({
@@ -3374,6 +3448,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawETHGainToTrove(): All depositors are able to withdraw their ETH gain from the SP to their Trove", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, troveManager } = contracts;
+
       // Whale opens trove
       await openTrove({
         extraBoldAmount: toBN(dec(100000, 18)),
@@ -3434,6 +3511,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawETHGainToTrove(): All depositors withdraw, each withdraw their correct ETH gain", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { priceFeed, stabilityPool, troveManager } = contracts;
+
       // Whale opens trove
       await openTrove({
         extraBoldAmount: toBN(dec(100000, 18)),
@@ -3523,6 +3603,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawETHGainToTrove(): caller can withdraw full deposit and ETH gain to their trove during Recovery Mode", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { troveManager, sortedTroves, priceFeed, stabilityPool } = contracts;
+
       // --- SETUP ---
 
       // Defaulter opens
@@ -3617,6 +3700,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawETHGainToTrove(): reverts if user has no trove", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, priceFeed, stabilityPool, troveManager, sortedTroves } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(10000, 18)),
         ICR: toBN(dec(10, 18)),
@@ -3671,6 +3757,9 @@ contract("StabilityPool", async (accounts) => {
     });
 
     it("withdrawETHGainToTrove(): reverts when depositor has no ETH gain", async () => {
+      const { contracts, openTrove } = await loadDeployAndFundFixture();
+      const { boldToken, stabilityPool } = contracts;
+
       await openTrove({
         extraBoldAmount: toBN(dec(100000, 18)),
         ICR: toBN(dec(10, 18)),

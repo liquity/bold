@@ -4,36 +4,38 @@ const DefaultPool = artifacts.require("./DefaultPool.sol")
 const NonPayableSwitch = artifacts.require("./NonPayableSwitch.sol")
 const ERC20 = artifacts.require("./ERC20MinterMock.sol");
 
-const testHelpers = require("../utils/testHelpers.js")
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { TestHelper: th } = require("../utils/testHelpers.js")
 
-const th = testHelpers.TestHelper
-const dec = th.dec
+const { dec } = th
 
 const _minus_1_Ether = web3.utils.toWei('-1', 'ether')
 
 contract('StabilityPool', async accounts => {
-  /* mock* are EOA’s, temporarily used to call protected functions.
-  TODO: Replace with mock contracts, and later complete transactions from EOA
-  */
-  let stabilityPool
-  let WETH
 
   const [owner, alice] = accounts;
 
-  beforeEach(async () => {
-    WETH = await ERC20.new("WETH", "WETH");
-    stabilityPool = await StabilityPool.new(WETH.address)
-    const mockActivePoolAddress = (await NonPayableSwitch.new()).address
-    const dumbContractAddress = (await NonPayableSwitch.new()).address
+  const deployFixture = async () => {
+    /* mock* are EOA’s, temporarily used to call protected functions.
+    TODO: Replace with mock contracts, and later complete transactions from EOA
+    */
+    const WETH = await ERC20.new("WETH", "WETH");
+    const stabilityPool = await StabilityPool.new(WETH.address)
+    const { address: mockActivePoolAddress } = await NonPayableSwitch.new()
+    const { address: dumbContractAddress } = await NonPayableSwitch.new()
     await stabilityPool.setAddresses(dumbContractAddress, dumbContractAddress, mockActivePoolAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
-  })
+
+    return stabilityPool
+  }
 
   it('getETHBalance(): gets the recorded ETH balance', async () => {
+    const stabilityPool = await loadFixture(deployFixture)
     const recordedETHBalance = await stabilityPool.getETHBalance()
     assert.equal(recordedETHBalance, 0)
   })
 
   it('getTotalBoldDeposits(): gets the recorded BOLD balance', async () => {
+    const stabilityPool = await loadFixture(deployFixture)
     const recordedETHBalance = await stabilityPool.getTotalBoldDeposits()
     assert.equal(recordedETHBalance, 0)
   })
@@ -41,28 +43,32 @@ contract('StabilityPool', async accounts => {
 
 contract('ActivePool', async accounts => {
 
-  let activePool, mockBorrowerOperations, WETH
-
   const [owner, alice] = accounts;
-  beforeEach(async () => {
-    WETH = await ERC20.new("WETH", "WETH");
-    activePool = await ActivePool.new(WETH.address)
-    mockBorrowerOperations = await NonPayableSwitch.new()
-    const dumbContractAddress = (await NonPayableSwitch.new()).address
+
+  const deployFixture = async () => {
+    const WETH = await ERC20.new("WETH", "WETH");
+    const activePool = await ActivePool.new(WETH.address)
+    const mockBorrowerOperations = await NonPayableSwitch.new()
+    const { address: dumbContractAddress } = await NonPayableSwitch.new()
     await activePool.setAddresses(mockBorrowerOperations.address, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
-  })
+
+    return { activePool, mockBorrowerOperations, WETH }
+  }
 
   it('getETHBalance(): gets the recorded ETH balance', async () => {
+    const { activePool } = await loadFixture(deployFixture)
     const recordedETHBalance = await activePool.getETHBalance()
     assert.equal(recordedETHBalance, 0)
   })
 
   it('getBoldDebt(): gets the recorded BOLD balance', async () => {
+    const { activePool } = await loadFixture(deployFixture)
     const recordedETHBalance = await activePool.getRecordedDebtSum()
     assert.equal(recordedETHBalance, 0)
   })
  
   it('increaseRecordedDebtSum(): increases the recorded BOLD balance by the correct amount', async () => {
+    const { activePool, mockBorrowerOperations } = await loadFixture(deployFixture)
     const recordedBold_balanceBefore = await activePool.getRecordedDebtSum()
     assert.equal(recordedBold_balanceBefore, 0)
 
@@ -75,6 +81,7 @@ contract('ActivePool', async accounts => {
   })
   // Decrease
   it('decreaseBoldDebt(): decreases the recorded BOLD balance by the correct amount', async () => {
+    const { activePool, mockBorrowerOperations } = await loadFixture(deployFixture)
     // start the pool on 100 wei
     //await activePool.increaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
     const increaseBoldDebtData = th.getTransactionData('increaseRecordedDebtSum(uint256)', ['0x64'])
@@ -94,6 +101,7 @@ contract('ActivePool', async accounts => {
 
   // send raw ether
   it('sendETH(): decreases the recorded ETH balance by the correct amount', async () => {
+    const { activePool, mockBorrowerOperations, WETH } = await loadFixture(deployFixture)
     // setup: give pool 2 ether
     const activePool_initialBalance = web3.utils.toBN(await WETH.balanceOf(activePool.address))
     assert.equal(activePool_initialBalance, 0)
@@ -115,7 +123,7 @@ contract('ActivePool', async accounts => {
     assert.equal(activePool_BalanceBeforeTx, dec(2, 'ether'))
 
     // send ether from pool to alice
-    th.logBN("eth bal", await WETH.balanceOf(activePool.address))
+    // th.logBN("eth bal", await WETH.balanceOf(activePool.address))
     //await activePool.sendETH(alice, dec(1, 'ether'), { from: mockBorrowerOperationsAddress })
     const sendETHData = th.getTransactionData('sendETH(address,uint256)', [alice, web3.utils.toHex(dec(1, 'ether'))])
     const tx2 = await mockBorrowerOperations.forward(activePool.address, sendETHData, { from: owner })
@@ -133,29 +141,33 @@ contract('ActivePool', async accounts => {
 
 contract('DefaultPool', async accounts => {
  
-  let defaultPool, mockTroveManager, mockActivePool, WETH
-
   const [owner, alice] = accounts;
-  beforeEach(async () => {
-    WETH = await ERC20.new("WETH", "WETH");
-    defaultPool = await DefaultPool.new(WETH.address)
-    mockTroveManager = await NonPayableSwitch.new()
-    mockActivePool = await NonPayableSwitch.new()
+
+  const deployFixture = async () => {
+    const WETH = await ERC20.new("WETH", "WETH");
+    const defaultPool = await DefaultPool.new(WETH.address)
+    const mockTroveManager = await NonPayableSwitch.new()
+    const mockActivePool = await NonPayableSwitch.new()
     await mockActivePool.setETH(WETH.address)
     await defaultPool.setAddresses(mockTroveManager.address, mockActivePool.address)
-  })
+
+    return { defaultPool, mockTroveManager, mockActivePool, WETH }
+  }
 
   it('getETHBalance(): gets the recorded BOLD balance', async () => {
+    const { defaultPool } = await loadFixture(deployFixture)
     const recordedETHBalance = await defaultPool.getETHBalance()
     assert.equal(recordedETHBalance, 0)
   })
 
   it('getBoldDebt(): gets the recorded BOLD balance', async () => {
+    const { defaultPool } = await loadFixture(deployFixture)
     const recordedETHBalance = await defaultPool.getBoldDebt()
     assert.equal(recordedETHBalance, 0)
   })
  
   it('increaseBold(): increases the recorded BOLD balance by the correct amount', async () => {
+    const { defaultPool, mockTroveManager } = await loadFixture(deployFixture)
     const recordedBold_balanceBefore = await defaultPool.getBoldDebt()
     assert.equal(recordedBold_balanceBefore, 0)
 
@@ -169,6 +181,7 @@ contract('DefaultPool', async accounts => {
   })
   
   it('decreaseBold(): decreases the recorded BOLD balance by the correct amount', async () => {
+    const { defaultPool, mockTroveManager } = await loadFixture(deployFixture)
     // start the pool on 100 wei
     //await defaultPool.increaseBoldDebt(100, { from: mockTroveManagerAddress })
     const increaseBoldDebtData = th.getTransactionData('increaseBoldDebt(uint256)', ['0x64'])
@@ -189,6 +202,7 @@ contract('DefaultPool', async accounts => {
 
   // send raw ether
   it('sendETHToActivePool(): decreases the recorded ETH balance by the correct amount', async () => {
+    const { defaultPool, mockTroveManager, mockActivePool, WETH } = await loadFixture(deployFixture)
     // setup: give pool 2 ether
     const defaultPool_initialBalance = web3.utils.toBN(await WETH.balanceOf(defaultPool.address))
     assert.equal(defaultPool_initialBalance, 0)

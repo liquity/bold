@@ -3,11 +3,12 @@ const deploymentHelper = require("./deploymentHelpers.js");
 const { fundAccounts } = require("./fundAccounts.js");
 const { TestHelper: th } = require("./testHelpers.js");
 
-// Returns a fixture utility to be called in every test. The only required parameter
-// is the list of accounts to be funded. Callback parameters can be used to run code
-// after the deployment and after the connection. They take the contracts as a
-// parameter, which can be modified as needed. The returned object will be merged
-// with the object returned by the fixture loader utility.
+// Returns a fixture utility to be called in every test (it()).
+// The only required parameter is the list of accounts to be funded.
+// Callback parameters can be used to run code after the deployment
+// and after the connection. They take the contracts as a parameter,
+// which can be modified as needed. The returned object will be
+// merged with the object returned by the fixture loader utility.
 function createDeployAndFundFixture(accounts, {
   afterDeploy = async () => null,
   afterConnect = async () => null,
