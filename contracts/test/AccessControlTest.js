@@ -1,13 +1,8 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const testHelpers = require("../utils/testHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
+const { TestHelper: th } = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 const TroveManagerTester = artifacts.require("TroveManagerTester");
 
-const th = testHelpers.TestHelper;
-const timeValues = testHelpers.TimeValues;
-
-const dec = th.dec;
-const toBN = th.toBN;
+const { dec, toBN } = th;
 
 /* The majority of access control tests are contained in this file. However, tests for restrictions 
 on the Liquity admin address's capabilities during the first year are found in:
@@ -17,53 +12,51 @@ test/launchSequenceTest/DuringLockupPeriodTest.js */
 contract(
   "Access Control: Liquity functions with the caller restricted to Liquity contract(s)",
   async (accounts) => {
-    const [owner, alice, bob, carol] = accounts;
+    const fundedAccounts = accounts.slice(0, 10);
+
+    const [owner, alice, bob, carol] = fundedAccounts;
     const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(
       997,
       1000
     );
 
-    let coreContracts;
+    let contracts;
 
     let priceFeed;
     let boldToken;
     let sortedTroves;
     let troveManager;
-    let nameRegistry;
     let activePool;
     let stabilityPool;
     let defaultPool;
-    let functionCaller;
     let borrowerOperations;
 
-    before(async () => {
-      coreContracts = await deploymentHelper.deployLiquityCore();
-      coreContracts.troveManager = await TroveManagerTester.new();
-      // TODO: coreContracts = await deploymentHelper.deployBoldTokenTester(coreContracts)
-    
-      priceFeed = coreContracts.priceFeed;
-      boldToken = coreContracts.boldToken;
-      sortedTroves = coreContracts.sortedTroves;
-      troveManager = coreContracts.troveManager;
-      nameRegistry = coreContracts.nameRegistry;
-      activePool = coreContracts.activePool;
-      stabilityPool = coreContracts.stabilityPool;
-      defaultPool = coreContracts.defaultPool;
-      functionCaller = coreContracts.functionCaller;
-      borrowerOperations = coreContracts.borrowerOperations;
-
-      await deploymentHelper.connectCoreContracts(coreContracts);
-
-
-      await fundAccounts(accounts.slice(0, 10), coreContracts.WETH);
-
-      for (const account of accounts.slice(0, 10)) {
-        await th.openTrove(coreContracts, {
-          extraBoldAmount: toBN(dec(20000, 18)),
-          ICR: toBN(dec(2, 18)),
-          extraParams: { from: account },
-        });
+    const deployFixture = createDeployAndFundFixture({
+      accounts: fundedAccounts,
+      mocks: { TroveManager: TroveManagerTester },
+      callback: async (contracts) => {
+        await Promise.all(fundedAccounts.map(
+          (account) => th.openTrove(contracts, {
+            extraBoldAmount: toBN(dec(20000, 18)),
+            ICR: toBN(dec(2, 18)),
+            extraParams: { from: account },
+          })
+        ))
       }
+    });
+
+    beforeEach(async () => {
+      const result = await deployFixture();
+
+      contracts = result.contracts;
+      priceFeed = contracts.priceFeed;
+      boldToken = contracts.boldToken;
+      sortedTroves = contracts.sortedTroves;
+      troveManager = contracts.troveManager;
+      activePool = contracts.activePool;
+      stabilityPool = contracts.stabilityPool;
+      defaultPool = contracts.defaultPool;
+      borrowerOperations = contracts.borrowerOperations;
     });
 
     describe("BorrowerOperations", async (accounts) => {

@@ -1,15 +1,11 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const testHelpers = require("../utils/testHelpers.js");
+const { TestHelper: th } = require("../utils/testHelpers.js");
 const { fundAccounts } = require("../utils/fundAccounts.js");
 
-const th = testHelpers.TestHelper;
 const { dec, toBN } = th;
-const moneyVals = testHelpers.MoneyValues;
 
 let latestRandomSeed = 31337;
 
 const TroveManagerTester = artifacts.require("TroveManagerTester");
-const BoldToken = artifacts.require("BoldToken");
 
 const INITIAL_PRICE = dec(100, 18);
 
@@ -26,7 +22,7 @@ contract("HintHelpers", async (accounts) => {
 
   let contracts;
 
-  let numAccounts;
+  let numAccounts = 10;
 
   const getNetBorrowingAmount = async (debtWithFee) =>
     th.getNetBorrowingAmount(contracts, debtWithFee);
@@ -93,33 +89,24 @@ contract("HintHelpers", async (accounts) => {
     // console.timeEnd('makeTrovesInSequence')
   };
 
-  before(async () => {
-    contracts = await deploymentHelper.deployLiquityCore();
-    contracts.troveManager = await TroveManagerTester.new();
-    contracts.boldToken = await BoldToken.new(
-      contracts.troveManager.address,
-      contracts.stabilityPool.address,
-      contracts.borrowerOperations.address,
-      contracts.activePool.address
-    );
-   
+  const deployFixture = createDeployAndFundFixture({
+    accounts: [owner, bountyAddress, lpRewardsAddress, multisig],
+    mocks: { TroveManager: TroveManagerTester },
+    callback: async (contracts) => {
+      await priceFeed.setPrice(INITIAL_PRICE);
+      await makeTrovesInSequence(accounts, numAccounts);
+      // await makeTrovesInParallel(accounts, numAccounts)
+    }
+  });
+
+  beforeEach(async () => {
+    const result = await deployFixture();
+    contracts = result.contracts;
     sortedTroves = contracts.sortedTroves;
     troveManager = contracts.troveManager;
     borrowerOperations = contracts.borrowerOperations;
     hintHelpers = contracts.hintHelpers;
     priceFeed = contracts.priceFeedTestnet;
-
-    await deploymentHelper.connectCoreContracts(contracts);
-
-    await fundAccounts([
-      owner, bountyAddress, lpRewardsAddress, multisig
-    ], contracts.WETH);
-
-    numAccounts = 10;
-
-    await priceFeed.setPrice(INITIAL_PRICE);
-    await makeTrovesInSequence(accounts, numAccounts);
-    // await makeTrovesInParallel(accounts, numAccounts)
   });
 
   it("setup: makes accounts with nominal ICRs increasing by 1% consecutively", async () => {

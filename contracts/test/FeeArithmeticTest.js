@@ -2,9 +2,9 @@ const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const Decimal = require("decimal.js");
 const { BNConverter } = require("../utils/BNConverter.js")
 const testHelpers = require("../utils/testHelpers.js")
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol")
 const LiquityMathTester = artifacts.require("./LiquityMathTester.sol")
-const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
 const th = testHelpers.TestHelper
 const timeValues = testHelpers.TimeValues
@@ -16,6 +16,8 @@ contract('Fee arithmetic tests', async accounts => {
   let contracts
   let troveManagerTester
   let mathTester
+
+  const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000)
 
   // see: https://docs.google.com/spreadsheets/d/1RbD8VGzq7xFgeK1GOkz_9bbKVIx-xkOz0VsVelnUFdc/edit#gid=0
   // Results array, maps seconds to expected minutes passed output (rounded down to nearest hour).

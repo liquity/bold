@@ -1,51 +1,42 @@
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const testHelpers = require("../utils/testHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
+const {
+  MoneyValues: mv,
+  TestHelper: th,
+  TimeValues: timeValues,
+} = require("../utils/testHelpers.js");
 
-const th = testHelpers.TestHelper;
-const dec = th.dec;
-const toBN = th.toBN;
-const mv = testHelpers.MoneyValues;
-const timeValues = testHelpers.TimeValues;
+const { dec, toBN } = th;
 
 const TroveManagerTester = artifacts.require("TroveManagerTester");
-const BoldToken = artifacts.require("BoldToken");
 
 contract("CollSurplusPool", async (accounts) => {
-  const [owner, A, B, C, D, E] = accounts;
+  const fundedAccounts = accounts.slice(0, 6);
+
+  const [owner, A, B, C, D, E] = fundedAccounts;
 
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
 
-  let borrowerOperations;
-  let priceFeed;
-  let collSurplusPool;
-
   let contracts;
+  let borrowerOperations;
+  let collSurplusPool;
+  let priceFeed;
 
   const getOpenTroveBoldAmount = async (totalDebt) =>
     th.getOpenTroveBoldAmount(contracts, totalDebt);
   const openTrove = async (params) => th.openTrove(contracts, params);
 
-  beforeEach(async () => {
-    contracts = await deploymentHelper.deployLiquityCore();
-    contracts.troveManager = await TroveManagerTester.new();
-    contracts.boldToken = await BoldToken.new(
-      contracts.troveManager.address,
-      contracts.stabilityPool.address,
-      contracts.borrowerOperations.address,
-      contracts.activePool.address
-    );
-    
-    priceFeed = contracts.priceFeedTestnet;
-    collSurplusPool = contracts.collSurplusPool;
-    borrowerOperations = contracts.borrowerOperations;
+  const deployFixture = createDeployAndFundFixture({
+    accounts: fundedAccounts,
+    mocks: { TroveManager: TroveManagerTester },
+  });
 
-    await deploymentHelper.connectCoreContracts(contracts);
-    await fundAccounts([
-      owner, A, B, C, D, E,
-      bountyAddress, lpRewardsAddress, multisig
-    ], contracts.WETH);
+  beforeEach(async () => {
+    const result = await deployFixture();
+    contracts = result.contracts;
+    borrowerOperations = contracts.borrowerOperations;
+    collSurplusPool = contracts.collSurplusPool;
+    priceFeed = contracts.priceFeedTestnet;
   });
 
   it("CollSurplusPool::getETHBalance(): Returns the ETH balance of the CollSurplusPool after redemption", async () => {

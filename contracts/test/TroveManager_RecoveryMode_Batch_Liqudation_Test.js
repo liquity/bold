@@ -1,14 +1,14 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js");
 const { TestHelper: th, MoneyValues: mv } = require("../utils/testHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
-const { toBN, dec, ZERO_ADDRESS } = th;
+
+const { toBN, dec } = th;
 
 const TroveManagerTester = artifacts.require("./TroveManagerTester");
-const BoldToken = artifacts.require("./BoldToken.sol");
 
 contract.skip(
   "TroveManager - in Recovery Mode - back to normal mode in 1 tx",
   async (accounts) => {
+    const fundedAccounts = accounts.slice(0, 24);
+
     const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(
       997,
       1000
@@ -38,7 +38,7 @@ contract.skip(
       G,
       H,
       I,
-    ] = accounts;
+    ] = fundedAccounts;
 
     let contracts;
     let troveManager;
@@ -48,49 +48,18 @@ contract.skip(
 
     const openTrove = async (params) => th.openTrove(contracts, params);
 
+    const deployFixture = createDeployAndFundFixture({
+      accounts: fundedAccounts,
+      mocks: { TroveManager: TroveManagerTester },
+    });
+
     beforeEach(async () => {
-      contracts = await deploymentHelper.deployLiquityCore();
-      contracts.troveManager = await TroveManagerTester.new();
-      contracts.boldToken = await BoldToken.new(
-        contracts.troveManager.address,
-        contracts.stabilityPool.address,
-        contracts.borrowerOperations.address,
-        contracts.activePool.address
-      );
-    
+      const result = await deployFixture();
+      contracts = result.contracts;
       troveManager = contracts.troveManager;
       stabilityPool = contracts.stabilityPool;
       priceFeed = contracts.priceFeedTestnet;
       sortedTroves = contracts.sortedTroves;
-
-      await deploymentHelper.connectCoreContracts(contracts);
-
-      await fundAccounts([
-        owner,
-        alice,
-        bob,
-        carol,
-        dennis,
-        erin,
-        freddy,
-        greta,
-        harry,
-        ida,
-        whale,
-        defaulter_1,
-        defaulter_2,
-        defaulter_3,
-        defaulter_4,
-        A,
-        B,
-        C,
-        D,
-        E,
-        F,
-        G,
-        H,
-        I,
-      ], contracts.WETH);
     });
 
     context("Batch liquidations", () => {

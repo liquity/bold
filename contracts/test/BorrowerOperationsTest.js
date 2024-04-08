@@ -33,6 +33,8 @@ contract("BorrowerOperations", async (accounts) => {
     frontEnd_3,
   ] = accountsToFund;
 
+  const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
+
   let contracts
 
   let priceFeed;
@@ -85,24 +87,24 @@ contract("BorrowerOperations", async (accounts) => {
     },
   });
 
-  beforeEach(async () => {
-    const result = await deployFixture()
-
-    contracts = result.contracts
-    priceFeed = contracts.priceFeedTestnet
-    boldToken = contracts.boldToken
-    sortedTroves = contracts.sortedTroves
-    troveManager = contracts.troveManager
-    activePool = contracts.activePool
-    defaultPool = contracts.defaultPool
-    borrowerOperations = contracts.borrowerOperations
-
-    BOLD_GAS_COMPENSATION = result.BOLD_GAS_COMPENSATION
-    MIN_NET_DEBT = result.MIN_NET_DEBT
-    BORROWING_FEE_FLOOR = result.BORROWING_FEE_FLOOR
-  });
-
   const testCorpus = () => {
+    beforeEach(async () => {
+      const result = await deployFixture()
+
+      contracts = result.contracts
+      priceFeed = contracts.priceFeedTestnet
+      boldToken = contracts.boldToken
+      sortedTroves = contracts.sortedTroves
+      troveManager = contracts.troveManager
+      activePool = contracts.activePool
+      defaultPool = contracts.defaultPool
+      borrowerOperations = contracts.borrowerOperations
+
+      BOLD_GAS_COMPENSATION = result.BOLD_GAS_COMPENSATION
+      MIN_NET_DEBT = result.MIN_NET_DEBT
+      BORROWING_FEE_FLOOR = result.BORROWING_FEE_FLOOR
+    });
+
     it("addColl(): reverts when top-up would leave trove with ICR < MCR", async () => {
       // alice creates a Trove and adds first collateral
       const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
@@ -1243,6 +1245,7 @@ contract("BorrowerOperations", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: alice },
       });
+      BOLD_GAS_COMPENSATION = await borrowerOperations.BOLD_GAS_COMPENSATION();
       const repayAmount = totalDebt.sub(BOLD_GAS_COMPENSATION).add(toBN(1));
       await openTrove({
         extraBoldAmount: repayAmount,
@@ -3602,7 +3605,7 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): reverts if net debt < minimum net debt", async () => {
-      const txAPromise = th.openTroveWrapper(contracts, th._100pct, 0, A, A, 0, {
+      const txAPromise = th.openTroveWrapper(contracts,th._100pct, 0, A, A, 0, {
         from: A,
         value: dec(100, 30),
       });
