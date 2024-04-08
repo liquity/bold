@@ -34,10 +34,11 @@ contract(
       defaulter_4,
     ] = accounts;
 
-    const loadDeployAndFundFixture = createDeployAndFundFixture(accounts.slice(0, 20), {
-      async afterDeploy(contracts) {
-        contracts.troveManager = await TroveManagerTester.new();
-      },
+    const loadDeployAndFundFixture = createDeployAndFundFixture({
+      accounts: accounts.slice(0, 20),
+      mocks: {
+        TroveManager: TroveManagerTester,
+      }
     });
 
     it("redistribution: A, B Open. B Liquidated. C, D Open. D Liquidated. Distributes correct rewards", async () => {

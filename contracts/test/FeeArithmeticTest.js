@@ -325,8 +325,9 @@ contract('Fee arithmetic tests', async accounts => {
     [919877008002166000, 85, 826094891277916],
   ]
 
-  const loadDeployAndFundFixture = createDeployAndFundFixture(accounts.slice(0, 20), {
-    afterDeploy: async () => {
+  const loadDeployAndFundFixture = createDeployAndFundFixture({
+    accounts: accounts.slice(0, 20),
+    callback: async () => {
       const troveManagerTester = await TroveManagerTester.new()
       TroveManagerTester.setAsDeployed(troveManagerTester)
 

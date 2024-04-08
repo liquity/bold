@@ -31,14 +31,13 @@ contract("BorrowerOperations", async (accounts) => {
     frontEnd_3,
   ] = accounts;
 
-  const loadDeployAndFundFixture = createDeployAndFundFixture(accounts.slice(0, 17), {
-    async afterDeploy(contracts) {
-      contracts.borrowerOperations = await BorrowerOperationsTester.new(
-        contracts.WETH.address,
-      );
-      contracts.troveManager = await TroveManagerTester.new();
+  const loadDeployAndFundFixture = createDeployAndFundFixture({
+    accounts: accounts.slice(0, 17),
+    mocks: {
+      BorrowerOperations: BorrowerOperationsTester,
+      TroveManager: TroveManagerTester,
     },
-    async afterConnect(contracts) {
+    callback: async (contracts) => {
       const { borrowerOperations } = contracts;
       return {
         BOLD_GAS_COMPENSATION: await borrowerOperations.BOLD_GAS_COMPENSATION(),

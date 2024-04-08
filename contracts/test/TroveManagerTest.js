@@ -50,10 +50,10 @@ contract("TroveManager", async (accounts) => {
     E,
   ] = accounts;
 
-  const loadDeployAndFundFixture = createDeployAndFundFixture(accounts.slice(0, 20), {
-    afterDeploy: async (contracts) => {
-      contracts.troveManager = await TroveManagerTester.new();
-      TroveManagerTester.setAsDeployed(contracts.troveManager);
+  const loadDeployAndFundFixture = createDeployAndFundFixture({
+    accounts: accounts.slice(0, 20),
+    mocks: {
+      TroveManager: TroveManagerTester,
     }
   });
 
