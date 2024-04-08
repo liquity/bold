@@ -1,14 +1,15 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js")
 const testHelpers = require("../utils/testHelpers.js")
-const { fundAccounts } = require("../utils/fundAccounts.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol")
 
 const { dec, toBN } = testHelpers.TestHelper
 const th = testHelpers.TestHelper
 
 contract('StabilityPool - Withdrawal of stability deposit - Reward calculations', async accounts => {
+  const fundedAccounts = accounts.slice(0, 22);
 
-  const [owner,
+  const [
+    owner,
     defaulter_1,
     defaulter_2,
     defaulter_3,
@@ -31,7 +32,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     D,
     E,
     F
-  ] = accounts;
+  ] = fundedAccounts;
 
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000)
 
@@ -39,66 +40,27 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
   let priceFeed
   let boldToken
-  let sortedTroves
   let troveManager
-  let activePool
   let stabilityPool
-  let defaultPool
-  let borrowerOperations
-
-  let gasPriceInWei
 
   const ZERO_ADDRESS = th.ZERO_ADDRESS
 
   const getOpenTroveBoldAmount = async (totalDebt) => th.getOpenTroveBoldAmount(contracts, totalDebt)
 
+  const deployFixture = createDeployAndFundFixture({
+    accounts: fundedAccounts,
+    mocks: { TroveManager: TroveManagerTester }
+  });
+
   describe("Stability Pool Withdrawal", async () => {
 
-    before(async () => {
-      gasPriceInWei = await web3.eth.getGasPrice()
-    })
-
     beforeEach(async () => {
-      contracts = await deploymentHelper.deployLiquityCore()
-      contracts.troveManager = await TroveManagerTester.new()
-      contracts = await deploymentHelper.deployBoldToken(contracts)
-
+      const result = await deployFixture()
+      contracts = result.contracts
       priceFeed = contracts.priceFeedTestnet
       boldToken = contracts.boldToken
-      sortedTroves = contracts.sortedTroves
       troveManager = contracts.troveManager
-      activePool = contracts.activePool
       stabilityPool = contracts.stabilityPool
-      defaultPool = contracts.defaultPool
-      borrowerOperations = contracts.borrowerOperations
-
-      await deploymentHelper.connectCoreContracts(contracts)
-
-      await fundAccounts([
-        owner,
-        defaulter_1,
-        defaulter_2,
-        defaulter_3,
-        defaulter_4,
-        defaulter_5,
-        defaulter_6,
-        whale,
-        // whale_2,
-        alice,
-        bob,
-        carol,
-        dennis,
-        erin,
-        flyn,
-        graham,
-        harriet,
-        A,
-        B,
-        C,
-        D,
-        E,
-        F
-      ], contracts.WETH);
     })
 
     // --- Compounding tests ---

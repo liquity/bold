@@ -22,6 +22,8 @@ const getFrontEndTag = async (stabilityPool, depositor) => {
 };
 
 contract("StabilityPool", async (accounts) => {
+  const fundedAccounts = accounts.slice(0, 20);
+
   const [
     owner,
     defaulter_1,
@@ -43,7 +45,7 @@ contract("StabilityPool", async (accounts) => {
     frontEnd_1,
     frontEnd_2,
     frontEnd_3,
-  ] = accounts;
+  ] = fundedAccounts;
 
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
 
@@ -65,16 +67,14 @@ contract("StabilityPool", async (accounts) => {
   const assertRevert = th.assertRevert;
 
   const deployFixture = createDeployAndFundFixture({
-    accounts: accounts.slice(0, 20),
-    mocks: {
-      TroveManager: TroveManagerTester,
-    }
+    accounts: fundedAccounts.slice(0, 20),
+    mocks: { TroveManager: TroveManagerTester }
   });
 
   describe("Stability Pool Mechanisms", async () => {
     beforeEach(async () => {
-      const f = await deployFixture();
-      contracts = f.contracts;
+      const result = await deployFixture()
+      contracts = result.contracts;
       priceFeed = contracts.priceFeed;
       boldToken = contracts.boldToken;
       sortedTroves = contracts.sortedTroves;

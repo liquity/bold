@@ -24,6 +24,8 @@ const GAS_PRICE = 10000000;
  *
  */
 contract("TroveManager", async (accounts) => {
+  const fundedAccounts = accounts.slice(0, 20);
+
   const _18_zeros = "000000000000000000";
   const ZERO_ADDRESS = th.ZERO_ADDRESS;
 
@@ -48,24 +50,44 @@ contract("TroveManager", async (accounts) => {
     C,
     D,
     E,
-  ] = accounts;
+  ] = fundedAccounts;
 
-  const loadDeployAndFundFixture = createDeployAndFundFixture({
-    accounts: accounts.slice(0, 20),
-    mocks: {
-      TroveManager: TroveManagerTester,
-    }
+  let contracts
+
+  let priceFeed
+  let boldToken
+  let sortedTroves
+  let troveManager
+  let activePool
+  let stabilityPool
+  let defaultPool
+  let borrowerOperations
+
+  const deployFixture = createDeployAndFundFixture({
+    accounts: fundedAccounts,
+    mocks: { TroveManager: TroveManagerTester, }
+  });
+  const getOpenTroveTotalDebt = async (boldAmount) => th.getOpenTroveTotalDebt(contracts, boldAmount);
+  const getOpenTroveBoldAmount = async (totalDebt) => th.getOpenTroveBoldAmount(contracts, totalDebt);
+  const getActualDebtFromComposite = async (compositeDebt) => th.getActualDebtFromComposite(compositeDebt, contracts);
+  const getNetBorrowingAmount = async (debtWithFee) => th.getNetBorrowingAmount(contracts, debtWithFee);
+  const openTrove = async (params) => th.openTrove(contracts, params);
+  const withdrawBold = async (params) => th.withdrawBold(contracts, params);
+
+  beforeEach(async () => {
+    const result = await deployFixture()
+    contracts = result.contracts
+    priceFeed = contracts.priceFeedTestnet
+    boldToken = contracts.boldToken
+    sortedTroves = contracts.sortedTroves
+    troveManager = contracts.troveManager
+    activePool = contracts.activePool
+    stabilityPool = contracts.stabilityPool
+    defaultPool = contracts.defaultPool
+    borrowerOperations = contracts.borrowerOperations
   });
 
   it("liquidate(): closes a Trove that has ICR < MCR", async () => {
-    const {
-      contracts,
-      getNetBorrowingAmount,
-      openTrove,
-      withdrawBold,
-    } = await loadDeployAndFundFixture();
-    const { priceFeed, sortedTroves, troveManager } = contracts;
-
     await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale } });
     const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: alice } });
 
@@ -102,9 +124,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): decreases ActivePool ETH and BoldDebt by correct amounts", async () => {
-    const { openTrove, contracts } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, activePool } = contracts;
-
     // --- SETUP ---
     const { troveId: aliceTroveId, collateral: A_collateral, totalDebt: A_totalDebt } =
       await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: alice } });
@@ -154,9 +173,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): increases DefaultPool ETH and Bold debt by correct amounts", async () => {
-    const { openTrove, contracts } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, defaultPool } = contracts;
-
     // --- SETUP ---
     const { troveId: aliceTroveId, collateral: A_collateral, totalDebt: A_totalDebt } =
       await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: alice } });
@@ -203,9 +219,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): removes the Trove's stake from the total stakes", async () => {
-    const { openTrove, contracts } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager } = contracts;
-
     // --- SETUP ---
     const { troveId: aliceTroveId, collateral: A_collateral, totalDebt: A_totalDebt } =
       await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: alice } });
@@ -233,9 +246,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): Removes the correct trove from the TroveIds array, and moves the last array element to the new empty slot", async () => {
-    const { openTrove, contracts } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves } = contracts;
-
     // --- SETUP ---
     const { troveId: whaleTroveId } = await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: whale } });
 
@@ -301,9 +311,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): updates the snapshots of total stakes and total collateral", async () => {
-    const { openTrove, contracts } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager } = contracts;
-
     // --- SETUP ---
     const { troveId: aliceTroveId, collateral: A_collateral, totalDebt: A_totalDebt } =
       await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: alice } });
@@ -351,9 +358,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): updates the L_ETH and L_boldDebt reward-per-unit-staked totals", async () => {
-    const { contracts, openTrove, withdrawBold } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves } = contracts;
-
     // --- SETUP ---
     const { troveId: aliceTroveId, collateral: A_collateral, totalDebt: A_totalDebt } =
       await openTrove({ ICR: toBN(dec(8, 18)), extraParams: { from: alice } });
@@ -456,9 +460,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): Liquidates undercollateralized trove if there are two troves in the system", async () => {
-    const { openTrove, contracts } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     const { troveId: bobTroveId } = await openTrove({
       ICR: toBN(dec(200, 18)),
       extraParams: { from: bob, value: dec(100, "ether") },
@@ -504,9 +505,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): reverts if trove is non-existent", async () => {
-    const { openTrove, contracts } = await loadDeployAndFundFixture();
-    const { troveManager, sortedTroves } = contracts;
-
     const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: alice } });
     const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(21, 17)), extraParams: { from: bob } });
 
@@ -528,9 +526,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): reverts if trove has been closed", async () => {
-    const { openTrove, contracts } = await loadDeployAndFundFixture();
-    const { troveManager, sortedTroves, priceFeed } = contracts;
-
     await openTrove({ ICR: toBN(dec(8, 18)), extraParams: { from: alice } });
     await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: bob } });
     const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: carol } });
@@ -562,9 +557,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): does nothing if trove has >= 110% ICR", async () => {
-    const { openTrove, contracts } = await loadDeployAndFundFixture();
-    const { troveManager, sortedTroves, priceFeed } = contracts;
-
     const { troveId: whaleTroveId } = await openTrove({ ICR: toBN(dec(3, 18)), extraParams: { from: whale } });
     const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(3, 18)), extraParams: { from: bob } });
 
@@ -598,9 +590,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): Given the same price and no other trove changes, complete Pool offsets restore the TCR to its value prior to the defaulters opening troves", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     // Whale provides Bold to SP
     const spDeposit = toBN(dec(100, 24));
     await openTrove({
@@ -666,9 +655,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): Pool offsets increase the TCR", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     // Whale provides Bold to SP
     const spDeposit = toBN(dec(100, 24));
     await openTrove({
@@ -735,9 +721,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): a pure redistribution reduces the TCR only as a result of compensation", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves } = contracts;
-
     await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: whale } });
 
     await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: alice } });
@@ -850,9 +833,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): does not affect the SP deposit or ETH gain when called on an SP depositor's address that has no trove", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, boldToken, stabilityPool } = contracts;
-
     await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: whale } });
     const spDeposit = toBN(dec(1, 24));
     await openTrove({
@@ -919,9 +899,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): does not liquidate a SP depositor's trove with ICR > 110%, and does not affect their SP deposit or ETH gain", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: whale } });
     const spDeposit = toBN(dec(1, 24));
     const { troveId: bobTroveId } = await openTrove({
@@ -987,9 +964,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): liquidates a SP depositor's trove with ICR < 110%, and the liquidation correctly impacts their SP deposit and ETH gain", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     const A_spDeposit = toBN(dec(3, 24));
     const B_spDeposit = toBN(dec(1, 24));
     await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale } });
@@ -1105,9 +1079,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): does not alter the liquidated user's token balance", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { activePool, priceFeed, troveManager, sortedTroves, boldToken, defaultPool } = contracts;
-
     await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: whale } });
     const { troveId: aliceTroveId, boldAmount: A_boldAmount } = await openTrove({
       ICR: toBN(dec(2, 18)),
@@ -1162,9 +1133,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("liquidate(): liquidates based on entire/collateral debt (including pending rewards), not raw collateral/debt", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves } = contracts;
-
     const { troveId: aliceTroveId } = await openTrove({
       ICR: toBN(dec(8, 18)),
       extraBoldAmount: toBN(dec(100, 18)),
@@ -1267,9 +1235,6 @@ contract("TroveManager", async (accounts) => {
   // --- batchLiquidateTroves() ---
 
   it("batchLiquidateTroves(): liquidates based on entire/collateral debt (including pending rewards), not raw collateral/debt", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves } = contracts;
-
     const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(400, 16)), extraParams: { from: alice } });
     const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(221, 16)), extraParams: { from: bob } });
     const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: carol } });
@@ -1346,9 +1311,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("batchLiquidateTroves():  liquidates troves with ICR < MCR", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves } = contracts;
-
     const { troveId: whaleTroveId } = await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale } });
 
     // A, B, C open troves that will remain active when price drops to 100
@@ -1407,9 +1369,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("batchLiquidateTroves(): does not affect the liquidated user's token balances", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, boldToken } = contracts;
-
     const { troveId: whaleTroveId } = await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale } });
 
     // D, E, F open troves that will fall below MCR when price drops to 100
@@ -1455,9 +1414,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("batchLiquidateTroves(): A liquidation sequence containing Pool offsets increases the TCR", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     // Whale provides 500 Bold to SP
     const { troveId: whaleTroveId } = await openTrove({
       ICR: toBN(dec(100, 18)),
@@ -1532,9 +1488,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("batchLiquidateTroves(): A liquidation sequence of pure redistributions decreases the TCR, due to gas compensation, but up to 0.5%", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     const { troveId: whaleTroveId, collateral: W_coll, totalDebt: W_debt } = await openTrove({
       ICR: toBN(dec(100, 18)),
       extraParams: { from: whale },
@@ -1641,9 +1594,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("batchLiquidateTroves(): Liquidating troves with SP deposits correctly impacts their SP deposit and ETH gain", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     // Whale provides 400 Bold to the SP
     const whaleDeposit = toBN(dec(40000, 18));
     const { troveId: whaleTroveId } = await openTrove({
@@ -1813,9 +1763,6 @@ contract("TroveManager", async (accounts) => {
   // Can we achieve / test the same thing using another liquidation function?
 
   it("batchLiquidateTroves(): liquidates a Trove that a) was skipped in a previous liquidation and b) has pending rewards", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool, defaultPool, borrowerOperations } = contracts;
-
     // A, B, C, D, E open troves
     const { troveId: CTroveId } = await openTrove({ ICR: toBN(dec(300, 16)), extraParams: { from: C } });
     const { troveId: DTroveId } = await openTrove({ ICR: toBN(dec(364, 16)), extraParams: { from: D } });
@@ -1901,9 +1848,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("batchLiquidateTroves(): closes every trove with ICR < MCR in the given array", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     // --- SETUP ---
     await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale } });
 
@@ -1967,9 +1911,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("batchLiquidateTroves(): does not liquidate troves that are not in the given array", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     // --- SETUP ---
     await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale } });
 
@@ -2039,9 +1980,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("batchLiquidateTroves(): does not close troves with ICR >= MCR in the given array", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     // --- SETUP ---
     const { troveId: whaleTroveId } = await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale } });
 
@@ -2105,9 +2043,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("batchLiquidateTroves(): reverts if array is empty", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     // --- SETUP ---
     await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale } });
 
@@ -2150,9 +2085,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("batchLiquidateTroves(): skips if trove is non-existent", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool } = contracts;
-
     // --- SETUP ---
     const spDeposit = toBN(dec(500000, 18));
     await openTrove({
@@ -2237,9 +2169,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("batchLiquidateTroves(): skips if a trove has been closed", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves, stabilityPool, boldToken, borrowerOperations } = contracts;
-
     // --- SETUP ---
     const spDeposit = toBN(dec(500000, 18));
     await openTrove({
@@ -2339,8 +2268,6 @@ contract("TroveManager", async (accounts) => {
   //  Many of these tests rely on specific ICR ordering in the setup, and close fully redeemed.
   //  It may be more efficient to write wholly new redemption tests in Solidity for Foundry.
   it.skip("getRedemptionHints(): gets the address of the first Trove and the final ICR of the last Trove involved in a redemption", async () => {
-    const { openTrove } = await loadDeployAndFundFixture();
-
     // --- SETUP ---
     const partialRedemptionAmount = toBN(dec(100, 18));
     const { collateral: A_coll, totalDebt: A_totalDebt } = await openTrove({
@@ -2376,8 +2303,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("getRedemptionHints(): returns 0 as partialRedemptionHintNICR when reaching _maxIterations", async () => {
-    const { openTrove } = await loadDeployAndFundFixture();
-
     // --- SETUP ---
     await openTrove({ ICR: toBN(dec(310, 16)), extraParams: { from: alice } });
     await openTrove({ ICR: toBN(dec(290, 16)), extraParams: { from: bob } });
@@ -2400,9 +2325,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): cancels the provided Bold with debt from Troves with the lowest ICRs and sends an equivalent amount of Ether", async () => {
-    const { openTrove, contracts } = await loadDeployAndFundFixture();
-    const { troveManager, boldToken, priceFeed, sortedTroves } = contracts;
-
     // --- SETUP ---
     const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(310, 16)),
@@ -2518,9 +2440,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): with invalid first hint, zero address", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { troveManager, priceFeed, sortedTroves } = contracts;
-
     // --- SETUP ---
     const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(310, 16)),
@@ -2627,9 +2546,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): with invalid first hint, non-existent trove", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves } = contracts;
-
     // --- SETUP ---
     const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(310, 16)),
@@ -2736,9 +2652,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): with invalid first hint, trove below MCR", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, troveManager, sortedTroves } = contracts;
-
     // --- SETUP ---
     const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(310, 16)),
@@ -2850,8 +2763,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): ends the redemption sequence when the token redemption request has been filled", async () => {
-    const { openTrove } = await loadDeployAndFundFixture();
-
     // --- SETUP ---
     await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale } });
 
@@ -2946,8 +2857,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): ends the redemption sequence when max iterations have been reached", async () => {
-    const { openTrove } = await loadDeployAndFundFixture();
-
     // --- SETUP ---
     await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale } });
 
@@ -3020,9 +2929,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): performs partial redemption if resultant debt is > minimum net debt", async () => {
-    const { contracts, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
-    const { troveManager, boldToken, sortedTroves } = contracts;
-
     const ATroveId = await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(10000, 18)),
@@ -3074,9 +2980,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): doesn't perform partial redemption if resultant debt would be < minimum net debt", async () => {
-    const { contracts, getOpenTroveBoldAmount } = await loadDeployAndFundFixture();
-    const { troveManager, boldToken, sortedTroves } = contracts;
-
     const ATroveId = await th.openTroveWrapper(contracts,
       th._100pct,
       await getOpenTroveBoldAmount(dec(6000, 18)),
@@ -3129,9 +3032,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): doesnt perform the final partial redemption in the sequence if the hint is out-of-date", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { troveManager, priceFeed, sortedTroves } = contracts;
-
     // --- SETUP ---
     const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(363, 16)),
@@ -3259,9 +3159,6 @@ contract("TroveManager", async (accounts) => {
 
   // active debt cannot be zero, as there’s a positive min debt enforced, and at least a trove must exist
   it.skip("redeemCollateral(): can redeem if there is zero active debt but non-zero debt in DefaultPool", async () => {
-    const { contracts, getOpenTroveBoldAmount, openTrove } = await loadDeployAndFundFixture();
-    const { troveManager, boldToken, priceFeed } = contracts;
-
     // --- SETUP ---
 
     const amount = await getOpenTroveBoldAmount(dec(110, 18));
@@ -3318,8 +3215,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): doesn't touch Troves with ICR < 110%", async () => {
-    const { openTrove } = await loadDeployAndFundFixture();
-
     // --- SETUP ---
 
     const { troveId: aliceTroveId, netDebt: A_debt } = await openTrove({
@@ -3365,8 +3260,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): finds the last Trove with ICR == 110% even if there is more than one", async () => {
-    const { openTrove } = await loadDeployAndFundFixture();
-
     // --- SETUP ---
     const amount1 = toBN(dec(100, 18));
     const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
@@ -3440,9 +3333,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): reverts when TCR < MCR", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed } = contracts;
-
     await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: alice } });
     await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: bob } });
     const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: carol } });
@@ -3466,8 +3356,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): reverts when argument _amount is 0", async () => {
-    const { openTrove } = await loadDeployAndFundFixture();
-
     await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale } });
 
     // Alice opens trove and transfers 500Bold to Erin, the would-be redeemer
@@ -3504,8 +3392,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): reverts if max fee > 100%", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-
     await openTrove({
       ICR: toBN(dec(400, 16)),
       extraBoldAmount: dec(10, 18),
@@ -3553,8 +3439,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): reverts if max fee < 0.5%", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-
     await openTrove({
       ICR: toBN(dec(400, 16)),
       extraBoldAmount: dec(10, 18),
@@ -3612,9 +3496,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): reverts if fee exceeds max fee percentage", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { boldToken, troveManager } = contracts;
-
     const { totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(400, 16)),
       extraBoldAmount: dec(80, 18),
@@ -3697,9 +3578,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): doesn't affect the Stability Pool deposits or ETH gain of redeemed-from troves", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { troveManager, boldToken, stabilityPool, priceFeed, sortedTroves } = contracts;
-
     await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale } });
 
     // B, C, D, F open trove
@@ -3834,8 +3712,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): caller can redeem their entire BoldToken balance", async () => {
-    const { openTrove } = await loadDeployAndFundFixture();
-
     const { collateral: W_coll, totalDebt: W_totalDebt } = await openTrove({
       ICR: toBN(dec(20, 18)),
       extraParams: { from: whale },
@@ -3933,8 +3809,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): reverts when requested redemption amount exceeds caller's Bold token balance", async () => {
-    const { openTrove } = await loadDeployAndFundFixture();
-
     const { collateral: W_coll, totalDebt: W_totalDebt } = await openTrove({
       ICR: toBN(dec(20, 18)),
       extraParams: { from: whale },
@@ -4141,9 +4015,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): value of issued ETH == face value of redeemed Bold (assuming 1 Bold has value of $1)", async () => {
-    const { openTrove, contracts } = await loadDeployAndFundFixture();
-    const { boldToken, troveManager, priceFeed, activePool, sortedTroves } = contracts;
-
     const { collateral: W_coll } = await openTrove({
       ICR: toBN(dec(20, 18)),
       extraParams: { from: whale },
@@ -4298,9 +4169,6 @@ contract("TroveManager", async (accounts) => {
   // it doesn’t make much sense as there’s now min debt enforced and at least one trove must remain active
   // the only way to test it is before any trove is opened
   it.skip("redeemCollateral(): reverts if there is zero outstanding system debt", async () => {
-    const { contracts } = await loadDeployAndFundFixture();
-    const { troveManager, boldToken } = contracts;
-
     // --- SETUP --- illegally mint Bold to Bob
     await boldToken.unprotectedMint(bob, dec(100, 18));
 
@@ -4341,8 +4209,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): reverts if caller's tries to redeem more than the outstanding system debt", async () => {
-    const { openTrove } = await loadDeployAndFundFixture();
-
     // --- SETUP --- illegally mint Bold to Bob
     await boldToken.unprotectedMint(bob, "101000000000000000000");
 
@@ -4400,9 +4266,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): a redemption sends the ETH remainder (ETHDrawn - gas) to the redeemer", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed, activePool, defaultPool } = contracts;
-
     // time fast-forwards 1 year, and multisig stakes 1 LQTY
     await time.increase(timeValues.SECONDS_IN_ONE_YEAR);
 
@@ -4625,9 +4488,6 @@ contract("TroveManager", async (accounts) => {
   };
 
   it.skip("redeemCollateral(): emits correct debt and coll values in each redeemed trove's TroveUpdated event", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { sortedTroves } = contracts;
-
     const { netDebt: W_netDebt } = await openTrove({
       ICR: toBN(dec(20, 18)),
       extraBoldAmount: dec(10000, 18),
@@ -4716,9 +4576,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): a redemption that closes a trove leaves the trove's ETH surplus (collateral - ETH drawn) available for the trove owner to claim", async () => {
-    const { contracts } = await loadDeployAndFundFixture();
-    const { collSurplusPool } = contracts;
-
     const { A_netDebt, A_coll, B_netDebt, B_coll, C_netDebt, C_coll } =
       await redeemCollateral3Full1Partial();
 
@@ -4753,9 +4610,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it.skip("redeemCollateral(): a redemption that closes a trove leaves the trove's ETH surplus (collateral - ETH drawn) available for the trove owner after re-opening trove", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed } = contracts;
-
     const {
       A_netDebt,
       A_coll: A_collBefore,
@@ -4817,9 +4671,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("getPendingBoldDebtReward(): Returns 0 if there is no pending BoldDebt reward", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { troveManager, stabilityPool, priceFeed, sortedTroves } = contracts;
-
     // Make some troves
     const { troveId: defaulter_1_TroveId, totalDebt } = await openTrove({
       ICR: toBN(dec(2, 18)),
@@ -4863,9 +4714,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("getPendingETHReward(): Returns 0 if there is no pending ETH reward", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { troveManager, stabilityPool, priceFeed, sortedTroves } = contracts;
-
     // make some troves
     const { troveId: defaulter_1_TroveId, totalDebt } = await openTrove({
       ICR: toBN(dec(2, 18)),
@@ -4910,9 +4758,6 @@ contract("TroveManager", async (accounts) => {
   // --- computeICR ---
 
   it("computeICR(): Returns 0 if trove's coll is worth 0", async () => {
-    const { contracts } = await loadDeployAndFundFixture();
-    const { troveManager } = contracts;
-
     const price = 0;
     const coll = dec(1, "ether");
     const debt = dec(100, 18);
@@ -4923,9 +4768,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("computeICR(): Returns 2^256-1 for ETH:USD = 100, coll = 1 ETH, debt = 100 Bold", async () => {
-    const { contracts } = await loadDeployAndFundFixture();
-    const { troveManager } = contracts;
-
     const price = dec(100, 18);
     const coll = dec(1, "ether");
     const debt = dec(100, 18);
@@ -4936,9 +4778,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("computeICR(): returns correct ICR for ETH:USD = 100, coll = 200 ETH, debt = 30 Bold", async () => {
-    const { contracts } = await loadDeployAndFundFixture();
-    const { troveManager } = contracts;
-
     const price = dec(100, 18);
     const coll = dec(200, "ether");
     const debt = dec(30, 18);
@@ -4949,9 +4788,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("computeICR(): returns correct ICR for ETH:USD = 250, coll = 1350 ETH, debt = 127 Bold", async () => {
-    const { contracts } = await loadDeployAndFundFixture();
-    const { troveManager } = contracts;
-
     const price = "250000000000000000000";
     const coll = "1350000000000000000000";
     const debt = "127000000000000000000";
@@ -4962,9 +4798,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("computeICR(): returns correct ICR for ETH:USD = 100, coll = 1 ETH, debt = 54321 Bold", async () => {
-    const { contracts } = await loadDeployAndFundFixture();
-    const { troveManager } = contracts;
-
     const price = dec(100, 18);
     const coll = dec(1, "ether");
     const debt = "54321000000000000000000";
@@ -4975,9 +4808,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("computeICR(): Returns 2^256-1 if trove has non-zero coll and zero debt", async () => {
-    const { contracts } = await loadDeployAndFundFixture();
-    const { troveManager } = contracts;
-
     const price = dec(100, 18);
     const coll = dec(1, "ether");
     const debt = 0;
@@ -4995,9 +4825,6 @@ contract("TroveManager", async (accounts) => {
 
   //TCR < 150%
   it("checkRecoveryMode(): Returns true when TCR < 150%", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed } = contracts;
-
     await priceFeed.setPrice(dec(100, 18));
 
     await openTrove({ ICR: toBN(dec(150, 16)), extraParams: { from: alice } });
@@ -5014,9 +4841,6 @@ contract("TroveManager", async (accounts) => {
 
   // TCR == 150%
   it("checkRecoveryMode(): Returns false when TCR == 150%", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed } = contracts;
-
     await priceFeed.setPrice(dec(100, 18));
 
     await openTrove({ ICR: toBN(dec(150, 16)), extraParams: { from: alice } });
@@ -5031,9 +4855,6 @@ contract("TroveManager", async (accounts) => {
 
   // > 150%
   it("checkRecoveryMode(): Returns false when TCR > 150%", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed } = contracts;
-
     await priceFeed.setPrice(dec(100, 18));
 
     await openTrove({ ICR: toBN(dec(150, 16)), extraParams: { from: alice } });
@@ -5050,9 +4871,6 @@ contract("TroveManager", async (accounts) => {
 
   // check 0
   it("checkRecoveryMode(): Returns false when TCR == 0", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { priceFeed } = contracts;
-
     await priceFeed.setPrice(dec(100, 18));
 
     await openTrove({ ICR: toBN(dec(150, 16)), extraParams: { from: alice } });
@@ -5070,9 +4888,6 @@ contract("TroveManager", async (accounts) => {
   // --- Getters ---
 
   it("getTroveStake(): Returns stake", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { troveManager } = contracts;
-
     const { troveId: ATroveId, collateral: A_coll } = await openTrove({
       ICR: toBN(dec(150, 16)),
       extraParams: { from: A },
@@ -5090,9 +4905,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("getTroveColl(): Returns coll", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { troveManager } = contracts;
-
     const { troveId: ATroveId, collateral: A_coll } = await openTrove({
       ICR: toBN(dec(150, 16)),
       extraParams: { from: A },
@@ -5107,9 +4919,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("getTroveDebt(): Returns debt", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { troveManager } = contracts;
-
     const { troveId: ATroveId, totalDebt: totalDebtA } = await openTrove({
       ICR: toBN(dec(150, 16)),
       extraParams: { from: A },
@@ -5129,9 +4938,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("getTroveStatus(): Returns status", async () => {
-    const { contracts, openTrove } = await loadDeployAndFundFixture();
-    const { troveManager, boldToken, borrowerOperations } = contracts;
-
     const { troveId: BTroveId, totalDebt: B_totalDebt } = await openTrove({
       ICR: toBN(dec(150, 16)),
       extraParams: { from: B },
@@ -5156,9 +4962,6 @@ contract("TroveManager", async (accounts) => {
   });
 
   it("hasRedistributionGains(): Returns false it trove is not active", async () => {
-    const { contracts } = await loadDeployAndFundFixture();
-    const { troveManager } = contracts;
-
     assert.isFalse(await troveManager.hasRedistributionGains(th.addressToTroveId(alice)));
   });
 });
