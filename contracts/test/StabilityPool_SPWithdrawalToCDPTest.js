@@ -515,7 +515,6 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       const carol_ETHWithdrawn = th.getEventArgByName(txC, 'ETHGainWithdrawn', '_ETH').toString()
       const dennis_ETHWithdrawn = th.getEventArgByName(txD, 'ETHGainWithdrawn', '_ETH').toString()
 
-      console.log()
       assert.isAtMost(th.getDifference((await stabilityPool.getCompoundedBoldDeposit(alice)).toString(), '1666666666666666666666'), 100000)
       assert.isAtMost(th.getDifference((await stabilityPool.getCompoundedBoldDeposit(bob)).toString(), '1666666666666666666666'), 100000)
       assert.isAtMost(th.getDifference((await stabilityPool.getCompoundedBoldDeposit(carol)).toString(), '1666666666666666666666'), 100000)
@@ -1592,7 +1591,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       assert.isTrue(txL1.receipt.status)
 
       const aliceDeposit = (await stabilityPool.getCompoundedBoldDeposit(alice)).toString()
-      console.log(`alice deposit: ${aliceDeposit}`)
+      // console.log(`alice deposit: ${aliceDeposit}`)
       assert.equal(aliceDeposit, 0)
     })
 
