@@ -6,9 +6,7 @@ const BorrowerOperationsTester = artifacts.require(
 );
 const TroveManagerTester = artifacts.require("TroveManagerTester");
 
-const dec = th.dec;
-const toBN = th.toBN;
-const assertRevert = th.assertRevert;
+const { dec, toBN, assertRevert } = th;
 
 contract("BorrowerOperations", async (accounts) => {
   const accountsToFund = accounts.slice(0, 17);
