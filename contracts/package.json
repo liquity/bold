@@ -7,7 +7,7 @@
     "lib": "lib"
   },
   "scripts": {
-    "test": "hardhat test",
+    "test": "hardhat test --parallel",
     "coverage": "hardhat coverage"
   },
   "repository": {
