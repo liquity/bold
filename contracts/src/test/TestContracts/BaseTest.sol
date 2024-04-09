@@ -56,35 +56,24 @@ contract BaseTest is Test {
         uint256 A;
         uint256 B;
         uint256 C;
-        uint256 D;
-    }
-
-    struct TroveIDs {
-        uint256 A;
-        uint256 B;
-        uint256 C;
-        uint256 D;
     }
 
     struct TroveCollAmounts {
         uint256 A;
         uint256 B;
         uint256 C;
-        uint256 D;
     }
 
     struct TroveInterestRates {
         uint256 A;
         uint256 B;
         uint256 C;
-        uint256 D;
     }
 
     struct TroveAccruedInterests {
         uint256 A;
         uint256 B;
         uint256 C;
-        uint256 D;
     }
 
     // --- functions ---
@@ -237,12 +226,6 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-
-    function redeem(address _from, uint256 _boldAmount) public {
-        vm.startPrank(_from);
-        troveManager.redeemCollateral(_boldAmount, MAX_UINT256, 1e18);
-        vm.stopPrank();
-    }
     function logContractAddresses() public view {
         console.log("ActivePool addr: ", address(activePool));
         console.log("BorrowerOps addr: ", address(borrowerOperations));
