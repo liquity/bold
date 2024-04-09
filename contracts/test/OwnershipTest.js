@@ -21,7 +21,7 @@ contract('All Liquity functions with onlyOwner modifier', async accounts => {
 
   before(async () => {
     contracts = await deploymentHelper.deployLiquityCore();
-    contracts.borrowerOperations = await BorrowerOperationsTester.new();
+    contracts.borrowerOperations = await BorrowerOperationsTester.new(contracts.WETH.address);
     contracts = await deploymentHelper.deployBoldToken(contracts);
 
     boldToken = contracts.boldToken;
@@ -92,7 +92,7 @@ contract('All Liquity functions with onlyOwner modifier', async accounts => {
 
   describe('ActivePool', async accounts => {
     it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testSetAddresses(activePool, 4)
+      await testSetAddresses(activePool, 6)
     })
   })
 

@@ -1,6 +1,7 @@
+const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const testHelpers = require("../utils/testHelpers.js");
-const NonPayable = artifacts.require("NonPayable.sol");
+const { fundAccounts } = require("../utils/fundAccounts.js");
 
 const th = testHelpers.TestHelper;
 const dec = th.dec;
@@ -32,19 +33,23 @@ contract("CollSurplusPool", async (accounts) => {
     contracts.boldToken = await BoldToken.new(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
-      contracts.borrowerOperations.address
+      contracts.borrowerOperations.address,
+      contracts.activePool.address
     );
     
-
     priceFeed = contracts.priceFeedTestnet;
     collSurplusPool = contracts.collSurplusPool;
     borrowerOperations = contracts.borrowerOperations;
 
     await deploymentHelper.connectCoreContracts(contracts);
+    await fundAccounts([
+      owner, A, B, C, D, E,
+      bountyAddress, lpRewardsAddress, multisig
+    ], contracts.WETH);
   });
 
-  it("CollSurplusPool::getETH(): Returns the ETH balance of the CollSurplusPool after redemption", async () => {
-    const ETH_1 = await collSurplusPool.getETH();
+  it("CollSurplusPool::getETHBalance(): Returns the ETH balance of the CollSurplusPool after redemption", async () => {
+    const ETH_1 = await collSurplusPool.getETHBalance();
     assert.equal(ETH_1, "0");
 
     const price = toBN(dec(100, 18));
@@ -60,15 +65,12 @@ contract("CollSurplusPool", async (accounts) => {
     });
 
     // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // At ETH:USD = 100, this redemption should leave 1 ether of coll surplus
     await th.redeemCollateralAndGetTxObject(A, contracts, B_netDebt);
 
-    const ETH_2 = await collSurplusPool.getETH();
+    const ETH_2 = await collSurplusPool.getETHBalance();
     th.assertIsApproximatelyEqual(
       ETH_2,
       B_coll.sub(B_netDebt.mul(mv._1e18BN).div(price))
@@ -77,62 +79,15 @@ contract("CollSurplusPool", async (accounts) => {
 
   it("CollSurplusPool: claimColl(): Reverts if caller is not Borrower Operations", async () => {
     await th.assertRevert(
-      collSurplusPool.claimColl(A, { from: A }),
+      collSurplusPool.claimColl(A, th.addressToTroveId(A), { from: A }),
       "CollSurplusPool: Caller is not Borrower Operations"
     );
   });
 
   it("CollSurplusPool: claimColl(): Reverts if nothing to claim", async () => {
     await th.assertRevert(
-      borrowerOperations.claimCollateral({ from: A }),
+      borrowerOperations.claimCollateral(th.addressToTroveId(A), { from: A }),
       "CollSurplusPool: No collateral available to claim"
-    );
-  });
-
-  it("CollSurplusPool: claimColl(): Reverts if owner cannot receive ETH surplus", async () => {
-    const nonPayable = await NonPayable.new();
-
-    const price = toBN(dec(100, 18));
-    await priceFeed.setPrice(price);
-
-    // open trove from NonPayable proxy contract
-    const B_coll = toBN(dec(60, 18));
-    const B_boldAmount = toBN(dec(3000, 18));
-    const B_netDebt = await th.getAmountWithBorrowingFee(
-      contracts,
-      B_boldAmount
-    );
-    const openTroveData = th.getTransactionData(
-      "openTrove(uint256,uint256,address,address,uint256)",
-      ["0xde0b6b3a7640000",  web3.utils.toHex(B_boldAmount), B, B, "0x0"]
-    );
-    await nonPayable.forward(borrowerOperations.address, openTroveData, {
-      value: B_coll,
-    });
-    await openTrove({
-      extraBoldAmount: B_netDebt,
-      extraParams: { from: A, value: dec(3000, "ether") },
-    });
-
-    // skip bootstrapping phase
-    await th.fastForwardTime(
-      timeValues.SECONDS_IN_ONE_WEEK * 2,
-      web3.currentProvider
-    );
-
-    // At ETH:USD = 100, this redemption should leave 1 ether of coll surplus for B
-    await th.redeemCollateralAndGetTxObject(A, contracts, B_netDebt);
-
-    const ETH_2 = await collSurplusPool.getETH();
-    th.assertIsApproximatelyEqual(
-      ETH_2,
-      B_coll.sub(B_netDebt.mul(mv._1e18BN).div(price))
-    );
-
-    const claimCollateralData = th.getTransactionData("claimCollateral()", []);
-    await th.assertRevert(
-      nonPayable.forward(borrowerOperations.address, claimCollateralData),
-      "CollSurplusPool: sending ETH failed"
     );
   });
 

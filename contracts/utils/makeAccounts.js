@@ -57,4 +57,4 @@ const makeHardhatAccountsList = (n) => {
 const arrayList = makeHardhatAccountsList(80000)
 
 // console.log(arrayList)
-  fs.appendFile('../accountsList.js', arrayList, (err) => { if (err) console.log(err) })
+fs.appendFile('../accountsList.js', arrayList, (err) => { if (err) console.log(err) })

@@ -1,5 +1,6 @@
 const deploymentHelper = require("../utils/deploymentHelpers.js")
 const testHelpers = require("../utils/testHelpers.js")
+const { fundAccounts } = require("../utils/fundAccounts.js");
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol")
 
 const { dec, toBN } = testHelpers.TestHelper
@@ -72,6 +73,32 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       borrowerOperations = contracts.borrowerOperations
 
       await deploymentHelper.connectCoreContracts(contracts)
+
+      await fundAccounts([
+        owner,
+        defaulter_1,
+        defaulter_2,
+        defaulter_3,
+        defaulter_4,
+        defaulter_5,
+        defaulter_6,
+        whale,
+        // whale_2,
+        alice,
+        bob,
+        carol,
+        dennis,
+        erin,
+        flyn,
+        graham,
+        harriet,
+        A,
+        B,
+        C,
+        D,
+        E,
+        F
+      ], contracts.WETH);
     })
 
     // --- Compounding tests ---
@@ -81,23 +108,23 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // --- Identical deposits, identical liquidation amounts---
     it("withdrawFromSP(): Depositors with equal initial deposit withdraw correct compounded deposit and ETH Gain after one liquidation", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k Bold to A, B and C who then deposit it to the SP
       const depositors = [alice, bob, carol]
-      for (account of depositors) {
+      for (const account of depositors) {
         await boldToken.transfer(account, dec(10000, 18), { from: whale })
         await stabilityPool.provideToSP(dec(10000, 18), { from: account })
       }
 
       // Defaulter opens trove with 200% ICR and 10k Bold net debt
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // Defaulter liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
 
       // Check depositors' compounded deposit is 6666.66 Bold and ETH Gain is 33.16 ETH
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
@@ -120,25 +147,25 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
     it("withdrawFromSP(): Depositors with equal initial deposit withdraw correct compounded deposit and ETH Gain after two identical liquidations", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k Bold to A, B and C who then deposit it to the SP
       const depositors = [alice, bob, carol]
-      for (account of depositors) {
+      for (const account of depositors) {
         await boldToken.transfer(account, dec(10000, 18), { from: whale })
         await stabilityPool.provideToSP(dec(10000, 18), { from: account })
       }
 
       // Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // Two defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       // Check depositors' compounded deposit is 3333.33 Bold and ETH Gain is 66.33 ETH
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
@@ -160,7 +187,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
     it("withdrawFromSP():  Depositors with equal initial deposit withdraw correct compounded deposit and ETH Gain after three identical liquidations", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k Bold to A, B and C who then deposit it to the SP
       const depositors = [alice, bob, carol]
@@ -170,17 +197,17 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // Three defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
-      await troveManager.liquidate(defaulter_3, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
 
       // Check depositors' compounded deposit is 0 Bold and ETH Gain is 99.5 ETH 
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
@@ -204,7 +231,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // --- Identical deposits, increasing liquidation amounts ---
     it("withdrawFromSP(): Depositors with equal initial deposit withdraw correct compounded deposit and ETH Gain after two liquidations of increasing Bold", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k Bold to A, B and C who then deposit it to the SP
       const depositors = [alice, bob, carol]
@@ -214,15 +241,15 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(5000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: '50000000000000000000' })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(7000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: '70000000000000000000' })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(5000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: '50000000000000000000' })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(7000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: '70000000000000000000' })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // Defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       // Check depositors' compounded deposit
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
@@ -246,7 +273,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
     it("withdrawFromSP(): Depositors with equal initial deposit withdraw correct compounded deposit and ETH Gain after three liquidations of increasing Bold", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, { from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, { from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k Bold to A, B and C who then deposit it to the SP
       const depositors = [alice, bob, carol]
@@ -256,17 +283,17 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(5000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: '50000000000000000000' })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(6000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: '60000000000000000000' })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(7000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: '70000000000000000000' })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(5000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: '50000000000000000000' })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(6000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: '60000000000000000000' })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(7000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: '70000000000000000000' })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // Three defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
-      await troveManager.liquidate(defaulter_3, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
 
       // Check depositors' compounded deposit
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
@@ -291,7 +318,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // --- Increasing deposits, identical liquidation amounts ---
     it("withdrawFromSP(): Depositors with varying deposits withdraw correct compounded deposit and ETH Gain after two identical liquidations", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k, 20k, 30k Bold to A, B and C respectively who then deposit it to the SP
       await boldToken.transfer(alice, dec(10000, 18), { from: whale })
@@ -302,15 +329,15 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(30000, 18), { from: carol })
 
       // 2 Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // Three defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       // Depositors attempt to withdraw everything
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
@@ -333,7 +360,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
     it("withdrawFromSP(): Depositors with varying deposits withdraw correct compounded deposit and ETH Gain after three identical liquidations", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k, 20k, 30k Bold to A, B and C respectively who then deposit it to the SP
       await boldToken.transfer(alice, dec(10000, 18), { from: whale })
@@ -344,17 +371,17 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(30000, 18), { from: carol })
 
       // Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // Three defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
-      await troveManager.liquidate(defaulter_3, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
 
       // Depositors attempt to withdraw everything
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
@@ -378,7 +405,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // --- Varied deposits and varied liquidation amount ---
     it("withdrawFromSP(): Depositors with varying deposits withdraw correct compounded deposit and ETH Gain after three varying liquidations", async () => {
       // Whale opens Trove with 1m ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(1000000, 18)), whale, whale, 0,{ from: whale, value: dec(1000000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(1000000, 18)), whale, whale, 0,{ from: whale, value: dec(1000000, 'ether') })
 
       /* Depositors provide:-
       Alice:  2000 Bold
@@ -398,17 +425,17 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       Defaulter 2: 5000 Bold & 50 ETH
       Defaulter 3: 46700 Bold & 500 ETH
       */
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount('207000000000000000000000'), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(2160, 18) })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(5, 21)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(50, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount('46700000000000000000000'), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(500, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount('207000000000000000000000'), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(2160, 18) })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(5, 21)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(50, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount('46700000000000000000000'), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(500, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // Three defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
-      await troveManager.liquidate(defaulter_3, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
 
       // Depositors attempt to withdraw everything
       const txA = await stabilityPool.withdrawFromSP(dec(500000, 18), { from: alice })
@@ -435,7 +462,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
     it("withdrawFromSP(): A, B, C Deposit -> 2 liquidations -> D deposits -> 1 liquidation. All deposits and liquidations = 100 Bold.  A, B, C, D withdraw correct Bold deposit and ETH Gain", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k Bold to A, B and C who then deposit it to the SP
       const depositors = [alice, bob, carol]
@@ -445,23 +472,23 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // First two defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       // Whale transfers 10k to Dennis who then provides to SP
       await boldToken.transfer(dennis, dec(10000, 18), { from: whale })
       await stabilityPool.provideToSP(dec(10000, 18), { from: dennis })
 
       // Third defaulter liquidated
-      await troveManager.liquidate(defaulter_3, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
 
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
       const txB = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: bob })
@@ -490,7 +517,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
     it("withdrawFromSP(): A, B, C Deposit -> 2 liquidations -> D deposits -> 2 liquidations. All deposits and liquidations = 100 Bold.  A, B, C, D withdraw correct Bold deposit and ETH Gain", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k Bold to A, B and C who then deposit it to the SP
       const depositors = [alice, bob, carol]
@@ -500,25 +527,25 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
+      const defaulter_4_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(100, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // First two defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       // Dennis opens a trove and provides to SP
       await boldToken.transfer(dennis, dec(10000, 18), { from: whale })
       await stabilityPool.provideToSP(dec(10000, 18), { from: dennis })
 
       // Third and fourth defaulters liquidated
-      await troveManager.liquidate(defaulter_3, { from: owner });
-      await troveManager.liquidate(defaulter_4, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_4_TroveId, { from: owner });
 
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
       const txB = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: bob })
@@ -544,7 +571,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
     it("withdrawFromSP(): A, B, C Deposit -> 2 liquidations -> D deposits -> 2 liquidations. Various deposit and liquidation vals.  A, B, C, D withdraw correct Bold deposit and ETH Gain", async () => {
       // Whale opens Trove with 1m ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(1000000, 18)), whale, whale, 0,{ from: whale, value: dec(1000000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(1000000, 18)), whale, whale, 0,{ from: whale, value: dec(1000000, 'ether') })
 
       /* Depositors open troves and make SP deposit:
       Alice: 60000 Bold
@@ -565,25 +592,25 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       Defaulter 3:  5000 Bold, 50 ETH
       Defaulter 4:  40000 Bold, 400 ETH
       */
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(25000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: '250000000000000000000' })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(5000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: '50000000000000000000' })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(40000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(400, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(25000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: '250000000000000000000' })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(5000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: '50000000000000000000' })
+      const defaulter_4_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(40000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(400, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // First two defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       // Dennis provides 25000 Bold
       await boldToken.transfer(dennis, dec(25000, 18), { from: whale })
       await stabilityPool.provideToSP(dec(25000, 18), { from: dennis })
 
       // Last two defaulters liquidated
-      await troveManager.liquidate(defaulter_3, { from: owner });
-      await troveManager.liquidate(defaulter_4, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_4_TroveId, { from: owner });
 
       // Each depositor withdraws as much as possible
       const txA = await stabilityPool.withdrawFromSP(dec(100000, 18), { from: alice })
@@ -613,7 +640,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
     it("withdrawFromSP(): A, B, C, D deposit -> 2 liquidations -> D withdraws -> 2 liquidations. All deposits and liquidations = 100 Bold.  A, B, C, D withdraw correct Bold deposit and ETH Gain", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k Bold to A, B and C who then deposit it to the SP
       const depositors = [alice, bob, carol, dennis]
@@ -623,17 +650,17 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
+      const defaulter_4_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(100, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // First two defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       // Dennis withdraws his deposit and ETH gain
       // Increasing the price for a moment to avoid pending liquidations to block withdrawal
@@ -646,8 +673,8 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       assert.isAtMost(th.getDifference(dennis_ETHWithdrawn, '49750000000000000000'), 100000)
 
       // Two more defaulters are liquidated
-      await troveManager.liquidate(defaulter_3, { from: owner });
-      await troveManager.liquidate(defaulter_4, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_4_TroveId, { from: owner });
 
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
       const txB = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: bob })
@@ -669,7 +696,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
     it("withdrawFromSP(): A, B, C, D deposit -> 2 liquidations -> D withdraws -> 2 liquidations. Various deposit and liquidation vals. A, B, C, D withdraw correct Bold deposit and ETH Gain", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       /* Initial deposits:
       Alice: 20000 Bold
@@ -693,17 +720,17 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       Defaulter 3: 30000 Bold
       Defaulter 4: 5000 Bold
       */
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(200, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(30000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(300, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(5000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: '50000000000000000000' })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(200, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(30000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(300, 'ether') })
+      const defaulter_4_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(5000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: '50000000000000000000' })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // First two defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       // Dennis withdraws his deposit and ETH gain
       // Increasing the price for a moment to avoid pending liquidations to block withdrawal
@@ -717,8 +744,8 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       assert.isAtMost(th.getDifference(dennis_ETHWithdrawn, '122461538461538466100'), 100000000000)
 
       // Two more defaulters are liquidated
-      await troveManager.liquidate(defaulter_3, { from: owner });
-      await troveManager.liquidate(defaulter_4, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_4_TroveId, { from: owner });
 
       const txA = await stabilityPool.withdrawFromSP(dec(100000, 18), { from: alice })
       const txB = await stabilityPool.withdrawFromSP(dec(100000, 18), { from: bob })
@@ -742,7 +769,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // --- One deposit enters at t > 0, and another leaves later ---
     it("withdrawFromSP(): A, B, D deposit -> 2 liquidations -> C makes deposit -> 1 liquidation -> D withdraws -> 1 liquidation. All deposits: 100 Bold. Liquidations: 100,100,100,50.  A, B, C, D withdraw correct Bold deposit and ETH Gain", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k Bold to A, B and D who then deposit it to the SP
       const depositors = [alice, bob, dennis]
@@ -752,23 +779,23 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // Defaulters open troves
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(5000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: '50000000000000000000' })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
+      const defaulter_4_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(5000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: '50000000000000000000' })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // First two defaulters liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       // Carol makes deposit
       await boldToken.transfer(carol, dec(10000, 18), { from: whale })
       await stabilityPool.provideToSP(dec(10000, 18), { from: carol })
 
-      await troveManager.liquidate(defaulter_3, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
 
       // Dennis withdraws his deposit and ETH gain
       // Increasing the price for a moment to avoid pending liquidations to block withdrawal
@@ -780,7 +807,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       assert.isAtMost(th.getDifference((await boldToken.balanceOf(dennis)).toString(), '1666666666666666666666'), 100000)
       assert.isAtMost(th.getDifference(dennis_ETHWithdrawn, '82916666666666666667'), 100000)
 
-      await troveManager.liquidate(defaulter_4, { from: owner });
+      await troveManager.liquidate(defaulter_4_TroveId, { from: owner });
 
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
       const txB = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: bob })
@@ -811,36 +838,36 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // C, D withdraw 5000Bold  & 500e
     it("withdrawFromSP(): Depositor withdraws correct compounded deposit after liquidation empties the pool", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k Bold to A, B who then deposit it to the SP
       const depositors = [alice, bob]
-      for (account of depositors) {
+      for (const account of depositors) {
         await boldToken.transfer(account, dec(10000, 18), { from: whale })
         await stabilityPool.provideToSP(dec(10000, 18), { from: account })
       }
 
       // 2 Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(200, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(200, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // Defaulter 1 liquidated. 20000 Bold fully offset with pool.
-      await troveManager.liquidate(defaulter_1, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
 
       // Carol, Dennis each deposit 10000 Bold
       const depositors_2 = [carol, dennis]
-      for (account of depositors_2) {
+      for (const account of depositors_2) {
         await boldToken.transfer(account, dec(10000, 18), { from: whale })
         await stabilityPool.provideToSP(dec(10000, 18), { from: account })
       }
 
       // Defaulter 2 liquidated. 10000 Bold offset
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
-      // await borrowerOperations.openTrove(th._100pct, dec(1, 18), account, account, { from: erin, value: dec(2, 'ether') })
+      // await th.openTroveWrapper(contracts, th._100pct, dec(1, 18), account, account, { from: erin, value: dec(2, 'ether') })
       // await stabilityPool.provideToSP(dec(1, 18), { from: erin })
 
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
@@ -878,20 +905,20 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // L2 20000, 200 empties Pool
     it("withdrawFromSP(): Pool-emptying liquidation increases epoch by one, resets scaleFactor to 0, and resets P to 1e18", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k Bold to A, B who then deposit it to the SP
       const depositors = [alice, bob]
-      for (account of depositors) {
+      for (const account of depositors) {
         await boldToken.transfer(account, dec(10000, 18), { from: whale })
         await stabilityPool.provideToSP(dec(10000, 18), { from: account })
       }
 
       // 4 Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
+      const defaulter_4_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(100, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
@@ -905,7 +932,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       assert.equal(P_0, dec(1, 18))
 
       // Defaulter 1 liquidated. 10--0 Bold fully offset, Pool remains non-zero
-      await troveManager.liquidate(defaulter_1, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
 
       //Check epoch, scale and sum
       const epoch_1 = (await stabilityPool.currentEpoch()).toString()
@@ -917,7 +944,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       assert.isAtMost(th.getDifference(P_1, dec(5, 17)), 1000)
 
       // Defaulter 2 liquidated. 1--00 Bold, empties pool
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       //Check epoch, scale and sum
       const epoch_2 = (await stabilityPool.currentEpoch()).toString()
@@ -936,7 +963,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // Defaulter 3 liquidated. 10000 Bold fully offset, Pool remains non-zero
-      await troveManager.liquidate(defaulter_3, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
 
       //Check epoch, scale and sum
       const epoch_3 = (await stabilityPool.currentEpoch()).toString()
@@ -948,7 +975,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       assert.isAtMost(th.getDifference(P_3, dec(5, 17)), 1000)
 
       // Defaulter 4 liquidated. 10000 Bold, empties pool
-      await troveManager.liquidate(defaulter_4, { from: owner });
+      await troveManager.liquidate(defaulter_4_TroveId, { from: owner });
 
       //Check epoch, scale and sum
       const epoch_4 = (await stabilityPool.currentEpoch()).toString()
@@ -970,7 +997,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // C, D withdraw 5000 Bold  & 50e
     it("withdrawFromSP(): Depositors withdraw correct compounded deposit after liquidation empties the pool", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Whale transfers 10k Bold to A, B who then deposit it to the SP
       const depositors = [alice, bob]
@@ -980,14 +1007,14 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // 2 Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(200, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(200, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
 
       // price drops by 50%
       await priceFeed.setPrice(dec(100, 18));
 
       // Defaulter 1 liquidated. 20000 Bold fully offset with pool.
-      await troveManager.liquidate(defaulter_1, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
 
       // Carol, Dennis, Erin each deposit 10000, 20000, 30000 Bold respectively
       await boldToken.transfer(carol, dec(10000, 18), { from: whale })
@@ -1000,7 +1027,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(30000, 18), { from: erin })
 
       // Defaulter 2 liquidated. 10000 Bold offset
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
       const txB = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: bob })
@@ -1037,23 +1064,23 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // Expect A to withdraw 0 deposit and ether only from reward L1
     it("withdrawFromSP(): single deposit fully offset. After subsequent liquidations, depositor withdraws 0 deposit and *only* the ETH Gain from one liquidation", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       await boldToken.transfer(alice, dec(10000, 18), { from: whale })
       await stabilityPool.provideToSP(dec(10000, 18), { from: alice })
 
       // Defaulter 1,2,3 withdraw 10000 Bold
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(10000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
 
       // price drops by 50%
       await priceFeed.setPrice(dec(100, 18));
 
       // Defaulter 1, 2  and 3 liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
-      await troveManager.liquidate(defaulter_2, { from: owner });
-      await troveManager.liquidate(defaulter_3, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
 
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
 
@@ -1079,13 +1106,13 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
     it("withdrawFromSP(): Depositor withdraws correct compounded deposit after liquidation empties the pool", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // 4 Defaulters open trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(200, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(200, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(200, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(200, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(200, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(200, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(200, 'ether') })
+      const defaulter_4_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(20000, 18)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(200, 'ether') })
 
       // price drops by 50%: defaulter ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
@@ -1098,7 +1125,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // Defaulter 1 liquidated. 20k Bold fully offset with pool.
-      await troveManager.liquidate(defaulter_1, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
 
       // Carol, Dennis each deposit 10000 Bold
       const depositors_2 = [carol, dennis]
@@ -1108,7 +1135,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // Defaulter 2 liquidated. 10000 Bold offset
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       // Erin, Flyn each deposit 10000 Bold
       const depositors_3 = [erin, flyn]
@@ -1118,7 +1145,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // Defaulter 3 liquidated. 10000 Bold offset
-      await troveManager.liquidate(defaulter_3, { from: owner });
+      await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
 
       // Graham, Harriet each deposit 10000 Bold
       const depositors_4 = [graham, harriet]
@@ -1128,7 +1155,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       }
 
       // Defaulter 4 liquidated. 10k Bold offset
-      await troveManager.liquidate(defaulter_4, { from: owner });
+      await troveManager.liquidate(defaulter_4_TroveId, { from: owner });
 
       const txA = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice })
       const txB = await stabilityPool.withdrawFromSP(dec(10000, 18), { from: bob })
@@ -1188,24 +1215,24 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // in helper functon getOpenTroveBoldAmount due to now-zero borrow fees. Double-check this when we write new SP arithmetic tests and fix the "P" issue.
     it.skip("withdrawFromSP(): deposit spans one scale factor change: Single depositor withdraws correct compounded deposit and ETH Gain after one liquidation", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       await boldToken.transfer(alice, dec(10000, 18), { from: whale })
       await stabilityPool.provideToSP(dec(10000, 18), { from: alice })
 
       // Defaulter 1 withdraws 'almost' 10000 Bold:  9999.99991 Bold
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount('9999999910000000000000'), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount('9999999910000000000000'), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
 
       assert.equal(await stabilityPool.currentScale(), '0')
 
       // Defaulter 2 withdraws 9900 Bold
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(9900, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(60, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(9900, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(60, 'ether') })
 
       // price drops by 50%
       await priceFeed.setPrice(dec(100, 18));
 
       // Defaulter 1 liquidated.  Value of P reduced to 9e9.
-      await troveManager.liquidate(defaulter_1, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
       assert.equal((await stabilityPool.P()).toString(), dec(9, 9))
 
       // Increasing the price for a moment to avoid pending liquidations to block withdrawal
@@ -1220,7 +1247,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(10000, 18), { from: bob })
 
       // Defaulter 2 liquidated.  9900 Bold liquidated. P altered by a factor of 1-(9900/10000) = 0.01.  Scale changed.
-      await troveManager.liquidate(defaulter_2, { from: owner });
+      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       assert.equal(await stabilityPool.currentScale(), '1')
 
@@ -1245,22 +1272,22 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // in helper functon getOpenTroveBoldAmount due to now-zero borrow fees. Double-check this when we write new SP arithmetic tests and fix the "P" issue.
     it.skip("withdrawFromSP(): Several deposits of varying amounts span one scale factor change. Depositors withdraw correct compounded deposit and ETH Gain after one liquidation", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       await boldToken.transfer(alice, dec(10000, 18), { from: whale })
       await stabilityPool.provideToSP(dec(10000, 18), { from: alice })
 
       // Defaulter 1 withdraws 'almost' 10k Bold.
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount('9999999910000000000000'), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount('9999999910000000000000'), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
 
       // Defaulter 2 withdraws 59400 Bold
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount('59400000000000000000000'), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(330, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount('59400000000000000000000'), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(330, 'ether') })
 
       // price drops by 50%
       await priceFeed.setPrice(dec(100, 18));
 
       // Defaulter 1 liquidated.  Value of P reduced to 9e9
-      await troveManager.liquidate(defaulter_1, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
       assert.equal((await stabilityPool.P()).toString(), dec(9, 9))
 
       assert.equal(await stabilityPool.currentScale(), '0')
@@ -1281,7 +1308,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(30000, 18), { from: dennis })
 
       // 54000 Bold liquidated.  P altered by a factor of 1-(59400/60000) = 0.01. Scale changed.
-      const txL2 = await troveManager.liquidate(defaulter_2, { from: owner });
+      const txL2 = await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
       assert.isTrue(txL2.receipt.status)
 
       assert.equal(await stabilityPool.currentScale(), '1')
@@ -1327,20 +1354,20 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // in helper functon getOpenTroveBoldAmount due to now-zero borrow fees. Double-check this when we write new SP arithmetic tests and fix the "P" issue.
     it.skip("withdrawFromSP(): deposit spans one scale factor change: Single depositor withdraws correct compounded deposit and ETH Gain after one liquidation", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       await boldToken.transfer(alice, dec(10000, 18), { from: whale })
       await stabilityPool.provideToSP(dec(10000, 18), { from: alice })
 
       // Defaulter 1 and default 2 each withdraw 9999.999999999 Bold
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
 
       // price drops by 50%: defaulter 1 ICR falls to 100%
       await priceFeed.setPrice(dec(100, 18));
 
       // Defaulter 1 liquidated.  Value of P updated to  to 1e13
-      const txL1 = await troveManager.liquidate(defaulter_1, { from: owner });
+      const txL1 = await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
       assert.isTrue(txL1.receipt.status)
       th.logBN("P", await stabilityPool.P()) //  0.000009999999999999, so 1 wei less than expected
       assert.equal(await stabilityPool.P(), dec(1, 13))  // P decreases. Expect P = 1e(18-5) = 1e13
@@ -1357,7 +1384,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(10000, 18), { from: bob })
 
       // Defaulter 2 liquidated
-      const txL2 = await troveManager.liquidate(defaulter_2, { from: owner });
+      const txL2 = await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
       assert.isTrue(txL2.receipt.status)
       assert.equal(await stabilityPool.P(), dec(1, 17))  // Scale changes and P changes. P = 1e(13-5+9) = 1e17
       assert.equal(await stabilityPool.currentScale(), '1')
@@ -1383,20 +1410,20 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // in helper functon getOpenTroveBoldAmount due to now-zero borrow fees. Double-check this when we write new SP arithmetic tests and fix the "P" issue.
     it.skip("withdrawFromSP(): Several deposits of varying amounts span one scale factor change. Depositors withdraws correct compounded deposit and ETH Gain after one liquidation", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       await boldToken.transfer(alice, dec(10000, 18), { from: whale })
       await stabilityPool.provideToSP(dec(10000, 18), { from: alice })
 
       // Defaulter 1 and default 2 withdraw up to debt of 9999.9 Bold and 59999.4 Bold
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount('9999900000000000000000'), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount('59999400000000000000000'), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(600, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount('9999900000000000000000'), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount('59999400000000000000000'), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(600, 'ether') })
 
       // price drops by 50%
       await priceFeed.setPrice(dec(100, 18));
 
       // Defaulter 1 liquidated.  Value of P updated to 1e13
-      const txL1 = await troveManager.liquidate(defaulter_1, { from: owner });
+      const txL1 = await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
       th.logBN("P", await stabilityPool.P()); // P = 0.000009999999999999, i.e. 1 wei less than expected
       assert.equal(await stabilityPool.P(), dec(1, 13))  // P decreases. Expect P = 1e(18-5) = 1e13
       assert.equal(await stabilityPool.currentScale(), '0')
@@ -1418,7 +1445,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(30000, 18), { from: dennis })
 
       // Defaulter 2 liquidated
-      const txL2 = await troveManager.liquidate(defaulter_2, { from: owner });
+      const txL2 = await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
       assert.isTrue(txL2.receipt.status)
       assert.equal(await stabilityPool.P(), dec(1, 17))  // P decreases. P = 1e(13-5+9) = 1e17
       assert.equal(await stabilityPool.currentScale(), '1')
@@ -1447,10 +1474,10 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // Expect A to withdraw 0 deposit
     it("withdrawFromSP(): Deposit that decreases to less than 1e-9 of it's original value is reduced to 0", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Defaulters 1 withdraws 9999.9999999 Bold
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount('9999999999900000000000'), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount('9999999999900000000000'), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
 
       // Price drops by 50%
       await priceFeed.setPrice(dec(100, 18));
@@ -1459,7 +1486,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(10000, 18), { from: alice })
 
       // Defaulter 1 liquidated. P -> (~1e-10)*P
-      const txL1 = await troveManager.liquidate(defaulter_1, { from: owner });
+      const txL1 = await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
       assert.isTrue(txL1.receipt.status)
 
       const aliceDeposit = (await stabilityPool.getCompoundedBoldDeposit(alice)).toString()
@@ -1483,13 +1510,13 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // in helper functon getOpenTroveBoldAmount due to now-zero borrow fees. Double-check this when we write new SP arithmetic tests and fix the "P" issue.
     it.skip("withdrawFromSP(): Several deposits of 10000 Bold span one scale factor change. Depositors withdraws correct compounded deposit and ETH Gain after one liquidation", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Defaulters 1-4 each withdraw 9999.9 Bold
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount('9999900000000000000000'), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount('9999900000000000000000'), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount('9999900000000000000000'), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount('9999900000000000000000'), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount('9999900000000000000000'), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount('9999900000000000000000'), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount('9999900000000000000000'), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
+      const defaulter_4_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount('9999900000000000000000'), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(100, 'ether') })
 
       // price drops by 50%
       await priceFeed.setPrice(dec(100, 18));
@@ -1498,7 +1525,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(10000, 18), { from: alice })
 
       // Defaulter 1 liquidated.  P updated to 1e13
-      const txL1 = await troveManager.liquidate(defaulter_1, { from: owner });
+      const txL1 = await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
       assert.isTrue(txL1.receipt.status)
       th.logBN("P", await stabilityPool.P()) // P  0.000009999999999999, 1 wei less than expecteed
       assert.equal(await stabilityPool.P(), dec(1, 13)) // Expect P decreases to 1e(18-5) = 1e13
@@ -1509,7 +1536,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(99999, 17), { from: bob })
 
       // Defaulter 2 liquidated
-      const txL2 = await troveManager.liquidate(defaulter_2, { from: owner });
+      const txL2 = await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
       assert.isTrue(txL2.receipt.status)
       assert.equal(await stabilityPool.P(), dec(1, 17)) // Scale changes and P changes to 1e(13-5+9) = 1e17
       assert.equal(await stabilityPool.currentScale(), '1')
@@ -1519,7 +1546,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(99999, 17), { from: carol })
 
       // Defaulter 3 liquidated
-      const txL3 = await troveManager.liquidate(defaulter_3, { from: owner });
+      const txL3 = await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
       assert.isTrue(txL3.receipt.status)
       assert.equal(await stabilityPool.P(), dec(1, 12)) // P decreases to 1e(17-5) = 1e12
       assert.equal(await stabilityPool.currentScale(), '1')
@@ -1529,7 +1556,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(99999, 17), { from: dennis })
 
       // Defaulter 4 liquidated
-      const txL4 = await troveManager.liquidate(defaulter_4, { from: owner });
+      const txL4 = await troveManager.liquidate(defaulter_4_TroveId, { from: owner });
       assert.isTrue(txL4.receipt.status)
       assert.equal(await stabilityPool.P(), dec(1, 16)) // Scale changes and P changes to 1e(12-5+9) = 1e16
       assert.equal(await stabilityPool.currentScale(), '2')
@@ -1561,12 +1588,12 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
     it("withdrawFromSP(): 2 depositors can withdraw after each receiving half of a pool-emptying liquidation", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Defaulters 1-3 each withdraw 24100, 24300, 24500 Bold (inc gas comp)
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(24100, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(200, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(24300, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(200, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(24500, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(200, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(24100, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(200, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(24300, 18)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(200, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(24500, 18)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(200, 'ether') })
 
       // price drops by 50%
       await priceFeed.setPrice(dec(100, 18));
@@ -1578,7 +1605,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(10000, 18), { from: B })
 
       // Defaulter 1 liquidated. SP emptied
-      const txL1 = await troveManager.liquidate(defaulter_1, { from: owner });
+      const txL1 = await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
       assert.isTrue(txL1.receipt.status)
 
       // Check compounded deposits
@@ -1618,7 +1645,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(10000, 18), { from: D })
 
       // Defaulter 2 liquidated.  SP emptied
-      const txL2 = await troveManager.liquidate(defaulter_2, { from: owner });
+      const txL2 = await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
       assert.isTrue(txL2.receipt.status)
 
       // Check compounded deposits
@@ -1658,7 +1685,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(10000, 18), { from: F })
 
       // Defaulter 3 liquidated. SP emptied
-      const txL3 = await troveManager.liquidate(defaulter_3, { from: owner });
+      const txL3 = await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
       assert.isTrue(txL3.receipt.status)
 
       // Check compounded deposits
@@ -1689,14 +1716,14 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // in helper functon getOpenTroveBoldAmount due to now-zero borrow fees. Double-check this when we write new SP arithmetic tests and fix the "P" issue.
     it.skip("withdrawFromSP(): Depositor's ETH gain stops increasing after two scale changes", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // Defaulters 1-5 each withdraw up to debt of 9999.9999999 Bold
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(100, 'ether') })
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_5, defaulter_5, 0, { from: defaulter_5, value: dec(100, 'ether') })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(100, 'ether') })
+      const defaulter_2_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_2, defaulter_2, 0, { from: defaulter_2, value: dec(100, 'ether') })
+      const defaulter_3_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_3, defaulter_3, 0, { from: defaulter_3, value: dec(100, 'ether') })
+      const defaulter_4_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_4, defaulter_4, 0, { from: defaulter_4, value: dec(100, 'ether') })
+      const defaulter_5_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(99999, 17)), defaulter_5, defaulter_5, 0, { from: defaulter_5, value: dec(100, 'ether') })
 
       // price drops by 50%
       await priceFeed.setPrice(dec(100, 18));
@@ -1705,7 +1732,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(10000, 18), { from: alice })
 
       // Defaulter 1 liquidated.  P updated to 1e13
-      const txL1 = await troveManager.liquidate(defaulter_1, { from: owner });
+      const txL1 = await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
       assert.isTrue(txL1.receipt.status)
       th.logBN("P", await stabilityPool.P());  // P = 0.000009999999999999, 1 wei less than expected
       assert.equal(await stabilityPool.P(), dec(1, 13)) // Expect P decreases to 1e(18-5) = 1e13
@@ -1716,7 +1743,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(99999, 17), { from: bob })
 
       // Defaulter 2 liquidated
-      const txL2 = await troveManager.liquidate(defaulter_2, { from: owner });
+      const txL2 = await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
       assert.isTrue(txL2.receipt.status)
       assert.equal(await stabilityPool.P(), dec(1, 17)) // Scale changes and P changes to 1e(13-5+9) = 1e17
       assert.equal(await stabilityPool.currentScale(), '1')
@@ -1726,7 +1753,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(99999, 17), { from: carol })
 
       // Defaulter 3 liquidated
-      const txL3 = await troveManager.liquidate(defaulter_3, { from: owner });
+      const txL3 = await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
       assert.isTrue(txL3.receipt.status)
       assert.equal(await stabilityPool.P(), dec(1, 12)) // P decreases to 1e(17-5) = 1e12
       assert.equal(await stabilityPool.currentScale(), '1')
@@ -1736,7 +1763,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(99999, 17), { from: dennis })
 
       // Defaulter 4 liquidated
-      const txL4 = await troveManager.liquidate(defaulter_4, { from: owner });
+      const txL4 = await troveManager.liquidate(defaulter_4_TroveId, { from: owner });
       assert.isTrue(txL4.receipt.status)
       assert.equal(await stabilityPool.P(), dec(1, 16)) // Scale changes and P changes to 1e(12-5+9) = 1e16
       assert.equal(await stabilityPool.currentScale(), '2')
@@ -1748,7 +1775,7 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
       await stabilityPool.provideToSP(dec(99999, 17), { from: erin })
   
       // Defaulter 5 liquidated
-      const txL5 = await troveManager.liquidate(defaulter_5, { from: owner });
+      const txL5 = await troveManager.liquidate(defaulter_5_TroveId, { from: owner });
       assert.isTrue(txL5.receipt.status)
       assert.equal(await stabilityPool.P(), dec(1, 11)) // P decreases to 1e(16-5) = 1e11
       assert.equal(await stabilityPool.currentScale(), '2')
@@ -1765,25 +1792,25 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
 
     it("withdrawFromSP(): Large liquidated coll/debt, deposits and ETH price", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, { from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, { from: whale, value: dec(100000, 'ether') })
 
       // ETH:USD price is $2 billion per ETH
       await priceFeed.setPrice(dec(2, 27));
 
       const depositors = [alice, bob]
-      for (account of depositors) {
-        await borrowerOperations.openTrove(th._100pct, dec(1, 36), account, account, 0, { from: account, value: dec(2, 27) })
+      for (const account of depositors) {
+        await th.openTroveWrapper(contracts, th._100pct, dec(1, 36), account, account, 0, { from: account, value: dec(2, 27) })
         await stabilityPool.provideToSP(dec(1, 36), { from: account })
       }
 
       // Defaulter opens trove with 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(1, 36)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(1, 27) })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(1, 36)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: dec(1, 27) })
 
       // ETH:USD price drops to $1 billion per ETH
       await priceFeed.setPrice(dec(1, 27));
 
       // Defaulter liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
 
       const txA = await stabilityPool.withdrawFromSP(dec(1, 36), { from: alice })
       const txB = await stabilityPool.withdrawFromSP(dec(1, 36), { from: bob })
@@ -1822,26 +1849,26 @@ contract('StabilityPool - Withdrawal of stability deposit - Reward calculations'
     // Double-check this when we write new SP arithmetic tests and fix the "P" issue.
     it.skip("withdrawFromSP(): Small liquidated coll/debt, large deposits and ETH price", async () => {
       // Whale opens Trove with 100k ETH
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
+      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0,{ from: whale, value: dec(100000, 'ether') })
 
       // ETH:USD price is $2 billion per ETH
       await priceFeed.setPrice(dec(2, 27));
       const price = await priceFeed.getPrice()
 
       const depositors = [alice, bob]
-      for (account of depositors) {
-        await borrowerOperations.openTrove(th._100pct, dec(1, 38), account, account, { from: account, value: dec(2, 29) })
+      for (const account of depositors) {
+        await th.openTroveWrapper(contracts, th._100pct, dec(1, 38), account, account, { from: account, value: dec(2, 29) })
         await stabilityPool.provideToSP(dec(1, 38), { from: account })
       }
 
       // Defaulter opens trove with 50e-7 ETH and  5000 Bold. 200% ICR
-      await borrowerOperations.openTrove(th._100pct, await getOpenTroveBoldAmount(dec(5000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: '5000000000000' })
+      const defaulter_1_TroveId = await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(5000, 18)), defaulter_1, defaulter_1, 0,{ from: defaulter_1, value: '5000000000000' })
 
       // ETH:USD price drops to $1 billion per ETH
       await priceFeed.setPrice(dec(1, 27));
 
       // Defaulter liquidated
-      await troveManager.liquidate(defaulter_1, { from: owner });
+      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
 
       const txA = await stabilityPool.withdrawFromSP(dec(1, 38), { from: alice })
       const txB = await stabilityPool.withdrawFromSP(dec(1, 38), { from: bob })

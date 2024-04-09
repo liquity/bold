@@ -1,5 +1,3 @@
-const Destructible = artifacts.require("./TestContracts/Destructible.sol");
-
 const MoneyValues = {
   negative_5e17: "-" + web3.utils.toWei("500", "finney"),
   negative_1e18: "-" + web3.utils.toWei("1", "ether"),
@@ -171,6 +169,10 @@ class TestHelper {
     return ICR;
   }
 
+  static addressToTroveId(address, index=0) {
+    return web3.utils.soliditySha3(web3.eth.abi.encodeParameters(['address', 'uint256'], [address, index]));
+  }
+
   static async ICRbetween100and110(account, troveManager, price) {
     const ICR = await troveManager.getCurrentICR(account, price);
     return ICR.gt(MoneyValues._ICR100) && ICR.lt(MoneyValues._MCR);
@@ -315,10 +317,18 @@ class TestHelper {
     return compositeDebt;
   }
 
+  static async getTroveEntireCollByAddress(contracts, account) {
+    return await this.getTroveEntireColl(contracts, this.addressToTroveId(account));
+  }
+
   static async getTroveEntireColl(contracts, trove) {
     return this.toBN(
       (await contracts.troveManager.getEntireDebtAndColl(trove))[1]
     );
+  }
+
+  static async getTroveEntireDebtByAddress(contracts, account) {
+    return await this.getTroveEntireDebt(contracts, this.addressToTroveId(account));
   }
 
   static async getTroveEntireDebt(contracts, trove) {
@@ -504,15 +514,19 @@ class TestHelper {
     return { upperHint, lowerHint };
   }
 
-  static async getEntireCollAndDebt(contracts, account) {
-    // console.log(`account: ${account}`)
-    const rawColl = (await contracts.troveManager.Troves(account))[1];
-    const rawDebt = (await contracts.troveManager.Troves(account))[0];
+  static async getEntireCollAndDebtByAddress(contracts, account) {
+    return await this.getEntireCollAndDebt(contracts, this.addressToTroveId(account));
+  }
+
+  static async getEntireCollAndDebt(contracts, troveId) {
+    // console.log(`troveId: ${troveId}`)
+    const rawColl = (await contracts.troveManager.Troves(troveId))[1];
+    const rawDebt = (await contracts.troveManager.Troves(troveId))[0];
     const pendingETHReward = await contracts.troveManager.getPendingETHReward(
-      account
+      troveId
     );
     const pendingBoldDebtReward =
-      await contracts.troveManager.getPendingBoldDebtReward(account);
+      await contracts.troveManager.getPendingBoldDebtReward(troveId);
     const entireColl = rawColl.add(pendingETHReward);
     const entireDebt = rawDebt.add(pendingBoldDebtReward);
 
@@ -611,10 +625,11 @@ class TestHelper {
 
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
+        ETHAmount,
         BoldAmount,
         upperHint,
         lowerHint,
-        { from: account, value: ETHAmount }
+        { from: account }
       );
       const gas = this.gasUsed(tx);
       gasCostList.push(gas);
@@ -642,10 +657,11 @@ class TestHelper {
 
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
+        randCollAmount,
         BoldAmount,
         upperHint,
         lowerHint,
-        { from: account, value: randCollAmount }
+        { from: account }
       );
       const gas = this.gasUsed(tx);
       gasCostList.push(gas);
@@ -680,10 +696,11 @@ class TestHelper {
 
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
+        randCollAmount,
         proportionalBold,
         upperHint,
         lowerHint,
-        { from: account, value: randCollAmount }
+        { from: account }
       );
       const gas = this.gasUsed(tx);
       gasCostList.push(gas);
@@ -728,10 +745,11 @@ class TestHelper {
       const feeFloor = this.dec(5, 16);
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
+        randCollAmount,
         proportionalBold,
         upperHint,
         lowerHint,
-        { from: account, value: randCollAmount }
+        { from: account }
       );
 
       if (logging && tx.receipt.status) {
@@ -768,10 +786,11 @@ class TestHelper {
 
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
+        ETHAmount,
         randBoldAmount,
         upperHint,
         lowerHint,
-        { from: account, value: ETHAmount }
+        { from: account }
       );
       const gas = this.gasUsed(tx);
       gasCostList.push(gas);
@@ -816,10 +835,11 @@ class TestHelper {
 
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
+        ETHAmount,
         BoldAmountWei,
         upperHint,
         lowerHint,
-        { from: account, value: ETHAmount }
+        { account }
       );
       const gas = this.gasUsed(tx);
       gasCostList.push(gas);
@@ -831,6 +851,7 @@ class TestHelper {
   static async openTrove(
     contracts,
     {
+      troveIndex,
       maxFeePercentage,
       extraBoldAmount,
       upperHint,
@@ -839,6 +860,7 @@ class TestHelper {
       extraParams,
     }
   ) {
+    if (!troveIndex) troveIndex = 0;
     if (!maxFeePercentage) maxFeePercentage = this._100pct;
     if (!extraBoldAmount) extraBoldAmount = this.toBN(0);
     else if (typeof extraBoldAmount == "string")
@@ -873,8 +895,14 @@ class TestHelper {
     //   { from: extraParams.from }
     // );
 
+    // approve ERC20 ETH
+    await contracts.WETH.approve(contracts.borrowerOperations.address, extraParams.value, { from: extraParams.from });
+
     const tx = await contracts.borrowerOperations.openTrove(
+      extraParams.from,
+      troveIndex,
       maxFeePercentage,
+      extraParams.value,
       boldAmount,
       //extraParams.value, // TODO: this is the stETH value - ensure its still working
       upperHint,
@@ -882,11 +910,13 @@ class TestHelper {
       extraParams.annualInterestRate,
       {
         from: extraParams.from,
-        value: extraParams.value,
       }
     );
 
+    const troveId = this.getTroveIdFromTx(tx);
+
     return {
+      troveId,
       boldAmount,
       netDebt,
       totalDebt,
@@ -896,11 +926,54 @@ class TestHelper {
     };
   }
 
+  static async openTroveWrapper(
+    contracts,
+    maxFeePercentage,
+    boldAmount,
+    upperHint,
+    lowerHint,
+    annualInterestRate,
+    extraParams,
+  ){
+    // approve ERC20 ETH
+    await contracts.WETH.approve(contracts.borrowerOperations.address, extraParams.value, { from: extraParams.from });
+
+    const tx = await contracts.borrowerOperations.openTrove(
+      extraParams.from,
+      0,
+      maxFeePercentage,
+      extraParams.value,
+      boldAmount,
+      upperHint,
+      lowerHint,
+      annualInterestRate,
+      {
+        from: extraParams.from,
+      }
+    );
+
+    const troveId = this.getTroveIdFromTx(tx);
+
+    return troveId;
+  }
+
+  static getTroveIdFromTx(tx) {
+    for (let i = 0; i < tx.logs.length; i++) {
+      if (tx.logs[i].event === "TroveCreated") {
+        const troveId = tx.logs[i].args['_troveId'];
+
+        return troveId;
+      }
+    }
+    throw "The transaction logs do not contain a trove creation event";
+  }
+
   static async withdrawBold(
     contracts,
-    { maxFeePercentage, boldAmount, ICR, extraParams }
+    { troveId, maxFeePercentage, boldAmount, ICR, extraParams }
   ) {
     if (!maxFeePercentage) maxFeePercentage = this._100pct;
+    if (!troveId) troveId = this.addressToTroveId(extraParams.from);
 
     assert(
       !(boldAmount && ICR) && (boldAmount || ICR),
@@ -910,16 +983,14 @@ class TestHelper {
     let increasedTotalDebt;
     if (ICR) {
       assert(extraParams.from, "A from account is needed");
-      const { debt, coll } = await contracts.troveManager.getEntireDebtAndColl(
-        extraParams.from
-      );
+      const { entireDebt, entireColl } = await contracts.troveManager.getEntireDebtAndColl(troveId);
       const price = await contracts.priceFeedTestnet.getPrice();
-      const targetDebt = coll.mul(price).div(ICR);
+      const targetDebt = entireColl.mul(price).div(ICR);
       assert(
-        targetDebt > debt,
+        targetDebt > entireDebt,
         "ICR is already greater than or equal to target"
       );
-      increasedTotalDebt = targetDebt.sub(debt);
+      increasedTotalDebt = targetDebt.sub(entireDebt);
       boldAmount = await this.getNetBorrowingAmount(
         contracts,
         increasedTotalDebt
@@ -932,6 +1003,7 @@ class TestHelper {
     }
 
     await contracts.borrowerOperations.withdrawBold(
+      troveId,
       maxFeePercentage,
       boldAmount,
       extraParams
@@ -978,12 +1050,13 @@ class TestHelper {
       if (ETHChangeBN.gt(zero)) {
         tx = await contracts.borrowerOperations.adjustTrove(
           this._100pct,
-          0,
+          ETHChangeBN,
+          true,
           BoldChangeBN,
           isDebtIncrease,
           upperHint,
           lowerHint,
-          { from: account, value: ETHChangeBN }
+          { from: account }
         );
         // Withdraw ETH from trove
       } else if (ETHChangeBN.lt(zero)) {
@@ -991,6 +1064,7 @@ class TestHelper {
         tx = await contracts.borrowerOperations.adjustTrove(
           this._100pct,
           ETHChangeBN,
+          false,
           BoldChangeBN,
           isDebtIncrease,
           upperHint,
@@ -1042,12 +1116,13 @@ class TestHelper {
       if (ETHChangeBN.gt(zero)) {
         tx = await contracts.borrowerOperations.adjustTrove(
           this._100pct,
-          0,
+          ETHChangeBN,
+          true,
           BoldChangeBN,
           isDebtIncrease,
           upperHint,
           lowerHint,
-          { from: account, value: ETHChangeBN }
+          { from: account }
         );
         // Withdraw ETH from trove
       } else if (ETHChangeBN.lt(zero)) {
@@ -1055,6 +1130,7 @@ class TestHelper {
         tx = await contracts.borrowerOperations.adjustTrove(
           this._100pct,
           ETHChangeBN,
+          false,
           BoldChangeBN,
           isDebtIncrease,
           lowerHint,
@@ -1121,6 +1197,26 @@ class TestHelper {
       gasCostList.push(gas);
     }
     return this.getGasMetrics(gasCostList);
+  }
+
+  static async addCollWrapper(
+    contracts,
+    extraParams
+  ) {
+    // approve ERC20 ETH
+    await contracts.WETH.approve(contracts.borrowerOperations.address, extraParams.value, { from: extraParams.from });
+
+    const troveId = this.addressToTroveId(extraParams.from);
+
+    const tx = await contracts.borrowerOperations.addColl(
+      troveId,
+      extraParams.value,
+      {
+        from: extraParams.from,
+      }
+    );
+    return tx;
+
   }
 
   static async withdrawColl_allAccounts(accounts, contracts, amount) {
@@ -1402,36 +1498,8 @@ class TestHelper {
     maxFee = 0,
     gasPrice_toUse = 0
   ) {
-    const redemptionhint = await contracts.hintHelpers.getRedemptionHints(
-      BoldAmount,
-      price,
-      gasPrice_toUse
-    );
-
-    const firstRedemptionHint = redemptionhint[0];
-    const partialRedemptionNewICR = redemptionhint[1];
-
-    const { hintAddress: approxPartialRedemptionHint, latestRandomSeed } =
-      await contracts.hintHelpers.getApproxHint(
-        partialRedemptionNewICR,
-        50,
-        this.latestRandomSeed
-      );
-    this.latestRandomSeed = latestRandomSeed;
-
-    const exactPartialRedemptionHint =
-      await contracts.sortedTroves.findInsertPosition(
-        partialRedemptionNewICR,
-        approxPartialRedemptionHint,
-        approxPartialRedemptionHint
-      );
-
     const tx = await contracts.troveManager.redeemCollateral(
       BoldAmount,
-      firstRedemptionHint,
-      exactPartialRedemptionHint[0],
-      exactPartialRedemptionHint[1],
-      partialRedemptionNewICR,
       0,
       maxFee,
       { from: redeemer, gasPrice: gasPrice_toUse }
@@ -1450,10 +1518,11 @@ class TestHelper {
 
       await contracts.borrowerOperations.openTrove(
         this._100pct,
+        coll,
         "200000000000000000000",
         account,
         account,
-        { from: account, value: coll }
+        { from: account }
       );
 
       amountFinney += 10;
@@ -1562,31 +1631,6 @@ class TestHelper {
 
   // --- Time functions ---
 
-  static async fastForwardTime(seconds, currentWeb3Provider) {
-    await currentWeb3Provider.send(
-      {
-        id: 0,
-        jsonrpc: "2.0",
-        method: "evm_increaseTime",
-        params: [seconds],
-      },
-      (err) => {
-        if (err) console.log(err);
-      }
-    );
-
-    await currentWeb3Provider.send(
-      {
-        id: 0,
-        jsonrpc: "2.0",
-        method: "evm_mine",
-      },
-      (err) => {
-        if (err) console.log(err);
-      }
-    );
-  }
-
   static async getLatestBlockTimestamp(web3Instance) {
     const blockNumber = await web3Instance.eth.getBlockNumber();
     const block = await web3Instance.eth.getBlock(blockNumber);
@@ -1648,12 +1692,6 @@ class TestHelper {
   }
 
   // --- Misc. functions  ---
-
-  static async forceSendEth(from, receiver, value) {
-    const destructible = await Destructible.new();
-    await web3.eth.sendTransaction({ to: destructible.address, from, value });
-    await destructible.destruct(receiver);
-  }
 
   static hexToParam(hexValue) {
     return ("0".repeat(64) + hexValue.slice(2)).slice(-64);

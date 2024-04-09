@@ -10,11 +10,11 @@ interface ICollSurplusPool {
         address _activePoolAddress
     ) external;
 
-    function getETH() external view returns (uint);
+    function getETHBalance() external view returns (uint);
 
-    function getCollateral(address _account) external view returns (uint);
+    function getCollateral(uint256 _troveId) external view returns (uint);
 
-    function accountSurplus(address _account, uint _amount) external;
+    function accountSurplus(uint256 _troveId, uint _amount) external;
 
-    function claimColl(address _account) external;
+    function claimColl(address _account, uint256 _troveId) external;
 }

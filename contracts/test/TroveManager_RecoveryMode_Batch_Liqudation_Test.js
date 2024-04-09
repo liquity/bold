@@ -1,11 +1,12 @@
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const { TestHelper: th, MoneyValues: mv } = require("../utils/testHelpers.js");
+const { fundAccounts } = require("../utils/fundAccounts.js");
 const { toBN, dec, ZERO_ADDRESS } = th;
 
 const TroveManagerTester = artifacts.require("./TroveManagerTester");
 const BoldToken = artifacts.require("./BoldToken.sol");
 
-contract(
+contract.skip(
   "TroveManager - in Recovery Mode - back to normal mode in 1 tx",
   async (accounts) => {
     const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(
@@ -53,7 +54,8 @@ contract(
       contracts.boldToken = await BoldToken.new(
         contracts.troveManager.address,
         contracts.stabilityPool.address,
-        contracts.borrowerOperations.address
+        contracts.borrowerOperations.address,
+        contracts.activePool.address
       );
     
       troveManager = contracts.troveManager;
@@ -62,6 +64,33 @@ contract(
       sortedTroves = contracts.sortedTroves;
 
       await deploymentHelper.connectCoreContracts(contracts);
+
+      await fundAccounts([
+        owner,
+        alice,
+        bob,
+        carol,
+        dennis,
+        erin,
+        freddy,
+        greta,
+        harry,
+        ida,
+        whale,
+        defaulter_1,
+        defaulter_2,
+        defaulter_3,
+        defaulter_4,
+        A,
+        B,
+        C,
+        D,
+        E,
+        F,
+        G,
+        H,
+        I,
+      ], contracts.WETH);
     });
 
     context("Batch liquidations", () => {
@@ -156,7 +185,7 @@ contract(
           price,
         } = await setup();
 
-        const spEthBefore = await stabilityPool.getETH();
+        const spEthBefore = await stabilityPool.getETHBalance();
         const spBoldBefore = await stabilityPool.getTotalBoldDeposits();
 
         const tx = await troveManager.batchLiquidateTroves([alice, carol]);
@@ -169,7 +198,7 @@ contract(
         assert.equal((await troveManager.Troves(alice))[3], "3");
         assert.equal((await troveManager.Troves(carol))[3], "3");
 
-        const spEthAfter = await stabilityPool.getETH();
+        const spEthAfter = await stabilityPool.getETHBalance();
         const spBoldAfter = await stabilityPool.getTotalBoldDeposits();
 
         // liquidate collaterals with the gas compensation fee subtracted

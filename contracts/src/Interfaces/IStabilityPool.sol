@@ -54,7 +54,7 @@ interface IStabilityPool is ILiquityBase {
     */
     function provideToSP(uint _amount) external;
 
-   
+
     /*  withdrawFromSP():
     * - Calculates depositor's ETH gain
     * - Calculates the compounded deposit
@@ -69,7 +69,7 @@ interface IStabilityPool is ILiquityBase {
     * - Leaves their compounded deposit in the Stability Pool
     * - Takes new snapshots of accumulators P and S 
     */
-    function withdrawETHGainToTrove() external;
+    function withdrawETHGainToTrove(uint256 _troveId) external;
 
     /*
      * Initial checks:
@@ -85,7 +85,7 @@ interface IStabilityPool is ILiquityBase {
      * Returns the total amount of ETH held by the pool, accounted in an internal variable instead of `balance`,
      * to exclude edge cases like ETH received from a self-destruct.
      */
-    function getETH() external view returns (uint);
+    function getETHBalance() external view returns (uint);
 
     /*
      * Returns Bold held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
@@ -103,8 +103,7 @@ interface IStabilityPool is ILiquityBase {
     function getCompoundedBoldDeposit(address _depositor) external view returns (uint);
 
     /*
-     * Fallback function
-     * Only callable by Active Pool, it just accounts for ETH received
-     * receive() external payable;
+     * Only callable by Active Pool, it pulls ETH and accounts for ETH received
      */
+    function receiveETH(uint256 _amount) external;
 }

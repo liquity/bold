@@ -2,9 +2,17 @@
 
 pragma solidity 0.8.18;
 
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import './Interfaces/IActivePool.sol';
+import './Interfaces/IBoldToken.sol';
+import "./Interfaces/IInterestRouter.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
+import './Interfaces/IDefaultPool.sol';
+import './Interfaces/IActivePool.sol';
+
+//import "forge-std/console2.sol";
 
 /*
  * The Active Pool holds the ETH collateral and Bold debt (but not Bold tokens) for all active troves.
@@ -14,14 +22,40 @@ import "./Dependencies/CheckContract.sol";
  *
  */
 contract ActivePool is Ownable, CheckContract, IActivePool {
+    using SafeERC20 for IERC20;
+
     string constant public NAME = "ActivePool";
 
+    IERC20 public immutable ETH;
     address public borrowerOperationsAddress;
     address public troveManagerAddress;
     address public stabilityPoolAddress;
     address public defaultPoolAddress;
-    uint256 internal ETH;  // deposited ether tracker
-    uint256 internal boldDebt;
+
+    IBoldToken boldToken;
+
+    IInterestRouter public interestRouter;
+
+    uint256 constant public SECONDS_IN_ONE_YEAR = 31536000; // 60 * 60 * 24 * 365,
+
+    uint256 internal ETHBalance;  // deposited ether tracker
+
+    // Sum of individual recorded Trove debts. Updated only at individual Trove operations.
+    // "G" in the spec.
+    uint256 internal recordedDebtSum;
+
+    // Aggregate recorded debt tracker. Updated whenever a Trove's debt is touched AND whenever the aggregate pending interest is minted.
+    // "D" in the spec.
+    uint256 public aggRecordedDebt;
+
+    /* Sum of individual recorded Trove debts weighted by their respective chosen interest rates.
+    * Updated at individual Trove operations.
+    * "S" in the spec.
+    */
+    uint256 public aggWeightedDebtSum;
+
+    // Last time at which the aggregate recorded debt and weighted sum were updated
+    uint256 public lastAggUpdateTime;
 
     // --- Events ---
 
@@ -30,8 +64,14 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     event EtherSent(address _to, uint _amount);
     event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event ActivePoolBoldDebtUpdated(uint _boldDebt);
-    event ActivePoolETHBalanceUpdated(uint _ETH);
+    event ActivePoolBoldDebtUpdated(uint _recordedDebtSum);
+    event ActivePoolETHBalanceUpdated(uint _ETHBalance);
+
+    constructor(address _ETHAddress) {
+        checkContract(_ETHAddress);
+        ETH = IERC20(_ETHAddress);
+    }
+
 
     // --- Contract setters ---
 
@@ -39,7 +79,9 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         address _borrowerOperationsAddress,
         address _troveManagerAddress,
         address _stabilityPoolAddress,
-        address _defaultPoolAddress
+        address _defaultPoolAddress,
+        address _boldTokenAddress,
+        address _interestRouterAddress
     )
         external
         onlyOwner
@@ -48,16 +90,23 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         checkContract(_troveManagerAddress);
         checkContract(_stabilityPoolAddress);
         checkContract(_defaultPoolAddress);
+        checkContract(_boldTokenAddress);
+        checkContract(_interestRouterAddress);
 
         borrowerOperationsAddress = _borrowerOperationsAddress;
         troveManagerAddress = _troveManagerAddress;
         stabilityPoolAddress = _stabilityPoolAddress;
         defaultPoolAddress = _defaultPoolAddress;
+        boldToken = IBoldToken(_boldTokenAddress);
+        interestRouter = IInterestRouter(_interestRouterAddress);
 
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
         emit TroveManagerAddressChanged(_troveManagerAddress);
         emit StabilityPoolAddressChanged(_stabilityPoolAddress);
         emit DefaultPoolAddressChanged(_defaultPoolAddress);
+
+        // Allow funds movements between Liquity contracts
+        ETH.approve(_defaultPoolAddress, type(uint256).max);
 
         _renounceOwnership();
     }
@@ -69,36 +118,109 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     *
     *Not necessarily equal to the the contract's raw ETH balance - ether can be forcibly sent to contracts.
     */
-    function getETH() external view override returns (uint) {
-        return ETH;
+    function getETHBalance() external view override returns (uint) {
+        return ETHBalance;
     }
 
-    function getBoldDebt() external view override returns (uint) {
-        return boldDebt;
+    function getRecordedDebtSum() external view override returns (uint) {
+        return recordedDebtSum;
+    }
+
+    function calcPendingAggInterest() public view returns (uint256) {
+        return aggWeightedDebtSum * (block.timestamp - lastAggUpdateTime) / SECONDS_IN_ONE_YEAR / 1e18;
+    }
+
+    // Returns sum of agg.recorded debt plus agg. pending interest. Excludes pending redist. gains.
+    function getTotalActiveDebt() public view returns (uint256) {
+        return aggRecordedDebt + calcPendingAggInterest();
     }
 
     // --- Pool functionality ---
 
     function sendETH(address _account, uint _amount) external override {
         _requireCallerIsBOorTroveMorSP();
-        ETH = ETH - _amount;
-        emit ActivePoolETHBalanceUpdated(ETH);
+
+        _accountForSendETH(_account, _amount);
+
+        ETH.safeTransfer(_account, _amount);
+    }
+
+    function sendETHToDefaultPool(uint _amount) external override {
+        _requireCallerIsTroveManager();
+
+        address defaultPoolAddressCached = defaultPoolAddress;
+        _accountForSendETH(defaultPoolAddressCached, _amount);
+
+        IDefaultPool(defaultPoolAddressCached).receiveETH(_amount);
+    }
+
+    function _accountForSendETH(address _account, uint _amount) internal {
+        uint256 newETHBalance = ETHBalance - _amount;
+        ETHBalance = newETHBalance;
+        emit ActivePoolETHBalanceUpdated(newETHBalance);
         emit EtherSent(_account, _amount);
-
-        (bool success, ) = _account.call{ value: _amount }("");
-        require(success, "ActivePool: sending ETH failed");
     }
 
-    function increaseBoldDebt(uint _amount) external override {
+    function receiveETH(uint256 _amount) external {
+        _requireCallerIsBorrowerOperationsOrDefaultPool();
+
+        uint256 newETHBalance = ETHBalance + _amount;
+        ETHBalance = newETHBalance;
+
+        // Pull ETH tokens from sender
+        ETH.safeTransferFrom(msg.sender, address(this), _amount);
+
+        emit ActivePoolETHBalanceUpdated(newETHBalance);
+    }
+
+    function increaseRecordedDebtSum(uint _amount) external override {
         _requireCallerIsBOorTroveM();
-        boldDebt  = boldDebt + _amount;
-        emit ActivePoolBoldDebtUpdated(boldDebt);
+        uint256 newRecordedDebtSum = recordedDebtSum + _amount;
+        recordedDebtSum  = newRecordedDebtSum;
+        emit ActivePoolBoldDebtUpdated(newRecordedDebtSum);
     }
 
-    function decreaseBoldDebt(uint _amount) external override {
+    function decreaseRecordedDebtSum(uint _amount) external override {
         _requireCallerIsBOorTroveMorSP();
-        boldDebt = boldDebt - _amount;
-        emit ActivePoolBoldDebtUpdated(boldDebt);
+        uint256 newRecordedDebtSum = recordedDebtSum - _amount;
+
+        recordedDebtSum = newRecordedDebtSum;
+
+        emit ActivePoolBoldDebtUpdated(newRecordedDebtSum);
+    }
+
+    function changeAggWeightedDebtSum(uint256 _oldWeightedRecordedTroveDebt, uint256 _newTroveWeightedRecordedTroveDebt) external {
+        _requireCallerIsBOorTroveM();
+        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        uint256 newAggWeightedDebtSum = aggWeightedDebtSum + _newTroveWeightedRecordedTroveDebt; // 1 SLOAD
+        newAggWeightedDebtSum -= _oldWeightedRecordedTroveDebt;
+        aggWeightedDebtSum = newAggWeightedDebtSum; // 1 SSTORE
+    }
+
+    // --- Aggregate interest operations ---
+
+    // This function is called inside all state-changing user ops: borrower ops, liquidations, redemptions and SP deposits/withdrawals.
+    // Some user ops trigger debt changes to Trove(s), in which case _troveDebtChange will be non-zero.
+    // The aggregate recorded debt is incremented by the aggregate pending interest, plus the net Trove debt change.
+    // The net Trove debt change consists of the sum of a) any debt issued/repaid and b) any redistribution debt gain applied in the encapsulating operation.
+    // It does *not* include the Trove's individual accrued interest - this gets accounted for in the aggregate accrued interest.
+    // The net Trove debt change could be positive or negative in a repayment (depending on whether its redistribution gain or repayment amount is larger),
+    // so this function accepts both the increase and the decrease to avoid using (and converting to/from) signed ints.
+    function mintAggInterest(uint256 _troveDebtIncrease, uint256 _troveDebtDecrease) public {
+        _requireCallerIsBOorTroveMorSP();
+        uint256 aggInterest = calcPendingAggInterest();
+        // Mint the new BOLD interest to a mock interest router that would split it and send it onward to SP, LP staking, etc.
+        // TODO: implement interest routing and SP Bold reward tracking
+        if (aggInterest > 0) {boldToken.mint(address(interestRouter), aggInterest);}
+
+        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        uint256 newAggRecordedDebt = aggRecordedDebt + aggInterest + _troveDebtIncrease; // 1 SLOAD
+        newAggRecordedDebt -=_troveDebtDecrease;
+        aggRecordedDebt = newAggRecordedDebt; // 1 SSTORE
+        // assert(aggRecordedDebt >= 0) // This should never be negative. If all redistribution gians and all aggregate interest was applied
+        // and all Trove debts were repaid, it should become 0.
+
+        lastAggUpdateTime = block.timestamp;
     }
 
     // --- 'require' functions ---
@@ -125,11 +247,9 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
             "ActivePool: Caller is neither BorrowerOperations nor TroveManager");
     }
 
-    // --- Fallback function ---
-
-    receive() external payable {
-        _requireCallerIsBorrowerOperationsOrDefaultPool();
-        ETH = ETH + msg.value;
-        emit ActivePoolETHBalanceUpdated(ETH);
+    function _requireCallerIsTroveManager() internal view {
+        require(
+            msg.sender == troveManagerAddress,
+            "ActivePool: Caller is not TroveManager");
     }
 }
