@@ -235,4 +235,33 @@ contract DevTestSetup is BaseTest {
 
         return (ATroveId, BTroveId, CTroveId, DTroveId);
     }
+
+    function _setupForRedemption() public returns (uint256, uint256, TroveIDs memory) {
+        TroveIDs memory troveIDs;
+
+        priceFeed.setPrice(2000e18);
+
+        uint256 interestRate_A = 10e16;
+        uint256 interestRate_B = 20e16;
+        uint256 interestRate_C = 30e16;
+        uint256 interestRate_D = 40e16;
+        uint256 coll = 20 ether;
+        uint256 debtRequest = 20000e18;
+        // Open in increasing order of interst rate
+        troveIDs.A = openTroveNoHints100pctMaxFee(A, coll, debtRequest, interestRate_A); 
+        troveIDs.B = openTroveNoHints100pctMaxFee(B, coll, debtRequest, interestRate_B); 
+        troveIDs.C = openTroveNoHints100pctMaxFee(C, coll, debtRequest, interestRate_C); 
+        troveIDs.D = openTroveNoHints100pctMaxFee(D, coll, debtRequest, interestRate_D); 
+
+        // fast-forward to pass bootstrap phase
+        vm.warp(block.timestamp + 14 days);
+
+        // A, B, C, D transfer all their Bold to E
+        transferBold(A, E, boldToken.balanceOf(A));
+        transferBold(B, E, boldToken.balanceOf(B));
+        transferBold(C, E, boldToken.balanceOf(C));
+        transferBold(D, E, boldToken.balanceOf(D));
+
+        return (coll, debtRequest, troveIDs);
+    }
 }
