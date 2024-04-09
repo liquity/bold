@@ -1,5 +1,5 @@
 {
-  "name": "bold",
+  "name": "bold-contracts",
   "version": "1.0.0",
   "description": "Bold decentralized stablecoin",
   "main": "index.js",
@@ -11,15 +11,10 @@
     "format": "forge fmt && dprint fmt",
     "coverage": "hardhat coverage"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/liquity/bold.git"
-  },
+  "repository": "github:liquity/bold",
   "author": "Liquity AG",
   "license": "GPL-3.0",
-  "bugs": {
-    "url": "https://github.com/liquity/bold/issues"
-  },
+  "bugs": "https://github.com/liquity/bold/issues",
   "homepage": "https://github.com/liquity/bold#readme",
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
@@ -38,7 +33,6 @@
     "@types/mocha": ">=9.1.0",
     "chai": "^4.2.0",
     "decimal.js": "^10.4.3",
-    "dprint": "^0.45.0",
     "hardhat": "^2.14.0",
     "hardhat-gas-reporter": "^1.0.8",
     "solidity-coverage": "^0.8.8",
