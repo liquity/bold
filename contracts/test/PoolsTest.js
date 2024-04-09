@@ -49,7 +49,7 @@ contract('ActivePool', async accounts => {
     activePool = await ActivePool.new(WETH.address)
     mockBorrowerOperations = await NonPayableSwitch.new()
     mockTroveManager = await NonPayableSwitch.new()
-    const dumbContractAddress = (await NonPayable.new()).address
+    const dumbContractAddress = (await NonPayableSwitch.new()).address
     await activePool.setAddresses(mockBorrowerOperations.address, mockTroveManager.address, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
   })
 
