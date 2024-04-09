@@ -13,6 +13,7 @@ Arguments:
                   - local: Deploy to a local network
                   - mainnet: Deploy to the Ethereum mainnet
                   - tenderly-devnet: Deploy to a Tenderly devnet
+                  - liquity-testnet: Deploy to the Liquity v2 testnet
 
 
 Options:
@@ -22,13 +23,16 @@ Options:
   --ledger-path <LEDGER_PATH>              HD path to use with the Ledger (only used
                                            when DEPLOYER is an address).
   --etherscan-api-key <ETHERSCAN_API_KEY>  Etherscan API key to verify the contracts
-                                           (mainnet only).
+                                           (required when verifying with Etherscan).
   --help, -h                               Show this help message.
   --open-demo-troves                       Open demo troves after deployment (local
                                            only).
   --rpc-url <RPC_URL>                      RPC URL to use.
-  --verify                                 Verify contracts on Etherscan after
-                                           deployment (requires ETHERSCAN_API_KEY).
+  --verify                                 Verify contracts after deployment.
+  --verifier <VERIFIER>                    Verification provider to use.
+                                           Possible values: etherscan, sourcify.
+  --verifier-url <VERIFIER_URL>            The verifier URL, if using a custom
+                                           provider.
 
 Note: options can also be set via corresponding environment variables,
 e.g. --chain-id can be set via CHAIN_ID instead. Parameters take precedence over variables.
@@ -51,6 +55,14 @@ export async function main() {
     options.rpcUrl ??= "http://localhost:8545";
   }
 
+  // network preset: liquity-testnet
+  if (networkPreset === "liquity-testnet") {
+    options.chainId ??= 1337;
+    options.rpcUrl ??= "https://testnet.liquity.org/rpc";
+    options.verifier ??= "sourcify";
+    options.verifierUrl ??= "https://testnet.liquity.org/sourcify/server";
+  }
+
   // network preset: tenderly-devnet
   if (networkPreset === "tenderly-devnet") {
     options.chainId ??= 1;
@@ -69,6 +81,8 @@ export async function main() {
     options.chainId ??= 1;
   }
 
+  options.verifier ??= "etherscan";
+
   // handle missing options
   if (!options.chainId) {
     throw new Error("--chain-id <CHAIN_ID> is required");
@@ -79,15 +93,15 @@ export async function main() {
   if (!options.deployer) {
     throw new Error("--deployer <DEPLOYER> is required");
   }
-  if (options.verify && !options.etherscanApiKey) {
+  if (options.verify && options.verifier === "etherscan" && !options.etherscanApiKey) {
     throw new Error(
-      "--verify requires --etherscan-api-key <ETHERSCAN_API_KEY>",
+      "Verifying with Etherscan requires --etherscan-api-key <ETHERSCAN_API_KEY>",
     );
   }
 
   const forgeArgs: string[] = [
     "script",
-    "scripts/DeployLiquity2.s.sol:DeployLiquity2Script",
+    "src/scripts/DeployLiquity2.s.sol",
     "--chain-id",
     String(options.chainId),
     "--rpc-url",
@@ -96,10 +110,26 @@ export async function main() {
   ];
 
   // verify
-  if (options.verify && options.etherscanApiKey) {
+  if (options.verify) {
     forgeArgs.push("--verify");
-    forgeArgs.push("--etherscan-api-key");
-    forgeArgs.push(options.etherscanApiKey);
+
+    // Etherscan API key
+    if (options.etherscanApiKey) {
+      forgeArgs.push("--etherscan-api-key");
+      forgeArgs.push(options.etherscanApiKey);
+    }
+
+    // verifier
+    if (options.verifier) {
+      forgeArgs.push("--verifier");
+      forgeArgs.push(options.verifier);
+    }
+
+    // verifier URL
+    if (options.verifierUrl) {
+      forgeArgs.push("--verifier-url");
+      forgeArgs.push(options.verifierUrl);
+    }
   }
 
   // Ledger signing
@@ -121,6 +151,8 @@ Deploying Liquity contracts with the following settings:
   OPEN_DEMO_TROVES:   ${options.openDemoTroves ? "yes" : "no"}
   RPC_URL:            ${options.rpcUrl}
   VERIFY:             ${options.verify ? "yes" : "no"}
+  VERIFIER:           ${options.verifier}
+  VERIFIER_URL:       ${options.verifierUrl}
 `;
 
   const envVars = [
@@ -208,6 +240,8 @@ async function parseArgs() {
     openDemoTroves: argBoolean("open-demo-troves"),
     rpcUrl: argv["rpc-url"],
     verify: argBoolean("verify"),
+    verifier: argv["verifier"],
+    verifierUrl: argv["verifier-url"]
   };
 
   const [networkPreset] = argv._;
@@ -228,6 +262,8 @@ async function parseArgs() {
   options.verify ??= Boolean(
     process.env.VERIFY && process.env.VERIFY !== "false",
   );
+  options.verifier ??= process.env.VERIFIER;
+  options.verifierUrl ??= process.env.VERIFIER_URL;
 
   return { options, networkPreset };
 }
