@@ -423,8 +423,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _collChange,
             _isCollIncrease,
             _boldChange,
-            _isDebtIncrease,
-            vars.accruedTroveInterest
+            _isDebtIncrease
         );
     }
 
@@ -593,9 +592,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
        return newEntireDebt;
     }
 
-    // This function incorporates both the Trove's net debt change (repaid/drawn) and its accrued interest.
-    // Redist. gains have already been applied before this is called.
-    // TODO: explicitly pass redist. gains too if we gas-optimize them.
+    // This function mints the BOLD corresponding to the borrower's chosen debt increase 
+    // (it does not mint the accrued interest).
     function _moveTokensAndETHfromAdjustment
     (
         IActivePool _activePool,
@@ -605,8 +603,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint _collChange,
         bool _isCollIncrease,
         uint _boldChange,
-        bool _isDebtIncrease,
-        uint256 _accruedTroveInterest
+        bool _isDebtIncrease
     )
         internal
     {
