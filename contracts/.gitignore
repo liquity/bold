@@ -22,4 +22,4 @@ coverage/
 coverage.json
 mochaOutput.json
 testMatrix.json
-/deployment-latest.json
+/deployment-context-latest.json
