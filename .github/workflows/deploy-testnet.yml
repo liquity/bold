@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   deploy-contracts:
+    if: false
     name: Deploy contracts to the Liquity v2 Testnet
     runs-on: ubuntu-latest
     steps:
@@ -81,7 +82,7 @@ jobs:
 
       - name: Build Project Artifacts
         run: |
-          cat ./deployment-context-latest.json | pn tsx contracts/utils/deployment-artifacts-to-next-env.ts > ./frontend/.env.local
+          test -f ./deployment-context-latest.json && cat ./deployment-context-latest.json | pn tsx contracts/utils/deployment-artifacts-to-next-env.ts > ./frontend/.env.local
           vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy Project Artifacts to Vercel
