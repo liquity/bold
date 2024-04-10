@@ -43,49 +43,56 @@ contract('StabilityPool', async accounts => {
 
 contract('ActivePool', async accounts => {
 
+  let activePool, mockBorrowerOperations, mockTroveManager, WETH
+
   const [owner, alice] = accounts;
 
   const deployFixture = async () => {
     const WETH = await ERC20.new("WETH", "WETH");
     const activePool = await ActivePool.new(WETH.address)
     const mockBorrowerOperations = await NonPayableSwitch.new()
+    const mockTroveManager = await NonPayableSwitch.new()
     const { address: dumbContractAddress } = await NonPayableSwitch.new()
-    await activePool.setAddresses(mockBorrowerOperations.address, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
+    await activePool.setAddresses(mockBorrowerOperations.address, mockTroveManager.address, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
 
-    return { activePool, mockBorrowerOperations, WETH }
+    return { activePool, mockBorrowerOperations, mockTroveManager, WETH }
   }
 
+  beforeEach(async () => {
+    const result = await loadFixture(deployFixture)
+    WETH = result.WETH
+    activePool = result.activePool
+    mockBorrowerOperations = result.mockBorrowerOperations
+    mockTroveManager = result.mockTroveManager
+  })
+
   it('getETHBalance(): gets the recorded ETH balance', async () => {
-    const { activePool } = await loadFixture(deployFixture)
     const recordedETHBalance = await activePool.getETHBalance()
     assert.equal(recordedETHBalance, 0)
   })
 
   it('getBoldDebt(): gets the recorded BOLD balance', async () => {
-    const { activePool } = await loadFixture(deployFixture)
     const recordedETHBalance = await activePool.getRecordedDebtSum()
     assert.equal(recordedETHBalance, 0)
   })
  
   it('increaseRecordedDebtSum(): increases the recorded BOLD balance by the correct amount', async () => {
-    const { activePool, mockBorrowerOperations } = await loadFixture(deployFixture)
     const recordedBold_balanceBefore = await activePool.getRecordedDebtSum()
     assert.equal(recordedBold_balanceBefore, 0)
 
     // await activePool.increaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
     const increaseBoldDebtData = th.getTransactionData('increaseRecordedDebtSum(uint256)', ['0x64'])
-    const tx = await mockBorrowerOperations.forward(activePool.address, increaseBoldDebtData)
+    const tx = await mockTroveManager.forward(activePool.address, increaseBoldDebtData)
     assert.isTrue(tx.receipt.status)
     const recordedBold_balanceAfter = await activePool.getRecordedDebtSum()
     assert.equal(recordedBold_balanceAfter, 100)
   })
   // Decrease
-  it('decreaseBoldDebt(): decreases the recorded BOLD balance by the correct amount', async () => {
-    const { activePool, mockBorrowerOperations } = await loadFixture(deployFixture)
+  it('decreaseRecordedDebtSum(): decreases the recorded BOLD balance by the correct amount', async () => {
     // start the pool on 100 wei
     //await activePool.increaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
     const increaseBoldDebtData = th.getTransactionData('increaseRecordedDebtSum(uint256)', ['0x64'])
-    const tx1 = await mockBorrowerOperations.forward(activePool.address, increaseBoldDebtData)
+    const tx1 = await mockTroveManager.forward(activePool.address, increaseBoldDebtData)
     assert.isTrue(tx1.receipt.status)
 
     const recordedBold_balanceBefore = await activePool.getRecordedDebtSum()
@@ -93,7 +100,7 @@ contract('ActivePool', async accounts => {
 
     //await activePool.decreaseBoldDebt(100, { from: mockBorrowerOperationsAddress })
     const decreaseBoldDebtData = th.getTransactionData('decreaseRecordedDebtSum(uint256)', ['0x64'])
-    const tx2 = await mockBorrowerOperations.forward(activePool.address, decreaseBoldDebtData)
+    const tx2 = await mockTroveManager.forward(activePool.address, decreaseBoldDebtData)
     assert.isTrue(tx2.receipt.status)
     const recordedBold_balanceAfter = await activePool.getRecordedDebtSum()
     assert.equal(recordedBold_balanceAfter, 0)
@@ -101,7 +108,6 @@ contract('ActivePool', async accounts => {
 
   // send raw ether
   it('sendETH(): decreases the recorded ETH balance by the correct amount', async () => {
-    const { activePool, mockBorrowerOperations, WETH } = await loadFixture(deployFixture)
     // setup: give pool 2 ether
     const activePool_initialBalance = web3.utils.toBN(await WETH.balanceOf(activePool.address))
     assert.equal(activePool_initialBalance, 0)
@@ -141,6 +147,8 @@ contract('ActivePool', async accounts => {
 
 contract('DefaultPool', async accounts => {
  
+   let defaultPool, mockTroveManager, mockActivePool, WETH
+
   const [owner, alice] = accounts;
 
   const deployFixture = async () => {
@@ -154,20 +162,25 @@ contract('DefaultPool', async accounts => {
     return { defaultPool, mockTroveManager, mockActivePool, WETH }
   }
 
+  beforeEach(async () => {
+    const result = await loadFixture(deployFixture)
+    WETH = result.WETH
+    defaultPool = result.defaultPool
+    mockTroveManager = result.mockTroveManager
+    mockActivePool = result.mockActivePool
+  })
+
   it('getETHBalance(): gets the recorded BOLD balance', async () => {
-    const { defaultPool } = await loadFixture(deployFixture)
     const recordedETHBalance = await defaultPool.getETHBalance()
     assert.equal(recordedETHBalance, 0)
   })
 
   it('getBoldDebt(): gets the recorded BOLD balance', async () => {
-    const { defaultPool } = await loadFixture(deployFixture)
     const recordedETHBalance = await defaultPool.getBoldDebt()
     assert.equal(recordedETHBalance, 0)
   })
  
   it('increaseBold(): increases the recorded BOLD balance by the correct amount', async () => {
-    const { defaultPool, mockTroveManager } = await loadFixture(deployFixture)
     const recordedBold_balanceBefore = await defaultPool.getBoldDebt()
     assert.equal(recordedBold_balanceBefore, 0)
 
@@ -181,7 +194,6 @@ contract('DefaultPool', async accounts => {
   })
   
   it('decreaseBold(): decreases the recorded BOLD balance by the correct amount', async () => {
-    const { defaultPool, mockTroveManager } = await loadFixture(deployFixture)
     // start the pool on 100 wei
     //await defaultPool.increaseBoldDebt(100, { from: mockTroveManagerAddress })
     const increaseBoldDebtData = th.getTransactionData('increaseBoldDebt(uint256)', ['0x64'])
@@ -202,7 +214,6 @@ contract('DefaultPool', async accounts => {
 
   // send raw ether
   it('sendETHToActivePool(): decreases the recorded ETH balance by the correct amount', async () => {
-    const { defaultPool, mockTroveManager, mockActivePool, WETH } = await loadFixture(deployFixture)
     // setup: give pool 2 ether
     const defaultPool_initialBalance = web3.utils.toBN(await WETH.balanceOf(defaultPool.address))
     assert.equal(defaultPool_initialBalance, 0)

@@ -205,7 +205,7 @@ contract(
           assert.include(err.message, "revert");
           assert.include(
             err.message,
-            "Caller is neither BorrowerOperations nor TroveManager"
+            "ActivePool: Caller is not TroveManager"
           );
         }
       });
@@ -221,7 +221,7 @@ contract(
           assert.include(err.message, "revert");
           assert.include(
             err.message,
-            "Caller is neither BorrowerOperations nor TroveManager nor StabilityPool"
+            "ActivePool: Caller is not TroveManager"
           );
         }
       });
