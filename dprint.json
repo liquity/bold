@@ -1,5 +1,4 @@
 {
-  "lineWidth": 80,
   "typescript": {
     "arrowFunction.useParentheses": "force"
   },
