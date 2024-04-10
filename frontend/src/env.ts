@@ -2,7 +2,9 @@ import z from "zod";
 import { zAddress } from "./zod-utils";
 
 export const EnvSchema = z.object({
+  APP_VERSION: z.string(),
   CHAIN_ID: z.string(),
+  COMMIT_HASH: z.string(),
   CONTRACT_ACTIVE_POOL: zAddress(),
   CONTRACT_BOLD_TOKEN: zAddress(),
   CONTRACT_BORROWER_OPERATIONS: zAddress(),
@@ -24,7 +26,9 @@ export const EnvSchema = z.object({
 export type Env = z.infer<typeof EnvSchema>;
 
 export const {
+  APP_VERSION,
   CHAIN_ID,
+  COMMIT_HASH,
   CONTRACT_ACTIVE_POOL,
   CONTRACT_BOLD_TOKEN,
   CONTRACT_BORROWER_OPERATIONS,
@@ -39,7 +43,9 @@ export const {
   CONTRACT_TROVE_MANAGER,
   WALLET_CONNECT_PROJECT_ID,
 } = EnvSchema.parse({
+  APP_VERSION: process.env.APP_VERSION,
   CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID,
+  COMMIT_HASH: process.env.COMMIT_HASH,
   CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_CONTRACT_ACTIVE_POOL,
   CONTRACT_BOLD_TOKEN: process.env.NEXT_PUBLIC_CONTRACT_BOLD_TOKEN,
   CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_CONTRACT_BORROWER_OPERATIONS,
