@@ -12,7 +12,6 @@ Arguments:
                   network presets. Available presets:
                   - local: Deploy to a local network
                   - mainnet: Deploy to the Ethereum mainnet
-                  - tenderly-devnet: Deploy to a Tenderly devnet
                   - liquity-testnet: Deploy to the Liquity v2 testnet
 
 
@@ -61,19 +60,6 @@ export async function main() {
     options.rpcUrl ??= "https://testnet.liquity.org/rpc";
     options.verifier ??= "sourcify";
     options.verifierUrl ??= "https://testnet.liquity.org/sourcify/server";
-  }
-
-  // network preset: tenderly-devnet
-  if (networkPreset === "tenderly-devnet") {
-    options.chainId ??= 1;
-    options.rpcUrl ??= (
-      await $`tenderly devnet spawn-rpc ${[
-        "--project",
-        "project",
-        "--template",
-        "liquity2",
-      ]} 2>&1`.quiet()
-    ).stdout.trim();
   }
 
   // network preset: mainnet
