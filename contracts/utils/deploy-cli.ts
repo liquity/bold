@@ -107,7 +107,6 @@ export async function main() {
     "--rpc-url",
     options.rpcUrl,
     "--broadcast",
-    "--slow",
   ];
 
   // verify
