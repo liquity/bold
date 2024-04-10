@@ -2,10 +2,10 @@ name: Deploy the contracts + app
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-  DEPLOY_CONTRACTS: 'no'
+  DEPLOY_CONTRACTS: no
 on:
   push:
-    branches: [deploy-contracts-and-app]
+    branches: ["deploy-contracts-and-app"]
     paths:
       - ".github/workflows/deploy-testnet.yml"
       - "contracts/**"
@@ -22,7 +22,7 @@ concurrency:
 jobs:
   deploy-contracts:
     name: Deploy contracts to the Liquity v2 Testnet
-    if: ${{ env.DEPLOY_CONTRACTS != 'no' }}
+    if: ${{ env.DEPLOY_CONTRACTS != "no" }}
     runs-on: ubuntu-latest
     steps:
       - name: Git checkout
