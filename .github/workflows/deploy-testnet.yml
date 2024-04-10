@@ -9,6 +9,10 @@ on:
       - ".github/workflows/deploy-testnet.yml"
       - "contracts/**"
       - "frontend/**"
+  pull_request:
+    paths:
+      - ".github/workflows/deploy-testnet.yml"
+      - "contracts/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -60,6 +64,7 @@ jobs:
   deploy-app:
     name: Deploy the Liquity v2 app to Vercel
     runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
