@@ -26,11 +26,16 @@ interface IActivePool {
     function aggWeightedDebtSum() external view returns (uint256);
     function calcPendingAggInterest() external view returns (uint256);
     
-    function mintAggInterest(uint256 _troveDebtIncrease, uint256 _troveDebtDecrease) external;
-    function changeAggWeightedDebtSum(
-        uint256 _oldWeightedRecordedTroveDebt, 
-        uint256 _newTroveWeightedRecordedTroveDebt
+    function mintAggInterest(
+        uint256 _troveDebtIncrease, 
+        uint256 _troveDebtDecrease,
+        uint256 recordedSumIncrease,
+        uint256 recordedSumDecrease,
+        uint256 newWeightedRecordedTroveDebt,
+        uint256 oldWeightedRecordedTroveDebt
     ) external;
+
+    function mintAggInterestNoTroveChange() external returns (uint256);
     function increaseRecordedDebtSum(uint256 _amount) external;
     function decreaseRecordedDebtSum(uint256 _amount) external;
     function sendETH(address _account, uint _amount) external;

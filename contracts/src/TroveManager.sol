@@ -146,6 +146,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         bool recoveryModeAtStart;
         uint liquidatedDebt;
         uint liquidatedColl;
+        uint256 totalRecordedDebtPlusInterestInSequence;
     }
 
     struct LocalVariables_InnerSingleLiquidateFunction {
@@ -651,14 +652,16 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
 
         require(totals.totalDebtInSequence > 0, "TroveManager: nothing to liquidate");
 
-        // Mint aggregate interest
-        activePool.mintAggInterest(0, totals.totalRecordedDebtInSequence + totals.totalAccruedInterestInSequence);
+        vars.totalRecordedDebtPlusInterestInSequence = totals.totalRecordedDebtInSequence + totals.totalAccruedInterestInSequence;
 
-        // TODO - Gas: combine these into one call to activePool?
-        // Remove the liquidated recorded debt from the sum
-        activePoolCached.decreaseRecordedDebtSum(totals.totalRecordedDebtInSequence + totals.totalRedistDebtGainsInSequence);
-        // Remove the liqudiated weighted recorded debt from the sum
-        activePool.changeAggWeightedDebtSum(totals.totalWeightedRecordedDebtInSequence, 0);
+        activePool.mintAggInterest(
+            0, 
+            vars.totalRecordedDebtPlusInterestInSequence, 
+            0, 
+            totals.totalRecordedDebtInSequence + totals.totalRedistDebtGainsInSequence,
+            0,
+            totals.totalWeightedRecordedDebtInSequence 
+        );
 
         // Move liquidated ETH and Bold to the appropriate pools
         stabilityPoolCached.offset(totals.totalDebtToOffset, totals.totalCollToSendToSP);
@@ -866,9 +869,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
     * Any surplus ETH left in the trove, is sent to the Coll surplus pool, and can be later claimed by the borrower.
     */
     function _redeemCloseTrove(ContractsCache memory _contractsCache, uint256 _troveId, uint _bold, uint _ETH) internal {
-        _contractsCache.boldToken.burn(gasPoolAddress, _bold);
-        // Update Active Pool Bold, and send ETH to account
-        _contractsCache.activePool.decreaseRecordedDebtSum(_bold);
+        _contractsCache.boldToken.burn(gasPoolAddress, _bold); 
 
         // send ETH from Active Pool to CollSurplus Pool
         _contractsCache.collSurplusPool.accountSurplus(_troveId, _ETH);
