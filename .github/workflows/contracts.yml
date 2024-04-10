@@ -1,4 +1,4 @@
-name: test contracts
+name: Test and deploy the contracts
 
 defaults:
   run:
@@ -78,6 +78,12 @@ jobs:
         run: ./deploy liquity-testnet --verify
         env:
           DEPLOYER: ${{ secrets.DEPLOYER }}
+
+      - name: Update env vars
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        with:
+          name: deployment.json
+          path: deployment-latest.json
 
   console-logs:
     name: Check we didn’t forget to remove console imports

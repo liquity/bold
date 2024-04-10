@@ -1,0 +1,90 @@
+name: Deploy the main branch to Vercel
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/deploy-testnet.yml"
+      - "contracts/**"
+      - "frontend/**"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-contracts:
+    name: Deploy contracts to the Liquity v2 Testnet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'pnpm'
+          cache-dependency-path: 'contracts/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run deployment tool
+        working-directory: ./contracts
+        run: ./deploy liquity-testnet --verify
+        env:
+          DEPLOYER: ${{ secrets.DEPLOYER }}
+
+      - name: Upload deployment context
+        uses: actions/upload-artifact@v4
+        working-directory: ./contracts
+        with:
+          name: deployment-context
+          path: deployment-context-latest.json
+
+  deploy-app:
+    name: Deploy the Liquity v2 app to Vercel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Vercel CLI
+        run: pnpm install --global vercel@canary
+
+      - name: Download deployment context
+        uses: actions/download-artifact@v4
+        working-directory: ./frontend
+        with:
+          name: deployment-context
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: |
+          cat ./contracts/deployment-latest.json | pn tsx contracts/utils/deployment-artifacts-to-next-env.ts > ./frontend/.env.local
+          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
