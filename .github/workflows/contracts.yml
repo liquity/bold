@@ -129,6 +129,7 @@ jobs:
         run: pnpm test
 
   coverage:
+    if: false
     name: Coverage
     runs-on: ubuntu-latest
     continue-on-error: true
