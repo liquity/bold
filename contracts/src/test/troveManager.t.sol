@@ -20,8 +20,6 @@ contract TroveManagerTest is DevTestSetup {
         uint256 collB1 = troveManager.getTroveColl(BTroveId);
         assertGt(collB1, 0);
 
-        // fast-forward until redemptions are enabled
-        vm.warp(block.timestamp + troveManager.BOOTSTRAP_PERIOD() + 1);
         // Reduce ETH price so A’s ICR goes below 100%
         uint256 newPrice = 1000e18;
         priceFeed.setPrice(newPrice);
@@ -50,5 +48,30 @@ contract TroveManagerTest is DevTestSetup {
         assertLt(debtB2, debtB1, "B debt mismatch");
         uint256 collB2 = troveManager.getTroveColl(BTroveId);
         assertLt(collB2, collB1, "B coll mismatch");
+    }
+
+    function testInitialRedemptionBaseRate() public {
+        assertEq(troveManager.baseRate(), 5e16);
+    }
+
+    function testRedemptionBaseRateAfter2Weeks() public {
+        assertEq(troveManager.baseRate(), 5e16);
+
+        // Two weeks go by
+        vm.warp(block.timestamp + 14 days);
+
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pctMaxFee(A, 200 ether, 200000e18, 1e17);
+        // A redeems 0.01 BOLD, base rate goes down to almost zero (it’s updated on redemption)
+        vm.startPrank(A);
+        troveManager.redeemCollateral(
+            1e16,
+            10,
+            1e18
+        );
+        vm.stopPrank();
+
+        console.log(troveManager.baseRate(), "baseRate");
+        assertLt(troveManager.baseRate(), 3e10); // Goes down below 3e-8, i.e., below 0.000003%
     }
 }

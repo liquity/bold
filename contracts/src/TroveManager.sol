@@ -46,10 +46,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
      */
     uint constant public MINUTE_DECAY_FACTOR = 999037758833783000;
     uint constant public REDEMPTION_FEE_FLOOR = DECIMAL_PRECISION / 1000 * 5; // 0.5%
+    // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
+    uint constant public INITIAL_REDEMPTION_RATE = DECIMAL_PRECISION / 100 * 5; // 5%
     uint constant public MAX_BORROWING_FEE = DECIMAL_PRECISION / 100 * 5; // 5%
 
-    // During bootsrap period redemptions are not allowed
-    uint constant public BOOTSTRAP_PERIOD = 14 days;
 
     /*
     * BETA: 18 digit decimal. Parameter by which to divide the redeemed fraction, in order to calc the new base rate from a redemption.
@@ -258,14 +258,19 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
     event TroveSnapshotsUpdated(uint _L_ETH, uint _L_boldDebt);
     event TroveIndexUpdated(uint256 _troveId, uint _newIndex);
 
-     enum TroveManagerOperation {
+    enum TroveManagerOperation {
         getAndApplyRedistributionGains,
         liquidateInNormalMode,
         liquidateInRecoveryMode,
         redeemCollateral
     }
 
-    constructor() ERC721(NAME, SYMBOL) {}
+    constructor() ERC721(NAME, SYMBOL) {
+        // Update the baseRate state variable
+        // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
+        baseRate = INITIAL_REDEMPTION_RATE;
+        emit BaseRateUpdated(INITIAL_REDEMPTION_RATE);
+    }
 
     // --- Dependency setter ---
 
@@ -919,7 +924,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         RedemptionTotals memory totals;
 
         _requireValidMaxFeePercentage(_maxFeePercentage);
-        _requireAfterBootstrapPeriod();
         totals.price = priceFeed.fetchPrice();
         _requireTCRoverMCR(totals.price);
         _requireAmountGreaterThanZero(_boldamount);
@@ -1469,11 +1473,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
 
     function _requireTCRoverMCR(uint _price) internal view {
         require(_getTCR(_price) >= MCR, "TroveManager: Cannot redeem when TCR < MCR");
-    }
-
-    function _requireAfterBootstrapPeriod() internal view {
-        uint systemDeploymentTime = boldToken.deploymentStartTime();
-        require(block.timestamp >= systemDeploymentTime + BOOTSTRAP_PERIOD, "TroveManager: Redemptions are not allowed during bootstrap phase");
     }
 
     function _requireValidMaxFeePercentage(uint _maxFeePercentage) internal pure {
