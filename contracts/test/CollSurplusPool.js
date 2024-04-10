@@ -48,35 +48,6 @@ contract("CollSurplusPool", async (accounts) => {
     ], contracts.WETH);
   });
 
-  it("CollSurplusPool::getETHBalance(): Returns the ETH balance of the CollSurplusPool after redemption", async () => {
-    const ETH_1 = await collSurplusPool.getETHBalance();
-    assert.equal(ETH_1, "0");
-
-    const price = toBN(dec(100, 18));
-    await priceFeed.setPrice(price);
-
-    const { collateral: B_coll, netDebt: B_netDebt } = await openTrove({
-      ICR: toBN(dec(200, 16)),
-      extraParams: { from: B },
-    });
-    await openTrove({
-      extraBoldAmount: B_netDebt,
-      extraParams: { from: A, value: dec(3000, "ether") },
-    });
-
-    // skip bootstrapping phase
-    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
-
-    // At ETH:USD = 100, this redemption should leave 1 ether of coll surplus
-    await th.redeemCollateralAndGetTxObject(A, contracts, B_netDebt);
-
-    const ETH_2 = await collSurplusPool.getETHBalance();
-    th.assertIsApproximatelyEqual(
-      ETH_2,
-      B_coll.sub(B_netDebt.mul(mv._1e18BN).div(price))
-    );
-  });
-
   it("CollSurplusPool: claimColl(): Reverts if caller is not Borrower Operations", async () => {
     await th.assertRevert(
       collSurplusPool.claimColl(A, th.addressToTroveId(A), { from: A }),

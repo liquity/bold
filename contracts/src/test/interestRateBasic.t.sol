@@ -755,15 +755,10 @@ contract InterestRateBasic is DevTestSetup {
         (uint256 entireTroveDebt_1, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
-        console.log(troveManager.getCurrentICR(ATroveId, 1000e18), "A ICR before");
         // A withdraws ETH gain to Trove
         withdrawETHGainToTrove(A, ATroveId);
 
-        console.log(troveManager.getCurrentICR(ATroveId, 1000e18), "A ICR after");
-
         (uint256 entireTroveDebt_2, , , , ) = troveManager.getEntireDebtAndColl(ATroveId);
-        console.log(entireTroveDebt_2, "entireTroveDebt_2");
-        console.log(entireTroveDebt_1, "entireTroveDebt_1");
 
         assertEq(entireTroveDebt_2, entireTroveDebt_1);
     }
@@ -783,5 +778,65 @@ contract InterestRateBasic is DevTestSetup {
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
 
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
+    }
+
+    // --- redemptions ---
+
+    function testRedemptionSetsTroveLastDebtUpdateTimeToNow() public {
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+
+        assertLt(troveManager.getTroveLastDebtUpdateTime(troveIDs.A), block.timestamp);
+
+        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+        // E redeems, hitting A partially
+        uint256 redeemAmount = debt_A / 2;
+        redeem(E, redeemAmount);
+
+        assertEq(troveManager.getTroveLastDebtUpdateTime(troveIDs.A), block.timestamp);
+    }
+
+    function testRedemptionReducesTroveAccruedInterestTo0() public {
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+
+        assertGt(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
+
+        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+        // E redeems, hitting A partially
+        uint256 redeemAmount = debt_A / 2;
+        redeem(E, redeemAmount);
+
+        assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
+    }
+
+    function testRedemptionReducesEntireTroveDebtByRedeemedAmount() public {
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+
+        uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(troveIDs.A);
+        assertGt(entireTroveDebt_1, 0);
+
+        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+        // E redeems, hitting A partially
+        uint256 redeemAmount = debt_A / 2;
+        redeem(E, redeemAmount);
+
+        uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(troveIDs.A);
+
+        assertEq(entireTroveDebt_2, entireTroveDebt_1 - redeemAmount);
+    }
+
+    function testRedemptionChangesRecordedTroveDebtByAccruedInterestMinusRedeemedAmount() public {
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+
+        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(troveIDs.A);
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(troveIDs.A);
+
+        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+        // E redeems, hitting A partially
+        uint256 redeemAmount = debt_A / 2;
+        redeem(E, redeemAmount);
+
+        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(troveIDs.A);
+
+        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest - redeemAmount);
     }
 }
