@@ -46,6 +46,7 @@ jobs:
         id: test
 
   deploy:
+    if: false
     name: Deploy contracts to Liquity v2 Testnet
     runs-on: ubuntu-latest
     steps:
