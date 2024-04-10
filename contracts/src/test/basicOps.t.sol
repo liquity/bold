@@ -98,7 +98,7 @@ contract BasicOps is DevTestSetup {
 
         // A redeems 1k BOLD
         vm.startPrank(A);
-        troveManager.redeemCollateral(redemptionAmount, 10, 1e18);
+        collateralRegistry.redeemCollateral(redemptionAmount, 10, 1e18);
 
         // Check B's coll and debt reduced
         uint256 debt_2 = troveManager.getTroveDebt(B_Id);

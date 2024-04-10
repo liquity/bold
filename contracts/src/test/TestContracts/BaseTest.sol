@@ -11,6 +11,7 @@ import "../../Interfaces/IPriceFeed.sol";
 import "../../Interfaces/ISortedTroves.sol";
 import "../../Interfaces/IStabilityPool.sol";
 import "../../Interfaces/ITroveManager.sol";
+import "../../Interfaces/ICollateralRegistry.sol";
 import "./PriceFeedTestnet.sol";
 import "../../Interfaces/IInterestRouter.sol";
 import "../../GasPool.sol";
@@ -30,6 +31,7 @@ contract BaseTest is Test {
     address public F;
     address public G;
 
+    uint256 public constant DECIMAL_PRECISION = 1e18;
     uint256 public constant MAX_UINT256 = type(uint256).max;
     uint256 public constant SECONDS_IN_1_YEAR = 31536000; // 60*60*24*365
     uint256 _100pct = 100e16;
@@ -46,6 +48,7 @@ contract BaseTest is Test {
     IStabilityPool stabilityPool;
     ITroveManager troveManager;
     IBoldToken boldToken;
+    ICollateralRegistry collateralRegistry;
     IPriceFeedTestnet priceFeed;
 
     GasPool gasPool;
@@ -231,7 +234,7 @@ contract BaseTest is Test {
 
     function redeem(address _from, uint256 _boldAmount) public {
         vm.startPrank(_from);
-        troveManager.redeemCollateral(_boldAmount, MAX_UINT256, 1e18);
+        collateralRegistry.redeemCollateral(_boldAmount, MAX_UINT256, 1e18);
         vm.stopPrank();
     }
 

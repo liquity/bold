@@ -46,28 +46,33 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
     }
   };
 
-  const testSetAddresses = async (contract, numberOfAddresses) => {
+  const testSetAddresses = async (contract, numberOfAddresses, twice=true, method='setAddresses') => {
     const dumbContract = await GasPool.new();
     const params = Array(numberOfAddresses).fill(dumbContract.address);
 
     // Attempt call from alice
-    await th.assertRevert(contract.setAddresses(...params, { from: alice }));
+    await th.assertRevert(contract[method](...params, { from: alice }));
 
     // Attempt to use zero address
-    await testZeroAddress(contract, params);
+    await testZeroAddress(contract, params, method);
     // Attempt to use non contract
-    await testNonContractAddress(contract, params);
+    await testNonContractAddress(contract, params, method);
 
     // Owner can successfully set any address
-    const txOwner = await contract.setAddresses(...params, { from: owner });
+    const txOwner = await contract[method](...params, { from: owner });
     assert.isTrue(txOwner.receipt.status);
     // fails if called twice
-    await th.assertRevert(contract.setAddresses(...params, { from: owner }));
+    if (twice) {
+      await th.assertRevert(contract[method](...params, { from: owner }));
+    }
   };
 
   describe("TroveManager", async (accounts) => {
-    it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testSetAddresses(troveManager, 9);
+    it("setAddresses(): reverts when called by non-owner, with wrong addresses", async () => {
+      await testSetAddresses(troveManager, 9, false);
+    });
+    it("setCollateralRegistry(): reverts when called by non-owner, with wrong address, or twice", async () => {
+      await testSetAddresses(troveManager, 1, true, 'setCollateralRegistry');
     });
   });
 

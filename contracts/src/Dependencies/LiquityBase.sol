@@ -11,9 +11,9 @@ import "../Interfaces/ILiquityBase.sol";
 
 //import "forge-std/console2.sol";
 
-/* 
+/*
 * Base contract for TroveManager, BorrowerOperations and StabilityPool. Contains global system constants and
-* common functions. 
+* common functions.
 */
 contract LiquityBase is BaseMath, ILiquityBase {
     // TODO: Pull all constants out into a separate base contract
@@ -38,6 +38,7 @@ contract LiquityBase is BaseMath, ILiquityBase {
     uint256 public constant PERCENT_DIVISOR = 200; // dividing by 200 yields 0.5%
 
     uint256 public constant BORROWING_FEE_FLOOR = DECIMAL_PRECISION / 1000 * 5; // 0.5%
+    uint256 public constant REDEMPTION_FEE_FLOOR = DECIMAL_PRECISION / 1000 * 5; // 0.5%
 
     IActivePool public activePool;
 
@@ -90,10 +91,5 @@ contract LiquityBase is BaseMath, ILiquityBase {
         uint256 TCR = _getTCR(_price);
 
         return TCR < CCR;
-    }
-
-    function _requireUserAcceptsFee(uint256 _fee, uint256 _amount, uint256 _maxFeePercentage) internal pure {
-        uint256 feePercentage = _fee * DECIMAL_PRECISION / _amount;
-        require(feePercentage <= _maxFeePercentage, "Fee exceeded provided maximum");
     }
 }

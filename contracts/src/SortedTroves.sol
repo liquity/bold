@@ -22,7 +22,7 @@ uint256 constant ROOT_NODE_ID = 0;
 *
 * The annual interest rate is stored on the Trove struct in TroveManager, not directly on the Node.
 *
-* A node need only be re-inserted when the borrower adjusts their interest rate. Interest rate order is preserved 
+* A node need only be re-inserted when the borrower adjusts their interest rate. Interest rate order is preserved
 * under all other system operations.
 *
 * The list is a modification of the following audited SortedDoublyLinkedList:

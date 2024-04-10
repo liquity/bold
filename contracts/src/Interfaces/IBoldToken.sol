@@ -7,6 +7,13 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.s
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 interface IBoldToken is IERC20, IERC20Metadata, IERC20Permit {
+    function setBranchAddresses(
+        address _troveManagerAddress,
+        address _stabilityPoolAddress,
+        address _borrowerOperationsAddress,
+        address _activePoolAddress
+    ) external;
+
     function version() external pure returns (string memory);
 
     function deploymentStartTime() external view returns (uint256);

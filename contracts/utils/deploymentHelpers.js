@@ -120,7 +120,8 @@ class DeploymentHelper {
   }
 
   static async deployBoldToken(contracts, MockedBoldToken = BoldToken) {
-    contracts.boldToken = await MockedBoldToken.new(
+    contracts.boldToken = await MockedBoldToken.new();
+    contracts.boldToken.setBranchAddresses(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
       contracts.borrowerOperations.address,
