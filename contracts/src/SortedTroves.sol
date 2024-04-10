@@ -397,7 +397,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         uint256 _annualInterestRate,
         uint256 _descentStartId,
         uint256 _ascentStartId
-    ) internal view returns (uint256, uint256) {
+    ) internal view returns (uint256 prevId, uint256 nextId) {
         Position memory descentPos = Position(_descentStartId, nodes[_descentStartId].nextId);
         Position memory ascentPos = Position(nodes[_ascentStartId].prevId, _ascentStartId);
 
@@ -411,7 +411,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
             }
         }
 
-        revert("Should not reach");
+        assert(false); // Should not reach
     }
 
     /*
