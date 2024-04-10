@@ -1,4 +1,4 @@
-name: Test and deploy the contracts
+name: Test the contracts
 
 defaults:
   run:
