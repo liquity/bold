@@ -79,12 +79,6 @@ jobs:
         env:
           DEPLOYER: ${{ secrets.DEPLOYER }}
 
-      - name: Update env vars
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        with:
-          name: deployment.json
-          path: deployment-latest.json
-
   console-logs:
     name: Check we didn’t forget to remove console imports
     runs-on: ubuntu-latest
