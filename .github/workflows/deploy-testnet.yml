@@ -2,7 +2,7 @@ name: Deploy the contracts + app
 
 on:
   push:
-    branches: ["deploy-contracts-and-app"]
+    branches: [main]
     paths:
       - ".github/workflows/deploy-testnet.yml"
       - "contracts/**"
