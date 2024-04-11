@@ -2,8 +2,6 @@
 
 pragma solidity 0.8.18;
 
-import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-
 import "./ActivePool.sol";
 import "./BoldToken.sol";
 import "./BorrowerOperations.sol";
@@ -17,6 +15,7 @@ import "./StabilityPool.sol";
 import "./TroveManager.sol";
 import "./MockInterestRouter.sol";
 import "./test/TestContracts/PriceFeedTestnet.sol";
+import {ERC20Faucet} from "./test/TestContracts/ERC20Faucet.sol";
 
 struct LiquityContracts {
     IActivePool activePool;
@@ -34,7 +33,12 @@ struct LiquityContracts {
 }
 
 function _deployAndConnectContracts() returns (LiquityContracts memory contracts) {
-    contracts.WETH = new ERC20("Wrapped ETH", "WETH");
+    contracts.WETH = new ERC20Faucet(
+        "Wrapped ETH", // _name
+        "WETH", //        _symbol
+        10 ether, //      _tapAmount
+        1 days //         _tapPeriod
+    );
 
     // TODO: optimize deployment order & constructor args & connector functions
 
