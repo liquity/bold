@@ -295,13 +295,6 @@ contract("SortedTroves", async (accounts) => {
       assert.isFalse(await sortedTroves.contains(th.addressToTroveId(bob)));
     });
 
-    // --- getMaxSize ---
-
-    it("getMaxSize(): Returns the maximum list size", async () => {
-      const max = await sortedTroves.getMaxSize();
-      assert.equal(web3.utils.toHex(max), th.maxBytes32);
-    });
-
     // --- findInsertPosition ---
 
     it("Finds the correct insert position given two addresses that loosely bound the correct position", async () => {
@@ -348,35 +341,11 @@ contract("SortedTroves", async (accounts) => {
       await sortedTrovesTester.setSortedTroves(sortedTroves.address);
     });
 
-    context("when params are wrongly set", () => {
-      it("setParams(): reverts if size is zero", async () => {
-        await th.assertRevert(
-          sortedTroves.setParams(
-            0,
-            // The SortedTrovesTester is being used here as both a wrapper for SortedTroves and a mock TroveManager.
-            sortedTrovesTester.address,
-            sortedTrovesTester.address
-          ),
-          "SortedTroves: Size can’t be zero"
-        );
-      });
-    });
-
     context("when params are properly set", () => {
-      beforeEach("set params", async () => {
-        await sortedTroves.setParams(
-          2,
+      beforeEach("set addresses", async () => {
+        await sortedTroves.setAddresses(
           sortedTrovesTester.address,
           sortedTrovesTester.address
-        );
-      });
-
-      it("insert(): fails if list is full", async () => {
-        await sortedTrovesTester.insert(alice, 1, alice, alice);
-        await sortedTrovesTester.insert(bob, 1, alice, alice);
-        await th.assertRevert(
-          sortedTrovesTester.insert(carol, 1, alice, alice),
-          "SortedTroves: List is full"
         );
       });
 
@@ -409,16 +378,21 @@ contract("SortedTroves", async (accounts) => {
         );
       });
 
-      it("findInsertPosition(): No prevId for hint - ascend list starting from nextId, result is after the tail", async () => {
-        await sortedTrovesTester.insert(th.addressToTroveId(alice), 1, th.addressToTroveId(alice), th.addressToTroveId(alice));
-        const pos = await sortedTroves.findInsertPosition(
-          1,
-          toBN(0),
-          th.addressToTroveId(alice)
-        );
-        assert.isTrue(pos[0].eq(toBN(th.addressToTroveId(alice))), "prevId result should be nextId param");
-        assert.isTrue(pos[1].eq(toBN(0)), "nextId result should be zero");
-      });
+      // danielattilasimon: I believe this test was reinforcing questionable behavior.
+      // The initial position (0, alice) _is_ already a valid insert position for the given list
+      // (which happens to contain only alice), so why are we expecting findInsertPosition() to
+      // move away from such a position?
+      //
+      // it("findInsertPosition(): No prevId for hint - ascend list starting from nextId, result is after the tail", async () => {
+      //   await sortedTrovesTester.insert(th.addressToTroveId(alice), 1, th.addressToTroveId(alice), th.addressToTroveId(alice));
+      //   const pos = await sortedTroves.findInsertPosition(
+      //     1,
+      //     toBN(0),
+      //     th.addressToTroveId(alice)
+      //   );
+      //   assert.isTrue(pos[0].eq(toBN(th.addressToTroveId(alice))), "prevId result should be nextId param");
+      //   assert.isTrue(pos[1].eq(toBN(0)), "nextId result should be zero");
+      // });
     });
   });
 });

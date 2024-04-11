@@ -62,9 +62,7 @@ function _deployAndConnectContracts() returns (LiquityContracts memory contracts
     );
 
     // Connect contracts
-    contracts.sortedTroves.setParams(
-        type(uint256).max, address(contracts.troveManager), address(contracts.borrowerOperations)
-    );
+    contracts.sortedTroves.setAddresses(address(contracts.troveManager), address(contracts.borrowerOperations));
 
     // set contracts in the Trove Manager
     contracts.troveManager.setAddresses(

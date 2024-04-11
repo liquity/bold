@@ -79,33 +79,38 @@ contract BasicOps is DevTestSetup {
 
     function testRedeem() public {
         priceFeed.setPrice(2000e18);
+
         vm.startPrank(A);
-        uint256 A_Id = borrowerOperations.openTrove(A, 0, 1e18, 5e18, 5_000e18, 0, 0, 0);
+        borrowerOperations.openTrove(A, 0, 1e18, 5e18, 5_000e18, 0, 0, 0);
         vm.stopPrank();
 
-        uint256 debt_1 = troveManager.getTroveDebt(A_Id);
-        assertGt(debt_1, 0);
-        uint256 coll_1 = troveManager.getTroveColl(A_Id);
-        assertGt(coll_1, 0);
-
         vm.startPrank(B);
-        borrowerOperations.openTrove(B, 0, 1e18, 5e18, 4_000e18, 0, 0, 0);
+        uint256 B_Id = borrowerOperations.openTrove(B, 0, 1e18, 5e18, 4_000e18, 0, 0, 0);
+        uint256 debt_1 = troveManager.getTroveDebt(B_Id);
+        assertGt(debt_1, 0);
+        uint256 coll_1 = troveManager.getTroveColl(B_Id);
+        assertGt(coll_1, 0);
+        vm.stopPrank();
+
+        // B is now first in line to get redeemed, as they both have the same interest rate,
+        // but B's Trove is younger.
         
         vm.warp(block.timestamp + troveManager.BOOTSTRAP_PERIOD() + 1);
 
         uint256 redemptionAmount = 1000e18;  // 1k BOLD
 
-        // B redeems 1k BOLD
+        // A redeems 1k BOLD
+        vm.startPrank(A);
         troveManager.redeemCollateral(
             redemptionAmount,
             10,
             1e18
         );
        
-        // Check A's coll and debt reduced
-        uint256 debt_2 = troveManager.getTroveDebt(A_Id);
+        // Check B's coll and debt reduced
+        uint256 debt_2 = troveManager.getTroveDebt(B_Id);
         assertLt(debt_2, debt_1);
-        uint256 coll_2 = troveManager.getTroveColl(A_Id);
+        uint256 coll_2 = troveManager.getTroveColl(B_Id);
         assertLt(coll_2, coll_1);
     }
 
