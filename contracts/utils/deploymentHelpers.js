@@ -128,8 +128,7 @@ class DeploymentHelper {
       contracts.priceFeedTestnet.address
     );
     // set TroveManager addr in SortedTroves
-    await contracts.sortedTroves.setParams(
-      maxBytes32,
+    await contracts.sortedTroves.setAddresses(
       contracts.troveManager.address,
       contracts.borrowerOperations.address
     );
