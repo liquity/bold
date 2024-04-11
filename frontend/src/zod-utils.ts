@@ -16,9 +16,7 @@ export function zAddress() {
   });
 }
 
-// Environment formats
-
-// e.g. Etherscan|https://etherscan.io
+// Env var link, e.g. Etherscan|https://etherscan.io
 export const EnvLinkSchema = z
   .string()
   .trim()
@@ -28,7 +26,7 @@ export const EnvLinkSchema = z
     return { name, url };
   });
 
-// e.g. 0xca11bde05977b3631167028862be2a173976ca11|14353601
+// Env var address + creation block, e.g. 0xca11bde05977b3631167028862be2a173976ca11|14353601
 export const EnvAddressAndBlockSchema = z
   .string()
   .trim()
@@ -45,7 +43,7 @@ export const EnvAddressAndBlockSchema = z
     };
   });
 
-// e.g. Ether|ETH|18
+// Env var currency, e.g. Ether|ETH|18
 export const EnvCurrencySchema = z
   .string()
   .trim()
