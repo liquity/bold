@@ -146,6 +146,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         bool recoveryModeAtStart;
         uint liquidatedDebt;
         uint liquidatedColl;
+        uint256 totalRecordedDebtPlusInterestInSequence;
     }
 
     struct LocalVariables_InnerSingleLiquidateFunction {
@@ -215,12 +216,22 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         uint decayedBaseRate;
         uint price;
         uint totalBoldSupplyAtStart;
+        uint256 totalRedistDebtGains;
+        uint256 totalNewRecordedTroveDebts;
+        uint256 totalOldRecordedTroveDebts;
+        uint256 totalNewWeightedRecordedTroveDebts;
+        uint256 totalOldWeightedRecordedTroveDebts;
     }
+
 
     struct SingleRedemptionValues {
         uint BoldLot;
         uint ETHLot;
-        bool cancelledPartial;
+        uint256 redistDebtGain;
+        uint256 oldRecordedTroveDebt;
+        uint256 newRecordedTroveDebt;
+        uint256 oldWeightedRecordedTroveDebt;
+        uint256 newWeightedRecordedTroveDebt;
     }
 
     // --- Events ---
@@ -651,14 +662,16 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
 
         require(totals.totalDebtInSequence > 0, "TroveManager: nothing to liquidate");
 
-        // Mint aggregate interest
-        activePool.mintAggInterest(0, totals.totalRecordedDebtInSequence + totals.totalAccruedInterestInSequence);
+        vars.totalRecordedDebtPlusInterestInSequence = totals.totalRecordedDebtInSequence + totals.totalAccruedInterestInSequence;
 
-        // TODO - Gas: combine these into one call to activePool?
-        // Remove the liquidated recorded debt from the sum
-        activePoolCached.decreaseRecordedDebtSum(totals.totalRecordedDebtInSequence + totals.totalRedistDebtGainsInSequence);
-        // Remove the liqudiated weighted recorded debt from the sum
-        activePool.changeAggWeightedDebtSum(totals.totalWeightedRecordedDebtInSequence, 0);
+        activePool.mintAggInterest(
+            0, 
+            vars.totalRecordedDebtPlusInterestInSequence, 
+            0, 
+            totals.totalRecordedDebtInSequence + totals.totalRedistDebtGainsInSequence,
+            0,
+            totals.totalWeightedRecordedDebtInSequence 
+        );
 
         // Move liquidated ETH and Bold to the appropriate pools
         stabilityPoolCached.offset(totals.totalDebtToOffset, totals.totalCollToSendToSP);
@@ -824,55 +837,46 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
     )
         internal returns (SingleRedemptionValues memory singleRedemption)
     {
+        singleRedemption.oldWeightedRecordedTroveDebt = getTroveWeightedRecordedDebt(_troveId);
+        singleRedemption.oldRecordedTroveDebt = Troves[_troveId].debt;
+
+        (, singleRedemption.redistDebtGain) = _getAndApplyRedistributionGains(_contractsCache.activePool, _contractsCache.defaultPool, _troveId);
+
+        // TODO: Gas. We apply accrued interest here, but could gas optimize this, since all-but-one Trove in the sequence will have their 
+        // debt zero'd by redemption. However, gas optimization for redemption is not as critical as for borrower & SP ops.
+        uint256 entireTroveDebt = getTroveEntireDebt(_troveId);
+        _updateTroveDebt(_troveId, entireTroveDebt);
+
         // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove minus the liquidation reserve
-        singleRedemption.BoldLot = LiquityMath._min(_maxBoldamount, Troves[_troveId].debt - BOLD_GAS_COMPENSATION);
+        // TODO: should we leave gas compensation (and corresponding debt) untouched for zombie Troves? Currently it's not touched.
+        singleRedemption.BoldLot = LiquityMath._min(_maxBoldamount, entireTroveDebt - BOLD_GAS_COMPENSATION);
 
         // Get the ETHLot of equivalent value in USD
         singleRedemption.ETHLot = singleRedemption.BoldLot * DECIMAL_PRECISION / _price;
 
         // Decrease the debt and collateral of the current Trove according to the Bold lot and corresponding ETH to send
-        uint newDebt = Troves[_troveId].debt - singleRedemption.BoldLot;
-        uint newColl = Troves[_troveId].coll - singleRedemption.ETHLot;
+        singleRedemption.newRecordedTroveDebt = entireTroveDebt - singleRedemption.BoldLot;
+        uint newColl = Troves[_troveId].coll - singleRedemption.ETHLot;  
 
-        // TODO: zombi troves
-        if (newDebt == BOLD_GAS_COMPENSATION) {
-            // No debt left in the Trove (except for the liquidation reserve), therefore the trove gets closed
-            _removeStake(_troveId);
-            _closeTrove(_troveId, Status.closedByRedemption);
-            _redeemCloseTrove(_contractsCache, _troveId, BOLD_GAS_COMPENSATION, newColl);
-            emit TroveUpdated(_troveId, 0, 0, 0, TroveManagerOperation.redeemCollateral);
-
-        } else {
-            Troves[_troveId].debt = newDebt;
-            Troves[_troveId].coll = newColl;
-            _updateStakeAndTotalStakes(_troveId);
-
-            emit TroveUpdated(
-                _troveId,
-                newDebt, newColl,
-                Troves[_troveId].stake,
-                TroveManagerOperation.redeemCollateral
-            );
+        if (singleRedemption.newRecordedTroveDebt <= MIN_NET_DEBT) {
+            // TODO: tag it as a zombie Trove and remove from Sorted List
         }
+        Troves[_troveId].debt = singleRedemption.newRecordedTroveDebt;
+        Troves[_troveId].coll = newColl;
+
+        singleRedemption.newWeightedRecordedTroveDebt = getTroveWeightedRecordedDebt(_troveId);
+
+        // TODO: Gas optimize? We update totalStakes N times for a sequence of N Trovres(!).
+        _updateStakeAndTotalStakes(_troveId);
+
+        emit TroveUpdated(
+            _troveId,
+            singleRedemption.newRecordedTroveDebt, newColl,
+            Troves[_troveId].stake,
+            TroveManagerOperation.redeemCollateral
+        );
 
         return singleRedemption;
-    }
-
-    /*
-    * Called when a full redemption occurs, and closes the trove.
-    * The redeemer swaps (debt - liquidation reserve) Bold for (debt - liquidation reserve) worth of ETH, so the Bold liquidation reserve left corresponds to the remaining debt.
-    * In order to close the trove, the Bold liquidation reserve is burned, and the corresponding debt is removed from the active pool.
-    * The debt recorded on the trove's struct is zero'd elswhere, in _closeTrove.
-    * Any surplus ETH left in the trove, is sent to the Coll surplus pool, and can be later claimed by the borrower.
-    */
-    function _redeemCloseTrove(ContractsCache memory _contractsCache, uint256 _troveId, uint _bold, uint _ETH) internal {
-        _contractsCache.boldToken.burn(gasPoolAddress, _bold);
-        // Update Active Pool Bold, and send ETH to account
-        _contractsCache.activePool.decreaseRecordedDebtSum(_bold);
-
-        // send ETH from Active Pool to CollSurplus Pool
-        _contractsCache.collSurplusPool.accountSurplus(_troveId, _ETH);
-        _contractsCache.activePool.sendETH(address(_contractsCache.collSurplusPool), _ETH);
     }
 
     /* Send _boldamount Bold to the system and redeem the corresponding amount of collateral from as many Troves as are needed to fill the redemption
@@ -934,7 +938,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         if (_maxIterations == 0) { _maxIterations = type(uint256).max; }
         while (currentTroveId != 0 && totals.remainingBold > 0 && _maxIterations > 0) {
             _maxIterations--;
-            // Save the uint256 of the Trove preceding the current one, before potentially modifying the list
+            // Save the uint256 of the Trove preceding the current one
             uint256 nextUserToCheck = contractsCache.sortedTroves.getPrev(currentTroveId);
             // Skip if ICR < 100%, to make sure that redemptions always improve the CR of hit Troves
             if (getCurrentICR(currentTroveId, totals.price) < _100pct) {
@@ -942,23 +946,28 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
                 continue;
             }
 
-            _getAndApplyRedistributionGains(contractsCache.activePool, contractsCache.defaultPool, currentTroveId);
-
             SingleRedemptionValues memory singleRedemption = _redeemCollateralFromTrove(
                 contractsCache,
                 currentTroveId,
                 totals.remainingBold,
                 totals.price
             );
-
-            if (singleRedemption.cancelledPartial) break; // Partial redemption was cancelled (out-of-date hint, or new net debt < minimum), therefore we could not redeem from the last Trove
-
+           
             totals.totalBoldToRedeem  = totals.totalBoldToRedeem + singleRedemption.BoldLot;
-            totals.totalETHDrawn = totals.totalETHDrawn + singleRedemption.ETHLot;
+            totals.totalRedistDebtGains =  totals.totalRedistDebtGains + singleRedemption.redistDebtGain;
+            // For recorded and weighted recorded debt totals, we need to capture the increases and decreases,
+            // since the net debt change for a given Trove could be positive or negative: redemptions decrease a Trove's recorded 
+            // (and weighted recorded) debt, but the accrued interest increases it. 
+            totals.totalNewRecordedTroveDebts = totals.totalNewRecordedTroveDebts + singleRedemption.newRecordedTroveDebt;
+            totals.totalOldRecordedTroveDebts = totals.totalOldRecordedTroveDebts + singleRedemption.oldRecordedTroveDebt;
+            totals.totalNewWeightedRecordedTroveDebts =  totals.totalNewWeightedRecordedTroveDebts + singleRedemption.newWeightedRecordedTroveDebt;
+            totals.totalOldWeightedRecordedTroveDebts =  totals.totalOldWeightedRecordedTroveDebts + singleRedemption.oldWeightedRecordedTroveDebt;
 
+            totals.totalETHDrawn = totals.totalETHDrawn + singleRedemption.ETHLot;
             totals.remainingBold = totals.remainingBold - singleRedemption.BoldLot;
             currentTroveId = nextUserToCheck;
         }
+
         require(totals.totalETHDrawn > 0, "TroveManager: Unable to redeem any amount");
 
         // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
@@ -975,10 +984,17 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
 
         emit Redemption(_boldamount, totals.totalBoldToRedeem, totals.totalETHDrawn, totals.ETHFee);
 
+        activePool.mintAggInterest(
+            totals.totalRedistDebtGains, 
+            totals.totalBoldToRedeem, 
+            totals.totalNewRecordedTroveDebts,
+            totals.totalOldRecordedTroveDebts,
+            totals.totalNewWeightedRecordedTroveDebts,
+            totals.totalOldWeightedRecordedTroveDebts
+        );
+
         // Burn the total Bold that is cancelled with debt, and send the redeemed ETH to msg.sender
         contractsCache.boldToken.burn(msg.sender, totals.totalBoldToRedeem);
-        // Update Active Pool Bold, and send ETH to account
-        contractsCache.activePool.decreaseRecordedDebtSum(totals.totalBoldToRedeem);
         contractsCache.activePool.sendETH(msg.sender, totals.ETHToSendToRedeemer);
     }
 
@@ -1107,7 +1123,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         entireColl = recordedColl + pendingETHReward;
     }
 
-    function getTroveEntireDebt(uint256 _troveId) external view returns (uint256) {
+    function getTroveEntireDebt(uint256 _troveId) public view returns (uint256) {
        (uint256 entireTroveDebt, , , , ) = getEntireDebtAndColl(_troveId);
         return entireTroveDebt;
     }

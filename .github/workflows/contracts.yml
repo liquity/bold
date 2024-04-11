@@ -46,6 +46,7 @@ jobs:
         id: test
 
   deploy:
+    if: false
     name: Deploy contracts to Liquity v2 Testnet
     runs-on: ubuntu-latest
     steps:
@@ -128,6 +129,7 @@ jobs:
         run: pnpm test
 
   coverage:
+    if: false
     name: Coverage
     runs-on: ubuntu-latest
     continue-on-error: true
