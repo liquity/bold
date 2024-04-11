@@ -3551,8 +3551,8 @@ contract("BorrowerOperations", async (accounts) => {
 
       const baseRateBefore = await troveManager.baseRate();
 
-      // Artificially make baseRate 5%
-      await troveManager.setBaseRate(dec(5, 16));
+      // Artificially make baseRate 6% (higher than the intital 5%)
+      await troveManager.setBaseRate(dec(6, 16));
       await troveManager.setLastFeeOpTimeToNow();
 
       assert.isTrue((await troveManager.baseRate()).gt(baseRateBefore));
