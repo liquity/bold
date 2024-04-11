@@ -1,5 +1,6 @@
 const { TestHelper: th } = require("../utils/testHelpers.js");
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
 const { dec, toBN, ZERO_ADDRESS } = th;
 

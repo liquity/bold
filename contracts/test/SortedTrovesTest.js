@@ -1,4 +1,5 @@
 const { TestHelper: th } = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
 const SortedTroves = artifacts.require("SortedTroves");
 const SortedTrovesTester = artifacts.require("SortedTrovesTester");

@@ -1,4 +1,5 @@
 const { TestHelper: th, MoneyValues: mv } = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
 const { toBN, dec } = th;
 
