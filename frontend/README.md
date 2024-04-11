@@ -1,4 +1,4 @@
-# BOLD App
+# Liquity v2 App
 
 ## Preview
 
@@ -66,6 +66,9 @@ cp .env .env.local
 ```
 
 See [./src/env.ts](./src/env.ts) for details about how the environment variables are being imported by the app.
+
+<details>
+<summary>Supported Variables</summary>
 
 ### `NEXT_PUBLIC_CHAIN_ID`
 
@@ -161,3 +164,4 @@ A WalletConnect project ID which can be obtained by [creating a WalletConnect pr
 ### `NEXT_PUBLIC_CONTRACT_…`
 
 Addresses of the Liquity contracts.
+</details>
