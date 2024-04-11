@@ -170,6 +170,12 @@ Deploying Liquity contracts with the following settings:
     `broadcast/DeployLiquity2.s.sol/${options.chainId}/run-latest.json`,
   );
 
+  // write env file
+  await fs.writeJson("deployment-context-latest.json", {
+    options,
+    deployedContracts: Object.fromEntries(deployedContracts),
+  });
+
   // format deployed contracts
   const longestContractName = Math.max(
     ...deployedContracts.map(([name]) => name.length),
@@ -241,7 +247,7 @@ async function parseArgs() {
     rpcUrl: argv["rpc-url"],
     verify: argBoolean("verify"),
     verifier: argv["verifier"],
-    verifierUrl: argv["verifier-url"]
+    verifierUrl: argv["verifier-url"],
   };
 
   const [networkPreset] = argv._;
