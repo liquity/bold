@@ -22,7 +22,7 @@ concurrency:
 jobs:
   deploy-contracts:
     name: Deploy contracts to the Liquity v2 Testnet
-    if: ${{ env.DEPLOY_CONTRACTS != "no" }}
+    if: env.DEPLOY_CONTRACTS != 'no'
     runs-on: ubuntu-latest
     steps:
       - name: Git checkout
@@ -79,7 +79,7 @@ jobs:
         run: pnpm install --global vercel@canary
 
       - name: Download deployment context
-        if: ${{ env.DEPLOY_CONTRACTS != 'no' }}
+        if: env.DEPLOY_CONTRACTS != 'no'
         uses: actions/download-artifact@v4
         with:
           name: deployment-context
