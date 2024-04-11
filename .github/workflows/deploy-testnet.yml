@@ -1,8 +1,5 @@
 name: Deploy the contracts + app
-env:
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-  DEPLOY_CONTRACTS: no
+
 on:
   push:
     branches: ["deploy-contracts-and-app"]
@@ -15,6 +12,10 @@ on:
       - ".github/workflows/deploy-testnet.yml"
       - "contracts/**"
 
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -22,7 +23,7 @@ concurrency:
 jobs:
   deploy-contracts:
     name: Deploy contracts to the Liquity v2 Testnet
-    if: env.DEPLOY_CONTRACTS != 'no'
+    if: false # Disable contracts deployment for now
     runs-on: ubuntu-latest
     steps:
       - name: Git checkout
@@ -79,7 +80,7 @@ jobs:
         run: pnpm install --global vercel@canary
 
       - name: Download deployment context
-        if: env.DEPLOY_CONTRACTS != 'no'
+        if: false # Disable contracts deployment for now
         uses: actions/download-artifact@v4
         with:
           name: deployment-context
