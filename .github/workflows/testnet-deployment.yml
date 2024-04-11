@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   deploy-contracts:
-    name: Deploying contracts
+    name: Deploy contracts
     if: false # Disable contracts deployment for now
     runs-on: ubuntu-latest
     steps:
@@ -68,7 +68,7 @@ jobs:
           path: ./contracts/deployment-context-latest.json
 
   deploy-app:
-    name: Deploying app
+    name: Deploy app
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'pull_request' }}
     steps:

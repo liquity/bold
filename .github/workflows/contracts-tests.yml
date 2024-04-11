@@ -52,7 +52,7 @@ jobs:
         id: test
 
   console-logs:
-    name: Checking for console imports
+    name: Console imports check
     runs-on: ubuntu-latest
 
     steps:
