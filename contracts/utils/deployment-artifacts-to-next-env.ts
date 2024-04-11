@@ -13,7 +13,7 @@ Options:
 
 const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 
-const DeploymentContext = z.object({
+const ZDeploymentContext = z.object({
   options: z.object({
     chainId: z.number(),
     deployer: z.string(), // can be an address or a private key
@@ -25,6 +25,8 @@ const DeploymentContext = z.object({
   }),
   deployedContracts: z.record(ZAddress),
 });
+
+type DeploymentContext = z.infer<typeof ZDeploymentContext>;
 
 const NULL_ADDRESS = `0x${"0".repeat(40)}`;
 
@@ -50,27 +52,22 @@ function objectToEnvironmentVariables(object: Record<string, unknown>) {
     .join("\n");
 }
 
-function deploymentContextToNextEnvVariables(deploymentContext: z.infer<typeof DeploymentContext>) {
-  const contracts = Object.fromEntries(
-    Object
-      .entries(deploymentContext.deployedContracts)
-      .reduce((entries, [contractName, address]) => {
-        const envVar = contractNameToNextEnvVariable(contractName);
-        if (envVar) {
-          entries.push([envVar, address]);
-        }
-        return entries;
-      }, [] as [string, string][])
-      .filter(Boolean),
-  );
-
-  contracts.NEXT_PUBLIC_CONTRACT_FUNCTION_CALLER = NULL_ADDRESS;
-  contracts.NEXT_PUBLIC_CONTRACT_HINT_HELPERS = NULL_ADDRESS;
-
-  return {
-    NEXT_PUBLIC_CHAIN_ID: deploymentContext.options.chainId,
-    ...contracts,
+function deploymentContextToNextEnvVariables({ deployedContracts, options }: DeploymentContext) {
+  const nextEnvVariables: Record<string, string> = {
+    NEXT_PUBLIC_CHAIN_ID: String(options.chainId),
   };
+
+  for (const [contractName, address] of Object.entries(deployedContracts)) {
+    const envVarName = contractNameToNextEnvVariable(contractName);
+    if (envVarName) {
+      nextEnvVariables[envVarName] = address;
+    }
+  }
+
+  nextEnvVariables.NEXT_PUBLIC_CONTRACT_FUNCTION_CALLER = NULL_ADDRESS;
+  nextEnvVariables.NEXT_PUBLIC_CONTRACT_HINT_HELPERS = NULL_ADDRESS;
+
+  return nextEnvVariables;
 }
 
 function contractNameToNextEnvVariable(contractName: string) {
@@ -113,7 +110,7 @@ function parseDeploymentContext(content: string) {
     process.exit(1);
   }
 
-  const context = DeploymentContext.safeParse(json);
+  const context = ZDeploymentContext.safeParse(json);
   if (!context.success) {
     console.error("\nInvalid deployment context provided.\n");
     console.error(
