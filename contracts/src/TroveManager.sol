@@ -48,7 +48,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
     uint constant public REDEMPTION_FEE_FLOOR = DECIMAL_PRECISION / 1000 * 5; // 0.5%
     // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
     uint constant public INITIAL_REDEMPTION_RATE = DECIMAL_PRECISION / 100 * 5; // 5%
-    uint constant public MAX_BORROWING_FEE = DECIMAL_PRECISION / 100 * 5; // 5%
 
 
     /*
@@ -1368,16 +1367,14 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
     }
 
     function getRedemptionRateWithDecay() public view override returns (uint) {
-        return 0;
-        // return _calcRedemptionRate(_calcDecayedBaseRate());
+        return _calcRedemptionRate(_calcDecayedBaseRate());
     }
 
-    function _calcRedemptionRate(uint /* _baseRate */) internal pure returns (uint) {
-        return 0;
-        // return LiquityMath._min(
-        //     REDEMPTION_FEE_FLOOR + _baseRate,
-        //     DECIMAL_PRECISION // cap at a maximum of 100%
-        // );
+    function _calcRedemptionRate(uint _baseRate) internal pure returns (uint) {
+        return LiquityMath._min(
+            REDEMPTION_FEE_FLOOR + _baseRate,
+            DECIMAL_PRECISION // cap at a maximum of 100%
+        );
     }
 
     function _getRedemptionFee(uint _ETHDrawn) internal view returns (uint) {
@@ -1388,11 +1385,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         return _calcRedemptionFee(getRedemptionRateWithDecay(), _ETHDrawn);
     }
 
-    function _calcRedemptionFee(uint /* _redemptionRate */, uint /* _ETHDrawn */) internal pure returns (uint) {
-        return 0;
-        // uint redemptionFee = _redemptionRate * _ETHDrawn / DECIMAL_PRECISION;
-        // require(redemptionFee < _ETHDrawn, "TroveManager: Fee would eat up all returned collateral");
-        // return redemptionFee;
+    function _calcRedemptionFee(uint _redemptionRate, uint _ETHDrawn) internal pure returns (uint) {
+        uint redemptionFee = _redemptionRate * _ETHDrawn / DECIMAL_PRECISION;
+        require(redemptionFee < _ETHDrawn, "TroveManager: Fee would eat up all returned collateral");
+        return redemptionFee;
     }
 
     // --- Internal fee functions ---
