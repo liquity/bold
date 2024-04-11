@@ -1,9 +1,22 @@
 import z from "zod";
-import { zAddress } from "./zod-utils";
+import { EnvAddressAndBlockSchema, EnvCurrencySchema, EnvLinkSchema, zAddress } from "./zod-utils";
 
 export const EnvSchema = z.object({
   APP_VERSION: z.string(),
-  CHAIN_ID: z.string(),
+  CHAIN_ID: z.string().transform((value) => {
+    const parsed = parseInt(value, 10);
+    if (isNaN(parsed)) {
+      throw new Error(`Invalid chain ID: ${value}`);
+    }
+    return parsed;
+  }),
+  CHAIN_NAME: z.string(),
+  CHAIN_CURRENCY: EnvCurrencySchema,
+  CHAIN_RPC_URL: z.string(),
+  CHAIN_BLOCK_EXPLORER: EnvLinkSchema.optional().catch(undefined),
+  CHAIN_CONTRACT_ENS_REGISTRY: EnvAddressAndBlockSchema.optional().catch(undefined),
+  CHAIN_CONTRACT_ENS_RESOLVER: EnvAddressAndBlockSchema.optional().catch(undefined),
+  CHAIN_CONTRACT_MULTICALL: EnvAddressAndBlockSchema.optional().catch(undefined),
   COMMIT_HASH: z.string(),
   CONTRACT_ACTIVE_POOL: zAddress(),
   CONTRACT_BOLD_TOKEN: zAddress(),
@@ -18,34 +31,21 @@ export const EnvSchema = z.object({
   CONTRACT_STABILITY_POOL: zAddress(),
   CONTRACT_TROVE_MANAGER: zAddress(),
   WALLET_CONNECT_PROJECT_ID: z.string(),
-}).transform((val) => ({
-  ...val,
-  CHAIN_ID: parseInt(val.CHAIN_ID, 10),
-}));
+});
 
 export type Env = z.infer<typeof EnvSchema>;
 
-export const {
-  APP_VERSION,
-  CHAIN_ID,
-  COMMIT_HASH,
-  CONTRACT_ACTIVE_POOL,
-  CONTRACT_BOLD_TOKEN,
-  CONTRACT_BORROWER_OPERATIONS,
-  CONTRACT_COLL_SURPLUS_POOL,
-  CONTRACT_DEFAULT_POOL,
-  CONTRACT_FUNCTION_CALLER,
-  CONTRACT_GAS_POOL,
-  CONTRACT_HINT_HELPERS,
-  CONTRACT_PRICE_FEED_TESTNET,
-  CONTRACT_SORTED_TROVES,
-  CONTRACT_STABILITY_POOL,
-  CONTRACT_TROVE_MANAGER,
-  WALLET_CONNECT_PROJECT_ID,
-} = EnvSchema.parse({
-  APP_VERSION: process.env.APP_VERSION,
+const parsedEnv = EnvSchema.parse({
+  APP_VERSION: process.env.APP_VERSION, // set in next.config.js
   CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID,
-  COMMIT_HASH: process.env.COMMIT_HASH,
+  CHAIN_NAME: process.env.NEXT_PUBLIC_CHAIN_NAME,
+  CHAIN_CURRENCY: process.env.NEXT_PUBLIC_CHAIN_CURRENCY,
+  CHAIN_RPC_URL: process.env.NEXT_PUBLIC_CHAIN_RPC_URL,
+  CHAIN_BLOCK_EXPLORER: process.env.NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER,
+  CHAIN_CONTRACT_ENS_REGISTRY: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_ENS_REGISTRY,
+  CHAIN_CONTRACT_ENS_RESOLVER: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_ENS_RESOLVER,
+  CHAIN_CONTRACT_MULTICALL: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL,
+  COMMIT_HASH: process.env.COMMIT_HASH, // set in next.config.js
   CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_CONTRACT_ACTIVE_POOL,
   CONTRACT_BOLD_TOKEN: process.env.NEXT_PUBLIC_CONTRACT_BOLD_TOKEN,
   CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_CONTRACT_BORROWER_OPERATIONS,
@@ -60,3 +60,29 @@ export const {
   CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_CONTRACT_TROVE_MANAGER,
   WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 });
+
+export const {
+  APP_VERSION,
+  CHAIN_ID,
+  CHAIN_NAME,
+  CHAIN_CURRENCY,
+  CHAIN_RPC_URL,
+  CHAIN_BLOCK_EXPLORER,
+  CHAIN_CONTRACT_ENS_REGISTRY,
+  CHAIN_CONTRACT_ENS_RESOLVER,
+  CHAIN_CONTRACT_MULTICALL,
+  COMMIT_HASH,
+  CONTRACT_ACTIVE_POOL,
+  CONTRACT_BOLD_TOKEN,
+  CONTRACT_BORROWER_OPERATIONS,
+  CONTRACT_COLL_SURPLUS_POOL,
+  CONTRACT_DEFAULT_POOL,
+  CONTRACT_FUNCTION_CALLER,
+  CONTRACT_GAS_POOL,
+  CONTRACT_HINT_HELPERS,
+  CONTRACT_PRICE_FEED_TESTNET,
+  CONTRACT_SORTED_TROVES,
+  CONTRACT_STABILITY_POOL,
+  CONTRACT_TROVE_MANAGER,
+  WALLET_CONNECT_PROJECT_ID,
+} = parsedEnv;

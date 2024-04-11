@@ -1,5 +1,6 @@
 "use client";
 
+import type { Address } from "@/src/types";
 import type { ReactNode } from "react";
 import type { Chain } from "wagmi/chains";
 
@@ -8,9 +9,7 @@ import { WALLET_CONNECT_PROJECT_ID } from "@/src/env";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 import { useMemo } from "react";
-import { match } from "ts-pattern";
 import { createConfig, http, WagmiProvider } from "wagmi";
-import { hardhat, mainnet } from "wagmi/chains";
 
 const queryClient = new QueryClient();
 
@@ -18,30 +17,28 @@ export function Ethereum({ children }: { children: ReactNode }) {
   const { config } = useConfig();
 
   const wagmiConfig = useMemo(() => {
-    const [chains, transports] = match(config.chainId)
-      .returnType<[
-        [Chain, ...Chain[]],
-        Record<string, ReturnType<typeof http>>,
-      ]>()
-      // Hardhat
-      .with(31337, () => [
-        [hardhat],
-        { [hardhat.id]: http("http://localhost:8545") },
-      ])
-      // Defaults to mainnet
-      .otherwise(() => [
-        [mainnet],
-        { [mainnet.id]: http() },
-      ]);
-
-    return createConfig(
-      getDefaultConfig({
-        appName: "Liquity 2",
-        chains,
-        transports,
-        ssr: true,
-        walletConnectProjectId: WALLET_CONNECT_PROJECT_ID,
-      }),
+    const chain = createChain({
+      id: config.chainId,
+      name: config.chainName,
+      currency: config.chainCurrency,
+      rpcUrl: config.chainRpcUrl,
+      blockExplorer: config.chainBlockExplorer,
+      contractEnsRegistry: config.chainContractEnsRegistry,
+      contractEnsResolver: config.chainContractEnsResolver,
+      contractMulticall: config.chainContractMulticall,
+    });
+    return (
+      createConfig(
+        getDefaultConfig({
+          appName: "Liquity 2",
+          chains: [chain],
+          transports: {
+            [config.chainId]: http(config.chainRpcUrl),
+          },
+          ssr: true,
+          walletConnectProjectId: WALLET_CONNECT_PROJECT_ID,
+        }),
+      )
     );
   }, [config]);
 
@@ -54,4 +51,41 @@ export function Ethereum({ children }: { children: ReactNode }) {
       </QueryClientProvider>
     </WagmiProvider>
   );
+}
+
+function createChain({
+  id,
+  name,
+  currency,
+  rpcUrl,
+  blockExplorer,
+  contractEnsRegistry,
+  contractEnsResolver,
+  contractMulticall,
+}: {
+  id: number;
+  name: string;
+  currency: { name: string; symbol: string; decimals: number };
+  rpcUrl: string;
+  blockExplorer?: { name: string; url: string };
+  contractEnsRegistry?: { address: Address; block?: number };
+  contractEnsResolver?: { address: Address; block?: number };
+  contractMulticall?: { address: Address; block?: number };
+}): Chain {
+  return {
+    id,
+    name,
+    nativeCurrency: currency,
+    rpcUrls: {
+      default: { http: [rpcUrl] },
+    },
+    blockExplorers: blockExplorer && {
+      default: blockExplorer,
+    },
+    contracts: {
+      ensRegistry: contractEnsRegistry,
+      ensUniversalResolver: contractEnsResolver,
+      multicall: contractMulticall,
+    },
+  } satisfies Chain;
 }

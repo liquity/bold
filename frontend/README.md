@@ -71,12 +71,88 @@ See [./src/env.ts](./src/env.ts) for details about how the environment variables
 
 The Ethereum network to connect to.
 
-Supports the following IDs:
+```dosini
+# Example
+NEXT_PUBLIC_CHAIN_ID=1
+```
 
-- `1` (mainnet)
-- `31337` (hardhat)
+### `NEXT_PUBLIC_CHAIN_NAME`
 
-Defaults to `1` (mainnet) if the chain ID is not supported.
+The name of the Ethereum network.
+
+```dosini
+# Example
+NEXT_PUBLIC_CHAIN_NAME=Ethereum
+```
+
+### `NEXT_PUBLIC_CHAIN_CURRENCY`
+
+The currency of the Ethereum network.
+
+```dosini
+# Format
+NEXT_PUBLIC_CHAIN_CURRENCY=name|symbol|decimals
+
+# Example
+NEXT_PUBLIC_CHAIN_CURRENCY=Ether|ETH|18
+```
+
+### `NEXT_PUBLIC_CHAIN_RPC_URL`
+
+The RPC URL for the Ethereum network.
+
+```dosini
+# Example
+NEXT_PUBLIC_CHAIN_RPC_URL=https://cloudflare-eth.com
+```
+
+### `NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER`
+
+The block explorer for the Ethereum network. Optional.
+
+```dosini
+# Format
+NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER=name|url
+
+# Example
+NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER=Etherscan|https://etherscan.io
+```
+
+### `NEXT_PUBLIC_CHAIN_CONTRACT_ENS_REGISTRY`
+
+The address of the ENS registry contract. Optional.
+
+```dosini
+# Format
+NEXT_PUBLIC_CHAIN_CONTRACT_ENS_REGISTRY=address
+
+# Example
+NEXT_PUBLIC_CHAIN_CONTRACT_ENS_REGISTRY=0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e
+```
+
+### `NEXT_PUBLIC_CHAIN_CONTRACT_ENS_RESOLVER`
+
+The address of the ENS resolver contract. Optional.
+
+```dosini
+# Format
+NEXT_PUBLIC_CHAIN_CONTRACT_ENS_RESOLVER=address|chainId
+
+# Example
+NEXT_PUBLIC_CHAIN_CONTRACT_ENS_RESOLVER=0xce01f8eee7E479C928F8919abD53E553a36CeF67|19258213
+```
+
+### `NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL`
+
+The address of the Multicall contract. Optional.
+
+```dosini
+# Format
+NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=address|chainId
+
+# Example
+NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=0xca11bde05977b3631167028862be2a173976ca11|14353601
+```
 
 ### `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`
 
