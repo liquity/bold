@@ -13,7 +13,6 @@ function createDeployAndFundFixture({
   mocks = {}, // e.g. { Contract: MockContract }
 } = {}) {
   const fixture = async () => {
-    const time = Date.now();
     const contracts = await deploymentHelper.deployLiquityCore(mocks);
     await deploymentHelper.connectCoreContracts(contracts);
     contracts.priceFeed = contracts.priceFeedTestnet;
