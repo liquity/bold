@@ -2,10 +2,11 @@ import { z } from "zod";
 import { argv, echo, stdin } from "zx";
 
 const HELP = `
-converts the deployment artifacts created by ./deploy into next environment variables
+converts the deployment artifacts created by ./deploy into environment
+variables to be used by the Next.js app located in frontend/.
 
 Usage:
-  ./deployment-artifacts-to-next-env.ts < deployment-latest.json
+  ./deployment-artifacts-to-app-env.ts < deployment-latest.json
 
 Options:
   --help, -h                               Show this help message.
@@ -40,7 +41,7 @@ export async function main() {
 
   console.log(
     objectToEnvironmentVariables(
-      deploymentContextToNextEnvVariables(deploymentContext),
+      deploymentContextToAppEnvVariables(deploymentContext),
     ),
   );
 }
@@ -52,25 +53,25 @@ function objectToEnvironmentVariables(object: Record<string, unknown>) {
     .join("\n");
 }
 
-function deploymentContextToNextEnvVariables({ deployedContracts, options }: DeploymentContext) {
-  const nextEnvVariables: Record<string, string> = {
+function deploymentContextToAppEnvVariables({ deployedContracts, options }: DeploymentContext) {
+  const appEnvVariables: Record<string, string> = {
     NEXT_PUBLIC_CHAIN_ID: String(options.chainId),
   };
 
   for (const [contractName, address] of Object.entries(deployedContracts)) {
-    const envVarName = contractNameToNextEnvVariable(contractName);
+    const envVarName = contractNameToAppEnvVariable(contractName);
     if (envVarName) {
-      nextEnvVariables[envVarName] = address;
+      appEnvVariables[envVarName] = address;
     }
   }
 
-  nextEnvVariables.NEXT_PUBLIC_CONTRACT_FUNCTION_CALLER = NULL_ADDRESS;
-  nextEnvVariables.NEXT_PUBLIC_CONTRACT_HINT_HELPERS = NULL_ADDRESS;
+  appEnvVariables.NEXT_PUBLIC_CONTRACT_FUNCTION_CALLER = NULL_ADDRESS;
+  appEnvVariables.NEXT_PUBLIC_CONTRACT_HINT_HELPERS = NULL_ADDRESS;
 
-  return nextEnvVariables;
+  return appEnvVariables;
 }
 
-function contractNameToNextEnvVariable(contractName: string) {
+function contractNameToAppEnvVariable(contractName: string) {
   switch (contractName) {
     case "ActivePool":
       return "NEXT_PUBLIC_CONTRACT_ACTIVE_POOL";
