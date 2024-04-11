@@ -1,4 +1,10 @@
-name: Test the contracts
+name: Contracts Tests
+
+# This workflow:
+# - Runs the Foundry tests
+# - Checks for console imports in the contracts
+# - Runs the Hardhat tests
+# - Generates a coverage report (currently disabled)
 
 defaults:
   run:
@@ -46,7 +52,7 @@ jobs:
         id: test
 
   console-logs:
-    name: Check we didn’t forget to remove console imports
+    name: Checking for console imports
     runs-on: ubuntu-latest
 
     steps:
@@ -180,4 +186,3 @@ jobs:
           base-path: ./contracts/
           path-to-lcov: ./contracts/lcov_merged.info
           debug: true
-

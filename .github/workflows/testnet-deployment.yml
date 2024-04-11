@@ -1,4 +1,8 @@
-name: Deploy the contracts + app
+name: Testnet Deployment
+
+# This workflow:
+# - Deploys the contracts to the Liquity v2 Testnet (currently disabled)
+# - Deploys the app to Vercel (only for the main branch, not PRs)
 
 on:
   push:
@@ -22,7 +26,7 @@ concurrency:
 
 jobs:
   deploy-contracts:
-    name: Deploy contracts to the Liquity v2 Testnet
+    name: Deploying contracts
     if: false # Disable contracts deployment for now
     runs-on: ubuntu-latest
     steps:
@@ -64,7 +68,7 @@ jobs:
           path: ./contracts/deployment-context-latest.json
 
   deploy-app:
-    name: Deploy the Liquity v2 app to Vercel
+    name: Deploying app
     runs-on: ubuntu-latest
     if: ${{ github.event_name != 'pull_request' }}
     steps:
