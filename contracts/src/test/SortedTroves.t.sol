@@ -267,14 +267,16 @@ contract SortedTrovesTest is Test {
     ///
 
     function _pickHint(uint256 troveCount, uint256 i) internal view returns (TroveId) {
-        i = bound(i, 0, troveCount * 2);
+        i = bound(i, 0, troveCount * 2 + 1);
 
-        if (i < troveCount) {
-            return tm.getTroveId(i);
-        } else if (i < troveCount * 2) {
-            return TroveId.wrap(tm._nextTroveId() + i - troveCount); // cheekily generate invalid IDs
+        if (i == 0) {
+            return TROVE_ID_ZERO;
+        } else if (i <= troveCount) {
+            return tm.getTroveId(i - 1);
+        } else if (i <= troveCount * 2) {
+            return TroveId.wrap(tm._nextTroveId() + i - 1 - troveCount); // cheekily generate invalid IDs
         } else {
-            return TROVE_ID_ZERO; // zero ID can be a valid position, too
+            return TROVE_ID_END_OF_LIST; // head or tail can be a valid position, too
         }
     }
 
@@ -317,10 +319,13 @@ contract SortedTrovesTest is Test {
         TroveId[] memory troveIds = new TroveId[](troveCount);
         TroveId curr = tm._sortedTroves_getFirst();
 
-        if (curr.isZero()) {
+        if (curr.isEndOfList()) {
             assertEq(tm.getTroveCount(), 0, "SortedTroves forward node count doesn't match TroveManager");
+
             assertEq(
-                tm._sortedTroves_getLast(), TROVE_ID_ZERO, "SortedTroves reverse node count doesn't match TroveManager"
+                tm._sortedTroves_getLast(),
+                TROVE_ID_END_OF_LIST,
+                "SortedTroves reverse node count doesn't match TroveManager"
             );
 
             // empty list is ordered by definition
@@ -334,7 +339,7 @@ contract SortedTrovesTest is Test {
         console.log("  Trove", TroveId.unwrap(curr), "annualInterestRate", prevAnnualInterestRate);
         curr = tm._sortedTroves_getNext(curr);
 
-        while (curr.isNotZero()) {
+        while (curr.isNotEndOfList()) {
             uint256 currAnnualInterestRate = tm.getTroveAnnualInterestRate(curr);
             console.log("  Trove", TroveId.unwrap(curr), "annualInterestRate", currAnnualInterestRate);
             assertLe(currAnnualInterestRate, prevAnnualInterestRate, "SortedTroves ordering is broken");
@@ -353,20 +358,20 @@ contract SortedTrovesTest is Test {
 
         while (i > 0) {
             console.log("  Trove", TroveId.unwrap(curr));
-            assertNe(curr, TROVE_ID_ZERO, "SortedTroves reverse node count doesn't match TroveManager");
+            assertNe(curr, TROVE_ID_END_OF_LIST, "SortedTroves reverse node count doesn't match TroveManager");
             assertEq(curr, troveIds[--i], "SortedTroves reverse ordering is broken");
             curr = tm._sortedTroves_getPrev(curr);
         }
 
         console.log();
-        assertEq(curr, TROVE_ID_ZERO, "SortedTroves reverse node count doesn't match TroveManager");
+        assertEq(curr, TROVE_ID_END_OF_LIST, "SortedTroves reverse node count doesn't match TroveManager");
     }
 
     function _checkBatchContiguity() internal {
         BatchIdSet seenBatches = new BatchIdSet();
         TroveId prev = tm._sortedTroves_getFirst();
 
-        if (prev.isZero()) {
+        if (prev.isEndOfList()) {
             return;
         }
 
@@ -381,7 +386,7 @@ contract SortedTrovesTest is Test {
         TroveId curr = tm._sortedTroves_getNext(prev);
         BatchId currBatch = tm._getBatchOf(curr);
 
-        while (curr.isNotZero()) {
+        while (curr.isNotEndOfList()) {
             console.log("  ", BatchId.unwrap(currBatch));
 
             if (currBatch.notEquals(prevBatch)) {
