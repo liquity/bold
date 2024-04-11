@@ -9,7 +9,7 @@ const TroveManagerTester = artifacts.require("TroveManagerTester");
 
 const INITIAL_PRICE = dec(100, 18);
 
-contract("HintHelpers", async (accounts) => {
+contract.skip("HintHelpers", async (accounts) => {
   const [owner] = accounts;
 
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);

@@ -97,24 +97,24 @@ contract('All Liquity functions with onlyOwner modifier', async accounts => {
   })
 
   describe('SortedTroves', async accounts => {
-    it("setParams(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
+    it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
       const dumbContract = await GasPool.new()
-      const params = [10000001, dumbContract.address, dumbContract.address]
+      const params = [dumbContract.address, dumbContract.address]
 
       // Attempt call from alice
-      await th.assertRevert(sortedTroves.setParams(...params, { from: alice }))
+      await th.assertRevert(sortedTroves.setAddresses(...params, { from: alice }))
 
       // Attempt to use zero address
-      await testZeroAddress(sortedTroves, params, 'setParams', 1)
+      await testZeroAddress(sortedTroves, params, 'setAddresses', 1)
       // Attempt to use non contract
-      await testNonContractAddress(sortedTroves, params, 'setParams', 1)
+      await testNonContractAddress(sortedTroves, params, 'setAddresses', 1)
 
       // Owner can successfully set params
-      const txOwner = await sortedTroves.setParams(...params, { from: owner })
+      const txOwner = await sortedTroves.setAddresses(...params, { from: owner })
       assert.isTrue(txOwner.receipt.status)
 
       // fails if called twice
-      await th.assertRevert(sortedTroves.setParams(...params, { from: owner }))
+      await th.assertRevert(sortedTroves.setAddresses(...params, { from: owner }))
     })
   })
 })

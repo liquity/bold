@@ -1,0 +1,101 @@
+name: Testnet Deployment
+
+# This workflow:
+# - Deploys the contracts to the Liquity v2 Testnet (currently disabled)
+# - Deploys the app to Vercel (only for the main branch, not PRs)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/deploy-testnet.yml"
+      - "contracts/**"
+      - "frontend/**"
+  pull_request:
+    paths:
+      - ".github/workflows/deploy-testnet.yml"
+      - "contracts/**"
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-contracts:
+    name: Deploy contracts
+    if: false # Disable contracts deployment for now
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'pnpm'
+          cache-dependency-path: 'contracts/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run deployment tool
+        working-directory: ./contracts
+        run: ./deploy liquity-testnet --verify
+        env:
+          DEPLOYER: ${{ secrets.DEPLOYER }}
+
+      - name: Upload deployment context
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-context
+          path: ./contracts/deployment-context-latest.json
+
+  deploy-app:
+    name: Deploy app
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'pull_request' }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Vercel CLI
+        run: pnpm install --global vercel@canary
+
+      - name: Download deployment context
+        if: false # Disable contracts deployment for now
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-context
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: |
+          test -f ./deployment-context-latest.json && cat ./deployment-context-latest.json | pn tsx contracts/utils/deployment-artifacts-to-next-env.ts > ./frontend/.env.local
+          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

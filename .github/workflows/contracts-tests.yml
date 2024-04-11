@@ -1,4 +1,10 @@
-name: test contracts
+name: Contracts Tests
+
+# This workflow:
+# - Runs the Foundry tests
+# - Checks for console imports in the contracts
+# - Runs the Hardhat tests
+# - Generates a coverage report (currently disabled)
 
 defaults:
   run:
@@ -45,43 +51,8 @@ jobs:
           forge test -vvv
         id: test
 
-  deploy:
-    if: false
-    name: Deploy contracts to Liquity v2 Testnet
-    runs-on: ubuntu-latest
-    steps:
-      - name: Git checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3.0.0
-        with:
-          version: 8
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.node-version'
-          cache: 'pnpm'
-          cache-dependency-path: 'contracts/pnpm-lock.yaml'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
-
-      - name: Run deployment tool
-        run: ./deploy liquity-testnet --verify
-        env:
-          DEPLOYER: ${{ secrets.DEPLOYER }}
-
   console-logs:
-    name: Check we didn’t forget to remove console imports
+    name: Console imports check
     runs-on: ubuntu-latest
 
     steps:
@@ -215,4 +186,3 @@ jobs:
           base-path: ./contracts/
           path-to-lcov: ./contracts/lcov_merged.info
           debug: true
-
