@@ -2,12 +2,25 @@
 // please do not edit it manually
 export const BoldToken = [{
   "type": "constructor",
-  "inputs": [{ "name": "_troveManagerAddress", "type": "address", "internalType": "address" }, {
-    "name": "_stabilityPoolAddress",
-    "type": "address",
-    "internalType": "address",
-  }, { "name": "_borrowerOperationsAddress", "type": "address", "internalType": "address" }],
+  "inputs": [
+    { "name": "_troveManagerAddress", "type": "address", "internalType": "address" },
+    { "name": "_stabilityPoolAddress", "type": "address", "internalType": "address" },
+    { "name": "_borrowerOperationsAddress", "type": "address", "internalType": "address" },
+    { "name": "_activePoolAddress", "type": "address", "internalType": "address" },
+  ],
   "stateMutability": "nonpayable",
+}, {
+  "type": "function",
+  "name": "DOMAIN_SEPARATOR",
+  "inputs": [],
+  "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "activePoolAddress",
+  "inputs": [],
+  "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+  "stateMutability": "view",
 }, {
   "type": "function",
   "name": "allowance",
@@ -74,12 +87,6 @@ export const BoldToken = [{
   "stateMutability": "view",
 }, {
   "type": "function",
-  "name": "domainSeparator",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
   "name": "increaseAllowance",
   "inputs": [{ "name": "spender", "type": "address", "internalType": "address" }, {
     "name": "addedValue",
@@ -124,12 +131,6 @@ export const BoldToken = [{
   ],
   "outputs": [],
   "stateMutability": "nonpayable",
-}, {
-  "type": "function",
-  "name": "permitTypeHash",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "bytes32", "internalType": "bytes32" }],
-  "stateMutability": "pure",
 }, {
   "type": "function",
   "name": "returnFromPool",

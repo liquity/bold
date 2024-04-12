@@ -68,26 +68,6 @@ export const HintHelpers = [{
   "stateMutability": "view",
 }, {
   "type": "function",
-  "name": "computeCR",
-  "inputs": [{ "name": "_coll", "type": "uint256", "internalType": "uint256" }, {
-    "name": "_debt",
-    "type": "uint256",
-    "internalType": "uint256",
-  }, { "name": "_price", "type": "uint256", "internalType": "uint256" }],
-  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
-  "stateMutability": "pure",
-}, {
-  "type": "function",
-  "name": "computeNominalCR",
-  "inputs": [{ "name": "_coll", "type": "uint256", "internalType": "uint256" }, {
-    "name": "_debt",
-    "type": "uint256",
-    "internalType": "uint256",
-  }],
-  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
-  "stateMutability": "pure",
-}, {
-  "type": "function",
   "name": "defaultPool",
   "inputs": [],
   "outputs": [{ "name": "", "type": "address", "internalType": "contract IDefaultPool" }],
@@ -95,12 +75,12 @@ export const HintHelpers = [{
 }, {
   "type": "function",
   "name": "getApproxHint",
-  "inputs": [{ "name": "_CR", "type": "uint256", "internalType": "uint256" }, {
+  "inputs": [{ "name": "_interestRate", "type": "uint256", "internalType": "uint256" }, {
     "name": "_numTrials",
     "type": "uint256",
     "internalType": "uint256",
   }, { "name": "_inputRandomSeed", "type": "uint256", "internalType": "uint256" }],
-  "outputs": [{ "name": "hintAddress", "type": "address", "internalType": "address" }, {
+  "outputs": [{ "name": "hintId", "type": "uint256", "internalType": "uint256" }, {
     "name": "diff",
     "type": "uint256",
     "internalType": "uint256",
@@ -117,20 +97,6 @@ export const HintHelpers = [{
   "name": "getEntireSystemDebt",
   "inputs": [],
   "outputs": [{ "name": "entireSystemDebt", "type": "uint256", "internalType": "uint256" }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
-  "name": "getRedemptionHints",
-  "inputs": [{ "name": "_boldamount", "type": "uint256", "internalType": "uint256" }, {
-    "name": "_price",
-    "type": "uint256",
-    "internalType": "uint256",
-  }, { "name": "_maxIterations", "type": "uint256", "internalType": "uint256" }],
-  "outputs": [{ "name": "firstRedemptionHint", "type": "address", "internalType": "address" }, {
-    "name": "partialRedemptionHintNICR",
-    "type": "uint256",
-    "internalType": "uint256",
-  }, { "name": "truncatedBoldamount", "type": "uint256", "internalType": "uint256" }],
   "stateMutability": "view",
 }, {
   "type": "function",
