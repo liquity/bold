@@ -95,16 +95,18 @@ jobs:
 
       - name: Prepare Environment from Latest Deployment Context
         working-directory: contracts
+        env:
+          APP_ENV_FILE: ../frontend/.env.local
+          DEPLOYMENT_CONTEXT_FILE: deployment-context-latest.json
         run: |
-          echo 'NEXT_PUBLIC_CHAIN_ID=1337' >> frontend/.env.local
-          echo 'NEXT_PUBLIC_CHAIN_NAME=Liquity Testnet' >> frontend/.env.local
-          echo 'NEXT_PUBLIC_CHAIN_CURRENCY=Ether|ETH|18' >> frontend/.env.local
-          echo 'NEXT_PUBLIC_CHAIN_RPC_URL=https://testnet.liquity.org/rpc' >> frontend/.env.local
-          echo 'NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER=https://testnet.liquity.org/' >> frontend/.env.local
-          echo 'NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=0xffB2BAa708261533b51D18394fd8AFd0E32aBC55|488' >> frontend/.env.local
-          echo '' >> frontend/.env.local
+          echo 'NEXT_PUBLIC_CHAIN_ID=1337' >> $APP_ENV_FILE
+          echo 'NEXT_PUBLIC_CHAIN_NAME=Liquity Testnet' >> $APP_ENV_FILE
+          echo 'NEXT_PUBLIC_CHAIN_CURRENCY=Ether|ETH|18' >> $APP_ENV_FILE
+          echo 'NEXT_PUBLIC_CHAIN_RPC_URL=https://testnet.liquity.org/rpc' >> $APP_ENV_FILE
+          echo 'NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER=https://testnet.liquity.org/' >> $APP_ENV_FILE
+          echo 'NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=0xffB2BAa708261533b51D18394fd8AFd0E32aBC55|488' >> $APP_ENV_FILE
 
-          pnpm tsx utils/deployment-artifacts-to-app-env.ts deployment-context-latest.json ../frontend/.env.local --append
+          pnpm tsx utils/deployment-artifacts-to-app-env.ts $DEPLOYMENT_CONTEXT_FILE $APP_ENV_FILE --append
 
       - name: Pull Vercel Environment Information
         working-directory: frontend
