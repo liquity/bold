@@ -6,11 +6,15 @@ converts the deployment artifacts created by ./deploy into environment
 variables to be used by the Next.js app located in frontend/.
 
 Usage:
-  ./deployment-artifacts-to-app-env.ts <INPUT_JSON> <OUTPUT_ENV> [OPTIONS]
+  ./deployment-artifacts-to-app-env.ts <INPUT_JSON> [OUTPUT_ENV] [OPTIONS]
+
+Arguments:
+  INPUT_JSON                               Path to the deployment artifacts JSON file.
+  OUTPUT_ENV                               Path to the environment variables file (if missing, stdout is used).
 
 Options:
   --help, -h                               Show this help message.
-  --append                                 Append to the output file instead of overwriting it.
+  --append                                 Append to the output file instead of overwriting it (requires OUTPUT_ENV).
 `;
 
 const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
@@ -40,8 +44,8 @@ export async function main() {
     process.exit(0);
   }
 
-  if (!options.inputJsonPath || !options.outputEnvPath) {
-    console.error("\nInvalid number of arguments provided (--help for instructions).\n");
+  if (!options.inputJsonPath) {
+    console.error("\nPlease provide the path to the deployment artifacts JSON file.\n");
     process.exit(1);
   }
 
@@ -52,6 +56,11 @@ export async function main() {
   const outputEnv = objectToEnvironmentVariables(
     deploymentContextToAppEnvVariables(deploymentContext),
   );
+
+  if (!options.outputEnvPath) {
+    console.log(outputEnv);
+    process.exit(0);
+  }
 
   await fs.ensureFile(options.outputEnvPath);
   if (options.append) {
