@@ -96,8 +96,8 @@ jobs:
         run: |
           test -f ./deployment-context-latest.json &&
           cat ./deployment-context-latest.json |
-            pnpm tsx contracts/utils/deployment-artifacts-to-next-env.ts |
-            tee ./frontend/.env.local
+            pnpm tsx contracts/utils/deployment-artifacts-to-next-env.ts > ./frontend/.env.local &&
+          cat ./frontend/.env.local
 
       - name: Build Project Artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
