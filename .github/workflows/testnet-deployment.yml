@@ -8,12 +8,12 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/deploy-testnet.yml"
+      - ".github/workflows/testnet-deployment.yml"
       - "contracts/**"
       - "frontend/**"
   pull_request:
     paths:
-      - ".github/workflows/deploy-testnet.yml"
+      - ".github/workflows/testnet-deployment.yml"
       - "contracts/**"
 
 env:
