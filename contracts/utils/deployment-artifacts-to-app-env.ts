@@ -14,12 +14,7 @@ Options:
 `;
 
 const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
-
 const ZDeploymentContext = z.object({
-  options: z.object({
-    chainId: z.number(),
-    rpcUrl: z.string(),
-  }),
   deployedContracts: z.record(ZAddress),
 });
 
@@ -45,12 +40,12 @@ export async function main() {
     process.exit(1);
   }
 
-  const deploymentContext = parseDeploymentContext(
+  const { deployedContracts } = parseDeploymentContext(
     await fs.readFile(options.inputJsonPath, "utf-8"),
   );
 
   const outputEnv = objectToEnvironmentVariables(
-    deploymentContextToAppEnvVariables(deploymentContext),
+    deployedContractsToAppEnvVariables(deployedContracts),
   );
 
   await fs.ensureFile(options.outputEnvPath);
@@ -70,10 +65,8 @@ function objectToEnvironmentVariables(object: Record<string, unknown>) {
     .join("\n");
 }
 
-function deploymentContextToAppEnvVariables({ deployedContracts, options }: DeploymentContext) {
-  const appEnvVariables: Record<string, string> = {
-    NEXT_PUBLIC_CHAIN_ID: String(options.chainId),
-  };
+function deployedContractsToAppEnvVariables(deployedContracts: DeploymentContext["deployedContracts"]) {
+  const appEnvVariables: Record<string, string> = {};
 
   for (const [contractName, address] of Object.entries(deployedContracts)) {
     const envVarName = contractNameToAppEnvVariable(contractName);
