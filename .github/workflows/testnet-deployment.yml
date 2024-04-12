@@ -93,11 +93,8 @@ jobs:
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Prepare Environment from Latest Deployment Context
-        run: |
-          test -f ./deployment-context-latest.json &&
-          cat ./deployment-context-latest.json |
-            pnpm tsx contracts/utils/deployment-artifacts-to-next-env.ts > ./frontend/.env.local &&
-          cat ./frontend/.env.local
+        run: pnpm tsx utils/deployment-artifacts-to-next-env.ts ../deployment-context-latest.json ../frontend/.env.local
+        working-directory: contracts
 
       - name: Build Project Artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
