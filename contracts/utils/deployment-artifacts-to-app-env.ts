@@ -2,19 +2,23 @@ import { z } from "zod";
 import { argv, echo, fs } from "zx";
 
 const HELP = `
-converts the deployment artifacts created by ./deploy into environment
-variables to be used by the Next.js app located in frontend/.
+Converts the deployment artifacts created by ./deploy into environment variables
+to be used by the Next.js app located in frontend/.
 
 Usage:
   ./deployment-artifacts-to-app-env.ts <INPUT_JSON> [OUTPUT_ENV] [OPTIONS]
 
 Arguments:
-  INPUT_JSON                               Path to the deployment artifacts JSON file.
-  OUTPUT_ENV                               Path to the environment variables file (if missing, stdout is used).
+  INPUT_JSON                               Path to the deployment artifacts
+                                           JSON file.
+  OUTPUT_ENV                               Path to the environment variables
+                                           file to write. If not provided, it
+                                           writes to stdout.
 
 Options:
   --help, -h                               Show this help message.
-  --append                                 Append to the output file instead of overwriting it (requires OUTPUT_ENV).
+  --append                                 Append to the output file instead of
+                                           overwriting it (requires OUTPUT_ENV).
 `;
 
 const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
