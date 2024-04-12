@@ -81,6 +81,10 @@ jobs:
         with:
           version: 8
 
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: contracts
+
       - name: Install Vercel CLI
         run: pnpm install --global vercel@canary
 
