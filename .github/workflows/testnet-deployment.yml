@@ -97,7 +97,7 @@ jobs:
         working-directory: contracts
         env:
           APP_ENV_FILE: ../frontend/.env.local
-          DEPLOYMENT_CONTEXT_FILE: deployment-context-latest.json
+          DEPLOYMENT_CONTEXT_FILE: ./deployment-context-latest.json
         run: |
           echo 'NEXT_PUBLIC_CHAIN_ID=1337' >> $APP_ENV_FILE
           echo 'NEXT_PUBLIC_CHAIN_NAME=Liquity Testnet' >> $APP_ENV_FILE
