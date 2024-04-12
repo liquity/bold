@@ -48,6 +48,7 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+        working-directory: ./contracts
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
