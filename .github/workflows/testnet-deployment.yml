@@ -84,7 +84,6 @@ jobs:
         run: pnpm install --global vercel@canary
 
       - name: Download deployment context
-        if: false # Disable contracts deployment for now
         uses: actions/download-artifact@v4
         with:
           name: deployment-context
