@@ -20,10 +20,10 @@ pnpm install
 # Run the anvil local node (keep it running in a separate terminal):
 anvil
 
-# First, we need to deploy the contracts:
+# First, the contracts:
 cd contracts
 
-# Deploy the contracts:
+# Build & deploy the contracts:
 ./deploy local --open-demo-troves # optionally open troves for the first 8 anvil accounts
 
 # Print the addresses of the deployed contracts:
