@@ -1,15 +1,14 @@
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const testHelpers = require("../utils/testHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
-const th = testHelpers.TestHelper;
-const dec = th.dec;
-const toBN = th.toBN;
-const mv = testHelpers.MoneyValues;
-const timeValues = testHelpers.TimeValues;
+const {
+  MoneyValues: mv,
+  TestHelper: th,
+  TimeValues: timeValues,
+} = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
+
+const { dec, toBN } = th;
 
 const TroveManagerTester = artifacts.require("TroveManagerTester");
-const BoldToken = artifacts.require("BoldToken");
 const NonPayableSwitch = artifacts.require("NonPayableSwitch.sol");
 
 const ZERO = toBN("0");
@@ -23,6 +22,8 @@ const getFrontEndTag = async (stabilityPool, depositor) => {
 };
 
 contract("StabilityPool", async (accounts) => {
+  const fundedAccounts = accounts.slice(0, 20);
+
   const [
     owner,
     defaulter_1,
@@ -44,11 +45,12 @@ contract("StabilityPool", async (accounts) => {
     frontEnd_1,
     frontEnd_2,
     frontEnd_3,
-  ] = accounts;
+  ] = fundedAccounts;
 
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
 
   const frontEnds = [frontEnd_1, frontEnd_2, frontEnd_3];
+
   let contracts;
   let priceFeed;
   let boldToken;
@@ -59,29 +61,21 @@ contract("StabilityPool", async (accounts) => {
   let defaultPool;
   let borrowerOperations;
 
-  let gasPriceInWei;
-
   const getOpenTroveBoldAmount = async (totalDebt) =>
     th.getOpenTroveBoldAmount(contracts, totalDebt);
   const openTrove = async (params) => th.openTrove(contracts, params);
   const assertRevert = th.assertRevert;
 
+  const deployFixture = createDeployAndFundFixture({
+    accounts: fundedAccounts.slice(0, 20),
+    mocks: { TroveManager: TroveManagerTester }
+  });
+
   describe("Stability Pool Mechanisms", async () => {
-    before(async () => {
-      gasPriceInWei = await web3.eth.getGasPrice();
-    });
-
     beforeEach(async () => {
-      contracts = await deploymentHelper.deployLiquityCore();
-      contracts.troveManager = await TroveManagerTester.new();
-      contracts.boldToken = await BoldToken.new(
-        contracts.troveManager.address,
-        contracts.stabilityPool.address,
-        contracts.borrowerOperations.address,
-        contracts.activePool.address
-      );
-
-      priceFeed = contracts.priceFeedTestnet;
+      const result = await deployFixture()
+      contracts = result.contracts;
+      priceFeed = contracts.priceFeed;
       boldToken = contracts.boldToken;
       sortedTroves = contracts.sortedTroves;
       troveManager = contracts.troveManager;
@@ -89,32 +83,6 @@ contract("StabilityPool", async (accounts) => {
       stabilityPool = contracts.stabilityPool;
       defaultPool = contracts.defaultPool;
       borrowerOperations = contracts.borrowerOperations;
-      hintHelpers = contracts.hintHelpers;
-
-      await deploymentHelper.connectCoreContracts(contracts);
-
-      await fundAccounts([
-        owner,
-        defaulter_1,
-        defaulter_2,
-        defaulter_3,
-        whale,
-        alice,
-        bob,
-        carol,
-        dennis,
-        erin,
-        flyn,
-        A,
-        B,
-        C,
-        D,
-        E,
-        F,
-        frontEnd_1,
-        frontEnd_2,
-        frontEnd_3,
-      ], contracts.WETH);
     });
 
     // --- provideToSP() ---

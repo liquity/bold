@@ -1,15 +1,8 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const testHelpers = require("../utils/testHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
+const { TestHelper: th } = require("../utils/testHelpers.js");
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol");
-const BoldToken = artifacts.require("./BoldToken.sol");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
-const th = testHelpers.TestHelper;
-const dec = th.dec;
-const toBN = th.toBN;
-const assertRevert = th.assertRevert;
-const mv = testHelpers.MoneyValues;
-const timeValues = testHelpers.TimeValues;
+const { dec, toBN, ZERO_ADDRESS } = th;
 
 /* NOTE: Some tests involving ETH redemption fees do not test for specific fee values.
  * Some only test that the fees are non-zero when they should occur.
@@ -19,11 +12,13 @@ const timeValues = testHelpers.TimeValues;
  *
  */
 contract("TroveManager", async (accounts) => {
-  const ZERO_ADDRESS = th.ZERO_ADDRESS;
-  const [owner, A, B, C, D, E, F] = accounts.slice(0, 7);
+  const fundedAccounts = accounts.slice(0, 7);
+
+  const [owner, A, B, C, D, E, F] = fundedAccounts;
 
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
 
+  let contracts;
   let priceFeed;
   let boldToken;
   let sortedTroves;
@@ -34,8 +29,6 @@ contract("TroveManager", async (accounts) => {
   let defaultPool;
   let borrowerOperations;
   let hintHelpers;
-
-  let contracts;
 
   const getOpenTroveBoldAmount = async (totalDebt) =>
     th.getOpenTroveBoldAmount(contracts, totalDebt);
@@ -48,16 +41,14 @@ contract("TroveManager", async (accounts) => {
     return ratio;
   };
 
-  beforeEach(async () => {
-    contracts = await deploymentHelper.deployLiquityCore();
-    contracts.troveManager = await TroveManagerTester.new();
-    contracts.boldToken = await BoldToken.new(
-      contracts.troveManager.address,
-      contracts.stabilityPool.address,
-      contracts.borrowerOperations.address,
-      contracts.activePool.address
-    )
+  const deployFixture = createDeployAndFundFixture({
+    accounts: fundedAccounts,
+    mocks: { TroveManager: TroveManagerTester },
+  });
 
+  beforeEach(async () => {
+    const result = await deployFixture();
+    contracts = result.contracts;
     priceFeed = contracts.priceFeedTestnet;
     boldToken = contracts.boldToken;
     sortedTroves = contracts.sortedTroves;
@@ -68,10 +59,6 @@ contract("TroveManager", async (accounts) => {
     collSurplusPool = contracts.collSurplusPool;
     borrowerOperations = contracts.borrowerOperations;
     hintHelpers = contracts.hintHelpers;
-
-    await deploymentHelper.connectCoreContracts(contracts);
-
-    await fundAccounts([owner, A, B, C, D, E, F], contracts.WETH);
   });
 
   it("A given trove's stake decline is negligible with adjustments and tiny liquidations", async () => {
@@ -151,19 +138,19 @@ contract("TroveManager", async (accounts) => {
     );
     await troveManager.liquidate(ATroveId);
 
-    console.log(
-      `totalStakesSnapshot after L1: ${await troveManager.totalStakesSnapshot()}`
-    );
-    console.log(
-      `totalCollateralSnapshot after L1: ${await troveManager.totalCollateralSnapshot()}`
-    );
-    console.log(`Snapshots ratio after L1: ${await getSnapshotsRatio()}`);
-    console.log(
-      `B pending ETH reward after L1: ${await troveManager.getPendingETHReward(
-        B
-      )}`
-    );
-    console.log(`B stake after L1: ${(await troveManager.Troves(BTroveId))[2]}`);
+    // console.log(
+    //   `totalStakesSnapshot after L1: ${await troveManager.totalStakesSnapshot()}`
+    // );
+    // console.log(
+    //   `totalCollateralSnapshot after L1: ${await troveManager.totalCollateralSnapshot()}`
+    // );
+    // console.log(`Snapshots ratio after L1: ${await getSnapshotsRatio()}`);
+    // console.log(
+    //   `B pending ETH reward after L1: ${await troveManager.getPendingETHReward(
+    //     B
+    //   )}`
+    // );
+    // console.log(`B stake after L1: ${(await troveManager.Troves(BTroveId))[2]}`);
 
     // adjust trove B 1 wei: apply rewards
     await borrowerOperations.adjustTrove(
@@ -175,20 +162,20 @@ contract("TroveManager", async (accounts) => {
       false,
       { from: B }
     ); // B repays 1 wei
-    console.log(`B stake after A1: ${(await troveManager.Troves(BTroveId))[2]}`);
-    console.log(`Snapshots ratio after A1: ${await getSnapshotsRatio()}`);
+    // console.log(`B stake after A1: ${(await troveManager.Troves(BTroveId))[2]}`);
+    // console.log(`Snapshots ratio after A1: ${await getSnapshotsRatio()}`);
 
     // Loop over tiny troves, and alternately:
     // - Liquidate a tiny trove
     // - Adjust B's collateral by 1 wei
     for (let [idx, trove] of tinyTroves.entries()) {
       await troveManager.liquidate(th.addressToTroveId(trove));
-      console.log(
-        `B stake after L${idx + 2}: ${(await troveManager.Troves(BTroveId))[2]}`
-      );
-      console.log(
-        `Snapshots ratio after L${idx + 2}: ${await getSnapshotsRatio()}`
-      );
+      // console.log(
+      //   `B stake after L${idx + 2}: ${(await troveManager.Troves(BTroveId))[2]}`
+      // );
+      // console.log(
+      //   `Snapshots ratio after L${idx + 2}: ${await getSnapshotsRatio()}`
+      // );
       await borrowerOperations.adjustTrove(
         BTroveId,
         th._100pct,
@@ -198,9 +185,9 @@ contract("TroveManager", async (accounts) => {
         false,
         { from: B }
       ); // A repays 1 wei
-      console.log(
-        `B stake after A${idx + 2}: ${(await troveManager.Troves(B))[2]}`
-      );
+      // console.log(
+      //   `B stake after A${idx + 2}: ${(await troveManager.Troves(B))[2]}`
+      // );
     }
   });
 

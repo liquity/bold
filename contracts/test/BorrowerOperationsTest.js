@@ -1,23 +1,16 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
-const testHelpers = require("../utils/testHelpers.js");
+const { TestHelper: th } = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
 const BorrowerOperationsTester = artifacts.require(
   "./BorrowerOperationsTester.sol"
 );
 const TroveManagerTester = artifacts.require("TroveManagerTester");
 
-const th = testHelpers.TestHelper;
-
-const dec = th.dec;
-const toBN = th.toBN;
-const mv = testHelpers.MoneyValues;
-const timeValues = testHelpers.TimeValues;
-
-const ZERO_ADDRESS = th.ZERO_ADDRESS;
-const assertRevert = th.assertRevert;
+const { dec, toBN, assertRevert } = th;
 
 contract("BorrowerOperations", async (accounts) => {
+  const accountsToFund = accounts.slice(0, 17);
+
   const [
     owner,
     alice,
@@ -36,21 +29,23 @@ contract("BorrowerOperations", async (accounts) => {
     frontEnd_1,
     frontEnd_2,
     frontEnd_3,
-  ] = accounts;
+  ] = accountsToFund;
 
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
+
+  let contracts
 
   let priceFeed;
   let boldToken;
   let sortedTroves;
   let troveManager;
   let activePool;
-  let stabilityPool;
   let defaultPool;
   let borrowerOperations;
-  let lqtyToken;
 
-  let contracts;
+  let BOLD_GAS_COMPENSATION;
+  let MIN_NET_DEBT;
+  let BORROWING_FEE_FLOOR;
 
   const getOpenTroveBoldAmount = async (totalDebt) =>
     th.getOpenTroveBoldAmount(contracts, totalDebt);
@@ -65,57 +60,47 @@ contract("BorrowerOperations", async (accounts) => {
     th.getTroveEntireDebt(contracts, trove);
   const getTroveStake = async (trove) => th.getTroveStake(contracts, trove);
 
-  let BOLD_GAS_COMPENSATION;
-  let MIN_NET_DEBT;
-  let BORROWING_FEE_FLOOR;
-
-  before(async () => {});
+  const deployFixture = createDeployAndFundFixture({
+    accounts: accountsToFund,
+    mocks: {
+      BorrowerOperations: BorrowerOperationsTester,
+      TroveManager: TroveManagerTester,
+    },
+    callback: async (contracts) => {
+      const { borrowerOperations } = contracts;
+      const [
+        BOLD_GAS_COMPENSATION,
+        MIN_NET_DEBT,
+        BORROWING_FEE_FLOOR,
+      ] = await Promise.all([
+        borrowerOperations.BOLD_GAS_COMPENSATION(),
+        borrowerOperations.MIN_NET_DEBT(),
+        borrowerOperations.BORROWING_FEE_FLOOR(),
+      ]);
+      return {
+        BOLD_GAS_COMPENSATION,
+        MIN_NET_DEBT,
+        BORROWING_FEE_FLOOR,
+      }
+    },
+  });
 
   const testCorpus = () => {
     beforeEach(async () => {
-      contracts = await deploymentHelper.deployLiquityCore();
-      contracts.borrowerOperations = await BorrowerOperationsTester.new(contracts.WETH.address);
-      contracts.troveManager = await TroveManagerTester.new();
-      contracts = await deploymentHelper.deployBoldToken(contracts);
+      const result = await deployFixture()
 
-      await deploymentHelper.connectCoreContracts(contracts);
+      contracts = result.contracts
+      priceFeed = contracts.priceFeedTestnet
+      boldToken = contracts.boldToken
+      sortedTroves = contracts.sortedTroves
+      troveManager = contracts.troveManager
+      activePool = contracts.activePool
+      defaultPool = contracts.defaultPool
+      borrowerOperations = contracts.borrowerOperations
 
-      priceFeed = contracts.priceFeedTestnet;
-      boldToken = contracts.boldToken;
-      sortedTroves = contracts.sortedTroves;
-      troveManager = contracts.troveManager;
-      activePool = contracts.activePool;
-      stabilityPool = contracts.stabilityPool;
-      defaultPool = contracts.defaultPool;
-      borrowerOperations = contracts.borrowerOperations;
-      hintHelpers = contracts.hintHelpers;
-
-      BOLD_GAS_COMPENSATION = await borrowerOperations.BOLD_GAS_COMPENSATION();
-      MIN_NET_DEBT = await borrowerOperations.MIN_NET_DEBT();
-      BORROWING_FEE_FLOOR = await borrowerOperations.BORROWING_FEE_FLOOR();
-
-      await fundAccounts([
-        owner,
-        alice,
-        bob,
-        carol,
-        dennis,
-        whale,
-        A,
-        B,
-        C,
-        D,
-        E,
-        F,
-        G,
-        H,
-        frontEnd_1,
-        frontEnd_2,
-        frontEnd_3,
-        bountyAddress,
-        lpRewardsAddress,
-        multisig,
-      ], contracts.WETH);
+      BOLD_GAS_COMPENSATION = result.BOLD_GAS_COMPENSATION
+      MIN_NET_DEBT = result.MIN_NET_DEBT
+      BORROWING_FEE_FLOOR = result.BORROWING_FEE_FLOOR
     });
 
     it("addColl(): reverts when top-up would leave trove with ICR < MCR", async () => {
@@ -4401,7 +4386,7 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const liqPrice = th.toBN(dec(100,18))
-        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        // th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
         await priceFeed.setPrice(liqPrice);
         // Confirm we are in Normal Mode
         assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
@@ -4460,7 +4445,7 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const liqPrice = th.toBN(dec(100,18))
-        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        // th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
         await priceFeed.setPrice(liqPrice);
         // Confirm we are in Normal Mode
         assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
@@ -4519,7 +4504,7 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const liqPrice = th.toBN(dec(100,18))
-        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        // th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
         await priceFeed.setPrice(liqPrice);
         // Confirm we are in Normal Mode
         assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
@@ -4577,7 +4562,7 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const liqPrice = th.toBN(dec(100,18))
-        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        // th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
         await priceFeed.setPrice(liqPrice);
         // Confirm we are in Normal Mode
         assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
@@ -4636,7 +4621,7 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const liqPrice = th.toBN(dec(100,18))
-        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        // th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
         await priceFeed.setPrice(liqPrice);
         // Confirm we are in Normal Mode
         assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
@@ -4695,7 +4680,7 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const liqPrice = th.toBN(dec(100,18))
-        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        // th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
         await priceFeed.setPrice(liqPrice);
         // Confirm we are in Normal Mode
         assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
@@ -4754,7 +4739,7 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const liqPrice = th.toBN(dec(100,18))
-        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        // th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
         await priceFeed.setPrice(liqPrice);
         // Confirm we are in Normal Mode
         assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
@@ -4813,7 +4798,7 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const liqPrice = th.toBN(dec(100,18))
-        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        // th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
         await priceFeed.setPrice(liqPrice);
         // Confirm we are in Normal Mode
         assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
@@ -4872,7 +4857,7 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const liqPrice = th.toBN(dec(100,18))
-        th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
+        // th.logBN("Bob ICR before liq", await troveManager.getCurrentICR(bob, liqPrice))
         await priceFeed.setPrice(liqPrice);
         // Confirm we are in Normal Mode
         assert.isFalse(await troveManager.checkRecoveryMode(liqPrice))
@@ -4904,9 +4889,7 @@ contract("BorrowerOperations", async (accounts) => {
     });
   };
 
-  describe("Test", async () => {
-    testCorpus();
-  });
+  testCorpus();
 });
 
 contract("Reset chain state", async (accounts) => {});

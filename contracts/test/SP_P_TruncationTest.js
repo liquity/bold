@@ -1,12 +1,7 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const testHelpers = require("../utils/testHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
+const { TestHelper: th } = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
-const th = testHelpers.TestHelper;
-const timeValues = testHelpers.TimeValues;
-const dec = th.dec;
-const toBN = th.toBN;
-const getDifference = th.getDifference;
+const { dec } = th;
 
 const TroveManagerTester = artifacts.require("TroveManagerTester");
 const BoldToken = artifacts.require("BoldToken");
@@ -14,7 +9,9 @@ const BoldToken = artifacts.require("BoldToken");
 const GAS_PRICE = 10000000;
 
 contract("StabilityPool Scale Factor issue tests", async (accounts) => {
-  const [owner, whale, A, B, C, D, E, F, F1, F2, F3] = accounts;
+  const fundedAccounts = accounts.slice(0, 11);
+
+  const [owner, whale, A, B, C, D, E, F, F1, F2, F3] = fundedAccounts;
 
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
 
@@ -35,32 +32,28 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
   const getBoldAmountForDesiredDebt = async (desiredDebt) =>
     (await getOpenTroveBoldAmount(dec(desiredDebt, 18)));
 
+  const deployFixture = createDeployAndFundFixture({
+    accounts: fundedAccounts,
+    callback: async (contracts) => {
+      await contracts.priceFeed.setPrice(dec(200, 18));
+    },
+    mocks: {
+      TroveManager: TroveManagerTester,
+    }
+  });
+
+  beforeEach(async () => {
+    const result = await deployFixture();
+    contracts = result.contracts;
+    priceFeed = contracts.priceFeed;
+    boldToken = contracts.boldToken;
+    stabilityPool = contracts.stabilityPool;
+    sortedTroves = contracts.sortedTroves;
+    troveManager = contracts.troveManager;
+    borrowerOperations = contracts.borrowerOperations;
+  });
+
   describe("Scale Factor issue tests", async () => {
-    beforeEach(async () => {
-      contracts = await deploymentHelper.deployLiquityCore();
-      contracts.troveManager = await TroveManagerTester.new();
-      contracts.boldToken = await BoldToken.new(
-        contracts.troveManager.address,
-        contracts.stabilityPool.address,
-        contracts.borrowerOperations.address,
-        contracts.activePool.address
-      );
-
-      priceFeed = contracts.priceFeedTestnet;
-      boldToken = contracts.boldToken;
-      stabilityPool = contracts.stabilityPool;
-      sortedTroves = contracts.sortedTroves;
-      troveManager = contracts.troveManager;
-      stabilityPool = contracts.stabilityPool;
-      borrowerOperations = contracts.borrowerOperations;
-
-      await deploymentHelper.connectCoreContracts(contracts);
-
-      await fundAccounts([owner, whale, A, B, C, D, E, F, F1, F2, F3], contracts.WETH);
-
-      await priceFeed.setPrice(dec(200, 18));
-    });
-
     it.skip("1. Liquidation succeeds after P reduced to 1", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
       await th.openTroveWrapper(contracts,

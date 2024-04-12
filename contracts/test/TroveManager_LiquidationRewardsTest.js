@@ -1,19 +1,14 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const testHelpers = require("../utils/testHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
-
-const th = testHelpers.TestHelper;
-const dec = th.dec;
-const toBN = th.toBN;
-const getDifference = th.getDifference;
-const mv = testHelpers.MoneyValues;
+const { TestHelper: th } = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
 const TroveManagerTester = artifacts.require("TroveManagerTester");
-const BoldToken = artifacts.require("BoldToken");
 
-contract(
-  "TroveManager - Redistribution reward calculations",
+const { dec, getDifference, toBN } = th;
+
+contract( "TroveManager - Redistribution reward calculations",
   async (accounts) => {
+    const fundedAccounts = accounts.slice(0, 20);
+
     const [
       owner,
       alice,
@@ -35,25 +30,18 @@ contract(
       defaulter_2,
       defaulter_3,
       defaulter_4,
-    ] = accounts;
+    ] = fundedAccounts;
 
-    const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(
-      997,
-      1000
-    );
+    let contracts
 
-    let priceFeed;
-    let boldToken;
-    let sortedTroves;
-    let troveManager;
-    let nameRegistry;
-    let activePool;
-    let stabilityPool;
-    let defaultPool;
-    let functionCaller;
-    let borrowerOperations;
-
-    let contracts;
+    let priceFeed
+    let boldToken
+    let sortedTroves
+    let troveManager
+    let activePool
+    let stabilityPool
+    let defaultPool
+    let borrowerOperations
 
     const getOpenTroveBoldAmount = async (totalDebt) =>
       th.getOpenTroveBoldAmount(contracts, totalDebt);
@@ -61,51 +49,25 @@ contract(
       th.getNetBorrowingAmount(contracts, debtWithFee);
     const openTrove = async (params) => th.openTrove(contracts, params);
 
+    const deployFixture = createDeployAndFundFixture({
+      accounts: fundedAccounts,
+      mocks: {
+        TroveManager: TroveManagerTester,
+      }
+    });
+
     beforeEach(async () => {
-      contracts = await deploymentHelper.deployLiquityCore();
-      contracts.troveManager = await TroveManagerTester.new();
-      contracts.boldToken = await BoldToken.new(
-        contracts.troveManager.address,
-        contracts.stabilityPool.address,
-        contracts.borrowerOperations.address,
-        contracts.activePool.address
-      );
-      
-      priceFeed = contracts.priceFeedTestnet;
-      boldToken = contracts.boldToken;
-      sortedTroves = contracts.sortedTroves;
-      troveManager = contracts.troveManager;
-      nameRegistry = contracts.nameRegistry;
-      activePool = contracts.activePool;
-      stabilityPool = contracts.stabilityPool;
-      defaultPool = contracts.defaultPool;
-      functionCaller = contracts.functionCaller;
-      borrowerOperations = contracts.borrowerOperations;
+      const result = await deployFixture();
 
-      await deploymentHelper.connectCoreContracts(contracts);
-
-      await fundAccounts([
-        owner,
-        alice,
-        bob,
-        carol,
-        dennis,
-        erin,
-        freddy,
-        greta,
-        harry,
-        ida,
-        A,
-        B,
-        C,
-        D,
-        E,
-        whale,
-        defaulter_1,
-        defaulter_2,
-        defaulter_3,
-        defaulter_4,
-      ], contracts.WETH);
+      contracts = result.contracts
+      priceFeed = contracts.priceFeed
+      boldToken = contracts.boldToken
+      sortedTroves = contracts.sortedTroves
+      troveManager = contracts.troveManager
+      activePool = contracts.activePool
+      stabilityPool = contracts.stabilityPool
+      defaultPool = contracts.defaultPool
+      borrowerOperations = contracts.borrowerOperations
     });
 
     it("redistribution: A, B Open. B Liquidated. C, D Open. D Liquidated. Distributes correct rewards", async () => {
