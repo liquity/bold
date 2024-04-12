@@ -4,7 +4,7 @@ const TroveManagerTester = artifacts.require("TroveManagerTester");
 
 const { dec, toBN } = th;
 
-/* The majority of access control tests are contained in this file. However, tests for restrictions 
+/* The majority of access control tests are contained in this file. However, tests for restrictions
 on the Liquity admin address's capabilities during the first year are found in:
 
 test/launchSequenceTest/DuringLockupPeriodTest.js */
@@ -17,7 +17,7 @@ contract(
     const [owner, alice, bob, carol] = fundedAccounts;
     const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(
       997,
-      1000
+      1000,
     );
 
     let contracts;
@@ -36,13 +36,14 @@ contract(
       mocks: { TroveManager: TroveManagerTester },
       callback: async (contracts) => {
         await Promise.all(fundedAccounts.map(
-          (account) => th.openTrove(contracts, {
-            extraBoldAmount: toBN(dec(20000, 18)),
-            ICR: toBN(dec(2, 18)),
-            extraParams: { from: account },
-          })
-        ))
-      }
+          (account) =>
+            th.openTrove(contracts, {
+              extraBoldAmount: toBN(dec(20000, 18)),
+              ICR: toBN(dec(2, 18)),
+              extraParams: { from: account },
+            }),
+        ));
+      },
     });
 
     beforeEach(async () => {
@@ -67,7 +68,7 @@ contract(
             bob,
             th.addressToTroveId(bob),
             1,
-            { from: bob }
+            { from: bob },
           );
         } catch (err) {
           assert.include(err.message, "revert");
@@ -175,7 +176,7 @@ contract(
           assert.include(err.message, "revert");
           assert.include(
             err.message,
-            "Caller is neither BorrowerOperations nor TroveManager nor StabilityPool"
+            "Caller is neither BorrowerOperations nor TroveManager nor StabilityPool",
           );
         }
       });
@@ -189,7 +190,7 @@ contract(
           assert.include(err.message, "revert");
           assert.include(
             err.message,
-            "ActivePool: Caller is not TroveManager"
+            "ActivePool: Caller is not TroveManager",
           );
         }
       });
@@ -205,7 +206,7 @@ contract(
           assert.include(err.message, "revert");
           assert.include(
             err.message,
-            "ActivePool: Caller is not TroveManager"
+            "ActivePool: Caller is not TroveManager",
           );
         }
       });
@@ -221,7 +222,7 @@ contract(
           assert.include(err.message, "revert");
           assert.include(
             err.message,
-            "ActivePool: Caller is not TroveManager"
+            "ActivePool: Caller is not TroveManager",
           );
         }
       });
@@ -235,7 +236,7 @@ contract(
           assert.include(err.message, "revert");
           assert.include(
             err.message,
-            "ActivePool: Caller is neither BO nor Default Pool"
+            "ActivePool: Caller is neither BO nor Default Pool",
           );
         }
       });
@@ -290,7 +291,7 @@ contract(
           assert.include(err.message, "revert");
           assert.include(
             err.message,
-            "DefaultPool: Caller is not the ActivePool"
+            "DefaultPool: Caller is not the ActivePool",
           );
         }
       });
@@ -322,7 +323,7 @@ contract(
           assert.include(err.message, "revert");
           assert.include(
             err.message,
-            "StabilityPool: Caller is not ActivePool"
+            "StabilityPool: Caller is not ActivePool",
           );
         }
       });
@@ -355,7 +356,7 @@ contract(
             bob,
             activePool.address,
             100,
-            { from: alice }
+            { from: alice },
           );
         } catch (err) {
           assert.include(err.message, "revert");
@@ -371,7 +372,7 @@ contract(
             activePool.address,
             bob,
             100,
-            { from: alice }
+            { from: alice },
           );
         } catch (err) {
           assert.include(err.message, "revert");
@@ -391,7 +392,7 @@ contract(
             "150000000000000000000",
             bob,
             bob,
-            { from: alice }
+            { from: alice },
           );
         } catch (err) {
           assert.include(err.message, "revert");
@@ -421,7 +422,7 @@ contract(
             "150000000000000000000",
             bob,
             bob,
-            { from: alice }
+            { from: alice },
           );
         } catch (err) {
           assert.include(err.message, "revert");
@@ -429,5 +430,5 @@ contract(
         }
       });
     });
-  }
+  },
 );

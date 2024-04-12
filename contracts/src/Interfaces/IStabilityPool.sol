@@ -45,15 +45,14 @@ interface IStabilityPool is ILiquityBase {
         address _sortedTrovesAddress,
         address _priceFeedAddress
     ) external;
-  
+
     /*  provideToSP():
     * - Calculates depositor's ETH gain
     * - Calculates the compounded deposit
     * - Increases deposit, and takes new snapshots of accumulators P and S
     * - Sends depositor's accumulated ETH gains to depositor
     */
-    function provideToSP(uint _amount) external;
-
+    function provideToSP(uint256 _amount) external;
 
     /*  withdrawFromSP():
     * - Calculates depositor's ETH gain
@@ -62,7 +61,7 @@ interface IStabilityPool is ILiquityBase {
     * - (If _amount > userDeposit, the user withdraws all of their compounded deposit)
     * - Decreases deposit by withdrawn amount and takes new snapshots of accumulators P and S
     */
-    function withdrawFromSP(uint _amount) external;
+    function withdrawFromSP(uint256 _amount) external;
 
     /* withdrawETHGainToTrove():
     * - Transfers the depositor's entire ETH gain from the Stability Pool to the caller's trove
@@ -79,28 +78,28 @@ interface IStabilityPool is ILiquityBase {
      * and transfers the Trove's ETH collateral from ActivePool to StabilityPool.
      * Only called by liquidation functions in the TroveManager.
      */
-    function offset(uint _debt, uint _coll) external;
+    function offset(uint256 _debt, uint256 _coll) external;
 
     /*
      * Returns the total amount of ETH held by the pool, accounted in an internal variable instead of `balance`,
      * to exclude edge cases like ETH received from a self-destruct.
      */
-    function getETHBalance() external view returns (uint);
+    function getETHBalance() external view returns (uint256);
 
     /*
      * Returns Bold held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
      */
-    function getTotalBoldDeposits() external view returns (uint);
+    function getTotalBoldDeposits() external view returns (uint256);
 
     /*
      * Calculates the ETH gain earned by the deposit since its last snapshots were taken.
      */
-    function getDepositorETHGain(address _depositor) external view returns (uint);
+    function getDepositorETHGain(address _depositor) external view returns (uint256);
 
     /*
      * Return the user's compounded deposit.
      */
-    function getCompoundedBoldDeposit(address _depositor) external view returns (uint);
+    function getCompoundedBoldDeposit(address _depositor) external view returns (uint256);
 
     /*
      * Only callable by Active Pool, it pulls ETH and accounts for ETH received

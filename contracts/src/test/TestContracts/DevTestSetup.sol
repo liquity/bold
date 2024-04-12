@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
@@ -6,7 +5,6 @@ import "./BaseTest.sol";
 import "../../deployment.sol";
 
 contract DevTestSetup is BaseTest {
-
     IERC20 WETH;
 
     function giveAndApproveETH(address _account, uint256 _amount) public {
@@ -32,8 +30,15 @@ contract DevTestSetup is BaseTest {
         accounts = new Accounts();
         createAccounts();
 
-        (A, B, C, D, E, F, G) =
-            (accountsList[0], accountsList[1], accountsList[2], accountsList[3], accountsList[4], accountsList[5], accountsList[6]);
+        (A, B, C, D, E, F, G) = (
+            accountsList[0],
+            accountsList[1],
+            accountsList[2],
+            accountsList[3],
+            accountsList[4],
+            accountsList[5],
+            accountsList[6]
+        );
 
         LiquityContracts memory contracts = _deployAndConnectContracts();
         WETH = contracts.WETH;
@@ -51,7 +56,8 @@ contract DevTestSetup is BaseTest {
 
         // Give some ETH to test accounts, and approve it to BorrowerOperations
         uint256 initialETHAmount = 10_000e18;
-        for(uint256 i = 0; i < 6; i++) { // A to F
+        for (uint256 i = 0; i < 6; i++) {
+            // A to F
             giveAndApproveETH(accountsList[i], initialETHAmount);
         }
     }
@@ -65,9 +71,9 @@ contract DevTestSetup is BaseTest {
         uint256 price = 2000e18;
         priceFeed.setPrice(price);
 
-        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  5 ether, troveDebtRequest_A, interestRate);
-        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  5 ether, troveDebtRequest_B, interestRate);
-        uint256 CTroveId = openTroveNoHints100pctMaxFee(C,  5 ether, troveDebtRequest_C, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 5 ether, troveDebtRequest_A, interestRate);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B, 5 ether, troveDebtRequest_B, interestRate);
+        uint256 CTroveId = openTroveNoHints100pctMaxFee(C, 5 ether, troveDebtRequest_C, interestRate);
 
         console.log(troveManager.getTCR(price), "TCR");
         console.log(troveManager.getCurrentICR(CTroveId, price), "C CR");
@@ -105,10 +111,10 @@ contract DevTestSetup is BaseTest {
         uint256 price = 2000e18;
         priceFeed.setPrice(price);
 
-        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  5 ether, troveDebtRequest_A, interestRate);
-        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  5 ether, troveDebtRequest_B, interestRate);
-        uint256 CTroveId = openTroveNoHints100pctMaxFee(C,  25e17, troveDebtRequest_C, interestRate);
-        uint256 DTroveId = openTroveNoHints100pctMaxFee(D,  25e17, troveDebtRequest_D, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 5 ether, troveDebtRequest_A, interestRate);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B, 5 ether, troveDebtRequest_B, interestRate);
+        uint256 CTroveId = openTroveNoHints100pctMaxFee(C, 25e17, troveDebtRequest_C, interestRate);
+        uint256 DTroveId = openTroveNoHints100pctMaxFee(D, 25e17, troveDebtRequest_D, interestRate);
 
         // console.log(troveManager.getTCR(price), "TCR");
         // console.log(troveManager.getCurrentICR(CTroveId, price), "C CR");
@@ -138,12 +144,12 @@ contract DevTestSetup is BaseTest {
         uint256 price = 2000e18;
         priceFeed.setPrice(price);
 
-        uint256 ATroveId = openTroveNoHints100pctMaxFee(A,  5 ether, troveDebtRequest_A, interestRate);
-        uint256 BTroveId = openTroveNoHints100pctMaxFee(B,  5 ether, troveDebtRequest_B, interestRate);
-        uint256 CTroveId = openTroveNoHints100pctMaxFee(C,  25e17, troveDebtRequest_C, interestRate);
-        uint256 DTroveId = openTroveNoHints100pctMaxFee(D,  25e17, troveDebtRequest_D, interestRate);
+        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 5 ether, troveDebtRequest_A, interestRate);
+        uint256 BTroveId = openTroveNoHints100pctMaxFee(B, 5 ether, troveDebtRequest_B, interestRate);
+        uint256 CTroveId = openTroveNoHints100pctMaxFee(C, 25e17, troveDebtRequest_C, interestRate);
+        uint256 DTroveId = openTroveNoHints100pctMaxFee(D, 25e17, troveDebtRequest_D, interestRate);
 
-        // Price drops, C and D become liquidateable 
+        // Price drops, C and D become liquidateable
         price = 1050e18;
         priceFeed.setPrice(price);
 
@@ -166,10 +172,10 @@ contract DevTestSetup is BaseTest {
         uint256 coll = 20 ether;
         uint256 debtRequest = 20000e18;
         // Open in increasing order of interst rate
-        troveIDs.A = openTroveNoHints100pctMaxFee(A, coll, debtRequest, interestRate_A); 
-        troveIDs.B = openTroveNoHints100pctMaxFee(B, coll, debtRequest, interestRate_B); 
-        troveIDs.C = openTroveNoHints100pctMaxFee(C, coll, debtRequest, interestRate_C); 
-        troveIDs.D = openTroveNoHints100pctMaxFee(D, coll, debtRequest, interestRate_D); 
+        troveIDs.A = openTroveNoHints100pctMaxFee(A, coll, debtRequest, interestRate_A);
+        troveIDs.B = openTroveNoHints100pctMaxFee(B, coll, debtRequest, interestRate_B);
+        troveIDs.C = openTroveNoHints100pctMaxFee(C, coll, debtRequest, interestRate_C);
+        troveIDs.D = openTroveNoHints100pctMaxFee(D, coll, debtRequest, interestRate_D);
 
         // fast-forward to pass bootstrap phase
         vm.warp(block.timestamp + 14 days);

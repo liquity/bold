@@ -3,7 +3,6 @@ pragma solidity 0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract BasicOps is DevTestSetup {
-
     function testOpenTroveFailsWithoutAllowance() public {
         priceFeed.setPrice(2000e18);
 
@@ -35,7 +34,7 @@ contract BasicOps is DevTestSetup {
         assertEq(trovesCount, 1);
     }
 
-     function testCloseTrove() public {
+    function testCloseTrove() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
         borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
@@ -68,7 +67,7 @@ contract BasicOps is DevTestSetup {
         assertGt(coll_1, 0);
 
         // Adjust trove
-        borrowerOperations.adjustTrove(A_Id, 1e18, 1e18, true, 500e18,  true);
+        borrowerOperations.adjustTrove(A_Id, 1e18, 1e18, true, 500e18, true);
 
         // Check coll and debt altered
         uint256 debt_2 = troveManager.getTroveDebt(A_Id);
@@ -95,15 +94,11 @@ contract BasicOps is DevTestSetup {
         // B is now first in line to get redeemed, as they both have the same interest rate,
         // but B's Trove is younger.
 
-        uint256 redemptionAmount = 1000e18;  // 1k BOLD
+        uint256 redemptionAmount = 1000e18; // 1k BOLD
 
         // A redeems 1k BOLD
         vm.startPrank(A);
-        troveManager.redeemCollateral(
-            redemptionAmount,
-            10,
-            1e18
-        );
+        troveManager.redeemCollateral(redemptionAmount, 10, 1e18);
 
         // Check B's coll and debt reduced
         uint256 debt_2 = troveManager.getTroveDebt(B_Id);
@@ -121,7 +116,7 @@ contract BasicOps is DevTestSetup {
         vm.startPrank(B);
         borrowerOperations.openTrove(B, 0, 1e18, 10e18, 2000e18, 0, 0, 0);
 
-       // Price drops
+        // Price drops
         priceFeed.setPrice(1200e18);
         uint256 price = priceFeed.fetchPrice();
 

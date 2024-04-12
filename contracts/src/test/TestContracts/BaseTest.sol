@@ -111,10 +111,7 @@ contract BaseTest is Test {
         uint256 _coll,
         uint256 _boldAmount,
         uint256 _annualInterestRate
-    )
-        public
-        returns (uint256)
-    {
+    ) public returns (uint256) {
         return openTroveNoHints100pctMaxFeeWithIndex(_account, 0, _coll, _boldAmount, _annualInterestRate);
     }
 
@@ -124,16 +121,13 @@ contract BaseTest is Test {
         uint256 _coll,
         uint256 _boldAmount,
         uint256 _annualInterestRate
-    )
-        public
-        returns (uint256)
-    {
+    ) public returns (uint256) {
         vm.startPrank(_account);
-        uint256 troveId = borrowerOperations.openTrove(_account, _index, 1e18, _coll, _boldAmount, 0, 0, _annualInterestRate);
+        uint256 troveId =
+            borrowerOperations.openTrove(_account, _index, 1e18, _coll, _boldAmount, 0, 0, _annualInterestRate);
         vm.stopPrank();
         return troveId;
     }
-
 
     // (uint _maxFeePercentage, uint _collWithdrawal, uint _boldChange, bool _isDebtIncrease)
     function adjustTrove100pctMaxFee(
@@ -143,11 +137,9 @@ contract BaseTest is Test {
         uint256 _boldChange,
         bool _isCollIncrease,
         bool _isDebtIncrease
-    )
-    public
-    {
+    ) public {
         vm.startPrank(_account);
-        borrowerOperations.adjustTrove(_troveId, 1e18, _collChange, _isCollIncrease, _boldChange,  _isDebtIncrease);
+        borrowerOperations.adjustTrove(_troveId, 1e18, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
         vm.stopPrank();
     }
 
@@ -237,12 +229,12 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-
     function redeem(address _from, uint256 _boldAmount) public {
         vm.startPrank(_from);
         troveManager.redeemCollateral(_boldAmount, MAX_UINT256, 1e18);
         vm.stopPrank();
     }
+
     function logContractAddresses() public view {
         console.log("ActivePool addr: ", address(activePool));
         console.log("BorrowerOps addr: ", address(borrowerOperations));

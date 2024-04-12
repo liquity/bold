@@ -2,7 +2,6 @@ pragma solidity ^0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 
-
 contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
     function testSetAddManager() public {
         uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 100 ether, 10000e18, 1e17);

@@ -1,8 +1,8 @@
 module.exports = {
   // Improve performance by skipping statements and functions. Tool still checks lines of code and branches:
   // https://github.com/sc-forks/solidity-coverage/blob/master/docs/advanced.md
-  //measureStatementCoverage: false,
-  //measureFunctionCoverage: false,
+  // measureStatementCoverage: false,
+  // measureFunctionCoverage: false,
 
   skipFiles: [
     "GasPool",
@@ -14,12 +14,12 @@ module.exports = {
     "Dependencies/Math.sol",
     "Dependencies/Ownable.sol",
     "Dependencies/",
-    "Integrations/"
+    "Integrations/",
   ],
   // https://github.com/sc-forks/solidity-coverage/blob/master/docs/advanced.md#skipping-tests
   mocha: {
     grep: "@skip-on-coverage", // Find everything with this tag
-    invert: true               // Run the grep's inverse set.
+    invert: true, // Run the grep's inverse set.
   },
   contractsDir: "src/",
 };

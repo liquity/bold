@@ -9,9 +9,9 @@ interface IDefaultPool {
     // --- Functions ---
     function getETHBalance() external view returns (uint256);
     function getBoldDebt() external view returns (uint256);
-    function sendETHToActivePool(uint _amount) external;
+    function sendETHToActivePool(uint256 _amount) external;
     function receiveETH(uint256 _amount) external;
 
-    function increaseBoldDebt(uint _amount) external;
-    function decreaseBoldDebt(uint _amount) external;
+    function increaseBoldDebt(uint256 _amount) external;
+    function decreaseBoldDebt(uint256 _amount) external;
 }

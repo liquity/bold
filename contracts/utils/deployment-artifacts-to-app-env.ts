@@ -41,7 +41,7 @@ export async function main() {
   const deploymentContext = parseDeploymentContext(await fs.readFile(argv._[0], "utf-8"));
 
   const outputEnv = objectToEnvironmentVariables(
-    deploymentContextToAppEnvVariables(deploymentContext)
+    deploymentContextToAppEnvVariables(deploymentContext),
   );
 
   await fs.writeFile(argv._[1], outputEnv);

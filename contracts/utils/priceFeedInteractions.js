@@ -1,12 +1,10 @@
 // Vanilla node.js script.
 
-/* 
-* Script now deprecated. 
-* TODO: replace with a script that deploys a PriceFeed.sol instance to mainnet, and interacts with it 
-* (i.e. gets the price).
-*
-*/
-
+/*
+ * Script now deprecated.
+ * TODO: replace with a script that deploys a PriceFeed.sol instance to mainnet, and interacts with it
+ * (i.e. gets the price).
+ */
 
 // const ethers = require('ethers');
 // const oracleABIs = require('./oracleABIs.js')
@@ -58,7 +56,6 @@
 //     // res.wait()
 //     const recordedTroveManagerAddressTestnet = await testnetPriceFeed.troveManagerAddress()
 //     console.log(`recorded TroveManager Address is ${recordedTroveManagerAddressTestnet}`)
-   
 
 //     // Call the testnet Chainlink aggregator directly
 //     const price_aggregatorTestnet = (await testnetAggregator.latestAnswer()).toString();
@@ -75,7 +72,7 @@
 //     console.log(`Testnet: Latest ETH:USD price from deployed PriceFeed: ${price_PriceFeedTestnet}`)
 //     console.log(`Testnet: Timestamp of latest price from deployed PriceFeed: ${timestamp_PriceFeedTestnet}`)
 //     console.log('\n')
-   
+
 //     let price = await testnetPriceFeed.getPrice()
 //     console.log (`stored'price' variable in testnet PriceFeed contract is ${price}`)
 
@@ -90,7 +87,7 @@
 
 //     // // --- Mainnet ---
 
-//     // Calling the mainnet Chainlink aggregator directly 
+//     // Calling the mainnet Chainlink aggregator directly
 //     const price_aggregatorMainnet = (await mainnetAggregator.currentAnswer()).toString();
 //     const timestamp_aggregatorMainnet = (await mainnetAggregator.updatedHeight()).toString()
 //     const latestAnswerID_aggregatorMainnet = (await mainnetAggregator.latestCompletedAnswer()).toString()
@@ -132,9 +129,9 @@
 
 //     /* updatePrice() is a tx (21k) + SStore (5k) + emit event (1.5k) = 27.5k gas
 
-//     Therefore, expected gas cost of a getLatestPrice() call is within a Trove function is (35k - 27.5k) 
+//     Therefore, expected gas cost of a getLatestPrice() call is within a Trove function is (35k - 27.5k)
 //     = 7500 gas upper bound.
-    
-//     To check, deploy an instance of FunctionCaller contract to ropsten and mainnet, 
+
+//     To check, deploy an instance of FunctionCaller contract to ropsten and mainnet,
 //     with a wrapped getLatestPrice() call. */
 // })();

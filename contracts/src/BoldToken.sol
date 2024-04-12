@@ -24,13 +24,13 @@ import "./Dependencies/CheckContract.sol";
 
 contract BoldToken is CheckContract, IBoldToken {
     uint256 private _totalSupply;
-    string constant internal _NAME = "Bold Stablecoin";
-    string constant internal _SYMBOL = "Bold";
-    string constant internal _VERSION = "1";
-    uint8 constant internal _DECIMALS = 18;
-    
+    string internal constant _NAME = "Bold Stablecoin";
+    string internal constant _SYMBOL = "Bold";
+    string internal constant _VERSION = "1";
+    uint8 internal constant _DECIMALS = 18;
+
     // --- Data for EIP2612 ---
-    
+
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
     bytes32 private constant _PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
     // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -43,29 +43,27 @@ contract BoldToken is CheckContract, IBoldToken {
 
     bytes32 private immutable _HASHED_NAME;
     bytes32 private immutable _HASHED_VERSION;
-    
-    mapping (address => uint256) private _nonces;
-    
+
+    mapping(address => uint256) private _nonces;
+
     uint256 public deploymentStartTime;
 
     // User data for Bold token
-    mapping (address => uint256) private _balances;
-    mapping (address => mapping (address => uint256)) private _allowances;  
-    
+    mapping(address => uint256) private _balances;
+    mapping(address => mapping(address => uint256)) private _allowances;
+
     // --- Addresses ---
     address public immutable troveManagerAddress;
     address public immutable stabilityPoolAddress;
     address public immutable borrowerOperationsAddress;
     address public immutable activePoolAddress;
-    
 
     // --- Events ---
     event TroveManagerAddressChanged(address _troveManagerAddress);
     event StabilityPoolAddressChanged(address _newStabilityPoolAddress);
     event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
 
-    constructor
-    ( 
+    constructor(
         address _troveManagerAddress,
         address _stabilityPoolAddress,
         address _borrowerOperationsAddress,
@@ -82,14 +80,14 @@ contract BoldToken is CheckContract, IBoldToken {
         stabilityPoolAddress = _stabilityPoolAddress;
         emit StabilityPoolAddressChanged(_stabilityPoolAddress);
 
-        borrowerOperationsAddress = _borrowerOperationsAddress;        
+        borrowerOperationsAddress = _borrowerOperationsAddress;
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
 
         activePoolAddress = _activePoolAddress;
-        
+
         bytes32 hashedName = keccak256(bytes(_NAME));
         bytes32 hashedVersion = keccak256(bytes(_VERSION));
-        
+
         _HASHED_NAME = hashedName;
         _HASHED_VERSION = hashedVersion;
         _CACHED_CHAIN_ID = _chainID();
@@ -110,7 +108,7 @@ contract BoldToken is CheckContract, IBoldToken {
         _burn(_account, _amount);
     }
 
-    function sendToPool(address _sender,  address _poolAddress, uint256 _amount) external override {
+    function sendToPool(address _sender, address _poolAddress, uint256 _amount) external override {
         _requireCallerIsStabilityPool();
         _transfer(_sender, _poolAddress, _amount);
     }
@@ -173,30 +171,25 @@ contract BoldToken is CheckContract, IBoldToken {
         }
     }
 
-    function permit
-    (
-        address owner, 
-        address spender, 
-        uint amount, 
-        uint deadline, 
-        uint8 v, 
-        bytes32 r, 
-        bytes32 s
-    ) 
-        external 
-        override 
-    {            
-        require(deadline >= block.timestamp, 'Bold: expired deadline');
-        bytes32 digest = keccak256(abi.encodePacked('\x19\x01', 
-                         DOMAIN_SEPARATOR(), keccak256(abi.encode(
-                         _PERMIT_TYPEHASH, owner, spender, amount, 
-                         _nonces[owner]++, deadline))));
+    function permit(address owner, address spender, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+        override
+    {
+        require(deadline >= block.timestamp, "Bold: expired deadline");
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR(),
+                keccak256(abi.encode(_PERMIT_TYPEHASH, owner, spender, amount, _nonces[owner]++, deadline))
+            )
+        );
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, 'Bold: invalid signature');
+        require(recoveredAddress != address(0) && recoveredAddress == owner, "Bold: invalid signature");
         _approve(owner, spender, amount);
     }
 
-    function nonces(address owner) external view override returns (uint256) { // FOR EIP 2612
+    function nonces(address owner) external view override returns (uint256) {
+        // FOR EIP 2612
         return _nonces[owner];
     }
 
@@ -207,7 +200,7 @@ contract BoldToken is CheckContract, IBoldToken {
             chainID := chainid()
         }
     }
-    
+
     function _buildDomainSeparator(bytes32 _typeHash, bytes32 _name, bytes32 _version) private view returns (bytes32) {
         return keccak256(abi.encode(_typeHash, _name, _version, _chainID(), address(this)));
     }
@@ -234,7 +227,7 @@ contract BoldToken is CheckContract, IBoldToken {
 
     function _burn(address account, uint256 amount) internal {
         assert(account != address(0));
-        
+
         _balances[account] = _balances[account] - amount;
         _totalSupply = _totalSupply - amount;
         emit Transfer(account, address(0), amount);
@@ -252,29 +245,27 @@ contract BoldToken is CheckContract, IBoldToken {
 
     function _requireValidRecipient(address _recipient) internal view {
         require(
-            _recipient != address(0) && 
-            _recipient != address(this),
+            _recipient != address(0) && _recipient != address(this),
             "Bold: Cannot transfer tokens directly to the Bold token contract or the zero address"
         );
         require(
-            _recipient != stabilityPoolAddress && 
-            _recipient != troveManagerAddress && 
-            _recipient != borrowerOperationsAddress, 
+            _recipient != stabilityPoolAddress && _recipient != troveManagerAddress
+                && _recipient != borrowerOperationsAddress,
             "Bold: Cannot transfer tokens directly to the StabilityPool, TroveManager or BorrowerOps"
         );
     }
 
     function _requireCallerIsBOorAP() internal view {
-        require(msg.sender == borrowerOperationsAddress ||
-            msg.sender == activePoolAddress,
-            "BoldToken: Caller is not BO or AP");
+        require(
+            msg.sender == borrowerOperationsAddress || msg.sender == activePoolAddress,
+            "BoldToken: Caller is not BO or AP"
+        );
     }
 
     function _requireCallerIsBOorTroveMorSP() internal view {
         require(
-            msg.sender == borrowerOperationsAddress ||
-            msg.sender == troveManagerAddress ||
-            msg.sender == stabilityPoolAddress,
+            msg.sender == borrowerOperationsAddress || msg.sender == troveManagerAddress
+                || msg.sender == stabilityPoolAddress,
             "Bold: Caller is neither BorrowerOperations nor TroveManager nor StabilityPool"
         );
     }
@@ -286,7 +277,8 @@ contract BoldToken is CheckContract, IBoldToken {
     function _requireCallerIsTroveMorSP() internal view {
         require(
             msg.sender == troveManagerAddress || msg.sender == stabilityPoolAddress,
-            "Bold: Caller is neither TroveManager nor StabilityPool");
+            "Bold: Caller is neither TroveManager nor StabilityPool"
+        );
     }
 
     // --- Optional functions ---

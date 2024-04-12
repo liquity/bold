@@ -2,9 +2,7 @@ pragma solidity 0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 
-
 contract TroveManagerTest is DevTestSetup {
-
     function testRedeemSkipTrovesUnder100pct() public {
         priceFeed.setPrice(2000e18);
         uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 2 ether, 2001e18, 1e17);
@@ -26,15 +24,11 @@ contract TroveManagerTest is DevTestSetup {
         assertLt(troveManager.getCurrentICR(ATroveId, newPrice), _100pct);
         assertGt(troveManager.getCurrentICR(BTroveId, newPrice), _100pct);
 
-        uint256 redemptionAmount = 1000e18;  // 1k BOLD
+        uint256 redemptionAmount = 1000e18; // 1k BOLD
 
         // C redeems 1k BOLD
         vm.startPrank(C);
-        troveManager.redeemCollateral(
-            redemptionAmount,
-            10,
-            1e18
-        );
+        troveManager.redeemCollateral(redemptionAmount, 10, 1e18);
         vm.stopPrank();
 
         // Check A's coll and debt are the same
@@ -64,11 +58,7 @@ contract TroveManagerTest is DevTestSetup {
         openTroveNoHints100pctMaxFee(A, 200 ether, 200000e18, 1e17);
         // A redeems 0.01 BOLD, base rate goes down to almost zero (it’s updated on redemption)
         vm.startPrank(A);
-        troveManager.redeemCollateral(
-            1e16,
-            10,
-            1e18
-        );
+        troveManager.redeemCollateral(1e16, 10, 1e18);
         vm.stopPrank();
 
         console.log(troveManager.baseRate(), "baseRate");

@@ -3,7 +3,6 @@ pragma solidity 0.8.18;
 import "./Interfaces/IPriceFeedMock.sol";
 import "../../PriceFeed.sol";
 
-
 contract PriceFeedMock is IPriceFeedMock {
     uint256 private PRICE;
 

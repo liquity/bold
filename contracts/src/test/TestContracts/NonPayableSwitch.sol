@@ -5,7 +5,6 @@ pragma solidity 0.8.18;
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 // import "forge-std/console.sol";
 
-
 contract NonPayableSwitch {
     using SafeERC20 for IERC20;
 
@@ -22,7 +21,7 @@ contract NonPayableSwitch {
 
     function forward(address _dest, bytes calldata _data) external payable {
         //console.logBytes(_data);
-        (bool success, bytes memory returnData) = _dest.call{ value: msg.value }(_data);
+        (bool success, bytes memory returnData) = _dest.call{value: msg.value}(_data);
         //console.log(msg.value, "msg.value");
         //console.log(success, "success");
         //console.logBytes(returnData);

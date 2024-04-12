@@ -1,10 +1,8 @@
-
 pragma solidity 0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 
 contract Deployment is DevTestSetup {
-
     function testContractsDeployed() public {
         assertNotEq(address(activePool), address(0));
         assertNotEq(address(boldToken), address(0));
