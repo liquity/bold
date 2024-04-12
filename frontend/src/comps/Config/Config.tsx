@@ -3,7 +3,14 @@
 import type { ReactNode } from "react";
 
 import {
+  CHAIN_BLOCK_EXPLORER,
+  CHAIN_CONTRACT_ENS_REGISTRY,
+  CHAIN_CONTRACT_ENS_RESOLVER,
+  CHAIN_CONTRACT_MULTICALL,
+  CHAIN_CURRENCY,
   CHAIN_ID,
+  CHAIN_NAME,
+  CHAIN_RPC_URL,
   CONTRACT_ACTIVE_POOL,
   CONTRACT_BOLD_TOKEN,
   CONTRACT_BORROWER_OPERATIONS,
@@ -23,6 +30,29 @@ import { z } from "zod";
 
 export const ConfigSchema = z.object({
   chainId: z.number(),
+  chainName: z.string(),
+  chainCurrency: z.object({
+    name: z.string(),
+    symbol: z.string(),
+    decimals: z.number(),
+  }),
+  chainBlockExplorer: z.object({
+    name: z.string(),
+    url: z.string(),
+  }).optional(),
+  chainContractEnsRegistry: z.object({
+    address: zAddress(),
+    block: z.number().optional(),
+  }).optional(),
+  chainContractEnsResolver: z.object({
+    address: zAddress(),
+    block: z.number().optional(),
+  }).optional(),
+  chainContractMulticall: z.object({
+    address: zAddress(),
+    block: z.number().optional(),
+  }).optional(),
+  chainRpcUrl: z.string(),
   contractActivePool: zAddress(),
   contractBoldToken: zAddress(),
   contractBorrowerOperations: zAddress(),
@@ -41,6 +71,13 @@ type Config = z.infer<typeof ConfigSchema>;
 
 const defaultConfig: Config = {
   chainId: CHAIN_ID,
+  chainName: CHAIN_NAME,
+  chainCurrency: CHAIN_CURRENCY,
+  chainBlockExplorer: CHAIN_BLOCK_EXPLORER,
+  chainContractEnsRegistry: CHAIN_CONTRACT_ENS_REGISTRY,
+  chainContractEnsResolver: CHAIN_CONTRACT_ENS_RESOLVER,
+  chainContractMulticall: CHAIN_CONTRACT_MULTICALL,
+  chainRpcUrl: CHAIN_RPC_URL,
   contractActivePool: CONTRACT_ACTIVE_POOL,
   contractBoldToken: CONTRACT_BOLD_TOKEN,
   contractBorrowerOperations: CONTRACT_BORROWER_OPERATIONS,

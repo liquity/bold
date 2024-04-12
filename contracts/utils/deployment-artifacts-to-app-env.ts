@@ -6,10 +6,11 @@ converts the deployment artifacts created by ./deploy into environment
 variables to be used by the Next.js app located in frontend/.
 
 Usage:
-  ./deployment-artifacts-to-app-env.ts <INPUT_JSON> <OUTPUT_ENV>
+  ./deployment-artifacts-to-app-env.ts <INPUT_JSON> <OUTPUT_ENV> [OPTIONS]
 
 Options:
   --help, -h                               Show this help message.
+  --append                                 Append to the output file instead of overwriting it.
 `;
 
 const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
@@ -17,13 +18,7 @@ const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 const ZDeploymentContext = z.object({
   options: z.object({
     chainId: z.number(),
-    // XXX hotfix: we were leaking Github secrets in "deployer"
-    // deployer: z.string(), // can be an address or a private key
-    help: z.boolean(),
-    openDemoTroves: z.boolean(),
     rpcUrl: z.string(),
-    verify: z.boolean(),
-    verifier: z.string(),
   }),
   deployedContracts: z.record(ZAddress),
 });
@@ -33,19 +28,39 @@ type DeploymentContext = z.infer<typeof ZDeploymentContext>;
 const NULL_ADDRESS = `0x${"0".repeat(40)}`;
 
 export async function main() {
-  if ("help" in argv || "h" in argv || argv._.length !== 2) {
+  const options = {
+    help: "help" in argv || "h" in argv,
+    append: "append" in argv,
+    inputJsonPath: argv._[0],
+    outputEnvPath: argv._[1],
+  };
+
+  if (options.help) {
     echo`${HELP}`;
     process.exit(0);
   }
 
-  const deploymentContext = parseDeploymentContext(await fs.readFile(argv._[0], "utf-8"));
+  if (!options.inputJsonPath || !options.outputEnvPath) {
+    console.error("\nInvalid number of arguments provided (--help for instructions).\n");
+    process.exit(1);
+  }
+
+  const deploymentContext = parseDeploymentContext(
+    await fs.readFile(options.inputJsonPath, "utf-8"),
+  );
 
   const outputEnv = objectToEnvironmentVariables(
     deploymentContextToAppEnvVariables(deploymentContext),
   );
 
-  await fs.writeFile(argv._[1], outputEnv);
-  console.log(outputEnv);
+  await fs.ensureFile(options.outputEnvPath);
+  if (options.append) {
+    await fs.appendFile(options.outputEnvPath, `\n${outputEnv}\n`);
+  } else {
+    await fs.writeFile(options.outputEnvPath, `${outputEnv}\n`);
+  }
+
+  console.log(`\nEnvironment variables written to ${options.outputEnvPath}.\n`);
 }
 
 function objectToEnvironmentVariables(object: Record<string, unknown>) {
