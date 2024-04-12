@@ -70,6 +70,7 @@ jobs:
   deploy-app:
     name: Deploy app
     runs-on: ubuntu-latest
+    needs: deploy-contracts
     if: ${{ github.event_name != 'pull_request' }}
     steps:
       - name: Git checkout
