@@ -17,28 +17,30 @@ pnpm install
 ## How to develop
 
 ```sh
-# Run the anvil local node (keep it running in a separate terminal)
+# Run the anvil local node (keep it running in a separate terminal):
 anvil
 
-# Deploy the contracts
+# First, we need to deploy the contracts:
 cd contracts
+
+# Deploy the contracts:
 ./deploy local --open-demo-troves # optionally open troves for the first 8 anvil accounts
 
-# Print the addresses of the deployed contracts
+# Print the addresses of the deployed contracts:
 pnpm tsx utils/deployment-artifacts-to-app-env.ts deployment-context-latest.json
 
-# Now, the app:
+# We are now ready to pass the deployed contracts to the app:
 cd ../frontend
 
-# Copy the example .env file
+# Copy the example .env file:
 cp .env .env.local
 
 # Edit the .env.local file:
 #  - Make sure the Hardhat / Anvil section is uncommented.
-#  - Copy into it the addresses printed by the previous command.
+#  - Copy into it the addresses printed by command above.
 
-# Run the app development server
+# Run the app development server:
 pnpm dev
 
-# Open https://localhost:3000 in your browser
+# You can now open https://localhost:3000 in your browser.
 ```
