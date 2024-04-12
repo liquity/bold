@@ -8,12 +8,12 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/deploy-testnet.yml"
+      - ".github/workflows/testnet-deployment.yml"
       - "contracts/**"
       - "frontend/**"
   pull_request:
     paths:
-      - ".github/workflows/deploy-testnet.yml"
+      - ".github/workflows/testnet-deployment.yml"
       - "contracts/**"
 
 env:
@@ -27,7 +27,6 @@ concurrency:
 jobs:
   deploy-contracts:
     name: Deploy contracts
-    if: false # Disable contracts deployment for now
     runs-on: ubuntu-latest
     steps:
       - name: Git checkout
@@ -49,6 +48,7 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+        working-directory: ./contracts
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1

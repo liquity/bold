@@ -156,9 +156,13 @@ Deploying Liquity contracts with the following settings:
     `broadcast/DeployLiquity2.s.sol/${options.chainId}/run-latest.json`,
   );
 
+  // XXX hotfix: we were leaking Github secrets in "deployer"
+  // TODO: check if "deployer" is a private key, and calculate its address and use it instead?
+  const { deployer, ...safeOptions } = options;
+
   // write env file
   await fs.writeJson("deployment-context-latest.json", {
-    options,
+    options: safeOptions,
     deployedContracts: Object.fromEntries(deployedContracts),
   });
 
