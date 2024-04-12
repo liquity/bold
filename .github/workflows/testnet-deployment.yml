@@ -107,6 +107,7 @@ jobs:
           echo 'NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=0xffB2BAa708261533b51D18394fd8AFd0E32aBC55|488' >> $APP_ENV_FILE
 
           pnpm tsx utils/deployment-artifacts-to-app-env.ts $DEPLOYMENT_CONTEXT_FILE $APP_ENV_FILE --append
+          cat $APP_ENV_FILE
 
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
