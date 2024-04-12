@@ -17,7 +17,8 @@ const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 const ZDeploymentContext = z.object({
   options: z.object({
     chainId: z.number(),
-    deployer: z.string(), // can be an address or a private key
+    // XXX hotfix: we were leaking Github secrets in "deployer"
+    // deployer: z.string(), // can be an address or a private key
     help: z.boolean(),
     openDemoTroves: z.boolean(),
     rpcUrl: z.string(),
