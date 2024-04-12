@@ -17,7 +17,7 @@ pnpm install
 ## How to develop
 
 ```sh
-# Run the anvil local node
+# Run the anvil local node (keep it running in a separate terminal)
 anvil
 
 # Deploy the contracts
