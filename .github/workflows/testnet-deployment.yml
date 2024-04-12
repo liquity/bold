@@ -55,10 +55,6 @@ jobs:
         with:
           version: nightly
 
-      - name: Dump Foundry config for debugging
-        working-directory: ./contracts
-        run: forge config --json
-
       - name: Run deployment tool
         working-directory: ./contracts
         run: ./deploy liquity-testnet --verify
