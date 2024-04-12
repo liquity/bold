@@ -24,33 +24,58 @@ const { fundAccounts } = require("./fundAccounts.js");
 const maxBytes32 = "0x" + "f".repeat(64);
 
 class DeploymentHelper {
-  static async deployLiquityCore() {
-    return await this.deployLiquityCoreHardhat();
+  static async deployLiquityCore(mocks = {}) {
+    return await this.deployLiquityCoreHardhat(mocks);
   }
 
-  static async deployLiquityCoreHardhat() {
+  static async deployLiquityCoreHardhat(mocks = {
+    PriceFeed: PriceFeedMock, // PriceFeed gets a mock by default
+  }) {
     const WETH = await ERC20.new("WETH", "WETH");
 
-    // Borrowing contracts
-    const activePool = await ActivePool.new(WETH.address);
-    const borrowerOperations = await BorrowerOperations.new(WETH.address);
-    const collSurplusPool = await CollSurplusPool.new(WETH.address);
-    const defaultPool = await DefaultPool.new(WETH.address);
-    const gasPool = await GasPool.new();
-    const priceFeedTestnet = await PriceFeedTestnet.new();
-    const priceFeed = await PriceFeedMock.new();
-    const sortedTroves = await SortedTroves.new();
-    const stabilityPool = await StabilityPool.new(WETH.address);
-    const troveManager = await TroveManager.new();
-    const boldToken = await BoldToken.new(
-      troveManager.address,
-      stabilityPool.address,
-      borrowerOperations.address,
-      activePool.address
+    // Contracts, with mocks overriding defaults
+    const Contracts = Object.fromEntries(
+      Object.entries({
+        ActivePool,
+        BorrowerOperations,
+        CollSurplusPool,
+        DefaultPool,
+        GasPool,
+        PriceFeedTestnet,
+        PriceFeedMock,
+        SortedTroves,
+        StabilityPool,
+        TroveManager,
+        BoldToken,
+        HintHelpers,
+      })
+      .map(([name, contract]) => [
+        name,
+        mocks[name] ?? contract
+      ])
     );
-    const mockInterestRouter = await MockInterestRouter.new();
 
-    const hintHelpers = await HintHelpers.new();
+    // Borrowing contracts
+    const activePool = await Contracts.ActivePool.new(WETH.address);
+    const borrowerOperations = await Contracts.BorrowerOperations.new(WETH.address);
+    const collSurplusPool = await Contracts.CollSurplusPool.new(WETH.address);
+    const defaultPool = await Contracts.DefaultPool.new(WETH.address);
+    const gasPool = await Contracts.GasPool.new();
+    const priceFeedTestnet = await Contracts.PriceFeedTestnet.new();
+    const priceFeed = await Contracts.PriceFeedMock.new();
+    const sortedTroves = await Contracts.SortedTroves.new();
+    const stabilityPool = await Contracts.StabilityPool.new(WETH.address);
+    const troveManager = await Contracts.TroveManager.new();
+
+    const { boldToken } = await this.deployBoldToken({
+      troveManager,
+      stabilityPool,
+      borrowerOperations,
+      activePool,
+    }, Contracts.BoldToken)
+
+    const mockInterestRouter = await MockInterestRouter.new();
+    const hintHelpers = await Contracts.HintHelpers.new();
       
     // // Needed?
     // const price = await priceFeed.getPrice();
@@ -63,17 +88,17 @@ class DeploymentHelper {
 
     // TODO: setAsDeployed all above?
     
-    BoldToken.setAsDeployed(boldToken);
-    DefaultPool.setAsDeployed(defaultPool);
-    PriceFeedTestnet.setAsDeployed(priceFeedTestnet);
-    SortedTroves.setAsDeployed(sortedTroves);
-    TroveManager.setAsDeployed(troveManager);
-    ActivePool.setAsDeployed(activePool);
-    StabilityPool.setAsDeployed(stabilityPool);
-    GasPool.setAsDeployed(gasPool);
-    CollSurplusPool.setAsDeployed(collSurplusPool);
-    BorrowerOperations.setAsDeployed(borrowerOperations);
-    HintHelpers.setAsDeployed(hintHelpers);
+    Contracts.BoldToken.setAsDeployed(boldToken);
+    Contracts.DefaultPool.setAsDeployed(defaultPool);
+    Contracts.PriceFeedTestnet.setAsDeployed(priceFeedTestnet);
+    Contracts.SortedTroves.setAsDeployed(sortedTroves);
+    Contracts.TroveManager.setAsDeployed(troveManager);
+    Contracts.ActivePool.setAsDeployed(activePool);
+    Contracts.StabilityPool.setAsDeployed(stabilityPool);
+    Contracts.GasPool.setAsDeployed(gasPool);
+    Contracts.CollSurplusPool.setAsDeployed(collSurplusPool);
+    Contracts.BorrowerOperations.setAsDeployed(borrowerOperations);
+    Contracts.HintHelpers.setAsDeployed(hintHelpers);
     MockInterestRouter.setAsDeployed(mockInterestRouter);
 
     const coreContracts = {
@@ -94,8 +119,8 @@ class DeploymentHelper {
     return coreContracts;
   }
 
-  static async deployBoldToken(contracts) {
-    contracts.boldToken = await BoldToken.new(
+  static async deployBoldToken(contracts, MockedBoldToken = BoldToken) {
+    contracts.boldToken = await MockedBoldToken.new(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
       contracts.borrowerOperations.address,

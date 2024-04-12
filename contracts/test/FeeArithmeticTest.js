@@ -1,8 +1,8 @@
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
 const Decimal = require("decimal.js");
-const deploymentHelper = require("../utils/deploymentHelpers.js")
 const { BNConverter } = require("../utils/BNConverter.js")
 const testHelpers = require("../utils/testHelpers.js")
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol")
 const LiquityMathTester = artifacts.require("./LiquityMathTester.sol")
 
@@ -331,17 +331,23 @@ contract('Fee arithmetic tests', async accounts => {
     [919877008002166000, 85, 826094891277916],
   ]
 
-  before(async () => {
-    troveManagerTester = await TroveManagerTester.new()
-    TroveManagerTester.setAsDeployed(troveManagerTester)
+  const deployFixture = createDeployAndFundFixture({
+    callback: async () => {
+      const troveManagerTester = await TroveManagerTester.new()
+      TroveManagerTester.setAsDeployed(troveManagerTester)
 
-    mathTester = await LiquityMathTester.new()
-    LiquityMathTester.setAsDeployed(mathTester)
-  })
+      const mathTester = await LiquityMathTester.new()
+      LiquityMathTester.setAsDeployed(mathTester)
+
+      return { mathTester, troveManagerTester }
+    }
+  });
 
   beforeEach(async () => {
-    contracts = await deploymentHelper.deployLiquityCore()
-    await deploymentHelper.connectCoreContracts(contracts)
+    const result = await deployFixture()
+    contracts = result.contracts
+    troveManagerTester = result.troveManagerTester
+    mathTester = result.mathTester
   })
 
   it("minutesPassedSinceLastFeeOp(): returns minutes passed for no time increase", async () => {

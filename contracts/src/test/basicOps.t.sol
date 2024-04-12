@@ -46,11 +46,11 @@ contract BasicOps is DevTestSetup {
 
         uint256 trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 2);
-       
+
         vm.startPrank(B);
         borrowerOperations.closeTrove(B_Id);
         vm.stopPrank();
-    
+
         // Check Troves count reduced by 1
         trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
@@ -66,7 +66,7 @@ contract BasicOps is DevTestSetup {
         assertGt(debt_1, 0);
         uint256 coll_1 = troveManager.getTroveColl(A_Id);
         assertGt(coll_1, 0);
- 
+
         // Adjust trove
         borrowerOperations.adjustTrove(A_Id, 1e18, 1e18, true, 500e18,  true);
 
@@ -94,8 +94,6 @@ contract BasicOps is DevTestSetup {
 
         // B is now first in line to get redeemed, as they both have the same interest rate,
         // but B's Trove is younger.
-        
-        vm.warp(block.timestamp + troveManager.BOOTSTRAP_PERIOD() + 1);
 
         uint256 redemptionAmount = 1000e18;  // 1k BOLD
 
@@ -106,7 +104,7 @@ contract BasicOps is DevTestSetup {
             10,
             1e18
         );
-       
+
         // Check B's coll and debt reduced
         uint256 debt_2 = troveManager.getTroveDebt(B_Id);
         assertLt(debt_2, debt_1);

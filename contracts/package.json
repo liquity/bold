@@ -7,8 +7,8 @@
     "lib": "lib"
   },
   "scripts": {
-    "test": "hardhat test",
     "format": "forge fmt && dprint fmt",
+    "test": "hardhat test --parallel",
     "coverage": "hardhat coverage"
   },
   "repository": "github:liquity/bold",

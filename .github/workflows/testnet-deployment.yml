@@ -8,12 +8,12 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/deploy-testnet.yml"
+      - ".github/workflows/testnet-deployment.yml"
       - "contracts/**"
       - "frontend/**"
   pull_request:
     paths:
-      - ".github/workflows/deploy-testnet.yml"
+      - ".github/workflows/testnet-deployment.yml"
       - "contracts/**"
 
 env:
@@ -27,7 +27,6 @@ concurrency:
 jobs:
   deploy-contracts:
     name: Deploy contracts
-    if: false # Disable contracts deployment for now
     runs-on: ubuntu-latest
     steps:
       - name: Git checkout
@@ -49,6 +48,7 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+        working-directory: ./contracts
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -70,6 +70,7 @@ jobs:
   deploy-app:
     name: Deploy app
     runs-on: ubuntu-latest
+    needs: deploy-contracts
     if: ${{ github.event_name != 'pull_request' }}
     steps:
       - name: Git checkout
@@ -80,11 +81,14 @@ jobs:
         with:
           version: 8
 
+      - name: Install dependencies
+        run: pnpm install
+        working-directory: contracts
+
       - name: Install Vercel CLI
         run: pnpm install --global vercel@canary
 
       - name: Download deployment context
-        if: false # Disable contracts deployment for now
         uses: actions/download-artifact@v4
         with:
           name: deployment-context
@@ -92,10 +96,12 @@ jobs:
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
+      - name: Prepare Environment from Latest Deployment Context
+        run: pnpm tsx utils/deployment-artifacts-to-app-env.ts ../deployment-context-latest.json ../frontend/.env.local
+        working-directory: contracts
+
       - name: Build Project Artifacts
-        run: |
-          test -f ./deployment-context-latest.json && cat ./deployment-context-latest.json | pn tsx contracts/utils/deployment-artifacts-to-next-env.ts > ./frontend/.env.local
-          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Deploy Project Artifacts to Vercel
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

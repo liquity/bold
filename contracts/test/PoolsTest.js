@@ -4,36 +4,38 @@ const DefaultPool = artifacts.require("./DefaultPool.sol")
 const NonPayableSwitch = artifacts.require("./NonPayableSwitch.sol")
 const ERC20 = artifacts.require("./ERC20MinterMock.sol");
 
-const testHelpers = require("../utils/testHelpers.js")
+const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
+const { TestHelper: th } = require("../utils/testHelpers.js")
 
-const th = testHelpers.TestHelper
-const dec = th.dec
+const { dec } = th
 
 const _minus_1_Ether = web3.utils.toWei('-1', 'ether')
 
 contract('StabilityPool', async accounts => {
-  /* mock* are EOA’s, temporarily used to call protected functions.
-  TODO: Replace with mock contracts, and later complete transactions from EOA
-  */
-  let stabilityPool
-  let WETH
 
   const [owner, alice] = accounts;
 
-  beforeEach(async () => {
-    WETH = await ERC20.new("WETH", "WETH");
-    stabilityPool = await StabilityPool.new(WETH.address)
-    const mockActivePoolAddress = (await NonPayableSwitch.new()).address
-    const dumbContractAddress = (await NonPayableSwitch.new()).address
+  const deployFixture = async () => {
+    /* mock* are EOA’s, temporarily used to call protected functions.
+    TODO: Replace with mock contracts, and later complete transactions from EOA
+    */
+    const WETH = await ERC20.new("WETH", "WETH");
+    const stabilityPool = await StabilityPool.new(WETH.address)
+    const { address: mockActivePoolAddress } = await NonPayableSwitch.new()
+    const { address: dumbContractAddress } = await NonPayableSwitch.new()
     await stabilityPool.setAddresses(dumbContractAddress, dumbContractAddress, mockActivePoolAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
-  })
+
+    return stabilityPool
+  }
 
   it('getETHBalance(): gets the recorded ETH balance', async () => {
+    const stabilityPool = await loadFixture(deployFixture)
     const recordedETHBalance = await stabilityPool.getETHBalance()
     assert.equal(recordedETHBalance, 0)
   })
 
   it('getTotalBoldDeposits(): gets the recorded BOLD balance', async () => {
+    const stabilityPool = await loadFixture(deployFixture)
     const recordedETHBalance = await stabilityPool.getTotalBoldDeposits()
     assert.equal(recordedETHBalance, 0)
   })
@@ -44,13 +46,24 @@ contract('ActivePool', async accounts => {
   let activePool, mockBorrowerOperations, mockTroveManager, WETH
 
   const [owner, alice] = accounts;
-  beforeEach(async () => {
-    WETH = await ERC20.new("WETH", "WETH");
-    activePool = await ActivePool.new(WETH.address)
-    mockBorrowerOperations = await NonPayableSwitch.new()
-    mockTroveManager = await NonPayableSwitch.new()
-    const dumbContractAddress = (await NonPayableSwitch.new()).address
+
+  const deployFixture = async () => {
+    const WETH = await ERC20.new("WETH", "WETH");
+    const activePool = await ActivePool.new(WETH.address)
+    const mockBorrowerOperations = await NonPayableSwitch.new()
+    const mockTroveManager = await NonPayableSwitch.new()
+    const { address: dumbContractAddress } = await NonPayableSwitch.new()
     await activePool.setAddresses(mockBorrowerOperations.address, mockTroveManager.address, dumbContractAddress, dumbContractAddress, dumbContractAddress, dumbContractAddress)
+
+    return { activePool, mockBorrowerOperations, mockTroveManager, WETH }
+  }
+
+  beforeEach(async () => {
+    const result = await loadFixture(deployFixture)
+    WETH = result.WETH
+    activePool = result.activePool
+    mockBorrowerOperations = result.mockBorrowerOperations
+    mockTroveManager = result.mockTroveManager
   })
 
   it('getETHBalance(): gets the recorded ETH balance', async () => {
@@ -116,7 +129,7 @@ contract('ActivePool', async accounts => {
     assert.equal(activePool_BalanceBeforeTx, dec(2, 'ether'))
 
     // send ether from pool to alice
-    th.logBN("eth bal", await WETH.balanceOf(activePool.address))
+    // th.logBN("eth bal", await WETH.balanceOf(activePool.address))
     //await activePool.sendETH(alice, dec(1, 'ether'), { from: mockBorrowerOperationsAddress })
     const sendETHData = th.getTransactionData('sendETH(address,uint256)', [alice, web3.utils.toHex(dec(1, 'ether'))])
     const tx2 = await mockBorrowerOperations.forward(activePool.address, sendETHData, { from: owner })
@@ -134,16 +147,27 @@ contract('ActivePool', async accounts => {
 
 contract('DefaultPool', async accounts => {
  
-  let defaultPool, mockTroveManager, mockActivePool, WETH
+   let defaultPool, mockTroveManager, mockActivePool, WETH
 
   const [owner, alice] = accounts;
-  beforeEach(async () => {
-    WETH = await ERC20.new("WETH", "WETH");
-    defaultPool = await DefaultPool.new(WETH.address)
-    mockTroveManager = await NonPayableSwitch.new()
-    mockActivePool = await NonPayableSwitch.new()
+
+  const deployFixture = async () => {
+    const WETH = await ERC20.new("WETH", "WETH");
+    const defaultPool = await DefaultPool.new(WETH.address)
+    const mockTroveManager = await NonPayableSwitch.new()
+    const mockActivePool = await NonPayableSwitch.new()
     await mockActivePool.setETH(WETH.address)
     await defaultPool.setAddresses(mockTroveManager.address, mockActivePool.address)
+
+    return { defaultPool, mockTroveManager, mockActivePool, WETH }
+  }
+
+  beforeEach(async () => {
+    const result = await loadFixture(deployFixture)
+    WETH = result.WETH
+    defaultPool = result.defaultPool
+    mockTroveManager = result.mockTroveManager
+    mockActivePool = result.mockActivePool
   })
 
   it('getETHBalance(): gets the recorded BOLD balance', async () => {

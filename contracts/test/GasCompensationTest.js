@@ -1,22 +1,18 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const testHelpers = require("../utils/testHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
+const { TestHelper: th, MoneyValues: mv } = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol");
 const BorrowerOperationsTester = artifacts.require(
   "./BorrowerOperationsTester.sol"
 );
-const BoldToken = artifacts.require("BoldToken");
 const ERC20 = artifacts.require("./ERC20MinterMock.sol");
 
-const th = testHelpers.TestHelper;
-const dec = th.dec;
-const toBN = th.toBN;
-const mv = testHelpers.MoneyValues;
-const ZERO_ADDRESS = th.ZERO_ADDRESS;
+const { dec, toBN, ZERO_ADDRESS } = th;
 
 const GAS_PRICE = 10000000;
 
 contract("Gas compensation tests", async (accounts) => {
+  const fundedAccounts = accounts.slice(0, 16);
+
   const [
     owner,
     liquidator,
@@ -34,20 +30,18 @@ contract("Gas compensation tests", async (accounts) => {
     defaulter_3,
     defaulter_4,
     whale,
-  ] = accounts;
+  ] = fundedAccounts;
 
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
 
+  let contracts;
+
   let priceFeed;
   let boldToken;
-  let sortedTroves;
   let troveManager;
-  let activePool;
   let stabilityPool;
-  let defaultPool;
   let borrowerOperations;
 
-  let contracts;
   let troveManagerTester;
   let borrowerOperationsTester;
 
@@ -61,6 +55,11 @@ contract("Gas compensation tests", async (accounts) => {
     }
   };
 
+  const deployFixture = createDeployAndFundFixture({
+    accounts: fundedAccounts,
+    mocks: { TroveManager: TroveManagerTester },
+  });
+
   before(async () => {
     troveManagerTester = await TroveManagerTester.new();
     const WETH = await ERC20.new("WETH", "WETH");
@@ -71,44 +70,13 @@ contract("Gas compensation tests", async (accounts) => {
   });
 
   beforeEach(async () => {
-    contracts = await deploymentHelper.deployLiquityCore();
-    contracts.troveManager = await TroveManagerTester.new();
-    contracts.boldToken = await BoldToken.new(
-      contracts.troveManager.address,
-      contracts.stabilityPool.address,
-      contracts.borrowerOperations.address,
-      contracts.activePool.address
-    );
-
+    const result = await deployFixture();
+    contracts = result.contracts;
     priceFeed = contracts.priceFeedTestnet;
     boldToken = contracts.boldToken;
-    sortedTroves = contracts.sortedTroves;
     troveManager = contracts.troveManager;
-    activePool = contracts.activePool;
     stabilityPool = contracts.stabilityPool;
-    defaultPool = contracts.defaultPool;
     borrowerOperations = contracts.borrowerOperations;
-
-    await deploymentHelper.connectCoreContracts(contracts);
-
-    await fundAccounts([
-      owner,
-      liquidator,
-      alice,
-      bob,
-      carol,
-      dennis,
-      erin,
-      flyn,
-      graham,
-      harriet,
-      ida,
-      defaulter_1,
-      defaulter_2,
-      defaulter_3,
-      defaulter_4,
-      whale,
-    ], contracts.WETH);
   });
 
   // --- Raw gas compensation calculations ---

@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { argv, echo, stdin } from "zx";
+import { argv, echo, fs } from "zx";
 
 const HELP = `
 converts the deployment artifacts created by ./deploy into environment
 variables to be used by the Next.js app located in frontend/.
 
 Usage:
-  ./deployment-artifacts-to-app-env.ts < deployment-latest.json
+  ./deployment-artifacts-to-app-env.ts <INPUT_JSON> <OUTPUT_ENV>
 
 Options:
   --help, -h                               Show this help message.
@@ -17,7 +17,8 @@ const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 const ZDeploymentContext = z.object({
   options: z.object({
     chainId: z.number(),
-    deployer: z.string(), // can be an address or a private key
+    // XXX hotfix: we were leaking Github secrets in "deployer"
+    // deployer: z.string(), // can be an address or a private key
     help: z.boolean(),
     openDemoTroves: z.boolean(),
     rpcUrl: z.string(),
@@ -32,18 +33,19 @@ type DeploymentContext = z.infer<typeof ZDeploymentContext>;
 const NULL_ADDRESS = `0x${"0".repeat(40)}`;
 
 export async function main() {
-  if ("help" in argv || "h" in argv) {
+  if ("help" in argv || "h" in argv || argv._.length !== 2) {
     echo`${HELP}`;
     process.exit(0);
   }
 
-  const deploymentContext = parseDeploymentContext(await stdin());
+  const deploymentContext = parseDeploymentContext(await fs.readFile(argv._[0], "utf-8"));
 
-  console.log(
-    objectToEnvironmentVariables(
-      deploymentContextToAppEnvVariables(deploymentContext),
-    ),
+  const outputEnv = objectToEnvironmentVariables(
+    deploymentContextToAppEnvVariables(deploymentContext)
   );
+
+  await fs.writeFile(argv._[1], outputEnv);
+  console.log(outputEnv);
 }
 
 function objectToEnvironmentVariables(object: Record<string, unknown>) {
