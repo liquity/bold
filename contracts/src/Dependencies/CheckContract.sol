@@ -2,7 +2,6 @@
 
 pragma solidity 0.8.18;
 
-
 contract CheckContract {
     /**
      * Check that the account is an already deployed non-destroyed contract.
@@ -13,7 +12,9 @@ contract CheckContract {
 
         uint256 size;
         // solhint-disable-next-line no-inline-assembly
-        assembly { size := extcodesize(_account) }
+        assembly {
+            size := extcodesize(_account)
+        }
         require(size > 0, "Account code size cannot be zero");
     }
 }

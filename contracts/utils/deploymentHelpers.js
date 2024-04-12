@@ -15,7 +15,7 @@ const MockInterestRouter = artifacts.require("./MockInterestRouter.sol");
 const ERC20 = artifacts.require("./ERC20MinterMock.sol");
 //  "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol"
 //  "../node_modules/@openzeppelin/contracts/build/contracts/ERC20PresetMinterPauser.json"
-//);
+// );
 
 const { web3, ethers } = require("hardhat");
 const { accountsList } = require("../hardhatAccountsList2k.js");
@@ -49,10 +49,10 @@ class DeploymentHelper {
         BoldToken,
         HintHelpers,
       })
-      .map(([name, contract]) => [
-        name,
-        mocks[name] ?? contract
-      ])
+        .map(([name, contract]) => [
+          name,
+          mocks[name] ?? contract,
+        ]),
     );
 
     // Borrowing contracts
@@ -72,11 +72,11 @@ class DeploymentHelper {
       stabilityPool,
       borrowerOperations,
       activePool,
-    }, Contracts.BoldToken)
+    }, Contracts.BoldToken);
 
     const mockInterestRouter = await MockInterestRouter.new();
     const hintHelpers = await Contracts.HintHelpers.new();
-      
+
     // // Needed?
     // const price = await priceFeed.getPrice();
     // const uint128Max = web3.utils.toBN(
@@ -87,7 +87,7 @@ class DeploymentHelper {
     // );
 
     // TODO: setAsDeployed all above?
-    
+
     Contracts.BoldToken.setAsDeployed(boldToken);
     Contracts.DefaultPool.setAsDeployed(defaultPool);
     Contracts.PriceFeedTestnet.setAsDeployed(priceFeedTestnet);
@@ -114,7 +114,7 @@ class DeploymentHelper {
       collSurplusPool,
       borrowerOperations,
       hintHelpers,
-      mockInterestRouter
+      mockInterestRouter,
     };
     return coreContracts;
   }
@@ -124,25 +124,25 @@ class DeploymentHelper {
       contracts.troveManager.address,
       contracts.stabilityPool.address,
       contracts.borrowerOperations.address,
-      contracts.activePool.address
+      contracts.activePool.address,
     );
     return contracts;
   }
 
   // Connect contracts to their dependencies
   static async connectCoreContracts(contracts) {
-      // set contracts in the Trove Manager
-      await contracts.troveManager.setAddresses(
-        contracts.borrowerOperations.address,
-        contracts.activePool.address,
-        contracts.defaultPool.address,
-        contracts.stabilityPool.address,
-        contracts.gasPool.address,
-        contracts.collSurplusPool.address,
-        contracts.priceFeedTestnet.address,
-        contracts.boldToken.address,
-        contracts.sortedTroves.address
-      );
+    // set contracts in the Trove Manager
+    await contracts.troveManager.setAddresses(
+      contracts.borrowerOperations.address,
+      contracts.activePool.address,
+      contracts.defaultPool.address,
+      contracts.stabilityPool.address,
+      contracts.gasPool.address,
+      contracts.collSurplusPool.address,
+      contracts.priceFeedTestnet.address,
+      contracts.boldToken.address,
+      contracts.sortedTroves.address,
+    );
 
     await contracts.stabilityPool.setAddresses(
       contracts.borrowerOperations.address,
@@ -150,12 +150,12 @@ class DeploymentHelper {
       contracts.activePool.address,
       contracts.boldToken.address,
       contracts.sortedTroves.address,
-      contracts.priceFeedTestnet.address
+      contracts.priceFeedTestnet.address,
     );
     // set TroveManager addr in SortedTroves
     await contracts.sortedTroves.setAddresses(
       contracts.troveManager.address,
-      contracts.borrowerOperations.address
+      contracts.borrowerOperations.address,
     );
 
     // set contracts in BorrowerOperations
@@ -168,8 +168,8 @@ class DeploymentHelper {
       contracts.collSurplusPool.address,
       contracts.priceFeedTestnet.address,
       contracts.sortedTroves.address,
-      contracts.boldToken.address
-      //contracts.stETH.address
+      contracts.boldToken.address,
+      // contracts.stETH.address
     );
 
     await contracts.activePool.setAddresses(
@@ -178,14 +178,14 @@ class DeploymentHelper {
       contracts.stabilityPool.address,
       contracts.defaultPool.address,
       contracts.boldToken.address,
-      contracts.mockInterestRouter.address
-      //contracts.stETH.address,
+      contracts.mockInterestRouter.address,
+      // contracts.stETH.address,
     );
 
     await contracts.defaultPool.setAddresses(
       contracts.troveManager.address,
       contracts.activePool.address,
-      //contracts.stETH.address
+      // contracts.stETH.address
     );
 
     await contracts.collSurplusPool.setAddresses(
@@ -197,7 +197,7 @@ class DeploymentHelper {
     // set contracts in HintHelpers
     await contracts.hintHelpers.setAddresses(
       contracts.sortedTroves.address,
-      contracts.troveManager.address
+      contracts.troveManager.address,
     );
   }
 }

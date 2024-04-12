@@ -8,9 +8,8 @@ import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 
-
 contract HintHelpers is LiquityBase, Ownable, CheckContract {
-    string constant public NAME = "HintHelpers";
+    string public constant NAME = "HintHelpers";
 
     ISortedTroves public sortedTroves;
     ITroveManager public troveManager;
@@ -22,13 +21,7 @@ contract HintHelpers is LiquityBase, Ownable, CheckContract {
 
     // --- Dependency setters ---
 
-    function setAddresses(
-        address _sortedTrovesAddress,
-        address _troveManagerAddress
-    )
-        external
-        onlyOwner
-    {
+    function setAddresses(address _sortedTrovesAddress, address _troveManagerAddress) external onlyOwner {
         checkContract(_sortedTrovesAddress);
         checkContract(_troveManagerAddress);
 
@@ -52,12 +45,12 @@ contract HintHelpers is LiquityBase, Ownable, CheckContract {
     Submitting numTrials = k * sqrt(length), with k = 15 makes it very, very likely that the ouput id will
     be <= sqrt(length) positions away from the correct insert position.
     */
-    function getApproxHint(uint _interestRate, uint _numTrials, uint _inputRandomSeed)
+    function getApproxHint(uint256 _interestRate, uint256 _numTrials, uint256 _inputRandomSeed)
         external
         view
-        returns (uint256 hintId, uint diff, uint latestRandomSeed)
+        returns (uint256 hintId, uint256 diff, uint256 latestRandomSeed)
     {
-        uint arrayLength = troveManager.getTroveIdsCount();
+        uint256 arrayLength = troveManager.getTroveIdsCount();
 
         if (arrayLength == 0) {
             return (0, 0, _inputRandomSeed);
@@ -67,17 +60,17 @@ contract HintHelpers is LiquityBase, Ownable, CheckContract {
         diff = LiquityMath._getAbsoluteDifference(_interestRate, troveManager.getTroveAnnualInterestRate(hintId));
         latestRandomSeed = _inputRandomSeed;
 
-        uint i = 1;
+        uint256 i = 1;
 
         while (i < _numTrials) {
-            latestRandomSeed = uint(keccak256(abi.encodePacked(latestRandomSeed)));
+            latestRandomSeed = uint256(keccak256(abi.encodePacked(latestRandomSeed)));
 
-            uint arrayIndex = latestRandomSeed % arrayLength;
+            uint256 arrayIndex = latestRandomSeed % arrayLength;
             uint256 currentId = troveManager.getTroveFromTroveIdsArray(arrayIndex);
-            uint currentInterestRate = troveManager.getTroveAnnualInterestRate(currentId);
+            uint256 currentInterestRate = troveManager.getTroveAnnualInterestRate(currentId);
 
             // check if abs(current - IR) > abs(closest - IR), and update closest if current is closer
-            uint currentDiff = LiquityMath._getAbsoluteDifference(currentInterestRate, _interestRate);
+            uint256 currentDiff = LiquityMath._getAbsoluteDifference(currentInterestRate, _interestRate);
 
             if (currentDiff < diff) {
                 diff = currentDiff;

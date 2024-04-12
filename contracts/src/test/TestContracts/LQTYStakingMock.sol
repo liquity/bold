@@ -3,24 +3,23 @@
 pragma solidity 0.8.18;
 
 contract LQTYStakingMock {
-    function setAddresses
-    (
+    function setAddresses(
         address _lqtyTokenAddress,
         address _boldTokenAddress,
-        address _troveManagerAddress, 
+        address _troveManagerAddress,
         address _borrowerOperationsAddress,
         address _activePoolAddress
-    )  external {}
+    ) external {}
 
-    function stake(uint _LQTYamount) external {}
+    function stake(uint256 _LQTYamount) external {}
 
-    function unstake(uint _LQTYamount) external {}
+    function unstake(uint256 _LQTYamount) external {}
 
-    function increaseF_ETH(uint _ETHFee) external {}
+    function increaseF_ETH(uint256 _ETHFee) external {}
 
-    function increaseF_bold(uint _LQTYFee) external {}
+    function increaseF_bold(uint256 _LQTYFee) external {}
 
-    function getPendingETHGain(address _user) external view returns (uint) {}
+    function getPendingETHGain(address _user) external view returns (uint256) {}
 
-    function getPendingBoldGain(address _user) external view returns (uint) {}
+    function getPendingBoldGain(address _user) external view returns (uint256) {}
 }

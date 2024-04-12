@@ -193,12 +193,12 @@ function isDeploymentLog(log: unknown): log is {
     && "transactions" in log
     && Array.isArray(log.transactions)
     && log.transactions
-      .filter(tx => (
+      .filter((tx) => (
         typeof tx === "object"
         && tx !== null
         && tx.transactionType === "CREATE"
       ))
-      .every(tx => (
+      .every((tx) => (
         typeof tx.contractName === "string"
         && typeof tx.contractAddress === "string"
       ))

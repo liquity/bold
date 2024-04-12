@@ -15,7 +15,13 @@ interface ISortedTroves {
     function setAddresses(address _troveManagerAddress, address _borrowerOperationsAddress) external;
 
     function insert(uint256 _id, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external;
-    function insertIntoBatch(uint256 _troveId, BatchId _batchId, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external;
+    function insertIntoBatch(
+        uint256 _troveId,
+        BatchId _batchId,
+        uint256 _annualInterestRate,
+        uint256 _prevId,
+        uint256 _nextId
+    ) external;
 
     function remove(uint256 _id) external;
     function removeFromBatch(uint256 _id) external;
@@ -36,8 +42,14 @@ interface ISortedTroves {
     function getNext(uint256 _id) external view returns (uint256);
     function getPrev(uint256 _id) external view returns (uint256);
 
-    function validInsertPosition(uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external view returns (bool);
-    function findInsertPosition(uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external view returns (uint256, uint256);
+    function validInsertPosition(uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId)
+        external
+        view
+        returns (bool);
+    function findInsertPosition(uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId)
+        external
+        view
+        returns (uint256, uint256);
 
     // Public state variable getters
     function borrowerOperationsAddress() external view returns (address);

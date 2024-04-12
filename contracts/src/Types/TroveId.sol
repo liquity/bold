@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.18;
 
-import { ROOT_NODE_ID } from "../SortedTroves.sol";
+import {ROOT_NODE_ID} from "../SortedTroves.sol";
 
 type TroveId is uint256;
 

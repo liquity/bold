@@ -12,7 +12,7 @@ contract.skip(
 
     const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(
       997,
-      1000
+      1000,
     );
     const [
       owner,
@@ -78,8 +78,7 @@ contract.skip(
           extraParams: { from: carol },
         });
 
-        const totalLiquidatedDebt =
-          A_totalDebt.add(B_totalDebt).add(C_totalDebt);
+        const totalLiquidatedDebt = A_totalDebt.add(B_totalDebt).add(C_totalDebt);
 
         await openTrove({
           ICR: toBN(dec(340, 16)),
@@ -173,7 +172,7 @@ contract.skip(
 
         // liquidate collaterals with the gas compensation fee subtracted
         const expectedCollateralLiquidatedA = th.applyLiquidationFee(
-          A_totalDebt.mul(mv._MCR).div(price)
+          A_totalDebt.mul(mv._MCR).div(price),
         );
         const expectedCollateralLiquidatedC = th.applyLiquidationFee(C_coll);
         // Stability Pool gains
@@ -190,17 +189,17 @@ contract.skip(
         assert.equal(
           spEthAfter.sub(spEthBefore).toString(),
           expectedCollateralLiquidatedA.toString(),
-          "Stability Pool ETH doesn’t match"
+          "Stability Pool ETH doesn’t match",
         );
         assert.equal(
           spBoldBefore.sub(spBoldAfter).toString(),
           A_totalDebt.toString(),
-          "Stability Pool Bold doesn’t match"
+          "Stability Pool Bold doesn’t match",
         );
         assert.equal(
           realGainInBold.toString(),
           expectedGainInBold.toString(),
-          "Stability Pool gains don’t match"
+          "Stability Pool gains don’t match",
         );
       });
 
@@ -218,8 +217,7 @@ contract.skip(
           extraParams: { from: carol },
         });
 
-        const totalLiquidatedDebt =
-          A_totalDebt.add(B_totalDebt).add(C_totalDebt);
+        const totalLiquidatedDebt = A_totalDebt.add(B_totalDebt).add(C_totalDebt);
 
         await openTrove({
           ICR: toBN(dec(310, 16)),
@@ -264,5 +262,5 @@ contract.skip(
         assert.equal((await troveManager.Troves(carol))[3], "1");
       });
     });
-  }
+  },
 );

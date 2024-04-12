@@ -9,7 +9,7 @@ import "./Interfaces/IPriceFeedTestnet.sol";
 * variable. The contract does not connect to a live Chainlink price feed. 
 */
 contract PriceFeedTestnet is IPriceFeedTestnet {
-    event LastGoodPriceUpdated(uint _lastGoodPrice);
+    event LastGoodPriceUpdated(uint256 _lastGoodPrice);
 
     uint256 private _price = 200 * 1e18;
 

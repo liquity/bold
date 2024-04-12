@@ -1,4 +1,4 @@
-const { time } = require('@nomicfoundation/hardhat-network-helpers');
+const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const {
   MoneyValues: mv,
   TestHelper: th,
@@ -61,19 +61,18 @@ contract("StabilityPool", async (accounts) => {
   let defaultPool;
   let borrowerOperations;
 
-  const getOpenTroveBoldAmount = async (totalDebt) =>
-    th.getOpenTroveBoldAmount(contracts, totalDebt);
+  const getOpenTroveBoldAmount = async (totalDebt) => th.getOpenTroveBoldAmount(contracts, totalDebt);
   const openTrove = async (params) => th.openTrove(contracts, params);
   const assertRevert = th.assertRevert;
 
   const deployFixture = createDeployAndFundFixture({
     accounts: fundedAccounts.slice(0, 20),
-    mocks: { TroveManager: TroveManagerTester }
+    mocks: { TroveManager: TroveManagerTester },
   });
 
   describe("Stability Pool Mechanisms", async () => {
     beforeEach(async () => {
-      const result = await deployFixture()
+      const result = await deployFixture();
       contracts = result.contracts;
       priceFeed = contracts.priceFeed;
       boldToken = contracts.boldToken;
@@ -101,8 +100,7 @@ contract("StabilityPool", async (accounts) => {
       await stabilityPool.provideToSP(200, { from: alice });
 
       // check Bold balances after
-      const stabilityPool_Bold_After =
-        await stabilityPool.getTotalBoldDeposits();
+      const stabilityPool_Bold_After = await stabilityPool.getTotalBoldDeposits();
       assert.equal(stabilityPool_Bold_After, 200);
     });
 
@@ -123,9 +121,7 @@ contract("StabilityPool", async (accounts) => {
       await stabilityPool.provideToSP(200, { from: alice });
 
       // check user's deposit record after
-      const alice_depositRecord_After = (
-        await stabilityPool.deposits(alice)
-      );
+      const alice_depositRecord_After = await stabilityPool.deposits(alice);
       assert.equal(alice_depositRecord_After, 200);
     });
 
@@ -148,7 +144,7 @@ contract("StabilityPool", async (accounts) => {
       const alice_BoldBalance_After = await boldToken.balanceOf(alice);
       assert.equal(
         alice_BoldBalance_Before.sub(alice_BoldBalance_After),
-        "200"
+        "200",
       );
     });
 
@@ -295,8 +291,7 @@ contract("StabilityPool", async (accounts) => {
       await troveManager.liquidate(defaulter_1_TroveId, { from: owner }); // 180 Bold closed
       await troveManager.liquidate(defaulter_2_TroveId, { from: owner }); // 180 Bold closed
 
-      const alice_compoundedDeposit_1 =
-        await stabilityPool.getCompoundedBoldDeposit(alice);
+      const alice_compoundedDeposit_1 = await stabilityPool.getCompoundedBoldDeposit(alice);
 
       // Alice makes deposit #2
       const alice_topUp_1 = toBN(dec(100, 18));
@@ -309,7 +304,7 @@ contract("StabilityPool", async (accounts) => {
       ).toString();
       assert.equal(
         alice_compoundedDeposit_1.add(alice_topUp_1),
-        alice_newDeposit_1
+        alice_newDeposit_1,
       );
 
       // get system reward terms
@@ -338,8 +333,7 @@ contract("StabilityPool", async (accounts) => {
       // Defaulter 3 Trove is closed
       await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
 
-      const alice_compoundedDeposit_2 =
-        await stabilityPool.getCompoundedBoldDeposit(alice);
+      const alice_compoundedDeposit_2 = await stabilityPool.getCompoundedBoldDeposit(alice);
 
       const P_2 = await stabilityPool.P();
       const S_2 = await stabilityPool.epochToScaleToSum(0, 0);
@@ -383,7 +377,7 @@ contract("StabilityPool", async (accounts) => {
 
       const aliceTxPromise = stabilityPool.provideToSP(
         aliceBoldbal.add(toBN(1)),
-        { from: alice }
+        { from: alice },
       );
       await assertRevert(aliceTxPromise, "revert");
 
@@ -391,7 +385,7 @@ contract("StabilityPool", async (accounts) => {
 
       const bobTxPromise = stabilityPool.provideToSP(
         bobBoldbal.add(toBN(dec(235534, 18))),
-        { from: bob }
+        { from: bob },
       );
       await assertRevert(bobTxPromise, "revert");
     });
@@ -414,7 +408,7 @@ contract("StabilityPool", async (accounts) => {
       });
 
       const maxBytes32 = web3.utils.toBN(
-        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
       );
 
       // Alice attempts to deposit 2^256-1 Bold
@@ -466,11 +460,11 @@ contract("StabilityPool", async (accounts) => {
       const tx1 = await nonPayable.forward(stabilityPool.address, txData1);
 
       const gain_0 = await stabilityPool.getDepositorETHGain(
-        nonPayable.address
+        nonPayable.address,
       );
       assert.isTrue(
         gain_0.eq(toBN(0)),
-        "NonPayableSwitch should not have accumulated gains"
+        "NonPayableSwitch should not have accumulated gains",
       );
 
       // price drops: defaulters' Troves fall below MCR, nonPayable and whale Trove remain active
@@ -481,11 +475,11 @@ contract("StabilityPool", async (accounts) => {
       await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       const gain_1 = await stabilityPool.getDepositorETHGain(
-        nonPayable.address
+        nonPayable.address,
       );
       assert.isTrue(
         gain_1.gt(toBN(0)),
-        "NonPayableSwitch should have some accumulated gains"
+        "NonPayableSwitch should have some accumulated gains",
       );
 
       // NonPayableSwitch tries to make deposit #2: 100Bold (which also attempts to withdraw ETH gain)
@@ -495,7 +489,7 @@ contract("StabilityPool", async (accounts) => {
       ]);
       await th.assertRevert(
         nonPayable.forward(stabilityPool.address, txData2),
-        "StabilityPool: sending ETH failed"
+        "StabilityPool: sending ETH failed",
       );
     });
 
@@ -579,7 +573,7 @@ contract("StabilityPool", async (accounts) => {
         await stabilityPool.getDepositorETHGain(carol)
       ).toString();
 
-      //check non-zero Bold and ETHGain in the Stability Pool
+      // check non-zero Bold and ETHGain in the Stability Pool
       const BoldinSP = await stabilityPool.getTotalBoldDeposits();
       const ETHinSP = await stabilityPool.getETHBalance();
       assert.isTrue(BoldinSP.gt(mv._zeroBN));
@@ -591,7 +585,7 @@ contract("StabilityPool", async (accounts) => {
       });
       assert.equal(
         (await stabilityPool.getCompoundedBoldDeposit(dennis)).toString(),
-        dec(1000, 18)
+        dec(1000, 18),
       );
 
       const alice_BoldDeposit_After = (
@@ -696,7 +690,7 @@ contract("StabilityPool", async (accounts) => {
       });
       assert.equal(
         (await stabilityPool.getCompoundedBoldDeposit(dennis)).toString(),
-        dec(1000, 18)
+        dec(1000, 18),
       );
 
       const activeDebt_After = (await activePool.getRecordedDebtSum()).toString();
@@ -805,7 +799,7 @@ contract("StabilityPool", async (accounts) => {
       });
       assert.equal(
         (await stabilityPool.getCompoundedBoldDeposit(dennis)).toString(),
-        dec(1000, 18)
+        dec(1000, 18),
       );
 
       const whale_Debt_After = (await troveManager.Troves(whaleTroveId))[0].toString();
@@ -896,7 +890,7 @@ contract("StabilityPool", async (accounts) => {
       // Confirm Bob has a Stability deposit
       assert.equal(
         (await stabilityPool.getCompoundedBoldDeposit(bob)).toString(),
-        dec(1000, 18)
+        dec(1000, 18),
       );
 
       // Price drops
@@ -995,25 +989,25 @@ contract("StabilityPool", async (accounts) => {
         await stabilityPool.provideToSP(dec(100, 18), {
           from: A,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
       const B_GAS_Used = th.gasUsed(
         await stabilityPool.provideToSP(dec(200, 18), {
           from: B,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
       const C_GAS_Used = th.gasUsed(
         await stabilityPool.provideToSP(dec(300, 18), {
           from: C,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
       const D_GAS_Used = th.gasUsed(
         await stabilityPool.provideToSP(dec(400, 18), {
           from: D,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
 
       // ETH balances before minus gas used
@@ -1105,28 +1099,28 @@ contract("StabilityPool", async (accounts) => {
           from: A,
           gasPrice: GAS_PRICE,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
       const B_GAS_Used = th.gasUsed(
         await stabilityPool.provideToSP(dec(200, 18), {
           from: B,
           gasPrice: GAS_PRICE,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
       const C_GAS_Used = th.gasUsed(
         await stabilityPool.provideToSP(dec(300, 18), {
           from: C,
           gasPrice: GAS_PRICE,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
       const D_GAS_Used = th.gasUsed(
         await stabilityPool.provideToSP(dec(400, 18), {
           from: D,
           gasPrice: GAS_PRICE,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
 
       // ETH balances before minus gas used
@@ -1177,19 +1171,19 @@ contract("StabilityPool", async (accounts) => {
 
       await th.assertRevert(
         txPromise_A,
-        "StabilityPool: Amount must be non-zero"
+        "StabilityPool: Amount must be non-zero",
       );
       await th.assertRevert(
         txPromise_B,
-        "StabilityPool: Amount must be non-zero"
+        "StabilityPool: Amount must be non-zero",
       );
       await th.assertRevert(
         txPromise_C,
-        "StabilityPool: Amount must be non-zero"
+        "StabilityPool: Amount must be non-zero",
       );
       await th.assertRevert(
         txPromise_D,
-        "StabilityPool: Amount must be non-zero"
+        "StabilityPool: Amount must be non-zero",
       );
     });
 
@@ -1211,7 +1205,7 @@ contract("StabilityPool", async (accounts) => {
         from: alice,
       });
 
-       const alice_initialDeposit = (
+      const alice_initialDeposit = (
         await stabilityPool.deposits(alice)
       ).toString();
 
@@ -1235,7 +1229,7 @@ contract("StabilityPool", async (accounts) => {
       } catch (err) {
         assert.include(err.message, "revert");
         // TODO: infamous issue #99
-        //assert.include(err.message, "User must have a non-zero deposit")
+        // assert.include(err.message, "User must have a non-zero deposit")
       }
     });
 
@@ -1285,10 +1279,10 @@ contract("StabilityPool", async (accounts) => {
       }); // 170 Bold closed
 
       const [liquidatedDebt_1] = await th.getEmittedLiquidationValues(
-        liquidationTX_1
+        liquidationTX_1,
       );
       const [liquidatedDebt_2] = await th.getEmittedLiquidationValues(
-        liquidationTX_2
+        liquidationTX_2,
       );
 
       // Alice BoldLoss is ((15000/200000) * liquidatedDebt), for each liquidation
@@ -1296,40 +1290,39 @@ contract("StabilityPool", async (accounts) => {
         .mul(toBN(dec(15000, 18)))
         .div(toBN(dec(200000, 18)))
         .add(
-          liquidatedDebt_2.mul(toBN(dec(15000, 18))).div(toBN(dec(200000, 18)))
+          liquidatedDebt_2.mul(toBN(dec(15000, 18))).div(toBN(dec(200000, 18))),
         );
 
       const expectedCompoundedBoldDeposit_A = toBN(dec(15000, 18)).sub(
-        expectedBoldLoss_A
+        expectedBoldLoss_A,
       );
-      const compoundedBoldDeposit_A =
-        await stabilityPool.getCompoundedBoldDeposit(alice);
+      const compoundedBoldDeposit_A = await stabilityPool.getCompoundedBoldDeposit(alice);
 
       assert.isAtMost(
         th.getDifference(
           expectedCompoundedBoldDeposit_A,
-          compoundedBoldDeposit_A
+          compoundedBoldDeposit_A,
         ),
-        100000
+        100000,
       );
 
       // Alice retrieves part of her entitled Bold: 9000 Bold
       await stabilityPool.withdrawFromSP(dec(9000, 18), { from: alice });
 
       const expectedNewDeposit_A = compoundedBoldDeposit_A.sub(
-        toBN(dec(9000, 18))
+        toBN(dec(9000, 18)),
       );
 
       // check Alice's deposit has been updated to equal her compounded deposit minus her withdrawal */
       const newDeposit = (await stabilityPool.deposits(alice)).toString();
       assert.isAtMost(
         th.getDifference(newDeposit, expectedNewDeposit_A),
-        100000
+        100000,
       );
 
       // Expect Alice has withdrawn all ETH gain
       const alice_pendingETHGain = await stabilityPool.getDepositorETHGain(
-        alice
+        alice,
       );
       assert.equal(alice_pendingETHGain, 0);
     });
@@ -1382,10 +1375,10 @@ contract("StabilityPool", async (accounts) => {
       });
 
       const [liquidatedDebt_1] = await th.getEmittedLiquidationValues(
-        liquidationTX_1
+        liquidationTX_1,
       );
       const [liquidatedDebt_2] = await th.getEmittedLiquidationValues(
-        liquidationTX_2
+        liquidationTX_2,
       );
 
       // Alice retrieves part of her entitled Bold: 9000 Bold
@@ -1454,10 +1447,10 @@ contract("StabilityPool", async (accounts) => {
       });
 
       const [liquidatedDebt_1] = await th.getEmittedLiquidationValues(
-        liquidationTX_1
+        liquidationTX_1,
       );
       const [liquidatedDebt_2] = await th.getEmittedLiquidationValues(
-        liquidationTX_2
+        liquidationTX_2,
       );
 
       // Alice BoldLoss is ((15000/200000) * liquidatedDebt), for each liquidation
@@ -1465,21 +1458,20 @@ contract("StabilityPool", async (accounts) => {
         .mul(toBN(dec(15000, 18)))
         .div(toBN(dec(200000, 18)))
         .add(
-          liquidatedDebt_2.mul(toBN(dec(15000, 18))).div(toBN(dec(200000, 18)))
+          liquidatedDebt_2.mul(toBN(dec(15000, 18))).div(toBN(dec(200000, 18))),
         );
 
       const expectedCompoundedBoldDeposit_A = toBN(dec(15000, 18)).sub(
-        expectedBoldLoss_A
+        expectedBoldLoss_A,
       );
-      const compoundedBoldDeposit_A =
-        await stabilityPool.getCompoundedBoldDeposit(alice);
+      const compoundedBoldDeposit_A = await stabilityPool.getCompoundedBoldDeposit(alice);
 
       assert.isAtMost(
         th.getDifference(
           expectedCompoundedBoldDeposit_A,
-          compoundedBoldDeposit_A
+          compoundedBoldDeposit_A,
         ),
-        100000
+        100000,
       );
 
       const BoldinSPBefore = await stabilityPool.getTotalBoldDeposits();
@@ -1492,7 +1484,7 @@ contract("StabilityPool", async (accounts) => {
       const BoldinSPAfter = await stabilityPool.getTotalBoldDeposits();
       assert.isAtMost(
         th.getDifference(expectedBoldinSPAfter, BoldinSPAfter),
-        100000
+        100000,
       );
     });
 
@@ -1668,10 +1660,9 @@ contract("StabilityPool", async (accounts) => {
       const liquidationTx_1 = await troveManager.liquidate(defaulter_1_TroveId, {
         from: owner,
       }); // 180 Bold closed
-      const [, liquidatedColl] =
-        th.getEmittedLiquidationValues(liquidationTx_1);
+      const [, liquidatedColl] = th.getEmittedLiquidationValues(liquidationTx_1);
 
-      //Get ActivePool and StabilityPool Ether before retrieval:
+      // Get ActivePool and StabilityPool Ether before retrieval:
       const active_ETH_Before = await activePool.getETHBalance();
       const stability_ETH_Before = await stabilityPool.getETHBalance();
 
@@ -1689,15 +1680,14 @@ contract("StabilityPool", async (accounts) => {
       const stability_ETH_After = await stabilityPool.getETHBalance();
 
       const active_ETH_Difference = active_ETH_Before.sub(active_ETH_After);
-      const stability_ETH_Difference =
-        stability_ETH_Before.sub(stability_ETH_After);
+      const stability_ETH_Difference = stability_ETH_Before.sub(stability_ETH_After);
 
       assert.equal(active_ETH_Difference, "0");
 
       // Expect StabilityPool to have decreased by Alice's ETHGain
       assert.isAtMost(
         th.getDifference(stability_ETH_Difference, aliceETHGain),
-        10000
+        10000,
       );
     });
 
@@ -1759,13 +1749,14 @@ contract("StabilityPool", async (accounts) => {
       });
 
       // 1 defaulter opens trove
-      const defaulter_1_TroveId = await th.openTroveWrapper(contracts,
+      const defaulter_1_TroveId = await th.openTroveWrapper(
+        contracts,
         th._100pct,
         await getOpenTroveBoldAmount(dec(10000, 18)),
         defaulter_1,
         defaulter_1,
         0,
-        { from: defaulter_1, value: dec(100, "ether") }
+        { from: defaulter_1, value: dec(100, "ether") },
       );
 
       const defaulterDebt = (
@@ -1801,11 +1792,7 @@ contract("StabilityPool", async (accounts) => {
       await priceFeed.setPrice(dec(200, 18));
 
       // Bob issues a further 5000 Bold from his trove
-      await borrowerOperations.withdrawBold(th.addressToTroveId(bob),
-        th._100pct,
-        dec(5000, 18),
-        { from: bob }
-      );
+      await borrowerOperations.withdrawBold(th.addressToTroveId(bob), th._100pct, dec(5000, 18), { from: bob });
 
       // Expect Alice's Bold balance increase be very close to 8333.3333333333333333 Bold
       await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice });
@@ -1814,9 +1801,9 @@ contract("StabilityPool", async (accounts) => {
       assert.isAtMost(
         th.getDifference(
           aliceBalance.sub(aliceBalBefore),
-          "8333333333333333333333"
+          "8333333333333333333333",
         ),
-        100000
+        100000,
       );
 
       // expect Bob's Bold balance increase to be very close to  13333.33333333333333333 Bold
@@ -1825,9 +1812,9 @@ contract("StabilityPool", async (accounts) => {
       assert.isAtMost(
         th.getDifference(
           bobBalance.sub(bobBalBefore),
-          "13333333333333333333333"
+          "13333333333333333333333",
         ),
-        100000
+        100000,
       );
     });
 
@@ -1898,7 +1885,7 @@ contract("StabilityPool", async (accounts) => {
         await stabilityPool.getDepositorETHGain(bob)
       ).toString();
 
-      //check non-zero Bold and ETHGain in the Stability Pool
+      // check non-zero Bold and ETHGain in the Stability Pool
       const BoldinSP = await stabilityPool.getTotalBoldDeposits();
       const ETHinSP = await stabilityPool.getETHBalance();
       assert.isTrue(BoldinSP.gt(mv._zeroBN));
@@ -1910,7 +1897,7 @@ contract("StabilityPool", async (accounts) => {
       // Carol withdraws her Stability deposit
       assert.equal(
         (await stabilityPool.deposits(carol)).toString(),
-        dec(30000, 18)
+        dec(30000, 18),
       );
       await stabilityPool.withdrawFromSP(dec(30000, 18), { from: carol });
       assert.equal((await stabilityPool.deposits(carol)).toString(), "0");
@@ -2002,7 +1989,7 @@ contract("StabilityPool", async (accounts) => {
       // Carol withdraws her Stability deposit
       assert.equal(
         (await stabilityPool.deposits(carol)).toString(),
-        dec(30000, 18)
+        dec(30000, 18),
       );
       await stabilityPool.withdrawFromSP(dec(30000, 18), { from: carol });
       assert.equal((await stabilityPool.deposits(carol)).toString(), "0");
@@ -2102,7 +2089,7 @@ contract("StabilityPool", async (accounts) => {
       // Carol withdraws her Stability deposit
       assert.equal(
         (await stabilityPool.deposits(carol)).toString(),
-        dec(30000, 18)
+        dec(30000, 18),
       );
       await stabilityPool.withdrawFromSP(dec(30000, 18), { from: carol });
       assert.equal((await stabilityPool.deposits(carol)).toString(), "0");
@@ -2173,7 +2160,7 @@ contract("StabilityPool", async (accounts) => {
       await priceFeed.setPrice(dec(105, 18));
       const price = await priceFeed.getPrice();
       assert.isTrue(
-        await th.ICRbetween100and110(defaulter_1_TroveId, troveManager, price)
+        await th.ICRbetween100and110(defaulter_1_TroveId, troveManager, price),
       );
 
       await time.increase(timeValues.MINUTES_IN_ONE_WEEK);
@@ -2184,7 +2171,7 @@ contract("StabilityPool", async (accounts) => {
 
       // Check d2 is undercollateralized
       assert.isTrue(
-        await th.ICRbetween100and110(defaulter_2_TroveId, troveManager, price)
+        await th.ICRbetween100and110(defaulter_2_TroveId, troveManager, price),
       );
       assert.isTrue(await sortedTroves.contains(defaulter_2_TroveId));
 
@@ -2398,10 +2385,10 @@ contract("StabilityPool", async (accounts) => {
       const bob_Bold_Balance_Before = await boldToken.balanceOf(bob);
 
       const alice_Deposit_Before = await stabilityPool.getCompoundedBoldDeposit(
-        alice
+        alice,
       );
       const bob_Deposit_Before = await stabilityPool.getCompoundedBoldDeposit(
-        bob
+        bob,
       );
 
       const BoldinSP_Before = await stabilityPool.getTotalBoldDeposits();
@@ -2498,13 +2485,13 @@ contract("StabilityPool", async (accounts) => {
       const bob_Bold_Balance_Before = await boldToken.balanceOf(bob);
 
       const bob_Deposit_Before = await stabilityPool.getCompoundedBoldDeposit(
-        bob
+        bob,
       );
 
       const BoldinSP_Before = await stabilityPool.getTotalBoldDeposits();
 
       const maxBytes32 = web3.utils.toBN(
-        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
       );
 
       // Price drops
@@ -2523,8 +2510,7 @@ contract("StabilityPool", async (accounts) => {
       assert.equal(bob_Bold_Balance_After, bob_expectedBoldBalance);
 
       // Check Bold in Stability Pool has been reduced by only  Bob's compounded deposit
-      const expectedBoldinSP =
-        BoldinSP_Before.sub(bob_Deposit_Before).toString();
+      const expectedBoldinSP = BoldinSP_Before.sub(bob_Deposit_Before).toString();
       const BoldinSP_After = (
         await stabilityPool.getTotalBoldDeposits()
       ).toString();
@@ -2561,13 +2547,14 @@ contract("StabilityPool", async (accounts) => {
         extraParams: { from: carol },
       });
 
-      const defaulter_1_TroveId = await th.openTroveWrapper(contracts,
+      const defaulter_1_TroveId = await th.openTroveWrapper(
+        contracts,
         th._100pct,
         await getOpenTroveBoldAmount(dec(10000, 18)),
         defaulter_1,
         defaulter_1,
         0,
-        { from: defaulter_1, value: dec(100, "ether") }
+        { from: defaulter_1, value: dec(100, "ether") },
       );
 
       // A, B, C provides 10000, 5000, 3000 Bold to SP
@@ -2575,19 +2562,19 @@ contract("StabilityPool", async (accounts) => {
         await stabilityPool.provideToSP(dec(10000, 18), {
           from: alice,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
       const B_GAS_Used = th.gasUsed(
         await stabilityPool.provideToSP(dec(5000, 18), {
           from: bob,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
       const C_GAS_Used = th.gasUsed(
         await stabilityPool.provideToSP(dec(3000, 18), {
           from: carol,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
 
       // Price drops
@@ -2605,31 +2592,31 @@ contract("StabilityPool", async (accounts) => {
       const carol_Bold_Balance_Before = await boldToken.balanceOf(carol);
 
       const alice_ETH_Balance_Before = web3.utils.toBN(
-        await contracts.WETH.balanceOf(alice)
+        await contracts.WETH.balanceOf(alice),
       );
       const bob_ETH_Balance_Before = web3.utils.toBN(
-        await contracts.WETH.balanceOf(bob)
+        await contracts.WETH.balanceOf(bob),
       );
       const carol_ETH_Balance_Before = web3.utils.toBN(
-        await contracts.WETH.balanceOf(carol)
+        await contracts.WETH.balanceOf(carol),
       );
 
       const alice_Deposit_Before = await stabilityPool.getCompoundedBoldDeposit(
-        alice
+        alice,
       );
       const bob_Deposit_Before = await stabilityPool.getCompoundedBoldDeposit(
-        bob
+        bob,
       );
       const carol_Deposit_Before = await stabilityPool.getCompoundedBoldDeposit(
-        carol
+        carol,
       );
 
       const alice_ETHGain_Before = await stabilityPool.getDepositorETHGain(
-        alice
+        alice,
       );
       const bob_ETHGain_Before = await stabilityPool.getDepositorETHGain(bob);
       const carol_ETHGain_Before = await stabilityPool.getDepositorETHGain(
-        carol
+        carol,
       );
 
       const BoldinSP_Before = await stabilityPool.getTotalBoldDeposits();
@@ -2644,19 +2631,19 @@ contract("StabilityPool", async (accounts) => {
         await stabilityPool.withdrawFromSP(dec(10000, 18), {
           from: alice,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
       const B_GAS_Deposit = th.gasUsed(
         await stabilityPool.withdrawFromSP(dec(5000, 18), {
           from: bob,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
       const C_GAS_Deposit = th.gasUsed(
         await stabilityPool.withdrawFromSP(dec(3000, 18), {
           from: carol,
           gasPrice: GAS_PRICE,
-        })
+        }),
       );
 
       // Check Bold balances of A, B, C have risen by the value of their compounded deposits, respectively
@@ -2774,7 +2761,7 @@ contract("StabilityPool", async (accounts) => {
       });
       await stabilityPool.provideToSP(dec(5000, 18), { from: bob });
 
-      //price drops
+      // price drops
       await priceFeed.setPrice(dec(105, 18));
 
       // Liquidate defaulter 1. Empties the Pool
@@ -2874,7 +2861,7 @@ contract("StabilityPool", async (accounts) => {
 
       const S_Before = await stabilityPool.epochToScaleToSum(
         currentEpoch,
-        currentScale
+        currentScale,
       );
       const P_Before = await stabilityPool.P();
 
@@ -2984,12 +2971,11 @@ contract("StabilityPool", async (accounts) => {
       await stabilityPool.withdrawFromSP(dec(10100, 18), { from: A });
 
       // Confirm A's recorded deposit is 0
-      const A_deposit = (await stabilityPool.deposits(A)); // get initialValue property on deposit struct
+      const A_deposit = await stabilityPool.deposits(A); // get initialValue property on deposit struct
       assert.equal(A_deposit, "0");
 
       // --- TEST ---
-      const expectedRevertMessage =
-        "StabilityPool: User must have a non-zero deposit";
+      const expectedRevertMessage = "StabilityPool: User must have a non-zero deposit";
 
       // Further withdrawal attempt from A
       const withdrawalPromise_A = stabilityPool.withdrawFromSP(dec(10000, 18), {
@@ -3101,12 +3087,11 @@ contract("StabilityPool", async (accounts) => {
       const liquidationTx_1 = await troveManager.liquidate(defaulter_1_TroveId, {
         from: owner,
       });
-      const [liquidatedDebt, liquidatedColl, ,] =
-        th.getEmittedLiquidationValues(liquidationTx_1);
+      const [liquidatedDebt, liquidatedColl] = th.getEmittedLiquidationValues(liquidationTx_1);
 
       const ETHGain_A = await stabilityPool.getDepositorETHGain(alice);
       const compoundedDeposit_A = await stabilityPool.getCompoundedBoldDeposit(
-        alice
+        alice,
       );
 
       // Alice should receive rewards proportional to her deposit as share of total deposits
@@ -3117,25 +3102,25 @@ contract("StabilityPool", async (accounts) => {
         .mul(toBN(dec(15000, 18)))
         .div(toBN(dec(200000, 18)));
       const expectedCompoundedDeposit_A = toBN(dec(15000, 18)).sub(
-        expectedBoldLoss_A
+        expectedBoldLoss_A,
       );
 
       assert.isAtMost(
         th.getDifference(expectedCompoundedDeposit_A, compoundedDeposit_A),
-        100000
+        100000,
       );
 
       // Alice sends her ETH Gains to her Trove
       await stabilityPool.withdrawETHGainToTrove(aliceTroveId, { from: alice });
 
       // check Alice's BoldLoss has been applied to her deposit expectedCompoundedDeposit_A
-      const alice_deposit_afterDefault = (await stabilityPool.deposits(alice));
+      const alice_deposit_afterDefault = await stabilityPool.deposits(alice);
       assert.isAtMost(
         th.getDifference(
           alice_deposit_afterDefault,
-          expectedCompoundedDeposit_A
+          expectedCompoundedDeposit_A,
         ),
-        100000
+        100000,
       );
 
       // check alice's Trove recorded ETH has increased by the expected reward amount
@@ -3193,7 +3178,7 @@ contract("StabilityPool", async (accounts) => {
       // Alice attempts to  her ETH Gains to her Trove
       await assertRevert(
         stabilityPool.withdrawETHGainToTrove(aliceTroveId, { from: alice }),
-        "BorrowerOps: An operation that would result in ICR < MCR is not permitted"
+        "BorrowerOps: An operation that would result in ICR < MCR is not permitted",
       );
     });
 
@@ -3303,8 +3288,7 @@ contract("StabilityPool", async (accounts) => {
 
       // defaulter's Trove is closed.
       const liquidationTx = await troveManager.liquidate(defaulter_1_TroveId);
-      const [liquidatedDebt, liquidatedColl, gasComp] =
-        th.getEmittedLiquidationValues(liquidationTx);
+      const [liquidatedDebt, liquidatedColl, gasComp] = th.getEmittedLiquidationValues(liquidationTx);
 
       // Expect alice to be entitled to 15000/200000 of the liquidated coll
       const aliceExpectedETHGain = liquidatedColl
@@ -3316,7 +3300,7 @@ contract("StabilityPool", async (accounts) => {
       // price bounces back
       await priceFeed.setPrice(dec(200, 18));
 
-      //check activePool and StabilityPool Ether before retrieval:
+      // check activePool and StabilityPool Ether before retrieval:
       const active_ETH_Before = await activePool.getETHBalance();
       const stability_ETH_Before = await stabilityPool.getETHBalance();
 
@@ -3327,17 +3311,16 @@ contract("StabilityPool", async (accounts) => {
       const stability_ETH_After = await stabilityPool.getETHBalance();
 
       const active_ETH_Difference = active_ETH_After.sub(active_ETH_Before); // AP ETH should increase
-      const stability_ETH_Difference =
-        stability_ETH_Before.sub(stability_ETH_After); // SP ETH should decrease
+      const stability_ETH_Difference = stability_ETH_Before.sub(stability_ETH_After); // SP ETH should decrease
 
       // check Pool ETH values change by Alice's ETHGain, i.e 0.075 ETH
       assert.isAtMost(
         th.getDifference(active_ETH_Difference, aliceETHGain),
-        10000
+        10000,
       );
       assert.isAtMost(
         th.getDifference(stability_ETH_Difference, aliceETHGain),
-        10000
+        10000,
       );
     });
 
@@ -3431,13 +3414,12 @@ contract("StabilityPool", async (accounts) => {
 
       await priceFeed.setPrice(dec(105, 18));
       const liquidationTx = await troveManager.liquidate(defaulter_1_TroveId);
-      const [, liquidatedColl, ,] =
-        th.getEmittedLiquidationValues(liquidationTx);
+      const [, liquidatedColl] = th.getEmittedLiquidationValues(liquidationTx);
 
-      /* All depositors attempt to withdraw their ETH gain to their Trove. Each depositor 
+      /* All depositors attempt to withdraw their ETH gain to their Trove. Each depositor
       receives (liquidatedColl/ 6).
 
-      Thus, expected new collateral for each depositor with 1 Ether in their trove originally, is 
+      Thus, expected new collateral for each depositor with 1 Ether in their trove originally, is
       (1 + liquidatedColl/6)
       */
 
@@ -3449,44 +3431,44 @@ contract("StabilityPool", async (accounts) => {
       const aliceCollAfter = (await troveManager.Troves(th.addressToTroveId(alice)))[1];
       assert.isAtMost(
         th.getDifference(aliceCollAfter.sub(collBefore), expectedCollGain),
-        10000
+        10000,
       );
 
       await stabilityPool.withdrawETHGainToTrove(th.addressToTroveId(bob), { from: bob });
       const bobCollAfter = (await troveManager.Troves(th.addressToTroveId(bob)))[1];
       assert.isAtMost(
         th.getDifference(bobCollAfter.sub(collBefore), expectedCollGain),
-        10000
+        10000,
       );
 
       await stabilityPool.withdrawETHGainToTrove(th.addressToTroveId(carol), { from: carol });
       const carolCollAfter = (await troveManager.Troves(th.addressToTroveId(carol)))[1];
       assert.isAtMost(
         th.getDifference(carolCollAfter.sub(collBefore), expectedCollGain),
-        10000
+        10000,
       );
 
-      await stabilityPool.withdrawETHGainToTrove(th.addressToTroveId(dennis),  {
+      await stabilityPool.withdrawETHGainToTrove(th.addressToTroveId(dennis), {
         from: dennis,
       });
       const dennisCollAfter = (await troveManager.Troves(th.addressToTroveId(dennis)))[1];
       assert.isAtMost(
         th.getDifference(dennisCollAfter.sub(collBefore), expectedCollGain),
-        10000
+        10000,
       );
 
       await stabilityPool.withdrawETHGainToTrove(th.addressToTroveId(erin), { from: erin });
       const erinCollAfter = (await troveManager.Troves(th.addressToTroveId(erin)))[1];
       assert.isAtMost(
         th.getDifference(erinCollAfter.sub(collBefore), expectedCollGain),
-        10000
+        10000,
       );
 
       await stabilityPool.withdrawETHGainToTrove(th.addressToTroveId(flyn), { from: flyn });
       const flynCollAfter = (await troveManager.Troves(th.addressToTroveId(flyn)))[1];
       assert.isAtMost(
         th.getDifference(flynCollAfter.sub(collBefore), expectedCollGain),
-        10000
+        10000,
       );
     });
 
@@ -3535,7 +3517,7 @@ contract("StabilityPool", async (accounts) => {
 
       // Check defaulter 1 has ICR: 100% < ICR < 110%.
       assert.isTrue(
-        await th.ICRbetween100and110(defaulter_1_TroveId, troveManager, price)
+        await th.ICRbetween100and110(defaulter_1_TroveId, troveManager, price),
       );
 
       const alice_Collateral_Before = (await troveManager.Troves(aliceTroveId))[1];
@@ -3548,11 +3530,11 @@ contract("StabilityPool", async (accounts) => {
       assert.isFalse(await sortedTroves.contains(defaulter_1_TroveId));
 
       const alice_ETHGain_Before = await stabilityPool.getDepositorETHGain(
-        alice
+        alice,
       );
       const bob_ETHGain_Before = await stabilityPool.getDepositorETHGain(bob);
       const carol_ETHGain_Before = await stabilityPool.getDepositorETHGain(
-        carol
+        carol,
       );
 
       // A, B, C withdraw their full ETH gain from the Stability Pool to their trove
@@ -3622,10 +3604,10 @@ contract("StabilityPool", async (accounts) => {
         from: dennis,
       });
 
-      //Price drops
+      // Price drops
       await priceFeed.setPrice(dec(105, 18));
 
-      //Liquidate defaulter 1
+      // Liquidate defaulter 1
       await troveManager.liquidate(defaulter_1_TroveId);
       assert.isFalse(await sortedTroves.contains(defaulter_1_TroveId));
 
@@ -3634,7 +3616,7 @@ contract("StabilityPool", async (accounts) => {
       // D attempts to withdraw his ETH gain to Trove
       await th.assertRevert(
         stabilityPool.withdrawETHGainToTrove(th.addressToTroveId(dennis), { from: dennis }),
-        "caller must have an active trove to withdraw ETHGain to"
+        "caller must have an active trove to withdraw ETHGain to",
       );
     });
 

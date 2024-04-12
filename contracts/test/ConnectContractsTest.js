@@ -1,22 +1,20 @@
-const deploymentHelper = require("../utils/deploymentHelpers.js")
+const deploymentHelper = require("../utils/deploymentHelpers.js");
 
-contract('Deployment script - Sets correct contract addresses dependencies after deployment', async accounts => {
+contract("Deployment script - Sets correct contract addresses dependencies after deployment", async (accounts) => {
   const [owner] = accounts;
 
-  const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000)
-  
+  const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
 
-  let priceFeed
-  let boldToken
-  let sortedTroves
-  let troveManager
-  let activePool
-  let stabilityPool
+  let priceFeed;
+  let boldToken;
+  let sortedTroves;
+  let troveManager;
+  let activePool;
+  let stabilityPool;
   let defaultPool;
   let borrowerOperations;
 
   before(async () => {
-
     const coreContracts = await deploymentHelper.deployLiquityCore();
 
     priceFeed = coreContracts.priceFeedTestnet;
@@ -59,8 +57,7 @@ contract('Deployment script - Sets correct contract addresses dependencies after
   it("Sets the correct BorrowerOperations address in TroveManager", async () => {
     const borrowerOperationsAddress = borrowerOperations.address;
 
-    const recordedBorrowerOperationsAddress =
-      await troveManager.borrowerOperationsAddress();
+    const recordedBorrowerOperationsAddress = await troveManager.borrowerOperationsAddress();
 
     assert.equal(borrowerOperationsAddress, recordedBorrowerOperationsAddress);
   });
@@ -92,14 +89,12 @@ contract('Deployment script - Sets correct contract addresses dependencies after
     assert.equal(stabilityPoolAddress, recordedStabilityPoolAddresss);
   });
 
-
   // Active Pool
 
   it("Sets the correct StabilityPool address in ActivePool", async () => {
     const stabilityPoolAddress = stabilityPool.address;
 
-    const recordedStabilityPoolAddress =
-      await activePool.stabilityPoolAddress();
+    const recordedStabilityPoolAddress = await activePool.stabilityPoolAddress();
 
     assert.equal(stabilityPoolAddress, recordedStabilityPoolAddress);
   });
@@ -115,8 +110,7 @@ contract('Deployment script - Sets correct contract addresses dependencies after
   it("Sets the correct BorrowerOperations address in ActivePool", async () => {
     const borrowerOperationsAddress = borrowerOperations.address;
 
-    const recordedBorrowerOperationsAddress =
-      await activePool.borrowerOperationsAddress();
+    const recordedBorrowerOperationsAddress = await activePool.borrowerOperationsAddress();
 
     assert.equal(borrowerOperationsAddress, recordedBorrowerOperationsAddress);
   });
@@ -140,8 +134,7 @@ contract('Deployment script - Sets correct contract addresses dependencies after
   it("Sets the correct BorrowerOperations address in StabilityPool", async () => {
     const borrowerOperationsAddress = borrowerOperations.address;
 
-    const recordedBorrowerOperationsAddress =
-      await stabilityPool.borrowerOperations();
+    const recordedBorrowerOperationsAddress = await stabilityPool.borrowerOperations();
 
     assert.equal(borrowerOperationsAddress, recordedBorrowerOperationsAddress);
   });
@@ -180,8 +173,7 @@ contract('Deployment script - Sets correct contract addresses dependencies after
   it("Sets the correct TroveManager address in SortedTroves", async () => {
     const borrowerOperationsAddress = borrowerOperations.address;
 
-    const recordedBorrowerOperationsAddress =
-      await sortedTroves.borrowerOperationsAddress();
+    const recordedBorrowerOperationsAddress = await sortedTroves.borrowerOperationsAddress();
     assert.equal(borrowerOperationsAddress, recordedBorrowerOperationsAddress);
   });
 
@@ -192,7 +184,7 @@ contract('Deployment script - Sets correct contract addresses dependencies after
     assert.equal(troveManagerAddress, recordedTroveManagerAddress);
   });
 
-  //--- BorrowerOperations ---
+  // --- BorrowerOperations ---
 
   // TroveManager in BO
   it("Sets the correct TroveManager address in BorrowerOperations", async () => {
@@ -233,4 +225,4 @@ contract('Deployment script - Sets correct contract addresses dependencies after
     const recordedDefaultPoolAddress = await borrowerOperations.defaultPool();
     assert.equal(defaultPoolAddress, recordedDefaultPoolAddress);
   });
-})
+});

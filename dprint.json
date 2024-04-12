@@ -1,20 +1,25 @@
 {
   "typescript": {
-    "useBraces": "always"
+    "arrowFunction.useParentheses": "force"
   },
-  "json": {
-  },
-  "markdown": {
-  },
+  "json": {},
+  "markdown": {},
+  "toml": {},
   "includes": ["**/*.{ts,tsx,js,jsx,mjs,json,md,html,css}"],
   "excludes": [
     "**/node_modules",
-    "**/*-lock.json"
+    "**/*-lock.json",
+    "/contracts/artifacts",
+    "/contracts/broadcast",
+    "/contracts/cache",
+    "/contracts/lib",
+    "/contracts/out"
   ],
   "plugins": [
     "https://plugins.dprint.dev/typescript-0.89.3.wasm",
     "https://plugins.dprint.dev/json-0.19.2.wasm",
     "https://plugins.dprint.dev/markdown-0.16.4.wasm",
+    "https://plugins.dprint.dev/toml-0.6.1.wasm",
     "https://plugins.dprint.dev/g-plane/malva-v0.1.5.wasm"
   ]
 }

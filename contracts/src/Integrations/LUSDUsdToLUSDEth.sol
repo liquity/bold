@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-
 interface IPriceFeed {
     function latestAnswer() external view returns (int256);
 }
-
 
 contract BoldUsdToBoldEth is IPriceFeed {
     IPriceFeed public constant Bold_USD = IPriceFeed(0x3D7aE7E594f2f2091Ad8798313450130d0Aba3a0);

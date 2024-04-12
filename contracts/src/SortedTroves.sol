@@ -37,7 +37,7 @@ uint256 constant ROOT_NODE_ID = 0;
 * - Public functions with parameters have been made internal to save gas, and given an external wrapper function for external access
 */
 contract SortedTroves is Ownable, CheckContract, ISortedTroves {
-    string constant public NAME = "SortedTroves";
+    string public constant NAME = "SortedTroves";
 
     // Constants used for documentation purposes
     uint256 constant UNINITIALIZED_ID = 0;
@@ -51,8 +51,8 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
 
     // Information for a node in the list
     struct Node {
-        uint256 nextId;  // Id of next node (smaller interest rate) in the list
-        uint256 prevId;  // Id of previous node (larger interest rate) in the list
+        uint256 nextId; // Id of next node (smaller interest rate) in the list
+        uint256 prevId; // Id of previous node (larger interest rate) in the list
         BatchId batchId; // Id of this node's batch manager, or zero in case of non-batched nodes
         bool exists;
     }
@@ -74,10 +74,10 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     // nodes[ROOT_NODE_ID] holds the head and tail of the list. This avoids the need for special
     // handling when inserting into or removing from a terminal position (head or tail), inserting
     // into an empty list or removing the element of a singleton list.
-    mapping (uint256 => Node) public nodes;
+    mapping(uint256 => Node) public nodes;
 
     // Lookup batches by the address of their manager
-    mapping (BatchId => Batch) public batches;
+    mapping(BatchId => Batch) public batches;
 
     constructor() {
         // Technically, this is not needed as long as ROOT_NODE_ID is 0, but it doesn't hurt
@@ -87,7 +87,11 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
 
     // --- Dependency setters ---
 
-    function setAddresses(address _troveManagerAddress, address _borrowerOperationsAddress) external override onlyOwner {
+    function setAddresses(address _troveManagerAddress, address _borrowerOperationsAddress)
+        external
+        override
+        onlyOwner
+    {
         checkContract(_troveManagerAddress);
         checkContract(_borrowerOperationsAddress);
 
@@ -103,14 +107,23 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
     // Insert an entire list slice (such as a batch of Troves sharing the same interest rate)
     // between adjacent nodes `_prevId` and `_nextId`.
     // Can be used to insert a single node by passing its ID as both `_sliceHead` and `_sliceTail`.
-    function _insertSliceIntoVerifiedPosition(uint256 _sliceHead, uint256 _sliceTail, uint256 _prevId, uint256 _nextId) internal {
+    function _insertSliceIntoVerifiedPosition(uint256 _sliceHead, uint256 _sliceTail, uint256 _prevId, uint256 _nextId)
+        internal
+    {
         nodes[_prevId].nextId = _sliceHead;
         nodes[_sliceHead].prevId = _prevId;
         nodes[_sliceTail].nextId = _nextId;
         nodes[_nextId].prevId = _sliceTail;
     }
 
-    function _insertSlice(ITroveManager _troveManager, uint256 _sliceHead, uint256 _sliceTail, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) internal {
+    function _insertSlice(
+        ITroveManager _troveManager,
+        uint256 _sliceHead,
+        uint256 _sliceTail,
+        uint256 _annualInterestRate,
+        uint256 _prevId,
+        uint256 _nextId
+    ) internal {
         if (!_validInsertPosition(_troveManager, _annualInterestRate, _prevId, _nextId)) {
             // Sender's hint was not a valid insert position
             // Use sender's hint to find a valid insert position
@@ -160,7 +173,14 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         --size;
     }
 
-    function _reInsertSlice(ITroveManager _troveManager, uint256 _sliceHead, uint256 _sliceTail, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) internal {
+    function _reInsertSlice(
+        ITroveManager _troveManager,
+        uint256 _sliceHead,
+        uint256 _sliceTail,
+        uint256 _annualInterestRate,
+        uint256 _prevId,
+        uint256 _nextId
+    ) internal {
         if (!_validInsertPosition(_troveManager, _annualInterestRate, _prevId, _nextId)) {
             // Sender's hint was not a valid insert position
             // Use sender's hint to find a valid insert position
@@ -181,7 +201,10 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _prevId Id of previous Trove for the new insert position
      * @param _nextId Id of next Trove for the new insert position
      */
-    function reInsert(uint256 _id, uint256 _newAnnualInterestRate, uint256 _prevId, uint256 _nextId) external override {
+    function reInsert(uint256 _id, uint256 _newAnnualInterestRate, uint256 _prevId, uint256 _nextId)
+        external
+        override
+    {
         _requireCallerIsBorrowerOperations();
         require(contains(_id), "SortedTroves: List does not contain the id");
         require(!isBatchedNode(_id), "SortedTroves: Must not reInsert() batched node");
@@ -197,7 +220,13 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _prevId Id of previous Trove for the insert position, in case the Batch is empty
      * @param _nextId Id of next Trove for the insert position, in case the Batch is empty
      */
-    function insertIntoBatch(uint256 _troveId, BatchId _batchId, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external override {
+    function insertIntoBatch(
+        uint256 _troveId,
+        BatchId _batchId,
+        uint256 _annualInterestRate,
+        uint256 _prevId,
+        uint256 _nextId
+    ) external override {
         _requireCallerIsBorrowerOperations();
         require(!contains(_troveId), "SortedTroves: List already contains the node");
         require(_troveId != ROOT_NODE_ID, "SortedTroves: _troveId cannot be the root node's ID");
@@ -211,12 +240,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
             batches[_batchId].head = _troveId;
             // (Tail will be set outside the "if")
         } else {
-            _insertSliceIntoVerifiedPosition(
-                _troveId,
-                _troveId,
-                batchTail,
-                nodes[batchTail].nextId
-            );
+            _insertSliceIntoVerifiedPosition(_troveId, _troveId, batchTail, nodes[batchTail].nextId);
         }
 
         batches[_batchId].tail = _troveId;
@@ -258,7 +282,10 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _prevId Id of previous Trove for the new insert position
      * @param _nextId Id of next Trove for the new insert position
      */
-    function reInsertBatch(BatchId _id, uint256 _newAnnualInterestRate, uint256 _prevId, uint256 _nextId) external override {
+    function reInsertBatch(BatchId _id, uint256 _newAnnualInterestRate, uint256 _prevId, uint256 _nextId)
+        external
+        override
+    {
         Batch memory batch = batches[_id];
 
         _requireCallerIsBorrowerOperations();
@@ -331,26 +358,33 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _prevId Id of previous node for the insert position
      * @param _nextId Id of next node for the insert position
      */
-    function validInsertPosition(uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external view override returns (bool) {
+    function validInsertPosition(uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId)
+        external
+        view
+        override
+        returns (bool)
+    {
         return _validInsertPosition(troveManager, _annualInterestRate, _prevId, _nextId);
     }
 
-    function _validInsertPosition(ITroveManager _troveManager, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) internal view returns (bool) {
+    function _validInsertPosition(
+        ITroveManager _troveManager,
+        uint256 _annualInterestRate,
+        uint256 _prevId,
+        uint256 _nextId
+    ) internal view returns (bool) {
         BatchId prevBatchId = nodes[_prevId].batchId;
 
         // `(_prevId, _nextId)` is a valid insert position if:
-        return (
-            // they are adjacent nodes
-            nodes[_prevId].nextId == _nextId &&
-            nodes[_nextId].prevId == _prevId &&
-            (
-                // they aren't part of the same batch
-                prevBatchId.notEquals(nodes[_nextId].batchId) ||
-                prevBatchId.isZero()
-            ) &&
+        return
+        // they are adjacent nodes
+        (
+            nodes[_prevId].nextId == _nextId && nodes[_nextId].prevId == _prevId
+            // they aren't part of the same batch
+            && (prevBatchId.notEquals(nodes[_nextId].batchId) || prevBatchId.isZero())
             // `_annualInterestRate` falls between the two nodes' interest rates
-            (_prevId == ROOT_NODE_ID || _troveManager.getTroveAnnualInterestRate(_prevId) >= _annualInterestRate) &&
-            (_nextId == ROOT_NODE_ID || _annualInterestRate > _troveManager.getTroveAnnualInterestRate(_nextId))
+            && (_prevId == ROOT_NODE_ID || _troveManager.getTroveAnnualInterestRate(_prevId) >= _annualInterestRate)
+                && (_nextId == ROOT_NODE_ID || _annualInterestRate > _troveManager.getTroveAnnualInterestRate(_nextId))
         );
     }
 
@@ -364,8 +398,13 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         return batchId.isNotZero() ? batches[batchId].head : _id;
     }
 
-    function _descendOne(ITroveManager _troveManager, uint256 _annualInterestRate, Position memory _pos) internal view returns (bool found) {
-        if (_pos.nextId == ROOT_NODE_ID || _annualInterestRate > _troveManager.getTroveAnnualInterestRate(_pos.nextId)) {
+    function _descendOne(ITroveManager _troveManager, uint256 _annualInterestRate, Position memory _pos)
+        internal
+        view
+        returns (bool found)
+    {
+        if (_pos.nextId == ROOT_NODE_ID || _annualInterestRate > _troveManager.getTroveAnnualInterestRate(_pos.nextId))
+        {
             found = true;
         } else {
             _pos.prevId = _skipToBatchTail(_pos.nextId);
@@ -373,8 +412,13 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         }
     }
 
-    function _ascendOne(ITroveManager _troveManager, uint256 _annualInterestRate, Position memory _pos) internal view returns (bool found) {
-        if (_pos.prevId == ROOT_NODE_ID || _troveManager.getTroveAnnualInterestRate(_pos.prevId) >= _annualInterestRate) {
+    function _ascendOne(ITroveManager _troveManager, uint256 _annualInterestRate, Position memory _pos)
+        internal
+        view
+        returns (bool found)
+    {
+        if (_pos.prevId == ROOT_NODE_ID || _troveManager.getTroveAnnualInterestRate(_pos.prevId) >= _annualInterestRate)
+        {
             found = true;
         } else {
             _pos.nextId = _skipToBatchHead(_pos.prevId);
@@ -388,7 +432,11 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _annualInterestRate Node's annual interest rate
      * @param _startId Id of node to start descending the list from
      */
-    function _descendList(ITroveManager _troveManager, uint256 _annualInterestRate, uint256 _startId) internal view returns (uint256, uint256) {
+    function _descendList(ITroveManager _troveManager, uint256 _annualInterestRate, uint256 _startId)
+        internal
+        view
+        returns (uint256, uint256)
+    {
         Position memory pos = Position(_startId, nodes[_startId].nextId);
 
         while (!_descendOne(_troveManager, _annualInterestRate, pos)) {}
@@ -401,7 +449,11 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _annualInterestRate Node's annual interest rate
      * @param _startId Id of node to start ascending the list from
      */
-    function _ascendList(ITroveManager _troveManager, uint256 _annualInterestRate, uint256 _startId) internal view returns (uint256, uint256) {
+    function _ascendList(ITroveManager _troveManager, uint256 _annualInterestRate, uint256 _startId)
+        internal
+        view
+        returns (uint256, uint256)
+    {
         Position memory pos = Position(nodes[_startId].prevId, _startId);
 
         while (!_ascendOne(_troveManager, _annualInterestRate, pos)) {}
@@ -436,14 +488,24 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _prevId Id of previous node for the insert position
      * @param _nextId Id of next node for the insert position
      */
-    function findInsertPosition(uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external view override returns (uint256, uint256) {
+    function findInsertPosition(uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId)
+        external
+        view
+        override
+        returns (uint256, uint256)
+    {
         return _findInsertPosition(troveManager, _annualInterestRate, _prevId, _nextId);
     }
 
     // This function is optimized under the assumption that only one of the original neighbours has been (re)moved.
     // In other words, we assume that the correct position can be found close to one of the two.
     // Nevertheless, the function will always find the correct position, regardless of hints or interference.
-    function _findInsertPosition(ITroveManager _troveManager, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) internal view returns (uint256, uint256) {
+    function _findInsertPosition(
+        ITroveManager _troveManager,
+        uint256 _annualInterestRate,
+        uint256 _prevId,
+        uint256 _nextId
+    ) internal view returns (uint256, uint256) {
         if (_prevId == ROOT_NODE_ID) {
             // The original correct position was found before the head of the list.
             // Assuming minimal interference, the new correct position is still close to the head.
@@ -483,7 +545,9 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
             // The correct position is still somewhere between the 2 hints, so it's not obvious
             // which of the 2 has been moved (assuming only one of them has been).
             // We simultaneously descend & ascend in the hope that one of them is very close.
-            return _descendAndAscendList(_troveManager, _annualInterestRate, _skipToBatchTail(_prevId), _skipToBatchHead(_nextId));
+            return _descendAndAscendList(
+                _troveManager, _annualInterestRate, _skipToBatchTail(_prevId), _skipToBatchHead(_nextId)
+            );
         }
     }
 
