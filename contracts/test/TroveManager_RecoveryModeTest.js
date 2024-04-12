@@ -4,6 +4,7 @@ const {
   TestHelper: th,
   TimeValues: timeValues,
 } = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
 const { assertRevert, dec, toBN } = th;
 
