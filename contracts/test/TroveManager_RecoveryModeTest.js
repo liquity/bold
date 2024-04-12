@@ -1,19 +1,18 @@
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const testHelpers = require("../utils/testHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
+const {
+  MoneyValues: mv,
+  TestHelper: th,
+  TimeValues: timeValues,
+} = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
-const th = testHelpers.TestHelper;
-const dec = th.dec;
-const toBN = th.toBN;
-const assertRevert = th.assertRevert;
-const mv = testHelpers.MoneyValues;
-const timeValues = testHelpers.TimeValues;
+const { assertRevert, dec, toBN } = th;
 
 const TroveManagerTester = artifacts.require("./TroveManagerTester");
-const BoldToken = artifacts.require("./BoldToken.sol");
 
 contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
+  const fundedAccounts = accounts.slice(0, 24);
+
   const _1_Ether = web3.utils.toWei("1", "ether");
   const _2_Ether = web3.utils.toWei("2", "ether");
   const _3_Ether = web3.utils.toWei("3", "ether");
@@ -27,7 +26,6 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
   const _25_Ether = web3.utils.toWei("25", "ether");
   const _30_Ether = web3.utils.toWei("30", "ether");
 
-  const ZERO_ADDRESS = th.ZERO_ADDRESS;
   const [
     owner,
     alice,
@@ -53,7 +51,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     G,
     H,
     I,
-  ] = accounts;
+  ] = fundedAccounts;
 
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
 
@@ -76,16 +74,14 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     th.getNetBorrowingAmount(contracts, debtWithFee);
   const openTrove = async (params) => th.openTrove(contracts, params);
 
+  const deployFixture = createDeployAndFundFixture({
+    accounts: fundedAccounts,
+    mocks: { TroveManager: TroveManagerTester },
+  });
+
   beforeEach(async () => {
-    contracts = await deploymentHelper.deployLiquityCore();
-    contracts.troveManager = await TroveManagerTester.new();
-    contracts.boldToken = await BoldToken.new(
-      contracts.troveManager.address,
-      contracts.stabilityPool.address,
-      contracts.borrowerOperations.address,
-      contracts.activePool.address
-    );
-  
+    const result = await deployFixture();
+    contracts = result.contracts;
     priceFeed = contracts.priceFeedTestnet;
     boldToken = contracts.boldToken;
     sortedTroves = contracts.sortedTroves;
@@ -96,35 +92,6 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     functionCaller = contracts.functionCaller;
     borrowerOperations = contracts.borrowerOperations;
     collSurplusPool = contracts.collSurplusPool;
-
-    await deploymentHelper.connectCoreContracts(contracts);
-
-      await fundAccounts([
-        owner,
-        alice,
-        bob,
-        carol,
-        dennis,
-        erin,
-        freddy,
-        greta,
-        harry,
-        ida,
-        whale,
-        defaulter_1,
-        defaulter_2,
-        defaulter_3,
-        defaulter_4,
-        A,
-        B,
-        C,
-        D,
-        E,
-        F,
-        G,
-        H,
-        I,
-      ], contracts.WETH);
   });
 
   it("checkRecoveryMode(): Returns true if TCR falls below CCR", async () => {

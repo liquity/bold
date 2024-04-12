@@ -1,16 +1,18 @@
 const { time } = require('@nomicfoundation/hardhat-network-helpers');
-const deploymentHelper = require("../utils/deploymentHelpers.js");
-const testHelpers = require("../utils/testHelpers.js");
-const { fundAccounts } = require("../utils/fundAccounts.js");
-const TroveManagerTester = artifacts.require("./TroveManagerTester.sol");
-const BoldToken = artifacts.require("./BoldToken.sol");
+const { 
+  MoneyValues: mv,
+  TestHelper: th,
+  TimeValues: timeValues,
+} = require("../utils/testHelpers.js");
+const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
-const th = testHelpers.TestHelper;
-const dec = th.dec;
-const toBN = th.toBN;
-const assertRevert = th.assertRevert;
-const mv = testHelpers.MoneyValues;
-const timeValues = testHelpers.TimeValues;
+const TroveManagerTester = artifacts.require("./TroveManagerTester.sol");
+
+const {
+  assertRevert,
+  dec,
+  toBN,
+} = th;
 
 const GAS_PRICE = 10000000;
 
@@ -22,6 +24,8 @@ const GAS_PRICE = 10000000;
  *
  */
 contract("TroveManager", async (accounts) => {
+  const fundedAccounts = accounts.slice(0, 20);
+
   const _18_zeros = "000000000000000000";
   const ZERO_ADDRESS = th.ZERO_ADDRESS;
 
@@ -46,78 +50,41 @@ contract("TroveManager", async (accounts) => {
     C,
     D,
     E,
-  ] = accounts;
+  ] = fundedAccounts;
 
-  const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
+  let contracts
 
-  let priceFeed;
-  let boldToken;
-  let sortedTroves;
-  let troveManager;
-  let activePool;
-  let stabilityPool;
-  let collSurplusPool;
-  let defaultPool;
-  let borrowerOperations;
-  let hintHelpers;
+  let priceFeed
+  let boldToken
+  let sortedTroves
+  let troveManager
+  let activePool
+  let stabilityPool
+  let defaultPool
+  let borrowerOperations
 
-  let contracts;
-
-  const getOpenTroveTotalDebt = async (boldAmount) =>
-    th.getOpenTroveTotalDebt(contracts, boldAmount);
-  const getOpenTroveBoldAmount = async (totalDebt) =>
-    th.getOpenTroveBoldAmount(contracts, totalDebt);
-  const getActualDebtFromComposite = async (compositeDebt) =>
-    th.getActualDebtFromComposite(compositeDebt, contracts);
-  const getNetBorrowingAmount = async (debtWithFee) =>
-    th.getNetBorrowingAmount(contracts, debtWithFee);
+  const deployFixture = createDeployAndFundFixture({
+    accounts: fundedAccounts,
+    mocks: { TroveManager: TroveManagerTester, }
+  });
+  const getOpenTroveTotalDebt = async (boldAmount) => th.getOpenTroveTotalDebt(contracts, boldAmount);
+  const getOpenTroveBoldAmount = async (totalDebt) => th.getOpenTroveBoldAmount(contracts, totalDebt);
+  const getActualDebtFromComposite = async (compositeDebt) => th.getActualDebtFromComposite(compositeDebt, contracts);
+  const getNetBorrowingAmount = async (debtWithFee) => th.getNetBorrowingAmount(contracts, debtWithFee);
   const openTrove = async (params) => th.openTrove(contracts, params);
   const withdrawBold = async (params) => th.withdrawBold(contracts, params);
 
   beforeEach(async () => {
-    contracts = await deploymentHelper.deployLiquityCore();
-    contracts.troveManager = await TroveManagerTester.new();
-    contracts.boldToken = await BoldToken.new(
-      contracts.troveManager.address,
-      contracts.stabilityPool.address,
-      contracts.borrowerOperations.address,
-      contracts.activePool.address
-    )
-
-    priceFeed = contracts.priceFeedTestnet;
-    boldToken = contracts.boldToken;
-    sortedTroves = contracts.sortedTroves;
-    troveManager = contracts.troveManager;
-    activePool = contracts.activePool;
-    stabilityPool = contracts.stabilityPool;
-    defaultPool = contracts.defaultPool;
-    collSurplusPool = contracts.collSurplusPool;
-    borrowerOperations = contracts.borrowerOperations;
-    hintHelpers = contracts.hintHelpers;
-
-    await deploymentHelper.connectCoreContracts(contracts);
-    await fundAccounts([
-      owner,
-      alice,
-      bob,
-      carol,
-      dennis,
-      erin,
-      flyn,
-      graham,
-      harriet,
-      ida,
-      defaulter_1,
-      defaulter_2,
-      defaulter_3,
-      defaulter_4,
-      whale,
-      A,
-      B,
-      C,
-      D,
-      E,
-    ], contracts.WETH);
+    const result = await deployFixture()
+    contracts = result.contracts
+    priceFeed = contracts.priceFeedTestnet
+    boldToken = contracts.boldToken
+    sortedTroves = contracts.sortedTroves
+    troveManager = contracts.troveManager
+    activePool = contracts.activePool
+    stabilityPool = contracts.stabilityPool
+    defaultPool = contracts.defaultPool
+    borrowerOperations = contracts.borrowerOperations
   });
 
   it("liquidate(): closes a Trove that has ICR < MCR", async () => {
@@ -436,7 +403,7 @@ contract("TroveManager", async (accounts) => {
     );
 
     assert.isTrue(await sortedTroves.contains(bobTroveId));
-    th.logBN("bob icr", await troveManager.getCurrentICR(bob, await priceFeed.getPrice()));
+    // th.logBN("bob icr", await troveManager.getCurrentICR(bob, await priceFeed.getPrice()));
     // Bob now withdraws Bold, bringing his ICR to 1.11
     const { increasedTotalDebt: B_increasedTotalDebt } = await withdrawBold({
       ICR: toBN(dec(111, 16)),
@@ -1618,7 +1585,7 @@ contract("TroveManager", async (accounts) => {
         totalCollNonDefaulters
           .add(th.applyLiquidationFee(totalCollDefaulters))
           .mul(price)
-          .div(totalDebt)
+          .div(totalDebt),
       ),
       1000
     );

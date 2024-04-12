@@ -28,9 +28,9 @@ interface ITroveManager is IERC721, ILiquityBase {
     function sortedTroves() external view returns(ISortedTroves);
     function borrowerOperationsAddress() external view returns (address);
 
-    function BOOTSTRAP_PERIOD() external view returns (uint256);
-
     // function BOLD_GAS_COMPENSATION() external view returns (uint256);
+
+    function baseRate() external view returns (uint256);
 
     function getTroveIdsCount() external view returns (uint);
 
