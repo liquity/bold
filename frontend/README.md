@@ -136,7 +136,7 @@ The address of the ENS resolver contract. Optional.
 
 ```dosini
 # Format
-NEXT_PUBLIC_CHAIN_CONTRACT_ENS_RESOLVER=address|chainId
+NEXT_PUBLIC_CHAIN_CONTRACT_ENS_RESOLVER=address|blockCreated
 
 # Example
 NEXT_PUBLIC_CHAIN_CONTRACT_ENS_RESOLVER=0xce01f8eee7E479C928F8919abD53E553a36CeF67|19258213
@@ -148,7 +148,7 @@ The address of the Multicall contract. Optional.
 
 ```dosini
 # Format
-NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=address|chainId
+NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=address|blockCreated
 
 # Example
 NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=0xca11bde05977b3631167028862be2a173976ca11|14353601
