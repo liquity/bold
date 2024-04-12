@@ -27,7 +27,6 @@ concurrency:
 jobs:
   deploy-contracts:
     name: Deploy contracts
-    if: false # Disable contracts deployment for now
     runs-on: ubuntu-latest
     steps:
       - name: Git checkout
@@ -54,6 +53,10 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
+
+      - name: Dump Foundry config for debugging
+        working-directory: ./contracts
+        run: forge config --json
 
       - name: Run deployment tool
         working-directory: ./contracts
