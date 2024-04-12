@@ -4,7 +4,6 @@ pragma solidity 0.8.18;
 
 import "../../Interfaces/ISortedTroves.sol";
 
-
 // Used as both a wrapper for SortedTroves functions and a mock TroveManager.
 contract SortedTrovesTester {
     ISortedTroves sortedTroves;
@@ -27,7 +26,7 @@ contract SortedTrovesTester {
     }
 
     // --- Mock TroveManager functions ---
-    function getTroveAnnualInterestRate(uint256) external pure returns (uint) {
+    function getTroveAnnualInterestRate(uint256) external pure returns (uint256) {
         return 1;
     }
 

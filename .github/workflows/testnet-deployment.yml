@@ -44,7 +44,7 @@ jobs:
         with:
           node-version-file: '.node-version'
           cache: 'pnpm'
-          cache-dependency-path: 'contracts/pnpm-lock.yaml'
+          cache-dependency-path: 'pnpm-lock.yaml'
 
       - name: Install dependencies
         run: pnpm install

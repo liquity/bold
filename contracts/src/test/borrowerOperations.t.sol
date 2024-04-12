@@ -2,7 +2,6 @@ pragma solidity ^0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 
-
 contract BorrowerOperationsTest is DevTestSetup {
     // closeTrove(): reverts when trove is the only one in the system", async () =>
     function testCloseLastTroveReverts() public {

@@ -12,5 +12,5 @@ pragma solidity 0.8.18;
  * See this issue for more context: https://github.com/liquity/dev/issues/186
  */
 contract GasPool {
-    // do nothing, as the core contracts have permission to send to and burn from this address
+// do nothing, as the core contracts have permission to send to and burn from this address
 }

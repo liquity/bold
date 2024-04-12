@@ -14,13 +14,13 @@ const CommunityIssuance = artifacts.require("./LQTY/CommunityIssuance.sol");
 const HintHelpers = artifacts.require("./HintHelpers.sol");
 
 const CommunityIssuanceTester = artifacts.require(
-  "./LQTY/CommunityIssuanceTester.sol"
+  "./LQTY/CommunityIssuanceTester.sol",
 );
 const ActivePoolTester = artifacts.require("./ActivePoolTester.sol");
 const DefaultPoolTester = artifacts.require("./DefaultPoolTester.sol");
 const LiquityMathTester = artifacts.require("./LiquityMathTester.sol");
 const BorrowerOperationsTester = artifacts.require(
-  "./BorrowerOperationsTester.sol"
+  "./BorrowerOperationsTester.sol",
 );
 const TroveManagerTester = artifacts.require("./TroveManagerTester.sol");
 // const BoldTokenTester = artifacts.require("./BoldTokenTester.sol");
@@ -73,11 +73,11 @@ const getBytecodeSize = (contractABI) => {
 const getUSDCostFromGasCost = (
   deploymentGasTotal,
   gasPriceInGwei,
-  ETHPrice
+  ETHPrice,
 ) => {
   const dollarCost = (deploymentGasTotal * gasPriceInGwei * ETHPrice) / 1e9;
   console.log(
-    `At gas price ${gasPriceInGwei} GWei, and ETH Price $${ETHPrice} per ETH, the total cost of deployment in USD is: $${dollarCost}`
+    `At gas price ${gasPriceInGwei} GWei, and ETH Price $${ETHPrice} per ETH, the total cost of deployment in USD is: $${dollarCost}`,
   );
 };
 
@@ -87,7 +87,7 @@ const logContractDeploymentCosts = async (contracts) => {
   for (contractName of Object.keys(contracts)) {
     const gasCost = await getGasFromContractDeployment(
       contracts[contractName],
-      contractName
+      contractName,
     );
     totalGasCost = totalGasCost + Number(gasCost);
   }
@@ -101,7 +101,7 @@ const logContractObjects = async (contracts) => {
   for (contractName of Object.keys(contracts)) {
     const gasCost = await getGasFromContractDeployment(
       contracts[contractName],
-      contractName
+      contractName,
     );
     totalGasCost = totalGasCost + Number(gasCost);
   }
@@ -119,7 +119,7 @@ async function main() {
   const coreContracts = await dh.deployLiquityCoreHardhat();
   const LQTYContracts = await dh.deployLQTYContractsHardhat(
     ARBITRARY_ADDRESS,
-    ARBITRARY_ADDRESS
+    ARBITRARY_ADDRESS,
   );
 
   await dh.connectCoreContracts(coreContracts, LQTYContracts);

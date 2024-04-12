@@ -1,4 +1,4 @@
-const { time } = require('@nomicfoundation/hardhat-network-helpers');
+const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 const {
   MoneyValues: mv,
@@ -22,8 +22,7 @@ contract("CollSurplusPool", async (accounts) => {
   let collSurplusPool;
   let priceFeed;
 
-  const getOpenTroveBoldAmount = async (totalDebt) =>
-    th.getOpenTroveBoldAmount(contracts, totalDebt);
+  const getOpenTroveBoldAmount = async (totalDebt) => th.getOpenTroveBoldAmount(contracts, totalDebt);
   const openTrove = async (params) => th.openTrove(contracts, params);
 
   const deployFixture = createDeployAndFundFixture({
@@ -42,14 +41,14 @@ contract("CollSurplusPool", async (accounts) => {
   it("CollSurplusPool: claimColl(): Reverts if caller is not Borrower Operations", async () => {
     await th.assertRevert(
       collSurplusPool.claimColl(A, th.addressToTroveId(A), { from: A }),
-      "CollSurplusPool: Caller is not Borrower Operations"
+      "CollSurplusPool: Caller is not Borrower Operations",
     );
   });
 
   it("CollSurplusPool: claimColl(): Reverts if nothing to claim", async () => {
     await th.assertRevert(
       borrowerOperations.claimCollateral(th.addressToTroveId(A), { from: A }),
-      "CollSurplusPool: No collateral available to claim"
+      "CollSurplusPool: No collateral available to claim",
     );
   });
 
@@ -60,14 +59,14 @@ contract("CollSurplusPool", async (accounts) => {
         to: collSurplusPool.address,
         value: 1,
       }),
-      "CollSurplusPool: Caller is not Active Pool"
+      "CollSurplusPool: Caller is not Active Pool",
     );
   });
 
   it("CollSurplusPool: accountSurplus: reverts if caller is not Trove Manager", async () => {
     await th.assertRevert(
       collSurplusPool.accountSurplus(A, 1),
-      "CollSurplusPool: Caller is not TroveManager"
+      "CollSurplusPool: Caller is not TroveManager",
     );
   });
 });

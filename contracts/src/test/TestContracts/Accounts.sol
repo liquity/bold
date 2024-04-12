@@ -16,7 +16,7 @@ contract Accounts {
         0xaD55BABd2FdceD7aa85eB1FEf47C455DBB7a57a46a16aC9ACFFBE66d7Caf83Ee
     ];
 
-    function getAccountsCount() external view returns (uint) {
+    function getAccountsCount() external view returns (uint256) {
         return accountsPks.length;
     }
 }
