@@ -85,7 +85,7 @@ function createChain({
     contracts: {
       ensRegistry: contractEnsRegistry,
       ensUniversalResolver: contractEnsResolver,
-      multicall: contractMulticall,
+      multicall3: contractMulticall,
     },
   } satisfies Chain;
 }
