@@ -1,12 +1,11 @@
-import type { Address } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
 import { FormField } from "@/src/comps/FormField/FormField";
 import { TextInput } from "@/src/comps/Input/TextInput";
 import { CONTRACT_BORROWER_OPERATIONS } from "@/src/env";
-import { ADDRESS_ZERO } from "@/src/eth-utils";
-import { parseInputAddress, parseInputPercentage, parseInputValue } from "@/src/form-utils";
+import { parseInputInt, parseInputPercentage, parseInputValue } from "@/src/form-utils";
+import { getTroveId } from "@/src/liquity-utils";
 import * as dn from "dnum";
 import { useState } from "react";
 import { useAccount, useWriteContract } from "wagmi";
@@ -28,33 +27,38 @@ export function ContractBorrowerOperations() {
   );
 }
 
+type FormValue<T> = [fieldValue: string, parsedValue: T];
+
 function OpenTrove() {
   const account = useAccount();
   const { writeContract } = useWriteContract();
 
   const [formValues, setFormValues] = useState<{
-    maxFeePercentage: [string, Dnum];
-    boldAmount: [string, Dnum];
-    upperHint: [string, Address];
-    lowerHint: [string, Address];
-    annualInterestRate: [string, Dnum];
-    ethValue: [string, Dnum];
+    ownerIndex: FormValue<bigint>;
+    maxFeePercentage: FormValue<Dnum>;
+    boldAmount: FormValue<Dnum>;
+    upperHint: FormValue<Dnum>;
+    lowerHint: FormValue<Dnum>;
+    annualInterestRate: FormValue<Dnum>;
+    ethAmount: FormValue<Dnum>;
   }>(() => ({
+    ownerIndex: ["", 0n],
     maxFeePercentage: ["", dn.from(0, 18)],
     boldAmount: ["", dn.from(0, 18)],
-    upperHint: ["", ADDRESS_ZERO],
-    lowerHint: ["", ADDRESS_ZERO],
+    upperHint: ["", dn.from(0, 18)],
+    lowerHint: ["", dn.from(0, 18)],
     annualInterestRate: ["", dn.from(0, 18)],
-    ethValue: ["", dn.from(0, 18)],
+    ethAmount: ["", dn.from(0, 18)],
   }));
 
   const formProps = Object.fromEntries([
+    ["ownerIndex", parseInputInt] as const,
     ["maxFeePercentage", parseInputValue] as const,
     ["boldAmount", parseInputValue] as const,
-    ["upperHint", parseInputAddress] as const,
-    ["lowerHint", parseInputAddress] as const,
+    ["upperHint", parseInputValue] as const,
+    ["lowerHint", parseInputValue] as const,
     ["annualInterestRate", parseInputPercentage] as const,
-    ["ethValue", parseInputValue] as const,
+    ["ethAmount", parseInputValue] as const,
   ].map(([name, valueParser]) => [name, {
     onChange: (value: string) => {
       const parsedValue = valueParser(value);
@@ -75,26 +79,28 @@ function OpenTrove() {
         address: CONTRACT_BORROWER_OPERATIONS,
         functionName: "openTrove",
         args: [
+          account.address,
+          formValues.ownerIndex[1],
           formValues.maxFeePercentage[1][0],
+          formValues.ethAmount[1][0],
           formValues.boldAmount[1][0],
-          formValues.upperHint[1],
-          formValues.lowerHint[1],
+          formValues.upperHint[1][0],
+          formValues.lowerHint[1][0],
           formValues.annualInterestRate[1][0],
         ],
-        value: formValues.ethValue[1][0],
       });
     }
   };
 
   const onFillExample = () => {
-    const address = account.address ?? ADDRESS_ZERO;
     setFormValues({
+      ownerIndex: ["0", 0n],
       maxFeePercentage: ["100", [100n * 10n ** 16n, 18]],
       boldAmount: ["1800", [1800n * 10n ** 18n, 18]],
-      upperHint: [address, address],
-      lowerHint: [address, address],
+      upperHint: ["0", [0n, 18]],
+      lowerHint: ["0", [0n, 18]],
       annualInterestRate: ["5", [5n * 10n ** 16n, 18]],
-      ethValue: ["20", [20n * 10n ** 18n, 18]],
+      ethAmount: ["20", [20n * 10n ** 18n, 18]],
     });
   };
 
@@ -104,8 +110,14 @@ function OpenTrove() {
       onSubmit={onSubmit}
       title="Open Trove"
     >
+      <FormField label="Owner Index">
+        <TextInput {...formProps.ownerIndex} />
+      </FormField>
       <FormField label="Max Fee Percentage">
         <TextInput {...formProps.maxFeePercentage} />
+      </FormField>
+      <FormField label="ETH Amount">
+        <TextInput {...formProps.ethAmount} />
       </FormField>
       <FormField label="BOLD Amount">
         <TextInput {...formProps.boldAmount} />
@@ -119,9 +131,6 @@ function OpenTrove() {
       <FormField label="Annual Interest Rate">
         <TextInput {...formProps.annualInterestRate} />
       </FormField>
-      <FormField label="Collateral (value)">
-        <TextInput {...formProps.ethValue} />
-      </FormField>
     </ContractAction>
   );
 }
@@ -129,20 +138,50 @@ function OpenTrove() {
 function CloseTrove() {
   const account = useAccount();
   const { writeContract } = useWriteContract();
+
+  const [formValues, setFormValues] = useState<{
+    ownerIndex: FormValue<bigint>;
+  }>(() => ({
+    ownerIndex: ["", 0n],
+  }));
+
+  const formProps = Object.fromEntries([
+    ["ownerIndex", parseInputInt] as const,
+  ].map(([name, valueParser]) => [name, {
+    onChange: (value: string) => {
+      const parsedValue = valueParser(value);
+      if (parsedValue !== null) {
+        setFormValues((values) => ({
+          ...values,
+          [name]: [value, parsedValue],
+        }));
+      }
+    },
+    value: formValues[name][0],
+  }]));
+
+  const onSubmit = () => {
+    if (account.address) {
+      writeContract({
+        abi: BorrowerOperations,
+        address: CONTRACT_BORROWER_OPERATIONS,
+        functionName: "closeTrove",
+        args: [
+          getTroveId(account.address, formValues.ownerIndex[1]),
+        ],
+      });
+    }
+  };
+
   return (
     <ContractAction
       title="Close Trove"
-      onSubmit={() => {
-        if (account.address) {
-          writeContract({
-            abi: BorrowerOperations,
-            address: CONTRACT_BORROWER_OPERATIONS,
-            functionName: "closeTrove",
-            args: [],
-          });
-        }
-      }}
-    />
+      onSubmit={onSubmit}
+    >
+      <FormField label="Owner Index">
+        <TextInput {...formProps.ownerIndex} />
+      </FormField>
+    </ContractAction>
   );
 }
 

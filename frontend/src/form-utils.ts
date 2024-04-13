@@ -7,6 +7,12 @@ export function isInputValueFloat(value: string) {
   return inputValueRegex.test(value);
 }
 
+const inputIntRegex = /^[0-9]*$/;
+export function isInputValueInt(value: string) {
+  value = value.trim();
+  return inputIntRegex.test(value);
+}
+
 export function parseInputValue(value: string) {
   value = value.trim();
 
@@ -27,6 +33,11 @@ export function parseInputPercentage(value: string) {
     return null;
   }
   return dn.div(parsedValue, 100);
+}
+
+export function parseInputInt(value: string) {
+  value = value.trim();
+  return isInputValueInt(value) ? BigInt(value) : null;
 }
 
 export function parseInputAddress(value: string) {

@@ -1,8 +1,9 @@
-import type { Address } from "@/src/types";
+import type { Address, TroveId } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { BoldTokenContract, BorrowerOperationsContract, TroveManagerContract } from "@/src/contracts";
 import { match } from "ts-pattern";
+import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { useReadContract, useReadContracts, useWriteContract } from "wagmi";
 
 type TroveStatus =
@@ -21,7 +22,7 @@ type TroveDetails = {
 };
 
 type LiquityInfo = {
-  trovesCount: number;
+  // trovesCount: number;
   totalCollateral: Dnum;
   totalDebt: Dnum;
   tcr: Dnum;
@@ -45,43 +46,40 @@ function troveStatusFromNumber(value: number): TroveStatus {
     });
 }
 
-export function useTroveDetails(borrower: Address) {
+export function useTroveDetails(troveId: TroveId = 0n) {
   const read = useReadContracts({
     allowFailure: false,
     contracts: [
       {
         ...TroveManagerContract,
         functionName: "getTroveStatus",
-        args: [borrower],
+        args: [troveId],
       },
       {
         ...TroveManagerContract,
         functionName: "getTroveStake",
-        args: [borrower],
+        args: [troveId],
       },
       {
         ...TroveManagerContract,
         functionName: "getTroveDebt",
-        args: [borrower],
+        args: [troveId],
       },
       {
         ...TroveManagerContract,
         functionName: "getTroveColl",
-        args: [borrower],
+        args: [troveId],
       },
       {
         ...TroveManagerContract,
         functionName: "getTroveAnnualInterestRate",
-        args: [borrower],
+        args: [troveId],
       },
     ],
   });
 
   if (!read.data || read.status !== "success") {
-    return {
-      ...read,
-      data: undefined,
-    };
+    return { ...read, data: undefined };
   }
 
   const troveStatusNumber = Number(read.data[0]);
@@ -94,26 +92,25 @@ export function useTroveDetails(borrower: Address) {
     interestRate: [read.data[4] ?? 0n, 18],
   };
 
-  return {
-    ...read,
-    data,
-  };
+  return { ...read, data };
 }
 
-export function useOpenTrove(address: Address, {
+export function useOpenTrove(owner: Address, {
+  ownerIndex,
   maxFeePercentage,
   boldAmount,
   upperHint,
   lowerHint,
   interestRate,
-  value,
+  ethAmount,
 }: {
+  ownerIndex: bigint;
   maxFeePercentage: bigint; // 0 to 1 * 10^18
   boldAmount: bigint; // amount * 10^18
-  upperHint: Address;
-  lowerHint: Address;
+  upperHint: bigint;
+  lowerHint: bigint;
   interestRate: bigint; // 0 to 1 * 10^18
-  value: bigint; // amount * 10^18
+  ethAmount: bigint; // amount * 10^18
 }) {
   const { writeContract } = useWriteContract();
   return () => (
@@ -121,26 +118,26 @@ export function useOpenTrove(address: Address, {
       ...BorrowerOperationsContract,
       functionName: "openTrove",
       args: [
+        owner,
+        ownerIndex,
         maxFeePercentage,
+        ethAmount,
         boldAmount,
         upperHint,
         lowerHint,
         interestRate,
       ],
-      account: address,
-      value: value,
     })
   );
 }
 
-export function useCloseTrove(address: Address) {
+export function useCloseTrove(troveId: TroveId) {
   const { writeContract } = useWriteContract();
   return () => (
     writeContract({
       ...BorrowerOperationsContract,
       functionName: "closeTrove",
-      args: [],
-      account: address,
+      args: [troveId],
     })
   );
 }
@@ -153,19 +150,19 @@ export function useBoldBalance(address: Address) {
   });
 }
 
-export function useRewards(address: Address) {
+export function useRewards(troveId: TroveId) {
   const read = useReadContracts({
     allowFailure: false,
     contracts: [
       {
         ...TroveManagerContract,
         functionName: "getPendingETHReward",
-        args: [address],
+        args: [troveId],
       },
       {
         ...TroveManagerContract,
         functionName: "getPendingBoldDebtReward",
-        args: [address],
+        args: [troveId],
       },
     ],
   });
@@ -192,11 +189,11 @@ export function useLiquity2Info() {
   const read = useReadContracts({
     allowFailure: false,
     contracts: [
-      {
-        ...TroveManagerContract,
-        functionName: "getTroveOwnersCount",
-        args: [],
-      },
+      // {
+      //   ...TroveManagerContract,
+      //   functionName: "getTroveOwnersCount",
+      //   args: [],
+      // },
       {
         ...TroveManagerContract,
         functionName: "getEntireSystemColl",
@@ -210,7 +207,7 @@ export function useLiquity2Info() {
       {
         ...TroveManagerContract,
         functionName: "getTCR",
-        args: [4_000n * 10n ** 18n],
+        args: [200n * 10n ** 18n],
       },
       {
         ...TroveManagerContract,
@@ -228,15 +225,19 @@ export function useLiquity2Info() {
   }
 
   const data: LiquityInfo = {
-    trovesCount: Number(read.data[0]),
-    totalCollateral: [read.data[1], 18],
-    totalDebt: [read.data[2], 18],
-    tcr: [read.data[3], 18],
-    redemptionRate: [read.data[4], 18],
+    // trovesCount: Number(read.data[0]),
+    totalCollateral: [read.data[0], 18],
+    totalDebt: [read.data[1], 18],
+    tcr: [read.data[2], 18],
+    redemptionRate: [read.data[3], 18],
   };
 
-  return {
-    ...read,
-    data,
-  };
+  return { ...read, data };
+}
+
+export function getTroveId(owner: Address, ownerIndex: bigint) {
+  return BigInt(keccak256(encodeAbiParameters(
+    parseAbiParameters("address, uint256"),
+    [owner, ownerIndex],
+  )));
 }

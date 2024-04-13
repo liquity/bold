@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { ADDRESS_ZERO, shortenAddress } from "@/src/eth-utils";
 import {
+  getTroveId,
   useBoldBalance,
   useCloseTrove,
   useLiquity2Info,
@@ -54,7 +55,7 @@ function AccountDetails() {
   const { address } = useAccount();
   const balance = useBalance({ address: address ?? ADDRESS_ZERO });
   const boldBalance = useBoldBalance(address ?? ADDRESS_ZERO);
-  const rewards = useRewards(address ?? ADDRESS_ZERO);
+  const rewards = useRewards(getTroveId(address ?? ADDRESS_ZERO, 0n));
   return (
     <Card
       title="Account"
@@ -75,7 +76,7 @@ function AccountDetails() {
         )
         .when(
           ({ address, data }) => address && data.some(({ status }) => status === "error"),
-          () => <div>error</div>,
+          ({ data }) => <div>error</div>,
         )
         .with(
           {
@@ -122,21 +123,22 @@ function AccountDetails() {
 
 function TroveDetails() {
   const { address } = useAccount();
-  const troveDetails = useTroveDetails(address ?? ADDRESS_ZERO);
+  const troveDetails = useTroveDetails(address && getTroveId(address, 0n));
 
-  const closeTrove = useCloseTrove(address ?? ADDRESS_ZERO);
+  const closeTrove = useCloseTrove(getTroveId(address ?? ADDRESS_ZERO, 0n));
   const openTrove = useOpenTrove(address ?? ADDRESS_ZERO, {
+    ownerIndex: 0n,
     maxFeePercentage: 100n * 10n ** 16n, // 100%
     boldAmount: 1800n * 10n ** 18n, // 1800 BOLD
-    upperHint: address ?? ADDRESS_ZERO,
-    lowerHint: address ?? ADDRESS_ZERO,
+    upperHint: 0n,
+    lowerHint: 0n,
     interestRate: 5n * 10n ** 16n, // 5%
-    value: 20n * 10n ** 18n, // 20 ETH
+    ethAmount: 20n * 10n ** 18n, // 20 ETH
   });
 
   return (
     <Card
-      title="Trove"
+      title="Trove #0"
       action={match([troveDetails.data?.status, address])
         .with(
           [
@@ -193,7 +195,7 @@ function Liquity2Info() {
           <>
             <CardRow
               name="Troves Count"
-              value={data.trovesCount}
+              value="?"
             />
             <CardRow
               name="Total Collateral"
@@ -201,12 +203,12 @@ function Liquity2Info() {
             />
             <CardRow
               name="Total Debt"
-              value={dn.format(data.totalDebt) + " BOLD"}
+              value={dn.format(data.totalDebt, 2) + " BOLD"}
             />
             <CardRow
               name={
                 <>
-                  <abbr title="Total Collateral Ratio">TCR</abbr> ($4k/ETH)
+                  <abbr title="Total Collateral Ratio">TCR</abbr> ($200/ETH)
                 </>
               }
               value={dn.format(dn.mul(data.tcr, 100n), 2) + "%"}
@@ -326,13 +328,10 @@ function CardRow({
         alignItems: "center",
         gap: 80,
         height: 32,
+        whiteSpace: "nowrap",
       })}
     >
-      <div
-        className={css({
-          whiteSpace: "nowrap",
-        })}
-      >
+      <div>
         {name}
       </div>
       <div>{value}</div>
