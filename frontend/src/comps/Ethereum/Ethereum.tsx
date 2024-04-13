@@ -30,7 +30,7 @@ export function Ethereum({ children }: { children: ReactNode }) {
     return (
       createConfig(
         getDefaultConfig({
-          appName: "Liquity 2",
+          appName: "Liquity v2",
           chains: [chain],
           transports: {
             [config.chainId]: http(config.chainRpcUrl),
