@@ -1,5 +1,6 @@
 import { ADDRESS_ZERO, isAddress } from "@/src/eth-utils";
 import * as dn from "dnum";
+import { useState } from "react";
 
 const inputValueRegex = /^[0-9]*\.?[0-9]*?$/;
 export function isInputValueFloat(value: string) {
@@ -40,7 +41,78 @@ export function parseInputInt(value: string) {
   return isInputValueInt(value) ? BigInt(value) : null;
 }
 
+export function parseInputBoolean(value: string) {
+  value = value.trim();
+  return value === "true" || value === "1";
+}
+
 export function parseInputAddress(value: string) {
   value = value.trim();
   return isAddress(value) ? value : ADDRESS_ZERO;
+}
+
+export type FormValue<T> = [fieldValue: string, parsedValue: T, parser: (value: string) => T];
+export function formValue<T>(parsedValueDefault: T, parser: (value: string) => T): FormValue<T> {
+  return ["", parsedValueDefault, parser];
+}
+
+export function useForm<Form extends Record<string, FormValue<unknown>>>(
+  initial: () => Form,
+  onUpdate: () => void, // use this to reset the error state
+) {
+  const [form, setForm] = useState(initial);
+
+  const fieldsProps: Record<string, {
+    onChange: (value: string) => void;
+    value: string;
+  }> = {};
+
+  for (const [name, formValue] of Object.entries(form)) {
+    const parser = formValue[2];
+    fieldsProps[name] = {
+      onChange: (value: string) => {
+        onUpdate();
+        const parsedValue = parser(value);
+        if (parsedValue !== null) {
+          setForm((values) => ({
+            ...values,
+            [name]: [value, parsedValue, parser],
+          }));
+        }
+      },
+      value: form[name][0],
+    };
+  }
+
+  const parsedValues = Object.fromEntries(
+    Object
+      .entries(form)
+      .map(([name, [_, parsedValue]]) => [name, parsedValue]),
+  ) as {
+    [K in keyof Form]: NonNullable<Form[K][1]>;
+  };
+
+  const setFormValues = (values: Record<string, unknown>) => {
+    setForm((form) => {
+      const newForm: Record<string, FormValue<unknown>> = { ...form };
+      for (const [name, value] of Object.entries(values)) {
+        const formValue = newForm[name];
+        if (formValue) {
+          const [, , parser] = formValue;
+          newForm[name] = [
+            String(value),
+            parser(String(value)),
+            parser,
+          ];
+        }
+      }
+      return { ...form, newForm };
+    });
+  };
+
+  return {
+    fieldsProps,
+    values: parsedValues,
+    setFormValues,
+  } as const;
 }

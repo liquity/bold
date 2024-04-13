@@ -1,13 +1,10 @@
-import type { Dnum } from "dnum";
-
 import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
 import { FormField } from "@/src/comps/FormField/FormField";
 import { TextInput } from "@/src/comps/Input/TextInput";
 import { CONTRACT_BORROWER_OPERATIONS } from "@/src/env";
-import { parseInputInt, parseInputPercentage, parseInputValue } from "@/src/form-utils";
+import { formValue, parseInputInt, parseInputPercentage, parseInputValue, useForm } from "@/src/form-utils";
 import { getTroveId } from "@/src/liquity-utils";
 import * as dn from "dnum";
-import { useState } from "react";
 import { useAccount, useWriteContract } from "wagmi";
 import { Contract } from "./Contract";
 import { ContractAction } from "./ContractAction";
@@ -27,50 +24,19 @@ export function ContractBorrowerOperations() {
   );
 }
 
-type FormValue<T> = [fieldValue: string, parsedValue: T];
-
 function OpenTrove() {
   const account = useAccount();
-  const { writeContract } = useWriteContract();
+  const { writeContract, error, reset } = useWriteContract();
 
-  const [formValues, setFormValues] = useState<{
-    ownerIndex: FormValue<bigint>;
-    maxFeePercentage: FormValue<Dnum>;
-    boldAmount: FormValue<Dnum>;
-    upperHint: FormValue<Dnum>;
-    lowerHint: FormValue<Dnum>;
-    annualInterestRate: FormValue<Dnum>;
-    ethAmount: FormValue<Dnum>;
-  }>(() => ({
-    ownerIndex: ["", 0n],
-    maxFeePercentage: ["", dn.from(0, 18)],
-    boldAmount: ["", dn.from(0, 18)],
-    upperHint: ["", dn.from(0, 18)],
-    lowerHint: ["", dn.from(0, 18)],
-    annualInterestRate: ["", dn.from(0, 18)],
-    ethAmount: ["", dn.from(0, 18)],
-  }));
-
-  const formProps = Object.fromEntries([
-    ["ownerIndex", parseInputInt] as const,
-    ["maxFeePercentage", parseInputValue] as const,
-    ["boldAmount", parseInputValue] as const,
-    ["upperHint", parseInputValue] as const,
-    ["lowerHint", parseInputValue] as const,
-    ["annualInterestRate", parseInputPercentage] as const,
-    ["ethAmount", parseInputValue] as const,
-  ].map(([name, valueParser]) => [name, {
-    onChange: (value: string) => {
-      const parsedValue = valueParser(value);
-      if (parsedValue !== null) {
-        setFormValues((values) => ({
-          ...values,
-          [name]: [value, parsedValue],
-        }));
-      }
-    },
-    value: formValues[name][0],
-  }]));
+  const { fieldsProps, values, setFormValues } = useForm(() => ({
+    ownerIndex: formValue(0n, parseInputInt),
+    maxFeePercentage: formValue(dn.from(0, 18), parseInputValue),
+    ethAmount: formValue(dn.from(0, 18), parseInputValue),
+    boldAmount: formValue(dn.from(0, 18), parseInputValue),
+    upperHint: formValue(dn.from(0, 18), parseInputValue),
+    lowerHint: formValue(dn.from(0, 18), parseInputValue),
+    annualInterestRate: formValue(dn.from(0, 18), parseInputPercentage),
+  }), reset);
 
   const onSubmit = () => {
     if (account.address) {
@@ -80,56 +46,56 @@ function OpenTrove() {
         functionName: "openTrove",
         args: [
           account.address,
-          formValues.ownerIndex[1],
-          formValues.maxFeePercentage[1][0],
-          formValues.ethAmount[1][0],
-          formValues.boldAmount[1][0],
-          formValues.upperHint[1][0],
-          formValues.lowerHint[1][0],
-          formValues.annualInterestRate[1][0],
+          values.ownerIndex,
+          values.maxFeePercentage[0],
+          values.ethAmount[0],
+          values.boldAmount[0],
+          values.upperHint[0],
+          values.lowerHint[0],
+          values.annualInterestRate[0],
         ],
       });
     }
   };
 
-  const onFillExample = () => {
-    setFormValues({
-      ownerIndex: ["0", 0n],
-      maxFeePercentage: ["100", [100n * 10n ** 16n, 18]],
-      boldAmount: ["1800", [1800n * 10n ** 18n, 18]],
-      upperHint: ["0", [0n, 18]],
-      lowerHint: ["0", [0n, 18]],
-      annualInterestRate: ["5", [5n * 10n ** 16n, 18]],
-      ethAmount: ["20", [20n * 10n ** 18n, 18]],
-    });
-  };
+  // const onFillExample = () => {
+  //   setFormValues({
+  //     ownerIndex: ["0", 0n],
+  //     maxFeePercentage: ["100", [100n * 10n ** 16n, 18]],
+  //     ethAmount: ["20", [20n * 10n ** 18n, 18]],
+  //     boldAmount: ["1800", [1800n * 10n ** 18n, 18]],
+  //     upperHint: ["0", [0n, 18]],
+  //     lowerHint: ["0", [0n, 18]],
+  //     annualInterestRate: ["5", [5n * 10n ** 16n, 18]],
+  //   });
+  // };
 
   return (
     <ContractAction
-      onFillExample={onFillExample}
+      error={error}
       onSubmit={onSubmit}
       title="Open Trove"
     >
       <FormField label="Owner Index">
-        <TextInput {...formProps.ownerIndex} />
+        <TextInput {...fieldsProps.ownerIndex} />
       </FormField>
       <FormField label="Max Fee Percentage">
-        <TextInput {...formProps.maxFeePercentage} />
+        <TextInput {...fieldsProps.maxFeePercentage} />
       </FormField>
       <FormField label="ETH Amount">
-        <TextInput {...formProps.ethAmount} />
+        <TextInput {...fieldsProps.ethAmount} />
       </FormField>
       <FormField label="BOLD Amount">
-        <TextInput {...formProps.boldAmount} />
+        <TextInput {...fieldsProps.boldAmount} />
       </FormField>
       <FormField label="Upper Hint">
-        <TextInput {...formProps.upperHint} />
+        <TextInput {...fieldsProps.upperHint} />
       </FormField>
       <FormField label="Lower Hint">
-        <TextInput {...formProps.lowerHint} />
+        <TextInput {...fieldsProps.lowerHint} />
       </FormField>
       <FormField label="Annual Interest Rate">
-        <TextInput {...formProps.annualInterestRate} />
+        <TextInput {...fieldsProps.annualInterestRate} />
       </FormField>
     </ContractAction>
   );
@@ -137,28 +103,11 @@ function OpenTrove() {
 
 function CloseTrove() {
   const account = useAccount();
-  const { writeContract } = useWriteContract();
+  const { writeContract, error, reset } = useWriteContract();
 
-  const [formValues, setFormValues] = useState<{
-    ownerIndex: FormValue<bigint>;
-  }>(() => ({
-    ownerIndex: ["", 0n],
-  }));
-
-  const formProps = Object.fromEntries([
-    ["ownerIndex", parseInputInt] as const,
-  ].map(([name, valueParser]) => [name, {
-    onChange: (value: string) => {
-      const parsedValue = valueParser(value);
-      if (parsedValue !== null) {
-        setFormValues((values) => ({
-          ...values,
-          [name]: [value, parsedValue],
-        }));
-      }
-    },
-    value: formValues[name][0],
-  }]));
+  const { fieldsProps, values } = useForm(() => ({
+    ownerIndex: formValue(0n, parseInputInt),
+  }), reset);
 
   const onSubmit = () => {
     if (account.address) {
@@ -167,7 +116,7 @@ function CloseTrove() {
         address: CONTRACT_BORROWER_OPERATIONS,
         functionName: "closeTrove",
         args: [
-          getTroveId(account.address, formValues.ownerIndex[1]),
+          getTroveId(account.address, values.ownerIndex),
         ],
       });
     }
@@ -175,46 +124,12 @@ function CloseTrove() {
 
   return (
     <ContractAction
-      title="Close Trove"
+      error={error}
       onSubmit={onSubmit}
+      title="Close Trove"
     >
       <FormField label="Owner Index">
-        <TextInput {...formProps.ownerIndex} />
-      </FormField>
-    </ContractAction>
-  );
-}
-
-function AdjustTroveInterestRate() {
-  return (
-    <ContractAction title="Adjust Trove Interest Rate">
-      <FormField label="New Annual Interest Rate">
-        <TextInput />
-      </FormField>
-      <FormField label="Upper Hint">
-        <TextInput />
-      </FormField>
-      <FormField label="Lower Hint">
-        <TextInput />
-      </FormField>
-    </ContractAction>
-  );
-}
-
-function AdjustTrove() {
-  return (
-    <ContractAction title="Adjust Trove">
-      <FormField label="Max Fee Percentage">
-        <TextInput />
-      </FormField>
-      <FormField label="Collateral withdrawal">
-        <TextInput />
-      </FormField>
-      <FormField label="BOLD Amount">
-        <TextInput />
-      </FormField>
-      <FormField label="Is Debt Increase">
-        <TextInput />
+        <TextInput {...fieldsProps.ownerIndex} />
       </FormField>
     </ContractAction>
   );
@@ -222,65 +137,267 @@ function AdjustTrove() {
 
 function RepayBold() {
   const account = useAccount();
-  const { writeContract } = useWriteContract();
-  const [[boldAmountInput, boldAmount], setBoldAmount] = useState<[string, Dnum]>(["", dn.from(0, 18)]);
+  const { writeContract, error, reset } = useWriteContract();
+
+  const { fieldsProps, values } = useForm(() => ({
+    ownerIndex: formValue(0n, parseInputInt),
+    boldAmount: formValue(dn.from(0, 18), parseInputValue),
+  }), reset);
+
+  const onSubmit = () => {
+    if (account.address) {
+      writeContract({
+        abi: BorrowerOperations,
+        address: CONTRACT_BORROWER_OPERATIONS,
+        functionName: "repayBold",
+        args: [
+          getTroveId(account.address, values.ownerIndex),
+          values.boldAmount[0],
+        ],
+      });
+    }
+  };
   return (
     <ContractAction
+      error={error}
+      onSubmit={onSubmit}
       title="Repay BOLD"
-      onSubmit={() => {
-        if (account.address) {
-          writeContract({
-            abi: BorrowerOperations,
-            address: CONTRACT_BORROWER_OPERATIONS,
-            functionName: "repayBold",
-            args: [boldAmount[0]],
-          });
-        }
-      }}
     >
+      <FormField label="Owner Index">
+        <TextInput {...fieldsProps.ownerIndex} />
+      </FormField>
       <FormField label="BOLD Amount">
-        <TextInput
-          onChange={(value) => {
-            const parsedValue = parseInputValue(value);
-            if (parsedValue !== null) {
-              setBoldAmount([value, parsedValue]);
-            }
-          }}
-          value={boldAmountInput}
-        />
+        <TextInput {...fieldsProps.boldAmount} />
       </FormField>
     </ContractAction>
   );
 }
 
 function AddCollateral() {
+  const account = useAccount();
+  const { writeContract, error, reset } = useWriteContract();
+
+  const { fieldsProps, values } = useForm(() => ({
+    ownerIndex: formValue(0n, parseInputInt),
+    ethAmount: formValue(dn.from(0, 18), parseInputValue),
+  }), reset);
+
+  const onSubmit = () => {
+    if (account.address) {
+      writeContract({
+        abi: BorrowerOperations,
+        address: CONTRACT_BORROWER_OPERATIONS,
+        functionName: "addColl",
+        args: [
+          getTroveId(account.address, values.ownerIndex),
+          values.ethAmount[0],
+        ],
+      });
+    }
+  };
+
   return (
-    <ContractAction title="Add Collateral">
+    <ContractAction
+      error={error}
+      onSubmit={onSubmit}
+      title="Add Collateral"
+    >
+      <FormField label="Owner Index">
+        <TextInput {...fieldsProps.ownerIndex} />
+      </FormField>
       <FormField label="ETH Amount">
-        <TextInput />
+        <TextInput {...fieldsProps.ethAmount} />
       </FormField>
     </ContractAction>
   );
 }
 
 function WithdrawCollateral() {
+  const account = useAccount();
+  const { writeContract, error, reset } = useWriteContract();
+
+  const { fieldsProps, values } = useForm(() => ({
+    ownerIndex: formValue(0n, parseInputInt),
+    ethAmount: formValue(dn.from(0, 18), parseInputValue),
+  }), reset);
+
+  const onSubmit = () => {
+    if (account.address) {
+      writeContract({
+        abi: BorrowerOperations,
+        address: CONTRACT_BORROWER_OPERATIONS,
+        functionName: "withdrawColl",
+        args: [
+          getTroveId(account.address, values.ownerIndex),
+          values.ethAmount[0],
+        ],
+      });
+    }
+  };
+
   return (
-    <ContractAction title="Withdraw Collateral">
+    <ContractAction
+      error={error}
+      onSubmit={onSubmit}
+      title="Withdraw Collateral"
+    >
+      <FormField label="Owner Index">
+        <TextInput {...fieldsProps.ownerIndex} />
+      </FormField>
       <FormField label="ETH Amount">
-        <TextInput />
+        <TextInput {...fieldsProps.ethAmount} />
+      </FormField>
+    </ContractAction>
+  );
+}
+
+function AdjustTroveInterestRate() {
+  const account = useAccount();
+  const { writeContract, error, reset } = useWriteContract();
+
+  const { fieldsProps, values } = useForm(() => ({
+    ownerIndex: formValue(0n, parseInputInt),
+    newAnnualInterestRate: formValue(dn.from(0, 18), parseInputPercentage),
+    upperHint: formValue(dn.from(0, 18), parseInputValue),
+    lowerHint: formValue(dn.from(0, 18), parseInputValue),
+  }), reset);
+
+  const onSubmit = () => {
+    if (account.address) {
+      writeContract({
+        abi: BorrowerOperations,
+        address: CONTRACT_BORROWER_OPERATIONS,
+        functionName: "adjustTroveInterestRate",
+        args: [
+          getTroveId(account.address, values.ownerIndex),
+          values.newAnnualInterestRate[0],
+          values.upperHint[0],
+          values.lowerHint[0],
+        ],
+      });
+    }
+  };
+
+  return (
+    <ContractAction
+      error={error}
+      onSubmit={onSubmit}
+      title="Adjust Trove Interest Rate"
+    >
+      <FormField label="Owner Index">
+        <TextInput {...fieldsProps.ownerIndex} />
+      </FormField>
+      <FormField label="New Annual Interest Rate">
+        <TextInput {...fieldsProps.newAnnualInterestRate} />
+      </FormField>
+      <FormField label="Upper Hint">
+        <TextInput {...fieldsProps.upperHint} />
+      </FormField>
+      <FormField label="Lower Hint">
+        <TextInput {...fieldsProps.lowerHint} />
+      </FormField>
+    </ContractAction>
+  );
+}
+
+function AdjustTrove() {
+  const account = useAccount();
+  const { error, reset, writeContract } = useWriteContract();
+
+  const { fieldsProps, values } = useForm(() => ({
+    ownerIndex: formValue(0n, parseInputInt),
+    maxFeePercentage: formValue(dn.from(0, 18), parseInputValue),
+    collChange: formValue(dn.from(0, 18), parseInputValue),
+    isCollIncrease: formValue(false, (value) => value === "true"),
+    boldChange: formValue(dn.from(0, 18), parseInputValue),
+    isDebtIncrease: formValue(false, (value) => value === "true"),
+  }), reset);
+
+  const onSubmit = () => {
+    if (account.address) {
+      writeContract({
+        abi: BorrowerOperations,
+        address: CONTRACT_BORROWER_OPERATIONS,
+        functionName: "adjustTrove",
+        args: [
+          getTroveId(account.address, values.ownerIndex),
+          values.maxFeePercentage[0],
+          values.collChange[0],
+          values.isCollIncrease,
+          values.boldChange[0],
+          values.isDebtIncrease,
+        ],
+      });
+    }
+  };
+
+  return (
+    <ContractAction
+      error={error}
+      onSubmit={onSubmit}
+      title="Adjust Trove"
+    >
+      <FormField label="Owner Index">
+        <TextInput {...fieldsProps.ownerIndex} />
+      </FormField>
+      <FormField label="Max Fee Percentage">
+        <TextInput {...fieldsProps.maxFeePercentage} />
+      </FormField>
+      <FormField label="Coll Change">
+        <TextInput {...fieldsProps.collChange} />
+      </FormField>
+      <FormField label="Is Coll Increase">
+        <TextInput {...fieldsProps.isCollIncrease} />
+      </FormField>
+      <FormField label="BOLD Change">
+        <TextInput {...fieldsProps.boldChange} />
+      </FormField>
+      <FormField label="Is Debt Increase">
+        <TextInput {...fieldsProps.isDebtIncrease} />
       </FormField>
     </ContractAction>
   );
 }
 
 function WithdrawBold() {
+  const account = useAccount();
+  const { error, reset, writeContract } = useWriteContract();
+
+  const { fieldsProps, values } = useForm(() => ({
+    ownerIndex: formValue(0n, parseInputInt),
+    maxFeePercentage: formValue(dn.from(0, 18), parseInputValue),
+    boldAmount: formValue(dn.from(0, 18), parseInputValue),
+  }), reset);
+
+  const onSubmit = () => {
+    if (account.address) {
+      writeContract({
+        abi: BorrowerOperations,
+        address: CONTRACT_BORROWER_OPERATIONS,
+        functionName: "withdrawBold",
+        args: [
+          getTroveId(account.address, values.ownerIndex),
+          values.maxFeePercentage[0],
+          values.boldAmount[0],
+        ],
+      });
+    }
+  };
+
   return (
-    <ContractAction title="Withdraw BOLD">
+    <ContractAction
+      error={error}
+      onSubmit={onSubmit}
+      title="Withdraw BOLD"
+    >
+      <FormField label="Owner Index">
+        <TextInput {...fieldsProps.ownerIndex} />
+      </FormField>
       <FormField label="Max Fee Percentage">
-        <TextInput />
+        <TextInput {...fieldsProps.maxFeePercentage} />
       </FormField>
       <FormField label="BOLD Amount">
-        <TextInput />
+        <TextInput {...fieldsProps.boldAmount} />
       </FormField>
     </ContractAction>
   );
