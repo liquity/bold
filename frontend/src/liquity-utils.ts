@@ -1,10 +1,10 @@
 import type { Address, TroveId } from "@/src/types";
 import type { Dnum } from "dnum";
 
-import { BoldTokenContract, BorrowerOperationsContract, TroveManagerContract } from "@/src/contracts";
+import { BorrowerOperationsContract, StabilityPoolContract, TroveManagerContract } from "@/src/contracts";
 import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
-import { useReadContract, useReadContracts, useWriteContract } from "wagmi";
+import { useReadContracts, useWriteContract } from "wagmi";
 
 type TroveStatus =
   | "nonExistent"
@@ -23,10 +23,11 @@ type TroveDetails = {
 
 type LiquityInfo = {
   // trovesCount: number;
+  redemptionRate: Dnum;
+  tcr: Dnum;
+  totalBoldDeposits: Dnum;
   totalCollateral: Dnum;
   totalDebt: Dnum;
-  tcr: Dnum;
-  redemptionRate: Dnum;
 };
 
 type Rewards = {
@@ -142,14 +143,6 @@ export function useCloseTrove(troveId: TroveId) {
   );
 }
 
-export function useBoldBalance(address: Address) {
-  return useReadContract({
-    ...BoldTokenContract,
-    functionName: "balanceOf",
-    args: [address],
-  });
-}
-
 export function useRewards(troveId: TroveId) {
   const read = useReadContracts({
     allowFailure: false,
@@ -185,6 +178,36 @@ export function useRewards(troveId: TroveId) {
   };
 }
 
+export function useStabilityPoolStats() {
+  const read = useReadContracts({
+    allowFailure: false,
+    contracts: [
+      {
+        ...StabilityPoolContract,
+        functionName: "getTotalBoldDeposits",
+      },
+      {
+        ...StabilityPoolContract,
+        functionName: "getETHBalance",
+      },
+    ],
+  });
+
+  if (!read.data || read.status !== "success") {
+    return {
+      ...read,
+      data: undefined,
+    };
+  }
+
+  const data = {
+    totalBoldDeposits: [read.data[0], 18],
+    ethBalance: [read.data[1], 18],
+  } as const;
+
+  return { ...read, data };
+}
+
 export function useLiquity2Info() {
   const read = useReadContracts({
     allowFailure: false,
@@ -214,6 +237,10 @@ export function useLiquity2Info() {
         functionName: "getRedemptionRate",
         args: [],
       },
+      {
+        ...StabilityPoolContract,
+        functionName: "getTotalBoldDeposits",
+      },
     ],
   });
 
@@ -226,10 +253,11 @@ export function useLiquity2Info() {
 
   const data: LiquityInfo = {
     // trovesCount: Number(read.data[0]),
+    redemptionRate: [read.data[3], 18],
+    tcr: [read.data[2], 18],
+    totalBoldDeposits: [read.data[4], 18],
     totalCollateral: [read.data[0], 18],
     totalDebt: [read.data[1], 18],
-    tcr: [read.data[2], 18],
-    redemptionRate: [read.data[3], 18],
   };
 
   return { ...read, data };

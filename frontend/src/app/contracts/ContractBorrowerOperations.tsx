@@ -1,7 +1,6 @@
-import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
 import { FormField } from "@/src/comps/FormField/FormField";
 import { TextInput } from "@/src/comps/Input/TextInput";
-import { CONTRACT_BORROWER_OPERATIONS } from "@/src/env";
+import { BorrowerOperationsContract } from "@/src/contracts";
 import { formValue, parseInputInt, parseInputPercentage, parseInputValue, useForm } from "@/src/form-utils";
 import { getTroveId } from "@/src/liquity-utils";
 import * as dn from "dnum";
@@ -28,7 +27,7 @@ function OpenTrove() {
   const account = useAccount();
   const { writeContract, error, reset } = useWriteContract();
 
-  const { fieldsProps, values, setFormValues } = useForm(() => ({
+  const { fieldsProps, values } = useForm(() => ({
     ownerIndex: formValue(0n, parseInputInt),
     maxFeePercentage: formValue(dn.from(0, 18), parseInputValue),
     ethAmount: formValue(dn.from(0, 18), parseInputValue),
@@ -41,8 +40,7 @@ function OpenTrove() {
   const onSubmit = () => {
     if (account.address) {
       writeContract({
-        abi: BorrowerOperations,
-        address: CONTRACT_BORROWER_OPERATIONS,
+        ...BorrowerOperationsContract,
         functionName: "openTrove",
         args: [
           account.address,
@@ -112,8 +110,7 @@ function CloseTrove() {
   const onSubmit = () => {
     if (account.address) {
       writeContract({
-        abi: BorrowerOperations,
-        address: CONTRACT_BORROWER_OPERATIONS,
+        ...BorrowerOperationsContract,
         functionName: "closeTrove",
         args: [
           getTroveId(account.address, values.ownerIndex),
@@ -147,8 +144,7 @@ function RepayBold() {
   const onSubmit = () => {
     if (account.address) {
       writeContract({
-        abi: BorrowerOperations,
-        address: CONTRACT_BORROWER_OPERATIONS,
+        ...BorrowerOperationsContract,
         functionName: "repayBold",
         args: [
           getTroveId(account.address, values.ownerIndex),
@@ -185,8 +181,7 @@ function AddCollateral() {
   const onSubmit = () => {
     if (account.address) {
       writeContract({
-        abi: BorrowerOperations,
-        address: CONTRACT_BORROWER_OPERATIONS,
+        ...BorrowerOperationsContract,
         functionName: "addColl",
         args: [
           getTroveId(account.address, values.ownerIndex),
@@ -224,8 +219,7 @@ function WithdrawCollateral() {
   const onSubmit = () => {
     if (account.address) {
       writeContract({
-        abi: BorrowerOperations,
-        address: CONTRACT_BORROWER_OPERATIONS,
+        ...BorrowerOperationsContract,
         functionName: "withdrawColl",
         args: [
           getTroveId(account.address, values.ownerIndex),
@@ -265,8 +259,7 @@ function AdjustTroveInterestRate() {
   const onSubmit = () => {
     if (account.address) {
       writeContract({
-        abi: BorrowerOperations,
-        address: CONTRACT_BORROWER_OPERATIONS,
+        ...BorrowerOperationsContract,
         functionName: "adjustTroveInterestRate",
         args: [
           getTroveId(account.address, values.ownerIndex),
@@ -316,8 +309,7 @@ function AdjustTrove() {
   const onSubmit = () => {
     if (account.address) {
       writeContract({
-        abi: BorrowerOperations,
-        address: CONTRACT_BORROWER_OPERATIONS,
+        ...BorrowerOperationsContract,
         functionName: "adjustTrove",
         args: [
           getTroveId(account.address, values.ownerIndex),
@@ -372,8 +364,7 @@ function WithdrawBold() {
   const onSubmit = () => {
     if (account.address) {
       writeContract({
-        abi: BorrowerOperations,
-        address: CONTRACT_BORROWER_OPERATIONS,
+        ...BorrowerOperationsContract,
         functionName: "withdrawBold",
         args: [
           getTroveId(account.address, values.ownerIndex),
