@@ -6,7 +6,7 @@ name: Testnet Deployment
 
 on:
   push:
-    branches: [main]
+    branches: [updated-abis]
     paths:
       - ".github/workflows/testnet-deployment.yml"
       - "contracts/**"
