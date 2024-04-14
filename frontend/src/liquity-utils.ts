@@ -2,16 +2,18 @@ import type { Address, TroveId } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import {
+  BoldTokenContract,
   BorrowerOperationsContract,
   CollTokenContract,
   StabilityPoolContract,
   TroveManagerContract,
 } from "@/src/contracts";
 import { ADDRESS_ZERO } from "@/src/eth-utils";
+import { useWatchQueries } from "@/src/wagmi-utils";
 import * as dn from "dnum";
 import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, maxUint256, parseAbiParameters } from "viem";
-import { useAccount, useReadContract, useReadContracts, useWriteContract } from "wagmi";
+import { useAccount, useBalance, useReadContract, useReadContracts, useWriteContract } from "wagmi";
 
 type TroveStatus =
   | "nonExistent"
@@ -86,6 +88,8 @@ export function useTroveDetails(troveId: TroveId = 0n) {
     ],
   });
 
+  useWatchQueries([read]);
+
   if (!read.data || read.status !== "success") {
     return { ...read, data: undefined };
   }
@@ -150,7 +154,7 @@ export function useCloseTrove(troveId: TroveId) {
   );
 }
 
-export function useRewards(troveId: TroveId) {
+export function useTroveRewards(troveId: TroveId) {
   const read = useReadContracts({
     allowFailure: false,
     contracts: [
@@ -166,6 +170,7 @@ export function useRewards(troveId: TroveId) {
       },
     ],
   });
+  useWatchQueries([read]);
 
   if (!read.data || read.status !== "success") {
     return {
@@ -199,6 +204,7 @@ export function useStabilityPoolStats() {
       },
     ],
   });
+  useWatchQueries([read]);
 
   if (!read.data || read.status !== "success") {
     return {
@@ -250,6 +256,7 @@ export function useLiquity2Info() {
       },
     ],
   });
+  useWatchQueries([read]);
 
   if (!read.data || read.status !== "success") {
     return {
@@ -298,6 +305,7 @@ export function useCollTokenAllowance() {
     functionName: "allowance",
     args: [account.address ?? ADDRESS_ZERO, BorrowerOperationsContract.address],
   });
+  useWatchQueries([allowance]);
 
   const collTokenWrite = useWriteContract();
   const approve = (amount = maxUint256) => (
@@ -313,4 +321,41 @@ export function useCollTokenAllowance() {
     collTokenWrite,
     approve,
   } as const;
+}
+
+export function useAccountBalances(address: Address | undefined, updateInterval?: number) {
+  const ethBalance = useBalance({
+    address: address ?? ADDRESS_ZERO,
+    query: {
+      select: ({ value }) => [value ?? 0n, 18] as const,
+    },
+  });
+
+  const readTokenBalances = useReadContracts({
+    contracts: [
+      {
+        ...BoldTokenContract,
+        functionName: "balanceOf",
+        args: [address ?? ADDRESS_ZERO],
+      },
+      {
+        ...CollTokenContract,
+        functionName: "balanceOf",
+        args: [address ?? ADDRESS_ZERO],
+      },
+    ],
+    query: {
+      select: (data) => data.map(({ result }) => [result ?? 0n, 18] as const),
+    },
+  });
+
+  useWatchQueries([ethBalance, readTokenBalances], updateInterval);
+
+  return {
+    boldBalance: readTokenBalances.data?.[0],
+    collBalance: readTokenBalances.data?.[1],
+    error: ethBalance.error ?? readTokenBalances.error,
+    ethBalance: ethBalance.data,
+    status: ethBalance.status === "success" ? readTokenBalances.status : ethBalance.status,
+  };
 }

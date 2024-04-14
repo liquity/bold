@@ -2,14 +2,13 @@
 
 import type { ReactNode } from "react";
 
-import { BoldTokenContract, CollTokenContract } from "@/src/contracts";
 import { ADDRESS_ZERO, shortenAddress } from "@/src/eth-utils";
 import {
   getTroveId,
+  useAccountBalances,
   useCloseTrove,
   useLiquity2Info,
   useOpenTrove,
-  useRewards,
   useStabilityPoolStats,
   useTapCollTokenFaucet,
   useTroveDetails,
@@ -18,7 +17,7 @@ import { css } from "@/styled-system/css";
 import { useModal } from "connectkit";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
-import { useAccount, useBalance, useReadContracts } from "wagmi";
+import { useAccount } from "wagmi";
 import { ContractBorrowerOperations } from "./ContractBorrowerOperations";
 import { ContractStabilityPool } from "./ContractStabilityPool";
 
@@ -58,27 +57,12 @@ function AccountDetails() {
   const { setOpen } = useModal();
   const { address } = useAccount();
 
-  const ethBalance = useBalance({ address: address ?? ADDRESS_ZERO });
-
-  const readTokenBalances = useReadContracts({
-    contracts: [
-      {
-        ...BoldTokenContract,
-        functionName: "balanceOf",
-        args: [address ?? ADDRESS_ZERO],
-      },
-      {
-        ...CollTokenContract,
-        functionName: "balanceOf",
-        args: [address ?? ADDRESS_ZERO],
-      },
-    ],
-    query: {
-      select: (data) => data.map(({ result }) => [result ?? 0n, 18] as const),
-    },
-  });
-
-  const rewards = useRewards(getTroveId(address ?? ADDRESS_ZERO, 0n));
+  const {
+    ethBalance,
+    boldBalance,
+    collBalance,
+    status: accountBalancesStatus,
+  } = useAccountBalances(address);
 
   const tapCollTokenFaucet = useTapCollTokenFaucet();
 
@@ -95,31 +79,25 @@ function AccountDetails() {
           onClick: () => setOpen(true),
         }))}
     >
-      {match({ address, data: [ethBalance, readTokenBalances, rewards] })
+      {match({ address, ethBalance, boldBalance, collBalance, accountBalancesStatus })
         .when(
-          ({ address, data }) => address && data.some(({ status }) => status === "pending"),
+          ({ address, accountBalancesStatus }) => address && accountBalancesStatus === "pending",
           () => <div>loading…</div>,
         )
         .when(
-          ({ address, data }) => address && data.some(({ status }) => status === "error"),
+          ({ address, accountBalancesStatus }) => address && accountBalancesStatus === "error",
           () => <div>error</div>,
         )
         .with(
           {
             address: P.string,
-            data: [
-              { status: "success" },
-              { status: "success" },
-              { status: "success" },
-            ],
+            accountBalancesStatus: "success",
           },
           ({
             address,
-            data: [
-              ethBalance,
-              { data: [boldBalance, collTokenBalance] },
-              rewards,
-            ],
+            ethBalance,
+            boldBalance,
+            collBalance,
           }) => (
             <>
               <CardRow
@@ -129,26 +107,26 @@ function AccountDetails() {
               <CardRow
                 name="ETH Balance"
                 value={
-                  <span title={dn.format([ethBalance.data?.value ?? 0n, 18])}>
-                    {dn.format([ethBalance.data?.value ?? 0n, 18], 2)} ETH
+                  <span title={ethBalance && dn.format(ethBalance)}>
+                    {ethBalance && dn.format(ethBalance, 2)} ETH
                   </span>
                 }
               />
               <CardRow
                 name="WETH Balance"
-                value={`${dn.format(collTokenBalance, 2)} WETH`}
+                value={
+                  <span title={collBalance && dn.format(collBalance)}>
+                    {collBalance && dn.format(collBalance, 2)} WETH
+                  </span>
+                }
               />
               <CardRow
                 name="BOLD Balance"
-                value={`${dn.format(boldBalance, 2)} BOLD`}
-              />
-              <CardRow
-                name="Rewards ETH"
-                value={`${dn.format(rewards.data.eth, 2)} ETH`}
-              />
-              <CardRow
-                name="Rewards BOLD"
-                value={`${dn.format(rewards.data.bold, 2)} BOLD`}
+                value={
+                  <span title={boldBalance && dn.format(boldBalance)}>
+                    {boldBalance && dn.format(boldBalance, 2)} BOLD
+                  </span>
+                }
               />
             </>
           ),
@@ -193,7 +171,7 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
           }),
         )
         .with(["active", P.not(undefined)], () => ({
-          label: "Close Trove",
+          label: `Close Trove #${ownerIndex}`,
           onClick: () => {
             const data = closeTrove();
             console.log("closeTrove", data);
