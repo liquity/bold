@@ -15,6 +15,7 @@ const ABIS = [
   "BorrowerOperations",
   "CollSurplusPool",
   "DefaultPool",
+  "ERC20Faucet",
   "GasPool",
   "HintHelpers",
   "MultiTroveGetter",

@@ -1,7 +1,7 @@
 import type { Address } from "@/src/types";
 
-import { BoldToken } from "@/src/abi/BoldToken";
 import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
+import { ERC20Faucet } from "@/src/abi/ERC20Faucet";
 import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
 import {
@@ -28,8 +28,8 @@ export const BoldTokenContract: Contract<typeof erc20Abi> = {
   address: CONTRACT_BOLD_TOKEN,
 };
 
-export const CollTokenContract: Contract<typeof erc20Abi> = {
-  abi: erc20Abi,
+export const CollTokenContract: Contract<typeof ERC20Faucet> = {
+  abi: ERC20Faucet,
   address: CONTRACT_COLL_TOKEN,
 };
 

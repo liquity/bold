@@ -92,27 +92,20 @@ export function useForm<Form extends Record<string, FormValue<unknown>>>(
     [K in keyof Form]: NonNullable<Form[K][1]>;
   };
 
-  const setFormValues = (values: Record<string, unknown>) => {
+  const fill = (values: Record<string, string>) => {
     setForm((form) => {
       const newForm: Record<string, FormValue<unknown>> = { ...form };
       for (const [name, value] of Object.entries(values)) {
-        const formValue = newForm[name];
-        if (formValue) {
-          const [, , parser] = formValue;
-          newForm[name] = [
-            String(value),
-            parser(String(value)),
-            parser,
-          ];
-        }
+        const parser = newForm[name][2];
+        newForm[name] = [value, parser(value), parser];
       }
-      return { ...form, newForm };
+      return { ...form, ...newForm };
     });
   };
 
   return {
     fieldsProps,
+    fill,
     values: parsedValues,
-    setFormValues,
   } as const;
 }

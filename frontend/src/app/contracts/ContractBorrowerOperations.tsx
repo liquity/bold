@@ -1,8 +1,8 @@
 import { FormField } from "@/src/comps/FormField/FormField";
 import { TextInput } from "@/src/comps/Input/TextInput";
-import { BorrowerOperationsContract } from "@/src/contracts";
+import { BorrowerOperationsContract, CollTokenContract } from "@/src/contracts";
 import { formValue, parseInputInt, parseInputPercentage, parseInputValue, useForm } from "@/src/form-utils";
-import { getTroveId } from "@/src/liquity-utils";
+import { getTroveId, useCollTokenAllowance } from "@/src/liquity-utils";
 import * as dn from "dnum";
 import { useAccount, useWriteContract } from "wagmi";
 import { Contract } from "./Contract";
@@ -25,62 +25,71 @@ export function ContractBorrowerOperations() {
 
 function OpenTrove() {
   const account = useAccount();
-  const { writeContract, error, reset } = useWriteContract();
+  const writeOpenTrove = useWriteContract();
+  const tokenAllowance = useCollTokenAllowance();
 
-  const { fieldsProps, values } = useForm(() => ({
+  const { fieldsProps, values, fill } = useForm(() => ({
     ownerIndex: formValue(0n, parseInputInt),
-    maxFeePercentage: formValue(dn.from(0, 18), parseInputValue),
+    maxFeePercentage: formValue(dn.from(0, 18), parseInputPercentage),
     ethAmount: formValue(dn.from(0, 18), parseInputValue),
     boldAmount: formValue(dn.from(0, 18), parseInputValue),
     upperHint: formValue(dn.from(0, 18), parseInputValue),
     lowerHint: formValue(dn.from(0, 18), parseInputValue),
     annualInterestRate: formValue(dn.from(0, 18), parseInputPercentage),
-  }), reset);
+  }), writeOpenTrove.reset);
+
+  const isApproved = tokenAllowance.allowance.data ?? 0n >= values.ethAmount[0];
 
   const onSubmit = () => {
-    if (account.address) {
-      writeContract({
-        ...BorrowerOperationsContract,
-        functionName: "openTrove",
-        args: [
-          account.address,
-          values.ownerIndex,
-          values.maxFeePercentage[0],
-          values.ethAmount[0],
-          values.boldAmount[0],
-          values.upperHint[0],
-          values.lowerHint[0],
-          values.annualInterestRate[0],
-        ],
-      });
+    if (!account.address) {
+      return;
     }
+
+    if (!isApproved) {
+      tokenAllowance.approve();
+      return;
+    }
+
+    writeOpenTrove.writeContract({
+      ...BorrowerOperationsContract,
+      functionName: "openTrove",
+      args: [
+        account.address,
+        values.ownerIndex,
+        values.maxFeePercentage[0],
+        values.ethAmount[0],
+        values.boldAmount[0],
+        values.upperHint[0],
+        values.lowerHint[0],
+        values.annualInterestRate[0],
+      ],
+    });
   };
 
-  // const onFillExample = () => {
-  //   setFormValues({
-  //     ownerIndex: ["0", 0n],
-  //     maxFeePercentage: ["100", [100n * 10n ** 16n, 18]],
-  //     ethAmount: ["20", [20n * 10n ** 18n, 18]],
-  //     boldAmount: ["1800", [1800n * 10n ** 18n, 18]],
-  //     upperHint: ["0", [0n, 18]],
-  //     lowerHint: ["0", [0n, 18]],
-  //     annualInterestRate: ["5", [5n * 10n ** 16n, 18]],
-  //   });
-  // };
+  const onFillExample = () => {
+    fill({
+      ownerIndex: "0",
+      maxFeePercentage: "100",
+      ethAmount: "20",
+      boldAmount: "1800",
+      upperHint: "0",
+      lowerHint: "0",
+      annualInterestRate: "5",
+    });
+  };
 
   return (
     <ContractAction
-      error={error}
+      buttonLabel={isApproved ? "Open Trove" : "Approve"}
+      error={writeOpenTrove.error}
+      onFillExample={onFillExample}
       onSubmit={onSubmit}
       title="Open Trove"
     >
       <FormField label="Owner Index">
         <TextInput {...fieldsProps.ownerIndex} />
       </FormField>
-      <FormField label="Max Fee Percentage">
-        <TextInput {...fieldsProps.maxFeePercentage} />
-      </FormField>
-      <FormField label="ETH Amount">
+      <FormField label="WETH Amount">
         <TextInput {...fieldsProps.ethAmount} />
       </FormField>
       <FormField label="BOLD Amount">
@@ -91,6 +100,9 @@ function OpenTrove() {
       </FormField>
       <FormField label="Lower Hint">
         <TextInput {...fieldsProps.lowerHint} />
+      </FormField>
+      <FormField label="Max Fee Percentage">
+        <TextInput {...fieldsProps.maxFeePercentage} />
       </FormField>
       <FormField label="Annual Interest Rate">
         <TextInput {...fieldsProps.annualInterestRate} />

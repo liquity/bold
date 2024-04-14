@@ -5,20 +5,22 @@ import { TextButton } from "@/src/comps/Button/TextButton";
 import { css } from "@/styled-system/css";
 
 export function ContractAction({
+  buttonLabel,
   children,
+  error,
   onFillExample,
   onSubmit,
   title,
-  error,
 }: {
+  buttonLabel?: string;
   children?: ReactNode;
-  onFillExample?: () => void;
-  onSubmit?: () => void;
-  title: string;
   error: {
     name: string;
     message: string;
   } | null;
+  onFillExample?: () => void;
+  onSubmit?: () => void;
+  title: string;
 }) {
   return (
     <section
@@ -72,7 +74,7 @@ export function ContractAction({
             paddingTop: 16,
           })}
         >
-          <Button label={title} />
+          <Button label={buttonLabel ?? title} />
         </div>
         {error && (
           <div

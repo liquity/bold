@@ -1,10 +1,17 @@
 import type { Address, TroveId } from "@/src/types";
 import type { Dnum } from "dnum";
 
-import { BorrowerOperationsContract, StabilityPoolContract, TroveManagerContract } from "@/src/contracts";
+import {
+  BorrowerOperationsContract,
+  CollTokenContract,
+  StabilityPoolContract,
+  TroveManagerContract,
+} from "@/src/contracts";
+import { ADDRESS_ZERO } from "@/src/eth-utils";
+import * as dn from "dnum";
 import { match } from "ts-pattern";
-import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
-import { useReadContracts, useWriteContract } from "wagmi";
+import { encodeAbiParameters, keccak256, maxUint256, parseAbiParameters } from "viem";
+import { useAccount, useReadContract, useReadContracts, useWriteContract } from "wagmi";
 
 type TroveStatus =
   | "nonExistent"
@@ -251,10 +258,12 @@ export function useLiquity2Info() {
     };
   }
 
+  const tcr = [read.data[2], 18] as const;
+
   const data: LiquityInfo = {
     // trovesCount: Number(read.data[0]),
     redemptionRate: [read.data[3], 18],
-    tcr: [read.data[2], 18],
+    tcr: dn.gt(tcr, 1) ? [0n, 18] : tcr,
     totalBoldDeposits: [read.data[4], 18],
     totalCollateral: [read.data[0], 18],
     totalDebt: [read.data[1], 18],
@@ -268,4 +277,40 @@ export function getTroveId(owner: Address, ownerIndex: bigint) {
     parseAbiParameters("address, uint256"),
     [owner, ownerIndex],
   )));
+}
+
+export function useTapCollTokenFaucet() {
+  const { writeContract } = useWriteContract();
+  return () => (
+    writeContract({
+      ...CollTokenContract,
+      functionName: "tap",
+      args: [],
+    })
+  );
+}
+
+export function useCollTokenAllowance() {
+  const account = useAccount();
+
+  const allowance = useReadContract({
+    ...CollTokenContract,
+    functionName: "allowance",
+    args: [account.address ?? ADDRESS_ZERO, BorrowerOperationsContract.address],
+  });
+
+  const collTokenWrite = useWriteContract();
+  const approve = (amount = maxUint256) => (
+    collTokenWrite.writeContract({
+      ...CollTokenContract,
+      functionName: "approve",
+      args: [BorrowerOperationsContract.address, amount],
+    })
+  );
+
+  return {
+    allowance,
+    collTokenWrite,
+    approve,
+  } as const;
 }

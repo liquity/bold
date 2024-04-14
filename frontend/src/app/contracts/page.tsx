@@ -11,6 +11,7 @@ import {
   useOpenTrove,
   useRewards,
   useStabilityPoolStats,
+  useTapCollTokenFaucet,
   useTroveDetails,
 } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
@@ -32,7 +33,9 @@ export default function Home() {
         <Liquity2Info />
         <StabilityPool />
         <AccountDetails />
-        <TroveDetails />
+        <TroveDetails ownerIndex={0n} />
+        <TroveDetails ownerIndex={1n} />
+        <TroveDetails ownerIndex={2n} />
       </CardsGrid>
       <div
         className={css({
@@ -53,7 +56,6 @@ export default function Home() {
 
 function AccountDetails() {
   const { setOpen } = useModal();
-  const { disconnect } = useDisconnect();
   const { address } = useAccount();
 
   const ethBalance = useBalance({ address: address ?? ADDRESS_ZERO });
@@ -78,13 +80,15 @@ function AccountDetails() {
 
   const rewards = useRewards(getTroveId(address ?? ADDRESS_ZERO, 0n));
 
+  const tapCollTokenFaucet = useTapCollTokenFaucet();
+
   return (
     <Card
       title="Account"
       action={match({ address })
         .with({ address: P.string }, () => ({
-          label: "Disconnect",
-          onClick: disconnect,
+          label: "Get WETH",
+          onClick: tapCollTokenFaucet,
         }))
         .otherwise(() => ({
           label: "Connect Wallet",
@@ -154,13 +158,13 @@ function AccountDetails() {
   );
 }
 
-function TroveDetails() {
+function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
   const { address } = useAccount();
-  const troveDetails = useTroveDetails(address && getTroveId(address, 0n));
+  const troveDetails = useTroveDetails(address && getTroveId(address, ownerIndex));
 
-  const closeTrove = useCloseTrove(getTroveId(address ?? ADDRESS_ZERO, 0n));
+  const closeTrove = useCloseTrove(getTroveId(address ?? ADDRESS_ZERO, ownerIndex));
   const openTrove = useOpenTrove(address ?? ADDRESS_ZERO, {
-    ownerIndex: 0n,
+    ownerIndex,
     maxFeePercentage: 100n * 10n ** 16n, // 100%
     boldAmount: 1800n * 10n ** 18n, // 1800 BOLD
     upperHint: 0n,
@@ -171,7 +175,7 @@ function TroveDetails() {
 
   return (
     <Card
-      title="Trove #0"
+      title={`Trove #${ownerIndex}`}
       action={match([troveDetails.data?.status, address])
         .with(
           [
@@ -184,11 +188,8 @@ function TroveDetails() {
             P.not(undefined),
           ],
           () => ({
-            label: "Open Trove",
-            onClick: () => {
-              const data = openTrove();
-              console.log("openTrove", data);
-            },
+            label: `Open Trove #${ownerIndex}`,
+            onClick: openTrove,
           }),
         )
         .with(["active", P.not(undefined)], () => ({
@@ -273,6 +274,10 @@ function Liquity2Info() {
             <CardRow
               name="Redemption Rate"
               value={dn.format(dn.mul(data.redemptionRate, 100n), 2) + "%"}
+            />
+            <CardRow
+              name="Stability Pool Deposits"
+              value={dn.format(data.totalBoldDeposits, 2) + " BOLD"}
             />
           </>
         ))
