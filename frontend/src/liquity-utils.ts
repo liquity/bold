@@ -17,7 +17,7 @@ import { useAccount, useBalance, useReadContract, useReadContracts, useWriteCont
 // hardcoded for now
 const ETH_PRICE_IN_USD = 200n;
 
-type TroveStatus =
+export type TroveStatus =
   | "nonExistent"
   | "active"
   | "closedByOwner"
@@ -47,6 +47,16 @@ function troveStatusFromNumber(value: number): TroveStatus {
     .otherwise(() => {
       throw new Error(`Unknown trove status number: ${value}`);
     });
+}
+
+export function troveStatusToLabel(status: TroveStatus) {
+  return match(status)
+    .with("nonExistent", () => "Non-existent")
+    .with("active", () => "Active")
+    .with("closedByOwner", () => "Closed by owner")
+    .with("closedByLiquidation", () => "Closed by liquidation")
+    .with("closedByRedemption", () => "Closed by redemption")
+    .exhaustive();
 }
 
 export function useTroveDetails(troveId: TroveId = 0n) {

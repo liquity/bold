@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { ADDRESS_ZERO, shortenAddress } from "@/src/eth-utils";
 import {
   getTroveId,
+  troveStatusToLabel,
   useAccountBalances,
   useCloseTrove,
   useCollTokenAllowance,
@@ -241,7 +242,18 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
           [{ status: "success", data: { status: P.not("active") } }, P.any],
           ([{ data }]) => (
             <>
-              <CardRow name="Status" value={data.status} />
+              <CardRow
+                name="Status"
+                value={
+                  <span
+                    className={css({
+                      textTransform: "lowercase",
+                    })}
+                  >
+                    {troveStatusToLabel(data.status)}
+                  </span>
+                }
+              />
               <CardRow name="Debt" value="−" />
               <CardRow name="Collateral" value="−" />
               <CardRow name="Interest Rate" value="−" />
@@ -252,7 +264,33 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
           [{ status: "success", data: P.not(undefined) }, P.any],
           ([{ data }]) => (
             <>
-              <CardRow name="Status" value={data.status} />
+              <CardRow
+                name="Status"
+                value={
+                  <span
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "2px 8px",
+                      textTransform: "lowercase",
+                      borderRadius: 8,
+                    })}
+                  >
+                    <span
+                      className={css({
+                        display: "block",
+                        width: 8,
+                        height: 8,
+                        translate: "0 1px",
+                        borderRadius: 4,
+                        background: "#8fcc9b",
+                      })}
+                    />
+                    <span>{troveStatusToLabel(data.status)}</span>
+                  </span>
+                }
+              />
               <CardRow name="Debt" value={dn.format(data.debt) + " BOLD"} />
               <CardRow name="Collateral" value={dn.format(data.collateral) + " ETH"} />
               <CardRow name="Interest Rate" value={dn.format(dn.mul(data.interestRate, 100)) + "%"} />
@@ -457,7 +495,7 @@ function Card({
                 color: "white",
                 fontSize: 14,
                 background: "blue",
-                borderRadius: 16,
+                borderRadius: 20,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
                 _disabled: {
