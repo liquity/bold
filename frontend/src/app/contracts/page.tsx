@@ -18,7 +18,7 @@ import { css } from "@/styled-system/css";
 import { useModal } from "connectkit";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
-import { useAccount, useBalance, useDisconnect, useReadContracts } from "wagmi";
+import { useAccount, useBalance, useReadContracts } from "wagmi";
 import { ContractBorrowerOperations } from "./ContractBorrowerOperations";
 import { ContractStabilityPool } from "./ContractStabilityPool";
 

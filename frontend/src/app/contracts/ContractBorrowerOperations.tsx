@@ -1,6 +1,6 @@
 import { FormField } from "@/src/comps/FormField/FormField";
 import { TextInput } from "@/src/comps/Input/TextInput";
-import { BorrowerOperationsContract, CollTokenContract } from "@/src/contracts";
+import { BorrowerOperationsContract } from "@/src/contracts";
 import { formValue, parseInputInt, parseInputPercentage, parseInputValue, useForm } from "@/src/form-utils";
 import { getTroveId, useCollTokenAllowance } from "@/src/liquity-utils";
 import * as dn from "dnum";
