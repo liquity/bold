@@ -95,7 +95,6 @@ function AccountDetails() {
               label: "Approve ∞",
               title: "Approve Liquity to transfer WETH on your behalf",
               onClick: () => {
-                console.log(approve);
                 approve();
               },
             },
@@ -183,7 +182,7 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
     ...openTroveQuickParams,
   });
 
-  const { allowance, approve } = useCollTokenAllowance();
+  const { allowance } = useCollTokenAllowance();
   const isApproved = (allowance.data ?? 0n) >= openTroveQuickParams.ethAmount;
 
   return (

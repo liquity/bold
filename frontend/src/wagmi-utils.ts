@@ -11,13 +11,23 @@ export function useWatchQueries(
 ) {
   const queryClient = useQueryClient();
   const { data: blockNumber } = useBlockNumber({ watch: true });
-  const queriesDep = hashFn(queries.map(({ queryKey }) => queryKey));
-  useEffect(() => {
-    if (!blockNumber || (blockNumber % BigInt(updateInterval) !== 0n)) {
-      return;
-    }
-    for (const { queryKey } of queries) {
-      queryClient.invalidateQueries({ queryKey });
-    }
-  }, [blockNumber, queryClient, queriesDep, updateInterval]);
+  const queriesHash = hashFn(queries.map(({ queryKey }) => queryKey));
+  useEffect(
+    () => {
+      if (!blockNumber || (blockNumber % BigInt(updateInterval) !== 0n)) {
+        return;
+      }
+      for (const { queryKey } of queries) {
+        queryClient.invalidateQueries({ queryKey });
+      }
+    },
+    // `queriesHash` replaces `queries` to avoid invalidation on every render
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+    [
+      blockNumber,
+      queryClient,
+      queriesHash,
+      updateInterval,
+    ],
+  );
 }

@@ -32,15 +32,6 @@ type TroveDetails = {
   interestRate: Dnum;
 };
 
-type LiquityInfo = {
-  // trovesCount: number;
-  redemptionRate: Dnum;
-  tcr: Dnum;
-  totalBoldDeposits: Dnum;
-  totalCollateral: Dnum;
-  totalDebt: Dnum;
-};
-
 type Rewards = {
   eth: Dnum;
   bold: Dnum;
