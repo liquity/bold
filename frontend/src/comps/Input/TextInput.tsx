@@ -20,8 +20,10 @@ export function TextInput({
         padding: 8,
         height: 60,
         fontSize: 24,
+        background: "#FFFFFF",
         border: "1px solid",
         borderColor: "#E5E6EE",
+        borderRadius: 4,
       })}
     />
   );

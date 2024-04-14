@@ -11,18 +11,11 @@ export function Contract({
   name: string;
 }) {
   return (
-    <div
-      className={css({
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 40,
-        width: "100%",
-      })}
-    >
+    <section>
       <h1
         className={css({
           width: "100%",
+          padding: "40px 0 20px",
           fontSize: 32,
         })}
       >
@@ -31,6 +24,6 @@ export function Contract({
       <Masonry>
         {children}
       </Masonry>
-    </div>
+    </section>
   );
 }

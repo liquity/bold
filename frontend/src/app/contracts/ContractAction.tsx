@@ -29,8 +29,9 @@ export function ContractAction({
         flexDirection: "column",
         gap: 40,
         width: "100%",
-        padding: 32,
+        padding: 40,
         background: "#F7F7FF",
+        borderRadius: 8,
       })}
     >
       <div

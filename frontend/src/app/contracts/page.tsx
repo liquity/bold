@@ -22,45 +22,52 @@ import { useAccount } from "wagmi";
 import { ContractBorrowerOperations } from "./ContractBorrowerOperations";
 import { ContractStabilityPool } from "./ContractStabilityPool";
 
-export default function Home() {
+export default function Contracts() {
   return (
     <div
       className={css({
+        display: "flex",
+        flexDirection: "column",
+        gap: 80,
         width: "100%",
         paddingTop: 80,
       })}
     >
-      <h1
-        className={css({
-          fontSize: 40,
-        })}
-      >
-        Liquity v2
-      </h1>
-      <CardsGrid>
-        <LiquityStats />
-        <TrovesStats />
-        <StabilityPool />
-        <AccountDetails />
-        <TroveDetails ownerIndex={0n} />
-        <TroveDetails ownerIndex={1n} />
-        <TroveDetails ownerIndex={2n} />
-        <TroveDetails ownerIndex={3n} />
-        <TroveDetails ownerIndex={4n} />
-      </CardsGrid>
-      <div
-        className={css({
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 160,
-          width: "100%",
-          paddingTop: 80,
-        })}
-      >
-        <ContractBorrowerOperations />
-        <ContractStabilityPool />
-      </div>
+      <section>
+        <h1
+          className={css({
+            fontSize: 32,
+            paddingBottom: 40,
+          })}
+        >
+          Liquity v2
+        </h1>
+        <CardsGrid>
+          <LiquityStats />
+          <TrovesStats />
+          <StabilityPool />
+        </CardsGrid>
+      </section>
+      <section>
+        <h1
+          className={css({
+            fontSize: 32,
+            padding: "40px 0 20px",
+          })}
+        >
+          Account
+        </h1>
+        <CardsGrid>
+          <AccountDetails />
+          <TroveDetails ownerIndex={0n} />
+          <TroveDetails ownerIndex={1n} />
+          <TroveDetails ownerIndex={2n} />
+          <TroveDetails ownerIndex={3n} />
+          <TroveDetails ownerIndex={4n} />
+        </CardsGrid>
+      </section>
+      <ContractBorrowerOperations />
+      <ContractStabilityPool />
     </div>
   );
 }
@@ -83,7 +90,6 @@ function AccountDetails() {
 
   return (
     <Card
-      title="Account"
       action={match({ address })
         .with({ address: P.string }, () => {
           const getWethAction = {
@@ -105,6 +111,8 @@ function AccountDetails() {
           label: "Connect Wallet",
           onClick: () => setOpen(true),
         }))}
+      lines={4}
+      title="Account"
     >
       {match({ address, ethBalance, boldBalance, collBalance, accountBalancesStatus })
         .when(
@@ -158,7 +166,14 @@ function AccountDetails() {
             </>
           ),
         )
-        .otherwise(() => null)}
+        .otherwise(() => (
+          <>
+            <CardRow name="Address" value="−" />
+            <CardRow name="ETH Balance" value="−" />
+            <CardRow name="WETH Balance" value="−" />
+            <CardRow name="BOLD Balance" value="−" />
+          </>
+        ))}
     </Card>
   );
 }
@@ -185,9 +200,8 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
   const { allowance } = useCollTokenAllowance();
   const isApproved = (allowance.data ?? 0n) >= openTroveQuickParams.ethAmount;
 
-  return (
+  return address && (
     <Card
-      title={`Trove #${ownerIndex}`}
       action={match([troveDetails.data?.status, address])
         .with(
           [
@@ -216,9 +230,11 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
           },
         }))
         .otherwise(() => null)}
+      lines={4}
+      title={`Trove #${ownerIndex}`}
     >
       {match([troveDetails, address])
-        .with([P.any, P.nullish], () => "please connect")
+        .with([P.any, P.nullish], () => null)
         .with([{ status: "pending" }, P.any], () => "loading…")
         .with([{ status: "error" }, P.any], () => "error")
         .with(
@@ -226,7 +242,6 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
           ([{ data }]) => (
             <>
               <CardRow name="Status" value={data.status} />
-              <CardRow name="Stake" value="−" />
               <CardRow name="Debt" value="−" />
               <CardRow name="Collateral" value="−" />
               <CardRow name="Interest Rate" value="−" />
@@ -238,7 +253,6 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
           ([{ data }]) => (
             <>
               <CardRow name="Status" value={data.status} />
-              <CardRow name="Stake" value={dn.format(data.stake) + " ETH"} />
               <CardRow name="Debt" value={dn.format(data.debt) + " BOLD"} />
               <CardRow name="Collateral" value={dn.format(data.collateral) + " ETH"} />
               <CardRow name="Interest Rate" value={dn.format(dn.mul(data.interestRate, 100)) + "%"} />
@@ -250,34 +264,13 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
   );
 }
 
-function StabilityPool() {
-  const stats = useStabilityPoolStats();
-  return (
-    <Card title="Stability Pool" solid={false}>
-      {match(stats)
-        .with({ status: "error" }, () => "error")
-        .with({ status: "pending" }, () => "loading…")
-        .with({ status: "success" }, ({ data }) => (
-          <>
-            <CardRow
-              name="Total Deposits"
-              value={dn.format(data.totalBoldDeposits, 2) + " BOLD"}
-            />
-            <CardRow
-              name="ETH Balance"
-              value={dn.format(data.ethBalance, 2) + " ETH"}
-            />
-          </>
-        ))
-        .otherwise(() => null)}
-    </Card>
-  );
-}
-
 function LiquityStats() {
   const stats = useTrovesStats();
   return (
-    <Card title="Protocol" solid={false}>
+    <Card
+      lines={3}
+      title="Protocol"
+    >
       {match(stats)
         .with({ status: "error" }, () => "error")
         .with({ status: "pending" }, () => "loading…")
@@ -311,7 +304,7 @@ function LiquityStats() {
 function TrovesStats() {
   const stats = useTrovesStats();
   return (
-    <Card title="Troves" solid={false}>
+    <Card title="Troves">
       {match(stats)
         .with({ status: "error" }, () => "error")
         .with({ status: "pending" }, () => "loading…")
@@ -342,6 +335,33 @@ function TrovesStats() {
   );
 }
 
+function StabilityPool() {
+  const stats = useStabilityPoolStats();
+  return (
+    <Card
+      lines={2}
+      title="Stability Pool"
+    >
+      {match(stats)
+        .with({ status: "error" }, () => "error")
+        .with({ status: "pending" }, () => "loading…")
+        .with({ status: "success" }, ({ data }) => (
+          <>
+            <CardRow
+              name="Total Deposits"
+              value={dn.format(data.totalBoldDeposits, 2) + " BOLD"}
+            />
+            <CardRow
+              name="ETH Balance"
+              value={dn.format(data.ethBalance, 2) + " ETH"}
+            />
+          </>
+        ))
+        .otherwise(() => null)}
+    </Card>
+  );
+}
+
 function CardsGrid({ children }: { children: ReactNode }) {
   return (
     <div
@@ -350,7 +370,6 @@ function CardsGrid({ children }: { children: ReactNode }) {
         gridTemplateColumns: "1fr 1fr 1fr",
         gap: 40,
         width: "100%",
-        padding: "40px 0 80px",
       })}
     >
       {children}
@@ -368,17 +387,18 @@ type CardAction = {
 function Card({
   action,
   children,
+  lines = 3,
   title,
-  solid = true,
 }: {
-  solid?: boolean;
   action?: null | CardAction | CardAction[];
   children: ReactNode;
+  lines?: number;
   title: string;
 }) {
   const actions = Array.isArray(action)
     ? action
     : (action ? [action] : []);
+
   return (
     <div
       className={css({
@@ -386,11 +406,11 @@ function Card({
         flexDirection: "column",
         justifyContent: "space-between",
         gap: 40,
-        minHeight: 214,
-        padding: solid ? 32 : "40px 0",
       })}
       style={{
-        background: solid ? "#F7F7FF" : "transparent",
+        padding: 32,
+        background: "#F7F7FF",
+        borderRadius: 8,
       }}
     >
       <div
@@ -408,7 +428,11 @@ function Card({
         >
           {title}
         </h1>
-        <div>
+        <div
+          style={{
+            height: lines * 32,
+          }}
+        >
           {children}
         </div>
       </div>
