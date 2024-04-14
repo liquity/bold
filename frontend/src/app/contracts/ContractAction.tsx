@@ -5,12 +5,19 @@ import { TextButton } from "@/src/comps/Button/TextButton";
 import { css } from "@/styled-system/css";
 
 export function ContractAction({
+  buttonLabel,
   children,
+  error,
   onFillExample,
   onSubmit,
   title,
 }: {
+  buttonLabel?: string;
   children?: ReactNode;
+  error: {
+    name: string;
+    message: string;
+  } | null;
   onFillExample?: () => void;
   onSubmit?: () => void;
   title: string;
@@ -24,6 +31,7 @@ export function ContractAction({
         width: "100%",
         padding: 40,
         background: "#F7F7FF",
+        borderRadius: 8,
       })}
     >
       <div
@@ -35,7 +43,7 @@ export function ContractAction({
       >
         <h1
           className={css({
-            fontSize: 32,
+            fontSize: 24,
           })}
         >
           {title}
@@ -48,7 +56,7 @@ export function ContractAction({
         )}
       </div>
       <form
-        onSubmit={e => {
+        onSubmit={(e) => {
           e.preventDefault();
           onSubmit?.();
         }}
@@ -67,8 +75,60 @@ export function ContractAction({
             paddingTop: 16,
           })}
         >
-          <Button label={title} />
+          <Button label={buttonLabel ?? title} />
         </div>
+        {error && (
+          <div
+            className={css({
+              paddingTop: 32,
+            })}
+          >
+            <div
+              className={css({
+                position: "relative",
+              })}
+            >
+              <div
+                className={css({
+                  position: "absolute",
+                  zIndex: 1,
+                  inset: 0,
+                  background: "negative",
+                  opacity: 0.8,
+                })}
+              />
+              <div
+                className={css({
+                  position: "relative",
+                  zIndex: 2,
+                  overflow: "auto",
+                  padding: 32,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                  color: "white",
+                  fontSize: 14,
+                })}
+              >
+                <p
+                  className={css({
+                    fontSize: 16,
+                    whiteSpace: "nowrap",
+                  })}
+                >
+                  Error: {error.name}
+                </p>
+                <div
+                  className={css({
+                    whiteSpace: "pre-wrap",
+                  })}
+                >
+                  {error.message}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </form>
     </section>
   );

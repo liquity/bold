@@ -10,10 +10,12 @@ import closeSvg from "./close.svg";
 export function Modal({
   children,
   onClose,
+  title,
   visible,
 }: {
   children: ReactNode;
   onClose: () => void;
+  title?: ReactNode;
   visible: boolean;
 }) {
   const visibility = useTransition(visible, {
@@ -26,7 +28,7 @@ export function Modal({
       closeTransform: "scale3d(0.8, 0.8, 1)",
       opacity: 0,
       overlayOpacity: 0,
-      transform: "scale3d(0.95, 0.95, 1)",
+      transform: "scale3d(0.97, 0.97, 1)",
     },
     enter: {
       closeTransform: "scale3d(1, 1, 1)",
@@ -108,6 +110,16 @@ export function Modal({
                     })}
                   >
                     <div>
+                      {title && (
+                        <h1
+                          className={css({
+                            paddingBottom: 16,
+                            fontSize: 20,
+                          })}
+                        >
+                          {title}
+                        </h1>
+                      )}
                       {children}
                     </div>
                   </a.div>

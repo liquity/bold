@@ -4,6 +4,7 @@ import "@/src/index.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { AboutModal } from "@/src/comps/AboutModal/AboutModal";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import { Config } from "@/src/comps/Config/Config";
 import { ConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
@@ -30,9 +31,11 @@ export default function Layout({
           <Config>
             <Ethereum>
               <ConfigModal>
-                <AppLayout>
-                  {children}
-                </AppLayout>
+                <AboutModal>
+                  <AppLayout>
+                    {children}
+                  </AppLayout>
+                </AboutModal>
               </ConfigModal>
             </Ethereum>
           </Config>

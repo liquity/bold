@@ -106,10 +106,14 @@ function contractNameToAppEnvVariable(contractName: string) {
       return "NEXT_PUBLIC_CONTRACT_COLL_SURPLUS_POOL";
     case "DefaultPool":
       return "NEXT_PUBLIC_CONTRACT_DEFAULT_POOL";
+    case "ERC20Faucet":
+      return "NEXT_PUBLIC_CONTRACT_COLL_TOKEN";
     case "GasPool":
       return "NEXT_PUBLIC_CONTRACT_GAS_POOL";
+    case "MockInterestRouter":
+      return "NEXT_PUBLIC_CONTRACT_INTEREST_ROUTER";
     case "PriceFeedTestnet":
-      return "NEXT_PUBLIC_CONTRACT_PRICE_FEED_TESTNET";
+      return "NEXT_PUBLIC_CONTRACT_PRICE_FEED";
     case "SortedTroves":
       return "NEXT_PUBLIC_CONTRACT_SORTED_TROVES";
     case "StabilityPool":

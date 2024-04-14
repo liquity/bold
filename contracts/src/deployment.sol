@@ -36,7 +36,7 @@ function _deployAndConnectContracts() returns (LiquityContracts memory contracts
     contracts.WETH = new ERC20Faucet(
         "Wrapped ETH", // _name
         "WETH", //        _symbol
-        10 ether, //      _tapAmount
+        100 ether, //     _tapAmount
         1 days //         _tapPeriod
     );
 

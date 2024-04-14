@@ -6,15 +6,15 @@ name: Testnet Deployment
 
 on:
   push:
-    branches: [main]
+    branches: [updated-abis]
     paths:
       - ".github/workflows/testnet-deployment.yml"
       - "contracts/**"
       - "frontend/**"
-  pull_request:
-    paths:
-      - ".github/workflows/testnet-deployment.yml"
-      - "contracts/**"
+  # pull_request:
+  #   paths:
+  #     - ".github/workflows/testnet-deployment.yml"
+  #     - "contracts/**"
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

@@ -1,9 +1,9 @@
 "use client";
 
 import { palette } from "@/src/colors";
+import { useAboutModal } from "@/src/comps/AboutModal/AboutModal";
 import { TextButton } from "@/src/comps/Button/TextButton";
 import { useConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
-import { APP_VERSION, COMMIT_HASH } from "@/src/env";
 import { css } from "@/styled-system/css";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,7 +11,8 @@ import Link from "next/link";
 import logo from "./footer-logo.svg";
 
 export function Footer() {
-  const { open: openConfigModal } = useConfigModal();
+  const aboutModal = useAboutModal();
+  const configModal = useConfigModal();
 
   const links: Array<[
     string | [string, string],
@@ -20,14 +21,8 @@ export function Footer() {
     // ["Liquity", "https://liquity.org"],
     // ["Disclaimer", "https://example.org"],
     // ["Privacy Policy", "https://example.org"],
-    ["Settings", openConfigModal],
-    [
-      [
-        `${APP_VERSION}-${COMMIT_HASH}`,
-        `Version ${APP_VERSION} (${COMMIT_HASH})`,
-      ],
-      "https://github.com/liquity/bold/tree/" + COMMIT_HASH,
-    ],
+    ["Settings", configModal.open],
+    ["About", aboutModal.open],
   ];
 
   return (

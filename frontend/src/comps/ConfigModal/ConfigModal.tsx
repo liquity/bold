@@ -23,8 +23,9 @@ export function ConfigModal({ children }: { children: ReactNode }) {
       <Modal
         onClose={() => setVisible(false)}
         visible={visible}
+        title="Settings"
       >
-        ConfigModal
+        <div />
       </Modal>
     </ConfigModalContext.Provider>
   );

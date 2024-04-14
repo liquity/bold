@@ -21,7 +21,7 @@ export const MultiTroveGetter = [{
     "type": "tuple[]",
     "internalType": "struct MultiTroveGetter.CombinedTroveData[]",
     "components": [
-      { "name": "owner", "type": "address", "internalType": "address" },
+      { "name": "id", "type": "uint256", "internalType": "uint256" },
       { "name": "debt", "type": "uint256", "internalType": "uint256" },
       { "name": "coll", "type": "uint256", "internalType": "uint256" },
       { "name": "stake", "type": "uint256", "internalType": "uint256" },

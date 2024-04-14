@@ -27,19 +27,18 @@ export function Ethereum({ children }: { children: ReactNode }) {
       contractEnsResolver: config.chainContractEnsResolver,
       contractMulticall: config.chainContractMulticall,
     });
-    return (
-      createConfig(
-        getDefaultConfig({
-          appName: "Liquity 2",
-          chains: [chain],
-          transports: {
-            [config.chainId]: http(config.chainRpcUrl),
-          },
-          ssr: true,
-          walletConnectProjectId: WALLET_CONNECT_PROJECT_ID,
-        }),
-      )
-    );
+
+    const configParams = getDefaultConfig({
+      appName: "Liquity v2",
+      chains: [chain],
+      transports: {
+        [config.chainId]: http(config.chainRpcUrl),
+      },
+      ssr: true,
+      walletConnectProjectId: WALLET_CONNECT_PROJECT_ID,
+    });
+
+    return createConfig(configParams);
   }, [config]);
 
   return (
