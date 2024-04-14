@@ -29,7 +29,7 @@ export function ContractAction({
         flexDirection: "column",
         gap: 40,
         width: "100%",
-        padding: 40,
+        padding: 32,
         background: "#F7F7FF",
       })}
     >
@@ -42,7 +42,7 @@ export function ContractAction({
       >
         <h1
           className={css({
-            fontSize: 32,
+            fontSize: 24,
           })}
         >
           {title}

@@ -23,7 +23,7 @@ export function Contract({
       <h1
         className={css({
           width: "100%",
-          fontSize: 40,
+          fontSize: 32,
         })}
       >
         {name}

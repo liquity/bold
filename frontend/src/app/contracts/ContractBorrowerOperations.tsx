@@ -26,7 +26,6 @@ export function ContractBorrowerOperations() {
 function OpenTrove() {
   const account = useAccount();
   const writeOpenTrove = useWriteContract();
-  const tokenAllowance = useCollTokenAllowance();
 
   const { fieldsProps, values, fill } = useForm(() => ({
     ownerIndex: formValue(0n, parseInputInt),
@@ -38,7 +37,8 @@ function OpenTrove() {
     annualInterestRate: formValue(dn.from(0, 18), parseInputPercentage),
   }), writeOpenTrove.reset);
 
-  const isApproved = tokenAllowance.allowance.data ?? 0n >= values.ethAmount[0];
+  const tokenAllowance = useCollTokenAllowance();
+  const isApproved = (tokenAllowance.allowance.data ?? 0n) >= values.ethAmount[0];
 
   const onSubmit = () => {
     if (!account.address) {

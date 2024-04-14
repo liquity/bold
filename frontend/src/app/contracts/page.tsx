@@ -7,11 +7,12 @@ import {
   getTroveId,
   useAccountBalances,
   useCloseTrove,
-  useLiquity2Info,
+  useCollTokenAllowance,
   useOpenTrove,
   useStabilityPoolStats,
   useTapCollTokenFaucet,
   useTroveDetails,
+  useTrovesStats,
 } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { useModal } from "connectkit";
@@ -26,15 +27,26 @@ export default function Home() {
     <div
       className={css({
         width: "100%",
+        paddingTop: 80,
       })}
     >
+      <h1
+        className={css({
+          fontSize: 40,
+        })}
+      >
+        Liquity v2
+      </h1>
       <CardsGrid>
-        <Liquity2Info />
+        <LiquityStats />
+        <TrovesStats />
         <StabilityPool />
         <AccountDetails />
         <TroveDetails ownerIndex={0n} />
         <TroveDetails ownerIndex={1n} />
         <TroveDetails ownerIndex={2n} />
+        <TroveDetails ownerIndex={3n} />
+        <TroveDetails ownerIndex={4n} />
       </CardsGrid>
       <div
         className={css({
@@ -66,14 +78,30 @@ function AccountDetails() {
 
   const tapCollTokenFaucet = useTapCollTokenFaucet();
 
+  const { allowance, approve } = useCollTokenAllowance();
+  const isApproved = allowance.data ?? 0n > 0n;
+
   return (
     <Card
       title="Account"
       action={match({ address })
-        .with({ address: P.string }, () => ({
-          label: "Get WETH",
-          onClick: tapCollTokenFaucet,
-        }))
+        .with({ address: P.string }, () => {
+          const getWethAction = {
+            label: "Receive WETH",
+            onClick: tapCollTokenFaucet,
+          };
+          return isApproved ? getWethAction : [
+            {
+              label: "Approve ∞",
+              title: "Approve Liquity to transfer WETH on your behalf",
+              onClick: () => {
+                console.log(approve);
+                approve();
+              },
+            },
+            getWethAction,
+          ];
+        })
         .otherwise(() => ({
           label: "Connect Wallet",
           onClick: () => setOpen(true),
@@ -136,6 +164,15 @@ function AccountDetails() {
   );
 }
 
+const openTroveQuickParams = {
+  maxFeePercentage: 100n * 10n ** 16n, // 100%
+  boldAmount: 1800n * 10n ** 18n, // 1800 BOLD
+  upperHint: 0n,
+  lowerHint: 0n,
+  interestRate: 5n * 10n ** 16n, // 5%
+  ethAmount: 20n * 10n ** 18n, // 20 ETH
+};
+
 function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
   const { address } = useAccount();
   const troveDetails = useTroveDetails(address && getTroveId(address, ownerIndex));
@@ -143,13 +180,11 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
   const closeTrove = useCloseTrove(getTroveId(address ?? ADDRESS_ZERO, ownerIndex));
   const openTrove = useOpenTrove(address ?? ADDRESS_ZERO, {
     ownerIndex,
-    maxFeePercentage: 100n * 10n ** 16n, // 100%
-    boldAmount: 1800n * 10n ** 18n, // 1800 BOLD
-    upperHint: 0n,
-    lowerHint: 0n,
-    interestRate: 5n * 10n ** 16n, // 5%
-    ethAmount: 20n * 10n ** 18n, // 20 ETH
+    ...openTroveQuickParams,
   });
+
+  const { allowance, approve } = useCollTokenAllowance();
+  const isApproved = (allowance.data ?? 0n) >= openTroveQuickParams.ethAmount;
 
   return (
     <Card
@@ -166,31 +201,51 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
             P.not(undefined),
           ],
           () => ({
+            disabled: isApproved ? null : "Please approve first",
             label: `Open Trove #${ownerIndex}`,
-            onClick: openTrove,
+            onClick: () => {
+              if (isApproved) {
+                openTrove();
+              }
+            },
           }),
         )
         .with(["active", P.not(undefined)], () => ({
           label: `Close Trove #${ownerIndex}`,
           onClick: () => {
-            const data = closeTrove();
-            console.log("closeTrove", data);
+            closeTrove();
           },
         }))
         .otherwise(() => null)}
     >
       {match([troveDetails, address])
-        .with([{ status: "pending" }, P.not(undefined)], () => "loading…")
-        .with([{ status: "error" }, P.not(undefined)], () => "error")
-        .with([{ status: "success", data: P.not(undefined) }, P.not(undefined)], ([{ data }]) => (
-          <>
-            <CardRow name="Status" value={data.status} />
-            <CardRow name="Stake" value={dn.format(data.stake) + " ETH"} />
-            <CardRow name="Debt" value={dn.format(data.debt) + " BOLD"} />
-            <CardRow name="Collateral" value={dn.format(data.collateral) + " ETH"} />
-            <CardRow name="Interest Rate" value={dn.format(dn.mul(data.interestRate, 100)) + "%"} />
-          </>
-        ))
+        .with([P.any, P.nullish], () => "please connect")
+        .with([{ status: "pending" }, P.any], () => "loading…")
+        .with([{ status: "error" }, P.any], () => "error")
+        .with(
+          [{ status: "success", data: { status: P.not("active") } }, P.any],
+          ([{ data }]) => (
+            <>
+              <CardRow name="Status" value={data.status} />
+              <CardRow name="Stake" value="−" />
+              <CardRow name="Debt" value="−" />
+              <CardRow name="Collateral" value="−" />
+              <CardRow name="Interest Rate" value="−" />
+            </>
+          ),
+        )
+        .with(
+          [{ status: "success", data: P.not(undefined) }, P.any],
+          ([{ data }]) => (
+            <>
+              <CardRow name="Status" value={data.status} />
+              <CardRow name="Stake" value={dn.format(data.stake) + " ETH"} />
+              <CardRow name="Debt" value={dn.format(data.debt) + " BOLD"} />
+              <CardRow name="Collateral" value={dn.format(data.collateral) + " ETH"} />
+              <CardRow name="Interest Rate" value={dn.format(dn.mul(data.interestRate, 100)) + "%"} />
+            </>
+          ),
+        )
         .otherwise(() => null)}
     </Card>
   );
@@ -199,7 +254,7 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
 function StabilityPool() {
   const stats = useStabilityPoolStats();
   return (
-    <Card title="Stability Pool">
+    <Card title="Stability Pool" solid={false}>
       {match(stats)
         .with({ status: "error" }, () => "error")
         .with({ status: "pending" }, () => "loading…")
@@ -220,42 +275,66 @@ function StabilityPool() {
   );
 }
 
-function Liquity2Info() {
-  const liquity2Info = useLiquity2Info();
+function LiquityStats() {
+  const stats = useTrovesStats();
   return (
-    <Card title="Liquity v2 Stats">
-      {match(liquity2Info)
+    <Card title="Protocol" solid={false}>
+      {match(stats)
         .with({ status: "error" }, () => "error")
         .with({ status: "pending" }, () => "loading…")
-        .with({ status: "success" }, ({ data }) => (
+        .with({ status: "success" }, ({
+          data: { redemptionRate, recoveryMode, tcr },
+        }) => (
           <>
-            <CardRow
-              name="Troves Count"
-              value="?"
-            />
-            <CardRow
-              name="Total Collateral"
-              value={dn.format(data.totalCollateral) + " ETH"}
-            />
-            <CardRow
-              name="Total Debt"
-              value={dn.format(data.totalDebt, 2) + " BOLD"}
-            />
             <CardRow
               name={
                 <>
                   <abbr title="Total Collateral Ratio">TCR</abbr> ($200/ETH)
                 </>
               }
-              value={dn.format(dn.mul(data.tcr, 100n), 2) + "%"}
+              value={dn.format(dn.mul(tcr, 100n), 2) + "%"}
             />
             <CardRow
               name="Redemption Rate"
-              value={dn.format(dn.mul(data.redemptionRate, 100n), 2) + "%"}
+              value={dn.format(dn.mul(redemptionRate, 100n), 2) + "%"}
             />
             <CardRow
-              name="Stability Pool Deposits"
-              value={dn.format(data.totalBoldDeposits, 2) + " BOLD"}
+              name="Recovery Mode"
+              value={recoveryMode ? "Yes" : "No"}
+            />
+          </>
+        ))
+        .otherwise(() => null)}
+    </Card>
+  );
+}
+
+function TrovesStats() {
+  const stats = useTrovesStats();
+  return (
+    <Card title="Troves" solid={false}>
+      {match(stats)
+        .with({ status: "error" }, () => "error")
+        .with({ status: "pending" }, () => "loading…")
+        .with({ status: "success" }, ({
+          data: {
+            totalCollateral,
+            totalDebt,
+            trovesCount,
+          },
+        }) => (
+          <>
+            <CardRow
+              name="Active Troves"
+              value={trovesCount}
+            />
+            <CardRow
+              name="Total Collateral"
+              value={dn.format(totalCollateral) + " ETH"}
+            />
+            <CardRow
+              name="Total Debt"
+              value={dn.format(totalDebt, 2) + " BOLD"}
             />
           </>
         ))
@@ -272,7 +351,7 @@ function CardsGrid({ children }: { children: ReactNode }) {
         gridTemplateColumns: "1fr 1fr 1fr",
         gap: 40,
         width: "100%",
-        padding: "80px 0",
+        padding: "40px 0 80px",
       })}
     >
       {children}
@@ -280,29 +359,40 @@ function CardsGrid({ children }: { children: ReactNode }) {
   );
 }
 
+type CardAction = {
+  label: string;
+  disabled?: string; // disabled message
+  onClick: () => void;
+  title?: string;
+};
+
 function Card({
   action,
   children,
   title,
+  solid = true,
 }: {
-  action?: null | {
-    label: string;
-    onClick: () => void;
-  };
+  solid?: boolean;
+  action?: null | CardAction | CardAction[];
   children: ReactNode;
   title: string;
 }) {
+  const actions = Array.isArray(action)
+    ? action
+    : (action ? [action] : []);
   return (
     <div
       className={css({
-        height: 400,
         display: "flex",
         flexDirection: "column",
         justifyContent: "space-between",
         gap: 40,
-        padding: 40,
-        background: "#F7F7FF",
+        minHeight: 214,
+        padding: solid ? 32 : "40px 0",
       })}
+      style={{
+        background: solid ? "#F7F7FF" : "transparent",
+      }}
     >
       <div
         className={css({
@@ -328,25 +418,39 @@ function Card({
           className={css({
             display: "flex",
             justifyContent: "flex-end",
+            gap: 16,
           })}
         >
-          <button
-            type="button"
-            onClick={action.onClick}
-            className={css({
-              padding: "8px 16px",
-              color: "white",
-              fontSize: 14,
-              background: "blue",
-              borderRadius: 16,
-              cursor: "pointer",
-              _active: {
-                translate: "0 1px",
-              },
-            })}
-          >
-            {action.label}
-          </button>
+          {actions.map((action, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={action.disabled ? undefined : action.onClick}
+              title={action.disabled ?? action.title}
+              disabled={Boolean(action.disabled)}
+              className={css({
+                height: 40,
+                padding: "8px 16px",
+                color: "white",
+                fontSize: 14,
+                background: "blue",
+                borderRadius: 16,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                _disabled: {
+                  background: "rain",
+                  cursor: "not-allowed",
+                },
+                _active: {
+                  _enabled: {
+                    translate: "0 1px",
+                  },
+                },
+              })}
+            >
+              {action.label}
+            </button>
+          ))}
         </div>
       )}
     </div>

@@ -10,10 +10,12 @@ import {
 } from "@/src/contracts";
 import { ADDRESS_ZERO } from "@/src/eth-utils";
 import { useWatchQueries } from "@/src/wagmi-utils";
-import * as dn from "dnum";
 import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, maxUint256, parseAbiParameters } from "viem";
 import { useAccount, useBalance, useReadContract, useReadContracts, useWriteContract } from "wagmi";
+
+// hardcoded for now
+const ETH_PRICE_IN_USD = 200n;
 
 type TroveStatus =
   | "nonExistent"
@@ -221,15 +223,15 @@ export function useStabilityPoolStats() {
   return { ...read, data };
 }
 
-export function useLiquity2Info() {
+export function useTrovesStats() {
   const read = useReadContracts({
     allowFailure: false,
     contracts: [
-      // {
-      //   ...TroveManagerContract,
-      //   functionName: "getTroveOwnersCount",
-      //   args: [],
-      // },
+      {
+        ...TroveManagerContract,
+        functionName: "getTroveIdsCount",
+        args: [],
+      },
       {
         ...TroveManagerContract,
         functionName: "getEntireSystemColl",
@@ -243,40 +245,40 @@ export function useLiquity2Info() {
       {
         ...TroveManagerContract,
         functionName: "getTCR",
-        args: [200n * 10n ** 18n],
+        args: [ETH_PRICE_IN_USD * 10n ** 18n],
+      },
+      {
+        ...TroveManagerContract,
+        functionName: "checkRecoveryMode",
+        args: [ETH_PRICE_IN_USD * 10n ** 18n],
       },
       {
         ...TroveManagerContract,
         functionName: "getRedemptionRate",
         args: [],
       },
-      {
-        ...StabilityPoolContract,
-        functionName: "getTotalBoldDeposits",
-      },
     ],
+    query: {
+      select: ([
+        trovesCount,
+        totalCollateral,
+        totalDebt,
+        tcr,
+        recoveryMode,
+        redemptionRate,
+      ]) => ({
+        redemptionRate: [redemptionRate, 18] as const,
+        recoveryMode,
+        tcr: [tcr && tcr <= 10n ** 18n ? tcr : 0n, 18] as const,
+        totalCollateral: [totalCollateral, 18] as const,
+        totalDebt: [totalDebt, 18] as const,
+        trovesCount: Number(trovesCount),
+      }),
+    },
   });
   useWatchQueries([read]);
 
-  if (!read.data || read.status !== "success") {
-    return {
-      ...read,
-      data: undefined,
-    };
-  }
-
-  const tcr = [read.data[2], 18] as const;
-
-  const data: LiquityInfo = {
-    // trovesCount: Number(read.data[0]),
-    redemptionRate: [read.data[3], 18],
-    tcr: dn.gt(tcr, 1) ? [0n, 18] : tcr,
-    totalBoldDeposits: [read.data[4], 18],
-    totalCollateral: [read.data[0], 18],
-    totalDebt: [read.data[1], 18],
-  };
-
-  return { ...read, data };
+  return read;
 }
 
 export function getTroveId(owner: Address, ownerIndex: bigint) {
