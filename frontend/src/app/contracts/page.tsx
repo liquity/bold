@@ -16,7 +16,7 @@ import {
   useTrovesStats,
 } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
-import { useModal as useConnectKitModal } from "connectkit";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import { useAccount } from "wagmi";
@@ -74,7 +74,7 @@ export default function Contracts() {
 }
 
 function AccountDetails() {
-  const connectKitModal = useConnectKitModal();
+  const rainbowKitModal = useConnectModal();
   const { address } = useAccount();
 
   const {
@@ -93,25 +93,20 @@ function AccountDetails() {
     <Card
       action={match({ address })
         .with({ address: P.string }, () => {
-          const getWethAction = {
+          const receiveWeith = {
             label: "Receive WETH",
             onClick: tapCollTokenFaucet,
           };
-          return isApproved ? getWethAction : [
-            {
-              label: "Approve ∞",
-              title: "Approve Liquity to transfer WETH on your behalf",
-              onClick: () => {
-                approve();
-              },
-            },
-            getWethAction,
-          ];
+          return isApproved ? receiveWeith : [{
+            label: "Approve ∞",
+            title: "Approve Liquity to transfer WETH on your behalf",
+            onClick: approve,
+          }, receiveWeith];
         })
         .otherwise(() => ({
           label: "Connect Wallet",
           onClick: () => {
-            connectKitModal.setOpen(true);
+            rainbowKitModal.openConnectModal?.();
           },
         }))}
       lines={4}

@@ -1,31 +1,34 @@
-import { shortenAddress } from "@/src/eth-utils";
-import { ConnectKitButton } from "connectkit";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { match, P } from "ts-pattern";
 import { IconAccount } from "./icons";
 import { MenuItem } from "./MenuItem";
 
 export function AccountButton() {
   return (
-    <ConnectKitButton.Custom>
-      {({ isConnected, show, address, ensName }) => (
-        <button onClick={show}>
-          <MenuItem
-            icon={<IconAccount />}
-            label={match({ isConnected, address, ensName })
-              .with({
-                ensName: P.string.minLength(1),
-                isConnected: true,
-              }, ({ ensName }) => ensName)
-              .with({
-                address: P.string.minLength(42),
-                isConnected: true,
-              }, ({ address }) => (
-                shortenAddress(address, 4)
-              ))
-              .otherwise(() => "Connect")}
-          />
-        </button>
-      )}
-    </ConnectKitButton.Custom>
+    <ConnectButton.Custom>
+      {({ account, chain, openAccountModal, openChainModal, openConnectModal }) => {
+        const button = match({ account, chain })
+          .with(
+            // wrong network
+            { chain: { unsupported: true } },
+            () => ({ label: "Wrong network", onClick: openChainModal }),
+          )
+          .with(
+            // connected
+            { account: P.nonNullable },
+            ({ account }) => ({ label: account.displayName, onClick: openAccountModal }),
+          )
+          .otherwise(
+            // disconnected / not ready
+            () => ({ label: "Connect", onClick: openConnectModal }),
+          );
+
+        return button && (
+          <button onClick={button.onClick} type="button">
+            <MenuItem icon={<IconAccount />} label={button.label} />
+          </button>
+        );
+      }}
+    </ConnectButton.Custom>
   );
 }
