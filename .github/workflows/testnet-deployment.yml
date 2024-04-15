@@ -103,7 +103,7 @@ jobs:
           echo 'NEXT_PUBLIC_CHAIN_NAME=Liquity Testnet' >> $APP_ENV_FILE
           echo 'NEXT_PUBLIC_CHAIN_CURRENCY=Ether|ETH|18' >> $APP_ENV_FILE
           echo 'NEXT_PUBLIC_CHAIN_RPC_URL=https://testnet.liquity.org/rpc' >> $APP_ENV_FILE
-          echo 'NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER=Otterscan|https://testnet.liquity.org/' >> $APP_ENV_FILE
+          echo 'NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER=Liquity Testnet|https://testnet.liquity.org/' >> $APP_ENV_FILE
           echo 'NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=0xffB2BAa708261533b51D18394fd8AFd0E32aBC55|488' >> $APP_ENV_FILE
 
           pnpm tsx utils/deployment-artifacts-to-app-env.ts $DEPLOYMENT_CONTEXT_FILE $APP_ENV_FILE --append
