@@ -13,9 +13,4 @@ module.exports = {
     APP_VERSION: pkg.version,
     COMMIT_HASH: commitHash,
   },
-  webpack: (config) => {
-    // RainbowKit related dependencies
-    config.externals.push("pino-pretty", "lokijs", "encoding");
-    return config;
-  },
 };
