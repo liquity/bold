@@ -93,15 +93,15 @@ function AccountDetails() {
     <Card
       action={match({ address })
         .with({ address: P.string }, () => {
-          const receiveWeith = {
+          const receiveWeth = {
             label: "Receive WETH",
             onClick: tapCollTokenFaucet,
           };
-          return isApproved ? receiveWeith : [{
+          return isApproved ? receiveWeth : [{
             label: "Approve ∞",
             title: "Approve Liquity to transfer WETH on your behalf",
             onClick: approve,
-          }, receiveWeith];
+          }, receiveWeth];
         })
         .otherwise(() => ({
           label: "Connect Wallet",
