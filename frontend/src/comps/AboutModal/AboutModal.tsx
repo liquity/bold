@@ -24,7 +24,6 @@ export function AboutModal({ children }: { children: ReactNode }) {
     <AboutModalContext.Provider
       value={{
         open: () => {
-          console.log(visible);
           setVisible(true);
         },
         close: () => setVisible(false),
