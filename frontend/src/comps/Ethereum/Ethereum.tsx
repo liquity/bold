@@ -18,7 +18,6 @@ const queryClient = new QueryClient();
 
 export function Ethereum({ children }: { children: ReactNode }) {
   const wagmiConfig = useWagmiConfig();
-  console.log({ wagmiConfig });
   const rainbowKitProps = useRainbowKitProps();
   return (
     <WagmiProvider config={wagmiConfig}>
