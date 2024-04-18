@@ -1,29 +1,43 @@
 "use client";
 
+import "@rainbow-me/rainbowkit/styles.css";
+
 import type { Address } from "@/src/types";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import type { Chain } from "wagmi/chains";
 
 import { useConfig } from "@/src/comps/Config/Config";
 import { WALLET_CONNECT_PROJECT_ID } from "@/src/env";
+import { useTheme } from "@/src/theme";
+import { getDefaultConfig, lightTheme, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ConnectKitProvider, getDefaultConfig as getDefaultConnectKitConfig } from "connectkit";
 import { useMemo } from "react";
-import { createConfig, http, WagmiProvider } from "wagmi";
+import { http, WagmiProvider } from "wagmi";
 
 const queryClient = new QueryClient();
 
 export function Ethereum({ children }: { children: ReactNode }) {
   const wagmiConfig = useWagmiConfig();
+  const rainbowKitProps = useRainbowKitProps();
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <ConnectKitProvider>
+        <RainbowKitProvider {...rainbowKitProps}>
           {children}
-        </ConnectKitProvider>
+        </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );
+}
+
+function useRainbowKitProps(): Omit<ComponentProps<typeof RainbowKitProvider>, "children"> {
+  const theme = useTheme();
+  return {
+    modalSize: "compact",
+    theme: lightTheme({
+      accentColor: theme.color("accent"),
+    }),
+  };
 }
 
 function useWagmiConfig() {
@@ -39,15 +53,15 @@ function useWagmiConfig() {
       contractEnsResolver: config.chainContractEnsResolver,
       contractMulticall: config.chainContractMulticall,
     });
-    return createConfig(getDefaultConnectKitConfig({
+    return getDefaultConfig({
       appName: "Liquity v2",
+      projectId: WALLET_CONNECT_PROJECT_ID,
       chains: [chain],
       transports: {
         [chain.id]: http(config.chainRpcUrl),
       },
       ssr: true,
-      walletConnectProjectId: WALLET_CONNECT_PROJECT_ID,
-    }));
+    });
   }, [config]);
 }
 

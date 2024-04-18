@@ -11,9 +11,9 @@
     "update-liquity-abis": "ts-node ./scripts/update-liquity-abis.ts"
   },
   "dependencies": {
+    "@rainbow-me/rainbowkit": "^2.0.5",
     "@react-spring/web": "^9.7.3",
     "@tanstack/react-query": "^5.29.2",
-    "connectkit": "^1.7.2",
     "dnum": "^2.11.0",
     "focus-trap-react": "^10.2.3",
     "next": "14.2.1",

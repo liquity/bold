@@ -13,4 +13,9 @@ module.exports = {
     APP_VERSION: pkg.version,
     COMMIT_HASH: commitHash,
   },
+  webpack: (config) => {
+    // required for rainbowkit
+    config.externals.push("pino-pretty", "lokijs", "encoding");
+    return config;
+  },
 };

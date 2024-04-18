@@ -16,7 +16,7 @@ import {
   useTrovesStats,
 } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
-import { useModal as useConnectKitModal } from "connectkit";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import { useAccount } from "wagmi";
@@ -74,7 +74,7 @@ export default function Contracts() {
 }
 
 function AccountDetails() {
-  const connectKitModal = useConnectKitModal();
+  const rainbowKitModal = useConnectModal();
   const { address } = useAccount();
 
   const {
@@ -106,7 +106,7 @@ function AccountDetails() {
         .otherwise(() => ({
           label: "Connect Wallet",
           onClick: () => {
-            connectKitModal.setOpen(true);
+            rainbowKitModal.openConnectModal?.();
           },
         }))}
       lines={4}
