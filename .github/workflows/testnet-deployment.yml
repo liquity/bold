@@ -19,6 +19,7 @@ on:
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  FOUNDRY_VERSION: nightly-f625d0fa7c51e65b4bf1e8f7931cd1c6e2e285e9
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -53,7 +54,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: ${{ env.FOUNDRY_VERSION }}
 
       - name: Run deployment tool
         working-directory: ./contracts
