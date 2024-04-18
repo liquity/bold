@@ -18,7 +18,7 @@ env:
 
 on:
   push:
-    branches: [gh-workflow-pin-foundry]
+    branches: [main]
     paths:
       - ".github/workflows/contracts.yml"
       - "contracts/**"

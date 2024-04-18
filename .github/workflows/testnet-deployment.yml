@@ -6,7 +6,7 @@ name: Testnet Deployment
 
 on:
   push:
-    branches: [gh-workflow-pin-foundry]
+    branches: [main]
     paths:
       - ".github/workflows/testnet-deployment.yml"
       - "contracts/**"
