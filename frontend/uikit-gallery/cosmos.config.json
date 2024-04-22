@@ -1,0 +1,9 @@
+{
+  "plugins": [
+    "react-cosmos-plugin-boolean-input"
+  ],
+  "rendererUrl": {
+    "dev": "http://localhost:3001/cosmos/<fixture>",
+    "export": "/cosmos/<fixture>.html"
+  }
+}
