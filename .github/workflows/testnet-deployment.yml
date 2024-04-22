@@ -94,7 +94,7 @@ jobs:
           path: ./contracts
 
       - name: Prepare Environment from Latest Deployment Context
-        working-directory: contracts
+        working-directory: ./contracts
         env:
           APP_ENV_FILE: ../frontend/app/.env.local
           DEPLOYMENT_CONTEXT_FILE: ./deployment-context-latest.json
