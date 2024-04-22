@@ -9,7 +9,7 @@ import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import { Config } from "@/src/comps/Config/Config";
 import { ConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
 import { Ethereum } from "@/src/comps/Ethereum/Ethereum";
-import { RootEntryPoint } from "@liquity2/uikit";
+import { UiKit } from "@liquity2/uikit";
 import { Inter } from "next/font/google";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -27,7 +27,7 @@ export default function Layout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <RootEntryPoint>
+        <UiKit>
           <Config>
             <Ethereum>
               <ConfigModal>
@@ -39,7 +39,7 @@ export default function Layout({
               </ConfigModal>
             </Ethereum>
           </Config>
-        </RootEntryPoint>
+        </UiKit>
       </body>
     </html>
   );

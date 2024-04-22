@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-import { useTheme } from "@/src/theme";
 import { css } from "@/styled-system/css";
+import { useTheme } from "@liquity2/uikit";
 
 export function MenuItem({
   icon,

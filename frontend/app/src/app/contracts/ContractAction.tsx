@@ -74,7 +74,10 @@ export function ContractAction({
             paddingTop: 16,
           })}
         >
-          <Button label={buttonLabel ?? title} />
+          <Button
+            label={buttonLabel ?? title}
+            size="large"
+          />
         </div>
         {error && (
           <div

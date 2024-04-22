@@ -8,7 +8,7 @@ import type { Chain } from "wagmi/chains";
 
 import { useConfig } from "@/src/comps/Config/Config";
 import { WALLET_CONNECT_PROJECT_ID } from "@/src/env";
-import { useTheme } from "@/src/theme";
+import { useTheme } from "@liquity2/uikit";
 import { getDefaultConfig, lightTheme, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMemo } from "react";

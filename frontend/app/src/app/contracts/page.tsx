@@ -486,7 +486,6 @@ function Card({
               disabled={Boolean(action.disabled)}
               label={action.label}
               onClick={action.disabled ? undefined : action.onClick}
-              size="small"
               title={action.disabled ?? action.title}
             />
           ))}
