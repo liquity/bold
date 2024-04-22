@@ -165,4 +165,5 @@ A WalletConnect project ID which can be obtained by [creating a WalletConnect pr
 ### `NEXT_PUBLIC_CONTRACT_…`
 
 Addresses of the Liquity contracts.
+
 </details>
