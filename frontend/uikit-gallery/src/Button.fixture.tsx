@@ -12,7 +12,7 @@ function ButtonDefault({
     defaultValue: defaultMode,
   });
   const [size] = useFixtureSelect("size", {
-    options: ["small", "medium", "large"],
+    options: ["medium", "large"],
     defaultValue: "medium",
   });
   const [wide] = useFixtureInput("wide", false);
