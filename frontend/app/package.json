@@ -4,15 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build": "next build",
+    "build-uikit": "cd ../uikit && pnpm build && pnpm panda-codegen",
+    "build": "pnpm panda-codegen && next build",
     "dev": "rm -rf ./.next && next dev",
     "fmt": "dprint fmt **/*.{ts,tsx,js,json,html,md}",
     "lint": "next lint",
-    "prepare": "panda codegen --silent",
+    "panda-codegen": "panda codegen --silent",
     "test": "vitest",
-    "update-liquity-abis": "ts-node ./scripts/update-liquity-abis.ts",
-    "cosmos": "cosmos --expose-imports",
-    "cosmos-build": "cosmos-export --expose-imports && pnpm build && cp -R ./out/_next ./cosmos-export && cp -R ./out/uikit ./cosmos-export"
+    "update-liquity-abis": "ts-node ./scripts/update-liquity-abis.ts"
   },
   "dependencies": {
     "@liquity2/uikit": "workspace:*",

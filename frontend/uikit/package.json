@@ -35,10 +35,10 @@
     }
   },
   "scripts": {
-    "prepare": "panda codegen --silent",
+    "build": "pnpm panda-codegen && tsc && vite build",
     "dev": "vite build --watch",
-    "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "panda-codegen": "panda codegen --silent"
   },
   "peerDependencies": {
     "@pandacss/dev": "^0.37.2",

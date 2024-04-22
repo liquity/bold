@@ -13,7 +13,7 @@
 
 ```sh
 git clone git@github.com:liquity/bold.git
-cd bold/frontend
+cd bold
 pnpm install
 ```
 
@@ -38,7 +38,8 @@ Copy the addresses of the deployed contracts to the `.env.local` file.
 Run the development server:
 
 ```sh
-cd bold/frontend
+cd bold/frontend/app
+pnpm build-uikit # only needed once
 pnpm dev
 ```
 

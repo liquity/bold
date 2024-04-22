@@ -3,13 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "pnpm panda-codegen && next build",
     "cosmos": "cosmos --expose-imports",
-    "cosmos-export": "cosmos-export --expose-imports",
     "dev": "next dev --port 3001",
     "lint": "next lint",
-    "prepare": "panda codegen --silent",
-    "start": "next start"
+    "panda-codegen": "panda codegen --silent",
+    "start": "next start",
+    "static-build": "cosmos-export --expose-imports && pnpm build && cp -R ./out/_next ./cosmos-export && cp -R ./out/uikit ./cosmos-export"
   },
   "dependencies": {
     "@liquity2/uikit": "workspace:*",
