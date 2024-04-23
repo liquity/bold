@@ -1,7 +1,14 @@
 export default function Page() {
   return (
-    <div>
-      <h1>Page</h1>
+    <div
+      style={{
+        display: "grid",
+        placeItems: "center",
+        width: "100vw",
+        height: "100vh",
+      }}
+    >
+      <h1>UI Kit Gallery</h1>
     </div>
   );
 }

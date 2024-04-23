@@ -1,15 +1,13 @@
+"use client";
+
 import { Button } from "@liquity2/uikit";
 import { useFixtureInput, useFixtureSelect } from "react-cosmos/client";
 
-function ButtonDefault({
-  defaultMode,
-}: {
-  defaultMode: "primary" | "secondary" | "positive" | "negative";
-}) {
+export default function ButtonFixture() {
   const [label] = useFixtureInput("label", "Button");
   const [mode] = useFixtureSelect("mode", {
     options: ["primary", "secondary", "positive", "negative"],
-    defaultValue: defaultMode,
+    defaultValue: "secondary",
   });
   const [size] = useFixtureSelect("size", {
     options: ["medium", "large"],
@@ -34,10 +32,3 @@ function ButtonDefault({
     </div>
   );
 }
-
-export default {
-  "Primary": () => <ButtonDefault defaultMode="primary" />,
-  "Secondary": () => <ButtonDefault defaultMode="secondary" />,
-  "Positive": () => <ButtonDefault defaultMode="positive" />,
-  "Negative": () => <ButtonDefault defaultMode="negative" />,
-};

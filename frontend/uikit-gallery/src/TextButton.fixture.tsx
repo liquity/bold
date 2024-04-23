@@ -1,7 +1,9 @@
+"use client";
+
 import { TextButton } from "@liquity2/uikit";
 import { useFixtureInput } from "react-cosmos/client";
 
-function TextButtonDefault() {
+export default function TextButtonFixture() {
   const [label] = useFixtureInput("label", "TextButton");
   return (
     <div
@@ -18,5 +20,3 @@ function TextButtonDefault() {
     </div>
   );
 }
-
-export default TextButtonDefault;

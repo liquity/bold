@@ -1,8 +1,8 @@
-import type { ReactNode } from "react";
+import type { ReactDecoratorProps } from "react-cosmos-core";
 
 import { css } from "../styled-system/css";
 
-export default function FixtureDecorator({ children }: { children: ReactNode }) {
+export default function FixtureDecorator({ children }: ReactDecoratorProps) {
   return (
     <div
       className={css({

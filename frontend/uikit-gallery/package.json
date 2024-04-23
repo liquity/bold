@@ -5,17 +5,19 @@
   "scripts": {
     "build": "pnpm panda-codegen && next build",
     "cosmos": "cosmos --expose-imports",
+    "cosmos-export": "cosmos-export --expose-imports",
     "dev": "next dev --port 3001",
     "lint": "next lint",
     "panda-codegen": "panda codegen --silent",
     "start": "next start",
-    "static-build": "cosmos-export --expose-imports && pnpm build && cp -R ./out/_next ./cosmos-export && cp -R ./out/uikit ./cosmos-export"
+    "static-build": "pnpm cosmos-export && pnpm next build && cp -r ./out/_next ./cosmos-export && cp -r ./out/cosmos ./cosmos-export"
   },
   "dependencies": {
     "@liquity2/uikit": "workspace:*",
     "@react-spring/web": "^9.7.3",
-    "next": "14.2.2",
+    "next": "14.0.4",
     "react": "^18",
+    "react-cosmos-core": "^6.1.1",
     "react-cosmos-plugin-boolean-input": "^6.1.1",
     "react-dom": "^18",
     "ts-pattern": "^5.0.8"
