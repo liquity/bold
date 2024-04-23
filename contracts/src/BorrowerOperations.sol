@@ -277,14 +277,11 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 _lowerHint
     ) external {
         _requireValidAnnualInterestRate(_newAnnualInterestRate);
-        ITroveManager troveManagerCached = troveManager;
-        _requireTroveisActive(troveManagerCached, _troveId);
         // TODO: Delegation functionality
         _requireIsOwner(_troveId);
 
         ContractsCacheTMAP memory contractsCache = ContractsCacheTMAP(troveManager, activePool);
 
-        _requireValidAnnualInterestRate(_newAnnualInterestRate);
         _requireTroveisActive(contractsCache.troveManager, _troveId);
 
         uint256 entireTroveDebt = _updateActivePoolTrackersNoDebtChange(
