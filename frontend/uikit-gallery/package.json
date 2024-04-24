@@ -3,14 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "pnpm panda-codegen && next build",
+    "build": "pnpm build-uikit && pnpm panda-codegen && next build",
+    "build-static": "pnpm build && pnpm cosmos-export && cp -r ./out/_next ./cosmos-export && cp -r ./out/cosmos ./cosmos-export",
+    "build-uikit": "cd ../uikit && pnpm build",
     "cosmos": "cosmos --expose-imports",
     "cosmos-export": "cosmos-export --expose-imports",
     "dev": "next dev --port 3001",
     "lint": "next lint",
     "panda-codegen": "panda codegen --silent",
-    "start": "next start",
-    "static-build": "cd ../uikit && pnpm build && cd - && pnpm cosmos-export && pnpm next build && cp -r ./out/_next ./cosmos-export && cp -r ./out/cosmos ./cosmos-export"
+    "start": "next start"
   },
   "dependencies": {
     "@liquity2/uikit": "workspace:*",
