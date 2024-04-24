@@ -4,7 +4,7 @@ import "./TestContracts/DevTestSetup.sol";
 
 contract Redemptions is DevTestSetup {
     function testRedemptionIsInOrderOfInterestRate() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (uint256 coll,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
@@ -43,7 +43,7 @@ contract Redemptions is DevTestSetup {
 
     // - Troves can be redeemed down to gas comp
     function testFullRedemptionDoesntCloseTroves() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
@@ -58,7 +58,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testFullRedemptionLeavesTrovesWithDebtEqualToGasComp() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
@@ -73,7 +73,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testFullRedemptionSkipsTrovesAtGasCompDebt() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (uint256 coll,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
@@ -105,14 +105,14 @@ contract Redemptions is DevTestSetup {
     // - Accrued Trove interest contributes to redee into debt of a redeemed trove
 
     function testRedemptionIncludesAccruedTroveInterest() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
-        (uint256 entireDebt_A,, uint256 redistDebtGain_A,, uint256 accruedInterest_A) =
+        (,, uint256 redistDebtGain_A,, uint256 accruedInterest_A) =
             troveManager.getEntireDebtAndColl(troveIDs.A);
         assertGt(accruedInterest_A, 0);
         assertEq(redistDebtGain_A, 0);
 
-        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+        troveManager.getTroveEntireDebt(troveIDs.A);
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
 
         // E redeems again, enough to fully redeem A (recorded debt + interest - gas comp), without touching the next trove B

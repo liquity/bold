@@ -779,7 +779,7 @@ contract InterestRateBasic is DevTestSetup {
     // --- redemptions ---
 
     function testRedemptionSetsTroveLastDebtUpdateTimeToNow() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         assertLt(troveManager.getTroveLastDebtUpdateTime(troveIDs.A), block.timestamp);
 
@@ -792,7 +792,7 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testRedemptionReducesTroveAccruedInterestTo0() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         assertGt(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
 
@@ -805,7 +805,7 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testRedemptionReducesEntireTroveDebtByRedeemedAmount() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(troveIDs.A);
         assertGt(entireTroveDebt_1, 0);
@@ -821,7 +821,7 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testRedemptionChangesRecordedTroveDebtByAccruedInterestMinusRedeemedAmount() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(troveIDs.A);
         uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(troveIDs.A);

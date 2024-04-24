@@ -2425,7 +2425,7 @@ contract InterestRateAggregate is DevTestSetup {
     //  --- redemption tests ---
 
     function testRedemptionWithNoRedistGainsChangesAggRecordedDebtCorrectly() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
 
@@ -2441,7 +2441,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionReducesPendingAggInterestTo0() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         assertGt(activePool.calcPendingAggInterest(), 0);
 
@@ -2453,7 +2453,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionMintsPendingAggInterestToRouter() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         // Check I-router balance is 0
         assertEq(boldToken.balanceOf(address(mockInterestRouter)), 0);
@@ -2470,7 +2470,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionUpdatesLastAggUpdateTimeToNow() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         assertGt(activePool.lastAggUpdateTime(), 0);
         assertLt(activePool.lastAggUpdateTime(), block.timestamp);
@@ -2484,7 +2484,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionWithNoRedistGainsChangesRecordedDebtSumCorrectly() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         // Get current recorded active debt
         uint256 recordedDebtSum_1 = activePool.getRecordedDebtSum();
@@ -2517,7 +2517,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionWithNoRedistGainsChangesWeightedDebtSumCorrectly() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemption();
+        (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
         // Get weighted recorded active debt
         uint256 aggWeightedDebtSum_1 = activePool.aggWeightedDebtSum();

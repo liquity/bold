@@ -36,7 +36,7 @@ interface IActivePool {
         uint256 oldWeightedRecordedTroveDebt
     ) external;
 
-    function mintAggInterestNoTroveChange() external returns (uint256);
+    function mintAggInterestNoTroveChange() external;
     function increaseRecordedDebtSum(uint256 _amount) external;
     function decreaseRecordedDebtSum(uint256 _amount) external;
     function sendETH(address _account, uint256 _amount) external;
