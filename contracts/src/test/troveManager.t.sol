@@ -7,7 +7,7 @@ contract TroveManagerTest is DevTestSetup {
         priceFeed.setPrice(2000e18);
         uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 2 ether, 2001e18, 1e17);
         uint256 BTroveId = openTroveNoHints100pctMaxFee(B, 5 ether, 2000e18, 2e17);
-        uint256 CTroveId = openTroveNoHints100pctMaxFee(C, 5 ether, 2000e18, 3e17);
+        openTroveNoHints100pctMaxFee(C, 5 ether, 2000e18, 3e17);
 
         uint256 debtA1 = troveManager.getTroveDebt(ATroveId);
         assertGt(debtA1, 0);

@@ -228,7 +228,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         _changeAggWeightedDebtSum(newWeightedRecordedTroveDebt, oldWeightedRecordedTroveDebt);
     }
 
-    function mintAggInterestNoTroveChange() external returns (uint256) {
+    function mintAggInterestNoTroveChange() external override {
         _requireCallerIsSP();
         aggRecordedDebt = _mintAggInterestNoTroveChange();
     }
