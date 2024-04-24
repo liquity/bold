@@ -6,6 +6,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/ITroveManager.sol";
+import "./Interfaces/IStabilityPool.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/ISortedTroves.sol";
@@ -24,7 +25,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     IERC20 public immutable ETH;
     ITroveManager public troveManager;
-    address stabilityPoolAddress;
+    IStabilityPool stabilityPool;
     address gasPoolAddress;
     ICollSurplusPool collSurplusPool;
     IBoldToken public boldToken;
@@ -135,7 +136,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         troveManager = ITroveManager(_troveManagerAddress);
         activePool = IActivePool(_activePoolAddress);
         defaultPool = IDefaultPool(_defaultPoolAddress);
-        stabilityPoolAddress = _stabilityPoolAddress;
+        stabilityPool = IStabilityPool(_stabilityPoolAddress);
         gasPoolAddress = _gasPoolAddress;
         collSurplusPool = ICollSurplusPool(_collSurplusPoolAddress);
         priceFeed = IPriceFeed(_priceFeedAddress);
@@ -168,7 +169,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 _boldAmount,
         uint256 _upperHint,
         uint256 _lowerHint,
-        uint256 _annualInterestRate
+        uint256 _annualInterestRate,
+        uint256 _spBoldAmount
     ) external override returns (uint256) {
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         LocalVariables_openTrove memory vars;
@@ -186,6 +188,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireTroveisNotActive(contractsCache.troveManager, troveId);
 
         _requireAtLeastMinNetDebt(_boldAmount);
+        _requireValidSPBoldAmount(_boldAmount, _spBoldAmount);
 
         // ICR is based on the composite debt, i.e. the requested Bold amount + Bold gas comp.
         vars.compositeDebt = _getCompositeDebt(_boldAmount);
@@ -224,6 +227,15 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         contractsCache.boldToken.mint(msg.sender, _boldAmount);
         contractsCache.boldToken.mint(gasPoolAddress, BOLD_GAS_COMPENSATION);
 
+        // Send to SP and check cap
+        IStabilityPool stabilityPoolCached = stabilityPool;
+        if (_spBoldAmount > 0) {
+            // TODO: gas optimization: we could avoid a transfer by minting directly to the SP, but it requires extra complexity or code duplication
+            stabilityPoolCached.provideToSPFromBorrowing(msg.sender, _spBoldAmount);
+        }
+        // Make sure we don’t end up below the borrowing cap threshold (SP Bold / total debt ratio)
+        _requireAboveBorrowingCap(stabilityPoolCached);
+
         emit TroveUpdated(troveId, vars.compositeDebt, _ETHAmount, vars.stake, BorrowerOperation.openTrove);
         emit BoldBorrowingFeePaid(troveId, vars.BoldFee); // TODO
 
@@ -232,29 +244,29 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     // Send ETH as collateral to a trove
     function addColl(uint256 _troveId, uint256 _ETHAmount) external override {
-        _adjustTrove(msg.sender, _troveId, _ETHAmount, true, 0, false, 0);
+        _adjustTrove(msg.sender, _troveId, _ETHAmount, true, 0, false, 0, 0);
     }
 
     // Send ETH as collateral to a trove. Called by only the Stability Pool.
     function moveETHGainToTrove(address _sender, uint256 _troveId, uint256 _ETHAmount) external override {
         _requireCallerIsStabilityPool();
         // TODO: check owner?
-        _adjustTrove(_sender, _troveId, _ETHAmount, true, 0, false, 0);
+        _adjustTrove(_sender, _troveId, _ETHAmount, true, 0, false, 0, 0);
     }
 
     // Withdraw ETH collateral from a trove
     function withdrawColl(uint256 _troveId, uint256 _collWithdrawal) external override {
-        _adjustTrove(msg.sender, _troveId, _collWithdrawal, false, 0, false, 0);
+        _adjustTrove(msg.sender, _troveId, _collWithdrawal, false, 0, false, 0, 0);
     }
 
     // Withdraw Bold tokens from a trove: mint new Bold tokens to the owner, and increase the trove's debt accordingly
-    function withdrawBold(uint256 _troveId, uint256 _maxFeePercentage, uint256 _boldAmount) external override {
-        _adjustTrove(msg.sender, _troveId, 0, false, _boldAmount, true, _maxFeePercentage);
+    function withdrawBold(uint256 _troveId, uint256 _maxFeePercentage, uint256 _boldAmount, uint256 _spBoldAmount) external override {
+        _adjustTrove(msg.sender, _troveId, 0, false, _boldAmount, true, _maxFeePercentage, _spBoldAmount);
     }
 
     // Repay Bold tokens to a Trove: Burn the repaid Bold tokens, and reduce the trove's debt accordingly
     function repayBold(uint256 _troveId, uint256 _boldAmount) external override {
-        _adjustTrove(msg.sender, _troveId, 0, false, _boldAmount, false, 0);
+        _adjustTrove(msg.sender, _troveId, 0, false, _boldAmount, false, 0, 0);
     }
 
     function adjustTrove(
@@ -263,10 +275,11 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 _collChange,
         bool _isCollIncrease,
         uint256 _boldChange,
-        bool _isDebtIncrease
+        bool _isDebtIncrease,
+        uint256 _spBoldAmount
     ) external override {
         _adjustTrove(
-            msg.sender, _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxFeePercentage
+            msg.sender, _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxFeePercentage, _spBoldAmount
         );
     }
 
@@ -304,7 +317,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         bool _isCollIncrease,
         uint256 _boldChange,
         bool _isDebtIncrease,
-        uint256 _maxFeePercentage
+        uint256 _maxFeePercentage,
+        uint256 _spBoldAmount
     ) internal {
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         LocalVariables_adjustTrove memory vars;
@@ -324,12 +338,16 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         if (_isDebtIncrease) {
             _requireValidMaxFeePercentage(_maxFeePercentage, isRecoveryMode);
             _requireNonZeroDebtChange(_boldChange);
+            _requireValidSPBoldAmount(_boldChange, _spBoldAmount);
+        } else {
+            require(_spBoldAmount == 0, "BO: Only can deposit to SP if  borrowing");
         }
         _requireNonZeroAdjustment(_collChange, _boldChange);
         _requireTroveisActive(contractsCache.troveManager, _troveId);
 
         // Confirm the operation is an ETH transfer if coming from the Stability Pool to a trove
-        assert((msg.sender != stabilityPoolAddress || (_isCollIncrease && _boldChange == 0)));
+        IStabilityPool stabilityPoolCached = stabilityPool;
+        assert((msg.sender != address(stabilityPoolCached) || (_isCollIncrease && _boldChange == 0)));
 
         (vars.entireDebt, vars.entireColl, vars.redistDebtGain,, vars.accruedTroveInterest) =
             contractsCache.troveManager.getEntireDebtAndColl(_troveId);
@@ -410,6 +428,14 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _boldChange,
             _isDebtIncrease
         );
+
+        // Send to SP and check cap
+        if (_spBoldAmount > 0) {
+            // TODO: gas optimization: we could avoid a transfer by minting directly to the SP, but it requires extra complexity or code duplication
+            stabilityPoolCached.provideToSPFromBorrowing(msg.sender, _spBoldAmount);
+        }
+        // Make sure we don’t end up below the borrowing cap threshold (SP Bold / total debt ratio)
+        _requireAboveBorrowingCap(stabilityPoolCached);
     }
 
     function closeTrove(uint256 _troveId) external override {
@@ -737,6 +763,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         require(_netDebt >= MIN_NET_DEBT, "BorrowerOps: Trove's net debt must be greater than minimum");
     }
 
+    function _requireValidSPBoldAmount(uint256 _netDebt, uint256 _spBoldAmount) internal pure {
+        require(_netDebt >= _spBoldAmount, "BO: SP amount cannot be higher than borrowed");
+    }
+
     function _requireValidBoldRepayment(uint256 _currentDebt, uint256 _debtRepayment) internal pure {
         require(
             _debtRepayment <= _currentDebt - BOLD_GAS_COMPENSATION,
@@ -745,7 +775,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     }
 
     function _requireCallerIsStabilityPool() internal view {
-        require(msg.sender == stabilityPoolAddress, "BorrowerOps: Caller is not Stability Pool");
+        require(msg.sender == address(stabilityPool), "BorrowerOps: Caller is not Stability Pool");
     }
 
     function _requireSufficientBoldBalance(IBoldToken _boldToken, address _borrower, uint256 _debtRepayment)
@@ -775,6 +805,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     function _requireTroveIsStale(ITroveManager _troveManager, uint256 _troveId) internal view {
         require(_troveManager.troveIsStale(_troveId), "BO: Trove must be stale");
+    }
+
+    function _requireAboveBorrowingCap(IStabilityPool _stabilityPool) internal view {
+        require(_stabilityPool.getSPRatio() >= BORROWING_CAP_THRESHOLD, "BO: Borrowing cap exceeded");
     }
 
     // --- ICR and TCR getters ---

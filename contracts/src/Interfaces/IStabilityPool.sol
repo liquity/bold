@@ -54,6 +54,9 @@ interface IStabilityPool is ILiquityBase {
     */
     function provideToSP(uint256 _amount) external;
 
+    // Same as above but when combined with a Bold borrowing operation
+    function provideToSPFromBorrowing(address _sender, uint256 _amount) external;
+
     /*  withdrawFromSP():
     * - Calculates depositor's ETH gain
     * - Calculates the compounded deposit
@@ -90,6 +93,11 @@ interface IStabilityPool is ILiquityBase {
      * Returns Bold held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
      */
     function getTotalBoldDeposits() external view returns (uint256);
+
+    /*
+     * Returns the ratio between Bold held in the pool and the total debt for its branch
+     */
+    function getSPRatio() external view returns (uint256);
 
     /*
      * Calculates the ETH gain earned by the deposit since its last snapshots were taken.

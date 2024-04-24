@@ -272,6 +272,10 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         return totalBoldDeposits;
     }
 
+    function getSPRatio() external view override returns (uint256) {
+        return totalBoldDeposits * DECIMAL_PRECISION / getEntireSystemDebt();
+    }
+
     // --- External Depositor Functions ---
 
     /*  provideToSP():
@@ -281,23 +285,33 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * - Sends depositor's accumulated ETH gains to depositor
     */
     function provideToSP(uint256 _amount) external override {
+        _provideToSP(msg.sender, _amount);
+    }
+
+    // Same as above but when combined with a Bold borrowing operation
+    function provideToSPFromBorrowing(address _sender, uint256 _amount) external override {
+        _requireCallerIsBorrowerOperations();
+        _provideToSP(_sender, _amount);
+    }
+
+    function _provideToSP(address _sender, uint256 _amount) internal {
         _requireNonZeroAmount(_amount);
 
         activePool.mintAggInterestNoTroveChange();
 
-        uint256 initialDeposit = deposits[msg.sender].initialValue;
+        uint256 initialDeposit = deposits[_sender].initialValue;
 
-        uint256 depositorETHGain = getDepositorETHGain(msg.sender);
-        uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
+        uint256 depositorETHGain = getDepositorETHGain(_sender);
+        uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(_sender);
         uint256 boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
 
-        _sendBoldtoStabilityPool(msg.sender, _amount);
+        _sendBoldtoStabilityPool(_sender, _amount);
 
         uint256 newDeposit = compoundedBoldDeposit + _amount;
-        _updateDepositAndSnapshots(msg.sender, newDeposit);
-        emit UserDepositChanged(msg.sender, newDeposit);
+        _updateDepositAndSnapshots(_sender, newDeposit);
+        emit UserDepositChanged(_sender, newDeposit);
 
-        emit ETHGainWithdrawn(msg.sender, depositorETHGain, boldLoss); // Bold Loss required for event log
+        emit ETHGainWithdrawn(_sender, depositorETHGain, boldLoss); // Bold Loss required for event log
 
         _sendETHGainToDepositor(depositorETHGain);
     }
@@ -671,6 +685,10 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
     function _requireCallerIsTroveManager() internal view {
         require(msg.sender == address(troveManager), "StabilityPool: Caller is not TroveManager");
+    }
+
+    function _requireCallerIsBorrowerOperations() internal view {
+        require(msg.sender == address(borrowerOperations), "StabilityPool: Caller is not TroveManager");
     }
 
     /* TODO

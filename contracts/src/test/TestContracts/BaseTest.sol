@@ -127,7 +127,31 @@ contract BaseTest is Test {
     ) public returns (uint256) {
         vm.startPrank(_account);
         uint256 troveId =
-            borrowerOperations.openTrove(_account, _index, 1e18, _coll, _boldAmount, 0, 0, _annualInterestRate);
+            borrowerOperations.openTrove(_account, _index, 1e18, _coll, _boldAmount, 0, 0, _annualInterestRate, 0);
+        vm.stopPrank();
+        return troveId;
+    }
+
+    function openTroveNoHints100pctMaxFeeSPDeposit(
+        address _account,
+        uint256 _coll,
+        uint256 _boldAmount,
+        uint256 _annualInterestRate
+    ) public returns (uint256) {
+        return openTroveNoHints100pctMaxFeeWithIndex(_account, 0, _coll, _boldAmount, _annualInterestRate);
+    }
+
+    function openTroveNoHints100pctMaxFeeWithIndexSPDeposit(
+        address _account,
+        uint256 _index,
+        uint256 _coll,
+        uint256 _boldAmount,
+        uint256 _annualInterestRate
+    ) public returns (uint256) {
+        uint256 spBoldAmount = _boldAmount * 25 / 100 + 100;
+        vm.startPrank(_account);
+        uint256 troveId =
+            borrowerOperations.openTrove(_account, _index, 1e18, _coll, _boldAmount, 0, 0, _annualInterestRate, spBoldAmount);
         vm.stopPrank();
         return troveId;
     }
@@ -141,8 +165,23 @@ contract BaseTest is Test {
         bool _isCollIncrease,
         bool _isDebtIncrease
     ) public {
+        uint256 spBoldAmount = _isDebtIncrease ? _boldChange * 25 / 100 : 0;
         vm.startPrank(_account);
-        borrowerOperations.adjustTrove(_troveId, 1e18, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
+        borrowerOperations.adjustTrove(_troveId, 1e18, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, spBoldAmount);
+        vm.stopPrank();
+    }
+
+    function adjustTrove100pctMaxFeeSPDeposit(
+        address _account,
+        uint256 _troveId,
+        uint256 _collChange,
+        uint256 _boldChange,
+        bool _isCollIncrease,
+        bool _isDebtIncrease
+    ) public {
+        uint256 spBoldAmount = _isDebtIncrease ? _boldChange * 25 / 100 : 0;
+        vm.startPrank(_account);
+        borrowerOperations.adjustTrove(_troveId, 1e18, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, spBoldAmount);
         vm.stopPrank();
     }
 
@@ -178,7 +217,14 @@ contract BaseTest is Test {
 
     function withdrawBold100pctMaxFee(address _account, uint256 _troveId, uint256 _debtIncrease) public {
         vm.startPrank(_account);
-        borrowerOperations.withdrawBold(_troveId, 1e18, _debtIncrease);
+        borrowerOperations.withdrawBold(_troveId, 1e18, _debtIncrease, 0);
+        vm.stopPrank();
+    }
+
+    function withdrawBold100pctMaxFeeSPDeposit(address _account, uint256 _troveId, uint256 _debtIncrease) public {
+        uint256 spBoldAmount = _debtIncrease * 25 / 100;
+        vm.startPrank(_account);
+        borrowerOperations.withdrawBold(_troveId, 1e18, _debtIncrease, spBoldAmount);
         vm.stopPrank();
     }
 

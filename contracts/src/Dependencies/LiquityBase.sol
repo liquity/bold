@@ -33,6 +33,9 @@ contract LiquityBase is BaseMath, ILiquityBase {
     uint256 public constant MIN_NET_DEBT = 1800e18;
     // uint constant public MIN_NET_DEBT = 0;
 
+    // Mininum ratio between SP Bold amount and debt for each branch to allow borrowing
+    uint256 public constant BORROWING_CAP_THRESHOLD = 25e16; // 25%
+
     uint256 public constant MAX_ANNUAL_INTEREST_RATE = 1e18; // 100%
 
     uint256 public constant PERCENT_DIVISOR = 200; // dividing by 200 yields 0.5%

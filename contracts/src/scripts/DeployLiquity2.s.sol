@@ -58,6 +58,8 @@ contract DeployLiquity2Script is Script, StdCheats {
         ];
 
         for (uint256 i = 0; i < troves.length; i++) {
+            uint256 spBoldAmount = troves[i].debt * 25 / 100 + 100;
+
             vm.startBroadcast(troves[i].owner);
 
             ERC20Faucet(address(WETH)).tap();
@@ -73,7 +75,8 @@ contract DeployLiquity2Script is Script, StdCheats {
                 troves[i].debt, //         _boldAmount
                 0, //                      _upperHint
                 0, //                      _lowerHint
-                0.05e18 //                 _annualInterestRate
+                0.05e18, //                _annualInterestRate
+                spBoldAmount //            _spBoldAmount
             );
 
             vm.stopBroadcast();

@@ -75,10 +75,10 @@ contract InterestRateBasic is DevTestSetup {
 
         vm.startPrank(A);
         vm.expectRevert();
-        borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 1e18 + 1);
+        borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 1e18 + 1, 0);
 
         vm.expectRevert();
-        borrowerOperations.openTrove(A, 1, 1e18, 2e18, 2000e18, 0, 0, 42e18);
+        borrowerOperations.openTrove(A, 1, 1e18, 2e18, 2000e18, 0, 0, 42e18, 0);
     }
 
     function testRevertWhenAdjustInterestRateFromNonOwner() public {

@@ -14,12 +14,13 @@ contract MulticollateralTest is DevTestSetup {
         uint256 _boldAmount,
         uint256 _annualInterestRate
     ) public returns (uint256) {
+        uint256 spBoldAmount = _boldAmount * 25 / 100 + 100;
         // TODO: remove when we switch to new gas compensation
         if (_boldAmount >= 2000e18) _boldAmount -= 200e18;
 
         vm.startPrank(_account);
         uint256 troveId = contractsArray[_collIndex].borrowerOperations.openTrove(
-            _account, _index, 1e18, _coll, _boldAmount, 0, 0, _annualInterestRate
+            _account, _index, 1e18, _coll, _boldAmount, 0, 0, _annualInterestRate, spBoldAmount
         );
         vm.stopPrank();
         return troveId;

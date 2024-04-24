@@ -288,21 +288,21 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         uint256 AInitialBoldBalance = boldToken.balanceOf(A);
         uint256 initialDebt = troveManager.getTroveDebt(ATroveId);
 
-        borrowerOperations.withdrawBold(ATroveId, 1e18, 10e18);
+        borrowerOperations.withdrawBold(ATroveId, 1e18, 10e18, 25e17);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveDebt(ATroveId), initialDebt + 10e18, "Wrong trove debt");
-        assertEq(boldToken.balanceOf(A), AInitialBoldBalance + 10e18, "Wrong owner balance");
+        assertEq(boldToken.balanceOf(A), AInitialBoldBalance + 10e18 - 25e17, "Wrong owner balance");
 
         // Manager can’t withdraw bold
         vm.startPrank(B);
         uint256 BInitialBoldBalance = boldToken.balanceOf(B);
 
-        borrowerOperations.withdrawBold(ATroveId, 1e18, 10e18);
+        borrowerOperations.withdrawBold(ATroveId, 1e18, 10e18, 25e17);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveDebt(ATroveId), initialDebt + 20e18, "Wrong trove debt");
-        assertEq(boldToken.balanceOf(A), AInitialBoldBalance + 20e18, "Wrong owner balance");
+        assertEq(boldToken.balanceOf(A), AInitialBoldBalance + 20e18 - 50e17, "Wrong owner balance");
         assertEq(boldToken.balanceOf(B), BInitialBoldBalance, "Wrong manager balance");
     }
 
@@ -314,18 +314,18 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         uint256 AInitialBoldBalance = boldToken.balanceOf(A);
         uint256 initialDebt = troveManager.getTroveDebt(ATroveId);
 
-        borrowerOperations.withdrawBold(ATroveId, 1e18, 10e18);
+        borrowerOperations.withdrawBold(ATroveId, 1e18, 10e18, 25e17);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveDebt(ATroveId), initialDebt + 10e18, "Wrong trove debt");
-        assertEq(boldToken.balanceOf(A), AInitialBoldBalance + 10e18, "Wrong owner balance");
+        assertEq(boldToken.balanceOf(A), AInitialBoldBalance + 10e18 - 25e17, "Wrong owner balance");
 
         // Manager can’t withdraw bold
         vm.startPrank(B);
         uint256 BInitialBoldBalance = boldToken.balanceOf(B);
 
         vm.expectRevert("TroveManager: sender is not trove owner nor manager");
-        borrowerOperations.withdrawBold(ATroveId, 1e18, 10e18);
+        borrowerOperations.withdrawBold(ATroveId, 1e18, 10e18, 25e17);
         vm.stopPrank();
 
         // Set add manager - still won’t work
@@ -335,11 +335,11 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         vm.startPrank(B);
         vm.expectRevert("TroveManager: sender is not trove owner nor manager");
-        borrowerOperations.withdrawBold(ATroveId, 1e18, 10e18);
+        borrowerOperations.withdrawBold(ATroveId, 1e18, 10e18, 25e17);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveDebt(ATroveId), initialDebt + 10e18, "Wrong trove debt");
-        assertEq(boldToken.balanceOf(A), AInitialBoldBalance + 10e18, "Wrong owner balance");
+        assertEq(boldToken.balanceOf(A), AInitialBoldBalance + 10e18 - 25e17, "Wrong owner balance");
         assertEq(boldToken.balanceOf(B), BInitialBoldBalance, "Wrong manager balance");
     }
 
