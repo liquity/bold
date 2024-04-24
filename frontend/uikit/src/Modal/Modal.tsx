@@ -175,7 +175,7 @@ function CloseButton({
         },
       })}
       style={{
-        backgroundImage: `url(${closeSvg})`,
+        backgroundImage: `url("${closeSvg}")`,
       }}
     >
     </button>

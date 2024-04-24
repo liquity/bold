@@ -10,17 +10,19 @@
     "lint": "next lint",
     "panda-codegen": "panda codegen --silent",
     "start": "next start",
-    "static-build": "pnpm cosmos-export && pnpm next build && cp -r ./out/_next ./cosmos-export && cp -r ./out/cosmos ./cosmos-export"
+    "static-build": "cd ../uikit && pnpm build && cd - && pnpm cosmos-export && pnpm next build && cp -r ./out/_next ./cosmos-export && cp -r ./out/cosmos ./cosmos-export"
   },
   "dependencies": {
     "@liquity2/uikit": "workspace:*",
     "@react-spring/web": "^9.7.3",
+    "dnum": "^2.11.0",
+    "geist": "^1.3.0",
     "next": "14.0.4",
     "react": "^18",
     "react-cosmos-core": "^6.1.1",
     "react-cosmos-plugin-boolean-input": "^6.1.1",
     "react-dom": "^18",
-    "ts-pattern": "^5.0.8"
+    "ts-pattern": "^5.1.1"
   },
   "devDependencies": {
     "@pandacss/dev": "^0.37.2",

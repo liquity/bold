@@ -1,8 +1,12 @@
+export type { BrandColorName, ThemeColorName, ThemeDescriptor } from "./Theme/Theme";
+
 export { Button } from "./Button/Button";
-export { TextButton } from "./Button/TextButton";
 export { FormField } from "./FormField/FormField";
 export { TextInput } from "./Input/TextInput";
+export { InputField } from "./InputField/InputField";
 export { Modal } from "./Modal/Modal";
+export { PillButton } from "./PillButton/PillButton";
 export { Root, RootEntryPoint } from "./Root/Root";
-export { theme, themeColor, ThemeProvider, useTheme } from "./theme";
+export { TextButton } from "./TextButton/TextButton";
+export { brand, colors, lightTheme, Theme, themeColor, useTheme } from "./Theme/Theme";
 export { UiKit } from "./UiKit/UiKit";

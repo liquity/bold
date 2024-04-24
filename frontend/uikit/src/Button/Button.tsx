@@ -2,7 +2,7 @@ import type { ComponentPropsWithoutRef } from "react";
 
 import { match } from "ts-pattern";
 import { css } from "../../styled-system/css";
-import { useTheme } from "../theme";
+import { useTheme } from "../Theme/Theme";
 
 export function Button({
   size = "medium",
@@ -72,6 +72,9 @@ export function Button({
         _disabled: {
           background: "rain",
           cursor: "not-allowed",
+        },
+        _focusVisible: {
+          outline: "2px solid token(colors.focused)",
         },
       })}
       style={{
