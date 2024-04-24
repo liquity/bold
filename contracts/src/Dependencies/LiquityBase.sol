@@ -33,8 +33,7 @@ contract LiquityBase is BaseMath, ILiquityBase {
     uint256 public constant MIN_NET_DEBT = 1800e18;
     // uint constant public MIN_NET_DEBT = 0;
 
-    // TODO: decide on a maximum value, or remove the limit
-    uint256 public constant MAX_ANNUAL_INTEREST_RATE = type(uint256).max;
+    uint256 public constant MAX_ANNUAL_INTEREST_RATE = 1e18; // 100%
 
     uint256 public constant PERCENT_DIVISOR = 200; // dividing by 200 yields 0.5%
 
