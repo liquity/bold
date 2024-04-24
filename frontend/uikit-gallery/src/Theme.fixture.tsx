@@ -18,15 +18,33 @@ export default function ThemeFixture() {
           justifyContent: "center",
           alignItems: "center",
           gap: 32,
-          width: 608,
+          width: 640,
         }}
       >
-        <ColorGroup name="Brand" colors={brand} />
-        <ColorGroup name="Blue" colors={filterColors(colors, "blue:")} />
-        <ColorGroup name="Gray" colors={filterColors(colors, "gray:")} />
-        <ColorGroup name="Yellow" colors={filterColors(colors, "yellow:")} />
-        <ColorGroup name="Green" colors={filterColors(colors, "green:")} />
-        <ColorGroup name="Red" colors={filterColors(colors, "red:")} />
+        <ColorGroup
+          name="Brand"
+          colors={brand}
+        />
+        <ColorGroup
+          name="Blue"
+          colors={filterColors(colors, "blue:")}
+        />
+        <ColorGroup
+          name="Gray"
+          colors={filterColors(colors, "gray:")}
+        />
+        <ColorGroup
+          name="Yellow"
+          colors={filterColors(colors, "yellow:")}
+        />
+        <ColorGroup
+          name="Green"
+          colors={filterColors(colors, "green:")}
+        />
+        <ColorGroup
+          name="Red"
+          colors={filterColors(colors, "red:")}
+        />
         <ColorGroup
           name="Miscellaneous"
           colors={filterColors(colors, (name) => (
@@ -51,6 +69,7 @@ export default function ThemeFixture() {
                   colors[value],
                 ]),
             )}
+            secondary={(name) => lightTheme.colors[name as keyof typeof lightTheme.colors]}
           />
           <ColorGroup
             name="Dark Theme"
@@ -58,11 +77,9 @@ export default function ThemeFixture() {
             colors={Object.fromEntries(
               Object
                 .entries(lightTheme.colors)
-                .map(([key]) => [
-                  key + " (tbd)",
-                  "white",
-                ]),
+                .map(([key]) => [key, "white"]),
             )}
+            secondary={() => "tbd"}
           />
         </div>
       </div>
@@ -72,12 +89,14 @@ export default function ThemeFixture() {
 
 function ColorGroup({
   colors,
-  name,
   mode = "horizontal",
+  name,
+  secondary = (_, value) => value,
 }: {
   colors: Record<string, string>;
-  name: string;
   mode?: "horizontal" | "vertical";
+  name: string;
+  secondary?: null | ((name: string, value: string) => string);
 }) {
   return (
     <div
@@ -104,12 +123,13 @@ function ColorGroup({
           gap: mode === "vertical" ? 8 : 0,
         }}
       >
-        {Object.entries(colors).map(([color, value]) => (
+        {Object.keys(colors).map((color: keyof (typeof colors)) => (
           <Color
             key={color}
             name={color}
-            value={value}
+            value={colors[color]}
             rowMode={mode === "vertical"}
+            secondary={secondary?.(color, colors[color])}
           />
         ))}
       </div>
@@ -119,12 +139,14 @@ function ColorGroup({
 
 function Color({
   name,
-  value,
   rowMode = false,
+  secondary,
+  value,
 }: {
   name: string;
-  value: string;
   rowMode?: boolean;
+  secondary?: string;
+  value: string;
 }) {
   return (
     <div
@@ -133,14 +155,16 @@ function Color({
         flexDirection: rowMode ? "row" : "column",
         alignItems: "center",
         width: rowMode ? "100%" : 48,
-        height: rowMode ? 24 : undefined,
+        height: rowMode ? 32 : undefined,
         gap: rowMode ? 8 : 0,
       }}
     >
       <div
         style={{
+          flexShrink: 0,
+          flexGrow: 0,
           display: "flex",
-          width: rowMode ? 24 : "100%",
+          width: rowMode ? 32 : "100%",
           height: rowMode ? "100%" : 48,
           backgroundColor: value,
           borderRadius: rowMode ? 4 : 8,
@@ -150,17 +174,34 @@ function Color({
       <div
         style={{
           display: "flex",
+          flexDirection: "column",
           justifyContent: "flex-start",
-          alignItems: "center",
+          alignItems: "flex-start",
           width: "100%",
-          height: 24,
-          fontSize: 12,
-          fontWeight: 500,
+          paddingTop: rowMode ? 0 : 8,
+          fontSize: 10,
           whiteSpace: "nowrap",
           textTransform: "uppercase",
         }}
       >
-        {camelCaseToSpaces(name)}
+        <div
+          style={{
+            fontWeight: 500,
+            color: "#333",
+          }}
+        >
+          {camelCaseToSpaces(name)}
+        </div>
+        {secondary && (
+          <div
+            style={{
+              fontWeight: 400,
+              color: "#757575",
+            }}
+          >
+            {secondary}
+          </div>
+        )}
       </div>
     </div>
   );
