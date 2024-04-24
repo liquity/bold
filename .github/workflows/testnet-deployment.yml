@@ -1,12 +1,13 @@
 name: Testnet Deployment
 
 # This workflow:
-# - Deploys the contracts to the Liquity v2 Testnet (currently disabled)
-# - Deploys the app to Vercel (only for the main branch, not PRs)
+# - Deploys the contracts to the Liquity v2 Testnet
+# - Deploys the app to Vercel (main branch only, not PRs)
+# - Deploys the gallery to Vercel (main branch only, not PRs)
 
 on:
   push:
-    branches: [uikit-gallery]
+    branches: [main]
     paths:
       - ".github/workflows/testnet-deployment.yml"
       - "contracts/**"
