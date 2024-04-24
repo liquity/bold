@@ -603,10 +603,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     }
 
     function _pullETHAndSendToActivePool(IActivePool _activePool, uint256 _amount) internal {
-        // Pull ETH tokens from sender (we may save gas by pulling directly from Active Pool, but then the approval UX for user would be weird)
-        ETH.safeTransferFrom(msg.sender, address(this), _amount);
-        // Move the ether to the Active Pool
-        _activePool.receiveETH(_amount);
+        // Send ETH tokens from sender to active pool
+        ETH.safeTransferFrom(msg.sender, address(_activePool), _amount);
+        // Make sure Active Pool accountancy is right
+        _activePool.accountForReceivedETH(_amount);
     }
 
     function _updateActivePoolTrackersNoDebtChange(
