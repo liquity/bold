@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "pnpm build-uikit && pnpm panda-codegen && next build",
-    "build-static": "pnpm build && pnpm cosmos-export && cp -r ./out/_next ./cosmos-export && cp -r ./out/cosmos ./cosmos-export",
+    "build": "pnpm build-uikit && pnpm panda-codegen && pnpm cosmos-export && next build",
+    "build-static": "pnpm build && cp -r ./out/_next ./cosmos-export && cp -r ./out/cosmos ./cosmos-export",
     "build-uikit": "cd ../uikit && pnpm build",
     "cosmos": "cosmos --expose-imports",
     "cosmos-export": "cosmos-export --expose-imports",
