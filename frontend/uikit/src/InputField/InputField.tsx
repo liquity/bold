@@ -76,7 +76,7 @@ export function InputField({
             background: "transparent",
             border: 0,
             _placeholder: {
-              color: "muted",
+              color: "dimmed",
             },
             _focusVisible: {
               outline: 0,
