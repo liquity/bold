@@ -3,10 +3,8 @@ import type { ReactNode } from "react";
 import { a, useSpring } from "@react-spring/web";
 import { useEffect, useRef, useState } from "react";
 import useDimensions from "react-cool-dimensions";
-// import { match } from "ts-pattern";
 import { css } from "../../styled-system/css";
 import { token } from "../../styled-system/tokens";
-// import { useTheme } from "../Theme/Theme";
 
 export type TabItem = {
   label: ReactNode;
@@ -25,9 +23,7 @@ export function Tabs({
 }) {
   const container = useRef<HTMLDivElement>(null);
   const isFocused = useRef(false);
-  const [selectedGeometry, setSelectedGeometry] = useState<
-    [number, number] | null
-  >(null);
+  const [selectedRect, setSelectedRect] = useState<[number, number] | null>(null);
 
   selected = Math.min(Math.max(0, selected), items.length - 1);
 
@@ -45,10 +41,10 @@ export function Tabs({
   });
 
   const barSpring = useSpring({
-    to: selectedGeometry
+    to: selectedRect
       ? {
-        transform: `translateX(${selectedGeometry[0]}px)`,
-        width: selectedGeometry[1],
+        transform: `translateX(${selectedRect[0]}px)`,
+        width: selectedRect[1],
       }
       : {},
     config: {
@@ -56,28 +52,21 @@ export function Tabs({
       tension: 2400,
       friction: 120,
     },
-    immediate: !selectedGeometry,
+    immediate: !selectedRect,
   });
 
   const { observe, width } = useDimensions();
-  const tabsXW = useRef<[number, number][]>([]);
 
-  // used to check if the container width has changed
-  const lastWidth = useRef(width);
-
+  // update selectedRect from the selected button
   useEffect(() => {
-    // update all the tabs dimensions if the container width has changed
-    if (width !== lastWidth.current) {
-      tabsXW.current = Array.from(
-        container.current?.querySelectorAll("button") ?? [],
-        (b) => [b.offsetLeft, b.offsetWidth],
-      );
-      lastWidth.current = width;
+    const button = container.current?.querySelector(`button:nth-of-type(${selected + 1})`);
+    if (button instanceof HTMLElement) {
+      setSelectedRect([button.offsetLeft, button.offsetWidth]);
     }
-
-    // update selectedGeometry with the dimensions of the selected tab
-    setSelectedGeometry(tabsXW.current[selected]);
-  }, [selected, width]);
+  }, [
+    selected,
+    width, // update on container width change too
+  ]);
 
   return (
     <div
@@ -100,34 +89,32 @@ export function Tabs({
       >
         <div
           ref={observe}
-          className={css({
-            position: "relative",
-            zIndex: 2,
-            display: "grid",
-            gridTemplateColumns: `repeat(${items.length}, 1fr)`,
-            gridTemplateRows: "1fr",
-            gap: 8,
-            width: "100%",
-            height: "100%",
-          })}
           onFocus={() => {
             isFocused.current = true;
           }}
           onBlur={() => {
             isFocused.current = false;
           }}
+          className={css({
+            position: "relative",
+            zIndex: 2,
+            display: "grid",
+            gridTemplateRows: "1fr",
+            gap: 8,
+            width: "100%",
+            height: "100%",
+          })}
+          style={{
+            gridTemplateColumns: `repeat(${items.length}, 1fr)`,
+          }}
         >
           {items.map((item, index) => (
-            <div
+            <Tab
               key={index}
-              className={css({})}
-            >
-              <Tab
-                onSelect={() => onSelect(index)}
-                selected={index === selected}
-                tabItem={item}
-              />
-            </div>
+              onSelect={() => onSelect(index)}
+              selected={index === selected}
+              tabItem={item}
+            />
           ))}
         </div>
         <a.div
@@ -170,10 +157,8 @@ function Tab({
       tabIndex={selected ? 0 : -1}
       className={css({
         zIndex: 3,
-        flex: "1 1 0",
         alignItems: "center",
         justifyContent: "center",
-        width: "100%",
         height: "100%",
         padding: 0,
         fontSize: 16,
@@ -243,7 +228,9 @@ function useFocusSelected({
   selected: number;
 }) {
   useEffect(() => {
-    if (!isFocused.current) return;
+    if (!isFocused.current) {
+      return;
+    }
     const selectedButton = container.current?.querySelector(
       "[tabindex=\"0\"]",
     ) as HTMLElement;
