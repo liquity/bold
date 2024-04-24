@@ -12,6 +12,17 @@ export type TabItem = {
   tabId: string;
 };
 
+// A note regarding the focus management in this component: the component
+// follows the ARIA Authoring Practices Guide Tabs Pattern [1][2].
+//
+// Consequently:
+// - Only the selected tab is focusable (not the container nor the other tabs).
+// - Once focused, the left and right arrows can be used to navigate between tabs.
+// - The focus is moved by the component when the selected tab changes.
+//
+// [1] https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
+// [2] https://www.w3.org/WAI/ARIA/apg/patterns/tabs/examples/tabs-automatic/
+
 export function Tabs({
   items,
   onSelect,
