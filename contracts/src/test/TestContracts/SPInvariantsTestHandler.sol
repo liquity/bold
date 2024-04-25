@@ -146,9 +146,9 @@ contract SPInvariantsTestHandler is Test {
         priceFeed.setPrice(initialPrice * LIQUIDATION_ICR / OPEN_TROVE_ICR);
 
         try troveManager.liquidate(troveId) {}
-        catch (bytes memory reason) {
+        catch Panic(uint256 errorCode) {
             // XXX ignore assertion failure inside liquidation (due to P = 0)
-            assertEq(reason.length, 0, "Unexpected revert in liquidate()");
+            assertEq(errorCode, 1, "Unexpected revert in liquidate()");
             vm.assume(false);
         }
 
