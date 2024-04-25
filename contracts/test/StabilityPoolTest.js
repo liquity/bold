@@ -2906,11 +2906,11 @@ contract("StabilityPool", async (accounts) => {
         const snapshot = await stabilityPool.depositSnapshots(depositor);
 
         const ZERO = toBN("0");
-        // Check S,P, G snapshots are non-zero
+        // Check S, P snapshots are non-zero
         assert.isTrue(snapshot[0].eq(S_Before)); // S
         assert.isTrue(snapshot[1].eq(P_Before)); // P
-        assert.equal(snapshot[3], "0"); // scale
-        assert.equal(snapshot[4], "0"); // epoch
+        assert.equal(snapshot[2], "0"); // scale
+        assert.equal(snapshot[3], "0"); // epoch
       }
 
       // All depositors make full withdrawal
@@ -2926,9 +2926,8 @@ contract("StabilityPool", async (accounts) => {
         // Check S, P, G snapshots are now zero
         assert.equal(snapshot[0], "0"); // S
         assert.equal(snapshot[1], "0"); // P
-        assert.equal(snapshot[2], "0"); // G
-        assert.equal(snapshot[3], "0"); // scale
-        assert.equal(snapshot[4], "0"); // epoch
+        assert.equal(snapshot[2], "0"); // scale
+        assert.equal(snapshot[3], "0"); // epoch
       }
     });
 

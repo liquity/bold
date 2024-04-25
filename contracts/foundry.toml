@@ -6,7 +6,7 @@ libs = ["lib"]
 [invariant]
 call_override = false
 fail_on_revert = true
-runs = 500
+runs = 1000
 depth = 20
 # shrink_run_limit = 0
 
