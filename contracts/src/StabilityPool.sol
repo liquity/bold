@@ -156,7 +156,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     struct Snapshots {
         uint256 S;
         uint256 P;
-        uint256 G;
         uint128 scale;
         uint128 epoch;
     }

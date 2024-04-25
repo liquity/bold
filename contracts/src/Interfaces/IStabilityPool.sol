@@ -101,6 +101,12 @@ interface IStabilityPool is ILiquityBase {
      */
     function getCompoundedBoldDeposit(address _depositor) external view returns (uint256);
 
+    // Public state variable getters
+    function P() external view returns (uint256);
+    function currentScale() external view returns (uint128);
+    function currentEpoch() external view returns (uint128);
+    function epochToScaleToSum(uint128 epoch, uint128 scale) external view returns (uint256);
+
     /*
      * Only callable by Active Pool, it pulls ETH and accounts for ETH received
      */
