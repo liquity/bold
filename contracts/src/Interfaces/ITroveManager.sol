@@ -46,8 +46,6 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function updateStakeAndTotalStakes(uint256 _troveId) external returns (uint256);
 
-    function addTroveIdToArray(uint256 _troveId) external returns (uint256 index);
-
     function getPendingETHReward(uint256 _troveId) external view returns (uint256);
 
     function getPendingBoldDebtReward(uint256 _troveId) external view returns (uint256);
@@ -105,7 +103,7 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _coll,
         uint256 _debt,
         uint256 _annualInterestRate
-    ) external returns (uint256);
+    ) external returns (uint256, uint256);
 
     function troveIsStale(uint256 _troveId) external view returns (bool);
 
