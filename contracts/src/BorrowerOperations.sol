@@ -183,7 +183,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireValidMaxFeePercentage(_maxFeePercentage, isRecoveryMode);
 
         uint256 troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
-        _requireTroveisNotActive(contractsCache.troveManager, troveId);
+        _requireTroveisNotOpen(contractsCache.troveManager, troveId);
 
         _requireAtLeastMinNetDebt(_boldAmount);
 
@@ -231,29 +231,44 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     // Send ETH as collateral to a trove
     function addColl(uint256 _troveId, uint256 _ETHAmount) external override {
+        // TODO: Use oldColl and assert in fuzzing, remove before deployment
+        uint256 oldColl = troveManager.getTroveEntireColl(_troveId);
         _adjustTrove(msg.sender, _troveId, _ETHAmount, true, 0, false, 0);
+        assert(troveManager.getTroveEntireColl(_troveId) > oldColl);
     }
 
     // Send ETH as collateral to a trove. Called by only the Stability Pool.
     function moveETHGainToTrove(address _sender, uint256 _troveId, uint256 _ETHAmount) external override {
+        // TODO: Use oldColl and assert in fuzzing, remove before deployment
+        uint256 oldColl = troveManager.getTroveEntireColl(_troveId);
         _requireCallerIsStabilityPool();
         // TODO: check owner?
         _adjustTrove(_sender, _troveId, _ETHAmount, true, 0, false, 0);
+        assert(troveManager.getTroveEntireColl(_troveId) > oldColl);
     }
 
     // Withdraw ETH collateral from a trove
     function withdrawColl(uint256 _troveId, uint256 _collWithdrawal) external override {
+        // TODO: Use oldColl and assert in fuzzing, remove before deployment
+        uint256 oldColl = troveManager.getTroveEntireColl(_troveId);
         _adjustTrove(msg.sender, _troveId, _collWithdrawal, false, 0, false, 0);
+        assert(troveManager.getTroveEntireColl(_troveId) < oldColl);
     }
 
     // Withdraw Bold tokens from a trove: mint new Bold tokens to the owner, and increase the trove's debt accordingly
     function withdrawBold(uint256 _troveId, uint256 _maxFeePercentage, uint256 _boldAmount) external override {
+        // TODO: Use oldDebt and assert in fuzzing, remove before deployment
+        uint256 oldDebt = troveManager.getTroveEntireDebt(_troveId);
         _adjustTrove(msg.sender, _troveId, 0, false, _boldAmount, true, _maxFeePercentage);
+        assert(troveManager.getTroveEntireDebt(_troveId) > oldDebt);
     }
 
     // Repay Bold tokens to a Trove: Burn the repaid Bold tokens, and reduce the trove's debt accordingly
     function repayBold(uint256 _troveId, uint256 _boldAmount) external override {
+        // TODO: Use oldDebt and assert in fuzzing, remove before deployment
+        uint256 oldDebt = troveManager.getTroveEntireDebt(_troveId);
         _adjustTrove(msg.sender, _troveId, 0, false, _boldAmount, false, 0);
+        assert(troveManager.getTroveEntireDebt(_troveId) < oldDebt); 
     }
 
     function adjustTrove(
@@ -281,7 +296,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         ContractsCacheTMAP memory contractsCache = ContractsCacheTMAP(troveManager, activePool);
 
-        _requireTroveisActive(contractsCache.troveManager, _troveId);
+        _requireValidAnnualInterestRate(_newAnnualInterestRate);
+        _requireTroveisOpen(contractsCache.troveManager, _troveId);
 
         uint256 entireTroveDebt = _updateActivePoolTrackersNoDebtChange(
             contractsCache.troveManager, contractsCache.activePool, _troveId, _newAnnualInterestRate
@@ -325,7 +341,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _requireNonZeroDebtChange(_boldChange);
         }
         _requireNonZeroAdjustment(_collChange, _boldChange);
-        _requireTroveisActive(contractsCache.troveManager, _troveId);
+        _requireTroveisOpen(contractsCache.troveManager, _troveId);
 
         // Confirm the operation is an ETH transfer if coming from the Stability Pool to a trove
         assert((msg.sender != stabilityPoolAddress || (_isCollIncrease && _boldChange == 0)));
@@ -347,7 +363,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // When the adjustment is a debt repayment, check it's a valid amount and that the caller has enough Bold
         if (!_isDebtIncrease && _boldChange > 0) {
-            _requireAtLeastMinNetDebt(_getNetDebt(vars.entireDebt) - _boldChange);
             _requireValidBoldRepayment(vars.entireDebt, _boldChange);
             _requireSufficientBoldBalance(contractsCache.boldToken, msg.sender, _boldChange);
         }
@@ -369,6 +384,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _isDebtIncrease,
             vars.accruedTroveInterest
         );
+
+        _requireAtLeastMinNetDebt(_getNetDebt(vars.newEntireDebt));
 
         vars.stake = contractsCache.troveManager.updateStakeAndTotalStakes(_troveId);
 
@@ -417,7 +434,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // --- Checks ---
 
         _requireCallerIsBorrower(contractsCache.troveManager, _troveId);
-        _requireTroveisActive(contractsCache.troveManager, _troveId);
+        _requireTroveisOpen(contractsCache.troveManager, _troveId);
         uint256 price = priceFeed.fetchPrice();
         _requireNotInRecoveryMode(price);
 
@@ -474,7 +491,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         ContractsCacheTMAP memory contractsCache = ContractsCacheTMAP(troveManager, activePool);
 
         _requireTroveIsStale(contractsCache.troveManager, _troveId);
-        _requireTroveisActive(contractsCache.troveManager, _troveId);
+        _requireTroveisOpen(contractsCache.troveManager, _troveId);
 
         uint256 annualInterestRate = contractsCache.troveManager.getTroveAnnualInterestRate(_troveId);
 
@@ -652,14 +669,19 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         require(troveManager.ownerOf(_troveId) == msg.sender, "BO: Only owner");
     }
 
-    function _requireTroveisActive(ITroveManager _troveManager, uint256 _troveId) internal view {
+    function _requireTroveisOpen(ITroveManager _troveManager, uint256 _troveId) internal view {
         uint256 status = _troveManager.getTroveStatus(_troveId);
-        require(status == 1, "BorrowerOps: Trove does not exist or is closed");
+        require(_troveManager.checkTroveIsOpen(_troveId), "BorrowerOps: Trove does not exist or is closed");
     }
 
-    function _requireTroveisNotActive(ITroveManager _troveManager, uint256 _troveId) internal view {
+    function _requireTroveisActive(ITroveManager _troveManager, uint256 _troveId) internal view {
         uint256 status = _troveManager.getTroveStatus(_troveId);
-        require(status != 1, "BorrowerOps: Trove is active");
+        require(_troveManager.checkTroveIsActive(_troveId), "BorrowerOps: Trove does not have active status");
+    }
+
+    function _requireTroveisNotOpen(ITroveManager _troveManager, uint256 _troveId) internal view {
+        uint256 status = _troveManager.getTroveStatus(_troveId);
+        require(!_troveManager.checkTroveIsOpen(_troveId),"BorrowerOps: Trove is open");
     }
 
     function _requireNonZeroCollChange(uint256 _collChange) internal pure {

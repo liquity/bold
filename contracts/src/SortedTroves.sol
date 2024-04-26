@@ -159,12 +159,20 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         nodes[nodes[_sliceTail].nextId].prevId = nodes[_sliceHead].prevId;
     }
 
+    function remove(uint256 _id) external override {
+        _requireCallerIsTroveManager();
+        if (isBatchedNode(_id)) {
+            _removeFromBatch(_id);
+        } else {
+            _removeNonBatched(_id);
+        }
+    }
+
     /*
      * @dev Remove a non-batched Trove from the list
      * @param _id Trove's id
      */
-    function remove(uint256 _id) external override {
-        _requireCallerIsTroveManager();
+    function _removeNonBatched(uint256 _id) internal {
         require(contains(_id), "SortedTroves: List does not contain the id");
         require(!isBatchedNode(_id), "SortedTroves: Must use removeFromBatch() to remove batched node");
 
@@ -253,8 +261,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @dev Remove a batched Trove from the list
      * @param _id Trove's id
      */
-    function removeFromBatch(uint256 _id) external override {
-        _requireCallerIsTroveManager();
+    function _removeFromBatch(uint256 _id) internal {
         BatchId batchId = nodes[_id].batchId;
         // batchId.isNotZero() implies that the list contains the node
         require(batchId.isNotZero(), "SortedTroves: Must use remove() to remove non-batched node");

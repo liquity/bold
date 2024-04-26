@@ -127,6 +127,8 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function checkRecoveryMode(uint256 _price) external view returns (bool);
 
+    function checkTroveIsOpen(uint256 _troveId) external view returns (bool);
+
     function checkTroveIsActive(uint256 _troveId) external view returns (bool);
 
     function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool);
