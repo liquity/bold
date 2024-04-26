@@ -160,14 +160,15 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     function receiveETH(uint256 _amount) external {
         _requireCallerIsBorrowerOperationsOrDefaultPool();
 
+        _accountForReceivedETH(_amount);
+
         // Pull ETH tokens from sender
         ETH.safeTransferFrom(msg.sender, address(this), _amount);
-
-        _accountForReceivedETH(_amount);
     }
 
     function accountForReceivedETH(uint256 _amount) public {
         _requireCallerIsBorrowerOperationsOrDefaultPool();
+
         _accountForReceivedETH(_amount);
     }
 
