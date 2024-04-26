@@ -10,4 +10,5 @@ export { Root, RootEntryPoint } from "./Root/Root";
 export { Tabs } from "./Tabs/Tabs";
 export { TextButton } from "./TextButton/TextButton";
 export { brand, colors, lightTheme, Theme, themeColor, useTheme } from "./Theme/Theme";
+export { TokenIcon } from "./TokenIcon/TokenIcon";
 export { UiKit } from "./UiKit/UiKit";
