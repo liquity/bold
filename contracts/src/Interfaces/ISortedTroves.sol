@@ -3,39 +3,58 @@
 pragma solidity 0.8.18;
 
 import "./ITroveManager.sol";
+import {BatchId, BATCH_ID_ZERO} from "../Types/BatchId.sol";
 
-// Common interface for the SortedTroves Doubly Linked List.
+// TODO
+//type Id is uint256;
+//type Value is uint256;
+
 interface ISortedTroves {
-    function borrowerOperationsAddress() external view returns (address);
-    function troveManager() external view returns (ITroveManager);
+    // -- Mutating functions (permissioned) --
 
-    function setParams(uint256 _size, address _TroveManagerAddress, address _borrowerOperationsAddress) external;
+    function setAddresses(address _troveManagerAddress, address _borrowerOperationsAddress) external;
 
-    function insert(address _id, uint256 _ICR, address _prevId, address _nextId) external;
+    function insert(uint256 _id, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external;
+    function insertIntoBatch(
+        uint256 _troveId,
+        BatchId _batchId,
+        uint256 _annualInterestRate,
+        uint256 _prevId,
+        uint256 _nextId
+    ) external;
 
-    function remove(address _id) external;
+    function remove(uint256 _id) external;
+    function removeFromBatch(uint256 _id) external;
 
-    function reInsert(address _id, uint256 _newICR, address _prevId, address _nextId) external;
+    function reInsert(uint256 _id, uint256 _newAnnualInterestRate, uint256 _prevId, uint256 _nextId) external;
+    function reInsertBatch(BatchId _id, uint256 _newAnnualInterestRate, uint256 _prevId, uint256 _nextId) external;
 
-    function contains(address _id) external view returns (bool);
+    // -- View functions --
 
-    function isFull() external view returns (bool);
+    function contains(uint256 _id) external view returns (bool);
+    function isBatchedNode(uint256 _id) external view returns (bool);
 
     function isEmpty() external view returns (bool);
-
     function getSize() external view returns (uint256);
 
-    function getMaxSize() external view returns (uint256);
+    function getFirst() external view returns (uint256);
+    function getLast() external view returns (uint256);
+    function getNext(uint256 _id) external view returns (uint256);
+    function getPrev(uint256 _id) external view returns (uint256);
 
-    function getFirst() external view returns (address);
+    function validInsertPosition(uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId)
+        external
+        view
+        returns (bool);
+    function findInsertPosition(uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId)
+        external
+        view
+        returns (uint256, uint256);
 
-    function getLast() external view returns (address);
-
-    function getNext(address _id) external view returns (address);
-
-    function getPrev(address _id) external view returns (address);
-
-    function validInsertPosition(uint256 _ICR, address _prevId, address _nextId) external view returns (bool);
-
-    function findInsertPosition(uint256 _ICR, address _prevId, address _nextId) external view returns (address, address);
+    // Public state variable getters
+    function borrowerOperationsAddress() external view returns (address);
+    function troveManager() external view returns (ITroveManager);
+    function size() external view returns (uint256);
+    function nodes(uint256 _id) external view returns (uint256 nextId, uint256 prevId, BatchId batchId, bool exists);
+    function batches(BatchId _id) external view returns (uint256 head, uint256 tail);
 }

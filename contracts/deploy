@@ -1,0 +1,8 @@
+#!/usr/bin/env -S npx tsx
+
+require("./utils/deploy-cli").main().catch(({ message }) => {
+  console.error("");
+  console.error(`  Error: ${message}`);
+  console.error("");
+  process.exit(1);
+});

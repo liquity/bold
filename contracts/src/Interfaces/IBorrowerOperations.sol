@@ -24,23 +24,53 @@ interface IBorrowerOperations is ILiquityBase {
         address _boldTokenAddress
     ) external;
 
-    function openTrove(uint _maxFee, uint _boldAmount, address _upperHint, address _lowerHint) external payable;
+    function openTrove(
+        address _owner,
+        uint256 _ownerIndex,
+        uint256 _maxFee,
+        uint256 _ETHAmount,
+        uint256 _boldAmount,
+        uint256 _upperHint,
+        uint256 _lowerHint,
+        uint256 _annualInterestRate
+    ) external returns (uint256);
 
-    function addColl(address _upperHint, address _lowerHint) external payable;
+    function addColl(uint256 _troveId, uint256 _ETHAmount) external;
 
-    function moveETHGainToTrove(address _user, address _upperHint, address _lowerHint) external payable;
+    function moveETHGainToTrove(address _sender, uint256 _troveId, uint256 _ETHAmount) external;
 
-    function withdrawColl(uint _amount, address _upperHint, address _lowerHint) external;
+    function withdrawColl(uint256 _troveId, uint256 _amount) external;
 
-    function withdrawBold(uint _maxFee, uint _amount, address _upperHint, address _lowerHint) external;
+    function withdrawBold(uint256 _troveId, uint256 _maxFee, uint256 _amount) external;
 
-    function repayBold(uint _amount, address _upperHint, address _lowerHint) external;
+    function repayBold(uint256 _troveId, uint256 _amount) external;
 
-    function closeTrove() external;
+    function closeTrove(uint256 _troveId) external;
 
-    function adjustTrove(uint _maxFee, uint _collWithdrawal, uint _debtChange, bool isDebtIncrease, address _upperHint, address _lowerHint) external payable;
+    function adjustTrove(
+        uint256 _troveId,
+        uint256 _maxFee,
+        uint256 _collChange,
+        bool _isCollIncrease,
+        uint256 _debtChange,
+        bool isDebtIncrease
+    ) external;
 
-    function claimCollateral() external;
+    function claimCollateral(uint256 _troveId) external;
 
-    function getCompositeDebt(uint _debt) external pure returns (uint);
+    function setAddManager(uint256 _troveId, address _manager) external;
+    function setRemoveManager(uint256 _troveId, address _manager) external;
+
+    // TODO: addRepayWhitelistedAddress?(see github issue #64)
+
+    function getCompositeDebt(uint256 _debt) external pure returns (uint256);
+
+    function adjustTroveInterestRate(
+        uint256 _troveId,
+        uint256 _newAnnualInterestRate,
+        uint256 _upperHint,
+        uint256 _lowerHint
+    ) external;
+
+    function applyTroveInterestPermissionless(uint256 _troveId) external;
 }

@@ -1,0 +1,22 @@
+@layer reset, base, tokens, recipes, utilities;
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/InterVariable.woff2") format("woff2");
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  min-width: 1200px;
+  color: #121b44;
+}
+a {
+  text-decoration: none;
+  color: #405ae5;
+}
+:focus-visible {
+  outline: 2px solid #405ae5;
+}

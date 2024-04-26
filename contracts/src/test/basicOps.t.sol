@@ -3,133 +3,141 @@ pragma solidity 0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract BasicOps is DevTestSetup {
+    function testOpenTroveFailsWithoutAllowance() public {
+        priceFeed.setPrice(2000e18);
+
+        vm.startPrank(G);
+        vm.expectRevert("ERC20: insufficient allowance");
+        borrowerOperations.openTrove(G, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
+        vm.stopPrank();
+    }
+
+    function testOpenTroveFailsWithoutBalance() public {
+        priceFeed.setPrice(2000e18);
+
+        vm.startPrank(G);
+        WETH.approve(address(borrowerOperations), 2e18);
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        borrowerOperations.openTrove(G, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
+        vm.stopPrank();
+    }
 
     function testOpenTrove() public {
         priceFeed.setPrice(2000e18);
-        uint256 trovesCount = troveManager.getTroveOwnersCount();
+        uint256 trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 0);
 
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+        borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
 
-        trovesCount = troveManager.getTroveOwnersCount();
+        trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
     }
 
-     function testCloseTrove() public {
+    function testCloseTrove() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+        borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+        uint256 B_Id = borrowerOperations.openTrove(B, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
 
-        uint256 trovesCount = troveManager.getTroveOwnersCount();
+        uint256 trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 2);
-       
+
         vm.startPrank(B);
-        borrowerOperations.closeTrove();
+        borrowerOperations.closeTrove(B_Id);
         vm.stopPrank();
-    
+
         // Check Troves count reduced by 1
-        trovesCount = troveManager.getTroveOwnersCount();
+        trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
     }
 
     function testAdjustTrove() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+        uint256 A_Id = borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
 
         // Check Trove coll and debt
-        uint256 debt_1 = troveManager.getTroveDebt(A);
+        uint256 debt_1 = troveManager.getTroveDebt(A_Id);
         assertGt(debt_1, 0);
-        uint256 coll_1 = troveManager.getTroveColl(A);
+        uint256 coll_1 = troveManager.getTroveColl(A_Id);
         assertGt(coll_1, 0);
- 
+
         // Adjust trove
-        borrowerOperations.adjustTrove{value: 1 ether}(1e18, 0,  500e18,  true,  ZERO_ADDRESS,  ZERO_ADDRESS);
+        borrowerOperations.adjustTrove(A_Id, 1e18, 1e18, true, 500e18, true);
 
         // Check coll and debt altered
-        uint256 debt_2 = troveManager.getTroveDebt(A);
+        uint256 debt_2 = troveManager.getTroveDebt(A_Id);
         assertGt(debt_2, debt_1);
-        uint256 coll_2 = troveManager.getTroveColl(A);
+        uint256 coll_2 = troveManager.getTroveColl(A_Id);
         assertGt(coll_2, coll_1);
     }
 
     function testRedeem() public {
         priceFeed.setPrice(2000e18);
+
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 5 ether}(1e18, 5_000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+        borrowerOperations.openTrove(A, 0, 1e18, 5e18, 5_000e18, 0, 0, 0);
         vm.stopPrank();
 
-        uint256 debt_1 = troveManager.getTroveDebt(A);
-        assertGt(debt_1, 0);
-        uint256 coll_1 = troveManager.getTroveColl(A);
-        assertGt(coll_1, 0);
-
         vm.startPrank(B);
-        borrowerOperations.openTrove{value: 5 ether}(1e18, 4_000e18, ZERO_ADDRESS, ZERO_ADDRESS);
-        
-        vm.warp(block.timestamp + troveManager.BOOTSTRAP_PERIOD() + 1);
+        uint256 B_Id = borrowerOperations.openTrove(B, 0, 1e18, 5e18, 4_000e18, 0, 0, 0);
+        uint256 debt_1 = troveManager.getTroveDebt(B_Id);
+        assertGt(debt_1, 0);
+        uint256 coll_1 = troveManager.getTroveColl(B_Id);
+        assertGt(coll_1, 0);
+        vm.stopPrank();
 
-        uint256 redemptionAmount = 1000e18;  // 1k BOLD
-        uint256 expectedCollReduction = redemptionAmount * 1e18 / priceFeed.fetchPrice();
+        // B is now first in line to get redeemed, as they both have the same interest rate,
+        // but B's Trove is younger.
 
-        uint256 expectedColl_A = troveManager.getTroveColl(A) - expectedCollReduction;
-        uint256 expectedDebt_A = troveManager.getTroveDebt(A) - redemptionAmount;
-        uint256 expectedNICR = LiquityMath._computeNominalCR(expectedColl_A,expectedDebt_A); 
-      
-        // B redeems 1k BOLD
-        troveManager.redeemCollateral(
-            redemptionAmount,
-            ZERO_ADDRESS,
-            ZERO_ADDRESS,
-            ZERO_ADDRESS,
-            expectedNICR,
-            10,
-            1e18
-        );
-       
-        // Check A's coll and debt reduced
-        uint256 debt_2 = troveManager.getTroveDebt(A);
+        uint256 redemptionAmount = 1000e18; // 1k BOLD
+
+        // A redeems 1k BOLD
+        vm.startPrank(A);
+        troveManager.redeemCollateral(redemptionAmount, 10, 1e18);
+
+        // Check B's coll and debt reduced
+        uint256 debt_2 = troveManager.getTroveDebt(B_Id);
         assertLt(debt_2, debt_1);
-        uint256 coll_2 = troveManager.getTroveColl(A);
+        uint256 coll_2 = troveManager.getTroveColl(B_Id);
         assertLt(coll_2, coll_1);
     }
 
     function testLiquidation() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+        uint256 A_Id = borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
-        borrowerOperations.openTrove{value: 10 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+        borrowerOperations.openTrove(B, 0, 1e18, 10e18, 2000e18, 0, 0, 0);
 
-       // Price drops
+        // Price drops
         priceFeed.setPrice(1200e18);
         uint256 price = priceFeed.fetchPrice();
 
         // Check CR_A < MCR and TCR > CCR
-        assertLt(troveManager.getCurrentICR(A, price), MCR);
+        assertLt(troveManager.getCurrentICR(A_Id, price), MCR);
         assertGt(troveManager.getTCR(price), CCR);
 
-        uint256 trovesCount = troveManager.getTroveOwnersCount();
+        uint256 trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 2);
 
-        troveManager.liquidate(A);
+        troveManager.liquidate(A_Id);
 
         // Check Troves count reduced by 1
-        trovesCount = troveManager.getTroveOwnersCount();
+        trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
     }
 
     function testSPDeposit() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+        borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
 
         // A makes an SP deposit
         stabilityPool.provideToSP(100e18);
@@ -148,7 +156,7 @@ contract BasicOps is DevTestSetup {
     function testSPWithdrawal() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove{value: 2 ether}(1e18, 2000e18, ZERO_ADDRESS, ZERO_ADDRESS);
+        borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
 
         // A makes an SP deposit
         stabilityPool.provideToSP(100e18);

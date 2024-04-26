@@ -2,9 +2,12 @@
 
 pragma solidity 0.8.18;
 
-import './Interfaces/IDefaultPool.sol';
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import "./Interfaces/IActivePool.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
+import "./Interfaces/IDefaultPool.sol";
 
 /*
  * The Default Pool holds the ETH and Bold debt (but not Bold tokens) from liquidations that have been redistributed
@@ -14,28 +17,30 @@ import "./Dependencies/CheckContract.sol";
  * from the Default Pool to the Active Pool.
  */
 contract DefaultPool is Ownable, CheckContract, IDefaultPool {
-    string constant public NAME = "DefaultPool";
+    using SafeERC20 for IERC20;
 
+    string public constant NAME = "DefaultPool";
+
+    IERC20 public immutable ETH;
     address public troveManagerAddress;
     address public activePoolAddress;
-    uint256 internal ETH;  // deposited ETH tracker
-    uint256 internal BoldDebt;  // debt
+    uint256 internal ETHBalance; // deposited ETH tracker
+    uint256 internal BoldDebt; // debt
 
     event ActivePoolAddressChanged(address _newActivePoolAddress);
-    event EtherSent(address _to, uint _amount);
+    event EtherSent(address _to, uint256 _amount);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event DefaultPoolBoldDebtUpdated(uint _boldDebt);
-    event DefaultPoolETHBalanceUpdated(uint _ETH);
+    event DefaultPoolBoldDebtUpdated(uint256 _boldDebt);
+    event DefaultPoolETHBalanceUpdated(uint256 _ETHBalance);
+
+    constructor(address _ETHAddress) {
+        checkContract(_ETHAddress);
+        ETH = IERC20(_ETHAddress);
+    }
 
     // --- Dependency setters ---
 
-    function setAddresses(
-        address _troveManagerAddress,
-        address _activePoolAddress
-    )
-        external
-        onlyOwner
-    {
+    function setAddresses(address _troveManagerAddress, address _activePoolAddress) external onlyOwner {
         checkContract(_troveManagerAddress);
         checkContract(_activePoolAddress);
 
@@ -45,44 +50,60 @@ contract DefaultPool is Ownable, CheckContract, IDefaultPool {
         emit TroveManagerAddressChanged(_troveManagerAddress);
         emit ActivePoolAddressChanged(_activePoolAddress);
 
+        // Allow funds movements between Liquity contracts
+        ETH.approve(_activePoolAddress, type(uint256).max);
+
         _renounceOwnership();
     }
 
     // --- Getters for public variables. Required by IPool interface ---
 
     /*
-    * Returns the ETH state variable.
+    * Returns the ETHBalance state variable.
     *
     * Not necessarily equal to the the contract's raw ETH balance - ether can be forcibly sent to contracts.
     */
-    function getETH() external view override returns (uint) {
-        return ETH;
+    function getETHBalance() external view override returns (uint256) {
+        return ETHBalance;
     }
 
-    function getBoldDebt() external view override returns (uint) {
+    function getBoldDebt() external view override returns (uint256) {
         return BoldDebt;
     }
 
     // --- Pool functionality ---
 
-    function sendETHToActivePool(uint _amount) external override {
+    function sendETHToActivePool(uint256 _amount) external override {
         _requireCallerIsTroveManager();
         address activePool = activePoolAddress; // cache to save an SLOAD
-        ETH = ETH - _amount;
-        emit DefaultPoolETHBalanceUpdated(ETH);
+        uint256 newETHBalance = ETHBalance - _amount;
+        ETHBalance = newETHBalance;
+        emit DefaultPoolETHBalanceUpdated(newETHBalance);
         emit EtherSent(activePool, _amount);
 
-        (bool success, ) = activePool.call{ value: _amount }("");
-        require(success, "DefaultPool: sending ETH failed");
+        // Send ETH to Active Pool and increase its recorded ETH balance
+        IActivePool(activePool).receiveETH(_amount);
     }
 
-    function increaseBoldDebt(uint _amount) external override {
+    function receiveETH(uint256 _amount) external {
+        _requireCallerIsActivePool();
+
+        uint256 newETHBalance = ETHBalance + _amount;
+        ETHBalance = newETHBalance;
+
+        // Pull ETH tokens from ActivePool
+        ETH.safeTransferFrom(msg.sender, address(this), _amount);
+
+        emit DefaultPoolETHBalanceUpdated(newETHBalance);
+    }
+
+    function increaseBoldDebt(uint256 _amount) external override {
         _requireCallerIsTroveManager();
         BoldDebt = BoldDebt + _amount;
         emit DefaultPoolBoldDebtUpdated(BoldDebt);
     }
 
-    function decreaseBoldDebt(uint _amount) external override {
+    function decreaseBoldDebt(uint256 _amount) external override {
         _requireCallerIsTroveManager();
         BoldDebt = BoldDebt - _amount;
         emit DefaultPoolBoldDebtUpdated(BoldDebt);
@@ -96,13 +117,5 @@ contract DefaultPool is Ownable, CheckContract, IDefaultPool {
 
     function _requireCallerIsTroveManager() internal view {
         require(msg.sender == troveManagerAddress, "DefaultPool: Caller is not the TroveManager");
-    }
-
-    // --- Fallback function ---
-
-    receive() external payable {
-        _requireCallerIsActivePool();
-        ETH = ETH + msg.value;
-        emit DefaultPoolETHBalanceUpdated(ETH);
     }
 }

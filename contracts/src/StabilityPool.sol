@@ -2,15 +2,19 @@
 
 pragma solidity 0.8.18;
 
-import './Interfaces/IBorrowerOperations.sol';
-import './Interfaces/IStabilityPool.sol';
-import './Interfaces/IBorrowerOperations.sol';
-import './Interfaces/ITroveManager.sol';
-import './Interfaces/IBoldToken.sol';
-import './Interfaces/ISortedTroves.sol';
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import "./Interfaces/IBorrowerOperations.sol";
+import "./Interfaces/IStabilityPool.sol";
+import "./Interfaces/IBorrowerOperations.sol";
+import "./Interfaces/ITroveManager.sol";
+import "./Interfaces/IBoldToken.sol";
+import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
+
+// import "forge-std/console2.sol";
 
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
@@ -127,38 +131,38 @@ import "./Dependencies/CheckContract.sol";
  *
  */
 contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
-    string constant public NAME = "StabilityPool";
+    using SafeERC20 for IERC20;
 
+    string public constant NAME = "StabilityPool";
+
+    IERC20 public immutable ETH;
     IBorrowerOperations public borrowerOperations;
-
     ITroveManager public troveManager;
-
     IBoldToken public boldToken;
-
     // Needed to check if there are pending liquidations
     ISortedTroves public sortedTroves;
 
-    uint256 internal ETH;  // deposited ether tracker
+    uint256 internal ETHBalance; // deposited ether tracker
 
     // Tracker for Bold held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
     uint256 internal totalBoldDeposits;
 
-   // --- Data structures ---
+    // --- Data structures ---
 
     struct Deposit {
-        uint initialValue;
+        uint256 initialValue;
     }
 
     struct Snapshots {
-        uint S;
-        uint P;
-        uint G;
+        uint256 S;
+        uint256 P;
+        uint256 G;
         uint128 scale;
         uint128 epoch;
     }
 
-    mapping (address => Deposit) public deposits;  // depositor address -> Deposit struct
-    mapping (address => Snapshots) public depositSnapshots;  // depositor address -> snapshots struct
+    mapping(address => Deposit) public deposits; // depositor address -> Deposit struct
+    mapping(address => Snapshots) public depositSnapshots; // depositor address -> snapshots struct
 
     /*  Product 'P': Running product by which to multiply an initial deposit, in order to find the current compounded deposit,
     * after a series of liquidations have occurred, each of which cancel some Bold debt with the deposit.
@@ -166,9 +170,9 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * During its lifetime, a deposit's value evolves from d_t to d_t * P / P_t , where P_t
     * is the snapshot of P taken at the instant the deposit was made. 18-digit decimal.
     */
-    uint public P = DECIMAL_PRECISION;
+    uint256 public P = DECIMAL_PRECISION;
 
-    uint public constant SCALE_FACTOR = 1e9;
+    uint256 public constant SCALE_FACTOR = 1e9;
 
     // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
     uint128 public currentScale;
@@ -184,16 +188,16 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * - The inner mapping records the sum S at different scales
     * - The outer mapping records the (scale => sum) mappings, for different epochs.
     */
-    mapping (uint128 => mapping(uint128 => uint)) public epochToScaleToSum;
+    mapping(uint128 => mapping(uint128 => uint256)) public epochToScaleToSum;
 
     // Error trackers for the error correction in the offset calculation
-    uint public lastETHError_Offset;
-    uint public lastBoldLossError_Offset;
+    uint256 public lastETHError_Offset;
+    uint256 public lastBoldLossError_Offset;
 
     // --- Events ---
 
-    event StabilityPoolETHBalanceUpdated(uint _newBalance);
-    event StabilityPoolBoldBalanceUpdated(uint _newBalance);
+    event StabilityPoolETHBalanceUpdated(uint256 _newBalance);
+    event StabilityPoolBoldBalanceUpdated(uint256 _newBalance);
 
     event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
@@ -203,17 +207,23 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     event SortedTrovesAddressChanged(address _newSortedTrovesAddress);
     event PriceFeedAddressChanged(address _newPriceFeedAddress);
 
-    event P_Updated(uint _P);
-    event S_Updated(uint _S, uint128 _epoch, uint128 _scale);
-    event G_Updated(uint _G, uint128 _epoch, uint128 _scale);
+    event P_Updated(uint256 _P);
+    event S_Updated(uint256 _S, uint128 _epoch, uint128 _scale);
+    event G_Updated(uint256 _G, uint128 _epoch, uint128 _scale);
     event EpochUpdated(uint128 _currentEpoch);
     event ScaleUpdated(uint128 _currentScale);
 
-    event DepositSnapshotUpdated(address indexed _depositor, uint _P, uint _S);
-    event UserDepositChanged(address indexed _depositor, uint _newDeposit);
+    event DepositSnapshotUpdated(address indexed _depositor, uint256 _P, uint256 _S);
+    event UserDepositChanged(address indexed _depositor, uint256 _newDeposit);
 
-    event ETHGainWithdrawn(address indexed _depositor, uint _ETH, uint _boldLoss);
-    event EtherSent(address _to, uint _amount);
+    event ETHGainWithdrawn(address indexed _depositor, uint256 _ETH, uint256 _boldLoss);
+    // TODO: Do we still need this, as we’ll likely have the ERC20 transfer event?
+    event EtherSent(address _to, uint256 _amount);
+
+    constructor(address _ETHAddress) {
+        checkContract(_ETHAddress);
+        ETH = IERC20(_ETHAddress);
+    }
 
     // --- Contract setters ---
 
@@ -224,11 +234,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         address _boldTokenAddress,
         address _sortedTrovesAddress,
         address _priceFeedAddress
-    )
-        external
-        override
-        onlyOwner
-    {
+    ) external override onlyOwner {
         checkContract(_borrowerOperationsAddress);
         checkContract(_troveManagerAddress);
         checkContract(_activePoolAddress);
@@ -250,16 +256,19 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         emit SortedTrovesAddressChanged(_sortedTrovesAddress);
         emit PriceFeedAddressChanged(_priceFeedAddress);
 
+        // Allow funds movements between Liquity contracts
+        ETH.approve(_borrowerOperationsAddress, type(uint256).max);
+
         _renounceOwnership();
     }
 
     // --- Getters for public variables. Required by IPool interface ---
 
-    function getETH() external view override returns (uint) {
-        return ETH;
+    function getETHBalance() external view override returns (uint256) {
+        return ETHBalance;
     }
 
-    function getTotalBoldDeposits() external view override returns (uint) {
+    function getTotalBoldDeposits() external view override returns (uint256) {
         return totalBoldDeposits;
     }
 
@@ -271,25 +280,27 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * - Increases deposit, and takes new snapshots of accumulators P and S
     * - Sends depositor's accumulated ETH gains to depositor
     */
-    function provideToSP(uint _amount) external override {
+    function provideToSP(uint256 _amount) external override {
         _requireNonZeroAmount(_amount);
 
-        uint initialDeposit = deposits[msg.sender].initialValue;
+        activePool.mintAggInterestNoTroveChange();
 
-        uint depositorETHGain = getDepositorETHGain(msg.sender);
-        uint compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
-        uint boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
+        uint256 initialDeposit = deposits[msg.sender].initialValue;
+
+        uint256 depositorETHGain = getDepositorETHGain(msg.sender);
+        uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
+        uint256 boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
 
         _sendBoldtoStabilityPool(msg.sender, _amount);
 
-        uint newDeposit = compoundedBoldDeposit + _amount;
+        uint256 newDeposit = compoundedBoldDeposit + _amount;
         _updateDepositAndSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
 
         emit ETHGainWithdrawn(msg.sender, depositorETHGain, boldLoss); // Bold Loss required for event log
 
         _sendETHGainToDepositor(depositorETHGain);
-     }
+    }
 
     /*  withdrawFromSP():
     * - Calculates depositor's ETH gain
@@ -298,25 +309,27 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * - (If _amount > userDeposit, the user withdraws all of their compounded deposit)
     * - Decreases deposit by withdrawn amount and takes new snapshots of accumulators P and S
     */
-    function withdrawFromSP(uint _amount) external override {
-        if (_amount !=0) {_requireNoUnderCollateralizedTroves();}
-        uint initialDeposit = deposits[msg.sender].initialValue;
+    function withdrawFromSP(uint256 _amount) external override {
+        // TODO: if (_amount !=0) {_requireNoUnderCollateralizedTroves();}
+        uint256 initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
 
-        uint depositorETHGain = getDepositorETHGain(msg.sender);
+        activePool.mintAggInterestNoTroveChange();
 
-        uint compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
-        uint BoldtoWithdraw = LiquityMath._min(_amount, compoundedBoldDeposit);
-        uint boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
+        uint256 depositorETHGain = getDepositorETHGain(msg.sender);
+
+        uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
+        uint256 BoldtoWithdraw = LiquityMath._min(_amount, compoundedBoldDeposit);
+        uint256 boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
 
         _sendBoldToDepositor(msg.sender, BoldtoWithdraw);
 
         // Update deposit
-        uint newDeposit = compoundedBoldDeposit - BoldtoWithdraw;
+        uint256 newDeposit = compoundedBoldDeposit - BoldtoWithdraw;
         _updateDepositAndSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
 
-        emit ETHGainWithdrawn(msg.sender, depositorETHGain, boldLoss);  // Bold Loss required for event log
+        emit ETHGainWithdrawn(msg.sender, depositorETHGain, boldLoss); // Bold Loss required for event log
 
         _sendETHGainToDepositor(depositorETHGain);
     }
@@ -326,16 +339,16 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * - Leaves their compounded deposit in the Stability Pool
     * - Takes new snapshots of accumulators P and S 
     */
-    function withdrawETHGainToTrove(address _upperHint, address _lowerHint) external override {
-        uint initialDeposit = deposits[msg.sender].initialValue;
+    function withdrawETHGainToTrove(uint256 _troveId) external override {
+        uint256 initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
-        _requireUserHasTrove(msg.sender);
+        _requireTroveIsActive(_troveId);
         _requireUserHasETHGain(msg.sender);
 
-        uint depositorETHGain = getDepositorETHGain(msg.sender);
+        uint256 depositorETHGain = getDepositorETHGain(msg.sender);
 
-        uint compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
-        uint boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
+        uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
+        uint256 boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
 
         _updateDepositAndSnapshots(msg.sender, compoundedBoldDeposit);
 
@@ -345,11 +358,12 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         emit ETHGainWithdrawn(msg.sender, depositorETHGain, boldLoss);
         emit UserDepositChanged(msg.sender, compoundedBoldDeposit);
 
-        ETH = ETH - depositorETHGain;
-        emit StabilityPoolETHBalanceUpdated(ETH);
+        uint256 newETHBalance = ETHBalance - depositorETHGain;
+        ETHBalance = newETHBalance;
+        emit StabilityPoolETHBalanceUpdated(newETHBalance);
         emit EtherSent(msg.sender, depositorETHGain);
 
-        borrowerOperations.moveETHGainToTrove{ value: depositorETHGain }(msg.sender, _upperHint, _lowerHint);
+        borrowerOperations.moveETHGainToTrove(msg.sender, _troveId, depositorETHGain);
     }
 
     // --- Liquidation functions ---
@@ -359,28 +373,24 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * and transfers the Trove's ETH collateral from ActivePool to StabilityPool.
     * Only called by liquidation functions in the TroveManager.
     */
-    function offset(uint _debtToOffset, uint _collToAdd) external override {
+    function offset(uint256 _debtToOffset, uint256 _collToAdd) external override {
         _requireCallerIsTroveManager();
-        uint totalBold = totalBoldDeposits; // cached to save an SLOAD
-        if (totalBold == 0 || _debtToOffset == 0) { return; }
+        uint256 totalBold = totalBoldDeposits; // cached to save an SLOAD
+        if (totalBold == 0 || _debtToOffset == 0) return;
 
-        (uint ETHGainPerUnitStaked,
-            uint boldLossPerUnitStaked) = _computeRewardsPerUnitStaked(_collToAdd, _debtToOffset, totalBold);
+        (uint256 ETHGainPerUnitStaked, uint256 boldLossPerUnitStaked) =
+            _computeRewardsPerUnitStaked(_collToAdd, _debtToOffset, totalBold);
 
-        _updateRewardSumAndProduct(ETHGainPerUnitStaked, boldLossPerUnitStaked);  // updates S and P
+        _updateRewardSumAndProduct(ETHGainPerUnitStaked, boldLossPerUnitStaked); // updates S and P
 
         _moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
     }
 
     // --- Offset helper functions ---
 
-    function _computeRewardsPerUnitStaked(
-        uint _collToAdd,
-        uint _debtToOffset,
-        uint _totalBoldDeposits
-    )
+    function _computeRewardsPerUnitStaked(uint256 _collToAdd, uint256 _debtToOffset, uint256 _totalBoldDeposits)
         internal
-        returns (uint ETHGainPerUnitStaked, uint boldLossPerUnitStaked)
+        returns (uint256 ETHGainPerUnitStaked, uint256 boldLossPerUnitStaked)
     {
         /*
         * Compute the Bold and ETH rewards. Uses a "feedback" error correction, to keep
@@ -393,14 +403,14 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         * 4) Store these errors for use in the next correction when this function is called.
         * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
         */
-        uint ETHNumerator = _collToAdd * DECIMAL_PRECISION + lastETHError_Offset;
+        uint256 ETHNumerator = _collToAdd * DECIMAL_PRECISION + lastETHError_Offset;
 
         assert(_debtToOffset <= _totalBoldDeposits);
         if (_debtToOffset == _totalBoldDeposits) {
-            boldLossPerUnitStaked = DECIMAL_PRECISION;  // When the Pool depletes to 0, so does each deposit
+            boldLossPerUnitStaked = DECIMAL_PRECISION; // When the Pool depletes to 0, so does each deposit
             lastBoldLossError_Offset = 0;
         } else {
-            uint boldLossNumerator = _debtToOffset * DECIMAL_PRECISION - lastBoldLossError_Offset;
+            uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION - lastBoldLossError_Offset;
             /*
             * Add 1 to make error in quotient positive. We want "slightly too much" Bold loss,
             * which ensures the error in any given compoundedBoldDeposit favors the Stability Pool.
@@ -416,20 +426,20 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     }
 
     // Update the Stability Pool reward sum S and product P
-    function _updateRewardSumAndProduct(uint _ETHGainPerUnitStaked, uint _boldLossPerUnitStaked) internal {
-        uint currentP = P;
-        uint newP;
+    function _updateRewardSumAndProduct(uint256 _ETHGainPerUnitStaked, uint256 _boldLossPerUnitStaked) internal {
+        uint256 currentP = P;
+        uint256 newP;
 
         assert(_boldLossPerUnitStaked <= DECIMAL_PRECISION);
         /*
         * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool Bold in the liquidation.
         * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - boldLossPerUnitStaked)
         */
-        uint newProductFactor = uint(DECIMAL_PRECISION) - _boldLossPerUnitStaked;
+        uint256 newProductFactor = uint256(DECIMAL_PRECISION) - _boldLossPerUnitStaked;
 
         uint128 currentScaleCached = currentScale;
         uint128 currentEpochCached = currentEpoch;
-        uint currentS = epochToScaleToSum[currentEpochCached][currentScaleCached];
+        uint256 currentS = epochToScaleToSum[currentEpochCached][currentScaleCached];
 
         /*
         * Calculate the new S first, before we update P.
@@ -438,8 +448,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         *
         * Since S corresponds to ETH gain, and P to deposit loss, we update S first.
         */
-        uint marginalETHGain = _ETHGainPerUnitStaked * currentP;
-        uint newS = currentS + marginalETHGain;
+        uint256 marginalETHGain = _ETHGainPerUnitStaked * currentP;
+        uint256 newS = currentS + marginalETHGain;
         epochToScaleToSum[currentEpochCached][currentScaleCached] = newS;
         emit S_Updated(newS, currentEpochCached, currentScaleCached);
 
@@ -451,7 +461,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
             emit ScaleUpdated(currentScale);
             newP = DECIMAL_PRECISION;
 
-        // If multiplying P by a non-zero product factor would reduce P below the scale boundary, increment the scale
+            // If multiplying P by a non-zero product factor would reduce P below the scale boundary, increment the scale
         } else if (currentP * newProductFactor / DECIMAL_PRECISION < SCALE_FACTOR) {
             newP = currentP * newProductFactor * SCALE_FACTOR / DECIMAL_PRECISION;
             currentScale = currentScaleCached + 1;
@@ -466,21 +476,23 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         emit P_Updated(newP);
     }
 
-    function _moveOffsetCollAndDebt(uint _collToAdd, uint _debtToOffset) internal {
+    function _moveOffsetCollAndDebt(uint256 _collToAdd, uint256 _debtToOffset) internal {
         IActivePool activePoolCached = activePool;
 
         // Cancel the liquidated Bold debt with the Bold in the stability pool
-        activePoolCached.decreaseBoldDebt(_debtToOffset);
         _decreaseBold(_debtToOffset);
 
         // Burn the debt that was successfully offset
         boldToken.burn(address(this), _debtToOffset);
 
+        // Update internal ETH balance tracker
+        ETHBalance = ETHBalance + _collToAdd;
+        // Pull ETH from Active Pool
         activePoolCached.sendETH(address(this), _collToAdd);
     }
 
-    function _decreaseBold(uint _amount) internal {
-        uint newTotalBoldDeposits = totalBoldDeposits - _amount;
+    function _decreaseBold(uint256 _amount) internal {
+        uint256 newTotalBoldDeposits = totalBoldDeposits - _amount;
         totalBoldDeposits = newTotalBoldDeposits;
         emit StabilityPoolBoldBalanceUpdated(newTotalBoldDeposits);
     }
@@ -492,18 +504,22 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * where S(0) and P(0) are the depositor's snapshots of the sum S and product P, respectively.
     * d0 is the last recorded deposit value.
     */
-    function getDepositorETHGain(address _depositor) public view override returns (uint) {
-        uint initialDeposit = deposits[_depositor].initialValue;
+    function getDepositorETHGain(address _depositor) public view override returns (uint256) {
+        uint256 initialDeposit = deposits[_depositor].initialValue;
 
-        if (initialDeposit == 0) { return 0; }
+        if (initialDeposit == 0) return 0;
 
         Snapshots memory snapshots = depositSnapshots[_depositor];
 
-        uint ETHGain = _getETHGainFromSnapshots(initialDeposit, snapshots);
+        uint256 ETHGain = _getETHGainFromSnapshots(initialDeposit, snapshots);
         return ETHGain;
     }
 
-    function _getETHGainFromSnapshots(uint initialDeposit, Snapshots memory snapshots) internal view returns (uint) {
+    function _getETHGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots)
+        internal
+        view
+        returns (uint256)
+    {
         /*
         * Grab the sum 'S' from the epoch at which the stake was made. The ETH gain may span up to one scale change.
         * If it does, the second portion of the ETH gain is scaled by 1e9.
@@ -511,13 +527,13 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         */
         uint128 epochSnapshot = snapshots.epoch;
         uint128 scaleSnapshot = snapshots.scale;
-        uint S_Snapshot = snapshots.S;
-        uint P_Snapshot = snapshots.P;
+        uint256 S_Snapshot = snapshots.S;
+        uint256 P_Snapshot = snapshots.P;
 
-        uint firstPortion = epochToScaleToSum[epochSnapshot][scaleSnapshot] - S_Snapshot;
-        uint secondPortion = epochToScaleToSum[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
+        uint256 firstPortion = epochToScaleToSum[epochSnapshot][scaleSnapshot] - S_Snapshot;
+        uint256 secondPortion = epochToScaleToSum[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
 
-        uint ETHGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
+        uint256 ETHGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
 
         return ETHGain;
     }
@@ -528,33 +544,30 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * Return the user's compounded deposit. Given by the formula:  d = d0 * P/P(0)
     * where P(0) is the depositor's snapshot of the product P, taken when they last updated their deposit.
     */
-    function getCompoundedBoldDeposit(address _depositor) public view override returns (uint) {
-        uint initialDeposit = deposits[_depositor].initialValue;
-        if (initialDeposit == 0) { return 0; }
+    function getCompoundedBoldDeposit(address _depositor) public view override returns (uint256) {
+        uint256 initialDeposit = deposits[_depositor].initialValue;
+        if (initialDeposit == 0) return 0;
 
         Snapshots memory snapshots = depositSnapshots[_depositor];
 
-        uint compoundedDeposit = _getCompoundedStakeFromSnapshots(initialDeposit, snapshots);
+        uint256 compoundedDeposit = _getCompoundedStakeFromSnapshots(initialDeposit, snapshots);
         return compoundedDeposit;
     }
 
     // Internal function, used to calculcate compounded deposits and compounded front end stakes.
-    function _getCompoundedStakeFromSnapshots(
-        uint initialStake,
-        Snapshots memory snapshots
-    )
+    function _getCompoundedStakeFromSnapshots(uint256 initialStake, Snapshots memory snapshots)
         internal
         view
-        returns (uint)
+        returns (uint256)
     {
-        uint snapshot_P = snapshots.P;
+        uint256 snapshot_P = snapshots.P;
         uint128 scaleSnapshot = snapshots.scale;
         uint128 epochSnapshot = snapshots.epoch;
 
         // If stake was made before a pool-emptying event, then it has been fully cancelled with debt -- so, return 0
-        if (epochSnapshot < currentEpoch) { return 0; }
+        if (epochSnapshot < currentEpoch) return 0;
 
-        uint compoundedStake;
+        uint256 compoundedStake;
         uint128 scaleDiff = currentScale - scaleSnapshot;
 
         /* Compute the compounded stake. If a scale change in P was made during the stake's lifetime,
@@ -565,7 +578,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
             compoundedStake = initialStake * P / snapshot_P;
         } else if (scaleDiff == 1) {
             compoundedStake = initialStake * P / snapshot_P / SCALE_FACTOR;
-        } else { // if scaleDiff >= 2
+        } else {
+            // if scaleDiff >= 2
             compoundedStake = 0;
         }
 
@@ -578,7 +592,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         *
         * Thus it's unclear whether this line is still really needed.
         */
-        if (compoundedStake < initialStake / 1e9) {return 0;}
+        if (compoundedStake < initialStake / 1e9) return 0;
 
         return compoundedStake;
     }
@@ -586,27 +600,38 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     // --- Sender functions for Bold deposit and ETH gains ---
 
     // Transfer the Bold tokens from the user to the Stability Pool's address, and update its recorded Bold
-    function _sendBoldtoStabilityPool(address _address, uint _amount) internal {
+    function _sendBoldtoStabilityPool(address _address, uint256 _amount) internal {
         boldToken.sendToPool(_address, address(this), _amount);
-        uint newTotalBoldDeposits = totalBoldDeposits + _amount;
+        uint256 newTotalBoldDeposits = totalBoldDeposits + _amount;
         totalBoldDeposits = newTotalBoldDeposits;
         emit StabilityPoolBoldBalanceUpdated(newTotalBoldDeposits);
     }
 
-    function _sendETHGainToDepositor(uint _amount) internal {
-        if (_amount == 0) {return;}
-        uint newETH = ETH - _amount;
-        ETH = newETH;
-        emit StabilityPoolETHBalanceUpdated(newETH);
+    function _sendETHGainToDepositor(uint256 _amount) internal {
+        if (_amount == 0) return;
+        uint256 newETHBalance = ETHBalance - _amount;
+        ETHBalance = newETHBalance;
+        emit StabilityPoolETHBalanceUpdated(newETHBalance);
         emit EtherSent(msg.sender, _amount);
 
-        (bool success, ) = msg.sender.call{ value: _amount }("");
-        require(success, "StabilityPool: sending ETH failed");
+        ETH.safeTransfer(msg.sender, _amount);
+    }
+
+    function receiveETH(uint256 _amount) external {
+        _requireCallerIsActivePool();
+
+        uint256 newETHBalance = ETHBalance + _amount;
+        ETHBalance = newETHBalance;
+
+        // Pull ETH tokens from sender
+        ETH.safeTransferFrom(msg.sender, address(this), _amount);
+
+        emit StabilityPoolETHBalanceUpdated(newETHBalance);
     }
 
     // Send Bold to user and decrease Bold in Pool
-    function _sendBoldToDepositor(address _depositor, uint BoldWithdrawal) internal {
-        if (BoldWithdrawal == 0) {return;}
+    function _sendBoldToDepositor(address _depositor, uint256 BoldWithdrawal) internal {
+        if (BoldWithdrawal == 0) return;
 
         boldToken.returnFromPool(address(this), _depositor, BoldWithdrawal);
         _decreaseBold(BoldWithdrawal);
@@ -614,7 +639,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
     // --- Stability Pool Deposit Functionality ---
 
-    function _updateDepositAndSnapshots(address _depositor, uint _newValue) internal {
+    function _updateDepositAndSnapshots(address _depositor, uint256 _newValue) internal {
         deposits[_depositor].initialValue = _newValue;
 
         if (_newValue == 0) {
@@ -624,10 +649,10 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         }
         uint128 currentScaleCached = currentScale;
         uint128 currentEpochCached = currentEpoch;
-        uint currentP = P;
+        uint256 currentP = P;
 
         // Get S for the current epoch and current scale
-        uint currentS = epochToScaleToSum[currentEpochCached][currentScaleCached];
+        uint256 currentS = epochToScaleToSum[currentEpochCached][currentScaleCached];
 
         // Record new snapshots of the latest running product P and sum S for the depositor
         depositSnapshots[_depositor].P = currentP;
@@ -641,51 +666,45 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     // --- 'require' functions ---
 
     function _requireCallerIsActivePool() internal view {
-        require( msg.sender == address(activePool), "StabilityPool: Caller is not ActivePool");
+        require(msg.sender == address(activePool), "StabilityPool: Caller is not ActivePool");
     }
 
     function _requireCallerIsTroveManager() internal view {
         require(msg.sender == address(troveManager), "StabilityPool: Caller is not TroveManager");
     }
 
+    /* TODO
     function _requireNoUnderCollateralizedTroves() internal {
         uint price = priceFeed.fetchPrice();
-        address lowestTrove = sortedTroves.getLast();
+        uint256 lowestTroveId = sortedTroves.getLast();
         uint ICR = troveManager.getCurrentICR(lowestTrove, price);
         require(ICR >= MCR, "StabilityPool: Cannot withdraw while there are troves with ICR < MCR");
     }
+    */
 
-    function _requireUserHasDeposit(uint _initialDeposit) internal pure {
-        require(_initialDeposit > 0, 'StabilityPool: User must have a non-zero deposit');
+    function _requireUserHasDeposit(uint256 _initialDeposit) internal pure {
+        require(_initialDeposit > 0, "StabilityPool: User must have a non-zero deposit");
     }
 
-     function _requireUserHasNoDeposit(address _address) internal view {
-        uint initialDeposit = deposits[_address].initialValue;
-        require(initialDeposit == 0, 'StabilityPool: User must have no deposit');
+    function _requireUserHasNoDeposit(address _address) internal view {
+        uint256 initialDeposit = deposits[_address].initialValue;
+        require(initialDeposit == 0, "StabilityPool: User must have no deposit");
     }
 
-    function _requireNonZeroAmount(uint _amount) internal pure {
-        require(_amount > 0, 'StabilityPool: Amount must be non-zero');
+    function _requireNonZeroAmount(uint256 _amount) internal pure {
+        require(_amount > 0, "StabilityPool: Amount must be non-zero");
     }
 
-    function _requireUserHasTrove(address _depositor) internal view {
-        require(troveManager.getTroveStatus(_depositor) == 1, "StabilityPool: caller must have an active trove to withdraw ETHGain to");
+    function _requireTroveIsActive(uint256 _troveId) internal view {
+        require(troveManager.checkTroveIsActive(_troveId), "StabilityPool: trove must be active to withdraw ETHGain to");
     }
 
     function _requireUserHasETHGain(address _depositor) internal view {
-        uint ETHGain = getDepositorETHGain(_depositor);
+        uint256 ETHGain = getDepositorETHGain(_depositor);
         require(ETHGain > 0, "StabilityPool: caller must have non-zero ETH Gain");
     }
 
-    function  _requireValidKickbackRate(uint _kickbackRate) internal pure {
-        require (_kickbackRate <= DECIMAL_PRECISION, "StabilityPool: Kickback rate must be in range [0,1]");
-    }
-
-    // --- Fallback function ---
-
-    receive() external payable {
-        _requireCallerIsActivePool();
-        ETH = ETH + msg.value;
-        emit StabilityPoolETHBalanceUpdated(ETH);
+    function _requireValidKickbackRate(uint256 _kickbackRate) internal pure {
+        require(_kickbackRate <= DECIMAL_PRECISION, "StabilityPool: Kickback rate must be in range [0,1]");
     }
 }

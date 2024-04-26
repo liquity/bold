@@ -1,10 +1,8 @@
-
 pragma solidity 0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 
 contract Deployment is DevTestSetup {
-
     function testContractsDeployed() public {
         assertNotEq(address(activePool), address(0));
         assertNotEq(address(boldToken), address(0));
@@ -15,6 +13,7 @@ contract Deployment is DevTestSetup {
         assertNotEq(address(sortedTroves), address(0));
         assertNotEq(address(stabilityPool), address(0));
         assertNotEq(address(troveManager), address(0));
+        assertNotEq(address(mockInterestRouter), address(0));
         logContractAddresses();
     }
 
@@ -64,6 +63,12 @@ contract Deployment is DevTestSetup {
     }
 
     // Active Pool
+
+    function testActivePoolHasCorrectInterestRouterAddress() public {
+        address interestRouter = address(mockInterestRouter);
+        address recordedInterestRouterAddress = address(activePool.interestRouter());
+        assertEq(interestRouter, recordedInterestRouterAddress);
+    }
 
     function testActivePoolHasCorrectStabilityPoolAddress() public {
         address stabilityPoolAddress = address(stabilityPool);

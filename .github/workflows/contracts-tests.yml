@@ -1,0 +1,190 @@
+name: Contracts Tests
+
+# This workflow:
+# - Runs the Foundry tests
+# - Checks for console imports in the contracts
+# - Runs the Hardhat tests
+# - Generates a coverage report (currently disabled)
+
+defaults:
+  run:
+    working-directory: contracts
+
+env:
+  FOUNDRY_PROFILE: ci
+  FOUNDRY_VERSION: nightly-f625d0fa7c51e65b4bf1e8f7931cd1c6e2e285e9
+  CI: true
+  FORCE_COLOR: true
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/contracts.yml"
+      - "contracts/**"
+  pull_request:
+    paths:
+      - ".github/workflows/contracts.yml"
+      - "contracts/**"
+
+jobs:
+  test-foundry:
+    name: Foundry tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: ${{ env.FOUNDRY_VERSION }}
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Run Forge tests
+        run: |
+          forge test -vvv
+        id: test
+
+  console-logs:
+    name: Console imports check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Check console imports
+        working-directory: contracts
+        run: >-
+          ! grep -R console src | grep import | grep -v "://" | grep -v TestContracts | grep -v ExternalContracts  | grep -v "\.t\.sol"
+
+  test-hardhat:
+    name: Hardhat tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".node-version"
+          cache: "pnpm"
+          cache-dependency-path: "pnpm-lock.yaml"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: ${{ env.FOUNDRY_VERSION }}
+
+      - name: Test contracts
+        run: pnpm test
+
+  coverage:
+    if: false
+    name: Coverage
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Foundry
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: ${{ env.FOUNDRY_VERSION }}
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
+
+      - name: Run Forge coverage
+        run: |
+          forge coverage --report lcov --report-file lcov_foundry.info
+        id: coverage
+
+      - name: Install lcov
+        run: sudo apt-get -y install lcov
+
+      #- name: Filter out tests from coverage
+      #  run: |
+      #    lcov --remove lcov_foundry.info -o lcov_foundry.info 'src/test/*'
+      #  id: coverage_filter
+
+      # Hardhat
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".node-version"
+          cache: "pnpm"
+          cache-dependency-path: "pnpm-lock.yaml"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: harhdat coverage
+        run: pnpm coverage
+        continue-on-error: true
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      # Merge
+      - name: Merge coverage reports
+        id: coverage_merge
+        run: |
+          lcov \
+              --rc lcov_branch_coverage=1 \
+              --add-tracefile lcov_foundry.info \
+              --add-tracefile coverage/lcov.info \
+              --output-file lcov_merged.info
+
+      # Filter
+      - name: Filter out tests from coverage
+        run: |
+          lcov --remove lcov_merged.info -o lcov_merged.info \
+              'src/test/*' \
+              'src/TestContracts/*' \
+              'src/OldTestContracts/*' \
+              'src/Dependencies/*' \
+              'src/Interfaces/*'
+        id: coverage_filter
+
+      # Send to coveralls
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          base-path: ./contracts/
+          path-to-lcov: ./contracts/lcov_merged.info
+          debug: true

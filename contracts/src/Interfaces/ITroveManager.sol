@@ -2,13 +2,15 @@
 
 pragma solidity 0.8.18;
 
+import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
+
 import "./ILiquityBase.sol";
 import "./IStabilityPool.sol";
 import "./IBoldToken.sol";
 import "./ISortedTroves.sol";
 
 // Common interface for the Trove Manager.
-interface ITroveManager is ILiquityBase {
+interface ITroveManager is IERC721, ILiquityBase {
     function setAddresses(
         address _borrowerOperationsAddress,
         address _activePoolAddress,
@@ -23,91 +25,107 @@ interface ITroveManager is ILiquityBase {
 
     function stabilityPool() external view returns (IStabilityPool);
     function boldToken() external view returns (IBoldToken);
-    function sortedTroves() external view returns(ISortedTroves);
+    function sortedTroves() external view returns (ISortedTroves);
     function borrowerOperationsAddress() external view returns (address);
 
-    function BOOTSTRAP_PERIOD() external view returns (uint256);
-    
-    function getTroveOwnersCount() external view returns (uint);
+    // function BOLD_GAS_COMPENSATION() external view returns (uint256);
 
-    function getTroveFromTroveOwnersArray(uint _index) external view returns (address);
+    function baseRate() external view returns (uint256);
 
-    function getNominalICR(address _borrower) external view returns (uint);
-    function getCurrentICR(address _borrower, uint _price) external view returns (uint);
+    function getTroveIdsCount() external view returns (uint256);
 
-    function liquidate(address _borrower) external;
+    function getTroveFromTroveIdsArray(uint256 _index) external view returns (uint256);
 
-    function liquidateTroves(uint _n) external;
+    function getCurrentICR(uint256 _troveId, uint256 _price) external view returns (uint256);
 
-    function batchLiquidateTroves(address[] calldata _troveArray) external;
+    function liquidate(uint256 _troveId) external;
 
-    function redeemCollateral(
-        uint _boldAmount,
-        address _firstRedemptionHint,
-        address _upperPartialRedemptionHint,
-        address _lowerPartialRedemptionHint,
-        uint _partialRedemptionHintNICR,
-        uint _maxIterations,
-        uint _maxFee
-    ) external; 
+    function batchLiquidateTroves(uint256[] calldata _troveArray) external;
 
-    function updateStakeAndTotalStakes(address _borrower) external returns (uint);
+    function redeemCollateral(uint256 _boldAmount, uint256 _maxIterations, uint256 _maxFee) external;
 
-    function updateTroveRewardSnapshots(address _borrower) external;
+    function updateStakeAndTotalStakes(uint256 _troveId) external returns (uint256);
 
-    function addTroveOwnerToArray(address _borrower) external returns (uint index);
+    function getPendingETHReward(uint256 _troveId) external view returns (uint256);
 
-    function applyPendingRewards(address _borrower) external;
+    function getPendingBoldDebtReward(uint256 _troveId) external view returns (uint256);
 
-    function getPendingETHReward(address _borrower) external view returns (uint);
+    function hasRedistributionGains(uint256 _troveId) external view returns (bool);
 
-    function getPendingBoldDebtReward(address _borrower) external view returns (uint);
+    function getEntireDebtAndColl(uint256 _troveId)
+        external
+        view
+        returns (
+            uint256 entireDebt,
+            uint256 entireColl,
+            uint256 pendingBoldDebtReward,
+            uint256 pendingETHReward,
+            uint256 pendingBoldInterest
+        );
 
-     function hasPendingRewards(address _borrower) external view returns (bool);
+    function getTroveEntireDebt(uint256 _troveId) external view returns (uint256);
 
-    function getEntireDebtAndColl(address _borrower) external view returns (
-        uint debt, 
-        uint coll, 
-        uint pendingBoldDebtReward, 
-        uint pendingETHReward
-    );
+    function getTroveEntireColl(uint256 _troveId) external view returns (uint256);
 
-    function closeTrove(address _borrower) external;
+    function getAndApplyRedistributionGains(uint256 _troveId) external returns (uint256, uint256);
 
-    function removeStake(address _borrower) external;
+    function closeTrove(uint256 _troveId) external;
 
-    function getRedemptionRate() external view returns (uint);
-    function getRedemptionRateWithDecay() external view returns (uint);
+    function removeStake(uint256 _troveId) external;
 
-    function getRedemptionFeeWithDecay(uint _ETHDrawn) external view returns (uint);
+    function getRedemptionRate() external view returns (uint256);
+    function getRedemptionRateWithDecay() external view returns (uint256);
 
-    function getBorrowingRate() external view returns (uint);
-    function getBorrowingRateWithDecay() external view returns (uint);
+    function getRedemptionFeeWithDecay(uint256 _ETHDrawn) external view returns (uint256);
 
-    function getBorrowingFee(uint BoldDebt) external view returns (uint);
-    function getBorrowingFeeWithDecay(uint _boldDebt) external view returns (uint);
+    function getTroveStatus(uint256 _troveId) external view returns (uint256);
 
-    function decayBaseRateFromBorrowing() external;
+    function getTroveStake(uint256 _troveId) external view returns (uint256);
 
-    function getTroveStatus(address _borrower) external view returns (uint);
-    
-    function getTroveStake(address _borrower) external view returns (uint);
+    function getTroveDebt(uint256 _troveId) external view returns (uint256);
 
-    function getTroveDebt(address _borrower) external view returns (uint);
+    function getTroveWeightedRecordedDebt(uint256 _troveId) external returns (uint256);
 
-    function getTroveColl(address _borrower) external view returns (uint);
+    function getTroveColl(uint256 _troveId) external view returns (uint256);
 
-    function setTroveStatus(address _borrower, uint num) external;
+    function getTroveAnnualInterestRate(uint256 _troveId) external view returns (uint256);
 
-    function increaseTroveColl(address _borrower, uint _collIncrease) external returns (uint);
+    function calcTroveAccruedInterest(uint256 _troveId) external view returns (uint256);
 
-    function decreaseTroveColl(address _borrower, uint _collDecrease) external returns (uint); 
+    function TroveAddManagers(uint256 _troveId) external view returns (address);
+    function TroveRemoveManagers(uint256 _troveId) external view returns (address);
 
-    function increaseTroveDebt(address _borrower, uint _debtIncrease) external returns (uint); 
+    function getTroveLastDebtUpdateTime(uint256 _troveId) external view returns (uint256);
 
-    function decreaseTroveDebt(address _borrower, uint _collDecrease) external returns (uint); 
+    function setTrovePropertiesOnOpen(
+        address _owner,
+        uint256 _troveId,
+        uint256 _coll,
+        uint256 _debt,
+        uint256 _annualInterestRate
+    ) external returns (uint256, uint256);
 
-    function getTCR(uint _price) external view returns (uint);
+    function troveIsStale(uint256 _troveId) external view returns (bool);
 
-    function checkRecoveryMode(uint _price) external view returns (bool);
+    function changeAnnualInterestRate(uint256 _troveId, uint256 _newAnnualInterestRate) external;
+
+    function updateTroveDebtAndInterest(uint256 _troveId, uint256 _entireTroveDebt, uint256 _newAnnualInterestRate)
+        external;
+
+    function updateTroveDebtFromInterestApplication(uint256 _troveId, uint256 _entireTroveDebt) external;
+
+    function updateTroveDebt(address _sender, uint256 _troveId, uint256 _entireTroveDebt, bool _isDebtIncrease)
+        external;
+
+    function updateTroveColl(address _sender, uint256 _troveId, uint256 _entireTroveColl, bool _isCollIncrease)
+        external;
+
+    function setAddManager(address _sender, uint256 _troveId, address _manager) external;
+    function setRemoveManager(address _sender, uint256 _troveId, address _manager) external;
+
+    function getTCR(uint256 _price) external view returns (uint256);
+
+    function checkRecoveryMode(uint256 _price) external view returns (bool);
+
+    function checkTroveIsActive(uint256 _troveId) external view returns (bool);
 }
