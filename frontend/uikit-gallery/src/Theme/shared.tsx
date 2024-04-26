@@ -1,93 +1,6 @@
 "use client";
 
-import { brand, colors, lightTheme } from "@liquity2/uikit";
-
-export default function ThemeFixture() {
-  return (
-    <div
-      style={{
-        display: "grid",
-        placeItems: "center",
-        padding: 64,
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: 32,
-          width: 640,
-        }}
-      >
-        <ColorGroup
-          name="Brand"
-          colors={brand}
-        />
-        <ColorGroup
-          name="Blue"
-          colors={filterColors(colors, "blue:")}
-        />
-        <ColorGroup
-          name="Gray"
-          colors={filterColors(colors, "gray:")}
-        />
-        <ColorGroup
-          name="Yellow"
-          colors={filterColors(colors, "yellow:")}
-        />
-        <ColorGroup
-          name="Green"
-          colors={filterColors(colors, "green:")}
-        />
-        <ColorGroup
-          name="Red"
-          colors={filterColors(colors, "red:")}
-        />
-        <ColorGroup
-          name="Miscellaneous"
-          colors={filterColors(colors, (name) => (
-            name.includes(":") ? null : name
-          ))}
-        />
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            width: "100%",
-          }}
-        >
-          <ColorGroup
-            name="Light Theme"
-            mode="vertical"
-            colors={Object.fromEntries(
-              Object
-                .entries(lightTheme.colors)
-                .map(([key, value]) => [
-                  key,
-                  colors[value],
-                ]),
-            )}
-            secondary={(name) => lightTheme.colors[name as keyof typeof lightTheme.colors]}
-          />
-          <ColorGroup
-            name="Dark Theme"
-            mode="vertical"
-            colors={Object.fromEntries(
-              Object
-                .entries(lightTheme.colors)
-                .map(([key]) => [key, "white"]),
-            )}
-            secondary={() => "tbd"}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ColorGroup({
+export function ColorGroup({
   colors,
   mode = "horizontal",
   name,
@@ -137,7 +50,7 @@ function ColorGroup({
   );
 }
 
-function Color({
+export function Color({
   name,
   rowMode = false,
   secondary,
@@ -207,11 +120,11 @@ function Color({
   );
 }
 
-function camelCaseToSpaces(value: string) {
+export function camelCaseToSpaces(value: string) {
   return value.replace(/([A-Z])/g, " $1");
 }
 
-function filterColors(
+export function filterColors(
   colors: Record<string, string>,
   filter: string | ((value: string) => string | null),
 ) {
