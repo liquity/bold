@@ -40,7 +40,7 @@ contract SPInvariantsTest is Test {
         assert(actors.length == actorLabels.length);
     }
 
-    function invariant_allFundsClaimable() external {
+    function invariant_allFundsClaimable() external view {
         uint256 stabilityPoolEth = stabilityPool.getETHBalance();
         uint256 stabilityPoolBold = stabilityPool.getTotalBoldDeposits();
         uint256 claimableEth = 0;
