@@ -136,7 +136,8 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     function sendETH(address _account, uint256 _amount) external override {
         _requireCallerIsBOorTroveMorSP();
 
-        _accountForSendETH(_account, _amount);
+        emit ActivePoolETHBalanceUpdated(ETHBalance -= _amount);
+        emit EtherSent(_account, _amount);
 
         ETH.safeTransfer(_account, _amount);
     }
@@ -144,17 +145,10 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     function sendETHToDefaultPool(uint256 _amount) external override {
         _requireCallerIsTroveManager();
 
-        address defaultPoolAddressCached = defaultPoolAddress;
-        _accountForSendETH(defaultPoolAddressCached, _amount);
+        emit ActivePoolETHBalanceUpdated(ETHBalance -= _amount);
+        emit EtherSent(defaultPoolAddress, _amount);
 
-        IDefaultPool(defaultPoolAddressCached).receiveETH(_amount);
-    }
-
-    function _accountForSendETH(address _account, uint256 _amount) internal {
-        uint256 newETHBalance = ETHBalance - _amount;
-        ETHBalance = newETHBalance;
-        emit ActivePoolETHBalanceUpdated(newETHBalance);
-        emit EtherSent(_account, _amount);
+        IDefaultPool(defaultPoolAddress).receiveETH(_amount);
     }
 
     function receiveETH(uint256 _amount) external {
@@ -163,16 +157,12 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         // Pull ETH tokens from sender
         ETH.safeTransferFrom(msg.sender, address(this), _amount);
 
-        accountForReceivedETH(_amount);
+        emit ActivePoolETHBalanceUpdated(ETHBalance += _amount);
     }
 
-    function accountForReceivedETH(uint256 _amount) public {
+    function accountForReceivedETH(uint256 _amount) external {
         _requireCallerIsBorrowerOperationsOrDefaultPool();
-
-        uint256 newETHBalance = ETHBalance + _amount;
-        ETHBalance = newETHBalance;
-
-        emit ActivePoolETHBalanceUpdated(newETHBalance);
+        emit ActivePoolETHBalanceUpdated(ETHBalance += _amount);
     }
 
     function increaseRecordedDebtSum(uint256 _amount) external {
