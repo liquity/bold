@@ -600,37 +600,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         }
     }
 
-    function _getTotalsFromLiquidateTrovesSequence_NormalMode(
-        IActivePool _activePool,
-        IDefaultPool _defaultPool,
-        uint256 _price,
-        uint256 _boldInStabPool,
-        uint256 _n
-    ) internal returns (LiquidationTotals memory totals) {
-        LocalVariables_LiquidationSequence memory vars;
-        LiquidationValues memory singleLiquidation;
-        ISortedTroves sortedTrovesCached = sortedTroves;
-
-        vars.remainingBoldInStabPool = _boldInStabPool;
-
-        for (vars.i = 0; vars.i < _n; vars.i++) {
-            vars.troveId = sortedTrovesCached.getLast();
-            vars.ICR = getCurrentICR(vars.troveId, _price);
-
-            if (vars.ICR < MCR) {
-                singleLiquidation =
-                    _liquidateNormalMode(_activePool, _defaultPool, vars.troveId, vars.remainingBoldInStabPool);
-
-                vars.remainingBoldInStabPool = vars.remainingBoldInStabPool - singleLiquidation.debtToOffset;
-
-                // Add liquidation values to their respective running totals
-                totals = _addLiquidationValuesToTotals(totals, singleLiquidation);
-            } else {
-                break;
-            } // break if the loop reaches a Trove with ICR >= MCR
-        }
-    }
-
     /*
     * Attempt to liquidate a custom list of troves provided by the caller.
     */
