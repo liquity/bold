@@ -1,0 +1,2 @@
+slither-analyzer==0.10.0
+slitherin==0.5.0

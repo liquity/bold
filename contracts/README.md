@@ -57,10 +57,29 @@ $ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --pri
 $ cast <subcommand>
 ```
 
-### Help
+## Slither
+
+Create a local Python env:
 
 ```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+python3 -m venv .venv
+```
+
+Install slither:
+
+```shell
+pip3 install -r requirements.txt
+```
+
+Install and use Solidity compiler:
+
+```shell
+solc-select install 0.8.18
+solc-select use 0.8.18
+```
+
+Run slither:
+
+```shell
+slither src
 ```
