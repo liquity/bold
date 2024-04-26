@@ -1312,9 +1312,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
     }
 
     // Push the trove's id to the Trove list, and record the corresponding array index on the Trove struct
-    function addTroveIdToArray(uint256 _troveId) external override returns (uint256) {
-        _requireCallerIsBorrowerOperations();
-
+    function _addTroveIdToArray(uint256 _troveId) internal returns (uint256) {
         /* Max array size is 2**128 - 1, i.e. ~3e30 troves. No risk of overflow, since troves have minimum Bold
         debt of liquidation reserve plus MIN_NET_DEBT. 3e30 Bold dwarfs the value of all wealth in the world ( which is < 1e15 USD). */
 
@@ -1571,7 +1569,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         uint256 _coll,
         uint256 _debt,
         uint256 _annualInterestRate
-    ) external returns (uint256) {
+    ) external returns (uint256, uint256) {
         _requireCallerIsBorrowerOperations();
         // TODO: optimize gas for writing to this struct
         Troves[_troveId].status = Status.active;
@@ -1584,8 +1582,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         // mint ERC721
         _mint(_owner, _troveId);
 
+        uint256 index = _addTroveIdToArray(_troveId);
+
         // Record the Trove's stake (for redistributions) and update the total stakes
-        return _updateStakeAndTotalStakes(_troveId);
+        uint256 stake = _updateStakeAndTotalStakes(_troveId);
+        return (stake, index);
     }
 
     function updateTroveDebtAndInterest(uint256 _troveId, uint256 _entireTroveDebt, uint256 _newAnnualInterestRate)

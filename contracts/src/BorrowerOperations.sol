@@ -209,12 +209,11 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         );
 
         // Set the stored Trove properties and mint the NFT
-        vars.stake = contractsCache.troveManager.setTrovePropertiesOnOpen(
+        (vars.stake, vars.arrayIndex) = contractsCache.troveManager.setTrovePropertiesOnOpen(
             _owner, troveId, _ETHAmount, vars.compositeDebt, _annualInterestRate
         );
 
         sortedTroves.insert(troveId, _annualInterestRate, _upperHint, _lowerHint);
-        vars.arrayIndex = contractsCache.troveManager.addTroveIdToArray(troveId);
         emit TroveCreated(_owner, troveId, vars.arrayIndex);
 
         // Pull ETH tokens from sender and move them to the Active Pool
