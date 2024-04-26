@@ -167,6 +167,8 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     }
 
     function accountForReceivedETH(uint256 _amount) public {
+        _requireCallerIsBorrowerOperationsOrDefaultPool();
+
         uint256 newETHBalance = ETHBalance + _amount;
         ETHBalance = newETHBalance;
 
