@@ -34,14 +34,4 @@ contract BorrowerOperationsTester is BorrowerOperations {
     function getUSDValue(uint256 _coll, uint256 _price) external pure returns (uint256) {
         return _getUSDValue(_coll, _price);
     }
-
-    function callInternalAdjustLoan(
-        uint256 _troveId,
-        uint256 _collWithdrawal,
-        uint256 _debtChange,
-        bool _isDebtIncrease
-    ) external {
-        // TODO: Add coll increase
-        _adjustTrove(msg.sender, _troveId, _collWithdrawal, false, _debtChange, _isDebtIncrease, 0);
-    }
 }

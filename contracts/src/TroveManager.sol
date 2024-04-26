@@ -768,7 +768,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         if (_getNetDebt(singleRedemption.newRecordedTroveDebt) < MIN_NET_DEBT) {
             Troves[_troveId].status = Status.unredeemable;
             sortedTroves.remove(_troveId);
-            // TODO: should we also remove from the TroveId? Seems unneccessary as it's only used for off-chain hints. W
+            // TODO: should we also remove from the Troves array? Seems unneccessary as it's only used for off-chain hints. 
             // We save borrowers gas by not removing 
         }
         Troves[_troveId].debt = singleRedemption.newRecordedTroveDebt;
@@ -835,13 +835,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             _maxIterations--;
             // Save the uint256 of the Trove preceding the current one
             uint256 nextUserToCheck = contractsCache.sortedTroves.getPrev(currentTroveId);
-<<<<<<< HEAD
             // Skip if ICR < 100%, to make sure that redemptions always improve the CR of hit Troves
             if (getCurrentICR(currentTroveId, _price) < _100pct) {
-=======
-            // Skip Trove if ICR < 100%, to make sure that redemptions always improve the CR of hit Troves
-            if (getCurrentICR(currentTroveId, totals.price) < _100pct) {
->>>>>>> 1f34979 (Implement zombie trove logic)
                 currentTroveId = nextUserToCheck;
                 continue;
             }
@@ -1234,102 +1229,20 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         return TCR < CCR;
     }
-
-<<<<<<< HEAD
-=======
-    // --- Redemption fee functions ---
-
-    /*
-    * This function has two impacts on the baseRate state variable:
-    * 1) decays the baseRate based on time passed since last redemption or Bold borrowing operation.
-    * then,
-    * 2) increases the baseRate based on the amount redeemed, as a proportion of total supply
-    */
-    function _updateBaseRateFromRedemption(uint256 _ETHDrawn, uint256 _price, uint256 _totalBoldSupply)
-        internal
-        returns (uint256)
-    {
-        uint256 decayedBaseRate = _calcDecayedBaseRate();
-
-        /* Convert the drawn ETH back to Bold at face value rate (1 Bold:1 USD), in order to get
-        * the fraction of total supply that was redeemed at face value. */
-        uint256 redeemedBoldFraction = _ETHDrawn * _price / _totalBoldSupply;
-
-        uint256 newBaseRate = decayedBaseRate + redeemedBoldFraction / BETA;
-        newBaseRate = LiquityMath._min(newBaseRate, DECIMAL_PRECISION); // cap baseRate at a maximum of 100%
-        //assert(newBaseRate <= DECIMAL_PRECISION); // This is already enforced in the line above
-        assert(newBaseRate > 0); // Base rate is always non-zero after redemption
-
-        // Update the baseRate state variable
-        baseRate = newBaseRate;
-        emit BaseRateUpdated(newBaseRate);
-
-        _updateLastFeeOpTime();
-
-        return newBaseRate;
-    }
-
-    function getRedemptionRate() public view override returns (uint256) {
-        return _calcRedemptionRate(baseRate);
-    }
-
-    function getRedemptionRateWithDecay() public view override returns (uint256) {
-        return _calcRedemptionRate(_calcDecayedBaseRate());
-    }
-
-    function _calcRedemptionRate(uint256 _baseRate) internal pure returns (uint256) {
-        return LiquityMath._min(
-            REDEMPTION_FEE_FLOOR + _baseRate,
-            DECIMAL_PRECISION // cap at a maximum of 100%
-        );
-    }
-
-    function _getRedemptionFee(uint256 _ETHDrawn) internal view returns (uint256) {
-        return _calcRedemptionFee(getRedemptionRate(), _ETHDrawn);
-    }
-
-    function getRedemptionFeeWithDecay(uint256 _ETHDrawn) external view override returns (uint256) {
-        return _calcRedemptionFee(getRedemptionRateWithDecay(), _ETHDrawn);
-    }
-
-    function _calcRedemptionFee(uint256 _redemptionRate, uint256 _ETHDrawn) internal pure returns (uint256) {
-        uint256 redemptionFee = _redemptionRate * _ETHDrawn / DECIMAL_PRECISION;
-        require(redemptionFee < _ETHDrawn, "TroveManager: Fee would eat up all returned collateral");
-        return redemptionFee;
-    }
-
-    // --- Internal fee functions ---
-
-    // Update the last fee operation time only if time passed >= decay interval. This prevents base rate griefing.
-    function _updateLastFeeOpTime() internal {
-        uint256 timePassed = block.timestamp - lastFeeOperationTime;
-
-        if (timePassed >= SECONDS_IN_ONE_MINUTE) {
-            lastFeeOperationTime = block.timestamp;
-            emit LastFeeOpTimeUpdated(block.timestamp);
-        }
-    }
-
-    function _calcDecayedBaseRate() internal view returns (uint256) {
-        uint256 minutesPassed = _minutesPassedSinceLastFeeOp();
-        uint256 decayFactor = LiquityMath._decPow(MINUTE_DECAY_FACTOR, minutesPassed);
-
-        return baseRate * decayFactor / DECIMAL_PRECISION;
-    }
-
-    function _minutesPassedSinceLastFeeOp() internal view returns (uint256) {
-        return (block.timestamp - lastFeeOperationTime) / SECONDS_IN_ONE_MINUTE;
-    }
-
+    
     function checkTroveIsOpen(uint256 _troveId) public view returns (bool) {
         Status status = Troves[_troveId].status;
         return status == Status.active || status == Status.unredeemable;
     }
-
->>>>>>> 1f34979 (Implement zombie trove logic)
+    
     function checkTroveIsActive(uint256 _troveId) public view returns (bool) {
         Status status = Troves[_troveId].status;
         return status == Status.active;
+    }
+
+    function checkTroveIsUnredeemable(uint256 _troveId) public view returns (bool) {
+        Status status = Troves[_troveId].status;
+        return status == Status.unredeemable;
     }
 
     function _getRedemptionFee(uint256 _ETHDrawn, uint256 _redemptionRate) internal pure returns (uint256) {
@@ -1372,17 +1285,12 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         );
     }
 
-<<<<<<< HEAD
     function _requireIsCollateralRegistry() internal view {
         require(msg.sender == collateralRegistryAddress, "TroveManager: Caller is not the CollateralRegistry contract");
     }
 
-    function _requireTroveIsActive(uint256 _troveId) internal view {
-        require(checkTroveIsActive(_troveId), "TroveManager: Trove does not exist or is closed");
-=======
     function _requireTroveIsOpen(uint256 _troveId) internal view {
         require(checkTroveIsOpen(_troveId), "TroveManager: Trove does not exist or is closed");
->>>>>>> 1f34979 (Implement zombie trove logic)
     }
 
     function _requireMoreThanOneTroveInSystem(uint256 TroveIdsArrayLength) internal view {
@@ -1460,6 +1368,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         // Record the Trove's stake (for redistributions) and update the total stakes
         uint256 stake = _updateStakeAndTotalStakes(_troveId);
         return (stake, index);
+    }
+
+    function setTroveStatusToActive(uint256 _troveId) external {
+        _requireCallerIsBorrowerOperations();
+        Troves[_troveId].status = Status.active;
     }
 
     function updateTroveDebtAndInterest(uint256 _troveId, uint256 _entireTroveDebt, uint256 _newAnnualInterestRate)

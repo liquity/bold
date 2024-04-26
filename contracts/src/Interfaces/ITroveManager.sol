@@ -105,6 +105,8 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _annualInterestRate
     ) external returns (uint256, uint256);
 
+    function setTroveStatusToActive(uint256 _troveId) external;
+
     function troveIsStale(uint256 _troveId) external view returns (bool);
 
     function changeAnnualInterestRate(uint256 _troveId, uint256 _newAnnualInterestRate) external;
@@ -132,4 +134,5 @@ interface ITroveManager is IERC721, ILiquityBase {
     function checkTroveIsActive(uint256 _troveId) external view returns (bool);
 
     function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool);
+    function checkTroveIsUnredeemable(uint256 _troveId) external view returns (bool);
 }

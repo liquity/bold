@@ -56,6 +56,17 @@ interface IBorrowerOperations is ILiquityBase {
         bool isDebtIncrease
     ) external;
 
+    function adjustUnredeemableTrove(
+         uint256 _troveId,
+        uint256 _maxFeePercentage,
+        uint256 _collChange,
+        bool _isCollIncrease,
+        uint256 _boldChange,
+        bool _isDebtIncrease,
+        uint256 _upperHint,
+        uint256 _lowerHint
+    ) external;
+    
     function claimCollateral(uint256 _troveId) external;
 
     function setAddManager(uint256 _troveId, address _manager) external;
