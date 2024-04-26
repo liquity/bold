@@ -1,13 +1,13 @@
-import type { ComponentProps, ReactElement, ReactNode } from "react";
+import type { ComponentProps, ReactElement } from "react";
 
 import { Children } from "react";
 import { css } from "../../styled-system/css";
-import tokenBold from "./icons/BOLD.svg";
-import tokenEth from "./icons/ETH.svg";
-import tokenOseth from "./icons/OSETH.svg";
-import tokenReth from "./icons/RETH.svg";
-import tokenSweth from "./icons/SWETH.svg";
-import tokenWsteth from "./icons/WSTETH.svg";
+import tokenBold from "./icons/bold.svg";
+import tokenEth from "./icons/eth.svg";
+import tokenOseth from "./icons/oseth.svg";
+import tokenReth from "./icons/reth.svg";
+import tokenSweth from "./icons/sweth.svg";
+import tokenWsteth from "./icons/wsteth.svg";
 
 export type IconName = "BOLD" | "ETH" | "OSETH" | "RETH" | "SWETH" | "WSTETH";
 
