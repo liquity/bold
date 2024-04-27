@@ -1,16 +1,22 @@
 "use client";
 
 import { Tabs } from "@liquity2/uikit";
-import { useState } from "react";
-
-const items = [
-  { label: "Deposit", panelId: "deposit", tabId: "deposit" },
-  { label: "Withdraw", panelId: "withdraw", tabId: "withdraw" },
-  { label: "Claim Rewards", panelId: "claimRewards", tabId: "claimRewards" },
-];
+import { useEffect, useState } from "react";
+import { useFixtureInput } from "react-cosmos/client";
 
 export default function Fixture() {
   const [selected, setSelected] = useState(0);
+  const [tabs] = useFixtureInput("tabs", 3);
+  const items = Array.from(
+    { length: Math.max(2, tabs) },
+    (_, i) => `Item ${i + 1}`,
+  );
+
+  const [idPrefix, setIdPrefix] = useState("");
+  useEffect(() => {
+    setIdPrefix(String(Date.now()));
+  }, [tabs]);
+
   return (
     <div
       style={{
@@ -21,7 +27,11 @@ export default function Fixture() {
       }}
     >
       <Tabs
-        items={items}
+        items={items.map((label, index) => ({
+          label,
+          panelId: `${idPrefix}${index}-panel`,
+          tabId: `${idPrefix}${index}-tab`,
+        }))}
         onSelect={setSelected}
         selected={selected}
       />

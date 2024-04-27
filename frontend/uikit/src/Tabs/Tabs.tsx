@@ -77,6 +77,7 @@ export function Tabs({
   }, [
     selected,
     width, // update on container width change too
+    items,
   ]);
 
   return (
@@ -84,6 +85,7 @@ export function Tabs({
       ref={container}
       role="tablist"
       className={css({
+        overflow: "hidden",
         display: "flex",
         width: "100%",
         height: 44,
@@ -171,10 +173,13 @@ function Tab({
         alignItems: "center",
         justifyContent: "center",
         height: "100%",
-        padding: 0,
+        padding: "0 16px",
         fontSize: 16,
         color: "interactive",
         cursor: "pointer",
+        whiteSpace: "nowrap",
+        textOverflow: "ellipsis",
+        overflow: "hidden",
         _active: {
           translate: "0 1px",
         },
