@@ -189,13 +189,13 @@ contract Redemptions is DevTestSetup {
         redeem(E, redeemAmount);
 
         // Check B's debt unchanged from redeemAmount < debt_B;
-        assertEq(debt_B, troveManager.getTroveEntireDebt(troveIDs.B)); 
+        assertEq(debt_B, troveManager.getTroveEntireDebt(troveIDs.B));
 
         redeemAmount = debt_B + 1;
         redeem(E, redeemAmount);
 
         // Check B's debt unchanged from redeemAmount > debt_B;
-        assertEq(debt_B, troveManager.getTroveEntireDebt(troveIDs.B)); 
+        assertEq(debt_B, troveManager.getTroveEntireDebt(troveIDs.B));
     }
 
     function testZombieTrovesCanReceiveRedistGains() public {
@@ -268,13 +268,13 @@ contract Redemptions is DevTestSetup {
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
-        assertLt(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.MIN_NET_DEBT()); 
+        assertLt(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.MIN_NET_DEBT());
         assertLt(troveManager.getTroveEntireDebt(troveIDs.B),  troveManager.MIN_NET_DEBT());
 
         // 100 years passes
         vm.warp(block.timestamp + 36500 days);
 
-        assertGt(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.MIN_NET_DEBT()); 
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.MIN_NET_DEBT());
         assertGt(troveManager.getTroveEntireDebt(troveIDs.B),  troveManager.MIN_NET_DEBT());
     }
 
@@ -301,7 +301,7 @@ contract Redemptions is DevTestSetup {
         // assertFalse(troveManager.checkRecoveryMode(price));
         assertLt(troveManager.getCurrentICR(troveID_E, price), troveManager.MCR());
 
-        assertLt(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.MIN_NET_DEBT()); 
+        assertLt(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.MIN_NET_DEBT());
         assertLt(troveManager.getTroveEntireDebt(troveIDs.B),  troveManager.MIN_NET_DEBT());
 
        // A liquidates E
@@ -329,8 +329,8 @@ contract Redemptions is DevTestSetup {
         assertEq(troveManager.getTroveStatus(troveIDs.A), 5); // Status 5 - 'unredeemable'
         assertEq(troveManager.getTroveStatus(troveIDs.B), 5); // Status 5 - 'unredeemable'
 
-        closeTrove(A, troveIDs.A); 
-        closeTrove(B, troveIDs.B); 
+        closeTrove(A, troveIDs.A);
+        closeTrove(B, troveIDs.B);
 
         assertEq(troveManager.getTroveStatus(troveIDs.A), 2); // Status 2 - 'closed by owner'
         assertEq(troveManager.getTroveStatus(troveIDs.B), 2); // Status 2 - 'closed by owner'
@@ -702,7 +702,7 @@ contract Redemptions is DevTestSetup {
         vm.expectRevert("BorrowerOps: Trove does not have active status");
         borrowerOperations.adjustTroveInterestRate(troveIDs.B, newInterestRate, troveIDs.B, troveIDs.B);
         vm.stopPrank();
-    } 
+    }
 
     function testZombieTroveAccruedInterestCanBePermissionlesslyApplied() public {
         ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
@@ -723,7 +723,7 @@ contract Redemptions is DevTestSetup {
 
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
-    } 
+    }
 
     function testZombieTroveCanBeLiquidated() public {
         ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
@@ -745,13 +745,13 @@ contract Redemptions is DevTestSetup {
         // assertFalse(troveManager.checkRecoveryMode(price));
         assertLt(troveManager.getCurrentICR(troveIDs.B, price), troveManager.MCR());
 
-        assertEq(troveManager.getTroveStatus(troveIDs.B), 5);        
+        assertEq(troveManager.getTroveStatus(troveIDs.B), 5);
 
         // E liquidates B
         liquidate(E, troveIDs.B);
         assertEq(troveManager.getTroveStatus(troveIDs.B), 3); // Status 3 - closed by liquidation
-    }   
+    }
 
     // TODO: tests borrower for combined adjustments - debt changes and coll add/withdrawals.
-    // Borrower should only be able to close OR leave Trove at >= min net debt.    
+    // Borrower should only be able to close OR leave Trove at >= min net debt.
 }

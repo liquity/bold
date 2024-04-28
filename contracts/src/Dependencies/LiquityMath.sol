@@ -13,6 +13,10 @@ library LiquityMath {
         return (_a >= _b) ? _a : _b;
     }
 
+    function _sub_min_0(uint256 _a, uint256 _b) internal pure returns (uint256) {
+        return (_a > _b) ? _a - _b : 0;
+    }
+
     /* 
     * Multiply two decimal numbers and use normal rounding rules:
     * -round product up if 19'th mantissa digit >= 5

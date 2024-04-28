@@ -13,7 +13,6 @@ interface IBorrowerOperations is ILiquityBase {
     function sortedTroves() external view returns (ISortedTroves);
 
     function setAddresses(
-        address _troveManagerAddress,
         address _activePoolAddress,
         address _defaultPoolAddress,
         address _stabilityPoolAddress,

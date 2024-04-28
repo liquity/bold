@@ -94,14 +94,14 @@ function _deployAndConnectCollateralContracts(IERC20 _collateralToken, IBoldToke
 
     // Deploy all contracts
     contracts.activePool = new ActivePool(address(_collateralToken));
-    contracts.borrowerOperations = new BorrowerOperations(address(_collateralToken));
+    contracts.troveManager = new TroveManager(110e16, 5e16, 10e16);
+    contracts.borrowerOperations = new BorrowerOperations(_collateralToken, contracts.troveManager);
     contracts.collSurplusPool = new CollSurplusPool(address(_collateralToken));
     contracts.defaultPool = new DefaultPool(address(_collateralToken));
     contracts.gasPool = new GasPool();
     contracts.priceFeed = new PriceFeedTestnet();
     contracts.sortedTroves = new SortedTroves();
     contracts.stabilityPool = new StabilityPool(address(_collateralToken));
-    contracts.troveManager = new TroveManager();
     contracts.interestRouter = new MockInterestRouter();
 
     _boldToken.setBranchAddresses(
@@ -129,7 +129,6 @@ function _deployAndConnectCollateralContracts(IERC20 _collateralToken, IBoldToke
 
     // set contracts in BorrowerOperations
     contracts.borrowerOperations.setAddresses(
-        address(contracts.troveManager),
         address(contracts.activePool),
         address(contracts.defaultPool),
         address(contracts.stabilityPool),
