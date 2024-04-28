@@ -704,22 +704,18 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     }
 
     function _requireTroveIsOpen(ITroveManager _troveManager, uint256 _troveId) internal view {
-        uint256 status = _troveManager.getTroveStatus(_troveId);
         require(_troveManager.checkTroveIsOpen(_troveId), "BorrowerOps: Trove does not exist or is closed");
     }
 
     function _requireTroveIsActive(ITroveManager _troveManager, uint256 _troveId) internal view {
-        uint256 status = _troveManager.getTroveStatus(_troveId);
         require(_troveManager.checkTroveIsActive(_troveId), "BorrowerOps: Trove does not have active status");
     }
 
     function _requireTroveIsUnredeemable(ITroveManager _troveManager, uint256 _troveId) internal view {
-        uint256 status = _troveManager.getTroveStatus(_troveId);
         require(_troveManager.checkTroveIsUnredeemable(_troveId), "BorrowerOps: Trove does not have unredeemable status");
     }
 
-    function _requireTroveIsNotOpen(ITroveManager _troveManager, uint256 _troveId) internal view {
-        uint256 status = _troveManager.getTroveStatus(_troveId);
+    function _requireTroveIsNotOpen(ITroveManager _troveManager, uint256 _troveId) internal view {       
         require(!_troveManager.checkTroveIsOpen(_troveId),"BorrowerOps: Trove is open");
     }
 

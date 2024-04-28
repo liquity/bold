@@ -1234,13 +1234,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         Status status = Troves[_troveId].status;
         return status == Status.active || status == Status.unredeemable;
     }
-    
-    function checkTroveIsActive(uint256 _troveId) public view returns (bool) {
+
+    function checkTroveIsActive(uint256 _troveId) external view returns (bool) {
         Status status = Troves[_troveId].status;
         return status == Status.active;
     }
 
-    function checkTroveIsUnredeemable(uint256 _troveId) public view returns (bool) {
+    function checkTroveIsUnredeemable(uint256 _troveId) external view returns (bool) {
         Status status = Troves[_troveId].status;
         return status == Status.unredeemable;
     }
