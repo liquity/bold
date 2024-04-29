@@ -2,13 +2,16 @@
 
 import { Tabs } from "@liquity2/uikit";
 import { useEffect, useState } from "react";
-import { useFixtureInput } from "react-cosmos/client";
+import { useFixtureSelect } from "react-cosmos/client";
 
 export default function Fixture() {
   const [selected, setSelected] = useState(0);
-  const [tabs] = useFixtureInput("tabs", 3);
+  const [tabs] = useFixtureSelect("tabs", {
+    options: Array.from({ length: 8 }, (_, i) => `${i + 2}`),
+    defaultValue: "3",
+  });
   const items = Array.from(
-    { length: Math.max(2, tabs) },
+    { length: Math.max(2, parseInt(tabs)) },
     (_, i) => `Item ${i + 1}`,
   );
 
