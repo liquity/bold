@@ -6,9 +6,11 @@ import dts from "vite-plugin-dts";
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(__dirname, "src/index.ts"),
+      entry: {
+        index: resolve(__dirname, "src/index.ts"),
+        "icons/index": resolve(__dirname, "src/icons/index.ts"),
+      },
       formats: ["es"],
-      fileName: "uikit",
     },
     sourcemap: true,
     rollupOptions: {
@@ -22,6 +24,8 @@ export default defineConfig({
       ],
       output: {
         banner: () => "'use client';",
+        preserveModules: true,
+        dir: "dist",
       },
     },
     emptyOutDir: false,

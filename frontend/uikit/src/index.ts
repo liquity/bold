@@ -2,6 +2,7 @@ export type { BrandColorName, ThemeColorName, ThemeDescriptor } from "./Theme/Th
 
 export { Button } from "./Button/Button";
 export { FormField } from "./FormField/FormField";
+export * from "./icons";
 export { TextInput } from "./Input/TextInput";
 export { InputField } from "./InputField/InputField";
 export { Modal } from "./Modal/Modal";
