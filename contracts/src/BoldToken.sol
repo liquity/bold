@@ -2,8 +2,9 @@
 
 pragma solidity 0.8.18;
 
+import "./Dependencies/Ownable.sol";
+
 import "./Interfaces/IBoldToken.sol";
-import "./Dependencies/CheckContract.sol";
 /*
 *
 * Based upon OpenZeppelin's ERC20 contract:
@@ -22,7 +23,7 @@ import "./Dependencies/CheckContract.sol";
 * 2) sendToPool() and returnFromPool(): functions callable only Liquity core contracts, which move Bold tokens between Liquity <-> user.
 */
 
-contract BoldToken is CheckContract, IBoldToken {
+contract BoldToken is Ownable, IBoldToken {
     uint256 private _totalSupply;
     string internal constant _NAME = "Bold Stablecoin";
     string internal constant _SYMBOL = "Bold";
@@ -60,12 +61,14 @@ contract BoldToken is CheckContract, IBoldToken {
     address public immutable activePoolAddress;
     */
     // TODO: optimize to make them immutable
+    address public collateralRegistryAddress;
     mapping(address => bool) troveManagerAddresses;
     mapping(address => bool) stabilityPoolAddresses;
     mapping(address => bool) borrowerOperationsAddresses;
     mapping(address => bool) activePoolAddresses;
 
     // --- Events ---
+    event CollateralRegistryAddressChanged(address _newCollateralRegistryAddress);
     event TroveManagerAddressAdded(address _newTroveManagerAddress);
     event StabilityPoolAddressAdded(address _newStabilityPoolAddress);
     event BorrowerOperationsAddressAdded(address _newBorrowerOperationsAddress);
@@ -88,12 +91,7 @@ contract BoldToken is CheckContract, IBoldToken {
         address _stabilityPoolAddress,
         address _borrowerOperationsAddress,
         address _activePoolAddress
-    ) external {
-        checkContract(_troveManagerAddress);
-        checkContract(_stabilityPoolAddress);
-        checkContract(_borrowerOperationsAddress);
-        checkContract(_activePoolAddress);
-
+    ) external override onlyOwner {
         troveManagerAddresses[_troveManagerAddress] = true;
         emit TroveManagerAddressAdded(_troveManagerAddress);
 
@@ -107,6 +105,13 @@ contract BoldToken is CheckContract, IBoldToken {
         emit ActivePoolAddressAdded(_activePoolAddress);
     }
 
+    function setCollateralRegistry(address _collateralRegistryAddress) external override onlyOwner {
+        collateralRegistryAddress = _collateralRegistryAddress;
+        emit CollateralRegistryAddressChanged(_collateralRegistryAddress);
+
+        _renounceOwnership();
+    }
+
     // --- Functions for intra-Liquity calls ---
 
     function mint(address _account, uint256 _amount) external override {
@@ -115,7 +120,7 @@ contract BoldToken is CheckContract, IBoldToken {
     }
 
     function burn(address _account, uint256 _amount) external override {
-        _requireCallerIsBOorTroveMorSP();
+        _requireCallerIsCRorBOorSP();
         _burn(_account, _amount);
     }
 
@@ -268,9 +273,9 @@ contract BoldToken is CheckContract, IBoldToken {
         );
     }
 
-    function _requireCallerIsBOorTroveMorSP() internal view {
+    function _requireCallerIsCRorBOorSP() internal view {
         require(
-            borrowerOperationsAddresses[msg.sender] || troveManagerAddresses[msg.sender]
+            msg.sender == collateralRegistryAddress || borrowerOperationsAddresses[msg.sender]
                 || stabilityPoolAddresses[msg.sender],
             "Bold: Caller is neither BorrowerOperations nor TroveManager nor StabilityPool"
         );

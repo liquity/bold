@@ -43,9 +43,9 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function batchLiquidateTroves(uint256[] calldata _troveArray) external;
 
-    function redeemCollateral(address _sender, uint256 _boldAmount, uint256 _maxIterations)
+    function redeemCollateral(address _sender, uint256 _boldAmount, uint256 _price, uint256 _maxIterations)
         external
-        returns (uint256 _feePercentage);
+        returns (uint256 _redemeedAmount, uint256 _feePercentage);
 
     function updateStakeAndTotalStakes(uint256 _troveId) external returns (uint256);
 
@@ -135,5 +135,5 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function checkTroveIsActive(uint256 _troveId) external view returns (bool);
 
-    function getUnbackedPortion() external view returns (uint256);
+    function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool);
 }

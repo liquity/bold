@@ -130,8 +130,8 @@ contract MulticollateralTest is DevTestSetup {
 
         // Check bold balance
         // TODO: change when we switch to new gas compensation
-        //assertApproximatelyEqual(boldToken.balanceOf(A), 14400e18, 10, "Wrong Bold balance after redemption");
-        assertApproximatelyEqual(boldToken.balanceOf(A), 13600e18, 10, "Wrong Bold balance after redemption");
+        //assertApproxEqAbs(boldToken.balanceOf(A), 14400e18, 10, "Wrong Bold balance after redemption");
+        assertApproxEqAbs(boldToken.balanceOf(A), 13600e18, 10, "Wrong Bold balance after redemption");
 
         // Check collateral balances
         // final balances
@@ -225,10 +225,14 @@ contract MulticollateralTest is DevTestSetup {
         testValues4.redeemAmount = redeemAmount * testValues4.unbackedPortion / totalUnbacked;
 
         // fees
-        testValues1.fee = contractsArray[0].troveManager.getEffectiveRedemptionFee(testValues1.redeemAmount, testValues1.price);
-        testValues2.fee = contractsArray[1].troveManager.getEffectiveRedemptionFee(testValues2.redeemAmount, testValues2.price);
-        testValues3.fee = contractsArray[2].troveManager.getEffectiveRedemptionFee(testValues3.redeemAmount, testValues3.price);
-        testValues4.fee = contractsArray[3].troveManager.getEffectiveRedemptionFee(testValues4.redeemAmount, testValues4.price);
+        testValues1.fee =
+            contractsArray[0].troveManager.getEffectiveRedemptionFee(testValues1.redeemAmount, testValues1.price);
+        testValues2.fee =
+            contractsArray[1].troveManager.getEffectiveRedemptionFee(testValues2.redeemAmount, testValues2.price);
+        testValues3.fee =
+            contractsArray[2].troveManager.getEffectiveRedemptionFee(testValues3.redeemAmount, testValues3.price);
+        testValues4.fee =
+            contractsArray[3].troveManager.getEffectiveRedemptionFee(testValues4.redeemAmount, testValues4.price);
         console.log(testValues1.fee, "fee1");
         console.log(testValues2.fee, "fee2");
         console.log(testValues3.fee, "fee3");
@@ -240,9 +244,7 @@ contract MulticollateralTest is DevTestSetup {
         vm.stopPrank();
 
         // Check bold balance
-        assertApproximatelyEqual(
-            boldToken.balanceOf(A), boldBalance - redeemAmount, 10, "Wrong Bold balance after redemption"
-        );
+        assertApproxEqAbs(boldToken.balanceOf(A), boldBalance - redeemAmount, 10, "Wrong Bold balance after redemption");
 
         // Check collateral balances
         // final balances

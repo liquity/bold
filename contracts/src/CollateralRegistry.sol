@@ -84,6 +84,12 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         _troveManager9 = numTokens > 9 ? _troveManagers[9] : ITroveManager(address(0));
     }
 
+    struct RedemptionTotals {
+        uint256 totalUnbacked;
+        uint256 totalFeePercentage;
+        uint256 totalRedeemedAmount;
+    }
+
     function redeemCollateral(uint256 _boldAmount, uint256 _maxIterations, uint256 _maxFeePercentage) external {
         _requireValidMaxFeePercentage(_maxFeePercentage);
         _requireAmountGreaterThanZero(_boldAmount);
@@ -91,38 +97,47 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
 
         uint256 numCollaterals = totalCollaterals;
         uint256[] memory unbackedPortions = new uint256[](numCollaterals);
-        uint256 totalUnbacked;
+        uint256[] memory prices = new uint256[](numCollaterals);
+
+        RedemptionTotals memory totals;
 
         // Gather and accumulate unbacked portions
         for (uint256 index = 0; index < numCollaterals; index++) {
             ITroveManager troveManager = getTroveManager(index);
-            uint256 unbackedPortion = troveManager.getUnbackedPortion();
-            totalUnbacked += unbackedPortion;
-            unbackedPortions[index] = unbackedPortion;
+            (uint256 unbackedPortion, uint256 price, bool redeemable) =
+                troveManager.getUnbackedPortionPriceAndRedeemability();
+            if (redeemable) {
+                totals.totalUnbacked += unbackedPortion;
+                unbackedPortions[index] = unbackedPortion;
+                prices[index] = price;
+            }
         }
 
         // The amount redeemed has to be outside SPs, and therefore unbacked
-        assert(totalUnbacked > _boldAmount);
+        assert(totals.totalUnbacked > _boldAmount);
 
         // Compute redemption amount for each collateral and redeem against the corresponding TroveManager
-        uint256 totalFeePercentage;
-        uint256 totalRedeemedAmount; // TODO: get rid of totalRedeemedAmount and just use _boldAmount
         for (uint256 index = 0; index < numCollaterals; index++) {
-            uint256 unbackedPortion = unbackedPortions[index];
-            if (unbackedPortion > 0) {
-                uint256 redeemAmount = _boldAmount * unbackedPortion / totalUnbacked;
+            //uint256 unbackedPortion = unbackedPortions[index];
+            if (unbackedPortions[index] > 0) {
+                uint256 redeemAmount = _boldAmount * unbackedPortions[index] / totals.totalUnbacked;
                 if (redeemAmount > 0) {
                     ITroveManager troveManager = getTroveManager(index);
-                    uint256 feePercentage = troveManager.redeemCollateral(msg.sender, redeemAmount, _maxIterations);
-                    totalFeePercentage += feePercentage * redeemAmount;
-                    totalRedeemedAmount += redeemAmount;
+                    (uint256 redeemedAmount, uint256 feePercentage) =
+                        troveManager.redeemCollateral(msg.sender, redeemAmount, prices[index], _maxIterations);
+                    totals.totalFeePercentage += feePercentage * redeemedAmount;
+                    totals.totalRedeemedAmount += redeemedAmount;
                 }
             }
         }
-        // TODO: get rid of totalRedeemedAmount and just use _boldAmount
-        assert(totalRedeemedAmount * DECIMAL_PRECISION / _boldAmount > 1e18 - 1e14); // 0.01% error
-        totalFeePercentage = totalFeePercentage / totalRedeemedAmount;
-        require(totalFeePercentage <= _maxFeePercentage, "Fee exceeded provided maximum");
+
+        // Burn the total Bold that is cancelled with debt
+        if (totals.totalRedeemedAmount > 0) {
+            boldToken.burn(msg.sender, totals.totalRedeemedAmount);
+        }
+        assert(totals.totalRedeemedAmount * DECIMAL_PRECISION / _boldAmount > 1e18 - 1e14); // 0.01% error
+        totals.totalFeePercentage = totals.totalFeePercentage / totals.totalRedeemedAmount;
+        require(totals.totalFeePercentage <= _maxFeePercentage, "Fee exceeded provided maximum");
     }
 
     function getTroveManager(uint256 _index) public view returns (ITroveManager) {
@@ -174,8 +189,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         // Confirm redeemer's balance is less than total Bold supply
         assert(boldBalance <= _boldToken.totalSupply());
         require(
-            boldBalance >= _amount,
-            "TroveManager: Requested redemption amount must be <= user's Bold token balance"
+            boldBalance >= _amount, "TroveManager: Requested redemption amount must be <= user's Bold token balance"
         );
     }
 

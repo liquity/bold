@@ -78,7 +78,7 @@ function _deployAndConnectContracts(uint256 _numCollaterals)
     }
 
     collateralRegistry = new CollateralRegistry(boldToken, collaterals, troveManagers);
-
+    boldToken.setCollateralRegistry(address(collateralRegistry));
     // Set registry in TroveManagers
     for (uint256 i = 0; i < _numCollaterals; i++) {
         contractsArray[i].troveManager.setCollateralRegistry(address(collateralRegistry));

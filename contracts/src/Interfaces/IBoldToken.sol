@@ -14,6 +14,8 @@ interface IBoldToken is IERC20, IERC20Metadata, IERC20Permit {
         address _activePoolAddress
     ) external;
 
+    function setCollateralRegistry(address _collateralRegistryAddress) external;
+
     function version() external pure returns (string memory);
 
     function deploymentStartTime() external view returns (uint256);
