@@ -1,0 +1,53 @@
+{
+  "name": "@liquity2/app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm build-uikit && pnpm panda-codegen && next build",
+    "build-uikit": "cd ../uikit && pnpm build && pnpm panda-codegen",
+    "dev": "rm -rf ./.next && next dev",
+    "fmt": "dprint fmt **/*.{ts,tsx,js,json,html,md}",
+    "lint": "next lint",
+    "panda-codegen": "panda codegen --silent",
+    "test": "vitest",
+    "update-liquity-abis": "ts-node ./scripts/update-liquity-abis.ts"
+  },
+  "dependencies": {
+    "@liquity2/uikit": "workspace:*",
+    "@rainbow-me/rainbowkit": "^2.0.5",
+    "@react-spring/web": "^9.7.3",
+    "@tanstack/react-query": "^5.31.0",
+    "dnum": "^2.11.0",
+    "focus-trap-react": "^10.2.3",
+    "geist": "^1.3.0",
+    "next": "14.2.2",
+    "react": "^18",
+    "react-dom": "^18",
+    "ts-pattern": "^5.0.8",
+    "viem": "^2.9.25",
+    "wagmi": "^2.5.12",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@babel/plugin-transform-private-methods": "^7.24.1",
+    "@pandacss/dev": "^0.37.2",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.2.2",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/node": "^20.12.7",
+    "@types/react": "^18.2.78",
+    "@types/react-dom": "^18.2.25",
+    "@typescript-eslint/eslint-plugin": "^7.3.1",
+    "@typescript-eslint/parser": "^7.3.1",
+    "dax-sh": "^0.39.2",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.6",
+    "jsdom": "^24.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5",
+    "vitest": "^1.4.0"
+  }
+}

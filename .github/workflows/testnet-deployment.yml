@@ -1,8 +1,9 @@
 name: Testnet Deployment
 
 # This workflow:
-# - Deploys the contracts to the Liquity v2 Testnet (currently disabled)
-# - Deploys the app to Vercel (only for the main branch, not PRs)
+# - Deploys the contracts to the Liquity v2 Testnet
+# - Deploys the app to Vercel (main branch only, not PRs)
+# - Deploys the gallery to Vercel (main branch only, not PRs)
 
 on:
   push:
@@ -18,7 +19,6 @@ on:
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
   FOUNDRY_VERSION: nightly-f625d0fa7c51e65b4bf1e8f7931cd1c6e2e285e9
 
 concurrency:
@@ -73,6 +73,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: deploy-contracts
     if: ${{ github.event_name != 'pull_request' }}
+    env:
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v4
@@ -95,9 +97,9 @@ jobs:
           path: ./contracts
 
       - name: Prepare Environment from Latest Deployment Context
-        working-directory: contracts
+        working-directory: ./contracts
         env:
-          APP_ENV_FILE: ../frontend/.env.local
+          APP_ENV_FILE: ../frontend/app/.env.local
           DEPLOYMENT_CONTEXT_FILE: ./deployment-context-latest.json
         run: |
           echo 'NEXT_PUBLIC_CHAIN_ID=1337' >> $APP_ENV_FILE
@@ -109,6 +111,37 @@ jobs:
 
           pnpm tsx utils/deployment-artifacts-to-app-env.ts $DEPLOYMENT_CONTEXT_FILE $APP_ENV_FILE --append
           cat $APP_ENV_FILE
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+  deploy-gallery:
+    name: Deploy gallery
+    runs-on: ubuntu-latest
+    needs: deploy-contracts
+    if: ${{ github.event_name != 'pull_request' }}
+    env:
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_GALLERY_PROJECT_ID }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3.0.0
+        with:
+          version: 8
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Vercel CLI
+        run: pnpm install --global vercel@canary
 
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
