@@ -119,9 +119,10 @@ contract MulticollateralTest is DevTestSetup {
         uint256 coll4InitialBalance = contractsArray[3].WETH.balanceOf(A);
 
         // fees
-        uint256 fee1 = contractsArray[0].troveManager.getEffectiveRedemptionFee(1000e18, price);
-        uint256 fee2 = contractsArray[1].troveManager.getEffectiveRedemptionFee(500e18, price);
-        uint256 fee3 = contractsArray[2].troveManager.getEffectiveRedemptionFee(100e18, price);
+        uint256 fee = collateralRegistry.getEffectiveRedemptionFeeInBold(1600e18) * DECIMAL_PRECISION / price;
+        uint256 fee1 = fee * 10 / 16;
+        uint256 fee2 = fee * 5 / 16;
+        uint256 fee3 = fee / 16;
 
         // A redeems 1.6k
         vm.startPrank(A);
@@ -225,14 +226,12 @@ contract MulticollateralTest is DevTestSetup {
         testValues4.redeemAmount = redeemAmount * testValues4.unbackedPortion / totalUnbacked;
 
         // fees
-        testValues1.fee =
-            contractsArray[0].troveManager.getEffectiveRedemptionFee(testValues1.redeemAmount, testValues1.price);
-        testValues2.fee =
-            contractsArray[1].troveManager.getEffectiveRedemptionFee(testValues2.redeemAmount, testValues2.price);
-        testValues3.fee =
-            contractsArray[2].troveManager.getEffectiveRedemptionFee(testValues3.redeemAmount, testValues3.price);
-        testValues4.fee =
-            contractsArray[3].troveManager.getEffectiveRedemptionFee(testValues4.redeemAmount, testValues4.price);
+        uint256 fee = collateralRegistry.getEffectiveRedemptionFeeInBold(redeemAmount);
+        testValues1.fee = fee * testValues1.redeemAmount / redeemAmount * DECIMAL_PRECISION / testValues1.price;
+        testValues2.fee = fee * testValues2.redeemAmount / redeemAmount * DECIMAL_PRECISION / testValues2.price;
+        testValues3.fee = fee * testValues3.redeemAmount / redeemAmount * DECIMAL_PRECISION / testValues3.price;
+        testValues4.fee = fee * testValues4.redeemAmount / redeemAmount * DECIMAL_PRECISION / testValues4.price;
+
         console.log(testValues1.fee, "fee1");
         console.log(testValues2.fee, "fee2");
         console.log(testValues3.fee, "fee3");
@@ -257,24 +256,28 @@ contract MulticollateralTest is DevTestSetup {
         console.log(testValues1.unbackedPortion, "testValues1.unbackedPortion");
         console.log(totalUnbacked, "totalUnbacked");
         console.log(testValues1.redeemAmount, "partial redeem amount 1");
-        assertEq(
+        assertApproxEqAbs(
             testValues1.collFinalBalance - testValues1.collInitialBalance,
             testValues1.redeemAmount * DECIMAL_PRECISION / testValues1.price - testValues1.fee,
+            10,
             "Wrong Collateral 1 balance"
         );
-        assertEq(
+        assertApproxEqAbs(
             testValues2.collFinalBalance - testValues2.collInitialBalance,
             testValues2.redeemAmount * DECIMAL_PRECISION / testValues2.price - testValues2.fee,
+            10,
             "Wrong Collateral 2 balance"
         );
-        assertEq(
+        assertApproxEqAbs(
             testValues3.collFinalBalance - testValues3.collInitialBalance,
             testValues3.redeemAmount * DECIMAL_PRECISION / testValues3.price - testValues3.fee,
+            10,
             "Wrong Collateral 3 balance"
         );
-        assertEq(
+        assertApproxEqAbs(
             testValues4.collFinalBalance - testValues4.collInitialBalance,
             testValues4.redeemAmount * DECIMAL_PRECISION / testValues4.price - testValues4.fee,
+            10,
             "Wrong Collateral 4 balance"
         );
     }

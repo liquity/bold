@@ -31,8 +31,6 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     // function BOLD_GAS_COMPENSATION() external view returns (uint256);
 
-    function baseRate() external view returns (uint256);
-
     function getTroveIdsCount() external view returns (uint256);
 
     function getTroveFromTroveIdsArray(uint256 _index) external view returns (uint256);
@@ -43,9 +41,13 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function batchLiquidateTroves(uint256[] calldata _troveArray) external;
 
-    function redeemCollateral(address _sender, uint256 _boldAmount, uint256 _price, uint256 _maxIterations)
-        external
-        returns (uint256 _redemeedAmount, uint256 _feePercentage);
+    function redeemCollateral(
+        address _sender,
+        uint256 _boldAmount,
+        uint256 _price,
+        uint256 _redemptionRate,
+        uint256 _maxIterations
+    ) external returns (uint256 _redemeedAmount);
 
     function updateStakeAndTotalStakes(uint256 _troveId) external returns (uint256);
 
@@ -77,12 +79,6 @@ interface ITroveManager is IERC721, ILiquityBase {
     function closeTrove(uint256 _troveId) external;
 
     function removeStake(uint256 _troveId) external;
-
-    function getRedemptionRate() external view returns (uint256);
-    function getRedemptionRateWithDecay() external view returns (uint256);
-
-    function getRedemptionFeeWithDecay(uint256 _ETHDrawn) external view returns (uint256);
-    function getEffectiveRedemptionFee(uint256 _redeemAmount, uint256 _price) external view returns (uint256);
 
     function getTroveStatus(uint256 _troveId) external view returns (uint256);
 

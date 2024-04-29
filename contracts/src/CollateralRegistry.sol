@@ -42,6 +42,30 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
 
     IBoldToken public immutable boldToken;
 
+    uint256 public constant SECONDS_IN_ONE_MINUTE = 60;
+
+    /*
+     * Half-life of 12h. 12h = 720 min
+     * (1/2) = d^720 => d = (1/2)^(1/720)
+     */
+    uint256 public constant MINUTE_DECAY_FACTOR = 999037758833783000;
+    // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
+    uint256 public constant INITIAL_REDEMPTION_RATE = DECIMAL_PRECISION / 100 * 5; // 5%
+
+    /*
+     * BETA: 18 digit decimal. Parameter by which to divide the redeemed fraction, in order to calc the new base rate from a redemption.
+     * Corresponds to (1 / ALPHA) in the white paper.
+     */
+    uint256 public constant BETA = 2;
+
+    uint256 public baseRate;
+
+    // The timestamp of the latest fee operation (redemption or new Bold issuance)
+    uint256 public lastFeeOperationTime;
+
+    event BaseRateUpdated(uint256 _baseRate);
+    event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
+
     constructor(IBoldToken _boldToken, IERC20[] memory _tokens, ITroveManager[] memory _troveManagers) {
         //checkContract(address(_boldToken));
 
@@ -82,12 +106,17 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
 
         _token9 = numTokens > 9 ? _tokens[9] : IERC20(address(0));
         _troveManager9 = numTokens > 9 ? _troveManagers[9] : ITroveManager(address(0));
+
+        // Update the baseRate state variable
+        // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
+        baseRate = INITIAL_REDEMPTION_RATE;
+        emit BaseRateUpdated(INITIAL_REDEMPTION_RATE);
     }
 
     struct RedemptionTotals {
-        uint256 totalUnbacked;
-        uint256 totalFeePercentage;
-        uint256 totalRedeemedAmount;
+        uint256 numCollaterals;
+        uint256 unbacked;
+        uint256 redeemedAmount;
     }
 
     function redeemCollateral(uint256 _boldAmount, uint256 _maxIterations, uint256 _maxFeePercentage) external {
@@ -95,50 +124,166 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         _requireAmountGreaterThanZero(_boldAmount);
         _requireBoldBalanceCoversRedemption(boldToken, msg.sender, _boldAmount);
 
-        uint256 numCollaterals = totalCollaterals;
-        uint256[] memory unbackedPortions = new uint256[](numCollaterals);
-        uint256[] memory prices = new uint256[](numCollaterals);
-
         RedemptionTotals memory totals;
 
+        totals.numCollaterals = totalCollaterals;
+        uint256[] memory unbackedPortions = new uint256[](totals.numCollaterals);
+        uint256[] memory prices = new uint256[](totals.numCollaterals);
+
+        // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
+        // Use the saved total Bold supply value, from before it was reduced by the redemption.
+        // TODO: what if the final redeemed amount is less than the requested amount?
+        uint256 redemptionRate = _updateBaseRateAndGetRedemptionRate(boldToken, _boldAmount);
+        require(redemptionRate <= _maxFeePercentage, "CR: Fee exceeded provided maximum");
+        // Implicit by the above and the _requireValidMaxFeePercentage checks
+        //require(newBaseRate < DECIMAL_PRECISION, "CR: Fee would eat up all collateral");
+
         // Gather and accumulate unbacked portions
-        for (uint256 index = 0; index < numCollaterals; index++) {
+        for (uint256 index = 0; index < totals.numCollaterals; index++) {
             ITroveManager troveManager = getTroveManager(index);
             (uint256 unbackedPortion, uint256 price, bool redeemable) =
                 troveManager.getUnbackedPortionPriceAndRedeemability();
             if (redeemable) {
-                totals.totalUnbacked += unbackedPortion;
+                totals.unbacked += unbackedPortion;
                 unbackedPortions[index] = unbackedPortion;
                 prices[index] = price;
             }
         }
 
         // The amount redeemed has to be outside SPs, and therefore unbacked
-        assert(totals.totalUnbacked > _boldAmount);
+        assert(totals.unbacked > _boldAmount);
 
         // Compute redemption amount for each collateral and redeem against the corresponding TroveManager
-        for (uint256 index = 0; index < numCollaterals; index++) {
+        for (uint256 index = 0; index < totals.numCollaterals; index++) {
             //uint256 unbackedPortion = unbackedPortions[index];
             if (unbackedPortions[index] > 0) {
-                uint256 redeemAmount = _boldAmount * unbackedPortions[index] / totals.totalUnbacked;
+                uint256 redeemAmount = _boldAmount * unbackedPortions[index] / totals.unbacked;
                 if (redeemAmount > 0) {
                     ITroveManager troveManager = getTroveManager(index);
-                    (uint256 redeemedAmount, uint256 feePercentage) =
-                        troveManager.redeemCollateral(msg.sender, redeemAmount, prices[index], _maxIterations);
-                    totals.totalFeePercentage += feePercentage * redeemedAmount;
-                    totals.totalRedeemedAmount += redeemedAmount;
+                    uint256 redeemedAmount = troveManager.redeemCollateral(
+                        msg.sender, redeemAmount, prices[index], redemptionRate, _maxIterations
+                    );
+                    totals.redeemedAmount += redeemedAmount;
                 }
             }
         }
 
         // Burn the total Bold that is cancelled with debt
-        if (totals.totalRedeemedAmount > 0) {
-            boldToken.burn(msg.sender, totals.totalRedeemedAmount);
+        if (totals.redeemedAmount > 0) {
+            boldToken.burn(msg.sender, totals.redeemedAmount);
         }
-        assert(totals.totalRedeemedAmount * DECIMAL_PRECISION / _boldAmount > 1e18 - 1e14); // 0.01% error
-        totals.totalFeePercentage = totals.totalFeePercentage / totals.totalRedeemedAmount;
-        require(totals.totalFeePercentage <= _maxFeePercentage, "Fee exceeded provided maximum");
+        assert(totals.redeemedAmount * DECIMAL_PRECISION / _boldAmount > 1e18 - 1e14); // 0.01% error
     }
+
+    // --- Internal fee functions ---
+
+    // Update the last fee operation time only if time passed >= decay interval. This prevents base rate griefing.
+    function _updateLastFeeOpTime() internal {
+        uint256 timePassed = block.timestamp - lastFeeOperationTime;
+
+        if (timePassed >= SECONDS_IN_ONE_MINUTE) {
+            lastFeeOperationTime = block.timestamp;
+            emit LastFeeOpTimeUpdated(block.timestamp);
+        }
+    }
+
+    function _minutesPassedSinceLastFeeOp() internal view returns (uint256) {
+        return (block.timestamp - lastFeeOperationTime) / SECONDS_IN_ONE_MINUTE;
+    }
+
+    // Updates the `baseRate` state with math from `_getUpdatedBaseRateFromRedemption`
+    function _updateBaseRateAndGetRedemptionRate(IBoldToken _boldToken, uint256 _boldAmount)
+        internal
+        returns (uint256)
+    {
+        uint256 totalBoldSupplyAtStart = _boldToken.totalSupply();
+
+        uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_boldAmount, totalBoldSupplyAtStart);
+
+        //assert(newBaseRate <= DECIMAL_PRECISION); // This is already enforced in the line above
+        assert(newBaseRate > 0); // Base rate is always non-zero after redemption
+
+        // Update the baseRate state variable
+        baseRate = newBaseRate;
+        emit BaseRateUpdated(newBaseRate);
+
+        _updateLastFeeOpTime();
+
+        return _calcRedemptionRate(newBaseRate);
+    }
+
+    /*
+     * This function has two impacts on the baseRate state variable:
+     * 1) decays the baseRate based on time passed since last redemption or Bold borrowing operation.
+     * then,
+     * 2) increases the baseRate based on the amount redeemed, as a proportion of total supply
+     */
+    function _getUpdatedBaseRateFromRedemption(uint256 _redeemAmount, uint256 _totalBoldSupply)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 decayedBaseRate = _calcDecayedBaseRate();
+
+        /* Convert the drawn ETH back to Bold at face value rate (1 Bold:1 USD), in order to get
+         * the fraction of total supply that was redeemed at face value. */
+        uint256 redeemedBoldFraction = _redeemAmount * DECIMAL_PRECISION / _totalBoldSupply;
+
+        uint256 newBaseRate = decayedBaseRate + redeemedBoldFraction / BETA;
+        newBaseRate = LiquityMath._min(newBaseRate, DECIMAL_PRECISION); // cap baseRate at a maximum of 100%
+
+        return newBaseRate;
+    }
+
+    function _calcDecayedBaseRate() internal view returns (uint256) {
+        uint256 minutesPassed = _minutesPassedSinceLastFeeOp();
+        uint256 decayFactor = LiquityMath._decPow(MINUTE_DECAY_FACTOR, minutesPassed);
+
+        return baseRate * decayFactor / DECIMAL_PRECISION;
+    }
+
+    function _calcRedemptionRate(uint256 _baseRate) internal pure returns (uint256) {
+        return LiquityMath._min(
+            REDEMPTION_FEE_FLOOR + _baseRate,
+            DECIMAL_PRECISION // cap at a maximum of 100%
+        );
+    }
+
+    function _calcRedemptionFee(uint256 _redemptionRate, uint256 _amount) internal pure returns (uint256) {
+        uint256 redemptionFee = _redemptionRate * _amount / DECIMAL_PRECISION;
+        return redemptionFee;
+    }
+
+    // external redemption rate/fee getters
+
+    function getRedemptionRate() external view override returns (uint256) {
+        return _calcRedemptionRate(baseRate);
+    }
+
+    function getRedemptionRateWithDecay() public view override returns (uint256) {
+        return _calcRedemptionRate(_calcDecayedBaseRate());
+    }
+
+    function getRedemptionFeeWithDecay(uint256 _ETHDrawn) external view override returns (uint256) {
+        return _calcRedemptionFee(getRedemptionRateWithDecay(), _ETHDrawn);
+    }
+
+    function getEffectiveRedemptionFeeInBold(uint256 _redeemAmount) public view override returns (uint256) {
+        uint256 totalBoldSupply = boldToken.totalSupply();
+        uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_redeemAmount, totalBoldSupply);
+        return _calcRedemptionFee(_calcRedemptionRate(newBaseRate), _redeemAmount);
+    }
+
+    function getEffectiveRedemptionFee(uint256 _redeemAmount, uint256 _price)
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return getEffectiveRedemptionFeeInBold(_redeemAmount) * DECIMAL_PRECISION / _price;
+    }
+
+    // getters
 
     function getTroveManager(uint256 _index) public view returns (ITroveManager) {
         if (_index == 0) return _troveManager0;

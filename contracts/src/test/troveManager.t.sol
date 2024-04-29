@@ -45,11 +45,11 @@ contract TroveManagerTest is DevTestSetup {
     }
 
     function testInitialRedemptionBaseRate() public {
-        assertEq(troveManager.baseRate(), 5e16);
+        assertEq(collateralRegistry.baseRate(), 5e16);
     }
 
     function testRedemptionBaseRateAfter2Weeks() public {
-        assertEq(troveManager.baseRate(), 5e16);
+        assertEq(collateralRegistry.baseRate(), 5e16);
 
         // Two weeks go by
         vm.warp(block.timestamp + 14 days);
@@ -61,7 +61,7 @@ contract TroveManagerTest is DevTestSetup {
         collateralRegistry.redeemCollateral(1e16, 10, 1e18);
         vm.stopPrank();
 
-        console.log(troveManager.baseRate(), "baseRate");
-        assertLt(troveManager.baseRate(), 3e10); // Goes down below 3e-8, i.e., below 0.000003%
+        console.log(collateralRegistry.baseRate(), "baseRate");
+        assertLt(collateralRegistry.baseRate(), 3e10); // Goes down below 3e-8, i.e., below 0.000003%
     }
 }
