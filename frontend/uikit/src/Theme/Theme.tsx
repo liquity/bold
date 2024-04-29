@@ -90,11 +90,19 @@ export const colors = {
 // The light theme, which is the only theme for now. These
 // colors are meant to be used by components via useTheme(),
 // so that the theme can be changed at runtime.
+
+// Some notes about naming conventions:
+// - "xContent" is the color used over a "x" background (text, icons or outlines).
+// - "xHint" is the color used to hint that "x" is interactive (generally on hover).
+// - "xActive" is the color used to indicate that "x" is being interacted with (generally on press).
+// - "xSurface" is the color used for the surface of "x" (generally the background).
 export const lightTheme = {
   name: "light" as const,
   colors: {
     accent: "blue:500",
+    accentActive: "blue:600",
     accentContent: "white",
+    accentHint: "blue:400",
     background: "white",
     content: "gray:950",
     contentAlt: "gray:600",
@@ -105,14 +113,23 @@ export const lightTheme = {
     fieldSurface: "gray:50",
     focused: "blue:500",
     interactive: "blue:950",
-    negative: "red:400",
+    negative: "red:500",
+    negativeActive: "red:600",
     negativeContent: "white",
-    positive: "green:400",
+    negativeHint: "red:400",
+    positive: "green:500",
+    positiveActive: "green:600",
     positiveContent: "white",
-    secondary: "blue:950",
-    secondaryContent: "white",
+    positiveHint: "green:400",
+    secondary: "blue:50",
+    secondaryActive: "blue:200",
+    secondaryContent: "blue:500",
+    secondaryHint: "blue:100",
     selected: "blue:500",
     warning: "yellow:400",
+    disabledBorder: "gray:200",
+    disabledContent: "gray:500",
+    disabledSurface: "gray:50",
   } satisfies Record<string, keyof typeof colors>,
 } as const;
 

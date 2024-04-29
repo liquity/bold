@@ -3,5 +3,5 @@
 import { ButtonFixture } from "./shared";
 
 export default function Fixture() {
-  return <ButtonFixture defaultMode="positive" />;
+  return <ButtonFixture size="medium" />;
 }
