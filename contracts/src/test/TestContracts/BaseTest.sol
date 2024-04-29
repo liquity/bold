@@ -255,11 +255,10 @@ contract BaseTest is Test {
     }
 
     function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin) public {
-        assertApproximatelyEqual(_x, _y, _margin, "");
+        assertApproxEqAbs(_x, _y, _margin, "");
     }
 
     function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin, string memory _reason) public {
-        uint256 diff = abs(_x, _y);
-        assertLe(diff, _margin, _reason);
+        assertApproxEqAbs(_x, _y, _margin, _reason);
     }
 }
