@@ -26,6 +26,7 @@ export function TokenIconFixture({
   defaultMode: "single" | "group";
 }) {
   const symbols = options.map((name, index) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     return useFixtureSelect(`token ${index + 1}`, {
       options: [emptyOption, ...options],
       defaultValue: defaultMode === "single" && index > 0 ? emptyOption : name,
