@@ -1331,7 +1331,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         return Troves[_troveId].status == Status.active;
     }
 
-    function _getRedemptionFee(uint256 _ETHDrawn, uint256 _redemptionRate) internal view returns (uint256) {
+    function _getRedemptionFee(uint256 _ETHDrawn, uint256 _redemptionRate) internal pure returns (uint256) {
         uint256 redemptionFee = _redemptionRate * _ETHDrawn / DECIMAL_PRECISION;
         return redemptionFee;
     }

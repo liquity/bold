@@ -67,8 +67,6 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
 
     constructor(IBoldToken _boldToken, IERC20[] memory _tokens, ITroveManager[] memory _troveManagers) {
-        //checkContract(address(_boldToken));
-
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens < 10, "Collateral list too long");
@@ -115,11 +113,12 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
 
     struct RedemptionTotals {
         uint256 numCollaterals;
+        uint256 boldSupplyAtStart;
         uint256 unbacked;
         uint256 redeemedAmount;
     }
 
-    function redeemCollateral(uint256 _boldAmount, uint256 _maxIterations, uint256 _maxFeePercentage) external {
+    function redeemCollateral(uint256 _boldAmount, uint256 _maxIterationsPerCollateral, uint256 _maxFeePercentage) external {
         _requireValidMaxFeePercentage(_maxFeePercentage);
         _requireAmountGreaterThanZero(_boldAmount);
         _requireBoldBalanceCoversRedemption(boldToken, msg.sender, _boldAmount);
@@ -130,10 +129,13 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         uint256[] memory unbackedPortions = new uint256[](totals.numCollaterals);
         uint256[] memory prices = new uint256[](totals.numCollaterals);
 
+        totals.boldSupplyAtStart = boldToken.totalSupply();
         // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
         // Use the saved total Bold supply value, from before it was reduced by the redemption.
-        // TODO: what if the final redeemed amount is less than the requested amount?
-        uint256 redemptionRate = _updateBaseRateAndGetRedemptionRate(boldToken, _boldAmount);
+        // We only compute it here, and update it at the end,
+        // because the final redeemed amount may be less than the requested amount
+        // Redeemers should take this into account in order to request the optimal amount to not overpay
+        uint256 redemptionRate = _calcRedemptionRate(_getUpdatedBaseRateFromRedemption(_boldAmount, totals.boldSupplyAtStart));
         require(redemptionRate <= _maxFeePercentage, "CR: Fee exceeded provided maximum");
         // Implicit by the above and the _requireValidMaxFeePercentage checks
         //require(newBaseRate < DECIMAL_PRECISION, "CR: Fee would eat up all collateral");
@@ -151,7 +153,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         }
 
         // The amount redeemed has to be outside SPs, and therefore unbacked
-        assert(totals.unbacked > _boldAmount);
+        assert(totals.unbacked >= _boldAmount);
 
         // Compute redemption amount for each collateral and redeem against the corresponding TroveManager
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
@@ -161,18 +163,19 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
                 if (redeemAmount > 0) {
                     ITroveManager troveManager = getTroveManager(index);
                     uint256 redeemedAmount = troveManager.redeemCollateral(
-                        msg.sender, redeemAmount, prices[index], redemptionRate, _maxIterations
+                        msg.sender, redeemAmount, prices[index], redemptionRate, _maxIterationsPerCollateral
                     );
                     totals.redeemedAmount += redeemedAmount;
                 }
             }
         }
 
+        _updateBaseRateAndGetRedemptionRate(boldToken, totals.redeemedAmount, totals.boldSupplyAtStart);
+
         // Burn the total Bold that is cancelled with debt
         if (totals.redeemedAmount > 0) {
             boldToken.burn(msg.sender, totals.redeemedAmount);
         }
-        assert(totals.redeemedAmount * DECIMAL_PRECISION / _boldAmount > 1e18 - 1e14); // 0.01% error
     }
 
     // --- Internal fee functions ---
@@ -192,15 +195,12 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     }
 
     // Updates the `baseRate` state with math from `_getUpdatedBaseRateFromRedemption`
-    function _updateBaseRateAndGetRedemptionRate(IBoldToken _boldToken, uint256 _boldAmount)
+    function _updateBaseRateAndGetRedemptionRate(IBoldToken _boldToken, uint256 _boldAmount, uint256 _totalBoldSupplyAtStart)
         internal
-        returns (uint256)
     {
-        uint256 totalBoldSupplyAtStart = _boldToken.totalSupply();
+        uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_boldAmount, _totalBoldSupplyAtStart);
 
-        uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_boldAmount, totalBoldSupplyAtStart);
-
-        //assert(newBaseRate <= DECIMAL_PRECISION); // This is already enforced in the line above
+        //assert(newBaseRate <= DECIMAL_PRECISION); // This is already enforced in `_getUpdatedBaseRateFromRedemption`
         assert(newBaseRate > 0); // Base rate is always non-zero after redemption
 
         // Update the baseRate state variable
@@ -208,12 +208,10 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         emit BaseRateUpdated(newBaseRate);
 
         _updateLastFeeOpTime();
-
-        return _calcRedemptionRate(newBaseRate);
     }
 
     /*
-     * This function has two impacts on the baseRate state variable:
+     * This function calculates the new baseRate in the following way:
      * 1) decays the baseRate based on time passed since last redemption or Bold borrowing operation.
      * then,
      * 2) increases the baseRate based on the amount redeemed, as a proportion of total supply
@@ -223,10 +221,10 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         view
         returns (uint256)
     {
+        // decay the base rate
         uint256 decayedBaseRate = _calcDecayedBaseRate();
 
-        /* Convert the drawn ETH back to Bold at face value rate (1 Bold:1 USD), in order to get
-         * the fraction of total supply that was redeemed at face value. */
+        // get the fraction of total supply that was redeemed
         uint256 redeemedBoldFraction = _redeemAmount * DECIMAL_PRECISION / _totalBoldSupply;
 
         uint256 newBaseRate = decayedBaseRate + redeemedBoldFraction / BETA;
