@@ -7,6 +7,8 @@ export { TextInput } from "./Input/TextInput";
 export { InputField } from "./InputField/InputField";
 export { Modal } from "./Modal/Modal";
 export { PillButton } from "./PillButton/PillButton";
+export { Radio } from "./Radio/Radio";
+export { RadioGroup, useRadioGroup } from "./Radio/RadioGroup";
 export { Root, RootEntryPoint } from "./Root/Root";
 export { Tabs } from "./Tabs/Tabs";
 export { TextButton } from "./TextButton/TextButton";
