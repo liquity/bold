@@ -90,7 +90,7 @@ jobs:
           cache-dependency-path: "pnpm-lock.yaml"
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -151,7 +151,7 @@ jobs:
           cache-dependency-path: "pnpm-lock.yaml"
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: harhdat coverage
         run: pnpm coverage
