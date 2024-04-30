@@ -18,27 +18,27 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     // See: https://github.com/ethereum/solidity/issues/12587
     uint256 public immutable totalCollaterals;
 
-    IERC20 internal immutable _token0;
-    IERC20 internal immutable _token1;
-    IERC20 internal immutable _token2;
-    IERC20 internal immutable _token3;
-    IERC20 internal immutable _token4;
-    IERC20 internal immutable _token5;
-    IERC20 internal immutable _token6;
-    IERC20 internal immutable _token7;
-    IERC20 internal immutable _token8;
-    IERC20 internal immutable _token9;
+    IERC20 internal immutable token0;
+    IERC20 internal immutable token1;
+    IERC20 internal immutable token2;
+    IERC20 internal immutable token3;
+    IERC20 internal immutable token4;
+    IERC20 internal immutable token5;
+    IERC20 internal immutable token6;
+    IERC20 internal immutable token7;
+    IERC20 internal immutable token8;
+    IERC20 internal immutable token9;
 
-    ITroveManager internal immutable _troveManager0;
-    ITroveManager internal immutable _troveManager1;
-    ITroveManager internal immutable _troveManager2;
-    ITroveManager internal immutable _troveManager3;
-    ITroveManager internal immutable _troveManager4;
-    ITroveManager internal immutable _troveManager5;
-    ITroveManager internal immutable _troveManager6;
-    ITroveManager internal immutable _troveManager7;
-    ITroveManager internal immutable _troveManager8;
-    ITroveManager internal immutable _troveManager9;
+    ITroveManager internal immutable troveManager0;
+    ITroveManager internal immutable troveManager1;
+    ITroveManager internal immutable troveManager2;
+    ITroveManager internal immutable troveManager3;
+    ITroveManager internal immutable troveManager4;
+    ITroveManager internal immutable troveManager5;
+    ITroveManager internal immutable troveManager6;
+    ITroveManager internal immutable troveManager7;
+    ITroveManager internal immutable troveManager8;
+    ITroveManager internal immutable troveManager9;
 
     IBoldToken public immutable boldToken;
 
@@ -77,35 +77,35 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
 
         boldToken = _boldToken;
 
-        _token0 = _tokens[0];
-        _troveManager0 = _troveManagers[0];
+        token0 = _tokens[0];
+        troveManager0 = _troveManagers[0];
 
-        _token1 = numTokens > 1 ? _tokens[1] : IERC20(address(0));
-        _troveManager1 = numTokens > 1 ? _troveManagers[1] : ITroveManager(address(0));
+        token1 = numTokens > 1 ? _tokens[1] : IERC20(address(0));
+        troveManager1 = numTokens > 1 ? _troveManagers[1] : ITroveManager(address(0));
 
-        _token2 = numTokens > 2 ? _tokens[2] : IERC20(address(0));
-        _troveManager2 = numTokens > 2 ? _troveManagers[2] : ITroveManager(address(0));
+        token2 = numTokens > 2 ? _tokens[2] : IERC20(address(0));
+        troveManager2 = numTokens > 2 ? _troveManagers[2] : ITroveManager(address(0));
 
-        _token3 = numTokens > 3 ? _tokens[3] : IERC20(address(0));
-        _troveManager3 = numTokens > 3 ? _troveManagers[3] : ITroveManager(address(0));
+        token3 = numTokens > 3 ? _tokens[3] : IERC20(address(0));
+        troveManager3 = numTokens > 3 ? _troveManagers[3] : ITroveManager(address(0));
 
-        _token4 = numTokens > 4 ? _tokens[4] : IERC20(address(0));
-        _troveManager4 = numTokens > 4 ? _troveManagers[4] : ITroveManager(address(0));
+        token4 = numTokens > 4 ? _tokens[4] : IERC20(address(0));
+        troveManager4 = numTokens > 4 ? _troveManagers[4] : ITroveManager(address(0));
 
-        _token5 = numTokens > 5 ? _tokens[5] : IERC20(address(0));
-        _troveManager5 = numTokens > 5 ? _troveManagers[5] : ITroveManager(address(0));
+        token5 = numTokens > 5 ? _tokens[5] : IERC20(address(0));
+        troveManager5 = numTokens > 5 ? _troveManagers[5] : ITroveManager(address(0));
 
-        _token6 = numTokens > 6 ? _tokens[6] : IERC20(address(0));
-        _troveManager6 = numTokens > 6 ? _troveManagers[6] : ITroveManager(address(0));
+        token6 = numTokens > 6 ? _tokens[6] : IERC20(address(0));
+        troveManager6 = numTokens > 6 ? _troveManagers[6] : ITroveManager(address(0));
 
-        _token7 = numTokens > 7 ? _tokens[7] : IERC20(address(0));
-        _troveManager7 = numTokens > 7 ? _troveManagers[7] : ITroveManager(address(0));
+        token7 = numTokens > 7 ? _tokens[7] : IERC20(address(0));
+        troveManager7 = numTokens > 7 ? _troveManagers[7] : ITroveManager(address(0));
 
-        _token8 = numTokens > 8 ? _tokens[8] : IERC20(address(0));
-        _troveManager8 = numTokens > 8 ? _troveManagers[8] : ITroveManager(address(0));
+        token8 = numTokens > 8 ? _tokens[8] : IERC20(address(0));
+        troveManager8 = numTokens > 8 ? _troveManagers[8] : ITroveManager(address(0));
 
-        _token9 = numTokens > 9 ? _tokens[9] : IERC20(address(0));
-        _troveManager9 = numTokens > 9 ? _troveManagers[9] : ITroveManager(address(0));
+        token9 = numTokens > 9 ? _tokens[9] : IERC20(address(0));
+        troveManager9 = numTokens > 9 ? _troveManagers[9] : ITroveManager(address(0));
 
         // Update the baseRate state variable
         // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
@@ -286,30 +286,30 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     // getters
 
     function getTroveManager(uint256 _index) public view returns (ITroveManager) {
-        if (_index == 0) return _troveManager0;
-        else if (_index == 1) return _troveManager1;
-        else if (_index == 2) return _troveManager2;
-        else if (_index == 3) return _troveManager3;
-        else if (_index == 4) return _troveManager4;
-        else if (_index == 5) return _troveManager5;
-        else if (_index == 6) return _troveManager6;
-        else if (_index == 7) return _troveManager7;
-        else if (_index == 8) return _troveManager8;
-        else if (_index == 9) return _troveManager9;
+        if (_index == 0) return troveManager0;
+        else if (_index == 1) return troveManager1;
+        else if (_index == 2) return troveManager2;
+        else if (_index == 3) return troveManager3;
+        else if (_index == 4) return troveManager4;
+        else if (_index == 5) return troveManager5;
+        else if (_index == 6) return troveManager6;
+        else if (_index == 7) return troveManager7;
+        else if (_index == 8) return troveManager8;
+        else if (_index == 9) return troveManager9;
         else revert("Invalid index");
     }
 
     function getToken(uint256 _index) external view returns (IERC20) {
-        if (_index == 0) return _token0;
-        else if (_index == 1) return _token1;
-        else if (_index == 2) return _token2;
-        else if (_index == 3) return _token3;
-        else if (_index == 4) return _token4;
-        else if (_index == 5) return _token5;
-        else if (_index == 6) return _token6;
-        else if (_index == 7) return _token7;
-        else if (_index == 8) return _token8;
-        else if (_index == 9) return _token9;
+        if (_index == 0) return token0;
+        else if (_index == 1) return token1;
+        else if (_index == 2) return token2;
+        else if (_index == 3) return token3;
+        else if (_index == 4) return token4;
+        else if (_index == 5) return token5;
+        else if (_index == 6) return token6;
+        else if (_index == 7) return token7;
+        else if (_index == 8) return token8;
+        else if (_index == 9) return token9;
         else revert("Invalid index");
     }
 
@@ -340,33 +340,33 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
 
     /*
       TODO: do we need this?
-    function getTokenIndex(IERC20 token) external view returns (uint256) {
-        if (token == _token0) { return 0; }
-        else if (token == _token1) { return 1; }
-        else if (token == _token2) { return 2; }
-        else if (token == _token3) { return 3; }
-        else if (token == _token4) { return 4; }
-        else if (token == _token5) { return 5; }
-        else if (token == _token6) { return 6; }
-        else if (token == _token7) { return 7; }
-        else if (token == _token8) { return 8; }
-        else if (token == _token9) { return 9; }
+    function getTokenIndex(IERC20 _token) external view returns (uint256) {
+        if (token == token0) { return 0; }
+        else if (_token == token1) { return 1; }
+        else if (_token == token2) { return 2; }
+        else if (_token == token3) { return 3; }
+        else if (_token == token4) { return 4; }
+        else if (_token == token5) { return 5; }
+        else if (_token == token6) { return 6; }
+        else if (_token == token7) { return 7; }
+        else if (_token == token8) { return 8; }
+        else if (_token == token9) { return 9; }
         else {
             revert("Invalid token");
         }
     }
 
-    function getTroveManagerIndex(ITroveManager troveManager) external view returns (uint256) {
-        if (troveManager == _troveManager0) { return 0; }
-        else if (troveManager == _troveManager1) { return 1; }
-        else if (troveManager == _troveManager2) { return 2; }
-        else if (troveManager == _troveManager3) { return 3; }
-        else if (troveManager == _troveManager4) { return 4; }
-        else if (troveManager == _troveManager5) { return 5; }
-        else if (troveManager == _troveManager6) { return 6; }
-        else if (troveManager == _troveManager7) { return 7; }
-        else if (troveManager == _troveManager8) { return 8; }
-        else if (troveManager == _troveManager9) { return 9; }
+    function getTroveManagerIndex(ITroveManager _troveManager) external view returns (uint256) {
+        if (troveManager == troveManager0) { return 0; }
+        else if (_troveManager == troveManager1) { return 1; }
+        else if (_troveManager == troveManager2) { return 2; }
+        else if (_troveManager == troveManager3) { return 3; }
+        else if (_troveManager == troveManager4) { return 4; }
+        else if (_troveManager == troveManager5) { return 5; }
+        else if (_troveManager == troveManager6) { return 6; }
+        else if (_troveManager == troveManager7) { return 7; }
+        else if (_troveManager == troveManager8) { return 8; }
+        else if (_troveManager == troveManager9) { return 9; }
         else {
             revert("Invalid troveManager");
         }
