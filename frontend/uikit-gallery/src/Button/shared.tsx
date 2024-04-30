@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@liquity2/uikit";
-import { useFixtureInput, useFixtureSelect } from "react-cosmos/client";
+import { useFixtureInput } from "react-cosmos/client";
 
 const modes = ["primary", "secondary", "tertiary", "positive", "negative"] as const;
 
