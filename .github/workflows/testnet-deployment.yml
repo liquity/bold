@@ -18,6 +18,7 @@ on:
       - "contracts/**"
 
 env:
+  CI: true
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   FOUNDRY_VERSION: nightly-f625d0fa7c51e65b4bf1e8f7931cd1c6e2e285e9
 
