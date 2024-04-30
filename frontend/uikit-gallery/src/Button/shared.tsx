@@ -1,38 +1,40 @@
 "use client";
 
 import { Button } from "@liquity2/uikit";
-import { useFixtureInput, useFixtureSelect } from "react-cosmos/client";
+import { useFixtureInput } from "react-cosmos/client";
+
+const modes = ["primary", "secondary", "tertiary", "positive", "negative"] as const;
 
 export function ButtonFixture({
-  defaultMode,
+  size,
 }: {
-  defaultMode: "primary" | "secondary" | "positive" | "negative";
+  size: "mini" | "small" | "medium" | "large";
 }) {
-  const [label] = useFixtureInput("label", "Button");
-  const [mode] = useFixtureSelect("mode", {
-    options: ["primary", "secondary", "positive", "negative"],
-    defaultValue: defaultMode,
-  });
-  const [size] = useFixtureSelect("size", {
-    options: ["medium", "large"],
-    defaultValue: "medium",
-  });
   const [wide] = useFixtureInput("wide", false);
+  const [disabled] = useFixtureInput("disabled", false);
   return (
     <div
       style={{
         display: "flex",
         justifyContent: "center",
-        width: 608,
-        padding: 16,
+        alignItems: "center",
+        flexDirection: wide ? "column" : "row",
+        flexWrap: "wrap",
+        width: wide && (size === "mini" || size === "small") ? 200 : wide ? 400 : 600,
+        padding: size === "large" ? 32 : 16,
+        gap: 16,
       }}
     >
-      <Button
-        label={label}
-        mode={mode}
-        size={size}
-        wide={wide}
-      />
+      {modes.map((mode) => (
+        <Button
+          key={mode}
+          label={mode.charAt(0).toUpperCase() + mode.slice(1)}
+          mode={mode}
+          size={size}
+          wide={wide}
+          disabled={disabled}
+        />
+      ))}
     </div>
   );
 }
