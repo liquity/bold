@@ -5,6 +5,7 @@ const BorrowerOperationsTester = artifacts.require(
   "./BorrowerOperationsTester.sol",
 );
 const TroveManagerTester = artifacts.require("TroveManagerTester");
+const CollateralRegistryTester = artifacts.require("CollateralRegistryTester");
 
 const { dec, toBN, assertRevert } = th;
 
@@ -42,6 +43,7 @@ contract("BorrowerOperations", async (accounts) => {
   let activePool;
   let defaultPool;
   let borrowerOperations;
+  let collateralRegistry;
 
   let BOLD_GAS_COMPENSATION;
   let MIN_NET_DEBT;
@@ -60,6 +62,7 @@ contract("BorrowerOperations", async (accounts) => {
     mocks: {
       BorrowerOperations: BorrowerOperationsTester,
       TroveManager: TroveManagerTester,
+      CollateralRegistry: CollateralRegistryTester,
     },
     callback: async (contracts) => {
       const { borrowerOperations } = contracts;
@@ -92,6 +95,7 @@ contract("BorrowerOperations", async (accounts) => {
       activePool = contracts.activePool;
       defaultPool = contracts.defaultPool;
       borrowerOperations = contracts.borrowerOperations;
+      collateralRegistry = contracts.collateralRegistry;
 
       BOLD_GAS_COMPENSATION = result.BOLD_GAS_COMPENSATION;
       MIN_NET_DEBT = result.MIN_NET_DEBT;
@@ -3517,13 +3521,13 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(B_Coll.eq(B_emittedColl));
       assert.isTrue(C_Coll.eq(C_emittedColl));
 
-      const baseRateBefore = await troveManager.baseRate();
+      const baseRateBefore = await collateralRegistry.baseRate();
 
       // Artificially make baseRate 6% (higher than the intital 5%)
-      await troveManager.setBaseRate(dec(6, 16));
-      await troveManager.setLastFeeOpTimeToNow();
+      await collateralRegistry.setBaseRate(dec(6, 16));
+      await collateralRegistry.setLastFeeOpTimeToNow();
 
-      assert.isTrue((await troveManager.baseRate()).gt(baseRateBefore));
+      assert.isTrue((await collateralRegistry.baseRate()).gt(baseRateBefore));
 
       const { troveId: DTroveId, tx: txD } = await openTrove({
         extraBoldAmount: toBN(dec(5000, 18)),
