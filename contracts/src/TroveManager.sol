@@ -334,6 +334,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 _boldInStabPool,
         uint256 _price
     ) internal returns (LiquidationValues memory singleLiquidation) {
+        address owner = ownerOf(_troveId);
+
         LocalVariables_InnerSingleLiquidateFunction memory vars;
         (
             singleLiquidation.entireTroveDebt,
@@ -369,7 +371,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         // Differencen between liquidation penalty and liquidation threshold
         if (singleLiquidation.collSurplus > 0) {
-            collSurplusPool.accountSurplus(_troveId, singleLiquidation.collSurplus);
+            collSurplusPool.accountSurplus(owner, singleLiquidation.collSurplus);
         }
 
         emit TroveLiquidated(
@@ -433,6 +435,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
             // If 100% < ICR < MCR, offset as much as possible, and redistribute the remainder
         } else if ((_ICR > _100pct) && (_ICR < MCR)) {
+            address owner = ownerOf(_troveId);
+
             _movePendingTroveRewardsToActivePool(
                 _activePool, _defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward
             );
@@ -452,7 +456,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
             // Differencen between liquidation penalty and liquidation threshold
             if (singleLiquidation.collSurplus > 0) {
-                collSurplusPool.accountSurplus(_troveId, singleLiquidation.collSurplus);
+                collSurplusPool.accountSurplus(owner, singleLiquidation.collSurplus);
             }
 
             emit TroveLiquidated(
@@ -469,6 +473,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         * The remainder due to the capped rate will be claimable as collateral surplus.
         */
         } else if ((_ICR >= MCR) && (_ICR < _TCR) && (singleLiquidation.entireTroveDebt <= _boldInStabPool)) {
+            address owner = ownerOf(_troveId);
+
             _movePendingTroveRewardsToActivePool(
                 _activePool, _defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward
             );
@@ -485,7 +491,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
             _closeTrove(_troveId, Status.closedByLiquidation);
             if (singleLiquidation.collSurplus > 0) {
-                collSurplusPool.accountSurplus(_troveId, singleLiquidation.collSurplus);
+                collSurplusPool.accountSurplus(owner, singleLiquidation.collSurplus);
             }
 
             emit TroveLiquidated(

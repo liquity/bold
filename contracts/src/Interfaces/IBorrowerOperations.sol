@@ -56,7 +56,7 @@ interface IBorrowerOperations is ILiquityBase {
     ) external;
 
     function adjustUnredeemableTrove(
-         uint256 _troveId,
+        uint256 _troveId,
         uint256 _maxFeePercentage,
         uint256 _collChange,
         bool _isCollIncrease,
@@ -65,8 +65,8 @@ interface IBorrowerOperations is ILiquityBase {
         uint256 _upperHint,
         uint256 _lowerHint
     ) external;
-    
-    function claimCollateral(uint256 _troveId) external;
+
+    function claimCollateral() external;
 
     function setAddManager(uint256 _troveId, address _manager) external;
     function setRemoveManager(uint256 _troveId, address _manager) external;

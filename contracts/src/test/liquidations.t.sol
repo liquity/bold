@@ -65,7 +65,7 @@ contract LiquidationsTest is DevTestSetup {
             "CollSurplusPoll should have received collateral"
         );
         vm.startPrank(A);
-        borrowerOperations.claimCollateral(ATroveId);
+        borrowerOperations.claimCollateral();
         vm.stopPrank();
         assertEq(WETH.balanceOf(A) - AInitialETHBalance, collSurplusAmount, "A collateral balance mismatch");
     }
