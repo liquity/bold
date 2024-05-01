@@ -8,19 +8,28 @@ contract DevTestSetup is BaseTest {
     IERC20 WETH;
 
     function giveAndApproveETH(address _account, uint256 _amount) public {
-        // Give some ETH to test accounts
-        deal(address(WETH), _account, _amount);
+        return giveAndApproveCollateral(WETH, _account, _amount, address(borrowerOperations));
+    }
+
+    function giveAndApproveCollateral(
+        IERC20 _token,
+        address _account,
+        uint256 _amount,
+        address _borrowerOperationsAddress
+    ) public {
+        // Give some Collateral to test accounts
+        deal(address(_token), _account, _amount);
 
         // Check accounts are funded
-        assertEq(WETH.balanceOf(_account), _amount);
+        assertEq(_token.balanceOf(_account), _amount);
 
         // Approve ETH to BorrowerOperations
         vm.startPrank(_account);
-        WETH.approve(address(borrowerOperations), _amount);
+        _token.approve(_borrowerOperationsAddress, _amount);
         vm.stopPrank();
 
         // Check approvals
-        assertEq(WETH.allowance(_account, address(borrowerOperations)), _amount);
+        assertEq(_token.allowance(_account, _borrowerOperationsAddress), _amount);
     }
 
     function setUp() public virtual {
@@ -40,7 +49,8 @@ contract DevTestSetup is BaseTest {
             accountsList[6]
         );
 
-        LiquityContracts memory contracts = _deployAndConnectContracts();
+        LiquityContracts memory contracts;
+        (contracts, collateralRegistry, boldToken) = _deployAndConnectContracts();
         WETH = contracts.WETH;
         activePool = contracts.activePool;
         borrowerOperations = contracts.borrowerOperations;
@@ -51,7 +61,6 @@ contract DevTestSetup is BaseTest {
         sortedTroves = contracts.sortedTroves;
         stabilityPool = contracts.stabilityPool;
         troveManager = contracts.troveManager;
-        boldToken = contracts.boldToken;
         mockInterestRouter = contracts.interestRouter;
 
         // Give some ETH to test accounts, and approve it to BorrowerOperations

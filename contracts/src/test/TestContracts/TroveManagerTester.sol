@@ -24,6 +24,7 @@ contract TroveManagerTester is TroveManager {
         return _getCompositeDebt(_debt);
     }
 
+    /*
     function unprotectedDecayBaseRateFromBorrowing() external returns (uint256) {
         baseRate = _calcDecayedBaseRate();
         assert(baseRate >= 0 && baseRate <= DECIMAL_PRECISION);
@@ -47,6 +48,7 @@ contract TroveManagerTester is TroveManager {
     function callGetRedemptionFee(uint256 _ETHDrawn) external view returns (uint256) {
         return _getRedemptionFee(_ETHDrawn);
     }
+    */
 
     function getActualDebtFromComposite(uint256 _debtVal) external pure returns (uint256) {
         return _getNetDebt(_debtVal);

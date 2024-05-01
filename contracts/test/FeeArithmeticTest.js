@@ -3,7 +3,7 @@ const Decimal = require("decimal.js");
 const { BNConverter } = require("../utils/BNConverter.js");
 const testHelpers = require("../utils/testHelpers.js");
 const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
-const TroveManagerTester = artifacts.require("./TroveManagerTester.sol");
+const CollateralRegistryTester = artifacts.require("./CollateralRegistryTester.sol");
 const LiquityMathTester = artifacts.require("./LiquityMathTester.sol");
 
 const th = testHelpers.TestHelper;
@@ -14,7 +14,7 @@ const getDifference = th.getDifference;
 
 contract("Fee arithmetic tests", async (accounts) => {
   let contracts;
-  let troveManagerTester;
+  let collateralRegistryTester;
   let mathTester;
 
   const [bountyAddress, lpRewardsAddress, multisig] = accounts.slice(997, 1000);
@@ -331,40 +331,42 @@ contract("Fee arithmetic tests", async (accounts) => {
   ];
 
   const deployFixture = createDeployAndFundFixture({
-    callback: async () => {
-      const troveManagerTester = await TroveManagerTester.new();
-      TroveManagerTester.setAsDeployed(troveManagerTester);
+    mocks: {
+      CollateralRegistry: CollateralRegistryTester,
+    },
+    callback: async (contracts) => {
+      const { collateralRegistry: collateralRegistryTester } = contracts;
 
       const mathTester = await LiquityMathTester.new();
       LiquityMathTester.setAsDeployed(mathTester);
 
-      return { mathTester, troveManagerTester };
+      return { mathTester, collateralRegistryTester };
     },
   });
 
   beforeEach(async () => {
     const result = await deployFixture();
     contracts = result.contracts;
-    troveManagerTester = result.troveManagerTester;
+    collateralRegistryTester = result.collateralRegistryTester;
     mathTester = result.mathTester;
   });
 
   it("minutesPassedSinceLastFeeOp(): returns minutes passed for no time increase", async () => {
-    await troveManagerTester.setLastFeeOpTimeToNow();
-    const minutesPassed = await troveManagerTester.minutesPassedSinceLastFeeOp();
+    await collateralRegistryTester.setLastFeeOpTimeToNow();
+    const minutesPassed = await collateralRegistryTester.minutesPassedSinceLastFeeOp();
 
     assert.equal(minutesPassed, "0");
   });
 
   it("minutesPassedSinceLastFeeOp(): returns minutes passed between time of last fee operation and current block.timestamp, rounded down to nearest minutes", async () => {
     for (const [seconds, expectedMinutesPassed] of secondsToMinutesRoundedDown) {
-      await troveManagerTester.setLastFeeOpTimeToNow();
+      await collateralRegistryTester.setLastFeeOpTimeToNow();
 
       if (seconds > 0) {
         await time.increase(seconds);
       }
 
-      const minutesPassed = await troveManagerTester.minutesPassedSinceLastFeeOp();
+      const minutesPassed = await collateralRegistryTester.minutesPassedSinceLastFeeOp();
 
       assert.equal(expectedMinutesPassed.toString(), minutesPassed.toString());
     }

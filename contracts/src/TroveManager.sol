@@ -11,54 +11,28 @@ import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
-import "./Dependencies/CheckContract.sol";
 
-// import "forge-std/console2.sol";
+// import "forge-std/console.sol";
 
-contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveManager {
+contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     string public constant NAME = "TroveManager"; // TODO
     string public constant SYMBOL = "Lv2T"; // TODO
 
     // --- Connected contract declarations ---
 
     address public borrowerOperationsAddress;
-
     IStabilityPool public override stabilityPool;
-
     address gasPoolAddress;
-
     ICollSurplusPool collSurplusPool;
-
     IBoldToken public override boldToken;
-
     // A doubly linked list of Troves, sorted by their sorted by their collateral ratios
     ISortedTroves public sortedTroves;
+    address public collateralRegistryAddress;
 
     // --- Data structures ---
 
-    uint256 public constant SECONDS_IN_ONE_MINUTE = 60;
     uint256 public constant SECONDS_IN_ONE_YEAR = 31536000; // 60 * 60 * 24 * 365,
     uint256 public constant STALE_TROVE_DURATION = 7776000; // 90 days: 60*60*24*90 = 7776000
-
-    /*
-     * Half-life of 12h. 12h = 720 min
-     * (1/2) = d^720 => d = (1/2)^(1/720)
-     */
-    uint256 public constant MINUTE_DECAY_FACTOR = 999037758833783000;
-    uint256 public constant REDEMPTION_FEE_FLOOR = DECIMAL_PRECISION / 1000 * 5; // 0.5%
-    // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
-    uint256 public constant INITIAL_REDEMPTION_RATE = DECIMAL_PRECISION / 100 * 5; // 5%
-
-    /*
-    * BETA: 18 digit decimal. Parameter by which to divide the redeemed fraction, in order to calc the new base rate from a redemption.
-    * Corresponds to (1 / ALPHA) in the white paper.
-    */
-    uint256 public constant BETA = 2;
-
-    uint256 public baseRate;
-
-    // The timestamp of the latest fee operation (redemption or new Bold issuance)
-    uint256 public lastFeeOperationTime;
 
     enum Status {
         nonExistent,
@@ -216,7 +190,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         uint256 ETHToSendToRedeemer;
         uint256 decayedBaseRate;
         uint256 price;
-        uint256 totalBoldSupplyAtStart;
         uint256 totalRedistDebtGains;
         uint256 totalNewRecordedTroveDebts;
         uint256 totalOldRecordedTroveDebts;
@@ -245,6 +218,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
     event GasPoolAddressChanged(address _gasPoolAddress);
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
+    event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
     event Liquidation(
         uint256 _liquidatedDebt, uint256 _liquidatedColl, uint256 _collGasCompensation, uint256 _boldGasCompensation
@@ -254,8 +228,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         uint256 indexed _troveId, uint256 _debt, uint256 _coll, uint256 _stake, TroveManagerOperation _operation
     );
     event TroveLiquidated(uint256 indexed _troveId, uint256 _debt, uint256 _coll, TroveManagerOperation _operation);
-    event BaseRateUpdated(uint256 _baseRate);
-    event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
     event TotalStakesUpdated(uint256 _newTotalStakes);
     event SystemSnapshotsUpdated(uint256 _totalStakesSnapshot, uint256 _totalCollateralSnapshot);
     event LTermsUpdated(uint256 _L_ETH, uint256 _L_boldDebt);
@@ -269,12 +241,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         redeemCollateral
     }
 
-    constructor() ERC721(NAME, SYMBOL) {
-        // Update the baseRate state variable
-        // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
-        baseRate = INITIAL_REDEMPTION_RATE;
-        emit BaseRateUpdated(INITIAL_REDEMPTION_RATE);
-    }
+    constructor() ERC721(NAME, SYMBOL) {}
 
     // --- Dependency setter ---
 
@@ -289,16 +256,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         address _boldTokenAddress,
         address _sortedTrovesAddress
     ) external override onlyOwner {
-        checkContract(_borrowerOperationsAddress);
-        checkContract(_activePoolAddress);
-        checkContract(_defaultPoolAddress);
-        checkContract(_stabilityPoolAddress);
-        checkContract(_gasPoolAddress);
-        checkContract(_collSurplusPoolAddress);
-        checkContract(_priceFeedAddress);
-        checkContract(_boldTokenAddress);
-        checkContract(_sortedTrovesAddress);
-
         borrowerOperationsAddress = _borrowerOperationsAddress;
         activePool = IActivePool(_activePoolAddress);
         defaultPool = IDefaultPool(_defaultPoolAddress);
@@ -318,6 +275,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         emit PriceFeedAddressChanged(_priceFeedAddress);
         emit BoldTokenAddressChanged(_boldTokenAddress);
         emit SortedTrovesAddressChanged(_sortedTrovesAddress);
+    }
+
+    function setCollateralRegistry(address _collateralRegistryAddress) external override onlyOwner {
+        collateralRegistryAddress = _collateralRegistryAddress;
+        emit CollateralRegistryAddressChanged(_collateralRegistryAddress);
 
         _renounceOwnership();
     }
@@ -946,23 +908,18 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
     * redemption will stop after the last completely redeemed Trove and the sender will keep the remaining Bold amount, which they can attempt
     * to redeem later.
     */
-    function redeemCollateral(uint256 _boldamount, uint256 _maxIterations, uint256 _maxFeePercentage)
-        external
-        override
-    {
+    function redeemCollateral(
+        address _sender,
+        uint256 _boldamount,
+        uint256 _price,
+        uint256 _redemptionRate,
+        uint256 _maxIterations
+    ) external override returns (uint256 _redemeedAmount) {
+        _requireIsCollateralRegistry();
+
         ContractsCache memory contractsCache =
             ContractsCache(activePool, defaultPool, boldToken, sortedTroves, collSurplusPool, gasPoolAddress);
         RedemptionTotals memory totals;
-
-        _requireValidMaxFeePercentage(_maxFeePercentage);
-        totals.price = priceFeed.fetchPrice();
-        _requireTCRoverMCR(totals.price);
-        _requireAmountGreaterThanZero(_boldamount);
-        _requireBoldBalanceCoversRedemption(contractsCache.boldToken, msg.sender, _boldamount);
-
-        totals.totalBoldSupplyAtStart = getEntireSystemDebt();
-        // Confirm redeemer's balance is less than total Bold supply
-        assert(contractsCache.boldToken.balanceOf(msg.sender) <= totals.totalBoldSupplyAtStart);
 
         totals.remainingBold = _boldamount;
         uint256 currentTroveId;
@@ -976,13 +933,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
             // Save the uint256 of the Trove preceding the current one
             uint256 nextUserToCheck = contractsCache.sortedTroves.getPrev(currentTroveId);
             // Skip if ICR < 100%, to make sure that redemptions always improve the CR of hit Troves
-            if (getCurrentICR(currentTroveId, totals.price) < _100pct) {
+            if (getCurrentICR(currentTroveId, _price) < _100pct) {
                 currentTroveId = nextUserToCheck;
                 continue;
             }
 
             SingleRedemptionValues memory singleRedemption =
-                _redeemCollateralFromTrove(contractsCache, currentTroveId, totals.remainingBold, totals.price);
+                _redeemCollateralFromTrove(contractsCache, currentTroveId, totals.remainingBold, _price);
 
             totals.totalBoldToRedeem = totals.totalBoldToRedeem + singleRedemption.BoldLot;
             totals.totalRedistDebtGains = totals.totalRedistDebtGains + singleRedemption.redistDebtGain;
@@ -1003,16 +960,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
             currentTroveId = nextUserToCheck;
         }
 
-        require(totals.totalETHDrawn > 0, "TroveManager: Unable to redeem any amount");
-
-        // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
-        // Use the saved total Bold supply value, from before it was reduced by the redemption.
-        _updateBaseRateFromRedemption(totals.totalETHDrawn, totals.price, totals.totalBoldSupplyAtStart);
+        // We are removing this condition to prevent blocking redemptions
+        //require(totals.totalETHDrawn > 0, "TroveManager: Unable to redeem any amount");
 
         // Calculate the ETH fee
-        totals.ETHFee = _getRedemptionFee(totals.totalETHDrawn);
-
-        _requireUserAcceptsFee(totals.ETHFee, totals.totalETHDrawn, _maxFeePercentage);
+        totals.ETHFee = _getRedemptionFee(totals.totalETHDrawn, _redemptionRate);
 
         // Do nothing with the fee - the funds remain in ActivePool. TODO: replace with new redemption fee scheme
         totals.ETHToSendToRedeemer = totals.totalETHDrawn - totals.ETHFee;
@@ -1028,9 +980,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
             totals.totalOldWeightedRecordedTroveDebts
         );
 
-        // Burn the total Bold that is cancelled with debt, and send the redeemed ETH to msg.sender
-        contractsCache.boldToken.burn(msg.sender, totals.totalBoldToRedeem);
-        contractsCache.activePool.sendETH(msg.sender, totals.ETHToSendToRedeemer);
+        // Send the redeemed ETH to sender
+        contractsCache.activePool.sendETH(_sender, totals.ETHToSendToRedeemer);
+        // We’ll burn all the Bold together out in the CollateralRegistry, to save gas
+
+        return totals.totalBoldToRedeem;
     }
 
     // --- Helper functions ---
@@ -1371,92 +1325,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         return TCR < CCR;
     }
 
-    // --- Redemption fee functions ---
-
-    /*
-    * This function has two impacts on the baseRate state variable:
-    * 1) decays the baseRate based on time passed since last redemption or Bold borrowing operation.
-    * then,
-    * 2) increases the baseRate based on the amount redeemed, as a proportion of total supply
-    */
-    function _updateBaseRateFromRedemption(uint256 _ETHDrawn, uint256 _price, uint256 _totalBoldSupply)
-        internal
-        returns (uint256)
-    {
-        uint256 decayedBaseRate = _calcDecayedBaseRate();
-
-        /* Convert the drawn ETH back to Bold at face value rate (1 Bold:1 USD), in order to get
-        * the fraction of total supply that was redeemed at face value. */
-        uint256 redeemedBoldFraction = _ETHDrawn * _price / _totalBoldSupply;
-
-        uint256 newBaseRate = decayedBaseRate + redeemedBoldFraction / BETA;
-        newBaseRate = LiquityMath._min(newBaseRate, DECIMAL_PRECISION); // cap baseRate at a maximum of 100%
-        //assert(newBaseRate <= DECIMAL_PRECISION); // This is already enforced in the line above
-        assert(newBaseRate > 0); // Base rate is always non-zero after redemption
-
-        // Update the baseRate state variable
-        baseRate = newBaseRate;
-        emit BaseRateUpdated(newBaseRate);
-
-        _updateLastFeeOpTime();
-
-        return newBaseRate;
-    }
-
-    function getRedemptionRate() public view override returns (uint256) {
-        return _calcRedemptionRate(baseRate);
-    }
-
-    function getRedemptionRateWithDecay() public view override returns (uint256) {
-        return _calcRedemptionRate(_calcDecayedBaseRate());
-    }
-
-    function _calcRedemptionRate(uint256 _baseRate) internal pure returns (uint256) {
-        return LiquityMath._min(
-            REDEMPTION_FEE_FLOOR + _baseRate,
-            DECIMAL_PRECISION // cap at a maximum of 100%
-        );
-    }
-
-    function _getRedemptionFee(uint256 _ETHDrawn) internal view returns (uint256) {
-        return _calcRedemptionFee(getRedemptionRate(), _ETHDrawn);
-    }
-
-    function getRedemptionFeeWithDecay(uint256 _ETHDrawn) external view override returns (uint256) {
-        return _calcRedemptionFee(getRedemptionRateWithDecay(), _ETHDrawn);
-    }
-
-    function _calcRedemptionFee(uint256 _redemptionRate, uint256 _ETHDrawn) internal pure returns (uint256) {
-        uint256 redemptionFee = _redemptionRate * _ETHDrawn / DECIMAL_PRECISION;
-        require(redemptionFee < _ETHDrawn, "TroveManager: Fee would eat up all returned collateral");
-        return redemptionFee;
-    }
-
-    // --- Internal fee functions ---
-
-    // Update the last fee operation time only if time passed >= decay interval. This prevents base rate griefing.
-    function _updateLastFeeOpTime() internal {
-        uint256 timePassed = block.timestamp - lastFeeOperationTime;
-
-        if (timePassed >= SECONDS_IN_ONE_MINUTE) {
-            lastFeeOperationTime = block.timestamp;
-            emit LastFeeOpTimeUpdated(block.timestamp);
-        }
-    }
-
-    function _calcDecayedBaseRate() internal view returns (uint256) {
-        uint256 minutesPassed = _minutesPassedSinceLastFeeOp();
-        uint256 decayFactor = LiquityMath._decPow(MINUTE_DECAY_FACTOR, minutesPassed);
-
-        return baseRate * decayFactor / DECIMAL_PRECISION;
-    }
-
-    function _minutesPassedSinceLastFeeOp() internal view returns (uint256) {
-        return (block.timestamp - lastFeeOperationTime) / SECONDS_IN_ONE_MINUTE;
-    }
-
     function checkTroveIsActive(uint256 _troveId) public view returns (bool) {
         return Troves[_troveId].status == Status.active;
+    }
+
+    function _getRedemptionFee(uint256 _ETHDrawn, uint256 _redemptionRate) internal pure returns (uint256) {
+        uint256 redemptionFee = _redemptionRate * _ETHDrawn / DECIMAL_PRECISION;
+        return redemptionFee;
     }
 
     // --- Interest rate calculations ---
@@ -1494,37 +1369,16 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
         );
     }
 
+    function _requireIsCollateralRegistry() internal view {
+        require(msg.sender == collateralRegistryAddress, "TroveManager: Caller is not the CollateralRegistry contract");
+    }
+
     function _requireTroveIsActive(uint256 _troveId) internal view {
         require(checkTroveIsActive(_troveId), "TroveManager: Trove does not exist or is closed");
     }
 
-    function _requireBoldBalanceCoversRedemption(IBoldToken _boldToken, address _redeemer, uint256 _amount)
-        internal
-        view
-    {
-        require(
-            _boldToken.balanceOf(_redeemer) >= _amount,
-            "TroveManager: Requested redemption amount must be <= user's Bold token balance"
-        );
-    }
-
     function _requireMoreThanOneTroveInSystem(uint256 TroveIdsArrayLength) internal view {
         require(TroveIdsArrayLength > 1 && sortedTroves.getSize() > 1, "TroveManager: Only one trove in the system");
-    }
-
-    function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
-        require(_amount > 0, "TroveManager: Amount must be greater than zero");
-    }
-
-    function _requireTCRoverMCR(uint256 _price) internal view {
-        require(_getTCR(_price) >= MCR, "TroveManager: Cannot redeem when TCR < MCR");
-    }
-
-    function _requireValidMaxFeePercentage(uint256 _maxFeePercentage) internal pure {
-        require(
-            _maxFeePercentage >= REDEMPTION_FEE_FLOOR && _maxFeePercentage <= DECIMAL_PRECISION,
-            "Max fee percentage must be between 0.5% and 100%"
-        );
     }
 
     // --- Trove property getters ---
@@ -1559,6 +1413,17 @@ contract TroveManager is ERC721, LiquityBase, Ownable, CheckContract, ITroveMana
 
     function troveIsStale(uint256 _troveId) external view returns (bool) {
         return block.timestamp - Troves[_troveId].lastDebtUpdateTime > STALE_TROVE_DURATION;
+    }
+
+    function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool) {
+        uint256 totalDebt = getEntireSystemDebt();
+        uint256 spSize = stabilityPool.getTotalBoldDeposits();
+        uint256 unbackedPortion = totalDebt - spSize;
+
+        uint256 price = priceFeed.fetchPrice();
+        bool redeemable = _getTCR(price) >= _100pct;
+
+        return (unbackedPortion, price, redeemable);
     }
 
     // --- Trove property setters, called by BorrowerOperations ---
