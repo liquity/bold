@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { css } from "@/styled-system/css";
-import { useTheme } from "@liquity2/uikit";
+import { token } from "@/styled-system/tokens";
 
 export function MenuItem({
   icon,
@@ -12,29 +12,33 @@ export function MenuItem({
   label: string;
   selected?: boolean;
 }) {
-  const { color } = useTheme();
   return (
     <div
       aria-selected={selected}
-      style={{
-        color: color(selected ? "accent" : "content"),
-      }}
       className={css({
         display: "flex",
         alignItems: "center",
         gap: 12,
-        height: 32,
-        padding: "0 12px",
+        height: "100%",
         color: "content",
         cursor: "pointer",
         userSelect: "none",
-        _active: {
-          translate: "0 1px",
-        },
       })}
+      style={{
+        color: token(`colors.${selected ? "selected" : "interactive"}`),
+      }}
     >
+      <div
+        className={css({
+          display: "grid",
+          placeItems: "center",
+          width: 24,
+          height: 24,
+        })}
+      >
+        {icon}
+      </div>
       {label}
-      {icon}
     </div>
   );
 }
