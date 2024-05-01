@@ -196,6 +196,10 @@ contract MockTroveManager {
         );
     }
 
+    function _sortedTroves_removeFromBatch(TroveId id) external {
+        _sortedTroves.removeFromBatch(TroveId.unwrap(id));
+    }
+    
     function _sortedTroves_findInsertPosition(uint256 annualInterestRate, Hints memory hints)
         external
         view
@@ -536,7 +540,7 @@ contract SortedTrovesTest is Test {
             tm._removeTrove(id);
 
             if (batchedTrove) {
-                tm._sortedTroves_remove(id);
+                tm._sortedTroves_removeFromBatch(id);
             } else {
                 tm._sortedTroves_remove(id);
             }

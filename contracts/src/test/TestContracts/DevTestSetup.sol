@@ -7,8 +7,8 @@ import "../../deployment.sol";
 contract DevTestSetup is BaseTest {
     IERC20 WETH;
 
-    uint256 boldGasComp;
-    uint256 minNetDebt;
+    uint256 BOLD_GAS_COMP;
+    uint256 MIN_NET_DEBT;
 
     function giveAndApproveETH(address _account, uint256 _amount) public {
         return giveAndApproveCollateral(WETH, _account, _amount, address(borrowerOperations));
@@ -73,8 +73,8 @@ contract DevTestSetup is BaseTest {
             giveAndApproveETH(accountsList[i], initialETHAmount);
         }
 
-        boldGasComp = troveManager.BOLD_GAS_COMPENSATION();
-        minNetDebt = troveManager.MIN_NET_DEBT();
+        BOLD_GAS_COMP = troveManager.BOLD_GAS_COMPENSATION();
+        MIN_NET_DEBT = troveManager.MIN_NET_DEBT();
     }
 
     function _setupForWithdrawETHGainToTrove() internal returns (uint256, uint256, uint256) {
@@ -211,8 +211,8 @@ contract DevTestSetup is BaseTest {
         redeem(E, redeemAmount);
 
         // Check A has net_debt == 0, and B has net_debt < min_net_debt
-        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), boldGasComp);
-        assertLt(troveManager.getTroveEntireDebt(_troveIDs.B) - boldGasComp, troveManager.MIN_NET_DEBT());
+        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), BOLD_GAS_COMP);
+        assertLt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP, troveManager.MIN_NET_DEBT());
 
        // Check A and B tagged as Zombie troves
         assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'
@@ -231,8 +231,8 @@ contract DevTestSetup is BaseTest {
         redeem(E, redeemAmount);
 
         // Check A has net_debt == gas_comp, and B has net_debt > min_net_debt;
-        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), boldGasComp);
-        assertGt(troveManager.getTroveEntireDebt(_troveIDs.B), boldGasComp);
+        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), BOLD_GAS_COMP);
+        assertGt(troveManager.getTroveEntireDebt(_troveIDs.B), BOLD_GAS_COMP);
 
         // // Check A is zombie Trove but B is not
         assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'

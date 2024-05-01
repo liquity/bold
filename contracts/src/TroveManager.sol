@@ -12,7 +12,7 @@ import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 
-// import "forge-std/console.sol";
+// import "forge-std/console2.sol";
 
 contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     string public constant NAME = "TroveManager"; // TODO

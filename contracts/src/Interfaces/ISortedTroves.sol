@@ -24,6 +24,7 @@ interface ISortedTroves {
     ) external;
 
     function remove(uint256 _id) external;
+    function removeFromBatch(uint256 _id) external;
 
     function reInsert(uint256 _id, uint256 _newAnnualInterestRate, uint256 _prevId, uint256 _nextId) external;
     function reInsertBatch(BatchId _id, uint256 _newAnnualInterestRate, uint256 _prevId, uint256 _nextId) external;
