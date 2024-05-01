@@ -170,7 +170,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
             }
         }
 
-        _updateBaseRateAndGetRedemptionRate(boldToken, totals.redeemedAmount, totals.boldSupplyAtStart);
+        _updateBaseRateAndGetRedemptionRate(totals.redeemedAmount, totals.boldSupplyAtStart);
 
         // Burn the total Bold that is cancelled with debt
         if (totals.redeemedAmount > 0) {
@@ -195,7 +195,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     }
 
     // Updates the `baseRate` state with math from `_getUpdatedBaseRateFromRedemption`
-    function _updateBaseRateAndGetRedemptionRate(IBoldToken _boldToken, uint256 _boldAmount, uint256 _totalBoldSupplyAtStart)
+    function _updateBaseRateAndGetRedemptionRate(uint256 _boldAmount, uint256 _totalBoldSupplyAtStart)
         internal
     {
         uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_boldAmount, _totalBoldSupplyAtStart);
