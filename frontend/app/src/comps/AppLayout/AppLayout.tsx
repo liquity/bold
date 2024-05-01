@@ -6,9 +6,9 @@ import { css } from "@/styled-system/css";
 
 export function AppLayout({
   children,
-}: Readonly<{
+}: {
   children: ReactNode;
-}>) {
+}) {
   return (
     <div
       className={css({
@@ -23,7 +23,7 @@ export function AppLayout({
         className={css({
           flexGrow: 0,
           flexShrink: 0,
-          paddingBottom: 40,
+          paddingBottom: 48,
         })}
       >
         <TopBar />
@@ -35,6 +35,7 @@ export function AppLayout({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          flexDirection: "column",
           width: "100%",
         })}
       >

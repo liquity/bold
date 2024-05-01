@@ -1,85 +1,48 @@
-import type { ReactNode } from "react";
+export function IconAccount({ color }: { color?: string }) {
+  return (
+    <svg width="16" height="16" style={{ fill: color }}>
+      <circle cx="8.45455" cy="5.45455" r="4.45455" />
+      <rect x="4" y="9.90918" width="8.90909" height="5.09091" />
+    </svg>
+  );
+}
 
-function IconBase({
-  children,
-  color = "currentColor",
-}: {
-  children: ReactNode;
-  color?: string;
-}) {
+export function IconBorrow({ color }: { color?: string }) {
   return (
     <svg
-      width="16"
-      height="16"
+      width="18"
+      height="18"
       style={{ fill: color }}
     >
-      {children}
+      <path d="M6.364 15.364A9 9 0 0 1 0 18V0a9 9 0 0 1 6.364 15.364Z" />
+      <path d="M9 9a9 9 0 0 1 9-9v18a9 9 0 0 1-9-9Z" />
+    </svg>
+  );
+}
+export function IconLeverage({ color }: { color?: string }) {
+  return (
+    <svg width="18" height="18" style={{ fill: color }}>
+      <path d="M0 11.572h6.429V18H0v-6.428ZM6.428 0h11.571v11.571H6.428V0Z" />
     </svg>
   );
 }
 
 export function IconEarn({ color }: { color?: string }) {
   return (
-    <IconBase color={color}>
+    <svg width="18" height="18" style={{ fill: color }}>
       <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M15 1H1V15H15V1ZM8 12C10.2091 12 12 10.2091 12 8C12 5.79086 10.2091 4 8 4C5.79086 4 4 5.79086 4 8C4 10.2091 5.79086 12 8 12Z"
+        fill-rule="evenodd"
+        d="M18 0H0v18h18V0ZM9.001 14.143a5.143 5.143 0 1 0 0-10.286 5.143 5.143 0 0 0 0 10.286Z"
+        clip-rule="evenodd"
       />
-    </IconBase>
+    </svg>
   );
 }
 
-export function IconBold({ color }: { color?: string }) {
+export function IconStake({ color }: { color?: string }) {
   return (
-    <IconBase color={color}>
-      <path d="M1 1L6 1L1 6L1 1Z" />
-      <path d="M1 15L6 15L1 10L1 15Z" />
-      <path d="M15 1L10 1L15 6L15 1Z" />
-      <circle cx="8" cy="8" r="4" />
-      <path d="M15 15L10 15L15 10L15 15Z" />
-    </IconBase>
-  );
-}
-
-export function IconBorrow({ color }: { color?: string }) {
-  return (
-    <IconBase color={color}>
-      <path d="M5.94975 12.9497C4.63699 14.2625 2.85652 15 1 15L1 1C2.85652 1 4.63699 1.7375 5.94975 3.05025C7.2625 4.36301 8 6.14349 8 8C8 9.85652 7.2625 11.637 5.94975 12.9497Z" />
-      <path d="M8 8C8 6.14349 8.7375 4.36301 10.0503 3.05025C11.363 1.7375 13.1435 1 15 1V15C13.1435 15 11.363 14.2625 10.0503 12.9497C8.7375 11.637 8 9.85652 8 8Z" />
-    </IconBase>
-  );
-}
-
-export function IconPortfolio({ color }: { color?: string }) {
-  return (
-    <IconBase color={color}>
-      <rect x="1.25" y="1.98145" width="4.939" height="5.22395" />
-      <path d="M7.96094 4.69434L11.6548 1.00045L15.1472 4.69434L11.6548 8.18674L7.96094 4.69434Z" />
-      <rect x="9.08594" y="10.2695" width="4.939" height="5.22395" />
-      <rect x="1" y="10" width="5.5" height="5.5" rx="2.75" />
-    </IconBase>
-  );
-}
-
-export function IconAccount({ color }: { color?: string }) {
-  return (
-    <IconBase color={color}>
-      <circle cx="8.45455" cy="5.45455" r="4.45455" />
-      <rect x="4" y="9.90918" width="8.90909" height="5.09091" />
-    </IconBase>
-  );
-}
-
-export function IconStats({ color }: { color?: string }) {
-  return (
-    <IconBase color={color}>
-      <rect x="1" y="11" width="4" height="4" />
-      <rect x="6" y="11" width="4" height="4" />
-      <rect x="6" y="6" width="4" height="4" />
-      <rect x="11" y="11" width="4" height="4" />
-      <rect x="11" y="6" width="4" height="4" />
-      <rect x="11" y="1" width="4" height="4" />
-    </IconBase>
+    <svg width="18" height="18" style={{ fill: color }}>
+      <path d="M6 12h6v6H6v-6ZM6 0h6v6H6V0ZM12 6h6v6h-6V6ZM0 6h6v6H0V6Z" />
+    </svg>
   );
 }

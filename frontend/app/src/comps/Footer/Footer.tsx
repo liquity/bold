@@ -2,17 +2,12 @@
 
 import { palette } from "@/src/colors";
 import { useAboutModal } from "@/src/comps/AboutModal/AboutModal";
-import { useConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
 import { css } from "@/styled-system/css";
 import { TextButton } from "@liquity2/uikit";
-import Image from "next/image";
 import Link from "next/link";
-
-import logo from "./footer-logo.svg";
 
 export function Footer() {
   const aboutModal = useAboutModal();
-  const configModal = useConfigModal();
 
   const links: Array<[
     string | [string, string],
@@ -21,7 +16,7 @@ export function Footer() {
     // ["Liquity", "https://liquity.org"],
     // ["Disclaimer", "https://example.org"],
     // ["Privacy Policy", "https://example.org"],
-    ["Settings", configModal.open],
+    ["Contracts", "/contracts"],
     ["About", aboutModal.open],
   ];
 
@@ -29,32 +24,11 @@ export function Footer() {
     <footer
       className={css({
         display: "flex",
-        justifyContent: "space-between",
+        justifyContent: "flex-end",
         alignItems: "center",
         height: 120,
       })}
     >
-      <div>
-        <Link
-          href="/"
-          className={css({
-            display: "flex",
-            alignItems: "center",
-            height: 64,
-            paddingRight: 16,
-            _active: {
-              translate: "0 1px",
-            },
-          })}
-        >
-          <Image
-            alt="Bold"
-            height={32}
-            src={logo}
-            width={82}
-          />
-        </Link>
-      </div>
       <div
         className={css({
           display: "flex",
@@ -75,8 +49,10 @@ export function Footer() {
                   ? (
                     <Link
                       href={href}
-                      rel="noopener noreferrer"
-                      target="_blank"
+                      {...href.startsWith("http") && {
+                        rel: "noopener noreferrer",
+                        target: "_blank",
+                      }}
                       title={title}
                       className={css({
                         display: "flex",
