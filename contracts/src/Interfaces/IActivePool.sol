@@ -42,4 +42,5 @@ interface IActivePool {
     function sendETH(address _account, uint256 _amount) external;
     function sendETHToDefaultPool(uint256 _amount) external;
     function receiveETH(uint256 _amount) external;
+    function accountForReceivedETH(uint256 _amount) external;
 }
