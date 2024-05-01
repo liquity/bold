@@ -6,9 +6,8 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Dependencies/Ownable.sol";
-import "./Dependencies/CheckContract.sol";
 
-contract CollSurplusPool is Ownable, CheckContract, ICollSurplusPool {
+contract CollSurplusPool is Ownable, ICollSurplusPool {
     using SafeERC20 for IERC20;
 
     string public constant NAME = "CollSurplusPool";
@@ -33,7 +32,6 @@ contract CollSurplusPool is Ownable, CheckContract, ICollSurplusPool {
     event EtherSent(address _to, uint256 _amount);
 
     constructor(address _ETHAddress) {
-        checkContract(_ETHAddress);
         ETH = IERC20(_ETHAddress);
     }
 
@@ -44,10 +42,6 @@ contract CollSurplusPool is Ownable, CheckContract, ICollSurplusPool {
         override
         onlyOwner
     {
-        checkContract(_borrowerOperationsAddress);
-        checkContract(_troveManagerAddress);
-        checkContract(_activePoolAddress);
-
         borrowerOperationsAddress = _borrowerOperationsAddress;
         troveManagerAddress = _troveManagerAddress;
         activePoolAddress = _activePoolAddress;
