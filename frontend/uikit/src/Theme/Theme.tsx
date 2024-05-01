@@ -104,6 +104,8 @@ export const lightTheme = {
     accentContent: "white",
     accentHint: "blue:400",
     background: "white",
+    backgroundActive: "gray:50",
+    border: "gray:200",
     content: "gray:950",
     contentAlt: "gray:600",
     controlBorder: "gray:300",

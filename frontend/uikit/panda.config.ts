@@ -24,7 +24,9 @@ export const liquityUiKitPreset = definePreset({
     tokens: {
       colors: tokenColors,
       fonts: {
-        body: { value: "Geist, sans-serif" },
+        body: {
+          value: "Geist, sans-serif",
+        },
       },
     },
     semanticTokens: {

@@ -1,6 +1,6 @@
 import type { ComponentProps, ReactElement } from "react";
 
-import { Children } from "react";
+import { Children, createContext, useContext } from "react";
 import { css } from "../../styled-system/css";
 import tokenBold from "./icons/bold.svg";
 import tokenEth from "./icons/eth.svg";
@@ -21,45 +21,69 @@ function srcFromName(name: IconName) {
   throw new Error(`Unsupported token icon: ${name}`);
 }
 
-export function TokenIcon({ symbol }: { symbol: IconName }) {
+type Size = "medium" | "large" | number;
+
+function getSizeValue(size: Size) {
+  if (size === "large") return 40;
+  if (size === "medium") return 24;
+  return size;
+}
+
+export function TokenIcon({
+  size = "medium",
+  symbol,
+}: {
+  size?: Size;
+  symbol: IconName;
+}) {
+  const sizeFromGroup = useContext(TokenIconGroupSize);
+  const sizeValue = getSizeValue(sizeFromGroup ?? size);
   return (
     <img
-      title={symbol}
       alt={symbol}
-      height={24}
+      height={sizeValue}
       src={srcFromName(symbol)}
-      width={24}
+      title={symbol}
+      width={sizeValue}
     />
   );
 }
 
-TokenIcon.Group = function TokenIconGroup<
+const TokenIconGroupSize = createContext<Size | undefined>(undefined);
+
+export function TokenIconGroup<
   C extends ReactElement<ComponentProps<typeof TokenIcon>>,
 >({
   children,
+  size,
 }: {
   children: C | C[];
+  size?: Size;
 }) {
   return (
     <div
       style={{
         display: "flex",
         justifyContent: "center",
-        gap: -8,
+        gap: 0,
       }}
     >
-      {Children.map(children, (child) => (
-        <div
-          className={css({
-            marginLeft: -4,
-            _firstOfType: {
-              marginLeft: 0,
-            },
-          })}
-        >
-          {child}
-        </div>
-      ))}
+      <TokenIconGroupSize.Provider value={size}>
+        {Children.map(children, (child) => (
+          <div
+            className={css({
+              marginLeft: -4,
+              _firstOfType: {
+                marginLeft: 0,
+              },
+            })}
+          >
+            {child}
+          </div>
+        ))}
+      </TokenIconGroupSize.Provider>
     </div>
   );
-};
+}
+
+TokenIcon.Group = TokenIconGroup;
