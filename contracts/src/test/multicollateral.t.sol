@@ -163,6 +163,52 @@ contract MulticollateralTest is DevTestSetup {
         uint256 _spBoldAmount4,
         uint256 _redemptionFraction
     ) public {
+        uint256 boldAmount = 10000e18;
+        uint256 minBoldBalance = 1;
+        // TODO: remove gas compensation
+        _spBoldAmount1 = bound(_spBoldAmount1, 0, boldAmount - 200e18);
+        _spBoldAmount2 = bound(_spBoldAmount2, 0, boldAmount - 200e18);
+        _spBoldAmount3 = bound(_spBoldAmount3, 0, boldAmount - 200e18);
+        _spBoldAmount4 = bound(_spBoldAmount4, 0, boldAmount - 200e18 - minBoldBalance);
+        _redemptionFraction = bound(
+            _redemptionFraction,
+            DECIMAL_PRECISION / minBoldBalance,
+            DECIMAL_PRECISION
+        );
+
+        _testMultiCollateralRedemption(boldAmount, _spBoldAmount1, _spBoldAmount2, _spBoldAmount3, _spBoldAmount4, _redemptionFraction);
+    }
+
+    function testMultiCollateralRedemptionCrazy() public {
+        uint256 boldAmount = 10000e18;
+        uint256 minBoldBalance = 1;
+
+        _testMultiCollateralRedemption(
+            boldAmount,
+            /*
+            115792089237316195423570985008687907853269984665640564039457584007913129639932,
+            115792089237316195423570985008687907853269984665640564039457584007913129639932,
+            115792089237316195423570985008687907853269984665640564039457584007913129639932,
+            115792089237316195423570985008687907853269984665640564039457584007913129639932,
+            0
+            */
+            // TODO: remove gas compensation
+            boldAmount - 200e18,
+            boldAmount - 200e18,
+            boldAmount - 200e18,
+            boldAmount - 200e18 - minBoldBalance,
+            DECIMAL_PRECISION / minBoldBalance
+        );
+    }
+
+    function _testMultiCollateralRedemption(
+        uint256 _boldAmount,
+        uint256 _spBoldAmount1,
+        uint256 _spBoldAmount2,
+        uint256 _spBoldAmount3,
+        uint256 _spBoldAmount4,
+        uint256 _redemptionFraction
+    ) internal {
         TestValues memory testValues1;
         TestValues memory testValues2;
         TestValues memory testValues3;
@@ -173,37 +219,29 @@ contract MulticollateralTest is DevTestSetup {
         testValues3.price = contractsArray[2].priceFeed.getPrice();
         testValues4.price = contractsArray[3].priceFeed.getPrice();
 
-        uint256 boldAmount = 10000e18;
-        // TODO: remove gas compensation
-        _spBoldAmount1 = bound(_spBoldAmount1, 0, boldAmount - 200e18);
-        _spBoldAmount2 = bound(_spBoldAmount2, 0, boldAmount - 200e18);
-        _spBoldAmount3 = bound(_spBoldAmount3, 0, boldAmount - 200e18);
-        _spBoldAmount4 = bound(_spBoldAmount4, 0, boldAmount - 200e18);
-        // With too low redemption fractions, it reverts due to `newBaseRate` rounding down to zero, so we put a min of 0.01%
-        _redemptionFraction = bound(_redemptionFraction, 1e14, DECIMAL_PRECISION);
 
         // First collateral
-        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(0, A, 0, 10e18, boldAmount, 5e16);
+        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(0, A, 0, 10e18, _boldAmount, 5e16);
         if (_spBoldAmount1 > 0) makeMulticollateralSPDeposit(0, A, _spBoldAmount1);
 
         // Second collateral
-        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(1, A, 0, 10e18, boldAmount, 5e16);
+        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(1, A, 0, 10e18, _boldAmount, 5e16);
         if (_spBoldAmount2 > 0) makeMulticollateralSPDeposit(1, A, _spBoldAmount2);
 
         // Third collateral
-        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(2, A, 0, 10e18, boldAmount, 5e16);
+        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(2, A, 0, 10e18, _boldAmount, 5e16);
         if (_spBoldAmount3 > 0) makeMulticollateralSPDeposit(2, A, _spBoldAmount3);
 
         // Fourth collateral
-        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(3, A, 0, 10e18, boldAmount, 5e16);
+        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(3, A, 0, 10e18, _boldAmount, 5e16);
         if (_spBoldAmount4 > 0) makeMulticollateralSPDeposit(3, A, _spBoldAmount4);
 
         uint256 boldBalance = boldToken.balanceOf(A);
         // Check A’s final bal
         // TODO: change when we switch to new gas compensation
-        //assertEq(boldToken.balanceOf(A), boldAmount * 4 - _spBoldAmount1 - _spBoldAmount2 - _spBoldAmount3 - _spBoldAmount4, "Wrong Bold balance before redemption");
+        //assertEq(boldToken.balanceOf(A), _boldAmount * 4 - _spBoldAmount1 - _spBoldAmount2 - _spBoldAmount3 - _spBoldAmount4, "Wrong Bold balance before redemption");
         // Stack too deep
-        //assertEq(boldBalance, boldAmount * 4 - _spBoldAmount1 - _spBoldAmount2 - _spBoldAmount3 - _spBoldAmount4 - 800e18, "Wrong Bold balance before redemption");
+        //assertEq(boldBalance, _boldAmount * 4 - _spBoldAmount1 - _spBoldAmount2 - _spBoldAmount3 - _spBoldAmount4 - 800e18, "Wrong Bold balance before redemption");
 
         uint256 redeemAmount = boldBalance * _redemptionFraction / DECIMAL_PRECISION;
 
@@ -213,10 +251,10 @@ contract MulticollateralTest is DevTestSetup {
         testValues3.collInitialBalance = contractsArray[2].WETH.balanceOf(A);
         testValues4.collInitialBalance = contractsArray[3].WETH.balanceOf(A);
 
-        testValues1.unbackedPortion = boldAmount - _spBoldAmount1;
-        testValues2.unbackedPortion = boldAmount - _spBoldAmount2;
-        testValues3.unbackedPortion = boldAmount - _spBoldAmount3;
-        testValues4.unbackedPortion = boldAmount - _spBoldAmount4;
+        testValues1.unbackedPortion = _boldAmount - _spBoldAmount1;
+        testValues2.unbackedPortion = _boldAmount - _spBoldAmount2;
+        testValues3.unbackedPortion = _boldAmount - _spBoldAmount3;
+        testValues4.unbackedPortion = _boldAmount - _spBoldAmount4;
         uint256 totalUnbacked = testValues1.unbackedPortion + testValues2.unbackedPortion + testValues3.unbackedPortion
             + testValues4.unbackedPortion;
 
