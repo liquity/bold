@@ -142,7 +142,7 @@ function PoolHeader({ pool }: { pool: typeof POOLS[number] }) {
 }
 
 function MyDeposit({ pool }: { pool: typeof POOLS[number] }) {
-  return (
+  return pool.deposit && (
     <div
       className={css({
         display: "grid",
