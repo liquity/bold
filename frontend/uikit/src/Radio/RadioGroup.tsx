@@ -5,7 +5,7 @@ import { noop } from "../utils";
 
 type RadioGroupContext = {
   addRadio: (radioIndex: number) => void;
-  focusableIndex: number;
+  focusableIndex?: number;
   select: (radioIndex: number) => void;
   removeRadio: (radioIndex: number) => void;
   selectNext: () => void;
@@ -13,9 +13,15 @@ type RadioGroupContext = {
   selected: number;
 };
 
-const RadioGroupContext = createContext<RadioGroupContext>(
-  {} as RadioGroupContext,
-);
+const RadioGroupContext = createContext<RadioGroupContext>({
+  addRadio: noop,
+  focusableIndex: undefined,
+  select: noop,
+  removeRadio: noop,
+  selectNext: noop,
+  selectPrev: noop,
+  selected: 0,
+});
 
 export function RadioGroup({
   children,
@@ -85,7 +91,7 @@ type RadioGroupValue = RadioGroupContext & {
 };
 
 export function useRadioGroup(radioIndex?: number): RadioGroupValue | null {
-  const radioGroup = useContext(RadioGroupContext) as RadioGroupValue;
+  const radioGroup = useContext(RadioGroupContext);
 
   const { addRadio, removeRadio } = radioGroup ?? {};
   useEffect(() => {
@@ -100,24 +106,26 @@ export function useRadioGroup(radioIndex?: number): RadioGroupValue | null {
     return null;
   }
 
-  // Handles key events and trigger changes in the RadioGroup as needed.
-  radioGroup.onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.altKey || event.metaKey || event.ctrlKey) {
-      return;
-    }
+  return {
+    ...radioGroup,
 
-    if (KEYS_PREV.includes(event.key)) {
-      radioGroup.selectPrev();
-      event.preventDefault();
-    }
+    // Handles key events and trigger changes in the RadioGroup as needed.
+    onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
+      if (event.altKey || event.metaKey || event.ctrlKey) {
+        return;
+      }
 
-    if (KEYS_NEXT.includes(event.key)) {
-      radioGroup.selectNext();
-      event.preventDefault();
-    }
+      if (KEYS_PREV.includes(event.key)) {
+        radioGroup.selectPrev();
+        event.preventDefault();
+      }
+
+      if (KEYS_NEXT.includes(event.key)) {
+        radioGroup.selectNext();
+        event.preventDefault();
+      }
+    },
   };
-
-  return radioGroup;
 }
 
 function findSiblingIndex<Index extends number>(
