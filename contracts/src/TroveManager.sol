@@ -12,7 +12,7 @@ import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 
-// import "forge-std/console.sol";
+// import "forge-std/console2.sol";
 
 contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     string public constant NAME = "TroveManager"; // TODO
@@ -39,7 +39,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         active,
         closedByOwner,
         closedByLiquidation,
-        closedByRedemption
+        closedByRedemption,
+        unredeemable
     }
 
     // Store the necessary data for a trove
@@ -298,7 +299,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
     // Single liquidation function. Closes the trove if its ICR is lower than the minimum collateral ratio.
     function liquidate(uint256 _troveId) external override {
-        _requireTroveIsActive(_troveId);
+        _requireTroveIsOpen(_troveId);
 
         uint256[] memory troves = new uint256[](1);
         troves[0] = _troveId;
@@ -764,8 +765,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         singleRedemption.newRecordedTroveDebt = entireTroveDebt - singleRedemption.BoldLot;
         uint256 newColl = Troves[_troveId].coll - singleRedemption.ETHLot;
 
-        if (singleRedemption.newRecordedTroveDebt <= MIN_NET_DEBT) {
-            // TODO: tag it as a zombie Trove and remove from Sorted List
+        if (_getNetDebt(singleRedemption.newRecordedTroveDebt) < MIN_NET_DEBT) {
+            Troves[_troveId].status = Status.unredeemable;
+            sortedTroves.remove(_troveId);
+            // TODO: should we also remove from the Troves array? Seems unneccessary as it's only used for off-chain hints. 
+            // We save borrowers gas by not removing 
         }
         Troves[_troveId].debt = singleRedemption.newRecordedTroveDebt;
         Troves[_troveId].coll = newColl;
@@ -922,7 +926,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 pendingBoldDebtReward;
 
         if (hasRedistributionGains(_troveId)) {
-            _requireTroveIsActive(_troveId);
+            _requireTroveIsOpen(_troveId);
 
             // Compute redistribution gains
             pendingETHReward = getPendingETHReward(_troveId);
@@ -960,7 +964,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 snapshotETH = rewardSnapshots[_troveId].ETH;
         uint256 rewardPerUnitStaked = L_ETH - snapshotETH;
 
-        if (rewardPerUnitStaked == 0 || Troves[_troveId].status != Status.active) return 0;
+        if (rewardPerUnitStaked == 0 || !checkTroveIsOpen(_troveId)) {return 0;}
 
         uint256 stake = Troves[_troveId].stake;
 
@@ -974,7 +978,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 snapshotBoldDebt = rewardSnapshots[_troveId].boldDebt;
         uint256 rewardPerUnitStaked = L_boldDebt - snapshotBoldDebt;
 
-        if (rewardPerUnitStaked == 0 || Troves[_troveId].status != Status.active) return 0;
+        if (rewardPerUnitStaked == 0 || !checkTroveIsOpen(_troveId)) {return 0;}
 
         uint256 stake = Troves[_troveId].stake;
 
@@ -989,7 +993,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         * this indicates that rewards have occured since the snapshot was made, and the user therefore has
         * redistribution gains
         */
-        if (Troves[_troveId].status != Status.active) return false;
+        if (!checkTroveIsOpen(_troveId)) {return false;}
 
         return (rewardSnapshots[_troveId].ETH < L_ETH);
     }
@@ -1126,6 +1130,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 TroveIdsArrayLength = TroveIds.length;
         _requireMoreThanOneTroveInSystem(TroveIdsArrayLength);
 
+        Status prevStatus = Troves[_troveId].status;
+
         // Zero Trove properties
         Troves[_troveId].status = closedStatus;
         Troves[_troveId].coll = 0;
@@ -1137,7 +1143,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         rewardSnapshots[_troveId].boldDebt = 0;
 
         _removeTroveId(_troveId, TroveIdsArrayLength);
-        sortedTroves.remove(_troveId);
+        if (prevStatus == Status.active) {sortedTroves.remove(_troveId);}
 
         // burn ERC721
         // TODO: Should we do it?
@@ -1223,9 +1229,20 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         return TCR < CCR;
     }
+    
+    function checkTroveIsOpen(uint256 _troveId) public view returns (bool) {
+        Status status = Troves[_troveId].status;
+        return status == Status.active || status == Status.unredeemable;
+    }
 
-    function checkTroveIsActive(uint256 _troveId) public view returns (bool) {
-        return Troves[_troveId].status == Status.active;
+    function checkTroveIsActive(uint256 _troveId) external view returns (bool) {
+        Status status = Troves[_troveId].status;
+        return status == Status.active;
+    }
+
+    function checkTroveIsUnredeemable(uint256 _troveId) external view returns (bool) {
+        Status status = Troves[_troveId].status;
+        return status == Status.unredeemable;
     }
 
     function _getRedemptionFee(uint256 _ETHDrawn, uint256 _redemptionRate) internal pure returns (uint256) {
@@ -1272,8 +1289,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         require(msg.sender == collateralRegistryAddress, "TroveManager: Caller is not the CollateralRegistry contract");
     }
 
-    function _requireTroveIsActive(uint256 _troveId) internal view {
-        require(checkTroveIsActive(_troveId), "TroveManager: Trove does not exist or is closed");
+    function _requireTroveIsOpen(uint256 _troveId) internal view {
+        require(checkTroveIsOpen(_troveId), "TroveManager: Trove does not exist or is closed");
     }
 
     function _requireMoreThanOneTroveInSystem(uint256 TroveIdsArrayLength) internal view {
@@ -1351,6 +1368,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         // Record the Trove's stake (for redistributions) and update the total stakes
         uint256 stake = _updateStakeAndTotalStakes(_troveId);
         return (stake, index);
+    }
+
+    function setTroveStatusToActive(uint256 _troveId) external {
+        _requireCallerIsBorrowerOperations();
+        Troves[_troveId].status = Status.active;
     }
 
     function updateTroveDebtAndInterest(uint256 _troveId, uint256 _entireTroveDebt, uint256 _newAnnualInterestRate)

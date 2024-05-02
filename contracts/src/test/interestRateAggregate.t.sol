@@ -2425,7 +2425,10 @@ contract InterestRateAggregate is DevTestSetup {
     //  --- redemption tests ---
 
     function testRedemptionWithNoRedistGainsChangesAggRecordedDebtCorrectly() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemption();
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        // Fast-forward to generate interest
+        vm.warp(block.timestamp + 1 days);
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
 
@@ -2441,11 +2444,18 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionReducesPendingAggInterestTo0() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemption();
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        // Fast-forward to generate interest
+        vm.warp(block.timestamp + 1 days);
 
         assertGt(activePool.calcPendingAggInterest(), 0);
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+
+        // Fast-forward to generate interest
+        vm.warp(block.timestamp + 14 days);
+
         // E redeems
         redeem(E, debt_A);
 
@@ -2453,7 +2463,10 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionMintsPendingAggInterestToRouter() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemption();
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        // Fast-forward to generate interest
+        vm.warp(block.timestamp + 1 days);
 
         // Check I-router balance is 0
         assertEq(boldToken.balanceOf(address(mockInterestRouter)), 0);
@@ -2470,7 +2483,10 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionUpdatesLastAggUpdateTimeToNow() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemption();
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        // Fast-forward to generate interest
+        vm.warp(block.timestamp + 1 days);
 
         assertGt(activePool.lastAggUpdateTime(), 0);
         assertLt(activePool.lastAggUpdateTime(), block.timestamp);
@@ -2484,7 +2500,10 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionWithNoRedistGainsChangesRecordedDebtSumCorrectly() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemption();
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        // Fast-forward to generate interest
+        vm.warp(block.timestamp + 1 days);
 
         // Get current recorded active debt
         uint256 recordedDebtSum_1 = activePool.getRecordedDebtSum();
@@ -2517,7 +2536,10 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionWithNoRedistGainsChangesWeightedDebtSumCorrectly() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemption();
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        // Fast-forward to generate interest
+        vm.warp(block.timestamp + 1 days);
 
         // Get weighted recorded active debt
         uint256 aggWeightedDebtSum_1 = activePool.aggWeightedDebtSum();
@@ -2548,7 +2570,7 @@ contract InterestRateAggregate is DevTestSetup {
         // Check recorded debt sum has changed correctly
         assertEq(activePool.aggWeightedDebtSum(), expectedAggWeightedRecordedDebt);
     }
-
+    
     // TODO: mixed collateral & debt adjustment opps
     // TODO: tests with pending debt redist. gain >0
     // TODO: tests that show total debt change under user ops

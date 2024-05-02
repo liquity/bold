@@ -342,7 +342,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     function withdrawETHGainToTrove(uint256 _troveId) external override {
         uint256 initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
-        _requireTroveIsActive(_troveId);
+        _requireTroveIsOpen(_troveId);
         _requireUserHasETHGain(msg.sender);
 
         uint256 depositorETHGain = getDepositorETHGain(msg.sender);
@@ -695,8 +695,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         require(_amount > 0, "StabilityPool: Amount must be non-zero");
     }
 
-    function _requireTroveIsActive(uint256 _troveId) internal view {
-        require(troveManager.checkTroveIsActive(_troveId), "StabilityPool: trove must be active to withdraw ETHGain to");
+    function _requireTroveIsOpen(uint256 _troveId) internal view {
+        require(troveManager.checkTroveIsOpen(_troveId), "StabilityPool: trove must be active to withdraw ETHGain to");
     }
 
     function _requireUserHasETHGain(address _depositor) internal view {

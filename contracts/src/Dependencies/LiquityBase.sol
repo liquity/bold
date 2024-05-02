@@ -72,8 +72,6 @@ contract LiquityBase is BaseMath, ILiquityBase {
     function getEntireSystemDebt() public view returns (uint256 entireSystemDebt) {
         uint256 activeDebt = activePool.getTotalActiveDebt();
         uint256 closedDebt = defaultPool.getBoldDebt();
-        // console2.log("SYS::activeDebt", activeDebt);
-        // console2.log("SYS::closedDebt", closedDebt);
 
         return activeDebt + closedDebt;
     }

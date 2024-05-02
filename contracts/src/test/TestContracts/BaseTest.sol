@@ -60,6 +60,7 @@ contract BaseTest is Test {
         uint256 B;
         uint256 C;
         uint256 D;
+        uint256 E;
     }
 
     struct TroveIDs {
@@ -67,6 +68,7 @@ contract BaseTest is Test {
         uint256 B;
         uint256 C;
         uint256 D;
+        uint256 E;
     }
 
     struct TroveCollAmounts {
@@ -74,6 +76,7 @@ contract BaseTest is Test {
         uint256 B;
         uint256 C;
         uint256 D;
+        uint256 E;
     }
 
     struct TroveInterestRates {
@@ -81,6 +84,7 @@ contract BaseTest is Test {
         uint256 B;
         uint256 C;
         uint256 D;
+        uint256 E;
     }
 
     struct TroveAccruedInterests {
@@ -88,6 +92,7 @@ contract BaseTest is Test {
         uint256 B;
         uint256 C;
         uint256 D;
+        uint256 E;
     }
 
     // --- functions ---
