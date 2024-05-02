@@ -107,8 +107,7 @@ contract Redemptions is DevTestSetup {
     function testRedemptionIncludesAccruedTroveInterest() public {
         (,, TroveIDs memory troveIDs) = _setupForRedemption();
 
-        (,, uint256 redistDebtGain_A,, uint256 accruedInterest_A) =
-            troveManager.getEntireDebtAndColl(troveIDs.A);
+        (,, uint256 redistDebtGain_A,, uint256 accruedInterest_A) = troveManager.getEntireDebtAndColl(troveIDs.A);
         assertGt(accruedInterest_A, 0);
         assertEq(redistDebtGain_A, 0);
 
