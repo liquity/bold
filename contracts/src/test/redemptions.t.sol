@@ -4,7 +4,7 @@ import "./TestContracts/DevTestSetup.sol";
 
 contract Redemptions is DevTestSetup {
     function testRedemptionIsInOrderOfInterestRate() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (uint256 coll, , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
@@ -43,7 +43,7 @@ contract Redemptions is DevTestSetup {
 
     // - Troves can be redeemed down to gas comp
     function testFullRedemptionDoesntCloseTroves() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
@@ -58,7 +58,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testFullRedemptionLeavesTrovesWithDebtEqualToGasComp() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
@@ -73,7 +73,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testFullRedemptionSkipsTrovesAtGasCompDebt() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (uint256 coll, , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
@@ -105,7 +105,7 @@ contract Redemptions is DevTestSetup {
     // - Accrued Trove interest contributes to redee into debt of a redeemed trove
 
     function testRedemptionIncludesAccruedTroveInterest() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -133,7 +133,7 @@ contract Redemptions is DevTestSetup {
     // --- Zombie Troves ---
 
     function testFullyRedeemedTroveBecomesZombieTrove() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -141,7 +141,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testTroveRedeemedToBelowMIN_NET_DEBTBecomesZombieTrove() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -149,7 +149,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testTroveRedeemedToAboveMIN_NET_DEBTDoesNotBecomesZombieTrove() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTroveAAndHitB(troveIDs);
 
@@ -157,7 +157,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testZombieTrovesRemovedFromSortedList() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Check A,B,C,D in sorted list
         assertTrue(sortedTroves.contains(troveIDs.A));
@@ -178,7 +178,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testZombieTroveCantBeRedeemedFrom() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -206,7 +206,7 @@ contract Redemptions is DevTestSetup {
         uint256 price = 2000e18;
         priceFeed.setPrice(price);
 
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -287,7 +287,7 @@ contract Redemptions is DevTestSetup {
         uint256 price = 2000e18;
         priceFeed.setPrice(price);
 
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -319,7 +319,7 @@ contract Redemptions is DevTestSetup {
     // --- Borrower ops on zombie troves ---
 
     function testZombieBorrowerCanCloseZombieTrove() public {
-     (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+     ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -338,7 +338,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testZombieBorrowerCanDrawFreshDebtToAboveMIN_NET_DEBT() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -386,7 +386,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testZombieTroveDrawingFreshDebtToAboveMIN_NET_DEBTChangesStatusToActive() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -438,7 +438,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testZombieTroveDrawingFreshDebtToAboveMIN_NET_DEBTInsertsItToSortedList() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -494,7 +494,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testZombieBorrowerDrawsFreshDebtToAboveMIN_NET_DEBTReducesPendingInterestTo0() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -549,7 +549,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testZombieTroveBorrowerCanNotDrawFreshDebtToBelowMIN_NET_DEBT() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -595,7 +595,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testZombieTroveBorrowerCanNotRepayDebt() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -617,7 +617,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testZombieTroveBorrowerCanNotUseNormalWithdrawBoldFunction() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -635,7 +635,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testZombieTroveBorrowerCanNotUseNormalAdjustTroveFunction() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -667,7 +667,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testZombieTroveBorrowerCanNotAddColl() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -687,7 +687,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testZombieTroveBorrowerCanNotChangeInterestRate() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
@@ -706,11 +706,9 @@ contract Redemptions is DevTestSetup {
     } 
 
     function testZombieTroveAccruedInterestCanBePermissionlesslyApplied() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
-
-        uint256 newInterestRate = 37e16;
 
         // fast-forward time such that trove is Stale
         vm.warp(block.timestamp + 90 days + 1);
@@ -729,7 +727,7 @@ contract Redemptions is DevTestSetup {
     } 
 
     function testZombieTroveCanBeLiquidated() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        ( , , TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
