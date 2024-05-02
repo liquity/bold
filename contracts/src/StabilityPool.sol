@@ -283,7 +283,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     function provideToSP(uint256 _amount) external override {
         _requireNonZeroAmount(_amount);
 
-        activePool.mintAggInterestNoTroveChange();
+        activePool.mintAggInterest();
 
         uint256 initialDeposit = deposits[msg.sender].initialValue;
 
@@ -314,7 +314,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
 
-        activePool.mintAggInterestNoTroveChange();
+        activePool.mintAggInterest();
 
         uint256 depositorETHGain = getDepositorETHGain(msg.sender);
 

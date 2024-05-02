@@ -54,8 +54,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 annualInterestRate;
         uint256 troveDebtIncrease;
         uint256 troveDebtDecrease;
-        uint256 recordedDebtIncrease;
-        uint256 recordedDebtDecrease;
     }
 
     struct LocalVariables_openTrove {
@@ -204,8 +202,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // --- Effects & interactions ---
 
         uint256 weightedRecordedTroveDebt = vars.compositeDebt * _annualInterestRate;
-        contractsCache.activePool.mintAggInterest(
-            vars.compositeDebt, 0, vars.compositeDebt, 0, weightedRecordedTroveDebt, 0
+        contractsCache.activePool.mintAggInterestAndAccountForTroveChange(
+            vars.compositeDebt, 0, weightedRecordedTroveDebt, 0
         );
 
         // Set the stored Trove properties and mint the NFT
@@ -377,21 +375,15 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         if (_isDebtIncrease) {
             // Increase Trove debt by the drawn debt + redist. gain
             vars.troveDebtIncrease = _boldChange + vars.redistDebtGain;
-            vars.recordedDebtIncrease = _boldChange + vars.accruedTroveInterest;
         } else {
             // Increase Trove debt by redist. gain and decrease by the repaid debt
             vars.troveDebtIncrease = vars.redistDebtGain;
             vars.troveDebtDecrease = _boldChange;
-
-            vars.recordedDebtIncrease = vars.accruedTroveInterest;
-            vars.recordedDebtDecrease = _boldChange;
         }
 
-        activePool.mintAggInterest(
+        activePool.mintAggInterestAndAccountForTroveChange(
             vars.troveDebtIncrease,
             vars.troveDebtDecrease,
-            vars.recordedDebtIncrease,
-            vars.recordedDebtDecrease,
             vars.newWeightedTroveDebt,
             vars.initialWeightedRecordedTroveDebt
         );
@@ -427,7 +419,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         (
             uint256 entireTroveDebt,
             uint256 entireTroveColl,
-            uint256 debtRedistGain,
+            , // debtRedistGain
             , // ETHredist gain
             uint256 accruedTroveInterest
         ) = contractsCache.troveManager.getEntireDebtAndColl(_troveId);
@@ -448,13 +440,9 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // Remove the Trove's initial recorded debt plus its accrued interest from ActivePool.aggRecordedDebt,
         // but *don't* remove the redistribution gains, since these were not yet incorporated into the sum.
         uint256 troveDebtDecrease = initialRecordedTroveDebt + accruedTroveInterest;
-        // Remove only the Trove's latest recorded debt (inc. redist. gains) from the recorded debt tracker,
-        // i.e. exclude the accrued interest since it has not been added.
-        // TODO: If/when redist. gains are gas-optimized, exclude them from here too.
-        uint256 recordedDebtSumDecrease = initialRecordedTroveDebt + debtRedistGain;
 
-        contractsCache.activePool.mintAggInterest(
-            0, troveDebtDecrease, 0, recordedDebtSumDecrease, 0, initialWeightedRecordedTroveDebt
+        contractsCache.activePool.mintAggInterestAndAccountForTroveChange(
+            0, troveDebtDecrease, 0, initialWeightedRecordedTroveDebt
         );
 
         contractsCache.troveManager.removeStake(_troveId);
@@ -626,8 +614,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // Add only the Trove's accrued interest to the recorded debt tracker since we have already applied redist. gains.
         // No debt is issued/repaid, so the net Trove debt change is purely the redistribution gain
         // TODO: also include redist. gains here in the recordedSumIncrease arg if we gas-optimize them
-        _activePool.mintAggInterest(
-            redistDebtGain, 0, accruedTroveInterest, 0, newWeightedTroveDebt, initialWeightedRecordedTroveDebt
+        _activePool.mintAggInterestAndAccountForTroveChange(
+            redistDebtGain, 0, newWeightedTroveDebt, initialWeightedRecordedTroveDebt
         );
 
         return entireTroveDebt;
