@@ -1,3 +1,5 @@
 packages:
-  - 'contracts/'
-  - 'frontend/'
+  - './contracts'
+  - './frontend/app'
+  - './frontend/uikit'
+  - './frontend/uikit-gallery'

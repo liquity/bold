@@ -5,6 +5,7 @@ const BorrowerOperationsTester = artifacts.require(
   "./BorrowerOperationsTester.sol",
 );
 const TroveManagerTester = artifacts.require("TroveManagerTester");
+const CollateralRegistryTester = artifacts.require("CollateralRegistryTester");
 
 const { dec, toBN, assertRevert } = th;
 
@@ -42,6 +43,7 @@ contract("BorrowerOperations", async (accounts) => {
   let activePool;
   let defaultPool;
   let borrowerOperations;
+  let collateralRegistry;
 
   let BOLD_GAS_COMPENSATION;
   let MIN_NET_DEBT;
@@ -60,6 +62,7 @@ contract("BorrowerOperations", async (accounts) => {
     mocks: {
       BorrowerOperations: BorrowerOperationsTester,
       TroveManager: TroveManagerTester,
+      CollateralRegistry: CollateralRegistryTester,
     },
     callback: async (contracts) => {
       const { borrowerOperations } = contracts;
@@ -92,6 +95,7 @@ contract("BorrowerOperations", async (accounts) => {
       activePool = contracts.activePool;
       defaultPool = contracts.defaultPool;
       borrowerOperations = contracts.borrowerOperations;
+      collateralRegistry = contracts.collateralRegistry;
 
       BOLD_GAS_COMPENSATION = result.BOLD_GAS_COMPENSATION;
       MIN_NET_DEBT = result.MIN_NET_DEBT;
@@ -395,7 +399,7 @@ contract("BorrowerOperations", async (accounts) => {
     //   assert.isAtMost(th.getDifference(dennis_Stake), 100)
     // })
 
-    it("addColl(), reverts if trove is non-existent or closed", async () => {
+    it("addColl(), reverts if trove is not active", async () => {
       // A, B open troves
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } });
@@ -409,7 +413,7 @@ contract("BorrowerOperations", async (accounts) => {
         assert.isFalse(txCarol.receipt.status);
       } catch (error) {
         assert.include(error.message, "revert");
-        assert.include(error.message, "Trove does not exist or is closed");
+        assert.include(error.message, "BorrowerOps: Trove does not have active status");
       }
 
       // Price drops
@@ -429,7 +433,7 @@ contract("BorrowerOperations", async (accounts) => {
         assert.isFalse(txBob.receipt.status);
       } catch (error) {
         assert.include(error.message, "revert");
-        assert.include(error.message, "Trove does not exist or is closed");
+        assert.include(error.message, "BorrowerOps: Trove does not have active status");
       }
     });
 
@@ -2752,56 +2756,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(repayBoldPromise_B, "revert");
     });
 
-    // --- Internal _adjustTrove() ---
-
-    // no need to test this with proxies
-    it("Internal _adjustTrove(): reverts when op is a withdrawal and _borrower param is not the msg.sender", async () => {
-      await openTrove({
-        extraBoldAmount: toBN(dec(10000, 18)),
-        ICR: toBN(dec(10, 18)),
-        extraParams: { from: whale },
-      });
-      await openTrove({
-        extraBoldAmount: toBN(dec(10000, 18)),
-        ICR: toBN(dec(10, 18)),
-        extraParams: { from: bob },
-      });
-
-      const txPromise_A = borrowerOperations.callInternalAdjustLoan(
-        alice,
-        dec(1, 18),
-        dec(1, 18),
-        true,
-        { from: bob },
-      );
-      await assertRevert(
-        txPromise_A,
-        "BorrowerOps: Caller must be the borrower for a withdrawal",
-      );
-      const txPromise_B = borrowerOperations.callInternalAdjustLoan(
-        bob,
-        dec(1, 18),
-        dec(1, 18),
-        true,
-        { from: owner },
-      );
-      await assertRevert(
-        txPromise_B,
-        "BorrowerOps: Caller must be the borrower for a withdrawal",
-      );
-      const txPromise_C = borrowerOperations.callInternalAdjustLoan(
-        carol,
-        dec(1, 18),
-        dec(1, 18),
-        true,
-        { from: bob },
-      );
-      await assertRevert(
-        txPromise_C,
-        "BorrowerOps: Caller must be the borrower for a withdrawal",
-      );
-    });
-
     // --- closeTrove() ---
 
     it("closeTrove(): reverts when it would lower the TCR below CCR", async () => {
@@ -3517,13 +3471,13 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(B_Coll.eq(B_emittedColl));
       assert.isTrue(C_Coll.eq(C_emittedColl));
 
-      const baseRateBefore = await troveManager.baseRate();
+      const baseRateBefore = await collateralRegistry.baseRate();
 
       // Artificially make baseRate 6% (higher than the intital 5%)
-      await troveManager.setBaseRate(dec(6, 16));
-      await troveManager.setLastFeeOpTimeToNow();
+      await collateralRegistry.setBaseRate(dec(6, 16));
+      await collateralRegistry.setLastFeeOpTimeToNow();
 
-      assert.isTrue((await troveManager.baseRate()).gt(baseRateBefore));
+      assert.isTrue((await collateralRegistry.baseRate()).gt(baseRateBefore));
 
       const { troveId: DTroveId, tx: txD } = await openTrove({
         extraBoldAmount: toBN(dec(5000, 18)),

@@ -14,6 +14,7 @@ contract Deployment is DevTestSetup {
         assertNotEq(address(stabilityPool), address(0));
         assertNotEq(address(troveManager), address(0));
         assertNotEq(address(mockInterestRouter), address(0));
+        assertNotEq(address(collateralRegistry), address(0));
         logContractAddresses();
     }
 

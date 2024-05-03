@@ -141,16 +141,19 @@ Deploying Liquity contracts with the following settings:
   VERIFIER_URL:       ${options.verifierUrl}
 `;
 
-  const envVars = [
-    `DEPLOYER=${options.deployer}`,
-  ];
+  process.env.DEPLOYER = options.deployer;
 
   if (options.openDemoTroves) {
-    envVars.push("OPEN_DEMO_TROVES=true");
+    process.env.OPEN_DEMO_TROVES = "true";
+  }
+
+  if ("CI" in process.env) {
+    echo("Workaround: deleting variable 'CI' from environment"); // See https://github.com/liquity/bold/pull/113
+    delete process.env.CI;
   }
 
   // deploy
-  await $`${envVars} forge ${forgeArgs}`;
+  await $`forge ${forgeArgs}`;
 
   const deployedContracts = await getDeployedContracts(
     `broadcast/DeployLiquity2.s.sol/${options.chainId}/run-latest.json`,

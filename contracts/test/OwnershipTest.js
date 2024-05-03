@@ -46,52 +46,68 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
     }
   };
 
-  const testSetAddresses = async (contract, numberOfAddresses) => {
+  const testDeploymentSetter = async (contract, numberOfAddresses, checkContract=true, twice=true, method='setAddresses') => {
     const dumbContract = await GasPool.new();
     const params = Array(numberOfAddresses).fill(dumbContract.address);
 
     // Attempt call from alice
-    await th.assertRevert(contract.setAddresses(...params, { from: alice }));
+    await th.assertRevert(contract[method](...params, { from: alice }));
 
-    // Attempt to use zero address
-    await testZeroAddress(contract, params);
-    // Attempt to use non contract
-    await testNonContractAddress(contract, params);
+    if (checkContract) {
+      // Attempt to use zero address
+      await testZeroAddress(contract, params, method);
+      // Attempt to use non contract
+      await testNonContractAddress(contract, params, method);
+    }
 
     // Owner can successfully set any address
-    const txOwner = await contract.setAddresses(...params, { from: owner });
+    const txOwner = await contract[method](...params, { from: owner });
     assert.isTrue(txOwner.receipt.status);
     // fails if called twice
-    await th.assertRevert(contract.setAddresses(...params, { from: owner }));
+    if (twice) {
+      await th.assertRevert(contract[method](...params, { from: owner }));
+    }
   };
 
+  describe("BoldToken", async (accounts) => {
+    it("setBranchAddresses(): reverts when called by non-owner, with wrong addresses", async () => {
+      await testDeploymentSetter(boldToken, 4, false, false, 'setBranchAddresses');
+    });
+    it("setCollateralRegistry(): reverts when called by non-owner, with wrong address, or twice", async () => {
+      await testDeploymentSetter(boldToken, 1, false, true, 'setCollateralRegistry');
+    });
+  });
+
   describe("TroveManager", async (accounts) => {
-    it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testSetAddresses(troveManager, 9);
+    it("setAddresses(): reverts when called by non-owner, with wrong addresses", async () => {
+      await testDeploymentSetter(troveManager, 9, false, false);
+    });
+    it("setCollateralRegistry(): reverts when called by non-owner, with wrong address, or twice", async () => {
+      await testDeploymentSetter(troveManager, 1, false, true, 'setCollateralRegistry');
     });
   });
 
   describe("BorrowerOperations", async (accounts) => {
     it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testSetAddresses(borrowerOperations, 9);
+      await testDeploymentSetter(borrowerOperations, 9);
     });
   });
 
   describe("DefaultPool", async (accounts) => {
     it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testSetAddresses(defaultPool, 2);
+      await testDeploymentSetter(defaultPool, 2);
     });
   });
 
   describe("StabilityPool", async (accounts) => {
     it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testSetAddresses(stabilityPool, 6);
+      await testDeploymentSetter(stabilityPool, 6);
     });
   });
 
   describe("ActivePool", async (accounts) => {
     it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testSetAddresses(activePool, 6);
+      await testDeploymentSetter(activePool, 6);
     });
   });
 

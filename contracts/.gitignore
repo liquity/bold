@@ -19,6 +19,9 @@ cache_hardhat
 
 coverage/
 coverage.json
+
+.venv
+
 mochaOutput.json
 testMatrix.json
 /deployment-context-latest.json

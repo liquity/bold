@@ -2,27 +2,28 @@
 
 pragma solidity 0.8.18;
 
+import "./Dependencies/Ownable.sol";
+
 import "./Interfaces/IBoldToken.sol";
-import "./Dependencies/CheckContract.sol";
 /*
 *
 * Based upon OpenZeppelin's ERC20 contract:
 * https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol
-*  
+*
 * and their EIP2612 (ERC20Permit / ERC712) functionality:
 * https://github.com/OpenZeppelin/openzeppelin-contracts/blob/53516bc555a454862470e7860a9b5254db4d00f5/contracts/token/ERC20/ERC20Permit.sol
-* 
+*
 *
 * --- Functionality added specific to the BoldToken ---
-* 
-* 1) Transfer protection: blacklist of addresses that are invalid recipients (i.e. core Liquity contracts) in external 
-* transfer() and transferFrom() calls. The purpose is to protect users from losing tokens by mistakenly sending Bold directly to a Liquity 
-* core contract, when they should rather call the right function. 
+*
+* 1) Transfer protection: blacklist of addresses that are invalid recipients (i.e. core Liquity contracts) in external
+* transfer() and transferFrom() calls. The purpose is to protect users from losing tokens by mistakenly sending Bold directly to a Liquity
+* core contract, when they should rather call the right function.
 *
 * 2) sendToPool() and returnFromPool(): functions callable only Liquity core contracts, which move Bold tokens between Liquity <-> user.
 */
 
-contract BoldToken is CheckContract, IBoldToken {
+contract BoldToken is Ownable, IBoldToken {
     uint256 private _totalSupply;
     string internal constant _NAME = "Bold Stablecoin";
     string internal constant _SYMBOL = "Bold";
@@ -53,38 +54,27 @@ contract BoldToken is CheckContract, IBoldToken {
     mapping(address => mapping(address => uint256)) private _allowances;
 
     // --- Addresses ---
+    /*
     address public immutable troveManagerAddress;
     address public immutable stabilityPoolAddress;
     address public immutable borrowerOperationsAddress;
     address public immutable activePoolAddress;
+    */
+    // TODO: optimize to make them immutable
+    address public collateralRegistryAddress;
+    mapping(address => bool) troveManagerAddresses;
+    mapping(address => bool) stabilityPoolAddresses;
+    mapping(address => bool) borrowerOperationsAddresses;
+    mapping(address => bool) activePoolAddresses;
 
     // --- Events ---
-    event TroveManagerAddressChanged(address _troveManagerAddress);
-    event StabilityPoolAddressChanged(address _newStabilityPoolAddress);
-    event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
+    event CollateralRegistryAddressChanged(address _newCollateralRegistryAddress);
+    event TroveManagerAddressAdded(address _newTroveManagerAddress);
+    event StabilityPoolAddressAdded(address _newStabilityPoolAddress);
+    event BorrowerOperationsAddressAdded(address _newBorrowerOperationsAddress);
+    event ActivePoolAddressAdded(address _newActivePoolAddress);
 
-    constructor(
-        address _troveManagerAddress,
-        address _stabilityPoolAddress,
-        address _borrowerOperationsAddress,
-        address _activePoolAddress
-    ) {
-        checkContract(_troveManagerAddress);
-        checkContract(_stabilityPoolAddress);
-        checkContract(_borrowerOperationsAddress);
-        checkContract(_activePoolAddress);
-
-        troveManagerAddress = _troveManagerAddress;
-        emit TroveManagerAddressChanged(_troveManagerAddress);
-
-        stabilityPoolAddress = _stabilityPoolAddress;
-        emit StabilityPoolAddressChanged(_stabilityPoolAddress);
-
-        borrowerOperationsAddress = _borrowerOperationsAddress;
-        emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
-
-        activePoolAddress = _activePoolAddress;
-
+    constructor() {
         bytes32 hashedName = keccak256(bytes(_NAME));
         bytes32 hashedVersion = keccak256(bytes(_VERSION));
 
@@ -96,6 +86,32 @@ contract BoldToken is CheckContract, IBoldToken {
         deploymentStartTime = block.timestamp;
     }
 
+    function setBranchAddresses(
+        address _troveManagerAddress,
+        address _stabilityPoolAddress,
+        address _borrowerOperationsAddress,
+        address _activePoolAddress
+    ) external override onlyOwner {
+        troveManagerAddresses[_troveManagerAddress] = true;
+        emit TroveManagerAddressAdded(_troveManagerAddress);
+
+        stabilityPoolAddresses[_stabilityPoolAddress] = true;
+        emit StabilityPoolAddressAdded(_stabilityPoolAddress);
+
+        borrowerOperationsAddresses[_borrowerOperationsAddress] = true;
+        emit BorrowerOperationsAddressAdded(_borrowerOperationsAddress);
+
+        activePoolAddresses[_activePoolAddress] = true;
+        emit ActivePoolAddressAdded(_activePoolAddress);
+    }
+
+    function setCollateralRegistry(address _collateralRegistryAddress) external override onlyOwner {
+        collateralRegistryAddress = _collateralRegistryAddress;
+        emit CollateralRegistryAddressChanged(_collateralRegistryAddress);
+
+        _renounceOwnership();
+    }
+
     // --- Functions for intra-Liquity calls ---
 
     function mint(address _account, uint256 _amount) external override {
@@ -104,7 +120,7 @@ contract BoldToken is CheckContract, IBoldToken {
     }
 
     function burn(address _account, uint256 _amount) external override {
-        _requireCallerIsBOorTroveMorSP();
+        _requireCallerIsCRorBOorSP();
         _burn(_account, _amount);
     }
 
@@ -248,35 +264,30 @@ contract BoldToken is CheckContract, IBoldToken {
             _recipient != address(0) && _recipient != address(this),
             "Bold: Cannot transfer tokens directly to the Bold token contract or the zero address"
         );
-        require(
-            _recipient != stabilityPoolAddress && _recipient != troveManagerAddress
-                && _recipient != borrowerOperationsAddress,
-            "Bold: Cannot transfer tokens directly to the StabilityPool, TroveManager or BorrowerOps"
-        );
     }
 
     function _requireCallerIsBOorAP() internal view {
         require(
-            msg.sender == borrowerOperationsAddress || msg.sender == activePoolAddress,
+            borrowerOperationsAddresses[msg.sender] || activePoolAddresses[msg.sender],
             "BoldToken: Caller is not BO or AP"
         );
     }
 
-    function _requireCallerIsBOorTroveMorSP() internal view {
+    function _requireCallerIsCRorBOorSP() internal view {
         require(
-            msg.sender == borrowerOperationsAddress || msg.sender == troveManagerAddress
-                || msg.sender == stabilityPoolAddress,
+            msg.sender == collateralRegistryAddress || borrowerOperationsAddresses[msg.sender]
+                || stabilityPoolAddresses[msg.sender],
             "Bold: Caller is neither BorrowerOperations nor TroveManager nor StabilityPool"
         );
     }
 
     function _requireCallerIsStabilityPool() internal view {
-        require(msg.sender == stabilityPoolAddress, "Bold: Caller is not the StabilityPool");
+        require(stabilityPoolAddresses[msg.sender], "Bold: Caller is not the StabilityPool");
     }
 
     function _requireCallerIsTroveMorSP() internal view {
         require(
-            msg.sender == troveManagerAddress || msg.sender == stabilityPoolAddress,
+            troveManagerAddresses[msg.sender] || stabilityPoolAddresses[msg.sender],
             "Bold: Caller is neither TroveManager nor StabilityPool"
         );
     }

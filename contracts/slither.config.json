@@ -1,0 +1,4 @@
+{
+  "detectors_to_exclude": "naming-convention,similar-names,incorrect-equality,uninitialized-local,solc-version,reentrancy-no-eth,reentrancy-benign,reentrancy-events,timestamp,pess-unprotected-setter,pess-readonly-reentrancy",
+  "filter_paths": "lib|test|TestContracts|Dependencies|Integrations|Interfaces"
+}

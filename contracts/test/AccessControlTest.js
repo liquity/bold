@@ -126,19 +126,6 @@ contract(
         }
       });
 
-      // addTroveIdToArray
-      it("addTroveIdToArray(): reverts when called by an account that is not BorrowerOperations", async () => {
-        // Attempt call from alice
-        try {
-          const txAlice = await troveManager.addTroveIdToArray(th.addressToTroveId(bob), {
-            from: alice,
-          });
-        } catch (err) {
-          assert.include(err.message, "revert");
-          // assert.include(err.message, "Caller is not the BorrowerOperations contract")
-        }
-      });
-
       // updateTroveColl
       it("updateTroveColl(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice

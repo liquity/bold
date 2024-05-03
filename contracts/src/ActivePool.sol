@@ -160,11 +160,21 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     function receiveETH(uint256 _amount) external {
         _requireCallerIsBorrowerOperationsOrDefaultPool();
 
-        uint256 newETHBalance = ETHBalance + _amount;
-        ETHBalance = newETHBalance;
+        _accountForReceivedETH(_amount);
 
         // Pull ETH tokens from sender
         ETH.safeTransferFrom(msg.sender, address(this), _amount);
+    }
+
+    function accountForReceivedETH(uint256 _amount) public {
+        _requireCallerIsBorrowerOperationsOrDefaultPool();
+
+        _accountForReceivedETH(_amount);
+    }
+
+    function _accountForReceivedETH(uint256 _amount) internal {
+        uint256 newETHBalance = ETHBalance + _amount;
+        ETHBalance = newETHBalance;
 
         emit ActivePoolETHBalanceUpdated(newETHBalance);
     }
@@ -228,7 +238,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         _changeAggWeightedDebtSum(newWeightedRecordedTroveDebt, oldWeightedRecordedTroveDebt);
     }
 
-    function mintAggInterestNoTroveChange() external returns (uint256) {
+    function mintAggInterestNoTroveChange() external override {
         _requireCallerIsSP();
         aggRecordedDebt = _mintAggInterestNoTroveChange();
     }
