@@ -179,7 +179,7 @@ contract MulticollateralTest is DevTestSetup {
         _testMultiCollateralRedemption(boldAmount, _spBoldAmount1, _spBoldAmount2, _spBoldAmount3, _spBoldAmount4, _redemptionFraction);
     }
 
-    function testMultiCollateralRedemptionCrazy() public {
+    function testMultiCollateralRedemptionMaxSPAmount() public {
         uint256 boldAmount = 10000e18;
         uint256 minBoldBalance = 1;
 
