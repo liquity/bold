@@ -191,7 +191,7 @@ export default function EarnHomePage() {
                             color: "positive",
                           })}
                         >
-                          {rewards[0]}
+                          {rewards.bold} BOLD
                           <div
                             className={css({
                               display: "flex",
@@ -201,7 +201,7 @@ export default function EarnHomePage() {
                               backgroundColor: "dimmed",
                             })}
                           />
-                          {rewards[1]}
+                          {rewards.eth} ETH
                         </div>
                       )}
                     </div>

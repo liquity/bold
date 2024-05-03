@@ -67,7 +67,7 @@ export function InputField({
           "peer",
           css({
             display: "block",
-            height: 120,
+            height: 120 - 2, // account for the 1px border
             padding: "0 16px",
             fontSize: 28,
             fontWeight: 500,

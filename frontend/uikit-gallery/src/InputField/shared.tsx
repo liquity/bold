@@ -14,7 +14,7 @@ function isInputValueFloat(value: string) {
   value = value.trim();
   return value && /^[0-9]*\.?[0-9]*?$/.test(value);
 }
-function parseInputValue(value: string) {
+function parseInputFloat(value: string) {
   value = value.trim();
   if (!isInputValueFloat(value)) {
     return null;
@@ -43,7 +43,7 @@ export function InputFieldFixture({
   const [value, setValue] = useFixtureInput("value", "");
   const [focused, setFocused] = useState(false);
 
-  const parsedValue = parseInputValue(value);
+  const parsedValue = parseInputFloat(value);
 
   const action = match(fixture)
     .with("deposit", () => <Token name="ETH" />)
