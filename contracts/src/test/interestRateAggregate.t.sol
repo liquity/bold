@@ -2570,7 +2570,45 @@ contract InterestRateAggregate is DevTestSetup {
         // Check recorded debt sum has changed correctly
         assertEq(activePool.aggWeightedDebtSum(), expectedAggWeightedRecordedDebt);
     }
-    
+
+    // A bug was caught while reading the implementation of `_updateActivePoolTrackersNoDebtChange()`, wherein
+    // a borrower incurred double interest on redistribution gains when adjusting their interest rate.
+    // This test case covers that scenario.
+    //
+    // We should properly address the TODO below ("tests with pending debt redist. gain >0"), but in the meantime,
+    // keep this testcase.
+    function testNoDoubleInterestOnPendingRedistribution() public {
+        TroveIDs memory troveIDs;
+
+        uint256 coll = 100 ether;
+        uint256 borrow = 10_000 ether - 200 ether;
+        uint256 interestRate = 1 ether;
+        troveIDs.A = openTroveNoHints100pctMaxFee(A, coll, borrow, interestRate);
+        troveIDs.B = openTroveNoHints100pctMaxFee(B, coll, borrow, interestRate);
+        troveIDs.C = openTroveNoHints100pctMaxFee(C, coll, borrow, interestRate);
+        troveIDs.D = openTroveNoHints100pctMaxFee(D, coll, borrow, interestRate);
+
+        emit log_named_decimal_uint("Trove D debt (initial)  ", troveManager.getTroveEntireDebt(troveIDs.D), 18);
+        vm.warp(block.timestamp + 365 days);
+        emit log_named_decimal_uint("Trove D debt (post-1y)  ", troveManager.getTroveEntireDebt(troveIDs.D), 18);
+
+        priceFeed.setPrice(110 ether);
+
+        uint256[] memory liquidatedTroves = new uint256[](3);
+        liquidatedTroves[0] = troveIDs.A;
+        liquidatedTroves[1] = troveIDs.B;
+        liquidatedTroves[2] = troveIDs.C;
+        troveManager.batchLiquidateTroves(liquidatedTroves);
+
+        uint256 debtBefore = troveManager.getTroveEntireDebt(troveIDs.D);
+        emit log_named_decimal_uint("Trove D debt (post-liq) ", debtBefore, 18);
+        changeInterestRateNoHints(D, troveIDs.D, 0.1 ether);
+        uint256 debtAfter = troveManager.getTroveEntireDebt(troveIDs.D);
+        emit log_named_decimal_uint("Trove D debt (post-adj) ", debtAfter, 18);
+
+        assertEq(debtBefore, debtAfter, "Adjusting interest rate shouldn't change Trove's debt");
+    }
+
     // TODO: mixed collateral & debt adjustment opps
     // TODO: tests with pending debt redist. gain >0
     // TODO: tests that show total debt change under user ops
