@@ -223,12 +223,6 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function withdrawETHGainToTrove(address _from, uint256 _troveId) public {
-        vm.startPrank(_from);
-        stabilityPool.withdrawETHGainToTrove(_troveId);
-        vm.stopPrank();
-    }
-
     function batchLiquidateTroves(address _from, uint256[] memory _trovesList) public {
         vm.startPrank(_from);
         console.log(_trovesList[0], "trove 0 to liq");

@@ -37,8 +37,6 @@ interface IBorrowerOperations is ILiquityBase {
 
     function addColl(uint256 _troveId, uint256 _ETHAmount) external;
 
-    function moveETHGainToTrove(address _sender, uint256 _troveId, uint256 _ETHAmount) external;
-
     function withdrawColl(uint256 _troveId, uint256 _amount) external;
 
     function withdrawBold(uint256 _troveId, uint256 _maxFee, uint256 _amount) external;

@@ -239,18 +239,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         assert(troveManager.getTroveEntireColl(_troveId) > oldColl);
     }
 
-    // Send ETH as collateral to a trove. Called by only the Stability Pool.
-    function moveETHGainToTrove(address _sender, uint256 _troveId, uint256 _ETHAmount) external override {
-        ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
-        _requireTroveIsActive(contractsCache.troveManager, _troveId);
-        // TODO: Use oldColl and assert in fuzzing, remove before deployment
-        uint256 oldColl = troveManager.getTroveEntireColl(_troveId);
-        _requireCallerIsStabilityPool();
-        // TODO: check owner?
-        _adjustTrove(_sender, _troveId, _ETHAmount, true, 0, false, 0, contractsCache);
-        assert(troveManager.getTroveEntireColl(_troveId) > oldColl);
-    }
-
     // Withdraw ETH collateral from a trove
     function withdrawColl(uint256 _troveId, uint256 _collWithdrawal) external override {
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
@@ -795,10 +783,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _debtRepayment <= _currentDebt - BOLD_GAS_COMPENSATION,
             "BorrowerOps: Amount repaid must not be larger than the Trove's debt"
         );
-    }
-
-    function _requireCallerIsStabilityPool() internal view {
-        require(msg.sender == stabilityPoolAddress, "BorrowerOps: Caller is not Stability Pool");
     }
 
     function _requireSufficientBoldBalance(IBoldToken _boldToken, address _borrower, uint256 _debtRepayment)
