@@ -176,13 +176,11 @@ contract MulticollateralTest is DevTestSetup {
         _spBoldAmount2 = bound(_spBoldAmount2, 0, boldAmount - 200e18);
         _spBoldAmount3 = bound(_spBoldAmount3, 0, boldAmount - 200e18);
         _spBoldAmount4 = bound(_spBoldAmount4, 0, boldAmount - 200e18 - minBoldBalance);
-        _redemptionFraction = bound(
-            _redemptionFraction,
-            DECIMAL_PRECISION / minBoldBalance,
-            DECIMAL_PRECISION
-        );
+        _redemptionFraction = bound(_redemptionFraction, DECIMAL_PRECISION / minBoldBalance, DECIMAL_PRECISION);
 
-        _testMultiCollateralRedemption(boldAmount, _spBoldAmount1, _spBoldAmount2, _spBoldAmount3, _spBoldAmount4, _redemptionFraction);
+        _testMultiCollateralRedemption(
+            boldAmount, _spBoldAmount1, _spBoldAmount2, _spBoldAmount3, _spBoldAmount4, _redemptionFraction
+        );
     }
 
     function testMultiCollateralRedemptionMaxSPAmount() public {
@@ -224,7 +222,6 @@ contract MulticollateralTest is DevTestSetup {
         testValues2.price = contractsArray[1].priceFeed.getPrice();
         testValues3.price = contractsArray[2].priceFeed.getPrice();
         testValues4.price = contractsArray[3].priceFeed.getPrice();
-
 
         // First collateral
         openMulticollateralTroveNoHints100pctMaxFeeWithIndex(0, A, 0, 10e18, _boldAmount, 5e16);

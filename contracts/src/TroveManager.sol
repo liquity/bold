@@ -555,7 +555,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             if (collRedistributionPortion > 0) {
                 (collToRedistribute, collSurplus) = _getCollPenaltyAndSurplus(
                     collRedistributionPortion + collSurplus, // Coll surplus from offset can be eaten up by red. penalty
-                    debtToRedistribute, LIQUIDATION_PENALTY_REDISTRIBUTION, _price
+                    debtToRedistribute,
+                    LIQUIDATION_PENALTY_REDISTRIBUTION,
+                    _price
                 );
             }
         }
@@ -1045,7 +1047,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 snapshotETH = rewardSnapshots[_troveId].ETH;
         uint256 rewardPerUnitStaked = L_ETH - snapshotETH;
 
-        if (rewardPerUnitStaked == 0 || !checkTroveIsOpen(_troveId)) {return 0;}
+        if (rewardPerUnitStaked == 0 || !checkTroveIsOpen(_troveId)) return 0;
 
         uint256 stake = Troves[_troveId].stake;
 
@@ -1059,7 +1061,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 snapshotBoldDebt = rewardSnapshots[_troveId].boldDebt;
         uint256 rewardPerUnitStaked = L_boldDebt - snapshotBoldDebt;
 
-        if (rewardPerUnitStaked == 0 || !checkTroveIsOpen(_troveId)) {return 0;}
+        if (rewardPerUnitStaked == 0 || !checkTroveIsOpen(_troveId)) return 0;
 
         uint256 stake = Troves[_troveId].stake;
 
@@ -1074,7 +1076,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         * this indicates that rewards have occured since the snapshot was made, and the user therefore has
         * redistribution gains
         */
-        if (!checkTroveIsOpen(_troveId)) {return false;}
+        if (!checkTroveIsOpen(_troveId)) return false;
 
         return (rewardSnapshots[_troveId].ETH < L_ETH);
     }
@@ -1224,7 +1226,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         rewardSnapshots[_troveId].boldDebt = 0;
 
         _removeTroveId(_troveId, TroveIdsArrayLength);
-        if (prevStatus == Status.active) {sortedTroves.remove(_troveId);}
+        if (prevStatus == Status.active) sortedTroves.remove(_troveId);
 
         // burn ERC721
         // TODO: Should we do it?

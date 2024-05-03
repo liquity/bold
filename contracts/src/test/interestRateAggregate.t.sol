@@ -2570,7 +2570,7 @@ contract InterestRateAggregate is DevTestSetup {
         // Check recorded debt sum has changed correctly
         assertEq(activePool.aggWeightedDebtSum(), expectedAggWeightedRecordedDebt);
     }
-    
+
     // TODO: mixed collateral & debt adjustment opps
     // TODO: tests with pending debt redist. gain >0
     // TODO: tests that show total debt change under user ops
