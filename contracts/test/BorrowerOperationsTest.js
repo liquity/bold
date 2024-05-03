@@ -399,7 +399,7 @@ contract("BorrowerOperations", async (accounts) => {
     //   assert.isAtMost(th.getDifference(dennis_Stake), 100)
     // })
 
-    it.only("addColl(), reverts if trove is non-existent or closed", async () => {
+    it("addColl(), reverts if trove is not active", async () => {
       // A, B open troves
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } });

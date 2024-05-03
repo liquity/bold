@@ -13,7 +13,7 @@ import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 
-import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
 contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOperations {
     using SafeERC20 for IERC20;
@@ -231,10 +231,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     // Send ETH as collateral to a trove
     function addColl(uint256 _troveId, uint256 _ETHAmount) external override {
-        console2.log("here");
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
-        console2.log("here2");
         // TODO: Use oldColl and assert in fuzzing, remove before deployment
         uint256 oldColl = troveManager.getTroveEntireColl(_troveId);
         _adjustTrove(msg.sender, _troveId, _ETHAmount, true, 0, false, 0, contractsCache);
