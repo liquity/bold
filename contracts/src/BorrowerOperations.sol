@@ -236,7 +236,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // TODO: Use oldColl and assert in fuzzing, remove before deployment
         uint256 oldColl = troveManager.getTroveEntireColl(_troveId);
         _adjustTrove(msg.sender, _troveId, _ETHAmount, true, 0, false, 0, contractsCache);
-        // assert(troveManager.getTroveEntireColl(_troveId) > oldColl);
+        assert(troveManager.getTroveEntireColl(_troveId) > oldColl);
     }
 
     // Send ETH as collateral to a trove. Called by only the Stability Pool.
