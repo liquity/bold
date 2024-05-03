@@ -729,9 +729,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 _bold,
         uint256 _ETH
     ) internal {
-        _defaultPool.decreaseBoldDebt(_bold);
-        _activePool.increaseRecordedDebtSum(_bold);
-        _defaultPool.sendETHToActivePool(_ETH);
+        if (_bold > 0) {
+            _defaultPool.decreaseBoldDebt(_bold);
+            _activePool.increaseRecordedDebtSum(_bold);
+        }
+        if (_ETH > 0) {
+            _defaultPool.sendETHToActivePool(_ETH);
+        }
     }
 
     // --- Redemption functions ---
