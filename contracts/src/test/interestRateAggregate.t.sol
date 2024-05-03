@@ -2000,7 +2000,7 @@ contract InterestRateAggregate is DevTestSetup {
     //  --- redemption tests ---
 
     function testRedemptionWithNoRedistGainsChangesAggRecordedDebtCorrectly() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -2019,7 +2019,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionReducesPendingAggInterestTo0() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -2038,7 +2038,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionMintsPendingAggInterestToRouter() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -2058,7 +2058,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionUpdatesLastAggUpdateTimeToNow() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -2075,7 +2075,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionWithNoRedistGainsChangesWeightedDebtSumCorrectly() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);

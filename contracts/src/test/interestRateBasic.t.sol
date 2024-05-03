@@ -717,7 +717,7 @@ contract InterestRateBasic is DevTestSetup {
     // --- redemptions ---
 
     function testRedemptionSetsTroveLastDebtUpdateTimeToNow() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -733,7 +733,7 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testRedemptionReducesTroveAccruedInterestTo0() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -749,7 +749,7 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testRedemptionReducesEntireTroveDebtByRedeemedAmount() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -768,7 +768,7 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testRedemptionChangesRecordedTroveDebtByAccruedInterestMinusRedeemedAmount() public {
-        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
