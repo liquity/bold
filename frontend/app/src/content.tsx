@@ -41,15 +41,35 @@ export default {
         Current <abbr title="Annual percentage yield">APY</abbr>
       </>
     ),
-    myDeposit: "My deposit",
-    unclaimedRewards: "Unclaimed rewards",
+    accountPosition: {
+      depositLabel: "My deposit",
+      rewardsLabel: "My rewards",
+    },
     tabs: {
       deposit: "Deposit",
       withdraw: "Withdraw",
       claim: "Claim rewards",
     },
-    depositField: {
+    depositPanel: {
+      label: "You deposit",
+      shareLabel: (share: N) => (
+        <>
+          Share in the pool {share}
+        </>
+      ),
       claimCheckbox: "Also claim rewards",
+    },
+    withdrawPanel: {
+      label: "You withdraw",
+      claimCheckbox: "Also claim rewards",
+    },
+    rewardsPanel: {
+      label: "You claim",
+      details: (usdAmount: N, fee: N) => (
+        <>
+          ~{usdAmount} USD • Expected gas fee ~{fee} USD
+        </>
+      ),
     },
   },
 };

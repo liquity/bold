@@ -3,7 +3,7 @@ import * as dn from "dnum";
 import { useState } from "react";
 
 const inputValueRegex = /^[0-9]*\.?[0-9]*?$/;
-export function isInputValueFloat(value: string) {
+export function isInputFloat(value: string) {
   value = value.trim();
   return inputValueRegex.test(value);
 }
@@ -14,10 +14,10 @@ export function isInputValueInt(value: string) {
   return inputIntRegex.test(value);
 }
 
-export function parseInputValue(value: string) {
+export function parseInputFloat(value: string) {
   value = value.trim();
 
-  if (!isInputValueFloat(value)) {
+  if (!isInputFloat(value)) {
     return null;
   }
 
@@ -29,7 +29,7 @@ export function parseInputValue(value: string) {
 }
 
 export function parseInputPercentage(value: string) {
-  const parsedValue = parseInputValue(value);
+  const parsedValue = parseInputFloat(value);
   if (parsedValue === null || dn.lt(parsedValue, 0) || dn.gt(parsedValue, 100)) {
     return null;
   }
