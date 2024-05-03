@@ -2,6 +2,7 @@
 pragma solidity 0.8.18;
 
 import {Test} from "forge-std/Test.sol";
+import {IBoldToken} from "../Interfaces/IBoldToken.sol";
 import {IStabilityPool} from "../Interfaces/IStabilityPool.sol";
 import {LiquityContracts, _deployAndConnectContracts} from "../deployment.sol";
 import {SPInvariantsTestHandler} from "./TestContracts/SPInvariantsTestHandler.sol";
@@ -14,12 +15,12 @@ contract SPInvariantsTest is Test {
     SPInvariantsTestHandler handler;
 
     function setUp() external {
-        LiquityContracts memory contracts = _deployAndConnectContracts();
+        (LiquityContracts memory contracts,, IBoldToken boldToken) = _deployAndConnectContracts();
         stabilityPool = contracts.stabilityPool;
 
         handler = new SPInvariantsTestHandler(
-            SPInvariantsTestHandler.ContractAddresses({
-                boldToken: contracts.boldToken,
+            SPInvariantsTestHandler.Contracts({
+                boldToken: boldToken,
                 borrowerOperations: contracts.borrowerOperations,
                 collateralToken: contracts.WETH,
                 priceFeed: contracts.priceFeed,

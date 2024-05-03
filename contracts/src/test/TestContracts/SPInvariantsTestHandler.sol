@@ -27,7 +27,7 @@ uint256 constant GAS_COMPENSATION = 200 ether;
 uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200;
 
 contract SPInvariantsTestHandler is Test {
-    struct ContractAddresses {
+    struct Contracts {
         IBoldToken boldToken;
         IBorrowerOperations borrowerOperations;
         IERC20 collateralToken;
@@ -53,7 +53,7 @@ contract SPInvariantsTestHandler is Test {
     // Fixtures
     uint256[] fixtureDeposited;
 
-    constructor(ContractAddresses memory contracts) {
+    constructor(Contracts memory contracts) {
         boldToken = contracts.boldToken;
         borrowerOperations = contracts.borrowerOperations;
         collateralToken = contracts.collateralToken;
