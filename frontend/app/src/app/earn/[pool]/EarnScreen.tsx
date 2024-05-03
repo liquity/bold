@@ -2,22 +2,42 @@
 
 import type { ReactNode } from "react";
 
+import { BackButton } from "@/src/comps/BackButton/BackButton";
+import content from "@/src/content";
+import { POOLS } from "@/src/demo-data";
 import { css } from "@/styled-system/css";
-import { Button, InputField, Tabs, TextButton, TokenIcon, TokenIconGroup } from "@liquity2/uikit";
+import { Button, Checkbox, InputField, Tabs, TextButton, TokenIcon, TokenIconGroup } from "@liquity2/uikit";
 import * as dn from "dnum";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { POOLS } from "../pools";
 
 const TABS = [
-  { label: "Deposit", id: "deposit" },
-  { label: "Withdraw", id: "withdraw" },
-  { label: "Claim rewards", id: "claim" },
+  { action: "deposit", label: content.earnScreen.tabs.deposit },
+  { action: "withdraw", label: content.earnScreen.tabs.withdraw },
+  { action: "claim", label: content.earnScreen.tabs.claim },
 ] as const;
 
-export function Pool({ pool }: { pool: typeof POOLS[number] }) {
-  const [tab, setTab] = useState(0);
-  return (
-    <>
+type Action = typeof TABS[number]["action"];
+
+export function EarnScreen() {
+  const { pool: poolName, action = "deposit" } = useParams();
+
+  const router = useRouter();
+  const pool = POOLS.find(({ symbol }) => symbol.toLowerCase() === poolName);
+  const tab = TABS.find((tab) => tab.action === action);
+
+  return pool && tab && (
+    <div
+      className={css({
+        flexGrow: 1,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 48,
+        width: 534,
+      })}
+    >
+      <BackButton href="/earn" label={content.earnScreen.backButton} />
       <PoolHeader pool={pool} />
       <MyDeposit pool={pool} />
       <div
@@ -29,16 +49,18 @@ export function Pool({ pool }: { pool: typeof POOLS[number] }) {
         })}
       >
         <Tabs
-          selected={tab}
-          onSelect={setTab}
+          selected={TABS.indexOf(tab)}
+          onSelect={(index) => {
+            router.push(`/earn/${poolName}/${TABS[index].action}`);
+          }}
           items={TABS.map((tab) => ({
             label: tab.label,
-            panelId: `panel-${tab.id}`,
-            tabId: `tab-${tab.id}`,
+            panelId: `panel-${tab.action}`,
+            tabId: `tab-${tab.action}`,
           }))}
         />
-        {tab === 0 && <DepositField />}
-        {tab !== 0 && (
+        {tab.action === "deposit" && <DepositField pool={pool} />}
+        {tab.action === "withdraw" && (
           <div
             className={css({
               display: "flex",
@@ -48,7 +70,24 @@ export function Pool({ pool }: { pool: typeof POOLS[number] }) {
             })}
           >
             <Button
-              label={TABS[tab].label}
+              label={tab.label}
+              mode="primary"
+              size="large"
+              wide
+            />
+          </div>
+        )}
+        {tab.action === "claim" && (
+          <div
+            className={css({
+              display: "flex",
+              justifyContent: "center",
+              width: "100%",
+              paddingTop: 48,
+            })}
+          >
+            <Button
+              label={tab.label}
               mode="primary"
               size="large"
               wide
@@ -56,7 +95,7 @@ export function Pool({ pool }: { pool: typeof POOLS[number] }) {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -109,7 +148,7 @@ function PoolHeader({ pool }: { pool: typeof POOLS[number] }) {
               whiteSpace: "nowrap",
             })}
           >
-            TVL {pool.boldQty}
+            {content.earnScreen.headerTvl(pool.boldQty)}
           </div>
         </div>
       </div>
@@ -134,7 +173,7 @@ function PoolHeader({ pool }: { pool: typeof POOLS[number] }) {
             whiteSpace: "nowrap",
           })}
         >
-          Current <abbr title="Annual percentage yield">APY</abbr>
+          {content.earnScreen.headerApy()}
         </div>
       </div>
     </div>
@@ -165,7 +204,7 @@ function MyDeposit({ pool }: { pool: typeof POOLS[number] }) {
             color: "contentAlt",
           })}
         >
-          My deposit
+          {content.earnScreen.myDeposit}
         </div>
         <div
           className={css({})}
@@ -185,7 +224,7 @@ function MyDeposit({ pool }: { pool: typeof POOLS[number] }) {
             color: "contentAlt",
           })}
         >
-          Unclaimed rewards
+          {content.earnScreen.unclaimedRewards}
         </div>
         {pool.rewards && (
           <div
@@ -215,9 +254,10 @@ function MyDeposit({ pool }: { pool: typeof POOLS[number] }) {
   );
 }
 
-export function DepositField() {
+export function DepositField({ pool }: { pool: typeof POOLS[number] }) {
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
+  const [claimRewards, setClaimRewards] = useState(false);
 
   const parsedValue = parseInputValue(value);
 
@@ -232,12 +272,12 @@ export function DepositField() {
 
   const secondaryEnd = (
     <TextButton
-      label="Max 10.00 ETH"
-      onClick={() => setValue("10")}
+      label="Max. 10,000.00 BOLD"
+      onClick={() => setValue("10000")}
     />
   );
 
-  const value_ = (focused || !parsedValue) ? value : `${dn.format(parsedValue)} ETH`;
+  const value_ = (focused || !parsedValue) ? value : `${dn.format(parsedValue)} BOLD`;
 
   return (
     <div
@@ -249,17 +289,58 @@ export function DepositField() {
         gap: 48,
       }}
     >
-      <InputField
-        action={action}
-        label="You deposit"
-        onFocus={() => setFocused(true)}
-        onChange={setValue}
-        onBlur={() => setFocused(false)}
-        value={value_}
-        placeholder="0.00"
-        secondaryStart={secondaryStart}
-        secondaryEnd={secondaryEnd}
-      />
+      <div
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        })}
+      >
+        <InputField
+          action={action}
+          label="You deposit"
+          onFocus={() => setFocused(true)}
+          onChange={setValue}
+          onBlur={() => setFocused(false)}
+          value={value_}
+          placeholder="0.00"
+          secondaryStart={secondaryStart}
+          secondaryEnd={secondaryEnd}
+        />
+        <div
+          className={css({
+            display: "flex",
+            justifyContent: "space-between",
+          })}
+        >
+          <label
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              userSelect: "none",
+            })}
+          >
+            <Checkbox
+              checked={claimRewards}
+              onChange={setClaimRewards}
+            />
+            {content.earnScreen.depositField.claimCheckbox}
+          </label>
+          {pool.rewards && (
+            <div
+              className={css({
+                display: "flex",
+                gap: 24,
+              })}
+            >
+              <div>{pool.rewards[0]}</div>
+              <div>{pool.rewards[1]}</div>
+            </div>
+          )}
+        </div>
+      </div>
 
       <div
         style={{
@@ -269,6 +350,7 @@ export function DepositField() {
         }}
       >
         <Button
+          disabled={!parsedValue}
           label="Add Deposit"
           mode="primary"
           size="large"

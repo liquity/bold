@@ -620,17 +620,17 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 _boldChange,
         bool _isDebtIncrease
     ) internal {
-        if (_isDebtIncrease) {
+        if (_isDebtIncrease) { // implies _boldChange > 0
             address borrower = _troveManager.ownerOf(_troveId);
             _boldToken.mint(borrower, _boldChange);
-        } else {
+        } else if (_boldChange > 0 ){
             _boldToken.burn(msg.sender, _boldChange);
         }
 
-        if (_isCollIncrease) {
+        if (_isCollIncrease) { // implies _collChange > 0
             // Pull ETH tokens from sender and move them to the Active Pool
             _pullETHAndSendToActivePool(_activePool, _collChange);
-        } else {
+        } else if (_collChange > 0 ){
             address borrower = _troveManager.ownerOf(_troveId);
             // Pull ETH from Active Pool and decrease its recorded ETH balance
             _activePool.sendETH(borrower, _collChange);

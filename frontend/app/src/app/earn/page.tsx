@@ -1,12 +1,12 @@
 "use client";
 
 import content from "@/src/content";
+import { POOLS } from "@/src/demo-data";
 import { css } from "@/styled-system/css";
 import { IconArrowRight, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
-import { POOLS } from "./pools";
 
-export default function Earn() {
+export default function EarnHomePage() {
   return (
     <div
       className={css({
@@ -30,7 +30,7 @@ export default function Earn() {
             fontSize: 28,
           })}
         >
-          {content.earnHomeHeadline(
+          {content.earnHome.headline(
             <TokenIcon.Group>
               <TokenIcon symbol="BOLD" />
               <TokenIcon symbol="ETH" />
@@ -46,7 +46,7 @@ export default function Earn() {
             color: "contentAlt",
           })}
         >
-          {content.earnHomeSubheading}
+          {content.earnHome.subheading}
         </p>
       </header>
 
@@ -72,9 +72,7 @@ export default function Earn() {
         })}
       >
         <thead>
-          <tr
-            className={css({})}
-          >
+          <tr>
             <th>Pool</th>
             <th>APY</th>
             <th
@@ -83,7 +81,7 @@ export default function Earn() {
                 textAlign: "right!",
               })}
             >
-              My Deposits and Rewards
+              {content.earnHome.poolsColumns.myDepositAndRewards}
             </th>
           </tr>
         </thead>

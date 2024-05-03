@@ -704,8 +704,12 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
     // Move a Trove's pending debt and collateral rewards from distributions, from the Default Pool to the Active Pool
     function _movePendingTroveRewardsToActivePool(IDefaultPool _defaultPool, uint256 _bold, uint256 _ETH) internal {
-        _defaultPool.decreaseBoldDebt(_bold);
-        _defaultPool.sendETHToActivePool(_ETH);
+        if (_bold > 0) {
+            _defaultPool.decreaseBoldDebt(_bold);
+        }
+        if (_ETH > 0) {
+            _defaultPool.sendETHToActivePool(_ETH);
+        }
     }
 
     // --- Redemption functions ---
@@ -741,8 +745,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         if (_getNetDebt(singleRedemption.newRecordedTroveDebt) < MIN_NET_DEBT) {
             Troves[_troveId].status = Status.unredeemable;
             sortedTroves.remove(_troveId);
-            // TODO: should we also remove from the Troves array? Seems unneccessary as it's only used for off-chain hints. 
-            // We save borrowers gas by not removing 
+            // TODO: should we also remove from the Troves array? Seems unneccessary as it's only used for off-chain hints.
+            // We save borrowers gas by not removing
         }
         Troves[_troveId].debt = singleRedemption.newRecordedTroveDebt;
         Troves[_troveId].coll = newColl;
@@ -931,7 +935,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 snapshotETH = rewardSnapshots[_troveId].ETH;
         uint256 rewardPerUnitStaked = L_ETH - snapshotETH;
 
-        if (rewardPerUnitStaked == 0 || !checkTroveIsOpen(_troveId)) {return 0;}
+        if (rewardPerUnitStaked == 0 || !checkTroveIsOpen(_troveId)) return 0;
 
         uint256 stake = Troves[_troveId].stake;
 
@@ -945,7 +949,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 snapshotBoldDebt = rewardSnapshots[_troveId].boldDebt;
         uint256 rewardPerUnitStaked = L_boldDebt - snapshotBoldDebt;
 
-        if (rewardPerUnitStaked == 0 || !checkTroveIsOpen(_troveId)) {return 0;}
+        if (rewardPerUnitStaked == 0 || !checkTroveIsOpen(_troveId)) return 0;
 
         uint256 stake = Troves[_troveId].stake;
 
@@ -960,7 +964,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         * this indicates that rewards have occured since the snapshot was made, and the user therefore has
         * redistribution gains
         */
-        if (!checkTroveIsOpen(_troveId)) {return false;}
+        if (!checkTroveIsOpen(_troveId)) return false;
 
         return (rewardSnapshots[_troveId].ETH < L_ETH);
     }
@@ -1110,7 +1114,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         rewardSnapshots[_troveId].boldDebt = 0;
 
         _removeTroveId(_troveId, TroveIdsArrayLength);
-        if (prevStatus == Status.active) {sortedTroves.remove(_troveId);}
+        if (prevStatus == Status.active) sortedTroves.remove(_troveId);
 
         // burn ERC721
         // TODO: Should we do it?
@@ -1196,7 +1200,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         return TCR < CCR;
     }
-    
+
     function checkTroveIsOpen(uint256 _troveId) public view returns (bool) {
         Status status = Troves[_troveId].status;
         return status == Status.active || status == Status.unredeemable;
