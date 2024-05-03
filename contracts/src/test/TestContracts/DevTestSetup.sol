@@ -205,10 +205,7 @@ contract DevTestSetup is BaseTest {
         return _setupForRedemption(troveInterestRates);
     }
 
-    function _redeemAndCreateZombieTrovesAAndB(TroveIDs memory _troveIDs)
-        internal
-        returns (uint256, uint256, TroveIDs memory)
-    {
+    function _redeemAndCreateZombieTrovesAAndB(TroveIDs memory _troveIDs) internal {
         // Redeem enough to leave to leave A with 0 debt and B with debt < MIN_NET_DEBT
         uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - troveManager.BOLD_GAS_COMPENSATION();
         uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - troveManager.BOLD_GAS_COMPENSATION()
@@ -227,10 +224,7 @@ contract DevTestSetup is BaseTest {
         assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'
     }
 
-    function _redeemAndCreateZombieTroveAAndHitB(TroveIDs memory _troveIDs)
-        internal
-        returns (uint256, uint256, TroveIDs memory)
-    {
+    function _redeemAndCreateZombieTroveAAndHitB(TroveIDs memory _troveIDs) internal {
         // Redeem enough to leave to leave A with 0 debt and B with debt < MIN_NET_DEBT
         uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - troveManager.BOLD_GAS_COMPENSATION();
         // Leave B with net_debt > min_net_debt
