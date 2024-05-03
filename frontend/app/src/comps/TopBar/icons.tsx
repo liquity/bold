@@ -31,9 +31,9 @@ export function IconEarn({ color }: { color?: string }) {
   return (
     <svg width="18" height="18" style={{ fill: color }}>
       <path
-        fill-rule="evenodd"
+        fillRule="evenodd"
         d="M18 0H0v18h18V0ZM9.001 14.143a5.143 5.143 0 1 0 0-10.286 5.143 5.143 0 0 0 0 10.286Z"
-        clip-rule="evenodd"
+        clipRule="evenodd"
       />
     </svg>
   );

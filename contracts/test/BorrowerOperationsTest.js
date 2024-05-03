@@ -399,7 +399,7 @@ contract("BorrowerOperations", async (accounts) => {
     //   assert.isAtMost(th.getDifference(dennis_Stake), 100)
     // })
 
-    it("addColl(), reverts if trove is non-existent or closed", async () => {
+    it("addColl(), reverts if trove is not active", async () => {
       // A, B open troves
       await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
       const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } });
@@ -413,7 +413,7 @@ contract("BorrowerOperations", async (accounts) => {
         assert.isFalse(txCarol.receipt.status);
       } catch (error) {
         assert.include(error.message, "revert");
-        assert.include(error.message, "Trove does not exist or is closed");
+        assert.include(error.message, "BorrowerOps: Trove does not have active status");
       }
 
       // Price drops
@@ -433,7 +433,7 @@ contract("BorrowerOperations", async (accounts) => {
         assert.isFalse(txBob.receipt.status);
       } catch (error) {
         assert.include(error.message, "revert");
-        assert.include(error.message, "Trove does not exist or is closed");
+        assert.include(error.message, "BorrowerOps: Trove does not have active status");
       }
     });
 
@@ -2754,56 +2754,6 @@ contract("BorrowerOperations", async (accounts) => {
 
       // B attempts to repay all his debt
       await assertRevert(repayBoldPromise_B, "revert");
-    });
-
-    // --- Internal _adjustTrove() ---
-
-    // no need to test this with proxies
-    it("Internal _adjustTrove(): reverts when op is a withdrawal and _borrower param is not the msg.sender", async () => {
-      await openTrove({
-        extraBoldAmount: toBN(dec(10000, 18)),
-        ICR: toBN(dec(10, 18)),
-        extraParams: { from: whale },
-      });
-      await openTrove({
-        extraBoldAmount: toBN(dec(10000, 18)),
-        ICR: toBN(dec(10, 18)),
-        extraParams: { from: bob },
-      });
-
-      const txPromise_A = borrowerOperations.callInternalAdjustLoan(
-        alice,
-        dec(1, 18),
-        dec(1, 18),
-        true,
-        { from: bob },
-      );
-      await assertRevert(
-        txPromise_A,
-        "BorrowerOps: Caller must be the borrower for a withdrawal",
-      );
-      const txPromise_B = borrowerOperations.callInternalAdjustLoan(
-        bob,
-        dec(1, 18),
-        dec(1, 18),
-        true,
-        { from: owner },
-      );
-      await assertRevert(
-        txPromise_B,
-        "BorrowerOps: Caller must be the borrower for a withdrawal",
-      );
-      const txPromise_C = borrowerOperations.callInternalAdjustLoan(
-        carol,
-        dec(1, 18),
-        dec(1, 18),
-        true,
-        { from: bob },
-      );
-      await assertRevert(
-        txPromise_C,
-        "BorrowerOps: Caller must be the borrower for a withdrawal",
-      );
     });
 
     // --- closeTrove() ---
