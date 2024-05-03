@@ -70,16 +70,17 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(sortedTroves.getPrev(ETroveId), 0);
     }
 
-    function testRevertWhenOpenTroveWithInterestRateGreaterThanMax() public {
-        priceFeed.setPrice(2000e18);
+    // TODO: uncomment this test if we pick a max, otherwise delete this test if we keep no max
+    // function testRevertWhenOpenTroveWithInterestRateGreaterThanMax() public {
+    //     priceFeed.setPrice(2000e18);
 
-        vm.startPrank(A);
-        vm.expectRevert();
-        borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 1e18 + 1);
+    //     vm.startPrank(A);
+    //     vm.expectRevert();
+    //     borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 1e18 + 1);
 
-        vm.expectRevert();
-        borrowerOperations.openTrove(A, 1, 1e18, 2e18, 2000e18, 0, 0, 42e18);
-    }
+    //     vm.expectRevert();
+    //     borrowerOperations.openTrove(A, 1, 1e18, 2e18, 2000e18, 0, 0, 42e18);
+    // }
 
     function testRevertWhenAdjustInterestRateFromNonOwner() public {
         priceFeed.setPrice(2000e18);
@@ -95,21 +96,22 @@ contract InterestRateBasic is DevTestSetup {
         vm.stopPrank();
     }
 
-    function testRevertWhenAdjustInterestRateGreaterThanMax() public {
-        priceFeed.setPrice(2000e18);
+    // TODO: uncomment this test if we pick a max, otherwise delete this test if we keep no max
+    // function testRevertWhenAdjustInterestRateGreaterThanMax() public {
+    //     priceFeed.setPrice(2000e18);
 
-        // A opens Trove with valid annual interest rate ...
-        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 2 ether, 2000e18, 37e16);
-        assertEq(troveManager.getTroveAnnualInterestRate(ATroveId), 37e16);
+    //     // A opens Trove with valid annual interest rate ...
+    //     uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 2 ether, 2000e18, 37e16);
+    //     assertEq(troveManager.getTroveAnnualInterestRate(ATroveId), 37e16);
 
-        // ... then tries to adjust it to an invalid value
-        vm.startPrank(A);
-        vm.expectRevert();
-        borrowerOperations.adjustTroveInterestRate(ATroveId, 1e18 + 1, 0, 0);
+    //     // ... then tries to adjust it to an invalid value
+    //     vm.startPrank(A);
+    //     vm.expectRevert();
+    //     borrowerOperations.adjustTroveInterestRate(ATroveId, 1e18 + 1, 0, 0);
 
-        vm.expectRevert();
-        borrowerOperations.adjustTroveInterestRate(ATroveId, 42e18, 0, 0);
-    }
+    //     vm.expectRevert();
+    //     borrowerOperations.adjustTroveInterestRate(ATroveId, 42e18, 0, 0);
+    // }
 
     // --- adjustTroveInterestRate ---
 
@@ -779,7 +781,10 @@ contract InterestRateBasic is DevTestSetup {
     // --- redemptions ---
 
     function testRedemptionSetsTroveLastDebtUpdateTimeToNow() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemption();
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        // Fast-forward to generate interest
+        vm.warp(block.timestamp + 1 days);
 
         assertLt(troveManager.getTroveLastDebtUpdateTime(troveIDs.A), block.timestamp);
 
@@ -792,7 +797,10 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testRedemptionReducesTroveAccruedInterestTo0() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemption();
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        // Fast-forward to generate interest
+        vm.warp(block.timestamp + 1 days);
 
         assertGt(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
 
@@ -805,7 +813,10 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testRedemptionReducesEntireTroveDebtByRedeemedAmount() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemption();
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        // Fast-forward to generate interest
+        vm.warp(block.timestamp + 1 days);
 
         uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(troveIDs.A);
         assertGt(entireTroveDebt_1, 0);
@@ -821,7 +832,10 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testRedemptionChangesRecordedTroveDebtByAccruedInterestMinusRedeemedAmount() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemption();
+        (uint256 coll, uint256 debtRequest, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        // Fast-forward to generate interest
+        vm.warp(block.timestamp + 1 days);
 
         uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(troveIDs.A);
         uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(troveIDs.A);
