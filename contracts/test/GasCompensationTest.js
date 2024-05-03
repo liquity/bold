@@ -60,9 +60,9 @@ contract("Gas compensation tests", async (accounts) => {
   });
 
   before(async () => {
-    troveManagerTester = await TroveManagerTester.new();
+    troveManagerTester = await TroveManagerTester.new(toBN(dec(110, 16)), toBN(dec(10, 16)), toBN(dec(10, 16)));
     const WETH = await ERC20.new("WETH", "WETH");
-    borrowerOperationsTester = await BorrowerOperationsTester.new(WETH.address);
+    borrowerOperationsTester = await BorrowerOperationsTester.new(WETH.address, troveManagerTester.address);
 
     TroveManagerTester.setAsDeployed(troveManagerTester);
     BorrowerOperationsTester.setAsDeployed(borrowerOperationsTester);
