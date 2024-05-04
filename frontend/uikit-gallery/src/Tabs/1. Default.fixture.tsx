@@ -10,6 +10,10 @@ export default function Fixture() {
     options: Array.from({ length: 8 }, (_, i) => `${i + 2}`),
     defaultValue: "3",
   });
+  const [width] = useFixtureSelect("width", {
+    options: ["360", "600", "960"],
+    defaultValue: "600",
+  });
   const items = Array.from(
     { length: Math.max(2, parseInt(tabs)) },
     (_, i) => `Item ${i + 1}`,
@@ -25,7 +29,7 @@ export default function Fixture() {
       style={{
         display: "flex",
         justifyContent: "center",
-        width: 640,
+        width: parseInt(width),
         padding: 16,
       }}
     >
