@@ -351,15 +351,15 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         // Set add manager
         vm.startPrank(A);
         borrowerOperations.setAddManager(ATroveId, B);
-        // A provides to SP
-        stabilityPool.provideToSP(10000e18);
         vm.stopPrank();
 
+        // A provides to SP
+        makeSPDepositAndClaim(A, 10000e18);
+       
         // B provides to SP
         deal(address(boldToken), B, 10000e18);
-        vm.startPrank(B);
-        stabilityPool.provideToSP(10000e18);
-        vm.stopPrank();
+       
+        makeSPDepositAndClaim(B, 10000e18);
 
         // C opens trove, price drops and gets liquidated
         uint256 CTroveId = openTroveNoHints100pctMaxFee(C, 100 ether, 14000e18, 1e17);
@@ -391,16 +391,12 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 100 ether, 10000e18, 1e17);
 
         // A provides to SP
-        vm.startPrank(A);
-        stabilityPool.provideToSP(10000e18);
-        vm.stopPrank();
+        makeSPDepositAndClaim(A, 10000e18);
 
         // B provides to SP
         deal(address(boldToken), B, 10000e18);
-        vm.startPrank(B);
-        stabilityPool.provideToSP(10000e18);
-        vm.stopPrank();
-
+        makeSPDepositAndClaim(B, 10000e18);
+        
         // C opens trove, price drops and gets liquidated
         uint256 CTroveId = openTroveNoHints100pctMaxFee(C, 100 ether, 14000e18, 1e17);
         priceFeed.setPrice(priceFeed.getPrice() * 3 / 4);

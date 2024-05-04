@@ -163,7 +163,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
     mapping(address => Deposit) public deposits; // depositor address -> Deposit struct
     mapping(address => Snapshots) public depositSnapshots; // depositor address -> snapshots struct
-
+    mapping(address => uint256) public stashedETH; 
+ 
     /*  Product 'P': Running product by which to multiply an initial deposit, in order to find the current compounded deposit,
     * after a series of liquidations have occurred, each of which cancel some Bold debt with the deposit.
     *
@@ -280,14 +281,14 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * - Increases deposit, and takes new snapshots of accumulators P and S
     * - Sends depositor's accumulated ETH gains to depositor
     */
-    function provideToSP(uint256 _amount) external override {
+    function provideToSP(uint256 _amount, bool _doClaim) external override {
         _requireNonZeroAmount(_amount);
 
         activePool.mintAggInterestNoTroveChange();
 
         uint256 initialDeposit = deposits[msg.sender].initialValue;
 
-        uint256 depositorETHGain = getDepositorETHGain(msg.sender);
+        uint256 currentETHGain = getDepositorETHGain(msg.sender);
         uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         uint256 boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
 
@@ -297,9 +298,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         _updateDepositAndSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
 
-        emit ETHGainWithdrawn(msg.sender, depositorETHGain, boldLoss); // Bold Loss required for event log
-
-        _sendETHGainToDepositor(depositorETHGain);
+        _stashOrSendETHGains(msg.sender, currentETHGain, boldLoss, _doClaim);
+        assert(getDepositorETHGain(msg.sender) == 0);
     }
 
     /*  withdrawFromSP():
@@ -309,14 +309,14 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * - (If _amount > userDeposit, the user withdraws all of their compounded deposit)
     * - Decreases deposit by withdrawn amount and takes new snapshots of accumulators P and S
     */
-    function withdrawFromSP(uint256 _amount) external override {
+    function withdrawFromSP(uint256 _amount, bool _doClaim) external override {
         // TODO: if (_amount !=0) {_requireNoUnderCollateralizedTroves();}
         uint256 initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
 
         activePool.mintAggInterestNoTroveChange();
 
-        uint256 depositorETHGain = getDepositorETHGain(msg.sender);
+        uint256 currentETHGain = getDepositorETHGain(msg.sender);
 
         uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         uint256 BoldtoWithdraw = LiquityMath._min(_amount, compoundedBoldDeposit);
@@ -329,9 +329,32 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         _updateDepositAndSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
 
-        emit ETHGainWithdrawn(msg.sender, depositorETHGain, boldLoss); // Bold Loss required for event log
+        _stashOrSendETHGains(msg.sender, currentETHGain, boldLoss, _doClaim);
+        assert(getDepositorETHGain(msg.sender) == 0);
+    }
 
-        _sendETHGainToDepositor(depositorETHGain);
+    function _stashOrSendETHGains(address _depositor, uint256 _currentETHGain, uint256 _boldLoss, bool _doClaim) internal {
+        if (_doClaim) {
+            // Get the total gain (stashed + current), zero the stashed balance, send total gain to depositor
+            uint ETHToSend = _getTotalETHGainAndZeroStash(_depositor, _currentETHGain);
+
+            emit ETHGainWithdrawn(msg.sender, ETHToSend, _boldLoss); // Bold Loss required for event log
+            _sendETHGainToDepositor(ETHToSend);
+        
+        } else {
+            // Just stash the current gain
+            stashedETH[_depositor] += _currentETHGain;
+        }
+    }
+
+    function _getTotalETHGainAndZeroStash(address _depositor, uint256 _currentETHGain) internal returns (uint256) {
+         uint256 stashedETHGain = stashedETH[_depositor];
+        uint256 totalETHGain = stashedETHGain + _currentETHGain;
+
+        // TODO: Gas - saves gas when stashedETHGain == 0?
+        if (stashedETHGain > 0) {stashedETH[_depositor] = 0;} 
+
+        return totalETHGain;
     }
 
     /* withdrawETHGainToTrove():
@@ -345,7 +368,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         _requireTroveIsOpen(_troveId);
         _requireUserHasETHGain(msg.sender);
 
-        uint256 depositorETHGain = getDepositorETHGain(msg.sender);
+        uint256 currentETHGain = getDepositorETHGain(msg.sender);
 
         uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         uint256 boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
@@ -355,16 +378,55 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         /* Emit events before transferring ETH gain to Trove.
          This lets the event log make more sense (i.e. so it appears that first the ETH gain is withdrawn
         and then it is deposited into the Trove, not the other way around). */
-        emit ETHGainWithdrawn(msg.sender, depositorETHGain, boldLoss);
+        emit ETHGainWithdrawn(msg.sender, currentETHGain, boldLoss);
         emit UserDepositChanged(msg.sender, compoundedBoldDeposit);
 
-        uint256 newETHBalance = ETHBalance - depositorETHGain;
+        uint256 newETHBalance = ETHBalance - currentETHGain;
         ETHBalance = newETHBalance;
         emit StabilityPoolETHBalanceUpdated(newETHBalance);
-        emit EtherSent(msg.sender, depositorETHGain);
+        emit EtherSent(msg.sender, currentETHGain);
 
-        borrowerOperations.moveETHGainToTrove(msg.sender, _troveId, depositorETHGain);
+        uint256 ETHToMove = _getTotalETHGainAndZeroStash(msg.sender, currentETHGain);
+        borrowerOperations.moveETHGainToTrove(msg.sender, _troveId, ETHToMove);
+        assert(getDepositorETHGain(msg.sender) == 0);
     }
+
+    function claimAllETHGains() external {
+        // We don't require they have a deposit: they may have stashed gains and no deposit
+        uint256 initialDeposit = deposits[msg.sender].initialValue;
+        uint256 boldLoss;
+        uint256 currentETHGain;
+
+        activePool.mintAggInterestNoTroveChange();
+        
+        // If they have a deposit, update it and update its snapshots
+        if (initialDeposit > 0) {
+            currentETHGain = getDepositorETHGain(msg.sender);  // Only active deposits can only have a current ETH gai
+
+            uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
+            boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
+
+            _updateDepositAndSnapshots(msg.sender, compoundedBoldDeposit);
+        }
+
+        uint256 stashedETHGain = stashedETH[msg.sender];
+        uint256 ETHToSend = currentETHGain + stashedETHGain;
+
+        stashedETH[msg.sender] = 0;
+
+        emit ETHGainWithdrawn(msg.sender, ETHToSend, boldLoss);
+
+        _sendETHGainToDepositor(ETHToSend);
+        assert(getDepositorETHGain(msg.sender) == 0);
+    }
+       
+// T    ODO: should claim both rewards (BOLD and ETH) since it updates snapshots
+	// -mintAggInterest
+	// -calc current gains
+	// -calc new deposit
+	// -updateDepositAndSnapshots
+	// -Send (current + stashed) total gains to depositor
+	// -Zero stashed gains
 
     // --- Liquidation functions ---
 

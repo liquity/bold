@@ -52,7 +52,7 @@ interface IStabilityPool is ILiquityBase {
     * - Increases deposit, and takes new snapshots of accumulators P and S
     * - Sends depositor's accumulated ETH gains to depositor
     */
-    function provideToSP(uint256 _amount) external;
+    function provideToSP(uint256 _amount, bool _doClaim) external;
 
     /*  withdrawFromSP():
     * - Calculates depositor's ETH gain
@@ -61,7 +61,7 @@ interface IStabilityPool is ILiquityBase {
     * - (If _amount > userDeposit, the user withdraws all of their compounded deposit)
     * - Decreases deposit by withdrawn amount and takes new snapshots of accumulators P and S
     */
-    function withdrawFromSP(uint256 _amount) external;
+    function withdrawFromSP(uint256 _amount, bool doClaim) external;
 
     /* withdrawETHGainToTrove():
     * - Transfers the depositor's entire ETH gain from the Stability Pool to the caller's trove
@@ -69,6 +69,8 @@ interface IStabilityPool is ILiquityBase {
     * - Takes new snapshots of accumulators P and S 
     */
     function withdrawETHGainToTrove(uint256 _troveId) external;
+
+    function claimAllETHGains() external;
 
     /*
      * Initial checks:
@@ -79,6 +81,8 @@ interface IStabilityPool is ILiquityBase {
      * Only called by liquidation functions in the TroveManager.
      */
     function offset(uint256 _debt, uint256 _coll) external;
+
+    function stashedETH(address _depositor) external view returns (uint256);
 
     /*
      * Returns the total amount of ETH held by the pool, accounted in an internal variable instead of `balance`,

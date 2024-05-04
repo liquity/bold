@@ -163,17 +163,36 @@ contract BaseTest is Test {
         assertEq(recoveryMode, _enabled);
     }
 
-    function makeSPDeposit(address _account, uint256 _amount) public {
+    function makeSPDepositAndClaim(address _account, uint256 _amount) public {
         vm.startPrank(_account);
-        stabilityPool.provideToSP(_amount);
+        stabilityPool.provideToSP(_amount, true);
         vm.stopPrank();
     }
 
-    function makeSPWithdrawal(address _account, uint256 _amount) public {
+    function makeSPDepositNoClaim(address _account, uint256 _amount) public {
         vm.startPrank(_account);
-        stabilityPool.withdrawFromSP(_amount);
+        stabilityPool.provideToSP(_amount, false);
         vm.stopPrank();
     }
+
+    function makeSPWithdrawalAndClaim(address _account, uint256 _amount) public {
+        vm.startPrank(_account);
+        stabilityPool.withdrawFromSP(_amount, true);
+        vm.stopPrank();
+    }
+
+    function makeSPWithdrawalNoClaim(address _account, uint256 _amount) public {
+        vm.startPrank(_account);
+        stabilityPool.withdrawFromSP(_amount, false);
+        vm.stopPrank();
+    }
+
+     function claimAllETHGains(address _account) public {
+        vm.startPrank(_account);
+        stabilityPool.claimAllETHGains();
+        vm.stopPrank();
+    }
+
 
     function closeTrove(address _account, uint256 _troveId) public {
         vm.startPrank(_account);

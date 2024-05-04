@@ -140,13 +140,13 @@ contract BasicOps is DevTestSetup {
         borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
 
         // A makes an SP deposit
-        stabilityPool.provideToSP(100e18);
+        makeSPDepositAndClaim(A, 100e18);
 
         // time passes
         vm.warp(block.timestamp + 7 days);
 
         // A tops up their SP deposit
-        stabilityPool.provideToSP(100e18);
+        makeSPDepositAndClaim(A, 100e18);
 
         // Check A's balance decreased and SP deposit increased
         assertEq(boldToken.balanceOf(A), 1800e18);
@@ -159,7 +159,7 @@ contract BasicOps is DevTestSetup {
         borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
 
         // A makes an SP deposit
-        stabilityPool.provideToSP(100e18);
+        makeSPDepositAndClaim(A, 100e18);
 
         // time passes
         vm.warp(block.timestamp + 7 days);
@@ -169,7 +169,7 @@ contract BasicOps is DevTestSetup {
         assertEq(stabilityPool.getCompoundedBoldDeposit(A), 100e18);
 
         // A withdraws their full SP deposit
-        stabilityPool.withdrawFromSP(100e18);
+        makeSPWithdrawalAndClaim(A, 100e18);
 
         // Check A's balance increased and SP deposit decreased to 0
         assertEq(boldToken.balanceOf(A), 2000e18);

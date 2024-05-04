@@ -735,7 +735,7 @@ contract Redemptions is DevTestSetup {
         uint256 troveColl_E = 25000e18;
         // E  opens new Trove and deposits to SP
         openTroveNoHints100pctMaxFee(E, troveColl_E, troveDebtRequest_E, interestRate_E);
-        makeSPDeposit(E, boldToken.balanceOf(E));
+        makeSPDepositAndClaim(E, boldToken.balanceOf(E));
         assertGt(stabilityPool.getTotalBoldDeposits(), troveManager.getTroveEntireDebt(troveIDs.B));
 
         // Price drops, B becomes liquidateable
