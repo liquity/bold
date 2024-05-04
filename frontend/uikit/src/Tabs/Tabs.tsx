@@ -66,7 +66,7 @@ export function Tabs({
     immediate: !selectedRect,
   });
 
-  const { size, ref: observeSize } = useElementSize(container);
+  const { size } = useElementSize(container);
 
   // update selectedRect from the selected button
   useEffect(() => {
@@ -82,7 +82,7 @@ export function Tabs({
 
   return (
     <div
-      ref={observeSize}
+      ref={container}
       role="tablist"
       className={css({
         overflow: "hidden",
