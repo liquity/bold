@@ -85,7 +85,7 @@ contract.skip(
           extraBoldAmount: totalLiquidatedDebt,
           extraParams: { from: whale },
         });
-        await stabilityPool.provideToSP(totalLiquidatedDebt, {
+        await th.provideToSPAndClaim(contracts, totalLiquidatedDebt, {
           from: whale,
         });
 
@@ -224,7 +224,7 @@ contract.skip(
           extraBoldAmount: totalLiquidatedDebt,
           extraParams: { from: whale },
         });
-        await stabilityPool.provideToSP(totalLiquidatedDebt, {
+        await th.provideToSPAndClaim(contracts, totalLiquidatedDebt, {
           from: whale,
         });
 

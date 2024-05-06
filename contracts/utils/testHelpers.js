@@ -1523,7 +1523,20 @@ class TestHelper {
     }
   }
 
-  // --- StabilityPool gas functions ---
+  // --- StabilityPool functions ---
+
+  static async provideToSPAndClaim(contracts, amount, extraParams) {
+    const tx = await contracts.stabilityPool.provideToSP(amount, true, {from: extraParams.from});
+  
+    return tx;
+  }
+
+  static async withdrawFromSPAndClaim(contracts, amount, extraParams) {
+    const tx = await contracts.stabilityPool.withdrawFromSP(amount, true, {from: extraParams.from});
+  
+    return tx;
+  }
+
 
   static async provideToSP_allAccounts(accounts, stabilityPool, amount) {
     const gasCostList = [];

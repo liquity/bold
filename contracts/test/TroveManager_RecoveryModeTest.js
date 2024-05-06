@@ -356,7 +356,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits to SP
-    await stabilityPool.provideToSP(spDeposit, { from: alice });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: alice });
 
     // check rewards-per-unit-staked before
     const P_Before = (await stabilityPool.P()).toString();
@@ -590,7 +590,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits 390Bold to the Stability Pool
-    await stabilityPool.provideToSP(spDeposit, { from: alice });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: alice });
 
     // --- TEST ---
     // price drops to 1ETH:100Bold, reducing TCR below 150%
@@ -768,7 +768,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
 
     // Alice deposits Bold in the Stability Pool
     const spDeposit = B_totalDebt.add(toBN(1));
-    await stabilityPool.provideToSP(spDeposit, { from: alice });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: alice });
 
     // --- TEST ---
     // price drops to 1ETH:100Bold, reducing TCR below 150%
@@ -853,7 +853,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
 
     // Alice deposits Bold in the Stability Pool
     const spDeposit = B_totalDebt.add(toBN(1));
-    await stabilityPool.provideToSP(spDeposit, { from: alice });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: alice });
 
     // --- TEST ---
     // price drops to 1ETH:100Bold, reducing TCR below 150%
@@ -926,7 +926,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits Bold in the Stability Pool
-    await stabilityPool.provideToSP(B_totalDebt.add(toBN(1)), {
+    await th.provideToSPAndClaim(contracts, B_totalDebt.add(toBN(1)), {
       from: alice,
     });
 
@@ -1000,7 +1000,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits Bold in the Stability Pool
-    await stabilityPool.provideToSP(B_totalDebt.add(toBN(1)), {
+    await th.provideToSPAndClaim(contracts, B_totalDebt.add(toBN(1)), {
       from: alice,
     });
 
@@ -1062,7 +1062,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits Bold in the Stability Pool
-    await stabilityPool.provideToSP(B_totalDebt.add(toBN(1)), {
+    await th.provideToSPAndClaim(contracts, B_totalDebt.add(toBN(1)), {
       from: alice,
     });
 
@@ -1151,7 +1151,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: totalLiquidatedDebt,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(totalLiquidatedDebt, {
+    await th.provideToSPAndClaim(contracts, totalLiquidatedDebt, {
       from: whale,
     });
 
@@ -1273,7 +1273,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits 1490 Bold in the Stability Pool
-    await stabilityPool.provideToSP("1490000000000000000000", {
+    await th.provideToSPAndClaim(contracts, "1490000000000000000000", {
       from: alice,
     });
 
@@ -1328,7 +1328,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits 100 Bold in the Stability Pool
-    await stabilityPool.provideToSP(dec(100, 18), {
+    await th.provideToSPAndClaim(contracts, dec(100, 18), {
       from: alice,
     });
 
@@ -1396,7 +1396,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits 100 Bold in the Stability Pool
-    await stabilityPool.provideToSP(dec(100, 18), {
+    await th.provideToSPAndClaim(contracts, dec(100, 18), {
       from: alice,
     });
 
@@ -1455,7 +1455,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits 100 Bold in the Stability Pool
-    await stabilityPool.provideToSP(dec(100, 18), {
+    await th.provideToSPAndClaim(contracts, dec(100, 18), {
       from: alice,
     });
 
@@ -1519,7 +1519,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits 100 Bold in the Stability Pool
-    await stabilityPool.provideToSP(dec(100, 18), {
+    await th.provideToSPAndClaim(contracts, dec(100, 18), {
       from: alice,
     });
 
@@ -1583,7 +1583,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits 100 Bold in the Stability Pool
-    await stabilityPool.provideToSP(dec(100, 18), {
+    await th.provideToSPAndClaim(contracts, dec(100, 18), {
       from: alice,
     });
 
@@ -1645,7 +1645,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     assert.isFalse(await sortedTroves.contains(bob));
 
     // Alice provides another 50 Bold to pool
-    await stabilityPool.provideToSP(dec(50, 18), { from: alice });
+    await th.provideToSPAndClaim(contracts, dec(50, 18), { from: alice });
 
     assert.isTrue(await th.checkRecoveryMode(contracts));
 
@@ -1695,7 +1695,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: dec(50, 18),
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(dec(50, 18), { from: whale });
+    await th.provideToSPAndClaim(contracts, dec(50, 18), { from: whale });
 
     const { collateral: A_coll } = await openTrove({
       ICR: toBN(dec(200, 16)),
@@ -1758,7 +1758,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
   it("liquidate(): Doesn't liquidate undercollateralized trove if it is the only trove in the system", async () => {
     // Alice creates a single trove with 0.62 ETH and a debt of 62 Bold, and provides 10 Bold to SP
     await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: alice } });
-    await stabilityPool.provideToSP(dec(10, 18), { from: alice });
+    await th.provideToSPAndClaim(contracts, dec(10, 18), { from: alice });
 
     assert.isFalse(await th.checkRecoveryMode(contracts));
 
@@ -1798,7 +1798,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: alice } });
 
     // Alice proves 10 Bold to SP
-    await stabilityPool.provideToSP(dec(10, 18), { from: alice });
+    await th.provideToSPAndClaim(contracts, dec(10, 18), { from: alice });
 
     assert.isFalse(await th.checkRecoveryMode(contracts));
 
@@ -1878,7 +1878,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     await openTrove({ ICR: toBN(dec(142, 16)), extraParams: { from: C } });
 
     // C fills SP with 130 Bold
-    await stabilityPool.provideToSP(dec(130, 18), { from: C });
+    await th.provideToSPAndClaim(contracts, dec(130, 18), { from: C });
 
     await priceFeed.setPrice(dec(150, 18));
     const price = await priceFeed.getPrice();
@@ -2055,7 +2055,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     await boldToken.transfer(dennis, spDeposit, { from: bob });
 
     // Dennis provides 200 Bold to SP
-    await stabilityPool.provideToSP(spDeposit, { from: dennis });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: dennis });
 
     // Price drop
     await priceFeed.setPrice(dec(105, 18));
@@ -2173,7 +2173,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits Bold in the Stability Pool
-    await stabilityPool.provideToSP(B_totalDebt, { from: alice });
+    await th.provideToSPAndClaim(contracts, B_totalDebt, { from: alice });
 
     // --- TEST ---
     // price drops to 1ETH:100Bold, reducing TCR below 150%
@@ -2294,7 +2294,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: B_totalDebt_2,
       extraParams: { from: alice, annualInterestRate: th.toBN(dec(20, 16)) },
     });
-    await stabilityPool.provideToSP(B_totalDebt_2, {
+    await th.provideToSPAndClaim(contracts, B_totalDebt_2, {
       from: alice,
     });
 
@@ -2373,7 +2373,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits Bold to Stability Pool
-    await stabilityPool.provideToSP(spDeposit, { from: alice });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: alice });
 
     // price drops to 1ETH:85Bold, reducing TCR below 150%
     await priceFeed.setPrice("85000000000000000000");
@@ -2508,7 +2508,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits Bold to Stability Pool
-    await stabilityPool.provideToSP(spDeposit, { from: alice });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: alice });
 
     // price drops to 1ETH:85Bold, reducing TCR below 150%
     await priceFeed.setPrice("85000000000000000000");
@@ -2642,7 +2642,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     });
 
     // Alice deposits Bold to Stability Pool
-    await stabilityPool.provideToSP(spDeposit, { from: alice });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: alice });
 
     // to compensate borrowing fee
     await boldToken.transfer(alice, A_totalDebt, { from: whale });
@@ -2764,7 +2764,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Price drops
     await priceFeed.setPrice(dec(120, 18));
@@ -2820,7 +2820,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Price drops
     await priceFeed.setPrice(dec(120, 18));
@@ -2891,7 +2891,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Price drops
     await priceFeed.setPrice(dec(120, 18));
@@ -2962,7 +2962,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Price drops
     await priceFeed.setPrice(dec(120, 18));
@@ -3037,7 +3037,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Price drops
     await priceFeed.setPrice(dec(120, 18));
@@ -3105,7 +3105,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Price drops
     await priceFeed.setPrice(dec(120, 18));
@@ -3201,7 +3201,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Price drops
     await priceFeed.setPrice(dec(120, 18));
@@ -3262,7 +3262,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Price drops
     await priceFeed.setPrice(dec(120, 18));
@@ -3450,7 +3450,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Price drops, but all troves remain active
     await priceFeed.setPrice(dec(110, 18));
@@ -3542,9 +3542,9 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
     // Whale withdraws entire deposit, and re-deposits 132 Bold
     // Increasing the price for a moment to avoid pending liquidations to block withdrawal
     await priceFeed.setPrice(dec(200, 18));
-    await stabilityPool.withdrawFromSP(spDeposit, { from: whale });
+    await th.withdrawFromSPAndClaim(contracts, spDeposit, { from: whale });
     await priceFeed.setPrice(dec(110, 18));
-    await stabilityPool.provideToSP(
+    await th.provideToSPAndClaim(contracts, 
       B_totalDebt.add(toBN(dec(50, 18))),
       { from: whale },
     );
@@ -3610,7 +3610,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Price drops, but all troves remain active
     await priceFeed.setPrice(dec(100, 18));
@@ -3733,7 +3733,7 @@ contract.skip("TroveManager - in Recovery Mode", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Price drops, but all troves remain active
     await priceFeed.setPrice(dec(100, 18));

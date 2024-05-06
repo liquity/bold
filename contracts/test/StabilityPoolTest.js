@@ -97,7 +97,7 @@ contract("StabilityPool", async (accounts) => {
       // --- TEST ---
 
       // provideToSP()
-      await stabilityPool.provideToSP(200, { from: alice });
+      await th.provideToSPAndClaim(contracts, 200, { from: alice });
 
       // check Bold balances after
       const stabilityPool_Bold_After = await stabilityPool.getTotalBoldDeposits();
@@ -118,7 +118,7 @@ contract("StabilityPool", async (accounts) => {
       assert.equal(alice_depositRecord_Before, 0);
 
       // provideToSP()
-      await stabilityPool.provideToSP(200, { from: alice });
+      await th.provideToSPAndClaim(contracts, 200, { from: alice });
 
       // check user's deposit record after
       const alice_depositRecord_After = await stabilityPool.deposits(alice);
@@ -138,7 +138,7 @@ contract("StabilityPool", async (accounts) => {
       const alice_BoldBalance_Before = await boldToken.balanceOf(alice);
 
       // provideToSP()
-      await stabilityPool.provideToSP(200, { from: alice });
+      await th.provideToSPAndClaim(contracts, 200, { from: alice });
 
       // check user's Bold balance change
       const alice_BoldBalance_After = await boldToken.balanceOf(alice);
@@ -157,7 +157,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: whale },
       });
-      await stabilityPool.provideToSP(dec(2000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(2000, 18), {
         from: whale,
       });
 
@@ -175,7 +175,7 @@ contract("StabilityPool", async (accounts) => {
         extraParams: { from: whale, value: dec(50, "ether") },
       });
       const whaleBold = await boldToken.balanceOf(whale);
-      await stabilityPool.provideToSP(whaleBold, { from: whale });
+      await th.provideToSPAndClaim(contracts, whaleBold, { from: whale });
 
       // 2 Troves opened, each withdraws minimum debt
       const { troveId: defaulter_1_TroveId } = await openTrove({
@@ -225,7 +225,7 @@ contract("StabilityPool", async (accounts) => {
       assert.equal(alice_snapshot_P_Before, "0");
 
       // Make deposit
-      await stabilityPool.provideToSP(dec(100, 18), {
+      await th.provideToSPAndClaim(contracts, dec(100, 18), {
         from: alice,
       });
 
@@ -247,7 +247,7 @@ contract("StabilityPool", async (accounts) => {
         extraParams: { from: whale, value: dec(50, "ether") },
       });
       const whaleBold = await boldToken.balanceOf(whale);
-      await stabilityPool.provideToSP(whaleBold, { from: whale });
+      await th.provideToSPAndClaim(contracts, whaleBold, { from: whale });
 
       // 3 Troves opened. Two users withdraw 160 Bold each
       const { troveId: defaulter_1_TroveId } = await openTrove({
@@ -274,7 +274,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(3, 18)),
         extraParams: { from: alice },
       });
-      await stabilityPool.provideToSP(dec(150, 18), {
+      await th.provideToSPAndClaim(contracts, dec(150, 18), {
         from: alice,
       });
 
@@ -295,7 +295,7 @@ contract("StabilityPool", async (accounts) => {
 
       // Alice makes deposit #2
       const alice_topUp_1 = toBN(dec(100, 18));
-      await stabilityPool.provideToSP(alice_topUp_1, {
+      await th.provideToSPAndClaim(contracts, alice_topUp_1, {
         from: alice,
       });
 
@@ -326,7 +326,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: bob },
       });
-      await stabilityPool.provideToSP(dec(427, 18), {
+      await th.provideToSPAndClaim(contracts, dec(427, 18), {
         from: alice,
       });
 
@@ -341,7 +341,7 @@ contract("StabilityPool", async (accounts) => {
       assert.isTrue(S_2.gt(S_1));
 
       // Alice makes deposit #3:  100Bold
-      await stabilityPool.provideToSP(dec(100, 18), {
+      await th.provideToSPAndClaim(contracts, dec(100, 18), {
         from: alice,
       });
 
@@ -413,84 +413,13 @@ contract("StabilityPool", async (accounts) => {
 
       // Alice attempts to deposit 2^256-1 Bold
       try {
-        aliceTx = await stabilityPool.provideToSP(maxBytes32, {
+        aliceTx = await th.provideToSPAndClaim(contracts, maxBytes32, {
           from: alice,
         });
         assert.isFalse(tx.receipt.status);
       } catch (error) {
         assert.include(error.message, "revert");
       }
-    });
-
-    it("provideToSP(): reverts if cannot receive ETH Gain", async () => {
-      // --- SETUP ---
-      // Whale deposits 1850 Bold in StabilityPool
-      await openTrove({
-        extraBoldAmount: toBN(dec(10000, 18)),
-        ICR: toBN(dec(2, 18)),
-        extraParams: { from: whale, value: dec(50, "ether") },
-      });
-      await stabilityPool.provideToSP(dec(1850, 18), {
-        from: whale,
-      });
-
-      // Defaulter Troves opened
-      const { troveId: defaulter_1_TroveId } = await openTrove({
-        extraBoldAmount: 0,
-        ICR: toBN(dec(2, 18)),
-        extraParams: { from: defaulter_1 },
-      });
-      const { troveId: defaulter_2_TroveId } = await openTrove({
-        extraBoldAmount: 0,
-        ICR: toBN(dec(2, 18)),
-        extraParams: { from: defaulter_2 },
-      });
-
-      // --- TEST ---
-
-      const nonPayable = await NonPayableSwitch.new();
-      await boldToken.transfer(nonPayable.address, dec(250, 18), {
-        from: whale,
-      });
-
-      // NonPayableSwitch makes deposit #1: 150 Bold
-      const txData1 = th.getTransactionData("provideToSP(uint256)", [
-        web3.utils.toHex(dec(150, 18)),
-      ]);
-      const tx1 = await nonPayable.forward(stabilityPool.address, txData1);
-
-      const gain_0 = await stabilityPool.getDepositorETHGain(
-        nonPayable.address,
-      );
-      assert.isTrue(
-        gain_0.eq(toBN(0)),
-        "NonPayableSwitch should not have accumulated gains",
-      );
-
-      // price drops: defaulters' Troves fall below MCR, nonPayable and whale Trove remain active
-      await priceFeed.setPrice(dec(105, 18));
-
-      // 2 defaulters are closed
-      await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
-      await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
-
-      const gain_1 = await stabilityPool.getDepositorETHGain(
-        nonPayable.address,
-      );
-      assert.isTrue(
-        gain_1.gt(toBN(0)),
-        "NonPayableSwitch should have some accumulated gains",
-      );
-
-      // NonPayableSwitch tries to make deposit #2: 100Bold (which also attempts to withdraw ETH gain)
-      const txData2 = th.getTransactionData("provideToSP(uint256,address)", [
-        web3.utils.toHex(dec(100, 18)),
-        frontEnd_1,
-      ]);
-      await th.assertRevert(
-        nonPayable.forward(stabilityPool.address, txData2),
-        "StabilityPool: sending ETH failed",
-      );
     });
 
     it("provideToSP(): doesn't impact other users' deposits or ETH gains", async () => {
@@ -517,11 +446,11 @@ contract("StabilityPool", async (accounts) => {
         extraParams: { from: carol },
       });
 
-      await stabilityPool.provideToSP(dec(1000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(1000, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(2000, 18), { from: bob });
-      await stabilityPool.provideToSP(dec(3000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(2000, 18), { from: bob });
+      await th.provideToSPAndClaim(contracts, dec(3000, 18), {
         from: carol,
       });
 
@@ -580,7 +509,7 @@ contract("StabilityPool", async (accounts) => {
       assert.isTrue(ETHinSP.gt(mv._zeroBN));
 
       // D makes an SP deposit
-      await stabilityPool.provideToSP(dec(1000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(1000, 18), {
         from: dennis,
       });
       assert.equal(
@@ -642,11 +571,11 @@ contract("StabilityPool", async (accounts) => {
         extraParams: { from: carol },
       });
 
-      await stabilityPool.provideToSP(dec(1000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(1000, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(2000, 18), { from: bob });
-      await stabilityPool.provideToSP(dec(3000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(2000, 18), { from: bob });
+      await th.provideToSPAndClaim(contracts, dec(3000, 18), {
         from: carol,
       });
 
@@ -685,7 +614,7 @@ contract("StabilityPool", async (accounts) => {
       const TCR_Before = (await th.getTCR(contracts)).toString();
 
       // D makes an SP deposit
-      await stabilityPool.provideToSP(dec(1000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(1000, 18), {
         from: dennis,
       });
       assert.equal(
@@ -732,10 +661,10 @@ contract("StabilityPool", async (accounts) => {
       });
 
       // A and B provide to SP
-      await stabilityPool.provideToSP(dec(1000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(1000, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(2000, 18), { from: bob });
+      await th.provideToSPAndClaim(contracts, dec(2000, 18), { from: bob });
 
       // D opens a trove
       const { troveId: dennisTroveId } = await openTrove({
@@ -794,7 +723,7 @@ contract("StabilityPool", async (accounts) => {
       ).toString();
 
       // D makes an SP deposit
-      await stabilityPool.provideToSP(dec(1000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(1000, 18), {
         from: dennis,
       });
       assert.equal(
@@ -878,10 +807,10 @@ contract("StabilityPool", async (accounts) => {
       });
 
       // A, B provide 100 Bold to SP
-      await stabilityPool.provideToSP(dec(1000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(1000, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(1000, 18), { from: bob });
+      await th.provideToSPAndClaim(contracts, dec(1000, 18), { from: bob });
 
       // Confirm Bob has an active trove in the system
       assert.isTrue(await sortedTroves.contains(bobTroveId));
@@ -931,11 +860,11 @@ contract("StabilityPool", async (accounts) => {
       });
 
       // A, B, C provides 100, 50, 30 Bold to SP
-      await stabilityPool.provideToSP(dec(100, 18), {
+      await th.provideToSPAndClaim(contracts, dec(100, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(50, 18), { from: bob });
-      await stabilityPool.provideToSP(dec(30, 18), { from: carol });
+      await th.provideToSPAndClaim(contracts, dec(50, 18), { from: bob });
+      await th.provideToSPAndClaim(contracts, dec(30, 18), { from: carol });
 
       const bob_Deposit_Before = (
         await stabilityPool.getCompoundedBoldDeposit(bob)
@@ -986,25 +915,25 @@ contract("StabilityPool", async (accounts) => {
 
       // A, B, C, D provide to SP
       const A_GAS_Used = th.gasUsed(
-        await stabilityPool.provideToSP(dec(100, 18), {
+        await th.provideToSPAndClaim(contracts, dec(100, 18), {
           from: A,
           gasPrice: GAS_PRICE,
         }),
       );
       const B_GAS_Used = th.gasUsed(
-        await stabilityPool.provideToSP(dec(200, 18), {
+        await th.provideToSPAndClaim(contracts, dec(200, 18), {
           from: B,
           gasPrice: GAS_PRICE,
         }),
       );
       const C_GAS_Used = th.gasUsed(
-        await stabilityPool.provideToSP(dec(300, 18), {
+        await th.provideToSPAndClaim(contracts, dec(300, 18), {
           from: C,
           gasPrice: GAS_PRICE,
         }),
       );
       const D_GAS_Used = th.gasUsed(
-        await stabilityPool.provideToSP(dec(400, 18), {
+        await th.provideToSPAndClaim(contracts, dec(400, 18), {
           from: D,
           gasPrice: GAS_PRICE,
         }),
@@ -1059,16 +988,16 @@ contract("StabilityPool", async (accounts) => {
 
       // --- SETUP ---
       // A, B, C, D provide to SP
-      await stabilityPool.provideToSP(dec(105, 18), { from: A });
-      await stabilityPool.provideToSP(dec(105, 18), { from: B });
-      await stabilityPool.provideToSP(dec(105, 18), { from: C });
-      await stabilityPool.provideToSP(dec(105, 18), { from: D });
+      await th.provideToSPAndClaim(contracts, dec(105, 18), { from: A });
+      await th.provideToSPAndClaim(contracts, dec(105, 18), { from: B });
+      await th.provideToSPAndClaim(contracts, dec(105, 18), { from: C });
+      await th.provideToSPAndClaim(contracts, dec(105, 18), { from: D });
 
       // time passes
       await time.increase(timeValues.SECONDS_IN_ONE_HOUR);
 
       // B deposits
-      await stabilityPool.provideToSP(dec(5, 18), { from: B });
+      await th.provideToSPAndClaim(contracts, dec(5, 18), { from: B });
 
       // Price drops, defaulter is liquidated, A, B, C, D earn ETH
       await priceFeed.setPrice(dec(105, 18));
@@ -1080,10 +1009,10 @@ contract("StabilityPool", async (accounts) => {
       await priceFeed.setPrice(dec(200, 18));
 
       // A B,C, D fully withdraw from the pool
-      await stabilityPool.withdrawFromSP(dec(105, 18), { from: A });
-      await stabilityPool.withdrawFromSP(dec(105, 18), { from: B });
-      await stabilityPool.withdrawFromSP(dec(105, 18), { from: C });
-      await stabilityPool.withdrawFromSP(dec(105, 18), { from: D });
+      await th.withdrawFromSPAndClaim(contracts, dec(105, 18), { from: A });
+      await th.withdrawFromSPAndClaim(contracts, dec(105, 18), { from: B });
+      await th.withdrawFromSPAndClaim(contracts, dec(105, 18), { from: C });
+      await th.withdrawFromSPAndClaim(contracts, dec(105, 18), { from: D });
 
       // --- TEST ---
 
@@ -1095,28 +1024,28 @@ contract("StabilityPool", async (accounts) => {
 
       // A, B, C, D provide to SP
       const A_GAS_Used = th.gasUsed(
-        await stabilityPool.provideToSP(dec(100, 18), {
+        await th.provideToSPAndClaim(contracts, dec(100, 18), {
           from: A,
           gasPrice: GAS_PRICE,
           gasPrice: GAS_PRICE,
         }),
       );
       const B_GAS_Used = th.gasUsed(
-        await stabilityPool.provideToSP(dec(200, 18), {
+        await th.provideToSPAndClaim(contracts, dec(200, 18), {
           from: B,
           gasPrice: GAS_PRICE,
           gasPrice: GAS_PRICE,
         }),
       );
       const C_GAS_Used = th.gasUsed(
-        await stabilityPool.provideToSP(dec(300, 18), {
+        await th.provideToSPAndClaim(contracts, dec(300, 18), {
           from: C,
           gasPrice: GAS_PRICE,
           gasPrice: GAS_PRICE,
         }),
       );
       const D_GAS_Used = th.gasUsed(
-        await stabilityPool.provideToSP(dec(400, 18), {
+        await th.provideToSPAndClaim(contracts, dec(400, 18), {
           from: D,
           gasPrice: GAS_PRICE,
           gasPrice: GAS_PRICE,
@@ -1201,7 +1130,7 @@ contract("StabilityPool", async (accounts) => {
         extraParams: { from: bob },
       });
 
-      await stabilityPool.provideToSP(dec(100, 18), {
+      await th.provideToSPAndClaim(contracts, dec(100, 18), {
         from: alice,
       });
 
@@ -1216,13 +1145,13 @@ contract("StabilityPool", async (accounts) => {
       assert.equal(alice_initialDeposit, dec(100, 18));
       assert.equal(bob_initialDeposit, "0");
 
-      const txAlice = await stabilityPool.withdrawFromSP(dec(100, 18), {
+      const txAlice = await th.withdrawFromSPAndClaim(contracts, dec(100, 18), {
         from: alice,
       });
       assert.isTrue(txAlice.receipt.status);
 
       try {
-        const txBob = await stabilityPool.withdrawFromSP(dec(100, 18), {
+        const txBob = await th.withdrawFromSPAndClaim(contracts, dec(100, 18), {
           from: bob,
         });
         assert.isFalse(txBob.receipt.status);
@@ -1241,7 +1170,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: whale },
       });
-      await stabilityPool.provideToSP(dec(185000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(185000, 18), {
         from: whale,
       });
 
@@ -1263,7 +1192,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: alice },
       });
-      await stabilityPool.provideToSP(dec(15000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(15000, 18), {
         from: alice,
       });
 
@@ -1307,7 +1236,7 @@ contract("StabilityPool", async (accounts) => {
       );
 
       // Alice retrieves part of her entitled Bold: 9000 Bold
-      await stabilityPool.withdrawFromSP(dec(9000, 18), { from: alice });
+      await th.withdrawFromSPAndClaim(contracts, dec(9000, 18), { from: alice });
 
       const expectedNewDeposit_A = compoundedBoldDeposit_A.sub(
         toBN(dec(9000, 18)),
@@ -1335,7 +1264,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: whale },
       });
-      await stabilityPool.provideToSP(dec(185000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(185000, 18), {
         from: whale,
       });
 
@@ -1356,7 +1285,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: alice },
       });
-      await stabilityPool.provideToSP(dec(15000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(15000, 18), {
         from: alice,
       });
 
@@ -1382,7 +1311,7 @@ contract("StabilityPool", async (accounts) => {
       );
 
       // Alice retrieves part of her entitled Bold: 9000 Bold
-      await stabilityPool.withdrawFromSP(dec(9000, 18), { from: alice });
+      await th.withdrawFromSPAndClaim(contracts, dec(9000, 18), { from: alice });
 
       /* Check SP has reduced from 2 liquidations and Alice's withdrawal
       Expect Bold in SP = (200000 - liquidatedDebt_1 - liquidatedDebt_2 - 9000) */
@@ -1406,7 +1335,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: whale },
       });
-      await stabilityPool.provideToSP(dec(185000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(185000, 18), {
         from: whale,
       });
 
@@ -1428,7 +1357,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: alice },
       });
-      await stabilityPool.provideToSP(dec(15000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(15000, 18), {
         from: alice,
       });
 
@@ -1477,7 +1406,7 @@ contract("StabilityPool", async (accounts) => {
       const BoldinSPBefore = await stabilityPool.getTotalBoldDeposits();
 
       // Alice retrieves all of her entitled Bold:
-      await stabilityPool.withdrawFromSP(dec(15000, 18), { from: alice });
+      await th.withdrawFromSPAndClaim(contracts, dec(15000, 18), { from: alice });
 
       const expectedBoldinSPAfter = BoldinSPBefore.sub(compoundedBoldDeposit_A);
 
@@ -1496,7 +1425,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: whale },
       });
-      await stabilityPool.provideToSP(dec(18500, 18), {
+      await th.provideToSPAndClaim(contracts, dec(18500, 18), {
         from: whale,
       });
 
@@ -1518,7 +1447,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: alice },
       });
-      await stabilityPool.provideToSP(dec(15000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(15000, 18), {
         from: alice,
       });
 
@@ -1530,11 +1459,11 @@ contract("StabilityPool", async (accounts) => {
       await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       // Alice retrieves all of her entitled Bold:
-      await stabilityPool.withdrawFromSP(dec(15000, 18), { from: alice });
+      await th.withdrawFromSPAndClaim(contracts, dec(15000, 18), { from: alice });
       assert.equal(await stabilityPool.getDepositorETHGain(alice), 0);
 
       // Alice makes second deposit
-      await stabilityPool.provideToSP(dec(10000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), {
         from: alice,
       });
       assert.equal(await stabilityPool.getDepositorETHGain(alice), 0);
@@ -1542,7 +1471,7 @@ contract("StabilityPool", async (accounts) => {
       const ETHinSP_Before = (await stabilityPool.getETHBalance()).toString();
 
       // Alice attempts second withdrawal
-      await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice });
+      await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: alice });
       assert.equal(await stabilityPool.getDepositorETHGain(alice), 0);
 
       // Check ETH in pool does not change
@@ -1550,7 +1479,7 @@ contract("StabilityPool", async (accounts) => {
       assert.equal(ETHinSP_Before, ETHinSP_1);
 
       // Third deposit
-      await stabilityPool.provideToSP(dec(10000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), {
         from: alice,
       });
       assert.equal(await stabilityPool.getDepositorETHGain(alice), 0);
@@ -1570,7 +1499,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: whale },
       });
-      await stabilityPool.provideToSP(dec(185000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(185000, 18), {
         from: whale,
       });
 
@@ -1592,7 +1521,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: alice },
       });
-      await stabilityPool.provideToSP(dec(15000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(15000, 18), {
         from: alice,
       });
 
@@ -1611,7 +1540,7 @@ contract("StabilityPool", async (accounts) => {
       await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
 
       // Alice retrieves part of her entitled Bold: 9000 Bold
-      await stabilityPool.withdrawFromSP(dec(9000, 18), { from: alice });
+      await th.withdrawFromSPAndClaim(contracts, dec(9000, 18), { from: alice });
 
       const P = (await stabilityPool.P()).toString();
       const S = (await stabilityPool.epochToScaleToSum(0, 0)).toString();
@@ -1631,7 +1560,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: whale },
       });
-      await stabilityPool.provideToSP(dec(185000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(185000, 18), {
         from: whale,
       });
 
@@ -1649,7 +1578,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: alice },
       });
-      await stabilityPool.provideToSP(dec(15000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(15000, 18), {
         from: alice,
       });
 
@@ -1674,7 +1603,7 @@ contract("StabilityPool", async (accounts) => {
       assert.isTrue(aliceExpectedETHGain.eq(aliceETHGain));
 
       // Alice retrieves all of her deposit
-      await stabilityPool.withdrawFromSP(dec(15000, 18), { from: alice });
+      await th.withdrawFromSPAndClaim(contracts, dec(15000, 18), { from: alice });
 
       const active_ETH_After = await activePool.getETHBalance();
       const stability_ETH_After = await stabilityPool.getETHBalance();
@@ -1709,7 +1638,7 @@ contract("StabilityPool", async (accounts) => {
           ICR: toBN(dec(2, 18)),
           extraParams: { from: account },
         });
-        await stabilityPool.provideToSP(dec(10000, 18), {
+        await th.provideToSPAndClaim(contracts, dec(10000, 18), {
           from: account,
         });
       }
@@ -1720,17 +1649,17 @@ contract("StabilityPool", async (accounts) => {
       await priceFeed.setPrice(dec(200, 18));
 
       // All depositors attempt to withdraw
-      await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice });
+      await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: alice });
       assert.equal((await stabilityPool.deposits(alice)).toString(), "0");
-      await stabilityPool.withdrawFromSP(dec(10000, 18), { from: bob });
+      await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: bob });
       assert.equal((await stabilityPool.deposits(alice)).toString(), "0");
-      await stabilityPool.withdrawFromSP(dec(10000, 18), { from: carol });
+      await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: carol });
       assert.equal((await stabilityPool.deposits(alice)).toString(), "0");
-      await stabilityPool.withdrawFromSP(dec(10000, 18), { from: dennis });
+      await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: dennis });
       assert.equal((await stabilityPool.deposits(alice)).toString(), "0");
-      await stabilityPool.withdrawFromSP(dec(10000, 18), { from: erin });
+      await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: erin });
       assert.equal((await stabilityPool.deposits(alice)).toString(), "0");
-      await stabilityPool.withdrawFromSP(dec(10000, 18), { from: flyn });
+      await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: flyn });
       assert.equal((await stabilityPool.deposits(alice)).toString(), "0");
 
       const totalDeposits = (
@@ -1771,7 +1700,7 @@ contract("StabilityPool", async (accounts) => {
           ICR: toBN(dec(2, 18)),
           extraParams: { from: account },
         });
-        await stabilityPool.provideToSP(dec(10000, 18), {
+        await th.provideToSPAndClaim(contracts, dec(10000, 18), {
           from: account,
         });
       }
@@ -1795,7 +1724,7 @@ contract("StabilityPool", async (accounts) => {
       await borrowerOperations.withdrawBold(th.addressToTroveId(bob), th._100pct, dec(5000, 18), { from: bob });
 
       // Expect Alice's Bold balance increase be very close to 8333.3333333333333333 Bold
-      await stabilityPool.withdrawFromSP(dec(10000, 18), { from: alice });
+      await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: alice });
       const aliceBalance = await boldToken.balanceOf(alice);
 
       assert.isAtMost(
@@ -1807,7 +1736,7 @@ contract("StabilityPool", async (accounts) => {
       );
 
       // expect Bob's Bold balance increase to be very close to  13333.33333333333333333 Bold
-      await stabilityPool.withdrawFromSP(dec(10000, 18), { from: bob });
+      await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: bob });
       const bobBalance = await boldToken.balanceOf(bob);
       assert.isAtMost(
         th.getDifference(
@@ -1842,13 +1771,13 @@ contract("StabilityPool", async (accounts) => {
         extraParams: { from: carol },
       });
 
-      await stabilityPool.provideToSP(dec(10000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(20000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(20000, 18), {
         from: bob,
       });
-      await stabilityPool.provideToSP(dec(30000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(30000, 18), {
         from: carol,
       });
 
@@ -1899,7 +1828,7 @@ contract("StabilityPool", async (accounts) => {
         (await stabilityPool.deposits(carol)).toString(),
         dec(30000, 18),
       );
-      await stabilityPool.withdrawFromSP(dec(30000, 18), { from: carol });
+      await th.withdrawFromSPAndClaim(contracts, dec(30000, 18), { from: carol });
       assert.equal((await stabilityPool.deposits(carol)).toString(), "0");
 
       const alice_BoldDeposit_After = (
@@ -1948,13 +1877,13 @@ contract("StabilityPool", async (accounts) => {
         extraParams: { from: carol },
       });
 
-      await stabilityPool.provideToSP(dec(10000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(20000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(20000, 18), {
         from: bob,
       });
-      await stabilityPool.provideToSP(dec(30000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(30000, 18), {
         from: carol,
       });
 
@@ -1991,7 +1920,7 @@ contract("StabilityPool", async (accounts) => {
         (await stabilityPool.deposits(carol)).toString(),
         dec(30000, 18),
       );
-      await stabilityPool.withdrawFromSP(dec(30000, 18), { from: carol });
+      await th.withdrawFromSPAndClaim(contracts, dec(30000, 18), { from: carol });
       assert.equal((await stabilityPool.deposits(carol)).toString(), "0");
 
       const activeDebt_After = (await activePool.getRecordedDebtSum()).toString();
@@ -2033,13 +1962,13 @@ contract("StabilityPool", async (accounts) => {
       });
 
       // A, B and C provide to SP
-      await stabilityPool.provideToSP(dec(10000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(20000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(20000, 18), {
         from: bob,
       });
-      await stabilityPool.provideToSP(dec(30000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(30000, 18), {
         from: carol,
       });
 
@@ -2091,7 +2020,7 @@ contract("StabilityPool", async (accounts) => {
         (await stabilityPool.deposits(carol)).toString(),
         dec(30000, 18),
       );
-      await stabilityPool.withdrawFromSP(dec(30000, 18), { from: carol });
+      await th.withdrawFromSPAndClaim(contracts, dec(30000, 18), { from: carol });
       assert.equal((await stabilityPool.deposits(carol)).toString(), "0");
 
       const whale_Debt_After = (await troveManager.Troves(whaleTroveId))[0].toString();
@@ -2141,7 +2070,7 @@ contract("StabilityPool", async (accounts) => {
         extraParams: { from: A },
       });
 
-      await stabilityPool.provideToSP(dec(100, 18), { from: A });
+      await th.provideToSPAndClaim(contracts, dec(100, 18), { from: A });
 
       const A_initialDeposit = (await stabilityPool.deposits(A)).toString();
       assert.equal(A_initialDeposit, dec(100, 18));
@@ -2182,7 +2111,7 @@ contract("StabilityPool", async (accounts) => {
       assert.isTrue(A_pendingETHGain.gt(toBN("0")));
 
       // Check withdrawal of 0 succeeds
-      const tx = await stabilityPool.withdrawFromSP(0, {
+      const tx = await th.withdrawFromSPAndClaim(contracts, 0, {
         from: A,
         gasPrice: GAS_PRICE,
       });
@@ -2220,11 +2149,11 @@ contract("StabilityPool", async (accounts) => {
       });
 
       // A, B, C provides 100, 50, 30 Bold to SP
-      await stabilityPool.provideToSP(dec(100, 18), {
+      await th.provideToSPAndClaim(contracts, dec(100, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(50, 18), { from: bob });
-      await stabilityPool.provideToSP(dec(30, 18), { from: carol });
+      await th.provideToSPAndClaim(contracts, dec(50, 18), { from: bob });
+      await th.provideToSPAndClaim(contracts, dec(30, 18), { from: carol });
 
       const bob_Deposit_Before = (
         await stabilityPool.getCompoundedBoldDeposit(bob)
@@ -2236,7 +2165,7 @@ contract("StabilityPool", async (accounts) => {
       assert.equal(BoldinSP_Before, dec(180, 18));
 
       // Bob withdraws 0 Bold from the Stability Pool
-      await stabilityPool.withdrawFromSP(0, { from: bob });
+      await th.withdrawFromSPAndClaim(contracts, 0, { from: bob });
 
       // check Bob's deposit and total Bold in Stability Pool has not changed
       const bob_Deposit_After = (
@@ -2295,7 +2224,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: dennis },
       });
-      await stabilityPool.provideToSP(dec(100, 18), {
+      await th.provideToSPAndClaim(contracts, dec(100, 18), {
         from: dennis,
       });
 
@@ -2314,7 +2243,7 @@ contract("StabilityPool", async (accounts) => {
       await priceFeed.setPrice(dec(200, 18));
 
       // Dennis withdraws his full deposit and ETHGain to his account
-      await stabilityPool.withdrawFromSP(dec(100, 18), {
+      await th.withdrawFromSPAndClaim(contracts, dec(100, 18), {
         from: dennis,
         gasPrice: GAS_PRICE,
       });
@@ -2365,13 +2294,13 @@ contract("StabilityPool", async (accounts) => {
       });
 
       // A, B, C provide Bold to SP
-      await stabilityPool.provideToSP(dec(10000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(20000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(20000, 18), {
         from: bob,
       });
-      await stabilityPool.provideToSP(dec(30000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(30000, 18), {
         from: carol,
       });
 
@@ -2396,7 +2325,7 @@ contract("StabilityPool", async (accounts) => {
       await priceFeed.setPrice(dec(200, 18));
 
       // Bob attempts to withdraws 1 wei more than his compounded deposit from the Stability Pool
-      await stabilityPool.withdrawFromSP(bob_Deposit_Before.add(toBN(1)), {
+      await th.withdrawFromSPAndClaim(contracts, bob_Deposit_Before.add(toBN(1)), {
         from: bob,
       });
 
@@ -2410,7 +2339,7 @@ contract("StabilityPool", async (accounts) => {
       assert.equal(bob_Bold_Balance_After, bob_expectedBoldBalance);
 
       // Alice attempts to withdraws 2309842309.000000000000000000 Bold from the Stability Pool
-      await stabilityPool.withdrawFromSP("2309842309000000000000000000", {
+      await th.withdrawFromSPAndClaim(contracts, "2309842309000000000000000000", {
         from: alice,
       });
 
@@ -2470,11 +2399,11 @@ contract("StabilityPool", async (accounts) => {
       });
 
       // A, B, C provides 100, 50, 30 Bold to SP
-      await stabilityPool.provideToSP(dec(100, 18), {
+      await th.provideToSPAndClaim(contracts, dec(100, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(50, 18), { from: bob });
-      await stabilityPool.provideToSP(dec(30, 18), { from: carol });
+      await th.provideToSPAndClaim(contracts, dec(50, 18), { from: bob });
+      await th.provideToSPAndClaim(contracts, dec(30, 18), { from: carol });
 
       // Price drops
       await priceFeed.setPrice(dec(100, 18));
@@ -2498,7 +2427,7 @@ contract("StabilityPool", async (accounts) => {
       await priceFeed.setPrice(dec(200, 18));
 
       // Bob attempts to withdraws maxBytes32 Bold from the Stability Pool
-      await stabilityPool.withdrawFromSP(maxBytes32, { from: bob });
+      await th.withdrawFromSPAndClaim(contracts, maxBytes32, { from: bob });
 
       // Check Bob's Bold balance has risen by only the value of his compounded deposit
       const bob_expectedBoldBalance = bob_Bold_Balance_Before
@@ -2559,19 +2488,19 @@ contract("StabilityPool", async (accounts) => {
 
       // A, B, C provides 10000, 5000, 3000 Bold to SP
       const A_GAS_Used = th.gasUsed(
-        await stabilityPool.provideToSP(dec(10000, 18), {
+        await th.provideToSPAndClaim(contracts, dec(10000, 18), {
           from: alice,
           gasPrice: GAS_PRICE,
         }),
       );
       const B_GAS_Used = th.gasUsed(
-        await stabilityPool.provideToSP(dec(5000, 18), {
+        await th.provideToSPAndClaim(contracts, dec(5000, 18), {
           from: bob,
           gasPrice: GAS_PRICE,
         }),
       );
       const C_GAS_Used = th.gasUsed(
-        await stabilityPool.provideToSP(dec(3000, 18), {
+        await th.provideToSPAndClaim(contracts, dec(3000, 18), {
           from: carol,
           gasPrice: GAS_PRICE,
         }),
@@ -2628,19 +2557,19 @@ contract("StabilityPool", async (accounts) => {
 
       // A, B, C withdraw their full deposits from the Stability Pool
       const A_GAS_Deposit = th.gasUsed(
-        await stabilityPool.withdrawFromSP(dec(10000, 18), {
+        await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), {
           from: alice,
           gasPrice: GAS_PRICE,
         }),
       );
       const B_GAS_Deposit = th.gasUsed(
-        await stabilityPool.withdrawFromSP(dec(5000, 18), {
+        await th.withdrawFromSPAndClaim(contracts, dec(5000, 18), {
           from: bob,
           gasPrice: GAS_PRICE,
         }),
       );
       const C_GAS_Deposit = th.gasUsed(
-        await stabilityPool.withdrawFromSP(dec(3000, 18), {
+        await th.withdrawFromSPAndClaim(contracts, dec(3000, 18), {
           from: carol,
           gasPrice: GAS_PRICE,
         }),
@@ -2756,10 +2685,10 @@ contract("StabilityPool", async (accounts) => {
       });
 
       // A, B, provide 10000, 5000 Bold to SP
-      await stabilityPool.provideToSP(dec(10000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(5000, 18), { from: bob });
+      await th.provideToSPAndClaim(contracts, dec(5000, 18), { from: bob });
 
       // price drops
       await priceFeed.setPrice(dec(105, 18));
@@ -2791,7 +2720,7 @@ contract("StabilityPool", async (accounts) => {
       ).toString();
 
       // Whale deposits 10000 Bold to Stability Pool
-      await stabilityPool.provideToSP(dec(1, 24), { from: whale });
+      await th.provideToSPAndClaim(contracts, dec(1, 24), { from: whale });
 
       // Liquidation 2
       await troveManager.liquidate(defaulter_2_TroveId);
@@ -2844,11 +2773,11 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: E },
       });
-      await stabilityPool.provideToSP(dec(10000, 18), { from: E });
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), { from: E });
 
       // Fast-forward time and make a second deposit
       await time.increase(timeValues.SECONDS_IN_ONE_HOUR);
-      await stabilityPool.provideToSP(dec(10000, 18), { from: E });
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), { from: E });
 
       // perform a liquidation to make 0 < P < 1, and S > 0
       await priceFeed.setPrice(dec(105, 18));
@@ -2891,12 +2820,12 @@ contract("StabilityPool", async (accounts) => {
       });
 
       // A, B, C, D make their initial deposits
-      await stabilityPool.provideToSP(dec(10000, 18), { from: A });
-      await stabilityPool.provideToSP(dec(20000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), { from: A });
+      await th.provideToSPAndClaim(contracts, dec(20000, 18), {
         from: B,
       });
-      await stabilityPool.provideToSP(dec(30000, 18), { from: C });
-      await stabilityPool.provideToSP(dec(40000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(30000, 18), { from: C });
+      await th.provideToSPAndClaim(contracts, dec(40000, 18), {
         from: D,
       });
 
@@ -2914,10 +2843,10 @@ contract("StabilityPool", async (accounts) => {
       }
 
       // All depositors make full withdrawal
-      await stabilityPool.withdrawFromSP(dec(10000, 18), { from: A });
-      await stabilityPool.withdrawFromSP(dec(20000, 18), { from: B });
-      await stabilityPool.withdrawFromSP(dec(30000, 18), { from: C });
-      await stabilityPool.withdrawFromSP(dec(40000, 18), { from: D });
+      await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: A });
+      await th.withdrawFromSPAndClaim(contracts, dec(20000, 18), { from: B });
+      await th.withdrawFromSPAndClaim(contracts, dec(30000, 18), { from: C });
+      await th.withdrawFromSPAndClaim(contracts, dec(40000, 18), { from: D });
 
       // Check all depositors' snapshots have been zero'd
       for (depositor of [A, B, C, D]) {
@@ -2945,7 +2874,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: A },
       });
-      await stabilityPool.provideToSP(dec(10000, 18), { from: A });
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), { from: A });
 
       const { troveId: defaulter_1_TroveId } = await openTrove({
         ICR: toBN(dec(2, 18)),
@@ -2956,7 +2885,7 @@ contract("StabilityPool", async (accounts) => {
 
       // Fast-forward time and make a second deposit
       await time.increase(timeValues.SECONDS_IN_ONE_HOUR);
-      await stabilityPool.provideToSP(dec(100, 18), { from: A });
+      await th.provideToSPAndClaim(contracts, dec(100, 18), { from: A });
 
       // perform a liquidation to make 0 < P < 1, and S > 0
       await priceFeed.setPrice(dec(105, 18));
@@ -2968,7 +2897,7 @@ contract("StabilityPool", async (accounts) => {
       await priceFeed.setPrice(dec(200, 18));
 
       // A successfully withraws deposit and all gains
-      await stabilityPool.withdrawFromSP(dec(10100, 18), { from: A });
+      await th.withdrawFromSPAndClaim(contracts, dec(10100, 18), { from: A });
 
       // Confirm A's recorded deposit is 0
       const A_deposit = await stabilityPool.deposits(A); // get initialValue property on deposit struct
@@ -3010,7 +2939,7 @@ contract("StabilityPool", async (accounts) => {
         extraParams: { from: bob },
       });
 
-      await stabilityPool.provideToSP(dec(10000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), {
         from: alice,
       });
 
@@ -3053,7 +2982,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: whale },
       });
-      await stabilityPool.provideToSP(dec(185000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(185000, 18), {
         from: whale,
       });
 
@@ -3071,7 +3000,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: alice },
       });
-      await stabilityPool.provideToSP(dec(15000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(15000, 18), {
         from: alice,
       });
 
@@ -3142,7 +3071,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: whale },
       });
-      await stabilityPool.provideToSP(dec(185000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(185000, 18), {
         from: whale,
       });
 
@@ -3160,7 +3089,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: alice },
       });
-      await stabilityPool.provideToSP(dec(15000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(15000, 18), {
         from: alice,
       });
 
@@ -3190,7 +3119,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: whale },
       });
-      await stabilityPool.provideToSP(dec(185000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(185000, 18), {
         from: whale,
       });
 
@@ -3208,7 +3137,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: alice },
       });
-      await stabilityPool.provideToSP(dec(15000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(15000, 18), {
         from: alice,
       });
 
@@ -3246,7 +3175,7 @@ contract("StabilityPool", async (accounts) => {
       await priceFeed.setPrice(dec(200, 18));
 
       // Alice attempts third withdrawal (this time, from SP to her own account)
-      await stabilityPool.withdrawFromSP(dec(15000, 18), { from: alice });
+      await th.withdrawFromSPAndClaim(contracts, dec(15000, 18), { from: alice });
 
       // Check ETH in pool does not change
       const ETHinSP_2 = (await stabilityPool.getETHBalance()).toString();
@@ -3261,7 +3190,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(10, 18)),
         extraParams: { from: whale },
       });
-      await stabilityPool.provideToSP(dec(185000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(185000, 18), {
         from: whale,
       });
 
@@ -3279,7 +3208,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: alice },
       });
-      await stabilityPool.provideToSP(dec(15000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(15000, 18), {
         from: alice,
       });
 
@@ -3346,7 +3275,7 @@ contract("StabilityPool", async (accounts) => {
           ICR: toBN(dec(2, 18)),
           extraParams: { from: account },
         });
-        await stabilityPool.provideToSP(dec(10000, 18), {
+        await th.provideToSPAndClaim(contracts, dec(10000, 18), {
           from: account,
         });
       }
@@ -3406,7 +3335,7 @@ contract("StabilityPool", async (accounts) => {
           ICR: toBN(dec(2, 18)),
           extraParams: { from: account },
         });
-        await stabilityPool.provideToSP(dec(10000, 18), {
+        await th.provideToSPAndClaim(contracts, dec(10000, 18), {
           from: account,
         });
       }
@@ -3499,11 +3428,11 @@ contract("StabilityPool", async (accounts) => {
       });
 
       // A, B, C provides 10000, 5000, 3000 Bold to SP
-      await stabilityPool.provideToSP(dec(10000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), {
         from: alice,
       });
-      await stabilityPool.provideToSP(dec(5000, 18), { from: bob });
-      await stabilityPool.provideToSP(dec(3000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(5000, 18), { from: bob });
+      await th.provideToSPAndClaim(contracts, dec(3000, 18), {
         from: carol,
       });
 
@@ -3600,7 +3529,7 @@ contract("StabilityPool", async (accounts) => {
       await boldToken.transfer(dennis, dec(10000, 18), { from: alice });
 
       // D deposits to Stability Pool
-      await stabilityPool.provideToSP(dec(10000, 18), {
+      await th.provideToSPAndClaim(contracts, dec(10000, 18), {
         from: dennis,
       });
 
@@ -3644,10 +3573,10 @@ contract("StabilityPool", async (accounts) => {
       });
 
       // A, B, C, D provide to SP
-      await stabilityPool.provideToSP(dec(10, 18), { from: A });
-      await stabilityPool.provideToSP(dec(20, 18), { from: B });
-      await stabilityPool.provideToSP(dec(30, 18), { from: C });
-      await stabilityPool.provideToSP(dec(40, 18), { from: D });
+      await th.provideToSPAndClaim(contracts, dec(10, 18), { from: A });
+      await th.provideToSPAndClaim(contracts, dec(20, 18), { from: B });
+      await th.provideToSPAndClaim(contracts, dec(30, 18), { from: C });
+      await th.provideToSPAndClaim(contracts, dec(40, 18), { from: D });
 
       // fastforward time, and E makes a deposit
       await time.increase(timeValues.SECONDS_IN_ONE_HOUR);
@@ -3656,7 +3585,7 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: E },
       });
-      await stabilityPool.provideToSP(dec(3000, 18), { from: E });
+      await th.provideToSPAndClaim(contracts, dec(3000, 18), { from: E });
 
       // Confirm A, B, C have zero ETH gain
       assert.equal(await stabilityPool.getDepositorETHGain(A), "0");
