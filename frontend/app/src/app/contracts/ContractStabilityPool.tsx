@@ -1,5 +1,5 @@
 import { StabilityPoolContract } from "@/src/contracts";
-import { formValue, parseInputInt, parseInputValue, useForm } from "@/src/form-utils";
+import { formValue, parseInputInt, parseInputFloat, useForm } from "@/src/form-utils";
 import { getTroveId } from "@/src/liquity-utils";
 import { FormField, TextInput } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -22,7 +22,7 @@ function ProvideToSp() {
   const { writeContract, error, reset } = useWriteContract();
 
   const { fieldsProps, values } = useForm(() => ({
-    amount: formValue(dn.from(0, 18), parseInputValue),
+    amount: formValue(dn.from(0, 18), parseInputFloat),
   }), reset);
 
   const onSubmit = () => {
@@ -55,7 +55,7 @@ function WithdrawFromSp() {
   const { writeContract, error, reset } = useWriteContract();
 
   const { fieldsProps, values } = useForm(() => ({
-    amount: formValue(dn.from(0, 18), parseInputValue),
+    amount: formValue(dn.from(0, 18), parseInputFloat),
   }), reset);
 
   const onSubmit = () => {
