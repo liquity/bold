@@ -16,7 +16,6 @@ interface IBorrowerOperations is ILiquityBase {
         address _troveManagerAddress,
         address _activePoolAddress,
         address _defaultPoolAddress,
-        address _stabilityPoolAddress,
         address _gasPoolAddress,
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
