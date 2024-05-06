@@ -8,6 +8,9 @@ out/
 /broadcast/*/1337/
 /broadcast/**/dry-run/
 
+# Created by `forge snapshot`
+/.gas-snapshot
+
 # Docs
 docs/
 
