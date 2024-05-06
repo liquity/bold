@@ -556,7 +556,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
                 (collToRedistribute, collSurplus) = _getCollPenaltyAndSurplus(
                     collRedistributionPortion + collSurplus, // Coll surplus from offset can be eaten up by red. penalty
                     debtToRedistribute,
-                    LIQUIDATION_PENALTY_REDISTRIBUTION,
+                    LIQUIDATION_PENALTY_REDISTRIBUTION, // _penaltyRatio
                     _price
                 );
             }
@@ -569,13 +569,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 _debtToLiquidate,
         uint256 _penaltyRatio,
         uint256 _price
-    ) internal pure returns (uint256 collPenalty, uint256 collSurplus) {
-        uint256 maxCollWithPenalty = _debtToLiquidate * (DECIMAL_PRECISION + _penaltyRatio) / _price;
-        if (_collToLiquidate > maxCollWithPenalty) {
-            collPenalty = maxCollWithPenalty;
-            collSurplus = _collToLiquidate - maxCollWithPenalty;
+    ) internal pure returns (uint256 seizedColl, uint256 collSurplus) {
+        uint256 maxSeizedColl = _debtToLiquidate * (DECIMAL_PRECISION + _penaltyRatio) / _price;
+        if (_collToLiquidate > maxSeizedColl) {
+            seizedColl = maxSeizedColl;
+            collSurplus = _collToLiquidate - maxSeizedColl;
         } else {
-            collPenalty = _collToLiquidate;
+            seizedColl = _collToLiquidate;
             collSurplus = 0;
         }
     }
