@@ -207,9 +207,6 @@ importers:
       react:
         specifier: ^18.2.0
         version: 18.3.1
-      react-cool-dimensions:
-        specifier: ^3.0.1
-        version: 3.0.1(react@18.3.1)
       react-dom:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
@@ -14285,14 +14282,6 @@ packages:
       iconv-lite: 0.4.24
       unpipe: 1.0.0
     dev: true
-
-  /react-cool-dimensions@3.0.1(react@18.3.1):
-    resolution: {integrity: sha512-DUsDB5WUN1Qh6fJJlBtqFKCktrZCPRYcVn8NTeM6hP/5AhZNjDOa2sC2Dg0EM3WUObPDNV5nFLA34vHQfahUeg==}
-    peerDependencies:
-      react: '>= 16.8.0'
-    dependencies:
-      react: 18.3.1
-    dev: false
 
   /react-cosmos-core@6.1.1:
     resolution: {integrity: sha512-LdnltfcjBqJamAR1zruW0pIpiTfdbdH12NSi6IkIDbZ51mY6Tqkz3v0uT5cjmUiqVclJ90OV+pYkVlXvBd+wRg==}

@@ -5,10 +5,10 @@ export const POOLS = [
     apy: "6.8%",
     boldQty: "65.7M BOLD",
     deposit: "21,453.00 BOLD",
-    rewards: [
-      "234.24 BOLD",
-      "0.0054 ETH",
-    ],
+    rewards: {
+      bold: "234.24",
+      eth: "0.0054",
+    },
   },
   {
     symbol: "WSTETH",

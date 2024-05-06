@@ -1,5 +1,5 @@
 import { BorrowerOperationsContract } from "@/src/contracts";
-import { formValue, parseInputInt, parseInputPercentage, parseInputValue, useForm } from "@/src/form-utils";
+import { formValue, parseInputInt, parseInputPercentage, parseInputFloat, useForm } from "@/src/form-utils";
 import { getTroveId, useCollTokenAllowance } from "@/src/liquity-utils";
 import { FormField, TextInput } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -29,10 +29,10 @@ function OpenTrove() {
   const { fieldsProps, values, fill } = useForm(() => ({
     ownerIndex: formValue(0n, parseInputInt),
     maxFeePercentage: formValue(dn.from(0, 18), parseInputPercentage),
-    ethAmount: formValue(dn.from(0, 18), parseInputValue),
-    boldAmount: formValue(dn.from(0, 18), parseInputValue),
-    upperHint: formValue(dn.from(0, 18), parseInputValue),
-    lowerHint: formValue(dn.from(0, 18), parseInputValue),
+    ethAmount: formValue(dn.from(0, 18), parseInputFloat),
+    boldAmount: formValue(dn.from(0, 18), parseInputFloat),
+    upperHint: formValue(dn.from(0, 18), parseInputFloat),
+    lowerHint: formValue(dn.from(0, 18), parseInputFloat),
     annualInterestRate: formValue(dn.from(0, 18), parseInputPercentage),
   }), writeOpenTrove.reset);
 
@@ -149,7 +149,7 @@ function RepayBold() {
 
   const { fieldsProps, values } = useForm(() => ({
     ownerIndex: formValue(0n, parseInputInt),
-    boldAmount: formValue(dn.from(0, 18), parseInputValue),
+    boldAmount: formValue(dn.from(0, 18), parseInputFloat),
   }), reset);
 
   const onSubmit = () => {
@@ -186,7 +186,7 @@ function AddCollateral() {
 
   const { fieldsProps, values } = useForm(() => ({
     ownerIndex: formValue(0n, parseInputInt),
-    ethAmount: formValue(dn.from(0, 18), parseInputValue),
+    ethAmount: formValue(dn.from(0, 18), parseInputFloat),
   }), reset);
 
   const onSubmit = () => {
@@ -224,7 +224,7 @@ function WithdrawCollateral() {
 
   const { fieldsProps, values } = useForm(() => ({
     ownerIndex: formValue(0n, parseInputInt),
-    ethAmount: formValue(dn.from(0, 18), parseInputValue),
+    ethAmount: formValue(dn.from(0, 18), parseInputFloat),
   }), reset);
 
   const onSubmit = () => {
@@ -263,8 +263,8 @@ function AdjustTroveInterestRate() {
   const { fieldsProps, values } = useForm(() => ({
     ownerIndex: formValue(0n, parseInputInt),
     newAnnualInterestRate: formValue(dn.from(0, 18), parseInputPercentage),
-    upperHint: formValue(dn.from(0, 18), parseInputValue),
-    lowerHint: formValue(dn.from(0, 18), parseInputValue),
+    upperHint: formValue(dn.from(0, 18), parseInputFloat),
+    lowerHint: formValue(dn.from(0, 18), parseInputFloat),
   }), reset);
 
   const onSubmit = () => {
@@ -310,10 +310,10 @@ function AdjustTrove() {
 
   const { fieldsProps, values } = useForm(() => ({
     ownerIndex: formValue(0n, parseInputInt),
-    maxFeePercentage: formValue(dn.from(0, 18), parseInputValue),
-    collChange: formValue(dn.from(0, 18), parseInputValue),
+    maxFeePercentage: formValue(dn.from(0, 18), parseInputFloat),
+    collChange: formValue(dn.from(0, 18), parseInputFloat),
     isCollIncrease: formValue(false, (value) => value === "true"),
-    boldChange: formValue(dn.from(0, 18), parseInputValue),
+    boldChange: formValue(dn.from(0, 18), parseInputFloat),
     isDebtIncrease: formValue(false, (value) => value === "true"),
   }), reset);
 
@@ -368,8 +368,8 @@ function WithdrawBold() {
 
   const { fieldsProps, values } = useForm(() => ({
     ownerIndex: formValue(0n, parseInputInt),
-    maxFeePercentage: formValue(dn.from(0, 18), parseInputValue),
-    boldAmount: formValue(dn.from(0, 18), parseInputValue),
+    maxFeePercentage: formValue(dn.from(0, 18), parseInputFloat),
+    boldAmount: formValue(dn.from(0, 18), parseInputFloat),
   }), reset);
 
   const onSubmit = () => {
