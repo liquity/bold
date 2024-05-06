@@ -182,38 +182,6 @@ contract(
         }
       });
 
-      // increaseBold
-      it("increaseBoldDebt(): reverts when called by an account that is not BO nor TroveM", async () => {
-        // Attempt call from alice
-        try {
-          const txAlice = await activePool.increaseRecordedDebtSum(100, {
-            from: alice,
-          });
-        } catch (err) {
-          assert.include(err.message, "revert");
-          assert.include(
-            err.message,
-            "ActivePool: Caller is not TroveManager",
-          );
-        }
-      });
-
-      // decreaseBold
-      it("decreaseBoldDebt(): reverts when called by an account that is not BO nor TroveM nor SP", async () => {
-        // Attempt call from alice
-        try {
-          const txAlice = await activePool.decreaseRecordedDebtSum(100, {
-            from: alice,
-          });
-        } catch (err) {
-          assert.include(err.message, "revert");
-          assert.include(
-            err.message,
-            "ActivePool: Caller is not TroveManager",
-          );
-        }
-      });
-
       // receiveETH (payment)
       it("receiveETH(): reverts when called by an account that is not Borrower Operations nor Default Pool", async () => {
         // Attempt call from alice

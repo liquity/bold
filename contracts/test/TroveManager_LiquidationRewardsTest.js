@@ -1479,7 +1479,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
         .sub(withdrawnColl)
         .add(th.applyLiquidationFee(D_coll)),
     );
-    const entireSystemDebt = (await activePool.getRecordedDebtSum()).add(
+    const entireSystemDebt = (await activePool.getTotalActiveDebt()).add(
       await defaultPool.getBoldDebt(),
     );
 
