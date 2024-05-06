@@ -582,7 +582,8 @@ contract SPTest is DevTestSetup {
 }
 
 // TODO:
-// 1) tests for withdrawETHGainToTrove (if we don't remove it)
-// 2) tests claimAllETHGains (requires deposit data & getter refactor):
-// - updates recorded deposit value
-// - updates deposit snapshots
+// 1) claim tests for withdrawETHGainToTrove (if we don't remove it)
+// 
+// 2) tests for claimAllETHGains (requires deposit data & getter refactor):
+//    - updates recorded deposit value
+//    - updates deposit snapshots

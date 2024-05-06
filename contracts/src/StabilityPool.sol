@@ -391,6 +391,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         assert(getDepositorETHGain(msg.sender) == 0);
     }
 
+    // TODO: Make this also claim BOlD gains when they are implemented
     function claimAllETHGains() external {
         // We don't require they have a deposit: they may have stashed gains and no deposit
         uint256 initialDeposit = deposits[msg.sender].initialValue;
@@ -401,7 +402,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         
         // If they have a deposit, update it and update its snapshots
         if (initialDeposit > 0) {
-            currentETHGain = getDepositorETHGain(msg.sender);  // Only active deposits can only have a current ETH gai
+            currentETHGain = getDepositorETHGain(msg.sender);  // Only active deposits can only have a current ETH gain
 
             uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
             boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
@@ -419,14 +420,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         _sendETHGainToDepositor(ETHToSend);
         assert(getDepositorETHGain(msg.sender) == 0);
     }
-       
-// T    ODO: should claim both rewards (BOLD and ETH) since it updates snapshots
-	// -mintAggInterest
-	// -calc current gains
-	// -calc new deposit
-	// -updateDepositAndSnapshots
-	// -Send (current + stashed) total gains to depositor
-	// -Zero stashed gains
 
     // --- Liquidation functions ---
 
