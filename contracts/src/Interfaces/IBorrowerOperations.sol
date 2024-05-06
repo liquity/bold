@@ -16,7 +16,6 @@ interface IBorrowerOperations is ILiquityBase {
         address _troveManagerAddress,
         address _activePoolAddress,
         address _defaultPoolAddress,
-        address _stabilityPoolAddress,
         address _gasPoolAddress,
         address _collSurplusPoolAddress,
         address _priceFeedAddress,
@@ -36,8 +35,6 @@ interface IBorrowerOperations is ILiquityBase {
     ) external returns (uint256);
 
     function addColl(uint256 _troveId, uint256 _ETHAmount) external;
-
-    function moveETHGainToTrove(address _sender, uint256 _troveId, uint256 _ETHAmount) external;
 
     function withdrawColl(uint256 _troveId, uint256 _amount) external;
 

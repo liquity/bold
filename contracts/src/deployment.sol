@@ -132,7 +132,6 @@ function _deployAndConnectCollateralContracts(IERC20 _collateralToken, IBoldToke
         address(contracts.troveManager),
         address(contracts.activePool),
         address(contracts.defaultPool),
-        address(contracts.stabilityPool),
         address(contracts.gasPool),
         address(contracts.collSurplusPool),
         address(contracts.priceFeed),

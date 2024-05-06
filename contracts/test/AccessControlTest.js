@@ -60,23 +60,6 @@ contract(
       borrowerOperations = contracts.borrowerOperations;
     });
 
-    describe("BorrowerOperations", async (accounts) => {
-      it("moveETHGainToTrove(): reverts when called by an account that is not StabilityPool", async () => {
-        // Attempt call from alice
-        try {
-          const tx1 = await borrowerOperations.moveETHGainToTrove(
-            bob,
-            th.addressToTroveId(bob),
-            1,
-            { from: bob },
-          );
-        } catch (err) {
-          assert.include(err.message, "revert");
-          // assert.include(err.message, "BorrowerOps: Caller is not Stability Pool")
-        }
-      });
-    });
-
     describe("TroveManager", async (accounts) => {
       // getAndApplyRedistributionGains
       it("getAndApplyRedistributionGains(): reverts when called by an account that is not BorrowerOperations", async () => {

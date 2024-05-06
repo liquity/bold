@@ -334,38 +334,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         _sendETHGainToDepositor(depositorETHGain);
     }
 
-    /* withdrawETHGainToTrove():
-    * - Transfers the depositor's entire ETH gain from the Stability Pool to the caller's trove
-    * - Leaves their compounded deposit in the Stability Pool
-    * - Takes new snapshots of accumulators P and S 
-    */
-    function withdrawETHGainToTrove(uint256 _troveId) external override {
-        uint256 initialDeposit = deposits[msg.sender].initialValue;
-        _requireUserHasDeposit(initialDeposit);
-        _requireTroveIsOpen(_troveId);
-        _requireUserHasETHGain(msg.sender);
-
-        uint256 depositorETHGain = getDepositorETHGain(msg.sender);
-
-        uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
-        uint256 boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
-
-        _updateDepositAndSnapshots(msg.sender, compoundedBoldDeposit);
-
-        /* Emit events before transferring ETH gain to Trove.
-         This lets the event log make more sense (i.e. so it appears that first the ETH gain is withdrawn
-        and then it is deposited into the Trove, not the other way around). */
-        emit ETHGainWithdrawn(msg.sender, depositorETHGain, boldLoss);
-        emit UserDepositChanged(msg.sender, compoundedBoldDeposit);
-
-        uint256 newETHBalance = ETHBalance - depositorETHGain;
-        ETHBalance = newETHBalance;
-        emit StabilityPoolETHBalanceUpdated(newETHBalance);
-        emit EtherSent(msg.sender, depositorETHGain);
-
-        borrowerOperations.moveETHGainToTrove(msg.sender, _troveId, depositorETHGain);
-    }
-
     // --- Liquidation functions ---
 
     /*
@@ -693,15 +661,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
     function _requireNonZeroAmount(uint256 _amount) internal pure {
         require(_amount > 0, "StabilityPool: Amount must be non-zero");
-    }
-
-    function _requireTroveIsOpen(uint256 _troveId) internal view {
-        require(troveManager.checkTroveIsOpen(_troveId), "StabilityPool: trove must be active to withdraw ETHGain to");
-    }
-
-    function _requireUserHasETHGain(address _depositor) internal view {
-        uint256 ETHGain = getDepositorETHGain(_depositor);
-        require(ETHGain > 0, "StabilityPool: caller must have non-zero ETH Gain");
     }
 
     function _requireValidKickbackRate(uint256 _kickbackRate) internal pure {
