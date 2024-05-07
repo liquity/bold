@@ -364,7 +364,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 boldLoss;
         uint256 currentETHGain;
 
-        activePool.mintAggInterestNoTroveChange();
+        activePool.mintAggInterest();
 
         // If they have a deposit, update it and update its snapshots
         if (initialDeposit > 0) {
