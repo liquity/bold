@@ -5,9 +5,9 @@ import "./TestContracts/DevTestSetup.sol";
 contract TroveManagerTest is DevTestSetup {
     function testRedeemSkipTrovesUnder100pct() public {
         priceFeed.setPrice(2000e18);
-        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 2 ether, 2001e18, 1e17);
-        uint256 BTroveId = openTroveNoHints100pctMaxFee(B, 5 ether, 2000e18, 2e17);
-        openTroveNoHints100pctMaxFee(C, 5 ether, 2000e18, 3e17);
+        uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2001e18, 1e17);
+        uint256 BTroveId = openTroveNoHints100pct(B, 5 ether, 2000e18, 2e17);
+        openTroveNoHints100pct(C, 5 ether, 2000e18, 3e17);
 
         uint256 debtA1 = troveManager.getTroveDebt(ATroveId);
         assertGt(debtA1, 0);
@@ -55,7 +55,7 @@ contract TroveManagerTest is DevTestSetup {
         vm.warp(block.timestamp + 14 days);
 
         priceFeed.setPrice(2000e18);
-        openTroveNoHints100pctMaxFee(A, 200 ether, 200000e18, 1e17);
+        openTroveNoHints100pct(A, 200 ether, 200000e18, 1e17);
         // A redeems 0.01 BOLD, base rate goes down to almost zero (it’s updated on redemption)
         vm.startPrank(A);
         collateralRegistry.redeemCollateral(1e16, 10, 1e18);

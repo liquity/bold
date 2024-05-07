@@ -52,8 +52,7 @@ async function main() {
   let { 0: upperHint, 1: lowerHint } = await sortedTroves.findInsertPosition(NICR, approxHint, approxHint);
 
   // Finally, call openTrove with the exact upperHint and lowerHint
-  const maxFee = "5".concat("0".repeat(16)); // Slippage protection: 5%
-  await borrowerOperations.openTrove(maxFee, LUSDAmount, upperHint, lowerHint, { value: ETHColl });
+  await borrowerOperations.openTrove(LUSDAmount, upperHint, lowerHint, { value: ETHColl });
 
   // --- adjust trove ---
 
@@ -75,7 +74,7 @@ async function main() {
   ({ 0: upperHint, 1: lowerHint } = await sortedTroves.findInsertPosition(NICR, approxHint, approxHint));
 
   // Call adjustTrove with the exact upperHint and lowerHint
-  await borrowerOperations.adjustTrove(maxFee, 0, LUSDRepayment, false, upperHint, lowerHint, { value: collIncrease });
+  await borrowerOperations.adjustTrove(0, LUSDRepayment, false, upperHint, lowerHint, { value: collIncrease });
 
   // --- RedeemCollateral ---
 
@@ -102,6 +101,7 @@ async function main() {
   /* Finally, perform the on-chain redemption, passing the truncated LUSD amount, the correct hints, and the expected
   * ICR of the final partially redeemed trove in the sequence.
   */
+  const maxFee = "5".concat("0".repeat(16)); // Slippage protection: 5%
   await troveManager.redeemCollateral(
     truncatedLUSDAmount,
     firstRedemptionHint,

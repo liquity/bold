@@ -68,7 +68,6 @@ contract DeployLiquity2Script is Script, StdCheats {
             borrowerOperations.openTrove(
                 vm.addr(troves[i].owner), //      _owner
                 troves[i].ownerIndex, // _ownerIndex
-                1e18, //                   _maxFeePercentage (100%)
                 troves[i].coll, //         _ETHAmount
                 troves[i].debt, //         _boldAmount
                 0, //                      _upperHint

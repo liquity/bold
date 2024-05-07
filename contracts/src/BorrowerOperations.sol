@@ -155,7 +155,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     function openTrove(
         address _owner,
         uint256 _ownerIndex,
-        uint256 _maxFeePercentage,
         uint256 _ETHAmount,
         uint256 _boldAmount,
         uint256 _upperHint,
@@ -172,7 +171,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         bool isRecoveryMode = _checkRecoveryMode(vars.price);
 
         _requireValidAnnualInterestRate(_annualInterestRate);
-        _requireValidMaxFeePercentage(_maxFeePercentage, isRecoveryMode);
 
         uint256 troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
         _requireTroveIsNotOpen(contractsCache.troveManager, troveId);
@@ -227,7 +225,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
         // TODO: Use oldColl and assert in fuzzing, remove before deployment
         uint256 oldColl = troveManager.getTroveEntireColl(_troveId);
-        _adjustTrove(msg.sender, _troveId, _ETHAmount, true, 0, false, 0, contractsCache);
+        _adjustTrove(msg.sender, _troveId, _ETHAmount, true, 0, false, contractsCache);
         assert(troveManager.getTroveEntireColl(_troveId) > oldColl);
     }
 
@@ -237,17 +235,17 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
         // TODO: Use oldColl and assert in fuzzing, remove before deployment
         uint256 oldColl = troveManager.getTroveEntireColl(_troveId);
-        _adjustTrove(msg.sender, _troveId, _collWithdrawal, false, 0, false, 0, contractsCache);
+        _adjustTrove(msg.sender, _troveId, _collWithdrawal, false, 0, false, contractsCache);
         assert(troveManager.getTroveEntireColl(_troveId) < oldColl);
     }
 
     // Withdraw Bold tokens from a trove: mint new Bold tokens to the owner, and increase the trove's debt accordingly
-    function withdrawBold(uint256 _troveId, uint256 _maxFeePercentage, uint256 _boldAmount) external override {
+    function withdrawBold(uint256 _troveId, uint256 _boldAmount) external override {
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
         // TODO: Use oldDebt and assert in fuzzing, remove before deployment
         uint256 oldDebt = troveManager.getTroveEntireDebt(_troveId);
-        _adjustTrove(msg.sender, _troveId, 0, false, _boldAmount, true, _maxFeePercentage, contractsCache);
+        _adjustTrove(msg.sender, _troveId, 0, false, _boldAmount, true, contractsCache);
         assert(troveManager.getTroveEntireDebt(_troveId) > oldDebt);
     }
 
@@ -257,13 +255,12 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
         // TODO: Use oldDebt and assert in fuzzing, remove before deployment
         uint256 oldDebt = troveManager.getTroveEntireDebt(_troveId);
-        _adjustTrove(msg.sender, _troveId, 0, false, _boldAmount, false, 0, contractsCache);
+        _adjustTrove(msg.sender, _troveId, 0, false, _boldAmount, false, contractsCache);
         assert(troveManager.getTroveEntireDebt(_troveId) < oldDebt);
     }
 
     function adjustTrove(
         uint256 _troveId,
-        uint256 _maxFeePercentage,
         uint256 _collChange,
         bool _isCollIncrease,
         uint256 _boldChange,
@@ -271,21 +268,11 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     ) external override {
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
-        _adjustTrove(
-            msg.sender,
-            _troveId,
-            _collChange,
-            _isCollIncrease,
-            _boldChange,
-            _isDebtIncrease,
-            _maxFeePercentage,
-            contractsCache
-        );
+        _adjustTrove(msg.sender, _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, contractsCache);
     }
 
     function adjustUnredeemableTrove(
         uint256 _troveId,
-        uint256 _maxFeePercentage,
         uint256 _collChange,
         bool _isCollIncrease,
         uint256 _boldChange,
@@ -296,16 +283,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         _requireTroveIsUnredeemable(contractsCache.troveManager, _troveId);
         // TODO: Gas - pass the cached TM down here, since we fetch it again inside _adjustTrove?
-        _adjustTrove(
-            msg.sender,
-            _troveId,
-            _collChange,
-            _isCollIncrease,
-            _boldChange,
-            _isDebtIncrease,
-            _maxFeePercentage,
-            contractsCache
-        );
+        _adjustTrove(msg.sender, _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, contractsCache);
         troveManager.setTroveStatusToActive(_troveId);
         sortedTroves.insert(
             _troveId, contractsCache.troveManager.getTroveAnnualInterestRate(_troveId), _upperHint, _lowerHint
@@ -346,7 +324,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         bool _isCollIncrease,
         uint256 _boldChange,
         bool _isDebtIncrease,
-        uint256 _maxFeePercentage,
         ContractsCacheTMAPBT memory _contractsCache
     ) internal {
         LocalVariables_adjustTrove memory vars;
@@ -364,7 +341,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _requireNonZeroCollChange(_collChange);
         }
         if (_isDebtIncrease) {
-            _requireValidMaxFeePercentage(_maxFeePercentage, isRecoveryMode);
             _requireNonZeroDebtChange(_boldChange);
         }
         _requireNonZeroAdjustment(_collChange, _boldChange);
@@ -789,17 +765,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _boldToken.balanceOf(_borrower) >= _debtRepayment,
             "BorrowerOps: Caller doesnt have enough Bold to make repayment"
         );
-    }
-
-    function _requireValidMaxFeePercentage(uint256 _maxFeePercentage, bool _isRecoveryMode) internal pure {
-        if (_isRecoveryMode) {
-            require(_maxFeePercentage <= DECIMAL_PRECISION, "Max fee percentage must less than or equal to 100%");
-        } else {
-            require(
-                _maxFeePercentage >= BORROWING_FEE_FLOOR && _maxFeePercentage <= DECIMAL_PRECISION,
-                "Max fee percentage must be between 0.5% and 100%"
-            );
-        }
     }
 
     function _requireValidAnnualInterestRate(uint256 _annualInterestRate) internal pure {

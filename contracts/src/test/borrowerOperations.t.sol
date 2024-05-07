@@ -6,7 +6,7 @@ contract BorrowerOperationsTest is DevTestSetup {
     // closeTrove(): reverts when trove is the only one in the system", async () =>
     function testCloseLastTroveReverts() public {
         priceFeed.setPrice(2000e18);
-        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 100 ether, 100000e18, 1e17);
+        uint256 ATroveId = openTroveNoHints100pct(A, 100 ether, 100000e18, 1e17);
 
         // Artificially mint to Alice so she has enough to close her trove
         deal(address(boldToken), A, 100200e18);
