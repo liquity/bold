@@ -69,7 +69,7 @@ contract HintHelpers is LiquityBase, Ownable, CheckContract {
             uint256 currentId = troveManager.getTroveFromTroveIdsArray(arrayIndex);
 
             // Skip this Trove if it's unredeeamable and not in the sorted list
-            if (!sortedTroves.contains(currentId)) { continue; }
+            if (!sortedTroves.contains(currentId)) continue;
 
             uint256 currentInterestRate = troveManager.getTroveAnnualInterestRate(currentId);
 

@@ -166,7 +166,10 @@ contract DevTestSetup is BaseTest {
         return (ATroveId, BTroveId, CTroveId, DTroveId);
     }
 
-    function _setupForRedemption(TroveInterestRates memory _troveInterestRates) internal returns (uint256, uint256, TroveIDs memory) {
+    function _setupForRedemption(TroveInterestRates memory _troveInterestRates)
+        internal
+        returns (uint256, uint256, TroveIDs memory)
+    {
         TroveIDs memory troveIDs;
 
         priceFeed.setPrice(2000e18);
@@ -200,11 +203,14 @@ contract DevTestSetup is BaseTest {
         return _setupForRedemption(troveInterestRates);
     }
 
-
-    function _redeemAndCreateZombieTrovesAAndB(TroveIDs memory _troveIDs) internal returns (uint256, uint256, TroveIDs memory) {
+    function _redeemAndCreateZombieTrovesAAndB(TroveIDs memory _troveIDs)
+        internal
+        returns (uint256, uint256, TroveIDs memory)
+    {
         // Redeem enough to leave to leave A with 0 debt and B with debt < MIN_NET_DEBT
         uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - troveManager.BOLD_GAS_COMPENSATION();
-        uint256 redeemFromB  = troveManager.getTroveEntireDebt(_troveIDs.B) - troveManager.BOLD_GAS_COMPENSATION() - troveManager.MIN_NET_DEBT() / 2;
+        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - troveManager.BOLD_GAS_COMPENSATION()
+            - troveManager.MIN_NET_DEBT() / 2;
         uint256 redeemAmount = redeemFromA + redeemFromB;
 
         // Fully redeem A and leave B with debt < MIN_NET_DEBT
@@ -214,17 +220,21 @@ contract DevTestSetup is BaseTest {
         assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), BOLD_GAS_COMP);
         assertLt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP, troveManager.MIN_NET_DEBT());
 
-       // Check A and B tagged as Zombie troves
+        // Check A and B tagged as Zombie troves
         assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'
         assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'
     }
 
-    function _redeemAndCreateZombieTroveAAndHitB(TroveIDs memory _troveIDs) internal returns (uint256, uint256, TroveIDs memory) {
+    function _redeemAndCreateZombieTroveAAndHitB(TroveIDs memory _troveIDs)
+        internal
+        returns (uint256, uint256, TroveIDs memory)
+    {
         // Redeem enough to leave to leave A with 0 debt and B with debt < MIN_NET_DEBT
         uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - troveManager.BOLD_GAS_COMPENSATION();
         // Leave B with net_debt > min_net_debt
-        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - troveManager.BOLD_GAS_COMPENSATION() - troveManager.MIN_NET_DEBT() - 37;
-      
+        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - troveManager.BOLD_GAS_COMPENSATION()
+            - troveManager.MIN_NET_DEBT() - 37;
+
         uint256 redeemAmount = redeemFromA + redeemFromB;
 
         // Fully redeem A and leave B with debt > MIN_NET_DEBT
