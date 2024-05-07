@@ -373,23 +373,27 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         (vars.entireDebt, vars.entireColl, vars.redistDebtGain,, vars.accruedTroveInterest) =
             _contractsCache.troveManager.getEntireDebtAndColl(_troveId);
 
-        // Get the trove's old ICR before the adjustment, and what its new ICR will be after the adjustment
-        vars.oldICR = LiquityMath._computeCR(vars.entireColl, vars.entireDebt, vars.price);
-        vars.newICR = _getNewICRFromTroveChange(
-            vars.entireColl, vars.entireDebt, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, vars.price
-        );
-        assert(_isCollIncrease || _collChange <= vars.entireColl); // TODO: do we still need this?
-
-        // Check the adjustment satisfies all conditions for the current system mode
-        _requireValidAdjustmentInCurrentMode(
-            isRecoveryMode, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, vars
-        );
-
         // When the adjustment is a debt repayment, check it's a valid amount and that the caller has enough Bold
         if (!_isDebtIncrease && _boldChange > 0) {
             _requireValidBoldRepayment(vars.entireDebt, _boldChange);
             _requireSufficientBoldBalance(_contractsCache.boldToken, msg.sender, _boldChange);
         }
+
+        // When the adjustment is a collateral withdrawal, check that it's no more than the Trove's entire collateral
+        if (!_isCollIncrease && _collChange > 0) {
+            _requireValidCollWithdrawal(vars.entireColl, _collChange);
+        }
+
+        // Get the trove's old ICR before the adjustment, and what its new ICR will be after the adjustment
+        vars.oldICR = LiquityMath._computeCR(vars.entireColl, vars.entireDebt, vars.price);
+        vars.newICR = _getNewICRFromTroveChange(
+            vars.entireColl, vars.entireDebt, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, vars.price
+        );
+
+        // Check the adjustment satisfies all conditions for the current system mode
+        _requireValidAdjustmentInCurrentMode(
+            isRecoveryMode, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, vars
+        );
 
         // --- Effects and interactions ---
 
@@ -615,17 +619,19 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 _boldChange,
         bool _isDebtIncrease
     ) internal {
-        if (_isDebtIncrease) { // implies _boldChange > 0
+        if (_isDebtIncrease) {
+            // implies _boldChange > 0
             address borrower = _troveManager.ownerOf(_troveId);
             _boldToken.mint(borrower, _boldChange);
-        } else if (_boldChange > 0 ){
+        } else if (_boldChange > 0) {
             _boldToken.burn(msg.sender, _boldChange);
         }
 
-        if (_isCollIncrease) { // implies _collChange > 0
+        if (_isCollIncrease) {
+            // implies _collChange > 0
             // Pull ETH tokens from sender and move them to the Active Pool
             _pullETHAndSendToActivePool(_activePool, _collChange);
-        } else if (_collChange > 0 ){
+        } else if (_collChange > 0) {
             address borrower = _troveManager.ownerOf(_troveId);
             // Pull ETH from Active Pool and decrease its recorded ETH balance
             _activePool.sendETH(borrower, _collChange);
@@ -779,6 +785,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _debtRepayment <= _currentDebt - BOLD_GAS_COMPENSATION,
             "BorrowerOps: Amount repaid must not be larger than the Trove's debt"
         );
+    }
+
+    function _requireValidCollWithdrawal(uint256 _currentColl, uint256 _collWithdrawal) internal pure {
+        require(_collWithdrawal <= _currentColl, "BorrowerOps: Can't withdraw more than the Trove's entire collateral");
     }
 
     function _requireSufficientBoldBalance(IBoldToken _boldToken, address _borrower, uint256 _debtRepayment)
