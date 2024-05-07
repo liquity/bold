@@ -6,7 +6,7 @@ contract MulticollateralTest is DevTestSetup {
     uint256 constant NUM_COLLATERALS = 4;
     LiquityContracts[] public contractsArray;
 
-    function openMulticollateralTroveNoHints100pctMaxFeeWithIndex(
+    function openMulticollateralTroveNoHints100pctWithIndex(
         uint256 _collIndex,
         address _account,
         uint256 _index,
@@ -19,7 +19,7 @@ contract MulticollateralTest is DevTestSetup {
 
         vm.startPrank(_account);
         uint256 troveId = contractsArray[_collIndex].borrowerOperations.openTrove(
-            _account, _index, 1e18, _coll, _boldAmount, 0, 0, _annualInterestRate
+            _account, _index, _coll, _boldAmount, 0, 0, _annualInterestRate
         );
         vm.stopPrank();
         return troveId;
@@ -93,18 +93,18 @@ contract MulticollateralTest is DevTestSetup {
         uint256 price = contractsArray[0].priceFeed.getPrice();
 
         // First collateral unbacked Bold: 10k (SP empty)
-        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(0, A, 0, 10e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 10e18, 10000e18, 5e16);
 
         // Second collateral unbacked Bold: 5k
-        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(1, A, 0, 10e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 10e18, 10000e18, 5e16);
         makeMulticollateralSPDepositAndClaim(1, A, 5000e18);
 
         // Third collateral unbacked Bold: 1k
-        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(2, A, 0, 10e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(2, A, 0, 10e18, 10000e18, 5e16);
         makeMulticollateralSPDepositAndClaim(2, A, 9000e18);
 
         // Fourth collateral unbacked Bold: 0
-        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(3, A, 0, 10e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(3, A, 0, 10e18, 10000e18, 5e16);
         makeMulticollateralSPDepositAndClaim(3, A, 10000e18);
 
         // Check A’s final bal
@@ -170,13 +170,11 @@ contract MulticollateralTest is DevTestSetup {
         _spBoldAmount2 = bound(_spBoldAmount2, 0, boldAmount - 200e18);
         _spBoldAmount3 = bound(_spBoldAmount3, 0, boldAmount - 200e18);
         _spBoldAmount4 = bound(_spBoldAmount4, 0, boldAmount - 200e18 - minBoldBalance);
-        _redemptionFraction = bound(
-            _redemptionFraction,
-            DECIMAL_PRECISION / minBoldBalance,
-            DECIMAL_PRECISION
-        );
+        _redemptionFraction = bound(_redemptionFraction, DECIMAL_PRECISION / minBoldBalance, DECIMAL_PRECISION);
 
-        _testMultiCollateralRedemption(boldAmount, _spBoldAmount1, _spBoldAmount2, _spBoldAmount3, _spBoldAmount4, _redemptionFraction);
+        _testMultiCollateralRedemption(
+            boldAmount, _spBoldAmount1, _spBoldAmount2, _spBoldAmount3, _spBoldAmount4, _redemptionFraction
+        );
     }
 
     function testMultiCollateralRedemptionMaxSPAmount() public {
@@ -219,21 +217,20 @@ contract MulticollateralTest is DevTestSetup {
         testValues3.price = contractsArray[2].priceFeed.getPrice();
         testValues4.price = contractsArray[3].priceFeed.getPrice();
 
-
         // First collateral
-        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(0, A, 0, 10e18, _boldAmount, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 10e18, _boldAmount, 5e16);
         if (_spBoldAmount1 > 0) makeMulticollateralSPDepositAndClaim(0, A, _spBoldAmount1);
 
         // Second collateral
-        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(1, A, 0, 10e18, _boldAmount, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 10e18, _boldAmount, 5e16);
         if (_spBoldAmount2 > 0) makeMulticollateralSPDepositAndClaim(1, A, _spBoldAmount2);
 
         // Third collateral
-        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(2, A, 0, 10e18, _boldAmount, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(2, A, 0, 10e18, _boldAmount, 5e16);
         if (_spBoldAmount3 > 0) makeMulticollateralSPDepositAndClaim(2, A, _spBoldAmount3);
 
         // Fourth collateral
-        openMulticollateralTroveNoHints100pctMaxFeeWithIndex(3, A, 0, 10e18, _boldAmount, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(3, A, 0, 10e18, _boldAmount, 5e16);
         if (_spBoldAmount4 > 0) makeMulticollateralSPDepositAndClaim(3, A, _spBoldAmount4);
 
         uint256 boldBalance = boldToken.balanceOf(A);

@@ -40,10 +40,6 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
     uint256 internal ETHBalance; // deposited ether tracker
 
-    // Sum of individual recorded Trove debts. Updated only at individual Trove operations.
-    // "G" in the spec.
-    uint256 internal recordedDebtSum;
-
     // Aggregate recorded debt tracker. Updated whenever a Trove's debt is touched AND whenever the aggregate pending interest is minted.
     // "D" in the spec.
     uint256 public aggRecordedDebt;
@@ -118,10 +114,6 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         return ETHBalance;
     }
 
-    function getRecordedDebtSum() external view override returns (uint256) {
-        return recordedDebtSum;
-    }
-
     function calcPendingAggInterest() public view returns (uint256) {
         return aggWeightedDebtSum * (block.timestamp - lastAggUpdateTime) / SECONDS_IN_ONE_YEAR / 1e18;
     }
@@ -179,35 +171,6 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         emit ActivePoolETHBalanceUpdated(newETHBalance);
     }
 
-    function increaseRecordedDebtSum(uint256 _amount) external {
-        _requireCallerIsTroveManager();
-        _changeRecordedDebtSum(_amount, 0);
-    }
-
-    // TODO: remove this once we implement interest minting in redemptions
-    function decreaseRecordedDebtSum(uint256 _amount) external {
-        _requireCallerIsTroveManager();
-        _changeRecordedDebtSum(0, _amount);
-    }
-
-    function _changeRecordedDebtSum(uint256 _recordedDebtIncrease, uint256 _recordedDebtDecrease) internal {
-        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
-        uint256 newRecordedDebtSum = recordedDebtSum + _recordedDebtIncrease; // 1 SLOAD
-        newRecordedDebtSum -= _recordedDebtDecrease;
-        recordedDebtSum = newRecordedDebtSum; // 1 SSTORE
-        emit ActivePoolBoldDebtUpdated(newRecordedDebtSum);
-    }
-
-    function _changeAggWeightedDebtSum(
-        uint256 _newTroveWeightedRecordedTroveDebt,
-        uint256 _oldWeightedRecordedTroveDebt
-    ) internal {
-        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
-        uint256 newAggWeightedDebtSum = aggWeightedDebtSum + _newTroveWeightedRecordedTroveDebt; // 1 SLOAD
-        newAggWeightedDebtSum -= _oldWeightedRecordedTroveDebt;
-        aggWeightedDebtSum = newAggWeightedDebtSum; // 1 SSTORE
-    }
-
     // --- Aggregate interest operations ---
 
     // This function is called inside all state-changing user ops: borrower ops, liquidations, redemptions and SP deposits/withdrawals.
@@ -217,40 +180,44 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     // It does *not* include the Trove's individual accrued interest - this gets accounted for in the aggregate accrued interest.
     // The net Trove debt change could be positive or negative in a repayment (depending on whether its redistribution gain or repayment amount is larger),
     // so this function accepts both the increase and the decrease to avoid using (and converting to/from) signed ints.
-    function mintAggInterest(
+    function mintAggInterestAndAccountForTroveChange(
         uint256 _troveDebtIncrease,
         uint256 _troveDebtDecrease,
-        uint256 recordedSumIncrease,
-        uint256 recordedSumDecrease,
-        uint256 newWeightedRecordedTroveDebt,
-        uint256 oldWeightedRecordedTroveDebt
+        uint256 _newWeightedRecordedTroveDebt,
+        uint256 _oldWeightedRecordedTroveDebt
     ) external {
         _requireCallerIsBOorTroveM();
 
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
-        uint256 newAggRecordedDebt = _mintAggInterestNoTroveChange() + _troveDebtIncrease; // 1 SLOAD
+        uint256 newAggRecordedDebt = aggRecordedDebt; // 1 SLOAD
+        newAggRecordedDebt += _mintAggInterest();
+        newAggRecordedDebt += _troveDebtIncrease;
         newAggRecordedDebt -= _troveDebtDecrease;
         aggRecordedDebt = newAggRecordedDebt; // 1 SSTORE
+
         // assert(aggRecordedDebt >= 0) // This should never be negative. If all redistribution gians and all aggregate interest was applied
         // and all Trove debts were repaid, it should become 0.
 
-        _changeRecordedDebtSum(recordedSumIncrease, recordedSumDecrease);
-        _changeAggWeightedDebtSum(newWeightedRecordedTroveDebt, oldWeightedRecordedTroveDebt);
+        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        uint256 newAggWeightedDebtSum = aggWeightedDebtSum; // 1 SLOAD
+        newAggWeightedDebtSum += _newWeightedRecordedTroveDebt;
+        newAggWeightedDebtSum -= _oldWeightedRecordedTroveDebt;
+        aggWeightedDebtSum = newAggWeightedDebtSum; // 1 SSTORE
     }
 
-    function mintAggInterestNoTroveChange() external override {
+    function mintAggInterest() external override {
         _requireCallerIsSP();
-        aggRecordedDebt = _mintAggInterestNoTroveChange();
+        aggRecordedDebt += _mintAggInterest();
     }
 
-    function _mintAggInterestNoTroveChange() internal returns (uint256) {
-        uint256 aggInterest = calcPendingAggInterest();
+    function _mintAggInterest() internal returns (uint256 aggInterest) {
+        aggInterest = calcPendingAggInterest();
+
         // Mint the new BOLD interest to a mock interest router that would split it and send it onward to SP, LP staking, etc.
         // TODO: implement interest routing and SP Bold reward tracking
         if (aggInterest > 0) boldToken.mint(address(interestRouter), aggInterest);
 
         lastAggUpdateTime = block.timestamp;
-        return aggRecordedDebt + aggInterest;
     }
 
     // --- 'require' functions ---

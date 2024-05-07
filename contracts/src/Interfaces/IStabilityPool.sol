@@ -57,18 +57,11 @@ interface IStabilityPool is ILiquityBase {
     /*  withdrawFromSP():
     * - Calculates depositor's ETH gain
     * - Calculates the compounded deposit
-    * - Sends the requested BOLD withdrawal to depositor 
+    * - Sends the requested BOLD withdrawal to depositor
     * - (If _amount > userDeposit, the user withdraws all of their compounded deposit)
     * - Decreases deposit by withdrawn amount and takes new snapshots of accumulators P and S
     */
     function withdrawFromSP(uint256 _amount, bool doClaim) external;
-
-    /* withdrawETHGainToTrove():
-    * - Transfers the depositor's entire ETH gain from the Stability Pool to the caller's trove
-    * - Leaves their compounded deposit in the Stability Pool
-    * - Takes new snapshots of accumulators P and S 
-    */
-    function withdrawETHGainToTrove(uint256 _troveId) external;
 
     function claimAllETHGains() external;
 

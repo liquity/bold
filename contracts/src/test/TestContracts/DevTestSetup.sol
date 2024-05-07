@@ -86,9 +86,9 @@ contract DevTestSetup is BaseTest {
         uint256 price = 2000e18;
         priceFeed.setPrice(price);
 
-        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 5 ether, troveDebtRequest_A, interestRate);
-        uint256 BTroveId = openTroveNoHints100pctMaxFee(B, 5 ether, troveDebtRequest_B, interestRate);
-        uint256 CTroveId = openTroveNoHints100pctMaxFee(C, 5 ether, troveDebtRequest_C, interestRate);
+        uint256 ATroveId = openTroveNoHints100pct(A, 5 ether, troveDebtRequest_A, interestRate);
+        uint256 BTroveId = openTroveNoHints100pct(B, 5 ether, troveDebtRequest_B, interestRate);
+        uint256 CTroveId = openTroveNoHints100pct(C, 5 ether, troveDebtRequest_C, interestRate);
 
         // A and B deposit to SP
         makeSPDepositAndClaim(A, troveDebtRequest_A);
@@ -122,10 +122,10 @@ contract DevTestSetup is BaseTest {
         uint256 price = 2000e18;
         priceFeed.setPrice(price);
 
-        troveIDs.A = openTroveNoHints100pctMaxFee(A, 5 ether, troveDebtRequest_A, interestRate);
-        troveIDs.B = openTroveNoHints100pctMaxFee(B, 5 ether, troveDebtRequest_B, interestRate);
-        troveIDs.C = openTroveNoHints100pctMaxFee(C, 25e17, troveDebtRequest_C, interestRate);
-        troveIDs.D = openTroveNoHints100pctMaxFee(D, 25e17, troveDebtRequest_D, interestRate);
+        troveIDs.A = openTroveNoHints100pct(A, 5 ether, troveDebtRequest_A, interestRate);
+        troveIDs.B = openTroveNoHints100pct(B, 5 ether, troveDebtRequest_B, interestRate);
+        troveIDs.C = openTroveNoHints100pct(C, 25e17, troveDebtRequest_C, interestRate);
+        troveIDs.D = openTroveNoHints100pct(D, 25e17, troveDebtRequest_D, interestRate);
 
         // A and B deposit to SP
         makeSPDepositAndClaim(A, troveDebtRequest_A);
@@ -167,10 +167,10 @@ contract DevTestSetup is BaseTest {
         uint256 price = 2000e18;
         priceFeed.setPrice(price);
 
-        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 5 ether, troveDebtRequest_A, interestRate);
-        uint256 BTroveId = openTroveNoHints100pctMaxFee(B, 5 ether, troveDebtRequest_B, interestRate);
-        uint256 CTroveId = openTroveNoHints100pctMaxFee(C, 25e17, troveDebtRequest_C, interestRate);
-        uint256 DTroveId = openTroveNoHints100pctMaxFee(D, 25e17, troveDebtRequest_D, interestRate);
+        uint256 ATroveId = openTroveNoHints100pct(A, 5 ether, troveDebtRequest_A, interestRate);
+        uint256 BTroveId = openTroveNoHints100pct(B, 5 ether, troveDebtRequest_B, interestRate);
+        uint256 CTroveId = openTroveNoHints100pct(C, 25e17, troveDebtRequest_C, interestRate);
+        uint256 DTroveId = openTroveNoHints100pct(D, 25e17, troveDebtRequest_D, interestRate);
 
         // Price drops, C and D become liquidateable
         price = 1050e18;
@@ -183,7 +183,10 @@ contract DevTestSetup is BaseTest {
         return (ATroveId, BTroveId, CTroveId, DTroveId);
     }
 
-    function _setupForRedemption(TroveInterestRates memory _troveInterestRates) internal returns (uint256, uint256, TroveIDs memory) {
+    function _setupForRedemption(TroveInterestRates memory _troveInterestRates)
+        internal
+        returns (uint256, uint256, TroveIDs memory)
+    {
         TroveIDs memory troveIDs;
 
         priceFeed.setPrice(2000e18);
@@ -193,10 +196,10 @@ contract DevTestSetup is BaseTest {
 
         uint256 coll = 20 ether;
         uint256 debtRequest = 20000e18;
-        troveIDs.A = openTroveNoHints100pctMaxFee(A, coll, debtRequest, _troveInterestRates.A);
-        troveIDs.B = openTroveNoHints100pctMaxFee(B, coll, debtRequest, _troveInterestRates.B);
-        troveIDs.C = openTroveNoHints100pctMaxFee(C, coll, debtRequest, _troveInterestRates.C);
-        troveIDs.D = openTroveNoHints100pctMaxFee(D, coll, debtRequest, _troveInterestRates.D);
+        troveIDs.A = openTroveNoHints100pct(A, coll, debtRequest, _troveInterestRates.A);
+        troveIDs.B = openTroveNoHints100pct(B, coll, debtRequest, _troveInterestRates.B);
+        troveIDs.C = openTroveNoHints100pct(C, coll, debtRequest, _troveInterestRates.C);
+        troveIDs.D = openTroveNoHints100pct(D, coll, debtRequest, _troveInterestRates.D);
 
         // A, B, C, D transfer all their Bold to E
         transferBold(A, E, boldToken.balanceOf(A));
@@ -217,11 +220,11 @@ contract DevTestSetup is BaseTest {
         return _setupForRedemption(troveInterestRates);
     }
 
-
-    function _redeemAndCreateZombieTrovesAAndB(TroveIDs memory _troveIDs) internal returns (uint256, uint256, TroveIDs memory) {
+    function _redeemAndCreateZombieTrovesAAndB(TroveIDs memory _troveIDs) internal {
         // Redeem enough to leave to leave A with 0 debt and B with debt < MIN_NET_DEBT
         uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - troveManager.BOLD_GAS_COMPENSATION();
-        uint256 redeemFromB  = troveManager.getTroveEntireDebt(_troveIDs.B) - troveManager.BOLD_GAS_COMPENSATION() - troveManager.MIN_NET_DEBT() / 2;
+        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - troveManager.BOLD_GAS_COMPENSATION()
+            - troveManager.MIN_NET_DEBT() / 2;
         uint256 redeemAmount = redeemFromA + redeemFromB;
 
         // Fully redeem A and leave B with debt < MIN_NET_DEBT
@@ -231,17 +234,18 @@ contract DevTestSetup is BaseTest {
         assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), BOLD_GAS_COMP);
         assertLt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP, troveManager.MIN_NET_DEBT());
 
-       // Check A and B tagged as Zombie troves
+        // Check A and B tagged as Zombie troves
         assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'
         assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'
     }
 
-    function _redeemAndCreateZombieTroveAAndHitB(TroveIDs memory _troveIDs) internal returns (uint256, uint256, TroveIDs memory) {
+    function _redeemAndCreateZombieTroveAAndHitB(TroveIDs memory _troveIDs) internal {
         // Redeem enough to leave to leave A with 0 debt and B with debt < MIN_NET_DEBT
         uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - troveManager.BOLD_GAS_COMPENSATION();
         // Leave B with net_debt > min_net_debt
-        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - troveManager.BOLD_GAS_COMPENSATION() - troveManager.MIN_NET_DEBT() - 37;
-      
+        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - troveManager.BOLD_GAS_COMPENSATION()
+            - troveManager.MIN_NET_DEBT() - 37;
+
         uint256 redeemAmount = redeemFromA + redeemFromB;
 
         // Fully redeem A and leave B with debt > MIN_NET_DEBT

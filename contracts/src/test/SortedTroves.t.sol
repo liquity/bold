@@ -199,7 +199,7 @@ contract MockTroveManager {
     function _sortedTroves_removeFromBatch(TroveId id) external {
         _sortedTroves.removeFromBatch(TroveId.unwrap(id));
     }
-    
+
     function _sortedTroves_findInsertPosition(uint256 annualInterestRate, Hints memory hints)
         external
         view

@@ -807,48 +807,10 @@ class TestHelper {
     return this.getGasMetrics(gasCostList);
   }
 
-  static async openTrove_allAccounts_decreasingBoldAmounts(
-    accounts,
-    contracts,
-    ETHAmount,
-    maxBoldAmount,
-  ) {
-    const gasCostList = [];
-
-    let i = 0;
-    for (const account of accounts) {
-      const BoldAmount = (maxBoldAmount - i).toString();
-      const BoldAmountWei = web3.utils.toWei(BoldAmount, "ether");
-      const totalDebt = await this.getOpenTroveTotalDebt(
-        contracts,
-        BoldAmountWei,
-      );
-      const { upperHint, lowerHint } = await this.getBorrowerOpsListHint(
-        contracts,
-        ETHAmount,
-        totalDebt,
-      );
-
-      const tx = await contracts.borrowerOperations.openTrove(
-        this._100pct,
-        ETHAmount,
-        BoldAmountWei,
-        upperHint,
-        lowerHint,
-        { account },
-      );
-      const gas = this.gasUsed(tx);
-      gasCostList.push(gas);
-      i += 1;
-    }
-    return this.getGasMetrics(gasCostList);
-  }
-
   static async openTrove(
     contracts,
     {
       troveIndex,
-      maxFeePercentage,
       extraBoldAmount,
       upperHint,
       lowerHint,
@@ -857,7 +819,6 @@ class TestHelper {
     },
   ) {
     if (!troveIndex) troveIndex = 0;
-    if (!maxFeePercentage) maxFeePercentage = this._100pct;
     if (!extraBoldAmount) extraBoldAmount = this.toBN(0);
     else if (typeof extraBoldAmount == "string") {
       extraBoldAmount = this.toBN(extraBoldAmount);
@@ -896,7 +857,6 @@ class TestHelper {
     const tx = await contracts.borrowerOperations.openTrove(
       extraParams.from,
       troveIndex,
-      maxFeePercentage,
       extraParams.value,
       boldAmount,
       // extraParams.value, // TODO: this is the stETH value - ensure its still working
@@ -923,7 +883,6 @@ class TestHelper {
 
   static async openTroveWrapper(
     contracts,
-    maxFeePercentage,
     boldAmount,
     upperHint,
     lowerHint,
@@ -936,7 +895,6 @@ class TestHelper {
     const tx = await contracts.borrowerOperations.openTrove(
       extraParams.from,
       0,
-      maxFeePercentage,
       extraParams.value,
       boldAmount,
       upperHint,
@@ -965,9 +923,8 @@ class TestHelper {
 
   static async withdrawBold(
     contracts,
-    { troveId, maxFeePercentage, boldAmount, ICR, extraParams },
+    { troveId, boldAmount, ICR, extraParams },
   ) {
-    if (!maxFeePercentage) maxFeePercentage = this._100pct;
     if (!troveId) troveId = this.addressToTroveId(extraParams.from);
 
     assert(
@@ -999,7 +956,6 @@ class TestHelper {
 
     await contracts.borrowerOperations.withdrawBold(
       troveId,
-      maxFeePercentage,
       boldAmount,
       extraParams,
     );

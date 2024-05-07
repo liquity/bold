@@ -69,9 +69,9 @@ import "./Dependencies/CheckContract.sol";
  * So, to track P accurately, we use a scale factor: if a liquidation would cause P to decrease to <1e-9 (and be rounded to 0 by Solidity),
  * we first multiply P by 1e9, and increment a currentScale factor by 1.
  *
- * The added benefit of using 1e9 for the scale factor (rather than 1e18) is that it ensures negligible precision loss close to the 
- * scale boundary: when P is at its minimum value of 1e9, the relative precision loss in P due to floor division is only on the 
- * order of 1e-9. 
+ * The added benefit of using 1e9 for the scale factor (rather than 1e18) is that it ensures negligible precision loss close to the
+ * scale boundary: when P is at its minimum value of 1e9, the relative precision loss in P due to floor division is only on the
+ * order of 1e-9.
  *
  * --- EPOCHS ---
  *
@@ -163,8 +163,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
     mapping(address => Deposit) public deposits; // depositor address -> Deposit struct
     mapping(address => Snapshots) public depositSnapshots; // depositor address -> snapshots struct
-    mapping(address => uint256) public stashedETH; 
- 
+    mapping(address => uint256) public stashedETH;
+
     /*  Product 'P': Running product by which to multiply an initial deposit, in order to find the current compounded deposit,
     * after a series of liquidations have occurred, each of which cancel some Bold debt with the deposit.
     *
@@ -284,7 +284,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     function provideToSP(uint256 _amount, bool _doClaim) external override {
         _requireNonZeroAmount(_amount);
 
-        activePool.mintAggInterestNoTroveChange();
+        activePool.mintAggInterest();
 
         uint256 initialDeposit = deposits[msg.sender].initialValue;
 
@@ -305,7 +305,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     /*  withdrawFromSP():
     * - Calculates depositor's ETH gain
     * - Calculates the compounded deposit
-    * - Sends the requested BOLD withdrawal to depositor 
+    * - Sends the requested BOLD withdrawal to depositor
     * - (If _amount > userDeposit, the user withdraws all of their compounded deposit)
     * - Decreases deposit by withdrawn amount and takes new snapshots of accumulators P and S
     */
@@ -314,7 +314,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
 
-        activePool.mintAggInterestNoTroveChange();
+        activePool.mintAggInterest();
 
         uint256 currentETHGain = getDepositorETHGain(msg.sender);
 
@@ -340,7 +340,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
             emit ETHGainWithdrawn(msg.sender, ETHToSend, _boldLoss); // Bold Loss required for event log
             _sendETHGainToDepositor(ETHToSend);
-        
+
         } else {
             // Just stash the current gain
             stashedETH[_depositor] += _currentETHGain;
@@ -352,43 +352,9 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 totalETHGain = stashedETHGain + _currentETHGain;
 
         // TODO: Gas - saves gas when stashedETHGain == 0?
-        if (stashedETHGain > 0) {stashedETH[_depositor] = 0;} 
+        if (stashedETHGain > 0) {stashedETH[_depositor] = 0;}
 
         return totalETHGain;
-    }
-
-    /* withdrawETHGainToTrove():
-    * - Transfers the depositor's entire ETH gain from the Stability Pool to the caller's trove
-    * - Leaves their compounded deposit in the Stability Pool
-    * - Takes new snapshots of accumulators P and S 
-    */
-    function withdrawETHGainToTrove(uint256 _troveId) external override {
-        uint256 initialDeposit = deposits[msg.sender].initialValue;
-        _requireUserHasDeposit(initialDeposit);
-        _requireTroveIsOpen(_troveId);
-        _requireUserHasETHGain(msg.sender);
-
-        uint256 currentETHGain = getDepositorETHGain(msg.sender);
-
-        uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
-        uint256 boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
-
-        _updateDepositAndSnapshots(msg.sender, compoundedBoldDeposit);
-
-        /* Emit events before transferring ETH gain to Trove.
-         This lets the event log make more sense (i.e. so it appears that first the ETH gain is withdrawn
-        and then it is deposited into the Trove, not the other way around). */
-        emit ETHGainWithdrawn(msg.sender, currentETHGain, boldLoss);
-        emit UserDepositChanged(msg.sender, compoundedBoldDeposit);
-
-        uint256 newETHBalance = ETHBalance - currentETHGain;
-        ETHBalance = newETHBalance;
-        emit StabilityPoolETHBalanceUpdated(newETHBalance);
-        emit EtherSent(msg.sender, currentETHGain);
-
-        uint256 ETHToMove = _getTotalETHGainAndZeroStash(msg.sender, currentETHGain);
-        borrowerOperations.moveETHGainToTrove(msg.sender, _troveId, ETHToMove);
-        assert(getDepositorETHGain(msg.sender) == 0);
     }
 
     // TODO: Make this also claim BOlD gains when they are implemented
@@ -399,7 +365,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 currentETHGain;
 
         activePool.mintAggInterestNoTroveChange();
-        
+
         // If they have a deposit, update it and update its snapshots
         if (initialDeposit > 0) {
             currentETHGain = getDepositorETHGain(msg.sender);  // Only active deposits can only have a current ETH gain
@@ -451,8 +417,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         * Compute the Bold and ETH rewards. Uses a "feedback" error correction, to keep
         * the cumulative error in the P and S state variables low:
         *
-        * 1) Form numerators which compensate for the floor division errors that occurred the last time this 
-        * function was called.  
+        * 1) Form numerators which compensate for the floor division errors that occurred the last time this
+        * function was called.
         * 2) Calculate "per-unit-staked" ratios.
         * 3) Multiply each ratio back by its denominator, to reveal the current floor division error.
         * 4) Store these errors for use in the next correction when this function is called.
@@ -748,15 +714,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
     function _requireNonZeroAmount(uint256 _amount) internal pure {
         require(_amount > 0, "StabilityPool: Amount must be non-zero");
-    }
-
-    function _requireTroveIsOpen(uint256 _troveId) internal view {
-        require(troveManager.checkTroveIsOpen(_troveId), "StabilityPool: trove must be active to withdraw ETHGain to");
-    }
-
-    function _requireUserHasETHGain(address _depositor) internal view {
-        uint256 ETHGain = getDepositorETHGain(_depositor);
-        require(ETHGain > 0, "StabilityPool: caller must have non-zero ETH Gain");
     }
 
     function _requireValidKickbackRate(uint256 _kickbackRate) internal pure {

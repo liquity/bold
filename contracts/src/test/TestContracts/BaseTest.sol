@@ -114,16 +114,14 @@ contract BaseTest is Test {
         return addressToTroveId(_owner, 0);
     }
 
-    function openTroveNoHints100pctMaxFee(
-        address _account,
-        uint256 _coll,
-        uint256 _boldAmount,
-        uint256 _annualInterestRate
-    ) public returns (uint256) {
-        return openTroveNoHints100pctMaxFeeWithIndex(_account, 0, _coll, _boldAmount, _annualInterestRate);
+    function openTroveNoHints100pct(address _account, uint256 _coll, uint256 _boldAmount, uint256 _annualInterestRate)
+        public
+        returns (uint256)
+    {
+        return openTroveNoHints100pctWithIndex(_account, 0, _coll, _boldAmount, _annualInterestRate);
     }
 
-    function openTroveNoHints100pctMaxFeeWithIndex(
+    function openTroveNoHints100pctWithIndex(
         address _account,
         uint256 _index,
         uint256 _coll,
@@ -131,14 +129,13 @@ contract BaseTest is Test {
         uint256 _annualInterestRate
     ) public returns (uint256) {
         vm.startPrank(_account);
-        uint256 troveId =
-            borrowerOperations.openTrove(_account, _index, 1e18, _coll, _boldAmount, 0, 0, _annualInterestRate);
+        uint256 troveId = borrowerOperations.openTrove(_account, _index, _coll, _boldAmount, 0, 0, _annualInterestRate);
         vm.stopPrank();
         return troveId;
     }
 
     // (uint _maxFeePercentage, uint _collWithdrawal, uint _boldChange, bool _isDebtIncrease)
-    function adjustTrove100pctMaxFee(
+    function adjustTrove100pct(
         address _account,
         uint256 _troveId,
         uint256 _collChange,
@@ -147,7 +144,7 @@ contract BaseTest is Test {
         bool _isDebtIncrease
     ) public {
         vm.startPrank(_account);
-        borrowerOperations.adjustTrove(_troveId, 1e18, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
+        borrowerOperations.adjustTrove(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
         vm.stopPrank();
     }
 
@@ -200,9 +197,9 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function withdrawBold100pctMaxFee(address _account, uint256 _troveId, uint256 _debtIncrease) public {
+    function withdrawBold100pct(address _account, uint256 _troveId, uint256 _debtIncrease) public {
         vm.startPrank(_account);
-        borrowerOperations.withdrawBold(_troveId, 1e18, _debtIncrease);
+        borrowerOperations.withdrawBold(_troveId, _debtIncrease);
         vm.stopPrank();
     }
 
@@ -239,12 +236,6 @@ contract BaseTest is Test {
     function liquidate(address _from, uint256 _troveId) public {
         vm.startPrank(_from);
         troveManager.liquidate(_troveId);
-        vm.stopPrank();
-    }
-
-    function withdrawETHGainToTrove(address _from, uint256 _troveId) public {
-        vm.startPrank(_from);
-        stabilityPool.withdrawETHGainToTrove(_troveId);
         vm.stopPrank();
     }
 
