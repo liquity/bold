@@ -71,10 +71,10 @@ contract TroveManagerTest is DevTestSetup {
         uint256 coll = 100 ether;
         uint256 borrow = 10_000 ether;
         uint256 interestRate = 0.01 ether;
-        troveIDs.A = openTroveNoHints100pctMaxFee(A, coll, borrow, interestRate);
-        troveIDs.B = openTroveNoHints100pctMaxFee(B, coll, borrow, interestRate);
-        troveIDs.C = openTroveNoHints100pctMaxFee(C, coll, borrow, interestRate);
-        troveIDs.D = openTroveNoHints100pctMaxFee(D, 1_000 ether, borrow, interestRate); // whale to keep TCR afloat
+        troveIDs.A = openTroveNoHints100pct(A, coll, borrow, interestRate);
+        troveIDs.B = openTroveNoHints100pct(B, coll, borrow, interestRate);
+        troveIDs.C = openTroveNoHints100pct(C, coll, borrow, interestRate);
+        troveIDs.D = openTroveNoHints100pct(D, 1_000 ether, borrow, interestRate); // whale to keep TCR afloat
 
         uint256 dropPrice = 110 ether;
         priceFeed.setPrice(dropPrice);
