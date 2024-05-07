@@ -110,8 +110,8 @@ contract("TroveManager", async (accounts) => {
     // price drops to 1ETH:100Bold, reducing Alice's ICR below MCR
     await priceFeed.setPrice("100000000000000000000");
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // close Trove
     await troveManager.liquidate(aliceTroveId, { from: owner });
@@ -155,8 +155,8 @@ contract("TroveManager", async (accounts) => {
     // price drops to 1ETH:100Bold, reducing Bob's ICR below MCR
     await priceFeed.setPrice("100000000000000000000");
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     /* close Bob's Trove. Should liquidate his ether and Bold,
     leaving Alice’s ether and Bold debt in the ActivePool. */
@@ -205,8 +205,8 @@ contract("TroveManager", async (accounts) => {
     // price drops to 1ETH:100Bold, reducing Bob's ICR below MCR
     await priceFeed.setPrice("100000000000000000000");
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // close Bob's Trove
     await troveManager.liquidate(bobTroveId, { from: owner });
@@ -246,8 +246,8 @@ contract("TroveManager", async (accounts) => {
     // price drops to 1ETH:100Bold, reducing Bob's ICR below MCR
     await priceFeed.setPrice("100000000000000000000");
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Close Bob's Trove
     await troveManager.liquidate(bobTroveId, { from: owner });
@@ -276,8 +276,8 @@ contract("TroveManager", async (accounts) => {
     const arrayLength_Before = await troveManager.getTroveIdsCount();
     assert.equal(arrayLength_Before, 6);
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate carol
     await troveManager.liquidate(carolTroveId);
@@ -348,8 +348,8 @@ contract("TroveManager", async (accounts) => {
     // price drops to 1ETH:100Bold, reducing Bob's ICR below MCR
     await priceFeed.setPrice("100000000000000000000");
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // close Bob's Trove.  His ether*0.995 and Bold should be added to the DefaultPool.
     await troveManager.liquidate(bobTroveId, { from: owner });
@@ -393,8 +393,8 @@ contract("TroveManager", async (accounts) => {
     // price drops to 1ETH:100Bold, reducing Carols's ICR below MCR
     await priceFeed.setPrice("100000000000000000000");
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // close Carol's Trove.
     assert.isTrue(await sortedTroves.contains(carolTroveId));
@@ -429,8 +429,8 @@ contract("TroveManager", async (accounts) => {
       extraParams: { from: bob },
     });
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // price drops to 1ETH:50Bold, reducing Bob's ICR below MCR
     await priceFeed.setPrice(dec(50, 18));
@@ -497,7 +497,7 @@ contract("TroveManager", async (accounts) => {
     await priceFeed.setPrice("105000000000000000000");
     const price = await priceFeed.getPrice();
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     const alice_ICR = (
       await troveManager.getCurrentICR(aliceTroveId, price)
@@ -508,8 +508,8 @@ contract("TroveManager", async (accounts) => {
 
     assert.equal(activeTrovesCount_Before, 2);
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate the trove
     await troveManager.liquidate(aliceTroveId, { from: owner });
@@ -533,8 +533,8 @@ contract("TroveManager", async (accounts) => {
 
     assert.isFalse(await sortedTroves.contains(th.addressToTroveId(carol)));
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     try {
       const txCarol = await troveManager.liquidate(th.addressToTroveId(carol));
@@ -564,8 +564,8 @@ contract("TroveManager", async (accounts) => {
 
     assert.equal(await troveManager.getTroveStatus(carolTroveId), 3); // check trove closed by liquidation
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     try {
       const txCarol_L2 = await troveManager.liquidate(carolTroveId);
@@ -590,8 +590,8 @@ contract("TroveManager", async (accounts) => {
     const bob_ICR = await troveManager.getCurrentICR(bobTroveId, price);
     assert.isTrue(bob_ICR.gte(mv._MCR));
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Attempt to liquidate bob
     await assertRevert(
@@ -652,8 +652,8 @@ contract("TroveManager", async (accounts) => {
     // Price drop
     await priceFeed.setPrice(dec(100, 18));
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // All defaulters liquidated
     await troveManager.liquidate(defaulter_1_TroveId);
@@ -716,8 +716,8 @@ contract("TroveManager", async (accounts) => {
 
     const TCR_1 = await th.getTCR(contracts);
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Check TCR improves with each liquidation that is offset with Pool
     await troveManager.liquidate(defaulter_1_TroveId);
@@ -785,8 +785,8 @@ contract("TroveManager", async (accounts) => {
 
     assert.isTrue(expectedTCR_0.eq(TCR_0));
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Check TCR does not decrease with each liquidation
     const liquidationTx_1 = await troveManager.liquidate(defaulter_1_TroveId);
@@ -891,8 +891,8 @@ contract("TroveManager", async (accounts) => {
       1000,
     );
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Attempt to liquidate Dennis
     try {
@@ -955,8 +955,8 @@ contract("TroveManager", async (accounts) => {
     );
     assert.isAtMost(th.getDifference(bob_ETHGain_Before, liquidatedColl), 1000);
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Attempt to liquidate Bob
     await assertRevert(
@@ -1025,8 +1025,8 @@ contract("TroveManager", async (accounts) => {
     // Alice provides Bold to SP
     await stabilityPool.provideToSP(A_spDeposit, { from: alice });
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate Bob
     await troveManager.liquidate(bobTroveId);
@@ -1116,8 +1116,8 @@ contract("TroveManager", async (accounts) => {
     // Check sortedList size
     assert.equal((await sortedTroves.getSize()).toString(), "4");
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate A, B and C
     const activeBoldDebt_0 = await activePool.getTotalActiveDebt();
@@ -1188,8 +1188,8 @@ contract("TroveManager", async (accounts) => {
     assert.isTrue(bob_ICR_Before.gte(mv._MCR));
     assert.isTrue(carol_ICR_Before.lte(mv._MCR));
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     /* Liquidate defaulter. 30 Bold and 0.3 ETH is distributed between A, B and C.
 
@@ -1225,7 +1225,7 @@ contract("TroveManager", async (accounts) => {
 
     // Whale enters system, pulling it into Normal Mode
     await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale } });
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate Alice, Bob, Carol
     await assertRevert(
@@ -1301,15 +1301,14 @@ contract("TroveManager", async (accounts) => {
     const bob_rawICR = bob_Coll.mul(toBN(dec(100, 18))).div(bob_Debt);
     assert.isTrue(bob_rawICR.gte(mv._MCR));
 
-    // Whale enters system, pulling it into Normal Mode
-    await openTrove({
-      ICR: toBN(dec(10, 18)),
-      extraBoldAmount: dec(1, 24),
-      extraParams: { from: whale },
-    });
+    // Alice adds coll, so TCR recovers above CT
+    await th.addCollWrapper(contracts, {
+      from: alice,
+      value: toBN(dec(100, 18)),
+    }),
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // liquidate A, B, C
     await troveManager.batchLiquidateTroves([aliceTroveId, bobTroveId, carolTroveId]);
@@ -1362,8 +1361,8 @@ contract("TroveManager", async (accounts) => {
     assert.isTrue(erin_ICR.lte(mv._MCR));
     assert.isTrue(flyn_ICR.lte(mv._MCR));
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate sequence
     await troveManager.batchLiquidateTroves([
@@ -1410,8 +1409,8 @@ contract("TroveManager", async (accounts) => {
     await priceFeed.setPrice(dec(100, 18));
     const price = await priceFeed.getPrice();
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate sequence
     await troveManager.batchLiquidateTroves([dennisTroveId, erinTroveId, flynTroveId, whaleTroveId]);
@@ -1487,8 +1486,8 @@ contract("TroveManager", async (accounts) => {
       dec(500, 18),
     );
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate troves
     await troveManager.batchLiquidateTroves([
@@ -1594,8 +1593,8 @@ contract("TroveManager", async (accounts) => {
     // Check pool is empty before liquidation
     assert.equal((await stabilityPool.getTotalBoldDeposits()).toString(), "0");
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate
     await troveManager.batchLiquidateTroves([
@@ -1684,8 +1683,8 @@ contract("TroveManager", async (accounts) => {
       totalDeposits,
     );
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate
     await troveManager.batchLiquidateTroves([aliceTroveId, bobTroveId, carolTroveId, whaleTroveId]);
@@ -1817,8 +1816,8 @@ contract("TroveManager", async (accounts) => {
     await priceFeed.setPrice(dec(175, 18));
     let price = await priceFeed.getPrice();
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // A gets liquidated, creates pending rewards for all
     const liqTxA = await troveManager.liquidate(ATroveId);
@@ -1831,8 +1830,8 @@ contract("TroveManager", async (accounts) => {
     // Price drops
     await priceFeed.setPrice(dec(100, 18));
     price = await priceFeed.getPrice();
-    // Confirm system is now in Recovery Mode
-    assert.isTrue(await th.checkRecoveryMode(contracts));
+    // Confirm system is now below CT
+    assert.isTrue(await th.checkBelowCriticalThreshold(contracts));
 
     // Confirm C has ICR > TCR
     const TCR = await troveManager.getTCR(price);
@@ -1872,8 +1871,8 @@ contract("TroveManager", async (accounts) => {
       1000,
     );
 
-    // Confirm system is still in Recovery Mode
-    assert.isTrue(await th.checkRecoveryMode(contracts));
+    // Confirm system is still below CT
+    assert.isTrue(await th.checkBelowCriticalThreshold(contracts));
 
     // D and E fill the Stability Pool, enough to completely absorb C's debt of 70
     await stabilityPool.provideToSP(dec(50, 18), { from: D });
@@ -1917,8 +1916,8 @@ contract("TroveManager", async (accounts) => {
     await priceFeed.setPrice(dec(100, 18));
     const price = await priceFeed.getPrice();
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Confirm troves A-C are ICR < 110%
     assert.isTrue((await troveManager.getCurrentICR(aliceTroveId, price)).lt(mv._MCR));
@@ -1985,8 +1984,8 @@ contract("TroveManager", async (accounts) => {
     await priceFeed.setPrice(dec(100, 18));
     const price = await priceFeed.getPrice();
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Confirm troves A-E are ICR < 110%
     assert.isTrue((await troveManager.getCurrentICR(aliceTroveId, price)).lt(mv._MCR));
@@ -2049,8 +2048,8 @@ contract("TroveManager", async (accounts) => {
     await priceFeed.setPrice(dec(100, 18));
     const price = await priceFeed.getPrice();
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Confirm troves A-C are ICR < 110%
     assert.isTrue((await troveManager.getCurrentICR(aliceTroveId, price)).lt(mv._MCR));
@@ -2112,8 +2111,8 @@ contract("TroveManager", async (accounts) => {
     await priceFeed.setPrice(dec(100, 18));
     const price = await priceFeed.getPrice();
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     const liquidationArray = [];
     try {
@@ -2164,8 +2163,8 @@ contract("TroveManager", async (accounts) => {
     await priceFeed.setPrice(dec(100, 18));
     const price = await priceFeed.getPrice();
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Confirm troves A-B are ICR < 110%
     assert.isTrue((await troveManager.getCurrentICR(aliceTroveId, price)).lt(mv._MCR));
@@ -2207,8 +2206,8 @@ contract("TroveManager", async (accounts) => {
       spDeposit.sub(A_debt).sub(B_debt),
     );
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
   });
 
   it("batchLiquidateTroves(): skips if a trove has been closed", async () => {
@@ -2260,8 +2259,8 @@ contract("TroveManager", async (accounts) => {
 
     assert.equal(await troveManager.getTroveStatus(carolTroveId), 2); // check trove closed
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Confirm troves A-B are ICR < 110%
     assert.isTrue((await troveManager.getCurrentICR(aliceTroveId, price)).lt(mv._MCR));
@@ -2301,8 +2300,8 @@ contract("TroveManager", async (accounts) => {
       spDeposit.sub(A_debt).sub(B_debt),
     );
 
-    // Confirm system is not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm system is not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
   });
 
   // --- redemptions ---
@@ -4877,10 +4876,10 @@ contract("TroveManager", async (accounts) => {
     assert.equal(ICR, maxBytes32);
   });
 
-  // --- checkRecoveryMode ---
+  // --- checkBelowCriticalThreshold ---
 
   // TCR < 150%
-  it("checkRecoveryMode(): Returns true when TCR < 150%", async () => {
+  it("checkBelowCriticalThreshold(): Returns true when TCR < 150%", async () => {
     await priceFeed.setPrice(dec(100, 18));
 
     await openTrove({ ICR: toBN(dec(150, 16)), extraParams: { from: alice } });
@@ -4892,11 +4891,11 @@ contract("TroveManager", async (accounts) => {
 
     assert.isTrue(TCR.lte(toBN("1500000000000000000")));
 
-    assert.isTrue(await th.checkRecoveryMode(contracts));
+    assert.isTrue(await th.checkBelowCriticalThreshold(contracts));
   });
 
   // TCR == 150%
-  it("checkRecoveryMode(): Returns false when TCR == 150%", async () => {
+  it("checkBelowCriticalThreshold(): Returns false when TCR == 150%", async () => {
     await priceFeed.setPrice(dec(100, 18));
 
     await openTrove({ ICR: toBN(dec(150, 16)), extraParams: { from: alice } });
@@ -4906,11 +4905,11 @@ contract("TroveManager", async (accounts) => {
 
     assert.equal(TCR, "1500000000000000000");
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
   });
 
   // > 150%
-  it("checkRecoveryMode(): Returns false when TCR > 150%", async () => {
+  it("checkBelowCriticalThreshold(): Returns false when TCR > 150%", async () => {
     await priceFeed.setPrice(dec(100, 18));
 
     await openTrove({ ICR: toBN(dec(150, 16)), extraParams: { from: alice } });
@@ -4922,11 +4921,11 @@ contract("TroveManager", async (accounts) => {
 
     assert.isTrue(TCR.gte(toBN("1500000000000000000")));
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
   });
 
   // check 0
-  it("checkRecoveryMode(): Returns false when TCR == 0", async () => {
+  it("checkBelowCriticalThreshold(): Returns false when TCR == 0", async () => {
     await priceFeed.setPrice(dec(100, 18));
 
     await openTrove({ ICR: toBN(dec(150, 16)), extraParams: { from: alice } });
@@ -4938,7 +4937,7 @@ contract("TroveManager", async (accounts) => {
 
     assert.equal(TCR, 0);
 
-    assert.isTrue(await th.checkRecoveryMode(contracts));
+    assert.isTrue(await th.checkBelowCriticalThreshold(contracts));
   });
 
   // --- Getters ---

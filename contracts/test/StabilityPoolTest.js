@@ -320,12 +320,14 @@ contract("StabilityPool", async (accounts) => {
       assert.isTrue(alice_Snapshot_S_1.eq(S_1));
       assert.isTrue(alice_Snapshot_P_1.eq(P_1));
 
-      // Bob withdraws Bold and deposits to StabilityPool
+      // Bob opens a Trove (sandwiched by a price movement to be above CT) and deposits to StabilityPool
+      await priceFeed.setPrice(dec(200, 18));
       await openTrove({
         extraBoldAmount: toBN(dec(1000, 18)),
         ICR: toBN(dec(2, 18)),
         extraParams: { from: bob },
       });
+      await priceFeed.setPrice(dec(100, 18));
       await stabilityPool.provideToSP(dec(427, 18), {
         from: alice,
       });
@@ -1072,7 +1074,7 @@ contract("StabilityPool", async (accounts) => {
 
       // Price drops, defaulter is liquidated, A, B, C, D earn ETH
       await priceFeed.setPrice(dec(105, 18));
-      assert.isFalse(await th.checkRecoveryMode(contracts));
+      assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
       await troveManager.liquidate(defaulter_1_TroveId);
 
@@ -2271,7 +2273,7 @@ contract("StabilityPool", async (accounts) => {
       // Price drops
       await priceFeed.setPrice(dec(105, 18));
 
-      assert.isFalse(await th.checkRecoveryMode(contracts));
+      assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
       // Defaulter 1 liquidated, full offset
       await troveManager.liquidate(defaulter_1_TroveId);
@@ -2504,7 +2506,7 @@ contract("StabilityPool", async (accounts) => {
       assert.equal(BoldinSP_After, expectedBoldinSP);
     });
 
-    it("withdrawFromSP(): caller can withdraw full deposit and ETH gain during Recovery Mode", async () => {
+    it("withdrawFromSP(): caller can withdraw full deposit and ETH gain while below CT", async () => {
       // --- SETUP ---
 
       // Price doubles
@@ -2514,8 +2516,6 @@ contract("StabilityPool", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: whale },
       });
-      // Price halves
-      await priceFeed.setPrice(dec(200, 18));
 
       // A, B, C open troves and make Stability Pool deposits
       await openTrove({
@@ -2543,6 +2543,9 @@ contract("StabilityPool", async (accounts) => {
         { from: defaulter_1, value: dec(100, "ether") },
       );
 
+      // Price halves
+      await priceFeed.setPrice(dec(200, 18));
+
       // A, B, C provides 10000, 5000, 3000 Bold to SP
       const A_GAS_Used = th.gasUsed(
         await stabilityPool.provideToSP(dec(10000, 18), {
@@ -2567,7 +2570,7 @@ contract("StabilityPool", async (accounts) => {
       await priceFeed.setPrice(dec(105, 18));
       const price = await priceFeed.getPrice();
 
-      assert.isTrue(await th.checkRecoveryMode(contracts));
+      assert.isTrue(await th.checkBelowCriticalThreshold(contracts));
 
       // Liquidate defaulter 1
       await troveManager.liquidate(defaulter_1_TroveId);
@@ -2610,7 +2613,7 @@ contract("StabilityPool", async (accounts) => {
       // Price rises
       await priceFeed.setPrice(dec(220, 18));
 
-      assert.isTrue(await th.checkRecoveryMode(contracts));
+      assert.isTrue(await th.checkBelowCriticalThreshold(contracts));
 
       // A, B, C withdraw their full deposits from the Stability Pool
       const A_GAS_Deposit = th.gasUsed(
@@ -2838,7 +2841,7 @@ contract("StabilityPool", async (accounts) => {
 
       // perform a liquidation to make 0 < P < 1, and S > 0
       await priceFeed.setPrice(dec(105, 18));
-      assert.isFalse(await th.checkRecoveryMode(contracts));
+      assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
       await troveManager.liquidate(defaulter_1_TroveId);
 
@@ -2946,7 +2949,7 @@ contract("StabilityPool", async (accounts) => {
 
       // perform a liquidation to make 0 < P < 1, and S > 0
       await priceFeed.setPrice(dec(105, 18));
-      assert.isFalse(await th.checkRecoveryMode(contracts));
+      assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
       await troveManager.liquidate(defaulter_1_TroveId);
       assert.isFalse(await sortedTroves.contains(defaulter_1_TroveId));

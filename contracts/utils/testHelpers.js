@@ -281,17 +281,17 @@ class TestHelper {
     console.log(`${label}:`, integerPart + "." + x.slice(-18));
   }
 
-  // --- TCR and Recovery Mode functions ---
+  // --- TCR functions ---
 
   // These functions use the PriceFeedTestNet view price function getPrice() which is sufficient for testing.
   // the mainnet contract PriceFeed uses fetchPrice, which is non-view and writes to storage.
 
-  // To checkRecoveryMode / getTCR from the Liquity mainnet contracts, pass a price value - this can be the lastGoodPrice
+  // To checkBelowCriticalThreshold / getTCR from the Liquity mainnet contracts, pass a price value - this can be the lastGoodPrice
   // stored in Liquity, or the current Chainlink ETHUSD price, etc.
 
-  static async checkRecoveryMode(contracts) {
+  static async checkBelowCriticalThreshold(contracts) {
     const price = await contracts.priceFeedTestnet.getPrice();
-    return contracts.troveManager.checkRecoveryMode(price);
+    return contracts.troveManager.checkBelowCriticalThreshold(price);
   }
 
   static async getTCR(contracts) {

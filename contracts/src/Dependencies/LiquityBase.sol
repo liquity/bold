@@ -23,7 +23,7 @@ contract LiquityBase is BaseMath, ILiquityBase {
     // Minimum collateral ratio for individual troves
     uint256 public constant MCR = 1100000000000000000; // 110%
 
-    // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, Recovery Mode is triggered.
+    // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
     uint256 public constant CCR = 1500000000000000000; // 150%
 
     // Amount of Bold to be locked in gas pool on opening troves
@@ -85,7 +85,7 @@ contract LiquityBase is BaseMath, ILiquityBase {
         return TCR;
     }
 
-    function _checkRecoveryMode(uint256 _price) internal view returns (bool) {
+    function _checkBelowCriticalThreshold(uint256 _price) internal view returns (bool) {
         uint256 TCR = _getTCR(_price);
 
         return TCR < CCR;
