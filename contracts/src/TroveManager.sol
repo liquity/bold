@@ -584,6 +584,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         );
     }
 
+    function _isLiquidatableStatus(Status _status) internal pure returns (bool) {
+        return _status == Status.active || _status == Status.unredeemable;
+    }
+
     /*
     * This function is used when the batch liquidation sequence starts during Recovery Mode. However, it
     * handle the case where the system *leaves* Recovery Mode, part way through the liquidation sequence
@@ -604,8 +608,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         for (vars.i = 0; vars.i < _troveArray.length; vars.i++) {
             vars.troveId = _troveArray[vars.i];
-            // Skip non-active troves
-            if (Troves[vars.troveId].status != Status.active) continue;
+
+            // Skip non-liquidatable troves
+            if (!_isLiquidatableStatus(Troves[vars.troveId].status)) continue;
+
             vars.ICR = getCurrentICR(vars.troveId, _price);
 
             if (!vars.backToNormalMode) {
@@ -654,6 +660,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         for (vars.i = 0; vars.i < _troveArray.length; vars.i++) {
             vars.troveId = _troveArray[vars.i];
+
+            // Skip non-liquidatable troves
+            if (!_isLiquidatableStatus(Troves[vars.troveId].status)) continue;
+
             vars.ICR = getCurrentICR(vars.troveId, _price);
 
             if (vars.ICR < MCR) {
