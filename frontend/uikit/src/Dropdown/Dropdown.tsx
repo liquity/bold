@@ -17,6 +17,7 @@ export type DropdownItem = ReactNode | {
 export function Dropdown({
   buttonDisplay = "normal",
   items,
+  menuPlacement = "start",
   menuWidth,
   onSelect,
   placeholder,
@@ -24,13 +25,14 @@ export function Dropdown({
 }: {
   buttonDisplay?: "normal" | "label-only";
   items: DropdownItem[];
+  menuPlacement?: "start" | "end";
   menuWidth?: number;
   onSelect: (index: number) => void;
   placeholder?: Exclude<DropdownItem, "value">;
   selected: number;
 }) {
   const { refs: floatingRefs, floatingStyles } = useFloating<HTMLButtonElement>({
-    placement: "bottom-start",
+    placement: `bottom-${menuPlacement}`,
     whileElementsMounted: (referenceEl, floatingEl, update) => (
       autoUpdate(referenceEl, floatingEl, update, {
         layoutShift: false,
@@ -174,8 +176,8 @@ export function Dropdown({
             },
           })}
           style={{
-            color: `var(${buttonItem === placeholder ? "--color-placeholder" : "--color-normal"})`,
-            background: `var(${buttonItem === placeholder ? "--background-placeholder" : "--background-normal"})`,
+            color: `var(--color-${buttonItem === placeholder ? "placeholder" : "normal"})`,
+            background: `var(--background-${buttonItem === placeholder ? "placeholder" : "normal"})`,
           } as CSSProperties}
         >
           {buttonItem.icon && buttonDisplay !== "label-only" && (
@@ -320,20 +322,16 @@ function useKeyboardNavigation({
 }) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      console.log("key down");
       if (!menuVisible) {
-        console.log("menu not visible");
         return;
       }
       if (event.key === "ArrowDown") {
         event.preventDefault();
-        console.log("ArrowDown, focusing", (focused + 1) % itemsLength);
         onFocus((focused + 1) % itemsLength);
         return;
       }
       if (event.key === "ArrowUp") {
         event.preventDefault();
-        console.log("ArrowUp, focusing", focused === 0 ? itemsLength - 1 : focused - 1);
         onFocus(focused === 0 ? itemsLength - 1 : focused - 1);
         return;
       }

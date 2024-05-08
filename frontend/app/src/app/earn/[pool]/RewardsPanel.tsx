@@ -75,7 +75,7 @@ export function RewardsPanel({ pool }: { pool: typeof POOLS[number] }) {
         }}
       >
         <Button
-          label="Claim rewards"
+          label={content.earnScreen.rewardsPanel.action}
           mode="primary"
           size="large"
           wide
