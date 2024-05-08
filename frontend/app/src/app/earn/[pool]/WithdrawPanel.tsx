@@ -1,3 +1,4 @@
+import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
 import { POOLS } from "@/src/demo-data";
 import { parseInputFloat } from "@/src/form-utils";
@@ -34,54 +35,45 @@ export function WithdrawPanel({ pool }: { pool: typeof POOLS[number] }) {
         gap: 48,
       }}
     >
-      <div
-        className={css({
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
-        })}
-      >
-        <InputField
-          action={
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                height: 40,
-                padding: "0 16px",
-                paddingLeft: 8,
-                background: "#FFF",
-                borderRadius: 20,
-                userSelect: "none",
-              }}
-            >
-              <TokenIcon symbol="BOLD" />
+      <Field
+        field={
+          <InputField
+            action={
               <div
                 style={{
-                  fontSize: 24,
-                  fontWeight: 500,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  height: 40,
+                  padding: "0 16px",
+                  paddingLeft: 8,
+                  background: "#FFF",
+                  borderRadius: 20,
+                  userSelect: "none",
                 }}
               >
-                BOLD
+                <TokenIcon symbol="BOLD" />
+                <div
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 500,
+                  }}
+                >
+                  BOLD
+                </div>
               </div>
-            </div>
-          }
-          label={content.earnScreen.withdrawPanel.label}
-          onFocus={() => setFocused(true)}
-          onChange={setValue}
-          onBlur={() => setFocused(false)}
-          value={value_}
-          placeholder="0.00"
-          secondaryStart={secondaryStart}
-          secondaryEnd={secondaryEnd}
-        />
-        <div
-          className={css({
-            display: "flex",
-            justifyContent: "space-between",
-          })}
-        >
+            }
+            label={content.earnScreen.withdrawPanel.label}
+            onFocus={() => setFocused(true)}
+            onChange={setValue}
+            onBlur={() => setFocused(false)}
+            value={value_}
+            placeholder="0.00"
+            secondaryStart={secondaryStart}
+            secondaryEnd={secondaryEnd}
+          />
+        }
+        footerStart={
           <label
             className={css({
               display: "flex",
@@ -97,38 +89,37 @@ export function WithdrawPanel({ pool }: { pool: typeof POOLS[number] }) {
             />
             {content.earnScreen.withdrawPanel.claimCheckbox}
           </label>
-          {pool.rewards && (
-            <div
-              className={css({
-                display: "flex",
-                gap: 24,
-              })}
-            >
-              <div>
-                {pool.rewards.bold}{" "}
-                <span
-                  className={css({
-                    color: "contentAlt",
-                  })}
-                >
-                  BOLD
-                </span>
-              </div>
-              <div>
-                {pool.rewards.eth}{" "}
-                <span
-                  className={css({
-                    color: "contentAlt",
-                  })}
-                >
-                  BOLD
-                </span>
-              </div>
+        }
+        footerEnd={pool.rewards && (
+          <div
+            className={css({
+              display: "flex",
+              gap: 24,
+            })}
+          >
+            <div>
+              {pool.rewards.bold}{" "}
+              <span
+                className={css({
+                  color: "contentAlt",
+                })}
+              >
+                BOLD
+              </span>
             </div>
-          )}
-        </div>
-      </div>
-
+            <div>
+              {pool.rewards.eth}{" "}
+              <span
+                className={css({
+                  color: "contentAlt",
+                })}
+              >
+                BOLD
+              </span>
+            </div>
+          </div>
+        )}
+      />
       <div
         style={{
           display: "flex",
@@ -138,7 +129,7 @@ export function WithdrawPanel({ pool }: { pool: typeof POOLS[number] }) {
       >
         <Button
           disabled={!parsedValue}
-          label="Withdraw"
+          label={content.earnScreen.withdrawPanel.action}
           mode="primary"
           size="large"
           wide

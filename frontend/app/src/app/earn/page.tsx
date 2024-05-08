@@ -2,7 +2,7 @@
 
 import content from "@/src/content";
 import { POOLS } from "@/src/demo-data";
-import { css } from "@/styled-system/css";
+import { css, cx } from "@/styled-system/css";
 import { IconArrowRight, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
 
@@ -19,7 +19,14 @@ export default function EarnHomePage() {
         padding: 24,
       })}
     >
-      <header>
+      <header
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+        })}
+      >
         <h1
           className={css({
             display: "flex",
@@ -32,11 +39,15 @@ export default function EarnHomePage() {
         >
           {content.earnHome.headline(
             <TokenIcon.Group>
-              <TokenIcon symbol="BOLD" />
-              <TokenIcon symbol="ETH" />
-              <TokenIcon symbol="OSETH" />
-              <TokenIcon symbol="RETH" />
-              <TokenIcon symbol="WSTETH" />
+              {[
+                "BOLD" as const,
+                ...POOLS.map(({ symbol }) => symbol),
+              ].map((symbol) => (
+                <TokenIcon
+                  key={symbol}
+                  symbol={symbol}
+                />
+              ))}
             </TokenIcon.Group>,
             <TokenIcon symbol="BOLD" />,
           )}
@@ -147,22 +158,24 @@ export default function EarnHomePage() {
               <td>
                 <Link href={`/earn/${symbol.toLowerCase()}`} passHref legacyBehavior>
                   <a
-                    className={css({
-                      display: "flex",
-                      justifyContent: "flex-end",
-                      alignItems: "center",
-                      // height: "100%",
-                      height: 102,
-                      padding: "24px 0 24px 24px",
-                      textAlign: "right",
-                      _focusVisible: {
-                        outline: "2px solid token(colors.focused)",
-                        borderRadius: 4,
-                      },
-                      _active: {
-                        background: "backgroundActive",
-                      },
-                    })}
+                    className={cx(
+                      "group",
+                      css({
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        height: 102,
+                        padding: "24px 0 24px 24px",
+                        textAlign: "right",
+                        _focusVisible: {
+                          outline: "2px solid token(colors.focused)",
+                          borderRadius: 4,
+                        },
+                        _active: {
+                          background: "backgroundActive",
+                        },
+                      }),
+                    )}
                   >
                     <div
                       className={css({
@@ -214,6 +227,13 @@ export default function EarnHomePage() {
                         color: "accent",
                         width: "88px!",
                         paddingRight: 28,
+                        transition: "transform 100ms",
+                        _groupHover: {
+                          transform: "translate3d(4px, 0, 0)",
+                        },
+                        _groupFocus: {
+                          transform: "translate3d(4px, 0, 0)",
+                        },
                       })}
                     >
                       <IconArrowRight />
