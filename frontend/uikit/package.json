@@ -54,6 +54,7 @@
     "ts-pattern": "^5.0.8"
   },
   "dependencies": {
+    "@floating-ui/react-dom": "^2.0.9",
     "focus-trap-react": "^10.2.3"
   },
   "devDependencies": {

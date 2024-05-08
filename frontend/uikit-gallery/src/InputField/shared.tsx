@@ -1,8 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-import { InputField, PillButton, TextButton } from "@liquity2/uikit";
+import { Dropdown, InputField, PillButton, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 import { useFixtureInput } from "react-cosmos/client";
@@ -45,8 +45,21 @@ export function InputFieldFixture({
 
   const parsedValue = parseInputFloat(value);
 
+  const [token, setToken] = useState(0);
+
   const action = match(fixture)
-    .with("deposit", () => <Token name="ETH" />)
+    .with("deposit", () => (
+      <Dropdown
+        selected={token}
+        onSelect={setToken}
+        items={[
+          itemRow("ETH", "ETH", "10.00"),
+          itemRow("RETH", "rETH", "30.00"),
+          itemRow("WSTETH", "wstETH", "40.00"),
+          itemRow("SWETH", "swETH", "50.00"),
+        ]}
+      />
+    ))
     .with("borrow", () => <Token name="BOLD" />)
     .with("interest", () => <Action label="% per year" />)
     .otherwise(() => undefined);
@@ -225,4 +238,16 @@ function IconEth() {
       <path fill="#000" d="M12 15.761v3.797l4.642-6.537z" opacity=".8" />
     </svg>
   );
+}
+
+function itemRow(
+  symbol: ComponentProps<typeof TokenIcon>["symbol"],
+  name: string,
+  balance: string,
+) {
+  return {
+    icon: <TokenIcon symbol={symbol} />,
+    label: name,
+    value: balance,
+  };
 }
