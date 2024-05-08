@@ -234,12 +234,12 @@ function useKeyboardNavigation({
 
 // Focuses the selected tab when the selection changes
 function useFocusSelected({
-  isFocused,
   container,
+  isFocused,
   selected,
 }: {
-  isFocused: React.MutableRefObject<boolean>;
   container: React.MutableRefObject<HTMLDivElement | null>;
+  isFocused: React.MutableRefObject<boolean>;
   selected: number;
 }) {
   useEffect(() => {

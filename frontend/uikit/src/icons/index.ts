@@ -5,6 +5,7 @@ export { IconAccount } from "./IconAccount";
 export { IconArrowBack } from "./IconArrowBack";
 export { IconArrowRight } from "./IconArrowRight";
 export { IconBorrow } from "./IconBorrow";
+export { IconChevronDown } from "./IconChevronDown";
 export { IconCross } from "./IconCross";
 export { IconEarn } from "./IconEarn";
 export { IconExternal } from "./IconExternal";
