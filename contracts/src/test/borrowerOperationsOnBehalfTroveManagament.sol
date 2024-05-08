@@ -218,12 +218,12 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         // Owner can repay bold
         vm.startPrank(A);
         uint256 AInitialBoldBalance = boldToken.balanceOf(A);
-        uint256 initialDebt = troveManager.getTroveDebt(ATroveId);
+        uint256 initialDebt = troveManager.getTroveEntireDebt(ATroveId);
 
         borrowerOperations.repayBold(ATroveId, 10e18);
         vm.stopPrank();
 
-        assertEq(troveManager.getTroveDebt(ATroveId), initialDebt - 10e18, "Wrong trove debt");
+        assertEq(troveManager.getTroveEntireDebt(ATroveId), initialDebt - 10e18, "Wrong trove debt");
         assertEq(boldToken.balanceOf(A), AInitialBoldBalance - 10e18, "Wrong owner balance");
 
         // Manager can repay bold
@@ -234,7 +234,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         borrowerOperations.repayBold(ATroveId, 10e18);
         vm.stopPrank();
 
-        assertEq(troveManager.getTroveDebt(ATroveId), initialDebt - 20e18, "Wrong trove debt");
+        assertEq(troveManager.getTroveEntireDebt(ATroveId), initialDebt - 20e18, "Wrong trove debt");
         assertEq(boldToken.balanceOf(B), BInitialBoldBalance - 10e18, "Wrong manager balance");
     }
 

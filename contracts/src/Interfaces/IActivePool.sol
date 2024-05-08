@@ -31,7 +31,8 @@ interface IActivePool {
         uint256 _troveDebtIncrease,
         uint256 _troveDebtDecrease,
         uint256 _newWeightedRecordedTroveDebt,
-        uint256 _oldWeightedRecordedTroveDebt
+        uint256 _oldWeightedRecordedTroveDebt,
+        uint256 _forgoneUpfrontInterest
     ) external;
 
     function sendETH(address _account, uint256 _amount) external;

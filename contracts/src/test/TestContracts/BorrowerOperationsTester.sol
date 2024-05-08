@@ -9,18 +9,6 @@ for testing the parent's internal functions. */
 contract BorrowerOperationsTester is BorrowerOperations {
     constructor(address _ETHAddress) BorrowerOperations(_ETHAddress) {}
 
-    function getNewICRFromTroveChange(
-        uint256 _coll,
-        uint256 _debt,
-        uint256 _collChange,
-        bool isCollIncrease,
-        uint256 _debtChange,
-        bool isDebtIncrease,
-        uint256 _price
-    ) external pure returns (uint256) {
-        return _getNewICRFromTroveChange(_coll, _debt, _collChange, isCollIncrease, _debtChange, isDebtIncrease, _price);
-    }
-
     function getNewTCRFromTroveChange(
         uint256 _collChange,
         bool isCollIncrease,

@@ -21,7 +21,7 @@ contract TroveManagerTester is TroveManager {
     }
 
     function getCompositeDebt(uint256 _debt) external pure returns (uint256) {
-        return _getCompositeDebt(_debt);
+        return _debt + BOLD_GAS_COMPENSATION;
     }
 
     /*
@@ -51,7 +51,7 @@ contract TroveManagerTester is TroveManager {
     */
 
     function getActualDebtFromComposite(uint256 _debtVal) external pure returns (uint256) {
-        return _getNetDebt(_debtVal);
+        return _debtVal - BOLD_GAS_COMPENSATION;
     }
 
     function callInternalRemoveTroveId(uint256 _troveId) external {

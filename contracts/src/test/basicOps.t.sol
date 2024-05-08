@@ -122,6 +122,8 @@ contract BasicOps is DevTestSetup {
 
         // Check CR_A < MCR and TCR > CCR
         assertLt(troveManager.getCurrentICR(A_Id, price), MCR);
+        troveManager.getLatestTroveData(A_Id);
+        emit log_named_decimal_uint("ICR", troveManager.getCurrentICR(A_Id, price), 18);
         assertGt(troveManager.getTCR(price), CCR);
 
         uint256 trovesCount = troveManager.getTroveIdsCount();

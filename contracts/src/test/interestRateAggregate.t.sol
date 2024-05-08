@@ -160,43 +160,43 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 debtChange = 37e18;
         vm.startPrank(A);
         vm.expectRevert();
-        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(borrowerOperations));
-        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(troveManager));
-        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0, 0);
         vm.stopPrank();
 
         // pass negative debt change
         vm.startPrank(A);
         vm.expectRevert();
-        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(borrowerOperations));
-        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(troveManager));
-        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0, 0);
         vm.stopPrank();
 
         // pass 0 debt change
         vm.startPrank(A);
         vm.expectRevert();
-        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(borrowerOperations));
-        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(troveManager));
-        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0);
         vm.stopPrank();
     }
 
@@ -615,7 +615,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(activePool.calcPendingAggInterest(), 0);
 
         // Check Trove's entire debt is larger than their recorded debt:
-        (uint256 entireTroveDebt_B,,,,) = troveManager.getEntireDebtAndColl(BTroveId);
+        uint256 entireTroveDebt_B = troveManager.getTroveEntireDebt(BTroveId);
         assertGt(entireTroveDebt_B, troveManager.getTroveDebt(BTroveId));
 
         // B closes Trove
@@ -722,7 +722,7 @@ contract InterestRateAggregate is DevTestSetup {
         vm.warp(block.timestamp + 1 days);
 
         // Get the up-to-date entire debt
-        (uint256 entireDebt_B,,,,) = troveManager.getEntireDebtAndColl(BTroveId);
+        uint256 entireDebt_B = troveManager.getTroveEntireDebt(BTroveId);
 
         // B closes Trove
         closeTrove(B, BTroveId);
@@ -826,7 +826,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 aggWeightedDebtSum_1 = activePool.aggWeightedDebtSum();
         assertGt(aggWeightedDebtSum_1, 0);
 
-        (uint256 entireTroveDebt,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt = troveManager.getTroveEntireDebt(ATroveId);
 
         uint256 newAnnualInterestRate = 75e16;
         uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * newAnnualInterestRate;
@@ -949,7 +949,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A draws more debt
         withdrawBold100pct(A, ATroveId, debtIncrease);
 
-        (uint256 entireTroveDebt,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt = troveManager.getTroveEntireDebt(ATroveId);
         uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;
 
         // Expect weighted sum decreases by the old and increases by the new individual weighted Trove debt.
@@ -1066,7 +1066,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A repays debt
         repayBold(A, ATroveId, debtDecrease);
 
-        (uint256 entireTroveDebt,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt = troveManager.getTroveEntireDebt(ATroveId);
         uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;
 
         // Expect weighted sum decreases by the old and increases by the new individual weighted Trove debt.
@@ -1181,7 +1181,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A adds coll
         addColl(A, ATroveId, collIncrease);
 
-        (uint256 entireTroveDebt,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt = troveManager.getTroveEntireDebt(ATroveId);
         uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;
 
         // Weighted debt should have increased due to interest being applied
@@ -1299,7 +1299,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A withdraw coll
         withdrawColl(A, ATroveId, collDecrease);
 
-        (uint256 entireTroveDebt,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt = troveManager.getTroveEntireDebt(ATroveId);
         uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;
 
         // Weighted debt should have increased due to interest being applied
@@ -1427,7 +1427,7 @@ contract InterestRateAggregate is DevTestSetup {
         // B applies A's pending interest
         applyTroveInterestPermissionless(B, ATroveId);
 
-        (uint256 entireTroveDebt,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt = troveManager.getTroveEntireDebt(ATroveId);
         uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;
 
         // Weighted debt should have increased due to interest being applied

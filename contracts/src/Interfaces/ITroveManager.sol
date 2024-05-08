@@ -11,6 +11,18 @@ import "./ISortedTroves.sol";
 
 // Common interface for the Trove Manager.
 interface ITroveManager is IERC721, ILiquityBase {
+    struct LatestTroveData {
+        uint256 entireDebt;
+        uint256 entireColl;
+        uint256 redistBoldDebtGain;
+        uint256 redistETHGain;
+        uint256 accruedInterest;
+        uint256 recordedDebt;
+        uint256 annualInterestRate;
+        uint256 weightedRecordedDebt;
+        uint256 unusedUpfrontInterest;
+    }
+
     function setAddresses(
         address _borrowerOperationsAddress,
         address _activePoolAddress,
@@ -65,14 +77,16 @@ interface ITroveManager is IERC721, ILiquityBase {
             uint256 entireColl,
             uint256 pendingBoldDebtReward,
             uint256 pendingETHReward,
-            uint256 pendingBoldInterest
+            uint256 accruedTroveInterest
         );
+
+    function getLatestTroveData(uint256 _troveId) external view returns (LatestTroveData memory);
 
     function getTroveEntireDebt(uint256 _troveId) external view returns (uint256);
 
     function getTroveEntireColl(uint256 _troveId) external view returns (uint256);
 
-    function getAndApplyRedistributionGains(uint256 _troveId) external returns (uint256, uint256);
+    function applyRedistributionGains(uint256 _troveId, uint256 _redistBoldDebtGain, uint256 _redistETHGain) external;
 
     function closeTrove(uint256 _troveId) external;
 
@@ -102,25 +116,40 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _troveId,
         uint256 _coll,
         uint256 _debt,
+        uint256 _upfrontInterest,
         uint256 _annualInterestRate
-    ) external returns (uint256, uint256);
+    ) external returns (uint256 arrayIndex);
 
     function setTroveStatusToActive(uint256 _troveId) external;
 
+    function setTrovePropertiesOnInterestRateAdjustment(
+        uint256 _troveId,
+        uint256 _coll,
+        uint256 _debt,
+        uint256 _upfrontInterest,
+        uint256 _annualInterestRate
+    ) external;
+
+    function setTrovePropertiesOnInterestApplication(
+        uint256 _troveId,
+        uint256 _coll,
+        uint256 _debt,
+        uint256 _upfrontInterest
+    ) external;
+
+    function setTrovePropertiesOnAdjustment(
+        address _sender,
+        uint256 _troveId,
+        uint256 _coll,
+        uint256 _debt,
+        uint256 _upfrontInterest,
+        bool _isCollIncrease,
+        bool _isCollDecrease,
+        bool _isDebtIncrease,
+        bool _isDebtDecrease
+    ) external;
+
     function troveIsStale(uint256 _troveId) external view returns (bool);
-
-    function changeAnnualInterestRate(uint256 _troveId, uint256 _newAnnualInterestRate) external;
-
-    function updateTroveDebtAndInterest(uint256 _troveId, uint256 _entireTroveDebt, uint256 _newAnnualInterestRate)
-        external;
-
-    function updateTroveDebtFromInterestApplication(uint256 _troveId, uint256 _entireTroveDebt) external;
-
-    function updateTroveDebt(address _sender, uint256 _troveId, uint256 _entireTroveDebt, bool _isDebtIncrease)
-        external;
-
-    function updateTroveColl(address _sender, uint256 _troveId, uint256 _entireTroveColl, bool _isCollIncrease)
-        external;
 
     function setAddManager(address _sender, uint256 _troveId, address _manager) external;
     function setRemoveManager(address _sender, uint256 _troveId, address _manager) external;

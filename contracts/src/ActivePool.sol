@@ -184,13 +184,14 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         uint256 _troveDebtIncrease,
         uint256 _troveDebtDecrease,
         uint256 _newWeightedRecordedTroveDebt,
-        uint256 _oldWeightedRecordedTroveDebt
+        uint256 _oldWeightedRecordedTroveDebt,
+        uint256 _forgoneUpfrontInterest
     ) external {
         _requireCallerIsBOorTroveM();
 
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
         uint256 newAggRecordedDebt = aggRecordedDebt; // 1 SLOAD
-        newAggRecordedDebt += _mintAggInterest();
+        newAggRecordedDebt += _mintAggInterest(_forgoneUpfrontInterest);
         newAggRecordedDebt += _troveDebtIncrease;
         newAggRecordedDebt -= _troveDebtDecrease;
         aggRecordedDebt = newAggRecordedDebt; // 1 SSTORE
@@ -207,15 +208,15 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
     function mintAggInterest() external override {
         _requireCallerIsSP();
-        aggRecordedDebt += _mintAggInterest();
+        aggRecordedDebt += _mintAggInterest(0);
     }
 
-    function _mintAggInterest() internal returns (uint256 aggInterest) {
-        aggInterest = calcPendingAggInterest();
+    function _mintAggInterest(uint256 _unusedUpfrontInterest) internal returns (uint256 aggDebtIncrease) {
+        aggDebtIncrease = calcPendingAggInterest() + _unusedUpfrontInterest;
 
         // Mint the new BOLD interest to a mock interest router that would split it and send it onward to SP, LP staking, etc.
         // TODO: implement interest routing and SP Bold reward tracking
-        if (aggInterest > 0) boldToken.mint(address(interestRouter), aggInterest);
+        if (aggDebtIncrease > 0) boldToken.mint(address(interestRouter), aggDebtIncrease);
 
         lastAggUpdateTime = block.timestamp;
     }

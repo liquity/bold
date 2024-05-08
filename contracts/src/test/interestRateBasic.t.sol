@@ -171,12 +171,12 @@ contract InterestRateBasic is DevTestSetup {
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         changeInterestRateNoHints(A, ATroveId, 75e16);
 
-        (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_1, entireTroveDebt_2);
     }
 
@@ -330,14 +330,13 @@ contract InterestRateBasic is DevTestSetup {
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // A draws more debt
         withdrawBold100pct(A, ATroveId, boldWithdrawal);
 
-        (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
-
+        uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_2, entireTroveDebt_1 + boldWithdrawal);
     }
 
@@ -410,14 +409,13 @@ contract InterestRateBasic is DevTestSetup {
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // A repays bold
         repayBold(A, ATroveId, boldRepayment);
 
-        (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
-
+        uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_2, entireTroveDebt_1 - boldRepayment);
     }
 
@@ -490,14 +488,13 @@ contract InterestRateBasic is DevTestSetup {
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // A adds coll
         addColl(A, ATroveId, collIncrease);
 
-        (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
-
+        uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_2, entireTroveDebt_1);
     }
 
@@ -570,14 +567,13 @@ contract InterestRateBasic is DevTestSetup {
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // A withdraws coll
         withdrawColl(A, ATroveId, collDecrease);
 
-        (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
-
+        uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_2, entireTroveDebt_1);
     }
 
@@ -656,14 +652,13 @@ contract InterestRateBasic is DevTestSetup {
         // Confirm Trove is stale
         assertTrue(troveManager.troveIsStale(ATroveId));
 
-        (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // B applies A's pending interest
         applyTroveInterestPermissionless(B, ATroveId);
 
-        (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
-
+        uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_2, entireTroveDebt_1);
     }
 
