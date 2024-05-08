@@ -368,7 +368,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
         // If they have a deposit, update it and update its snapshots
         if (initialDeposit > 0) {
-            currentETHGain = getDepositorETHGain(msg.sender);  // Only active deposits can only have a current ETH gain
+            currentETHGain = getDepositorETHGain(msg.sender);  // Only active deposits can have a current ETH gain
 
             uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
             boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
