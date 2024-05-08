@@ -376,12 +376,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
             _updateDepositAndSnapshots(msg.sender, compoundedBoldDeposit);
         }
 
-        uint256 stashedETHGain = stashedETH[msg.sender];
-        uint256 ETHToSend = currentETHGain + stashedETHGain;
-
-        stashedETH[msg.sender] = 0;
-
-        emit ETHGainWithdrawn(msg.sender, ETHToSend, boldLoss);
+        uint256 ETHToSend = _getTotalETHGainAndZeroStash(msg.sender,  currentETHGain);
 
         _sendETHGainToDepositor(ETHToSend);
         assert(getDepositorETHGain(msg.sender) == 0);
