@@ -52,6 +52,7 @@ export function InputFieldFixture({
       <Dropdown
         selected={token}
         onSelect={setToken}
+        menuPlacement="end"
         items={[
           itemRow("ETH", "ETH", "10.00"),
           itemRow("RETH", "rETH", "30.00"),

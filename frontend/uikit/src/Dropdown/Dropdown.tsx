@@ -151,6 +151,7 @@ export function Dropdown({
             padding: "0 10px 0 16px",
             gap: 8,
             height: "100%",
+            whiteSpace: "nowrap",
             borderWidth: "1px 1px 0 1px",
             borderStyle: "solid",
             borderColor: "#F5F6F8",
