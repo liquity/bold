@@ -188,7 +188,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 totalETHDrawn;
         uint256 ETHFee;
         uint256 ETHToSendToRedeemer;
-        uint256 decayedBaseRate;
         uint256 price;
         uint256 totalRedistDebtGains;
         uint256 totalNewWeightedRecordedTroveDebts;
