@@ -5,9 +5,9 @@ import "./TestContracts/DevTestSetup.sol";
 contract TroveManagerTest is DevTestSetup {
     function testRedeemSkipTrovesUnder100pct() public {
         priceFeed.setPrice(2000e18);
-        uint256 ATroveId = openTroveNoHints100pctMaxFee(A, 2 ether, 2001e18, 1e17);
-        uint256 BTroveId = openTroveNoHints100pctMaxFee(B, 5 ether, 2000e18, 2e17);
-        openTroveNoHints100pctMaxFee(C, 5 ether, 2000e18, 3e17);
+        uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2001e18, 1e17);
+        uint256 BTroveId = openTroveNoHints100pct(B, 5 ether, 2000e18, 2e17);
+        openTroveNoHints100pct(C, 5 ether, 2000e18, 3e17);
 
         uint256 debtA1 = troveManager.getTroveDebt(ATroveId);
         assertGt(debtA1, 0);
@@ -55,7 +55,7 @@ contract TroveManagerTest is DevTestSetup {
         vm.warp(block.timestamp + 14 days);
 
         priceFeed.setPrice(2000e18);
-        openTroveNoHints100pctMaxFee(A, 200 ether, 200000e18, 1e17);
+        openTroveNoHints100pct(A, 200 ether, 200000e18, 1e17);
         // A redeems 0.01 BOLD, base rate goes down to almost zero (it’s updated on redemption)
         vm.startPrank(A);
         collateralRegistry.redeemCollateral(1e16, 10, 1e18);
@@ -63,5 +63,28 @@ contract TroveManagerTest is DevTestSetup {
 
         console.log(collateralRegistry.baseRate(), "baseRate");
         assertLt(collateralRegistry.baseRate(), 3e10); // Goes down below 3e-8, i.e., below 0.000003%
+    }
+
+    function testLiquidationSucceedsEvenWhenEncounteringInactiveTroves() public {
+        TroveIDs memory troveIDs;
+
+        uint256 coll = 100 ether;
+        uint256 borrow = 10_000 ether;
+        uint256 interestRate = 0.01 ether;
+        troveIDs.A = openTroveNoHints100pct(A, coll, borrow, interestRate);
+        troveIDs.B = openTroveNoHints100pct(B, coll, borrow, interestRate);
+        troveIDs.C = openTroveNoHints100pct(C, coll, borrow, interestRate);
+        troveIDs.D = openTroveNoHints100pct(D, 1_000 ether, borrow, interestRate); // whale to keep TCR afloat
+
+        uint256 dropPrice = 110 ether;
+        priceFeed.setPrice(dropPrice);
+        assertGt(troveManager.getTCR(dropPrice), CCR, "Want TCR > CCR");
+
+        troveManager.liquidate(troveIDs.A);
+
+        uint256[] memory liquidatedTroves = new uint256[](2);
+        liquidatedTroves[0] = troveIDs.A; // inactive
+        liquidatedTroves[1] = troveIDs.B;
+        troveManager.batchLiquidateTroves(liquidatedTroves);
     }
 }

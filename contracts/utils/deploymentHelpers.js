@@ -169,7 +169,6 @@ class DeploymentHelper {
     await contracts.borrowerOperations.setAddresses(
       contracts.activePool.address,
       contracts.defaultPool.address,
-      contracts.stabilityPool.address,
       contracts.gasPool.address,
       contracts.collSurplusPool.address,
       contracts.priceFeedTestnet.address,

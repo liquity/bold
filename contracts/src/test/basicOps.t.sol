@@ -8,7 +8,7 @@ contract BasicOps is DevTestSetup {
 
         vm.startPrank(G);
         vm.expectRevert("ERC20: insufficient allowance");
-        borrowerOperations.openTrove(G, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
+        borrowerOperations.openTrove(G, 0, 2e18, 2000e18, 0, 0, 0);
         vm.stopPrank();
     }
 
@@ -18,7 +18,7 @@ contract BasicOps is DevTestSetup {
         vm.startPrank(G);
         WETH.approve(address(borrowerOperations), 2e18);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
-        borrowerOperations.openTrove(G, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
+        borrowerOperations.openTrove(G, 0, 2e18, 2000e18, 0, 0, 0);
         vm.stopPrank();
     }
 
@@ -28,7 +28,7 @@ contract BasicOps is DevTestSetup {
         assertEq(trovesCount, 0);
 
         vm.startPrank(A);
-        borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
+        borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, 0);
 
         trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
@@ -37,11 +37,11 @@ contract BasicOps is DevTestSetup {
     function testCloseTrove() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
+        borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
-        uint256 B_Id = borrowerOperations.openTrove(B, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
+        uint256 B_Id = borrowerOperations.openTrove(B, 0, 2e18, 2000e18, 0, 0, 0);
 
         uint256 trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 2);
@@ -58,7 +58,7 @@ contract BasicOps is DevTestSetup {
     function testAdjustTrove() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 A_Id = borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
+        uint256 A_Id = borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, 0);
 
         // Check Trove coll and debt
         uint256 debt_1 = troveManager.getTroveDebt(A_Id);
@@ -67,7 +67,7 @@ contract BasicOps is DevTestSetup {
         assertGt(coll_1, 0);
 
         // Adjust trove
-        borrowerOperations.adjustTrove(A_Id, 1e18, 1e18, true, 500e18, true);
+        borrowerOperations.adjustTrove(A_Id, 1e18, true, 500e18, true);
 
         // Check coll and debt altered
         uint256 debt_2 = troveManager.getTroveDebt(A_Id);
@@ -80,11 +80,11 @@ contract BasicOps is DevTestSetup {
         priceFeed.setPrice(2000e18);
 
         vm.startPrank(A);
-        borrowerOperations.openTrove(A, 0, 1e18, 5e18, 5_000e18, 0, 0, 0);
+        borrowerOperations.openTrove(A, 0, 5e18, 5_000e18, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
-        uint256 B_Id = borrowerOperations.openTrove(B, 0, 1e18, 5e18, 4_000e18, 0, 0, 0);
+        uint256 B_Id = borrowerOperations.openTrove(B, 0, 5e18, 4_000e18, 0, 0, 0);
         uint256 debt_1 = troveManager.getTroveDebt(B_Id);
         assertGt(debt_1, 0);
         uint256 coll_1 = troveManager.getTroveColl(B_Id);
@@ -110,11 +110,11 @@ contract BasicOps is DevTestSetup {
     function testLiquidation() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 A_Id = borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
+        uint256 A_Id = borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
-        borrowerOperations.openTrove(B, 0, 1e18, 10e18, 2000e18, 0, 0, 0);
+        borrowerOperations.openTrove(B, 0, 10e18, 2000e18, 0, 0, 0);
 
         // Price drops
         priceFeed.setPrice(1200e18);
@@ -137,16 +137,16 @@ contract BasicOps is DevTestSetup {
     function testSPDeposit() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
+        borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, 0);
 
         // A makes an SP deposit
-        stabilityPool.provideToSP(100e18);
+        makeSPDepositAndClaim(A, 100e18);
 
         // time passes
         vm.warp(block.timestamp + 7 days);
 
         // A tops up their SP deposit
-        stabilityPool.provideToSP(100e18);
+        makeSPDepositAndClaim(A, 100e18);
 
         // Check A's balance decreased and SP deposit increased
         assertEq(boldToken.balanceOf(A), 1800e18);
@@ -156,10 +156,10 @@ contract BasicOps is DevTestSetup {
     function testSPWithdrawal() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove(A, 0, 1e18, 2e18, 2000e18, 0, 0, 0);
+        borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, 0);
 
         // A makes an SP deposit
-        stabilityPool.provideToSP(100e18);
+        makeSPDepositAndClaim(A, 100e18);
 
         // time passes
         vm.warp(block.timestamp + 7 days);
@@ -169,7 +169,7 @@ contract BasicOps is DevTestSetup {
         assertEq(stabilityPool.getCompoundedBoldDeposit(A), 100e18);
 
         // A withdraws their full SP deposit
-        stabilityPool.withdrawFromSP(100e18);
+        makeSPWithdrawalAndClaim(A, 100e18);
 
         // Check A's balance increased and SP deposit decreased to 0
         assertEq(boldToken.balanceOf(A), 2000e18);

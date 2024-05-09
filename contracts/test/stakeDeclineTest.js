@@ -66,7 +66,6 @@ contract("TroveManager", async (accounts) => {
     // Make 1 mega troves A at ~50% total collateral
     const ATroveId = await th.openTroveWrapper(
       contracts,
-      th._100pct,
       await getOpenTroveBoldAmount(dec(1, 31)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
@@ -77,7 +76,6 @@ contract("TroveManager", async (accounts) => {
     // Make 5 large troves B, C, D, E, F at ~10% total collateral
     const BTroveId = await th.openTroveWrapper(
       contracts,
-      th._100pct,
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
@@ -86,7 +84,6 @@ contract("TroveManager", async (accounts) => {
     );
     await th.openTroveWrapper(
       contracts,
-      th._100pct,
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
@@ -95,7 +92,6 @@ contract("TroveManager", async (accounts) => {
     );
     await th.openTroveWrapper(
       contracts,
-      th._100pct,
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
@@ -104,7 +100,6 @@ contract("TroveManager", async (accounts) => {
     );
     await th.openTroveWrapper(
       contracts,
-      th._100pct,
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
@@ -113,7 +108,6 @@ contract("TroveManager", async (accounts) => {
     );
     await th.openTroveWrapper(
       contracts,
-      th._100pct,
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
@@ -128,8 +122,7 @@ contract("TroveManager", async (accounts) => {
       await contracts.WETH.mint(account, eth_amount);
       await th.openTroveWrapper(
         contracts,
-        th._100pct,
-        await getOpenTroveBoldAmount(dec(1, 22)),
+          await getOpenTroveBoldAmount(dec(1, 22)),
         ZERO_ADDRESS,
         ZERO_ADDRESS,
         0,
@@ -161,7 +154,6 @@ contract("TroveManager", async (accounts) => {
     // adjust trove B 1 wei: apply rewards
     await borrowerOperations.adjustTrove(
       BTroveId,
-      th._100pct,
       0,
       false,
       1,
@@ -184,7 +176,6 @@ contract("TroveManager", async (accounts) => {
       // );
       await borrowerOperations.adjustTrove(
         BTroveId,
-        th._100pct,
         0,
         false,
         1,

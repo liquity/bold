@@ -142,7 +142,7 @@ contract("TroveManager", async (accounts) => {
       await contracts.WETH.balanceOf(activePool.address)
     ).toString();
     const activePool_BoldDebt_Before = (
-      await activePool.getRecordedDebtSum()
+      await activePool.getTotalActiveDebt()
     ).toString();
 
     assert.equal(activePool_ETH_Before, A_collateral.add(B_collateral));
@@ -168,7 +168,7 @@ contract("TroveManager", async (accounts) => {
       await contracts.WETH.balanceOf(activePool.address)
     ).toString();
     const activePool_BoldDebt_After = (
-      await activePool.getRecordedDebtSum()
+      await activePool.getTotalActiveDebt()
     ).toString();
 
     assert.equal(activePool_ETH_After, A_collateral);
@@ -491,7 +491,7 @@ contract("TroveManager", async (accounts) => {
     });
 
     // Alice proves 10 Bold to SP
-    await stabilityPool.provideToSP(dec(10, 18), { from: alice });
+    await th.provideToSPAndClaim(contracts, dec(10, 18), { from: alice });
 
     // Set ETH:USD price to 105
     await priceFeed.setPrice("105000000000000000000");
@@ -618,7 +618,7 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: alice } });
     await openTrove({ ICR: toBN(dec(70, 18)), extraParams: { from: bob } });
@@ -683,7 +683,7 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: alice } });
     await openTrove({ ICR: toBN(dec(70, 18)), extraParams: { from: bob } });
@@ -867,7 +867,7 @@ contract("TroveManager", async (accounts) => {
     await boldToken.transfer(dennis, spDeposit, { from: bob });
 
     // Dennis provides Bold to SP
-    await stabilityPool.provideToSP(spDeposit, { from: dennis });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: dennis });
 
     // Carol gets liquidated
     await priceFeed.setPrice(dec(100, 18));
@@ -929,7 +929,7 @@ contract("TroveManager", async (accounts) => {
     });
 
     // Bob provides Bold to SP
-    await stabilityPool.provideToSP(spDeposit, { from: bob });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: bob });
 
     // Carol gets liquidated
     await priceFeed.setPrice(dec(100, 18));
@@ -999,7 +999,7 @@ contract("TroveManager", async (accounts) => {
     });
 
     // Bob provides Bold to SP
-    await stabilityPool.provideToSP(B_spDeposit, { from: bob });
+    await th.provideToSPAndClaim(contracts, B_spDeposit, { from: bob });
 
     // Carol gets liquidated
     await priceFeed.setPrice(dec(100, 18));
@@ -1023,7 +1023,7 @@ contract("TroveManager", async (accounts) => {
     );
 
     // Alice provides Bold to SP
-    await stabilityPool.provideToSP(A_spDeposit, { from: alice });
+    await th.provideToSPAndClaim(contracts, A_spDeposit, { from: alice });
 
     // Confirm system is not in Recovery Mode
     assert.isFalse(await th.checkRecoveryMode(contracts));
@@ -1120,15 +1120,15 @@ contract("TroveManager", async (accounts) => {
     assert.isFalse(await th.checkRecoveryMode(contracts));
 
     // Liquidate A, B and C
-    const activeBoldDebt_0 = await activePool.getRecordedDebtSum();
+    const activeBoldDebt_0 = await activePool.getTotalActiveDebt();
     const defaultBoldDebt_0 = await defaultPool.getBoldDebt();
 
     await troveManager.liquidate(aliceTroveId);
-    const activeBoldDebt_A = await activePool.getRecordedDebtSum();
+    const activeBoldDebt_A = await activePool.getTotalActiveDebt();
     const defaultBoldDebt_A = await defaultPool.getBoldDebt();
 
     await troveManager.liquidate(bobTroveId);
-    const activeBoldDebt_B = await activePool.getRecordedDebtSum();
+    const activeBoldDebt_B = await activePool.getTotalActiveDebt();
     const defaultBoldDebt_B = await defaultPool.getBoldDebt();
 
     await troveManager.liquidate(carolTroveId);
@@ -1443,7 +1443,7 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: toBN(dec(500, 18)),
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(dec(500, 18), {
+    await th.provideToSPAndClaim(contracts, dec(500, 18), {
       from: whale,
     });
 
@@ -1644,7 +1644,7 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: whaleDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(whaleDeposit, {
+    await th.provideToSPAndClaim(contracts, whaleDeposit, {
       from: whale,
     });
 
@@ -1669,8 +1669,8 @@ contract("TroveManager", async (accounts) => {
     const liquidatedDebt = A_debt.add(B_debt).add(C_debt);
 
     // A, B provide 100, 300 to the SP
-    await stabilityPool.provideToSP(A_deposit, { from: alice });
-    await stabilityPool.provideToSP(B_deposit, { from: bob });
+    await th.provideToSPAndClaim(contracts, A_deposit, { from: alice });
+    await th.provideToSPAndClaim(contracts, B_deposit, { from: bob });
 
     assert.equal((await sortedTroves.getSize()).toString(), "4");
 
@@ -1826,7 +1826,7 @@ contract("TroveManager", async (accounts) => {
     assert.isFalse(await sortedTroves.contains(ATroveId));
 
     // A adds 10 Bold to the SP, but less than C's debt
-    await stabilityPool.provideToSP(dec(10, 18), { from: A });
+    await th.provideToSPAndClaim(contracts, dec(10, 18), { from: A });
 
     // Price drops
     await priceFeed.setPrice(dec(100, 18));
@@ -1876,8 +1876,8 @@ contract("TroveManager", async (accounts) => {
     assert.isTrue(await th.checkRecoveryMode(contracts));
 
     // D and E fill the Stability Pool, enough to completely absorb C's debt of 70
-    await stabilityPool.provideToSP(dec(50, 18), { from: D });
-    await stabilityPool.provideToSP(dec(50, 18), { from: E });
+    await th.provideToSPAndClaim(contracts, dec(50, 18), { from: D });
+    await th.provideToSPAndClaim(contracts, dec(50, 18), { from: E });
 
     await priceFeed.setPrice(dec(50, 18));
 
@@ -1907,7 +1907,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal((await sortedTroves.getSize()).toString(), "6");
 
     // Whale puts some tokens in Stability Pool
-    await stabilityPool.provideToSP(dec(300, 18), {
+    await th.provideToSPAndClaim(contracts, dec(300, 18), {
       from: whale,
     });
 
@@ -1975,7 +1975,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal((await sortedTroves.getSize()).toString(), "6");
 
     // Whale puts some tokens in Stability Pool
-    await stabilityPool.provideToSP(dec(300, 18), {
+    await th.provideToSPAndClaim(contracts, dec(300, 18), {
       from: whale,
     });
 
@@ -2039,7 +2039,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal((await sortedTroves.getSize()).toString(), "6");
 
     // Whale puts some tokens in Stability Pool
-    await stabilityPool.provideToSP(dec(300, 18), {
+    await th.provideToSPAndClaim(contracts, dec(300, 18), {
       from: whale,
     });
 
@@ -2102,7 +2102,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal((await sortedTroves.getSize()).toString(), "6");
 
     // Whale puts some tokens in Stability Pool
-    await stabilityPool.provideToSP(dec(300, 18), {
+    await th.provideToSPAndClaim(contracts, dec(300, 18), {
       from: whale,
     });
 
@@ -2156,7 +2156,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal((await sortedTroves.getSize()).toString(), "5");
 
     // Whale puts some tokens in Stability Pool
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // --- TEST ---
 
@@ -2241,7 +2241,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal((await sortedTroves.getSize()).toString(), "6");
 
     // Whale puts some tokens in Stability Pool
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Whale transfers to Carol so she can close her trove
     await boldToken.transfer(carol, dec(100, 18), { from: whale });
@@ -3677,11 +3677,11 @@ contract("TroveManager", async (accounts) => {
     await boldToken.transfer(erin, redemptionAmount, { from: alice });
 
     // B, C, D deposit some of their tokens to the Stability Pool
-    await stabilityPool.provideToSP(dec(50, 18), { from: bob });
-    await stabilityPool.provideToSP(dec(150, 18), {
+    await th.provideToSPAndClaim(contracts, dec(50, 18), { from: bob });
+    await th.provideToSPAndClaim(contracts, dec(150, 18), {
       from: carol,
     });
-    await stabilityPool.provideToSP(dec(200, 18), {
+    await th.provideToSPAndClaim(contracts, dec(200, 18), {
       from: dennis,
     });
 
@@ -3816,7 +3816,7 @@ contract("TroveManager", async (accounts) => {
     const totalColl = W_coll.add(A_coll).add(B_coll).add(C_coll).add(D_coll);
 
     // Get active debt and coll before redemption
-    const activePool_debt_before = await activePool.getRecordedDebtSum();
+    const activePool_debt_before = await activePool.getTotalActiveDebt();
     const activePool_coll_before = await activePool.getETHBalance();
 
     th.assertIsApproximatelyEqual(activePool_debt_before, totalDebt);
@@ -3852,7 +3852,7 @@ contract("TroveManager", async (accounts) => {
     );
 
     // Check activePool debt reduced by  400 Bold
-    const activePool_debt_after = await activePool.getRecordedDebtSum();
+    const activePool_debt_after = await activePool.getTotalActiveDebt();
     assert.equal(
       activePool_debt_before.sub(activePool_debt_after),
       dec(400, 18),
@@ -3915,7 +3915,7 @@ contract("TroveManager", async (accounts) => {
     const totalColl = W_coll.add(A_coll).add(B_coll).add(C_coll).add(D_coll);
 
     // Get active debt and coll before redemption
-    const activePool_debt_before = await activePool.getRecordedDebtSum();
+    const activePool_debt_before = await activePool.getTotalActiveDebt();
     const activePool_coll_before = (await activePool.getETHBalance()).toString();
 
     th.assertIsApproximatelyEqual(activePool_debt_before, totalDebt);
@@ -4288,7 +4288,7 @@ contract("TroveManager", async (accounts) => {
 
     const totalDebt = C_totalDebt.add(D_totalDebt);
     th.assertIsApproximatelyEqual(
-      (await activePool.getRecordedDebtSum()).toString(),
+      (await activePool.getTotalActiveDebt()).toString(),
       totalDebt,
     );
 
@@ -4359,7 +4359,7 @@ contract("TroveManager", async (accounts) => {
     const A_balanceBefore = toBN(await contracts.WETH.balanceOf(A));
 
     // Check total Bold supply
-    const activeBold = await activePool.getRecordedDebtSum();
+    const activeBold = await activePool.getTotalActiveDebt();
     const defaultBold = await defaultPool.getBoldDebt();
 
     const totalBoldSupply = activeBold.add(defaultBold);
@@ -4747,7 +4747,7 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: totalDebt,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(totalDebt, { from: whale });
+    await th.provideToSPAndClaim(contracts, totalDebt, { from: whale });
 
     // Price drops
     await priceFeed.setPrice(dec(100, 18));
@@ -4789,7 +4789,7 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: totalDebt,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(totalDebt, { from: whale });
+    await th.provideToSPAndClaim(contracts, totalDebt, { from: whale });
 
     // Price drops
     await priceFeed.setPrice(dec(100, 18));

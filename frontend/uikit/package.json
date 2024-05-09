@@ -54,8 +54,8 @@
     "ts-pattern": "^5.0.8"
   },
   "dependencies": {
-    "focus-trap-react": "^10.2.3",
-    "react-cool-dimensions": "^3.0.1"
+    "@floating-ui/react-dom": "^2.0.9",
+    "focus-trap-react": "^10.2.3"
   },
   "devDependencies": {
     "@svgr/core": "^8.1.0",

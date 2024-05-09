@@ -210,7 +210,7 @@ contract Redemptions is DevTestSetup {
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
         // E opens new Trove
-        troveIDs.E = openTroveNoHints100pctMaxFee(E, troveColl_E, troveDebtRequest_E, interestRate_E);
+        troveIDs.E = openTroveNoHints100pct(E, troveColl_E, troveDebtRequest_E, interestRate_E);
 
         // Price drops, E becomes liquidateable
         price = 1050e18;
@@ -291,8 +291,8 @@ contract Redemptions is DevTestSetup {
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
         // E  opens new Trove
-        uint256 troveID_E = openTroveNoHints100pctMaxFee(E, troveColl_E, troveDebtRequest_E, interestRate_E);
-        // openTroveNoHints100pctMaxFee(F, troveColl_F, troveDebtRequest_F, interestRate_F);
+        uint256 troveID_E = openTroveNoHints100pct(E, troveColl_E, troveDebtRequest_E, interestRate_E);
+        // openTroveNoHints100pct(F, troveColl_F, troveDebtRequest_F, interestRate_F);
 
         // Price drops, E becomes liquidateable
         price = 950e18;
@@ -355,13 +355,13 @@ contract Redemptions is DevTestSetup {
         // A and B withdraw Bold from their zombie Trove
         vm.startPrank(A);
         borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.A, 1e18, 0, false, debtDelta_A + surplusDebt, true, troveIDs.A, troveIDs.A
+            troveIDs.A, 0, false, debtDelta_A + surplusDebt, true, troveIDs.A, troveIDs.A
         );
         vm.stopPrank();
 
         vm.startPrank(B);
         borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.B, 1e18, 0, false, debtDelta_A + surplusDebt, true, troveIDs.B, troveIDs.B
+            troveIDs.B, 0, false, debtDelta_A + surplusDebt, true, troveIDs.B, troveIDs.B
         );
         vm.stopPrank();
 
@@ -389,13 +389,13 @@ contract Redemptions is DevTestSetup {
         // A and B withdraw Bold from their zombie Trove
         vm.startPrank(A);
         borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.A, 1e18, 0, false, debtDelta_A + surplusDebt, true, troveIDs.A, troveIDs.A
+            troveIDs.A, 0, false, debtDelta_A + surplusDebt, true, troveIDs.A, troveIDs.A
         );
         vm.stopPrank();
 
         vm.startPrank(B);
         borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.B, 1e18, 0, false, debtDelta_A + surplusDebt, true, troveIDs.B, troveIDs.B
+            troveIDs.B, 0, false, debtDelta_A + surplusDebt, true, troveIDs.B, troveIDs.B
         );
         vm.stopPrank();
 
@@ -431,13 +431,13 @@ contract Redemptions is DevTestSetup {
         // A and B withdraw Bold from their zombie Trove
         vm.startPrank(A);
         borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.A, 1e18, 0, false, debtDelta_A + surplusDebt, true, troveIDs.A, troveIDs.A
+            troveIDs.A, 0, false, debtDelta_A + surplusDebt, true, troveIDs.A, troveIDs.A
         );
         vm.stopPrank();
 
         vm.startPrank(B);
         borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.B, 1e18, 0, false, debtDelta_A + surplusDebt, true, troveIDs.B, troveIDs.B
+            troveIDs.B, 0, false, debtDelta_A + surplusDebt, true, troveIDs.B, troveIDs.B
         );
         vm.stopPrank();
 
@@ -472,13 +472,13 @@ contract Redemptions is DevTestSetup {
         // A and B withdraw Bold from their zombie Trove
         vm.startPrank(A);
         borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.A, 1e18, 0, false, debtDelta_A + surplusDebt, true, troveIDs.A, troveIDs.A
+            troveIDs.A, 0, false, debtDelta_A + surplusDebt, true, troveIDs.A, troveIDs.A
         );
         vm.stopPrank();
 
         vm.startPrank(B);
         borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.B, 1e18, 0, false, debtDelta_A + surplusDebt, true, troveIDs.B, troveIDs.B
+            troveIDs.B, 0, false, debtDelta_A + surplusDebt, true, troveIDs.B, troveIDs.B
         );
         vm.stopPrank();
 
@@ -511,14 +511,14 @@ contract Redemptions is DevTestSetup {
         vm.startPrank(A);
         vm.expectRevert("BorrowerOps: Trove's net debt must be greater than minimum");
         borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.A, 1e18, 0, false, debtDelta_A - debtDeficiency, true, troveIDs.A, troveIDs.A
+            troveIDs.A, 0, false, debtDelta_A - debtDeficiency, true, troveIDs.A, troveIDs.A
         );
         vm.stopPrank();
 
         vm.startPrank(B);
         vm.expectRevert("BorrowerOps: Trove's net debt must be greater than minimum");
         borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.B, 1e18, 0, false, debtDelta_B - debtDeficiency, true, troveIDs.B, troveIDs.B
+            troveIDs.B, 0, false, debtDelta_B - debtDeficiency, true, troveIDs.B, troveIDs.B
         );
         vm.stopPrank();
     }
@@ -554,12 +554,12 @@ contract Redemptions is DevTestSetup {
 
         vm.startPrank(A);
         vm.expectRevert("BorrowerOps: Trove does not have active status");
-        borrowerOperations.withdrawBold(troveIDs.A, 1e18, debtWithdrawal);
+        borrowerOperations.withdrawBold(troveIDs.A, debtWithdrawal);
         vm.stopPrank();
 
         vm.startPrank(B);
         vm.expectRevert("BorrowerOps: Trove does not have active status");
-        borrowerOperations.withdrawBold(troveIDs.B, 1e18, debtWithdrawal);
+        borrowerOperations.withdrawBold(troveIDs.B, debtWithdrawal);
         vm.stopPrank();
     }
 
@@ -572,12 +572,12 @@ contract Redemptions is DevTestSetup {
 
         vm.startPrank(A);
         vm.expectRevert("BorrowerOps: Trove does not have active status");
-        borrowerOperations.adjustTrove(troveIDs.A, 1e18, 0, false, debtWithdrawal, true);
+        borrowerOperations.adjustTrove(troveIDs.A, 0, false, debtWithdrawal, true);
         vm.stopPrank();
 
         vm.startPrank(B);
         vm.expectRevert("BorrowerOps: Trove does not have active status");
-        borrowerOperations.adjustTrove(troveIDs.B, 1e18, 0, false, debtWithdrawal, true);
+        borrowerOperations.adjustTrove(troveIDs.B, 0, false, debtWithdrawal, true);
         vm.stopPrank();
     }
 
@@ -650,8 +650,8 @@ contract Redemptions is DevTestSetup {
         uint256 troveDebtRequest_E = 200000e18;
         uint256 troveColl_E = 25000e18;
         // E  opens new Trove and deposits to SP
-        openTroveNoHints100pctMaxFee(E, troveColl_E, troveDebtRequest_E, interestRate_E);
-        makeSPDeposit(E, boldToken.balanceOf(E));
+        openTroveNoHints100pct(E, troveColl_E, troveDebtRequest_E, interestRate_E);
+        makeSPDepositAndClaim(E, boldToken.balanceOf(E));
         assertGt(stabilityPool.getTotalBoldDeposits(), troveManager.getTroveEntireDebt(troveIDs.B));
 
         // Price drops, B becomes liquidateable

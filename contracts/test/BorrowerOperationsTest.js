@@ -331,7 +331,7 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(bobNewDebt.eq(bobDebtBefore.add(bobPendingBoldDebtReward)));
 
       /* Check that both Alice and Bob's snapshots of the rewards-per-unit-staked metrics should be updated
-       to the latest values of L_ETH and L_boldDebt */
+         to the latest values of L_ETH and L_boldDebt */
       const alice_rewardSnapshot_After = await troveManager.rewardSnapshots(aliceTroveId);
       const alice_ETHrewardSnapshot_After = alice_rewardSnapshot_After[0];
       const alice_BoldDebtRewardSnapshot_After = alice_rewardSnapshot_After[1];
@@ -363,11 +363,11 @@ contract("BorrowerOperations", async (accounts) => {
 
     //   // --- SETUP ---
     //   // A,B,C add 15/5/5 ETH, withdraw 100/100/900 Bold
-    //   await th.openTroveWrapper(contracts,th._100pct, dec(100, 18), alice, alice, { from: alice, value: dec(15, 'ether') })
-    //   await th.openTroveWrapper(contracts,th._100pct, dec(100, 18), bob, bob, { from: bob, value: dec(4, 'ether') })
-    //   await th.openTroveWrapper(contracts,th._100pct, dec(900, 18), carol, carol, { from: carol, value: dec(5, 'ether') })
+    //   await th.openTroveWrapper(contracts,dec(100, 18), alice, alice, { from: alice, value: dec(15, 'ether') })
+    //   await th.openTroveWrapper(contracts,dec(100, 18), bob, bob, { from: bob, value: dec(4, 'ether') })
+    //   await th.openTroveWrapper(contracts,dec(900, 18), carol, carol, { from: carol, value: dec(5, 'ether') })
 
-    //   await th.openTroveWrapper(contracts,th._100pct, 0, dennis, dennis, { from: dennis, value: dec(1, 'ether') })
+    //   await th.openTroveWrapper(contracts,0, dennis, dennis, { from: dennis, value: dec(1, 'ether') })
     //   // --- TEST ---
 
     //   // price drops to 1ETH:100Bold, reducing Carol's ICR below MCR
@@ -870,7 +870,7 @@ contract("BorrowerOperations", async (accounts) => {
       );
 
       /* After top up, both Alice and Bob's snapshots of the rewards-per-unit-staked metrics should be updated
-       to the latest values of L_ETH and L_boldDebt */
+         to the latest values of L_ETH and L_boldDebt */
       const alice_rewardSnapshot_After = await troveManager.rewardSnapshots(
         aliceTroveId,
       );
@@ -920,7 +920,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(
         borrowerOperations.withdrawBold(
           aliceTroveId,
-          th._100pct,
           Boldwithdrawal,
           { from: alice },
         ),
@@ -935,7 +934,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Bob successfully withdraws Bold
       const txBob = await borrowerOperations.withdrawBold(
         bobTroveId,
-        th._100pct,
         dec(100, 18),
         { from: bob },
       );
@@ -945,7 +943,6 @@ contract("BorrowerOperations", async (accounts) => {
       try {
         const txCarol = await borrowerOperations.withdrawBold(
           th.addressToTroveId(carol),
-          th._100pct,
           dec(100, 18),
           { from: carol },
         );
@@ -962,7 +959,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Bob successfully withdraws 1e-18 Bold
       const txBob = await borrowerOperations.withdrawBold(
         bobTroveId,
-        th._100pct,
         1,
         { from: bob },
       );
@@ -972,7 +968,6 @@ contract("BorrowerOperations", async (accounts) => {
       try {
         const txAlice = await borrowerOperations.withdrawBold(
           aliceTroveId,
-          th._100pct,
           0,
           { from: alice },
         );
@@ -992,7 +987,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Withdrawal possible when recoveryMode == false
       const txAlice = await borrowerOperations.withdrawBold(
         aliceTroveId,
-        th._100pct,
         dec(100, 18),
         { from: alice },
       );
@@ -1006,7 +1000,6 @@ contract("BorrowerOperations", async (accounts) => {
       try {
         const txBob = await borrowerOperations.withdrawBold(
           bobTroveId,
-          th._100pct,
           1,
           { from: bob },
         );
@@ -1024,7 +1017,6 @@ contract("BorrowerOperations", async (accounts) => {
       try {
         const txBob = await borrowerOperations.withdrawBold(
           bobTroveId,
-          th._100pct,
           1,
           { from: bob },
         );
@@ -1050,7 +1042,6 @@ contract("BorrowerOperations", async (accounts) => {
       try {
         const txBob = await borrowerOperations.withdrawBold(
           bobTroveId,
-          th._100pct,
           dec(1, 18),
           { from: bob },
         );
@@ -1074,7 +1065,6 @@ contract("BorrowerOperations", async (accounts) => {
       try {
         const txData = await borrowerOperations.withdrawBold(
           aliceTroveId,
-          th._100pct,
           "200",
           { from: alice },
         );
@@ -1093,7 +1083,6 @@ contract("BorrowerOperations", async (accounts) => {
 
       await borrowerOperations.withdrawBold(
         aliceTroveId,
-        th._100pct,
         await getNetBorrowingAmount(100),
         { from: alice },
       );
@@ -1116,18 +1105,17 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(aliceDebtBefore.gt(toBN(0)));
 
       // check before
-      const activePool_Bold_Before = await activePool.getRecordedDebtSum();
+      const activePool_Bold_Before = await activePool.getTotalActiveDebt();
       assert.isTrue(activePool_Bold_Before.eq(aliceDebtBefore));
 
       await borrowerOperations.withdrawBold(
         aliceTroveId,
-        th._100pct,
         await getNetBorrowingAmount(dec(10000, 18)),
         { from: alice },
       );
 
       // check after
-      const activePool_Bold_After = await activePool.getRecordedDebtSum();
+      const activePool_Bold_After = await activePool.getTotalActiveDebt();
       th.assertIsApproximatelyEqual(
         activePool_Bold_After,
         activePool_Bold_Before.add(toBN(dec(10000, 18))),
@@ -1145,7 +1133,6 @@ contract("BorrowerOperations", async (accounts) => {
 
       await borrowerOperations.withdrawBold(
         aliceTroveId,
-        th._100pct,
         dec(10000, 18),
         { from: alice },
       );
@@ -1188,7 +1175,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Make the Bold request 2 wei above min net debt to correct for floor division, and make net debt = min net debt + 1 wei
       const ATroveId = await th.openTroveWrapper(
         contracts,
-        th._100pct,
         await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN("2"))),
         A,
         A,
@@ -1199,7 +1185,7 @@ contract("BorrowerOperations", async (accounts) => {
       const repayTxA = await borrowerOperations.repayBold(ATroveId, 1, { from: A });
       assert.isTrue(repayTxA.receipt.status);
 
-      const BTroveId = await th.openTroveWrapper(contracts, th._100pct, dec(20, 25), B, B, 0, {
+      const BTroveId = await th.openTroveWrapper(contracts, dec(20, 25), B, B, 0, {
         from: B,
         value: dec(100, 30),
       });
@@ -1214,7 +1200,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Open the trove with min debt + 1 wei
       const ATroveId = await th.openTroveWrapper(
         contracts,
-        th._100pct,
         await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN("1"))),
         A,
         A,
@@ -1255,7 +1240,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(
         borrowerOperations.adjustTrove(
           aliceTroveId,
-          th._100pct,
           0,
           false,
           repayAmount,
@@ -1373,7 +1357,7 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(aliceDebtBefore.gt(toBN("0")));
 
       // Check before
-      const activePool_Bold_Before = await activePool.getRecordedDebtSum();
+      const activePool_Bold_Before = await activePool.getTotalActiveDebt();
       assert.isTrue(activePool_Bold_Before.gt(toBN("0")));
 
       await borrowerOperations.repayBold(
@@ -1383,7 +1367,7 @@ contract("BorrowerOperations", async (accounts) => {
       ); // Repays 1/10 her debt
 
       // check after
-      const activePool_Bold_After = await activePool.getRecordedDebtSum();
+      const activePool_Bold_After = await activePool.getTotalActiveDebt();
       th.assertIsApproximatelyEqual(
         activePool_Bold_After,
         activePool_Bold_Before.sub(aliceDebtBefore.div(toBN(10))),
@@ -1514,7 +1498,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(
         borrowerOperations.adjustTrove(
           aliceTroveId,
-          th._100pct,
           collTopUp,
           true,
           BoldRepayment,
@@ -1542,7 +1525,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Alice coll and debt increase(+1 ETH, +50Bold)
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(1, "ether"),
         true,
         dec(50, 18),
@@ -1555,7 +1537,6 @@ contract("BorrowerOperations", async (accounts) => {
         await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: carol });
         const txCarol = await borrowerOperations.adjustTrove(
           th.addressToTroveId(carol),
-          th._100pct,
           dec(1, "ether"),
           true,
           dec(50, 18),
@@ -1586,7 +1567,6 @@ contract("BorrowerOperations", async (accounts) => {
       await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: alice });
       const txAlice = await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(1, "ether"),
         true,
         dec(50, 18),
@@ -1603,7 +1583,6 @@ contract("BorrowerOperations", async (accounts) => {
         // collateral withdrawal should also fail
         const txAlice = await borrowerOperations.adjustTrove(
           aliceTroveId,
-          th._100pct,
           dec(1, "ether"),
           false,
           0,
@@ -1619,7 +1598,6 @@ contract("BorrowerOperations", async (accounts) => {
         // debt increase should fail
         const txBob = await borrowerOperations.adjustTrove(
           bobTroveId,
-          th._100pct,
           0,
           false,
           dec(50, 18),
@@ -1637,7 +1615,6 @@ contract("BorrowerOperations", async (accounts) => {
         await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: bob });
         const txBob = await borrowerOperations.adjustTrove(
           bobTroveId,
-          th._100pct,
           dec(1, "ether"),
           true,
           dec(111, 18),
@@ -1672,7 +1649,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(
         borrowerOperations.adjustTrove(
           aliceTroveId,
-          th._100pct,
           1,
           false,
           dec(5000, 18),
@@ -1724,7 +1700,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(
         borrowerOperations.adjustTrove(
           aliceTroveId,
-          th._100pct,
           collIncrease,
           true,
           debtIncrease,
@@ -1781,7 +1756,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(
         borrowerOperations.adjustTrove(
           aliceTroveId,
-          th._100pct,
           aliceCollIncrease,
           true,
           aliceDebtIncrease,
@@ -1817,7 +1791,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(
         borrowerOperations.adjustTrove(
           bobTroveId,
-          th._100pct,
           bobCollIncrease,
           true,
           bobDebtIncrease,
@@ -1870,7 +1843,6 @@ contract("BorrowerOperations", async (accounts) => {
       await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: alice });
       const tx = await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         collIncrease,
         true,
         debtIncrease,
@@ -1925,7 +1897,6 @@ contract("BorrowerOperations", async (accounts) => {
       await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: alice });
       const tx = await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         collIncrease,
         true,
         debtIncrease,
@@ -1953,7 +1924,6 @@ contract("BorrowerOperations", async (accounts) => {
       try {
         const txBob = await borrowerOperations.adjustTrove(
           bobTroveId,
-          th._100pct,
           0,
           false,
           dec(1, 18),
@@ -1986,7 +1956,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(
         borrowerOperations.adjustTrove(
           bobTroveId,
-          th._100pct,
           dec(1, "ether"),
           true,
           remainingDebt.add(toBN(1)),
@@ -2008,7 +1977,6 @@ contract("BorrowerOperations", async (accounts) => {
       try {
         const txCarol = await borrowerOperations.adjustTrove(
           carolTroveId,
-          th._100pct,
           carolColl.add(toBN(1)),
           false,
           0,
@@ -2048,7 +2016,6 @@ contract("BorrowerOperations", async (accounts) => {
         await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: bob });
         const txBob = await borrowerOperations.adjustTrove(
           bobTroveId,
-          th._100pct,
           dec(1, "ether"),
           true,
           dec(100, 18),
@@ -2077,7 +2044,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Alice adjusts trove. No coll change, and a debt increase (+50Bold)
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         0,
         false,
         dec(50, 18),
@@ -2100,7 +2066,7 @@ contract("BorrowerOperations", async (accounts) => {
       });
 
       const aliceDebtBefore = await getTroveEntireDebt(aliceTroveId);
-      const activePoolDebtBefore = await activePool.getRecordedDebtSum();
+      const activePoolDebtBefore = await activePool.getTotalActiveDebt();
 
       assert.isTrue(aliceDebtBefore.gt(toBN("0")));
       assert.isTrue(aliceDebtBefore.eq(activePoolDebtBefore));
@@ -2110,7 +2076,6 @@ contract("BorrowerOperations", async (accounts) => {
       await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: alice });
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(1, "ether"),
         true,
         0,
@@ -2119,7 +2084,7 @@ contract("BorrowerOperations", async (accounts) => {
       );
 
       const aliceDebtAfter = await getTroveEntireDebt(aliceTroveId);
-      const activePoolDebtAfter = await activePool.getRecordedDebtSum();
+      const activePoolDebtAfter = await activePool.getTotalActiveDebt();
 
       assert.isTrue(aliceDebtAfter.eq(aliceDebtBefore));
       assert.isTrue(activePoolDebtAfter.eq(activePoolDebtBefore));
@@ -2148,7 +2113,6 @@ contract("BorrowerOperations", async (accounts) => {
       await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: alice });
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(1, "ether"),
         true,
         await getNetBorrowingAmount(dec(50, 18)),
@@ -2192,7 +2156,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Alice adjusts trove coll and debt decrease (-0.5 ETH, -50Bold)
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(500, "finney"),
         false,
         dec(50, 18),
@@ -2230,7 +2193,6 @@ contract("BorrowerOperations", async (accounts) => {
       await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: alice });
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(500, "finney"),
         true,
         dec(50, 18),
@@ -2274,7 +2236,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Alice adjusts trove - coll decrease and debt increase (0.1 ETH, 10Bold)
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(1, 17),
         false,
         await getNetBorrowingAmount(dec(1, 18)),
@@ -2320,7 +2281,6 @@ contract("BorrowerOperations", async (accounts) => {
       await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: alice });
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(1, "ether"),
         true,
         dec(50, 18),
@@ -2358,7 +2318,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Alice adjusts trove - coll decrease and debt decrease
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(500, "finney"),
         false,
         dec(50, 18),
@@ -2394,7 +2353,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Alice adjusts trove - coll decrease and debt decrease
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(100, "finney"),
         false,
         dec(10, 18),
@@ -2432,7 +2390,6 @@ contract("BorrowerOperations", async (accounts) => {
       await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: alice });
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(1, "ether"),
         true,
         dec(100, 18),
@@ -2472,7 +2429,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Alice adjusts trove - coll decrease and debt decrease
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(100, "finney"),
         false,
         dec(10, 18),
@@ -2519,7 +2475,6 @@ contract("BorrowerOperations", async (accounts) => {
       await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: alice });
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(1, "ether"),
         true,
         dec(100, 18),
@@ -2554,7 +2509,7 @@ contract("BorrowerOperations", async (accounts) => {
         extraParams: { from: alice },
       });
 
-      const activePool_BoldDebt_Before = await activePool.getRecordedDebtSum();
+      const activePool_BoldDebt_Before = await activePool.getTotalActiveDebt();
       assert.isTrue(activePool_BoldDebt_Before.gt(toBN("0")));
 
       // Alice adjusts trove - coll increase and debt decrease
@@ -2562,7 +2517,6 @@ contract("BorrowerOperations", async (accounts) => {
       await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: alice });
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(1, "ether"),
         true,
         dec(30, 18),
@@ -2570,7 +2524,7 @@ contract("BorrowerOperations", async (accounts) => {
         { from: alice },
       );
 
-      const activePool_BoldDebt_After = await activePool.getRecordedDebtSum();
+      const activePool_BoldDebt_After = await activePool.getTotalActiveDebt();
       assert.isTrue(
         activePool_BoldDebt_After.eq(
           activePool_BoldDebt_Before.sub(toBN(dec(30, 18))),
@@ -2590,7 +2544,7 @@ contract("BorrowerOperations", async (accounts) => {
         extraParams: { from: alice },
       });
 
-      const activePool_BoldDebt_Before = await activePool.getRecordedDebtSum();
+      const activePool_BoldDebt_Before = await activePool.getTotalActiveDebt();
       assert.isTrue(activePool_BoldDebt_Before.gt(toBN("0")));
 
       // Alice adjusts trove - coll increase and debt increase
@@ -2598,7 +2552,6 @@ contract("BorrowerOperations", async (accounts) => {
       await contracts.WETH.approve(borrowerOperations.address, dec(1, 24), { from: alice });
       await borrowerOperations.adjustTrove(
         aliceTroveId,
-        th._100pct,
         dec(1, "ether"),
         true,
         await getNetBorrowingAmount(dec(100, 18)),
@@ -2606,7 +2559,7 @@ contract("BorrowerOperations", async (accounts) => {
         { from: alice },
       );
 
-      const activePool_BoldDebt_After = await activePool.getRecordedDebtSum();
+      const activePool_BoldDebt_After = await activePool.getTotalActiveDebt();
 
       th.assertIsApproximatelyEqual(
         activePool_BoldDebt_After,
@@ -2637,7 +2590,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(
         borrowerOperations.adjustTrove(
           aliceTroveId,
-          th._100pct,
           aliceColl,
           false,
           aliceDebt,
@@ -2661,7 +2613,7 @@ contract("BorrowerOperations", async (accounts) => {
       });
 
       await assertRevert(
-        borrowerOperations.adjustTrove(aliceTroveId, th._100pct, 0, false, 0, true, {
+        borrowerOperations.adjustTrove(aliceTroveId, 0, false, 0, true, {
           from: alice,
         }),
         "BorrowerOps: Debt increase requires non-zero debtChange",
@@ -2676,7 +2628,7 @@ contract("BorrowerOperations", async (accounts) => {
       });
 
       await assertRevert(
-        borrowerOperations.adjustTrove(aliceTroveId, th._100pct, 0, false, 0, false, {
+        borrowerOperations.adjustTrove(aliceTroveId, 0, false, 0, false, {
           from: alice,
         }),
         "BorrowerOps: There must be either a collateral change or a debt change",
@@ -2701,7 +2653,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(
         borrowerOperations.adjustTrove(
           aliceTroveId,
-          th._100pct,
           aliceColl.add(toBN(1)),
           false,
           0,
@@ -2712,7 +2663,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(
         borrowerOperations.adjustTrove(
           aliceTroveId,
-          th._100pct,
           aliceColl.add(toBN(dec(37, "ether"))),
           false,
           0,
@@ -2744,7 +2694,6 @@ contract("BorrowerOperations", async (accounts) => {
 
       const repayBoldPromise_B = borrowerOperations.adjustTrove(
         BTroveId,
-        th._100pct,
         0,
         false,
         bobDebt,
@@ -3116,7 +3065,7 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(aliceDebt.gt("0"));
 
       // Check before
-      const activePool_Debt_before = await activePool.getRecordedDebtSum();
+      const activePool_Debt_before = await activePool.getTotalActiveDebt();
       assert.isTrue(activePool_Debt_before.eq(aliceDebt.add(dennisDebt)));
       assert.isTrue(activePool_Debt_before.gt(toBN("0")));
 
@@ -3129,7 +3078,7 @@ contract("BorrowerOperations", async (accounts) => {
       await borrowerOperations.closeTrove(aliceTroveId, { from: alice });
 
       // Check after
-      const activePool_Debt_After = (await activePool.getRecordedDebtSum()).toString();
+      const activePool_Debt_After = (await activePool.getTotalActiveDebt()).toString();
       th.assertIsApproximatelyEqual(activePool_Debt_After, dennisDebt);
     });
 
@@ -3361,7 +3310,6 @@ contract("BorrowerOperations", async (accounts) => {
       // whale adjusts trove, pulling their rewards out of DefaultPool
       await borrowerOperations.adjustTrove(
         whaleTroveId,
-        th._100pct,
         0,
         false,
         dec(1, 18),
@@ -3520,7 +3468,6 @@ contract("BorrowerOperations", async (accounts) => {
       // Add 1 wei to correct for rounding error in helper function
       const ATroveId = await th.openTroveWrapper(
         contracts,
-        th._100pct,
         await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN(1))),
         A,
         A,
@@ -3531,7 +3478,6 @@ contract("BorrowerOperations", async (accounts) => {
 
       const CTroveId = await th.openTroveWrapper(
         contracts,
-        th._100pct,
         await getNetBorrowingAmount(MIN_NET_DEBT.add(toBN(dec(47789898, 22)))),
         A,
         A,
@@ -3542,7 +3488,7 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): reverts if net debt < minimum net debt", async () => {
-      const txAPromise = th.openTroveWrapper(contracts, th._100pct, 0, A, A, 0, {
+      const txAPromise = th.openTroveWrapper(contracts, 0, A, A, 0, {
         from: A,
         value: dec(100, 30),
       });
@@ -3550,7 +3496,6 @@ contract("BorrowerOperations", async (accounts) => {
 
       const txBPromise = th.openTroveWrapper(
         contracts,
-        th._100pct,
         await getNetBorrowingAmount(MIN_NET_DEBT.sub(toBN(1))),
         B,
         B,
@@ -3559,7 +3504,7 @@ contract("BorrowerOperations", async (accounts) => {
       );
       await assertRevert(txBPromise, "revert");
 
-      const txCPromise = th.openTroveWrapper(contracts, th._100pct, MIN_NET_DEBT.sub(toBN(dec(173, 18))), C, C, 0, {
+      const txCPromise = th.openTroveWrapper(contracts, MIN_NET_DEBT.sub(toBN(dec(173, 18))), C, C, 0, {
         from: C,
         value: dec(100, 30),
       });
@@ -3774,7 +3719,7 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(await th.checkRecoveryMode(contracts));
 
       await assertRevert(
-        th.openTroveWrapper(contracts, th._100pct, await getNetBorrowingAmount(MIN_NET_DEBT), carol, carol, 0, {
+        th.openTroveWrapper(contracts, await getNetBorrowingAmount(MIN_NET_DEBT), carol, carol, 0, {
           from: carol,
           value: dec(1, "ether"),
         }),
@@ -3783,20 +3728,20 @@ contract("BorrowerOperations", async (accounts) => {
 
     it("openTrove(): creates a new Trove and assigns the correct collateral and debt amount", async () => {
       /*
-      const debt_Before = await getTroveEntireDebt(aliceTroveId);
-      const coll_Before = await getTroveEntireColl(aliceTroveId);
-      const status_Before = await troveManager.getTroveStatus(aliceTroveId);
+        const debt_Before = await getTroveEntireDebt(aliceTroveId);
+        const coll_Before = await getTroveEntireColl(aliceTroveId);
+        const status_Before = await troveManager.getTroveStatus(aliceTroveId);
 
-      // check coll and debt before
-      assert.equal(debt_Before, 0);
-      assert.equal(coll_Before, 0);
+        // check coll and debt before
+        assert.equal(debt_Before, 0);
+        assert.equal(coll_Before, 0);
 
-      // check non-existent status
-      assert.equal(status_Before, 0);
+        // check non-existent status
+        assert.equal(status_Before, 0);
       */
 
       const BoldRequest = MIN_NET_DEBT;
-      const aliceTroveId = await th.openTroveWrapper(contracts, th._100pct, MIN_NET_DEBT, carol, carol, 0, {
+      const aliceTroveId = await th.openTroveWrapper(contracts, MIN_NET_DEBT, carol, carol, 0, {
         from: alice,
         value: dec(100, "ether"),
       });
@@ -3927,7 +3872,7 @@ contract("BorrowerOperations", async (accounts) => {
       const [liquidatedDebt, liquidatedColl, gasComp] = th.getEmittedLiquidationValues(liquidationTx);
 
       /* with total stakes = 10 ether, after liquidation, L_ETH should equal 1/10 ether per-ether-staked,
-       and L_Bold should equal 18 Bold per-ether-staked. */
+         and L_Bold should equal 18 Bold per-ether-staked. */
 
       const L_ETH = await troveManager.L_ETH();
       const L_Bold = await troveManager.L_boldDebt();
@@ -4013,7 +3958,6 @@ contract("BorrowerOperations", async (accounts) => {
 
       const aliceTroveId = await th.openTroveWrapper(
         contracts,
-        th._100pct,
         await getOpenTroveBoldAmount(dec(10000, 18)),
         alice,
         alice,
@@ -4028,7 +3972,7 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): increases Bold debt in ActivePool by the debt of the trove", async () => {
-      const activePool_BoldDebt_Before = await activePool.getRecordedDebtSum();
+      const activePool_BoldDebt_Before = await activePool.getTotalActiveDebt();
       assert.equal(activePool_BoldDebt_Before, 0);
 
       const { troveId: aliceTroveId } = await openTrove({
@@ -4039,7 +3983,7 @@ contract("BorrowerOperations", async (accounts) => {
       const aliceDebt = await getTroveEntireDebt(aliceTroveId);
       assert.isTrue(aliceDebt.gt(toBN("0")));
 
-      const activePool_BoldDebt_After = await activePool.getRecordedDebtSum();
+      const activePool_BoldDebt_After = await activePool.getTotalActiveDebt();
       assert.isTrue(activePool_BoldDebt_After.eq(aliceDebt));
     });
 
@@ -4048,7 +3992,7 @@ contract("BorrowerOperations", async (accounts) => {
       const alice_BoldTokenBalance_Before = await boldToken.balanceOf(alice);
       assert.equal(alice_BoldTokenBalance_Before, 0);
 
-      await th.openTroveWrapper(contracts, th._100pct, dec(10000, 18), alice, alice, 0, {
+      await th.openTroveWrapper(contracts, dec(10000, 18), alice, alice, 0, {
         from: alice,
         value: dec(100, "ether"),
       });
@@ -4294,11 +4238,11 @@ contract("BorrowerOperations", async (accounts) => {
         const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
         const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
 
-        await th.openTroveWrapper(contracts, th._100pct, whaleBoldAmount, whale, whale, 0, {
+        await th.openTroveWrapper(contracts, whaleBoldAmount, whale, whale, 0, {
           from: whale,
           value: whaleColl,
         });
-        const bobTroveId = await th.openTroveWrapper(contracts, th._100pct, bobBoldAmount, bob, bob, 0, {
+        const bobTroveId = await th.openTroveWrapper(contracts, bobBoldAmount, bob, bob, 0, {
           from: bob,
           value: bobColl,
         });
@@ -4326,9 +4270,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-          .add(liquidatedColl)
-          .mul(liqPrice)
-          .div(whaleTotalDebt.add(liquidatedDebt));
+              .add(liquidatedColl)
+              .mul(liqPrice)
+              .div(whaleTotalDebt.add(liquidatedDebt));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4343,12 +4287,12 @@ contract("BorrowerOperations", async (accounts) => {
         const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
         const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
 
-        await th.openTroveWrapper(contracts, th._100pct, whaleBoldAmount, whale, whale, 0, {
+        await th.openTroveWrapper(contracts, whaleBoldAmount, whale, whale, 0, {
           from: whale,
           value: whaleColl,
         });
 
-        const bobTroveId = await th.openTroveWrapper(contracts, th._100pct, bobBoldAmount, bob, bob, 0, {
+        const bobTroveId = await th.openTroveWrapper(contracts, bobBoldAmount, bob, bob, 0, {
           from: bob,
           value: bobColl,
         });
@@ -4376,9 +4320,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-          .add(liquidatedColl)
-          .mul(liqPrice)
-          .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
+              .add(liquidatedColl)
+              .mul(liqPrice)
+              .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4393,12 +4337,12 @@ contract("BorrowerOperations", async (accounts) => {
         const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
         const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
 
-        await th.openTroveWrapper(contracts, th._100pct, whaleBoldAmount, whale, whale, 0, {
+        await th.openTroveWrapper(contracts, whaleBoldAmount, whale, whale, 0, {
           from: whale,
           value: whaleColl,
         });
 
-        const bobTroveId = await th.openTroveWrapper(contracts, th._100pct, bobBoldAmount, bob, bob, 0, {
+        const bobTroveId = await th.openTroveWrapper(contracts, bobBoldAmount, bob, bob, 0, {
           from: bob,
           value: bobColl,
         });
@@ -4426,9 +4370,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-          .add(liquidatedColl)
-          .mul(liqPrice)
-          .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
+              .add(liquidatedColl)
+              .mul(liqPrice)
+              .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4443,11 +4387,11 @@ contract("BorrowerOperations", async (accounts) => {
         const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
         const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
 
-        await th.openTroveWrapper(contracts, th._100pct, whaleBoldAmount, whale, whale, 0, {
+        await th.openTroveWrapper(contracts, whaleBoldAmount, whale, whale, 0, {
           from: whale,
           value: whaleColl,
         });
-        const bobTroveId = await th.openTroveWrapper(contracts, th._100pct, bobBoldAmount, bob, bob, 0, {
+        const bobTroveId = await th.openTroveWrapper(contracts, bobBoldAmount, bob, bob, 0, {
           from: bob,
           value: bobColl,
         });
@@ -4475,9 +4419,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-          .add(liquidatedColl).add(collChange)
-          .mul(liqPrice)
-          .div(whaleTotalDebt.add(liquidatedDebt));
+              .add(liquidatedColl).add(collChange)
+              .mul(liqPrice)
+              .div(whaleTotalDebt.add(liquidatedDebt));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4492,12 +4436,12 @@ contract("BorrowerOperations", async (accounts) => {
         const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
         const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
 
-        await th.openTroveWrapper(contracts, th._100pct, whaleBoldAmount, whale, whale, 0, {
+        await th.openTroveWrapper(contracts, whaleBoldAmount, whale, whale, 0, {
           from: whale,
           value: whaleColl,
         });
 
-        const bobTroveId = await th.openTroveWrapper(contracts, th._100pct, bobBoldAmount, bob, bob, 0, {
+        const bobTroveId = await th.openTroveWrapper(contracts, bobBoldAmount, bob, bob, 0, {
           from: bob,
           value: bobColl,
         });
@@ -4525,9 +4469,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-          .add(liquidatedColl).sub(collChange)
-          .mul(liqPrice)
-          .div(whaleTotalDebt.add(liquidatedDebt));
+              .add(liquidatedColl).sub(collChange)
+              .mul(liqPrice)
+              .div(whaleTotalDebt.add(liquidatedDebt));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4542,12 +4486,12 @@ contract("BorrowerOperations", async (accounts) => {
         const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
         const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
 
-        await th.openTroveWrapper(contracts, th._100pct, whaleBoldAmount, whale, whale, 0, {
+        await th.openTroveWrapper(contracts, whaleBoldAmount, whale, whale, 0, {
           from: whale,
           value: whaleColl,
         });
 
-        const bobTroveId = await th.openTroveWrapper(contracts, th._100pct, bobBoldAmount, bob, bob, 0, {
+        const bobTroveId = await th.openTroveWrapper(contracts, bobBoldAmount, bob, bob, 0, {
           from: bob,
           value: bobColl,
         });
@@ -4575,9 +4519,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-          .add(liquidatedColl).sub(collChange)
-          .mul(liqPrice)
-          .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
+              .add(liquidatedColl).sub(collChange)
+              .mul(liqPrice)
+              .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4592,12 +4536,12 @@ contract("BorrowerOperations", async (accounts) => {
         const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
         const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
 
-        await th.openTroveWrapper(contracts, th._100pct, whaleBoldAmount, whale, whale, 0, {
+        await th.openTroveWrapper(contracts, whaleBoldAmount, whale, whale, 0, {
           from: whale,
           value: whaleColl,
         });
 
-        const bobTroveId = await th.openTroveWrapper(contracts, th._100pct, bobBoldAmount, bob, bob, 0, {
+        const bobTroveId = await th.openTroveWrapper(contracts, bobBoldAmount, bob, bob, 0, {
           from: bob,
           value: bobColl,
         });
@@ -4625,9 +4569,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-          .add(liquidatedColl).add(collChange)
-          .mul(liqPrice)
-          .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
+              .add(liquidatedColl).add(collChange)
+              .mul(liqPrice)
+              .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4642,12 +4586,12 @@ contract("BorrowerOperations", async (accounts) => {
         const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
         const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
 
-        await th.openTroveWrapper(contracts, th._100pct, whaleBoldAmount, whale, whale, 0, {
+        await th.openTroveWrapper(contracts, whaleBoldAmount, whale, whale, 0, {
           from: whale,
           value: whaleColl,
         });
 
-        const bobTroveId = await th.openTroveWrapper(contracts, th._100pct, bobBoldAmount, bob, bob, 0, {
+        const bobTroveId = await th.openTroveWrapper(contracts, bobBoldAmount, bob, bob, 0, {
           from: bob,
           value: bobColl,
         });
@@ -4675,9 +4619,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-          .add(liquidatedColl).add(collChange)
-          .mul(liqPrice)
-          .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
+              .add(liquidatedColl).add(collChange)
+              .mul(liqPrice)
+              .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4692,12 +4636,12 @@ contract("BorrowerOperations", async (accounts) => {
         const bobBoldAmount = await getOpenTroveBoldAmount(bobTotalDebt);
         const whaleBoldAmount = await getOpenTroveBoldAmount(whaleTotalDebt);
 
-        await th.openTroveWrapper(contracts, th._100pct, whaleBoldAmount, whale, whale, 0, {
+        await th.openTroveWrapper(contracts, whaleBoldAmount, whale, whale, 0, {
           from: whale,
           value: whaleColl,
         });
 
-        const bobTroveId = await th.openTroveWrapper(contracts, th._100pct, bobBoldAmount, bob, bob, 0, {
+        const bobTroveId = await th.openTroveWrapper(contracts, bobBoldAmount, bob, bob, 0, {
           from: bob,
           value: bobColl,
         });
@@ -4725,9 +4669,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-          .add(liquidatedColl).sub(collChange)
-          .mul(liqPrice)
-          .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
+              .add(liquidatedColl).sub(collChange)
+              .mul(liqPrice)
+              .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4741,10 +4685,10 @@ contract("Reset chain state", async (accounts) => {});
 
 /* TODO:
 
- 1) Test SortedList re-ordering by ICR. ICR ratio
- changes with addColl, withdrawColl, withdrawBold, repayBold, etc. Can split them up and put them with
- individual functions, or give ordering it's own 'describe' block.
+   1) Test SortedList re-ordering by ICR. ICR ratio
+   changes with addColl, withdrawColl, withdrawBold, repayBold, etc. Can split them up and put them with
+   individual functions, or give ordering it's own 'describe' block.
 
- 2)In security phase:
- -'Negative' tests for all the above functions.
- */
+   2)In security phase:
+   -'Negative' tests for all the above functions.
+*/

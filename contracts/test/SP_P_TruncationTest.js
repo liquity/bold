@@ -54,7 +54,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
   describe("Scale Factor issue tests", async () => {
     it.skip("1. Liquidation succeeds after P reduced to 1", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, {
+      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, {
         from: whale,
         value: dec(100000, "ether"),
       });
@@ -62,7 +62,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (const account of [A, B, C]) {
-        await th.openTroveWrapper(contracts, th._100pct, await getBoldAmountForDesiredDebt(2000), account, account, {
+        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, {
           from: account,
           value: dec(15, "ether"),
         });
@@ -78,7 +78,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // A  deposits to SP - i.e. minimum needed to reduce P to 1e9 from a 2000 debt liquidation
       const deposit_0 = th.toBN("2000000000000000002001");
-      await stabilityPool.provideToSP(deposit_0, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_0, { from: A });
 
       // console.log("P0:");
       const P_0 = await stabilityPool.P();
@@ -101,7 +101,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       const deposit_1 = deposit_0.sub(
         await stabilityPool.getTotalBoldDeposits(),
       );
-      await stabilityPool.provideToSP(deposit_1, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_1, { from: A });
 
       // Price drop -> liquidate Trove B -> price rises
       await priceFeed.setPrice(dec(100, 18));
@@ -119,7 +119,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       const deposit_2 = deposit_0.sub(
         await stabilityPool.getTotalBoldDeposits(),
       );
-      await stabilityPool.provideToSP(deposit_2, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_2, { from: A });
 
       // Price drop -> liquidate Trove C -> price rises
       await priceFeed.setPrice(dec(100, 18));
@@ -134,7 +134,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("2. New deposits can be made after P reduced to 1", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
+      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
         from: whale,
         value: dec(100000, "ether"),
       });
@@ -142,7 +142,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (const account of [A, B, C]) {
-        await th.openTroveWrapper(contracts, th._100pct, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
+        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
           from: account,
           value: dec(15, "ether"),
         });
@@ -155,7 +155,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // A  deposits to SP - i.e. minimum needed to reduce P to 1e9 from a 2000 debt liquidation
       const deposit_0 = th.toBN("2000000000000000002001");
-      await stabilityPool.provideToSP(deposit_0, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_0, { from: A });
 
       // console.log("P0:");
       const P_0 = await stabilityPool.P();
@@ -178,7 +178,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       const deposit_1 = deposit_0.sub(
         await stabilityPool.getTotalBoldDeposits(),
       );
-      await stabilityPool.provideToSP(deposit_1, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_1, { from: A });
 
       // Price drop -> liquidate Trove B -> price rises
       await priceFeed.setPrice(dec(100, 18));
@@ -196,7 +196,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       const deposit_2 = deposit_0.sub(
         await stabilityPool.getTotalBoldDeposits(),
       );
-      await stabilityPool.provideToSP(deposit_2, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_2, { from: A });
 
       // Whale gives Bold to D,E,F
       const newDeposits = [
@@ -210,7 +210,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
         await boldToken.transfer(newDepositors[i], newDeposits[i], {
           from: whale,
         });
-        await stabilityPool.provideToSP(newDeposits[i], {
+        await th.provideToSPAndClaim(contracts, newDeposits[i], {
           from: newDepositors[i],
         });
         assert.isTrue(
@@ -223,7 +223,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("3. Liquidation succeeds when P == 1 and liquidation has newProductFactor == 1e9", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
+      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
         from: whale,
         value: dec(100000, "ether"),
       });
@@ -231,7 +231,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (const account of [A, B, C]) {
-        await th.openTroveWrapper(contracts, th._100pct, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
+        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
           from: account,
           value: dec(15, "ether"),
         });
@@ -244,7 +244,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // A  deposits to SP - i.e. minimum needed to reduce P to 1e9 from a 2000 debt liquidation
       const deposit_0 = th.toBN("2000000000000000002001");
-      await stabilityPool.provideToSP(deposit_0, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_0, { from: A });
 
       // console.log("P0:");
       const P_0 = await stabilityPool.P();
@@ -276,7 +276,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       const deposit_1 = deposit_0.sub(
         await stabilityPool.getTotalBoldDeposits(),
       );
-      await stabilityPool.provideToSP(deposit_1, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_1, { from: A });
 
       // Price drop -> liquidate Trove B -> price rises
       await priceFeed.setPrice(dec(100, 18));
@@ -300,7 +300,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       const deposit_2 = deposit_0
         .sub(await stabilityPool.getTotalBoldDeposits())
         .add(th.toBN(dec(2, 12)));
-      await stabilityPool.provideToSP(deposit_2, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_2, { from: A });
 
       // Price drop -> liquidate Trove C -> price rises
       await priceFeed.setPrice(dec(100, 18));
@@ -323,7 +323,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("4. Liquidation succeeds when P == 1 and liquidation has newProductFactor > 1e9", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
+      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
         from: whale,
         value: dec(100000, "ether"),
       });
@@ -331,7 +331,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (const account of [A, B, C]) {
-        await th.openTroveWrapper(contracts, th._100pct, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
+        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
           from: account,
           value: dec(15, "ether"),
         });
@@ -344,7 +344,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // A  deposits to SP - i.e. minimum needed to reduce P to 1e9 from a 2000 debt liquidation
       const deposit_0 = th.toBN("2000000000000000002001");
-      await stabilityPool.provideToSP(deposit_0, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_0, { from: A });
 
       // console.log("P0:");
       const P_0 = await stabilityPool.P();
@@ -376,7 +376,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       const deposit_1 = deposit_0.sub(
         await stabilityPool.getTotalBoldDeposits(),
       );
-      await stabilityPool.provideToSP(deposit_1, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_1, { from: A });
 
       // Price drop -> liquidate Trove B -> price rises
       await priceFeed.setPrice(dec(100, 18));
@@ -400,7 +400,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       const deposit_2 = deposit_0
         .mul(th.toBN(2))
         .sub(await stabilityPool.getTotalBoldDeposits());
-      await stabilityPool.provideToSP(deposit_2, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_2, { from: A });
 
       // Price drop -> liquidate Trove C -> price rises
       await priceFeed.setPrice(dec(100, 18));
@@ -425,7 +425,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("5. Depositor have correct depleted stake after deposit at P == 1 and scale changing liq (with newProductFactor == 1e9)", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
+      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
         from: whale,
         value: dec(100000, "ether"),
       });
@@ -433,7 +433,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (const account of [A, B, C]) {
-        await th.openTroveWrapper(contracts, th._100pct, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
+        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
           from: account,
           value: dec(15, "ether"),
         });
@@ -446,7 +446,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // A  deposits to SP - i.e. minimum needed to reduce P to 1e9 from a 2000 debt liquidation
       const deposit_0 = th.toBN("2000000000000000002001");
-      await stabilityPool.provideToSP(deposit_0, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_0, { from: A });
 
       // console.log("P0:");
       const P_0 = await stabilityPool.P();
@@ -478,7 +478,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       const deposit_1 = deposit_0.sub(
         await stabilityPool.getTotalBoldDeposits(),
       );
-      await stabilityPool.provideToSP(deposit_1, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_1, { from: A });
 
       // Price drop -> liquidate Trove B -> price rises
       await priceFeed.setPrice(dec(100, 18));
@@ -500,14 +500,14 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       // D makes deposit of 1000 Bold
       const D_deposit = dec(1, 21);
       await boldToken.transfer(D, dec(1, 21), { from: whale });
-      await stabilityPool.provideToSP(D_deposit, { from: D });
+      await th.provideToSPAndClaim(contracts, D_deposit, { from: D });
 
       // A re-fills SP to ~1.000000001x pre-liq level, i.e. to trigger a newProductFactor == 1e9,
       // (and trigger scale change)
       const deposit_2 = deposit_0
         .sub(await stabilityPool.getTotalBoldDeposits())
         .add(th.toBN(dec(2, 12)));
-      await stabilityPool.provideToSP(deposit_2, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_2, { from: A });
 
       // Price drop -> liquidate Trove C -> price rises
       await priceFeed.setPrice(dec(100, 18));
@@ -536,7 +536,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("6. Depositor have correct depleted stake after deposit at P == 1 and scale changing liq (with newProductFactor > 1e9)", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await th.openTroveWrapper(contracts, th._100pct, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
+      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
         from: whale,
         value: dec(100000, "ether"),
       });
@@ -544,7 +544,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (const account of [A, B, C]) {
-        await th.openTroveWrapper(contracts, th._100pct, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
+        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
           from: account,
           value: dec(15, "ether"),
         });
@@ -557,7 +557,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // A  deposits to SP - i.e. minimum needed to reduce P to 1e9 from a 2000 debt liquidation
       const deposit_0 = th.toBN("2000000000000000002001");
-      await stabilityPool.provideToSP(deposit_0, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_0, { from: A });
 
       // console.log("P0:");
       const P_0 = await stabilityPool.P();
@@ -589,7 +589,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       const deposit_1 = deposit_0.sub(
         await stabilityPool.getTotalBoldDeposits(),
       );
-      await stabilityPool.provideToSP(deposit_1, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_1, { from: A });
 
       // Price drop -> liquidate Trove B -> price rises
       await priceFeed.setPrice(dec(100, 18));
@@ -611,14 +611,14 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       // D makes deposit of 1000 Bold
       const D_deposit = dec(1, 21);
       await boldToken.transfer(D, dec(1, 21), { from: whale });
-      await stabilityPool.provideToSP(D_deposit, { from: D });
+      await th.provideToSPAndClaim(contracts, D_deposit, { from: D });
 
       // A re-fills SP to ~2x pre-liq level, i.e. to trigger a newProductFactor > 1e9,
       // and trigger scale change and *increase* raw value of P again.
       const deposit_2 = deposit_0
         .mul(th.toBN(2))
         .sub(await stabilityPool.getTotalBoldDeposits());
-      await stabilityPool.provideToSP(deposit_2, { from: A });
+      await th.provideToSPAndClaim(contracts, deposit_2, { from: A });
 
       // Price drop -> liquidate Trove C -> price rises
       await priceFeed.setPrice(dec(100, 18));

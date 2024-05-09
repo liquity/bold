@@ -447,11 +447,11 @@ contract("Gas compensation tests", async (accounts) => {
     });
 
     // D, E each provide Bold to SP
-    await stabilityPool.provideToSP(A_totalDebt, {
+    await th.provideToSPAndClaim(contracts, A_totalDebt, {
       from: dennis,
       gasPrice: GAS_PRICE,
     });
-    await stabilityPool.provideToSP(
+    await th.provideToSPAndClaim(contracts, 
       B_totalDebt.add(C_totalDebt),
       { from: erin, gasPrice: GAS_PRICE },
     );
@@ -615,11 +615,11 @@ contract("Gas compensation tests", async (accounts) => {
     });
 
     // D, E each provide 10000 Bold to SP
-    await stabilityPool.provideToSP(dec(1, 23), {
+    await th.provideToSPAndClaim(contracts, dec(1, 23), {
       from: dennis,
       gasPrice: GAS_PRICE,
     });
-    await stabilityPool.provideToSP(dec(1, 23), {
+    await th.provideToSPAndClaim(contracts, dec(1, 23), {
       from: erin,
       gasPrice: GAS_PRICE,
     });
@@ -757,11 +757,11 @@ contract("Gas compensation tests", async (accounts) => {
     });
 
     // D, E each provide 10000 Bold to SP
-    await stabilityPool.provideToSP(dec(1, 23), {
+    await th.provideToSPAndClaim(contracts, dec(1, 23), {
       from: dennis,
       gasPrice: GAS_PRICE,
     });
-    await stabilityPool.provideToSP(dec(1, 23), {
+    await th.provideToSPAndClaim(contracts, dec(1, 23), {
       from: erin,
       gasPrice: GAS_PRICE,
     });
@@ -894,10 +894,10 @@ contract("Gas compensation tests", async (accounts) => {
     });
 
     // D, E each provide Bold to SP
-    await stabilityPool.provideToSP(A_totalDebt, {
+    await th.provideToSPAndClaim(contracts, A_totalDebt, {
       from: dennis,
     });
-    await stabilityPool.provideToSP(B_totalDebt, { from: erin });
+    await th.provideToSPAndClaim(contracts, B_totalDebt, { from: erin });
 
     const BoldinSP_0 = await stabilityPool.getTotalBoldDeposits();
 
@@ -1007,8 +1007,8 @@ contract("Gas compensation tests", async (accounts) => {
     });
 
     // D, E each provide 10000 Bold to SP
-    await stabilityPool.provideToSP(dec(1, 23), { from: dennis });
-    await stabilityPool.provideToSP(dec(1, 23), { from: erin });
+    await th.provideToSPAndClaim(contracts, dec(1, 23), { from: dennis });
+    await th.provideToSPAndClaim(contracts, dec(1, 23), { from: erin });
 
     const BoldinSP_0 = await stabilityPool.getTotalBoldDeposits();
     const ETHinSP_0 = await stabilityPool.getETHBalance();
@@ -1142,8 +1142,8 @@ contract("Gas compensation tests", async (accounts) => {
     });
 
     // D, E each provide 10000 Bold to SP
-    await stabilityPool.provideToSP(dec(1, 23), { from: dennis });
-    await stabilityPool.provideToSP(dec(1, 23), { from: erin });
+    await th.provideToSPAndClaim(contracts, dec(1, 23), { from: dennis });
+    await th.provideToSPAndClaim(contracts, dec(1, 23), { from: erin });
 
     const BoldinSP_0 = await stabilityPool.getTotalBoldDeposits();
     const ETHinSP_0 = await stabilityPool.getETHBalance();

@@ -168,7 +168,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 totalCollInSequence;
         uint256 totalDebtInSequence;
         uint256 totalRecordedDebtInSequence;
-        uint256 totalRedistDebtGainsInSequence;
         uint256 totalWeightedRecordedDebtInSequence;
         uint256 totalAccruedInterestInSequence;
         uint256 totalCollGasCompensation;
@@ -196,11 +195,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 totalETHDrawn;
         uint256 ETHFee;
         uint256 ETHToSendToRedeemer;
-        uint256 decayedBaseRate;
         uint256 price;
         uint256 totalRedistDebtGains;
-        uint256 totalNewRecordedTroveDebts;
-        uint256 totalOldRecordedTroveDebts;
         uint256 totalNewWeightedRecordedTroveDebts;
         uint256 totalOldWeightedRecordedTroveDebts;
     }
@@ -328,7 +324,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
     // Liquidate one trove, in Normal Mode.
     function _liquidateNormalMode(
-        IActivePool _activePool,
         IDefaultPool _defaultPool,
         uint256 _troveId,
         uint256 _boldInStabPool,
@@ -350,9 +345,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         //TODO - GAS: We already read this inside getEntireDebtAndColl - so add it to the returned vals?
         singleLiquidation.recordedTroveDebt = Troves[_troveId].debt;
 
-        _movePendingTroveRewardsToActivePool(
-            _activePool, _defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward
-        );
+        _movePendingTroveRewardsToActivePool(_defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward);
         _removeStake(_troveId);
 
         singleLiquidation.collGasCompensation = _getCollGasCompensation(singleLiquidation.entireTroveColl);
@@ -386,7 +379,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
     // Liquidate one trove, in Recovery Mode.
     function _liquidateRecoveryMode(
-        IActivePool _activePool,
         IDefaultPool _defaultPool,
         uint256 _troveId,
         uint256 _ICR,
@@ -415,7 +407,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         // If ICR <= 100%, purely redistribute the Trove across all active Troves
         if (_ICR <= _100pct) {
             _movePendingTroveRewardsToActivePool(
-                _activePool, _defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward
+                _defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward
             );
             _removeStake(_troveId);
 
@@ -438,7 +430,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             address owner = ownerOf(_troveId);
 
             _movePendingTroveRewardsToActivePool(
-                _activePool, _defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward
+                _defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward
             );
             _removeStake(_troveId);
 
@@ -476,7 +468,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             address owner = ownerOf(_troveId);
 
             _movePendingTroveRewardsToActivePool(
-                _activePool, _defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward
+                _defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward
             );
             assert(_boldInStabPool != 0);
 
@@ -627,13 +619,12 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         // Perform the appropriate liquidation sequence - tally values and obtain their totals.
         if (vars.recoveryModeAtStart) {
             totals = _getTotalFromBatchLiquidate_RecoveryMode(
-                activePoolCached, defaultPoolCached, vars.price, vars.boldInStabPool, _troveArray
+                defaultPoolCached, vars.price, vars.boldInStabPool, _troveArray
             );
         } else {
             //  if !vars.recoveryModeAtStart
-            totals = _getTotalsFromBatchLiquidate_NormalMode(
-                activePoolCached, defaultPoolCached, vars.price, vars.boldInStabPool, _troveArray
-            );
+            totals =
+                _getTotalsFromBatchLiquidate_NormalMode(defaultPoolCached, vars.price, vars.boldInStabPool, _troveArray);
         }
 
         require(totals.totalDebtInSequence > 0, "TroveManager: nothing to liquidate");
@@ -641,13 +632,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         vars.totalRecordedDebtPlusInterestInSequence =
             totals.totalRecordedDebtInSequence + totals.totalAccruedInterestInSequence;
 
-        activePool.mintAggInterest(
-            0,
-            vars.totalRecordedDebtPlusInterestInSequence,
-            0,
-            totals.totalRecordedDebtInSequence + totals.totalRedistDebtGainsInSequence,
-            0,
-            totals.totalWeightedRecordedDebtInSequence
+        activePool.mintAggInterestAndAccountForTroveChange(
+            0, vars.totalRecordedDebtPlusInterestInSequence, 0, totals.totalWeightedRecordedDebtInSequence
         );
 
         // Move liquidated ETH and Bold to the appropriate pools
@@ -677,12 +663,15 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         );
     }
 
+    function _isLiquidatableStatus(Status _status) internal pure returns (bool) {
+        return _status == Status.active || _status == Status.unredeemable;
+    }
+
     /*
     * This function is used when the batch liquidation sequence starts during Recovery Mode. However, it
     * handle the case where the system *leaves* Recovery Mode, part way through the liquidation sequence
     */
     function _getTotalFromBatchLiquidate_RecoveryMode(
-        IActivePool _activePool,
         IDefaultPool _defaultPool,
         uint256 _price,
         uint256 _boldInStabPool,
@@ -698,8 +687,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         for (vars.i = 0; vars.i < _troveArray.length; vars.i++) {
             vars.troveId = _troveArray[vars.i];
-            // Skip non-active troves
-            if (Troves[vars.troveId].status != Status.active) continue;
+
+            // Skip non-liquidatable troves
+            if (!_isLiquidatableStatus(Troves[vars.troveId].status)) continue;
+
             vars.ICR = getCurrentICR(vars.troveId, _price);
 
             if (!vars.backToNormalMode) {
@@ -709,7 +700,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
                 uint256 TCR = LiquityMath._computeCR(vars.entireSystemColl, vars.entireSystemDebt, _price);
 
                 singleLiquidation = _liquidateRecoveryMode(
-                    _activePool, _defaultPool, vars.troveId, vars.ICR, vars.remainingBoldInStabPool, TCR, _price
+                    _defaultPool, vars.troveId, vars.ICR, vars.remainingBoldInStabPool, TCR, _price
                 );
 
                 // Update aggregate trackers
@@ -725,7 +716,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
                     !_checkPotentialRecoveryMode(vars.entireSystemColl, vars.entireSystemDebt, _price);
             } else if (vars.backToNormalMode && vars.ICR < MCR) {
                 singleLiquidation =
-                    _liquidateNormalMode(_activePool, _defaultPool, vars.troveId, vars.remainingBoldInStabPool, _price);
+                    _liquidateNormalMode(_defaultPool, vars.troveId, vars.remainingBoldInStabPool, _price);
                 vars.remainingBoldInStabPool = vars.remainingBoldInStabPool - singleLiquidation.debtToOffset;
 
                 // Add liquidation values to their respective running totals
@@ -737,7 +728,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     }
 
     function _getTotalsFromBatchLiquidate_NormalMode(
-        IActivePool _activePool,
         IDefaultPool _defaultPool,
         uint256 _price,
         uint256 _boldInStabPool,
@@ -750,11 +740,15 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         for (vars.i = 0; vars.i < _troveArray.length; vars.i++) {
             vars.troveId = _troveArray[vars.i];
+
+            // Skip non-liquidatable troves
+            if (!_isLiquidatableStatus(Troves[vars.troveId].status)) continue;
+
             vars.ICR = getCurrentICR(vars.troveId, _price);
 
             if (vars.ICR < MCR) {
                 singleLiquidation =
-                    _liquidateNormalMode(_activePool, _defaultPool, vars.troveId, vars.remainingBoldInStabPool, _price);
+                    _liquidateNormalMode(_defaultPool, vars.troveId, vars.remainingBoldInStabPool, _price);
                 vars.remainingBoldInStabPool = vars.remainingBoldInStabPool - singleLiquidation.debtToOffset;
 
                 // Add liquidation values to their respective running totals
@@ -776,8 +770,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         newTotals.totalCollInSequence = oldTotals.totalCollInSequence + singleLiquidation.entireTroveColl;
         newTotals.totalRecordedDebtInSequence =
             oldTotals.totalRecordedDebtInSequence + singleLiquidation.recordedTroveDebt;
-        newTotals.totalRedistDebtGainsInSequence =
-            oldTotals.totalRedistDebtGainsInSequence + singleLiquidation.pendingDebtReward;
         newTotals.totalWeightedRecordedDebtInSequence =
             oldTotals.totalWeightedRecordedDebtInSequence + singleLiquidation.weightedRecordedTroveDebt;
         newTotals.totalAccruedInterestInSequence =
@@ -802,15 +794,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     }
 
     // Move a Trove's pending debt and collateral rewards from distributions, from the Default Pool to the Active Pool
-    function _movePendingTroveRewardsToActivePool(
-        IActivePool _activePool,
-        IDefaultPool _defaultPool,
-        uint256 _bold,
-        uint256 _ETH
-    ) internal {
+    function _movePendingTroveRewardsToActivePool(IDefaultPool _defaultPool, uint256 _bold, uint256 _ETH) internal {
         if (_bold > 0) {
             _defaultPool.decreaseBoldDebt(_bold);
-            _activePool.increaseRecordedDebtSum(_bold);
         }
         if (_ETH > 0) {
             _defaultPool.sendETHToActivePool(_ETH);
@@ -829,8 +815,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         singleRedemption.oldWeightedRecordedTroveDebt = getTroveWeightedRecordedDebt(_troveId);
         singleRedemption.oldRecordedTroveDebt = Troves[_troveId].debt;
 
-        (, singleRedemption.redistDebtGain) =
-            _getAndApplyRedistributionGains(_contractsCache.activePool, _contractsCache.defaultPool, _troveId);
+        (, singleRedemption.redistDebtGain) = _getAndApplyRedistributionGains(_contractsCache.defaultPool, _troveId);
 
         // TODO: Gas. We apply accrued interest here, but could gas optimize this, since all-but-one Trove in the sequence will have their
         // debt zero'd by redemption. However, gas optimization for redemption is not as critical as for borrower & SP ops.
@@ -932,10 +917,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             // For recorded and weighted recorded debt totals, we need to capture the increases and decreases,
             // since the net debt change for a given Trove could be positive or negative: redemptions decrease a Trove's recorded
             // (and weighted recorded) debt, but the accrued interest increases it.
-            totals.totalNewRecordedTroveDebts =
-                totals.totalNewRecordedTroveDebts + singleRedemption.newRecordedTroveDebt;
-            totals.totalOldRecordedTroveDebts =
-                totals.totalOldRecordedTroveDebts + singleRedemption.oldRecordedTroveDebt;
             totals.totalNewWeightedRecordedTroveDebts =
                 totals.totalNewWeightedRecordedTroveDebts + singleRedemption.newWeightedRecordedTroveDebt;
             totals.totalOldWeightedRecordedTroveDebts =
@@ -957,11 +938,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         emit Redemption(_boldamount, totals.totalBoldToRedeem, totals.totalETHDrawn, totals.ETHFee);
 
-        activePool.mintAggInterest(
+        activePool.mintAggInterestAndAccountForTroveChange(
             totals.totalRedistDebtGains,
             totals.totalBoldToRedeem,
-            totals.totalNewRecordedTroveDebts,
-            totals.totalOldRecordedTroveDebts,
             totals.totalNewWeightedRecordedTroveDebts,
             totals.totalOldWeightedRecordedTroveDebts
         );
@@ -997,11 +976,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
     function getAndApplyRedistributionGains(uint256 _troveId) external override returns (uint256, uint256) {
         _requireCallerIsBorrowerOperations();
-        return _getAndApplyRedistributionGains(activePool, defaultPool, _troveId);
+        return _getAndApplyRedistributionGains(defaultPool, _troveId);
     }
 
     // Add the borrowers's coll and debt rewards earned from redistributions, to their Trove
-    function _getAndApplyRedistributionGains(IActivePool _activePool, IDefaultPool _defaultPool, uint256 _troveId)
+    function _getAndApplyRedistributionGains(IDefaultPool _defaultPool, uint256 _troveId)
         internal
         returns (uint256, uint256)
     {
@@ -1022,7 +1001,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             _updateTroveRewardSnapshots(_troveId);
 
             // Transfer redistribution gains from DefaultPool to ActivePool
-            _movePendingTroveRewardsToActivePool(_activePool, _defaultPool, pendingBoldDebtReward, pendingETHReward);
+            _movePendingTroveRewardsToActivePool(_defaultPool, pendingBoldDebtReward, pendingETHReward);
 
             emit TroveUpdated(
                 _troveId,

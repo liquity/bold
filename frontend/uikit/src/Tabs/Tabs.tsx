@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 
 import { a, useSpring } from "@react-spring/web";
 import { useEffect, useRef, useState } from "react";
-import useDimensions from "react-cool-dimensions";
 import { css } from "../../styled-system/css";
 import { token } from "../../styled-system/tokens";
+import { useElementSize } from "../react-utils";
 
 export type TabItem = {
   label: ReactNode;
@@ -66,7 +66,7 @@ export function Tabs({
     immediate: !selectedRect,
   });
 
-  const { observe, width } = useDimensions();
+  const { size } = useElementSize(container);
 
   // update selectedRect from the selected button
   useEffect(() => {
@@ -75,9 +75,9 @@ export function Tabs({
       setSelectedRect([button.offsetLeft, button.offsetWidth]);
     }
   }, [
+    items.length, // all tabs are the same width so this is enough
     selected,
-    width, // update on container width change too
-    items,
+    size, // update on container size change too
   ]);
 
   return (
@@ -101,7 +101,6 @@ export function Tabs({
         })}
       >
         <div
-          ref={observe}
           onFocus={() => {
             isFocused.current = true;
           }}
@@ -235,12 +234,12 @@ function useKeyboardNavigation({
 
 // Focuses the selected tab when the selection changes
 function useFocusSelected({
-  isFocused,
   container,
+  isFocused,
   selected,
 }: {
-  isFocused: React.MutableRefObject<boolean>;
   container: React.MutableRefObject<HTMLDivElement | null>;
+  isFocused: React.MutableRefObject<boolean>;
   selected: number;
 }) {
   useEffect(() => {
