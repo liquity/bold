@@ -323,12 +323,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     // --- Inner single liquidation functions ---
 
     // Liquidate one trove, in Normal Mode.
-    function _liquidateNormalMode(
-        IDefaultPool _defaultPool,
-        uint256 _troveId,
-        uint256 _boldInStabPool,
-        uint256 _price
-    ) internal returns (LiquidationValues memory singleLiquidation) {
+    function _liquidateNormalMode(IDefaultPool _defaultPool, uint256 _troveId, uint256 _boldInStabPool, uint256 _price)
+        internal
+        returns (LiquidationValues memory singleLiquidation)
+    {
         address owner = ownerOf(_troveId);
 
         LocalVariables_InnerSingleLiquidateFunction memory vars;

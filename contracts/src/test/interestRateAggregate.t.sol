@@ -2173,7 +2173,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testClaimAllETHGainsReducesPendingAggInterestTo0() public {
-       _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         // A stashes first gain
         makeSPDepositNoClaim(A, 1e18);

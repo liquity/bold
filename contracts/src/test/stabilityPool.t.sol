@@ -3,8 +3,7 @@ pragma solidity 0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract SPTest is DevTestSetup {
-
-    function _setupStashedAndCurrentETHGains() internal { 
+    function _setupStashedAndCurrentETHGains() internal {
         TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
 
         // A stashes first gain
@@ -19,7 +18,6 @@ contract SPTest is DevTestSetup {
         uint256 currentETHGain_A = stabilityPool.getDepositorETHGain(A);
         assertGt(stashedETHGain_A, 0);
         assertGt(currentETHGain_A, 0);
-
 
         // Check B has only current gains, no stashed
         uint256 stashedETHGain_B = stabilityPool.stashedETH(B);
@@ -46,21 +44,21 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A + currentETHGain);
     }
 
-     function testProvideToSPWithClaim_WithOnlyCurrentGainsDoesntChangeStashedGain() public {
+    function testProvideToSPWithClaim_WithOnlyCurrentGainsDoesntChangeStashedGain() public {
         _setupForSPDepositAdjustments();
 
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
         assertGt(currentETHGain, 0);
 
-        assertEq( stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedETH(A), 0);
 
         makeSPDepositAndClaim(A, 1e18);
 
-        assertEq( stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedETH(A), 0);
     }
 
     function testProvideToSPWithClaim_WithCurrentAndStashedGainsSendsTotalETHGainToDepositor() public {
-       // A has stashed & current gains, B has only current
+        // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
         // Check A has both stashed and current gains
@@ -86,7 +84,7 @@ contract SPTest is DevTestSetup {
         makeSPDepositAndClaim(A, 1e18);
 
         // Check A's stashed balance reduced to 0
-        assertEq(stabilityPool.stashedETH(A),0);
+        assertEq(stabilityPool.stashedETH(A), 0);
     }
 
     function testProvideToSPWithClaim_WithOnlyStashedGainsSendsStashedETHGainToDepositor() public {
@@ -125,13 +123,13 @@ contract SPTest is DevTestSetup {
         makeSPDepositAndClaim(A, 1e18);
 
         // Check A's stashed balance reduced to 0
-        assertEq(stabilityPool.stashedETH(A),0);
+        assertEq(stabilityPool.stashedETH(A), 0);
     }
 
-     // --- provideToSP, doClaim == false ---
+    // --- provideToSP, doClaim == false ---
 
     function testProvideToSPNoClaim_WithOnlyCurrentGainsDoesntChangeDepositorETHBalance() public {
-           _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
         assertGt(currentETHGain, 0);
@@ -151,7 +149,7 @@ contract SPTest is DevTestSetup {
         assertGt(currentETHGain, 0);
 
         // Check A has no stashed gains
-        assertEq( stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedETH(A), 0);
 
         makeSPDepositNoClaim(A, 1e18);
 
@@ -171,7 +169,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testProvideToSPNoClaim_WithCurrentAndStashedGainsIncreasedStashedGainByCurrentGain() public {
-      // A has stashed & current gains, B has only current
+        // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
         // Check A has both stashed and current gains
@@ -222,7 +220,7 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), stashedETHGain);
     }
 
-     // --- withdrawFromSP, doClaim == true ---
+    // --- withdrawFromSP, doClaim == true ---
     function testWithdrawFromSPWithClaim_WithOnlyCurrentGainsSendsTotalETHGainToDepositor() public {
         _setupForSPDepositAdjustments();
 
@@ -240,17 +238,17 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A + currentETHGain);
     }
 
-     function testWithdrawFromSPWithClaim_WithOnlyCurrentGainsDoesntChangeStashedGain() public {
+    function testWithdrawFromSPWithClaim_WithOnlyCurrentGainsDoesntChangeStashedGain() public {
         _setupForSPDepositAdjustments();
 
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
         assertGt(currentETHGain, 0);
 
-        assertEq( stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedETH(A), 0);
 
         makeSPWithdrawalAndClaim(A, 1e18);
 
-        assertEq( stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedETH(A), 0);
     }
 
     function testWithdrawFromSPWithClaim_WithCurrentAndStashedGainsSendsTotalETHGainToDepositor() public {
@@ -280,7 +278,7 @@ contract SPTest is DevTestSetup {
         makeSPWithdrawalAndClaim(A, 1e18);
 
         // Check A's stashed balance reduced to 0
-        assertEq(stabilityPool.stashedETH(A),0);
+        assertEq(stabilityPool.stashedETH(A), 0);
     }
 
     function testWithdrawFromSPPWithClaim_WithOnlyStashedGainsSendsStashedETHGainToDepositor() public {
@@ -319,10 +317,10 @@ contract SPTest is DevTestSetup {
         makeSPWithdrawalAndClaim(A, 1e18);
 
         // Check A's stashed balance reduced to 0
-        assertEq(stabilityPool.stashedETH(A),0);
+        assertEq(stabilityPool.stashedETH(A), 0);
     }
 
-     // --- withdrawFromSP, doClaim == false ---
+    // --- withdrawFromSP, doClaim == false ---
 
     function testWithdrawFromSPNoClaim_WithOnlyCurrentGainsDoesntChangeDepositorETHBalance() public {
         _setupForSPDepositAdjustments();
@@ -345,7 +343,7 @@ contract SPTest is DevTestSetup {
         assertGt(currentETHGain, 0);
 
         // Check A has no stashed gains
-        assertEq( stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedETH(A), 0);
 
         makeSPWithdrawalNoClaim(A, 1e18);
 
@@ -360,7 +358,7 @@ contract SPTest is DevTestSetup {
         // Check A has both stashed and current gains
         stabilityPool.stashedETH(A);
         stabilityPool.getDepositorETHGain(A);
-    
+
         uint256 ETHBal_A = WETH.balanceOf(A);
         assertGt(ETHBal_A, 0);
 
@@ -370,7 +368,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testWithdrawFromSPNoClaim_WithCurrentAndStashedGainsIncreasedStashedGainByCurrentGain() public {
-       // A has stashed & current gains, B has only current
+        // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
         uint256 stashedETHGain = stabilityPool.stashedETH(A);
@@ -467,12 +465,12 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(B), 0);
     }
 
-     function testClaimAllETHGainsForOnlyCurrentETHGainIncreasesUserBalanceByCurrentETHGain() public {
+    function testClaimAllETHGainsForOnlyCurrentETHGainIncreasesUserBalanceByCurrentETHGain() public {
         // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
         uint256 currentETHGain_B = stabilityPool.getDepositorETHGain(B);
-        
+
         uint256 ETHBal_B = WETH.balanceOf(B);
         assertGt(ETHBal_B, 0);
 
@@ -525,9 +523,9 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A + stashedGain_A + currentGain_A);
     }
 
-      function testClaimAllETHGainsForOnlyStashedETHGainDoesntChangeETHGain() public {
+    function testClaimAllETHGainsForOnlyStashedETHGainDoesntChangeETHGain() public {
         _setupForSPDepositAdjustments();
- 
+
         // A stashes first gain
         makeSPDepositNoClaim(A, 1e18);
 
@@ -544,7 +542,7 @@ contract SPTest is DevTestSetup {
 
     function testClaimAllETHGainsForOnlyStashedETHGainZerosStashedETHGain() public {
         _setupForSPDepositAdjustments();
- 
+
         // A stashes first gain
         makeSPDepositNoClaim(A, 1e18);
 
@@ -560,8 +558,8 @@ contract SPTest is DevTestSetup {
     }
 
     function testClaimAllETHGainsForOnlyStashedETHGainIncreasesUserBalanceByStashedETHGain() public {
-         _setupForSPDepositAdjustments();
- 
+        _setupForSPDepositAdjustments();
+
         // A stashes first gain
         makeSPDepositNoClaim(A, 1e18);
 
@@ -583,7 +581,7 @@ contract SPTest is DevTestSetup {
 
 // TODO:
 // 1) claim tests for withdrawETHGainToTrove (if we don't remove it)
-// 
+//
 // 2) tests for claimAllETHGains (requires deposit data & getter refactor):
 //    - updates recorded deposit value
 //    - updates deposit snapshots

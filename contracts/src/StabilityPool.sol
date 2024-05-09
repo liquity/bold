@@ -333,14 +333,15 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         assert(getDepositorETHGain(msg.sender) == 0);
     }
 
-    function _stashOrSendETHGains(address _depositor, uint256 _currentETHGain, uint256 _boldLoss, bool _doClaim) internal {
+    function _stashOrSendETHGains(address _depositor, uint256 _currentETHGain, uint256 _boldLoss, bool _doClaim)
+        internal
+    {
         if (_doClaim) {
             // Get the total gain (stashed + current), zero the stashed balance, send total gain to depositor
-            uint ETHToSend = _getTotalETHGainAndZeroStash(_depositor, _currentETHGain);
+            uint256 ETHToSend = _getTotalETHGainAndZeroStash(_depositor, _currentETHGain);
 
             emit ETHGainWithdrawn(msg.sender, ETHToSend, _boldLoss); // Bold Loss required for event log
             _sendETHGainToDepositor(ETHToSend);
-
         } else {
             // Just stash the current gain
             stashedETH[_depositor] += _currentETHGain;
@@ -348,11 +349,11 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     }
 
     function _getTotalETHGainAndZeroStash(address _depositor, uint256 _currentETHGain) internal returns (uint256) {
-         uint256 stashedETHGain = stashedETH[_depositor];
+        uint256 stashedETHGain = stashedETH[_depositor];
         uint256 totalETHGain = stashedETHGain + _currentETHGain;
 
         // TODO: Gas - saves gas when stashedETHGain == 0?
-        if (stashedETHGain > 0) {stashedETH[_depositor] = 0;}
+        if (stashedETHGain > 0) stashedETH[_depositor] = 0;
 
         return totalETHGain;
     }
@@ -368,7 +369,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
         // If they have a deposit, update it and update its snapshots
         if (initialDeposit > 0) {
-            currentETHGain = getDepositorETHGain(msg.sender);  // Only active deposits can have a current ETH gain
+            currentETHGain = getDepositorETHGain(msg.sender); // Only active deposits can have a current ETH gain
 
             uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
             boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
@@ -376,7 +377,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
             _updateDepositAndSnapshots(msg.sender, compoundedBoldDeposit);
         }
 
-        uint256 ETHToSend = _getTotalETHGainAndZeroStash(msg.sender,  currentETHGain);
+        uint256 ETHToSend = _getTotalETHGainAndZeroStash(msg.sender, currentETHGain);
 
         _sendETHGainToDepositor(ETHToSend);
         assert(getDepositorETHGain(msg.sender) == 0);

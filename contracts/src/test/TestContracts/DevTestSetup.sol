@@ -146,7 +146,7 @@ contract DevTestSetup is BaseTest {
 
     function _setupForSPDepositAdjustments() internal returns (TroveIDs memory) {
         TroveIDs memory troveIDs;
-        (troveIDs.A, troveIDs.B, troveIDs.C, troveIDs.D) =  _setupForBatchLiquidateTrovesPureOffset();
+        (troveIDs.A, troveIDs.B, troveIDs.C, troveIDs.D) = _setupForBatchLiquidateTrovesPureOffset();
 
         // A liquidates C
         liquidate(A, troveIDs.C);
