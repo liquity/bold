@@ -147,6 +147,9 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     // Tracker for Bold held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
     uint256 internal totalBoldDeposits;
 
+    // Total remaining Bold rewards held by SP and not yet paid out to depositors
+    uint256 internal boldRewardsOwed;
+
     // --- Data structures ---
 
     struct Deposit {
@@ -154,9 +157,9 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     }
 
     struct Snapshots {
-        uint256 S;
+        uint256 S; // ETH reward sum liqs
         uint256 P;
-        uint256 G;
+        uint256 B; // Bold reward sum from minted interest
         uint128 scale;
         uint128 epoch;
     }
@@ -189,11 +192,15 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     * - The inner mapping records the sum S at different scales
     * - The outer mapping records the (scale => sum) mappings, for different epochs.
     */
-    mapping(uint128 => mapping(uint128 => uint256)) public epochToScaleToSum;
+    mapping(uint128 => mapping(uint128 => uint256)) public epochToScaleToS;
+    mapping(uint128 => mapping(uint128 => uint256)) public epochToScaleToB;
 
     // Error trackers for the error correction in the offset calculation
     uint256 public lastETHError_Offset;
     uint256 public lastBoldLossError_Offset;
+
+    // Error tracker fror the error correction in the BOLD reward calculation
+    uint256 public lastBoldError;
 
     // --- Events ---
 
@@ -210,7 +217,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
     event P_Updated(uint256 _P);
     event S_Updated(uint256 _S, uint128 _epoch, uint128 _scale);
-    event G_Updated(uint256 _G, uint128 _epoch, uint128 _scale);
+    event B_Updated(uint256 _B, uint128 _epoch, uint128 _scale);
     event EpochUpdated(uint128 _currentEpoch);
     event ScaleUpdated(uint128 _currentScale);
 
@@ -284,7 +291,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     function provideToSP(uint256 _amount, bool _doClaim) external override {
         _requireNonZeroAmount(_amount);
 
-        activePool.mintAggInterest();
+        uint256 spYield = activePool.mintAggInterest();
+        _triggerBoldRewards(spYield);
 
         uint256 initialDeposit = deposits[msg.sender].initialValue;
 
@@ -314,7 +322,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
 
-        activePool.mintAggInterest();
+        uint256 spYield = activePool.mintAggInterest();
+        _triggerBoldRewards(spYield);
 
         uint256 currentETHGain = getDepositorETHGain(msg.sender);
 
@@ -365,7 +374,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 boldLoss;
         uint256 currentETHGain;
 
-        activePool.mintAggInterest();
+        uint256 spYield = activePool.mintAggInterest();
+        _triggerBoldRewards(spYield);
 
         // If they have a deposit, update it and update its snapshots
         if (initialDeposit > 0) {
@@ -383,6 +393,48 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         assert(getDepositorETHGain(msg.sender) == 0);
     }
 
+    // --- BOLD reward functions ---
+
+    function _triggerBoldRewards(uint256 _boldYield) internal {
+        boldRewardsOwed += _boldYield;
+   
+        uint256 totalBoldDepositsCached = totalBoldDeposits; // cached to save an SLOAD
+        /*
+        * When total deposits is 0, B is not updated. In this case, the BOLD issued can not be obtained by later
+        * depositors - it is missed out on, and remains in the balance of the SP.
+        *
+        */
+        if (totalBoldDepositsCached == 0 || _boldYield == 0) {return;}
+
+        uint boldPerUnitStaked;
+        boldPerUnitStaked =_computeBOLDPerUnitStaked(_boldYield, totalBoldDepositsCached);
+
+        uint marginalBoldGain = boldPerUnitStaked * P;
+        epochToScaleToB[currentEpoch][currentScale] = epochToScaleToB[currentEpoch][currentScale] + marginalBoldGain;
+
+        emit B_Updated(epochToScaleToB[currentEpoch][currentScale], currentEpoch, currentScale);
+    }
+
+    function _computeBOLDPerUnitStaked(uint256 _boldYield, uint256 _totalBoldDeposits) internal returns (uint) {
+        /*  
+        * Calculate the BOLD-per-unit staked.  Division uses a "feedback" error correction, to keep the 
+        * cumulative error low in the running total B:
+        *
+        * 1) Form a numerator which compensates for the floor division error that occurred the last time this 
+        * function was called.  
+        * 2) Calculate "per-unit-staked" ratio.
+        * 3) Multiply the ratio back by its denominator, to reveal the current floor division error.
+        * 4) Store this error for use in the next correction when this function is called.
+        * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
+        */
+        uint boldNumerator = _boldYield * DECIMAL_PRECISION + lastBoldError;
+
+        uint boldPerUnitStaked = boldNumerator / _totalBoldDeposits;
+        lastBoldError = boldNumerator - boldPerUnitStaked * _totalBoldDeposits;
+
+        return boldPerUnitStaked;
+    }
+
     // --- Liquidation functions ---
 
     /*
@@ -396,16 +448,16 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         if (totalBold == 0 || _debtToOffset == 0) return;
 
         (uint256 ETHGainPerUnitStaked, uint256 boldLossPerUnitStaked) =
-            _computeRewardsPerUnitStaked(_collToAdd, _debtToOffset, totalBold);
+            _computeETHRewardsPerUnitStaked(_collToAdd, _debtToOffset, totalBold);
 
-        _updateRewardSumAndProduct(ETHGainPerUnitStaked, boldLossPerUnitStaked); // updates S and P
+        _updateETHRewardSumAndProduct(ETHGainPerUnitStaked, boldLossPerUnitStaked); // updates S and P
 
         _moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
     }
 
     // --- Offset helper functions ---
 
-    function _computeRewardsPerUnitStaked(uint256 _collToAdd, uint256 _debtToOffset, uint256 _totalBoldDeposits)
+    function _computeETHRewardsPerUnitStaked(uint256 _collToAdd, uint256 _debtToOffset, uint256 _totalBoldDeposits)
         internal
         returns (uint256 ETHGainPerUnitStaked, uint256 boldLossPerUnitStaked)
     {
@@ -443,7 +495,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     }
 
     // Update the Stability Pool reward sum S and product P
-    function _updateRewardSumAndProduct(uint256 _ETHGainPerUnitStaked, uint256 _boldLossPerUnitStaked) internal {
+    function _updateETHRewardSumAndProduct(uint256 _ETHGainPerUnitStaked, uint256 _boldLossPerUnitStaked) internal {
         uint256 currentP = P;
         uint256 newP;
 
@@ -456,7 +508,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
         uint128 currentScaleCached = currentScale;
         uint128 currentEpochCached = currentEpoch;
-        uint256 currentS = epochToScaleToSum[currentEpochCached][currentScaleCached];
+        uint256 currentS = epochToScaleToS[currentEpochCached][currentScaleCached];
 
         /*
         * Calculate the new S first, before we update P.
@@ -467,7 +519,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         */
         uint256 marginalETHGain = _ETHGainPerUnitStaked * currentP;
         uint256 newS = currentS + marginalETHGain;
-        epochToScaleToSum[currentEpochCached][currentScaleCached] = newS;
+        epochToScaleToS[currentEpochCached][currentScaleCached] = newS;
         emit S_Updated(newS, currentEpochCached, currentScaleCached);
 
         // If the Stability Pool was emptied, increment the epoch, and reset the scale and product P
@@ -547,8 +599,8 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 S_Snapshot = snapshots.S;
         uint256 P_Snapshot = snapshots.P;
 
-        uint256 firstPortion = epochToScaleToSum[epochSnapshot][scaleSnapshot] - S_Snapshot;
-        uint256 secondPortion = epochToScaleToSum[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
+        uint256 firstPortion = epochToScaleToS[epochSnapshot][scaleSnapshot] - S_Snapshot;
+        uint256 secondPortion = epochToScaleToS[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
 
         uint256 ETHGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
 
@@ -669,7 +721,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 currentP = P;
 
         // Get S for the current epoch and current scale
-        uint256 currentS = epochToScaleToSum[currentEpochCached][currentScaleCached];
+        uint256 currentS = epochToScaleToS[currentEpochCached][currentScaleCached];
 
         // Record new snapshots of the latest running product P and sum S for the depositor
         depositSnapshots[_depositor].P = currentP;

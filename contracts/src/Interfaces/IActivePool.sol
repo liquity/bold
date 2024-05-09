@@ -3,13 +3,14 @@
 pragma solidity 0.8.18;
 
 import "./IInterestRouter.sol";
+import "./IStabilityPool.sol";
 
 interface IActivePool {
-    function stabilityPoolAddress() external view returns (address);
     function defaultPoolAddress() external view returns (address);
     function borrowerOperationsAddress() external view returns (address);
     function troveManagerAddress() external view returns (address);
     function interestRouter() external view returns (IInterestRouter);
+    function stabilityPool() external view returns (IStabilityPool);
     function setAddresses(
         address _borrowerOperationsAddress,
         address _troveManagerAddress,
@@ -26,7 +27,7 @@ interface IActivePool {
     function aggWeightedDebtSum() external view returns (uint256);
     function calcPendingAggInterest() external view returns (uint256);
 
-    function mintAggInterest() external;
+    function mintAggInterest() external returns (uint256);
     function mintAggInterestAndAccountForTroveChange(
         uint256 _troveDebtIncrease,
         uint256 _troveDebtDecrease,
