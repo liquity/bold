@@ -154,10 +154,10 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function checkRecoveryMode(bool _enabled) public {
+    function checkBelowCriticalThreshold(bool _true) public {
         uint256 price = priceFeed.getPrice();
-        bool recoveryMode = troveManager.checkRecoveryMode(price);
-        assertEq(recoveryMode, _enabled);
+        bool belowCriticalThreshold = troveManager.checkBelowCriticalThreshold(price);
+        assertEq(belowCriticalThreshold, _true);
     }
 
     function makeSPDepositAndClaim(address _account, uint256 _amount) public {
@@ -184,12 +184,11 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-     function claimAllETHGains(address _account) public {
+    function claimAllETHGains(address _account) public {
         vm.startPrank(_account);
         stabilityPool.claimAllETHGains();
         vm.stopPrank();
     }
-
 
     function closeTrove(address _account, uint256 _troveId) public {
         vm.startPrank(_account);
