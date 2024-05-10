@@ -37,6 +37,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     struct LocalVariables_adjustTrove {
         uint256 price;
+        bool isBelowCriticalThreshold;
         uint256 oldICR;
         uint256 newICR;
         uint256 newTCR;
@@ -340,7 +341,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         LocalVariables_adjustTrove memory vars;
 
         vars.price = priceFeed.fetchPrice();
-        bool isBelowCriticalThreshold = _checkBelowCriticalThreshold(vars.price);
+        vars.isBelowCriticalThreshold = _checkBelowCriticalThreshold(vars.price);
 
         // --- Checks ---
 
@@ -397,9 +398,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         vars.newICR = LiquityMath._computeCR(vars.newEntireColl, vars.newEntireDebt, vars.price);
 
         // Check the adjustment satisfies all conditions for the current system mode
-        _requireValidAdjustmentInCurrentMode(
-            isBelowCriticalThreshold, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, vars
-        );
+        _requireValidAdjustmentInCurrentMode(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, vars);
 
         // --- Effects and interactions ---
 
@@ -655,7 +654,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     }
 
     function _requireValidAdjustmentInCurrentMode(
-        bool _isBelowCriticalThreshold,
         uint256 _collChange,
         bool _isCollIncrease,
         uint256 _boldChange,
@@ -673,7 +671,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         * - The new ICR is above MCR
         * - The adjustment won't pull the TCR below CCR
         */
-        if (_isBelowCriticalThreshold) {
+        if (_vars.isBelowCriticalThreshold) {
             _requireNoBorrowing(_isDebtIncrease);
             _requireDebtRepaymentGeCollWithdrawal(
                 _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _vars.price
