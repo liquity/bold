@@ -447,11 +447,11 @@ contract("Gas compensation tests", async (accounts) => {
     });
 
     // D, E each provide Bold to SP
-    await stabilityPool.provideToSP(A_totalDebt, {
+    await th.provideToSPAndClaim(contracts, A_totalDebt, {
       from: dennis,
       gasPrice: GAS_PRICE,
     });
-    await stabilityPool.provideToSP(
+    await th.provideToSPAndClaim(contracts, 
       B_totalDebt.add(C_totalDebt),
       { from: erin, gasPrice: GAS_PRICE },
     );
@@ -469,7 +469,7 @@ contract("Gas compensation tests", async (accounts) => {
     // Check collateral value in USD is < $10
     const aliceColl = (await troveManager.Troves(aliceTroveId))[1];
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate A (use 0 gas price to easily check the amount the compensation amount the liquidator receives)
     const liquidatorBalance_before_A = web3.utils.toBN(
@@ -506,7 +506,7 @@ contract("Gas compensation tests", async (accounts) => {
     // Check collateral value in USD is < $10
     const bobColl = (await troveManager.Troves(bobTroveId))[1];
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
     // Liquidate B (use 0 gas price to easily check the amount the compensation amount the liquidator receives)
     const liquidatorBalance_before_B = web3.utils.toBN(
       await contracts.WETH.balanceOf(liquidator),
@@ -549,7 +549,7 @@ contract("Gas compensation tests", async (accounts) => {
     // Check collateral value in USD is < $10
     const carolColl = (await troveManager.Troves(carolTroveId))[1];
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
     // Liquidate B (use 0 gas price to easily check the amount the compensation amount the liquidator receives)
     const liquidatorBalance_before_C = web3.utils.toBN(
       await contracts.WETH.balanceOf(liquidator),
@@ -615,11 +615,11 @@ contract("Gas compensation tests", async (accounts) => {
     });
 
     // D, E each provide 10000 Bold to SP
-    await stabilityPool.provideToSP(dec(1, 23), {
+    await th.provideToSPAndClaim(contracts, dec(1, 23), {
       from: dennis,
       gasPrice: GAS_PRICE,
     });
-    await stabilityPool.provideToSP(dec(1, 23), {
+    await th.provideToSPAndClaim(contracts, dec(1, 23), {
       from: erin,
       gasPrice: GAS_PRICE,
     });
@@ -642,7 +642,7 @@ contract("Gas compensation tests", async (accounts) => {
     // Check collateral value in USD is > $10
     const aliceColl = (await troveManager.Troves(aliceTroveId))[1];
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     const aliceICR = await troveManager.getCurrentICR(aliceTroveId, price_1);
     assert.isTrue(aliceICR.lt(mv._MCR));
@@ -690,7 +690,7 @@ contract("Gas compensation tests", async (accounts) => {
     // Check collateral value in USD is > $10
     const bobColl = (await troveManager.Troves(bobTroveId))[1];
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     const bobICR = await troveManager.getCurrentICR(bobTroveId, price_2);
     assert.isTrue(bobICR.lte(mv._MCR));
@@ -757,11 +757,11 @@ contract("Gas compensation tests", async (accounts) => {
     });
 
     // D, E each provide 10000 Bold to SP
-    await stabilityPool.provideToSP(dec(1, 23), {
+    await th.provideToSPAndClaim(contracts, dec(1, 23), {
       from: dennis,
       gasPrice: GAS_PRICE,
     });
-    await stabilityPool.provideToSP(dec(1, 23), {
+    await th.provideToSPAndClaim(contracts, dec(1, 23), {
       from: erin,
       gasPrice: GAS_PRICE,
     });
@@ -784,7 +784,7 @@ contract("Gas compensation tests", async (accounts) => {
     const aliceColl = (await troveManager.Troves(aliceTroveId))[1];
     const _0pt5percent_aliceColl = aliceColl.div(web3.utils.toBN("200"));
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     const aliceICR = await troveManager.getCurrentICR(aliceTroveId, price_1);
     assert.isTrue(aliceICR.lt(mv._MCR));
@@ -828,7 +828,7 @@ contract("Gas compensation tests", async (accounts) => {
     const bobColl = (await troveManager.Troves(bobTroveId))[1];
     const _0pt5percent_bobColl = bobColl.div(web3.utils.toBN("200"));
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     const bobICR = await troveManager.getCurrentICR(bobTroveId, price_1);
     assert.isTrue(bobICR.lt(mv._MCR));
@@ -894,10 +894,10 @@ contract("Gas compensation tests", async (accounts) => {
     });
 
     // D, E each provide Bold to SP
-    await stabilityPool.provideToSP(A_totalDebt, {
+    await th.provideToSPAndClaim(contracts, A_totalDebt, {
       from: dennis,
     });
-    await stabilityPool.provideToSP(B_totalDebt, { from: erin });
+    await th.provideToSPAndClaim(contracts, B_totalDebt, { from: erin });
 
     const BoldinSP_0 = await stabilityPool.getTotalBoldDeposits();
 
@@ -915,7 +915,7 @@ contract("Gas compensation tests", async (accounts) => {
     const aliceDebt = (await troveManager.Troves(aliceTroveId))[0];
 
     // th.logBN('TCR', await troveManager.getTCR(await priceFeed.getPrice()))
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate A (use 0 gas price to easily check the amount the compensation amount the liquidator receives)
     const liquidationTxA = await troveManager.liquidate(aliceTroveId, {
@@ -951,7 +951,7 @@ contract("Gas compensation tests", async (accounts) => {
     const bobColl = (await troveManager.Troves(bobTroveId))[1];
     const bobDebt = (await troveManager.Troves(bobTroveId))[0];
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
     // Liquidate B (use 0 gas price to easily check the amount the compensation amount the liquidator receives)
     const liquidationTxB = await troveManager.liquidate(bobTroveId, {
       from: liquidator,
@@ -1007,8 +1007,8 @@ contract("Gas compensation tests", async (accounts) => {
     });
 
     // D, E each provide 10000 Bold to SP
-    await stabilityPool.provideToSP(dec(1, 23), { from: dennis });
-    await stabilityPool.provideToSP(dec(1, 23), { from: erin });
+    await th.provideToSPAndClaim(contracts, dec(1, 23), { from: dennis });
+    await th.provideToSPAndClaim(contracts, dec(1, 23), { from: erin });
 
     const BoldinSP_0 = await stabilityPool.getTotalBoldDeposits();
     const ETHinSP_0 = await stabilityPool.getETHBalance();
@@ -1037,7 +1037,7 @@ contract("Gas compensation tests", async (accounts) => {
     // Check value of 0.5% of collateral in USD is < $10
     const _0pt5percent_aliceColl = aliceColl.div(web3.utils.toBN("200"));
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     const aliceICR = await troveManager.getCurrentICR(aliceTroveId, price_1);
     assert.isTrue(aliceICR.lt(mv._MCR));
@@ -1080,7 +1080,7 @@ contract("Gas compensation tests", async (accounts) => {
     const bobColl = (await troveManager.Troves(bobTroveId))[1];
     const bobDebt = (await troveManager.Troves(bobTroveId))[0];
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     const bobICR = await troveManager.getCurrentICR(bobTroveId, price_2);
     assert.isTrue(bobICR.lte(mv._MCR));
@@ -1142,8 +1142,8 @@ contract("Gas compensation tests", async (accounts) => {
     });
 
     // D, E each provide 10000 Bold to SP
-    await stabilityPool.provideToSP(dec(1, 23), { from: dennis });
-    await stabilityPool.provideToSP(dec(1, 23), { from: erin });
+    await th.provideToSPAndClaim(contracts, dec(1, 23), { from: dennis });
+    await th.provideToSPAndClaim(contracts, dec(1, 23), { from: erin });
 
     const BoldinSP_0 = await stabilityPool.getTotalBoldDeposits();
     const ETHinSP_0 = await stabilityPool.getETHBalance();
@@ -1156,7 +1156,7 @@ contract("Gas compensation tests", async (accounts) => {
     const aliceDebt = (await troveManager.Troves(aliceTroveId))[0];
     const _0pt5percent_aliceColl = aliceColl.div(web3.utils.toBN("200"));
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     const aliceICR = await troveManager.getCurrentICR(aliceTroveId, price_1);
     assert.isTrue(aliceICR.lt(mv._MCR));
@@ -1196,7 +1196,7 @@ contract("Gas compensation tests", async (accounts) => {
     const bobDebt = (await troveManager.Troves(bobTroveId))[0];
     const _0pt5percent_bobColl = bobColl.div(web3.utils.toBN("200"));
 
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     const bobICR = await troveManager.getCurrentICR(bobTroveId, price_1);
     assert.isTrue(bobICR.lt(mv._MCR));

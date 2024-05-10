@@ -216,7 +216,7 @@ contract Redemptions is DevTestSetup {
         price = 1050e18;
         priceFeed.setPrice(price);
 
-        assertFalse(troveManager.checkRecoveryMode(price));
+        assertFalse(troveManager.checkBelowCriticalThreshold(price));
         assertLt(troveManager.getCurrentICR(troveIDs.E, price), troveManager.MCR());
 
         // A liquidates E
@@ -298,7 +298,7 @@ contract Redemptions is DevTestSetup {
         price = 950e18;
         priceFeed.setPrice(price);
 
-        // assertFalse(troveManager.checkRecoveryMode(price));
+        // assertFalse(troveManager.checkBelowCriticalThreshold(price));
         assertLt(troveManager.getCurrentICR(troveID_E, price), troveManager.MCR());
 
         assertLt(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.MIN_NET_DEBT());
@@ -651,14 +651,14 @@ contract Redemptions is DevTestSetup {
         uint256 troveColl_E = 25000e18;
         // E  opens new Trove and deposits to SP
         openTroveNoHints100pct(E, troveColl_E, troveDebtRequest_E, interestRate_E);
-        makeSPDeposit(E, boldToken.balanceOf(E));
+        makeSPDepositAndClaim(E, boldToken.balanceOf(E));
         assertGt(stabilityPool.getTotalBoldDeposits(), troveManager.getTroveEntireDebt(troveIDs.B));
 
         // Price drops, B becomes liquidateable
         uint256 price = 100e18;
         priceFeed.setPrice(price);
 
-        // assertFalse(troveManager.checkRecoveryMode(price));
+        // assertFalse(troveManager.checkBelowCriticalThreshold(price));
         assertLt(troveManager.getCurrentICR(troveIDs.B, price), troveManager.MCR());
 
         assertEq(troveManager.getTroveStatus(troveIDs.B), 5);

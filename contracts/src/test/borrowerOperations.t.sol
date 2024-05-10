@@ -16,8 +16,8 @@ contract BorrowerOperationsTest is DevTestSetup {
         uint256 aliceDebt = troveManager.getTroveEntireDebt(ATroveId);
         assertGe(aliceBal, aliceDebt, "Not enough balance");
 
-        // check Recovery Mode
-        checkRecoveryMode(false);
+        // check is not below CT
+        checkBelowCriticalThreshold(false);
 
         // Alice attempts to close her trove
         vm.startPrank(A);

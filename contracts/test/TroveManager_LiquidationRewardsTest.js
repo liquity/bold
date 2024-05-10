@@ -81,8 +81,8 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     // Price drops to 100 $/E
     await priceFeed.setPrice(dec(100, 18));
 
-    // Confirm not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // L1: B liquidated
     const txB = await troveManager.liquidate(bobTroveId);
@@ -105,8 +105,8 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     // Price drops to 100 $/E
     await priceFeed.setPrice(dec(100, 18));
 
-    // Confirm not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // L2: D Liquidated
     const txD = await troveManager.liquidate(dennisTroveId);
@@ -184,8 +184,8 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     // Price drops to 100 $/E
     await priceFeed.setPrice(dec(100, 18));
 
-    // Confirm not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // L1: C liquidated
     const txC = await troveManager.liquidate(carolTroveId);
@@ -212,8 +212,8 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     // Price drops to 100 $/E
     await priceFeed.setPrice(dec(100, 18));
 
-    // Confirm not in Recovery Mode
-    assert.isFalse(await th.checkRecoveryMode(contracts));
+    // Confirm not below CT
+    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // L2: F Liquidated
     const txF = await troveManager.liquidate(freddyTroveId);
@@ -1392,7 +1392,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     // Price drops to 110 $/E
     const liqPrice = th.toBN(dec(190, 18));
     await priceFeed.setPrice(liqPrice);
-    assert.isFalse(await troveManager.checkRecoveryMode(liqPrice));
+    assert.isFalse(await troveManager.checkBelowCriticalThreshold(liqPrice));
 
     // Liquidate Carol
     const txC = await troveManager.liquidate(carolTroveId);
@@ -1417,7 +1417,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
 
     // Price drops again
     await priceFeed.setPrice(liqPrice);
-    assert.isFalse(await troveManager.checkRecoveryMode(liqPrice));
+    assert.isFalse(await troveManager.checkBelowCriticalThreshold(liqPrice));
 
     // Liquidate D
     const txA = await troveManager.liquidate(dennisTroveId);

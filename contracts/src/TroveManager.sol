@@ -117,7 +117,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     struct LocalVariables_OuterLiquidationFunction {
         uint256 price;
         uint256 boldInStabPool;
-        bool recoveryModeAtStart;
         uint256 liquidatedDebt;
         uint256 liquidatedColl;
     }
@@ -133,7 +132,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 i;
         uint256 ICR;
         uint256 troveId;
-        bool backToNormalMode;
         uint256 entireSystemDebt;
         uint256 entireSystemColl;
     }
@@ -230,8 +228,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     event TroveIndexUpdated(uint256 _troveId, uint256 _newIndex);
 
     enum Operation {
-        liquidateInNormalMode,
-        liquidateInRecoveryMode,
+        liquidate,
         redeemCollateral
     }
 
@@ -302,7 +299,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     // --- Inner single liquidation functions ---
 
     // Liquidate one trove, in Normal Mode.
-    function _liquidateNormalMode(
+    function _liquidate(
         IDefaultPool _defaultPool,
         uint256 _troveId,
         uint256 _boldInStabPool,
@@ -336,114 +333,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         ) = _getOffsetAndRedistributionVals(singleLiquidation.entireDebt, collToLiquidate, _boldInStabPool);
 
         _closeTrove(_troveId, Status.closedByLiquidation);
-        emit TroveLiquidated(
-            _troveId, singleLiquidation.entireDebt, singleLiquidation.entireColl, Operation.liquidateInNormalMode
-        );
-        emit TroveUpdated(_troveId, 0, 0, Operation.liquidateInNormalMode);
-    }
-
-    // Liquidate one trove, in Recovery Mode.
-    function _liquidateRecoveryMode(
-        IDefaultPool _defaultPool,
-        uint256 _troveId,
-        uint256 _ICR,
-        uint256 _boldInStabPool,
-        uint256 _TCR,
-        uint256 _price,
-        LiquidationValues memory singleLiquidation
-    ) internal {
-        LocalVariables_InnerSingleLiquidateFunction memory vars;
-        if (TroveIds.length <= 1) return; // don't liquidate if last trove
-
-        LatestTroveData memory data;
-        _getLatestTroveData(_troveId, data);
-
-        singleLiquidation.entireDebt = data.entireDebt;
-        singleLiquidation.entireColl = data.entireColl;
-        singleLiquidation.pendingDebtReward = data.redistBoldDebtGain;
-        vars.pendingCollReward = data.redistETHGain;
-        singleLiquidation.recordedDebt = data.recordedDebt;
-        singleLiquidation.accruedInterest = data.accruedInterest;
-        singleLiquidation.weightedRecordedDebt = data.weightedRecordedDebt;
-        singleLiquidation.forgoneUpfrontInterest = data.unusedUpfrontInterest;
-        singleLiquidation.collGasCompensation = _getCollGasCompensation(singleLiquidation.entireColl);
-        singleLiquidation.BoldGasCompensation = BOLD_GAS_COMPENSATION;
-        vars.collToLiquidate = singleLiquidation.entireColl - singleLiquidation.collGasCompensation;
-
-        // If ICR <= 100%, purely redistribute the Trove across all active Troves
-        if (_ICR <= _100pct) {
-            _movePendingTroveRewardsToActivePool(
-                _defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward
-            );
-            _removeStake(_troveId);
-
-            singleLiquidation.debtToOffset = 0;
-            singleLiquidation.collToSendToSP = 0;
-            singleLiquidation.debtToRedistribute = singleLiquidation.entireDebt;
-            singleLiquidation.collToRedistribute = vars.collToLiquidate;
-
-            _closeTrove(_troveId, Status.closedByLiquidation);
-            emit TroveLiquidated(
-                _troveId, singleLiquidation.entireDebt, singleLiquidation.entireColl, Operation.liquidateInRecoveryMode
-            );
-            emit TroveUpdated(_troveId, 0, 0, Operation.liquidateInRecoveryMode);
-
-            // If 100% < ICR < MCR, offset as much as possible, and redistribute the remainder
-        } else if ((_ICR > _100pct) && (_ICR < MCR)) {
-            _movePendingTroveRewardsToActivePool(
-                _defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward
-            );
-            _removeStake(_troveId);
-
-            (
-                singleLiquidation.debtToOffset,
-                singleLiquidation.collToSendToSP,
-                singleLiquidation.debtToRedistribute,
-                singleLiquidation.collToRedistribute
-            ) = _getOffsetAndRedistributionVals(singleLiquidation.entireDebt, vars.collToLiquidate, _boldInStabPool);
-
-            _closeTrove(_troveId, Status.closedByLiquidation);
-            emit TroveLiquidated(
-                _troveId, singleLiquidation.entireDebt, singleLiquidation.entireColl, Operation.liquidateInRecoveryMode
-            );
-            emit TroveUpdated(_troveId, 0, 0, Operation.liquidateInRecoveryMode);
-            /*
-        * If 110% <= ICR < current TCR (accounting for the preceding liquidations in the current sequence)
-        * and there is Bold in the Stability Pool, only offset, with no redistribution,
-        * but at a capped rate of 1.1 and only if the whole debt can be liquidated.
-        * The remainder due to the capped rate will be claimable as collateral surplus.
-        */
-        } else if ((_ICR >= MCR) && (_ICR < _TCR) && (singleLiquidation.entireDebt <= _boldInStabPool)) {
-            _movePendingTroveRewardsToActivePool(
-                _defaultPool, singleLiquidation.pendingDebtReward, vars.pendingCollReward
-            );
-            assert(_boldInStabPool != 0);
-
-            _removeStake(_troveId);
-            singleLiquidation = _getCappedOffsetVals(
-                singleLiquidation.entireDebt,
-                singleLiquidation.entireColl,
-                singleLiquidation.recordedDebt,
-                singleLiquidation.weightedRecordedDebt,
-                _price
-            );
-
-            _closeTrove(_troveId, Status.closedByLiquidation);
-            if (singleLiquidation.collSurplus > 0) {
-                collSurplusPool.accountSurplus(_troveId, singleLiquidation.collSurplus);
-            }
-
-            emit TroveLiquidated(
-                _troveId,
-                singleLiquidation.entireDebt,
-                singleLiquidation.collToSendToSP,
-                Operation.liquidateInRecoveryMode
-            );
-            emit TroveUpdated(_troveId, 0, 0, Operation.liquidateInRecoveryMode);
-        } else {
-            // if (_ICR >= MCR && ( _ICR >= _TCR || singleLiquidation.entireTroveDebt > _boldInStabPool))
-            return; // zero values
-        }
+        emit TroveLiquidated(_troveId, singleLiquidation.entireDebt, singleLiquidation.entireColl, Operation.liquidate);
+        emit TroveUpdated(_troveId, 0, 0, Operation.liquidate);
     }
 
     /* In a full liquidation, returns the values for a trove's coll and debt to be offset, and coll and debt to be
@@ -522,15 +413,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         vars.price = priceFeed.fetchPrice();
         vars.boldInStabPool = stabilityPoolCached.getTotalBoldDeposits();
-        vars.recoveryModeAtStart = _checkRecoveryMode(vars.price);
 
         // Perform the appropriate liquidation sequence - tally values and obtain their totals.
-        if (vars.recoveryModeAtStart) {
-            _batchLiquidateTroves_RecoveryMode(defaultPoolCached, vars.price, vars.boldInStabPool, _troveArray, totals);
-        } else {
-            //  if !vars.recoveryModeAtStart
-            _batchLiquidateTroves_NormalMode(defaultPoolCached, vars.price, vars.boldInStabPool, _troveArray, totals);
-        }
+        _batchLiquidateTroves(defaultPoolCached, vars.price, vars.boldInStabPool, _troveArray, totals);
 
         require(totals.totalDebtInSequence > 0, "TroveManager: nothing to liquidate");
 
@@ -570,72 +455,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         return _status == Status.active || _status == Status.unredeemable;
     }
 
-    /*
-    * This function is used when the batch liquidation sequence starts during Recovery Mode. However, it
-    * handle the case where the system *leaves* Recovery Mode, part way through the liquidation sequence
-    */
-    function _batchLiquidateTroves_RecoveryMode(
-        IDefaultPool _defaultPool,
-        uint256 _price,
-        uint256 _boldInStabPool,
-        uint256[] memory _troveArray,
-        LiquidationTotals memory totals
-    ) internal {
-        LocalVariables_LiquidationSequence memory vars;
-
-        vars.remainingBoldInStabPool = _boldInStabPool;
-        vars.backToNormalMode = false;
-        vars.entireSystemDebt = getEntireSystemDebt();
-        vars.entireSystemColl = getEntireSystemColl();
-
-        for (vars.i = 0; vars.i < _troveArray.length; vars.i++) {
-            vars.troveId = _troveArray[vars.i];
-
-            // Skip non-liquidatable troves
-            if (!_isLiquidatableStatus(Troves[vars.troveId].status)) continue;
-
-            vars.ICR = getCurrentICR(vars.troveId, _price);
-
-            if (!vars.backToNormalMode) {
-                // Skip this trove if ICR is greater than MCR and Stability Pool is empty
-                if (vars.ICR >= MCR && vars.remainingBoldInStabPool == 0) continue;
-
-                uint256 TCR = LiquityMath._computeCR(vars.entireSystemColl, vars.entireSystemDebt, _price);
-
-                LiquidationValues memory singleLiquidation;
-
-                _liquidateRecoveryMode(
-                    _defaultPool, vars.troveId, vars.ICR, vars.remainingBoldInStabPool, TCR, _price, singleLiquidation
-                );
-
-                // Update aggregate trackers
-                vars.remainingBoldInStabPool -= singleLiquidation.debtToOffset;
-                vars.entireSystemDebt -= singleLiquidation.debtToOffset;
-                vars.entireSystemColl -= (
-                    singleLiquidation.collToSendToSP + singleLiquidation.collGasCompensation
-                        + singleLiquidation.collSurplus
-                );
-
-                // Add liquidation values to their respective running totals
-                _addLiquidationValuesToTotals(totals, singleLiquidation);
-
-                vars.backToNormalMode =
-                    !_checkPotentialRecoveryMode(vars.entireSystemColl, vars.entireSystemDebt, _price);
-            } else if (vars.backToNormalMode && vars.ICR < MCR) {
-                LiquidationValues memory singleLiquidation;
-
-                _liquidateNormalMode(_defaultPool, vars.troveId, vars.remainingBoldInStabPool, singleLiquidation);
-                vars.remainingBoldInStabPool -= singleLiquidation.debtToOffset;
-
-                // Add liquidation values to their respective running totals
-                _addLiquidationValuesToTotals(totals, singleLiquidation);
-            } else {
-                continue;
-            } // In Normal Mode skip troves with ICR >= MCR
-        }
-    }
-
-    function _batchLiquidateTroves_NormalMode(
+    function _batchLiquidateTroves(
         IDefaultPool _defaultPool,
         uint256 _price,
         uint256 _boldInStabPool,
@@ -657,7 +477,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             if (vars.ICR < MCR) {
                 LiquidationValues memory singleLiquidation;
 
-                _liquidateNormalMode(_defaultPool, vars.troveId, vars.remainingBoldInStabPool, singleLiquidation);
+                _liquidate(_defaultPool, vars.troveId, vars.remainingBoldInStabPool, singleLiquidation);
                 vars.remainingBoldInStabPool -= singleLiquidation.debtToOffset;
 
                 // Add liquidation values to their respective running totals
@@ -1155,25 +975,14 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         TroveIds.pop();
     }
 
-    // --- Recovery Mode and TCR functions ---
+    // --- TCR functions ---
 
     function getTCR(uint256 _price) external view override returns (uint256) {
         return _getTCR(_price);
     }
 
-    function checkRecoveryMode(uint256 _price) external view override returns (bool) {
-        return _checkRecoveryMode(_price);
-    }
-
-    // Check whether or not the system *would be* in Recovery Mode, given an ETH:USD price, and the entire system coll and debt.
-    function _checkPotentialRecoveryMode(uint256 _entireSystemColl, uint256 _entireSystemDebt, uint256 _price)
-        internal
-        pure
-        returns (bool)
-    {
-        uint256 TCR = LiquityMath._computeCR(_entireSystemColl, _entireSystemDebt, _price);
-
-        return TCR < CCR;
+    function checkBelowCriticalThreshold(uint256 _price) external view override returns (bool) {
+        return _checkBelowCriticalThreshold(_price);
     }
 
     function checkTroveIsOpen(uint256 _troveId) public view returns (bool) {

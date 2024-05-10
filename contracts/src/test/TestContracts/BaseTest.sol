@@ -154,21 +154,39 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function checkRecoveryMode(bool _enabled) public {
+    function checkBelowCriticalThreshold(bool _true) public {
         uint256 price = priceFeed.getPrice();
-        bool recoveryMode = troveManager.checkRecoveryMode(price);
-        assertEq(recoveryMode, _enabled);
+        bool belowCriticalThreshold = troveManager.checkBelowCriticalThreshold(price);
+        assertEq(belowCriticalThreshold, _true);
     }
 
-    function makeSPDeposit(address _account, uint256 _amount) public {
+    function makeSPDepositAndClaim(address _account, uint256 _amount) public {
         vm.startPrank(_account);
-        stabilityPool.provideToSP(_amount);
+        stabilityPool.provideToSP(_amount, true);
         vm.stopPrank();
     }
 
-    function makeSPWithdrawal(address _account, uint256 _amount) public {
+    function makeSPDepositNoClaim(address _account, uint256 _amount) public {
         vm.startPrank(_account);
-        stabilityPool.withdrawFromSP(_amount);
+        stabilityPool.provideToSP(_amount, false);
+        vm.stopPrank();
+    }
+
+    function makeSPWithdrawalAndClaim(address _account, uint256 _amount) public {
+        vm.startPrank(_account);
+        stabilityPool.withdrawFromSP(_amount, true);
+        vm.stopPrank();
+    }
+
+    function makeSPWithdrawalNoClaim(address _account, uint256 _amount) public {
+        vm.startPrank(_account);
+        stabilityPool.withdrawFromSP(_amount, false);
+        vm.stopPrank();
+    }
+
+    function claimAllETHGains(address _account) public {
+        vm.startPrank(_account);
+        stabilityPool.claimAllETHGains();
         vm.stopPrank();
     }
 
