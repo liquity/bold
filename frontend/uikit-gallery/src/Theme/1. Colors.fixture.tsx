@@ -1,6 +1,6 @@
 "use client";
 
-import { brand, colors } from "@liquity2/uikit";
+import { colors } from "@liquity2/uikit";
 import { ColorGroup, filterColors } from "./shared";
 
 export default function ColorsFixture() {
@@ -24,7 +24,7 @@ export default function ColorsFixture() {
       >
         <ColorGroup
           name="Brand"
-          colors={brand}
+          colors={filterColors(colors, "brand:")}
         />
         <ColorGroup
           name="Blue"
