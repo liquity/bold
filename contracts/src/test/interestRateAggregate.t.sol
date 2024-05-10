@@ -529,13 +529,16 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
+        uint256 expectedSPYield_A = SP_YIELD_SPLIT * pendingAggInterest / 1e18;
+
+        uint256 expectedBoldGain_A = getShareofSPReward(A, expectedSPYield_A);
 
         // A withdraws from SP
         makeSPWithdrawalAndClaim(A, sPdeposit);
 
-        // Check SP Bold bal has increased as expected from 3rd trove opening
+        // Check SP Bold bal has increased as expected 
         uint256 boldBalSP_2 = boldToken.balanceOf(address(stabilityPool));
-        assertEq(boldBalSP_2, boldBalSP_1 - sPdeposit + pendingAggInterest);
+        assertApproximatelyEqual(boldBalSP_2, boldBalSP_1 - sPdeposit + pendingAggInterest - expectedBoldGain_A, 1e3);
     }
 
     function testSPWithdrawalDoesNotChangeAggWeightedDebtSum() public {
@@ -2219,29 +2222,30 @@ contract InterestRateAggregate is DevTestSetup {
 
     // mints interest to router
     function testClaimAllETHGainsMintsAggInterestToSP() public {
-        _setupForSPDepositAdjustments();
+        TroveIDs memory troveIDs;
+        troveIDs = _setupForSPDepositAdjustments();
 
-        // A stashes first gain
+        // stashes first gain
         makeSPDepositNoClaim(A, 1e18);
 
-        vm.warp(block.timestamp + 1 days);
-
-        // Check A has stashed gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        assertGt(stashedETHGain, 0);
-
-        // Get SP balance
         uint256 boldBalSP_1 = boldToken.balanceOf(address(stabilityPool));
-        assertGt(boldBalSP_1, 0);
+
+        vm.warp(block.timestamp + 90 days + 1);
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
+        uint256 expectedSPYield = pendingAggInterest * SP_YIELD_SPLIT / 1e18;
+        uint256 expectedBoldGain_A = getShareofSPReward(A, expectedSPYield);
+
+        // Check A has stashed ETH gains 
+        uint256 stashedETHGain = stabilityPool.stashedETH(A);
+        assertGt(stashedETHGain, 0);
 
         claimAllETHGains(A);
 
-        // Check SP Bold bal has increased as expected
+        // Check SP Bold bal has changed as expected - by the pendingAggInterest, minus A's share of it which gets paid out
         uint256 boldBalSP_2 = boldToken.balanceOf(address(stabilityPool));
-        assertEq(boldBalSP_2,  boldBalSP_1 + pendingAggInterest);
+        assertApproximatelyEqual(boldBalSP_2,  boldBalSP_1 + pendingAggInterest - expectedBoldGain_A, 1e3);
     }
 
     // TODO: mixed collateral & debt adjustment opps

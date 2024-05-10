@@ -20,6 +20,7 @@ interface IActivePool {
         address _interestRouterAddress
     ) external;
 
+    function SP_YIELD_SPLIT() external view returns (uint256);
     function getETHBalance() external view returns (uint256);
     function getTotalActiveDebt() external view returns (uint256);
     function lastAggUpdateTime() external view returns (uint256);
@@ -27,7 +28,7 @@ interface IActivePool {
     function aggWeightedDebtSum() external view returns (uint256);
     function calcPendingAggInterest() external view returns (uint256);
 
-    function mintAggInterest() external returns (uint256);
+    function mintAggInterest() external;
     function mintAggInterestAndAccountForTroveChange(
         uint256 _troveDebtIncrease,
         uint256 _troveDebtDecrease,

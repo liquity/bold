@@ -577,6 +577,526 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), 0);
         assertEq(WETH.balanceOf(A), ETHBal_A + stashedETHGain_A);
     }
+
+    // --- Bold reward sum 'B' tests ---
+
+    function testBoldRewardSumIncreasesWhenTroveOpened() public {
+        _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_1, 0);
+
+        openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        assertGt(boldRewardSum_2, boldRewardSum_1);
+    }
+    
+    function testBoldRewardSumIncreasesWhenTroveInterestRateAdjusted() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_1, 0);
+
+        changeInterestRateNoHints(B, troveIDs.B, 75e16);
+
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        assertGt(boldRewardSum_2, boldRewardSum_1);
+    }
+
+    function testBoldRewardSumIncreasesWhenTroveClosed() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+        troveIDs.F = openTroveNoHints100pct(F, 3 ether, 2000e18, 25e16);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_1, 0);
+
+        // F sends E his bold so he can close
+        vm.startPrank(F);
+        boldToken.transfer(E, boldToken.balanceOf(F));
+        vm.stopPrank();
+        closeTrove(E, troveIDs.E);
+
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        assertGt(boldRewardSum_2, boldRewardSum_1);
+    }
+
+    function testBoldRewardSumIncreasesWhenTroveDebtAndCollAdjusted() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_1, 0);
+
+        adjustTrove100pct(
+            A,
+            troveIDs.A,
+            1,
+            1,
+            true,
+            true
+        );
+
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        assertGt(boldRewardSum_2, boldRewardSum_1);
+    }
+
+    function testBoldRewardSumIncreasesWhenInterestAppliedPermissionlessly() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_1, 0);
+
+        // B applies A's pending interest
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        assertGt(boldRewardSum_2, boldRewardSum_1);
+    }
+
+    function testBoldRewardSumIncreasesWhenTroveLiquidated() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_1, 0);
+
+        // A liquidates D
+        liquidate(A, troveIDs.D);
+        assertEq(troveManager.getTroveStatus(troveIDs.D), 3); // Status 3 - closed by liq
+
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        assertGt(boldRewardSum_2, boldRewardSum_1);
+    }
+
+    function testBoldRewardSumIncreasesWhenRedemptionOccurs() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_1, 0);
+
+        uint256 wethBalBefore_A = WETH.balanceOf(A);
+        // A redeems
+        redeem(A, 1e18);
+        assertGt(WETH.balanceOf(A), wethBalBefore_A);
+
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        assertGt(boldRewardSum_2, boldRewardSum_1);
+    }
+
+    function testBoldRewardSumIncreasesWhenNewDepositIsMade() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_1, 0);
+
+        // E Makes deposit
+        makeSPDepositAndClaim(E, 1e18);
+
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        assertGt(boldRewardSum_2, boldRewardSum_1);
+    }
+
+    function testBoldRewardSumIncreasesWhenDepositToppedUp() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_1, 0);
+
+        // A tops up deposit
+        makeSPDepositAndClaim(A, 1e18);
+
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        assertGt(boldRewardSum_2, boldRewardSum_1);
+    }
+
+    function testBoldRewardSumIncreasesWhenDepositWithdrawn() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_1, 0);
+
+        // A withdraws some deposit
+        makeSPWithdrawalAndClaim(A, 1e18);
+
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        assertGt(boldRewardSum_2, boldRewardSum_1);
+    }
+
+    // ---- boldRewardsOwed tests ---
+
+      function testBoldRewardsOwedIncreasesWhenTroveOpened() public {
+        _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
+        assertEq(boldRewardsOwed_1, 0);
+
+        openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+
+        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
+        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+    }
+    
+    function testBoldRewardsOwedIncreasesWhenTroveInterestRateAdjusted() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
+        assertEq(boldRewardsOwed_1, 0);
+
+        changeInterestRateNoHints(B, troveIDs.B, 75e16);
+
+        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
+        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+    }
+
+    function testBoldRewardsOwedIncreasesWhenTroveClosed() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+        troveIDs.F = openTroveNoHints100pct(F, 3 ether, 2000e18, 25e16);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
+        assertEq(boldRewardsOwed_1, 0);
+
+        // F sends E his bold so he can close
+        vm.startPrank(F);
+        boldToken.transfer(E, boldToken.balanceOf(F));
+        vm.stopPrank();
+        closeTrove(E, troveIDs.E);
+
+        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
+        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+    }
+
+    function testBoldRewardsOwedIncreasesWhenTroveDebtAndCollAdjusted() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
+        assertEq(boldRewardsOwed_1, 0);
+
+        adjustTrove100pct(
+            A,
+            troveIDs.A,
+            1,
+            1,
+            true,
+            true
+        );
+
+        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
+        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+    }
+
+    function testBoldRewardsOwedIncreasesWhenInterestAppliedPermissionlessly() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
+        assertEq(boldRewardsOwed_1, 0);
+
+        // B applies A's pending interest
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
+        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+    }
+
+    function testBoldRewardsOwedIncreasesWhenTroveLiquidated() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
+        assertEq(boldRewardsOwed_1, 0);
+
+        // A liquidates D
+        liquidate(A, troveIDs.D);
+        assertEq(troveManager.getTroveStatus(troveIDs.D), 3); // Status 3 - closed by liq
+
+        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
+        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+    }
+
+    function testBoldRewardsOwedIncreasesWhenRedemptionOccurs() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
+        assertEq(boldRewardsOwed_1, 0);
+        uint256 wethBalBefore_A = WETH.balanceOf(A);
+        // A redeems
+        redeem(A, 1e18);
+        assertGt(WETH.balanceOf(A), wethBalBefore_A);
+
+        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
+        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+    }
+
+    function testBoldRewardsOwedIncreasesWhenNewDepositIsMade() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
+        assertEq(boldRewardsOwed_1, 0);
+
+        // E Makes deposit
+        makeSPDepositAndClaim(E, 1e18);
+
+        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
+        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+    }
+
+    function testBoldRewardsOwedIncreasesWhenDepositToppedUp() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
+        assertEq(boldRewardsOwed_1, 0);
+
+        // A tops up deposit
+        makeSPDepositAndClaim(A, 1e18);
+
+        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
+        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+    }
+
+    function testBoldRewardsOwedIncreasesWhenDepositWithdrawn() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
+        assertEq(boldRewardsOwed_1, 0);
+
+        // A withdraws some deposit
+        makeSPWithdrawalAndClaim(A, 1e18);
+
+         uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
+        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+    }
+
+    // --- depositor BOLD rewards tests ---
+
+    function testGetDepositorBoldGain1SPDepositor1RewardEventEarnsAllSPYield() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        // B withdraws entirely
+        makeSPWithdrawalAndClaim(B, stabilityPool.getCompoundedBoldDeposit(B));
+
+        // Check A has entirely of the non-zero SP deposits
+        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), stabilityPool.getTotalBoldDeposits(), 1e4);
+        assertGt(stabilityPool.getTotalBoldDeposits(), 0);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+        uint256 expectedSpYield = SP_YIELD_SPLIT * pendingAggInterest / 1e18;
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        assertApproximatelyEqual(stabilityPool.getDepositorBoldGain(A), expectedSpYield, 1e4);
+    }
+
+    function testGetDepositorBoldGain2SPDepositor1RewardEventEarnFairShareOfSPYield() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+        uint256 expectedSpYield = SP_YIELD_SPLIT * pendingAggInterest / 1e18;
+
+        uint256 expectedShareOfReward_A = getShareofSPReward(A, expectedSpYield);
+        uint256 expectedShareOfReward_B = getShareofSPReward(B, expectedSpYield);
+        // Confirm the expected shares sum up to the total expected yield
+        assertApproximatelyEqual(expectedShareOfReward_A + expectedShareOfReward_B, expectedSpYield, 1e3);
+        assertGt(expectedShareOfReward_B, expectedShareOfReward_A);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        // Check both depositors earn their expected shares of the yield
+        assertApproximatelyEqual(stabilityPool.getDepositorBoldGain(A), expectedShareOfReward_A, 1e4);
+        assertApproximatelyEqual(stabilityPool.getDepositorBoldGain(B), expectedShareOfReward_B, 1e4);
+    }
+
+     function testGetDepositorBoldGain1SPDepositor2RewardEventEarnsAllSPYield() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        // B withdraws entirely
+        makeSPWithdrawalAndClaim(B, stabilityPool.getCompoundedBoldDeposit(B));
+
+        // Check A has entirely of the non-zero SP deposits
+        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), stabilityPool.getTotalBoldDeposits(), 1e4);
+        assertGt(stabilityPool.getTotalBoldDeposits(), 0);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_1, 0);
+        uint256 expectedSpYield_1 = SP_YIELD_SPLIT * pendingAggInterest_1 / 1e18;
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
+        assertGt(boldRewardsOwed_1, 0);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest_2 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_2, 0);
+        uint256 expectedSpYield_2 = SP_YIELD_SPLIT * pendingAggInterest_2 / 1e18;
+
+        // A trove gets poked, interest minted and yield paid to SP again
+        applyTroveInterestPermissionless(B, troveIDs.A);
+        uint256 boldRewardsOwed_2 = stabilityPool.getBoldRewardsOwed();
+        assertGt(boldRewardsOwed_2, 0);
+
+        assertApproximatelyEqual(stabilityPool.getDepositorBoldGain(A), expectedSpYield_1 + expectedSpYield_2, 1e4);
+    }
+
+    function testGetDepositorBoldGain3SPDepositor3RewardEventEarnFairShareOfSPYield() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_1, 0);
+        uint256 expectedSpYield_1 = SP_YIELD_SPLIT * pendingAggInterest_1 / 1e18;
+
+        uint256 expectedShareOfReward1_A = getShareofSPReward(A, expectedSpYield_1);
+        uint256 expectedShareOfReward1_B = getShareofSPReward(B, expectedSpYield_1);
+        assertGt(expectedShareOfReward1_A, 0);
+        assertGt(expectedShareOfReward1_B, 0);
+    
+        // Confirm the expected shares sum up to the total expected yield 
+        assertApproximatelyEqual(expectedShareOfReward1_A + expectedShareOfReward1_B, expectedSpYield_1, 1e3);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        // fast-forward time again and accrue interest
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest_2 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_2, 0);
+        uint256 expectedSpYield_2 = SP_YIELD_SPLIT * pendingAggInterest_2 / 1e18;
+
+        uint256 expectedShareOfReward2_A = getShareofSPReward(A, expectedSpYield_2);
+        uint256 expectedShareOfReward2_B = getShareofSPReward(B, expectedSpYield_2);
+        assertGt(expectedShareOfReward2_A, 0);
+        assertGt(expectedShareOfReward2_B, 0);
+    
+        // Confirm the expected shares sum up to the total expected yield 
+        assertApproximatelyEqual(expectedShareOfReward2_A + expectedShareOfReward2_B, expectedSpYield_2, 1e3);
+
+         // A trove gets poked again, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        // Check both depositors earn their expected shares of the yield
+        console.log(stabilityPool.getDepositorBoldGain(A), "stabilityPool.getDepositorBoldGain(A)");
+        console.log(expectedShareOfReward1_A + expectedShareOfReward2_A, "expectedShareOfReward1_A + expectedShareOfReward2_A");
+        assertApproximatelyEqual(stabilityPool.getDepositorBoldGain(A), expectedShareOfReward1_A + expectedShareOfReward2_A, 1e4);
+        assertApproximatelyEqual(stabilityPool.getDepositorBoldGain(B), expectedShareOfReward1_B + expectedShareOfReward2_B, 1e4);
+    }
 }
 
 // TODO:

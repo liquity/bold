@@ -167,6 +167,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     mapping(address => Deposit) public deposits; // depositor address -> Deposit struct
     mapping(address => Snapshots) public depositSnapshots; // depositor address -> snapshots struct
     mapping(address => uint256) public stashedETH;
+    mapping(address => uint256) public stashedBold;
 
     /*  Product 'P': Running product by which to multiply an initial deposit, in order to find the current compounded deposit,
     * after a series of liquidations have occurred, each of which cancel some Bold debt with the deposit.
@@ -221,12 +222,15 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     event EpochUpdated(uint128 _currentEpoch);
     event ScaleUpdated(uint128 _currentScale);
 
-    event DepositSnapshotUpdated(address indexed _depositor, uint256 _P, uint256 _S);
+    event DepositSnapshotUpdated(address indexed _depositor, uint256 _P, uint256 _S, uint256 _B);
     event UserDepositChanged(address indexed _depositor, uint256 _newDeposit);
 
     event ETHGainWithdrawn(address indexed _depositor, uint256 _ETH, uint256 _boldLoss);
     // TODO: Do we still need this, as we’ll likely have the ERC20 transfer event?
     event EtherSent(address _to, uint256 _amount);
+
+    event BoldRewardsOwedUpdated(uint256 _newBoldRewardsOwed);
+    event BoldGainsSent(address _to, uint256 _amount);
 
     constructor(address _ETHAddress) {
         checkContract(_ETHAddress);
@@ -280,6 +284,10 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         return totalBoldDeposits;
     }
 
+    function getBoldRewardsOwed() external view override returns (uint256) {
+        return boldRewardsOwed;
+    }
+
     // --- External Depositor Functions ---
 
     /*  provideToSP():
@@ -291,12 +299,12 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     function provideToSP(uint256 _amount, bool _doClaim) external override {
         _requireNonZeroAmount(_amount);
 
-        uint256 spYield = activePool.mintAggInterest();
-        _triggerBoldRewards(spYield);
+        activePool.mintAggInterest();
 
         uint256 initialDeposit = deposits[msg.sender].initialValue;
 
         uint256 currentETHGain = getDepositorETHGain(msg.sender);
+        uint256 currentBoldGain = getDepositorBoldGain(msg.sender);
         uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         uint256 boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
 
@@ -306,8 +314,9 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         _updateDepositAndSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
 
-        _stashOrSendETHGains(msg.sender, currentETHGain, boldLoss, _doClaim);
+        _stashOrSendGains(msg.sender, currentETHGain, currentBoldGain, boldLoss, _doClaim);
         assert(getDepositorETHGain(msg.sender) == 0);
+        assert(getDepositorBoldGain(msg.sender) == 0);
     }
 
     /*  withdrawFromSP():
@@ -322,24 +331,25 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
 
-        uint256 spYield = activePool.mintAggInterest();
-        _triggerBoldRewards(spYield);
-
+        activePool.mintAggInterest();
+     
         uint256 currentETHGain = getDepositorETHGain(msg.sender);
+        uint256 currentBoldGain = getDepositorBoldGain(msg.sender);
 
         uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         uint256 BoldtoWithdraw = LiquityMath._min(_amount, compoundedBoldDeposit);
         uint256 boldLoss = initialDeposit - compoundedBoldDeposit; // Needed only for event log
 
-        _sendBoldToDepositor(msg.sender, BoldtoWithdraw);
+        _withdrawBoldDeposit(msg.sender, BoldtoWithdraw);
 
         // Update deposit
         uint256 newDeposit = compoundedBoldDeposit - BoldtoWithdraw;
         _updateDepositAndSnapshots(msg.sender, newDeposit);
         emit UserDepositChanged(msg.sender, newDeposit);
 
-        _stashOrSendETHGains(msg.sender, currentETHGain, boldLoss, _doClaim);
+        _stashOrSendGains(msg.sender, currentETHGain, currentBoldGain, boldLoss, _doClaim);
         assert(getDepositorETHGain(msg.sender) == 0);
+        assert(getDepositorBoldGain(msg.sender) == 0);
     }
 
     function _stashOrSendETHGains(address _depositor, uint256 _currentETHGain, uint256 _boldLoss, bool _doClaim)
@@ -361,10 +371,14 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 stashedETHGain = stashedETH[_depositor];
         uint256 totalETHGain = stashedETHGain + _currentETHGain;
 
+        // Get total BOLD gains
+        uint256 stashedBoldGain = stashedBold[_depositor];
+        uint256 totalBoldGain = stashedBoldGain + _currentBoldGain;
+
         // TODO: Gas - saves gas when stashedETHGain == 0?
         if (stashedETHGain > 0) stashedETH[_depositor] = 0;
 
-        return totalETHGain;
+        return (totalETHGain, totalBoldGain);
     }
 
     // TODO: Make this also claim BOlD gains when they are implemented
@@ -373,9 +387,9 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 initialDeposit = deposits[msg.sender].initialValue;
         uint256 boldLoss;
         uint256 currentETHGain;
+        uint256 currentBoldGain;
 
-        uint256 spYield = activePool.mintAggInterest();
-        _triggerBoldRewards(spYield);
+        activePool.mintAggInterest();
 
         // If they have a deposit, update it and update its snapshots
         if (initialDeposit > 0) {
@@ -391,11 +405,13 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
         _sendETHGainToDepositor(ETHToSend);
         assert(getDepositorETHGain(msg.sender) == 0);
+        assert(getDepositorBoldGain(msg.sender) == 0);
     }
 
     // --- BOLD reward functions ---
 
-    function _triggerBoldRewards(uint256 _boldYield) internal {
+    function triggerBoldRewards(uint256 _boldYield) external {
+        _requireCallerIsActivePool();
         boldRewardsOwed += _boldYield;
    
         uint256 totalBoldDepositsCached = totalBoldDeposits; // cached to save an SLOAD
@@ -584,6 +600,17 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         return ETHGain;
     }
 
+    function getDepositorBoldGain(address _depositor) public view override returns (uint256) {
+        uint256 initialDeposit = deposits[_depositor].initialValue;
+
+        if (initialDeposit == 0) return 0;
+
+        Snapshots memory snapshots = depositSnapshots[_depositor];
+
+        uint256 boldGain = _getBoldGainFromSnapshots(initialDeposit, snapshots);
+        return boldGain;
+    }
+
     function _getETHGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots)
         internal
         view
@@ -605,6 +632,29 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 ETHGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
 
         return ETHGain;
+    }
+
+    function _getBoldGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots)
+        internal
+        view
+        returns (uint256)
+    {
+        /*
+        * Grab the sum 'B' from the epoch at which the stake was made. The Bold gain may span up to one scale change.
+        * If it does, the second portion of the Bold gain is scaled by 1e9.
+        * If the gain spans no scale change, the second portion will be 0.
+        */
+        uint128 epochSnapshot = snapshots.epoch;
+        uint128 scaleSnapshot = snapshots.scale;
+        uint256 B_Snapshot = snapshots.B;
+        uint256 P_Snapshot = snapshots.P;
+
+        uint256 firstPortion = epochToScaleToB[epochSnapshot][scaleSnapshot] - B_Snapshot;
+        uint256 secondPortion = epochToScaleToB[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
+
+        uint256 boldGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
+
+        return boldGain;
     }
 
     // --- Compounded deposit ---
@@ -676,14 +726,24 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         emit StabilityPoolBoldBalanceUpdated(newTotalBoldDeposits);
     }
 
-    function _sendETHGainToDepositor(uint256 _amount) internal {
-        if (_amount == 0) return;
-        uint256 newETHBalance = ETHBalance - _amount;
-        ETHBalance = newETHBalance;
-        emit StabilityPoolETHBalanceUpdated(newETHBalance);
-        emit EtherSent(msg.sender, _amount);
+    function _sendGainsToDepositor(uint256 _ETHAmount, uint256 _boldAmount) internal {
+        if (_ETHAmount > 0) {
+             uint256 newETHBalance = ETHBalance - _ETHAmount;
+            ETHBalance = newETHBalance;
+            emit StabilityPoolETHBalanceUpdated(newETHBalance);
+            emit EtherSent(msg.sender, _ETHAmount);
+            ETH.safeTransfer(msg.sender, _ETHAmount);
+        }
 
-        ETH.safeTransfer(msg.sender, _amount);
+        if (_boldAmount > 0) {
+            uint256 newBoldRewardsOwed = boldRewardsOwed - _boldAmount;
+            boldRewardsOwed = newBoldRewardsOwed;
+            emit BoldRewardsOwedUpdated(newBoldRewardsOwed);
+            emit BoldGainsSent(msg.sender, _boldAmount);
+
+            // TODO: use safeTransfer here (and update BoldToken to inherit latest OZ ERC20 contract?)
+            boldToken.transfer(msg.sender, _boldAmount);
+        }
     }
 
     function receiveETH(uint256 _amount) external {
@@ -699,7 +759,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     }
 
     // Send Bold to user and decrease Bold in Pool
-    function _sendBoldToDepositor(address _depositor, uint256 BoldWithdrawal) internal {
+    function _withdrawBoldDeposit(address _depositor, uint256 BoldWithdrawal) internal {
         if (BoldWithdrawal == 0) return;
 
         boldToken.returnFromPool(address(this), _depositor, BoldWithdrawal);
@@ -713,7 +773,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
         if (_newValue == 0) {
             delete depositSnapshots[_depositor];
-            emit DepositSnapshotUpdated(_depositor, 0, 0);
+            emit DepositSnapshotUpdated(_depositor, 0, 0, 0);
             return;
         }
         uint128 currentScaleCached = currentScale;
@@ -722,14 +782,16 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
         // Get S for the current epoch and current scale
         uint256 currentS = epochToScaleToS[currentEpochCached][currentScaleCached];
+        uint256 currentB = epochToScaleToB[currentEpochCached][currentScaleCached];
 
         // Record new snapshots of the latest running product P and sum S for the depositor
         depositSnapshots[_depositor].P = currentP;
         depositSnapshots[_depositor].S = currentS;
+        depositSnapshots[_depositor].B = currentB;
         depositSnapshots[_depositor].scale = currentScaleCached;
         depositSnapshots[_depositor].epoch = currentEpochCached;
 
-        emit DepositSnapshotUpdated(_depositor, currentP, currentS);
+        emit DepositSnapshotUpdated(_depositor, currentP, currentS, currentB);
     }
 
     // --- 'require' functions ---

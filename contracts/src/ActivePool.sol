@@ -190,7 +190,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     ) external {
         _requireCallerIsBOorTroveM();
 
-        (uint256 aggInterest, ) = _mintAggInterest();
+       uint256 aggInterest = _mintAggInterest();
         
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
         uint256 newAggRecordedDebt = aggRecordedDebt; // 1 SLOAD
@@ -209,27 +209,30 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         aggWeightedDebtSum = newAggWeightedDebtSum; // 1 SSTORE
     }
 
-    function mintAggInterest() external override returns (uint256) {
+    function mintAggInterest() external override  {
         _requireCallerIsSP();
-        (, uint256 spYield) = _mintAggInterest();
-        aggRecordedDebt += spYield;
-        return spYield;
+        aggRecordedDebt +=  _mintAggInterest();
     }
 
-    function _mintAggInterest() internal returns (uint256, uint256) {
+    function _mintAggInterest() internal returns (uint256) {
         uint256 aggInterest = calcPendingAggInterest();
 
         // Mint part of the BOLD interest to the SP.
         // TODO: implement interest minting to LPs
-        uint256 spYield;
+        
         if (aggInterest > 0) {
-            spYield = SP_YIELD_SPLIT * aggInterest / 1e18;
+            uint256 spYield = SP_YIELD_SPLIT * aggInterest / 1e18;
+            uint256 remainderToLPs = aggInterest - spYield;
+           
+            boldToken.mint(address(interestRouter), remainderToLPs);
             boldToken.mint(address(stabilityPool), spYield);
+
+            stabilityPool.triggerBoldRewards(spYield);
         }
 
         lastAggUpdateTime = block.timestamp;
 
-        return (aggInterest, spYield);
+        return aggInterest;
     }
 
     // --- 'require' functions ---

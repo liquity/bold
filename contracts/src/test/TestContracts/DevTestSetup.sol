@@ -9,6 +9,7 @@ contract DevTestSetup is BaseTest {
 
     uint256 BOLD_GAS_COMP;
     uint256 MIN_NET_DEBT;
+    uint256 SP_YIELD_SPLIT;
 
     function giveAndApproveETH(address _account, uint256 _amount) public {
         return giveAndApproveCollateral(WETH, _account, _amount, address(borrowerOperations));
@@ -77,6 +78,7 @@ contract DevTestSetup is BaseTest {
 
         BOLD_GAS_COMP = troveManager.BOLD_GAS_COMPENSATION();
         MIN_NET_DEBT = troveManager.MIN_NET_DEBT();
+        SP_YIELD_SPLIT = activePool.SP_YIELD_SPLIT();
     }
 
     function _setupForWithdrawETHGainToTrove() internal returns (uint256, uint256, uint256) {
