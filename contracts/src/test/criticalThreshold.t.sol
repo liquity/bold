@@ -2,7 +2,6 @@ pragma solidity ^0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 
-
 contract CriticalThresholdTest is DevTestSetup {
     function setUpBelowCT() internal returns (uint256, uint256, uint256) {
         priceFeed.setPrice(2000e18);
@@ -17,7 +16,7 @@ contract CriticalThresholdTest is DevTestSetup {
     }
 
     function testTrovesAreNotLiquidatedBetweenMCRAndCT() public {
-        (,uint256 BTroveId, uint256 price) = setUpBelowCT();
+        (, uint256 BTroveId, uint256 price) = setUpBelowCT();
 
         // Check A between MCR and CT
         uint256 AICR = troveManager.getCurrentICR(BTroveId, price);

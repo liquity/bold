@@ -184,12 +184,11 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-     function claimAllETHGains(address _account) public {
+    function claimAllETHGains(address _account) public {
         vm.startPrank(_account);
         stabilityPool.claimAllETHGains();
         vm.stopPrank();
     }
-
 
     function closeTrove(address _account, uint256 _troveId) public {
         vm.startPrank(_account);
