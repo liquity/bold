@@ -491,7 +491,7 @@ contract("TroveManager", async (accounts) => {
     });
 
     // Alice proves 10 Bold to SP
-    await stabilityPool.provideToSP(dec(10, 18), { from: alice });
+    await th.provideToSPAndClaim(contracts, dec(10, 18), { from: alice });
 
     // Set ETH:USD price to 105
     await priceFeed.setPrice("105000000000000000000");
@@ -618,7 +618,7 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: alice } });
     await openTrove({ ICR: toBN(dec(70, 18)), extraParams: { from: bob } });
@@ -683,7 +683,7 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: spDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: alice } });
     await openTrove({ ICR: toBN(dec(70, 18)), extraParams: { from: bob } });
@@ -867,7 +867,7 @@ contract("TroveManager", async (accounts) => {
     await boldToken.transfer(dennis, spDeposit, { from: bob });
 
     // Dennis provides Bold to SP
-    await stabilityPool.provideToSP(spDeposit, { from: dennis });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: dennis });
 
     // Carol gets liquidated
     await priceFeed.setPrice(dec(100, 18));
@@ -929,7 +929,7 @@ contract("TroveManager", async (accounts) => {
     });
 
     // Bob provides Bold to SP
-    await stabilityPool.provideToSP(spDeposit, { from: bob });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: bob });
 
     // Carol gets liquidated
     await priceFeed.setPrice(dec(100, 18));
@@ -999,7 +999,7 @@ contract("TroveManager", async (accounts) => {
     });
 
     // Bob provides Bold to SP
-    await stabilityPool.provideToSP(B_spDeposit, { from: bob });
+    await th.provideToSPAndClaim(contracts, B_spDeposit, { from: bob });
 
     // Carol gets liquidated
     await priceFeed.setPrice(dec(100, 18));
@@ -1023,7 +1023,7 @@ contract("TroveManager", async (accounts) => {
     );
 
     // Alice provides Bold to SP
-    await stabilityPool.provideToSP(A_spDeposit, { from: alice });
+    await th.provideToSPAndClaim(contracts, A_spDeposit, { from: alice });
 
     // Confirm system is not below CT
     assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
@@ -1442,7 +1442,7 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: toBN(dec(500, 18)),
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(dec(500, 18), {
+    await th.provideToSPAndClaim(contracts, dec(500, 18), {
       from: whale,
     });
 
@@ -1643,7 +1643,7 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: whaleDeposit,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(whaleDeposit, {
+    await th.provideToSPAndClaim(contracts, whaleDeposit, {
       from: whale,
     });
 
@@ -1668,8 +1668,8 @@ contract("TroveManager", async (accounts) => {
     const liquidatedDebt = A_debt.add(B_debt).add(C_debt);
 
     // A, B provide 100, 300 to the SP
-    await stabilityPool.provideToSP(A_deposit, { from: alice });
-    await stabilityPool.provideToSP(B_deposit, { from: bob });
+    await th.provideToSPAndClaim(contracts, A_deposit, { from: alice });
+    await th.provideToSPAndClaim(contracts, B_deposit, { from: bob });
 
     assert.equal((await sortedTroves.getSize()).toString(), "4");
 
@@ -1825,7 +1825,7 @@ contract("TroveManager", async (accounts) => {
     assert.isFalse(await sortedTroves.contains(ATroveId));
 
     // A adds 10 Bold to the SP, but less than C's debt
-    await stabilityPool.provideToSP(dec(10, 18), { from: A });
+    await th.provideToSPAndClaim(contracts, dec(10, 18), { from: A });
 
     // Price drops
     await priceFeed.setPrice(dec(100, 18));
@@ -1875,8 +1875,8 @@ contract("TroveManager", async (accounts) => {
     assert.isTrue(await th.checkBelowCriticalThreshold(contracts));
 
     // D and E fill the Stability Pool, enough to completely absorb C's debt of 70
-    await stabilityPool.provideToSP(dec(50, 18), { from: D });
-    await stabilityPool.provideToSP(dec(50, 18), { from: E });
+    await th.provideToSPAndClaim(contracts, dec(50, 18), { from: D });
+    await th.provideToSPAndClaim(contracts, dec(50, 18), { from: E });
 
     await priceFeed.setPrice(dec(50, 18));
 
@@ -1906,7 +1906,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal((await sortedTroves.getSize()).toString(), "6");
 
     // Whale puts some tokens in Stability Pool
-    await stabilityPool.provideToSP(dec(300, 18), {
+    await th.provideToSPAndClaim(contracts, dec(300, 18), {
       from: whale,
     });
 
@@ -1974,7 +1974,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal((await sortedTroves.getSize()).toString(), "6");
 
     // Whale puts some tokens in Stability Pool
-    await stabilityPool.provideToSP(dec(300, 18), {
+    await th.provideToSPAndClaim(contracts, dec(300, 18), {
       from: whale,
     });
 
@@ -2038,7 +2038,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal((await sortedTroves.getSize()).toString(), "6");
 
     // Whale puts some tokens in Stability Pool
-    await stabilityPool.provideToSP(dec(300, 18), {
+    await th.provideToSPAndClaim(contracts, dec(300, 18), {
       from: whale,
     });
 
@@ -2101,7 +2101,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal((await sortedTroves.getSize()).toString(), "6");
 
     // Whale puts some tokens in Stability Pool
-    await stabilityPool.provideToSP(dec(300, 18), {
+    await th.provideToSPAndClaim(contracts, dec(300, 18), {
       from: whale,
     });
 
@@ -2155,7 +2155,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal((await sortedTroves.getSize()).toString(), "5");
 
     // Whale puts some tokens in Stability Pool
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // --- TEST ---
 
@@ -2240,7 +2240,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal((await sortedTroves.getSize()).toString(), "6");
 
     // Whale puts some tokens in Stability Pool
-    await stabilityPool.provideToSP(spDeposit, { from: whale });
+    await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
     // Whale transfers to Carol so she can close her trove
     await boldToken.transfer(carol, dec(100, 18), { from: whale });
@@ -3676,11 +3676,11 @@ contract("TroveManager", async (accounts) => {
     await boldToken.transfer(erin, redemptionAmount, { from: alice });
 
     // B, C, D deposit some of their tokens to the Stability Pool
-    await stabilityPool.provideToSP(dec(50, 18), { from: bob });
-    await stabilityPool.provideToSP(dec(150, 18), {
+    await th.provideToSPAndClaim(contracts, dec(50, 18), { from: bob });
+    await th.provideToSPAndClaim(contracts, dec(150, 18), {
       from: carol,
     });
-    await stabilityPool.provideToSP(dec(200, 18), {
+    await th.provideToSPAndClaim(contracts, dec(200, 18), {
       from: dennis,
     });
 
@@ -4746,7 +4746,7 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: totalDebt,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(totalDebt, { from: whale });
+    await th.provideToSPAndClaim(contracts, totalDebt, { from: whale });
 
     // Price drops
     await priceFeed.setPrice(dec(100, 18));
@@ -4788,7 +4788,7 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: totalDebt,
       extraParams: { from: whale },
     });
-    await stabilityPool.provideToSP(totalDebt, { from: whale });
+    await th.provideToSPAndClaim(contracts, totalDebt, { from: whale });
 
     // Price drops
     await priceFeed.setPrice(dec(100, 18));

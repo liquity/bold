@@ -58,10 +58,12 @@ export default {
         </>
       ),
       claimCheckbox: "Also claim rewards",
+      action: "Add deposit",
     },
     withdrawPanel: {
       label: "You withdraw",
       claimCheckbox: "Also claim rewards",
+      action: "Withdraw",
     },
     rewardsPanel: {
       label: "You claim",
@@ -70,6 +72,27 @@ export default {
           ~{usdAmount} USD • Expected gas fee ~{fee} USD
         </>
       ),
+      action: "Claim rewards",
     },
+  },
+
+  // Borrow screen
+  borrowScreen: {
+    headline: (tokensIcons: N, boldIcon: N) => (
+      <>
+        Deposit {tokensIcons} to Borrow {boldIcon} BOLD
+      </>
+    ),
+    subheading: "With your own interest rate or ready-to-use strategies",
+    depositField: {
+      label: "You deposit",
+    },
+    borrowField: {
+      label: "You borrow",
+    },
+    interestRateField: {
+      label: "Interest rate",
+    },
+    action: "Open new loan",
   },
 };

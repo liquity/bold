@@ -25,9 +25,9 @@ contract MulticollateralTest is DevTestSetup {
         return troveId;
     }
 
-    function makeMulticollateralSPDeposit(uint256 _collIndex, address _account, uint256 _amount) public {
+    function makeMulticollateralSPDepositAndClaim(uint256 _collIndex, address _account, uint256 _amount) public {
         vm.startPrank(_account);
-        contractsArray[_collIndex].stabilityPool.provideToSP(_amount);
+        contractsArray[_collIndex].stabilityPool.provideToSP(_amount, true);
         vm.stopPrank();
     }
 
@@ -97,15 +97,15 @@ contract MulticollateralTest is DevTestSetup {
 
         // Second collateral unbacked Bold: 5k
         openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 10e18, 10000e18, 5e16);
-        makeMulticollateralSPDeposit(1, A, 5000e18);
+        makeMulticollateralSPDepositAndClaim(1, A, 5000e18);
 
         // Third collateral unbacked Bold: 1k
         openMulticollateralTroveNoHints100pctWithIndex(2, A, 0, 10e18, 10000e18, 5e16);
-        makeMulticollateralSPDeposit(2, A, 9000e18);
+        makeMulticollateralSPDepositAndClaim(2, A, 9000e18);
 
         // Fourth collateral unbacked Bold: 0
         openMulticollateralTroveNoHints100pctWithIndex(3, A, 0, 10e18, 10000e18, 5e16);
-        makeMulticollateralSPDeposit(3, A, 10000e18);
+        makeMulticollateralSPDepositAndClaim(3, A, 10000e18);
 
         // Check A’s final bal
         // TODO: change when we switch to new gas compensation
@@ -219,19 +219,19 @@ contract MulticollateralTest is DevTestSetup {
 
         // First collateral
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 10e18, _boldAmount, 5e16);
-        if (_spBoldAmount1 > 0) makeMulticollateralSPDeposit(0, A, _spBoldAmount1);
+        if (_spBoldAmount1 > 0) makeMulticollateralSPDepositAndClaim(0, A, _spBoldAmount1);
 
         // Second collateral
         openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 10e18, _boldAmount, 5e16);
-        if (_spBoldAmount2 > 0) makeMulticollateralSPDeposit(1, A, _spBoldAmount2);
+        if (_spBoldAmount2 > 0) makeMulticollateralSPDepositAndClaim(1, A, _spBoldAmount2);
 
         // Third collateral
         openMulticollateralTroveNoHints100pctWithIndex(2, A, 0, 10e18, _boldAmount, 5e16);
-        if (_spBoldAmount3 > 0) makeMulticollateralSPDeposit(2, A, _spBoldAmount3);
+        if (_spBoldAmount3 > 0) makeMulticollateralSPDepositAndClaim(2, A, _spBoldAmount3);
 
         // Fourth collateral
         openMulticollateralTroveNoHints100pctWithIndex(3, A, 0, 10e18, _boldAmount, 5e16);
-        if (_spBoldAmount4 > 0) makeMulticollateralSPDeposit(3, A, _spBoldAmount4);
+        if (_spBoldAmount4 > 0) makeMulticollateralSPDepositAndClaim(3, A, _spBoldAmount4);
 
         uint256 boldBalance = boldToken.balanceOf(A);
         // Check A’s final bal

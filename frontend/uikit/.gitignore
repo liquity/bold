@@ -24,3 +24,5 @@ dist-ssr
 *.sw?
 
 /styled-system/
+
+tsconfig.tsbuildinfo

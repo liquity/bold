@@ -341,7 +341,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(activePool.calcPendingAggInterest(), 0);
 
         // A deposits to SP
-        makeSPDeposit(A, sPdeposit);
+        makeSPDepositAndClaim(A, sPdeposit);
 
         // Check pending agg. interest reduced to 0
         assertEq(activePool.calcPendingAggInterest(), 0);
@@ -365,7 +365,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(aggRecordedDebt_1, 0);
 
         // A deposits to SP
-        makeSPDeposit(A, sPdeposit);
+        makeSPDepositAndClaim(A, sPdeposit);
 
         // Check pending agg. debt increased
         uint256 aggRecordedDebt_2 = activePool.aggRecordedDebt();
@@ -387,7 +387,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertLt(activePool.lastAggUpdateTime(), block.timestamp);
 
         // A deposits to SP
-        makeSPDeposit(A, sPdeposit);
+        makeSPDepositAndClaim(A, sPdeposit);
 
         // Check last agg update time increased to now
         assertEq(activePool.lastAggUpdateTime(), block.timestamp);
@@ -412,7 +412,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         // Make SP deposit
-        makeSPDeposit(A, sPdeposit);
+        makeSPDepositAndClaim(A, sPdeposit);
 
         // Check I-router Bold bal has increased as expected from SP deposit
         uint256 boldBalRouter_2 = boldToken.balanceOf(address(mockInterestRouter));
@@ -436,7 +436,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(weightedDebtSum_1, 0);
 
         // Make SP deposit
-        makeSPDeposit(A, sPdeposit);
+        makeSPDepositAndClaim(A, sPdeposit);
 
         // Get weighted sum after, check no change
         uint256 weightedDebtSum_2 = activePool.aggWeightedDebtSum();
@@ -451,7 +451,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A opens Trove to obtain BOLD  and makes SP deposit
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
-        makeSPDeposit(A, sPdeposit);
+        makeSPDepositAndClaim(A, sPdeposit);
 
         // fast-forward time
         vm.warp(block.timestamp + 1 days);
@@ -460,7 +460,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(activePool.calcPendingAggInterest(), 0);
 
         // A withdraws deposit
-        makeSPWithdrawal(A, sPdeposit);
+        makeSPWithdrawalAndClaim(A, sPdeposit);
 
         // Check pending agg. interest reduced to 0
         assertEq(activePool.calcPendingAggInterest(), 0);
@@ -472,7 +472,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A opens Trove to obtain BOLD  and makes SP deposit
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
-        makeSPDeposit(A, sPdeposit);
+        makeSPDepositAndClaim(A, sPdeposit);
 
         // fast-forward time
         vm.warp(block.timestamp + 1 days);
@@ -484,7 +484,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(aggRecordedDebt_1, 0);
 
         // A withdraws deposit
-        makeSPWithdrawal(A, sPdeposit);
+        makeSPWithdrawalAndClaim(A, sPdeposit);
 
         // Check pending agg. debt increased
         uint256 aggRecordedDebt_2 = activePool.aggRecordedDebt();
@@ -497,7 +497,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A opens Trove to obtain BOLD  and makes SP deposit
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
-        makeSPDeposit(A, sPdeposit);
+        makeSPDepositAndClaim(A, sPdeposit);
 
         // fast-forward time
         vm.warp(block.timestamp + 1 days);
@@ -506,7 +506,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertLt(activePool.lastAggUpdateTime(), block.timestamp);
 
         // A withdraws from SP
-        makeSPWithdrawal(A, sPdeposit);
+        makeSPWithdrawalAndClaim(A, sPdeposit);
 
         // Check last agg update time increased to now
         assertEq(activePool.lastAggUpdateTime(), block.timestamp);
@@ -518,7 +518,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A opens Trove to obtain BOLD  and makes SP deposit
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
-        makeSPDeposit(A, sPdeposit);
+        makeSPDepositAndClaim(A, sPdeposit);
 
         // fast-forward time
         vm.warp(block.timestamp + 1 days);
@@ -531,7 +531,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         // A withdraws from SP
-        makeSPWithdrawal(A, sPdeposit);
+        makeSPWithdrawalAndClaim(A, sPdeposit);
 
         // Check I-router Bold bal has increased as expected from 3rd trove opening
         uint256 boldBalRouter_2 = boldToken.balanceOf(address(mockInterestRouter));
@@ -545,7 +545,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A opens Trove to obtain BOLD
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
-        makeSPDeposit(A, sPdeposit);
+        makeSPDepositAndClaim(A, sPdeposit);
 
         // fast-forward time
         vm.warp(block.timestamp + 1 days);
@@ -558,7 +558,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         // Make SP deposit
-        makeSPWithdrawal(A, sPdeposit);
+        makeSPWithdrawalAndClaim(A, sPdeposit);
 
         // Get weighted sum after, check no change
         uint256 weightedDebtSum_2 = activePool.aggWeightedDebtSum();
@@ -2146,6 +2146,98 @@ contract InterestRateAggregate is DevTestSetup {
         emit log_named_decimal_uint("Trove D debt (post-adj) ", debtAfter, 18);
 
         assertEq(debtBefore, debtAfter, "Adjusting interest rate shouldn't change Trove's debt");
+    }
+
+    // --- claimALLETHGains ---
+
+    function testClaimAllETHGainsIncreasesAggRecordedDebtByPendingAggInterest() public {
+        _setupForSPDepositAdjustments();
+
+        // A stashes first gain
+        makeSPDepositNoClaim(A, 1e18);
+
+        vm.warp(block.timestamp + 1 days);
+
+        // Check A has stashed gains
+        uint256 stashedETHGain = stabilityPool.stashedETH(A);
+        assertGt(stashedETHGain, 0);
+
+        uint256 aggRecordedDebt_1 = activePool.aggRecordedDebt();
+        assertGt(aggRecordedDebt_1, 0);
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        claimAllETHGains(A);
+
+        assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest);
+    }
+
+    function testClaimAllETHGainsReducesPendingAggInterestTo0() public {
+       _setupForSPDepositAdjustments();
+
+        // A stashes first gain
+        makeSPDepositNoClaim(A, 1e18);
+
+        vm.warp(block.timestamp + 1 days);
+
+        // Check A has stashed gains
+        uint256 stashedETHGain = stabilityPool.stashedETH(A);
+        assertGt(stashedETHGain, 0);
+
+        assertGt(activePool.calcPendingAggInterest(), 0);
+
+        claimAllETHGains(A);
+
+        assertEq(activePool.calcPendingAggInterest(), 0);
+    }
+
+    // // Update last agg. update time to now
+    function testClaimAllETHGainsUpdatesLastAggUpdateTimeToNow() public {
+        _setupForSPDepositAdjustments();
+
+        // A stashes first gain
+        makeSPDepositNoClaim(A, 1e18);
+
+        vm.warp(block.timestamp + 1 days);
+
+        // Check A has stashed gains
+        uint256 stashedETHGain = stabilityPool.stashedETH(A);
+        assertGt(stashedETHGain, 0);
+
+        assertGt(activePool.lastAggUpdateTime(), 0);
+        assertLt(activePool.lastAggUpdateTime(), block.timestamp);
+
+        claimAllETHGains(A);
+
+        // Check last agg update time increased to now
+        assertEq(activePool.lastAggUpdateTime(), block.timestamp);
+    }
+
+    // mints interest to router
+    function testClaimAllETHGainsMintsAggInterestToRouter() public {
+        _setupForSPDepositAdjustments();
+
+        // A stashes first gain
+        makeSPDepositNoClaim(A, 1e18);
+
+        vm.warp(block.timestamp + 1 days);
+
+        // Check A has stashed gains
+        uint256 stashedETHGain = stabilityPool.stashedETH(A);
+        assertGt(stashedETHGain, 0);
+
+        // Get I-router balance
+        uint256 boldBalRouter_1 = boldToken.balanceOf(address(mockInterestRouter));
+        assertEq(boldBalRouter_1, 0);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        claimAllETHGains(A);
+
+        // Check I-router Bold bal has increased as expected
+        uint256 boldBalRouter_2 = boldToken.balanceOf(address(mockInterestRouter));
+        assertEq(boldBalRouter_2, pendingAggInterest);
     }
 
     // TODO: mixed collateral & debt adjustment opps

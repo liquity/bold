@@ -114,6 +114,8 @@ export const lightTheme = {
     fieldBorder: "gray:200",
     fieldSurface: "gray:50",
     focused: "blue:500",
+    focusedSurface: "blue:50",
+    focusedSurfaceActive: "blue:100",
     interactive: "blue:950",
     negative: "red:500",
     negativeActive: "red:600",

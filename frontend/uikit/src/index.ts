@@ -1,7 +1,9 @@
+export type { DropdownItem } from "./Dropdown/Dropdown";
 export type { BrandColorName, ThemeColorName, ThemeDescriptor } from "./Theme/Theme";
 
 export { Button } from "./Button/Button";
 export { Checkbox } from "./Checkbox/Checkbox";
+export { Dropdown } from "./Dropdown/Dropdown";
 export { FormField } from "./FormField/FormField";
 export * from "./icons";
 export { TextInput } from "./Input/TextInput";

@@ -91,8 +91,8 @@ contract DevTestSetup is BaseTest {
         uint256 CTroveId = openTroveNoHints100pct(C, 5 ether, troveDebtRequest_C, interestRate);
 
         // A and B deposit to SP
-        makeSPDeposit(A, troveDebtRequest_A);
-        makeSPDeposit(B, troveDebtRequest_B);
+        makeSPDepositAndClaim(A, troveDebtRequest_A);
+        makeSPDepositAndClaim(B, troveDebtRequest_B);
 
         // Price drops, C becomes liquidateable
         price = 1025e18;
@@ -117,27 +117,44 @@ contract DevTestSetup is BaseTest {
         uint256 troveDebtRequest_D = 2250e18;
         uint256 interestRate = 5e16; // 5%
 
+        TroveIDs memory troveIDs;
+
         uint256 price = 2000e18;
         priceFeed.setPrice(price);
 
-        uint256 ATroveId = openTroveNoHints100pct(A, 5 ether, troveDebtRequest_A, interestRate);
-        uint256 BTroveId = openTroveNoHints100pct(B, 5 ether, troveDebtRequest_B, interestRate);
-        uint256 CTroveId = openTroveNoHints100pct(C, 25e17, troveDebtRequest_C, interestRate);
-        uint256 DTroveId = openTroveNoHints100pct(D, 25e17, troveDebtRequest_D, interestRate);
+        troveIDs.A = openTroveNoHints100pct(A, 5 ether, troveDebtRequest_A, interestRate);
+        troveIDs.B = openTroveNoHints100pct(B, 5 ether, troveDebtRequest_B, interestRate);
+        troveIDs.C = openTroveNoHints100pct(C, 25e17, troveDebtRequest_C, interestRate);
+        troveIDs.D = openTroveNoHints100pct(D, 25e17, troveDebtRequest_D, interestRate);
 
         // A and B deposit to SP
-        makeSPDeposit(A, troveDebtRequest_A);
-        makeSPDeposit(B, troveDebtRequest_B);
+        makeSPDepositAndClaim(A, troveDebtRequest_A);
+        makeSPDepositAndClaim(B, troveDebtRequest_B);
 
         // Price drops, C and D become liquidateable
         price = 1050e18;
         priceFeed.setPrice(price);
 
         assertFalse(troveManager.checkBelowCriticalThreshold(price));
-        assertLt(troveManager.getCurrentICR(CTroveId, price), troveManager.MCR());
-        assertLt(troveManager.getCurrentICR(DTroveId, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(troveIDs.C, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(troveIDs.D, price), troveManager.MCR());
 
-        return (ATroveId, BTroveId, CTroveId, DTroveId);
+        return (troveIDs.A, troveIDs.B, troveIDs.C, troveIDs.D);
+    }
+
+    function _setupForSPDepositAdjustments() internal returns (TroveIDs memory) {
+        TroveIDs memory troveIDs;
+        (troveIDs.A, troveIDs.B, troveIDs.C, troveIDs.D) =  _setupForBatchLiquidateTrovesPureOffset();
+
+        // A liquidates C
+        liquidate(A, troveIDs.C);
+
+        // D sends BOLD to A and B so they have some to use in tests
+        transferBold(D, A, boldToken.balanceOf(D) / 2);
+        transferBold(D, B, boldToken.balanceOf(D));
+
+        assertEq(troveManager.getTroveStatus(troveIDs.C), 3); // Status 3 - closed by liquidation
+        return troveIDs;
     }
 
     function _setupForBatchLiquidateTrovesPureRedist() internal returns (uint256, uint256, uint256, uint256) {

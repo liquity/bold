@@ -39,13 +39,14 @@ export function PillButton({
         className={css({
           width: 12,
           height: 12,
-          background: warnLevel === "low"
-            ? "positive"
-            : warnLevel === "medium"
-            ? "warning"
-            : "negative",
           borderRadius: "50%",
+          "--warn-color-low": "token(colors.positive)",
+          "--warn-color-medium": "token(colors.warning)",
+          "--warn-color-high": "token(colors.negative)",
         })}
+        style={{
+          background: `var(--warn-color-${warnLevel})`,
+        }}
       />
       <div>
         {label}
