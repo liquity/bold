@@ -1,5 +1,5 @@
 export type { DropdownItem } from "./Dropdown/Dropdown";
-export type { BrandColorName, ThemeColorName, ThemeDescriptor } from "./Theme/Theme";
+export type { ThemeColorName, ThemeDescriptor } from "./Theme/Theme";
 
 export { Button } from "./Button/Button";
 export { Checkbox } from "./Checkbox/Checkbox";
@@ -15,6 +15,6 @@ export { RadioGroup, useRadioGroup } from "./Radio/RadioGroup";
 export { Root, RootEntryPoint } from "./Root/Root";
 export { Tabs } from "./Tabs/Tabs";
 export { TextButton } from "./TextButton/TextButton";
-export { brand, colors, lightTheme, Theme, themeColor, useTheme } from "./Theme/Theme";
+export { colors, lightTheme, Theme, themeColor, useTheme } from "./Theme/Theme";
 export { TokenIcon, TokenIconGroup } from "./TokenIcon/TokenIcon";
 export { UiKit } from "./UiKit/UiKit";
