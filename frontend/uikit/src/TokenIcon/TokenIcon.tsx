@@ -1,53 +1,64 @@
 import type { ComponentProps, ReactElement } from "react";
 
 import { Children, createContext, useContext } from "react";
+import { match } from "ts-pattern";
 import { css } from "../../styled-system/css";
+
 import tokenBold from "./icons/bold.svg";
 import tokenEth from "./icons/eth.svg";
+import tokenLqty from "./icons/lqty.svg";
 import tokenOseth from "./icons/oseth.svg";
 import tokenReth from "./icons/reth.svg";
 import tokenSweth from "./icons/sweth.svg";
 import tokenWsteth from "./icons/wsteth.svg";
 
-export type IconName = "BOLD" | "ETH" | "OSETH" | "RETH" | "SWETH" | "WSTETH";
-
-function srcFromName(name: IconName) {
-  if (name === "BOLD") return tokenBold;
-  if (name === "ETH") return tokenEth;
-  if (name === "OSETH") return tokenOseth;
-  if (name === "RETH") return tokenReth;
-  if (name === "SWETH") return tokenSweth;
-  if (name === "WSTETH") return tokenWsteth;
-  throw new Error(`Unsupported token icon: ${name}`);
-}
-
-type Size = "medium" | "large" | number;
-
-function getSizeValue(size: Size) {
-  if (size === "large") return 40;
-  if (size === "medium") return 24;
-  return size;
-}
-
 export function TokenIcon({
   size = "medium",
   symbol,
 }: {
-  size?: Size;
-  symbol: IconName;
+  size?: "medium" | "large" | "small" | number;
+  symbol: "BOLD" | "ETH" | "OSETH" | "RETH" | "SWETH" | "WSTETH" | "LQTY";
 }) {
   const sizeFromGroup = useContext(TokenIconGroupSize);
-  const sizeValue = getSizeValue(sizeFromGroup ?? size);
+
+  const size_ = match(sizeFromGroup ?? size)
+    .with("large", () => 40)
+    .with("medium", () => 24)
+    .with("small", () => 20)
+    .otherwise(() => size);
+
+  const src = match(symbol)
+    .with("BOLD", () => tokenBold)
+    .with("ETH", () => tokenEth)
+    .with("OSETH", () => tokenOseth)
+    .with("RETH", () => tokenReth)
+    .with("SWETH", () => tokenSweth)
+    .with("WSTETH", () => tokenWsteth)
+    .with("LQTY", () => tokenLqty)
+    .exhaustive();
+
   return (
-    <img
-      alt={symbol}
-      height={sizeValue}
-      src={srcFromName(symbol)}
-      title={symbol}
-      width={sizeValue}
-    />
+    <div
+      className={css({
+        display: "flex",
+      })}
+      style={{
+        height: size_,
+        width: size_,
+      }}
+    >
+      <img
+        alt={symbol}
+        height={size_}
+        src={src}
+        title={symbol}
+        width={size_}
+      />
+    </div>
   );
 }
+
+type Size = ComponentProps<typeof TokenIcon>["size"];
 
 const TokenIconGroupSize = createContext<Size | undefined>(undefined);
 
