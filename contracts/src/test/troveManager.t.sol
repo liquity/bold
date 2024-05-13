@@ -3,6 +3,17 @@ pragma solidity 0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract TroveManagerTest is DevTestSetup {
+    function testLiquidateLastTroveReverts() public {
+        priceFeed.setPrice(2_000e18);
+        uint256 ATroveId = openTroveNoHints100pct(A, 100 ether, 100_000e18, 1e17);
+        priceFeed.setPrice(1_000e18);
+
+        vm.startPrank(A);
+        vm.expectRevert("TroveManager: Only one trove in the system");
+        troveManager.liquidate(ATroveId);
+        vm.stopPrank();
+    }
+
     function testRedeemSkipTrovesUnder100pct() public {
         priceFeed.setPrice(2000e18);
         uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2001e18, 1e17);

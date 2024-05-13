@@ -21,9 +21,11 @@ interface IActivePool {
 
     function getETHBalance() external view returns (uint256);
     function getTotalActiveDebt() external view returns (uint256);
+    function getTotalDebtUpperBound() external view returns (uint256);
     function lastAggUpdateTime() external view returns (uint256);
     function aggRecordedDebt() external view returns (uint256);
     function aggWeightedDebtSum() external view returns (uint256);
+    function aggRecordedUpfrontInterest() external view returns (uint256);
     function calcPendingAggInterest() external view returns (uint256);
 
     function mintAggInterest() external;
@@ -32,6 +34,8 @@ interface IActivePool {
         uint256 _troveDebtDecrease,
         uint256 _newWeightedRecordedTroveDebt,
         uint256 _oldWeightedRecordedTroveDebt,
+        uint256 _upfrontInterestIncrease,
+        uint256 _upfrontInterestDecrease,
         uint256 _forgoneUpfrontInterest
     ) external;
 

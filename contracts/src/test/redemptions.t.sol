@@ -68,8 +68,8 @@ contract Redemptions is DevTestSetup {
         redeem(E, redeemAmount_1);
 
         // Check A and B's Trove debt equals gas comp
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.BOLD_GAS_COMPENSATION());
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), troveManager.BOLD_GAS_COMPENSATION());
+        assertEq(troveManager.getInterestBearingDebt(troveIDs.A), troveManager.BOLD_GAS_COMPENSATION());
+        assertEq(troveManager.getInterestBearingDebt(troveIDs.B), troveManager.BOLD_GAS_COMPENSATION());
     }
 
     function testFullRedemptionSkipsTrovesAtGasCompDebt() public {
@@ -243,8 +243,8 @@ contract Redemptions is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
 
-        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
-        uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
+        uint256 debt_A = troveManager.getInterestBearingDebt(troveIDs.A);
+        uint256 debt_B = troveManager.getInterestBearingDebt(troveIDs.B);
 
         // Time passes
         vm.warp(block.timestamp + 365 days);
@@ -253,8 +253,8 @@ contract Redemptions is DevTestSetup {
         uint256 expectedDebt_A = debt_A * (1e18 + troveInterestRates.A) / 1e18; // 10% increase
         uint256 expectedDebt_B = debt_B * (1e18 + troveInterestRates.B) / 1e18; // 20% increase
 
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), expectedDebt_A); // 10% increase
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), expectedDebt_B); // 20% increase
+        assertEq(troveManager.getInterestBearingDebt(troveIDs.A), expectedDebt_A); // 10% increase
+        assertEq(troveManager.getInterestBearingDebt(troveIDs.B), expectedDebt_B); // 20% increase
     }
 
     function testZombieTrovesCanAccrueInterestThatBringThemAboveMIN_NET_DEBT() public {

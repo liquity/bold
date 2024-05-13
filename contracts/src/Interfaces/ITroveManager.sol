@@ -20,6 +20,7 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 recordedDebt;
         uint256 annualInterestRate;
         uint256 weightedRecordedDebt;
+        uint256 recordedUpfrontInterest;
         uint256 unusedUpfrontInterest;
     }
 
@@ -85,6 +86,10 @@ interface ITroveManager is IERC721, ILiquityBase {
     function getTroveEntireDebt(uint256 _troveId) external view returns (uint256);
 
     function getTroveEntireColl(uint256 _troveId) external view returns (uint256);
+
+    function getInterestBearingDebt(uint256 _troveId) external view returns (uint256);
+
+    function getUnusedUpfrontInterest(uint256 _troveId) external view returns (uint256);
 
     function applyRedistributionGains(uint256 _troveId, uint256 _redistBoldDebtGain, uint256 _redistETHGain) external;
 

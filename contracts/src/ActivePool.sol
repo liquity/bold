@@ -50,6 +50,10 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     */
     uint256 public aggWeightedDebtSum;
 
+    // Sum of recorded upfront interest. This is an upper bound on the total outstanding upfront interest.
+    // Some fraction of this will have already been cancelled out by accrued interest.
+    uint256 public aggRecordedUpfrontInterest;
+
     // Last time at which the aggregate recorded debt and weighted sum were updated
     uint256 public lastAggUpdateTime;
 
@@ -119,8 +123,12 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     }
 
     // Returns sum of agg.recorded debt plus agg. pending interest. Excludes pending redist. gains.
-    function getTotalActiveDebt() public view returns (uint256) {
+    function getTotalActiveDebt() external view returns (uint256) {
         return aggRecordedDebt + calcPendingAggInterest();
+    }
+
+    function getTotalDebtUpperBound() external view returns (uint256) {
+        return aggRecordedDebt + calcPendingAggInterest() + aggRecordedUpfrontInterest;
     }
 
     // --- Pool functionality ---
@@ -185,6 +193,8 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         uint256 _troveDebtDecrease,
         uint256 _newWeightedRecordedTroveDebt,
         uint256 _oldWeightedRecordedTroveDebt,
+        uint256 _upfrontInterestIncrease,
+        uint256 _upfrontInterestDecrease,
         uint256 _forgoneUpfrontInterest
     ) external {
         _requireCallerIsBOorTroveM();
@@ -204,6 +214,11 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         newAggWeightedDebtSum += _newWeightedRecordedTroveDebt;
         newAggWeightedDebtSum -= _oldWeightedRecordedTroveDebt;
         aggWeightedDebtSum = newAggWeightedDebtSum; // 1 SSTORE
+
+        uint256 newAggRecordedUpfrontInterest = aggRecordedUpfrontInterest;
+        newAggRecordedUpfrontInterest += _upfrontInterestIncrease;
+        newAggRecordedUpfrontInterest -= _upfrontInterestDecrease;
+        aggRecordedUpfrontInterest = newAggRecordedUpfrontInterest; // 1 SSTORE
     }
 
     function mintAggInterest() external override {

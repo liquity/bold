@@ -3,6 +3,8 @@ pragma solidity 0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract InterestRateAggregate is DevTestSetup {
+    uint256 constant UPFRONT_INTEREST_PERIOD = 7 days;
+
     // ---  Pending aggregate interest calculator ---
 
     function testCalcPendingAggInterestReturns0For0TimePassedSinceLastUpdate() public {
@@ -160,43 +162,43 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 debtChange = 37e18;
         vm.startPrank(A);
         vm.expectRevert();
-        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(borrowerOperations));
-        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(troveManager));
-        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         // pass negative debt change
         vm.startPrank(A);
         vm.expectRevert();
-        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(borrowerOperations));
-        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(troveManager));
-        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         // pass 0 debt change
         vm.startPrank(A);
         vm.expectRevert();
-        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(borrowerOperations));
-        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(troveManager));
-        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0, 0, 0);
         vm.stopPrank();
     }
 
@@ -604,7 +606,7 @@ contract InterestRateAggregate is DevTestSetup {
         transferBold(A, B, boldToken.balanceOf(A));
 
         // fast-forward time
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD);
 
         // Check the agg recorded debt is non-zero
         uint256 aggRecordedDebt_1 = activePool.aggRecordedDebt();
@@ -661,7 +663,7 @@ contract InterestRateAggregate is DevTestSetup {
         transferBold(A, B, boldToken.balanceOf(A));
 
         // fast-forward time
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD);
 
         // Get I-router balance
         uint256 boldBalRouter_1 = boldToken.balanceOf(address(mockInterestRouter));
@@ -739,7 +741,7 @@ contract InterestRateAggregate is DevTestSetup {
         priceFeed.setPrice(2000e18);
         uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
 
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD);
 
         uint256 aggRecordedDebt_1 = activePool.aggRecordedDebt();
         assertGt(aggRecordedDebt_1, 0);
@@ -794,7 +796,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
 
         // fast-forward time
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD);
 
         // Get I-router balance
         uint256 boldBalRouter_1 = boldToken.balanceOf(address(mockInterestRouter));
@@ -1181,8 +1183,8 @@ contract InterestRateAggregate is DevTestSetup {
         // A adds coll
         addColl(A, ATroveId, collIncrease);
 
-        uint256 entireTroveDebt = troveManager.getTroveEntireDebt(ATroveId);
-        uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;
+        uint256 interestBearingDebt = troveManager.getInterestBearingDebt(ATroveId);
+        uint256 expectedNewRecordedWeightedDebt = interestBearingDebt * interestRate;
 
         // Weighted debt should have increased due to interest being applied
         assertGt(expectedNewRecordedWeightedDebt, oldRecordedWeightedDebt);
@@ -1443,12 +1445,12 @@ contract InterestRateAggregate is DevTestSetup {
     // --- getTotalSystemDebt tests ---
 
     function testGetEntireSystemDebtReturns0For0TrovesOpen() public {
-        uint256 entireSystemDebt_1 = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt_1 = troveManager.getEntireSystemDebtLowerBound();
         assertEq(entireSystemDebt_1, 0);
 
         vm.warp(block.timestamp + 1 days);
 
-        uint256 entireSystemDebt_2 = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt_2 = troveManager.getEntireSystemDebtLowerBound();
         assertEq(entireSystemDebt_2, 0);
     }
 
@@ -1471,7 +1473,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(recordedDebt_B, 0);
         assertGt(recordedDebt_C, 0);
 
-        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt = troveManager.getEntireSystemDebtLowerBound();
 
         assertEq(entireSystemDebt, recordedDebt_A + recordedDebt_B + recordedDebt_C);
     }
@@ -1505,7 +1507,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(accruedInterest_B, 0);
         assertGt(accruedInterest_C, 0);
 
-        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt = troveManager.getEntireSystemDebtLowerBound();
 
         uint256 sumIndividualTroveDebts =
             recordedDebt_A + accruedInterest_A + recordedDebt_B + accruedInterest_B + recordedDebt_C + accruedInterest_C;
@@ -1521,7 +1523,7 @@ contract InterestRateAggregate is DevTestSetup {
         (,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureOffset();
 
         // fast-forward time so interest accrues
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD);
 
         uint256 aggRecordedDebt_1 = activePool.aggRecordedDebt();
         assertGt(aggRecordedDebt_1, 0);
@@ -1579,7 +1581,7 @@ contract InterestRateAggregate is DevTestSetup {
         (,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureOffset();
 
         // fast-forward time so interest accrues
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD);
 
         uint256 boldBalRouter_1 = boldToken.balanceOf(address(mockInterestRouter));
         assertEq(boldBalRouter_1, 0);
@@ -1657,7 +1659,7 @@ contract InterestRateAggregate is DevTestSetup {
         (uint256 ATroveId,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureRedist();
 
         // fast-forward time so interest accrues
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD);
 
         uint256 aggRecordedDebt_1 = activePool.aggRecordedDebt();
         assertGt(aggRecordedDebt_1, 0);
@@ -1719,7 +1721,7 @@ contract InterestRateAggregate is DevTestSetup {
         (uint256 ATroveId,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureRedist();
 
         // fast-forward time so interest accrues
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD);
 
         uint256 boldBalRouter_1 = boldToken.balanceOf(address(mockInterestRouter));
         assertEq(boldBalRouter_1, 0);
@@ -1803,7 +1805,7 @@ contract InterestRateAggregate is DevTestSetup {
         (uint256 ATroveId,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureRedist();
 
         // fast-forward time so interest accrues
-        vm.warp(block.timestamp + 1 days);
+        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD);
 
         uint256 recordedTroveDebt_C = troveManager.getTroveDebt(CTroveId);
         uint256 accruedInterest_C = troveManager.calcTroveAccruedInterest(CTroveId);
@@ -1849,8 +1851,10 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 ATroveId = openTroveNoHints100pct(A, coll, troveDebtRequest, interestRate);
 
-        uint256 compositeDebt = troveDebtRequest + borrowerOperations.BOLD_GAS_COMPENSATION();
-        uint256 expectedICR = coll * price / compositeDebt;
+        uint256 interestBearingDebt = troveDebtRequest + borrowerOperations.BOLD_GAS_COMPENSATION();
+        uint256 entireDebt =
+            interestBearingDebt + interestBearingDebt * interestRate * UPFRONT_INTEREST_PERIOD / 365 days / 1e18;
+        uint256 expectedICR = coll * price / entireDebt;
         assertEq(expectedICR, troveManager.getCurrentICR(ATroveId, price));
 
         assertEq(expectedICR, troveManager.getTCR(price));
@@ -1973,8 +1977,10 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 ATroveId = openTroveNoHints100pct(A, coll, troveDebtRequest, interestRate);
 
-        uint256 compositeDebt = troveDebtRequest + borrowerOperations.BOLD_GAS_COMPENSATION();
-        uint256 expectedICR = coll * price / compositeDebt;
+        uint256 interestBearingDebt = troveDebtRequest + borrowerOperations.BOLD_GAS_COMPENSATION();
+        uint256 entireDebt =
+            interestBearingDebt + interestBearingDebt * interestRate * UPFRONT_INTEREST_PERIOD / 365 days / 1e18;
+        uint256 expectedICR = coll * price / entireDebt;
         assertEq(expectedICR, troveManager.getCurrentICR(ATroveId, price));
     }
 
@@ -2228,7 +2234,6 @@ contract InterestRateAggregate is DevTestSetup {
 
         // Get I-router balance
         uint256 boldBalRouter_1 = boldToken.balanceOf(address(mockInterestRouter));
-        assertEq(boldBalRouter_1, 0);
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
@@ -2237,7 +2242,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         // Check I-router Bold bal has increased as expected
         uint256 boldBalRouter_2 = boldToken.balanceOf(address(mockInterestRouter));
-        assertEq(boldBalRouter_2, pendingAggInterest);
+        assertEq(boldBalRouter_2 - boldBalRouter_1, pendingAggInterest);
     }
 
     // TODO: mixed collateral & debt adjustment opps

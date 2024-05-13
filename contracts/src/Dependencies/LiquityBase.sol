@@ -64,18 +64,30 @@ contract LiquityBase is ILiquityBase {
         return activeColl + liquidatedColl;
     }
 
-    function getEntireSystemDebt() public view returns (uint256 entireSystemDebt) {
+    // Total system debt minus the total outstanding upfront interest.
+    function getEntireSystemDebtLowerBound() public view returns (uint256 entireSystemDebtLowerBound) {
         uint256 activeDebt = activePool.getTotalActiveDebt();
         uint256 closedDebt = defaultPool.getBoldDebt();
 
         return activeDebt + closedDebt;
     }
 
+    // Total system debt plus the total *recorded* upfront interest.
+    // The actual outstanding upfront interest will be lower than this, as some fraction of it will have already been
+    // cancelled out by accrued interest.
+    function getEntireSystemDebtUpperBound() public view returns (uint256 entireSystemDebtUpperBound) {
+        uint256 activeDebt = activePool.getTotalDebtUpperBound();
+        uint256 closedDebt = defaultPool.getBoldDebt();
+
+        return activeDebt + closedDebt;
+    }
+
+    // Returns a lower bound on the TCR, based on our upper bound on total system debt.
     function _getTCR(uint256 _price) internal view returns (uint256 TCR) {
         uint256 entireSystemColl = getEntireSystemColl();
-        uint256 entireSystemDebt = getEntireSystemDebt();
+        uint256 entireSystemDebtUpperBound = getEntireSystemDebtUpperBound();
 
-        TCR = LiquityMath._computeCR(entireSystemColl, entireSystemDebt, _price);
+        TCR = LiquityMath._computeCR(entireSystemColl, entireSystemDebtUpperBound, _price);
 
         return TCR;
     }
