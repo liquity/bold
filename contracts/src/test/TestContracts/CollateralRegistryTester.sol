@@ -8,8 +8,8 @@ import "../../CollateralRegistry.sol";
 for testing the parent's internal functions. */
 
 contract CollateralRegistryTester is CollateralRegistry {
-    constructor(IBoldToken _boldToken, IERC20[] memory _tokens, ITroveManager[] memory _troveManagers)
-        CollateralRegistry(_boldToken, _tokens, _troveManagers)
+    constructor(IBoldToken _boldToken, address _interestRouterAddress, IERC20[] memory _tokens, ITroveManager[] memory _troveManagers)
+        CollateralRegistry(_boldToken, _interestRouterAddress, _tokens, _troveManagers)
     {}
 
     function unprotectedDecayBaseRateFromBorrowing() external returns (uint256) {
@@ -21,7 +21,7 @@ contract CollateralRegistryTester is CollateralRegistry {
     }
 
     function minutesPassedSinceLastFeeOp() external view returns (uint256) {
-        return _minutesPassedSinceLastFeeOp();
+        return _minutesPassedSinceLastFeeOp(0);
     }
 
     function setLastFeeOpTimeToNow() external {

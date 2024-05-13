@@ -1,3 +1,5 @@
+const { time } = require("@nomicfoundation/hardhat-network-helpers");
+
 const MoneyValues = {
   negative_5e17: "-" + web3.utils.toWei("500", "finney"),
   negative_1e18: "-" + web3.utils.toWei("1", "ether"),
@@ -1377,15 +1379,14 @@ class TestHelper {
     redeemer,
     contracts,
     BoldAmount,
-    gasPrice = 0,
     maxFee = this._100pct,
+    gasPrice = 0,
   ) {
-    const price = await contracts.priceFeedTestnet.getPrice();
-    const tx = await this.performRedemptionTx(
+    const tx = await this.redeemCollateralAndGetTxObject(
       redeemer,
-      price,
       contracts,
       BoldAmount,
+      10,
       maxFee,
       gasPrice,
     );
@@ -1397,22 +1398,23 @@ class TestHelper {
     redeemer,
     contracts,
     BoldAmount,
-    gasPrice,
+    maxIterations=10,
     maxFee = this._100pct,
+    gasPrice = 0,
   ) {
-    // console.log("GAS PRICE:  " + gasPrice)
-    if (gasPrice == undefined) {
-      gasPrice = 0;
-    }
-    const price = await contracts.priceFeedTestnet.getPrice();
-    const tx = await this.performRedemptionTx(
-      redeemer,
-      price,
-      contracts,
+    await contracts.collateralRegistry.commitRedemption(
+      0,
       BoldAmount,
+      maxIterations,
       maxFee,
-      gasPrice,
+      { from: redeemer, gasPrice: gasPrice },
     );
+
+    // Wait for redemption window
+    await time.increase(80);
+
+    const tx = await contracts.collateralRegistry.executeRedemption(0, { from: redeemer });
+
     return tx;
   }
 
@@ -1423,14 +1425,12 @@ class TestHelper {
     contracts,
   ) {
     const gasCostList = [];
-    const price = await contracts.priceFeedTestnet.getPrice();
 
     for (const redeemer of accounts) {
       const randBoldAmount = this.randAmountInWei(min, max);
 
-      await this.performRedemptionTx(
+      const tx = await this.redeemCollateralAndGetTxObject(
         redeemer,
-        price,
         contracts,
         randBoldAmount,
       );
@@ -1438,24 +1438,6 @@ class TestHelper {
       gasCostList.push(gas);
     }
     return this.getGasMetrics(gasCostList);
-  }
-
-  static async performRedemptionTx(
-    redeemer,
-    price,
-    contracts,
-    BoldAmount,
-    maxFee = 0,
-    gasPrice_toUse = 0,
-  ) {
-    const tx = await contracts.troveManager.redeemCollateral(
-      BoldAmount,
-      0,
-      maxFee,
-      { from: redeemer, gasPrice: gasPrice_toUse },
-    );
-
-    return tx;
   }
 
   // --- Composite functions ---

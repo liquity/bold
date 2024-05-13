@@ -247,10 +247,15 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function redeem(address _from, uint256 _boldAmount) public {
+    function redeem(address _from, uint256 _boldAmount) public returns (uint256) {
+        uint256 redemptionId = 0;
         vm.startPrank(_from);
-        collateralRegistry.redeemCollateral(_boldAmount, MAX_UINT256, 1e18);
+        collateralRegistry.commitRedemption(redemptionId, _boldAmount, 100, 1e18);
+        vm.warp(block.timestamp + 80 seconds);
+        collateralRegistry.executeRedemption(redemptionId);
         vm.stopPrank();
+
+        return redemptionId;
     }
 
     function getShareofSPReward(address _depositor, uint256 _reward) public returns (uint256) {

@@ -41,6 +41,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     ITroveManager internal immutable troveManager9;
 
     IBoldToken public immutable boldToken;
+    address public immutable interestRouterAddress;
 
     uint256 public constant SECONDS_IN_ONE_MINUTE = 60;
 
@@ -58,15 +59,36 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
      */
     uint256 public constant BETA = 2;
 
+    // Redemption interval for executing committed redemptions in seconds
+    uint256 public constant REDEMPTION_INTERVAL_MIN = 60;
+    uint256 public constant REDEMPTION_INTERVAL_MAX = 300;
+    // Penalty if the redemption is not executed during the interval
+    uint256 public constant REDEMPTION_FAILURE_PENALTY = DECIMAL_PRECISION / 1000 * 5; // 0.5%
+
     uint256 public baseRate;
 
     // The timestamp of the latest fee operation (redemption or new Bold issuance)
     uint256 public lastFeeOperationTime;
 
+    // Total bold hold by Redemption commitments
+    uint256 public boldRedemptionCommitments;
+
+    struct RedemptionCommitment {
+        uint256 boldAmount;
+        uint64 timestamp;
+        uint64 maxIterationsPerCollateral;
+        uint64 maxFeePercentage;
+    }
+
+    // Account => index => commitment
+    mapping (address => mapping (uint256 => RedemptionCommitment)) redemptionCommitments;
+
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
+    event RedemptionCommited(uint256 _redemptionId, uint256 _boldAmount, uint256 _maxFeePercentage);
+    event RedemptionWithdrawn(uint256 _redemptionId, uint256  _redemptionRefund, uint256 _penalty);
 
-    constructor(IBoldToken _boldToken, IERC20[] memory _tokens, ITroveManager[] memory _troveManagers) {
+    constructor(IBoldToken _boldToken, address _interestRouterAddress, IERC20[] memory _tokens, ITroveManager[] memory _troveManagers) {
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens < 10, "Collateral list too long");
@@ -74,6 +96,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         totalCollaterals = numTokens;
 
         boldToken = _boldToken;
+        interestRouterAddress = _interestRouterAddress;
 
         token0 = _tokens[0];
         troveManager0 = _troveManagers[0];
@@ -111,6 +134,24 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         emit BaseRateUpdated(INITIAL_REDEMPTION_RATE);
     }
 
+    // _redemptionId is per user
+    function commitRedemption(uint256 _redemptionId, uint256 _boldAmount, uint64 _maxIterationsPerCollateral, uint64 _maxFeePercentage) external override {
+        _requireValidRedemptionId(msg.sender, _redemptionId);
+        _requireValidMaxFeePercentage(_maxFeePercentage);
+        _requireAmountGreaterThanZero(_boldAmount);
+        _requireBoldBalanceCoversRedemption(boldToken, msg.sender, _boldAmount);
+
+        redemptionCommitments[msg.sender][_redemptionId] = RedemptionCommitment(_boldAmount, uint64(block.timestamp), _maxIterationsPerCollateral, _maxFeePercentage);
+
+        // Account for the committed amount
+        boldRedemptionCommitments += _boldAmount;
+
+        // Get Bold from redeemer
+        boldToken.sendToPool(msg.sender, address(this), _boldAmount);
+
+        emit RedemptionCommited(_redemptionId, _boldAmount, _maxFeePercentage);
+    }
+
     struct RedemptionTotals {
         uint256 numCollaterals;
         uint256 boldSupplyAtStart;
@@ -118,12 +159,11 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         uint256 redeemedAmount;
     }
 
-    function redeemCollateral(uint256 _boldAmount, uint256 _maxIterationsPerCollateral, uint256 _maxFeePercentage)
-        external
-    {
-        _requireValidMaxFeePercentage(_maxFeePercentage);
-        _requireAmountGreaterThanZero(_boldAmount);
-        _requireBoldBalanceCoversRedemption(boldToken, msg.sender, _boldAmount);
+    // _redemptionId is per user
+    function executeRedemption(uint256 _redemptionId) external override {
+        RedemptionCommitment memory redemptionCommitment = redemptionCommitments[msg.sender][_redemptionId];
+        _requireValidCommitment(redemptionCommitment);
+        _requireValidTime(redemptionCommitment);
 
         RedemptionTotals memory totals;
 
@@ -138,8 +178,8 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         // because the final redeemed amount may be less than the requested amount
         // Redeemers should take this into account in order to request the optimal amount to not overpay
         uint256 redemptionRate =
-            _calcRedemptionRate(_getUpdatedBaseRateFromRedemption(_boldAmount, totals.boldSupplyAtStart));
-        require(redemptionRate <= _maxFeePercentage, "CR: Fee exceeded provided maximum");
+            _calcRedemptionRate(_getUpdatedBaseRateFromRedemption(redemptionCommitment.boldAmount, totals.boldSupplyAtStart));
+        require(redemptionRate <= redemptionCommitment.maxFeePercentage, "CR: Fee exceeded provided maximum");
         // Implicit by the above and the _requireValidMaxFeePercentage checks
         //require(newBaseRate < DECIMAL_PRECISION, "CR: Fee would eat up all collateral");
 
@@ -156,29 +196,65 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         }
 
         // The amount redeemed has to be outside SPs, and therefore unbacked
-        assert(totals.unbacked >= _boldAmount);
+        assert(totals.unbacked >= redemptionCommitment.boldAmount);
 
         // Compute redemption amount for each collateral and redeem against the corresponding TroveManager
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
             //uint256 unbackedPortion = unbackedPortions[index];
             if (unbackedPortions[index] > 0) {
-                uint256 redeemAmount = _boldAmount * unbackedPortions[index] / totals.unbacked;
+                uint256 redeemAmount = redemptionCommitment.boldAmount * unbackedPortions[index] / totals.unbacked;
                 if (redeemAmount > 0) {
                     ITroveManager troveManager = getTroveManager(index);
                     uint256 redeemedAmount = troveManager.redeemCollateral(
-                        msg.sender, redeemAmount, prices[index], redemptionRate, _maxIterationsPerCollateral
+                        msg.sender, redeemAmount, prices[index], redemptionRate, redemptionCommitment.maxIterationsPerCollateral
                     );
                     totals.redeemedAmount += redeemedAmount;
                 }
             }
         }
 
-        _updateBaseRateAndGetRedemptionRate(totals.redeemedAmount, totals.boldSupplyAtStart);
-
         // Burn the total Bold that is cancelled with debt
         if (totals.redeemedAmount > 0) {
-            boldToken.burn(msg.sender, totals.redeemedAmount);
+            // We are calling again _getUpdatedBaseRateFromRedemption inside, but redeemedAmount may be different
+            // That means that the effective rate payed may be greater than it should be from the final amount
+            // See comment above, for `redemptionRate` declaration
+            _updateBaseRateAndGetRedemptionRate(totals.redeemedAmount, totals.boldSupplyAtStart);
+            boldToken.burn(address(this), totals.redeemedAmount);
         }
+
+        // Send leftovers back to redeemer
+        if (redemptionCommitment.boldAmount > totals.redeemedAmount) {
+            boldToken.transfer(msg.sender, redemptionCommitment.boldAmount - totals.redeemedAmount);
+        }
+
+        // Update accountancy of commitments
+        boldRedemptionCommitments -= redemptionCommitment.boldAmount;
+
+        // Wipe out commitment from mapping
+        delete(redemptionCommitments[msg.sender][_redemptionId]);
+    }
+
+    // _redemptionId is per user
+    function withdrawRedemption(uint256 _redemptionId) external override {
+        RedemptionCommitment memory redemptionCommitment = redemptionCommitments[msg.sender][_redemptionId];
+        _requireValidCommitment(redemptionCommitment);
+
+        uint256 penalty = redemptionCommitment.boldAmount * REDEMPTION_FAILURE_PENALTY / DECIMAL_PRECISION;
+        uint256 redemptionRefund = redemptionCommitment.boldAmount - penalty;
+
+        // Send refund to redeemer
+        boldToken.transfer(msg.sender, redemptionRefund);
+
+        // Send penalty to yield router
+        boldToken.transfer(interestRouterAddress, penalty);
+
+        // Update accountancy of commitments
+        boldRedemptionCommitments -= redemptionCommitment.boldAmount;
+
+        // Wipe out commitment from mapping
+        delete(redemptionCommitments[msg.sender][_redemptionId]);
+
+        emit RedemptionWithdrawn(_redemptionId, redemptionRefund, penalty);
     }
 
     // --- Internal fee functions ---
@@ -193,8 +269,8 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         }
     }
 
-    function _minutesPassedSinceLastFeeOp() internal view returns (uint256) {
-        return (block.timestamp - lastFeeOperationTime) / SECONDS_IN_ONE_MINUTE;
+    function _minutesPassedSinceLastFeeOp(uint256 _extraSeconds) internal view returns (uint256) {
+        return (block.timestamp - lastFeeOperationTime + _extraSeconds) / SECONDS_IN_ONE_MINUTE;
     }
 
     // Updates the `baseRate` state with math from `_getUpdatedBaseRateFromRedemption`
@@ -222,8 +298,16 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         view
         returns (uint256)
     {
+        return _getFutureBaseRateFromRedemption(_redeemAmount, _totalBoldSupply, 0);
+    }
+
+    function _getFutureBaseRateFromRedemption(uint256 _redeemAmount, uint256 _totalBoldSupply, uint256 _extraSeconds)
+        internal
+        view
+        returns (uint256)
+    {
         // decay the base rate
-        uint256 decayedBaseRate = _calcDecayedBaseRate();
+        uint256 decayedBaseRate = _calcFutureDecayedBaseRate(_extraSeconds);
 
         // get the fraction of total supply that was redeemed
         uint256 redeemedBoldFraction = _redeemAmount * DECIMAL_PRECISION / _totalBoldSupply;
@@ -234,11 +318,15 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         return newBaseRate;
     }
 
-    function _calcDecayedBaseRate() internal view returns (uint256) {
-        uint256 minutesPassed = _minutesPassedSinceLastFeeOp();
+    function _calcFutureDecayedBaseRate(uint256 _extraSeconds) internal view returns (uint256) {
+        uint256 minutesPassed = _minutesPassedSinceLastFeeOp(_extraSeconds);
         uint256 decayFactor = LiquityMath._decPow(MINUTE_DECAY_FACTOR, minutesPassed);
 
         return baseRate * decayFactor / DECIMAL_PRECISION;
+    }
+
+    function _calcDecayedBaseRate() internal view returns (uint256) {
+        return _calcFutureDecayedBaseRate(0);
     }
 
     function _calcRedemptionRate(uint256 _baseRate) internal pure returns (uint256) {
@@ -267,19 +355,19 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         return _calcRedemptionFee(getRedemptionRateWithDecay(), _ETHDrawn);
     }
 
-    function getEffectiveRedemptionFeeInBold(uint256 _redeemAmount) public view override returns (uint256) {
+    function getEffectiveRedemptionFeeInBold(uint256 _redeemAmount, uint256 _extraSeconds) public view override returns (uint256) {
         uint256 totalBoldSupply = boldToken.totalSupply();
-        uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_redeemAmount, totalBoldSupply);
+        uint256 newBaseRate = _getFutureBaseRateFromRedemption(_redeemAmount, totalBoldSupply, _extraSeconds);
         return _calcRedemptionFee(_calcRedemptionRate(newBaseRate), _redeemAmount);
     }
 
-    function getEffectiveRedemptionFee(uint256 _redeemAmount, uint256 _price)
+    function getEffectiveRedemptionFee(uint256 _redeemAmount, uint256 _price, uint256 _extraSeconds)
         external
         view
         override
         returns (uint256)
     {
-        return getEffectiveRedemptionFeeInBold(_redeemAmount) * DECIMAL_PRECISION / _price;
+        return getEffectiveRedemptionFeeInBold(_redeemAmount, _extraSeconds) * DECIMAL_PRECISION / _price;
     }
 
     // getters
@@ -317,12 +405,12 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     function _requireValidMaxFeePercentage(uint256 _maxFeePercentage) internal pure {
         require(
             _maxFeePercentage >= REDEMPTION_FEE_FLOOR && _maxFeePercentage <= DECIMAL_PRECISION,
-            "Max fee percentage must be between 0.5% and 100%"
+            "CR: Max fee percentage must be between 0.5% and 100%"
         );
     }
 
     function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
-        require(_amount > 0, "TroveManager: Amount must be greater than zero");
+        require(_amount > 0, "CR: Amount must be greater than zero");
     }
 
     function _requireBoldBalanceCoversRedemption(IBoldToken _boldToken, address _redeemer, uint256 _amount)
@@ -333,7 +421,22 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         // Confirm redeemer's balance is less than total Bold supply
         assert(boldBalance <= _boldToken.totalSupply());
         require(
-            boldBalance >= _amount, "TroveManager: Requested redemption amount must be <= user's Bold token balance"
+            boldBalance >= _amount, "CR: Requested redemption amount must be <= user's Bold token balance"
+        );
+    }
+
+    function _requireValidRedemptionId(address _account, uint256 _redemptionId) internal view {
+        require(redemptionCommitments[_account][_redemptionId].boldAmount == 0, "CR: Commitment already exists");
+    }
+
+    function _requireValidCommitment(RedemptionCommitment memory _redemptionCommitment) internal pure {
+        require(_redemptionCommitment.boldAmount > 0, "CR: Non existing commitment");
+    }
+
+    function _requireValidTime(RedemptionCommitment memory _redemptionCommitment) internal view {
+        require(
+            _redemptionCommitment.timestamp + REDEMPTION_INTERVAL_MIN <= block.timestamp && block.timestamp <= _redemptionCommitment.timestamp + REDEMPTION_INTERVAL_MAX,
+            "CR: commitment out of redemption window"
         );
     }
 

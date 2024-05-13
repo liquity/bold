@@ -542,7 +542,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A withdraws from SP
         makeSPWithdrawalAndClaim(A, sPdeposit);
 
-        // Check SP Bold bal has increased as expected 
+        // Check SP Bold bal has increased as expected
         uint256 boldBalSP_2 = boldToken.balanceOf(address(stabilityPool));
         assertApproximatelyEqual(boldBalSP_2, boldBalSP_1 - sPdeposit + expectedSPYield_A - expectedBoldGain_A, 1e3);
     }
@@ -1620,7 +1620,7 @@ contract InterestRateAggregate is DevTestSetup {
         trovesToLiq[1] = DTroveId;
         batchLiquidateTroves(A, trovesToLiq);
 
-        // Check SP Bold bal has increased as expected from liquidation: depleted by Trove debts C and D, increased by pending 
+        // Check SP Bold bal has increased as expected from liquidation: depleted by Trove debts C and D, increased by pending
         // interest
         uint256 boldBalSP_2 = boldToken.balanceOf(address(stabilityPool));
         assertEq(boldBalSP_2, boldBalSP_1 - debt_C - debt_D + expectedSPYield);
@@ -2045,7 +2045,8 @@ contract InterestRateAggregate is DevTestSetup {
         // E redeems
         redeem(E, debt_A);
 
-        assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest - debt_A);
+        assertApproxEqAbs(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest - debt_A, 1e17);
+        assertGt(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest - debt_A);
     }
 
     function testRedemptionReducesPendingAggInterestTo0() public {
@@ -2084,8 +2085,9 @@ contract InterestRateAggregate is DevTestSetup {
         // E redeems
         redeem(E, debt_A);
 
-        // Check SP Bold bal has increased by the pending agg interest
-        assertEq(boldToken.balanceOf(address(stabilityPool)), expectedSPYield);
+        // Check SP Bold bal has increased by the pending agg interest, plus some interest from the redemption window
+        assertApproxEqAbs(boldToken.balanceOf(address(stabilityPool)), expectedSPYield, 1e17);
+        assertGt(boldToken.balanceOf(address(stabilityPool)), expectedSPYield);
     }
 
     function testRedemptionUpdatesLastAggUpdateTimeToNow() public {
@@ -2127,7 +2129,8 @@ contract InterestRateAggregate is DevTestSetup {
         redeem(E, debt_A + debt_B / 2);
 
         // Confirm C wasn't touched
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.C), debt_C);
+        assertApproxEqAbs(troveManager.getTroveEntireDebt(troveIDs.C), debt_C, 1e17);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.C), debt_C);
 
         uint256 newWeightedRecordedDebt_A = troveManager.getTroveWeightedRecordedDebt(troveIDs.A);
         uint256 newWeightedRecordedDebt_B = troveManager.getTroveWeightedRecordedDebt(troveIDs.B);
@@ -2265,7 +2268,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 expectedSPYield = _getSPYield(pendingAggInterest);
         uint256 expectedBoldGain_A = getShareofSPReward(A, expectedSPYield);
 
-        // Check A has stashed ETH gains 
+        // Check A has stashed ETH gains
         uint256 stashedETHGain = stabilityPool.stashedETH(A);
         assertGt(stashedETHGain, 0);
 

@@ -5,6 +5,9 @@ pragma solidity 0.8.18;
 import "./Dependencies/Ownable.sol";
 
 import "./Interfaces/IBoldToken.sol";
+
+// import "forge-std/console2.sol";
+
 /*
 *
 * Based upon OpenZeppelin's ERC20 contract:
@@ -125,7 +128,7 @@ contract BoldToken is Ownable, IBoldToken {
     }
 
     function sendToPool(address _sender, address _poolAddress, uint256 _amount) external override {
-        _requireCallerIsStabilityPool();
+        _requireCallerIsCRorSP();
         _transfer(_sender, _poolAddress, _amount);
     }
 
@@ -277,12 +280,12 @@ contract BoldToken is Ownable, IBoldToken {
         require(
             msg.sender == collateralRegistryAddress || borrowerOperationsAddresses[msg.sender]
                 || stabilityPoolAddresses[msg.sender],
-            "Bold: Caller is neither BorrowerOperations nor TroveManager nor StabilityPool"
+            "Bold: Caller is neither the Registry nor BorrowerOperations nor TroveManager nor StabilityPool"
         );
     }
 
-    function _requireCallerIsStabilityPool() internal view {
-        require(stabilityPoolAddresses[msg.sender], "Bold: Caller is not the StabilityPool");
+    function _requireCallerIsCRorSP() internal view {
+        require(msg.sender == collateralRegistryAddress || stabilityPoolAddresses[msg.sender], "Bold: Caller is neither the Registry nor the StabilityPool");
     }
 
     function _requireCallerIsTroveMorSP() internal view {

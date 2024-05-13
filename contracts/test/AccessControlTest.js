@@ -298,7 +298,7 @@ contract(
           );
         } catch (err) {
           assert.include(err.message, "revert");
-          assert.include(err.message, "Caller is not the StabilityPool");
+          assert.include(err.message, "Bold: Caller is neither the Registry nor the StabilityPool");
         }
       });
 

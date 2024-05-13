@@ -764,7 +764,8 @@ contract InterestRateBasic is DevTestSetup {
 
         uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(troveIDs.A);
 
-        assertEq(entireTroveDebt_2, entireTroveDebt_1 - redeemAmount);
+        assertApproxEqAbs(entireTroveDebt_2, entireTroveDebt_1 - redeemAmount, 1e16, "A debt mismatch");
+        assertGt(entireTroveDebt_2, entireTroveDebt_1 - redeemAmount);
     }
 
     function testRedemptionChangesRecordedTroveDebtByAccruedInterestMinusRedeemedAmount() public {
@@ -783,6 +784,7 @@ contract InterestRateBasic is DevTestSetup {
 
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(troveIDs.A);
 
-        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest - redeemAmount);
+        assertApproxEqAbs(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest - redeemAmount, 1e16, "A debt mismatch");
+        assertGt(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest - redeemAmount);
     }
 }

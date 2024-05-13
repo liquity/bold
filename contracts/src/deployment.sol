@@ -93,7 +93,8 @@ function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerPara
         contractsArray[i] = contracts;
     }
 
-    collateralRegistry = new CollateralRegistry(boldToken, collaterals, troveManagers);
+    // TODO: interest router should be common (not per collateral branch)
+    collateralRegistry = new CollateralRegistry(boldToken, address(contractsArray[0].interestRouter), collaterals, troveManagers);
     boldToken.setCollateralRegistry(address(collateralRegistry));
     // Set registry in TroveManagers
     for (uint256 i = 0; i < numCollaterals; i++) {

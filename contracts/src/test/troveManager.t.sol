@@ -27,9 +27,7 @@ contract TroveManagerTest is DevTestSetup {
         uint256 redemptionAmount = 1000e18; // 1k BOLD
 
         // C redeems 1k BOLD
-        vm.startPrank(C);
-        collateralRegistry.redeemCollateral(redemptionAmount, 10, 1e18);
-        vm.stopPrank();
+        redeem(C, redemptionAmount);
 
         // Check A's coll and debt are the same
         uint256 debtA2 = troveManager.getTroveDebt(ATroveId);
@@ -57,9 +55,7 @@ contract TroveManagerTest is DevTestSetup {
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pct(A, 200 ether, 200000e18, 1e17);
         // A redeems 0.01 BOLD, base rate goes down to almost zero (it’s updated on redemption)
-        vm.startPrank(A);
-        collateralRegistry.redeemCollateral(1e16, 10, 1e18);
-        vm.stopPrank();
+        redeem(A, 1e16);
 
         console.log(collateralRegistry.baseRate(), "baseRate");
         assertLt(collateralRegistry.baseRate(), 3e10); // Goes down below 3e-8, i.e., below 0.000003%

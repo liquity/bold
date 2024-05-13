@@ -24,34 +24,42 @@ contract Redemptions is DevTestSetup {
         uint256 debt_C = troveManager.getTroveEntireDebt(troveIDs.C);
         uint256 debt_D = troveManager.getTroveEntireDebt(troveIDs.D);
 
+        uint256 boldRedemptionCommitmentsBefore = collateralRegistry.boldRedemptionCommitments();
+
         // E redeems enough to fully redeem A and partially from B
         uint256 redeemAmount_1 = debt_A + debt_B / 2;
         redeem(E, redeemAmount_1);
 
+        // check Bold bal tracking
+        assertEq(collateralRegistry.boldRedemptionCommitments(), boldRedemptionCommitmentsBefore);
+
         // Check A's Trove debt equals gas comp
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.BOLD_GAS_COMPENSATION());
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.BOLD_GAS_COMPENSATION(), "A debt mismatch");
         // Check B coll and debt reduced
-        assertLt(troveManager.getTroveEntireDebt(troveIDs.B), debt_B);
-        assertLt(troveManager.getTroveEntireColl(troveIDs.B), coll);
-        // Check C coll and debt unchanged
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.C), debt_C);
-        assertEq(troveManager.getTroveEntireColl(troveIDs.C), coll);
-        // Check D coll and debt unchanged
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.D), debt_D);
-        assertEq(troveManager.getTroveEntireColl(troveIDs.D), coll);
+        assertLt(troveManager.getTroveEntireDebt(troveIDs.B), debt_B, "B debt mismatch");
+        assertLt(troveManager.getTroveEntireColl(troveIDs.B), coll, "B coll mismatch");
+        // Check C coll unchanged and debt slightly increased
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.C), debt_C, "C debt should increase"); // due to interest
+        assertEq(troveManager.getTroveEntireColl(troveIDs.C), coll, "C coll should not change");
+        // Check D coll unchanged and debt slightly increased
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.D), debt_D, "D debt should increase"); // due to interest
+        assertEq(troveManager.getTroveEntireColl(troveIDs.D), coll, "D coll should not change");
 
         // E redeems enough to fully redeem B and partially redeem C
         uint256 redeemAmount_2 = debt_B / 2 + debt_C / 2;
         redeem(E, redeemAmount_2);
 
-        // Check A's Trove debt equals gas comp
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), troveManager.BOLD_GAS_COMPENSATION());
+        // check Bold bal tracking
+        assertEq(collateralRegistry.boldRedemptionCommitments(), boldRedemptionCommitmentsBefore);
+
+        // Check B's Trove debt equals gas comp
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), troveManager.BOLD_GAS_COMPENSATION(), "B debt mismatch");
         // Check C coll and debt reduced
-        assertLt(troveManager.getTroveEntireDebt(troveIDs.C), debt_C);
-        assertLt(troveManager.getTroveEntireColl(troveIDs.C), coll);
-        // Check D coll and debt unchanged
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.D), debt_D);
-        assertEq(troveManager.getTroveEntireColl(troveIDs.D), coll);
+        assertLt(troveManager.getTroveEntireDebt(troveIDs.C), debt_C, "C debt mismatch");
+        assertLt(troveManager.getTroveEntireColl(troveIDs.C), coll, "C coll mismatch");
+        // Check D coll unchanged and debt slightly increased
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.D), debt_D, "D debt should increase"); // due to interest
+        assertEq(troveManager.getTroveEntireColl(troveIDs.D), coll, "D coll mismatch");
     }
 
     // - Troves can be redeemed down to gas comp
@@ -97,8 +105,8 @@ contract Redemptions is DevTestSetup {
         redeem(E, redeemAmount_1);
 
         // Check A and B's Trove debt equals gas comp
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.BOLD_GAS_COMPENSATION());
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), troveManager.BOLD_GAS_COMPENSATION());
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.BOLD_GAS_COMPENSATION(), "A debt should gas comp");
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), troveManager.BOLD_GAS_COMPENSATION(), "B debt should gas comp");
 
         // E redeems again, enough to partially redeem C
         uint256 redeemAmount_2 = debt_C / 2;
@@ -107,12 +115,12 @@ contract Redemptions is DevTestSetup {
         // Check A and B still open with debt == gas comp
         assertEq(troveManager.getTroveStatus(troveIDs.A), 5); // Status 'unredeemable'
         assertEq(troveManager.getTroveStatus(troveIDs.B), 5); // Status 'unredeemable'
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.BOLD_GAS_COMPENSATION());
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), troveManager.BOLD_GAS_COMPENSATION());
+        assertApproxEqAbs(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.BOLD_GAS_COMPENSATION(), 1e14, "A debt should gas comp plus some interest");
+        assertApproxEqAbs(troveManager.getTroveEntireDebt(troveIDs.B), troveManager.BOLD_GAS_COMPENSATION(), 2e14, "B debt should gas comp plus some interest");
 
         // Check C's debt and coll reduced
-        assertLt(troveManager.getTroveEntireDebt(troveIDs.C), debt_C);
-        assertLt(troveManager.getTroveEntireColl(troveIDs.C), coll);
+        assertLt(troveManager.getTroveEntireDebt(troveIDs.C), debt_C, "C dobt should be reduced");
+        assertLt(troveManager.getTroveEntireColl(troveIDs.C), coll, "C coll should be reduced");
     }
 
     // - Accrued Trove interest contributes to redeemed debt of a redeemed trove
@@ -135,10 +143,12 @@ contract Redemptions is DevTestSetup {
         redeem(E, redeemAmount);
 
         // Check A reduced down to gas comp
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.BOLD_GAS_COMPENSATION());
+        assertApproxEqAbs(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.BOLD_GAS_COMPENSATION(), 1e16, "A debt should be gas comp plus some interest");
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.A), troveManager.BOLD_GAS_COMPENSATION(), "A debt should be more than gas comp");
 
-        // Check B's debt unchanged
-        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), debt_B);
+        // Check B's debt slightly increased (due to interest)
+        assertApproxEqAbs(troveManager.getTroveEntireDebt(troveIDs.B), debt_B, 2e16, "B debt should be the same plus some interest");
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.B), debt_B, "B debt should have increased");
     }
 
     function testRedemption1TroveLeavesETHFeeInTrove() public {
@@ -148,7 +158,7 @@ contract Redemptions is DevTestSetup {
         // E redeems enough to partly redeem from A
         uint256 redeemAmount = troveManager.getTroveDebt(troveIDs.A)  / 2;
         uint256 correspondingETH = redeemAmount * DECIMAL_PRECISION / price;
-        uint256 predictedETHFee = collateralRegistry.getEffectiveRedemptionFee(redeemAmount, price);
+        uint256 predictedETHFee = collateralRegistry.getEffectiveRedemptionFee(redeemAmount, price, 80);
         assertGt(correspondingETH, 0);
         assertGt(predictedETHFee, 0);
        
@@ -169,7 +179,7 @@ contract Redemptions is DevTestSetup {
         // E redeems enough to partly redeem from A
         uint256 redeemAmount = troveManager.getTroveDebt(troveIDs.A)  / 2;
         uint256 correspondingETH = redeemAmount * DECIMAL_PRECISION / price;
-        uint256 predictedETHFee = collateralRegistry.getEffectiveRedemptionFee(redeemAmount, price);
+        uint256 predictedETHFee = collateralRegistry.getEffectiveRedemptionFee(redeemAmount, price, 80);
         assertGt(correspondingETH, 0);
         assertGt(predictedETHFee, 0);
         // Expect Active pool to reduce by the ETH removed from the Trove
@@ -204,7 +214,7 @@ contract Redemptions is DevTestSetup {
         correspondingETH.B = boldRedeemAmounts.B * DECIMAL_PRECISION / price;
         correspondingETH.C = boldRedeemAmounts.C * DECIMAL_PRECISION / price;
 
-        uint256 redemptionFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(totalBoldRedeemAmount) * DECIMAL_PRECISION / totalBoldRedeemAmount;
+        uint256 redemptionFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(totalBoldRedeemAmount, 80) * DECIMAL_PRECISION / totalBoldRedeemAmount;
        
         uint256 predictedETHFee_A = correspondingETH.A * redemptionFeePct / DECIMAL_PRECISION;
         uint256 predictedETHFee_B = correspondingETH.B * redemptionFeePct / DECIMAL_PRECISION;
@@ -224,9 +234,9 @@ contract Redemptions is DevTestSetup {
 
         redeem(E, totalBoldRedeemAmount);
 
-        assertEq(troveManager.getTroveEntireColl(troveIDs.A), expectedRemainingColl_A);
-        assertEq(troveManager.getTroveEntireColl(troveIDs.B), expectedRemainingColl_B);
-        assertEq(troveManager.getTroveEntireColl(troveIDs.C), expectedRemainingColl_C);
+        assertApproxEqAbs(troveManager.getTroveEntireColl(troveIDs.A), expectedRemainingColl_A, 1e14, "A coll mismatch");
+        assertApproxEqAbs(troveManager.getTroveEntireColl(troveIDs.B), expectedRemainingColl_B, 1e14, "B coll mismatch");
+        assertApproxEqAbs(troveManager.getTroveEntireColl(troveIDs.C), expectedRemainingColl_C, 1e14, "C coll mismatch");
     }
 
      function testRedemption3TroveLeavesETHFeesInActivePool() public {
@@ -242,7 +252,7 @@ contract Redemptions is DevTestSetup {
         uint256 totalBoldRedeemAmount = boldRedeemAmounts.A + boldRedeemAmounts.B + boldRedeemAmounts.C;
         uint256 totalCorrespondingETH =totalBoldRedeemAmount * DECIMAL_PRECISION / price;
 
-        uint256 redemptionFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(totalBoldRedeemAmount) * DECIMAL_PRECISION / totalBoldRedeemAmount;
+        uint256 redemptionFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(totalBoldRedeemAmount, 80) * DECIMAL_PRECISION / totalBoldRedeemAmount;
         uint256 totalETHFee = totalCorrespondingETH * redemptionFeePct / DECIMAL_PRECISION;
 
         uint256 expectedETHDelta = totalCorrespondingETH - totalETHFee;
@@ -256,8 +266,8 @@ contract Redemptions is DevTestSetup {
         redeem(E, totalBoldRedeemAmount);
 
         // Check Active Pool ETH reduced correctly
-        assertEq(WETH.balanceOf(address(activePool)), activePoolBalBefore - expectedETHDelta);
-        assertEq(activePool.getETHBalance(), activePoolETHTrackerBefore - expectedETHDelta);
+        assertApproxEqAbs(WETH.balanceOf(address(activePool)), activePoolBalBefore - expectedETHDelta, 10, "ActivePool bal mismatch");
+        assertApproxEqAbs(activePool.getETHBalance(), activePoolETHTrackerBefore - expectedETHDelta, 10, "ActivePool tracker mismatch");
     }
 
     // --- Zombie Troves ---
@@ -320,13 +330,15 @@ contract Redemptions is DevTestSetup {
         redeem(E, redeemAmount);
 
         // Check B's debt unchanged from redeemAmount < debt_B;
-        assertEq(debt_B, troveManager.getTroveEntireDebt(troveIDs.B));
+        assertApproxEqAbs(debt_B, troveManager.getTroveEntireDebt(troveIDs.B), 1e15, "B debt should be the same plus some interest");
+        assertLt(debt_B, troveManager.getTroveEntireDebt(troveIDs.B), "B debt should have increased");
 
         redeemAmount = debt_B + 1;
         redeem(E, redeemAmount);
 
         // Check B's debt unchanged from redeemAmount > debt_B;
-        assertEq(debt_B, troveManager.getTroveEntireDebt(troveIDs.B));
+        assertApproxEqAbs(debt_B, troveManager.getTroveEntireDebt(troveIDs.B), 2e15, "B debt should be the same plus some interest");
+        assertLt(debt_B, troveManager.getTroveEntireDebt(troveIDs.B), "B debt should have increased");
     }
 
     function testZombieTrovesCanReceiveRedistGains() public {
@@ -797,6 +809,78 @@ contract Redemptions is DevTestSetup {
         // E liquidates B
         liquidate(E, troveIDs.B);
         assertEq(troveManager.getTroveStatus(troveIDs.B), 3); // Status 3 - closed by liquidation
+    }
+
+    function _testWithdrawRedemption(uint256 _withdrawTime, bool _checkOutOfWindow) internal {
+        uint256 REDEMPTION_FAILURE_PENALTY = collateralRegistry.REDEMPTION_FAILURE_PENALTY();
+
+        _setupForRedemptionAscendingInterest();
+
+        uint256 redeemAmount = 100e18;
+
+        uint256 boldRedemptionCommitmentsBefore = collateralRegistry.boldRedemptionCommitments();
+
+        vm.startPrank(E);
+        collateralRegistry.commitRedemption(0, redeemAmount, 100, 1e18);
+        vm.warp(block.timestamp + _withdrawTime);
+
+        if (_checkOutOfWindow) {
+            vm.expectRevert("CR: commitment out of redemption window");
+            collateralRegistry.executeRedemption(0);
+        }
+
+        uint256 interestRouterBoldBalBefore = boldToken.balanceOf(address(mockInterestRouter));
+        uint256 EBoldBalBefore = boldToken.balanceOf(E);
+        uint256 expectedPenalty = redeemAmount * REDEMPTION_FAILURE_PENALTY / DECIMAL_PRECISION;
+
+        collateralRegistry.withdrawRedemption(0);
+        vm.stopPrank();
+
+        assertEq(boldToken.balanceOf(address(mockInterestRouter)), interestRouterBoldBalBefore + expectedPenalty, "Interest router bal mismatch");
+        assertEq(boldToken.balanceOf(E), EBoldBalBefore + redeemAmount - expectedPenalty, "Redeemer bal mismatch");
+        assertEq(collateralRegistry.boldRedemptionCommitments(), boldRedemptionCommitmentsBefore, "Registry tracker mismatch");
+    }
+
+    function testWithdrawRedemptionImmediately() public {
+        _testWithdrawRedemption(0, true);
+    }
+
+    function testWithdrawRedemptionBeforeWindow() public {
+        _testWithdrawRedemption(59 seconds, true);
+    }
+
+    function testWithdrawRedemptionDuringWindow() public {
+        _testWithdrawRedemption(80 seconds, false);
+    }
+
+    function testWithdrawRedemptionAfterWindow() public {
+        _testWithdrawRedemption(301 seconds, true);
+    }
+
+    function testCannotWithdrawRedemptionAfterExecution() public {
+        _setupForRedemptionAscendingInterest();
+        uint256 redemptionId = redeem(E, 100e18);
+
+        vm.startPrank(E);
+        vm.expectRevert("CR: Non existing commitment");
+        collateralRegistry.withdrawRedemption(redemptionId);
+        vm.stopPrank();
+    }
+
+    function testCannotExecuteRedemptionAfterWithdrawal() public {
+        _setupForRedemptionAscendingInterest();
+
+        uint256 redemptionId = 0;
+
+        vm.startPrank(E);
+        collateralRegistry.commitRedemption(redemptionId, 100e18, 100, 1e18);
+
+        vm.warp(block.timestamp + 80 seconds);
+        collateralRegistry.withdrawRedemption(redemptionId);
+
+        vm.expectRevert("CR: Non existing commitment");
+        collateralRegistry.executeRedemption(redemptionId);
+        vm.stopPrank();
     }
 
     // TODO: tests borrower for combined adjustments - debt changes and coll add/withdrawals.

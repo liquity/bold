@@ -12,6 +12,7 @@ import "./ISortedTroves.sol";
 // Common interface for the Trove Manager.
 interface ITroveManager is IERC721, ILiquityBase {
     function MCR() external view returns (uint256);
+    function STALE_TROVE_DURATION() external view returns (uint256);
 
     function setAddresses(
         address _borrowerOperationsAddress,
