@@ -3,8 +3,6 @@ pragma solidity 0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract InterestRateAggregate is DevTestSetup {
-    uint256 constant UPFRONT_INTEREST_PERIOD = 7 days;
-
     // ---  Pending aggregate interest calculator ---
 
     function testCalcPendingAggInterestReturns0For0TimePassedSinceLastUpdate() public {
@@ -158,47 +156,17 @@ contract InterestRateAggregate is DevTestSetup {
     // --- mintAggInterest ---
 
     function testMintAggInterestRevertsWhenNotCalledByBOorTM() public {
-        // pass positive debt change
-        uint256 debtChange = 37e18;
         vm.startPrank(A);
         vm.expectRevert();
-        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(borrowerOperations));
-        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(address(troveManager));
-        activePool.mintAggInterestAndAccountForTroveChange(debtChange, 0, 0, 0, 0, 0, 0);
-        vm.stopPrank();
-
-        // pass negative debt change
-        vm.startPrank(A);
-        vm.expectRevert();
-        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0, 0, 0, 0);
-        vm.stopPrank();
-
-        vm.startPrank(address(borrowerOperations));
-        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0, 0, 0, 0);
-        vm.stopPrank();
-
-        vm.startPrank(address(troveManager));
-        activePool.mintAggInterestAndAccountForTroveChange(0, debtChange, 0, 0, 0, 0, 0);
-        vm.stopPrank();
-
-        // pass 0 debt change
-        vm.startPrank(A);
-        vm.expectRevert();
-        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0, 0, 0);
-        vm.stopPrank();
-
-        vm.startPrank(address(borrowerOperations));
-        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0, 0, 0);
-        vm.stopPrank();
-
-        vm.startPrank(address(troveManager));
-        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0, 0, 0);
+        activePool.mintAggInterestAndAccountForTroveChange(0, 0, 0, 0, 0, 0, 0, 0);
         vm.stopPrank();
     }
 
@@ -951,7 +919,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A draws more debt
         withdrawBold100pct(A, ATroveId, debtIncrease);
 
-        uint256 entireTroveDebt = troveManager.getTroveEntireDebt(ATroveId);
+        uint256 entireTroveDebt = troveManager.getNewRecordedDebt(ATroveId);
         uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;
 
         // Expect weighted sum decreases by the old and increases by the new individual weighted Trove debt.
@@ -981,10 +949,12 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        // A repays bold
+        uint256 unusedUpfrontInterest_1 = troveManager.getLatestTroveData(ATroveId).unusedUpfrontInterest;
         repayBold(A, ATroveId, debtDecrease);
+        uint256 unusedUpfrontInterest_2 = troveManager.getLatestTroveData(ATroveId).unusedUpfrontInterest;
 
-        assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest - debtDecrease);
+        uint256 forgone = unusedUpfrontInterest_1 - unusedUpfrontInterest_2;
+        assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest - (debtDecrease - forgone));
     }
 
     function testRepayBoldReducesPendingAggInterestTo0() public {
@@ -1005,13 +975,14 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(activePool.calcPendingAggInterest(), 0);
     }
 
-    function testRepayBoldMintsAggInterestToRouter() public {
+    function testRepayBoldMintsAggInterestAndForgoneUpfrontInterestToRouter() public {
         uint256 troveDebtRequest = 3000e18;
+        uint256 interestRate = 25e16;
         uint256 debtDecrease = 500e18;
 
         // A opens Trove
         priceFeed.setPrice(2000e18);
-        uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, 25e16);
+        uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, interestRate);
 
         vm.warp(block.timestamp + 1 days);
 
@@ -1021,10 +992,12 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        // A repays debt
+        uint256 unusedUpfrontInterest_1 = troveManager.getLatestTroveData(ATroveId).unusedUpfrontInterest;
         repayBold(A, ATroveId, debtDecrease);
+        uint256 unusedUpfrontInterest_2 = troveManager.getLatestTroveData(ATroveId).unusedUpfrontInterest;
 
-        assertEq(boldToken.balanceOf(address(mockInterestRouter)), pendingAggInterest);
+        uint256 forgone = unusedUpfrontInterest_1 - unusedUpfrontInterest_2;
+        assertEq(boldToken.balanceOf(address(mockInterestRouter)), pendingAggInterest + forgone);
     }
 
     function testRepayBoldUpdatesLastAggUpdateTimeToNow() public {
@@ -1068,13 +1041,11 @@ contract InterestRateAggregate is DevTestSetup {
         // A repays debt
         repayBold(A, ATroveId, debtDecrease);
 
-        uint256 entireTroveDebt = troveManager.getTroveEntireDebt(ATroveId);
-        uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;
+        uint256 newRecordedWeightedDebt = troveManager.getTroveWeightedRecordedDebt(ATroveId);
 
         // Expect weighted sum decreases by the old and increases by the new individual weighted Trove debt.
         assertEq(
-            activePool.aggWeightedDebtSum(),
-            aggWeightedDebtSum_1 - oldRecordedWeightedDebt + expectedNewRecordedWeightedDebt
+            activePool.aggWeightedDebtSum(), aggWeightedDebtSum_1 - oldRecordedWeightedDebt + newRecordedWeightedDebt
         );
     }
 
@@ -1172,7 +1143,7 @@ contract InterestRateAggregate is DevTestSetup {
         priceFeed.setPrice(2000e18);
         uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, interestRate);
 
-        uint256 oldRecordedWeightedDebt = troveManager.getTroveWeightedRecordedDebt(ATroveId);
+        uint256 oldWeightedRecordedDebt = troveManager.getTroveWeightedRecordedDebt(ATroveId);
 
         // fast-forward time
         vm.warp(block.timestamp + 1 days);
@@ -1183,16 +1154,16 @@ contract InterestRateAggregate is DevTestSetup {
         // A adds coll
         addColl(A, ATroveId, collIncrease);
 
-        uint256 interestBearingDebt = troveManager.getInterestBearingDebt(ATroveId);
-        uint256 expectedNewRecordedWeightedDebt = interestBearingDebt * interestRate;
+        uint256 newRecordedDebt = troveManager.getNewRecordedDebt(ATroveId);
+        uint256 expectedNewWeightedRecordedDebt = newRecordedDebt * interestRate;
 
         // Weighted debt should have increased due to interest being applied
-        assertGt(expectedNewRecordedWeightedDebt, oldRecordedWeightedDebt);
+        assertGt(expectedNewWeightedRecordedDebt, oldWeightedRecordedDebt);
 
         // Expect weighted sum decreases by the old and increases by the new individual weighted Trove debt.
         assertEq(
             activePool.aggWeightedDebtSum(),
-            aggWeightedDebtSum_1 - oldRecordedWeightedDebt + expectedNewRecordedWeightedDebt
+            aggWeightedDebtSum_1 - oldWeightedRecordedDebt + expectedNewWeightedRecordedDebt
         );
     }
 
@@ -1301,7 +1272,7 @@ contract InterestRateAggregate is DevTestSetup {
         // A withdraw coll
         withdrawColl(A, ATroveId, collDecrease);
 
-        uint256 entireTroveDebt = troveManager.getTroveEntireDebt(ATroveId);
+        uint256 entireTroveDebt = troveManager.getNewRecordedDebt(ATroveId);
         uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;
 
         // Weighted debt should have increased due to interest being applied
@@ -1851,10 +1822,10 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 ATroveId = openTroveNoHints100pct(A, coll, troveDebtRequest, interestRate);
 
-        uint256 interestBearingDebt = troveDebtRequest + borrowerOperations.BOLD_GAS_COMPENSATION();
-        uint256 entireDebt =
-            interestBearingDebt + interestBearingDebt * interestRate * UPFRONT_INTEREST_PERIOD / 365 days / 1e18;
-        uint256 expectedICR = coll * price / entireDebt;
+        uint256 debt = troveDebtRequest + BOLD_GAS_COMP;
+        debt += calcUpfrontInterest(debt, interestRate);
+
+        uint256 expectedICR = coll * price / debt;
         assertEq(expectedICR, troveManager.getCurrentICR(ATroveId, price));
 
         assertEq(expectedICR, troveManager.getTCR(price));
@@ -1874,13 +1845,15 @@ contract InterestRateAggregate is DevTestSetup {
         openTroveNoHints100pct(B, coll_B, troveDebtRequest_B, interestRate);
         openTroveNoHints100pct(C, coll_C, troveDebtRequest_C, interestRate);
 
-        uint256 compositeDebt_A = troveDebtRequest_A + borrowerOperations.BOLD_GAS_COMPENSATION();
-        uint256 compositeDebt_B = troveDebtRequest_B + borrowerOperations.BOLD_GAS_COMPENSATION();
-        uint256 compositeDebt_C = troveDebtRequest_C + borrowerOperations.BOLD_GAS_COMPENSATION();
+        uint256 debt_A = troveDebtRequest_A + BOLD_GAS_COMP;
+        uint256 debt_B = troveDebtRequest_B + BOLD_GAS_COMP;
+        uint256 debt_C = troveDebtRequest_C + BOLD_GAS_COMP;
 
-        uint256 sizeWeightedCR =
-            (coll_A + coll_B + coll_C) * price / (compositeDebt_A + compositeDebt_B + compositeDebt_C);
+        debt_A += calcUpfrontInterest(debt_A, interestRate);
+        debt_B += calcUpfrontInterest(debt_B, interestRate);
+        debt_C += calcUpfrontInterest(debt_C, interestRate);
 
+        uint256 sizeWeightedCR = (coll_A + coll_B + coll_C) * price / (debt_A + debt_B + debt_C);
         assertEq(sizeWeightedCR, troveManager.getTCR(price));
     }
 
@@ -1890,72 +1863,60 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 coll = 20 ether;
         uint256 interestRate = 25e16;
 
-        uint256 ATroveId = openTroveNoHints100pct(A, coll, troveDebtRequest, interestRate);
+        openTroveNoHints100pct(A, coll, troveDebtRequest, interestRate);
 
         // Fast-forward time
         vm.warp(block.timestamp + 14 days);
 
-        uint256 troveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
-        assertGt(troveInterest, 0);
+        uint256 debt = troveDebtRequest + BOLD_GAS_COMP;
+        debt += calcInterest(debt, interestRate, 14 days) + calcUpfrontInterest(debt, interestRate);
 
-        uint256 compositeDebt = troveDebtRequest + borrowerOperations.BOLD_GAS_COMPENSATION() + troveInterest;
-        uint256 expectedICR = coll * price / compositeDebt;
-        assertEq(expectedICR, troveManager.getCurrentICR(ATroveId, price));
-
-        assertEq(expectedICR, troveManager.getTCR(price));
+        uint256 expectedTCR = coll * price / debt;
+        assertEq(expectedTCR, troveManager.getTCR(price));
     }
 
     function testGetTCRIncorporatesAllTroveInterestForSystemWithMultipleTroves() public {
+        uint256 price = priceFeed.fetchPrice();
+
         // Use structs to bi-pass "stack-too-deep" error
-        TroveDebtRequests memory troveDebtRequests;
-        TroveCollAmounts memory troveCollAmounts;
-        TroveInterestRates memory troveInterestRates;
-        TroveAccruedInterests memory troveInterests;
+        ABCDEF memory borrow;
+        borrow.A = 2000e18;
+        borrow.B = 4000e18;
+        borrow.C = 5000e18;
 
-        troveDebtRequests.A = 2000e18;
-        troveDebtRequests.B = 4000e18;
-        troveDebtRequests.C = 5000e18;
-        troveCollAmounts.A = 20 ether;
-        troveCollAmounts.B = 30 ether;
-        troveCollAmounts.C = 40 ether;
+        ABCDEF memory coll;
+        coll.A = 20 ether;
+        coll.B = 30 ether;
+        coll.C = 40 ether;
 
-        troveInterestRates.A = 25e16;
-        troveInterestRates.B = 25e16;
-        troveInterestRates.C = 25e16;
+        ABCDEF memory interestRate;
+        interestRate.A = 25e16;
+        interestRate.B = 25e16;
+        interestRate.C = 25e16;
 
-        uint256 ATroveId = openTroveNoHints100pct(A, troveCollAmounts.A, troveDebtRequests.A, troveInterestRates.A);
-        // Fast-forward time
-        vm.warp(block.timestamp + 14 days);
-        uint256 BTroveId = openTroveNoHints100pct(B, troveCollAmounts.B, troveDebtRequests.B, troveInterestRates.B);
-        // Fast-forward time
-        vm.warp(block.timestamp + 14 days);
-        uint256 CTroveId = openTroveNoHints100pct(C, troveCollAmounts.C, troveDebtRequests.C, troveInterestRates.C);
+        openTroveNoHints100pct(A, coll.A, borrow.A, interestRate.A);
         // Fast-forward time
         vm.warp(block.timestamp + 14 days);
 
-        troveInterests.A = troveManager.calcTroveAccruedInterest(ATroveId);
-        assertGt(troveInterests.A, 0);
-        troveInterests.B = troveManager.calcTroveAccruedInterest(BTroveId);
-        assertGt(troveInterests.B, 0);
-        troveInterests.C = troveManager.calcTroveAccruedInterest(CTroveId);
-        assertGt(troveInterests.C, 0);
+        openTroveNoHints100pct(B, coll.B, borrow.B, interestRate.B);
+        // Fast-forward time
+        vm.warp(block.timestamp + 14 days);
 
-        /*
-         * stack too deep
-        uint256 compositeDebt_A = troveDebtRequests.A + borrowerOperations.BOLD_GAS_COMPENSATION() + troveInterest_A;
-        uint256 compositeDebt_B = troveDebtRequests.B + borrowerOperations.BOLD_GAS_COMPENSATION() + troveInterest_B;
-        uint256 compositeDebt_C = troveDebtRequests.C + borrowerOperations.BOLD_GAS_COMPENSATION() + troveInterest_C;
+        openTroveNoHints100pct(C, coll.C, borrow.C, interestRate.C);
+        // Fast-forward time
+        vm.warp(block.timestamp + 14 days);
 
-        uint256 expectedTCR = (troveCollAmounts.A + troveCollAmounts.B + troveCollAmounts.C) * price / (compositeDebt_A + compositeDebt_B + compositeDebt_C);
-        */
-        uint256 gasCompensation = borrowerOperations.BOLD_GAS_COMPENSATION();
-        uint256 expectedTCR = (troveCollAmounts.A + troveCollAmounts.B + troveCollAmounts.C) * priceFeed.fetchPrice()
-            / (
-                troveDebtRequests.A + troveDebtRequests.B + troveDebtRequests.C + 3 * gasCompensation + troveInterests.A
-                    + troveInterests.B + troveInterests.C
-            );
+        ABCDEF memory debt;
+        debt.A = borrow.A + BOLD_GAS_COMP;
+        debt.B = borrow.B + BOLD_GAS_COMP;
+        debt.C = borrow.C + BOLD_GAS_COMP;
 
-        assertEq(expectedTCR, troveManager.getTCR(priceFeed.fetchPrice()));
+        debt.A += calcInterest(debt.A, interestRate.A, 42 days) + calcUpfrontInterest(debt.A, interestRate.A);
+        debt.B += calcInterest(debt.B, interestRate.B, 28 days) + calcUpfrontInterest(debt.B, interestRate.B);
+        debt.C += calcInterest(debt.C, interestRate.C, 14 days) + calcUpfrontInterest(debt.C, interestRate.C);
+
+        uint256 expectedTCR = (coll.A + coll.B + coll.C) * price / (debt.A + debt.B + debt.C);
+        assertEq(expectedTCR, troveManager.getTCR(price));
     }
 
     // --- ICR tests ---
@@ -1977,10 +1938,10 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 ATroveId = openTroveNoHints100pct(A, coll, troveDebtRequest, interestRate);
 
-        uint256 interestBearingDebt = troveDebtRequest + borrowerOperations.BOLD_GAS_COMPENSATION();
-        uint256 entireDebt =
-            interestBearingDebt + interestBearingDebt * interestRate * UPFRONT_INTEREST_PERIOD / 365 days / 1e18;
-        uint256 expectedICR = coll * price / entireDebt;
+        uint256 debt = troveDebtRequest + BOLD_GAS_COMP;
+        debt += calcUpfrontInterest(debt, interestRate);
+
+        uint256 expectedICR = coll * price / debt;
         assertEq(expectedICR, troveManager.getCurrentICR(ATroveId, price));
     }
 
@@ -2006,26 +1967,29 @@ contract InterestRateAggregate is DevTestSetup {
     //  --- redemption tests ---
 
     function testRedemptionWithNoRedistGainsChangesAggRecordedDebtCorrectly() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
 
-        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+        uint256 redeemed = troveManager.getRedeemableDebt(troveIDs.A);
 
         uint256 aggRecordedDebt_1 = activePool.aggRecordedDebt();
         assertGt(aggRecordedDebt_1, 0);
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        // E redeems
-        redeem(E, debt_A);
+        uint256 unusedUpfrontInterest_1 = troveManager.getLatestTroveData(troveIDs.A).unusedUpfrontInterest;
+        redeem(E, redeemed);
+        uint256 unusedUpfrontInterest_2 = troveManager.getLatestTroveData(troveIDs.A).unusedUpfrontInterest;
 
-        assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest - debt_A);
+        // Upfront interest is not reflected in aggRecordedDebt
+        uint256 forgone = unusedUpfrontInterest_1 - unusedUpfrontInterest_2;
+        assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest - (redeemed - forgone));
     }
 
     function testRedemptionReducesPendingAggInterestTo0() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -2043,8 +2007,8 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(activePool.calcPendingAggInterest(), 0);
     }
 
-    function testRedemptionMintsPendingAggInterestToRouter() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+    function testRedemptionMintsPendingAggInterestAndForgoneUpfrontInterestToRouter() public {
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -2055,16 +2019,17 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
-        // E redeems
-        redeem(E, debt_A);
+        uint256 unusedUpfrontInterest_1 = troveManager.getLatestTroveData(troveIDs.A).unusedUpfrontInterest;
+        redeem(E, troveManager.getRedeemableDebt(troveIDs.A));
+        uint256 unusedUpfrontInterest_2 = troveManager.getLatestTroveData(troveIDs.A).unusedUpfrontInterest;
 
-        // Check I-router Bold bal has increased by the pending agg interest
-        assertEq(boldToken.balanceOf(address(mockInterestRouter)), pendingAggInterest);
+        // Check I-router Bold bal has increased by the pending agg interest and forgone upfront interest
+        uint256 forgone = unusedUpfrontInterest_1 - unusedUpfrontInterest_2;
+        assertEq(boldToken.balanceOf(address(mockInterestRouter)), pendingAggInterest + forgone);
     }
 
     function testRedemptionUpdatesLastAggUpdateTimeToNow() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -2081,7 +2046,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testRedemptionWithNoRedistGainsChangesWeightedDebtSumCorrectly() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -2123,7 +2088,7 @@ contract InterestRateAggregate is DevTestSetup {
     // We should properly address the TODO below ("tests with pending debt redist. gain >0"), but in the meantime,
     // keep this testcase.
     function testNoDoubleInterestOnPendingRedistribution() public {
-        TroveIDs memory troveIDs;
+        ABCDEF memory troveIDs;
 
         uint256 coll = 100 ether;
         uint256 borrow = 10_000 ether - 200 ether;
@@ -2151,7 +2116,11 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 debtAfter = troveManager.getTroveEntireDebt(troveIDs.D);
         emit log_named_decimal_uint("Trove D debt (post-adj) ", debtAfter, 18);
 
-        assertEq(debtBefore, debtAfter, "Adjusting interest rate shouldn't change Trove's debt");
+        assertEq(
+            debtAfter,
+            debtBefore + calcUpfrontInterest(debtBefore, 0.1 ether),
+            "Adjusting interest rate should only add upfront interest"
+        );
     }
 
     // --- claimALLETHGains ---

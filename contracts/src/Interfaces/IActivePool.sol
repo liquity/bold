@@ -30,12 +30,13 @@ interface IActivePool {
 
     function mintAggInterest() external;
     function mintAggInterestAndAccountForTroveChange(
-        uint256 _troveDebtIncrease,
-        uint256 _troveDebtDecrease,
-        uint256 _newWeightedRecordedTroveDebt,
-        uint256 _oldWeightedRecordedTroveDebt,
-        uint256 _upfrontInterestIncrease,
-        uint256 _upfrontInterestDecrease,
+        uint256 _appliedRedistBoldDebtGain,
+        uint256 _debtIncrease,
+        uint256 _debtDecrease,
+        uint256 _newWeightedRecordedDebt,
+        uint256 _oldWeightedRecordedDebt,
+        uint256 _newRecordedUpfrontInterest,
+        uint256 _oldRecordedUpfrontInterest,
         uint256 _forgoneUpfrontInterest
     ) external;
 

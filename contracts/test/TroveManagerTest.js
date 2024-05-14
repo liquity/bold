@@ -777,7 +777,7 @@ contract("TroveManager", async (accounts) => {
     const TCR_0 = await th.getTCR(contracts);
 
     const entireSystemCollBefore = await troveManager.getEntireSystemColl();
-    const entireSystemDebtBefore = await troveManager.getEntireSystemDebt();
+    const entireSystemDebtBefore = await troveManager.getEntireSystemDebtLowerBound();
 
     const expectedTCR_0 = entireSystemCollBefore
       .mul(price)
@@ -1306,9 +1306,8 @@ contract("TroveManager", async (accounts) => {
       from: alice,
       value: toBN(dec(100, 18)),
     }),
-
-    // Confirm system is not below CT
-    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
+      // Confirm system is not below CT
+      assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // liquidate A, B, C
     await troveManager.batchLiquidateTroves([aliceTroveId, bobTroveId, carolTroveId]);

@@ -77,7 +77,7 @@ contract TroveManagerTest is DevTestSetup {
     }
 
     function testLiquidationSucceedsEvenWhenEncounteringInactiveTroves() public {
-        TroveIDs memory troveIDs;
+        ABCDEF memory troveIDs;
 
         uint256 coll = 100 ether;
         uint256 borrow = 10_000 ether;

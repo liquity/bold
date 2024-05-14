@@ -4,7 +4,7 @@ import "./TestContracts/DevTestSetup.sol";
 
 contract SPTest is DevTestSetup {
     function _setupStashedAndCurrentETHGains() internal {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         // A stashes first gain
         makeSPDepositNoClaim(A, 1e18);

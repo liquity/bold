@@ -55,39 +55,7 @@ contract BaseTest is Test {
     IInterestRouter mockInterestRouter;
 
     // Structs for use in test where we need to bi-pass "stack-too-deep" errors
-    struct TroveDebtRequests {
-        uint256 A;
-        uint256 B;
-        uint256 C;
-        uint256 D;
-        uint256 E;
-    }
-
-    struct TroveIDs {
-        uint256 A;
-        uint256 B;
-        uint256 C;
-        uint256 D;
-        uint256 E;
-    }
-
-    struct TroveCollAmounts {
-        uint256 A;
-        uint256 B;
-        uint256 C;
-        uint256 D;
-        uint256 E;
-    }
-
-    struct TroveInterestRates {
-        uint256 A;
-        uint256 B;
-        uint256 C;
-        uint256 D;
-        uint256 E;
-    }
-
-    struct TroveAccruedInterests {
+    struct ABCDEF {
         uint256 A;
         uint256 B;
         uint256 C;
