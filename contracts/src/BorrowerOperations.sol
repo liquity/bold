@@ -378,28 +378,28 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireNonZeroAdjustment(_collChange, _boldChange);
         _requireTroveIsOpen(_contractsCache.troveManager, _troveId);
 
-        ITroveManager.LatestTroveData memory data = _contractsCache.troveManager.getLatestTroveData(_troveId);
+        ITroveManager.LatestTroveData memory trove = _contractsCache.troveManager.getLatestTroveData(_troveId);
 
         // When the adjustment is a debt repayment, check it's a valid amount and that the caller has enough Bold
         if (!_isDebtIncrease && _boldChange > 0) {
-            _requireValidBoldRepayment(data.entireDebt, _boldChange);
+            _requireValidBoldRepayment(trove.entireDebt, _boldChange);
             _requireSufficientBoldBalance(_contractsCache.boldToken, msg.sender, _boldChange);
         }
 
         // When the adjustment is a collateral withdrawal, check that it's no more than the Trove's entire collateral
         if (!_isCollIncrease && _collChange > 0) {
-            _requireValidCollWithdrawal(data.entireColl, _collChange);
+            _requireValidCollWithdrawal(trove.entireColl, _collChange);
         }
 
-        vars.newRecordedDebt = data.entireDebt - data.unusedUpfrontInterest;
-        vars.newUpfrontInterest = data.unusedUpfrontInterest;
+        vars.newRecordedDebt = trove.entireDebt - trove.unusedUpfrontInterest;
+        vars.newUpfrontInterest = trove.unusedUpfrontInterest;
 
         if (_isDebtIncrease) {
             vars.newRecordedDebt += _boldChange;
             vars.newUpfrontInterest +=
-                _boldChange * data.annualInterestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
+                _boldChange * trove.annualInterestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
         } else {
-            uint256 repaidRecordedDebt = vars.newRecordedDebt * _boldChange / data.entireDebt;
+            uint256 repaidRecordedDebt = vars.newRecordedDebt * _boldChange / trove.entireDebt;
             vars.forgoneUpfrontInterest = _boldChange - repaidRecordedDebt;
             vars.newRecordedDebt -= repaidRecordedDebt;
             vars.newUpfrontInterest -= vars.forgoneUpfrontInterest;
@@ -408,8 +408,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // Make sure the Trove doesn't become unredeemable
         _requireAtLeastMinDebt(vars.newRecordedDebt);
 
-        vars.newWeightedRecordedDebt = vars.newRecordedDebt * data.annualInterestRate;
-        vars.newEntireColl = _isCollIncrease ? data.entireColl + _collChange : data.entireColl - _collChange;
+        vars.newWeightedRecordedDebt = vars.newRecordedDebt * trove.annualInterestRate;
+        vars.newEntireColl = _isCollIncrease ? trove.entireColl + _collChange : trove.entireColl - _collChange;
         vars.newEntireDebt = vars.newRecordedDebt + vars.newUpfrontInterest;
 
         vars.newICR = LiquityMath._computeCR(vars.newEntireColl, vars.newEntireDebt, vars.price);
@@ -419,7 +419,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _isDebtIncrease ? _boldChange : 0, // _debtIncrease
             _isDebtIncrease ? 0 : _boldChange, // _debtDecrease
             vars.newUpfrontInterest,
-            data.recordedUpfrontInterest,
+            trove.recordedUpfrontInterest,
             vars.forgoneUpfrontInterest,
             vars.price
         );
@@ -429,7 +429,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // --- Effects and interactions ---
 
-        _contractsCache.troveManager.applyRedistributionGains(_troveId, data.redistBoldDebtGain, data.redistETHGain);
+        _contractsCache.troveManager.applyRedistributionGains(_troveId, trove.redistBoldDebtGain, trove.redistETHGain);
 
         // Update the Trove's recorded properties
         _contractsCache.troveManager.setTrovePropertiesOnAdjustment(
@@ -447,13 +447,13 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _contractsCache.troveManager.updateStakeAndTotalStakes(_troveId);
 
         _contractsCache.activePool.mintAggInterestAndAccountForTroveChange(
-            data.redistBoldDebtGain,
+            trove.redistBoldDebtGain,
             _isDebtIncrease ? _boldChange : 0, // _debtIncrease
             _isDebtIncrease ? 0 : _boldChange, // _debtDecrease
             vars.newWeightedRecordedDebt,
-            data.weightedRecordedDebt,
+            trove.weightedRecordedDebt,
             vars.newUpfrontInterest,
-            data.recordedUpfrontInterest,
+            trove.recordedUpfrontInterest,
             vars.forgoneUpfrontInterest
         );
 
@@ -480,19 +480,19 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireTroveIsOpen(contractsCache.troveManager, _troveId);
         uint256 price = priceFeed.fetchPrice();
 
-        ITroveManager.LatestTroveData memory data = contractsCache.troveManager.getLatestTroveData(_troveId);
+        ITroveManager.LatestTroveData memory trove = contractsCache.troveManager.getLatestTroveData(_troveId);
 
         // The borrower must repay their entire debt including accrued interest and redist. gains (and less the gas comp.)
-        _requireSufficientBoldBalance(contractsCache.boldToken, msg.sender, data.entireDebt - BOLD_GAS_COMPENSATION);
+        _requireSufficientBoldBalance(contractsCache.boldToken, msg.sender, trove.entireDebt - BOLD_GAS_COMPENSATION);
 
         uint256 newTCR = _getNewTCRFromTroveChange(
             0, // _collIncrease
-            data.entireColl,
+            trove.entireColl,
             0, // _debtIncrease
-            data.entireDebt,
+            trove.entireDebt,
             0, // _newRecordedUpfrontInterest
-            data.recordedUpfrontInterest,
-            data.unusedUpfrontInterest,
+            trove.recordedUpfrontInterest,
+            trove.unusedUpfrontInterest,
             price
         );
         _requireNewTCRisAboveCCR(newTCR);
@@ -501,17 +501,17 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // TODO: gas optimization of redistribution gains. We don't need to update the Trove's reward snapshots, since
         // we'll zero them at the end.
-        contractsCache.troveManager.applyRedistributionGains(_troveId, data.redistBoldDebtGain, data.redistETHGain);
+        contractsCache.troveManager.applyRedistributionGains(_troveId, trove.redistBoldDebtGain, trove.redistETHGain);
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(
-            data.redistBoldDebtGain,
+            trove.redistBoldDebtGain,
             0, // _debtIncrease
-            data.entireDebt,
+            trove.entireDebt,
             0, // _newWeightedRecordedDebt
-            data.weightedRecordedDebt,
+            trove.weightedRecordedDebt,
             0, // _newRecordedUpfrontInterest
-            data.recordedUpfrontInterest,
-            data.unusedUpfrontInterest
+            trove.recordedUpfrontInterest,
+            trove.unusedUpfrontInterest
         );
 
         contractsCache.troveManager.removeStake(_troveId);
@@ -521,10 +521,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // Burn the 200 BOLD gas compensation
         contractsCache.boldToken.burn(gasPoolAddress, BOLD_GAS_COMPENSATION);
         // Burn the remainder of the Trove's entire debt from the user
-        contractsCache.boldToken.burn(msg.sender, data.entireDebt - BOLD_GAS_COMPENSATION);
+        contractsCache.boldToken.burn(msg.sender, trove.entireDebt - BOLD_GAS_COMPENSATION);
 
         // Send the collateral back to the user
-        contractsCache.activePool.sendETH(msg.sender, data.entireColl);
+        contractsCache.activePool.sendETH(msg.sender, trove.entireColl);
     }
 
     function applyTroveInterestPermissionless(uint256 _troveId) external {
@@ -533,29 +533,29 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireTroveIsStale(contractsCache.troveManager, _troveId);
         _requireTroveIsOpen(contractsCache.troveManager, _troveId);
 
-        ITroveManager.LatestTroveData memory data = contractsCache.troveManager.getLatestTroveData(_troveId);
+        ITroveManager.LatestTroveData memory trove = contractsCache.troveManager.getLatestTroveData(_troveId);
 
-        contractsCache.troveManager.applyRedistributionGains(_troveId, data.redistBoldDebtGain, data.redistETHGain);
+        contractsCache.troveManager.applyRedistributionGains(_troveId, trove.redistBoldDebtGain, trove.redistETHGain);
 
-        uint256 newRecordedDebt = data.entireDebt - data.unusedUpfrontInterest;
-        uint256 newWeightedRecordedDebt = newRecordedDebt * data.annualInterestRate;
+        uint256 newRecordedDebt = trove.entireDebt - trove.unusedUpfrontInterest;
+        uint256 newWeightedRecordedDebt = newRecordedDebt * trove.annualInterestRate;
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(
-            data.redistBoldDebtGain,
+            trove.redistBoldDebtGain,
             0, // _debtIncrease
             0, // _debtDecrease
             newWeightedRecordedDebt,
-            data.weightedRecordedDebt,
-            data.unusedUpfrontInterest,
-            data.recordedUpfrontInterest,
+            trove.weightedRecordedDebt,
+            trove.unusedUpfrontInterest,
+            trove.recordedUpfrontInterest,
             0 // _forgoneUpfrontInterest
         );
 
         contractsCache.troveManager.setTrovePropertiesOnInterestApplication(
-            _troveId, data.entireColl, newRecordedDebt, data.unusedUpfrontInterest
+            _troveId, trove.entireColl, newRecordedDebt, trove.unusedUpfrontInterest
         );
 
-        emit TroveUpdated(_troveId, data.entireColl, data.entireDebt, Operation.applyTroveInterestPermissionless);
+        emit TroveUpdated(_troveId, trove.entireColl, trove.entireDebt, Operation.applyTroveInterestPermissionless);
     }
 
     function setAddManager(uint256 _troveId, address _manager) external {

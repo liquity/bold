@@ -40,7 +40,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         unredeemable
     }
 
-    // Store the necessary data for a trove
+    // Store the necessary trove for a trove
     struct Trove {
         uint256 debt;
         uint256 coll;
@@ -652,9 +652,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
     // Return the current collateral ratio (ICR) of a given Trove. Takes a trove's pending coll and debt rewards from redistributions into account.
     function getCurrentICR(uint256 _troveId, uint256 _price) public view override returns (uint256) {
-        LatestTroveData memory data;
-        _getLatestTroveData(_troveId, data);
-        return LiquityMath._computeCR(data.entireColl, data.entireDebt, _price);
+        LatestTroveData memory trove;
+        _getLatestTroveData(_troveId, trove);
+        return LiquityMath._computeCR(trove.entireColl, trove.entireDebt, _price);
     }
 
     function applyRedistributionGains(uint256 _troveId, uint256 _redistBoldDebtGain, uint256 _redistETHGain)
@@ -685,16 +685,16 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
     // Get the borrower's pending accumulated ETH reward, earned by their stake
     function getPendingETHReward(uint256 _troveId) external view override returns (uint256 redistETHGain) {
-        LatestTroveData memory data;
-        _getLatestTroveData(_troveId, data);
-        return data.redistETHGain;
+        LatestTroveData memory trove;
+        _getLatestTroveData(_troveId, trove);
+        return trove.redistETHGain;
     }
 
     // Get the borrower's pending accumulated Bold reward, earned by their stake
     function getPendingBoldDebtReward(uint256 _troveId) external view override returns (uint256 redistBoldDebtGain) {
-        LatestTroveData memory data;
-        _getLatestTroveData(_troveId, data);
-        return data.redistBoldDebtGain;
+        LatestTroveData memory trove;
+        _getLatestTroveData(_troveId, trove);
+        return trove.redistBoldDebtGain;
     }
 
     function hasRedistributionGains(uint256 _troveId) external view override returns (bool) {
@@ -709,29 +709,29 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     }
 
     // Return the Troves entire debt and coll, including redistribution gains from redistributions.
-    function _getLatestTroveData(uint256 _troveId, LatestTroveData memory data) internal view {
+    function _getLatestTroveData(uint256 _troveId, LatestTroveData memory trove) internal view {
         uint256 stake = Troves[_troveId].stake;
-        data.redistBoldDebtGain = stake * (L_boldDebt - rewardSnapshots[_troveId].boldDebt) / DECIMAL_PRECISION;
-        data.redistETHGain = stake * (L_ETH - rewardSnapshots[_troveId].ETH) / DECIMAL_PRECISION;
+        trove.redistBoldDebtGain = stake * (L_boldDebt - rewardSnapshots[_troveId].boldDebt) / DECIMAL_PRECISION;
+        trove.redistETHGain = stake * (L_ETH - rewardSnapshots[_troveId].ETH) / DECIMAL_PRECISION;
 
-        data.recordedDebt = Troves[_troveId].debt;
-        data.annualInterestRate = Troves[_troveId].annualInterestRate;
-        data.weightedRecordedDebt = data.recordedDebt * data.annualInterestRate;
-        data.accruedInterest = data.weightedRecordedDebt * (block.timestamp - Troves[_troveId].lastDebtUpdateTime)
+        trove.recordedDebt = Troves[_troveId].debt;
+        trove.annualInterestRate = Troves[_troveId].annualInterestRate;
+        trove.weightedRecordedDebt = trove.recordedDebt * trove.annualInterestRate;
+        trove.accruedInterest = trove.weightedRecordedDebt * (block.timestamp - Troves[_troveId].lastDebtUpdateTime)
             / ONE_YEAR / DECIMAL_PRECISION;
 
-        data.recordedUpfrontInterest = Troves[_troveId].upfrontInterest;
-        if (data.accruedInterest < data.recordedUpfrontInterest) {
-            data.unusedUpfrontInterest = data.recordedUpfrontInterest - data.accruedInterest;
+        trove.recordedUpfrontInterest = Troves[_troveId].upfrontInterest;
+        if (trove.accruedInterest < trove.recordedUpfrontInterest) {
+            trove.unusedUpfrontInterest = trove.recordedUpfrontInterest - trove.accruedInterest;
         }
 
-        data.entireDebt =
-            data.recordedDebt + data.redistBoldDebtGain + data.accruedInterest + data.unusedUpfrontInterest;
-        data.entireColl = Troves[_troveId].coll + data.redistETHGain;
+        trove.entireDebt =
+            trove.recordedDebt + trove.redistBoldDebtGain + trove.accruedInterest + trove.unusedUpfrontInterest;
+        trove.entireColl = Troves[_troveId].coll + trove.redistETHGain;
     }
 
-    function getLatestTroveData(uint256 _troveId) external view returns (LatestTroveData memory data) {
-        _getLatestTroveData(_troveId, data);
+    function getLatestTroveData(uint256 _troveId) external view returns (LatestTroveData memory trove) {
+        _getLatestTroveData(_troveId, trove);
     }
 
     function getEntireDebtAndColl(uint256 _troveId)
@@ -745,30 +745,31 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             uint256 accruedTroveInterest
         )
     {
-        LatestTroveData memory data;
-        _getLatestTroveData(_troveId, data);
+        LatestTroveData memory trove;
+        _getLatestTroveData(_troveId, trove);
 
-        return (data.entireDebt, data.entireColl, data.redistBoldDebtGain, data.redistETHGain, data.accruedInterest);
+        return
+            (trove.entireDebt, trove.entireColl, trove.redistBoldDebtGain, trove.redistETHGain, trove.accruedInterest);
     }
 
     function getTroveEntireDebt(uint256 _troveId) public view returns (uint256) {
-        LatestTroveData memory data;
-        _getLatestTroveData(_troveId, data);
-        return data.entireDebt;
+        LatestTroveData memory trove;
+        _getLatestTroveData(_troveId, trove);
+        return trove.entireDebt;
     }
 
     function getTroveEntireColl(uint256 _troveId) external view returns (uint256) {
-        LatestTroveData memory data;
-        _getLatestTroveData(_troveId, data);
-        return data.entireColl;
+        LatestTroveData memory trove;
+        _getLatestTroveData(_troveId, trove);
+        return trove.entireColl;
     }
 
     // What the Trove's new recorded debt would become if it were "touched" now
     // This includes all of the Trove's pending debt except for unused upfront interest
     function getNewRecordedDebt(uint256 _troveId) external view returns (uint256) {
-        LatestTroveData memory data;
-        _getLatestTroveData(_troveId, data);
-        return data.entireDebt - data.unusedUpfrontInterest;
+        LatestTroveData memory trove;
+        _getLatestTroveData(_troveId, trove);
+        return trove.entireDebt - trove.unusedUpfrontInterest;
     }
 
     // How much can be redeemed from a Trove such that it is left with at least BOLD_GAS_COMPENSATION recorded debt
@@ -778,15 +779,15 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     }
 
     function getRedeemableDebt(uint256 _troveId) external view returns (uint256) {
-        LatestTroveData memory data;
-        _getLatestTroveData(_troveId, data);
-        return _getRedeemableDebt(data.entireDebt, data.unusedUpfrontInterest);
+        LatestTroveData memory trove;
+        _getLatestTroveData(_troveId, trove);
+        return _getRedeemableDebt(trove.entireDebt, trove.unusedUpfrontInterest);
     }
 
     function getUnusedUpfrontInterest(uint256 _troveId) external view returns (uint256) {
-        LatestTroveData memory data;
-        _getLatestTroveData(_troveId, data);
-        return data.unusedUpfrontInterest;
+        LatestTroveData memory trove;
+        _getLatestTroveData(_troveId, trove);
+        return trove.unusedUpfrontInterest;
     }
 
     function removeStake(uint256 _troveId) external override {
