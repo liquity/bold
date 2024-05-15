@@ -3685,7 +3685,7 @@ contract("BorrowerOperations", async (accounts) => {
           extraBoldAmount: toBN(dec(5000, 18)),
           ICR: toBN(dec(15, 17)),
           extraParams: { from: carol },
-        })
+        }),
       );
     });
 
@@ -4265,9 +4265,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-              .add(liquidatedColl)
-              .mul(liqPrice)
-              .div(whaleTotalDebt.add(liquidatedDebt));
+          .add(liquidatedColl)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4315,9 +4315,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-              .add(liquidatedColl)
-              .mul(liqPrice)
-              .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
+          .add(liquidatedColl)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4365,9 +4365,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-              .add(liquidatedColl)
-              .mul(liqPrice)
-              .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
+          .add(liquidatedColl)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4414,9 +4414,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-              .add(liquidatedColl).add(collChange)
-              .mul(liqPrice)
-              .div(whaleTotalDebt.add(liquidatedDebt));
+          .add(liquidatedColl).add(collChange)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4464,9 +4464,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-              .add(liquidatedColl).sub(collChange)
-              .mul(liqPrice)
-              .div(whaleTotalDebt.add(liquidatedDebt));
+          .add(liquidatedColl).sub(collChange)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4514,9 +4514,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-              .add(liquidatedColl).sub(collChange)
-              .mul(liqPrice)
-              .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
+          .add(liquidatedColl).sub(collChange)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4564,9 +4564,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-              .add(liquidatedColl).add(collChange)
-              .mul(liqPrice)
-              .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
+          .add(liquidatedColl).add(collChange)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4614,9 +4614,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-              .add(liquidatedColl).add(collChange)
-              .mul(liqPrice)
-              .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
+          .add(liquidatedColl).add(collChange)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt).sub(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });
@@ -4664,9 +4664,9 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const expectedTCR = whaleColl
-              .add(liquidatedColl).sub(collChange)
-              .mul(liqPrice)
-              .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
+          .add(liquidatedColl).sub(collChange)
+          .mul(liqPrice)
+          .div(whaleTotalDebt.add(liquidatedDebt).add(debtChange));
 
         assert.isTrue(newTCR.eq(expectedTCR));
       });

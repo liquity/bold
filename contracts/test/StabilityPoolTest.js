@@ -1218,11 +1218,11 @@ contract("StabilityPool", async (accounts) => {
 
       // Alice BoldLoss is ((15000/200000) * liquidatedDebt), for each liquidation
       const expectedBoldLoss_A = liquidatedDebt_1
-            .mul(toBN(dec(15000, 18)))
-            .div(toBN(dec(200000, 18)))
-            .add(
-              liquidatedDebt_2.mul(toBN(dec(15000, 18))).div(toBN(dec(200000, 18))),
-            );
+        .mul(toBN(dec(15000, 18)))
+        .div(toBN(dec(200000, 18)))
+        .add(
+          liquidatedDebt_2.mul(toBN(dec(15000, 18))).div(toBN(dec(200000, 18))),
+        );
 
       const expectedCompoundedBoldDeposit_A = toBN(dec(15000, 18)).sub(
         expectedBoldLoss_A,
@@ -1318,9 +1318,9 @@ contract("StabilityPool", async (accounts) => {
       /* Check SP has reduced from 2 liquidations and Alice's withdrawal
          Expect Bold in SP = (200000 - liquidatedDebt_1 - liquidatedDebt_2 - 9000) */
       const expectedSPBold = toBN(dec(200000, 18))
-            .sub(toBN(liquidatedDebt_1))
-            .sub(toBN(liquidatedDebt_2))
-            .sub(toBN(dec(9000, 18)));
+        .sub(toBN(liquidatedDebt_1))
+        .sub(toBN(liquidatedDebt_2))
+        .sub(toBN(dec(9000, 18)));
 
       const SP_Bold_After = (
         await stabilityPool.getTotalBoldDeposits()
@@ -1386,11 +1386,11 @@ contract("StabilityPool", async (accounts) => {
 
       // Alice BoldLoss is ((15000/200000) * liquidatedDebt), for each liquidation
       const expectedBoldLoss_A = liquidatedDebt_1
-            .mul(toBN(dec(15000, 18)))
-            .div(toBN(dec(200000, 18)))
-            .add(
-              liquidatedDebt_2.mul(toBN(dec(15000, 18))).div(toBN(dec(200000, 18))),
-            );
+        .mul(toBN(dec(15000, 18)))
+        .div(toBN(dec(200000, 18)))
+        .add(
+          liquidatedDebt_2.mul(toBN(dec(15000, 18))).div(toBN(dec(200000, 18))),
+        );
 
       const expectedCompoundedBoldDeposit_A = toBN(dec(15000, 18)).sub(
         expectedBoldLoss_A,
@@ -1587,8 +1587,8 @@ contract("StabilityPool", async (accounts) => {
 
       // Expect alice to be entitled to 15000/200000 of the liquidated coll
       const aliceExpectedETHGain = liquidatedColl
-            .mul(toBN(dec(15000, 18)))
-            .div(toBN(dec(200000, 18)));
+        .mul(toBN(dec(15000, 18)))
+        .div(toBN(dec(200000, 18)));
       const aliceETHGain = await stabilityPool.getDepositorETHGain(alice);
       assert.isTrue(aliceExpectedETHGain.eq(aliceETHGain));
 
@@ -2320,8 +2320,8 @@ contract("StabilityPool", async (accounts) => {
 
       // Check Bob's Bold balance has risen by only the value of his compounded deposit
       const bob_expectedBoldBalance = bob_Bold_Balance_Before
-            .add(bob_Deposit_Before)
-            .toString();
+        .add(bob_Deposit_Before)
+        .toString();
       const bob_Bold_Balance_After = (
         await boldToken.balanceOf(bob)
       ).toString();
@@ -2334,8 +2334,8 @@ contract("StabilityPool", async (accounts) => {
 
       // Check Alice's Bold balance has risen by only the value of her compounded deposit
       const alice_expectedBoldBalance = alice_Bold_Balance_Before
-            .add(alice_Deposit_Before)
-            .toString();
+        .add(alice_Deposit_Before)
+        .toString();
       const alice_Bold_Balance_After = (
         await boldToken.balanceOf(alice)
       ).toString();
@@ -2343,8 +2343,8 @@ contract("StabilityPool", async (accounts) => {
 
       // Check Bold in Stability Pool has been reduced by only Alice's compounded deposit and Bob's compounded deposit
       const expectedBoldinSP = BoldinSP_Before.sub(alice_Deposit_Before)
-            .sub(bob_Deposit_Before)
-            .toString();
+        .sub(bob_Deposit_Before)
+        .toString();
       const BoldinSP_After = (
         await stabilityPool.getTotalBoldDeposits()
       ).toString();
@@ -2420,8 +2420,8 @@ contract("StabilityPool", async (accounts) => {
 
       // Check Bob's Bold balance has risen by only the value of his compounded deposit
       const bob_expectedBoldBalance = bob_Bold_Balance_Before
-            .add(bob_Deposit_Before)
-            .toString();
+        .add(bob_Deposit_Before)
+        .toString();
       const bob_Bold_Balance_After = (
         await boldToken.balanceOf(bob)
       ).toString();
@@ -2566,15 +2566,15 @@ contract("StabilityPool", async (accounts) => {
 
       // Check Bold balances of A, B, C have risen by the value of their compounded deposits, respectively
       const alice_expectedBoldBalance = alice_Bold_Balance_Before
-            .add(alice_Deposit_Before)
-            .toString();
+        .add(alice_Deposit_Before)
+        .toString();
 
       const bob_expectedBoldBalance = bob_Bold_Balance_Before
-            .add(bob_Deposit_Before)
-            .toString();
+        .add(bob_Deposit_Before)
+        .toString();
       const carol_expectedBoldBalance = carol_Bold_Balance_Before
-            .add(carol_Deposit_Before)
-            .toString();
+        .add(carol_Deposit_Before)
+        .toString();
 
       const alice_Bold_Balance_After = (
         await boldToken.balanceOf(alice)
@@ -2593,14 +2593,14 @@ contract("StabilityPool", async (accounts) => {
 
       // Check ETH balances of A, B, C have increased by the value of their ETH gain from liquidations, respectively
       const alice_expectedETHBalance = alice_ETH_Balance_Before
-            .add(alice_ETHGain_Before)
-            .toString();
+        .add(alice_ETHGain_Before)
+        .toString();
       const bob_expectedETHBalance = bob_ETH_Balance_Before
-            .add(bob_ETHGain_Before)
-            .toString();
+        .add(bob_ETHGain_Before)
+        .toString();
       const carol_expectedETHBalance = carol_ETH_Balance_Before
-            .add(carol_ETHGain_Before)
-            .toString();
+        .add(carol_ETHGain_Before)
+        .toString();
 
       const alice_ETHBalance_After = (
         await contracts.WETH.balanceOf(alice)
@@ -2621,9 +2621,9 @@ contract("StabilityPool", async (accounts) => {
 
       // Check Bold in Stability Pool has been reduced by A, B and C's compounded deposit
       const expectedBoldinSP = BoldinSP_Before.sub(alice_Deposit_Before)
-            .sub(bob_Deposit_Before)
-            .sub(carol_Deposit_Before)
-            .toString();
+        .sub(bob_Deposit_Before)
+        .sub(carol_Deposit_Before)
+        .toString();
       const BoldinSP_After = (
         await stabilityPool.getTotalBoldDeposits()
       ).toString();

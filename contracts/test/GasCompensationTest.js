@@ -451,10 +451,7 @@ contract("Gas compensation tests", async (accounts) => {
       from: dennis,
       gasPrice: GAS_PRICE,
     });
-    await th.provideToSPAndClaim(contracts, 
-      B_totalDebt.add(C_totalDebt),
-      { from: erin, gasPrice: GAS_PRICE },
-    );
+    await th.provideToSPAndClaim(contracts, B_totalDebt.add(C_totalDebt), { from: erin, gasPrice: GAS_PRICE });
 
     const BoldinSP_0 = await stabilityPool.getTotalBoldDeposits();
 
