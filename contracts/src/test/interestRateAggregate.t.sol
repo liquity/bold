@@ -949,9 +949,9 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 unusedUpfrontInterest_1 = troveManager.getLatestTroveData(ATroveId).unusedUpfrontInterest;
+        uint256 unusedUpfrontInterest_1 = troveManager.getUnusedUpfrontInterest(ATroveId);
         repayBold(A, ATroveId, debtDecrease);
-        uint256 unusedUpfrontInterest_2 = troveManager.getLatestTroveData(ATroveId).unusedUpfrontInterest;
+        uint256 unusedUpfrontInterest_2 = troveManager.getUnusedUpfrontInterest(ATroveId);
 
         uint256 forgone = unusedUpfrontInterest_1 - unusedUpfrontInterest_2;
         assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest - (debtDecrease - forgone));
@@ -992,9 +992,9 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 unusedUpfrontInterest_1 = troveManager.getLatestTroveData(ATroveId).unusedUpfrontInterest;
+        uint256 unusedUpfrontInterest_1 = troveManager.getUnusedUpfrontInterest(ATroveId);
         repayBold(A, ATroveId, debtDecrease);
-        uint256 unusedUpfrontInterest_2 = troveManager.getLatestTroveData(ATroveId).unusedUpfrontInterest;
+        uint256 unusedUpfrontInterest_2 = troveManager.getUnusedUpfrontInterest(ATroveId);
 
         uint256 forgone = unusedUpfrontInterest_1 - unusedUpfrontInterest_2;
         assertEq(boldToken.balanceOf(address(mockInterestRouter)), pendingAggInterest + forgone);
@@ -1979,9 +1979,9 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 unusedUpfrontInterest_1 = troveManager.getLatestTroveData(troveIDs.A).unusedUpfrontInterest;
+        uint256 unusedUpfrontInterest_1 = troveManager.getUnusedUpfrontInterest(troveIDs.A);
         redeem(E, redeemed);
-        uint256 unusedUpfrontInterest_2 = troveManager.getLatestTroveData(troveIDs.A).unusedUpfrontInterest;
+        uint256 unusedUpfrontInterest_2 = troveManager.getUnusedUpfrontInterest(troveIDs.A);
 
         // Upfront interest is not reflected in aggRecordedDebt
         uint256 forgone = unusedUpfrontInterest_1 - unusedUpfrontInterest_2;
@@ -2019,9 +2019,9 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 unusedUpfrontInterest_1 = troveManager.getLatestTroveData(troveIDs.A).unusedUpfrontInterest;
+        uint256 unusedUpfrontInterest_1 = troveManager.getUnusedUpfrontInterest(troveIDs.A);
         redeem(E, troveManager.getRedeemableDebt(troveIDs.A));
-        uint256 unusedUpfrontInterest_2 = troveManager.getLatestTroveData(troveIDs.A).unusedUpfrontInterest;
+        uint256 unusedUpfrontInterest_2 = troveManager.getUnusedUpfrontInterest(troveIDs.A);
 
         // Check I-router Bold bal has increased by the pending agg interest and forgone upfront interest
         uint256 forgone = unusedUpfrontInterest_1 - unusedUpfrontInterest_2;
