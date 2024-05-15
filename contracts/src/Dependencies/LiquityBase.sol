@@ -20,9 +20,6 @@ contract LiquityBase is ILiquityBase {
     uint256 public constant DECIMAL_PRECISION = 1e18;
     uint256 public constant _100pct = DECIMAL_PRECISION;
 
-    // Minimum collateral ratio for individual troves
-    uint256 public constant MCR = 1100000000000000000; // 110%
-
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
     uint256 public constant CCR = 1500000000000000000; // 150%
 

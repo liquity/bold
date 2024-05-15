@@ -60,9 +60,9 @@ contract("Gas compensation tests", async (accounts) => {
   });
 
   before(async () => {
-    troveManagerTester = await TroveManagerTester.new();
+    troveManagerTester = await TroveManagerTester.new(toBN(dec(110, 16)), toBN(dec(10, 16)), toBN(dec(10, 16)));
     const WETH = await ERC20.new("WETH", "WETH");
-    borrowerOperationsTester = await BorrowerOperationsTester.new(WETH.address);
+    borrowerOperationsTester = await BorrowerOperationsTester.new(WETH.address, troveManagerTester.address);
 
     TroveManagerTester.setAsDeployed(troveManagerTester);
     BorrowerOperationsTester.setAsDeployed(borrowerOperationsTester);
@@ -451,10 +451,7 @@ contract("Gas compensation tests", async (accounts) => {
       from: dennis,
       gasPrice: GAS_PRICE,
     });
-    await th.provideToSPAndClaim(contracts, 
-      B_totalDebt.add(C_totalDebt),
-      { from: erin, gasPrice: GAS_PRICE },
-    );
+    await th.provideToSPAndClaim(contracts, B_totalDebt.add(C_totalDebt), { from: erin, gasPrice: GAS_PRICE });
 
     const BoldinSP_0 = await stabilityPool.getTotalBoldDeposits();
 

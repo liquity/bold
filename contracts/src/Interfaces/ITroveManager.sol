@@ -24,6 +24,8 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 unusedUpfrontInterest;
     }
 
+    function MCR() external view returns (uint256);
+
     function setAddresses(
         address _borrowerOperationsAddress,
         address _activePoolAddress,

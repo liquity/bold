@@ -34,22 +34,38 @@ struct LiquityContracts {
     IERC20 WETH;
 }
 
+struct TroveManagerParams {
+    uint256 MCR;
+    uint256 LIQUIDATION_PENALTY_SP;
+    uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
+}
+
 function _deployAndConnectContracts()
     returns (LiquityContracts memory contracts, ICollateralRegistry collateralRegistry, IBoldToken boldToken)
 {
+    return _deployAndConnectContracts(TroveManagerParams(110e16, 5e16, 10e16));
+}
+
+function _deployAndConnectContracts(TroveManagerParams memory troveManagerParams)
+    returns (LiquityContracts memory contracts, ICollateralRegistry collateralRegistry, IBoldToken boldToken)
+{
     LiquityContracts[] memory contractsArray;
-    (contractsArray, collateralRegistry, boldToken) = _deployAndConnectContracts(1);
+    TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](1);
+
+    troveManagerParamsArray[0] = troveManagerParams;
+    (contractsArray, collateralRegistry, boldToken) = _deployAndConnectContracts(troveManagerParamsArray);
     contracts = contractsArray[0];
 }
 
-function _deployAndConnectContracts(uint256 _numCollaterals)
+function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerParamsArray)
     returns (LiquityContracts[] memory contractsArray, ICollateralRegistry collateralRegistry, IBoldToken boldToken)
 {
+    uint256 numCollaterals = troveManagerParamsArray.length;
     boldToken = new BoldToken();
 
-    contractsArray = new LiquityContracts[](_numCollaterals);
-    IERC20[] memory collaterals = new IERC20[](_numCollaterals);
-    ITroveManager[] memory troveManagers = new ITroveManager[](_numCollaterals);
+    contractsArray = new LiquityContracts[](numCollaterals);
+    IERC20[] memory collaterals = new IERC20[](numCollaterals);
+    ITroveManager[] memory troveManagers = new ITroveManager[](numCollaterals);
 
     LiquityContracts memory contracts;
     IERC20 WETH = new ERC20Faucet(
@@ -58,20 +74,20 @@ function _deployAndConnectContracts(uint256 _numCollaterals)
         100 ether, //     _tapAmount
         1 days //         _tapPeriod
     );
-    contracts = _deployAndConnectCollateralContracts(WETH, boldToken);
+    contracts = _deployAndConnectCollateralContracts(WETH, boldToken, troveManagerParamsArray[0]);
     contractsArray[0] = contracts;
     collaterals[0] = contracts.WETH;
     troveManagers[0] = contracts.troveManager;
 
     // Multicollateral registry
-    for (uint256 i = 1; i < _numCollaterals; i++) {
+    for (uint256 i = 1; i < numCollaterals; i++) {
         IERC20 stETH = new ERC20Faucet(
             string.concat("Staked ETH", string(abi.encode(i))), // _name
             string.concat("stETH", string(abi.encode(i))), // _symbol
             100 ether, //     _tapAmount
             1 days //         _tapPeriod
         );
-        contracts = _deployAndConnectCollateralContracts(stETH, boldToken);
+        contracts = _deployAndConnectCollateralContracts(stETH, boldToken, troveManagerParamsArray[i]);
         collaterals[i] = contracts.WETH;
         troveManagers[i] = contracts.troveManager;
         contractsArray[i] = contracts;
@@ -80,28 +96,34 @@ function _deployAndConnectContracts(uint256 _numCollaterals)
     collateralRegistry = new CollateralRegistry(boldToken, collaterals, troveManagers);
     boldToken.setCollateralRegistry(address(collateralRegistry));
     // Set registry in TroveManagers
-    for (uint256 i = 0; i < _numCollaterals; i++) {
+    for (uint256 i = 0; i < numCollaterals; i++) {
         contractsArray[i].troveManager.setCollateralRegistry(address(collateralRegistry));
     }
 }
 
-function _deployAndConnectCollateralContracts(IERC20 _collateralToken, IBoldToken _boldToken)
-    returns (LiquityContracts memory contracts)
-{
+function _deployAndConnectCollateralContracts(
+    IERC20 _collateralToken,
+    IBoldToken _boldToken,
+    TroveManagerParams memory troveManagerParams
+) returns (LiquityContracts memory contracts) {
     // TODO: optimize deployment order & constructor args & connector functions
 
     contracts.WETH = _collateralToken;
 
     // Deploy all contracts
     contracts.activePool = new ActivePool(address(_collateralToken));
-    contracts.borrowerOperations = new BorrowerOperations(address(_collateralToken));
+    contracts.troveManager = new TroveManager(
+        troveManagerParams.MCR,
+        troveManagerParams.LIQUIDATION_PENALTY_SP,
+        troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
+    );
+    contracts.borrowerOperations = new BorrowerOperations(_collateralToken, contracts.troveManager);
     contracts.collSurplusPool = new CollSurplusPool(address(_collateralToken));
     contracts.defaultPool = new DefaultPool(address(_collateralToken));
     contracts.gasPool = new GasPool();
     contracts.priceFeed = new PriceFeedTestnet();
     contracts.sortedTroves = new SortedTroves();
     contracts.stabilityPool = new StabilityPool(address(_collateralToken));
-    contracts.troveManager = new TroveManager();
     contracts.interestRouter = new MockInterestRouter();
 
     _boldToken.setBranchAddresses(
@@ -129,7 +151,6 @@ function _deployAndConnectCollateralContracts(IERC20 _collateralToken, IBoldToke
 
     // set contracts in BorrowerOperations
     contracts.borrowerOperations.setAddresses(
-        address(contracts.troveManager),
         address(contracts.activePool),
         address(contracts.defaultPool),
         address(contracts.gasPool),

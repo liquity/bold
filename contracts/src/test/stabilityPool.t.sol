@@ -79,7 +79,7 @@ contract SPTest is DevTestSetup {
         _setupStashedAndCurrentETHGains();
 
         // Check A has both stashed and current gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
+        stabilityPool.stashedETH(A);
 
         makeSPDepositAndClaim(A, 1e18);
 
@@ -272,8 +272,8 @@ contract SPTest is DevTestSetup {
         _setupStashedAndCurrentETHGains();
 
         // Check A has both stashed and current gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
+        stabilityPool.stashedETH(A);
+        stabilityPool.getDepositorETHGain(A);
 
         makeSPWithdrawalAndClaim(A, 1e18);
 
@@ -356,8 +356,8 @@ contract SPTest is DevTestSetup {
         _setupStashedAndCurrentETHGains();
 
         // Check A has both stashed and current gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
+        stabilityPool.stashedETH(A);
+        stabilityPool.getDepositorETHGain(A);
 
         uint256 ETHBal_A = WETH.balanceOf(A);
         assertGt(ETHBal_A, 0);

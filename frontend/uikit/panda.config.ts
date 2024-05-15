@@ -13,7 +13,8 @@ const semanticColors = Object.fromEntries(
     key,
     {
       value: `{colors.${value}}`,
-      // this is where the dark theme can be added, see https://panda-css.com/docs/theming/tokens
+      // this is where the dark theme can be added,
+      // see https://panda-css.com/docs/theming/tokens
       // _dark: `{colors.${otherValue}}`,
     },
   ]),

@@ -14,7 +14,6 @@ interface ILiquityBase {
     function MIN_NET_DEBT() external view returns (uint256);
     function MIN_DEBT() external view returns (uint256);
     function UPFRONT_INTEREST_PERIOD() external view returns (uint256);
-    function MCR() external view returns (uint256);
     function getEntireSystemDebtUpperBound() external view returns (uint256);
     function getEntireSystemDebtLowerBound() external view returns (uint256);
 }

@@ -122,7 +122,7 @@ contract("TroveManager", async (accounts) => {
       await contracts.WETH.mint(account, eth_amount);
       await th.openTroveWrapper(
         contracts,
-          await getOpenTroveBoldAmount(dec(1, 22)),
+        await getOpenTroveBoldAmount(dec(1, 22)),
         ZERO_ADDRESS,
         ZERO_ADDRESS,
         0,

@@ -23,12 +23,15 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     // --- Connected contract declarations ---
 
     IERC20 public immutable ETH;
-    ITroveManager public troveManager;
+    ITroveManager public immutable troveManager;
     address gasPoolAddress;
     ICollSurplusPool collSurplusPool;
     IBoldToken public boldToken;
     // A doubly linked list of Troves, sorted by their collateral ratios
     ISortedTroves public sortedTroves;
+
+    // Minimum collateral ratio for individual troves
+    uint256 public immutable MCR;
 
     /* --- Variable container structs  ---
 
@@ -90,15 +93,21 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     event TroveUpdated(uint256 indexed _troveId, uint256 _debt, uint256 _coll, Operation operation);
     event BoldBorrowingFeePaid(uint256 indexed _troveId, uint256 _boldFee);
 
-    constructor(address _ETHAddress) {
-        checkContract(_ETHAddress);
-        ETH = IERC20(_ETHAddress);
+    constructor(IERC20 _ETH, ITroveManager _troveManager) {
+        checkContract(address(_ETH));
+        checkContract(address(_troveManager));
+
+        ETH = _ETH;
+        troveManager = _troveManager;
+
+        MCR = _troveManager.MCR();
+
+        emit TroveManagerAddressChanged(address(_troveManager));
     }
 
     // --- Dependency setters ---
 
     function setAddresses(
-        address _troveManagerAddress,
         address _activePoolAddress,
         address _defaultPoolAddress,
         address _gasPoolAddress,
@@ -110,7 +119,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // This makes impossible to open a trove with zero withdrawn Bold
         assert(MIN_NET_DEBT > 0);
 
-        checkContract(_troveManagerAddress);
         checkContract(_activePoolAddress);
         checkContract(_defaultPoolAddress);
         checkContract(_gasPoolAddress);
@@ -119,7 +127,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         checkContract(_sortedTrovesAddress);
         checkContract(_boldTokenAddress);
 
-        troveManager = ITroveManager(_troveManagerAddress);
         activePool = IActivePool(_activePoolAddress);
         defaultPool = IDefaultPool(_defaultPoolAddress);
         gasPoolAddress = _gasPoolAddress;
@@ -128,7 +135,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
         boldToken = IBoldToken(_boldTokenAddress);
 
-        emit TroveManagerAddressChanged(_troveManagerAddress);
         emit ActivePoolAddressChanged(_activePoolAddress);
         emit DefaultPoolAddressChanged(_defaultPoolAddress);
         emit GasPoolAddressChanged(_gasPoolAddress);
@@ -567,13 +573,11 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     }
 
     /**
-     * Claim remaining collateral from a redemption or from a liquidation with ICR > MCR in Recovery Mode
+     * Claim remaining collateral from a liquidation with ICR exceeding the liquidation penalty
      */
-    function claimCollateral(uint256 _troveId) external override {
-        _requireIsOwner(troveManager, _troveId);
-
+    function claimCollateral() external override {
         // send ETH from CollSurplus Pool to owner
-        collSurplusPool.claimColl(msg.sender, _troveId);
+        collSurplusPool.claimColl(msg.sender);
     }
 
     // --- Helper functions ---
@@ -694,7 +698,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 _boldChange,
         bool _isDebtIncrease,
         LocalVariables_adjustTrove memory _vars
-    ) internal pure {
+    ) internal view {
         /*
         * Below Critical Threshold, it is not permitted:
         *
@@ -718,7 +722,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         }
     }
 
-    function _requireICRisAboveMCR(uint256 _newICR) internal pure {
+    function _requireICRisAboveMCR(uint256 _newICR) internal view {
         require(_newICR >= MCR, "BorrowerOps: An operation that would result in ICR < MCR is not permitted");
     }
 

@@ -2,19 +2,6 @@ import type { ReactNode } from "react";
 
 import { createContext, useContext, useState } from "react";
 
-// The Liquity v2 brand colors.
-export const brand = {
-  "blue": "#405AE5",
-  "green": "#63D77D",
-  "darkBlue": "#121B44",
-  "golden": "#F5D93A",
-  "cyan": "#95CBF3",
-  "coral": "#FB7C59",
-  "brown": "#DBB79B",
-};
-
-export type BrandColorName = keyof typeof brand;
-
 // The Liquity v2 base color palette, meant
 // to be used by themes rather than directly.
 export const colors = {
@@ -85,6 +72,15 @@ export const colors = {
 
   // White
   "white": "#FFFFFF",
+
+  // Brand colors
+  "brand:blue": "#405AE5",
+  "brand:green": "#63D77D",
+  "brand:darkBlue": "#121B44",
+  "brand:golden": "#F5D93A",
+  "brand:cyan": "#95CBF3",
+  "brand:coral": "#FB7C59",
+  "brand:brown": "#DBB79B",
 };
 
 // The light theme, which is the only theme for now. These
@@ -107,6 +103,7 @@ export const lightTheme = {
     backgroundActive: "gray:50",
     border: "gray:200",
     content: "gray:950",
+    content2: "blue:950",
     contentAlt: "gray:600",
     controlBorder: "gray:300",
     controlSurface: "white",
@@ -134,6 +131,24 @@ export const lightTheme = {
     disabledBorder: "gray:200",
     disabledContent: "gray:500",
     disabledSurface: "gray:50",
+
+    brandBlue: "brand:blue",
+    brandBlueContent: "white",
+    brandBlueContentAlt: "blue:50",
+    brandDarkBlue: "brand:darkBlue",
+    brandDarkBlueContent: "white",
+    brandDarkBlueContentAlt: "gray:50",
+    brandGolden: "brand:golden",
+    brandGoldenContent: "yellow:950",
+    brandGoldenContentAlt: "yellow:800",
+    brandGreen: "brand:green",
+    brandGreenContent: "green:950",
+    brandGreenContentAlt: "green:800",
+
+    // not used yet
+    brandCyan: "brand:cyan",
+    brandCoral: "brand:coral",
+    brandBrown: "brand:brown",
   } satisfies Record<string, keyof typeof colors>,
 } as const;
 

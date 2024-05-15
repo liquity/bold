@@ -76,6 +76,8 @@ contract DevTestSetup is BaseTest {
         troveManager = contracts.troveManager;
         mockInterestRouter = contracts.interestRouter;
 
+        MCR = troveManager.MCR();
+
         // Give some ETH to test accounts, and approve it to BorrowerOperations
         uint256 initialETHAmount = 1000_000e18;
         for (uint256 i = 0; i < 6; i++) {

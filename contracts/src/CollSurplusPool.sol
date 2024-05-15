@@ -6,9 +6,8 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Dependencies/Ownable.sol";
-import "./Dependencies/CheckContract.sol";
 
-contract CollSurplusPool is Ownable, CheckContract, ICollSurplusPool {
+contract CollSurplusPool is Ownable, ICollSurplusPool {
     using SafeERC20 for IERC20;
 
     string public constant NAME = "CollSurplusPool";
@@ -21,7 +20,7 @@ contract CollSurplusPool is Ownable, CheckContract, ICollSurplusPool {
     // deposited ether tracker
     uint256 internal ETHBalance;
     // Collateral surplus claimable by trove owners
-    mapping(uint256 => uint256) internal balances;
+    mapping(address => uint256) internal balances;
 
     // --- Events ---
 
@@ -29,11 +28,10 @@ contract CollSurplusPool is Ownable, CheckContract, ICollSurplusPool {
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event ActivePoolAddressChanged(address _newActivePoolAddress);
 
-    event CollBalanceUpdated(uint256 indexed _troveId, uint256 _newBalance);
+    event CollBalanceUpdated(address indexed _account, uint256 _newBalance);
     event EtherSent(address _to, uint256 _amount);
 
     constructor(address _ETHAddress) {
-        checkContract(_ETHAddress);
         ETH = IERC20(_ETHAddress);
     }
 
@@ -44,10 +42,6 @@ contract CollSurplusPool is Ownable, CheckContract, ICollSurplusPool {
         override
         onlyOwner
     {
-        checkContract(_borrowerOperationsAddress);
-        checkContract(_troveManagerAddress);
-        checkContract(_activePoolAddress);
-
         borrowerOperationsAddress = _borrowerOperationsAddress;
         troveManagerAddress = _troveManagerAddress;
         activePoolAddress = _activePoolAddress;
@@ -65,29 +59,29 @@ contract CollSurplusPool is Ownable, CheckContract, ICollSurplusPool {
         return ETHBalance;
     }
 
-    function getCollateral(uint256 _troveId) external view override returns (uint256) {
-        return balances[_troveId];
+    function getCollateral(address _account) external view override returns (uint256) {
+        return balances[_account];
     }
 
     // --- Pool functionality ---
 
-    function accountSurplus(uint256 _troveId, uint256 _amount) external override {
+    function accountSurplus(address _account, uint256 _amount) external override {
         _requireCallerIsTroveManager();
 
-        uint256 newAmount = balances[_troveId] + _amount;
-        balances[_troveId] = newAmount;
+        uint256 newAmount = balances[_account] + _amount;
+        balances[_account] = newAmount;
         ETHBalance = ETHBalance + _amount;
 
-        emit CollBalanceUpdated(_troveId, newAmount);
+        emit CollBalanceUpdated(_account, newAmount);
     }
 
-    function claimColl(address _account, uint256 _troveId) external override {
+    function claimColl(address _account) external override {
         _requireCallerIsBorrowerOperations();
-        uint256 claimableColl = balances[_troveId];
+        uint256 claimableColl = balances[_account];
         require(claimableColl > 0, "CollSurplusPool: No collateral available to claim");
 
-        balances[_troveId] = 0;
-        emit CollBalanceUpdated(_troveId, 0);
+        balances[_account] = 0;
+        emit CollBalanceUpdated(_account, 0);
 
         ETHBalance = ETHBalance - claimableColl;
         emit EtherSent(_account, claimableColl);

@@ -8,9 +8,9 @@ interface ICollSurplusPool {
 
     function getETHBalance() external view returns (uint256);
 
-    function getCollateral(uint256 _troveId) external view returns (uint256);
+    function getCollateral(address _account) external view returns (uint256);
 
-    function accountSurplus(uint256 _troveId, uint256 _amount) external;
+    function accountSurplus(address _account, uint256 _amount) external;
 
-    function claimColl(address _account, uint256 _troveId) external;
+    function claimColl(address _account) external;
 }

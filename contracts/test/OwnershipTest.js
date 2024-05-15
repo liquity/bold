@@ -20,7 +20,10 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
 
   before(async () => {
     contracts = await deploymentHelper.deployLiquityCore();
-    contracts.borrowerOperations = await BorrowerOperationsTester.new(contracts.WETH.address);
+    contracts.borrowerOperations = await BorrowerOperationsTester.new(
+      contracts.WETH.address,
+      contracts.troveManager.address,
+    );
     contracts = await deploymentHelper.deployBoldToken(contracts);
 
     boldToken = contracts.boldToken;
@@ -46,7 +49,13 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
     }
   };
 
-  const testDeploymentSetter = async (contract, numberOfAddresses, checkContract=true, twice=true, method='setAddresses') => {
+  const testDeploymentSetter = async (
+    contract,
+    numberOfAddresses,
+    checkContract = true,
+    twice = true,
+    method = "setAddresses",
+  ) => {
     const dumbContract = await GasPool.new();
     const params = Array(numberOfAddresses).fill(dumbContract.address);
 
@@ -71,10 +80,10 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
 
   describe("BoldToken", async (accounts) => {
     it("setBranchAddresses(): reverts when called by non-owner, with wrong addresses", async () => {
-      await testDeploymentSetter(boldToken, 4, false, false, 'setBranchAddresses');
+      await testDeploymentSetter(boldToken, 4, false, false, "setBranchAddresses");
     });
     it("setCollateralRegistry(): reverts when called by non-owner, with wrong address, or twice", async () => {
-      await testDeploymentSetter(boldToken, 1, false, true, 'setCollateralRegistry');
+      await testDeploymentSetter(boldToken, 1, false, true, "setCollateralRegistry");
     });
   });
 
@@ -83,13 +92,13 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
       await testDeploymentSetter(troveManager, 9, false, false);
     });
     it("setCollateralRegistry(): reverts when called by non-owner, with wrong address, or twice", async () => {
-      await testDeploymentSetter(troveManager, 1, false, true, 'setCollateralRegistry');
+      await testDeploymentSetter(troveManager, 1, false, true, "setCollateralRegistry");
     });
   });
 
   describe("BorrowerOperations", async (accounts) => {
     it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testDeploymentSetter(borrowerOperations, 8);
+      await testDeploymentSetter(borrowerOperations, 7);
     });
   });
 

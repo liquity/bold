@@ -31,6 +31,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
     // --- Data structures ---
 
+    // Minimum collateral ratio for individual troves
+    uint256 public immutable MCR;
+    // Liquidation penalty for troves offset to the SP
+    uint256 public immutable LIQUIDATION_PENALTY_SP;
+    // Liquidation penalty for troves redistributed
+    uint256 public immutable LIQUIDATION_PENALTY_REDISTRIBUTION;
+
     enum Status {
         nonExistent,
         active,
@@ -220,7 +227,18 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         redeemCollateral
     }
 
-    constructor() ERC721(NAME, SYMBOL) {}
+    constructor(uint256 _mcr, uint256 _liquidationPenaltySP, uint256 _liquidationPenaltyRedistribution)
+        ERC721(NAME, SYMBOL)
+    {
+        require(_mcr > 1e18 && _mcr < 2e18, "Invalid MCR");
+        require(_liquidationPenaltySP >= 5e16, "SP penalty too low");
+        require(_liquidationPenaltySP <= _liquidationPenaltyRedistribution, "SP penalty cannot be > redist");
+        require(_liquidationPenaltyRedistribution <= 10e16, "Redistribution penalty too high");
+
+        MCR = _mcr;
+        LIQUIDATION_PENALTY_SP = _liquidationPenaltySP;
+        LIQUIDATION_PENALTY_REDISTRIBUTION = _liquidationPenaltyRedistribution;
+    }
 
     // --- Dependency setter ---
 
@@ -291,8 +309,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         IDefaultPool _defaultPool,
         uint256 _troveId,
         uint256 _boldInStabPool,
+        uint256 _price,
         SingleLiquidation memory singleLiquidation
     ) internal {
+        address owner = ownerOf(_troveId);
+
         _getLatestTroveData(_troveId, singleLiquidation.trove);
 
         _movePendingTroveRewardsToActivePool(
@@ -308,10 +329,18 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             singleLiquidation.debtToOffset,
             singleLiquidation.collToSendToSP,
             singleLiquidation.debtToRedistribute,
-            singleLiquidation.collToRedistribute
-        ) = _getOffsetAndRedistributionVals(singleLiquidation.trove.entireDebt, collToLiquidate, _boldInStabPool);
+            singleLiquidation.collToRedistribute,
+            singleLiquidation.collSurplus
+        ) = _getOffsetAndRedistributionVals(
+            singleLiquidation.trove.entireDebt, collToLiquidate, _boldInStabPool, _price
+        );
 
         _closeTrove(_troveId, Status.closedByLiquidation);
+
+        // Differencen between liquidation penalty and liquidation threshold
+        if (singleLiquidation.collSurplus > 0) {
+            collSurplusPool.accountSurplus(owner, singleLiquidation.collSurplus);
+        }
 
         emit TroveLiquidated(
             _troveId, singleLiquidation.trove.entireDebt, singleLiquidation.trove.entireColl, Operation.liquidate
@@ -324,39 +353,75 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     */
     function _getOffsetAndRedistributionVals(
         uint256 _entireTroveDebt,
-        uint256 _collToLiquidate,
-        uint256 _boldInStabPool
+        uint256 _collToLiquidate, // gas compensation is already subtracted
+        uint256 _boldInStabPool,
+        uint256 _price
     )
         internal
-        pure
-        returns (uint256 debtToOffset, uint256 collToSendToSP, uint256 debtToRedistribute, uint256 collToRedistribute)
+        view
+        returns (
+            uint256 debtToOffset,
+            uint256 collToSendToSP,
+            uint256 debtToRedistribute,
+            uint256 collToRedistribute,
+            uint256 collSurplus
+        )
     {
+        uint256 collSPPortion;
+        /*
+         * Offset as much debt & collateral as possible against the Stability Pool, and redistribute the remainder
+         * between all active troves.
+         *
+         *  If the trove's debt is larger than the deposited Bold in the Stability Pool:
+         *
+         *  - Offset an amount of the trove's debt equal to the Bold in the Stability Pool
+         *  - Send a fraction of the trove's collateral to the Stability Pool, equal to the fraction of its offset debt
+         *
+         */
         if (_boldInStabPool > 0) {
-            /*
-        * Offset as much debt & collateral as possible against the Stability Pool, and redistribute the remainder
-        * between all active troves.
-        *
-        *  If the trove's debt is larger than the deposited Bold in the Stability Pool:
-        *
-        *  - Offset an amount of the trove's debt equal to the Bold in the Stability Pool
-        *  - Send a fraction of the trove's collateral to the Stability Pool, equal to the fraction of its offset debt
-        *
-        */
             debtToOffset = LiquityMath._min(_entireTroveDebt, _boldInStabPool);
-            collToSendToSP = _collToLiquidate * debtToOffset / _entireTroveDebt;
-            debtToRedistribute = _entireTroveDebt - debtToOffset;
-            collToRedistribute = _collToLiquidate - collToSendToSP;
+            collSPPortion = _collToLiquidate * debtToOffset / _entireTroveDebt;
+            (collToSendToSP, collSurplus) =
+                _getCollPenaltyAndSurplus(collSPPortion, debtToOffset, LIQUIDATION_PENALTY_SP, _price);
+        }
+        // TODO: this fails if debt in gwei is less than price (rounding coll to zero)
+        //assert(debtToOffset == 0 || collToSendToSP > 0);
+
+        // Redistribution
+        debtToRedistribute = _entireTroveDebt - debtToOffset;
+        if (debtToRedistribute > 0) {
+            uint256 collRedistributionPortion = _collToLiquidate - collSPPortion;
+            if (collRedistributionPortion > 0) {
+                (collToRedistribute, collSurplus) = _getCollPenaltyAndSurplus(
+                    collRedistributionPortion + collSurplus, // Coll surplus from offset can be eaten up by red. penalty
+                    debtToRedistribute,
+                    LIQUIDATION_PENALTY_REDISTRIBUTION, // _penaltyRatio
+                    _price
+                );
+            }
+        }
+        assert(_collToLiquidate == collToSendToSP + collToRedistribute + collSurplus);
+    }
+
+    function _getCollPenaltyAndSurplus(
+        uint256 _collToLiquidate,
+        uint256 _debtToLiquidate,
+        uint256 _penaltyRatio,
+        uint256 _price
+    ) internal pure returns (uint256 seizedColl, uint256 collSurplus) {
+        uint256 maxSeizedColl = _debtToLiquidate * (DECIMAL_PRECISION + _penaltyRatio) / _price;
+        if (_collToLiquidate > maxSeizedColl) {
+            seizedColl = maxSeizedColl;
+            collSurplus = _collToLiquidate - maxSeizedColl;
         } else {
-            debtToOffset = 0;
-            collToSendToSP = 0;
-            debtToRedistribute = _entireTroveDebt;
-            collToRedistribute = _collToLiquidate;
+            seizedColl = _collToLiquidate;
+            collSurplus = 0;
         }
     }
 
     /*
-    * Attempt to liquidate a custom list of troves provided by the caller.
-    */
+     * Attempt to liquidate a custom list of troves provided by the caller.
+     */
     function batchLiquidateTroves(uint256[] memory _troveArray) public override {
         require(_troveArray.length != 0, "TroveManager: Calldata address array must not be empty");
 
@@ -387,7 +452,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         );
 
         // Move liquidated ETH and Bold to the appropriate pools
-        stabilityPoolCached.offset(totals.totalDebtToOffset, totals.totalCollToSendToSP);
+        if (totals.totalDebtToOffset > 0 || totals.totalCollToSendToSP > 0) {
+            stabilityPoolCached.offset(totals.totalDebtToOffset, totals.totalCollToSendToSP);
+        }
+        // we check amount is not zero inside
         _redistributeDebtAndColl(
             activePoolCached, defaultPoolCached, totals.totalDebtToRedistribute, totals.totalCollToRedistribute
         );
@@ -436,7 +504,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             if (vars.ICR < MCR) {
                 SingleLiquidation memory singleLiquidation;
 
-                _liquidate(_defaultPool, vars.troveId, vars.remainingBoldInStabPool, singleLiquidation);
+                _liquidate(_defaultPool, vars.troveId, vars.remainingBoldInStabPool, _price, singleLiquidation);
                 vars.remainingBoldInStabPool -= singleLiquidation.debtToOffset;
 
                 // Add liquidation values to their respective running totals
@@ -483,6 +551,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         if (_bold > 0) {
             _defaultPool.decreaseBoldDebt(_bold);
         }
+
         if (_ETH > 0) {
             _defaultPool.sendETHToActivePool(_ETH);
         }

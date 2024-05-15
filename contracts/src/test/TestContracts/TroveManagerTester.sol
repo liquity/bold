@@ -8,6 +8,10 @@ import "../../TroveManager.sol";
 for testing the parent's internal functions. */
 
 contract TroveManagerTester is TroveManager {
+    constructor(uint256 _mcr, uint256 _liquidationPenaltySP, uint256 _liquidationPenaltyRedistribution)
+        TroveManager(_mcr, _liquidationPenaltySP, _liquidationPenaltyRedistribution)
+    {}
+
     function computeICR(uint256 _coll, uint256 _debt, uint256 _price) external pure returns (uint256) {
         return LiquityMath._computeCR(_coll, _debt, _price);
     }

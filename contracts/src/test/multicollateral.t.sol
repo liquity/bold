@@ -3,7 +3,7 @@ pragma solidity ^0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract MulticollateralTest is DevTestSetup {
-    uint256 constant NUM_COLLATERALS = 4;
+    uint256 NUM_COLLATERALS = 4;
     LiquityContracts[] public contractsArray;
 
     function openMulticollateralTroveNoHints100pctWithIndex(
@@ -48,8 +48,14 @@ contract MulticollateralTest is DevTestSetup {
             accountsList[6]
         );
 
+        TroveManagerParams[] memory troveManagerParams = new TroveManagerParams[](NUM_COLLATERALS);
+        troveManagerParams[0] = TroveManagerParams(110e16, 5e16, 10e16);
+        troveManagerParams[1] = TroveManagerParams(120e16, 5e16, 10e16);
+        troveManagerParams[2] = TroveManagerParams(120e16, 5e16, 10e16);
+        troveManagerParams[3] = TroveManagerParams(125e16, 5e16, 10e16);
+
         LiquityContracts[] memory _contractsArray;
-        (_contractsArray, collateralRegistry, boldToken) = _deployAndConnectContracts(NUM_COLLATERALS);
+        (_contractsArray, collateralRegistry, boldToken) = _deployAndConnectContracts(troveManagerParams);
         // Unimplemented feature (...):Copying of type struct LiquityContracts memory[] memory to storage not yet supported.
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
             contractsArray.push(_contractsArray[c]);
