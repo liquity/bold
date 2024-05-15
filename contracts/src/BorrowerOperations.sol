@@ -174,7 +174,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // --- Checks ---
 
-        bool isRecoveryMode = _checkRecoveryMode(vars.price);
+        _requireNotBelowCriticalThreshold(vars.price);
 
         _requireValidAnnualInterestRate(_annualInterestRate);
 
@@ -189,13 +189,9 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         vars.ICR = LiquityMath._computeCR(_ETHAmount, vars.compositeDebt, vars.price);
 
-        if (isRecoveryMode) {
-            _requireICRisAboveCCR(vars.ICR);
-        } else {
-            _requireICRisAboveMCR(vars.ICR);
-            uint256 newTCR = _getNewTCRFromTroveChange(_ETHAmount, true, vars.compositeDebt, true, vars.price); // bools: coll increase, debt increase
-            _requireNewTCRisAboveCCR(newTCR);
-        }
+        _requireICRisAboveMCR(vars.ICR);
+        uint256 newTCR = _getNewTCRFromTroveChange(_ETHAmount, true, vars.compositeDebt, true, vars.price); // bools: coll increase, debt increase
+        _requireNewTCRisAboveCCR(newTCR);
 
         // --- Effects & interactions ---
 
@@ -341,7 +337,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // --- Checks ---
 
-        bool isRecoveryMode = _checkRecoveryMode(vars.price);
+        bool isBelowCriticalThreshold = _checkBelowCriticalThreshold(vars.price);
 
         if (_isCollIncrease) {
             _requireNonZeroCollChange(_collChange);
@@ -374,7 +370,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // Check the adjustment satisfies all conditions for the current system mode
         _requireValidAdjustmentInCurrentMode(
-            isRecoveryMode, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, vars
+            isBelowCriticalThreshold, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, vars
         );
 
         // --- Effects and interactions ---
@@ -440,7 +436,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireCallerIsBorrower(contractsCache.troveManager, _troveId);
         _requireTroveIsOpen(contractsCache.troveManager, _troveId);
         uint256 price = priceFeed.fetchPrice();
-        _requireNotInRecoveryMode(price);
 
         uint256 initialWeightedRecordedTroveDebt = contractsCache.troveManager.getTroveWeightedRecordedDebt(_troveId);
         uint256 initialRecordedTroveDebt = contractsCache.troveManager.getTroveDebt(_troveId);
@@ -694,18 +689,16 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         require(_boldChange > 0, "BorrowerOps: Debt increase requires non-zero debtChange");
     }
 
-    function _requireNotInRecoveryMode(uint256 _price) internal view {
-        require(!_checkRecoveryMode(_price), "BorrowerOps: Operation not permitted during Recovery Mode");
+    function _requireNotBelowCriticalThreshold(uint256 _price) internal view {
+        require(!_checkBelowCriticalThreshold(_price), "BorrowerOps: Operation not permitted below CT");
     }
 
-    function _requireNoCollWithdrawal(uint256 _collWithdrawal, bool _isCollIncrease) internal pure {
-        require(
-            _collWithdrawal == 0 || _isCollIncrease, "BorrowerOps: Collateral withdrawal not permitted Recovery Mode"
-        );
+    function _requireNoBorrowing(bool _isDebtIncrease) internal pure {
+        require(!_isDebtIncrease, "BorrowerOps: Borrowing not permitted below CT");
     }
 
     function _requireValidAdjustmentInCurrentMode(
-        bool _isRecoveryMode,
+        bool _isBelowCriticalThreshold,
         uint256 _collChange,
         bool _isCollIncrease,
         uint256 _boldChange,
@@ -713,24 +706,21 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         LocalVariables_adjustTrove memory _vars
     ) internal view {
         /*
-        *In Recovery Mode, only allow:
+        * Below Critical Threshold, it is not permitted:
         *
-        * - Pure collateral top-up
-        * - Pure debt repayment
-        * - Collateral top-up with debt repayment
-        * - A debt increase combined with a collateral top-up which makes the ICR >= 150% and improves the ICR (and by extension improves the TCR).
+        * - Borrowing
+        * - Collateral withdrawal except accompanied by a debt repayment of at least the same value
         *
         * In Normal Mode, ensure:
         *
         * - The new ICR is above MCR
         * - The adjustment won't pull the TCR below CCR
         */
-        if (_isRecoveryMode) {
-            _requireNoCollWithdrawal(_collChange, _isCollIncrease);
-            if (_isDebtIncrease) {
-                _requireICRisAboveCCR(_vars.newICR);
-                _requireNewICRisAboveOldICR(_vars.newICR, _vars.oldICR);
-            }
+        if (_isBelowCriticalThreshold) {
+            _requireNoBorrowing(_isDebtIncrease);
+            _requireDebtRepaymentGeCollWithdrawal(
+                _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _vars.price
+            );
         } else {
             // if Normal Mode
             _requireICRisAboveMCR(_vars.newICR);
@@ -744,12 +734,17 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         require(_newICR >= MCR, "BorrowerOps: An operation that would result in ICR < MCR is not permitted");
     }
 
-    function _requireICRisAboveCCR(uint256 _newICR) internal pure {
-        require(_newICR >= CCR, "BorrowerOps: Operation must leave trove with ICR >= CCR");
-    }
-
-    function _requireNewICRisAboveOldICR(uint256 _newICR, uint256 _oldICR) internal pure {
-        require(_newICR >= _oldICR, "BorrowerOps: Cannot decrease your Trove's ICR in Recovery Mode");
+    function _requireDebtRepaymentGeCollWithdrawal(
+        uint256 _collChange,
+        bool _isCollIncrease,
+        uint256 _boldChange,
+        bool _isDebtIncrease,
+        uint256 _price
+    ) internal pure {
+        require(
+            _isCollIncrease || (!_isDebtIncrease && _boldChange >= _collChange * _price / DECIMAL_PRECISION),
+            "BorrowerOps: below CT, repayment must be >= coll withdrawal"
+        );
     }
 
     function _requireNewTCRisAboveCCR(uint256 _newTCR) internal pure {

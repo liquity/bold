@@ -100,7 +100,7 @@ contract DevTestSetup is BaseTest {
         price = 1025e18;
         priceFeed.setPrice(price);
 
-        assertFalse(troveManager.checkRecoveryMode(price));
+        assertFalse(troveManager.checkBelowCriticalThreshold(price));
         assertLt(troveManager.getCurrentICR(CTroveId, price), troveManager.MCR());
 
         // A liquidates C
@@ -137,7 +137,7 @@ contract DevTestSetup is BaseTest {
         price = 1050e18;
         priceFeed.setPrice(price);
 
-        assertFalse(troveManager.checkRecoveryMode(price));
+        assertFalse(troveManager.checkBelowCriticalThreshold(price));
         assertLt(troveManager.getCurrentICR(troveIDs.C, price), troveManager.MCR());
         assertLt(troveManager.getCurrentICR(troveIDs.D, price), troveManager.MCR());
 
@@ -178,7 +178,7 @@ contract DevTestSetup is BaseTest {
         price = 1050e18;
         priceFeed.setPrice(price);
 
-        assertFalse(troveManager.checkRecoveryMode(price));
+        assertFalse(troveManager.checkBelowCriticalThreshold(price));
         assertLt(troveManager.getCurrentICR(CTroveId, price), troveManager.MCR());
         assertLt(troveManager.getCurrentICR(DTroveId, price), troveManager.MCR());
 

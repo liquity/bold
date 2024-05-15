@@ -129,7 +129,7 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function getTCR(uint256 _price) external view returns (uint256);
 
-    function checkRecoveryMode(uint256 _price) external view returns (bool);
+    function checkBelowCriticalThreshold(uint256 _price) external view returns (bool);
 
     function checkTroveIsOpen(uint256 _troveId) external view returns (bool);
 

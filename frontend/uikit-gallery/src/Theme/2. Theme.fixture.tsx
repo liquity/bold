@@ -36,7 +36,7 @@ export default function ThemeFixture() {
                 .entries(lightTheme.colors)
                 .map(([key, value]) => [
                   key,
-                  colors[value],
+                  colors[value as keyof typeof colors],
                 ]),
             )}
             secondary={(name) => lightTheme.colors[name as keyof typeof lightTheme.colors]}

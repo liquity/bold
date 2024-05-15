@@ -133,7 +133,7 @@ contract("TroveManager", async (accounts) => {
     // liquidate 1 trove at ~50% total system collateral
     await priceFeed.setPrice(dec(50, 18));
     assert.isTrue(
-      await troveManager.checkRecoveryMode(await priceFeed.getPrice()),
+      await troveManager.checkBelowCriticalThreshold(await priceFeed.getPrice()),
     );
     await troveManager.liquidate(ATroveId);
 
