@@ -328,8 +328,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         );
         _requireNewTCRisAboveCCR(newTCR);
 
-        // Add only the Trove's accrued interest to the recorded debt tracker since we have already applied redist. gains.
-        // No debt is issued/repaid, so the net Trove debt change is purely the redistribution gain
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(
             trove.redistBoldDebtGain,
             0, // _debtIncrease
@@ -343,7 +341,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         sortedTroves.reInsert(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint);
 
-        // Update Trove recorded debt and interest-weighted debt sum
         contractsCache.troveManager.setTrovePropertiesOnInterestRateAdjustment(
             _troveId, trove.entireColl, trove.entireDebt, newUpfrontInterest, _newAnnualInterestRate
         );
@@ -488,7 +485,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // The borrower must repay their entire debt including accrued interest and redist. gains (and less the gas comp.)
         _requireSufficientBoldBalance(contractsCache.boldToken, msg.sender, data.entireDebt - BOLD_GAS_COMPENSATION);
 
-        // The TCR includes A Trove's redist. gain, accrued interest and latest recorded upfront interest
         uint256 newTCR = _getNewTCRFromTroveChange(
             0, // _collIncrease
             data.entireColl,
@@ -507,8 +503,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // we'll zero them at the end.
         contractsCache.troveManager.applyRedistributionGains(_troveId, data.redistBoldDebtGain, data.redistETHGain);
 
-        // Remove the Trove's initial recorded debt plus its accrued interest from ActivePool.aggRecordedDebt,
-        // but *don't* remove the redistribution gains, since these were not yet incorporated into the sum.
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(
             data.redistBoldDebtGain,
             0, // _debtIncrease
@@ -546,8 +540,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 newRecordedDebt = data.entireDebt - data.unusedUpfrontInterest;
         uint256 newWeightedRecordedDebt = newRecordedDebt * data.annualInterestRate;
 
-        // Add only the Trove's accrued interest to the recorded debt tracker since we have already applied redist. gains.
-        // No debt is issued/repaid, so the net Trove debt change is purely the redistribution gain
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(
             data.redistBoldDebtGain,
             0, // _debtIncrease
@@ -559,7 +551,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             0 // _forgoneUpfrontInterest
         );
 
-        // Update Trove recorded debt and interest-weighted debt sum
         contractsCache.troveManager.setTrovePropertiesOnInterestApplication(
             _troveId, data.entireColl, newRecordedDebt, data.unusedUpfrontInterest
         );
