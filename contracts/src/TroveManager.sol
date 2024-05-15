@@ -549,8 +549,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             vars.ICR = getCurrentICR(vars.troveId, _price);
 
             if (vars.ICR < MCR) {
-                singleLiquidation =
-                    _liquidate(_defaultPool, vars.troveId, vars.remainingBoldInStabPool, _price);
+                singleLiquidation = _liquidate(_defaultPool, vars.troveId, vars.remainingBoldInStabPool, _price);
                 vars.remainingBoldInStabPool = vars.remainingBoldInStabPool - singleLiquidation.debtToOffset;
 
                 // Add liquidation values to their respective running totals
