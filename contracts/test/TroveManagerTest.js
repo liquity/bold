@@ -1306,9 +1306,8 @@ contract("TroveManager", async (accounts) => {
       from: alice,
       value: toBN(dec(100, 18)),
     }),
-
-    // Confirm system is not below CT
-    assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
+      // Confirm system is not below CT
+      assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // liquidate A, B, C
     await troveManager.batchLiquidateTroves([aliceTroveId, bobTroveId, carolTroveId]);

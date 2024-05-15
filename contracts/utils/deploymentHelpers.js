@@ -59,7 +59,11 @@ class DeploymentHelper {
 
     // Borrowing contracts
     const activePool = await Contracts.ActivePool.new(WETH.address);
-    const troveManager = await Contracts.TroveManager.new(web3.utils.toBN("1100000000000000000"), web3.utils.toBN("100000000000000000"), web3.utils.toBN("100000000000000000"));
+    const troveManager = await Contracts.TroveManager.new(
+      web3.utils.toBN("1100000000000000000"),
+      web3.utils.toBN("100000000000000000"),
+      web3.utils.toBN("100000000000000000"),
+    );
     const borrowerOperations = await Contracts.BorrowerOperations.new(WETH.address, troveManager.address);
     const collSurplusPool = await Contracts.CollSurplusPool.new(WETH.address);
     const defaultPool = await Contracts.DefaultPool.new(WETH.address);
@@ -76,7 +80,9 @@ class DeploymentHelper {
       activePool,
     }, Contracts.BoldToken);
 
-    const collateralRegistry = await Contracts.CollateralRegistry.new(boldToken.address, [WETH.address], [troveManager.address]);
+    const collateralRegistry = await Contracts.CollateralRegistry.new(boldToken.address, [WETH.address], [
+      troveManager.address,
+    ]);
 
     const mockInterestRouter = await MockInterestRouter.new();
     const hintHelpers = await Contracts.HintHelpers.new();
