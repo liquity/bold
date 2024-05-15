@@ -67,7 +67,7 @@ contract LiquidationsLSTTest is DevTestSetup {
         uint256 AInitialETHBalance = WETH.balanceOf(A);
 
         // Check not RM
-        assertEq(troveManager.checkRecoveryMode(price), false, "System should not be in Recovery Mode");
+        assertEq(troveManager.checkBelowCriticalThreshold(price), false, "System should not be below CT");
 
         // Check CR_A < MCR and TCR > CCR
         assertLt(troveManager.getCurrentICR(ATroveId, price), MCR);
@@ -171,7 +171,7 @@ contract LiquidationsLSTTest is DevTestSetup {
         initialValues.BColl = troveManager.getTroveEntireColl(BTroveId);
 
         // Check not RM
-        assertEq(troveManager.checkRecoveryMode(_finalPrice), false, "System should not be in Recovery Mode");
+        assertEq(troveManager.checkBelowCriticalThreshold(_finalPrice), false, "System should not be below CT");
 
         // Check CR_A < MCR and TCR > CCR
         assertLt(troveManager.getCurrentICR(ATroveId, _finalPrice), MCR);
