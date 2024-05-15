@@ -66,7 +66,7 @@ contract LiquityBase is ILiquityBase {
 
     // Total system debt minus the total outstanding upfront interest.
     function getEntireSystemDebtLowerBound() public view returns (uint256 entireSystemDebtLowerBound) {
-        uint256 activeDebt = activePool.getTotalActiveDebt();
+        uint256 activeDebt = activePool.getBoldDebtLowerBound();
         uint256 closedDebt = defaultPool.getBoldDebt();
 
         return activeDebt + closedDebt;
@@ -76,7 +76,7 @@ contract LiquityBase is ILiquityBase {
     // The actual outstanding upfront interest will be lower than this, as some fraction of it will have already been
     // cancelled out by accrued interest.
     function getEntireSystemDebtUpperBound() public view returns (uint256 entireSystemDebtUpperBound) {
-        uint256 activeDebt = activePool.getTotalDebtUpperBound();
+        uint256 activeDebt = activePool.getBoldDebtUpperBound();
         uint256 closedDebt = defaultPool.getBoldDebt();
 
         return activeDebt + closedDebt;

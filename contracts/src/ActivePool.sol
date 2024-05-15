@@ -123,11 +123,11 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     }
 
     // Returns sum of agg.recorded debt plus agg. pending interest. Excludes pending redist. gains.
-    function getTotalActiveDebt() external view returns (uint256) {
+    function getBoldDebtLowerBound() external view returns (uint256) {
         return aggRecordedDebt + calcPendingAggInterest();
     }
 
-    function getTotalDebtUpperBound() external view returns (uint256) {
+    function getBoldDebtUpperBound() external view returns (uint256) {
         return aggRecordedDebt + calcPendingAggInterest() + aggRecordedUpfrontInterest;
     }
 

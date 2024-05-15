@@ -142,7 +142,7 @@ contract("TroveManager", async (accounts) => {
       await contracts.WETH.balanceOf(activePool.address)
     ).toString();
     const activePool_BoldDebt_Before = (
-      await activePool.getTotalActiveDebt()
+      await activePool.getBoldDebtLowerBound()
     ).toString();
 
     assert.equal(activePool_ETH_Before, A_collateral.add(B_collateral));
@@ -168,7 +168,7 @@ contract("TroveManager", async (accounts) => {
       await contracts.WETH.balanceOf(activePool.address)
     ).toString();
     const activePool_BoldDebt_After = (
-      await activePool.getTotalActiveDebt()
+      await activePool.getBoldDebtLowerBound()
     ).toString();
 
     assert.equal(activePool_ETH_After, A_collateral);
@@ -1120,15 +1120,15 @@ contract("TroveManager", async (accounts) => {
     assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
     // Liquidate A, B and C
-    const activeBoldDebt_0 = await activePool.getTotalActiveDebt();
+    const activeBoldDebt_0 = await activePool.getBoldDebtLowerBound();
     const defaultBoldDebt_0 = await defaultPool.getBoldDebt();
 
     await troveManager.liquidate(aliceTroveId);
-    const activeBoldDebt_A = await activePool.getTotalActiveDebt();
+    const activeBoldDebt_A = await activePool.getBoldDebtLowerBound();
     const defaultBoldDebt_A = await defaultPool.getBoldDebt();
 
     await troveManager.liquidate(bobTroveId);
-    const activeBoldDebt_B = await activePool.getTotalActiveDebt();
+    const activeBoldDebt_B = await activePool.getBoldDebtLowerBound();
     const defaultBoldDebt_B = await defaultPool.getBoldDebt();
 
     await troveManager.liquidate(carolTroveId);
@@ -3814,7 +3814,7 @@ contract("TroveManager", async (accounts) => {
     const totalColl = W_coll.add(A_coll).add(B_coll).add(C_coll).add(D_coll);
 
     // Get active debt and coll before redemption
-    const activePool_debt_before = await activePool.getTotalActiveDebt();
+    const activePool_debt_before = await activePool.getBoldDebtLowerBound();
     const activePool_coll_before = await activePool.getETHBalance();
 
     th.assertIsApproximatelyEqual(activePool_debt_before, totalDebt);
@@ -3850,7 +3850,7 @@ contract("TroveManager", async (accounts) => {
     );
 
     // Check activePool debt reduced by  400 Bold
-    const activePool_debt_after = await activePool.getTotalActiveDebt();
+    const activePool_debt_after = await activePool.getBoldDebtLowerBound();
     assert.equal(
       activePool_debt_before.sub(activePool_debt_after),
       dec(400, 18),
@@ -3913,7 +3913,7 @@ contract("TroveManager", async (accounts) => {
     const totalColl = W_coll.add(A_coll).add(B_coll).add(C_coll).add(D_coll);
 
     // Get active debt and coll before redemption
-    const activePool_debt_before = await activePool.getTotalActiveDebt();
+    const activePool_debt_before = await activePool.getBoldDebtLowerBound();
     const activePool_coll_before = (await activePool.getETHBalance()).toString();
 
     th.assertIsApproximatelyEqual(activePool_debt_before, totalDebt);
@@ -4286,7 +4286,7 @@ contract("TroveManager", async (accounts) => {
 
     const totalDebt = C_totalDebt.add(D_totalDebt);
     th.assertIsApproximatelyEqual(
-      (await activePool.getTotalActiveDebt()).toString(),
+      (await activePool.getBoldDebtLowerBound()).toString(),
       totalDebt,
     );
 
@@ -4357,7 +4357,7 @@ contract("TroveManager", async (accounts) => {
     const A_balanceBefore = toBN(await contracts.WETH.balanceOf(A));
 
     // Check total Bold supply
-    const activeBold = await activePool.getTotalActiveDebt();
+    const activeBold = await activePool.getBoldDebtLowerBound();
     const defaultBold = await defaultPool.getBoldDebt();
 
     const totalBoldSupply = activeBold.add(defaultBold);

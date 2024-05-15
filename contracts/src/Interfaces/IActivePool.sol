@@ -20,8 +20,8 @@ interface IActivePool {
     ) external;
 
     function getETHBalance() external view returns (uint256);
-    function getTotalActiveDebt() external view returns (uint256);
-    function getTotalDebtUpperBound() external view returns (uint256);
+    function getBoldDebtLowerBound() external view returns (uint256);
+    function getBoldDebtUpperBound() external view returns (uint256);
     function lastAggUpdateTime() external view returns (uint256);
     function aggRecordedDebt() external view returns (uint256);
     function aggWeightedDebtSum() external view returns (uint256);
