@@ -40,6 +40,31 @@ export default {
         description: "Use LQTY to generate yield without a minimum lockup period.",
       },
     },
+    products: {
+      borrow: {
+        title: "Borrow BOLD",
+        description: "Set your own interest rate and borrow BOLD against ETH and staked ETH.",
+        total: "Total borrowed",
+        hint: "Borrow BOLD",
+        avgIr: "Avg IR",
+        maxLtv: "Max LTV",
+      },
+      leverage: {
+        title: "Leverage ETH",
+        description: "Increase your exposure to ETH and staked ETH",
+        hint: "Leverage",
+        avgIr: "Avg IR",
+        avgLeverage: "Avg leverage",
+      },
+      earn: {
+        title: "Earn with pools",
+        description: "Earn defi-native yield from your BOLD",
+        total: "In earn pools",
+        hint: "Earn",
+        apy: "APY",
+        tvl: "TVL",
+      },
+    },
     statsBar: {
       label: "Protocol stats",
     },
