@@ -34,18 +34,22 @@ export async function main() {
       const componentName = `Icon${kebabToPascal(name)}`;
       const transformed = await transform(svg, {
         plugins: ["@svgr/plugin-svgo", "@svgr/plugin-jsx"],
-        icon: 24,
         typescript: true,
         template: svgrTemplate,
         jsxRuntime: "automatic",
         exportType: "named",
         expandProps: false,
+        svgProps: {
+          width: "{size}",
+          height: "{size}",
+        },
         replaceAttrValues: {
           "#000": "currentColor",
           "#000000": "currentColor",
         },
         svgoConfig: {
           plugins: [
+            "removeDimensions",
             "removeUselessDefs",
             "removeXMLNS",
             "cleanupIds",
@@ -98,7 +102,7 @@ ${variables.interfaces};
 
 ${variables.imports};
 
-export function ${variables.componentName} (${variables.props}) {
+export function ${variables.componentName} ({ size = 24 }: { size?: number }) {
   return ${variables.jsx};
 }
 `;
