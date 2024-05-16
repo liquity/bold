@@ -1,6 +1,8 @@
 import type { ComponentPropsWithoutRef } from "react";
 
+import { match } from "ts-pattern";
 import { css } from "../../styled-system/css";
+import { StatusDot } from "../StatusDot/StatusDot";
 
 export function PillButton({
   label,
@@ -35,18 +37,12 @@ export function PillButton({
         },
       })}
     >
-      <div
-        className={css({
-          width: 12,
-          height: 12,
-          borderRadius: "50%",
-          "--warn-color-low": "token(colors.positive)",
-          "--warn-color-medium": "token(colors.warning)",
-          "--warn-color-high": "token(colors.negative)",
-        })}
-        style={{
-          background: `var(--warn-color-${warnLevel})`,
-        }}
+      <StatusDot
+        mode={match(warnLevel)
+          .with("low", () => "positive" as const)
+          .with("medium", () => "warning" as const)
+          .with("high", () => "negative" as const)
+          .exhaustive()}
       />
       <div>
         {label}
