@@ -66,10 +66,7 @@ export default function Borrow() {
         >
           {content.borrowScreen.headline(
             <TokenIcon.Group>
-              {[
-                "BOLD" as const,
-                ...POOLS.map(({ symbol }) => symbol),
-              ].map((symbol) => (
+              {POOLS.map(({ symbol }) => (
                 <TokenIcon
                   key={symbol}
                   symbol={symbol}

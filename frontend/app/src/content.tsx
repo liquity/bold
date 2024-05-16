@@ -1,7 +1,7 @@
 import type { ReactNode as N } from "react";
 
 export default {
-  // Top bar and other places
+  // Used in the top bar and other places
   appName: "Liquity v2",
 
   // Menu bar
@@ -10,6 +10,38 @@ export default {
     leverage: "Leverage",
     earn: "Earn",
     stake: "Stake",
+  },
+
+  accountButton: {
+    wrongNetwork: "Wrong network",
+    connectAccount: "Connect wallet",
+  },
+
+  // Home screen
+  home: {
+    openPositionTitle: "Open your first position",
+    myPositionsTitle: "My positions",
+    actions: {
+      borrow: {
+        title: "Borrow BOLD",
+        description: "Set your own interest rate and borrow BOLD against ETH and staked ETH.",
+      },
+      leverage: {
+        title: "Leverage ETH",
+        description: "Set your own interest rate and increase your exposure to ETH and staked ETH.",
+      },
+      earn: {
+        title: "Earn with BOLD",
+        description: "Earn defi-native yield with your BOLD.",
+      },
+      stake: {
+        title: "Stake LQTY",
+        description: "Use LQTY to generate yield without a minimum lockup period.",
+      },
+    },
+    statsBar: {
+      label: "Protocol stats",
+    },
   },
 
   // Earn home screen: header
