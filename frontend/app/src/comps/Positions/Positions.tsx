@@ -122,6 +122,7 @@ function PositionEarn() {
       <StrongCard
         heading={[
           "Earn",
+          // eslint-disable-next-line react/jsx-key
           <FlexRow>
             <div>stETH pool</div>
             <TokenIcon size="small" symbol="WSTETH" />
