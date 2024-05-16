@@ -109,6 +109,7 @@ export function Button({
       style={{
         maxWidth,
         width: wide ? "100%" : undefined,
+        outlineOffset: mode === "primary" ? 2 : 0, // primary mode background === focus ring color
         ...colors,
         ...geometry,
       }}
