@@ -15,6 +15,7 @@ export { Radio } from "./Radio/Radio";
 export { RadioGroup, useRadioGroup } from "./Radio/RadioGroup";
 export { Root, RootEntryPoint } from "./Root/Root";
 export { StatusDot } from "./StatusDot/StatusDot";
+export { StrongCard } from "./StrongCard/StrongCard";
 export { Tabs } from "./Tabs/Tabs";
 export { TextButton } from "./TextButton/TextButton";
 export { colors, lightTheme, Theme, themeColor, useTheme } from "./Theme/Theme";
