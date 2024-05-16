@@ -2,7 +2,7 @@
 
 import "@rainbow-me/rainbowkit/styles.css";
 
-import type { Address } from "@/src/types";
+import type { Address } from "@liquity2/uikit";
 import type { ComponentProps, ReactNode } from "react";
 import type { Chain } from "wagmi/chains";
 

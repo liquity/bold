@@ -1,4 +1,4 @@
-import type { Address } from "@/src/types";
+import type { Address } from "@liquity2/uikit";
 
 import { isAddress } from "@/src/eth-utils";
 import z from "zod";

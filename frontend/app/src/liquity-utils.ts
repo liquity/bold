@@ -1,4 +1,5 @@
-import type { Address, TroveId } from "@/src/types";
+import type { TroveId } from "@/src/types";
+import type { Address } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 
 import {
