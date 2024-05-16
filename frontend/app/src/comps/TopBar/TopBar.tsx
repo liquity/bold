@@ -4,7 +4,7 @@ import { Logo } from "@/src/comps/Logo/Logo";
 import content from "@/src/content";
 import { css } from "@/styled-system/css";
 import Link from "next/link";
-import { Actions } from "./Actions";
+import { AccountButton } from "./AccountButton";
 import { Menu } from "./Menu";
 
 export function TopBar() {
@@ -41,7 +41,7 @@ export function TopBar() {
         {content.appName}
       </Link>
       <Menu />
-      <Actions />
+      <AccountButton />
     </div>
   );
 }

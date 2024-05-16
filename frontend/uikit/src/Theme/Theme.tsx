@@ -70,6 +70,9 @@ export const colors = {
   "red:900": "#82301A",
   "red:950": "#471608",
 
+  // brown
+  "brown:50": "#F8F6F4",
+
   // White
   "white": "#FFFFFF",
 
@@ -103,10 +106,10 @@ export const lightTheme = {
     backgroundActive: "gray:50",
     border: "gray:200",
     content: "gray:950",
-    content2: "blue:950",
     contentAlt: "gray:600",
     controlBorder: "gray:300",
     controlSurface: "white",
+    hint: "brown:50",
     dimmed: "gray:400",
     fieldBorder: "gray:200",
     fieldSurface: "gray:50",
@@ -121,7 +124,7 @@ export const lightTheme = {
     negativeActive: "red:600",
     negativeContent: "white",
     negativeHint: "red:400",
-    positive: "green:500",
+    positive: "green:400",
     positiveActive: "green:600",
     positiveContent: "white",
     positiveHint: "green:400",
@@ -134,7 +137,6 @@ export const lightTheme = {
     disabledBorder: "gray:200",
     disabledContent: "gray:500",
     disabledSurface: "gray:50",
-
     brandBlue: "brand:blue",
     brandBlueContent: "white",
     brandBlueContentAlt: "blue:50",

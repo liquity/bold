@@ -14,7 +14,7 @@ export function AppLayout({
       className={css({
         display: "flex",
         flexDirection: "column",
-        width: 1160,
+        width: 1092,
         minHeight: "100vh",
         margin: "0 auto",
       })}
