@@ -61,23 +61,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     // TODO: optimize this struct packing for gas reduction, which may break v1 tests that assume a certain order of properties
 
     mapping(uint256 => Trove) public Troves;
-    /*
-     * Mapping from TroveId to granted address for operations that “give” money to the trove (add collateral, pay debt).
-     * Useful for instance for cold/hot wallet setups.
-     * If its value is zero address, any address is allowed to do those operations on behalf of trove owner.
-     * Otherwise, only the address in this mapping (and the trove owner) will be allowed.
-     * To restrict this permission to no one, trove owner should be set in this mapping.
-     */
-    mapping(uint256 => address) public TroveAddManagers;
-    /*
-     * Mapping from TroveId to granted address for operations that “withdraw” money from the trove (withdraw collateral, borrow).
-     * Useful for instance for cold/hot wallet setups.
-     * If its value is zero address, only owner is allowed to do those operations.
-     * Otherwise, only the address in this mapping (and the trove owner) will be allowed.
-     * Therefore, by default this permission is restricted to no one.
-     * Trove owner be set in this mapping is equivalent to zero address.
-     */
-    mapping(uint256 => address) public TroveRemoveManagers;
 
     uint256 public totalStakes;
 
@@ -1086,22 +1069,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         require(msg.sender == borrowerOperationsAddress, "TroveManager: Caller is not the BorrowerOperations contract");
     }
 
-    function _requireIsOwnerOrAddManager(uint256 _troveId, address _sender) internal view {
-        assert(_sender != address(0)); // TODO: remove
-        require(
-            _sender == ownerOf(_troveId) || _sender == TroveAddManagers[_troveId],
-            "TroveManager: sender is not trove owner nor manager"
-        );
-    }
-
-    function _requireIsOwnerOrRemoveManager(uint256 _troveId, address _sender) internal view {
-        assert(_sender != address(0)); // TODO: remove
-        require(
-            _sender == ownerOf(_troveId) || _sender == TroveRemoveManagers[_troveId],
-            "TroveManager: sender is not trove owner nor manager"
-        );
-    }
-
     function _requireIsCollateralRegistry() internal view {
         require(msg.sender == collateralRegistryAddress, "TroveManager: Caller is not the CollateralRegistry contract");
     }
@@ -1172,6 +1139,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 _annualInterestRate
     ) external returns (uint256 arrayIndex) {
         _requireCallerIsBorrowerOperations();
+
         // TODO: optimize gas for writing to this struct
         Troves[_troveId].status = Status.active;
         Troves[_troveId].coll = _coll;
@@ -1212,54 +1180,15 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
     }
 
-    function setTrovePropertiesOnInterestApplication(
-        uint256 _troveId,
-        uint256 _coll,
-        uint256 _debt,
-        uint256 _upfrontInterest
-    ) external {
+    function setTrovePropertiesOnAdjustment(uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _upfrontInterest)
+        external
+    {
         _requireCallerIsBorrowerOperations();
-
-        Troves[_troveId].coll = _coll;
-        Troves[_troveId].debt = _debt;
-        Troves[_troveId].upfrontInterest = _upfrontInterest;
-        Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
-    }
-
-    function setTrovePropertiesOnAdjustment(
-        address _sender,
-        uint256 _troveId,
-        uint256 _coll,
-        uint256 _debt,
-        uint256 _upfrontInterest,
-        bool _isCollIncrease,
-        bool _isCollDecrease,
-        bool _isDebtIncrease,
-        bool _isDebtDecrease
-    ) external {
-        _requireCallerIsBorrowerOperations();
-
-        if (_isCollDecrease || _isDebtIncrease) _requireIsOwnerOrRemoveManager(_troveId, _sender);
-        if (_isCollIncrease || _isDebtDecrease) _requireIsOwnerOrAddManager(_troveId, _sender);
 
         // TODO: consider optimizing this so we only write storage slots that need changing
         Troves[_troveId].coll = _coll;
         Troves[_troveId].debt = _debt;
         Troves[_troveId].upfrontInterest = _upfrontInterest;
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
-    }
-
-    function setAddManager(address _sender, uint256 _troveId, address _manager) external {
-        _requireCallerIsBorrowerOperations();
-        require(_sender == ownerOf(_troveId), "TroveManager: sender is not trove owner");
-
-        TroveAddManagers[_troveId] = _manager;
-    }
-
-    function setRemoveManager(address _sender, uint256 _troveId, address _manager) external {
-        _requireCallerIsBorrowerOperations();
-        require(_sender == ownerOf(_troveId), "TroveManager: sender is not trove owner");
-
-        TroveRemoveManagers[_troveId] = _manager;
     }
 }

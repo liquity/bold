@@ -115,9 +115,6 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function calcTroveAccruedInterest(uint256 _troveId) external view returns (uint256);
 
-    function TroveAddManagers(uint256 _troveId) external view returns (address);
-    function TroveRemoveManagers(uint256 _troveId) external view returns (address);
-
     function getTroveLastDebtUpdateTime(uint256 _troveId) external view returns (uint256);
 
     function setTrovePropertiesOnOpen(
@@ -139,29 +136,10 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _annualInterestRate
     ) external;
 
-    function setTrovePropertiesOnInterestApplication(
-        uint256 _troveId,
-        uint256 _coll,
-        uint256 _debt,
-        uint256 _upfrontInterest
-    ) external;
-
-    function setTrovePropertiesOnAdjustment(
-        address _sender,
-        uint256 _troveId,
-        uint256 _coll,
-        uint256 _debt,
-        uint256 _upfrontInterest,
-        bool _isCollIncrease,
-        bool _isCollDecrease,
-        bool _isDebtIncrease,
-        bool _isDebtDecrease
-    ) external;
+    function setTrovePropertiesOnAdjustment(uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _upfrontInterest)
+        external;
 
     function troveIsStale(uint256 _troveId) external view returns (bool);
-
-    function setAddManager(address _sender, uint256 _troveId, address _manager) external;
-    function setRemoveManager(address _sender, uint256 _troveId, address _manager) external;
 
     function getTCR(uint256 _price) external view returns (uint256);
 

@@ -64,6 +64,8 @@ interface IBorrowerOperations is ILiquityBase {
 
     function setAddManager(uint256 _troveId, address _manager) external;
     function setRemoveManager(uint256 _troveId, address _manager) external;
+    function addManagerOf(uint256 _troveId) external view returns (address);
+    function removeManagerOf(uint256 _troveId) external view returns (address);
 
     // TODO: addRepayWhitelistedAddress?(see github issue #64)
 
