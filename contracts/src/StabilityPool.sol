@@ -14,7 +14,7 @@ import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 
-import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
@@ -418,14 +418,12 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         _requireCallerIsActivePool();
    
         uint256 totalBoldDepositsCached = totalBoldDeposits; // cached to save an SLOAD
-        console2.log("trigger");
         /*
         * When total deposits is 0, B is not updated. In this case, the BOLD issued can not be obtained by later
         * depositors - it is missed out on, and remains in the balance of the SP.
         *
         */
         if (totalBoldDepositsCached == 0 || _boldYield == 0) {
-            console2.log("doesn't update");
             return;}
 
         yieldGainsOwed += _boldYield;
@@ -546,7 +544,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         epochToScaleToS[currentEpochCached][currentScaleCached] = newS;
         emit S_Updated(newS, currentEpochCached, currentScaleCached);
 
-        console2.log(currentP * newProductFactor / DECIMAL_PRECISION, "currentP * newProductFactor / DECIMAL_PRECISION");
         // If the Stability Pool was emptied, increment the epoch, and reset the scale and product P
         if (newProductFactor == 0) {
             currentEpoch = currentEpochCached + 1;
@@ -557,7 +554,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
             // If multiplying P by a non-zero product factor would reduce P below the scale boundary, increment the scale
         } else if (currentP * newProductFactor / DECIMAL_PRECISION < SCALE_FACTOR) {
-            console2.log("scale change branch");
             newP = currentP * newProductFactor * SCALE_FACTOR / DECIMAL_PRECISION;
             currentScale = currentScaleCached + 1;
             emit ScaleUpdated(currentScale);
@@ -714,11 +710,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         if (scaleDiff == 0) {
             compoundedStake = initialStake * P / snapshot_P;
         } else if (scaleDiff == 1) {
-            console2.log("scale diff 1");
-
             compoundedStake = initialStake * P / snapshot_P / SCALE_FACTOR;
-            console2.log(compoundedStake, "compounded stake in scaleDiff==1 branch");
-            console2.log(initialStake / 1e9, "initialStake / 1e9");
         } else {
             // if scaleDiff >= 2
             compoundedStake = 0;
