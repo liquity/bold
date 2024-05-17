@@ -11,7 +11,7 @@ import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 import "./Interfaces/IDefaultPool.sol";
 
-//import "forge-std/console2.sol";
+import "forge-std/console2.sol";
 
 /*
  * The Active Pool holds the ETH collateral and Bold debt (but not Bold tokens) for all active troves.
@@ -216,7 +216,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
     function _mintAggInterest() internal returns (uint256) {
         uint256 aggInterest = calcPendingAggInterest();
-
+        console2.log("mintAgg");
         // Mint part of the BOLD interest to the SP.
         // TODO: implement interest minting to LPs
         
@@ -224,8 +224,11 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
             uint256 spYield = SP_YIELD_SPLIT * aggInterest / 1e18;
             uint256 remainderToLPs = aggInterest - spYield;
            
+            console2.log(spYield, "spYield to mint");
             boldToken.mint(address(interestRouter), remainderToLPs);
             boldToken.mint(address(stabilityPool), spYield);
+
+
 
             stabilityPool.triggerBoldRewards(spYield);
         }

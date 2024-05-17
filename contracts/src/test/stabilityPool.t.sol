@@ -3,7 +3,16 @@ pragma solidity 0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract SPTest is DevTestSetup {
-    function _setupStashedAndCurrentETHGains() internal {
+    struct ExpectedShareOfReward {
+        uint256 _1_A;
+        uint256 _1_B;
+        uint256 _2_A;
+        uint256 _2_B;
+        uint256 _2_C;
+        uint256 _2_D;
+    }
+
+    function _setupStashedAndCurrentETHGains() internal { 
         TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
 
         // A stashes first gain
@@ -26,8 +35,8 @@ contract SPTest is DevTestSetup {
         assertGt(currentETHGain_B, 0);
     }
 
-    // --- provideToSP, doClaim == true ---
-    function testProvideToSPWithClaim_WithOnlyCurrentGainsSendsTotalETHGainToDepositor() public {
+    // --- provideToSP, doClaim == true, ETH gains ---
+    function testProvideToSPWithClaim_WithOnlyCurrentETHGainsSendsTotalETHGainToDepositor() public {
         _setupForSPDepositAdjustments();
 
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
@@ -44,7 +53,7 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A + currentETHGain);
     }
 
-    function testProvideToSPWithClaim_WithOnlyCurrentGainsDoesntChangeStashedGain() public {
+     function testProvideToSPWithClaim_WithOnlyCurrentETHGainsDoesntChangeStashedETHGain() public {
         _setupForSPDepositAdjustments();
 
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
@@ -57,13 +66,15 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), 0);
     }
 
-    function testProvideToSPWithClaim_WithCurrentAndStashedGainsSendsTotalETHGainToDepositor() public {
-        // A has stashed & current gains, B has only current
+    function testProvideToSPWithClaim_WithCurrentAndStashedETHGainsSendsTotalETHGainToDepositor() public {
+       // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
         // Check A has both stashed and current gains
         uint256 stashedETHGain = stabilityPool.stashedETH(A);
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
+        assertGt(stashedETHGain, 0);
+        assertGt(currentETHGain, 0);
 
         uint256 ETHBal_A = WETH.balanceOf(A);
         assertGt(ETHBal_A, 0);
@@ -74,7 +85,7 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A + stashedETHGain + currentETHGain);
     }
 
-    function testProvideToSPWithClaim_WithCurrentAndStashedGainsZerosStashedETHBalance() public {
+    function testProvideToSPWithClaim_WithCurrentAndStashedETHGainsZerosStashedETHBalance() public {
         // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
@@ -87,7 +98,7 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), 0);
     }
 
-    function testProvideToSPWithClaim_WithOnlyStashedGainsSendsStashedETHGainToDepositor() public {
+    function testProvideToSPWithClaim_WithOnlyStashedETHGainsSendsStashedETHGainToDepositor() public {
         _setupForSPDepositAdjustments();
 
         // Stash gains
@@ -108,7 +119,7 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A + stashedETHGain);
     }
 
-    function testProvideToSPWithClaim_WithOnlyStashedGainsZerosStashedETHBalance() public {
+    function testProvideToSPWithClaim_WithOnlyStashedETHGainsZerosStashedETHBalance() public {
         _setupForSPDepositAdjustments();
 
         // Stash gains
@@ -126,9 +137,49 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), 0);
     }
 
-    // --- provideToSP, doClaim == false ---
+     // --- provideToSP, doClaim == true, BOLD gains ---
 
-    function testProvideToSPNoClaim_WithOnlyCurrentGainsDoesntChangeDepositorETHBalance() public {
+    function testProvideToSPWithClaim_WithOnlyCurrentBOLDGainsSendsTotalBOLDGainToDepositor() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(currentBoldGain, 0);
+
+        uint256 boldBal_A = boldToken.balanceOf(A);
+
+        uint256 topUp = 1e18;
+        makeSPDepositAndClaim(A, topUp);
+
+        assertEq(boldToken.balanceOf(A), boldBal_A + currentBoldGain - topUp);
+    }
+
+    function testProvideToSPWithClaim_WithCurrentBOLDGainsZerosCurrentBOLDGains() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        // Check has currentBoldGain
+        uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(currentBoldGain, 0);
+
+        uint256 topUp = 1e18;
+        makeSPDepositAndClaim(A, topUp);
+
+        // Check A's currentBoldGain reduced to 0
+        assertEq(stabilityPool.getDepositorYieldGain(A), 0);
+    }
+
+    // --- provideToSP, doClaim == false, ETH gains ---
+
+    function testProvideToSPNoClaim_WithOnlyCurrentETHGainsDoesntChangeDepositorETHBalance() public {
         _setupForSPDepositAdjustments();
 
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
@@ -142,7 +193,7 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A);
     }
 
-    function testProvideToSPNoClaim_WithOnlyCurrentETHGainsStashesGains() public {
+    function testProvideToSPNoClaim_WithOnlyCurrentETHGainsStashesETHGains() public {
         _setupForSPDepositAdjustments();
 
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
@@ -157,7 +208,7 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), currentETHGain);
     }
 
-    function testProvideToSPNoClaim_WithCurrentAndStashedGainsDoesntChangeDepositorETHBalance() public {
+    function testProvideToSPNoClaim_WithCurrentAndStashedETHGainsDoesntChangeDepositorETHBalance() public {
         _setupStashedAndCurrentETHGains();
 
         uint256 ETHBal_A = WETH.balanceOf(A);
@@ -168,8 +219,8 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A);
     }
 
-    function testProvideToSPNoClaim_WithCurrentAndStashedGainsIncreasedStashedGainByCurrentGain() public {
-        // A has stashed & current gains, B has only current
+    function testProvideToSPNoClaim_WithCurrentAndStashedETHGainsIncreasedStashedETHGainByCurrentGain() public {
+      // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
         // Check A has both stashed and current gains
@@ -183,7 +234,7 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), stashedETHGain + currentETHGain);
     }
 
-    function testProvideToSPNoClaim_WithOnlyStashedGainDoesntChangeDepositorETHBalance() public {
+    function testProvideToSPNoClaim_WithOnlyStashedETHGainDoesntChangeDepositorETHBalance() public {
         _setupForSPDepositAdjustments();
 
         // A stashes first gain
@@ -203,7 +254,7 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A);
     }
 
-    function testProvideToSPNoClaim_WithOnlyStashedGainDoesntChangeStashedGain() public {
+    function testProvideToSPNoClaim_WithOnlyStashedETHGainDoesntChangeStashedETHGain() public {
         _setupForSPDepositAdjustments();
 
         // A stashes first gain
@@ -220,8 +271,65 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), stashedETHGain);
     }
 
-    // --- withdrawFromSP, doClaim == true ---
-    function testWithdrawFromSPWithClaim_WithOnlyCurrentGainsSendsTotalETHGainToDepositor() public {
+     // --- provideToSP, doClaim == false, BOLD gains ---
+
+    function testProvideToSPNoClaimAddsBOLDGainsToDeposit() public {
+       TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(currentBoldGain, 0);
+
+        uint256 depositBefore_A = stabilityPool.getCompoundedBoldDeposit(A);
+
+        uint256 topUp = 1e18;
+        makeSPDepositNoClaim(A, topUp);
+
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A + topUp + currentBoldGain);
+    }
+
+    function testProvideToSPNoClaimZerosCurrentBoldGains() public {
+       TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(currentBoldGain, 0);
+
+        uint256 topUp = 1e18;
+        makeSPDepositNoClaim(A, topUp);
+
+        assertEq(stabilityPool.getDepositorYieldGain(A), 0);
+    }
+
+    function testProvideToSPNoClaimReducesDepositorBoldBalanceByOnlyTheTopUp() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(currentBoldGain, 0);
+
+        uint256 boldBalBefore_A = boldToken.balanceOf(A);
+
+        uint256 topUp = 1e18;
+        makeSPDepositNoClaim(A, topUp);
+
+        assertEq(boldToken.balanceOf(A), boldBalBefore_A - topUp);
+    }
+
+    // --- withdrawFromSP, doClaim == true, ETH gains ---
+    function testWithdrawFromSPWithClaim_WithOnlyCurrentETHGainsSendsTotalETHGainToDepositor() public {
         _setupForSPDepositAdjustments();
 
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
@@ -238,7 +346,7 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A + currentETHGain);
     }
 
-    function testWithdrawFromSPWithClaim_WithOnlyCurrentGainsDoesntChangeStashedGain() public {
+    function testWithdrawFromSPWithClaim_WithOnlyCurrentETHGainsDoesntChangeStashedETHGain() public {
         _setupForSPDepositAdjustments();
 
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
@@ -251,7 +359,7 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), 0);
     }
 
-    function testWithdrawFromSPWithClaim_WithCurrentAndStashedGainsSendsTotalETHGainToDepositor() public {
+    function testWithdrawFromSPWithClaim_WithCurrentAndStashedETHGainsSendsTotalETHGainToDepositor() public {
         // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
@@ -267,7 +375,7 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A + stashedETHGain + currentETHGain);
     }
 
-    function testWithdrawFromSPWithClaim_WithCurrentAndStashedGainsZerosStashedETHBalance() public {
+    function testWithdrawFromSPWithClaim_WithCurrentAndStashedETHGainsZerosStashedETHBalance() public {
         // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
@@ -281,7 +389,7 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), 0);
     }
 
-    function testWithdrawFromSPPWithClaim_WithOnlyStashedGainsSendsStashedETHGainToDepositor() public {
+    function testWithdrawFromSPPWithClaim_WithOnlyStashedETHGainsSendsStashedETHGainToDepositor() public {
         _setupForSPDepositAdjustments();
 
         // Stash gains
@@ -302,7 +410,7 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A + stashedETHGain);
     }
 
-    function testWithdrawFromSPWithClaim_WithOnlyStashedGainsZerosStashedETHBalance() public {
+    function testWithdrawFromSPWithClaim_WithOnlyStashedETHGainsZerosStashedETHBalance() public {
         _setupForSPDepositAdjustments();
 
         // Stash gains
@@ -320,9 +428,49 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), 0);
     }
 
-    // --- withdrawFromSP, doClaim == false ---
+    // --- withdrawFromSP, doClaim == true, BOLD gains ---
+    function testWithdrawFromSPWithClaim_WithCurrentBOLDGainsSendsBOLDGainToDepositor() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
 
-    function testWithdrawFromSPNoClaim_WithOnlyCurrentGainsDoesntChangeDepositorETHBalance() public {
+        vm.warp(block.timestamp + 90 days + 1);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(currentBoldGain, 0);
+
+        uint256 boldBal_A = boldToken.balanceOf(A);
+
+        uint256 withdrawal = 1e18;
+
+        makeSPWithdrawalAndClaim(A, withdrawal);
+
+        assertEq(boldToken.balanceOf(A), boldBal_A + withdrawal + currentBoldGain);
+    }
+
+    function testWithdrawFromSPWithClaim_WithCurrentBOLDGainsZerosCurrentBoldGains() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(currentBoldGain, 0);
+
+        uint256 withdrawal = 1e18;
+
+        makeSPWithdrawalAndClaim(A, withdrawal);
+
+        // Check A's BOLD gain reduced to 0
+        assertEq(stabilityPool.getDepositorYieldGain(A), 0);
+    }
+
+    // --- withdrawFromSP, doClaim == false, ETH gains ---
+
+    function testWithdrawFromSPNoClaim_WithOnlyCurrentETHGainsDoesntChangeDepositorETHBalance() public {
         _setupForSPDepositAdjustments();
 
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
@@ -336,7 +484,7 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A);
     }
 
-    function testWithdrawFromSPNoClaim_WithOnlyCurrentETHGainsStashesGains() public {
+    function testWithdrawFromSPNoClaim_WithOnlyCurrentETHGainsStashesETHGains() public {
         _setupForSPDepositAdjustments();
 
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
@@ -351,7 +499,7 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), currentETHGain);
     }
 
-    function testWithdrawFromSPNoClaim_WithCurrentAndStashedGainsDoesntChangeDepositorETHBalance() public {
+    function testWithdrawFromSPNoClaim_WithCurrentAndStashedETHGainsDoesntChangeDepositorETHBalance() public {
         // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
@@ -367,8 +515,8 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A);
     }
 
-    function testWithdrawFromSPNoClaim_WithCurrentAndStashedGainsIncreasedStashedGainByCurrentGain() public {
-        // A has stashed & current gains, B has only current
+    function testWithdrawFromSPNoClaim_WithCurrentAndStashedETHGainsIncreasedStashedGainByCurrentETHGain() public {
+       // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
         uint256 stashedETHGain = stabilityPool.stashedETH(A);
@@ -399,7 +547,7 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A);
     }
 
-    function testWithdrawFromSPNoClaim_WithOnlyStashedGainDoesntChangeStashedGain() public {
+    function testWithdrawFromSPNoClaim_WithOnlyStashedETHGainDoesntChangeStashedETHGain() public {
         _setupForSPDepositAdjustments();
 
         // A stashes first gain
@@ -416,9 +564,66 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), stashedETHGain);
     }
 
+    // --- withdrawFromSP, doClaim == false, BOLD gains ---
+
+    function testWithdrawFromSPNoClaimAddsBOLDGainsToDeposit() public {
+       TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(currentBoldGain, 0);
+
+        uint256 depositBefore_A = stabilityPool.getCompoundedBoldDeposit(A);
+
+        uint256 withdrawal = 1e18;
+        makeSPWithdrawalNoClaim(A, withdrawal);
+
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A - withdrawal + currentBoldGain);
+    }
+
+    function testWithdrawFromSPNoClaimZerosCurrentBoldGains() public {
+       TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(currentBoldGain, 0);
+
+        uint256 withdrawal = 1e18;
+        makeSPWithdrawalNoClaim(A, withdrawal);
+
+        assertEq(stabilityPool.getDepositorYieldGain(A), 0);
+    }
+
+    function testWithdrawFromSPNoClaimReducesDepositorBoldBalanceByOnlyTheTopUp() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(currentBoldGain, 0);
+
+        uint256 boldBalBefore_A = boldToken.balanceOf(A);
+
+        uint256 withdrawal = 1e18;
+        makeSPWithdrawalNoClaim(A, withdrawal);
+
+        assertEq(boldToken.balanceOf(A), boldBalBefore_A + withdrawal);
+    }
+
     // --- claimAllETHGains ---
 
-    function testClaimAllETHGainsDoesNotChangeCompoundedDeposit() public {
+    function testClaimAllETHGainsRevertsWhenUserHasNoDeposit() public {
         // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
@@ -426,108 +631,35 @@ contract SPTest is DevTestSetup {
         uint256 compoundedDeposit_A = stabilityPool.getCompoundedBoldDeposit(A);
         assertGt(compoundedDeposit_A, 0);
 
+        vm.startPrank(A);
+        vm.expectRevert("StabilityPool: User must have no deposit");
+        stabilityPool.claimAllETHGains();
+        vm.stopPrank();
+    }
+
+    function testClaimAllETHGainsDoesNotChangeCompoundedDeposit() public {
+        // A has stashed & current gains, B has only current
+        _setupStashedAndCurrentETHGains();
+
+        // A withdraws deposit 
+        uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
+        makeSPWithdrawalNoClaim(A, deposit_A);
+
+        // A
+        uint256 compoundedDeposit_A = stabilityPool.getCompoundedBoldDeposit(A);
+        assertEq(compoundedDeposit_A, 0);
+
         claimAllETHGains(A);
 
         assertEq(compoundedDeposit_A, stabilityPool.getCompoundedBoldDeposit(A));
-
-        // B
-        uint256 compoundedDeposit_B = stabilityPool.getCompoundedBoldDeposit(B);
-        assertGt(compoundedDeposit_B, 0);
-
-        claimAllETHGains(B);
-
-        assertEq(compoundedDeposit_B, stabilityPool.getCompoundedBoldDeposit(B));
     }
 
-    function testClaimAllETHGainsForOnlyCurrentETHGainZerosCurrentETHGain() public {
-        // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
-
-        // B
-        uint256 curentETHGain_B = stabilityPool.getDepositorETHGain(B);
-        assertGt(curentETHGain_B, 0);
-
-        claimAllETHGains(B);
-
-        assertEq(stabilityPool.getDepositorETHGain(B), 0);
-    }
-
-    function testClaimAllETHGainsForOnlyCurrentETHGainDoesntChangeStashedGain() public {
-        // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
-
-        // B
-        uint256 stashedGain_B = stabilityPool.stashedETH(B);
-        assertEq(stashedGain_B, 0);
-
-        claimAllETHGains(B);
-
-        assertEq(stabilityPool.stashedETH(B), 0);
-    }
-
-    function testClaimAllETHGainsForOnlyCurrentETHGainIncreasesUserBalanceByCurrentETHGain() public {
-        // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
-
-        uint256 currentETHGain_B = stabilityPool.getDepositorETHGain(B);
-
-        uint256 ETHBal_B = WETH.balanceOf(B);
-        assertGt(ETHBal_B, 0);
-
-        claimAllETHGains(B);
-
-        assertEq(stabilityPool.stashedETH(B), 0);
-        assertEq(WETH.balanceOf(B), ETHBal_B + currentETHGain_B);
-    }
-
-    function testClaimAllETHGainsForCurrentAndStashedETHGainZerosCurrentETHGain() public {
-        // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
-
-        // A
-        uint256 curentETHGain_A = stabilityPool.getDepositorETHGain(A);
-        assertGt(curentETHGain_A, 0);
-
-        claimAllETHGains(A);
-
-        assertEq(stabilityPool.getDepositorETHGain(A), 0);
-    }
-
-    function testClaimAllETHGainsForOnlyCurrentAndStashedETHGainZerosStashedETHGain() public {
-        // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
-
-        // A
-        uint256 stashedGain_A = stabilityPool.stashedETH(A);
-        assertGt(stashedGain_A, 0);
-
-        claimAllETHGains(A);
-
-        assertEq(stabilityPool.stashedETH(A), 0);
-    }
-
-    function testClaimAllETHGainsForCurrentAndStashedETHGainIncreasesUserBalanceByTotalETHGain() public {
-        // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
-
-        // A
-        uint256 stashedGain_A = stabilityPool.stashedETH(A);
-        uint256 currentGain_A = stabilityPool.getDepositorETHGain(A);
-
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
-
-        claimAllETHGains(A);
-
-        assertEq(stabilityPool.stashedETH(A), 0);
-        assertEq(WETH.balanceOf(A), ETHBal_A + stashedGain_A + currentGain_A);
-    }
-
-    function testClaimAllETHGainsForOnlyStashedETHGainDoesntChangeETHGain() public {
+    function testClaimAllETHGainsDoesntChangeCurrentETHGain() public {
         _setupForSPDepositAdjustments();
-
-        // A stashes first gain
-        makeSPDepositNoClaim(A, 1e18);
+ 
+        // A withdraws deposit and stashes gain
+        uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
+        makeSPWithdrawalNoClaim(A, deposit_A);
 
         // Check A has only stashed gains
         uint256 stashedETHGain_A = stabilityPool.stashedETH(A);
@@ -540,11 +672,12 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.getDepositorETHGain(A), 0);
     }
 
-    function testClaimAllETHGainsForOnlyStashedETHGainZerosStashedETHGain() public {
+    function testClaimAllETHGainsZerosStashedETHGain() public {
         _setupForSPDepositAdjustments();
-
-        // A stashes first gain
-        makeSPDepositNoClaim(A, 1e18);
+ 
+        // A withdraws deposit and stashes gain
+        uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
+        makeSPWithdrawalNoClaim(A, deposit_A);
 
         // Check A has only stashed gains
         uint256 stashedETHGain_A = stabilityPool.stashedETH(A);
@@ -557,17 +690,16 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), 0);
     }
 
-    function testClaimAllETHGainsForOnlyStashedETHGainIncreasesUserBalanceByStashedETHGain() public {
+    function testClaimAllETHGainsIncreasesUserBalanceByStashedETHGain() public {
         _setupForSPDepositAdjustments();
-
-        // A stashes first gain
-        makeSPDepositNoClaim(A, 1e18);
+ 
+        // A withdraws deposit and stashes gain
+        uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
+        makeSPWithdrawalNoClaim(A, deposit_A);
 
         // Check A has only stashed gains
         uint256 stashedETHGain_A = stabilityPool.stashedETH(A);
-        uint256 currentETHGain_A = stabilityPool.getDepositorETHGain(A);
         assertGt(stashedETHGain_A, 0);
-        assertEq(currentETHGain_A, 0);
 
         uint256 ETHBal_A = WETH.balanceOf(A);
         assertGt(ETHBal_A, 0);
@@ -579,6 +711,42 @@ contract SPTest is DevTestSetup {
     }
 
     // --- Bold reward sum 'B' tests ---
+
+     function testBoldRewardsSumDoesntChangeWhenSPIsEmpty() public {
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pct(A, 3 ether, 2000e18, 25e16);
+
+        // check SP is 0
+        assertEq(stabilityPool.getTotalBoldDeposits(), 0);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_1, 0);
+
+        openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_2, boldRewardSum_1);
+    }
+
+     function testBoldRewardSumDoesntChangeWhenNoYieldMinted() public {
+        _setupForSPDepositAdjustments();
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertEq(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        assertEq(boldRewardSum_1, 0);
+
+        openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+
+        uint256 boldRewardSum_2 = stabilityPool.getYieldGainsOwed();
+        assertEq(boldRewardSum_2, boldRewardSum_1);
+    }
 
     function testBoldRewardSumIncreasesWhenTroveOpened() public {
         _setupForSPDepositAdjustments();
@@ -775,9 +943,45 @@ contract SPTest is DevTestSetup {
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
-    // ---- boldRewardsOwed tests ---
+    // ---- yieldGainsOwed tests ---
 
-      function testBoldRewardsOwedIncreasesWhenTroveOpened() public {
+    function testBoldRewardsOwedDoesntChangeWhenSPIsEmpty() public {
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pct(A, 3 ether, 2000e18, 25e16);
+
+        // check SP is 0
+        assertEq(stabilityPool.getTotalBoldDeposits(), 0);
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest, 0);
+
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_1, 0);
+
+        openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+
+        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_2, yieldGainsOwed_1);
+    }
+
+     function testBoldRewardsOwedDoesntChangeWhenNoYieldMinted() public {
+        _setupForSPDepositAdjustments();
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertEq(pendingAggInterest, 0);
+
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_1, 0);
+
+        openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+
+        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_2, yieldGainsOwed_1);
+    }
+
+    function testBoldRewardsOwedIncreasesWhenTroveOpened() public {
         _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
@@ -785,13 +989,13 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
-        assertEq(boldRewardsOwed_1, 0);
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_1, 0);
 
         openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
-        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
-        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
     
     function testBoldRewardsOwedIncreasesWhenTroveInterestRateAdjusted() public {
@@ -802,13 +1006,13 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
-        assertEq(boldRewardsOwed_1, 0);
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_1, 0);
 
         changeInterestRateNoHints(B, troveIDs.B, 75e16);
 
-        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
-        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenTroveClosed() public {
@@ -821,8 +1025,8 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
-        assertEq(boldRewardsOwed_1, 0);
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_1, 0);
 
         // F sends E his bold so he can close
         vm.startPrank(F);
@@ -830,8 +1034,8 @@ contract SPTest is DevTestSetup {
         vm.stopPrank();
         closeTrove(E, troveIDs.E);
 
-        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
-        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenTroveDebtAndCollAdjusted() public {
@@ -842,8 +1046,8 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
-        assertEq(boldRewardsOwed_1, 0);
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_1, 0);
 
         adjustTrove100pct(
             A,
@@ -854,8 +1058,8 @@ contract SPTest is DevTestSetup {
             true
         );
 
-        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
-        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenInterestAppliedPermissionlessly() public {
@@ -866,14 +1070,14 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
-        assertEq(boldRewardsOwed_1, 0);
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_1, 0);
 
         // B applies A's pending interest
         applyTroveInterestPermissionless(B, troveIDs.A);
 
-        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
-        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenTroveLiquidated() public {
@@ -884,15 +1088,15 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
-        assertEq(boldRewardsOwed_1, 0);
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_1, 0);
 
         // A liquidates D
         liquidate(A, troveIDs.D);
         assertEq(troveManager.getTroveStatus(troveIDs.D), 3); // Status 3 - closed by liq
 
-        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
-        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenRedemptionOccurs() public {
@@ -903,15 +1107,15 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
-        assertEq(boldRewardsOwed_1, 0);
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_1, 0);
         uint256 wethBalBefore_A = WETH.balanceOf(A);
         // A redeems
         redeem(A, 1e18);
         assertGt(WETH.balanceOf(A), wethBalBefore_A);
 
-        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
-        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenNewDepositIsMade() public {
@@ -923,14 +1127,14 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
-        assertEq(boldRewardsOwed_1, 0);
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_1, 0);
 
         // E Makes deposit
         makeSPDepositAndClaim(E, 1e18);
 
-        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
-        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenDepositToppedUp() public {
@@ -942,14 +1146,14 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
-        assertEq(boldRewardsOwed_1, 0);
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_1, 0);
 
         // A tops up deposit
         makeSPDepositAndClaim(A, 1e18);
 
-        uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
-        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenDepositWithdrawn() public {
@@ -961,19 +1165,19 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
-        assertEq(boldRewardsOwed_1, 0);
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_1, 0);
 
         // A withdraws some deposit
         makeSPWithdrawalAndClaim(A, 1e18);
 
-         uint256 boldRewardsOwed_2 =  stabilityPool.getBoldRewardsOwed();
-        assertGt(boldRewardsOwed_2, boldRewardsOwed_1);
+        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     // --- depositor BOLD rewards tests ---
 
-    function testGetDepositorBoldGain1SPDepositor1RewardEventEarnsAllSPYield() public {
+    function testGetDepositorBoldGain_1SPDepositor1RewardEvent_EarnsAllSPYield() public {
         TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
 
         // B withdraws entirely
@@ -992,10 +1196,10 @@ contract SPTest is DevTestSetup {
         // A trove gets poked, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
 
-        assertApproximatelyEqual(stabilityPool.getDepositorBoldGain(A), expectedSpYield, 1e4);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedSpYield, 1e4);
     }
 
-    function testGetDepositorBoldGain2SPDepositor1RewardEventEarnFairShareOfSPYield() public {
+    function testGetDepositorBoldGain_2SPDepositor1RewardEvent_EarnFairShareOfSPYield() public {
         TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
@@ -1014,11 +1218,11 @@ contract SPTest is DevTestSetup {
         applyTroveInterestPermissionless(B, troveIDs.A);
 
         // Check both depositors earn their expected shares of the yield
-        assertApproximatelyEqual(stabilityPool.getDepositorBoldGain(A), expectedShareOfReward_A, 1e4);
-        assertApproximatelyEqual(stabilityPool.getDepositorBoldGain(B), expectedShareOfReward_B, 1e4);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward_A, 1e4);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward_B, 1e4);
     }
 
-     function testGetDepositorBoldGain1SPDepositor2RewardEventEarnsAllSPYield() public {
+     function testGetDepositorBoldGain_1SPDepositor2RewardEvent_EarnsAllSPYield() public {
         TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
 
         // B withdraws entirely
@@ -1036,8 +1240,8 @@ contract SPTest is DevTestSetup {
 
         // A trove gets poked, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
-        uint256 boldRewardsOwed_1 = stabilityPool.getBoldRewardsOwed();
-        assertGt(boldRewardsOwed_1, 0);
+        uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
+        assertGt(yieldGainsOwed_1, 0);
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -1047,13 +1251,13 @@ contract SPTest is DevTestSetup {
 
         // A trove gets poked, interest minted and yield paid to SP again
         applyTroveInterestPermissionless(B, troveIDs.A);
-        uint256 boldRewardsOwed_2 = stabilityPool.getBoldRewardsOwed();
-        assertGt(boldRewardsOwed_2, 0);
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
+        assertGt(yieldGainsOwed_2, 0);
 
-        assertApproximatelyEqual(stabilityPool.getDepositorBoldGain(A), expectedSpYield_1 + expectedSpYield_2, 1e4);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedSpYield_1 + expectedSpYield_2, 1e4);
     }
 
-    function testGetDepositorBoldGain3SPDepositor3RewardEventEarnFairShareOfSPYield() public {
+    function testGetDepositorBoldGain_2SPDepositor2RewardEvent_EarnFairShareOfSPYield() public {
         TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
@@ -1092,10 +1296,231 @@ contract SPTest is DevTestSetup {
         applyTroveInterestPermissionless(B, troveIDs.A);
 
         // Check both depositors earn their expected shares of the yield
-        console.log(stabilityPool.getDepositorBoldGain(A), "stabilityPool.getDepositorBoldGain(A)");
-        console.log(expectedShareOfReward1_A + expectedShareOfReward2_A, "expectedShareOfReward1_A + expectedShareOfReward2_A");
-        assertApproximatelyEqual(stabilityPool.getDepositorBoldGain(A), expectedShareOfReward1_A + expectedShareOfReward2_A, 1e4);
-        assertApproximatelyEqual(stabilityPool.getDepositorBoldGain(B), expectedShareOfReward1_B + expectedShareOfReward2_B, 1e4);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward1_A + expectedShareOfReward2_A, 1e4);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward1_B + expectedShareOfReward2_B, 1e4);
+    }
+
+    function testGetDepositorBoldGain_2SPDepositor1Liq1FreshDeposit_EarnFairShareOfSPYield() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_1, 0);
+        uint256 expectedSpYield_1 = SP_YIELD_SPLIT * pendingAggInterest_1 / 1e18;
+
+        uint256 expectedShareOfReward1_A = getShareofSPReward(A, expectedSpYield_1);
+        uint256 expectedShareOfReward1_B = getShareofSPReward(B, expectedSpYield_1);
+        assertGt(expectedShareOfReward1_A, 0);
+        assertGt(expectedShareOfReward1_B, 0);
+        uint256 totalSPDeposits_1 = stabilityPool.getTotalBoldDeposits();
+    
+        // Confirm the expected shares sum up to the total expected yield 
+        assertApproximatelyEqual(expectedShareOfReward1_A + expectedShareOfReward1_B, expectedSpYield_1, 1e3);
+
+        // A trove gets poked, interest minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+        assertEq( activePool.calcPendingAggInterest(), 0);
+
+        // A liquidates D
+        liquidate(A, troveIDs.D);
+
+        // C makes fresh deposit
+        uint256 deposit_C = 1e18;
+        makeSPDepositAndClaim(C, deposit_C);
+
+        // Check SP still has funds
+        uint256 totalSPDeposits_2 = stabilityPool.getTotalBoldDeposits();
+        assertGt(totalSPDeposits_2, 0);
+        assertLt(totalSPDeposits_2, totalSPDeposits_1);
+
+        // fast-forward time again and accrue interest
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest_2 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_2, 0);
+        uint256 expectedSpYield_2 = SP_YIELD_SPLIT * pendingAggInterest_2 / 1e18;
+
+        // Expected reward round 2 calculated with a different totalSPDeposits denominator
+        uint256 expectedShareOfReward2_A = getShareofSPReward(A, expectedSpYield_2);
+        uint256 expectedShareOfReward2_B = getShareofSPReward(B, expectedSpYield_2);
+        uint256 expectedShareOfReward2_C = getShareofSPReward(C, expectedSpYield_2);
+        assertGt(expectedShareOfReward2_A, 0);
+        assertGt(expectedShareOfReward2_B, 0);
+        assertGt(expectedShareOfReward2_C, 0);
+    
+        // Confirm the expected shares sum up to the total expected yield 
+        assertApproximatelyEqual(expectedShareOfReward2_A + expectedShareOfReward2_B + expectedShareOfReward2_C, expectedSpYield_2, 1e4);
+
+        // A trove gets poked again, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        // Check both depositors earn their expected shares of the yield
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward1_A + expectedShareOfReward2_A, 1e4);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward1_B + expectedShareOfReward2_B, 1e4);
+    }
+
+    function testGetDepositorBoldGain_2SPDepositor1LiqEmptiesPoolFreshDeposit_EarnFairShareOfSPYield() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ExpectedShareOfReward memory expectedShareOfReward;
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_1, 0);
+        uint256 expectedSpYield_1 = SP_YIELD_SPLIT * pendingAggInterest_1 / 1e18;
+
+        expectedShareOfReward._1_A = getShareofSPReward(A, expectedSpYield_1);
+        expectedShareOfReward._1_B = getShareofSPReward(B, expectedSpYield_1);
+        assertGt(expectedShareOfReward._1_A, 0);
+        assertGt(expectedShareOfReward._1_B, 0);
+        uint256 totalSPDeposits_1 = stabilityPool.getTotalBoldDeposits();
+    
+        // Confirm the expected shares sum up to the total expected yield 
+        assertApproximatelyEqual(expectedShareOfReward._1_A + expectedShareOfReward._1_B, expectedSpYield_1, 1e3);
+
+        // A withdraws some deposit so that D's liq will empty the pool. This also mints interest and pays the yield to the SP
+        makeSPWithdrawalAndClaim(A, 100e18);
+        assertEq(stabilityPool.getDepositorYieldGain(A), 0);
+        assertEq( activePool.calcPendingAggInterest(), 0);
+
+        // A liquidates D
+        liquidate(A, troveIDs.D);
+        // Check SP has no funds now
+        assertEq(stabilityPool.getTotalBoldDeposits(), 0);
+
+        // C and D makes fresh deposit
+        uint256 deposit_C = 1e18;
+        uint256 deposit_D = 1e18;
+        makeSPDepositAndClaim(C, deposit_C);
+        transferBold(C, D, deposit_D);
+        makeSPDepositAndClaim(D, deposit_D);
+
+        // Check SP still has funds
+        uint256 totalSPDeposits_2 = stabilityPool.getTotalBoldDeposits();
+        assertGt(totalSPDeposits_2, 0);
+        assertLt(totalSPDeposits_2, totalSPDeposits_1);
+
+        // fast-forward time again and accrue interest
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest_2 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_2, 0);
+        uint256 expectedSpYield_2 = SP_YIELD_SPLIT * pendingAggInterest_2 / 1e18;
+
+        // Expected reward round 2 calculated with a different totalSPDeposits denominator. Expect A and B to earn 0 of
+        // this reward.
+        expectedShareOfReward._2_A = getShareofSPReward(A, expectedSpYield_2);
+        expectedShareOfReward._2_B = getShareofSPReward(B, expectedSpYield_2);
+        expectedShareOfReward._2_C = getShareofSPReward(C, expectedSpYield_2);
+        expectedShareOfReward._2_D = getShareofSPReward(C, expectedSpYield_2);
+        // A and B should get 0 from reward 2
+        assertEq(expectedShareOfReward._2_A, 0);
+        assertEq(expectedShareOfReward._2_B, 0);
+        // C and D should split the entire reward 2
+        assertGt(expectedShareOfReward._2_C, 0);
+        assertGt(expectedShareOfReward._2_D, 0);
+    
+        // Confirm the expected shares sum up to the total expected yield 
+        assertApproximatelyEqual(
+            expectedShareOfReward._2_A + 
+            expectedShareOfReward._2_B + 
+            expectedShareOfReward._2_C + 
+            expectedShareOfReward._2_D, 
+            expectedSpYield_2, 1e4
+        );
+
+        // // A trove gets poked again, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        // Expect A to receive 0 - they already claimed his gain 1, and gets 0 from 2nd reward
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), 0, 1e4);
+        // Expect B to receive only their share of reward 1, and get 0 for 2nd reward
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward._1_B, 1e4);
+        // Expect C to receive a share of both reward 1 and 2
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward._2_C, 1e4);
+    }
+
+
+    function testGetDepositorBoldGain_2SPDepositor1LiqScaleChangeFreshDeposit_EarnFairShareOfSPYield() public {
+        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ExpectedShareOfReward memory expectedShareOfReward;
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_1, 0);
+        uint256 expectedSpYield_1 = SP_YIELD_SPLIT * pendingAggInterest_1 / 1e18;
+
+        expectedShareOfReward._1_A = getShareofSPReward(A, expectedSpYield_1);
+        expectedShareOfReward._1_B = getShareofSPReward(B, expectedSpYield_1);
+        assertGt(expectedShareOfReward._1_A, 0);
+        assertGt(expectedShareOfReward._1_B, 0);
+        uint256 totalSPDeposits_1 = stabilityPool.getTotalBoldDeposits();
+    
+        // Confirm the expected shares sum up to the total expected yield 
+        assertApproximatelyEqual(expectedShareOfReward._1_A + expectedShareOfReward._1_B, expectedSpYield_1, 1e3);
+
+        // A withdraws some deposit so that D's liq will *almost* empty the pool - triggers a scale change.
+        // This also mints interest and pays the yield to the SP
+        uint256 debtSPDelta = totalSPDeposits_1 - troveManager.getTroveEntireDebt(troveIDs.D);
+        makeSPWithdrawalAndClaim(A, debtSPDelta - 1e12);
+        assertEq(stabilityPool.getDepositorYieldGain(A), 0);
+        assertEq( activePool.calcPendingAggInterest(), 0);
+
+        assertEq(stabilityPool.currentScale(), 0);
+
+        // A liquidates D
+        liquidate(A, troveIDs.D);
+
+        // Check scale increased
+        assertEq(stabilityPool.currentScale(), 1);
+
+        // C and D makes fresh deposit
+        uint256 deposit_C = 1e18;
+        uint256 deposit_D = 1e18;
+        makeSPDepositAndClaim(C, deposit_C);
+        transferBold(C, D, deposit_D);
+        makeSPDepositAndClaim(D, deposit_D);
+
+        // fast-forward time again and accrue interest
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest_2 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_2, 0);
+        uint256 expectedSpYield_2 = SP_YIELD_SPLIT * pendingAggInterest_2 / 1e18;
+
+        // Expected reward round 2 calculated with a different totalSPDeposits denominator. Expect A and B to earn 0 of
+        // this reward.
+        expectedShareOfReward._2_A = getShareofSPReward(A, expectedSpYield_2);
+        expectedShareOfReward._2_B = getShareofSPReward(B, expectedSpYield_2);
+        expectedShareOfReward._2_C = getShareofSPReward(C, expectedSpYield_2);
+        expectedShareOfReward._2_D = getShareofSPReward(C, expectedSpYield_2);
+        
+        assertEq(expectedShareOfReward._2_A, 0);
+        assertEq(expectedShareOfReward._2_B, 0);
+        assertGt(expectedShareOfReward._2_C, 0);
+        assertGt(expectedShareOfReward._2_D, 0);
+        
+        // Confirm the expected shares sum up to the total expected yield. More precision loss tolerance here,
+        // since there's an extra div by 1e9 in A and B's reward calcs.
+        assertApproximatelyEqual(
+            expectedShareOfReward._2_A + 
+            expectedShareOfReward._2_B + 
+            expectedShareOfReward._2_C + 
+            expectedShareOfReward._2_D, 
+            expectedSpYield_2, 1e14
+        );
+
+        // A trove gets poked again, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        // A only gets reward 2 since already claimed reward 1
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward._2_A, 1e15);
+
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward._1_B + expectedShareOfReward._2_B, 1e14);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward._2_C, 1e14);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(D), expectedShareOfReward._2_D, 1e14);
     }
 }
 

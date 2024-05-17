@@ -532,12 +532,19 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 expectedSPYield_A = SP_YIELD_SPLIT * pendingAggInterest / 1e18;
 
         uint256 expectedBoldGain_A = getShareofSPReward(A, expectedSPYield_A);
+        assertGt(expectedBoldGain_A, 0);
 
         // A withdraws from SP
         makeSPWithdrawalAndClaim(A, sPdeposit);
 
         // Check SP Bold bal has increased as expected 
         uint256 boldBalSP_2 = boldToken.balanceOf(address(stabilityPool));
+        console.log(boldBalSP_2, "boldBalSP_2");
+        console.log(sPdeposit, "sPdeposit");
+        console.log(pendingAggInterest, "pendingAggInterest");
+        console.log(expectedBoldGain_A, "expectedBoldGain_A");
+        console.log(boldBalSP_1 - sPdeposit + pendingAggInterest - expectedBoldGain_A, "boldBalSP_1 - sPdeposit + pendingAggInterest - expectedBoldGain_A");
+
         assertApproximatelyEqual(boldBalSP_2, boldBalSP_1 - sPdeposit + pendingAggInterest - expectedBoldGain_A, 1e3);
     }
 
@@ -2160,8 +2167,9 @@ contract InterestRateAggregate is DevTestSetup {
     function testClaimAllETHGainsIncreasesAggRecordedDebtByPendingAggInterest() public {
         _setupForSPDepositAdjustments();
 
-        // A stashes first gain
-        makeSPDepositNoClaim(A, 1e18);
+        // A withdraws depsoiit and stashes gain
+        uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
+        makeSPWithdrawalNoClaim(A, deposit_A);
 
         vm.warp(block.timestamp + 1 days);
 
@@ -2182,8 +2190,9 @@ contract InterestRateAggregate is DevTestSetup {
     function testClaimAllETHGainsReducesPendingAggInterestTo0() public {
         _setupForSPDepositAdjustments();
 
-        // A stashes first gain
-        makeSPDepositNoClaim(A, 1e18);
+        // A withdraws depsoiit and stashes gain
+        uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
+        makeSPWithdrawalNoClaim(A, deposit_A);
 
         vm.warp(block.timestamp + 1 days);
 
@@ -2202,8 +2211,9 @@ contract InterestRateAggregate is DevTestSetup {
     function testClaimAllETHGainsUpdatesLastAggUpdateTimeToNow() public {
         _setupForSPDepositAdjustments();
 
-        // A stashes first gain
-        makeSPDepositNoClaim(A, 1e18);
+        // A withdraws deposit and stashes gain
+        uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
+        makeSPWithdrawalNoClaim(A, deposit_A);
 
         vm.warp(block.timestamp + 1 days);
 
@@ -2220,13 +2230,14 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(activePool.lastAggUpdateTime(), block.timestamp);
     }
 
-    // mints interest to router
+    // mints interest to SP
     function testClaimAllETHGainsMintsAggInterestToSP() public {
         TroveIDs memory troveIDs;
         troveIDs = _setupForSPDepositAdjustments();
 
-        // stashes first gain
-        makeSPDepositNoClaim(A, 1e18);
+        // A withdraws depsoiit and stashes gain
+        uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
+        makeSPWithdrawalNoClaim(A, deposit_A);
 
         uint256 boldBalSP_1 = boldToken.balanceOf(address(stabilityPool));
 

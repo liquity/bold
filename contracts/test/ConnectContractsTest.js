@@ -94,7 +94,7 @@ contract("Deployment script - Sets correct contract addresses dependencies after
   it("Sets the correct StabilityPool address in ActivePool", async () => {
     const stabilityPoolAddress = stabilityPool.address;
 
-    const recordedStabilityPoolAddress = await activePool.stabilityPoolAddress();
+    const recordedStabilityPoolAddress = await activePool.stabilityPool();
 
     assert.equal(stabilityPoolAddress, recordedStabilityPoolAddress);
   });
