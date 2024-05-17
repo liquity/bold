@@ -19,7 +19,7 @@ export default function Borrow() {
 
   const deposit = useInputFieldValue((value) => `${dn.format(value)} ${pool.symbol}`);
   const borrowing = useInputFieldValue((value) => `${dn.format(value)} BOLD`);
-  const interestRate = useInputFieldValue((value) => dn.format(value));
+  const interestRate = useInputFieldValue((value) => `${dn.format(value)}%`);
 
   const liquidationRisk: null | {
     ethPrice: Dnum;
@@ -123,16 +123,10 @@ export default function Borrow() {
           }
           footerStart={`${pool.token} stats`}
           footerEnd={
-            <>
-              <FieldInfo
-                label="Max LTV"
-                value="80.00%"
-              />
-              <FieldInfo
-                label="Capacity"
-                value="0.5M"
-              />
-            </>
+            <FieldInfo
+              label="Max LTV"
+              value="80.00%"
+            />
           }
         />
         <Field
