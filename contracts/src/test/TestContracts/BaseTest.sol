@@ -256,7 +256,6 @@ contract BaseTest is Test {
     function getShareofSPReward(address _depositor, uint256 _reward) public returns (uint256) {
         return _reward * stabilityPool.getCompoundedBoldDeposit(_depositor) / stabilityPool.getTotalBoldDeposits();
     }
-    
     function logContractAddresses() public view {
         console.log("ActivePool addr: ", address(activePool));
         console.log("BorrowerOps addr: ", address(borrowerOperations));

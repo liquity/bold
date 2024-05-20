@@ -37,8 +37,8 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
     uint256 public constant SECONDS_IN_ONE_YEAR = 31536000; // 60 * 60 * 24 * 365,
 
-    // uint256 public constant SP_YIELD_SPLIT = 72e16;
-    uint256 public constant SP_YIELD_SPLIT = 1e18;
+    uint256 public constant SP_YIELD_SPLIT = 72e16;
+    // uint256 public constant SP_YIELD_SPLIT = 1e18;
 
     uint256 internal ETHBalance; // deposited ether tracker
 
