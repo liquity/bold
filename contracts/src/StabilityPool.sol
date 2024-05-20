@@ -325,11 +325,18 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     }
 
     function _getYieldToKeepOrSend(uint256 _currentYieldGain, bool _doClaim) internal pure returns (uint256, uint256) {
+        uint256 yieldToKeep;
+        uint256 yieldToSend;
+         
         if (_doClaim) {
-            return (0, _currentYieldGain);
-        } else {
-            return (_currentYieldGain, 0);
+            yieldToKeep = 0;
+            yieldToSend = _currentYieldGain;
+        } else { 
+            yieldToKeep = _currentYieldGain;
+            yieldToSend = 0;
         }
+
+        return (yieldToKeep, yieldToSend);
     }
 
     /*  withdrawFromSP():

@@ -38,7 +38,6 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     uint256 public constant SECONDS_IN_ONE_YEAR = 31536000; // 60 * 60 * 24 * 365,
 
     uint256 public constant SP_YIELD_SPLIT = 72e16;
-    // uint256 public constant SP_YIELD_SPLIT = 1e18;
 
     uint256 internal ETHBalance; // deposited ether tracker
 
@@ -190,11 +189,9 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     ) external {
         _requireCallerIsBOorTroveM();
 
-       uint256 aggInterest = _mintAggInterest();
-        
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
         uint256 newAggRecordedDebt = aggRecordedDebt; // 1 SLOAD
-        newAggRecordedDebt += aggInterest;
+        newAggRecordedDebt += _mintAggInterest();
         newAggRecordedDebt += _troveDebtIncrease;
         newAggRecordedDebt -= _troveDebtDecrease;
         aggRecordedDebt = newAggRecordedDebt; // 1 SSTORE
@@ -209,7 +206,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         aggWeightedDebtSum = newAggWeightedDebtSum; // 1 SSTORE
     }
 
-    function mintAggInterest() external override  {
+    function mintAggInterest() external override {
         _requireCallerIsSP();
         aggRecordedDebt +=  _mintAggInterest();
     }
