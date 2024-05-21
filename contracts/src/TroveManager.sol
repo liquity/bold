@@ -202,6 +202,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     struct SingleRedemptionValues {
         uint256 BoldLot;
         uint256 ETHLot;
+        uint256 ETHFee;
         uint256 redistDebtGain;
         uint256 oldRecordedTroveDebt;
         uint256 newRecordedTroveDebt;
@@ -235,7 +236,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     event LTermsUpdated(uint256 _L_ETH, uint256 _L_boldDebt);
     event TroveSnapshotsUpdated(uint256 _L_ETH, uint256 _L_boldDebt);
     event TroveIndexUpdated(uint256 _troveId, uint256 _newIndex);
-
+    event RedemptionFeePaidToTrove(uint256 indexed _troveId, uint256 _ETHFee);
     enum TroveManagerOperation {
         getAndApplyRedistributionGains,
         liquidate,
@@ -611,7 +612,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         ContractsCache memory _contractsCache,
         uint256 _troveId,
         uint256 _maxBoldamount,
-        uint256 _price
+        uint256 _price,
+        uint256 _redemptionRate
     ) internal returns (SingleRedemptionValues memory singleRedemption) {
         singleRedemption.oldWeightedRecordedTroveDebt = getTroveWeightedRecordedDebt(_troveId);
         singleRedemption.oldRecordedTroveDebt = Troves[_troveId].debt;
@@ -627,10 +629,14 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         // TODO: should we leave gas compensation (and corresponding debt) untouched for zombie Troves? Currently it's not touched.
         singleRedemption.BoldLot = LiquityMath._min(_maxBoldamount, entireTroveDebt - BOLD_GAS_COMPENSATION);
 
-        // Get the ETHLot of equivalent value in USD
-        singleRedemption.ETHLot = singleRedemption.BoldLot * DECIMAL_PRECISION / _price;
+        // Get the amount of ETH equal in USD value to the BoldLot redeemed 
+        uint256 correspondingETH = singleRedemption.BoldLot * DECIMAL_PRECISION / _price;
+        // Calculate the ETHFee separately (for events)
+        singleRedemption.ETHFee = correspondingETH * _redemptionRate / DECIMAL_PRECISION; 
+        // Get the final ETHLot to send to redeemer, leaving the fee in the Trove
+        singleRedemption.ETHLot = correspondingETH - singleRedemption.ETHFee;
 
-        // Decrease the debt and collateral of the current Trove according to the Bold lot and corresponding ETH to send
+        // Decrease the debt and collateral of the current Trove according to the Bold lot and ETH to send
         singleRedemption.newRecordedTroveDebt = entireTroveDebt - singleRedemption.BoldLot;
         uint256 newColl = Troves[_troveId].coll - singleRedemption.ETHLot;
 
@@ -655,6 +661,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             Troves[_troveId].stake,
             TroveManagerOperation.redeemCollateral
         );
+
+        emit RedemptionFeePaidToTrove(_troveId, singleRedemption.ETHFee);
 
         return singleRedemption;
     }
@@ -711,7 +719,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             }
 
             SingleRedemptionValues memory singleRedemption =
-                _redeemCollateralFromTrove(contractsCache, currentTroveId, totals.remainingBold, _price);
+                _redeemCollateralFromTrove(contractsCache, currentTroveId, totals.remainingBold, _price, _redemptionRate);
 
             totals.totalBoldToRedeem = totals.totalBoldToRedeem + singleRedemption.BoldLot;
             totals.totalRedistDebtGains = totals.totalRedistDebtGains + singleRedemption.redistDebtGain;
@@ -724,18 +732,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
                 totals.totalOldWeightedRecordedTroveDebts + singleRedemption.oldWeightedRecordedTroveDebt;
 
             totals.totalETHDrawn = totals.totalETHDrawn + singleRedemption.ETHLot;
+            totals.ETHFee = totals.ETHFee + singleRedemption.ETHFee;
             totals.remainingBold = totals.remainingBold - singleRedemption.BoldLot;
             currentTroveId = nextUserToCheck;
         }
 
         // We are removing this condition to prevent blocking redemptions
         //require(totals.totalETHDrawn > 0, "TroveManager: Unable to redeem any amount");
-
-        // Calculate the ETH fee
-        totals.ETHFee = _getRedemptionFee(totals.totalETHDrawn, _redemptionRate);
-
-        // Do nothing with the fee - the funds remain in ActivePool. TODO: replace with new redemption fee scheme
-        totals.ETHToSendToRedeemer = totals.totalETHDrawn - totals.ETHFee;
 
         emit Redemption(_boldamount, totals.totalBoldToRedeem, totals.totalETHDrawn, totals.ETHFee);
 
@@ -747,7 +750,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         );
 
         // Send the redeemed ETH to sender
-        contractsCache.activePool.sendETH(_sender, totals.ETHToSendToRedeemer);
+        contractsCache.activePool.sendETH(_sender, totals.totalETHDrawn);
         // We’ll burn all the Bold together out in the CollateralRegistry, to save gas
 
         return totals.totalBoldToRedeem;
