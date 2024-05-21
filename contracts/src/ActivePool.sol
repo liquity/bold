@@ -50,10 +50,6 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     */
     uint256 public aggWeightedDebtSum;
 
-    // Sum of recorded upfront interest. This is an upper bound on the total outstanding upfront interest.
-    // Some fraction of this will have already been cancelled out by accrued interest.
-    uint256 public aggRecordedUpfrontInterest;
-
     // Last time at which the aggregate recorded debt and weighted sum were updated
     uint256 public lastAggUpdateTime;
 
@@ -123,12 +119,8 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     }
 
     // Returns sum of agg.recorded debt plus agg. pending interest. Excludes pending redist. gains.
-    function getBoldDebtLowerBound() external view returns (uint256) {
+    function getBoldDebt() external view returns (uint256) {
         return aggRecordedDebt + calcPendingAggInterest();
-    }
-
-    function getBoldDebtUpperBound() external view returns (uint256) {
-        return aggRecordedDebt + calcPendingAggInterest() + aggRecordedUpfrontInterest;
     }
 
     // --- Pool functionality ---
@@ -190,22 +182,19 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     // so this function accepts both the increase and the decrease to avoid using (and converting to/from) signed ints.
     function mintAggInterestAndAccountForTroveChange(
         uint256 _appliedRedistBoldDebtGain,
-        uint256 _debtIncrease,
-        uint256 _debtDecrease,
-        uint256 _newWeightedRecordedDebt,
-        uint256 _oldWeightedRecordedDebt,
-        uint256 _newRecordedUpfrontInterest,
-        uint256 _oldRecordedUpfrontInterest,
-        uint256 _forgoneUpfrontInterest
+        uint256 _troveDebtIncrease,
+        uint256 _troveDebtDecrease,
+        uint256 _newWeightedRecordedTroveDebt,
+        uint256 _oldWeightedRecordedTroveDebt
     ) external {
         _requireCallerIsBOorTroveM();
 
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
         uint256 newAggRecordedDebt = aggRecordedDebt; // 1 SLOAD
-        newAggRecordedDebt += _mintAggInterest(_forgoneUpfrontInterest); // adds minted agg. + forgone upfront interest
+        newAggRecordedDebt += _mintAggInterest(); // adds minted agg.
         newAggRecordedDebt += _appliedRedistBoldDebtGain;
-        newAggRecordedDebt += _debtIncrease;
-        newAggRecordedDebt -= _debtDecrease;
+        newAggRecordedDebt += _troveDebtIncrease;
+        newAggRecordedDebt -= _troveDebtDecrease;
         aggRecordedDebt = newAggRecordedDebt; // 1 SSTORE
 
         // assert(aggRecordedDebt >= 0) // This should never be negative. If all redistribution gians and all aggregate interest was applied
@@ -213,27 +202,22 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
         uint256 newAggWeightedDebtSum = aggWeightedDebtSum; // 1 SLOAD
-        newAggWeightedDebtSum += _newWeightedRecordedDebt;
-        newAggWeightedDebtSum -= _oldWeightedRecordedDebt;
+        newAggWeightedDebtSum += _newWeightedRecordedTroveDebt;
+        newAggWeightedDebtSum -= _oldWeightedRecordedTroveDebt;
         aggWeightedDebtSum = newAggWeightedDebtSum; // 1 SSTORE
-
-        uint256 newAggRecordedUpfrontInterest = aggRecordedUpfrontInterest;
-        newAggRecordedUpfrontInterest += _newRecordedUpfrontInterest;
-        newAggRecordedUpfrontInterest -= _oldRecordedUpfrontInterest;
-        aggRecordedUpfrontInterest = newAggRecordedUpfrontInterest; // 1 SSTORE
     }
 
     function mintAggInterest() external override {
         _requireCallerIsSP();
-        aggRecordedDebt += _mintAggInterest(0);
+        aggRecordedDebt += _mintAggInterest();
     }
 
-    function _mintAggInterest(uint256 _forgoneUpfrontInterest) internal returns (uint256 aggDebtIncrease) {
-        aggDebtIncrease = calcPendingAggInterest() + _forgoneUpfrontInterest;
+    function _mintAggInterest() internal returns (uint256 aggInterest) {
+        aggInterest = calcPendingAggInterest();
 
         // Mint the new BOLD interest to a mock interest router that would split it and send it onward to SP, LP staking, etc.
         // TODO: implement interest routing and SP Bold reward tracking
-        if (aggDebtIncrease > 0) boldToken.mint(address(interestRouter), aggDebtIncrease);
+        if (aggInterest > 0) boldToken.mint(address(interestRouter), aggInterest);
 
         lastAggUpdateTime = block.timestamp;
     }

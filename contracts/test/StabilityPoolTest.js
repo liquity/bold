@@ -609,7 +609,7 @@ contract("StabilityPool", async (accounts) => {
       assert.isFalse(await sortedTroves.contains(defaulter_1_TroveId));
       assert.isFalse(await sortedTroves.contains(defaulter_2_TroveId));
 
-      const activeDebt_Before = (await activePool.getBoldDebtLowerBound()).toString();
+      const activeDebt_Before = (await activePool.getBoldDebt()).toString();
       const defaultedDebt_Before = (await defaultPool.getBoldDebt()).toString();
       const activeColl_Before = (await activePool.getETHBalance()).toString();
       const defaultedColl_Before = (await defaultPool.getETHBalance()).toString();
@@ -624,7 +624,7 @@ contract("StabilityPool", async (accounts) => {
         dec(1000, 18),
       );
 
-      const activeDebt_After = (await activePool.getBoldDebtLowerBound()).toString();
+      const activeDebt_After = (await activePool.getBoldDebt()).toString();
       const defaultedDebt_After = (await defaultPool.getBoldDebt()).toString();
       const activeColl_After = (await activePool.getETHBalance()).toString();
       const defaultedColl_After = (await defaultPool.getETHBalance()).toString();
@@ -1898,7 +1898,7 @@ contract("StabilityPool", async (accounts) => {
       // Price rises
       await priceFeed.setPrice(dec(200, 18));
 
-      const activeDebt_Before = (await activePool.getBoldDebtLowerBound()).toString();
+      const activeDebt_Before = (await activePool.getBoldDebt()).toString();
       const defaultedDebt_Before = (await defaultPool.getBoldDebt()).toString();
       const activeColl_Before = (await activePool.getETHBalance()).toString();
       const defaultedColl_Before = (await defaultPool.getETHBalance()).toString();
@@ -1912,7 +1912,7 @@ contract("StabilityPool", async (accounts) => {
       await th.withdrawFromSPAndClaim(contracts, dec(30000, 18), { from: carol });
       assert.equal((await stabilityPool.deposits(carol)).toString(), "0");
 
-      const activeDebt_After = (await activePool.getBoldDebtLowerBound()).toString();
+      const activeDebt_After = (await activePool.getBoldDebt()).toString();
       const defaultedDebt_After = (await defaultPool.getBoldDebt()).toString();
       const activeColl_After = (await activePool.getETHBalance()).toString();
       const defaultedColl_After = (await defaultPool.getETHBalance()).toString();

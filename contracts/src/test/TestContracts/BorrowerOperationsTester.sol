@@ -21,9 +21,6 @@ contract BorrowerOperationsTester is BorrowerOperations {
             isCollIncrease ? 0 : _collChange, // _collDecrease
             isDebtIncrease ? _debtChange : 0, // _debtIncrease
             isDebtIncrease ? 0 : _debtChange, // _debtDecrease
-            0, // _newRecordedUpfrontInterest
-            0, // _oldRecordedUpfrontInterest
-            0, // _forgoneUpfrontInterest
             _price
         );
     }

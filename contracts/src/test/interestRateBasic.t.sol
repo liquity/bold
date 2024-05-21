@@ -164,62 +164,28 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
-    function testAdjustTroveInterestRateChargesUpfrontInterest() public {
-        priceFeed.setPrice(2_000 ether);
-
-        uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2_000 ether, 0.5 ether);
-        uint256 debtBeforeAdjustment = troveManager.getTroveEntireDebt(ATroveId);
-
-        changeInterestRateNoHints(A, ATroveId, 0.75 ether);
-        uint256 debtAfterAdjustment = troveManager.getTroveEntireDebt(ATroveId);
-
-        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD);
-        uint256 debtAfterOneUpfrontPeriod = troveManager.getTroveEntireDebt(ATroveId);
-
-        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD);
-        uint256 debtAfterTwoUpfrontPeriods = troveManager.getTroveEntireDebt(ATroveId);
-
-        assertGt(debtAfterAdjustment, debtBeforeAdjustment);
-        assertEq(debtAfterOneUpfrontPeriod, debtAfterAdjustment, "Debt should not increase during the upfront period");
-        assertEq(
-            debtAfterAdjustment - debtBeforeAdjustment,
-            debtAfterTwoUpfrontPeriods - debtAfterAdjustment,
-            "Upfront interest should equal interest accrued over upfront period"
-        );
-    }
-
-    function testAdjustTroveInterestRateForgoesUnusedUpfrontInterest() public {
-        priceFeed.setPrice(2_000 ether);
-
-        uint256 borrowed = 2_000 ether;
-        uint256 troveId = openTroveNoHints100pct(A, 2 ether, borrowed, 0.5 ether);
-
-        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD / 2);
-
-        ITroveManager.LatestTroveData memory preAdjust = troveManager.getLatestTroveData(troveId);
-        changeInterestRateNoHints(A, troveId, 0.75 ether);
-        ITroveManager.LatestTroveData memory postAdjust = troveManager.getLatestTroveData(troveId);
-
-        assertGt(preAdjust.accruedInterest, 0);
-        assertApproxEqAbs(
-            preAdjust.accruedInterest,
-            preAdjust.unusedUpfrontInterest,
-            1,
-            "Accrued interest should equal unused upfront interest after half an upfront period"
-        );
-        assertEq(
-            postAdjust.recordedDebt,
-            preAdjust.recordedDebt + preAdjust.accruedInterest + preAdjust.unusedUpfrontInterest,
-            "Recorded debt should increase by accrued interest and unused upfront interest"
-        );
-    }
-
-    function testAdjustTroveInterestRateIncreasesRecordedDebtByAccruedInterestAfterUpfrontPeriod() public {
+    function testAdjustTroveInterestRateDoesNotChangeEntireTroveDebt() public {
         priceFeed.setPrice(2000e18);
 
         uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2000e18, 5e17);
 
-        vm.warp(block.timestamp + 2 * UPFRONT_INTEREST_PERIOD);
+        vm.warp(block.timestamp + 1 days);
+
+        (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        assertGt(entireTroveDebt_1, 0);
+
+        changeInterestRateNoHints(A, ATroveId, 75e16);
+
+        (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        assertEq(entireTroveDebt_1, entireTroveDebt_2);
+    }
+
+    function testAdjustTroveInterestRateIncreasesRecordedDebtByAccruedInterest() public {
+        priceFeed.setPrice(2000e18);
+
+        uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2000e18, 5e17);
+
+        vm.warp(block.timestamp + 1 days);
 
         uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
         assertGt(recordedTroveDebt_1, 0);
@@ -354,12 +320,11 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
-    function testWithdrawBoldIncreasesEntireTroveDebtByWithdrawnAmountPlusUpfrontInterest() public {
+    function testWithdrawBoldIncreasesEntireTroveDebtByWithdrawnAmount() public {
         priceFeed.setPrice(2000e18);
         uint256 troveDebtRequest = 2000e18;
         uint256 interestRate = 25e16;
         uint256 boldWithdrawal = 500e18;
-        uint256 upfrontInterest = calcUpfrontInterest(boldWithdrawal, interestRate);
 
         uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, interestRate);
 
@@ -372,7 +337,7 @@ contract InterestRateBasic is DevTestSetup {
         withdrawBold100pct(A, ATroveId, boldWithdrawal);
 
         uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
-        assertEq(entireTroveDebt_2, entireTroveDebt_1 + boldWithdrawal + upfrontInterest);
+        assertEq(entireTroveDebt_2, entireTroveDebt_1 + boldWithdrawal);
     }
 
     function testWithdrawBoldIncreasesRecordedTroveDebtByAccruedInterestPlusWithdrawnAmount() public {
@@ -454,7 +419,7 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(entireTroveDebt_2, entireTroveDebt_1 - boldRepayment);
     }
 
-    function testRepayBoldChangesRecordedTroveDebtPlusUpfrontInterestByAccruedInterestMinusRepaidAmount() public {
+    function testRepayBoldChangesRecordedTroveDebtByAccruedInterestMinusRepaidAmount() public {
         priceFeed.setPrice(2000e18);
         uint256 troveDebtRequest = 3000e18;
         uint256 interestRate = 25e16;
@@ -469,10 +434,7 @@ contract InterestRateBasic is DevTestSetup {
         repayBold(A, ATroveId, boldRepayment);
         ITroveManager.LatestTroveData memory postRepay = troveManager.getLatestTroveData(ATroveId);
 
-        assertEq(
-            postRepay.recordedDebt + postRepay.unusedUpfrontInterest,
-            preRepay.recordedDebt + preRepay.unusedUpfrontInterest + preRepay.accruedInterest - boldRepayment
-        );
+        assertEq(postRepay.recordedDebt, preRepay.recordedDebt + preRepay.accruedInterest - boldRepayment);
     }
 
     // --- addColl ---
@@ -797,13 +759,13 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(entireTroveDebt_2, entireTroveDebt_1 - redeemAmount);
     }
 
-    function testRedemptionChangesRecordedTroveDebtPlusUpfrontInterestByAccruedInterestMinusRedeemedAmount() public {
+    function testRedemptionChangesRecordedTroveDebtByAccruedInterestMinusRedeemedAmount() public {
         (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
 
-        uint256 debt_A = troveManager.getRedeemableDebt(troveIDs.A);
+        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         // E redeems, hitting A partially
         uint256 redeemAmount = debt_A / 2;
 
@@ -811,9 +773,6 @@ contract InterestRateBasic is DevTestSetup {
         redeem(E, redeemAmount);
         ITroveManager.LatestTroveData memory postRedeem = troveManager.getLatestTroveData(troveIDs.A);
 
-        assertEq(
-            postRedeem.recordedDebt + postRedeem.unusedUpfrontInterest,
-            preRedeem.recordedDebt + preRedeem.unusedUpfrontInterest + preRedeem.accruedInterest - redeemAmount
-        );
+        assertEq(postRedeem.recordedDebt, preRedeem.recordedDebt + preRedeem.accruedInterest - redeemAmount);
     }
 }

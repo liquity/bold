@@ -1105,7 +1105,7 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(aliceDebtBefore.gt(toBN(0)));
 
       // check before
-      const activePool_Bold_Before = await activePool.getBoldDebtLowerBound();
+      const activePool_Bold_Before = await activePool.getBoldDebt();
       assert.isTrue(activePool_Bold_Before.eq(aliceDebtBefore));
 
       await borrowerOperations.withdrawBold(
@@ -1115,7 +1115,7 @@ contract("BorrowerOperations", async (accounts) => {
       );
 
       // check after
-      const activePool_Bold_After = await activePool.getBoldDebtLowerBound();
+      const activePool_Bold_After = await activePool.getBoldDebt();
       th.assertIsApproximatelyEqual(
         activePool_Bold_After,
         activePool_Bold_Before.add(toBN(dec(10000, 18))),
@@ -1357,7 +1357,7 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(aliceDebtBefore.gt(toBN("0")));
 
       // Check before
-      const activePool_Bold_Before = await activePool.getBoldDebtLowerBound();
+      const activePool_Bold_Before = await activePool.getBoldDebt();
       assert.isTrue(activePool_Bold_Before.gt(toBN("0")));
 
       await borrowerOperations.repayBold(
@@ -1367,7 +1367,7 @@ contract("BorrowerOperations", async (accounts) => {
       ); // Repays 1/10 her debt
 
       // check after
-      const activePool_Bold_After = await activePool.getBoldDebtLowerBound();
+      const activePool_Bold_After = await activePool.getBoldDebt();
       th.assertIsApproximatelyEqual(
         activePool_Bold_After,
         activePool_Bold_Before.sub(aliceDebtBefore.div(toBN(10))),
@@ -2065,7 +2065,7 @@ contract("BorrowerOperations", async (accounts) => {
       });
 
       const aliceDebtBefore = await getTroveEntireDebt(aliceTroveId);
-      const activePoolDebtBefore = await activePool.getBoldDebtLowerBound();
+      const activePoolDebtBefore = await activePool.getBoldDebt();
 
       assert.isTrue(aliceDebtBefore.gt(toBN("0")));
       assert.isTrue(aliceDebtBefore.eq(activePoolDebtBefore));
@@ -2083,7 +2083,7 @@ contract("BorrowerOperations", async (accounts) => {
       );
 
       const aliceDebtAfter = await getTroveEntireDebt(aliceTroveId);
-      const activePoolDebtAfter = await activePool.getBoldDebtLowerBound();
+      const activePoolDebtAfter = await activePool.getBoldDebt();
 
       assert.isTrue(aliceDebtAfter.eq(aliceDebtBefore));
       assert.isTrue(activePoolDebtAfter.eq(activePoolDebtBefore));
@@ -2508,7 +2508,7 @@ contract("BorrowerOperations", async (accounts) => {
         extraParams: { from: alice },
       });
 
-      const activePool_BoldDebt_Before = await activePool.getBoldDebtLowerBound();
+      const activePool_BoldDebt_Before = await activePool.getBoldDebt();
       assert.isTrue(activePool_BoldDebt_Before.gt(toBN("0")));
 
       // Alice adjusts trove - coll increase and debt decrease
@@ -2523,7 +2523,7 @@ contract("BorrowerOperations", async (accounts) => {
         { from: alice },
       );
 
-      const activePool_BoldDebt_After = await activePool.getBoldDebtLowerBound();
+      const activePool_BoldDebt_After = await activePool.getBoldDebt();
       assert.isTrue(
         activePool_BoldDebt_After.eq(
           activePool_BoldDebt_Before.sub(toBN(dec(30, 18))),
@@ -2543,7 +2543,7 @@ contract("BorrowerOperations", async (accounts) => {
         extraParams: { from: alice },
       });
 
-      const activePool_BoldDebt_Before = await activePool.getBoldDebtLowerBound();
+      const activePool_BoldDebt_Before = await activePool.getBoldDebt();
       assert.isTrue(activePool_BoldDebt_Before.gt(toBN("0")));
 
       // Alice adjusts trove - coll increase and debt increase
@@ -2558,7 +2558,7 @@ contract("BorrowerOperations", async (accounts) => {
         { from: alice },
       );
 
-      const activePool_BoldDebt_After = await activePool.getBoldDebtLowerBound();
+      const activePool_BoldDebt_After = await activePool.getBoldDebt();
 
       th.assertIsApproximatelyEqual(
         activePool_BoldDebt_After,
@@ -3064,7 +3064,7 @@ contract("BorrowerOperations", async (accounts) => {
       assert.isTrue(aliceDebt.gt("0"));
 
       // Check before
-      const activePool_Debt_before = await activePool.getBoldDebtLowerBound();
+      const activePool_Debt_before = await activePool.getBoldDebt();
       assert.isTrue(activePool_Debt_before.eq(aliceDebt.add(dennisDebt)));
       assert.isTrue(activePool_Debt_before.gt(toBN("0")));
 
@@ -3077,7 +3077,7 @@ contract("BorrowerOperations", async (accounts) => {
       await borrowerOperations.closeTrove(aliceTroveId, { from: alice });
 
       // Check after
-      const activePool_Debt_After = (await activePool.getBoldDebtLowerBound()).toString();
+      const activePool_Debt_After = (await activePool.getBoldDebt()).toString();
       th.assertIsApproximatelyEqual(activePool_Debt_After, dennisDebt);
     });
 
@@ -3967,7 +3967,7 @@ contract("BorrowerOperations", async (accounts) => {
     });
 
     it("openTrove(): increases Bold debt in ActivePool by the debt of the trove", async () => {
-      const activePool_BoldDebt_Before = await activePool.getBoldDebtLowerBound();
+      const activePool_BoldDebt_Before = await activePool.getBoldDebt();
       assert.equal(activePool_BoldDebt_Before, 0);
 
       const { troveId: aliceTroveId } = await openTrove({
@@ -3978,7 +3978,7 @@ contract("BorrowerOperations", async (accounts) => {
       const aliceDebt = await getTroveEntireDebt(aliceTroveId);
       assert.isTrue(aliceDebt.gt(toBN("0")));
 
-      const activePool_BoldDebt_After = await activePool.getBoldDebtLowerBound();
+      const activePool_BoldDebt_After = await activePool.getBoldDebt();
       assert.isTrue(activePool_BoldDebt_After.eq(aliceDebt));
     });
 

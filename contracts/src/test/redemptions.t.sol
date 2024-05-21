@@ -6,50 +6,50 @@ contract Redemptions is DevTestSetup {
     function testRedemptionIsInOrderOfInterestRate() public {
         (uint256 coll,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
-        uint256 debt_A = troveManager.getRedeemableDebt(troveIDs.A);
-        uint256 debt_B = troveManager.getRedeemableDebt(troveIDs.B);
-        uint256 debt_C = troveManager.getRedeemableDebt(troveIDs.C);
-        uint256 debt_D = troveManager.getRedeemableDebt(troveIDs.D);
+        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+        uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
+        uint256 debt_C = troveManager.getTroveEntireDebt(troveIDs.C);
+        uint256 debt_D = troveManager.getTroveEntireDebt(troveIDs.D);
 
         // E redeems enough to fully redeem A and partially from B
-        uint256 redeemAmount_1 = debt_A + debt_B / 2;
+        uint256 redeemAmount_1 = (debt_A - BOLD_GAS_COMP) + (debt_B - BOLD_GAS_COMP) / 2;
         redeem(E, redeemAmount_1);
 
         // Check A's Trove debt equals gas comp
-        assertEq(troveManager.getTroveDebt(troveIDs.A), BOLD_GAS_COMP);
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), BOLD_GAS_COMP);
         // Check B coll and debt reduced
-        assertLt(troveManager.getRedeemableDebt(troveIDs.B), debt_B);
-        assertLt(troveManager.getTroveColl(troveIDs.B), coll);
+        assertLt(troveManager.getTroveEntireDebt(troveIDs.B), debt_B);
+        assertLt(troveManager.getTroveEntireColl(troveIDs.B), coll);
         // Check C coll and debt unchanged
-        assertEq(troveManager.getRedeemableDebt(troveIDs.C), debt_C);
-        assertEq(troveManager.getTroveColl(troveIDs.C), coll);
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.C), debt_C);
+        assertEq(troveManager.getTroveEntireColl(troveIDs.C), coll);
         // Check D coll and debt unchanged
-        assertEq(troveManager.getRedeemableDebt(troveIDs.D), debt_D);
-        assertEq(troveManager.getTroveColl(troveIDs.D), coll);
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.D), debt_D);
+        assertEq(troveManager.getTroveEntireColl(troveIDs.D), coll);
 
         // E redeems enough to fully redeem B and partially redeem C
-        uint256 redeemAmount_2 = debt_B / 2 + debt_C / 2;
+        uint256 redeemAmount_2 = (debt_B - BOLD_GAS_COMP) / 2 + (debt_C - BOLD_GAS_COMP) / 2;
         redeem(E, redeemAmount_2);
 
         // Check B's Trove debt equals gas comp
-        assertEq(troveManager.getTroveDebt(troveIDs.B), BOLD_GAS_COMP);
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), BOLD_GAS_COMP);
         // Check C coll and debt reduced
-        assertLt(troveManager.getRedeemableDebt(troveIDs.C), debt_C);
-        assertLt(troveManager.getTroveColl(troveIDs.C), coll);
+        assertLt(troveManager.getTroveEntireDebt(troveIDs.C), debt_C);
+        assertLt(troveManager.getTroveEntireColl(troveIDs.C), coll);
         // Check D coll and debt unchanged
-        assertEq(troveManager.getRedeemableDebt(troveIDs.D), debt_D);
-        assertEq(troveManager.getTroveColl(troveIDs.D), coll);
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.D), debt_D);
+        assertEq(troveManager.getTroveEntireColl(troveIDs.D), coll);
     }
 
     // - Troves can be redeemed down to gas comp
     function testFullRedemptionDoesntCloseTroves() public {
         (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
-        uint256 debt_A = troveManager.getRedeemableDebt(troveIDs.A);
-        uint256 debt_B = troveManager.getRedeemableDebt(troveIDs.B);
+        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+        uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
 
         // E redeems enough to fully redeem A and B
-        uint256 redeemAmount_1 = debt_A + debt_B;
+        uint256 redeemAmount_1 = (debt_A - BOLD_GAS_COMP) + (debt_B - BOLD_GAS_COMP);
         redeem(E, redeemAmount_1);
 
         // Check A and B still open
@@ -60,32 +60,32 @@ contract Redemptions is DevTestSetup {
     function testFullRedemptionLeavesTrovesWithDebtEqualToGasComp() public {
         (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
-        uint256 debt_A = troveManager.getRedeemableDebt(troveIDs.A);
-        uint256 debt_B = troveManager.getRedeemableDebt(troveIDs.B);
+        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+        uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
 
         // E redeems enough to fully redeem A and B
-        uint256 redeemAmount_1 = debt_A + debt_B;
+        uint256 redeemAmount_1 = (debt_A - BOLD_GAS_COMP) + (debt_B - BOLD_GAS_COMP);
         redeem(E, redeemAmount_1);
 
         // Check A and B's Trove debt equals gas comp
-        assertEq(troveManager.getTroveDebt(troveIDs.A), BOLD_GAS_COMP);
-        assertEq(troveManager.getTroveDebt(troveIDs.B), BOLD_GAS_COMP);
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), BOLD_GAS_COMP);
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), BOLD_GAS_COMP);
     }
 
     function testFullRedemptionSkipsTrovesAtGasCompDebt() public {
         (uint256 coll,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
-        uint256 debt_A = troveManager.getRedeemableDebt(troveIDs.A);
-        uint256 debt_B = troveManager.getRedeemableDebt(troveIDs.B);
-        uint256 debt_C = troveManager.getRedeemableDebt(troveIDs.C);
+        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+        uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
+        uint256 debt_C = troveManager.getTroveEntireDebt(troveIDs.C);
 
         // E redeems enough to fully redeem A and B
-        uint256 redeemAmount_1 = debt_A + debt_B;
+        uint256 redeemAmount_1 = (debt_A - BOLD_GAS_COMP) + (debt_B - BOLD_GAS_COMP);
         redeem(E, redeemAmount_1);
 
         // Check A and B's Trove debt equals gas comp
-        assertEq(troveManager.getTroveDebt(troveIDs.A), BOLD_GAS_COMP);
-        assertEq(troveManager.getTroveDebt(troveIDs.B), BOLD_GAS_COMP);
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), BOLD_GAS_COMP);
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), BOLD_GAS_COMP);
 
         // E redeems again, enough to partially redeem C
         uint256 redeemAmount_2 = debt_C / 2;
@@ -94,12 +94,12 @@ contract Redemptions is DevTestSetup {
         // Check A and B still open with debt == gas comp
         assertEq(troveManager.getTroveStatus(troveIDs.A), 5); // Status 'unredeemable'
         assertEq(troveManager.getTroveStatus(troveIDs.B), 5); // Status 'unredeemable'
-        assertEq(troveManager.getTroveDebt(troveIDs.A), BOLD_GAS_COMP);
-        assertEq(troveManager.getTroveDebt(troveIDs.B), BOLD_GAS_COMP);
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), BOLD_GAS_COMP);
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), BOLD_GAS_COMP);
 
         // Check C's debt and coll reduced
-        assertLt(troveManager.getRedeemableDebt(troveIDs.C), debt_C);
-        assertLt(troveManager.getTroveColl(troveIDs.C), coll);
+        assertLt(troveManager.getTroveEntireDebt(troveIDs.C), debt_C);
+        assertLt(troveManager.getTroveEntireColl(troveIDs.C), coll);
     }
 
     // - Accrued Trove interest contributes to redee into debt of a redeemed trove
@@ -108,8 +108,7 @@ contract Redemptions is DevTestSetup {
         (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
-        // For simplicity's sake, we wait long enough so there's no more unused upfront interest left
-        vm.warp(block.timestamp + UPFRONT_INTEREST_PERIOD);
+        vm.warp(block.timestamp + 1 days);
 
         ITroveManager.LatestTroveData memory trove_A = troveManager.getLatestTroveData(troveIDs.A);
         assertGt(trove_A.accruedInterest, 0);
@@ -242,8 +241,8 @@ contract Redemptions is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
 
-        uint256 debt_A = troveManager.getNewRecordedDebt(troveIDs.A);
-        uint256 debt_B = troveManager.getNewRecordedDebt(troveIDs.B);
+        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+        uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
 
         // Time passes
         vm.warp(block.timestamp + 365 days);
@@ -252,8 +251,8 @@ contract Redemptions is DevTestSetup {
         uint256 expectedDebt_A = debt_A * (1e18 + troveInterestRates.A) / 1e18; // 10% increase
         uint256 expectedDebt_B = debt_B * (1e18 + troveInterestRates.B) / 1e18; // 20% increase
 
-        assertEq(troveManager.getNewRecordedDebt(troveIDs.A), expectedDebt_A); // 10% increase
-        assertEq(troveManager.getNewRecordedDebt(troveIDs.B), expectedDebt_B); // 20% increase
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), expectedDebt_A); // 10% increase
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), expectedDebt_B); // 20% increase
     }
 
     function testZombieTrovesCanAccrueInterestThatBringThemAboveMIN_DEBT() public {
@@ -267,14 +266,14 @@ contract Redemptions is DevTestSetup {
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
-        assertLt(troveManager.getNewRecordedDebt(troveIDs.B), MIN_DEBT);
-        assertLt(troveManager.getNewRecordedDebt(troveIDs.B), MIN_DEBT);
+        assertLt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT);
+        assertLt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT);
 
         // 100 years passes
         vm.warp(block.timestamp + 36500 days);
 
-        assertGt(troveManager.getNewRecordedDebt(troveIDs.A), MIN_DEBT);
-        assertGt(troveManager.getNewRecordedDebt(troveIDs.B), MIN_DEBT);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT);
     }
 
     function testZombieTrovesCanReceiveRedistGainsThatBringThemAboveMIN_DEBT() public {
@@ -300,8 +299,8 @@ contract Redemptions is DevTestSetup {
         // assertFalse(troveManager.checkBelowCriticalThreshold(price));
         assertLt(troveManager.getCurrentICR(troveID_E, price), troveManager.MCR());
 
-        assertLt(troveManager.getNewRecordedDebt(troveIDs.A), MIN_DEBT);
-        assertLt(troveManager.getNewRecordedDebt(troveIDs.B), MIN_DEBT);
+        assertLt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
+        assertLt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT);
 
         // A liquidates E
         liquidate(A, troveID_E);
@@ -310,8 +309,8 @@ contract Redemptions is DevTestSetup {
         assertTrue(troveManager.hasRedistributionGains(troveIDs.A));
         assertTrue(troveManager.hasRedistributionGains(troveIDs.B));
 
-        assertGt(troveManager.getNewRecordedDebt(troveIDs.A), MIN_DEBT);
-        assertGt(troveManager.getNewRecordedDebt(troveIDs.B), MIN_DEBT);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT);
     }
 
     // --- Borrower ops on zombie troves ---
@@ -343,8 +342,8 @@ contract Redemptions is DevTestSetup {
         vm.warp(block.timestamp + 1 days);
 
         // Calculate how far below min debt each zombie Trove is
-        uint256 debtDelta_A = MIN_DEBT - troveManager.getNewRecordedDebt(troveIDs.A);
-        uint256 debtDelta_B = MIN_DEBT - troveManager.getNewRecordedDebt(troveIDs.B);
+        uint256 debtDelta_A = MIN_DEBT - troveManager.getTroveEntireDebt(troveIDs.A);
+        uint256 debtDelta_B = MIN_DEBT - troveManager.getTroveEntireDebt(troveIDs.B);
 
         assertGt(debtDelta_A, 0);
         assertGt(debtDelta_B, 0);
@@ -365,8 +364,8 @@ contract Redemptions is DevTestSetup {
         vm.stopPrank();
 
         // Check they are above the min debt
-        assertGt(troveManager.getNewRecordedDebt(troveIDs.A), MIN_DEBT);
-        assertGt(troveManager.getNewRecordedDebt(troveIDs.B), MIN_DEBT);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT);
     }
 
     function testZombieTroveDrawingFreshDebtToAboveMIN_NET_DEBTChangesStatusToActive() public {
@@ -377,8 +376,8 @@ contract Redemptions is DevTestSetup {
         vm.warp(block.timestamp + 1 days);
 
         // Calculate how far below min debt each zombie Trove is
-        uint256 debtDelta_A = MIN_DEBT - troveManager.getNewRecordedDebt(troveIDs.A);
-        uint256 debtDelta_B = MIN_DEBT - troveManager.getNewRecordedDebt(troveIDs.B);
+        uint256 debtDelta_A = MIN_DEBT - troveManager.getTroveEntireDebt(troveIDs.A);
+        uint256 debtDelta_B = MIN_DEBT - troveManager.getTroveEntireDebt(troveIDs.B);
 
         assertGt(debtDelta_A, 0);
         assertGt(debtDelta_B, 0);
@@ -399,8 +398,8 @@ contract Redemptions is DevTestSetup {
         vm.stopPrank();
 
         // Check they are above the min debt
-        assertGt(troveManager.getNewRecordedDebt(troveIDs.A), MIN_DEBT);
-        assertGt(troveManager.getNewRecordedDebt(troveIDs.B), MIN_DEBT);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT);
 
         // Check A and B now have active status
         assertEq(troveManager.getTroveStatus(troveIDs.A), 1);
@@ -415,8 +414,8 @@ contract Redemptions is DevTestSetup {
         vm.warp(block.timestamp + 1 days);
 
         // Calculate how far below min debt each zombie Trove is
-        uint256 debtDelta_A = MIN_DEBT - troveManager.getNewRecordedDebt(troveIDs.A);
-        uint256 debtDelta_B = MIN_DEBT - troveManager.getNewRecordedDebt(troveIDs.B);
+        uint256 debtDelta_A = MIN_DEBT - troveManager.getTroveEntireDebt(troveIDs.A);
+        uint256 debtDelta_B = MIN_DEBT - troveManager.getTroveEntireDebt(troveIDs.B);
 
         assertGt(debtDelta_A, 0);
         assertGt(debtDelta_B, 0);
@@ -441,8 +440,8 @@ contract Redemptions is DevTestSetup {
         vm.stopPrank();
 
         // Check they are above the min debt
-        assertGt(troveManager.getNewRecordedDebt(troveIDs.A), MIN_DEBT);
-        assertGt(troveManager.getNewRecordedDebt(troveIDs.B), MIN_DEBT);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT);
 
         // Check A and B are now in SortedTroves
         assertTrue(sortedTroves.contains(troveIDs.A));
@@ -460,8 +459,8 @@ contract Redemptions is DevTestSetup {
         assertGt(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
 
         // Calculate how far below min debt each zombie Trove is
-        uint256 debtDelta_A = MIN_DEBT - troveManager.getNewRecordedDebt(troveIDs.A);
-        uint256 debtDelta_B = MIN_DEBT - troveManager.getNewRecordedDebt(troveIDs.B);
+        uint256 debtDelta_A = MIN_DEBT - troveManager.getTroveEntireDebt(troveIDs.A);
+        uint256 debtDelta_B = MIN_DEBT - troveManager.getTroveEntireDebt(troveIDs.B);
 
         assertGt(debtDelta_A, 0);
         assertGt(debtDelta_B, 0);
@@ -482,8 +481,8 @@ contract Redemptions is DevTestSetup {
         vm.stopPrank();
 
         // Check they are above the min debt
-        assertGt(troveManager.getNewRecordedDebt(troveIDs.A), MIN_DEBT);
-        assertGt(troveManager.getNewRecordedDebt(troveIDs.B), MIN_DEBT);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT);
 
         // Check accrued interest reduced to 0
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
@@ -496,8 +495,8 @@ contract Redemptions is DevTestSetup {
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
         // Calculate how far below min debt each zombie Trove is
-        uint256 debtDelta_A = MIN_DEBT - troveManager.getNewRecordedDebt(troveIDs.A);
-        uint256 debtDelta_B = MIN_DEBT - troveManager.getNewRecordedDebt(troveIDs.B);
+        uint256 debtDelta_A = MIN_DEBT - troveManager.getTroveEntireDebt(troveIDs.A);
+        uint256 debtDelta_B = MIN_DEBT - troveManager.getTroveEntireDebt(troveIDs.B);
 
         assertGt(debtDelta_A, 0);
         assertGt(debtDelta_B, 0);
@@ -656,7 +655,7 @@ contract Redemptions is DevTestSetup {
         priceFeed.setPrice(price);
 
         // assertFalse(troveManager.checkBelowCriticalThreshold(price));
-        assertLt(troveManager.getCurrentICR(troveIDs.B, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(troveIDs.B, price), MCR);
 
         assertEq(troveManager.getTroveStatus(troveIDs.B), 5);
 

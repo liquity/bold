@@ -230,16 +230,16 @@ contract DevTestSetup is BaseTest {
 
     function _redeemAndCreateZombieTrovesAAndB(ABCDEF memory _troveIDs) internal {
         // Redeem enough to leave A with 0 net debt and B with net debt < MIN_NET_DEBT
-        uint256 redeemFromA = troveManager.getRedeemableDebt(_troveIDs.A);
-        uint256 redeemFromB = troveManager.getRedeemableDebt(_troveIDs.B) - MIN_NET_DEBT / 2;
+        uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - BOLD_GAS_COMP;
+        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP - MIN_NET_DEBT / 2;
         uint256 redeemAmount = redeemFromA + redeemFromB;
 
-        // Maximally redeem A and leave B with net debt < MIN_NET_DEBT
+        // Fully redeem A and leave B with debt < MIN_NET_DEBT
         redeem(E, redeemAmount);
 
         // Check A has net_debt == 0, and B has net_debt < min_net_debt
-        assertEq(troveManager.getTroveDebt(_troveIDs.A) - BOLD_GAS_COMP, 0);
-        assertLt(troveManager.getTroveDebt(_troveIDs.B) - BOLD_GAS_COMP, MIN_NET_DEBT);
+        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), BOLD_GAS_COMP);
+        assertLt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP, MIN_NET_DEBT);
 
         // Check A and B tagged as Zombie troves
         assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'
@@ -248,16 +248,16 @@ contract DevTestSetup is BaseTest {
 
     function _redeemAndCreateZombieTroveAAndHitB(ABCDEF memory _troveIDs) internal {
         // Redeem enough to leave A with 0 debt but B with net debt > MIN_NET_DEBT
-        uint256 redeemFromA = troveManager.getRedeemableDebt(_troveIDs.A);
-        uint256 redeemFromB = troveManager.getRedeemableDebt(_troveIDs.B) - MIN_NET_DEBT * 2;
+        uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - BOLD_GAS_COMP;
+        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP - MIN_NET_DEBT * 2;
         uint256 redeemAmount = redeemFromA + redeemFromB;
 
-        // Maximally redeem A and leave B with net debt > MIN_NET_DEBT
+        // Fully redeem A and leave B with debt > MIN_NET_DEBT
         redeem(E, redeemAmount);
 
         // Check A has net_debt == gas_comp, and B has net_debt > min_net_debt;
-        assertEq(troveManager.getTroveDebt(_troveIDs.A) - BOLD_GAS_COMP, 0);
-        assertGt(troveManager.getTroveDebt(_troveIDs.B) - BOLD_GAS_COMP, MIN_NET_DEBT);
+        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), BOLD_GAS_COMP);
+        assertGt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP, MIN_NET_DEBT);
 
         // // Check A is zombie Trove but B is not
         assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'

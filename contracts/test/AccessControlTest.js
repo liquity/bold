@@ -119,7 +119,6 @@ contract(
             0,
             0,
             0,
-            0,
             { from: alice },
           );
         } catch (err) {
@@ -137,24 +136,6 @@ contract(
             0,
             0,
             0,
-            0,
-            { from: alice },
-          );
-        } catch (err) {
-          assert.include(err.message, "revert");
-          // assert.include(err.message, "Caller is not the BorrowerOperations contract")
-        }
-      });
-
-      // setTrovePropertiesOnInterestApplication
-      it("setTrovePropertiesOnInterestApplication(): reverts when called by an account that is not BorrowerOperations", async () => {
-        // Attempt call from alice
-        try {
-          const txAlice = await troveManager.setTrovePropertiesOnInterestApplication(
-            th.addressToTroveId(bob),
-            0,
-            0,
-            0,
             { from: alice },
           );
         } catch (err) {
@@ -168,14 +149,9 @@ contract(
         // Attempt call from alice
         try {
           const txAlice = await troveManager.setTrovePropertiesOnAdjustment(
-            bob,
             th.addressToTroveId(bob),
             0,
             0,
-            0,
-            0,
-            false,
-            false,
             { from: alice },
           );
         } catch (err) {

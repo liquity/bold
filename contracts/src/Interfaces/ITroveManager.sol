@@ -20,8 +20,6 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 recordedDebt;
         uint256 annualInterestRate;
         uint256 weightedRecordedDebt;
-        uint256 recordedUpfrontInterest;
-        uint256 unusedUpfrontInterest;
     }
 
     function MCR() external view returns (uint256);
@@ -89,12 +87,6 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function getTroveEntireColl(uint256 _troveId) external view returns (uint256);
 
-    function getNewRecordedDebt(uint256 _troveId) external view returns (uint256);
-
-    function getRedeemableDebt(uint256 _troveId) external view returns (uint256);
-
-    function getUnusedUpfrontInterest(uint256 _troveId) external view returns (uint256);
-
     function applyRedistributionGains(uint256 _troveId, uint256 _redistBoldDebtGain, uint256 _redistETHGain) external;
 
     function closeTrove(uint256 _troveId) external;
@@ -122,7 +114,6 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _troveId,
         uint256 _coll,
         uint256 _debt,
-        uint256 _upfrontInterest,
         uint256 _annualInterestRate
     ) external returns (uint256 arrayIndex);
 
@@ -132,12 +123,10 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _troveId,
         uint256 _coll,
         uint256 _debt,
-        uint256 _upfrontInterest,
         uint256 _annualInterestRate
     ) external;
 
-    function setTrovePropertiesOnAdjustment(uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _upfrontInterest)
-        external;
+    function setTrovePropertiesOnAdjustment(uint256 _troveId, uint256 _coll, uint256 _debt) external;
 
     function troveIsStale(uint256 _troveId) external view returns (bool);
 
