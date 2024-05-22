@@ -1,4 +1,5 @@
 import type { ComponentProps, ReactElement } from "react";
+import type { Token } from "../types";
 
 import { Children, createContext, useContext } from "react";
 import { match } from "ts-pattern";
@@ -10,7 +11,7 @@ export function TokenIcon({
   symbol,
 }: {
   size?: "medium" | "large" | "small" | number;
-  symbol: keyof typeof TOKENS_BY_SYMBOL;
+  symbol: Token["symbol"];
 }) {
   const sizeFromGroup = useContext(TokenIconGroupSize);
 
