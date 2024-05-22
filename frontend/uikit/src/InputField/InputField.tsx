@@ -5,6 +5,7 @@ import { css, cx } from "../../styled-system/css";
 
 export function InputField({
   action,
+  actionLabel,
   label,
   onBlur,
   onChange,
@@ -15,6 +16,7 @@ export function InputField({
   value,
 }: {
   action?: ReactNode;
+  actionLabel?: ReactNode;
   label?: string;
   onBlur?: () => void;
   onChange?: (value: string) => void;
@@ -32,27 +34,27 @@ export function InputField({
         display: "flex",
         flexDirection: "column",
         width: "100%",
-        paddingBottom: 8,
+        paddingBottom: 16,
         background: "fieldSurface",
         border: "1px solid token(colors.fieldBorder)",
         borderRadius: 8,
       })}
     >
-      {label && (
-        <label
-          htmlFor={id}
-          className={css({
-            position: "absolute",
-            inset: "0 auto auto 0",
-            padding: "8px 16px 0",
-            fontSize: 16,
-            fontWeight: 500,
-            color: "contentAlt",
-          })}
-        >
-          {label}
-        </label>
-      )}
+      <div
+        className={css({
+          position: "absolute",
+          inset: "0 0 auto 0",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "12px 16px 0",
+          fontSize: 16,
+          color: "contentAlt",
+        })}
+      >
+        {label ? <label htmlFor={id}>{label}</label> : <div />}
+        {actionLabel && <div>{actionLabel}</div>}
+      </div>
       <input
         id={id}
         type="text"
@@ -67,7 +69,7 @@ export function InputField({
           "peer",
           css({
             display: "block",
-            height: 120 - 2, // account for the 1px border
+            height: 136 - 2, // account for the 1px border
             padding: "0 16px",
             fontSize: 28,
             fontWeight: 500,
@@ -101,7 +103,7 @@ export function InputField({
         <div
           className={css({
             position: "absolute",
-            inset: "40px 16px auto auto",
+            inset: "48px 16px auto auto",
           })}
         >
           {action}
@@ -110,7 +112,7 @@ export function InputField({
       <div
         className={css({
           position: "absolute",
-          inset: "auto 16px 8px",
+          inset: "auto 16px 16px",
           display: "flex",
           justifyContent: "space-between",
           fontSize: 16,
