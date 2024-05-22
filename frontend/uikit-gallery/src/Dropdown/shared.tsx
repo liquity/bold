@@ -70,7 +70,7 @@ export function DropdownFixture({
           }
           : undefined}
         items={[
-          itemRow("ETH", "ETH", "10.00"),
+          itemRow("WETH", "ETH", "10.00"),
           itemRow("RETH", "rETH", "30.00"),
           itemRow("WSTETH", "wstETH", "40.00"),
         ]}
