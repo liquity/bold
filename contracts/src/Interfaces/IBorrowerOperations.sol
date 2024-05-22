@@ -29,7 +29,8 @@ interface IBorrowerOperations is ILiquityBase {
         uint256 _boldAmount,
         uint256 _upperHint,
         uint256 _lowerHint,
-        uint256 _annualInterestRate
+        uint256 _annualInterestRate,
+        uint256 _maxUpfrontFee
     ) external returns (uint256);
 
     function addColl(uint256 _troveId, uint256 _ETHAmount) external;

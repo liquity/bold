@@ -429,10 +429,10 @@ contract InterestRateBasic is DevTestSetup {
 
         vm.warp(block.timestamp + 1 days);
 
-        ITroveManager.LatestTroveData memory preRepay = troveManager.getLatestTroveData(ATroveId);
+        LatestTroveData memory preRepay = troveManager.getLatestTroveData(ATroveId);
         // A repays bold
         repayBold(A, ATroveId, boldRepayment);
-        ITroveManager.LatestTroveData memory postRepay = troveManager.getLatestTroveData(ATroveId);
+        LatestTroveData memory postRepay = troveManager.getLatestTroveData(ATroveId);
 
         assertEq(postRepay.recordedDebt, preRepay.recordedDebt + preRepay.accruedInterest - boldRepayment);
     }
@@ -769,10 +769,25 @@ contract InterestRateBasic is DevTestSetup {
         // E redeems, hitting A partially
         uint256 redeemAmount = debt_A / 2;
 
-        ITroveManager.LatestTroveData memory preRedeem = troveManager.getLatestTroveData(troveIDs.A);
+        LatestTroveData memory preRedeem = troveManager.getLatestTroveData(troveIDs.A);
         redeem(E, redeemAmount);
-        ITroveManager.LatestTroveData memory postRedeem = troveManager.getLatestTroveData(troveIDs.A);
+        LatestTroveData memory postRedeem = troveManager.getLatestTroveData(troveIDs.A);
 
         assertEq(postRedeem.recordedDebt, preRedeem.recordedDebt + preRedeem.accruedInterest - redeemAmount);
+    }
+
+    // --- upfront fee ---
+
+    function testOpenTroveMintsUpfrontFeeToInterestRouter() public {
+        priceFeed.setPrice(2000e18);
+
+        uint256 borrow = 2_000 ether;
+        uint256 interestRate = 0.1 ether;
+        openTroveNoHints100pct(A, 2 ether, borrow, interestRate);
+
+        uint256 debtWithoutFee = borrow + BOLD_GAS_COMP;
+        uint256 fee = calcUpfrontFee(debtWithoutFee, interestRate);
+
+        assertEqDecimal(boldToken.balanceOf(address(mockInterestRouter)), fee, 18, "Wrong I-router balance");
     }
 }

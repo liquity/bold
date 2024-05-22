@@ -3,6 +3,7 @@
 pragma solidity 0.8.18;
 
 import "./IInterestRouter.sol";
+import "../Types/TroveChange.sol";
 
 interface IActivePool {
     function stabilityPoolAddress() external view returns (address);
@@ -25,15 +26,13 @@ interface IActivePool {
     function aggRecordedDebt() external view returns (uint256);
     function aggWeightedDebtSum() external view returns (uint256);
     function calcPendingAggInterest() external view returns (uint256);
+    function getNewApproxAvgInterestRateFromTroveChange(TroveChange calldata _troveChange)
+        external
+        view
+        returns (uint256);
 
     function mintAggInterest() external;
-    function mintAggInterestAndAccountForTroveChange(
-        uint256 _appliedRedistBoldDebtGain,
-        uint256 _troveDebtIncrease,
-        uint256 _troveDebtDecrease,
-        uint256 _newWeightedRecordedTroveDebt,
-        uint256 _oldWeightedRecordedTroveDebt
-    ) external;
+    function mintAggInterestAndAccountForTroveChange(TroveChange calldata _troveChange) external;
 
     function sendETH(address _account, uint256 _amount) external;
     function sendETHToDefaultPool(uint256 _amount) external;

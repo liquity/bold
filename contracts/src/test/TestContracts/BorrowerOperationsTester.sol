@@ -16,13 +16,21 @@ contract BorrowerOperationsTester is BorrowerOperations {
         bool isDebtIncrease,
         uint256 _price
     ) external view returns (uint256) {
-        return _getNewTCRFromTroveChange(
-            isCollIncrease ? _collChange : 0, // _collIncrease
-            isCollIncrease ? 0 : _collChange, // _collDecrease
-            isDebtIncrease ? _debtChange : 0, // _debtIncrease
-            isDebtIncrease ? 0 : _debtChange, // _debtDecrease
-            _price
-        );
+        TroveChange memory troveChange;
+
+        if (isCollIncrease) {
+            troveChange.collIncrease = _collChange;
+        } else {
+            troveChange.collDecrease = _collChange;
+        }
+
+        if (isDebtIncrease) {
+            troveChange.debtIncrease = _debtChange;
+        } else {
+            troveChange.debtDecrease = _debtChange;
+        }
+
+        return _getNewTCRFromTroveChange(troveChange, _price);
     }
 
     function getUSDValue(uint256 _coll, uint256 _price) external pure returns (uint256) {

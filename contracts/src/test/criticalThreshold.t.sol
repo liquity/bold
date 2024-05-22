@@ -31,7 +31,7 @@ contract CriticalThresholdTest is DevTestSetup {
         setUpBelowCT();
 
         vm.expectRevert("BorrowerOps: Operation not permitted below CT");
-        openTroveNoHints100pct(B, 100 ether, 10000e18, 1e17); // CR: ~1500%
+        this.openTroveNoHints100pct(B, 100 ether, 10000e18, 1e17); // CR: ~1500%
     }
 
     function testNoIncreaseDebtAloneBelowCT() public {

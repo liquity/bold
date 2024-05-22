@@ -110,7 +110,7 @@ contract Redemptions is DevTestSetup {
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
 
-        ITroveManager.LatestTroveData memory trove_A = troveManager.getLatestTroveData(troveIDs.A);
+        LatestTroveData memory trove_A = troveManager.getLatestTroveData(troveIDs.A);
         assertGt(trove_A.accruedInterest, 0);
         assertEq(trove_A.redistBoldDebtGain, 0);
 

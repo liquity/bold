@@ -863,6 +863,7 @@ class TestHelper {
       upperHint,
       lowerHint,
       extraParams.annualInterestRate,
+      this.toBN("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"), // _maxUpfrontFee
       {
         from: extraParams.from,
       },
@@ -900,6 +901,7 @@ class TestHelper {
       upperHint,
       lowerHint,
       annualInterestRate,
+      this.toBN("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
       {
         from: extraParams.from,
       },

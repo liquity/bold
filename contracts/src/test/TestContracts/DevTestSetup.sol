@@ -5,21 +5,6 @@ import "./BaseTest.sol";
 import "../../deployment.sol";
 
 contract DevTestSetup is BaseTest {
-    IERC20 WETH;
-
-    uint256 BOLD_GAS_COMP;
-    uint256 MIN_NET_DEBT;
-    uint256 MIN_DEBT;
-    uint256 UPFRONT_INTEREST_PERIOD;
-
-    function calcInterest(uint256 debt, uint256 interestRate, uint256 period) internal pure returns (uint256) {
-        return debt * interestRate * period / 365 days / 1e18;
-    }
-
-    function calcUpfrontInterest(uint256 debt, uint256 interestRate) internal view returns (uint256) {
-        return calcInterest(debt, interestRate, UPFRONT_INTEREST_PERIOD);
-    }
-
     function giveAndApproveETH(address _account, uint256 _amount) public {
         return giveAndApproveCollateral(WETH, _account, _amount, address(borrowerOperations));
     }

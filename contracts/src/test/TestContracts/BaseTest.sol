@@ -39,6 +39,11 @@ contract BaseTest is Test {
     uint256 CCR = 150e16;
     address public constant ZERO_ADDRESS = address(0);
 
+    uint256 BOLD_GAS_COMP;
+    uint256 MIN_NET_DEBT;
+    uint256 MIN_DEBT;
+    uint256 UPFRONT_INTEREST_PERIOD;
+
     // Core contracts
     IActivePool activePool;
     IBorrowerOperations borrowerOperations;
@@ -50,9 +55,9 @@ contract BaseTest is Test {
     IBoldToken boldToken;
     ICollateralRegistry collateralRegistry;
     IPriceFeedTestnet priceFeed;
-
     GasPool gasPool;
     IInterestRouter mockInterestRouter;
+    IERC20 WETH;
 
     // Structs for use in test where we need to bi-pass "stack-too-deep" errors
     struct ABCDEF {
@@ -64,6 +69,14 @@ contract BaseTest is Test {
     }
 
     // --- functions ---
+
+    function calcInterest(uint256 weightedRecordedDebt, uint256 period) internal pure returns (uint256) {
+        return weightedRecordedDebt * period / 365 days / DECIMAL_PRECISION;
+    }
+
+    function calcUpfrontFee(uint256 debt, uint256 avgInterestRate) internal view returns (uint256) {
+        return calcInterest(debt * avgInterestRate, UPFRONT_INTEREST_PERIOD);
+    }
 
     function createAccounts() public {
         address[10] memory tempAccounts;
@@ -84,9 +97,9 @@ contract BaseTest is Test {
 
     function openTroveNoHints100pct(address _account, uint256 _coll, uint256 _boldAmount, uint256 _annualInterestRate)
         public
-        returns (uint256)
+        returns (uint256 troveId)
     {
-        return openTroveNoHints100pctWithIndex(_account, 0, _coll, _boldAmount, _annualInterestRate);
+        (troveId,) = openTroveHelper(_account, 0, _coll, _boldAmount, _annualInterestRate);
     }
 
     function openTroveNoHints100pctWithIndex(
@@ -95,14 +108,39 @@ contract BaseTest is Test {
         uint256 _coll,
         uint256 _boldAmount,
         uint256 _annualInterestRate
-    ) public returns (uint256) {
-        vm.startPrank(_account);
-        uint256 troveId = borrowerOperations.openTrove(_account, _index, _coll, _boldAmount, 0, 0, _annualInterestRate);
-        vm.stopPrank();
-        return troveId;
+    ) public returns (uint256 troveId) {
+        (troveId,) = openTroveHelper(_account, _index, _coll, _boldAmount, _annualInterestRate);
     }
 
-    // (uint _maxFeePercentage, uint _collWithdrawal, uint _boldChange, bool _isDebtIncrease)
+    function openTroveHelper(
+        address _account,
+        uint256 _index,
+        uint256 _coll,
+        uint256 _boldAmount,
+        uint256 _annualInterestRate
+    ) public returns (uint256 troveId, uint256 upfrontFee) {
+        TroveChange memory troveChange;
+        troveChange.debtIncrease = _boldAmount + BOLD_GAS_COMP;
+        troveChange.newWeightedRecordedDebt = troveChange.debtIncrease * _annualInterestRate;
+        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
+        upfrontFee = calcUpfrontFee(troveChange.debtIncrease, avgInterestRate);
+
+        vm.startPrank(_account);
+
+        troveId = borrowerOperations.openTrove(
+            _account,
+            _index,
+            _coll,
+            _boldAmount,
+            0, // _upperHint
+            0, // _lowerHint
+            _annualInterestRate,
+            upfrontFee
+        );
+
+        vm.stopPrank();
+    }
+
     function adjustTrove100pct(
         address _account,
         uint256 _troveId,

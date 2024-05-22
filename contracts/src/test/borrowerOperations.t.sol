@@ -9,12 +9,8 @@ contract BorrowerOperationsTest is DevTestSetup {
         uint256 ATroveId = openTroveNoHints100pct(A, 100 ether, 100000e18, 1e17);
 
         // Artificially mint to Alice so she has enough to close her trove
-        deal(address(boldToken), A, 100200e18);
-
-        // Check she has more Bold than her trove debt
-        uint256 aliceBal = boldToken.balanceOf(A);
-        (uint256 aliceDebt,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
-        assertGe(aliceBal, aliceDebt, "Not enough balance");
+        uint256 aliceDebt = troveManager.getTroveEntireDebt(ATroveId);
+        deal(address(boldToken), A, aliceDebt);
 
         // check is not below CT
         checkBelowCriticalThreshold(false);

@@ -83,4 +83,12 @@ contract LiquityBase is ILiquityBase {
 
         return TCR < CCR;
     }
+
+    function _calcInterest(uint256 _weightedDebt, uint256 _period) internal pure returns (uint256) {
+        return _weightedDebt * _period / ONE_YEAR / DECIMAL_PRECISION;
+    }
+
+    function _calcUpfrontFee(uint256 _debt, uint256 _avgInterestRate) internal pure returns (uint256) {
+        return _calcInterest(_debt * _avgInterestRate, UPFRONT_INTEREST_PERIOD);
+    }
 }
