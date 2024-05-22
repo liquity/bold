@@ -397,7 +397,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 totalETHGain = stashedETHGain + _currentETHGain;
 
         // TODO: Gas - saves gas when stashedETHGain == 0?
-        if (stashedETHGain > 0) {stashedETH[_depositor] = 0;}
+        if (stashedETHGain > 0) stashedETH[_depositor] = 0;
 
         return totalETHGain;
     }
@@ -435,10 +435,9 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
 
         yieldGainsOwed += _boldYield;
 
-        uint yieldPerUnitStaked;
-        yieldPerUnitStaked =_computeYieldPerUnitStaked(_boldYield, totalBoldDepositsCached);
+        uint256 yieldPerUnitStaked =_computeYieldPerUnitStaked(_boldYield, totalBoldDepositsCached);
 
-        uint marginalYieldGain = yieldPerUnitStaked * P;
+        uint256 marginalYieldGain = yieldPerUnitStaked * P;
         epochToScaleToB[currentEpoch][currentScale] = epochToScaleToB[currentEpoch][currentScale] + marginalYieldGain;
 
         emit B_Updated(epochToScaleToB[currentEpoch][currentScale], currentEpoch, currentScale);
@@ -456,9 +455,9 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         * 4) Store this error for use in the next correction when this function is called.
         * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
         */
-        uint yieldNumerator = _yield * DECIMAL_PRECISION + lastYieldError;
+        uint256 yieldNumerator = _yield * DECIMAL_PRECISION + lastYieldError;
 
-        uint yieldPerUnitStaked = yieldNumerator / _totalBoldDeposits;
+        uint256 yieldPerUnitStaked = yieldNumerator / _totalBoldDeposits;
         lastYieldError = yieldNumerator - yieldPerUnitStaked * _totalBoldDeposits;
 
         return yieldPerUnitStaked;
