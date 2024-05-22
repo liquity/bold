@@ -97,7 +97,14 @@ export function ProductCard({
             })}
           >
             {icon}
-            {title}
+            <div
+              className={css({
+                display: "flex",
+                marginTop: -2,
+              })}
+            >
+              {title}
+            </div>
           </h1>
           {tag && (
             <div

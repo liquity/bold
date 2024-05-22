@@ -1,5 +1,5 @@
 export const BORROW_FROM = {
-  ETH: {
+  WETH: {
     avgIr: "5.6%",
     maxTvl: "91%",
   },
@@ -14,7 +14,7 @@ export const BORROW_FROM = {
 } as const;
 
 export const LEVERAGE_FROM = {
-  ETH: {
+  WETH: {
     avgIr: "4.6%",
     avgLeverage: "5.6x",
     maxLeverage: "7.2x",
@@ -32,7 +32,7 @@ export const LEVERAGE_FROM = {
 } as const;
 
 export const EARN_POOLS = {
-  ETH: {
+  WETH: {
     apy: [6_800n, 3],
     boldQty: [65_700_000n, 0],
   },
@@ -46,32 +46,28 @@ export const EARN_POOLS = {
   },
 } as const;
 
-export const POOLS = [
-  {
-    symbol: "ETH",
-    token: "ETH",
-    apy: "6.8%",
-    boldQty: "65.7M BOLD",
-    deposit: "21,453.00 BOLD",
-    rewards: {
-      bold: "234.24",
-      eth: "0.0054",
-    },
+export const POOLS = [{
+  symbol: "WETH",
+  token: "ETH",
+  apy: "6.8%",
+  boldQty: "65.7M BOLD",
+  deposit: "21,453.00 BOLD",
+  rewards: {
+    bold: "234.24",
+    eth: "0.0054",
   },
-  {
-    symbol: "RETH",
-    token: "rETH",
-    apy: "5.7%",
-    boldQty: "65.7M BOLD",
-    deposit: null,
-    rewards: null,
-  },
-  {
-    symbol: "WSTETH",
-    token: "wstETH",
-    apy: "5.4%",
-    boldQty: "65.7M BOLD",
-    deposit: null,
-    rewards: null,
-  },
-] as const;
+}, {
+  symbol: "RETH",
+  token: "rETH",
+  apy: "5.7%",
+  boldQty: "65.7M BOLD",
+  deposit: null,
+  rewards: null,
+}, {
+  symbol: "WSTETH",
+  token: "wstETH",
+  apy: "5.4%",
+  boldQty: "65.7M BOLD",
+  deposit: null,
+  rewards: null,
+}] as const;

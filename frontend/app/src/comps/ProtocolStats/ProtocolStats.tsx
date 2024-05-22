@@ -177,7 +177,7 @@ function useStats() {
       }, {
         amount: [3421_55n, 2],
         label: "ETH",
-        token: "ETH",
+        token: "WETH",
       }]);
     };
 

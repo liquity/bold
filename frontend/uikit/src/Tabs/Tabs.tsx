@@ -97,6 +97,7 @@ export function Tabs({
       <div
         className={css({
           position: "relative",
+          zIndex: 0,
           width: "100%",
         })}
       >

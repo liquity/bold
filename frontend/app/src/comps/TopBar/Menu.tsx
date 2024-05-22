@@ -1,41 +1,45 @@
 import type { ComponentType } from "react";
 
-import content from "@/src/content";
 import { css } from "@/styled-system/css";
 import { token } from "@/styled-system/tokens";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconBorrow, IconEarn, IconLeverage, IconStake } from "./icons";
 import { MenuItem } from "./MenuItem";
 
-const menuItems: [
-  string,
-  string,
-  ComponentType<{ color: string }>,
-][] = [
-  [content.menu.borrow, "/borrow", IconBorrow],
-  [content.menu.leverage, "/leverage", IconLeverage],
-  [content.menu.earn, "/earn", IconEarn],
-  [content.menu.stake, "/stake", IconStake],
-];
-
-export function Menu() {
+export function Menu({
+  hovered = -1,
+  menuItems,
+  onHover,
+}: {
+  hovered: number;
+  menuItems: [
+    string,
+    string,
+    ComponentType<{ color: string }>,
+  ][];
+  onHover: (index: number) => void;
+}) {
   const pathname = usePathname();
   return (
     <nav>
       <ul
         className={css({
+          position: "relative",
+          zIndex: 2,
           display: "flex",
           gap: 8,
           height: "100%",
         })}
       >
-        {menuItems.map(([label, href, Icon]) => {
-          const selected = pathname.startsWith(href);
+        {menuItems.map(([label, href, Icon], index) => {
+          const selected = hovered === -1
+            ? pathname.startsWith(href)
+            : hovered === index;
           return (
             <li key={label + href}>
               <Link
                 href={href}
+                onMouseEnter={() => onHover(index)}
                 className={css({
                   display: "flex",
                   height: "100%",

@@ -7,7 +7,7 @@ import { ProductCard } from "@/src/comps/ProductCard/ProductCard";
 import { ProtocolStats } from "@/src/comps/ProtocolStats/ProtocolStats";
 import content from "@/src/content";
 import { css } from "@/styled-system/css";
-import { IconBorrow, IconEarn, IconLeverage, TokenIcon } from "@liquity2/uikit";
+import { IconBorrow, IconEarn, IconLeverage, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { BORROW_FROM, EARN_POOLS, LEVERAGE_FROM } from "../demo-data";
 
@@ -48,7 +48,7 @@ export default function Home() {
                 hint={content.home.products.borrow.hint}
                 icon={<TokenIcon symbol={symbol} />}
                 path={`/borrow/${symbol.toLowerCase()}`}
-                title={symbol}
+                title={TOKENS_BY_SYMBOL[symbol].name}
               >
                 <ProductCard.Info
                   label={content.home.products.borrow.avgIr}
@@ -73,7 +73,7 @@ export default function Home() {
                 hint="Leverage"
                 icon={<TokenIcon symbol={symbol} />}
                 path={`/leverage/${symbol.toLowerCase()}`}
-                title={symbol}
+                title={TOKENS_BY_SYMBOL[symbol].name}
                 tag={`Max ${maxLeverage}`}
               >
                 <ProductCard.Info
@@ -103,7 +103,7 @@ export default function Home() {
                 hint={content.home.products.earn.hint}
                 icon={<TokenIcon symbol={symbol} />}
                 path={`/earn/${symbol.toLowerCase()}`}
-                title={symbol}
+                title={TOKENS_BY_SYMBOL[symbol].name}
               >
                 <ProductCard.Info
                   label={content.home.products.earn.apy}

@@ -4,6 +4,8 @@ import { Footer } from "@/src/comps/Footer/Footer";
 import { TopBar } from "@/src/comps/TopBar/TopBar";
 import { css } from "@/styled-system/css";
 
+export const LAYOUT_WIDTH = 1092;
+
 export function AppLayout({
   children,
 }: {
@@ -14,13 +16,14 @@ export function AppLayout({
       className={css({
         display: "flex",
         flexDirection: "column",
-        width: 1092,
+        alignItems: "center",
         minHeight: "100vh",
         margin: "0 auto",
       })}
     >
       <div
         className={css({
+          width: "100%",
           flexGrow: 0,
           flexShrink: 0,
           paddingBottom: 48,
@@ -36,7 +39,7 @@ export function AppLayout({
           alignItems: "center",
           justifyContent: "center",
           flexDirection: "column",
-          width: "100%",
+          width: LAYOUT_WIDTH,
         })}
       >
         {children}
@@ -45,6 +48,7 @@ export function AppLayout({
         className={css({
           flexGrow: 0,
           flexShrink: 0,
+          width: LAYOUT_WIDTH,
           paddingTop: 40,
         })}
       >
