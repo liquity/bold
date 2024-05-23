@@ -3,6 +3,19 @@ pragma solidity 0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract Redemptions is DevTestSetup {
+
+    struct BoldRedeemAmounts {
+        uint256 A;
+        uint256 B;
+        uint256 C;
+    }
+
+    struct  CorrespondingETH {
+        uint256 A;
+        uint256 B;
+        uint256 C;
+    }
+
     function testRedemptionIsInOrderOfInterestRate() public {
         (uint256 coll,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
 
@@ -102,7 +115,7 @@ contract Redemptions is DevTestSetup {
         assertLt(troveManager.getTroveEntireColl(troveIDs.C), coll);
     }
 
-    // - Accrued Trove interest contributes to redee into debt of a redeemed trove
+    // - Accrued Trove interest contributes to redeemed debt of a redeemed trove
 
     function testRedemptionIncludesAccruedTroveInterest() public {
         (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
@@ -114,10 +127,9 @@ contract Redemptions is DevTestSetup {
         assertGt(accruedInterest_A, 0);
         assertEq(redistDebtGain_A, 0);
 
-        troveManager.getTroveEntireDebt(troveIDs.A);
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
 
-        // E redeems again, enough to fully redeem A (recorded debt + interest - gas comp), without touching the next trove B
+        // E redeems, enough to fully redeem A (recorded debt + interest - gas comp), without touching the next trove B
         uint256 redeemAmount =
             troveManager.getTroveDebt(troveIDs.A) + accruedInterest_A - troveManager.BOLD_GAS_COMPENSATION();
         redeem(E, redeemAmount);
@@ -127,6 +139,125 @@ contract Redemptions is DevTestSetup {
 
         // Check B's debt unchanged
         assertEq(troveManager.getTroveEntireDebt(troveIDs.B), debt_B);
+    }
+
+    function testRedemption1TroveLeavesETHFeeInTrove() public {
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        uint256 price = priceFeed.getPrice();
+
+        // E redeems enough to partly redeem from A
+        uint256 redeemAmount = troveManager.getTroveDebt(troveIDs.A)  / 2;
+        uint256 correspondingETH = redeemAmount * DECIMAL_PRECISION / price;
+        uint256 predictedETHFee = collateralRegistry.getEffectiveRedemptionFee(redeemAmount, price);
+        assertGt(correspondingETH, 0);
+        assertGt(predictedETHFee, 0);
+       
+        // Expect Trove's coll reduced by the ETH corresponding to the BOLD redeemed (less the ETH fee)
+        uint256 expectedRemainingColl = troveManager.getTroveEntireColl(troveIDs.B) - correspondingETH + predictedETHFee;
+        assertGt(expectedRemainingColl, 0);
+    
+        redeem(E, redeemAmount);
+
+        // Check A reduced down to gas comp
+        assertEq(troveManager.getTroveEntireColl(troveIDs.A), expectedRemainingColl);
+    }
+
+    function testRedemption1TroveLeavesETHFeeInActivePool() public {
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        uint256 price = priceFeed.getPrice();
+
+        // E redeems enough to partly redeem from A
+        uint256 redeemAmount = troveManager.getTroveDebt(troveIDs.A)  / 2;
+        uint256 correspondingETH = redeemAmount * DECIMAL_PRECISION / price;
+        uint256 predictedETHFee = collateralRegistry.getEffectiveRedemptionFee(redeemAmount, price);
+        assertGt(correspondingETH, 0);
+        assertGt(predictedETHFee, 0);
+        // Expect Active pool to reduce by the ETH removed from the Trove
+        uint256 expectedETHDelta = correspondingETH - predictedETHFee;
+        assertGt(expectedETHDelta, 0);
+
+        uint256 activePoolBalBefore = WETH.balanceOf(address(activePool));
+        uint256 activePoolETHTrackerBefore = activePool.getETHBalance();
+        assertGt(activePoolBalBefore, 0);
+        assertGt(activePoolETHTrackerBefore, 0);
+
+        redeem(E, redeemAmount);
+
+        // Check Active Pool ETH reduced correctly
+        assertEq(WETH.balanceOf(address(activePool)), activePoolBalBefore - expectedETHDelta);
+        assertEq(activePool.getETHBalance(), activePoolETHTrackerBefore - expectedETHDelta);
+    }
+
+    function testRedemption3TroveLeavesETHFeesInTroves() public {
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        uint256 price = priceFeed.getPrice();
+
+        BoldRedeemAmounts memory boldRedeemAmounts;
+        CorrespondingETH memory correspondingETH;
+
+        boldRedeemAmounts.A = troveManager.getTroveDebt(troveIDs.A) - BOLD_GAS_COMP;
+        boldRedeemAmounts.B = troveManager.getTroveDebt(troveIDs.B) - BOLD_GAS_COMP;
+        boldRedeemAmounts.C = (troveManager.getTroveDebt(troveIDs.C)  - BOLD_GAS_COMP)/ 2;
+        uint256 totalBoldRedeemAmount = boldRedeemAmounts.A + boldRedeemAmounts.B + boldRedeemAmounts.C;
+
+        correspondingETH.A = boldRedeemAmounts.A * DECIMAL_PRECISION / price;
+        correspondingETH.B = boldRedeemAmounts.B * DECIMAL_PRECISION / price;
+        correspondingETH.C = boldRedeemAmounts.C * DECIMAL_PRECISION / price;
+
+        uint256 redemptionFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(totalBoldRedeemAmount) * DECIMAL_PRECISION / totalBoldRedeemAmount;
+       
+        uint256 predictedETHFee_A = correspondingETH.A * redemptionFeePct / DECIMAL_PRECISION;
+        uint256 predictedETHFee_B = correspondingETH.B * redemptionFeePct / DECIMAL_PRECISION;
+        uint256 predictedETHFee_C = correspondingETH.C * redemptionFeePct / DECIMAL_PRECISION;
+
+        assertGt(predictedETHFee_A, 0);
+        assertGt(predictedETHFee_B, 0);
+        assertGt(predictedETHFee_C, 0);
+       
+        // Expect each Trove's coll to reduce by the ETH corresponding to the bold redeemed, less the ETH fee
+        uint256 expectedRemainingColl_A = troveManager.getTroveEntireColl(troveIDs.A) - correspondingETH.A + predictedETHFee_A;
+        uint256 expectedRemainingColl_B = troveManager.getTroveEntireColl(troveIDs.B) - correspondingETH.B + predictedETHFee_B;
+        uint256 expectedRemainingColl_C = troveManager.getTroveEntireColl(troveIDs.C) - correspondingETH.C + predictedETHFee_C;
+        assertGt(expectedRemainingColl_A, 0);
+        assertGt(expectedRemainingColl_B, 0);
+        assertGt(expectedRemainingColl_C, 0);
+
+        redeem(E, totalBoldRedeemAmount);
+
+        assertEq(troveManager.getTroveEntireColl(troveIDs.A), expectedRemainingColl_A);
+        assertEq(troveManager.getTroveEntireColl(troveIDs.B), expectedRemainingColl_B);
+        assertEq(troveManager.getTroveEntireColl(troveIDs.C), expectedRemainingColl_C);
+    }
+
+     function testRedemption3TroveLeavesETHFeesInActivePool() public {
+        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        uint256 price = priceFeed.getPrice();
+
+        BoldRedeemAmounts memory boldRedeemAmounts;
+
+        boldRedeemAmounts.A = troveManager.getTroveDebt(troveIDs.A) - BOLD_GAS_COMP;
+        boldRedeemAmounts.B = troveManager.getTroveDebt(troveIDs.B) - BOLD_GAS_COMP;
+        boldRedeemAmounts.C = (troveManager.getTroveDebt(troveIDs.C)  - BOLD_GAS_COMP)/ 2;
+        
+        uint256 totalBoldRedeemAmount = boldRedeemAmounts.A + boldRedeemAmounts.B + boldRedeemAmounts.C;
+        uint256 totalCorrespondingETH =totalBoldRedeemAmount * DECIMAL_PRECISION / price;
+
+        uint256 redemptionFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(totalBoldRedeemAmount) * DECIMAL_PRECISION / totalBoldRedeemAmount;
+        uint256 totalETHFee = totalCorrespondingETH * redemptionFeePct / DECIMAL_PRECISION;
+
+        uint256 expectedETHDelta = totalCorrespondingETH - totalETHFee;
+        assertGt(expectedETHDelta, 0);
+
+        uint256 activePoolBalBefore = WETH.balanceOf(address(activePool));
+        uint256 activePoolETHTrackerBefore = activePool.getETHBalance();
+        assertGt(activePoolBalBefore, 0);
+        assertGt(activePoolETHTrackerBefore, 0);
+
+        redeem(E, totalBoldRedeemAmount);
+
+        // Check Active Pool ETH reduced correctly
+        assertEq(WETH.balanceOf(address(activePool)), activePoolBalBefore - expectedETHDelta);
+        assertEq(activePool.getETHBalance(), activePoolETHTrackerBefore - expectedETHDelta);
     }
 
     // --- Zombie Troves ---
@@ -655,7 +786,7 @@ contract Redemptions is DevTestSetup {
         assertGt(stabilityPool.getTotalBoldDeposits(), troveManager.getTroveEntireDebt(troveIDs.B));
 
         // Price drops, B becomes liquidateable
-        uint256 price = 100e18;
+        uint256 price = 10e18;
         priceFeed.setPrice(price);
 
         // assertFalse(troveManager.checkBelowCriticalThreshold(price));
