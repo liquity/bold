@@ -75,6 +75,8 @@ interface IStabilityPool is ILiquityBase {
      */
     function offset(uint256 _debt, uint256 _coll) external;
 
+    function triggerBoldRewards(uint256 _boldYield) external;
+
     function stashedETH(address _depositor) external view returns (uint256);
 
     /*
@@ -88,15 +90,29 @@ interface IStabilityPool is ILiquityBase {
      */
     function getTotalBoldDeposits() external view returns (uint256);
 
+    function getYieldGainsOwed() external view returns (uint256);
+
     /*
      * Calculates the ETH gain earned by the deposit since its last snapshots were taken.
      */
     function getDepositorETHGain(address _depositor) external view returns (uint256);
 
     /*
+     * Calculates the BOLD yield gain earned by the deposit since its last snapshots were taken.
+     */
+    function getDepositorYieldGain(address _depositor) external view returns (uint256);
+
+    /*
      * Return the user's compounded deposit.
      */
     function getCompoundedBoldDeposit(address _depositor) external view returns (uint256);
+
+    function epochToScaleToS(uint128 _epoch, uint128 _scale) external view returns (uint256);
+
+    function epochToScaleToB(uint128 _epoch, uint128 _scale) external view returns (uint256);
+
+    function currentScale() external view returns (uint128);
+    function currentEpoch() external view returns (uint128);
 
     /*
      * Only callable by Active Pool, it pulls ETH and accounts for ETH received

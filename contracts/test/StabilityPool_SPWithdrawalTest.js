@@ -1873,7 +1873,6 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       assert.isAtMost(th.getDifference(carol_ETHWithdrawn, "109450000000000000000"), 100000);
       assert.isAtMost(th.getDifference(dennis_ETHWithdrawn, "164175000000000000000"), 100000);
     });
-
     // Deposit's ETH reward spans one scale change - deposit reduced by correct amount
 
     // A make deposit 10000 Bold

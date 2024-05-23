@@ -213,7 +213,7 @@ contract("StabilityPool", async (accounts) => {
 
       // --- TEST ---
       const P_Before = await stabilityPool.P();
-      const S_Before = await stabilityPool.epochToScaleToSum(0, 0);
+      const S_Before = await stabilityPool.epochToScaleToS(0, 0);
       assert.isTrue(P_Before.gt(toBN("0")));
       assert.isTrue(S_Before.gt(toBN("0")));
 
@@ -309,7 +309,7 @@ contract("StabilityPool", async (accounts) => {
 
       // get system reward terms
       const P_1 = await stabilityPool.P();
-      const S_1 = await stabilityPool.epochToScaleToSum(0, 0);
+      const S_1 = await stabilityPool.epochToScaleToS(0, 0);
       assert.isTrue(P_1.lt(toBN(dec(1, 18))));
       assert.isTrue(S_1.gt(toBN("0")));
 
@@ -338,7 +338,7 @@ contract("StabilityPool", async (accounts) => {
       const alice_compoundedDeposit_2 = await stabilityPool.getCompoundedBoldDeposit(alice);
 
       const P_2 = await stabilityPool.P();
-      const S_2 = await stabilityPool.epochToScaleToSum(0, 0);
+      const S_2 = await stabilityPool.epochToScaleToS(0, 0);
       assert.isTrue(P_2.lt(P_1));
       assert.isTrue(S_2.gt(S_1));
 
@@ -1533,7 +1533,7 @@ contract("StabilityPool", async (accounts) => {
       await th.withdrawFromSPAndClaim(contracts, dec(9000, 18), { from: alice });
 
       const P = (await stabilityPool.P()).toString();
-      const S = (await stabilityPool.epochToScaleToSum(0, 0)).toString();
+      const S = (await stabilityPool.epochToScaleToS(0, 0)).toString();
       // check 'After' snapshots
       const alice_snapshot_After = await stabilityPool.depositSnapshots(alice);
       const alice_snapshot_S_After = alice_snapshot_After[0].toString();
@@ -2777,7 +2777,7 @@ contract("StabilityPool", async (accounts) => {
       const currentEpoch = await stabilityPool.currentEpoch();
       const currentScale = await stabilityPool.currentScale();
 
-      const S_Before = await stabilityPool.epochToScaleToSum(
+      const S_Before = await stabilityPool.epochToScaleToS(
         currentEpoch,
         currentScale,
       );
