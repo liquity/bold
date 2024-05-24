@@ -778,7 +778,7 @@ contract InterestRateBasic is DevTestSetup {
 
     // --- upfront fee ---
 
-    function testOpenTroveMintsUpfrontFeeToInterestRouter() public {
+    function testOpenTroveMintsUpfrontFeeToInterestReceivers() public {
         priceFeed.setPrice(2000e18);
 
         uint256 borrow = 2_000 ether;
@@ -788,6 +788,11 @@ contract InterestRateBasic is DevTestSetup {
         uint256 debtWithoutFee = borrow + BOLD_GAS_COMP;
         uint256 fee = calcUpfrontFee(debtWithoutFee, interestRate);
 
-        assertEqDecimal(boldToken.balanceOf(address(mockInterestRouter)), fee, 18, "Wrong I-router balance");
+        assertEqDecimal(
+            boldToken.balanceOf(address(stabilityPool)) + boldToken.balanceOf(address(mockInterestRouter)),
+            fee,
+            18,
+            "Wrong amount minted to interest receivers"
+        );
     }
 }

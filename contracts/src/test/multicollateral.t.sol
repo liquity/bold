@@ -178,6 +178,12 @@ contract MulticollateralTest is DevTestSetup {
         uint256 fee;
         uint256 collInitialBalance;
         uint256 collFinalBalance;
+        uint256 branchDebt;
+        uint256 WETHBalBefore_A;
+        uint256 redeemed;
+        uint256 correspondingETH;
+        uint256 ETHFee;
+        uint256 spBoldAmount;
     }
 
     function testMultiCollateralRedemptionFuzz(
@@ -288,7 +294,7 @@ contract MulticollateralTest is DevTestSetup {
         console.log(testValues3.fee, "fee3");
         console.log(testValues4.fee, "fee4");
 
-        // A redeems 1.6k
+        // A redeems 
         vm.startPrank(A);
         collateralRegistry.redeemCollateral(redeemAmount, 0, 1e18);
         vm.stopPrank();
@@ -332,4 +338,92 @@ contract MulticollateralTest is DevTestSetup {
             "Wrong Collateral 4 balance"
         );
     }
+
+    function testMultiCollRedemptionIncreasesRedeemerETHBalanceByCorrespondingETHLessTheETHFee() public {
+        TestValues memory testValues0;
+        TestValues memory testValues1;
+        TestValues memory testValues2;
+        TestValues memory testValues3;
+
+        uint256 boldAmount = 100000e18;
+        testValues0.spBoldAmount = boldAmount / 2;
+        testValues1.spBoldAmount = boldAmount / 4;
+        testValues2.spBoldAmount = boldAmount / 8;
+        testValues3.spBoldAmount = boldAmount / 16;
+
+        uint256 redemptionFraction = 25e16;
+
+        testValues0.price = contractsArray[0].priceFeed.getPrice();
+        testValues1.price = contractsArray[1].priceFeed.getPrice();
+        testValues2.price = contractsArray[2].priceFeed.getPrice();
+        testValues3.price = contractsArray[3].priceFeed.getPrice();
+
+        // First collateral
+        openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 100e18, boldAmount, 5e16);
+        makeMulticollateralSPDepositAndClaim(0, A,  testValues0.spBoldAmount);
+
+        // Second collateral
+        openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 100e18, boldAmount, 5e16);
+        makeMulticollateralSPDepositAndClaim(0, A,  testValues1.spBoldAmount);
+
+        // Third collateral
+        openMulticollateralTroveNoHints100pctWithIndex(2, A, 0, 100e18, boldAmount, 5e16);
+        makeMulticollateralSPDepositAndClaim(0, A,  testValues2.spBoldAmount);
+
+        // Fourth collateral
+        openMulticollateralTroveNoHints100pctWithIndex(3, A, 0, 100e18, boldAmount, 5e16);
+        makeMulticollateralSPDepositAndClaim(0, A,  testValues3.spBoldAmount);
+
+        uint256 boldBalance = boldToken.balanceOf(A);
+       
+        uint256 redeemAmount = boldBalance * redemptionFraction / DECIMAL_PRECISION;
+        uint256 expectedFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(redeemAmount) * DECIMAL_PRECISION / redeemAmount;
+        assertGt(expectedFeePct, 0);
+
+        // Get BOLD debts from each branch
+        testValues0.branchDebt = contractsArray[0].troveManager.getEntireSystemDebt();
+        testValues1.branchDebt = contractsArray[1].troveManager.getEntireSystemDebt();
+        testValues2.branchDebt = contractsArray[2].troveManager.getEntireSystemDebt();
+        testValues3.branchDebt = contractsArray[3].troveManager.getEntireSystemDebt();
+
+        testValues0.WETHBalBefore_A = contractsArray[0].WETH.balanceOf(A);
+        testValues1.WETHBalBefore_A = contractsArray[1].WETH.balanceOf(A);
+        testValues2.WETHBalBefore_A = contractsArray[2].WETH.balanceOf(A);
+        testValues3.WETHBalBefore_A = contractsArray[3].WETH.balanceOf(A);
+
+        // A redeems 
+        redeem(A, redeemAmount);
+
+        // Check how much BOLD was redeemed from each branch
+        testValues0.redeemed = testValues0.branchDebt - contractsArray[0].troveManager.getEntireSystemDebt(); 
+        testValues1.redeemed = testValues1.branchDebt - contractsArray[1].troveManager.getEntireSystemDebt(); 
+        testValues2.redeemed = testValues2.branchDebt - contractsArray[2].troveManager.getEntireSystemDebt(); 
+        testValues3.redeemed = testValues3.branchDebt - contractsArray[3].troveManager.getEntireSystemDebt(); 
+        
+        assertGt(testValues0.redeemed, 0);
+        assertGt(testValues1.redeemed, 0);
+        assertGt(testValues2.redeemed, 0);
+        assertGt(testValues3.redeemed, 0);
+
+        // Get corresponding ETH from each branch, and fee
+        testValues0.correspondingETH = testValues0.redeemed * DECIMAL_PRECISION / testValues0.price;
+        testValues1.correspondingETH = testValues1.redeemed * DECIMAL_PRECISION / testValues1.price;
+        testValues2.correspondingETH = testValues2.redeemed * DECIMAL_PRECISION / testValues2.price;
+        testValues3.correspondingETH = testValues3.redeemed * DECIMAL_PRECISION / testValues3.price;
+
+        testValues0.ETHFee = testValues0.correspondingETH * expectedFeePct / DECIMAL_PRECISION;
+        testValues1.ETHFee = testValues1.correspondingETH * expectedFeePct / DECIMAL_PRECISION;
+        testValues2.ETHFee = testValues2.correspondingETH * expectedFeePct / DECIMAL_PRECISION;
+        testValues3.ETHFee = testValues3.correspondingETH * expectedFeePct / DECIMAL_PRECISION;
+        assertGt(testValues0.ETHFee, 0);
+        assertGt(testValues1.ETHFee, 0);
+        assertGt(testValues2.ETHFee, 0);
+        assertGt(testValues3.ETHFee, 0);
+
+        // Expect WETH balance of redeemer increased by drawn ETH, leaving the ETH fee in the branch
+        assertEq(contractsArray[0].WETH.balanceOf(A), testValues0.WETHBalBefore_A + testValues0.correspondingETH - testValues0.ETHFee);
+        assertEq(contractsArray[1].WETH.balanceOf(A), testValues1.WETHBalBefore_A + testValues1.correspondingETH - testValues1.ETHFee);
+        assertEq(contractsArray[2].WETH.balanceOf(A), testValues2.WETHBalBefore_A + testValues2.correspondingETH - testValues2.ETHFee);
+        assertEq(contractsArray[3].WETH.balanceOf(A), testValues3.WETHBalBefore_A + testValues3.correspondingETH - testValues3.ETHFee);
+    }  
 }

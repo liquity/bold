@@ -3,14 +3,15 @@
 pragma solidity 0.8.18;
 
 import "./IInterestRouter.sol";
+import "./IStabilityPool.sol";
 import "../Types/TroveChange.sol";
 
 interface IActivePool {
-    function stabilityPoolAddress() external view returns (address);
     function defaultPoolAddress() external view returns (address);
     function borrowerOperationsAddress() external view returns (address);
     function troveManagerAddress() external view returns (address);
     function interestRouter() external view returns (IInterestRouter);
+    function stabilityPool() external view returns (IStabilityPool);
     function setAddresses(
         address _borrowerOperationsAddress,
         address _troveManagerAddress,
@@ -20,6 +21,7 @@ interface IActivePool {
         address _interestRouterAddress
     ) external;
 
+    function SP_YIELD_SPLIT() external view returns (uint256);
     function getETHBalance() external view returns (uint256);
     function getBoldDebt() external view returns (uint256);
     function lastAggUpdateTime() external view returns (uint256);

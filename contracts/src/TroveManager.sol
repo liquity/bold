@@ -148,19 +148,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         ICollSurplusPool collSurplusPool;
         address gasPoolAddress;
     }
-    // --- Variable container structs for redemptions ---
-
-    struct RedemptionTotals {
-        uint256 remainingBold;
-        uint256 totalBoldToRedeem;
-        uint256 totalETHDrawn;
-        uint256 ETHFee;
-        uint256 ETHToSendToRedeemer;
-        uint256 price;
-        uint256 totalRedistDebtGains;
-        uint256 totalNewWeightedRecordedTroveDebts;
-        uint256 totalOldWeightedRecordedTroveDebts;
-    }
 
     // --- Events ---
 
@@ -186,6 +173,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     event LTermsUpdated(uint256 _L_ETH, uint256 _L_boldDebt);
     event TroveSnapshotsUpdated(uint256 _L_ETH, uint256 _L_boldDebt);
     event TroveIndexUpdated(uint256 _troveId, uint256 _newIndex);
+    event RedemptionFeePaidToTrove(uint256 indexed _troveId, uint256 _ETHFee);
 
     enum Operation {
         liquidate,
@@ -519,13 +507,21 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 _troveId,
         uint256 _maxBoldamount,
         uint256 _price,
+        uint256 _redemptionRate,
         TroveChange memory singleRedemption
-    ) internal {
+    ) internal returns (uint256 ETHFee) {
         LatestTroveData memory trove;
         _getLatestTroveData(_troveId, trove);
 
+        // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove minus the liquidation reserve
         singleRedemption.debtDecrease = LiquityMath._min(_maxBoldamount, trove.entireDebt - BOLD_GAS_COMPENSATION);
-        singleRedemption.collDecrease = singleRedemption.debtDecrease * DECIMAL_PRECISION / _price;
+
+        // Get the amount of ETH equal in USD value to the BoldLot redeemed
+        uint256 correspondingETH = singleRedemption.debtDecrease * DECIMAL_PRECISION / _price;
+        // Calculate the ETHFee separately (for events)
+        ETHFee = singleRedemption.collDecrease * _redemptionRate / DECIMAL_PRECISION;
+        // Get the final ETHLot to send to redeemer, leaving the fee in the Trove
+        singleRedemption.collDecrease = correspondingETH - ETHFee;
 
         // Decrease the debt and collateral of the current Trove according to the Bold lot and corresponding ETH to send
         uint256 newDebt = trove.entireDebt - singleRedemption.debtDecrease;
@@ -554,6 +550,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         singleRedemption.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
 
         emit TroveUpdated(_troveId, newDebt, newColl, Operation.redeemCollateral);
+        emit RedemptionFeePaidToTrove(_troveId, ETHFee);
     }
 
     /* Send _boldamount Bold to the system and redeem the corresponding amount of collateral from as many Troves as are needed to fill the redemption
@@ -592,6 +589,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         uint256 remainingBold = _boldamount;
         uint256 currentTroveId;
+        uint256 ETHFee;
 
         currentTroveId = contractsCache.sortedTroves.getLast();
 
@@ -608,7 +606,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             }
 
             TroveChange memory singleRedemption;
-            _redeemCollateralFromTrove(contractsCache, currentTroveId, remainingBold, _price, singleRedemption);
+            ETHFee += _redeemCollateralFromTrove(
+                contractsCache, currentTroveId, remainingBold, _price, _redemptionRate, singleRedemption
+            );
 
             totals.collDecrease += singleRedemption.collDecrease;
             totals.debtDecrease += singleRedemption.debtDecrease;
@@ -626,18 +626,12 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         // We are removing this condition to prevent blocking redemptions
         //require(totals.totalETHDrawn > 0, "TroveManager: Unable to redeem any amount");
 
-        // Calculate the ETH fee
-        uint256 ETHFee = _getRedemptionFee(totals.collDecrease, _redemptionRate);
-
-        // Do nothing with the fee - the funds remain in ActivePool. TODO: replace with new redemption fee scheme
-        uint256 ETHToSendToRedeemer = totals.collDecrease - ETHFee;
-
         emit Redemption(_boldamount, totals.debtDecrease, totals.collDecrease, ETHFee);
 
         activePool.mintAggInterestAndAccountForTroveChange(totals);
 
         // Send the redeemed ETH to sender
-        contractsCache.activePool.sendETH(_sender, ETHToSendToRedeemer);
+        contractsCache.activePool.sendETH(_sender, totals.collDecrease);
         // We’ll burn all the Bold together out in the CollateralRegistry, to save gas
 
         return totals.debtDecrease;

@@ -42,6 +42,7 @@ contract BaseTest is Test {
     uint256 BOLD_GAS_COMP;
     uint256 MIN_NET_DEBT;
     uint256 MIN_DEBT;
+    uint256 SP_YIELD_SPLIT;
     uint256 UPFRONT_INTEREST_PERIOD;
 
     // Core contracts
@@ -66,6 +67,7 @@ contract BaseTest is Test {
         uint256 C;
         uint256 D;
         uint256 E;
+        uint256 F;
     }
 
     // --- functions ---
@@ -256,6 +258,10 @@ contract BaseTest is Test {
         vm.startPrank(_from);
         collateralRegistry.redeemCollateral(_boldAmount, MAX_UINT256, 1e18);
         vm.stopPrank();
+    }
+
+    function getShareofSPReward(address _depositor, uint256 _reward) public view returns (uint256) {
+        return _reward * stabilityPool.getCompoundedBoldDeposit(_depositor) / stabilityPool.getTotalBoldDeposits();
     }
 
     function logContractAddresses() public view {

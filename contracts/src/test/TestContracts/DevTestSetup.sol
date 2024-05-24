@@ -73,7 +73,9 @@ contract DevTestSetup is BaseTest {
         BOLD_GAS_COMP = troveManager.BOLD_GAS_COMPENSATION();
         MIN_NET_DEBT = troveManager.MIN_NET_DEBT();
         MIN_DEBT = troveManager.MIN_DEBT();
+        SP_YIELD_SPLIT = activePool.SP_YIELD_SPLIT();
         UPFRONT_INTEREST_PERIOD = troveManager.UPFRONT_INTEREST_PERIOD();
+        MCR = troveManager.MCR();
     }
 
     function _setupForWithdrawETHGainToTrove() internal returns (uint256, uint256, uint256) {
@@ -247,5 +249,12 @@ contract DevTestSetup is BaseTest {
         // // Check A is zombie Trove but B is not
         assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'
         assertEq(troveManager.getTroveStatus(_troveIDs.B), 1); // status 'active'
+    }
+
+    function _getSPYield(uint256 _aggInterest) internal returns (uint256) {
+        uint256 spYield = SP_YIELD_SPLIT * _aggInterest / 1e18;
+        assertGt(spYield, 0);
+        assertLe(spYield, _aggInterest);
+        return spYield;
     }
 }

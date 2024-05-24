@@ -1,7 +1,8 @@
 import type { ReactNode as N } from "react";
 
+// eslint-disable-next-line import/no-anonymous-default-export
 export default {
-  // Top bar and other places
+  // Used in the top bar and other places
   appName: "Liquity v2",
 
   // Menu bar
@@ -10,6 +11,63 @@ export default {
     leverage: "Leverage",
     earn: "Earn",
     stake: "Stake",
+  },
+
+  accountButton: {
+    wrongNetwork: "Wrong network",
+    connectAccount: "Connect wallet",
+  },
+
+  // Home screen
+  home: {
+    openPositionTitle: "Open your first position",
+    myPositionsTitle: "My positions",
+    actions: {
+      borrow: {
+        title: "Borrow BOLD",
+        description: "Set your own interest rate and borrow BOLD against ETH and staked ETH.",
+      },
+      leverage: {
+        title: "Leverage ETH",
+        description: "Set your own interest rate and increase your exposure to ETH and staked ETH.",
+      },
+      earn: {
+        title: "Earn with BOLD",
+        description: "Earn defi-native yield with your BOLD.",
+      },
+      stake: {
+        title: "Stake LQTY",
+        description: "Use LQTY to generate yield without a minimum lockup period.",
+      },
+    },
+    products: {
+      borrow: {
+        title: "Borrow BOLD",
+        description: "Set your own interest rate and borrow BOLD against ETH and staked ETH.",
+        total: "Total borrowed",
+        hint: "Borrow BOLD",
+        avgIr: "Avg IR",
+        maxLtv: "Max LTV",
+      },
+      leverage: {
+        title: "Leverage ETH",
+        description: "Increase your exposure to ETH and staked ETH",
+        hint: "Leverage",
+        avgIr: "Avg IR",
+        avgLeverage: "Avg leverage",
+      },
+      earn: {
+        title: "Earn with pools",
+        description: "Earn defi-native yield from your BOLD",
+        total: "In earn pools",
+        hint: "Earn",
+        apy: "APY",
+        tvl: "TVL",
+      },
+    },
+    statsBar: {
+      label: "Protocol stats",
+    },
   },
 
   // Earn home screen: header

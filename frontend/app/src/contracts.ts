@@ -1,4 +1,4 @@
-import type { Address } from "@/src/types";
+import type { Address } from "@liquity2/uikit";
 
 import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
 import { ERC20Faucet } from "@/src/abi/ERC20Faucet";

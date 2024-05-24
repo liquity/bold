@@ -2,7 +2,7 @@
 
 import type { ComponentProps, ReactNode } from "react";
 
-import { Dropdown, InputField, PillButton, TextButton, TokenIcon } from "@liquity2/uikit";
+import { Dropdown, InputField, PillButton, Slider, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 import { useFixtureInput } from "react-cosmos/client";
@@ -28,7 +28,7 @@ function parseInputFloat(value: string) {
 export function InputFieldFixture({
   fixture,
 }: {
-  fixture: "deposit" | "borrow" | "interest" | "strategy";
+  fixture: "deposit" | "borrow" | "interest" | "strategy" | "slider";
 }) {
   const [label] = useFixtureInput(
     "label",
@@ -37,6 +37,7 @@ export function InputFieldFixture({
       .with("borrow", () => "You borrow")
       .with("interest", () => "Interest rate")
       .with("strategy", () => undefined)
+      .with("slider", () => "ETH Liquidation price")
       .exhaustive(),
   );
 
@@ -47,6 +48,27 @@ export function InputFieldFixture({
 
   const [token, setToken] = useState(0);
 
+  const [leverage, setLeverage] = useState(0); // from 0 (1x) to 5.3 (6.3x)
+
+  const actionLabel = match(fixture)
+    .with("slider", () => (
+      <span>
+        Leverage{" "}
+        <span
+          style={{
+            color: leverage > 4 ? "#F36740" : "#2F3037",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {dn.format([BigInt(Math.round((leverage + 1) * 10)), 1], {
+            digits: 1,
+            trailingZeros: true,
+          })}x
+        </span>
+      </span>
+    ))
+    .otherwise(() => undefined);
+
   const action = match(fixture)
     .with("deposit", () => (
       <Dropdown
@@ -54,21 +76,39 @@ export function InputFieldFixture({
         onSelect={setToken}
         menuPlacement="end"
         items={[
-          itemRow("ETH", "ETH", "10.00"),
+          itemRow("WETH", "ETH", "10.00"),
           itemRow("RETH", "rETH", "30.00"),
           itemRow("WSTETH", "wstETH", "40.00"),
-          itemRow("SWETH", "swETH", "50.00"),
         ]}
       />
     ))
     .with("borrow", () => <Token name="BOLD" />)
     .with("interest", () => <Action label="% per year" />)
+    .with("slider", () => (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 300,
+        }}
+      >
+        <Slider
+          gradientMode={true}
+          onChange={(value) => {
+            setLeverage(Math.round(value * 5.3 * 10) / 10);
+          }}
+          value={leverage / 5.3}
+        />
+      </div>
+    ))
     .otherwise(() => undefined);
 
   const secondaryStart = match(fixture)
     .with("deposit", () => `${parsedValue ? dn.format(dn.mul(parsedValue, ETH_PRICE_USD), 2) : "−"}  USD`)
     .with("borrow", () => `${parsedValue ? dn.format(parsedValue, 2) : "−"}  USD`)
     .with("interest", () => `0 BOLD / year`)
+    .with("slider", () => "Total debt 0 BOLD")
     .otherwise(() => undefined);
 
   const secondaryEnd = match(fixture)
@@ -122,6 +162,30 @@ export function InputFieldFixture({
         />
       </div>
     ))
+    .with("slider", () => (
+      <div
+        style={{
+          display: "flex",
+          gap: 6,
+        }}
+      >
+        <PillButton
+          label="2.2x"
+          onClick={() => setLeverage(1.2)}
+          warnLevel="low"
+        />
+        <PillButton
+          label="4.1x"
+          onClick={() => setLeverage(3.1)}
+          warnLevel="medium"
+        />
+        <PillButton
+          label="6.3x"
+          onClick={() => setLeverage(5.3)}
+          warnLevel="high"
+        />
+      </div>
+    ))
     .otherwise(() => undefined);
 
   const value_ = match(fixture)
@@ -134,6 +198,16 @@ export function InputFieldFixture({
     .with("interest", () => (
       (focused || !parsedValue) ? value : `${dn.format(parsedValue)}%`
     ))
+    .with("slider", () => (
+      (focused || !parsedValue) ? value : `$${dn.format(parsedValue)}`
+    ))
+    .otherwise(() => undefined);
+
+  const placeholder = match(fixture)
+    .with("deposit", () => "0.00")
+    .with("borrow", () => "0.00")
+    .with("interest", () => "0.00")
+    .with("slider", () => "$0.00")
     .otherwise(() => undefined);
 
   return (
@@ -147,12 +221,13 @@ export function InputFieldFixture({
     >
       <InputField
         action={action}
+        actionLabel={actionLabel}
         label={label}
         onFocus={() => setFocused(true)}
         onChange={setValue}
         onBlur={() => setFocused(false)}
         value={value_}
-        placeholder="0.00"
+        placeholder={placeholder}
         secondaryStart={secondaryStart}
         secondaryEnd={secondaryEnd}
       />

@@ -1,23 +1,17 @@
 import type { ComponentProps, ReactElement } from "react";
+import type { Token } from "../types";
 
 import { Children, createContext, useContext } from "react";
 import { match } from "ts-pattern";
 import { css } from "../../styled-system/css";
-
-import tokenBold from "./icons/bold.svg";
-import tokenEth from "./icons/eth.svg";
-import tokenLqty from "./icons/lqty.svg";
-import tokenOseth from "./icons/oseth.svg";
-import tokenReth from "./icons/reth.svg";
-import tokenSweth from "./icons/sweth.svg";
-import tokenWsteth from "./icons/wsteth.svg";
+import { TOKENS_BY_SYMBOL } from "../tokens";
 
 export function TokenIcon({
   size = "medium",
   symbol,
 }: {
   size?: "medium" | "large" | "small" | number;
-  symbol: "BOLD" | "ETH" | "OSETH" | "RETH" | "SWETH" | "WSTETH" | "LQTY";
+  symbol: Token["symbol"];
 }) {
   const sizeFromGroup = useContext(TokenIconGroupSize);
 
@@ -27,15 +21,7 @@ export function TokenIcon({
     .with("small", () => 20)
     .otherwise(() => size);
 
-  const src = match(symbol)
-    .with("BOLD", () => tokenBold)
-    .with("ETH", () => tokenEth)
-    .with("OSETH", () => tokenOseth)
-    .with("RETH", () => tokenReth)
-    .with("SWETH", () => tokenSweth)
-    .with("WSTETH", () => tokenWsteth)
-    .with("LQTY", () => tokenLqty)
-    .exhaustive();
+  const token = TOKENS_BY_SYMBOL[symbol];
 
   return (
     <div
@@ -48,10 +34,10 @@ export function TokenIcon({
       }}
     >
       <img
-        alt={symbol}
+        alt={token.name}
         height={size_}
-        src={src}
-        title={symbol}
+        src={token.icon}
+        title={token.name}
         width={size_}
       />
     </div>

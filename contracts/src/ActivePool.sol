@@ -10,9 +10,8 @@ import "./Interfaces/IInterestRouter.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 import "./Interfaces/IDefaultPool.sol";
-import "./Interfaces/IActivePool.sol";
 
-//import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
 /*
  * The Active Pool holds the ETH collateral and Bold debt (but not Bold tokens) for all active troves.
@@ -29,14 +28,16 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     IERC20 public immutable ETH;
     address public borrowerOperationsAddress;
     address public troveManagerAddress;
-    address public stabilityPoolAddress;
     address public defaultPoolAddress;
 
     IBoldToken boldToken;
 
     IInterestRouter public interestRouter;
+    IStabilityPool public stabilityPool;
 
     uint256 public constant SECONDS_IN_ONE_YEAR = 31536000; // 60 * 60 * 24 * 365,
+
+    uint256 public constant SP_YIELD_SPLIT = 72e16;
 
     uint256 internal ETHBalance; // deposited ether tracker
 
@@ -87,10 +88,10 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
         borrowerOperationsAddress = _borrowerOperationsAddress;
         troveManagerAddress = _troveManagerAddress;
-        stabilityPoolAddress = _stabilityPoolAddress;
         defaultPoolAddress = _defaultPoolAddress;
         boldToken = IBoldToken(_boldTokenAddress);
         interestRouter = IInterestRouter(_interestRouterAddress);
+        stabilityPool = IStabilityPool(_stabilityPoolAddress);
 
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
         emit TroveManagerAddressChanged(_troveManagerAddress);
@@ -227,9 +228,17 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     function _mintAggInterest(uint256 _upfrontFee) internal returns (uint256 mintedAmount) {
         mintedAmount = calcPendingAggInterest() + _upfrontFee;
 
-        // Mint the new BOLD interest to a mock interest router that would split it and send it onward to SP, LP staking, etc.
-        // TODO: implement interest routing and SP Bold reward tracking
-        if (mintedAmount > 0) boldToken.mint(address(interestRouter), mintedAmount);
+        // Mint part of the BOLD interest to the SP.
+        // TODO: implement interest minting to LPs
+        if (mintedAmount > 0) {
+            uint256 spYield = SP_YIELD_SPLIT * mintedAmount / 1e18;
+            uint256 remainderToLPs = mintedAmount - spYield;
+
+            boldToken.mint(address(interestRouter), remainderToLPs);
+            boldToken.mint(address(stabilityPool), spYield);
+
+            stabilityPool.triggerBoldRewards(spYield);
+        }
 
         lastAggUpdateTime = block.timestamp;
     }
@@ -246,13 +255,13 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     function _requireCallerIsBOorTroveMorSP() internal view {
         require(
             msg.sender == borrowerOperationsAddress || msg.sender == troveManagerAddress
-                || msg.sender == stabilityPoolAddress,
+                || msg.sender == address(stabilityPool),
             "ActivePool: Caller is neither BorrowerOperations nor TroveManager nor StabilityPool"
         );
     }
 
     function _requireCallerIsSP() internal view {
-        require(msg.sender == stabilityPoolAddress, "ActivePool: Caller is not StabilityPool");
+        require(msg.sender == address(stabilityPool), "ActivePool: Caller is not StabilityPool");
     }
 
     function _requireCallerIsBOorTroveM() internal view {

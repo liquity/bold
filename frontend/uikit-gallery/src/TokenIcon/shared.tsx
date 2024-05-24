@@ -5,10 +5,8 @@ import { useFixtureSelect } from "react-cosmos/client";
 
 const options = [
   "BOLD" as const,
-  "ETH" as const,
-  "OSETH" as const,
+  "WETH" as const,
   "RETH" as const,
-  "SWETH" as const,
   "WSTETH" as const,
 ];
 

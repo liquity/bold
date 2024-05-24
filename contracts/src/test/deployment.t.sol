@@ -73,7 +73,7 @@ contract Deployment is DevTestSetup {
 
     function testActivePoolHasCorrectStabilityPoolAddress() public {
         address stabilityPoolAddress = address(stabilityPool);
-        address recordedStabilityPoolAddress = activePool.stabilityPoolAddress();
+        address recordedStabilityPoolAddress = address(activePool.stabilityPool());
         assertEq(stabilityPoolAddress, recordedStabilityPoolAddress);
     }
 
