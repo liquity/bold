@@ -1,15 +1,20 @@
-import type { ComponentPropsWithoutRef } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
+import { forwardRef } from "react";
 import { css } from "../../styled-system/css";
 
-export function TextButton({
+export const TextButton = forwardRef<
+  HTMLButtonElement,
+  ComponentPropsWithoutRef<"button"> & {
+    label: ReactNode;
+  }
+>(function TextButton({
   label,
   ...props
-}: ComponentPropsWithoutRef<"button"> & {
-  label: string;
-}) {
+}, ref) {
   return (
     <button
+      ref={ref}
       {...props}
       className={css({
         display: "inline",
@@ -28,4 +33,4 @@ export function TextButton({
       {label}
     </button>
   );
-}
+});
