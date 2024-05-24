@@ -24,4 +24,5 @@ export { Tabs } from "./Tabs/Tabs";
 export { TextButton } from "./TextButton/TextButton";
 export { colors, lightTheme, Theme, themeColor, useTheme } from "./Theme/Theme";
 export { TokenIcon, TokenIconGroup } from "./TokenIcon/TokenIcon";
+export { Tooltip } from "./Tooltip/Tooltip";
 export { UiKit } from "./UiKit/UiKit";
