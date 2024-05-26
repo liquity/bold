@@ -73,14 +73,12 @@ contract LiquidationsLSTTest is DevTestSetup {
         assertLt(troveManager.getCurrentICR(ATroveId, price), MCR);
         assertGt(troveManager.getTCR(price), CCR);
 
-        uint256 trovesCount = troveManager.getTroveIdsCount();
-        assertEq(trovesCount, 2);
+        assertEq(troveManager.getTroveIdsCount(), 2);
 
         troveManager.liquidate(ATroveId);
 
         // Check Troves count reduced by 1
-        trovesCount = troveManager.getTroveIdsCount();
-        assertEq(trovesCount, 1);
+        assertEq(troveManager.getTroveIdsCount(), 1);
 
         // Check SP stays the same
         assertEq(stabilityPool.getTotalBoldDeposits(), 0, "SP should be empty");

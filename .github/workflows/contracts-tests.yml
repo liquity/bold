@@ -101,7 +101,6 @@ jobs:
         run: pnpm test
 
   coverage:
-    if: false
     name: Coverage
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -156,10 +155,21 @@ jobs:
       - name: harhdat coverage
         run: pnpm coverage
         continue-on-error: true
+        timeout-minutes: 30
         env:
-          NODE_OPTIONS: --max-old-space-size=4096
+          NODE_OPTIONS: --max-old-space-size=8192
 
       # Merge
+      - name: ls
+        id: ls
+        run: |
+          ls && ls coverage
+
+      - name: Remove path from contract names in Hardhat
+        id: remove_contract_path
+        run: |
+          sed -i "s/SF:.*src/SF:src/g" coverage/lcov.info
+
       - name: Merge coverage reports
         id: coverage_merge
         run: |
