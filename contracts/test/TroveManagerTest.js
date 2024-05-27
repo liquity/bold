@@ -2342,7 +2342,7 @@ contract("TroveManager", async (accounts) => {
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
-    const ETHFee = await contracts.collateralRegistry.getEffectiveRedemptionFee(redemptionAmount, price, 80);
+    const ETHFee = await contracts.troveManager.getEffectiveRedemptionFeeInColl(redemptionAmount, price, 80);
 
     // Dennis redeems 20 Bold
     // Don't pay for gas, as it makes it easier to calculate the received Ether
@@ -2715,7 +2715,7 @@ contract("TroveManager", async (accounts) => {
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
-    const ETHFee = await contracts.collateralRegistry.getEffectiveRedemptionFee(amount, price, 80);
+    const ETHFee = await contracts.troveManager.getEffectiveRedemptionFeeInColl(amount, price, 80);
 
     const redemptionTx = await th.redeemCollateralAndGetTxObject(
       carol,
@@ -3198,7 +3198,7 @@ contract("TroveManager", async (accounts) => {
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
-    const ETHFee = await contracts.collateralRegistry.getEffectiveRedemptionFee(dec(400, 18), price, 80);
+    const ETHFee = await contracts.troveManager.getEffectiveRedemptionFeeInColl(dec(400, 18), price, 80);
 
     // Erin attempts to redeem 400 Bold
 
@@ -3411,7 +3411,7 @@ contract("TroveManager", async (accounts) => {
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
-    const ETHFee_1 = await contracts.collateralRegistry.getEffectiveRedemptionFee(_120_Bold, price, 80);
+    const ETHFee_1 = await contracts.troveManager.getEffectiveRedemptionFeeInColl(_120_Bold, price, 80);
 
     const redemption_1 = await th.redeemCollateralAndGetTxObject(
       erin,
@@ -3433,7 +3433,7 @@ contract("TroveManager", async (accounts) => {
       activeETH_0.sub(toBN(_120_Bold).mul(mv._1e18BN).div(price)).toString(),
     );
 
-    const ETHFee_2 = await contracts.collateralRegistry.getEffectiveRedemptionFee(_373_Bold, price, 80);
+    const ETHFee_2 = await contracts.troveManager.getEffectiveRedemptionFeeInColl(_373_Bold, price, 80);
     // Flyn redeems 373 Bold
     const redemption_2 = await th.redeemCollateralAndGetTxObject(
       flyn,
@@ -3454,7 +3454,7 @@ contract("TroveManager", async (accounts) => {
       activeETH_1.sub(toBN(_373_Bold).mul(mv._1e18BN).div(price)).toString(),
     );
 
-    const ETHFee_3 = await contracts.collateralRegistry.getEffectiveRedemptionFee(_950_Bold, price, 80);
+    const ETHFee_3 = await contracts.troveManager.getEffectiveRedemptionFeeInColl(_950_Bold, price, 80);
     // Graham redeems 950 Bold
     const redemption_3 = await th.redeemCollateralAndGetTxObject(
       graham,
@@ -3591,7 +3591,7 @@ contract("TroveManager", async (accounts) => {
     // A redeems 9 Bold
     const redemptionAmount = toBN(dec(9, 18));
     const price = await priceFeed.getPrice();
-    const ETHFee = await contracts.collateralRegistry.getEffectiveRedemptionFee(redemptionAmount, price, 80);
+    const ETHFee = await contracts.troveManager.getEffectiveRedemptionFeeInColl(redemptionAmount, price, 80);
     await th.redeemCollateral(
       A,
       contracts,
@@ -3720,7 +3720,7 @@ contract("TroveManager", async (accounts) => {
     const interestC = await troveManager.calcTroveAccruedInterest(CTroveId);
     const price = toBN(await priceFeed.getPrice());
     const priceWithoutDecimals = price.div(toBN(dec(1,18)));
-    const ETHFee = await contracts.collateralRegistry.getEffectiveRedemptionFee(redemptionAmount, price, 80);
+    const ETHFee = await contracts.troveManager.getEffectiveRedemptionFeeInColl(redemptionAmount, price, 80);
 
     // whale redeems Bold.  Expect this to fully redeem A, B, C, and partially redeem D.
     await th.redeemCollateral(whale, contracts, redemptionAmount, th._100pct, GAS_PRICE);

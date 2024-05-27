@@ -20,6 +20,5 @@ interface ICollateralRegistry {
     function getRedemptionRateWithDecay() external view returns (uint256);
 
     function getRedemptionFeeWithDecay(uint256 _ETHDrawn) external view returns (uint256);
-    function getEffectiveRedemptionFee(uint256 _redeemAmount, uint256 _price, uint256 _extraSeconds) external view returns (uint256);
     function getEffectiveRedemptionFeeInBold(uint256 _redeemAmount, uint256 _extraSeconds) external view returns (uint256);
 }
