@@ -273,15 +273,6 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         return _calcRedemptionFee(_calcRedemptionRate(newBaseRate), _redeemAmount);
     }
 
-    function getEffectiveRedemptionFee(uint256 _redeemAmount, uint256 _price)
-        external
-        view
-        override
-        returns (uint256)
-    {
-        return getEffectiveRedemptionFeeInBold(_redeemAmount) * DECIMAL_PRECISION / _price;
-    }
-
     // getters
 
     function getTroveManager(uint256 _index) public view returns (ITroveManager) {
