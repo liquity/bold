@@ -784,7 +784,9 @@ contract InterestRateBasic is DevTestSetup {
 
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(troveIDs.A);
 
-        assertApproxEqAbs(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest - redeemAmount, 1e16, "A debt mismatch");
+        assertApproxEqAbs(
+            recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest - redeemAmount, 1e16, "A debt mismatch"
+        );
         assertGt(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest - redeemAmount);
     }
 }

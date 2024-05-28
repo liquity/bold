@@ -320,11 +320,14 @@ contract MulticollateralTest is DevTestSetup {
         testValues3.collInitialBalance = contractsArray[2].WETH.balanceOf(A);
         testValues4.collInitialBalance = contractsArray[3].WETH.balanceOf(A);
 
-
-        testValues1.unbackedPortion = contractsArray[0].troveManager.getTroveEntireDebt(testValues1.troveId) - _spBoldAmount1;
-        testValues2.unbackedPortion = contractsArray[1].troveManager.getTroveEntireDebt(testValues2.troveId) - _spBoldAmount2;
-        testValues3.unbackedPortion = contractsArray[2].troveManager.getTroveEntireDebt(testValues3.troveId) - _spBoldAmount3;
-        testValues4.unbackedPortion = contractsArray[3].troveManager.getTroveEntireDebt(testValues4.troveId) - _spBoldAmount4;
+        testValues1.unbackedPortion =
+            contractsArray[0].troveManager.getTroveEntireDebt(testValues1.troveId) - _spBoldAmount1;
+        testValues2.unbackedPortion =
+            contractsArray[1].troveManager.getTroveEntireDebt(testValues2.troveId) - _spBoldAmount2;
+        testValues3.unbackedPortion =
+            contractsArray[2].troveManager.getTroveEntireDebt(testValues3.troveId) - _spBoldAmount3;
+        testValues4.unbackedPortion =
+            contractsArray[3].troveManager.getTroveEntireDebt(testValues4.troveId) - _spBoldAmount4;
         uint256 totalUnbacked = testValues1.unbackedPortion + testValues2.unbackedPortion + testValues3.unbackedPortion
             + testValues4.unbackedPortion;
 
@@ -420,7 +423,8 @@ contract MulticollateralTest is DevTestSetup {
         uint256 boldBalance = boldToken.balanceOf(A);
 
         uint256 redeemAmount = boldBalance * redemptionFraction / DECIMAL_PRECISION;
-        uint256 expectedFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(redeemAmount, 80) * DECIMAL_PRECISION / redeemAmount;
+        uint256 expectedFeePct =
+            collateralRegistry.getEffectiveRedemptionFeeInBold(redeemAmount, 80) * DECIMAL_PRECISION / redeemAmount;
         assertGt(expectedFeePct, 0);
 
         // Get BOLD debts from each branch
@@ -464,9 +468,29 @@ contract MulticollateralTest is DevTestSetup {
         assertGt(testValues3.ETHFee, 0);
 
         // Expect WETH balance of redeemer increased by drawn ETH, leaving the ETH fee in the branch
-        assertApproxEqAbs(contractsArray[0].WETH.balanceOf(A), testValues0.WETHBalBefore_A + testValues0.correspondingETH - testValues0.ETHFee, 1e14, "Redeemer bal mismatch for branch 1");
-        assertApproxEqAbs(contractsArray[1].WETH.balanceOf(A), testValues1.WETHBalBefore_A + testValues1.correspondingETH - testValues1.ETHFee, 1e14, "Redeemer bal mismatch for branch 2");
-        assertApproxEqAbs(contractsArray[2].WETH.balanceOf(A), testValues2.WETHBalBefore_A + testValues2.correspondingETH - testValues2.ETHFee, 1e14, "Redeemer bal mismatch for branch 3");
-        assertApproxEqAbs(contractsArray[3].WETH.balanceOf(A), testValues3.WETHBalBefore_A + testValues3.correspondingETH - testValues3.ETHFee, 1e14, "Redeemer bal mismatch for branch 4");
+        assertApproxEqAbs(
+            contractsArray[0].WETH.balanceOf(A),
+            testValues0.WETHBalBefore_A + testValues0.correspondingETH - testValues0.ETHFee,
+            1e14,
+            "Redeemer bal mismatch for branch 1"
+        );
+        assertApproxEqAbs(
+            contractsArray[1].WETH.balanceOf(A),
+            testValues1.WETHBalBefore_A + testValues1.correspondingETH - testValues1.ETHFee,
+            1e14,
+            "Redeemer bal mismatch for branch 2"
+        );
+        assertApproxEqAbs(
+            contractsArray[2].WETH.balanceOf(A),
+            testValues2.WETHBalBefore_A + testValues2.correspondingETH - testValues2.ETHFee,
+            1e14,
+            "Redeemer bal mismatch for branch 3"
+        );
+        assertApproxEqAbs(
+            contractsArray[3].WETH.balanceOf(A),
+            testValues3.WETHBalBefore_A + testValues3.correspondingETH - testValues3.ETHFee,
+            1e14,
+            "Redeemer bal mismatch for branch 4"
+        );
     }
 }

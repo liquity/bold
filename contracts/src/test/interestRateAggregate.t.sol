@@ -289,7 +289,6 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(pendingAggInterest_2, 0);
         uint256 expectedSPYield_2 = _getSPYield(pendingAggInterest_2);
 
-
         // Open 3rd trove
         openTroveNoHints100pct(C, 2 ether, 2000e18, 25e16);
 
@@ -680,8 +679,6 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 expectedSPYield = _getSPYield(pendingAggInterest);
-
-
 
         // B closes Trove
         closeTrove(B, BTroveId);
@@ -2276,7 +2273,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         // Check SP Bold bal has changed as expected - by the pendingAggInterest, minus A's share of it which gets paid out
         uint256 boldBalSP_2 = boldToken.balanceOf(address(stabilityPool));
-        assertApproximatelyEqual(boldBalSP_2,  boldBalSP_1 + expectedSPYield - expectedBoldGain_A, 1e3);
+        assertApproximatelyEqual(boldBalSP_2, boldBalSP_1 + expectedSPYield - expectedBoldGain_A, 1e3);
     }
 
     // TODO: mixed collateral & debt adjustment opps

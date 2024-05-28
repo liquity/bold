@@ -285,7 +285,10 @@ contract BoldToken is Ownable, IBoldToken {
     }
 
     function _requireCallerIsCRorSP() internal view {
-        require(msg.sender == collateralRegistryAddress || stabilityPoolAddresses[msg.sender], "Bold: Caller is neither the Registry nor the StabilityPool");
+        require(
+            msg.sender == collateralRegistryAddress || stabilityPoolAddresses[msg.sender],
+            "Bold: Caller is neither the Registry nor the StabilityPool"
+        );
     }
 
     function _requireCallerIsTroveMorSP() internal view {

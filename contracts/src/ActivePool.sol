@@ -208,18 +208,18 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
     function mintAggInterest() external override {
         _requireCallerIsSP();
-        aggRecordedDebt +=  _mintAggInterest();
+        aggRecordedDebt += _mintAggInterest();
     }
 
     function _mintAggInterest() internal returns (uint256) {
         uint256 aggInterest = calcPendingAggInterest();
         // Mint part of the BOLD interest to the SP.
         // TODO: implement interest minting to LPs
-        
+
         if (aggInterest > 0) {
             uint256 spYield = SP_YIELD_SPLIT * aggInterest / 1e18;
             uint256 remainderToLPs = aggInterest - spYield;
-           
+
             boldToken.mint(address(interestRouter), remainderToLPs);
             boldToken.mint(address(stabilityPool), spYield);
 

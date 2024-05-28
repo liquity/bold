@@ -81,14 +81,19 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     }
 
     // Account => index => commitment
-    mapping (address => mapping (uint256 => RedemptionCommitment)) redemptionCommitments;
+    mapping(address => mapping(uint256 => RedemptionCommitment)) redemptionCommitments;
 
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
     event RedemptionCommited(uint256 _redemptionId, uint256 _boldAmount, uint256 _maxFeePercentage);
-    event RedemptionWithdrawn(uint256 _redemptionId, uint256  _redemptionRefund, uint256 _penalty);
+    event RedemptionWithdrawn(uint256 _redemptionId, uint256 _redemptionRefund, uint256 _penalty);
 
-    constructor(IBoldToken _boldToken, address _interestRouterAddress, IERC20[] memory _tokens, ITroveManager[] memory _troveManagers) {
+    constructor(
+        IBoldToken _boldToken,
+        address _interestRouterAddress,
+        IERC20[] memory _tokens,
+        ITroveManager[] memory _troveManagers
+    ) {
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens < 10, "Collateral list too long");
@@ -135,13 +140,19 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     }
 
     // _redemptionId is per user
-    function commitRedemption(uint256 _redemptionId, uint256 _boldAmount, uint64 _maxIterationsPerCollateral, uint64 _maxFeePercentage) external override {
+    function commitRedemption(
+        uint256 _redemptionId,
+        uint256 _boldAmount,
+        uint64 _maxIterationsPerCollateral,
+        uint64 _maxFeePercentage
+    ) external override {
         _requireValidRedemptionId(msg.sender, _redemptionId);
         _requireValidMaxFeePercentage(_maxFeePercentage);
         _requireAmountGreaterThanZero(_boldAmount);
         _requireBoldBalanceCoversRedemption(boldToken, msg.sender, _boldAmount);
 
-        redemptionCommitments[msg.sender][_redemptionId] = RedemptionCommitment(_boldAmount, uint64(block.timestamp), _maxIterationsPerCollateral, _maxFeePercentage);
+        redemptionCommitments[msg.sender][_redemptionId] =
+            RedemptionCommitment(_boldAmount, uint64(block.timestamp), _maxIterationsPerCollateral, _maxFeePercentage);
 
         // Account for the committed amount
         boldRedemptionCommitments += _boldAmount;
@@ -177,8 +188,9 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         // We only compute it here, and update it at the end,
         // because the final redeemed amount may be less than the requested amount
         // Redeemers should take this into account in order to request the optimal amount to not overpay
-        uint256 redemptionRate =
-            _calcRedemptionRate(_getUpdatedBaseRateFromRedemption(redemptionCommitment.boldAmount, totals.boldSupplyAtStart));
+        uint256 redemptionRate = _calcRedemptionRate(
+            _getUpdatedBaseRateFromRedemption(redemptionCommitment.boldAmount, totals.boldSupplyAtStart)
+        );
         require(redemptionRate <= redemptionCommitment.maxFeePercentage, "CR: Fee exceeded provided maximum");
         // Implicit by the above and the _requireValidMaxFeePercentage checks
         //require(newBaseRate < DECIMAL_PRECISION, "CR: Fee would eat up all collateral");
@@ -206,7 +218,11 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
                 if (redeemAmount > 0) {
                     ITroveManager troveManager = getTroveManager(index);
                     uint256 redeemedAmount = troveManager.redeemCollateral(
-                        msg.sender, redeemAmount, prices[index], redemptionRate, redemptionCommitment.maxIterationsPerCollateral
+                        msg.sender,
+                        redeemAmount,
+                        prices[index],
+                        redemptionRate,
+                        redemptionCommitment.maxIterationsPerCollateral
                     );
                     totals.redeemedAmount += redeemedAmount;
                 }
@@ -355,7 +371,12 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         return _calcRedemptionFee(getRedemptionRateWithDecay(), _ETHDrawn);
     }
 
-    function getEffectiveRedemptionFeeInBold(uint256 _redeemAmount, uint256 _extraSeconds) public view override returns (uint256) {
+    function getEffectiveRedemptionFeeInBold(uint256 _redeemAmount, uint256 _extraSeconds)
+        public
+        view
+        override
+        returns (uint256)
+    {
         uint256 totalBoldSupply = boldToken.totalSupply();
         uint256 newBaseRate = _getFutureBaseRateFromRedemption(_redeemAmount, totalBoldSupply, _extraSeconds);
         return _calcRedemptionFee(_calcRedemptionRate(newBaseRate), _redeemAmount);
@@ -411,9 +432,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         uint256 boldBalance = _boldToken.balanceOf(_redeemer);
         // Confirm redeemer's balance is less than total Bold supply
         assert(boldBalance <= _boldToken.totalSupply());
-        require(
-            boldBalance >= _amount, "CR: Requested redemption amount must be <= user's Bold token balance"
-        );
+        require(boldBalance >= _amount, "CR: Requested redemption amount must be <= user's Bold token balance");
     }
 
     function _requireValidRedemptionId(address _account, uint256 _redemptionId) internal view {
@@ -426,7 +445,8 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
 
     function _requireValidTime(RedemptionCommitment memory _redemptionCommitment) internal view {
         require(
-            _redemptionCommitment.timestamp + REDEMPTION_INTERVAL_MIN <= block.timestamp && block.timestamp <= _redemptionCommitment.timestamp + REDEMPTION_INTERVAL_MAX,
+            _redemptionCommitment.timestamp + REDEMPTION_INTERVAL_MIN <= block.timestamp
+                && block.timestamp <= _redemptionCommitment.timestamp + REDEMPTION_INTERVAL_MAX,
             "CR: commitment out of redemption window"
         );
     }

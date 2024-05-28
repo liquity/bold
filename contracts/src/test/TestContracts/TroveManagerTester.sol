@@ -64,9 +64,10 @@ contract TroveManagerTester is TroveManager {
         view
         returns (uint256)
     {
-        return ICollateralRegistry(collateralRegistryAddress).getEffectiveRedemptionFeeInBold(_redeemAmount, _extraSeconds) * DECIMAL_PRECISION / _price;
+        return ICollateralRegistry(collateralRegistryAddress).getEffectiveRedemptionFeeInBold(
+            _redeemAmount, _extraSeconds
+        ) * DECIMAL_PRECISION / _price;
     }
-
 
     function callInternalRemoveTroveId(uint256 _troveId) external {
         uint256 troveOwnersArrayLength = TroveIds.length;

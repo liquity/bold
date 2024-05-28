@@ -236,6 +236,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     event TroveSnapshotsUpdated(uint256 _L_ETH, uint256 _L_boldDebt);
     event TroveIndexUpdated(uint256 _troveId, uint256 _newIndex);
     event RedemptionFeePaidToTrove(uint256 indexed _troveId, uint256 _ETHFee);
+
     enum TroveManagerOperation {
         getAndApplyRedistributionGains,
         liquidate,
@@ -628,7 +629,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         // TODO: should we leave gas compensation (and corresponding debt) untouched for zombie Troves? Currently it's not touched.
         singleRedemption.BoldLot = LiquityMath._min(_maxBoldamount, entireTroveDebt - BOLD_GAS_COMPENSATION);
 
-        // Get the amount of ETH equal in USD value to the BoldLot redeemed 
+        // Get the amount of ETH equal in USD value to the BoldLot redeemed
         uint256 correspondingETH = singleRedemption.BoldLot * DECIMAL_PRECISION / _price;
         // Calculate the ETHFee separately (for events)
         singleRedemption.ETHFee = correspondingETH * _redemptionRate / DECIMAL_PRECISION;
@@ -710,8 +711,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
                 continue;
             }
 
-            SingleRedemptionValues memory singleRedemption =
-                _redeemCollateralFromTrove(contractsCache, currentTroveId, totals.remainingBold, _price, _redemptionRate);
+            SingleRedemptionValues memory singleRedemption = _redeemCollateralFromTrove(
+                contractsCache, currentTroveId, totals.remainingBold, _price, _redemptionRate
+            );
 
             totals.totalBoldToRedeem = totals.totalBoldToRedeem + singleRedemption.BoldLot;
             totals.totalRedistDebtGains = totals.totalRedistDebtGains + singleRedemption.redistDebtGain;
