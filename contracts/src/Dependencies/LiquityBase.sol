@@ -39,6 +39,7 @@ contract LiquityBase is ILiquityBase {
 
     uint256 public constant ONE_YEAR = 365 days;
     uint256 public constant UPFRONT_INTEREST_PERIOD = 7 days;
+    uint256 public constant INTEREST_RATE_ADJ_COOLDOWN = 3 days;
     uint256 public constant STALE_TROVE_DURATION = 90 days;
 
     IActivePool public activePool;

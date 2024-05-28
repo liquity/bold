@@ -73,7 +73,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 entireDebt;
         uint256 ICR;
         uint256 newTCR;
-        uint256 arrayIndex;
     }
 
     struct ContractsCacheTMAP {
@@ -104,7 +103,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
 
-    event TroveCreated(address indexed _owner, uint256 _troveId, uint256 _arrayIndex);
+    event TroveCreated(address indexed _owner, uint256 _troveId);
     event TroveUpdated(uint256 indexed _troveId, uint256 _debt, uint256 _coll, Operation operation);
     event BoldBorrowingFeePaid(uint256 indexed _troveId, uint256 _boldFee);
 
@@ -215,13 +214,12 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // --- Effects & interactions ---
 
         // Set the stored Trove properties and mint the NFT
-        vars.arrayIndex =
-            contractsCache.troveManager.openTrove(_owner, troveId, _ETHAmount, vars.entireDebt, _annualInterestRate);
+        contractsCache.troveManager.openTrove(_owner, troveId, _ETHAmount, vars.entireDebt, _annualInterestRate);
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(vars.troveChange);
         sortedTroves.insert(troveId, _annualInterestRate, _upperHint, _lowerHint);
 
-        emit TroveCreated(_owner, troveId, vars.arrayIndex);
+        emit TroveCreated(_owner, troveId);
 
         // Pull ETH tokens from sender and move them to the Active Pool
         _pullETHAndSendToActivePool(contractsCache.activePool, _ETHAmount);
@@ -355,11 +353,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 _troveId,
         uint256 _newAnnualInterestRate,
         uint256 _upperHint,
-        uint256 _lowerHint
+        uint256 _lowerHint,
+        uint256 _maxUpfrontFee
     ) external {
         ContractsCacheTMAP memory contractsCache = ContractsCacheTMAP(troveManager, activePool);
-
-        // uint256 price = priceFeed.fetchPrice();
 
         _requireValidAnnualInterestRate(_newAnnualInterestRate);
         // TODO: Delegation functionality
@@ -367,34 +364,56 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
 
         LatestTroveData memory trove = contractsCache.troveManager.getLatestTroveData(_troveId);
+        uint256 newColl = trove.entireColl;
+        uint256 newDebt = trove.entireDebt;
 
         TroveChange memory troveChange;
         troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
-        troveChange.newWeightedRecordedDebt = trove.entireDebt * _newAnnualInterestRate;
+        troveChange.newWeightedRecordedDebt = newDebt * _newAnnualInterestRate;
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
 
-        // uint256 newTCR = _getNewTCRFromTroveChange(
-        //     0, // _collIncrease
-        //     0, // _collDecrease
-        //     0, // _debtIncrease
-        //     0, // _debtDecrease
-        //     price
-        // );
-        // _requireNewTCRisAboveCCR(newTCR);
+        bool prematureAdjustment = (
+            trove.lastInterestRateAdjTime != 0
+                && block.timestamp < trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
+        );
+
+        // Apply upfront fee on premature adjustments
+        if (prematureAdjustment) {
+            // TODO: should we fetch unconditionally? Would make the TX a bit more expensive for well-behaved users, but
+            // it would be more consistent with other functions (fetching the price is the first thing we usually do).
+            uint256 price = priceFeed.fetchPrice();
+
+            uint256 avgInterestRate = contractsCache.activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
+            troveChange.upfrontFee = _calcUpfrontFee(newDebt, avgInterestRate);
+            _requireUserAcceptsUpfrontFee(troveChange.upfrontFee, _maxUpfrontFee);
+
+            newDebt += troveChange.upfrontFee;
+
+            // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee
+            troveChange.newWeightedRecordedDebt = newDebt * _newAnnualInterestRate;
+
+            // ICR is based on the composite debt, i.e. the requested Bold amount + Bold gas comp + upfront fee.
+            uint256 newICR = LiquityMath._computeCR(newColl, newDebt, price);
+            _requireICRisAboveMCR(newICR);
+
+            uint256 newTCR = _getNewTCRFromTroveChange(troveChange, price);
+            _requireNewTCRisAboveCCR(newTCR);
+        }
 
         contractsCache.troveManager.adjustTroveInterestRate(
             _troveId,
-            trove.entireColl,
-            trove.entireDebt,
+            newColl,
+            newDebt,
             _newAnnualInterestRate,
             trove.redistETHGain,
-            trove.redistBoldDebtGain
+            trove.redistBoldDebtGain,
+            !prematureAdjustment // _startCooldown
         );
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
         sortedTroves.reInsert(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint);
 
-        emit TroveUpdated(_troveId, trove.entireColl, trove.entireDebt, Operation.adjustTroveInterestRate);
+        emit TroveUpdated(_troveId, newColl, newDebt, Operation.adjustTroveInterestRate);
     }
 
     /*

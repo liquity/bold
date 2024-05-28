@@ -43,7 +43,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         active,
         closedByOwner,
         closedByLiquidation,
-        closedByRedemption,
         unredeemable
     }
 
@@ -53,8 +52,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 coll;
         uint256 stake;
         Status status;
-        uint128 arrayIndex;
+        uint64 arrayIndex;
         uint64 lastDebtUpdateTime;
+        uint64 lastInterestRateAdjTime;
         uint256 annualInterestRate;
     }
     // TODO: optimize this struct packing for gas reduction, which may break v1 tests that assume a certain order of properties
@@ -690,6 +690,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         trove.entireDebt = trove.recordedDebt + trove.redistBoldDebtGain + trove.accruedInterest;
         trove.entireColl = Troves[_troveId].coll + trove.redistETHGain;
+        trove.lastInterestRateAdjTime = Troves[_troveId].lastInterestRateAdjTime;
     }
 
     function getLatestTroveData(uint256 _troveId) external view returns (LatestTroveData memory trove) {
@@ -726,13 +727,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         return trove.entireColl;
     }
 
-    // Remove borrower's stake from the totalStakes sum, and set their stake to 0
-    function _removeStake(uint256 _troveId) internal {
-        uint256 stake = Troves[_troveId].stake;
-        totalStakes = totalStakes - stake;
-        Troves[_troveId].stake = 0;
-    }
-
     // Update borrower's stake based on their latest collateral value
     // TODO: Gas: can we pass current coll as a param here and remove an SLOAD?
     function _updateStakeAndTotalStakes(uint256 _troveId) internal returns (uint256) {
@@ -740,8 +734,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 oldStake = Troves[_troveId].stake;
         Troves[_troveId].stake = newStake;
 
-        totalStakes = totalStakes - oldStake + newStake;
-        emit TotalStakesUpdated(totalStakes);
+        uint256 newTotalStakes = totalStakes - oldStake + newStake;
+        totalStakes = newTotalStakes;
+        emit TotalStakesUpdated(newTotalStakes);
 
         return newStake;
     }
@@ -813,27 +808,27 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     }
 
     function _closeTrove(uint256 _troveId, Status closedStatus) internal {
-        assert(closedStatus != Status.nonExistent && closedStatus != Status.active);
+        assert(closedStatus == Status.closedByLiquidation || closedStatus == Status.closedByOwner);
 
         uint256 TroveIdsArrayLength = TroveIds.length;
         _requireMoreThanOneTroveInSystem(TroveIdsArrayLength);
 
-        Status prevStatus = Troves[_troveId].status;
-
-        // Zero Trove properties
-        Troves[_troveId].status = closedStatus;
-        Troves[_troveId].coll = 0;
-        Troves[_troveId].debt = 0;
-        Troves[_troveId].annualInterestRate = 0;
-
-        // Zero Trove snapshots
-        rewardSnapshots[_troveId].ETH = 0;
-        rewardSnapshots[_troveId].boldDebt = 0;
-
-        _removeStake(_troveId);
         _removeTroveId(_troveId, TroveIdsArrayLength);
 
-        if (prevStatus == Status.active) sortedTroves.remove(_troveId);
+        if (Troves[_troveId].status == Status.active) {
+            sortedTroves.remove(_troveId);
+        }
+
+        uint256 newTotalStakes = totalStakes - Troves[_troveId].stake;
+        totalStakes = newTotalStakes;
+        emit TotalStakesUpdated(newTotalStakes);
+
+        // Zero Trove properties
+        delete Troves[_troveId];
+        Troves[_troveId].status = closedStatus;
+
+        // Zero Trove snapshots
+        delete rewardSnapshots[_troveId];
 
         // burn ERC721
         // TODO: Should we do it?
@@ -860,33 +855,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         emit SystemSnapshotsUpdated(totalStakesSnapshot, totalCollateralSnapshot);
     }
 
-    // Push the trove's id to the Trove list, and record the corresponding array index on the Trove struct
-    function _addTroveIdToArray(uint256 _troveId) internal returns (uint256) {
-        /* Max array size is 2**128 - 1, i.e. ~3e30 troves. No risk of overflow, since troves have minimum Bold
-        debt of liquidation reserve plus MIN_NET_DEBT. 3e30 Bold dwarfs the value of all wealth in the world ( which is < 1e15 USD). */
-
-        // Push the Troveowner to the array
-        TroveIds.push(_troveId);
-
-        // Record the index of the new Troveowner on their Trove struct
-        uint128 index = uint128(TroveIds.length - 1);
-        Troves[_troveId].arrayIndex = index;
-
-        return index;
-    }
-
     /*
     * Remove a Trove owner from the TroveIds array, not preserving array order. Removing owner 'B' does the following:
     * [A B C D E] => [A E C D], and updates E's Trove struct to point to its new array index.
     */
     function _removeTroveId(uint256 _troveId, uint256 TroveIdsArrayLength) internal {
-        Status troveStatus = Troves[_troveId].status;
-        // It’s set in caller function `_closeTrove`
-        assert(troveStatus != Status.nonExistent && troveStatus != Status.active);
-
-        uint128 index = Troves[_troveId].arrayIndex;
-        uint256 length = TroveIdsArrayLength;
-        uint256 idxLast = length - 1;
+        uint64 index = Troves[_troveId].arrayIndex;
+        uint256 idxLast = TroveIdsArrayLength - 1;
 
         assert(index <= idxLast);
 
@@ -1009,26 +984,31 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
     function openTrove(address _owner, uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _annualInterestRate)
         external
-        returns (uint256 arrayIndex)
     {
         _requireCallerIsBorrowerOperations();
 
-        // TODO: optimize gas for writing to this struct
-        Troves[_troveId].status = Status.active;
-        Troves[_troveId].coll = _coll;
+        uint256 newStake = _computeNewStake(_coll);
+
+        // Trove memory newTrove;
         Troves[_troveId].debt = _debt;
-        Troves[_troveId].annualInterestRate = _annualInterestRate;
+        Troves[_troveId].coll = _coll;
+        Troves[_troveId].stake = newStake;
+        Troves[_troveId].status = Status.active;
+        Troves[_troveId].arrayIndex = uint64(TroveIds.length);
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
+        Troves[_troveId].annualInterestRate = _annualInterestRate;
 
         _updateTroveRewardSnapshots(_troveId);
 
+        // Push the trove's id to the Trove list
+        TroveIds.push(_troveId);
+
+        uint256 newTotalStakes = totalStakes + newStake;
+        totalStakes = newTotalStakes;
+        emit TotalStakesUpdated(newTotalStakes);
+
         // mint ERC721
         _mint(_owner, _troveId);
-
-        arrayIndex = _addTroveIdToArray(_troveId);
-
-        // Record the Trove's stake (for redistributions) and update the total stakes
-        _updateStakeAndTotalStakes(_troveId);
     }
 
     function setTroveStatusToActive(uint256 _troveId) external {
@@ -1042,7 +1022,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 _newDebt,
         uint256 _newAnnualInterestRate,
         uint256 _appliedRedistETHGain,
-        uint256 _appliedRedistBoldDebtGain
+        uint256 _appliedRedistBoldDebtGain,
+        bool _startCooldown
     ) external {
         _requireCallerIsBorrowerOperations();
 
@@ -1050,6 +1031,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         Troves[_troveId].debt = _newDebt;
         Troves[_troveId].annualInterestRate = _newAnnualInterestRate;
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
+        if (_startCooldown) Troves[_troveId].lastInterestRateAdjTime = uint64(block.timestamp);
 
         _updateTroveRewardSnapshots(_troveId);
         _movePendingTroveRewardsToActivePool(defaultPool, _appliedRedistBoldDebtGain, _appliedRedistETHGain);

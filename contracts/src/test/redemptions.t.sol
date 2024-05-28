@@ -65,8 +65,8 @@ contract Redemptions is DevTestSetup {
         redeem(E, redeemAmount_1);
 
         // Check A and B still open
-        assertEq(troveManager.getTroveStatus(troveIDs.A), 5); // Status 'unredeemable'
-        assertEq(troveManager.getTroveStatus(troveIDs.B), 5); // Status 'unredeemable'
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(TroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(TroveManager.Status.unredeemable));
     }
 
     function testFullRedemptionLeavesTrovesWithDebtEqualToGasComp() public {
@@ -104,8 +104,8 @@ contract Redemptions is DevTestSetup {
         redeem(E, redeemAmount_2);
 
         // Check A and B still open with debt == gas comp
-        assertEq(troveManager.getTroveStatus(troveIDs.A), 5); // Status 'unredeemable'
-        assertEq(troveManager.getTroveStatus(troveIDs.B), 5); // Status 'unredeemable'
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(TroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(TroveManager.Status.unredeemable));
         assertEq(troveManager.getTroveEntireDebt(troveIDs.A), BOLD_GAS_COMP);
         assertEq(troveManager.getTroveEntireDebt(troveIDs.B), BOLD_GAS_COMP);
 
@@ -270,7 +270,7 @@ contract Redemptions is DevTestSetup {
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
-        assertEq(troveManager.getTroveStatus(troveIDs.A), 5); // Status 5 - 'unredeemable'
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(TroveManager.Status.unredeemable));
     }
 
     function testTroveRedeemedToBelowMIN_NET_DEBTBecomesZombieTrove() public {
@@ -278,7 +278,7 @@ contract Redemptions is DevTestSetup {
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
-        assertEq(troveManager.getTroveStatus(troveIDs.B), 5); // Status 5 - 'unredeemable'
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(TroveManager.Status.unredeemable));
     }
 
     function testTroveRedeemedToAboveMIN_NET_DEBTDoesNotBecomesZombieTrove() public {
@@ -286,7 +286,7 @@ contract Redemptions is DevTestSetup {
 
         _redeemAndCreateZombieTroveAAndHitB(troveIDs);
 
-        assertEq(troveManager.getTroveStatus(troveIDs.C), 1); // Status 1 - 'active'
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.C)), uint8(TroveManager.Status.active));
     }
 
     function testZombieTrovesRemovedFromSortedList() public {
@@ -355,7 +355,7 @@ contract Redemptions is DevTestSetup {
 
         // A liquidates E
         liquidate(A, troveIDs.E);
-        assertEq(troveManager.getTroveStatus(troveIDs.E), 3); // Status 3 - closed by liquidation
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.E)), uint8(TroveManager.Status.closedByLiquidation));
 
         // // Check A and B have redist. gains
         assertTrue(troveManager.hasRedistributionGains(troveIDs.A));
@@ -440,7 +440,7 @@ contract Redemptions is DevTestSetup {
 
         // A liquidates E
         liquidate(A, troveID_E);
-        assertEq(troveManager.getTroveStatus(troveID_E), 3); // Status 3 - closed by liquidation
+        assertEq(uint8(troveManager.getTroveStatus(troveID_E)), uint8(TroveManager.Status.closedByLiquidation));
 
         assertTrue(troveManager.hasRedistributionGains(troveIDs.A));
         assertTrue(troveManager.hasRedistributionGains(troveIDs.B));
@@ -460,14 +460,14 @@ contract Redemptions is DevTestSetup {
         transferBold(E, A, boldToken.balanceOf(E) / 2);
         transferBold(E, B, boldToken.balanceOf(E));
 
-        assertEq(troveManager.getTroveStatus(troveIDs.A), 5); // Status 5 - 'unredeemable'
-        assertEq(troveManager.getTroveStatus(troveIDs.B), 5); // Status 5 - 'unredeemable'
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(TroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(TroveManager.Status.unredeemable));
 
         closeTrove(A, troveIDs.A);
         closeTrove(B, troveIDs.B);
 
-        assertEq(troveManager.getTroveStatus(troveIDs.A), 2); // Status 2 - 'closed by owner'
-        assertEq(troveManager.getTroveStatus(troveIDs.B), 2); // Status 2 - 'closed by owner'
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(TroveManager.Status.closedByOwner));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(TroveManager.Status.closedByOwner));
     }
 
     function testZombieBorrowerCanDrawFreshDebtToAboveMIN_NET_DEBT() public {
@@ -538,8 +538,8 @@ contract Redemptions is DevTestSetup {
         assertGt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT);
 
         // Check A and B now have active status
-        assertEq(troveManager.getTroveStatus(troveIDs.A), 1);
-        assertEq(troveManager.getTroveStatus(troveIDs.B), 1);
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(TroveManager.Status.active));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(TroveManager.Status.active));
     }
 
     function testZombieTroveDrawingFreshDebtToAboveMIN_NET_DEBTInsertsItToSortedList() public {
@@ -743,12 +743,12 @@ contract Redemptions is DevTestSetup {
         // A and B attempt to change interes rates
         vm.startPrank(A);
         vm.expectRevert("BorrowerOps: Trove does not have active status");
-        borrowerOperations.adjustTroveInterestRate(troveIDs.A, newInterestRate, troveIDs.A, troveIDs.A);
+        borrowerOperations.adjustTroveInterestRate(troveIDs.A, newInterestRate, troveIDs.A, troveIDs.A, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
         vm.expectRevert("BorrowerOps: Trove does not have active status");
-        borrowerOperations.adjustTroveInterestRate(troveIDs.B, newInterestRate, troveIDs.B, troveIDs.B);
+        borrowerOperations.adjustTroveInterestRate(troveIDs.B, newInterestRate, troveIDs.B, troveIDs.B, 0);
         vm.stopPrank();
     }
 
@@ -793,11 +793,11 @@ contract Redemptions is DevTestSetup {
         // assertFalse(troveManager.checkBelowCriticalThreshold(price));
         assertLt(troveManager.getCurrentICR(troveIDs.B, price), MCR);
 
-        assertEq(troveManager.getTroveStatus(troveIDs.B), 5);
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(TroveManager.Status.unredeemable));
 
         // E liquidates B
         liquidate(E, troveIDs.B);
-        assertEq(troveManager.getTroveStatus(troveIDs.B), 3); // Status 3 - closed by liquidation
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(TroveManager.Status.closedByLiquidation));
     }
 
     // TODO: tests borrower for combined adjustments - debt changes and coll add/withdrawals.

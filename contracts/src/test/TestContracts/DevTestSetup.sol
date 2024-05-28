@@ -75,6 +75,7 @@ contract DevTestSetup is BaseTest {
         MIN_DEBT = troveManager.MIN_DEBT();
         SP_YIELD_SPLIT = activePool.SP_YIELD_SPLIT();
         UPFRONT_INTEREST_PERIOD = troveManager.UPFRONT_INTEREST_PERIOD();
+        INTEREST_RATE_ADJ_COOLDOWN = troveManager.INTEREST_RATE_ADJ_COOLDOWN();
         MCR = troveManager.MCR();
     }
 
@@ -153,7 +154,7 @@ contract DevTestSetup is BaseTest {
         transferBold(D, A, boldToken.balanceOf(D) / 2);
         transferBold(D, B, boldToken.balanceOf(D));
 
-        assertEq(troveManager.getTroveStatus(troveIDs.C), 3); // Status 3 - closed by liquidation
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.C)), uint8(TroveManager.Status.closedByLiquidation));
     }
 
     function _setupForBatchLiquidateTrovesPureRedist() internal returns (uint256, uint256, uint256, uint256) {
@@ -229,8 +230,8 @@ contract DevTestSetup is BaseTest {
         assertLt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP, MIN_NET_DEBT);
 
         // Check A and B tagged as Zombie troves
-        assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'
-        assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(TroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(TroveManager.Status.unredeemable));
     }
 
     function _redeemAndCreateZombieTroveAAndHitB(ABCDEF memory _troveIDs) internal {
@@ -247,8 +248,8 @@ contract DevTestSetup is BaseTest {
         assertGt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP, MIN_NET_DEBT);
 
         // // Check A is zombie Trove but B is not
-        assertEq(troveManager.getTroveStatus(_troveIDs.A), 5); // status 'unredeemable'
-        assertEq(troveManager.getTroveStatus(_troveIDs.B), 1); // status 'active'
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(TroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.B)), uint8(TroveManager.Status.active));
     }
 
     function _getSPYield(uint256 _aggInterest) internal returns (uint256) {

@@ -11,4 +11,5 @@ struct LatestTroveData {
     uint256 recordedDebt;
     uint256 annualInterestRate;
     uint256 weightedRecordedDebt;
+    uint256 lastInterestRateAdjTime;
 }

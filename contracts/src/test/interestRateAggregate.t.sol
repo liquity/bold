@@ -1542,8 +1542,8 @@ contract InterestRateAggregate is DevTestSetup {
         batchLiquidateTroves(A, trovesToLiq);
 
         // Check both Troves were closed by liquidation
-        assertEq(troveManager.getTroveStatus(CTroveId), 3);
-        assertEq(troveManager.getTroveStatus(DTroveId), 3);
+        assertEq(uint8(troveManager.getTroveStatus(CTroveId)), uint8(TroveManager.Status.closedByLiquidation));
+        assertEq(uint8(troveManager.getTroveStatus(DTroveId)), uint8(TroveManager.Status.closedByLiquidation));
 
         // // changes agg. recorded debt by: agg_accrued_interest - liq'd_troves_recorded_trove_debts - liq'd_troves_accrued_interest
         assertEq(
@@ -1685,8 +1685,8 @@ contract InterestRateAggregate is DevTestSetup {
         assertTrue(troveManager.hasRedistributionGains(ATroveId));
 
         // Check both Troves were closed by liquidation
-        assertEq(troveManager.getTroveStatus(CTroveId), 3);
-        assertEq(troveManager.getTroveStatus(DTroveId), 3);
+        assertEq(uint8(troveManager.getTroveStatus(CTroveId)), uint8(TroveManager.Status.closedByLiquidation));
+        assertEq(uint8(troveManager.getTroveStatus(DTroveId)), uint8(TroveManager.Status.closedByLiquidation));
 
         // // changes agg. recorded debt by: agg_accrued_interest - liq'd_troves_recorded_trove_debts - liq'd_troves_accrued_interest
         assertEq(

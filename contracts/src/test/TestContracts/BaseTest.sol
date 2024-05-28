@@ -44,6 +44,7 @@ contract BaseTest is Test {
     uint256 MIN_DEBT;
     uint256 SP_YIELD_SPLIT;
     uint256 UPFRONT_INTEREST_PERIOD;
+    uint256 INTEREST_RATE_ADJ_COOLDOWN;
 
     // Core contracts
     IActivePool activePool;
@@ -87,6 +88,29 @@ contract BaseTest is Test {
 
         uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(openTrove);
         return calcUpfrontFee(openTrove.debtIncrease, avgInterestRate);
+    }
+
+    function predictAdjustInterestRateUpfrontFee(uint256 troveId, uint256 newInterestRate)
+        internal
+        view
+        returns (uint256)
+    {
+        LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
+
+        if (
+            trove.lastInterestRateAdjTime == 0
+                || block.timestamp >= trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
+        ) {
+            return 0;
+        }
+
+        TroveChange memory troveChange;
+        troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
+        troveChange.newWeightedRecordedDebt = trove.entireDebt * newInterestRate;
+        troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
+
+        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
+        return calcUpfrontFee(trove.entireDebt, avgInterestRate);
     }
 
     // Quick and dirty binary search instead of Newton's, because it's easier
@@ -188,7 +212,13 @@ contract BaseTest is Test {
 
     function changeInterestRateNoHints(address _account, uint256 _troveId, uint256 _newAnnualInterestRate) public {
         vm.startPrank(_account);
-        borrowerOperations.adjustTroveInterestRate(_troveId, _newAnnualInterestRate, 0, 0);
+        borrowerOperations.adjustTroveInterestRate(
+            _troveId,
+            _newAnnualInterestRate,
+            0,
+            0,
+            predictAdjustInterestRateUpfrontFee(_troveId, _newAnnualInterestRate)
+        );
         vm.stopPrank();
     }
 

@@ -92,8 +92,7 @@ interface ITroveManager is IERC721, ILiquityBase {
     function getTroveLastDebtUpdateTime(uint256 _troveId) external view returns (uint256);
 
     function openTrove(address _owner, uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _annualInterestRate)
-        external
-        returns (uint256 arrayIndex);
+        external;
 
     function setTroveStatusToActive(uint256 _troveId) external;
 
@@ -103,7 +102,8 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _newDebt,
         uint256 _newAnnualInterestRate,
         uint256 _appliedRedistETHGain,
-        uint256 _appliedRedistBoldDebtGain
+        uint256 _appliedRedistBoldDebtGain,
+        bool _startCooldown
     ) external;
 
     function adjustTrove(
