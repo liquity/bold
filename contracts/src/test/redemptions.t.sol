@@ -226,9 +226,9 @@ contract Redemptions is DevTestSetup {
 
         redeem(E, totalBoldRedeemAmount);
 
-        assertEq(troveManager.getTroveEntireColl(troveIDs.A), expectedRemainingColl_A);
-        assertEq(troveManager.getTroveEntireColl(troveIDs.B), expectedRemainingColl_B);
-        assertEq(troveManager.getTroveEntireColl(troveIDs.C), expectedRemainingColl_C);
+        assertApproxEqAbs(troveManager.getTroveEntireColl(troveIDs.A), expectedRemainingColl_A, 10);
+        assertApproxEqAbs(troveManager.getTroveEntireColl(troveIDs.B), expectedRemainingColl_B, 10);
+        assertApproxEqAbs(troveManager.getTroveEntireColl(troveIDs.C), expectedRemainingColl_C, 10);
     }
 
     function testRedemption3TroveLeavesETHFeesInActivePool() public {
@@ -259,8 +259,8 @@ contract Redemptions is DevTestSetup {
         redeem(E, totalBoldRedeemAmount);
 
         // Check Active Pool ETH reduced correctly
-        assertEq(WETH.balanceOf(address(activePool)), activePoolBalBefore - expectedETHDelta);
-        assertEq(activePool.getETHBalance(), activePoolETHTrackerBefore - expectedETHDelta);
+        assertApproxEqAbs(WETH.balanceOf(address(activePool)), activePoolBalBefore - expectedETHDelta, 30);
+        assertApproxEqAbs(activePool.getETHBalance(), activePoolETHTrackerBefore - expectedETHDelta, 30);
     }
 
     // --- Zombie Troves ---

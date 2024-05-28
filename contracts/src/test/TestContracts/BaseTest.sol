@@ -80,6 +80,40 @@ contract BaseTest is Test {
         return calcInterest(debt * avgInterestRate, UPFRONT_INTEREST_PERIOD);
     }
 
+    function predictOpenTroveUpfrontFee(uint256 borrowedAmount, uint256 interestRate) internal view returns (uint256) {
+        TroveChange memory openTrove;
+        openTrove.debtIncrease = borrowedAmount + BOLD_GAS_COMP;
+        openTrove.newWeightedRecordedDebt = openTrove.debtIncrease * interestRate;
+
+        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(openTrove);
+        return calcUpfrontFee(openTrove.debtIncrease, avgInterestRate);
+    }
+
+    // Quick and dirty binary search instead of Newton's, because it's easier
+    function findAmountToBorrow(uint256 targetDebt, uint256 interestRate)
+        internal
+        view
+        returns (uint256 borrow, uint256 upfrontFee)
+    {
+        uint256 right = targetDebt - BOLD_GAS_COMP;
+        upfrontFee = predictOpenTroveUpfrontFee(right, interestRate);
+        uint256 left = right - upfrontFee;
+
+        for (uint256 i = 0; i < 256; ++i) {
+            borrow = (left + right) / 2;
+            upfrontFee = predictOpenTroveUpfrontFee(borrow, interestRate);
+            uint256 actualDebt = borrow + BOLD_GAS_COMP + upfrontFee;
+
+            if (actualDebt == targetDebt) {
+                break;
+            } else if (actualDebt < targetDebt) {
+                left = borrow;
+            } else {
+                right = borrow;
+            }
+        }
+    }
+
     function createAccounts() public {
         address[10] memory tempAccounts;
         for (uint256 i = 0; i < accounts.getAccountsCount(); i++) {
@@ -121,11 +155,7 @@ contract BaseTest is Test {
         uint256 _boldAmount,
         uint256 _annualInterestRate
     ) public returns (uint256 troveId, uint256 upfrontFee) {
-        TroveChange memory troveChange;
-        troveChange.debtIncrease = _boldAmount + BOLD_GAS_COMP;
-        troveChange.newWeightedRecordedDebt = troveChange.debtIncrease * _annualInterestRate;
-        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
-        upfrontFee = calcUpfrontFee(troveChange.debtIncrease, avgInterestRate);
+        upfrontFee = predictOpenTroveUpfrontFee(_boldAmount, _annualInterestRate);
 
         vm.startPrank(_account);
 

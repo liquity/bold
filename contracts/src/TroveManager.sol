@@ -519,7 +519,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         // Get the amount of ETH equal in USD value to the BoldLot redeemed
         uint256 correspondingETH = singleRedemption.debtDecrease * DECIMAL_PRECISION / _price;
         // Calculate the ETHFee separately (for events)
-        ETHFee = singleRedemption.collDecrease * _redemptionRate / DECIMAL_PRECISION;
+        ETHFee = correspondingETH * _redemptionRate / DECIMAL_PRECISION;
         // Get the final ETHLot to send to redeemer, leaving the fee in the Trove
         singleRedemption.collDecrease = correspondingETH - ETHFee;
 
