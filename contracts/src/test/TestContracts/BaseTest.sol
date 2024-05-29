@@ -113,27 +113,69 @@ contract BaseTest is Test {
         return calcUpfrontFee(trove.entireDebt, avgInterestRate);
     }
 
+    function predictAdjustTroveUpfrontFee(uint256 troveId, uint256 debtIncrease) internal view returns (uint256) {
+        if (debtIncrease == 0) return 0;
+
+        LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
+
+        TroveChange memory troveChange;
+        troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
+        troveChange.debtIncrease = debtIncrease;
+        troveChange.newWeightedRecordedDebt = (trove.entireDebt + debtIncrease) * trove.annualInterestRate;
+        troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
+
+        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
+        return calcUpfrontFee(debtIncrease, avgInterestRate);
+    }
+
     // Quick and dirty binary search instead of Newton's, because it's easier
-    function findAmountToBorrow(uint256 targetDebt, uint256 interestRate)
+    function findAmountToBorrowWithOpenTrove(uint256 targetDebt, uint256 interestRate)
         internal
         view
         returns (uint256 borrow, uint256 upfrontFee)
     {
-        uint256 right = targetDebt - BOLD_GAS_COMP;
-        upfrontFee = predictOpenTroveUpfrontFee(right, interestRate);
-        uint256 left = right - upfrontFee;
+        uint256 borrowRight = targetDebt - BOLD_GAS_COMP;
+        upfrontFee = predictOpenTroveUpfrontFee(borrowRight, interestRate);
+        uint256 borrowLeft = borrowRight - upfrontFee;
 
         for (uint256 i = 0; i < 256; ++i) {
-            borrow = (left + right) / 2;
+            borrow = (borrowLeft + borrowRight) / 2;
             upfrontFee = predictOpenTroveUpfrontFee(borrow, interestRate);
             uint256 actualDebt = borrow + BOLD_GAS_COMP + upfrontFee;
 
             if (actualDebt == targetDebt) {
                 break;
             } else if (actualDebt < targetDebt) {
-                left = borrow;
+                borrowLeft = borrow;
             } else {
-                right = borrow;
+                borrowRight = borrow;
+            }
+        }
+    }
+
+    function findAmountToBorrowWithAdjustTrove(uint256 troveId, uint256 targetDebt)
+        internal
+        view
+        returns (uint256 borrow, uint256 upfrontFee)
+    {
+        uint256 entireDebt = troveManager.getTroveEntireDebt(troveId);
+        assert(targetDebt >= entireDebt);
+
+        uint256 borrowRight = targetDebt - entireDebt;
+        upfrontFee = predictAdjustTroveUpfrontFee(troveId, borrowRight);
+        uint256 borrowLeft = borrowRight - upfrontFee;
+
+        for (uint256 i = 0; i < 256; ++i) {
+            borrow = (borrowLeft + borrowRight) / 2;
+            upfrontFee = predictAdjustTroveUpfrontFee(troveId, borrow);
+            uint256 actualDebt = entireDebt + borrow + upfrontFee;
+
+            if (actualDebt == targetDebt) {
+                break;
+            } else if (actualDebt < targetDebt) {
+                borrowLeft = borrow;
+            } else {
+                borrowRight = borrow;
             }
         }
     }
@@ -206,12 +248,52 @@ contract BaseTest is Test {
         bool _isDebtIncrease
     ) public {
         vm.startPrank(_account);
-        borrowerOperations.adjustTrove(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
+
+        borrowerOperations.adjustTrove(
+            _troveId,
+            _collChange,
+            _isCollIncrease,
+            _boldChange,
+            _isDebtIncrease,
+            predictAdjustTroveUpfrontFee(
+                _troveId,
+                _isDebtIncrease ? _boldChange : 0 // debtIncrease
+            )
+        );
+
+        vm.stopPrank();
+    }
+
+    function adjustUnredeemableTrove(
+        address _account,
+        uint256 _troveId,
+        uint256 _collChange,
+        bool _isCollIncrease,
+        uint256 _boldChange,
+        bool _isDebtIncrease
+    ) public {
+        vm.startPrank(_account);
+
+        borrowerOperations.adjustUnredeemableTrove(
+            _troveId,
+            _collChange,
+            _isCollIncrease,
+            _boldChange,
+            _isDebtIncrease,
+            0, // _upperHint
+            0, // _lowerHint
+            predictAdjustTroveUpfrontFee(
+                _troveId,
+                _isDebtIncrease ? _boldChange : 0 // debtIncrease
+            )
+        );
+
         vm.stopPrank();
     }
 
     function changeInterestRateNoHints(address _account, uint256 _troveId, uint256 _newAnnualInterestRate) public {
         vm.startPrank(_account);
+
         borrowerOperations.adjustTroveInterestRate(
             _troveId,
             _newAnnualInterestRate,
@@ -219,6 +301,7 @@ contract BaseTest is Test {
             0,
             predictAdjustInterestRateUpfrontFee(_troveId, _newAnnualInterestRate)
         );
+
         vm.stopPrank();
     }
 
@@ -266,7 +349,7 @@ contract BaseTest is Test {
 
     function withdrawBold100pct(address _account, uint256 _troveId, uint256 _debtIncrease) public {
         vm.startPrank(_account);
-        borrowerOperations.withdrawBold(_troveId, _debtIncrease);
+        borrowerOperations.withdrawBold(_troveId, _debtIncrease, predictAdjustTroveUpfrontFee(_troveId, _debtIncrease));
         vm.stopPrank();
     }
 

@@ -37,7 +37,7 @@ interface IBorrowerOperations is ILiquityBase {
 
     function withdrawColl(uint256 _troveId, uint256 _amount) external;
 
-    function withdrawBold(uint256 _troveId, uint256 _amount) external;
+    function withdrawBold(uint256 _troveId, uint256 _amount, uint256 _maxUpfrontFee) external;
 
     function repayBold(uint256 _troveId, uint256 _amount) external;
 
@@ -48,7 +48,8 @@ interface IBorrowerOperations is ILiquityBase {
         uint256 _collChange,
         bool _isCollIncrease,
         uint256 _debtChange,
-        bool isDebtIncrease
+        bool isDebtIncrease,
+        uint256 _maxUpfrontFee
     ) external;
 
     function adjustUnredeemableTrove(
@@ -58,7 +59,8 @@ interface IBorrowerOperations is ILiquityBase {
         uint256 _boldChange,
         bool _isDebtIncrease,
         uint256 _upperHint,
-        uint256 _lowerHint
+        uint256 _lowerHint,
+        uint256 _maxUpfrontFee
     ) external;
 
     function claimCollateral() external;

@@ -853,11 +853,13 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(aggRecordedDebt_1, 0);
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
+        uint256 upfrontFee = predictAdjustTroveUpfrontFee(ATroveId, debtIncrease);
+        assertGt(upfrontFee, 0);
 
         // A draws more debt
         withdrawBold100pct(A, ATroveId, debtIncrease);
 
-        assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest + debtIncrease);
+        assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest + debtIncrease + upfrontFee);
     }
 
     function testWithdrawBoldReducesPendingAggInterestTo0() public {
@@ -878,7 +880,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(activePool.calcPendingAggInterest(), 0);
     }
 
-    function testWithdrawBoldMintsAggInterestToSP() public {
+    function testWithdrawBoldMintsAggInterestAndUpfrontFeeToSP() public {
         uint256 troveDebtRequest = 2000e18;
         uint256 debtIncrease = 500e18;
 
@@ -892,7 +894,9 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 aggInterest = activePool.calcPendingAggInterest();
         assertGt(aggInterest, 0);
-        uint256 expectedSPYield = _getSPYield(aggInterest);
+
+        uint256 upfrontFee = predictAdjustTroveUpfrontFee(ATroveId, debtIncrease);
+        uint256 expectedSPYield = _getSPYield(aggInterest + upfrontFee);
 
         // A draws more debt
         withdrawBold100pct(A, ATroveId, debtIncrease);

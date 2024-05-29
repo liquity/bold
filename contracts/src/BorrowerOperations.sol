@@ -242,7 +242,13 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         TroveChange memory troveChange;
         troveChange.collIncrease = _ETHAmount;
-        _adjustTrove(_troveId, troveChange, contractsCache);
+
+        _adjustTrove(
+            contractsCache,
+            _troveId,
+            troveChange,
+            0 // _maxUpfrontFee
+        );
     }
 
     // Withdraw ETH collateral from a trove
@@ -254,11 +260,17 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         TroveChange memory troveChange;
         troveChange.collDecrease = _collWithdrawal;
-        _adjustTrove(_troveId, troveChange, contractsCache);
+
+        _adjustTrove(
+            contractsCache,
+            _troveId,
+            troveChange,
+            0 // _maxUpfrontFee
+        );
     }
 
     // Withdraw Bold tokens from a trove: mint new Bold tokens to the owner, and increase the trove's debt accordingly
-    function withdrawBold(uint256 _troveId, uint256 _boldAmount) external override {
+    function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external override {
         require(_boldAmount != 0, "BorrowerOps: Withdrawn Bold must be non-zero");
 
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
@@ -266,7 +278,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         TroveChange memory troveChange;
         troveChange.debtIncrease = _boldAmount;
-        _adjustTrove(_troveId, troveChange, contractsCache);
+        _adjustTrove(contractsCache, _troveId, troveChange, _maxUpfrontFee);
     }
 
     // Repay Bold tokens to a Trove: Burn the repaid Bold tokens, and reduce the trove's debt accordingly
@@ -278,7 +290,13 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         TroveChange memory troveChange;
         troveChange.debtDecrease = _boldAmount;
-        _adjustTrove(_troveId, troveChange, contractsCache);
+
+        _adjustTrove(
+            contractsCache,
+            _troveId,
+            troveChange,
+            0 // _maxUpfrontFee
+        );
     }
 
     function _initTroveChange(
@@ -306,7 +324,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 _collChange,
         bool _isCollIncrease,
         uint256 _boldChange,
-        bool _isDebtIncrease
+        bool _isDebtIncrease,
+        uint256 _maxUpfrontFee
     ) external override {
         require(
             _collChange != 0 || _boldChange != 0,
@@ -318,7 +337,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         TroveChange memory troveChange;
         _initTroveChange(troveChange, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
-        _adjustTrove(_troveId, troveChange, contractsCache);
+        _adjustTrove(contractsCache, _troveId, troveChange, _maxUpfrontFee);
     }
 
     function adjustUnredeemableTrove(
@@ -328,7 +347,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 _boldChange,
         bool _isDebtIncrease,
         uint256 _upperHint,
-        uint256 _lowerHint
+        uint256 _lowerHint,
+        uint256 _maxUpfrontFee
     ) external override {
         require(
             _collChange != 0 || _boldChange != 0,
@@ -340,7 +360,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         TroveChange memory troveChange;
         _initTroveChange(troveChange, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
-        _adjustTrove(_troveId, troveChange, contractsCache);
+        _adjustTrove(contractsCache, _troveId, troveChange, _maxUpfrontFee);
 
         contractsCache.troveManager.setTroveStatusToActive(_troveId);
 
@@ -378,6 +398,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         );
 
         // Apply upfront fee on premature adjustments
+        // TODO: should we disallow premature adjustments when TCR < CCR, as we normally would't allow debt increases
+        // during that time?
         if (prematureAdjustment) {
             // TODO: should we fetch unconditionally? Would make the TX a bit more expensive for well-behaved users, but
             // it would be more consistent with other functions (fetching the price is the first thing we usually do).
@@ -420,9 +442,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     * _adjustTrove(): Alongside a debt change, this function can perform either a collateral top-up or a collateral withdrawal.
     */
     function _adjustTrove(
+        ContractsCacheTMAPBT memory _contractsCache,
         uint256 _troveId,
         TroveChange memory _troveChange,
-        ContractsCacheTMAPBT memory _contractsCache
+        uint256 _maxUpfrontFee
     ) internal {
         LocalVariables_adjustTrove memory vars;
 
@@ -460,12 +483,25 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         vars.newColl = vars.trove.entireColl + _troveChange.collIncrease - _troveChange.collDecrease;
         vars.newDebt = vars.trove.entireDebt + _troveChange.debtIncrease - _troveChange.debtDecrease;
 
-        // Make sure the Trove doesn't become unredeemable
-        _requireAtLeastMinDebt(vars.newDebt);
-
         _troveChange.appliedRedistBoldDebtGain = vars.trove.redistBoldDebtGain;
         _troveChange.oldWeightedRecordedDebt = vars.trove.weightedRecordedDebt;
         _troveChange.newWeightedRecordedDebt = vars.newDebt * vars.trove.annualInterestRate;
+
+        // Pay an upfront fee on debt increases
+        if (_troveChange.debtIncrease > 0) {
+            uint256 avgInterestRate =
+                _contractsCache.activePool.getNewApproxAvgInterestRateFromTroveChange(_troveChange);
+            _troveChange.upfrontFee = _calcUpfrontFee(_troveChange.debtIncrease, avgInterestRate);
+            _requireUserAcceptsUpfrontFee(_troveChange.upfrontFee, _maxUpfrontFee);
+
+            vars.newDebt += _troveChange.upfrontFee;
+
+            // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee
+            _troveChange.newWeightedRecordedDebt = vars.newDebt * vars.trove.annualInterestRate;
+        }
+
+        // Make sure the Trove doesn't become unredeemable
+        _requireAtLeastMinDebt(vars.newDebt);
 
         vars.newICR = LiquityMath._computeCR(vars.newColl, vars.newDebt, vars.price);
 

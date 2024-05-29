@@ -67,7 +67,7 @@ contract BasicOps is DevTestSetup {
         assertGt(coll_1, 0);
 
         // Adjust trove
-        borrowerOperations.adjustTrove(A_Id, 1e18, true, 500e18, true);
+        adjustTrove100pct(A, A_Id, 1e18, 500e18, true, true);
 
         // Check coll and debt altered
         uint256 debt_2 = troveManager.getTroveDebt(A_Id);

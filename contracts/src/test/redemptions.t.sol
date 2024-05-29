@@ -487,17 +487,8 @@ contract Redemptions is DevTestSetup {
         uint256 surplusDebt = 37;
 
         // A and B withdraw Bold from their zombie Trove
-        vm.startPrank(A);
-        borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.A, 0, false, debtDelta_A + surplusDebt, true, troveIDs.A, troveIDs.A
-        );
-        vm.stopPrank();
-
-        vm.startPrank(B);
-        borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.B, 0, false, debtDelta_A + surplusDebt, true, troveIDs.B, troveIDs.B
-        );
-        vm.stopPrank();
+        adjustUnredeemableTrove(A, troveIDs.A, 0, false, debtDelta_A + surplusDebt, true);
+        adjustUnredeemableTrove(B, troveIDs.B, 0, false, debtDelta_A + surplusDebt, true);
 
         // Check they are above the min debt
         assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
@@ -521,17 +512,8 @@ contract Redemptions is DevTestSetup {
         uint256 surplusDebt = 37;
 
         // A and B withdraw Bold from their zombie Trove
-        vm.startPrank(A);
-        borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.A, 0, false, debtDelta_A + surplusDebt, true, troveIDs.A, troveIDs.A
-        );
-        vm.stopPrank();
-
-        vm.startPrank(B);
-        borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.B, 0, false, debtDelta_A + surplusDebt, true, troveIDs.B, troveIDs.B
-        );
-        vm.stopPrank();
+        adjustUnredeemableTrove(A, troveIDs.A, 0, false, debtDelta_A + surplusDebt, true);
+        adjustUnredeemableTrove(B, troveIDs.B, 0, false, debtDelta_A + surplusDebt, true);
 
         // Check they are above the min debt
         assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
@@ -563,17 +545,8 @@ contract Redemptions is DevTestSetup {
         assertFalse(sortedTroves.contains(troveIDs.B));
 
         // A and B withdraw Bold from their zombie Trove
-        vm.startPrank(A);
-        borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.A, 0, false, debtDelta_A + surplusDebt, true, troveIDs.A, troveIDs.A
-        );
-        vm.stopPrank();
-
-        vm.startPrank(B);
-        borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.B, 0, false, debtDelta_A + surplusDebt, true, troveIDs.B, troveIDs.B
-        );
-        vm.stopPrank();
+        adjustUnredeemableTrove(A, troveIDs.A, 0, false, debtDelta_A + surplusDebt, true);
+        adjustUnredeemableTrove(B, troveIDs.B, 0, false, debtDelta_A + surplusDebt, true);
 
         // Check they are above the min debt
         assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
@@ -604,17 +577,8 @@ contract Redemptions is DevTestSetup {
         uint256 surplusDebt = 37;
 
         // A and B withdraw Bold from their zombie Trove
-        vm.startPrank(A);
-        borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.A, 0, false, debtDelta_A + surplusDebt, true, troveIDs.A, troveIDs.A
-        );
-        vm.stopPrank();
-
-        vm.startPrank(B);
-        borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.B, 0, false, debtDelta_A + surplusDebt, true, troveIDs.B, troveIDs.B
-        );
-        vm.stopPrank();
+        adjustUnredeemableTrove(A, troveIDs.A, 0, false, debtDelta_A + surplusDebt, true);
+        adjustUnredeemableTrove(B, troveIDs.B, 0, false, debtDelta_A + surplusDebt, true);
 
         // Check they are above the min debt
         assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
@@ -630,29 +594,18 @@ contract Redemptions is DevTestSetup {
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
-        // Calculate how far below min debt each zombie Trove is
-        uint256 debtDelta_A = MIN_DEBT - troveManager.getTroveEntireDebt(troveIDs.A);
-        uint256 debtDelta_B = MIN_DEBT - troveManager.getTroveEntireDebt(troveIDs.B);
-
-        assertGt(debtDelta_A, 0);
-        assertGt(debtDelta_B, 0);
-
         uint256 debtDeficiency = 37;
 
-        // A and B attempt to withdraw Bold, but not enough
-        vm.startPrank(A);
-        vm.expectRevert("BorrowerOps: Trove's debt must be greater than minimum");
-        borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.A, 0, false, debtDelta_A - debtDeficiency, true, troveIDs.A, troveIDs.A
-        );
-        vm.stopPrank();
+        // Calculate how much to borrow to get to *just* below min debt
+        (uint256 borrow_A,) = findAmountToBorrowWithAdjustTrove(troveIDs.A, MIN_DEBT - debtDeficiency);
+        (uint256 borrow_B,) = findAmountToBorrowWithAdjustTrove(troveIDs.B, MIN_DEBT - debtDeficiency);
 
-        vm.startPrank(B);
+        // A and B attempt to withdraw Bold, but not enough
         vm.expectRevert("BorrowerOps: Trove's debt must be greater than minimum");
-        borrowerOperations.adjustUnredeemableTrove(
-            troveIDs.B, 0, false, debtDelta_B - debtDeficiency, true, troveIDs.B, troveIDs.B
-        );
-        vm.stopPrank();
+        this.adjustUnredeemableTrove(A, troveIDs.A, 0, false, borrow_A, true);
+
+        vm.expectRevert("BorrowerOps: Trove's debt must be greater than minimum");
+        this.adjustUnredeemableTrove(B, troveIDs.B, 0, false, borrow_B, true);
     }
 
     function testZombieTroveBorrowerCanNotRepayDebt() public {
@@ -686,12 +639,12 @@ contract Redemptions is DevTestSetup {
 
         vm.startPrank(A);
         vm.expectRevert("BorrowerOps: Trove does not have active status");
-        borrowerOperations.withdrawBold(troveIDs.A, debtWithdrawal);
+        borrowerOperations.withdrawBold(troveIDs.A, debtWithdrawal, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
         vm.expectRevert("BorrowerOps: Trove does not have active status");
-        borrowerOperations.withdrawBold(troveIDs.B, debtWithdrawal);
+        borrowerOperations.withdrawBold(troveIDs.B, debtWithdrawal, 0);
         vm.stopPrank();
     }
 
@@ -702,15 +655,11 @@ contract Redemptions is DevTestSetup {
 
         uint256 debtWithdrawal = 1;
 
-        vm.startPrank(A);
         vm.expectRevert("BorrowerOps: Trove does not have active status");
-        borrowerOperations.adjustTrove(troveIDs.A, 0, false, debtWithdrawal, true);
-        vm.stopPrank();
+        this.adjustTrove100pct(A, troveIDs.A, 0, debtWithdrawal, false, true);
 
-        vm.startPrank(B);
         vm.expectRevert("BorrowerOps: Trove does not have active status");
-        borrowerOperations.adjustTrove(troveIDs.B, 0, false, debtWithdrawal, true);
-        vm.stopPrank();
+        this.adjustTrove100pct(B, troveIDs.B, 0, debtWithdrawal, false, true);
     }
 
     function testZombieTroveBorrowerCanNotAddColl() public {

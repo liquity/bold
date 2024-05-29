@@ -1541,7 +1541,7 @@ contract SPTest is DevTestSetup {
         // E opens a Trove with debt slightly lower than the SP size
         uint256 targetDebt_E = stabilityPool.getTotalBoldDeposits() - 1e9;
         uint256 interestRate_E = 5e16;
-        (uint256 debtRequest_E, uint256 upfrontFee_E) = findAmountToBorrow(targetDebt_E, interestRate_E);
+        (uint256 debtRequest_E, uint256 upfrontFee_E) = findAmountToBorrowWithOpenTrove(targetDebt_E, interestRate_E);
         uint256 price = priceFeed.getPrice();
         uint256 coll_E = mulDivCeil(targetDebt_E, MCR, price);
         troveIDs.E = openTroveNoHints100pct(E, coll_E, debtRequest_E, interestRate_E);

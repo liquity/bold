@@ -320,7 +320,7 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
-    function testWithdrawBoldIncreasesEntireTroveDebtByWithdrawnAmount() public {
+    function testWithdrawBoldIncreasesEntireTroveDebtByWithdrawnAmountPlusUpfrontFee() public {
         priceFeed.setPrice(2000e18);
         uint256 troveDebtRequest = 2000e18;
         uint256 interestRate = 25e16;
@@ -333,14 +333,17 @@ contract InterestRateBasic is DevTestSetup {
         uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
+        uint256 upfrontFee = predictAdjustTroveUpfrontFee(ATroveId, boldWithdrawal);
+        assertGt(upfrontFee, 0);
+
         // A draws more debt
         withdrawBold100pct(A, ATroveId, boldWithdrawal);
 
         uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
-        assertEq(entireTroveDebt_2, entireTroveDebt_1 + boldWithdrawal);
+        assertEq(entireTroveDebt_2, entireTroveDebt_1 + boldWithdrawal + upfrontFee);
     }
 
-    function testWithdrawBoldIncreasesRecordedTroveDebtByAccruedInterestPlusWithdrawnAmount() public {
+    function testWithdrawBoldIncreasesRecordedTroveDebtByAccruedInterestPlusWithdrawnAmountPlusUpfrontFee() public {
         priceFeed.setPrice(2000e18);
         uint256 troveDebtRequest = 2000e18;
         uint256 interestRate = 25e16;
@@ -352,13 +355,13 @@ contract InterestRateBasic is DevTestSetup {
 
         uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
         uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
+        uint256 upfrontFee = predictAdjustTroveUpfrontFee(ATroveId, boldWithdrawal);
 
         // A draws more debt
         withdrawBold100pct(A, ATroveId, boldWithdrawal);
 
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
-
-        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest + boldWithdrawal);
+        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest + boldWithdrawal + upfrontFee);
     }
 
     // --- repayBold ---

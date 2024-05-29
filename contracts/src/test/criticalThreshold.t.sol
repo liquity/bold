@@ -37,40 +37,32 @@ contract CriticalThresholdTest is DevTestSetup {
     function testNoIncreaseDebtAloneBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.startPrank(A);
         vm.expectRevert("BorrowerOps: Borrowing not permitted below CT");
-        borrowerOperations.adjustTrove(ATroveId, 0, false, 1, true);
+        this.adjustTrove100pct(A, ATroveId, 0, 1, false, true);
 
         vm.expectRevert("BorrowerOps: Borrowing not permitted below CT");
-        borrowerOperations.withdrawBold(ATroveId, 1);
-        vm.stopPrank();
+        this.withdrawBold100pct(A, ATroveId, 1);
     }
 
     function testNoIncreaseDebtWithAddCollBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.startPrank(A);
         vm.expectRevert("BorrowerOps: Borrowing not permitted below CT");
-        borrowerOperations.adjustTrove(ATroveId, 1e18, true, 1, true);
-        vm.stopPrank();
+        this.adjustTrove100pct(A, ATroveId, 1e18, 1, true, true);
     }
 
     function testNoIncreaseDebtWithWithdrawCollBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.startPrank(A);
         vm.expectRevert("BorrowerOps: Borrowing not permitted below CT");
-        borrowerOperations.adjustTrove(ATroveId, 1, false, 1, true);
-        vm.stopPrank();
+        this.adjustTrove100pct(A, ATroveId, 1, 1, false, true);
     }
 
     function testWithdrawCollAlongWithRepaymentBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
         uint256 initialColl = troveManager.getTroveEntireColl(ATroveId);
-        vm.startPrank(A);
-        borrowerOperations.adjustTrove(ATroveId, 1e18, false, 1499e18, false);
-        vm.stopPrank();
+        adjustTrove100pct(A, ATroveId, 1e18, 1499e18, false, false);
 
         assertEq(troveManager.getTroveEntireColl(ATroveId), initialColl - 1e18);
     }
@@ -78,21 +70,17 @@ contract CriticalThresholdTest is DevTestSetup {
     function testNoCollWithdrawalWithLowRepaymentBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.startPrank(A);
         vm.expectRevert("BorrowerOps: below CT, repayment must be >= coll withdrawal");
-        borrowerOperations.adjustTrove(ATroveId, 1e18, false, 1498999999999999999999, false); // 1 gwei short
-        vm.stopPrank();
+        this.adjustTrove100pct(A, ATroveId, 1e18, 1498999999999999999999, false, false); // 1 gwei short
     }
 
     function testNoCollWithdrawalWithNoRepaymentBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.startPrank(A);
         vm.expectRevert("BorrowerOps: below CT, repayment must be >= coll withdrawal");
-        borrowerOperations.adjustTrove(ATroveId, 1, false, 0, false);
+        this.adjustTrove100pct(A, ATroveId, 1, 0, false, false);
 
         vm.expectRevert("BorrowerOps: below CT, repayment must be >= coll withdrawal");
-        borrowerOperations.withdrawColl(ATroveId, 1);
-        vm.stopPrank();
+        this.withdrawColl(A, ATroveId, 1);
     }
 }
