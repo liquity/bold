@@ -701,8 +701,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         require(!_checkBelowCriticalThreshold(_price), "BorrowerOps: Operation not permitted below CT");
     }
 
-    function _requireNoBorrowing(bool _isDebtIncrease) internal pure {
-        require(!_isDebtIncrease, "BorrowerOps: Borrowing not permitted below CT");
+    function _requireNoBorrowing(uint256 _debtIncrease) internal pure {
+        require(_debtIncrease == 0, "BorrowerOps: Borrowing not permitted below CT");
     }
 
     function _requireValidAdjustmentInCurrentMode(
@@ -721,7 +721,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         * - The adjustment won't pull the TCR below CCR
         */
         if (_vars.isBelowCriticalThreshold) {
-            _requireNoBorrowing(_troveChange.debtIncrease > 0);
+            _requireNoBorrowing(_troveChange.debtIncrease);
             _requireDebtRepaymentGeCollWithdrawal(_troveChange, _vars.price);
         } else {
             // if Normal Mode
