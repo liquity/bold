@@ -3,7 +3,7 @@
 pragma solidity 0.8.18;
 
 import "./IInterestRouter.sol";
-import "./IStabilityPool.sol";
+import "./IBoldRewardsReceiver.sol";
 import "../Types/TroveChange.sol";
 
 interface IActivePool {
@@ -11,7 +11,8 @@ interface IActivePool {
     function borrowerOperationsAddress() external view returns (address);
     function troveManagerAddress() external view returns (address);
     function interestRouter() external view returns (IInterestRouter);
-    function stabilityPool() external view returns (IStabilityPool);
+    // We avoid IStabilityPool here in order to prevent creating a dependency cycle that would break flattening
+    function stabilityPool() external view returns (IBoldRewardsReceiver);
     function setAddresses(
         address _borrowerOperationsAddress,
         address _troveManagerAddress,

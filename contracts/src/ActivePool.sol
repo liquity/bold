@@ -33,7 +33,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     IBoldToken boldToken;
 
     IInterestRouter public interestRouter;
-    IStabilityPool public stabilityPool;
+    IBoldRewardsReceiver public stabilityPool;
 
     uint256 public constant SECONDS_IN_ONE_YEAR = 31536000; // 60 * 60 * 24 * 365,
 
@@ -91,7 +91,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         defaultPoolAddress = _defaultPoolAddress;
         boldToken = IBoldToken(_boldTokenAddress);
         interestRouter = IInterestRouter(_interestRouterAddress);
-        stabilityPool = IStabilityPool(_stabilityPoolAddress);
+        stabilityPool = IBoldRewardsReceiver(_stabilityPoolAddress);
 
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
         emit TroveManagerAddressChanged(_troveManagerAddress);
