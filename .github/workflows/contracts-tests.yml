@@ -187,7 +187,11 @@ jobs:
               'src/TestContracts/*' \
               'src/OldTestContracts/*' \
               'src/Dependencies/*' \
-              'src/Interfaces/*'
+              'src/Interfaces/*' \
+              'src/Types/*' \
+              'src/scripts/*' \
+              'src/MultiTroveGetter.sol' \
+              'src/deployment.sol'
         id: coverage_filter
 
       # Send to coveralls
