@@ -725,6 +725,22 @@ contract SPTest is DevTestSetup {
         assertEq(boldRewardSum_2, boldRewardSum_1);
     }
 
+    function testBoldRewardSumDoesntChangeWhenNoYieldMinted() public {
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+
+        uint256 pendingAggInterest = activePool.calcPendingAggInterest();
+        assertEq(pendingAggInterest, 0);
+
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        assertEq(boldRewardSum_1, 0);
+
+        // Adjust a Trove in a way that doesn't incur an upfront fee
+        repayBold(B, troveIDs.B, 1_000 ether);
+
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        assertEq(boldRewardSum_2, boldRewardSum_1);
+    }
+
     function testBoldRewardSumIncreasesWhenTroveOpened() public {
         _setupForSPDepositAdjustments();
 
