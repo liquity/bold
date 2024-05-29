@@ -22,8 +22,6 @@ const { web3, ethers } = require("hardhat");
 const { accountsList } = require("../hardhatAccountsList2k.js");
 const { fundAccounts } = require("./fundAccounts.js");
 
-const maxBytes32 = "0x" + "f".repeat(64);
-
 class DeploymentHelper {
   static async deployLiquityCore(mocks = {}) {
     return await this.deployLiquityCoreHardhat(mocks);

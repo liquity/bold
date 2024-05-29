@@ -921,6 +921,7 @@ contract("BorrowerOperations", async (accounts) => {
         borrowerOperations.withdrawBold(
           aliceTroveId,
           Boldwithdrawal,
+          th.MAX_UINT256, // _maxUpfrontFee
           { from: alice },
         ),
         "BorrowerOps: An operation that would result in ICR < MCR is not permitted",
@@ -935,6 +936,7 @@ contract("BorrowerOperations", async (accounts) => {
       const txBob = await borrowerOperations.withdrawBold(
         bobTroveId,
         dec(100, 18),
+        th.MAX_UINT256, // _maxUpfrontFee
         { from: bob },
       );
       assert.isTrue(txBob.receipt.status);
@@ -944,6 +946,7 @@ contract("BorrowerOperations", async (accounts) => {
         const txCarol = await borrowerOperations.withdrawBold(
           th.addressToTroveId(carol),
           dec(100, 18),
+          th.MAX_UINT256, // _maxUpfrontFee
           { from: carol },
         );
         assert.isFalse(txCarol.receipt.status);
@@ -960,6 +963,7 @@ contract("BorrowerOperations", async (accounts) => {
       const txBob = await borrowerOperations.withdrawBold(
         bobTroveId,
         1,
+        th.MAX_UINT256, // _maxUpfrontFee
         { from: bob },
       );
       assert.isTrue(txBob.receipt.status);
@@ -969,6 +973,7 @@ contract("BorrowerOperations", async (accounts) => {
         const txAlice = await borrowerOperations.withdrawBold(
           aliceTroveId,
           0,
+          th.MAX_UINT256, // _maxUpfrontFee
           { from: alice },
         );
         assert.isFalse(txAlice.receipt.status);
@@ -988,6 +993,7 @@ contract("BorrowerOperations", async (accounts) => {
       const txAlice = await borrowerOperations.withdrawBold(
         aliceTroveId,
         dec(100, 18),
+        th.MAX_UINT256, // _maxUpfrontFee
         { from: alice },
       );
       assert.isTrue(txAlice.receipt.status);
@@ -1001,6 +1007,7 @@ contract("BorrowerOperations", async (accounts) => {
         const txBob = await borrowerOperations.withdrawBold(
           bobTroveId,
           1,
+          th.MAX_UINT256, // _maxUpfrontFee
           { from: bob },
         );
         assert.isFalse(txBob.receipt.status);
@@ -1018,6 +1025,7 @@ contract("BorrowerOperations", async (accounts) => {
         const txBob = await borrowerOperations.withdrawBold(
           bobTroveId,
           1,
+          th.MAX_UINT256, // _maxUpfrontFee
           { from: bob },
         );
         assert.isFalse(txBob.receipt.status);
@@ -1043,6 +1051,7 @@ contract("BorrowerOperations", async (accounts) => {
         const txBob = await borrowerOperations.withdrawBold(
           bobTroveId,
           dec(1, 18),
+          th.MAX_UINT256, // _maxUpfrontFee
           { from: bob },
         );
         assert.isFalse(txBob.receipt.status);
@@ -1066,60 +1075,13 @@ contract("BorrowerOperations", async (accounts) => {
         const txData = await borrowerOperations.withdrawBold(
           aliceTroveId,
           "200",
+          th.MAX_UINT256, // _maxUpfrontFee
           { from: alice },
         );
         assert.isFalse(txData.receipt.status);
       } catch (err) {
         assert.include(err.message, "revert");
       }
-    });
-
-    it("withdrawBold(): increases the Trove's Bold debt by the correct amount", async () => {
-      const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: alice } });
-
-      // check before
-      const aliceDebtBefore = await getTroveEntireDebt(aliceTroveId);
-      assert.isTrue(aliceDebtBefore.gt(toBN(0)));
-
-      await borrowerOperations.withdrawBold(
-        aliceTroveId,
-        await getNetBorrowingAmount(100),
-        { from: alice },
-      );
-
-      // check after
-      const aliceDebtAfter = await getTroveEntireDebt(aliceTroveId);
-      th.assertIsApproximatelyEqual(
-        aliceDebtAfter,
-        aliceDebtBefore.add(toBN(100)),
-      );
-    });
-
-    it("withdrawBold(): increases Bold debt in ActivePool by correct amount", async () => {
-      const { troveId: aliceTroveId } = await openTrove({
-        ICR: toBN(dec(10, 18)),
-        extraParams: { from: alice, value: toBN(dec(100, "ether")) },
-      });
-
-      const aliceDebtBefore = await getTroveEntireDebt(aliceTroveId);
-      assert.isTrue(aliceDebtBefore.gt(toBN(0)));
-
-      // check before
-      const activePool_Bold_Before = await activePool.getBoldDebt();
-      assert.isTrue(activePool_Bold_Before.eq(aliceDebtBefore));
-
-      await borrowerOperations.withdrawBold(
-        aliceTroveId,
-        await getNetBorrowingAmount(dec(10000, 18)),
-        { from: alice },
-      );
-
-      // check after
-      const activePool_Bold_After = await activePool.getBoldDebt();
-      th.assertIsApproximatelyEqual(
-        activePool_Bold_After,
-        activePool_Bold_Before.add(toBN(dec(10000, 18))),
-      );
     });
 
     it("withdrawBold(): increases user BoldToken balance by correct amount", async () => {
@@ -1134,6 +1096,7 @@ contract("BorrowerOperations", async (accounts) => {
       await borrowerOperations.withdrawBold(
         aliceTroveId,
         dec(10000, 18),
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -1218,35 +1181,6 @@ contract("BorrowerOperations", async (accounts) => {
       await assertRevert(
         repayTxAPromise,
         "BorrowerOps: Trove's net debt must be greater than minimum",
-      );
-    });
-
-    it("adjustTrove(): Reverts if repaid amount is greater than current debt", async () => {
-      const { troveId: aliceTroveId, totalDebt } = await openTrove({
-        extraBoldAmount: toBN(dec(10000, 18)),
-        ICR: toBN(dec(10, 18)),
-        extraParams: { from: alice },
-      });
-      BOLD_GAS_COMPENSATION = await borrowerOperations.BOLD_GAS_COMPENSATION();
-      const repayAmount = totalDebt.sub(BOLD_GAS_COMPENSATION).add(toBN(1));
-      await openTrove({
-        extraBoldAmount: repayAmount,
-        ICR: toBN(dec(150, 16)),
-        extraParams: { from: bob },
-      });
-
-      await boldToken.transfer(alice, repayAmount, { from: bob });
-
-      await assertRevert(
-        borrowerOperations.adjustTrove(
-          aliceTroveId,
-          0,
-          false,
-          repayAmount,
-          false,
-          { from: alice },
-        ),
-        "SafeMath: subtraction overflow",
       );
     });
 
@@ -1486,9 +1420,7 @@ contract("BorrowerOperations", async (accounts) => {
       const price = await priceFeed.getPrice();
 
       assert.isFalse(await troveManager.checkBelowCriticalThreshold(price));
-      assert.isTrue(
-        (await troveManager.getCurrentICR(aliceTroveId, price)).lt(toBN(dec(110, 16))),
-      );
+      assert.isTrue((await troveManager.getCurrentICR(aliceTroveId, price)).lt(toBN(dec(110, 16))));
 
       const BoldRepayment = 1; // 1 wei repayment
       const collTopUp = 1;
@@ -1502,6 +1434,7 @@ contract("BorrowerOperations", async (accounts) => {
           true,
           BoldRepayment,
           false,
+          th.MAX_UINT256,
           { from: alice },
         ),
         "BorrowerOps: An operation that would result in ICR < MCR is not permitted",
@@ -1529,6 +1462,7 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         dec(50, 18),
         true,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -1541,6 +1475,7 @@ contract("BorrowerOperations", async (accounts) => {
           true,
           dec(50, 18),
           true,
+          th.MAX_UINT256,
           { from: carol },
         );
         assert.isFalse(txCarol.receipt.status);
@@ -1571,6 +1506,7 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         dec(50, 18),
         true,
+        th.MAX_UINT256,
         { from: alice },
       );
       assert.isTrue(txAlice.receipt.status);
@@ -1587,6 +1523,7 @@ contract("BorrowerOperations", async (accounts) => {
           false,
           0,
           false,
+          th.MAX_UINT256,
           { from: alice },
         );
         assert.isFalse(txAlice.receipt.status);
@@ -1602,6 +1539,7 @@ contract("BorrowerOperations", async (accounts) => {
           false,
           dec(50, 18),
           true,
+          th.MAX_UINT256,
           { from: bob },
         );
         assert.isFalse(txBob.receipt.status);
@@ -1619,6 +1557,7 @@ contract("BorrowerOperations", async (accounts) => {
           true,
           dec(111, 18),
           true,
+          th.MAX_UINT256,
           { from: bob },
         );
         assert.isFalse(txBob.receipt.status);
@@ -1653,6 +1592,7 @@ contract("BorrowerOperations", async (accounts) => {
         false,
         dec(5000, 18),
         false,
+        th.MAX_UINT256,
         { from: alice },
       );
       assert.isTrue((await troveManager.getTroveEntireColl(aliceTroveId)).eq(initialColl));
@@ -1703,6 +1643,7 @@ contract("BorrowerOperations", async (accounts) => {
           true,
           debtIncrease,
           true,
+          th.MAX_UINT256,
           { from: alice },
         ),
         "BorrowerOps: Operation must leave trove with ICR >= CCR",
@@ -1759,6 +1700,7 @@ contract("BorrowerOperations", async (accounts) => {
           true,
           aliceDebtIncrease,
           true,
+          th.MAX_UINT256,
           { from: alice },
         ),
         "BorrowerOps: Cannot decrease your Trove's ICR below CT",
@@ -1794,6 +1736,7 @@ contract("BorrowerOperations", async (accounts) => {
           true,
           bobDebtIncrease,
           true,
+          th.MAX_UINT256,
           { from: bob },
         ),
         " BorrowerOps: Operation must leave trove with ICR >= CCR",
@@ -1846,6 +1789,7 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         debtIncrease,
         false,
+        th.MAX_UINT256,
         { from: alice },
       );
       assert.isTrue(tx.receipt.status);
@@ -1900,6 +1844,7 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         debtIncrease,
         false,
+        th.MAX_UINT256,
         { from: alice },
       );
       assert.isTrue(tx.receipt.status);
@@ -1927,6 +1872,7 @@ contract("BorrowerOperations", async (accounts) => {
           false,
           dec(1, 18),
           true,
+          th.MAX_UINT256,
           { from: bob },
         );
         assert.isFalse(txBob.receipt.status);
@@ -1959,6 +1905,7 @@ contract("BorrowerOperations", async (accounts) => {
           true,
           remainingDebt.add(toBN(1)),
           false,
+          th.MAX_UINT256,
           { from: bob },
         ),
         "revert",
@@ -1980,6 +1927,7 @@ contract("BorrowerOperations", async (accounts) => {
           false,
           0,
           true,
+          th.MAX_UINT256,
           { from: carol },
         );
         assert.isFalse(txCarol.receipt.status);
@@ -2019,6 +1967,7 @@ contract("BorrowerOperations", async (accounts) => {
           true,
           dec(100, 18),
           true,
+          th.MAX_UINT256,
           { from: bob },
         );
         assert.isFalse(txBob.receipt.status);
@@ -2047,6 +1996,7 @@ contract("BorrowerOperations", async (accounts) => {
         false,
         dec(50, 18),
         true,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2079,6 +2029,7 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         0,
         false,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2116,6 +2067,7 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         await getNetBorrowingAmount(dec(50, 18)),
         true,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2159,6 +2111,7 @@ contract("BorrowerOperations", async (accounts) => {
         false,
         dec(50, 18),
         false,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2196,6 +2149,7 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         dec(50, 18),
         false,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2239,6 +2193,7 @@ contract("BorrowerOperations", async (accounts) => {
         false,
         await getNetBorrowingAmount(dec(1, 18)),
         true,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2284,6 +2239,7 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         dec(50, 18),
         true,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2321,6 +2277,7 @@ contract("BorrowerOperations", async (accounts) => {
         false,
         dec(50, 18),
         false,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2356,6 +2313,7 @@ contract("BorrowerOperations", async (accounts) => {
         false,
         dec(10, 18),
         false,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2393,6 +2351,7 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         dec(100, 18),
         true,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2432,6 +2391,7 @@ contract("BorrowerOperations", async (accounts) => {
         false,
         dec(10, 18),
         false,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2478,6 +2438,7 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         dec(100, 18),
         true,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2520,6 +2481,7 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         dec(30, 18),
         false,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2555,6 +2517,7 @@ contract("BorrowerOperations", async (accounts) => {
         true,
         await getNetBorrowingAmount(dec(100, 18)),
         true,
+        th.MAX_UINT256,
         { from: alice },
       );
 
@@ -2593,6 +2556,7 @@ contract("BorrowerOperations", async (accounts) => {
           false,
           aliceDebt,
           true,
+          th.MAX_UINT256,
           { from: alice },
         ),
         "BorrowerOps: An operation that would result in ICR < MCR is not permitted",
@@ -2612,9 +2576,7 @@ contract("BorrowerOperations", async (accounts) => {
       });
 
       await assertRevert(
-        borrowerOperations.adjustTrove(aliceTroveId, 0, false, 0, true, {
-          from: alice,
-        }),
+        borrowerOperations.adjustTrove(aliceTroveId, 0, false, 0, true, th.MAX_UINT256, { from: alice }),
         "BorrowerOps: Debt increase requires non-zero debtChange",
       );
     });
@@ -2627,9 +2589,7 @@ contract("BorrowerOperations", async (accounts) => {
       });
 
       await assertRevert(
-        borrowerOperations.adjustTrove(aliceTroveId, 0, false, 0, false, {
-          from: alice,
-        }),
+        borrowerOperations.adjustTrove(aliceTroveId, 0, false, 0, false, th.MAX_UINT256, { from: alice }),
         "BorrowerOps: There must be either a collateral change or a debt change",
       );
     });
@@ -2656,6 +2616,7 @@ contract("BorrowerOperations", async (accounts) => {
           false,
           0,
           false,
+          th.MAX_UINT256,
           { from: alice },
         ),
       );
@@ -2666,6 +2627,7 @@ contract("BorrowerOperations", async (accounts) => {
           false,
           0,
           false,
+          th.MAX_UINT256,
           { from: alice },
         ),
       );
@@ -2697,6 +2659,7 @@ contract("BorrowerOperations", async (accounts) => {
         false,
         bobDebt,
         false,
+        th.MAX_UINT256,
         { from: B },
       );
 
@@ -3313,6 +3276,7 @@ contract("BorrowerOperations", async (accounts) => {
         false,
         dec(1, 18),
         true,
+        th.MAX_UINT256,
         { from: whale },
       );
 

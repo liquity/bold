@@ -160,9 +160,7 @@ class TestHelper {
     const priceBN = web3.utils.toBN(price);
 
     const ICR = debtBN.eq(this.toBN("0"))
-      ? this.toBN(
-        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-      )
+      ? TestHelper.MAX_UINT256
       : collBN.mul(priceBN).div(debtBN);
 
     return ICR;
@@ -863,10 +861,8 @@ class TestHelper {
       upperHint,
       lowerHint,
       extraParams.annualInterestRate,
-      this.toBN("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"), // _maxUpfrontFee
-      {
-        from: extraParams.from,
-      },
+      TestHelper.MAX_UINT256, // _maxUpfrontFee
+      { from: extraParams.from },
     );
 
     const troveId = this.getTroveIdFromTx(tx);
@@ -901,10 +897,8 @@ class TestHelper {
       upperHint,
       lowerHint,
       annualInterestRate,
-      this.toBN("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"),
-      {
-        from: extraParams.from,
-      },
+      TestHelper.MAX_UINT256, // _maxUpfrontFee
+      { from: extraParams.from },
     );
 
     const troveId = this.getTroveIdFromTx(tx);
@@ -959,6 +953,7 @@ class TestHelper {
     await contracts.borrowerOperations.withdrawBold(
       troveId,
       boldAmount,
+      TestHelper.MAX_UINT256,
       extraParams,
     );
 
@@ -1690,8 +1685,8 @@ class TestHelper {
   }
 }
 
+TestHelper.MAX_UINT256 = web3.utils.toBN("0x" + "f".repeat(64));
 TestHelper.ZERO_ADDRESS = "0x" + "0".repeat(40);
-TestHelper.maxBytes32 = "0x" + "f".repeat(64);
 TestHelper._100pct = "1000000000000000000";
 TestHelper.latestRandomSeed = 31337;
 

@@ -13,7 +13,6 @@ const NonPayableSwitch = artifacts.require("NonPayableSwitch.sol");
 
 const ZERO = toBN("0");
 const ZERO_ADDRESS = th.ZERO_ADDRESS;
-const maxBytes32 = th.maxBytes32;
 
 const GAS_PRICE = 10000000;
 
@@ -409,13 +408,9 @@ contract("StabilityPool", async (accounts) => {
         extraParams: { from: bob, value: dec(50, "ether") },
       });
 
-      const maxBytes32 = web3.utils.toBN(
-        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-      );
-
       // Alice attempts to deposit 2^256-1 Bold
       try {
-        aliceTx = await th.provideToSPAndClaim(contracts, maxBytes32, {
+        aliceTx = await th.provideToSPAndClaim(contracts, th.MAX_UINT256, {
           from: alice,
         });
         assert.isFalse(tx.receipt.status);
@@ -1710,7 +1705,7 @@ contract("StabilityPool", async (accounts) => {
       await priceFeed.setPrice(dec(200, 18));
 
       // Bob issues a further 5000 Bold from his trove
-      await borrowerOperations.withdrawBold(th.addressToTroveId(bob), dec(5000, 18), { from: bob });
+      await borrowerOperations.withdrawBold(th.addressToTroveId(bob), dec(5000, 18), th.MAX_UINT256, { from: bob });
 
       // Expect Alice's Bold balance increase be very close to 8333.3333333333333333 Bold
       await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: alice });
@@ -2408,15 +2403,11 @@ contract("StabilityPool", async (accounts) => {
 
       const BoldinSP_Before = await stabilityPool.getTotalBoldDeposits();
 
-      const maxBytes32 = web3.utils.toBN(
-        "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-      );
-
       // Price drops
       await priceFeed.setPrice(dec(200, 18));
 
-      // Bob attempts to withdraws maxBytes32 Bold from the Stability Pool
-      await th.withdrawFromSPAndClaim(contracts, maxBytes32, { from: bob });
+      // Bob attempts to withdraws 2^256 - 1 Bold from the Stability Pool
+      await th.withdrawFromSPAndClaim(contracts, th.MAX_UINT256, { from: bob });
 
       // Check Bob's Bold balance has risen by only the value of his compounded deposit
       const bob_expectedBoldBalance = bob_Bold_Balance_Before

@@ -794,6 +794,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     await borrowerOperations.withdrawBold(
       aliceTroveId,
       await getNetBorrowingAmount(A_totalDebt),
+      th.MAX_UINT256,
       { from: alice },
     );
 
@@ -1330,6 +1331,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     await borrowerOperations.withdrawBold(
       aliceTroveId,
       await getNetBorrowingAmount(A_totalDebt),
+      th.MAX_UINT256,
       { from: alice },
     );
 

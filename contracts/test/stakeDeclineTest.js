@@ -158,6 +158,7 @@ contract("TroveManager", async (accounts) => {
       false,
       1,
       false,
+      th.MAX_UINT256,
       { from: B },
     ); // B repays 1 wei
     // console.log(`B stake after A1: ${(await troveManager.Troves(BTroveId))[2]}`);
@@ -180,6 +181,7 @@ contract("TroveManager", async (accounts) => {
         false,
         1,
         false,
+        th.MAX_UINT256,
         { from: B },
       ); // A repays 1 wei
       // console.log(

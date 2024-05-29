@@ -4037,9 +4037,6 @@ contract("TroveManager", async (accounts) => {
     }
 
     // Erin tries to redeem 2^256 - 1 Bold
-    const maxBytes32 = toBN(
-      "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-    );
 
     try {
       ({ firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
@@ -4058,7 +4055,7 @@ contract("TroveManager", async (accounts) => {
       );
 
       const redemptionTx = await troveManager.redeemCollateral(
-        maxBytes32,
+        th.MAX_UINT256,
         firstRedemptionHint,
         upperPartialRedemptionHint_4,
         lowerPartialRedemptionHint_4,
@@ -4867,12 +4864,9 @@ contract("TroveManager", async (accounts) => {
     const coll = dec(1, "ether");
     const debt = 0;
 
-    const ICR = web3.utils.toHex(
-      await troveManager.computeICR(coll, debt, price),
-    );
-    const maxBytes32 = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+    const ICR = await troveManager.computeICR(coll, debt, price);
 
-    assert.equal(ICR, maxBytes32);
+    assert.equal(ICR.toString(), th.MAX_UINT256.toString());
   });
 
   // --- checkBelowCriticalThreshold ---
