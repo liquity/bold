@@ -299,8 +299,8 @@ contract("BorrowerOperations", async (accounts) => {
       }
 
       // Alice and Bob top up their Troves
-      const aliceTopUp = toBN(dec(5, "ether"));
-      const bobTopUp = toBN(dec(1, "ether"));
+      const aliceTopUp = toBN(dec(25, "ether"));
+      const bobTopUp = toBN(dec(16, "ether"));
 
       await th.addCollWrapper(contracts, {
         from: alice,
