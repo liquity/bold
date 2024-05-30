@@ -107,6 +107,7 @@ export const lightTheme = {
     border: "gray:200",
     content: "gray:950",
     contentAlt: "gray:600",
+    contentAlt2: "gray:500",
     controlBorder: "gray:300",
     controlBorderStrong: "blue:950",
     controlSurface: "white",
