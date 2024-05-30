@@ -380,8 +380,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         );
 
         // Apply upfront fee on premature adjustments
-        // TODO: should we disallow premature adjustments when TCR < CCR, as we normally would't allow debt increases
-        // during that time?
         if (prematureAdjustment) {
             // TODO: should we fetch unconditionally? Would make the TX a bit more expensive for well-behaved users, but
             // it would be more consistent with other functions (fetching the price is the first thing we usually do).
