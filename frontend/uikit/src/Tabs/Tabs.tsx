@@ -165,7 +165,8 @@ function Tab({
       aria-controls={panelId}
       aria-selected={selected}
       id={tabId}
-      onClick={onSelect}
+      onMouseDown={onSelect}
+      onTouchEnd={onSelect}
       role="tab"
       tabIndex={selected ? 0 : -1}
       className={css({
