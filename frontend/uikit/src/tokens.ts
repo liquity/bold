@@ -3,8 +3,15 @@ import type { Token } from "./types";
 import tokenBold from "./token-icons/bold.svg";
 import tokenEth from "./token-icons/eth.svg";
 import tokenLqty from "./token-icons/lqty.svg";
+import tokenLusd from "./token-icons/lusd.svg";
 import tokenReth from "./token-icons/reth.svg";
 import tokenWsteth from "./token-icons/wsteth.svg";
+
+export const LUSD: Token = {
+  icon: tokenLusd,
+  name: "LUSD",
+  symbol: "LUSD" as const,
+} as const;
 
 export const BOLD: Token = {
   icon: tokenBold,
@@ -48,4 +55,5 @@ export const TOKENS_BY_SYMBOL = {
   WETH,
   RETH,
   WSTETH,
+  LUSD,
 } as const;
