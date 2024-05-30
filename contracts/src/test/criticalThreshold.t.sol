@@ -83,4 +83,35 @@ contract CriticalThresholdTest is DevTestSetup {
         vm.expectRevert("BorrowerOps: below CT, repayment must be >= coll withdrawal");
         this.withdrawColl(A, ATroveId, 1);
     }
+
+    function testNoPrematureInterestRateAdjustmentIfItWouldPullTCRBelowCCR() public {
+        uint256 price = CCR; // set price such that TCR=CCR when nominalTCR=100%
+        priceFeed.setPrice(price);
+
+        uint256 interestRate = 0.1 ether;
+        uint256 targetDebt = 10_000 ether;
+        (uint256 borrow,) = findAmountToBorrowWithOpenTrove(targetDebt, interestRate);
+        uint256 troveId = openTroveNoHints100pct(A, targetDebt, borrow, interestRate);
+        assertEq(troveManager.getTCR(price), CCR, "TCR should equal CCR");
+
+        // First, make a free adjustment, which will start a cooldown timer
+        changeInterestRateNoHints(A, troveId, 0.2 ether);
+
+        vm.expectRevert("BorrowerOps: An operation that would result in TCR < CCR is not permitted");
+        this.changeInterestRateNoHints(A, troveId, 0.3 ether);
+    }
+
+    // TODO: decide whether we want to allow this or not
+    function testPrematureInterestRateAdjustmentAllowedIfTCRAlreadyBelowCCR() public {
+        (uint256 ATroveId,,) = setUpBelowCT();
+
+        // First, make a free adjustment, which will start a cooldown timer
+        changeInterestRateNoHints(A, ATroveId, 0.2 ether);
+
+        uint256 debtBefore = troveManager.getTroveEntireDebt(ATroveId);
+        changeInterestRateNoHints(A, ATroveId, 0.3 ether);
+        uint256 debtAfter = troveManager.getTroveEntireDebt(ATroveId);
+
+        assertGt(debtAfter, debtBefore, "Adjustment should have incurred a fee");
+    }
 }
