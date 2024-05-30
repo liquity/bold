@@ -400,11 +400,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             uint256 newICR = LiquityMath._computeCR(newColl, newDebt, price);
             _requireICRisAboveMCR(newICR);
 
-            // TODO: decide whether to allow premature adjustments below CCR
-            if (!_checkBelowCriticalThreshold(price)) {
-                uint256 newTCR = _getNewTCRFromTroveChange(troveChange, price);
-                _requireNewTCRisAboveCCR(newTCR);
-            }
+            // Disallow a premature adjustment if it would result in TCR < CCR
+            // (which includes the case when TCR is already below CCR before the adjustment).
+            uint256 newTCR = _getNewTCRFromTroveChange(troveChange, price);
+            _requireNewTCRisAboveCCR(newTCR);
         }
 
         contractsCache.troveManager.adjustTroveInterestRate(

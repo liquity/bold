@@ -101,17 +101,13 @@ contract CriticalThresholdTest is DevTestSetup {
         this.changeInterestRateNoHints(A, troveId, 0.3 ether);
     }
 
-    // TODO: decide whether we want to allow this or not
-    function testPrematureInterestRateAdjustmentAllowedIfTCRAlreadyBelowCCR() public {
+    function testPrematureInterestRateAdjustmentDisallowedIfTCRAlreadyBelowCCR() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
         // First, make a free adjustment, which will start a cooldown timer
         changeInterestRateNoHints(A, ATroveId, 0.2 ether);
 
-        uint256 debtBefore = troveManager.getTroveEntireDebt(ATroveId);
-        changeInterestRateNoHints(A, ATroveId, 0.3 ether);
-        uint256 debtAfter = troveManager.getTroveEntireDebt(ATroveId);
-
-        assertGt(debtAfter, debtBefore, "Adjustment should have incurred a fee");
+        vm.expectRevert("BorrowerOps: An operation that would result in TCR < CCR is not permitted");
+        this.changeInterestRateNoHints(A, ATroveId, 0.3 ether);
     }
 }
