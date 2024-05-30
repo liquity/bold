@@ -1016,7 +1016,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         Troves[_troveId].status = Status.active;
     }
 
-    function adjustTroveInterestRate(
+    function onAdjustTroveInterestRate(
         uint256 _troveId,
         uint256 _newColl,
         uint256 _newDebt,
@@ -1037,7 +1037,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         _movePendingTroveRewardsToActivePool(defaultPool, _appliedRedistBoldDebtGain, _appliedRedistETHGain);
     }
 
-    function adjustTrove(
+    function onAdjustTrove(
         uint256 _troveId,
         uint256 _newColl,
         uint256 _newDebt,
@@ -1055,7 +1055,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         _updateStakeAndTotalStakes(_troveId);
     }
 
-    function applyTroveInterest(
+    function onApplyTroveInterest(
         uint256 _troveId,
         uint256 _newColl,
         uint256 _newDebt,

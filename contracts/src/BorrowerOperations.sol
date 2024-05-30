@@ -404,7 +404,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _requireNewTCRisAboveCCR(newTCR);
         }
 
-        contractsCache.troveManager.adjustTroveInterestRate(
+        contractsCache.troveManager.onAdjustTroveInterestRate(
             _troveId,
             newColl,
             newDebt,
@@ -493,7 +493,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // --- Effects and interactions ---
 
-        _contractsCache.troveManager.adjustTrove(
+        _contractsCache.troveManager.onAdjustTrove(
             _troveId, vars.newColl, vars.newDebt, vars.trove.redistETHGain, vars.trove.redistBoldDebtGain
         );
 
@@ -555,7 +555,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
         troveChange.newWeightedRecordedDebt = trove.entireDebt * trove.annualInterestRate;
 
-        contractsCache.troveManager.applyTroveInterest(
+        contractsCache.troveManager.onApplyTroveInterest(
             _troveId, trove.entireColl, trove.entireDebt, trove.redistETHGain, trove.redistBoldDebtGain
         );
 

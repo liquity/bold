@@ -81,20 +81,30 @@ contract(
         }
       });
 
-      it("adjustTroveInterestRate(): reverts when called by an account that is not BorrowerOperations", async () => {
+      it("onAdjustTroveInterestRate(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          await troveManager.adjustTroveInterestRate(th.addressToTroveId(bob), 0, 0, 0, 0, 0, { from: alice });
+          await troveManager.onAdjustTroveInterestRate(th.addressToTroveId(bob), 0, 0, 0, 0, 0, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           // assert.include(err.message, "Caller is not the BorrowerOperations contract")
         }
       });
 
-      it("adjustTrove(): reverts when called by an account that is not BorrowerOperations", async () => {
+      it("onAdjustTrove(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          await troveManager.adjustTrove(th.addressToTroveId(bob), 0, 0, 0, 0, { from: alice });
+          await troveManager.onAdjustTrove(th.addressToTroveId(bob), 0, 0, 0, 0, { from: alice });
+        } catch (err) {
+          assert.include(err.message, "revert");
+          // assert.include(err.message, "Caller is not the BorrowerOperations contract")
+        }
+      });
+
+      it("onApplyTroveInterest(): reverts when called by an account that is not BorrowerOperations", async () => {
+        // Attempt call from alice
+        try {
+          await troveManager.onApplyTroveInterest(th.addressToTroveId(bob), 0, 0, 0, 0, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           // assert.include(err.message, "Caller is not the BorrowerOperations contract")
