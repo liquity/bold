@@ -9,6 +9,8 @@ export * from "./tokens";
 export { Button } from "./Button/Button";
 export { Checkbox } from "./Checkbox/Checkbox";
 export { Dropdown } from "./Dropdown/Dropdown";
+export { HFlex } from "./Flex/HFlex";
+export { VFlex } from "./Flex/VFlex";
 export { FormField } from "./FormField/FormField";
 export { TextInput } from "./Input/TextInput";
 export { InputField } from "./InputField/InputField";
