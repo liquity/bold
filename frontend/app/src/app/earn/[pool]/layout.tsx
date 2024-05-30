@@ -1,5 +1,5 @@
 import { POOLS } from "@/src/demo-data";
-import { EarnScreen } from "./EarnScreen";
+import { EarnPoolScreen } from "@/src/screens/EarnPoolScreen/EarnPoolScreen";
 
 export function generateStaticParams() {
   return POOLS.map((pool) => ({
@@ -8,7 +8,5 @@ export function generateStaticParams() {
 }
 
 export default function Layout() {
-  // We are rendering <EarnScreen /> from the layout,
-  // so that we can use animations between route changes.
-  return <EarnScreen />;
+  return <EarnPoolScreen />;
 }

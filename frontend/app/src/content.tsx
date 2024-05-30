@@ -25,19 +25,19 @@ export default {
     actions: {
       borrow: {
         title: "Borrow BOLD",
-        description: "Set your own interest rate and borrow BOLD against ETH and staked ETH.",
+        description: "Set your own interest rate or borrow BOLD against ETH and staked ETH.",
       },
       leverage: {
         title: "Leverage ETH",
-        description: "Set your own interest rate and increase your exposure to ETH and staked ETH.",
+        description: "Set your own interest rate or increase your exposure to ETH and staked ETH.",
       },
       earn: {
         title: "Earn with BOLD",
-        description: "Earn defi-native yield with your BOLD.",
+        description: "Cover liquidations to earn BOLD and collateral assets",
       },
       stake: {
         title: "Stake LQTY",
-        description: "Use LQTY to generate yield without a minimum lockup period.",
+        description: "Accrue voting power by staking your LQTY without a minimum lockup period",
       },
     },
     products: {
@@ -138,19 +138,21 @@ export default {
   borrowScreen: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Deposit {tokensIcons} to Borrow {boldIcon} BOLD
+        Borrow {boldIcon} BOLD with {tokensIcons} ETH
       </>
     ),
-    subheading: "With your own interest rate or ready-to-use strategies",
     depositField: {
       label: "You deposit",
     },
     borrowField: {
       label: "You borrow",
     },
+    liquidationPriceField: {
+      label: "ETH Liquidation price",
+    },
     interestRateField: {
       label: "Interest rate",
     },
-    action: "Open new loan",
+    action: "Open loan",
   },
 };

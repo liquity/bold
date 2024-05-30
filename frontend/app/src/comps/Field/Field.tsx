@@ -62,11 +62,59 @@ export function FieldInfo({
       }}
     >
       {label && (
-        <span className={css({ color: "contentAlt" })}>
+        <div
+          className={css({
+            color: "contentAlt",
+          })}
+        >
           {label}
-        </span>
+        </div>
       )}
-      <span>{value}</span>
+      <div
+        className={css({
+          display: "flex",
+          alignItems: "center",
+        })}
+      >
+        {value}
+      </div>
     </div>
+  );
+}
+
+export function FieldInfoWarnLevel({
+  label,
+  level,
+}: {
+  label: ReactNode;
+  level: "low" | "medium" | "high";
+}) {
+  return (
+    <FieldInfo
+      value={
+        <div
+          className={css({
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+          })}
+        >
+          <div
+            className={css({
+              width: 12,
+              height: 12,
+              "--warn-color-low": "token(colors.positive)",
+              "--warn-color-medium": "token(colors.warning)",
+              "--warn-color-high": "token(colors.negative)",
+              borderRadius: "50%",
+            })}
+            style={{
+              background: `var(--warn-color-${level})`,
+            }}
+          />
+          {label}
+        </div>
+      }
+    />
   );
 }

@@ -25,10 +25,10 @@ export const LQTY: Token = {
   symbol: "LQTY" as const,
 } as const;
 
-export const WETH: Token = {
+export const ETH: Token = {
   icon: tokenEth,
   name: "ETH",
-  symbol: "WETH" as const,
+  symbol: "ETH" as const,
 } as const;
 
 export const RETH: Token = {
@@ -44,15 +44,15 @@ export const WSTETH: Token = {
 } as const;
 
 export const COLLATERALS = [
-  WETH,
-  WSTETH,
+  ETH,
   RETH,
+  WSTETH,
 ] as const;
 
 export const TOKENS_BY_SYMBOL = {
   BOLD,
+  ETH,
   LQTY,
-  WETH,
   RETH,
   WSTETH,
   LUSD,

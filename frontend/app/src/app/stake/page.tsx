@@ -1,7 +1,3 @@
-export default function Stake() {
-  return (
-    <div>
-      Stake
-    </div>
-  );
+export default function Page() {
+  return null;
 }

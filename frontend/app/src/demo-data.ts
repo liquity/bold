@@ -1,5 +1,7 @@
+export const STAKED_LQTY = 43_920_716_739_092_664_364_409_174n;
+
 export const BORROW_FROM = {
-  WETH: {
+  ETH: {
     avgIr: "5.6%",
     maxTvl: "91%",
   },
@@ -14,7 +16,7 @@ export const BORROW_FROM = {
 } as const;
 
 export const LEVERAGE_FROM = {
-  WETH: {
+  ETH: {
     avgIr: "4.6%",
     avgLeverage: "5.6x",
     maxLeverage: "7.2x",
@@ -32,7 +34,7 @@ export const LEVERAGE_FROM = {
 } as const;
 
 export const EARN_POOLS = {
-  WETH: {
+  ETH: {
     apy: [6_800n, 3],
     boldQty: [65_700_000n, 0],
   },
@@ -47,7 +49,7 @@ export const EARN_POOLS = {
 } as const;
 
 export const POOLS = [{
-  symbol: "WETH",
+  symbol: "ETH",
   token: "ETH",
   apy: "6.8%",
   boldQty: "65.7M BOLD",
