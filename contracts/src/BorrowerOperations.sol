@@ -235,8 +235,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     // Send ETH as collateral to a trove
     function addColl(uint256 _troveId, uint256 _ETHAmount) external override {
-        require(_ETHAmount != 0, "BorrowerOps: Added collateral must be non-zero");
-
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
 
@@ -253,8 +251,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     // Withdraw ETH collateral from a trove
     function withdrawColl(uint256 _troveId, uint256 _collWithdrawal) external override {
-        require(_collWithdrawal != 0, "BorrowerOps: Withdrawn collateral must be non-zero");
-
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
 
@@ -271,8 +267,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     // Withdraw Bold tokens from a trove: mint new Bold tokens to the owner, and increase the trove's debt accordingly
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external override {
-        require(_boldAmount != 0, "BorrowerOps: Withdrawn Bold must be non-zero");
-
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
 
@@ -283,8 +277,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     // Repay Bold tokens to a Trove: Burn the repaid Bold tokens, and reduce the trove's debt accordingly
     function repayBold(uint256 _troveId, uint256 _boldAmount) external override {
-        require(_boldAmount != 0, "BorrowerOps: Repaid Bold must be non-zero");
-
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
 
@@ -327,11 +319,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         bool _isDebtIncrease,
         uint256 _maxUpfrontFee
     ) external override {
-        require(
-            _collChange != 0 || _boldChange != 0,
-            "BorrowerOps: There must be either a collateral change or a debt change"
-        );
-
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
 
@@ -350,11 +337,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) external override {
-        require(
-            _collChange != 0 || _boldChange != 0,
-            "BorrowerOps: There must be either a collateral change or a debt change"
-        );
-
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         _requireTroveIsUnredeemable(contractsCache.troveManager, _troveId);
 
@@ -457,6 +439,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // --- Checks ---
 
+        _requireNonZeroAdjustment(_troveChange);
         _requireTroveIsOpen(_contractsCache.troveManager, _troveId);
 
         address owner = _contractsCache.troveManager.ownerOf(_troveId);
@@ -657,6 +640,14 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     function _requireCallerIsBorrower(ITroveManager _troveManager, uint256 _troveId) internal view {
         require(
             msg.sender == _troveManager.ownerOf(_troveId), "BorrowerOps: Caller must be the borrower for a withdrawal"
+        );
+    }
+
+    function _requireNonZeroAdjustment(TroveChange memory _troveChange) internal pure {
+        require(
+            _troveChange.collIncrease > 0 || _troveChange.collDecrease > 0 || _troveChange.debtIncrease > 0
+                || _troveChange.debtDecrease > 0,
+            "BorrowerOps: There must be either a collateral change or a debt change"
         );
     }
 
