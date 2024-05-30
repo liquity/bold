@@ -366,7 +366,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
 
         LatestTroveData memory trove = contractsCache.troveManager.getLatestTroveData(_troveId);
-        uint256 newColl = trove.entireColl;
         uint256 newDebt = trove.entireDebt;
 
         TroveChange memory troveChange;
@@ -395,7 +394,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             troveChange.newWeightedRecordedDebt = newDebt * _newAnnualInterestRate;
 
             // ICR is based on the composite debt, i.e. the requested Bold amount + Bold gas comp + upfront fee.
-            uint256 newICR = LiquityMath._computeCR(newColl, newDebt, price);
+            uint256 newICR = LiquityMath._computeCR(trove.entireColl, newDebt, price);
             _requireICRisAboveMCR(newICR);
 
             // Disallow a premature adjustment if it would result in TCR < CCR
@@ -406,7 +405,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         contractsCache.troveManager.onAdjustTroveInterestRate(
             _troveId,
-            newColl,
+            trove.entireColl,
             newDebt,
             _newAnnualInterestRate,
             trove.redistETHGain,
@@ -417,7 +416,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
         sortedTroves.reInsert(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint);
 
-        emit TroveUpdated(_troveId, newColl, newDebt, Operation.adjustTroveInterestRate);
+        emit TroveUpdated(_troveId, trove.entireColl, newDebt, Operation.adjustTroveInterestRate);
     }
 
     /*
