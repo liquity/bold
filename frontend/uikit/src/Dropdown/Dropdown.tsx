@@ -113,7 +113,9 @@ export function Dropdown({
     const selectedButton = focusContainer.current?.querySelector(
       "[tabindex=\"0\"]",
     ) as HTMLElement;
-    selectedButton?.focus();
+    setTimeout(() => {
+      selectedButton?.focus();
+    }, 0);
   }, [focused, showMenu]);
 
   let buttonItem = getItem(items[selected] || placeholder);
@@ -346,7 +348,7 @@ function useKeyboardNavigation({
     return () => {
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [itemsLength, onFocus, focused, menuVisible]);
+  }, [itemsLength, onClose, onFocus, focused, menuVisible]);
 }
 
 function getItem(item: DropdownItem): null | Exclude<DropdownItem, ReactNode> {

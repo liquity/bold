@@ -1,7 +1,7 @@
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { forwardRef } from "react";
-import { css } from "../../styled-system/css";
+import { css, cx } from "../../styled-system/css";
 
 export const TextButton = forwardRef<
   HTMLButtonElement,
@@ -10,25 +10,29 @@ export const TextButton = forwardRef<
   }
 >(function TextButton({
   label,
+  className,
   ...props
 }, ref) {
   return (
     <button
       ref={ref}
+      className={cx(
+        className,
+        css({
+          display: "inline",
+          fontSize: 16,
+          color: "accent",
+          borderRadius: 4,
+          cursor: "pointer",
+          _focusVisible: {
+            outline: "2px solid token(colors.focused)",
+          },
+          _active: {
+            translate: "0 1px",
+          },
+        }),
+      )}
       {...props}
-      className={css({
-        display: "inline",
-        fontSize: 16,
-        color: "accent",
-        borderRadius: 4,
-        cursor: "pointer",
-        _focusVisible: {
-          outline: "2px solid token(colors.focused)",
-        },
-        _active: {
-          translate: "0 1px",
-        },
-      })}
     >
       {label}
     </button>

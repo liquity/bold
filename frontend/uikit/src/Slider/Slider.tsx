@@ -165,10 +165,10 @@ export function Slider({
         onTouchStart={dragStart}
         className={css({
           position: "relative",
-          cursor: "pointer",
         })}
         style={{
           height: HEIGHT,
+          cursor: disabled ? "default" : "pointer",
         }}
       >
         <div
@@ -263,7 +263,6 @@ export function Slider({
                 borderWidth: 2,
                 borderStyle: "solid",
                 borderRadius: "50%",
-                cursor: "pointer",
                 pointerEvents: "auto",
                 "--borderColor": "token(colors.controlBorderStrong)",
                 "--borderColorDisabled": "token(colors.disabledBorder)",
