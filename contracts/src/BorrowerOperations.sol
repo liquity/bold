@@ -694,7 +694,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     }
 
     function _requireUserAcceptsUpfrontFee(uint256 _fee, uint256 _maxFee) internal pure {
-        require(_fee <= _maxFee, "BorrowerOps: Unfront fee exceeded provided maximum");
+        require(_fee <= _maxFee, "BorrowerOps: Upfront fee exceeded provided maximum");
     }
 
     function _requireNotBelowCriticalThreshold(uint256 _price) internal view {
