@@ -168,7 +168,7 @@ export function BorrowLeverageScreen() {
                 <HFlex gap={4}>
                   <div>80.00%</div>
                   <InfoTooltip heading="Max LTV">
-                    A redemption is an event where the borrower's collateral is exchanged for a corresponding amount of
+                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
                     Bold stablecoins. At the time of the exchange a borrower does not lose any money.
                   </InfoTooltip>
                 </HFlex>
@@ -237,7 +237,7 @@ export function BorrowLeverageScreen() {
                       <HFlex gap={4}>
                         {liquidationRisk.ltv}
                         <InfoTooltip heading="LTV">
-                          A redemption is an event where the borrower's collateral is exchanged for a corresponding
+                          A redemption is an event where the borrower’s collateral is exchanged for a corresponding
                           amount of Bold stablecoins. At the time of the exchange a borrower does not lose any money.
                         </InfoTooltip>
                       </HFlex>
@@ -252,7 +252,7 @@ export function BorrowLeverageScreen() {
                     <HFlex gap={4}>
                       ${dn.format(liquidationRisk.ethPrice, 2)}
                       <InfoTooltip heading="LTV">
-                        A redemption is an event where the borrower's collateral is exchanged for a corresponding amount
+                        A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount
                         of Bold stablecoins. At the time of the exchange a borrower does not lose any money.
                       </InfoTooltip>
                     </HFlex>
@@ -322,7 +322,7 @@ export function BorrowLeverageScreen() {
                         warnLevel="high"
                       />
                       <InfoTooltip heading="Leverage level">
-                        A redemption is an event where the borrower's collateral is exchanged for a corresponding amount
+                        A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount
                         of Bold stablecoins. At the time of the exchange a borrower does not lose any money.
                       </InfoTooltip>
                     </HFlex>
@@ -348,7 +348,7 @@ export function BorrowLeverageScreen() {
                       <HFlex gap={4}>
                         {liquidationRisk.ltv}
                         <InfoTooltip heading="LTV">
-                          A redemption is an event where the borrower's collateral is exchanged for a corresponding
+                          A redemption is an event where the borrower’s collateral is exchanged for a corresponding
                           amount of Bold stablecoins. At the time of the exchange a borrower does not lose any money.
                         </InfoTooltip>
                       </HFlex>
@@ -363,7 +363,7 @@ export function BorrowLeverageScreen() {
                     <HFlex gap={4}>
                       ${dn.format(liquidationRisk.ethPrice, 2)}
                       <InfoTooltip heading="LTV">
-                        A redemption is an event where the borrower's collateral is exchanged for a corresponding amount
+                        A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount
                         of Bold stablecoins. At the time of the exchange a borrower does not lose any money.
                       </InfoTooltip>
                     </HFlex>
@@ -385,7 +385,7 @@ export function BorrowLeverageScreen() {
                 <HFlex gap={4}>
                   <div>0 BOLD / year</div>
                   <InfoTooltip heading="Interest rate">
-                    A redemption is an event where the borrower's collateral is exchanged for a corresponding amount of
+                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
                     Bold stablecoins. At the time of the exchange a borrower does not lose any money.
                   </InfoTooltip>
                 </HFlex>
@@ -408,7 +408,7 @@ export function BorrowLeverageScreen() {
                     warnLevel="high"
                   />
                   <InfoTooltip heading="Interest rate">
-                    A redemption is an event where the borrower's collateral is exchanged for a corresponding amount of
+                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
                     Bold stablecoins. At the time of the exchange a borrower does not lose any money.
                   </InfoTooltip>
                 </HFlex>
