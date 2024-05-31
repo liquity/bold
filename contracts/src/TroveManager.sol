@@ -798,7 +798,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         _activePool.sendETHToDefaultPool(_collToRedistribute);
     }
 
-    function closeTrove(uint256 _troveId, uint256 _appliedRedistETHGain, uint256 _appliedRedistBoldDebtGain)
+    function onCloseTrove(uint256 _troveId, uint256 _appliedRedistETHGain, uint256 _appliedRedistBoldDebtGain)
         external
         override
     {
@@ -982,7 +982,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
     // --- Trove property setters, called by BorrowerOperations ---
 
-    function openTrove(address _owner, uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _annualInterestRate)
+    function onOpenTrove(address _owner, uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _annualInterestRate)
         external
     {
         _requireCallerIsBorrowerOperations();

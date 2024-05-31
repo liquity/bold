@@ -214,7 +214,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // --- Effects & interactions ---
 
         // Set the stored Trove properties and mint the NFT
-        contractsCache.troveManager.openTrove(_owner, troveId, _ETHAmount, vars.entireDebt, _annualInterestRate);
+        contractsCache.troveManager.onOpenTrove(_owner, troveId, _ETHAmount, vars.entireDebt, _annualInterestRate);
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(vars.troveChange);
         sortedTroves.insert(troveId, _annualInterestRate, _upperHint, _lowerHint);
@@ -516,7 +516,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // --- Effects and interactions ---
 
-        contractsCache.troveManager.closeTrove(_troveId, trove.redistETHGain, trove.redistBoldDebtGain);
+        contractsCache.troveManager.onCloseTrove(_troveId, trove.redistETHGain, trove.redistBoldDebtGain);
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
 
         emit TroveUpdated(_troveId, 0, 0, Operation.closeTrove);

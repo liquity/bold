@@ -93,7 +93,7 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     // -- permissioned functions called by BorrowerOperations
 
-    function openTrove(address _owner, uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _annualInterestRate)
+    function onOpenTrove(address _owner, uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _annualInterestRate)
         external;
 
     // Called from `adjustUnredeemableTrove()`
@@ -124,7 +124,8 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _appliedRedistBoldDebtGain
     ) external;
 
-    function closeTrove(uint256 _troveId, uint256 _appliedRedistETHGain, uint256 _appliedRedistBoldDebtGain) external;
+    function onCloseTrove(uint256 _troveId, uint256 _appliedRedistETHGain, uint256 _appliedRedistBoldDebtGain)
+        external;
 
     // -- end of permissioned functions --
 

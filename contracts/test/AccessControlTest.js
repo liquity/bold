@@ -61,20 +61,20 @@ contract(
     });
 
     describe("TroveManager", async (accounts) => {
-      it("openTrove(): reverts when called by an account that is not BorrowerOperations", async () => {
+      it("onOpenTrove(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          await troveManager.openTrove(bob, th.addressToTroveId(bob), 0, 0, 0, { from: alice });
+          await troveManager.onOpenTrove(bob, th.addressToTroveId(bob), 0, 0, 0, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           // assert.include(err.message, "Caller is not the BorrowerOperations contract")
         }
       });
 
-      it("closeTrove(): reverts when called by an account that is not BorrowerOperations", async () => {
+      it("onCloseTrove(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          await troveManager.closeTrove(th.addressToTroveId(bob), 0, 0, { from: alice });
+          await troveManager.onCloseTrove(th.addressToTroveId(bob), 0, 0, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           // assert.include(err.message, "Caller is not the BorrowerOperations contract")
