@@ -453,7 +453,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // When the adjustment is a debt repayment, check it's a valid amount and that the caller has enough Bold
         if (_troveChange.debtDecrease > 0) {
             _requireValidBoldRepayment(vars.trove.entireDebt, _troveChange.debtDecrease);
-            // TODO: is this needed? Then why aren't we doing this for collateral?
             _requireSufficientBoldBalance(_contractsCache.boldToken, msg.sender, _troveChange.debtDecrease);
         }
 
