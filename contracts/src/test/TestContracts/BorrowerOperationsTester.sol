@@ -17,19 +17,7 @@ contract BorrowerOperationsTester is BorrowerOperations {
         uint256 _price
     ) external view returns (uint256) {
         TroveChange memory troveChange;
-
-        if (isCollIncrease) {
-            troveChange.collIncrease = _collChange;
-        } else {
-            troveChange.collDecrease = _collChange;
-        }
-
-        if (isDebtIncrease) {
-            troveChange.debtIncrease = _debtChange;
-        } else {
-            troveChange.debtDecrease = _debtChange;
-        }
-
+        _initTroveChange(troveChange, _collChange, isCollIncrease, _debtChange, isDebtIncrease);
         return _getNewTCRFromTroveChange(troveChange, _price);
     }
 
