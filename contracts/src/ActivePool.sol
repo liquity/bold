@@ -124,6 +124,11 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         view
         returns (uint256)
     {
+        // We are ignoring the upfront fee when calculating the approx. avg. interest rate.
+        // This is a simple way to resolve the circularity in:
+        //   fee depends on avg. interest rate -> avg. interest rate is weighted by debt -> debt includes fee -> ...
+        assert(_troveChange.upfrontFee == 0);
+
         uint256 newAggRecordedDebt = aggRecordedDebt;
         newAggRecordedDebt += calcPendingAggInterest();
         newAggRecordedDebt += _troveChange.appliedRedistBoldDebtGain;
