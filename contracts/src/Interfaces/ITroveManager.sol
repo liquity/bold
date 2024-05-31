@@ -105,8 +105,7 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _newDebt,
         uint256 _newAnnualInterestRate,
         uint256 _appliedRedistETHGain,
-        uint256 _appliedRedistBoldDebtGain,
-        bool _startCooldown
+        uint256 _appliedRedistBoldDebtGain
     ) external;
 
     function onAdjustTrove(

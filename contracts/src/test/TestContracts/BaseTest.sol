@@ -291,17 +291,14 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function changeInterestRateNoHints(address _account, uint256 _troveId, uint256 _newAnnualInterestRate) public {
+    function changeInterestRateNoHints(address _account, uint256 _troveId, uint256 _newAnnualInterestRate)
+        public
+        returns (uint256 upfrontFee)
+    {
+        upfrontFee = predictAdjustInterestRateUpfrontFee(_troveId, _newAnnualInterestRate);
+
         vm.startPrank(_account);
-
-        borrowerOperations.adjustTroveInterestRate(
-            _troveId,
-            _newAnnualInterestRate,
-            0,
-            0,
-            predictAdjustInterestRateUpfrontFee(_troveId, _newAnnualInterestRate)
-        );
-
+        borrowerOperations.adjustTroveInterestRate(_troveId, _newAnnualInterestRate, 0, 0, upfrontFee);
         vm.stopPrank();
     }
 

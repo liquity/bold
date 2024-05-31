@@ -996,6 +996,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         Troves[_troveId].status = Status.active;
         Troves[_troveId].arrayIndex = uint64(TroveIds.length);
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
+        Troves[_troveId].lastInterestRateAdjTime = uint64(block.timestamp);
         Troves[_troveId].annualInterestRate = _annualInterestRate;
 
         _updateTroveRewardSnapshots(_troveId);
@@ -1022,8 +1023,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 _newDebt,
         uint256 _newAnnualInterestRate,
         uint256 _appliedRedistETHGain,
-        uint256 _appliedRedistBoldDebtGain,
-        bool _startCooldown
+        uint256 _appliedRedistBoldDebtGain
     ) external {
         _requireCallerIsBorrowerOperations();
 
@@ -1031,7 +1031,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         Troves[_troveId].debt = _newDebt;
         Troves[_troveId].annualInterestRate = _newAnnualInterestRate;
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
-        if (_startCooldown) Troves[_troveId].lastInterestRateAdjTime = uint64(block.timestamp);
+        Troves[_troveId].lastInterestRateAdjTime = uint64(block.timestamp);
 
         _updateTroveRewardSnapshots(_troveId);
         _movePendingTroveRewardsToActivePool(defaultPool, _appliedRedistBoldDebtGain, _appliedRedistETHGain);

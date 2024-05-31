@@ -731,7 +731,8 @@ contract InterestRateAggregate is DevTestSetup {
         priceFeed.setPrice(2000e18);
         uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
 
-        vm.warp(block.timestamp + 1 days);
+        // Wait for interest rate adjustment cooldown to pass, so we don't incur a fee
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN);
 
         uint256 aggRecordedDebt_1 = activePool.aggRecordedDebt();
         assertGt(aggRecordedDebt_1, 0);
@@ -794,10 +795,9 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 expectedSPYield = _getSPYield(pendingAggInterest);
-
         // A changes interest rate
-        changeInterestRateNoHints(A, ATroveId, 75e16);
+        uint256 upfrontFee = changeInterestRateNoHints(A, ATroveId, 75e16);
+        uint256 expectedSPYield = _getSPYield(pendingAggInterest + upfrontFee);
 
         // Check SP Bold bal has increased as expected
         uint256 boldBalSP_2 = boldToken.balanceOf(address(stabilityPool));
@@ -822,10 +822,10 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 entireTroveDebt = troveManager.getTroveEntireDebt(ATroveId);
 
         uint256 newAnnualInterestRate = 75e16;
-        uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * newAnnualInterestRate;
 
         // A changes interest rate
-        changeInterestRateNoHints(A, ATroveId, newAnnualInterestRate);
+        uint256 upfrontFee = changeInterestRateNoHints(A, ATroveId, newAnnualInterestRate);
+        uint256 expectedNewRecordedWeightedDebt = (entireTroveDebt + upfrontFee) * newAnnualInterestRate;
 
         // Expect weighted sum decreases by the old and increases by the new individual weighted Trove debt.
         assertEq(

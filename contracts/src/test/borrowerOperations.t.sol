@@ -108,39 +108,26 @@ contract BorrowerOperationsTest is DevTestSetup {
 
         uint56[4] memory interestRate = [0.01 ether, 0.02 ether, 0.03 ether, 0.04 ether];
 
-        uint256 troveDebtBefore = troveManager.getTroveEntireDebt(troveId);
-        uint256 activePoolDebtBefore = activePool.getBoldDebt();
-
-        // First adjustment is free, but it will start a cooldown timer
-        vm.prank(A);
-        borrowerOperations.adjustTroveInterestRate(troveId, interestRate[0], 0, 0, 0);
-
-        uint256 troveDebtAfter = troveManager.getTroveEntireDebt(troveId);
-        uint256 activePoolDebtAfter = activePool.getBoldDebt();
-
-        assertEqDecimal(troveDebtAfter - troveDebtBefore, 0, 18, "Wrong Trove debt increase 1");
-        assertEqDecimal(activePoolDebtAfter - activePoolDebtBefore, 0, 18, "Wrong AP debt increase 1");
-
         // Wait less than the cooldown period, thus the next adjustment will have a cost
         vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN / 2);
 
         uint256 upfrontFee = predictAdjustInterestRateUpfrontFee(troveId, interestRate[1]);
         assertGt(upfrontFee, 0);
 
-        troveDebtBefore = troveManager.getTroveEntireDebt(troveId);
-        activePoolDebtBefore = activePool.getBoldDebt();
+        uint256 troveDebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 activePoolDebtBefore = activePool.getBoldDebt();
 
         vm.prank(A);
         borrowerOperations.adjustTroveInterestRate(troveId, interestRate[1], 0, 0, upfrontFee);
 
-        troveDebtAfter = troveManager.getTroveEntireDebt(troveId);
-        activePoolDebtAfter = activePool.getBoldDebt();
+        uint256 troveDebtAfter = troveManager.getTroveEntireDebt(troveId);
+        uint256 activePoolDebtAfter = activePool.getBoldDebt();
 
-        assertEqDecimal(troveDebtAfter - troveDebtBefore, upfrontFee, 18, "Wrong Trove debt increase 2");
-        assertEqDecimal(activePoolDebtAfter - activePoolDebtBefore, upfrontFee, 18, "Wrong AP debt increase 2");
+        assertEqDecimal(troveDebtAfter - troveDebtBefore, upfrontFee, 18, "Wrong Trove debt increase 1");
+        assertEqDecimal(activePoolDebtAfter - activePoolDebtBefore, upfrontFee, 18, "Wrong AP debt increase 1");
 
-        // Wait a bit again, but still not enough to finish the cooldown, thus next adjustment should still cost
-        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN / 4);
+        // Once again wait less than the cooldown period, thus the next adjustment will still have a cost
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN * 3 / 4);
 
         upfrontFee = predictAdjustInterestRateUpfrontFee(troveId, interestRate[2]);
         assertGt(upfrontFee, 0);
@@ -154,11 +141,11 @@ contract BorrowerOperationsTest is DevTestSetup {
         troveDebtAfter = troveManager.getTroveEntireDebt(troveId);
         activePoolDebtAfter = activePool.getBoldDebt();
 
-        assertEqDecimal(troveDebtAfter - troveDebtBefore, upfrontFee, 18, "Wrong Trove debt increase 3");
-        assertEqDecimal(activePoolDebtAfter - activePoolDebtBefore, upfrontFee, 18, "Wrong AP debt increase 3");
+        assertEqDecimal(troveDebtAfter - troveDebtBefore, upfrontFee, 18, "Wrong Trove debt increase 2");
+        assertEqDecimal(activePoolDebtAfter - activePoolDebtBefore, upfrontFee, 18, "Wrong AP debt increase 2");
 
         // Wait for cooldown to finish, thus the next adjustment will be free again
-        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN / 4);
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN);
 
         troveDebtBefore = troveManager.getTroveEntireDebt(troveId);
         activePoolDebtBefore = activePool.getBoldDebt();
@@ -169,27 +156,23 @@ contract BorrowerOperationsTest is DevTestSetup {
         troveDebtAfter = troveManager.getTroveEntireDebt(troveId);
         activePoolDebtAfter = activePool.getBoldDebt();
 
-        assertEqDecimal(troveDebtAfter - troveDebtBefore, 0, 18, "Wrong Trove debt increase 4");
-        assertEqDecimal(activePoolDebtAfter - activePoolDebtBefore, 0, 18, "Wrong AP debt increase 4");
+        assertEqDecimal(troveDebtAfter - troveDebtBefore, 0, 18, "Wrong Trove debt increase 3");
+        assertEqDecimal(activePoolDebtAfter - activePoolDebtBefore, 0, 18, "Wrong AP debt increase 3");
     }
 
     function testAdjustInterestRateRevertsWhenUpfrontFeeExceedsUserProvidedLimit() public {
         uint256 troveId = openTroveNoHints100pct(A, 100 ether, 10_000 ether, 0.05 ether);
 
-        uint56[2] memory interestRate = [0.01 ether, 0.02 ether];
-
-        // First adjustment is free, but it will start a cooldown timer
-        vm.prank(A);
-        borrowerOperations.adjustTroveInterestRate(troveId, interestRate[0], 0, 0, 0);
+        uint56 interestRate = 0.01 ether;
 
         // Wait less than the cooldown period, thus the next adjustment will have a cost
         vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN / 2);
 
-        uint256 upfrontFee = predictAdjustInterestRateUpfrontFee(troveId, interestRate[1]);
+        uint256 upfrontFee = predictAdjustInterestRateUpfrontFee(troveId, interestRate);
         assertGt(upfrontFee, 0);
 
         vm.prank(A);
         vm.expectRevert("BorrowerOps: Upfront fee exceeded provided maximum");
-        borrowerOperations.adjustTroveInterestRate(troveId, interestRate[1], 0, 0, upfrontFee - 1);
+        borrowerOperations.adjustTroveInterestRate(troveId, interestRate, 0, 0, upfrontFee - 1);
     }
 }

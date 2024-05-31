@@ -373,13 +373,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         troveChange.newWeightedRecordedDebt = newDebt * _newAnnualInterestRate;
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
 
-        bool prematureAdjustment = (
-            trove.lastInterestRateAdjTime != 0
-                && block.timestamp < trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
-        );
-
         // Apply upfront fee on premature adjustments
-        if (prematureAdjustment) {
+        if (block.timestamp < trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN) {
             // TODO: should we fetch unconditionally? Would make the TX a bit more expensive for well-behaved users, but
             // it would be more consistent with other functions (fetching the price is the first thing we usually do).
             uint256 price = priceFeed.fetchPrice();
@@ -404,13 +399,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         }
 
         contractsCache.troveManager.onAdjustTroveInterestRate(
-            _troveId,
-            trove.entireColl,
-            newDebt,
-            _newAnnualInterestRate,
-            trove.redistETHGain,
-            trove.redistBoldDebtGain,
-            !prematureAdjustment // _startCooldown
+            _troveId, trove.entireColl, newDebt, _newAnnualInterestRate, trove.redistETHGain, trove.redistBoldDebtGain
         );
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
