@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { autoUpdate, limitShift, offset, shift, useFloating } from "@floating-ui/react-dom";
+import { autoUpdate, offset, shift, useFloating } from "@floating-ui/react-dom";
 import { a, useTransition } from "@react-spring/web";
 import { useEffect, useRef, useState } from "react";
 import { css } from "../../styled-system/css";

@@ -1,6 +1,7 @@
 "use client";
 
 import { BackButton } from "@/src/comps/BackButton/BackButton";
+import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { POOLS } from "@/src/demo-data";
 import { css } from "@/styled-system/css";
@@ -16,7 +17,7 @@ const TABS = [
   { action: "claim", label: content.earnScreen.tabs.claim },
 ] as const;
 
-export function EarnScreen() {
+export function EarnPoolScreen() {
   const { pool: poolName, action = "deposit" } = useParams();
 
   const router = useRouter();
@@ -24,16 +25,7 @@ export function EarnScreen() {
   const tab = TABS.find((tab) => tab.action === action);
 
   return pool && tab && (
-    <div
-      className={css({
-        flexGrow: 1,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 48,
-        width: 534,
-      })}
-    >
+    <Screen>
       <BackButton href="/earn" label={content.earnScreen.backButton} />
       <PoolSummary pool={pool} />
       <AccountPosition pool={pool} />
@@ -62,7 +54,7 @@ export function EarnScreen() {
         {tab.action === "withdraw" && <WithdrawPanel pool={pool} />}
         {tab.action === "claim" && <RewardsPanel pool={pool} />}
       </div>
-    </div>
+    </Screen>
   );
 }
 

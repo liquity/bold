@@ -26,19 +26,19 @@ const menuSections: MenuSection[] = [
   {
     actions: [
       {
-        href: "/borrow",
+        href: "/borrow/eth",
         name: "ETH pool",
         secondary: "91% Max LTV",
-        token: "WETH",
+        token: "ETH",
       },
       {
-        href: "/borrow",
+        href: "/borrow/reth",
         name: "rETH pool",
         secondary: "91% Max LTV",
         token: "RETH",
       },
       {
-        href: "/borrow",
+        href: "/borrow/wsteth",
         name: "wstETH pool",
         secondary: "91% Max LTV",
         token: "WSTETH",
@@ -53,7 +53,7 @@ const menuSections: MenuSection[] = [
         href: "/leverage/eth",
         name: "ETH pool",
         secondary: "91% Max LTV",
-        token: "WETH",
+        token: "ETH",
       },
       {
         href: "/leverage/reth",
@@ -77,7 +77,7 @@ const menuSections: MenuSection[] = [
         href: "/earn/eth",
         name: "ETH pool",
         secondary: "4.3% APY",
-        token: "WETH",
+        token: "ETH",
       },
       {
         href: "/earn/reth",
