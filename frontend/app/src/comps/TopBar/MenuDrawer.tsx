@@ -9,9 +9,13 @@ import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 
 export function MenuDrawer({
+  onMouseEnter,
+  onMouseLeave,
   opened,
   sections,
 }: {
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
   opened: number;
   sections: MenuSection[];
 }) {
@@ -39,6 +43,8 @@ export function MenuDrawer({
 
   return (
     <div
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       className={css({
         position: "absolute",
         zIndex: 1,

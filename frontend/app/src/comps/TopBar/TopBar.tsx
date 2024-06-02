@@ -8,7 +8,7 @@ import content from "@/src/content";
 import { css } from "@/styled-system/css";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LAYOUT_WIDTH } from "../AppLayout/AppLayout";
 import { AccountButton } from "./AccountButton";
 import { IconBorrow, IconEarn, IconLeverage, IconStake } from "./icons";
@@ -107,14 +107,32 @@ export function TopBar() {
 
   const [hoveredItem, setHoveredItem] = useState(-1);
 
+  const hoverDelay = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelDelayedHover = useCallback(() => {
+    if (!hoverDelay.current) {
+      return;
+    }
+    clearTimeout(hoverDelay.current);
+    hoverDelay.current = null;
+  }, []);
+  const startDelayedHover = useCallback((hoveredItem: number, delay: number) => {
+    cancelDelayedHover();
+    if (delay === 0) {
+      setHoveredItem(hoveredItem);
+      return;
+    }
+    hoverDelay.current = setTimeout(() => {
+      setHoveredItem(hoveredItem);
+    }, delay);
+  }, [cancelDelayedHover]);
+
   // close the drawer when the route changes
   useEffect(() => {
-    setHoveredItem(-1);
-  }, [pathname]);
+    startDelayedHover(-1, 0);
+  }, [startDelayedHover, pathname]);
 
   return (
     <div
-      onMouseLeave={() => setHoveredItem(-1)}
       className={css({
         position: "relative",
         zIndex: 2,
@@ -160,7 +178,12 @@ export function TopBar() {
         <Menu
           hovered={hoveredItem}
           menuItems={menuItems}
-          onHover={(index) => setHoveredItem(index)}
+          onHover={(index) => {
+            startDelayedHover(index, hoveredItem === -1 ? 200 : 0);
+          }}
+          onMouseLeave={() => {
+            startDelayedHover(-1, 200);
+          }}
         />
         <AccountButton />
       </div>
@@ -174,6 +197,12 @@ export function TopBar() {
         })}
       >
         <MenuDrawer
+          onMouseEnter={() => {
+            cancelDelayedHover();
+          }}
+          onMouseLeave={() => {
+            startDelayedHover(-1, 200);
+          }}
           opened={hoveredItem}
           sections={menuSections}
         />
