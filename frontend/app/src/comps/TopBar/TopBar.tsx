@@ -107,29 +107,29 @@ export function TopBar() {
 
   const [hoveredItem, setHoveredItem] = useState(-1);
 
-  const initialHoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cancelInitialHover = useCallback(() => {
-    if (!initialHoverTimer.current) {
+  const hoverDelay = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelDelayedHover = useCallback(() => {
+    if (!hoverDelay.current) {
       return;
     }
-    clearTimeout(initialHoverTimer.current);
-    initialHoverTimer.current = null;
+    clearTimeout(hoverDelay.current);
+    hoverDelay.current = null;
   }, []);
-  const startInitialHover = useCallback((hoveredItem: number, delay: number) => {
-    cancelInitialHover();
+  const startDelayedHover = useCallback((hoveredItem: number, delay: number) => {
+    cancelDelayedHover();
     if (delay === 0) {
       setHoveredItem(hoveredItem);
       return;
     }
-    initialHoverTimer.current = setTimeout(() => {
+    hoverDelay.current = setTimeout(() => {
       setHoveredItem(hoveredItem);
     }, delay);
-  }, [cancelInitialHover]);
+  }, [cancelDelayedHover]);
 
   // close the drawer when the route changes
   useEffect(() => {
-    startInitialHover(-1, 0);
-  }, [startInitialHover, pathname]);
+    startDelayedHover(-1, 0);
+  }, [startDelayedHover, pathname]);
 
   return (
     <div
@@ -179,10 +179,10 @@ export function TopBar() {
           hovered={hoveredItem}
           menuItems={menuItems}
           onHover={(index) => {
-            startInitialHover(index, hoveredItem === -1 ? 200 : 0);
+            startDelayedHover(index, hoveredItem === -1 ? 200 : 0);
           }}
           onMouseLeave={() => {
-            startInitialHover(-1, 200);
+            startDelayedHover(-1, 200);
           }}
         />
         <AccountButton />
@@ -198,10 +198,10 @@ export function TopBar() {
       >
         <MenuDrawer
           onMouseEnter={() => {
-            cancelInitialHover();
+            cancelDelayedHover();
           }}
           onMouseLeave={() => {
-            startInitialHover(-1, 200);
+            startDelayedHover(-1, 200);
           }}
           opened={hoveredItem}
           sections={menuSections}
