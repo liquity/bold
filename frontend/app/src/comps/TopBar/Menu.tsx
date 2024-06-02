@@ -10,6 +10,7 @@ export function Menu({
   hovered = -1,
   menuItems,
   onHover,
+  onMouseLeave,
 }: {
   hovered: number;
   menuItems: [
@@ -18,10 +19,11 @@ export function Menu({
     ComponentType<{ color: string }>,
   ][];
   onHover: (index: number) => void;
+  onMouseLeave: () => void;
 }) {
   const pathname = usePathname();
   return (
-    <nav>
+    <nav onMouseLeave={onMouseLeave}>
       <ul
         className={css({
           position: "relative",
