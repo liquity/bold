@@ -127,7 +127,7 @@ export default {
       label: "You claim",
       details: (usdAmount: N, fee: N) => (
         <>
-          ~{usdAmount} USD • Expected gas fee ~{fee} USD
+          ~${usdAmount} • Expected gas fee ~${fee}
         </>
       ),
       action: "Claim rewards",
@@ -154,5 +154,55 @@ export default {
       label: "Interest rate",
     },
     action: "Open loan",
+  },
+
+  // Stake screen
+  stakeScreen: {
+    header: (lqtyIcon: N, lusdEthIcons: N) => (
+      <>
+        <span>Stake</span>
+        {lqtyIcon} <span>LQTY & get</span>
+        {lusdEthIcons} <span>LUSD + ETH</span>
+      </>
+    ),
+    accountDetails: {
+      myDeposit: "My deposit",
+      votingPower: "Voting power",
+      votingPowerHelp: (
+        <>
+          Voting power is the percentage of the total staked LQTY that you own.
+        </>
+      ),
+      unclaimed: "Unclaimed rewards",
+    },
+    tabs: {
+      deposit: "Deposit",
+      withdraw: "Withdraw",
+      claim: "Claim rewards",
+    },
+    depositPanel: {
+      label: "You deposit",
+      shareLabel: (share: N) => (
+        <>
+          Share in the pool {share}
+        </>
+      ),
+      claimCheckbox: "Also claim rewards",
+      action: "Add deposit",
+    },
+    withdrawPanel: {
+      label: "You withdraw",
+      claimCheckbox: "Also claim rewards",
+      action: "Withdraw",
+    },
+    rewardsPanel: {
+      label: "You claim",
+      details: (usdAmount: N, fee: N) => (
+        <>
+          ~${usdAmount} • Expected gas fee ~${fee}
+        </>
+      ),
+      action: "Claim rewards",
+    },
   },
 };

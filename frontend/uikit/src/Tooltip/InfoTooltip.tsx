@@ -10,7 +10,7 @@ export function InfoTooltip({
   heading,
 }: {
   children?: ReactNode;
-  heading: ReactNode;
+  heading?: ReactNode;
 }) {
   return (
     <Tooltip

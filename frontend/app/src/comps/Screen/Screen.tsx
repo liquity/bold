@@ -4,11 +4,13 @@ import { css } from "@/styled-system/css";
 
 export function Screen({
   children,
+  gap = 48,
   subtitle,
   title,
   width = 534,
 }: {
   children: ReactNode;
+  gap?: number;
   subtitle?: ReactNode;
   title?: ReactNode;
   width?: number;
@@ -20,9 +22,9 @@ export function Screen({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: 64,
         width: "100%",
         padding: 24,
+        gap: 64,
       })}
     >
       {title && (
@@ -60,9 +62,9 @@ export function Screen({
         className={css({
           display: "flex",
           flexDirection: "column",
-          gap: 48,
         })}
         style={{
+          gap,
           width,
         }}
       >

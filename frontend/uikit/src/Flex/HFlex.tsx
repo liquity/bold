@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 
 import { css, cx } from "../../styled-system/css";
 
@@ -6,12 +6,14 @@ export function HFlex({
   children,
   className,
   gap = 8,
+  justifyContent = "center",
   style = {},
   ...props
 }: {
   children: ReactNode;
   className?: string;
   gap?: number;
+  justifyContent?: CSSProperties["justifyContent"];
 } & HTMLAttributes<HTMLDivElement>) {
   return (
     <div
@@ -21,12 +23,12 @@ export function HFlex({
           display: "flex",
           flexDirection: "row",
           alignItems: "center",
-          justifyContent: "center",
         }),
       )}
       style={{
         ...style,
         gap,
+        justifyContent,
       }}
       {...props}
     >
