@@ -1,10 +1,14 @@
+import type { PositionEarn, PositionLoan } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
+import { ACCOUNT_POSITIONS } from "@/src/demo-data";
 import { css } from "@/styled-system/css";
-import { StrongCard, StatusDot, TokenIcon } from "@liquity2/uikit";
+import { StatusDot, StrongCard, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import * as dn from "dnum";
 import Link from "next/link";
+import { match } from "ts-pattern";
 import { useAccount } from "wagmi";
 
 export function Positions() {
@@ -28,8 +32,12 @@ export function Positions() {
             gap: 24,
           })}
         >
-          <PositionBorrow />
-          <PositionEarn />
+          {ACCOUNT_POSITIONS.map((position) => (
+            match(position)
+              .with({ type: "loan" }, ({ type, ...props }) => <PositionLoan {...props} />)
+              .with({ type: "earn" }, ({ type, ...props }) => <PositionEarn {...props} />)
+              .otherwise(() => null)
+          ))}
         </div>
       </div>
     )
@@ -60,11 +68,35 @@ export function Positions() {
     );
 }
 
-function PositionBorrow() {
+function PositionLoan({
+  borrowed,
+  collateral,
+  deposit,
+  interestRate,
+  troveId,
+  ltv,
+}: Pick<
+  PositionLoan,
+  | "borrowed"
+  | "collateral"
+  | "deposit"
+  | "interestRate"
+  | "troveId"
+  | "ltv"
+>) {
+  const token = TOKENS_BY_SYMBOL[collateral];
   return (
-    <Link href="/borrow" passHref legacyBehavior>
+    <Link
+      href={{
+        pathname: "/loan",
+        query: { id: String(troveId) },
+      }}
+      legacyBehavior
+      passHref
+    >
       <StrongCard
-        heading="Borrow"
+        title={`Loan #${troveId}`}
+        heading="Loan"
         rows={[
           [
             {
@@ -73,9 +105,11 @@ function PositionBorrow() {
                 <FlexRow>
                   <TokenIcon
                     size="small"
-                    symbol="RETH"
+                    symbol={token.symbol}
                   />
-                  <div>5.50 rETH</div>
+                  <div>
+                    {dn.format(deposit, 4)} {token.name}
+                  </div>
                 </FlexRow>
               ),
             },
@@ -83,7 +117,9 @@ function PositionBorrow() {
               label: "LTV",
               value: (
                 <FlexRow>
-                  <div>61.00%</div>
+                  <div>
+                    {dn.format(dn.mul(ltv, 100), 2)}%
+                  </div>
                   <StatusDot mode="positive" size={8} />
                 </FlexRow>
               ),
@@ -95,7 +131,7 @@ function PositionBorrow() {
               value: (
                 <FlexRow>
                   <div>
-                    25,789.00 BOLD
+                    {dn.format(borrowed, 4)} BOLD
                   </div>
                 </FlexRow>
               ),
@@ -104,7 +140,9 @@ function PositionBorrow() {
               label: "Int. Rate",
               value: (
                 <FlexRow>
-                  <div>5.7%</div>
+                  <div>
+                    {dn.format(dn.mul(interestRate, 100), 2)}%
+                  </div>
                   <StatusDot mode="positive" size={8} />
                 </FlexRow>
               ),
@@ -116,16 +154,32 @@ function PositionBorrow() {
   );
 }
 
-function PositionEarn() {
+function PositionEarn({
+  apy,
+  collateral,
+  deposit,
+  rewards,
+}: Pick<
+  PositionEarn,
+  | "apy"
+  | "collateral"
+  | "deposit"
+  | "rewards"
+>) {
+  const token = TOKENS_BY_SYMBOL[collateral];
   return (
-    <Link href="/earn" passHref legacyBehavior>
+    <Link
+      href={`/earn/${token.symbol.toLowerCase()}`}
+      passHref
+      legacyBehavior
+    >
       <StrongCard
         heading={[
           "Earn",
           // eslint-disable-next-line react/jsx-key
           <FlexRow>
-            <div>stETH pool</div>
-            <TokenIcon size="small" symbol="WSTETH" />
+            <div>{token.name} pool</div>
+            <TokenIcon size="small" symbol={token.symbol} />
           </FlexRow>,
         ]}
         rows={[
@@ -138,13 +192,13 @@ function PositionEarn() {
                     size="small"
                     symbol="BOLD"
                   />
-                  <div>5,000 BOLD</div>
+                  <div>{dn.format(deposit, 4)} BOLD</div>
                 </FlexRow>
               ),
             },
             {
               label: "APY",
-              value: "7.80%",
+              value: dn.format(dn.mul(apy, 100), 2) + "%",
             },
           ],
           [
@@ -158,7 +212,7 @@ function PositionEarn() {
                       color: "positive",
                     })}
                   >
-                    25,789.00 BOLD
+                    {dn.format(rewards.bold)} BOLD
                   </div>
                   <div
                     className={css({
@@ -166,7 +220,7 @@ function PositionEarn() {
                       color: "strongSurfaceContentAlt",
                     })}
                   >
-                    +0.943 swETH
+                    +{dn.format(rewards.eth)} {token.name}
                   </div>
                 </FlexRow>
               ),

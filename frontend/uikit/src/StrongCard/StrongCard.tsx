@@ -19,10 +19,12 @@ export const StrongCard = forwardRef<HTMLAnchorElement, {
     [Cell | null, Cell | null],
     [Cell | null, Cell | null],
   ];
+  title?: string;
 }>(function StrongCard({
   heading,
   href,
   rows,
+  title,
 }, ref) {
   const [heading1, heading2] = Array.isArray(heading) ? heading : [heading];
 
@@ -56,6 +58,7 @@ export const StrongCard = forwardRef<HTMLAnchorElement, {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onMouseUp={() => setActive(false)}
+      title={title}
       className={cx(
         "group",
         css({
@@ -64,6 +67,10 @@ export const StrongCard = forwardRef<HTMLAnchorElement, {
           padding: 16,
           background: "strongSurface",
           borderRadius: 8,
+          outline: "none",
+          _focusVisible: {
+            outline: "2px solid token(colors.focused)",
+          },
         }),
       )}
       style={hoverSpring}

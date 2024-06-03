@@ -1,11 +1,12 @@
 "use client";
 
 import { BackButton } from "@/src/comps/BackButton/BackButton";
+import { Details } from "@/src/comps/Details/Details";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { POOLS } from "@/src/demo-data";
 import { css } from "@/styled-system/css";
-import { Tabs, TokenIcon, TokenIconGroup } from "@liquity2/uikit";
+import { HFlex, Tabs, TokenIcon, TokenIconGroup } from "@liquity2/uikit";
 import { useParams, useRouter } from "next/navigation";
 import { DepositPanel } from "./DepositPanel";
 import { RewardsPanel } from "./RewardsPanel";
@@ -28,7 +29,41 @@ export function EarnPoolScreen() {
     <Screen>
       <BackButton href="/earn" label={content.earnScreen.backButton} />
       <PoolSummary pool={pool} />
-      <AccountPosition pool={pool} />
+      {pool.deposit && (
+        <Details
+          items={[
+            {
+              label: content.earnScreen.accountPosition.depositLabel,
+              value: pool.deposit,
+            },
+            {
+              label: content.earnScreen.accountPosition.rewardsLabel,
+              value: pool.rewards && (
+                <HFlex
+                  gap={8}
+                  justifyContent="flex-start"
+                  className={css({
+                    fontSize: 14,
+                    color: "positive",
+                  })}
+                >
+                  {pool.rewards.bold} BOLD
+                  <div
+                    className={css({
+                      display: "flex",
+                      width: 4,
+                      height: 4,
+                      borderRadius: "50%",
+                      backgroundColor: "dimmed",
+                    })}
+                  />
+                  {pool.rewards.eth} ETH
+                </HFlex>
+              ),
+            },
+          ]}
+        />
+      )}
       <div
         className={css({
           display: "flex",
@@ -134,80 +169,6 @@ function PoolSummary({ pool }: { pool: typeof POOLS[number] }) {
         >
           {content.earnScreen.headerApy()}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function AccountPosition({ pool }: { pool: typeof POOLS[number] }) {
-  return pool.deposit && (
-    <div
-      className={css({
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        width: "100%",
-        padding: 24,
-        background: "#F8F6F4",
-        borderRadius: 8,
-      })}
-    >
-      <div
-        className={css({
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-        })}
-      >
-        <div
-          className={css({
-            color: "contentAlt",
-          })}
-        >
-          {content.earnScreen.accountPosition.depositLabel}
-        </div>
-        <div
-          className={css({})}
-        >
-          {pool.deposit}
-        </div>
-      </div>
-      <div
-        className={css({
-          display: "flex",
-          flexDirection: "column",
-          gap: 8,
-        })}
-      >
-        <div
-          className={css({
-            color: "contentAlt",
-          })}
-        >
-          {content.earnScreen.accountPosition.rewardsLabel}
-        </div>
-        {pool.rewards && (
-          <div
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              fontSize: 14,
-              color: "positive",
-            })}
-          >
-            {pool.rewards.bold} BOLD
-            <div
-              className={css({
-                display: "flex",
-                width: 4,
-                height: 4,
-                borderRadius: "50%",
-                backgroundColor: "dimmed",
-              })}
-            />
-            {pool.rewards.eth} ETH
-          </div>
-        )}
       </div>
     </div>
   );
