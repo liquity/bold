@@ -14,7 +14,7 @@ import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
 
-import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
@@ -473,8 +473,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     function offset(uint256 _debtToOffset, uint256 _collToAdd) external override {
         _requireCallerIsTroveManager();
         uint256 totalBold = totalBoldDeposits; // cached to save an SLOAD
-        console2.log("offset::_debtToOffset", _debtToOffset);
-        console2.log("offset::totalBoldDeposits", totalBoldDeposits);
         if (totalBold == 0 || _debtToOffset == 0) return;
 
         (uint256 ETHGainPerUnitStaked, uint256 boldLossPerUnitStaked) =
@@ -530,7 +528,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         uint256 newP;
 
         assert(_boldLossPerUnitStaked <= DECIMAL_PRECISION);
-        console2.log("offset::_boldLossPerUnitStaked", _boldLossPerUnitStaked);
         /*
         * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool Bold in the liquidation.
         * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - boldLossPerUnitStaked)
@@ -565,8 +562,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         } else if (currentP * newProductFactor / DECIMAL_PRECISION < SCALE_FACTOR) {
             newP = currentP * newProductFactor * SCALE_FACTOR / DECIMAL_PRECISION;
             currentScale = currentScaleCached + 1;
-
-            console2.log("newP", newP);
 
             // Increment the scale again if it's still below the boundary. This ensures the invariant P >= 1e9 holds and addresses this issue
             // from Liquity v1: https://github.com/liquity/dev/security/advisories/GHSA-m9f3-hrx8-x2g3
