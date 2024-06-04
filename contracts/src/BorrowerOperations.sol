@@ -86,14 +86,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         IBoldToken boldToken;
     }
 
-    enum Operation {
-        openTrove,
-        closeTrove,
-        adjustTrove,
-        adjustTroveInterestRate,
-        applyTroveInterestPermissionless
-    }
-
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event ActivePoolAddressChanged(address _activePoolAddress);
     event DefaultPoolAddressChanged(address _defaultPoolAddress);
@@ -102,10 +94,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     event PriceFeedAddressChanged(address _newPriceFeedAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
-
-    event TroveCreated(address indexed _owner, uint256 _troveId);
-    event TroveUpdated(uint256 indexed _troveId, uint256 _debt, uint256 _coll, Operation operation);
-    event BoldBorrowingFeePaid(uint256 indexed _troveId, uint256 _boldFee);
 
     constructor(IERC20 _ETH, ITroveManager _troveManager) {
         checkContract(address(_ETH));
@@ -219,16 +207,12 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(vars.troveChange);
         sortedTroves.insert(troveId, _annualInterestRate, _upperHint, _lowerHint);
 
-        emit TroveCreated(_owner, troveId);
-
         // Pull ETH tokens from sender and move them to the Active Pool
         _pullETHAndSendToActivePool(contractsCache.activePool, _ETHAmount);
 
         // Mint the requested _boldAmount to the borrower and mint the gas comp to the GasPool
         contractsCache.boldToken.mint(msg.sender, _boldAmount);
         contractsCache.boldToken.mint(gasPoolAddress, BOLD_GAS_COMPENSATION);
-
-        emit TroveUpdated(troveId, vars.entireDebt, _ETHAmount, Operation.openTrove);
 
         return troveId;
     }
@@ -404,8 +388,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
         sortedTroves.reInsert(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint);
-
-        emit TroveUpdated(_troveId, trove.entireColl, newDebt, Operation.adjustTroveInterestRate);
     }
 
     /*
@@ -486,8 +468,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         _contractsCache.activePool.mintAggInterestAndAccountForTroveChange(_troveChange);
 
-        emit TroveUpdated(_troveId, vars.newDebt, vars.newColl, Operation.adjustTrove);
-
         _moveTokensAndETHfromAdjustment(owner, _troveChange, _contractsCache);
     }
 
@@ -519,8 +499,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         contractsCache.troveManager.onCloseTrove(_troveId, trove.redistETHGain, trove.redistBoldDebtGain);
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
 
-        emit TroveUpdated(_troveId, 0, 0, Operation.closeTrove);
-
         // Burn the 200 BOLD gas compensation
         contractsCache.boldToken.burn(gasPoolAddress, BOLD_GAS_COMPENSATION);
         // Burn the remainder of the Trove's entire debt from the user
@@ -547,8 +525,6 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         );
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
-
-        emit TroveUpdated(_troveId, trove.entireColl, trove.entireDebt, Operation.applyTroveInterestPermissionless);
     }
 
     function setAddManager(uint256 _troveId, address _manager) external {

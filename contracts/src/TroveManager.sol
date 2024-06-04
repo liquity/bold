@@ -9,12 +9,13 @@ import "./Interfaces/IStabilityPool.sol";
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ISortedTroves.sol";
+import "./Interfaces/ITroveEvents.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 
 // import "forge-std/console2.sol";
 
-contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
+contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEvents {
     string public constant NAME = "TroveManager"; // TODO
     string public constant SYMBOL = "Lv2T"; // TODO
 
@@ -177,24 +178,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
-
-    event Liquidation(
-        uint256 _liquidatedDebt, uint256 _liquidatedColl, uint256 _collGasCompensation, uint256 _boldGasCompensation
-    );
-    event Redemption(uint256 _attemptedBoldAmount, uint256 _actualBoldAmount, uint256 _ETHSent, uint256 _ETHFee);
-    event TroveUpdated(uint256 indexed _troveId, uint256 _debt, uint256 _coll, Operation _operation);
-    event TroveLiquidated(uint256 indexed _troveId, uint256 _debt, uint256 _coll, Operation _operation);
-    event TotalStakesUpdated(uint256 _newTotalStakes);
-    event SystemSnapshotsUpdated(uint256 _totalStakesSnapshot, uint256 _totalCollateralSnapshot);
-    event LTermsUpdated(uint256 _L_ETH, uint256 _L_boldDebt);
-    event TroveSnapshotsUpdated(uint256 _L_ETH, uint256 _L_boldDebt);
-    event TroveIndexUpdated(uint256 _troveId, uint256 _newIndex);
-    event RedemptionFeePaidToTrove(uint256 indexed _troveId, uint256 _ETHFee);
-
-    enum Operation {
-        liquidate,
-        redeemCollateral
-    }
 
     constructor(uint256 _mcr, uint256 _liquidationPenaltySP, uint256 _liquidationPenaltyRedistribution)
         ERC721(NAME, SYMBOL)
@@ -820,6 +803,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         _requireCallerIsBorrowerOperations();
         _closeTrove(_troveId, Status.closedByOwner);
         _movePendingTroveRewardsToActivePool(defaultPool, _appliedRedistBoldDebtGain, _appliedRedistETHGain);
+
+        emit TroveUpdated(_troveId, 0, 0, Operation.closeTrove);
     }
 
     function _closeTrove(uint256 _troveId, Status closedStatus) internal {
@@ -1025,6 +1010,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         // mint ERC721
         _mint(_owner, _troveId);
+
+        emit TroveCreated(_owner, _troveId);
+        emit TroveUpdated(_troveId, _debt, _coll, Operation.openTrove);
     }
 
     function setTroveStatusToActive(uint256 _troveId) external {
@@ -1050,6 +1038,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         _updateTroveRewardSnapshots(_troveId);
         _movePendingTroveRewardsToActivePool(defaultPool, _appliedRedistBoldDebtGain, _appliedRedistETHGain);
+
+        emit TroveUpdated(_troveId, _newDebt, _newColl, Operation.adjustTroveInterestRate);
     }
 
     function onAdjustTrove(
@@ -1068,6 +1058,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         _updateTroveRewardSnapshots(_troveId);
         _movePendingTroveRewardsToActivePool(defaultPool, _appliedRedistBoldDebtGain, _appliedRedistETHGain);
         _updateStakeAndTotalStakes(_troveId);
+
+        emit TroveUpdated(_troveId, _newDebt, _newColl, Operation.adjustTrove);
     }
 
     function onApplyTroveInterest(
@@ -1085,5 +1077,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
         _updateTroveRewardSnapshots(_troveId);
         _movePendingTroveRewardsToActivePool(defaultPool, _appliedRedistBoldDebtGain, _appliedRedistETHGain);
+
+        emit TroveUpdated(_troveId, _newDebt, _newColl, Operation.applyTroveInterestPermissionless);
     }
 }

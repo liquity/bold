@@ -82,6 +82,10 @@ contract BaseTest is Test {
         return calcInterest(debt * avgInterestRate, UPFRONT_INTEREST_PERIOD);
     }
 
+    function predictTroveId(address owner, uint256 ownerIndex) internal pure returns (uint256) {
+        return uint256(keccak256(abi.encode(owner, ownerIndex)));
+    }
+
     function predictOpenTroveUpfrontFee(uint256 borrowedAmount, uint256 interestRate) internal view returns (uint256) {
         TroveChange memory openTrove;
         openTrove.debtIncrease = borrowedAmount + BOLD_GAS_COMP;
