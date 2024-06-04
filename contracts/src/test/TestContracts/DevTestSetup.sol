@@ -77,6 +77,7 @@ contract DevTestSetup is BaseTest {
         UPFRONT_INTEREST_PERIOD = troveManager.UPFRONT_INTEREST_PERIOD();
         INTEREST_RATE_ADJ_COOLDOWN = troveManager.INTEREST_RATE_ADJ_COOLDOWN();
         MCR = troveManager.MCR();
+        STALE_TROVE_DURATION = troveManager.STALE_TROVE_DURATION();
     }
 
     function _setupForWithdrawETHGainToTrove() internal returns (uint256, uint256, uint256) {

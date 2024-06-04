@@ -626,7 +626,7 @@ contract InterestRateBasic is DevTestSetup {
         uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, interestRate);
 
         // Fast-forward time such that trove is Stale
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
         // Confirm Trove is stale
         assertTrue(troveManager.troveIsStale(ATroveId));
 
@@ -646,7 +646,7 @@ contract InterestRateBasic is DevTestSetup {
         uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, interestRate);
 
         // Fast-forward time such that trove is Stale
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
         // Confirm Trove is stale
         assertTrue(troveManager.troveIsStale(ATroveId));
 
@@ -666,7 +666,7 @@ contract InterestRateBasic is DevTestSetup {
         uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, interestRate);
 
         // Fast-forward time such that trove is Stale
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
         // Confirm Trove is stale
         assertTrue(troveManager.troveIsStale(ATroveId));
 
@@ -688,7 +688,7 @@ contract InterestRateBasic is DevTestSetup {
         uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, interestRate);
 
         // Fast-forward time such that trove is Stale
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
         // Confirm Trove is stale
         assertTrue(troveManager.troveIsStale(ATroveId));
 
@@ -717,8 +717,7 @@ contract InterestRateBasic is DevTestSetup {
         vm.stopPrank();
 
         // Fast-forward time, but less than the staleness threshold
-        // TODO: replace "90 days" with troveManager.STALE_TROVE_DURATION() after conflicts are resolved
-        vm.warp(block.timestamp + 90 days - 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION - 1);
 
         // B tries to apply A's interest. Expect revert
         vm.startPrank(B);

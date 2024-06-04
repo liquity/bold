@@ -134,7 +134,7 @@ contract SPTest is DevTestSetup {
     function testProvideToSPWithClaim_WithOnlyCurrentBOLDGainsSendsTotalBOLDGainToDepositor() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
@@ -153,7 +153,7 @@ contract SPTest is DevTestSetup {
     function testProvideToSPWithClaim_WithCurrentBOLDGainsZerosCurrentBOLDGains() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
@@ -268,7 +268,7 @@ contract SPTest is DevTestSetup {
     function testProvideToSPNoClaimAddsBOLDGainsToDeposit() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
@@ -287,7 +287,7 @@ contract SPTest is DevTestSetup {
     function testProvideToSPNoClaimZerosCurrentBoldGains() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
@@ -304,7 +304,7 @@ contract SPTest is DevTestSetup {
     function testProvideToSPNoClaimReducesDepositorBoldBalanceByOnlyTheTopUp() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
@@ -424,7 +424,7 @@ contract SPTest is DevTestSetup {
     function testWithdrawFromSPWithClaim_WithCurrentBOLDGainsSendsBOLDGainToDepositor() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
@@ -444,7 +444,7 @@ contract SPTest is DevTestSetup {
     function testWithdrawFromSPWithClaim_WithCurrentBOLDGainsZerosCurrentBoldGains() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
@@ -561,7 +561,7 @@ contract SPTest is DevTestSetup {
     function testWithdrawFromSPNoClaimAddsBOLDGainsToDeposit() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
@@ -580,7 +580,7 @@ contract SPTest is DevTestSetup {
     function testWithdrawFromSPNoClaimZerosCurrentBoldGains() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
@@ -597,7 +597,7 @@ contract SPTest is DevTestSetup {
     function testWithdrawFromSPNoClaimReducesDepositorBoldBalanceByOnlyTheTopUp() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
@@ -818,7 +818,7 @@ contract SPTest is DevTestSetup {
     function testBoldRewardSumIncreasesWhenInterestAppliedPermissionlessly() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
@@ -1044,7 +1044,7 @@ contract SPTest is DevTestSetup {
     function testBoldRewardsOwedIncreasesWhenInterestAppliedPermissionlessly() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
@@ -1166,7 +1166,7 @@ contract SPTest is DevTestSetup {
         assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), stabilityPool.getTotalBoldDeposits(), 1e4);
         assertGt(stabilityPool.getTotalBoldDeposits(), 0);
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
@@ -1181,7 +1181,7 @@ contract SPTest is DevTestSetup {
     function testGetDepositorBoldGain_2SPDepositor1RewardEvent_EarnFairShareOfSPYield() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
@@ -1211,7 +1211,7 @@ contract SPTest is DevTestSetup {
         assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), stabilityPool.getTotalBoldDeposits(), 1e4);
         assertGt(stabilityPool.getTotalBoldDeposits(), 0);
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest_1, 0);
@@ -1222,7 +1222,7 @@ contract SPTest is DevTestSetup {
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_1, 0);
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         uint256 pendingAggInterest_2 = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest_2, 0);
@@ -1239,7 +1239,7 @@ contract SPTest is DevTestSetup {
     function testGetDepositorBoldGain_2SPDepositor2RewardEvent_EarnFairShareOfSPYield() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest_1, 0);
@@ -1257,7 +1257,7 @@ contract SPTest is DevTestSetup {
         applyTroveInterestPermissionless(B, troveIDs.A);
 
         // fast-forward time again and accrue interest
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         uint256 pendingAggInterest_2 = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest_2, 0);
@@ -1286,7 +1286,7 @@ contract SPTest is DevTestSetup {
     function testGetDepositorBoldGain_2SPDepositor1Liq1FreshDeposit_EarnFairShareOfSPYield() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest_1, 0);
@@ -1318,7 +1318,7 @@ contract SPTest is DevTestSetup {
         assertLt(totalSPDeposits_2, totalSPDeposits_1);
 
         // fast-forward time again and accrue interest
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         uint256 pendingAggInterest_2 = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest_2, 0);
@@ -1391,7 +1391,7 @@ contract SPTest is DevTestSetup {
         assertLt(totalSPDeposits_1, totalSPDeposits_0);
 
         // fast-forward time again and accrue interest
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest_1, 0);
@@ -1471,7 +1471,7 @@ contract SPTest is DevTestSetup {
         makeSPDepositAndClaim(D, deposit_D);
 
         // fast-forward time again and accrue interest
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest_1, 0);
@@ -1596,7 +1596,7 @@ contract SPTest is DevTestSetup {
         makeSPDepositAndClaim(D, deposit_D);
 
         // fast-forward time again and accrue interest
-        vm.warp(block.timestamp + 180 days);
+        vm.warp(block.timestamp + 2 * STALE_TROVE_DURATION);
 
         pendingAggInterest[2] = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest[2], 0);
