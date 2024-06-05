@@ -1,5 +1,4 @@
 import type { Position, PositionLoan } from "@/src/types";
-import type { Dnum } from "dnum";
 
 import * as dn from "dnum";
 

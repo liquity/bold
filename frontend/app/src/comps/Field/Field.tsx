@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { css } from "@/styled-system/css";
-import { Dropdown, StatusDot } from "@liquity2/uikit";
+import { StatusDot } from "@liquity2/uikit";
 import { match } from "ts-pattern";
 
 export function Field({
