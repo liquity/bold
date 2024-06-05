@@ -1,3 +1,5 @@
+import type { Dnum } from "dnum";
+
 import { ADDRESS_ZERO, isAddress } from "@/src/eth-utils";
 import * as dn from "dnum";
 import { useState } from "react";
@@ -108,4 +110,21 @@ export function useForm<Form extends Record<string, FormValue<unknown>>>(
     fill,
     values: parsedValues,
   } as const;
+}
+
+export function useInputFieldValue(format: (value: Dnum) => string) {
+  const [value, setValue] = useState("");
+  const [focused, setFocused] = useState(false);
+  const parsed = parseInputFloat(value);
+  return {
+    inputFieldProps: {
+      onBlur: () => setFocused(false),
+      onChange: (value: string) => setValue(value),
+      onFocus: () => setFocused(true),
+      value: focused || !parsed || !value.trim() ? value : format(parsed),
+    },
+    parsed,
+    setValue,
+    value,
+  };
 }

@@ -32,10 +32,10 @@ export function Positions() {
             gap: 24,
           })}
         >
-          {ACCOUNT_POSITIONS.map((position) => (
+          {ACCOUNT_POSITIONS.map((position, index) => (
             match(position)
-              .with({ type: "loan" }, ({ type, ...props }) => <PositionLoan {...props} />)
-              .with({ type: "earn" }, ({ type, ...props }) => <PositionEarn {...props} />)
+              .with({ type: "loan" }, ({ type, ...props }) => <PositionLoan key={index} {...props} />)
+              .with({ type: "earn" }, ({ type, ...props }) => <PositionEarn key={index} {...props} />)
               .otherwise(() => null)
           ))}
         </div>
@@ -170,8 +170,8 @@ function PositionEarn({
   return (
     <Link
       href={`/earn/${token.symbol.toLowerCase()}`}
-      passHref
       legacyBehavior
+      passHref
     >
       <StrongCard
         heading={[

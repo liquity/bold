@@ -128,6 +128,7 @@ export const lightTheme = {
     negativeContent: "white",
     negativeHint: "red:400",
     positive: "green:500",
+    positiveAlt: "green:400",
     positiveActive: "green:600",
     positiveContent: "white",
     positiveHint: "green:400",
