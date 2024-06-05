@@ -907,11 +907,11 @@ class TestHelper {
   }
 
   static getTroveIdFromTx(tx) {
-    for (let i = 0; i < tx.logs.length; i++) {
-      if (tx.logs[i].event === "TroveCreated") {
-        const troveId = tx.logs[i].args["_troveId"];
+    for (let i = 0; i < tx.receipt.rawLogs.length; i++) {
+      if (tx.receipt.rawLogs[i].topics[0] === web3.utils.keccak256("TroveCreated(address,uint256)")) {
+        const troveId = tx.receipt.rawLogs[i].data;
 
-        return troveId;
+        return this.toBN(troveId);
       }
     }
     throw "The transaction logs do not contain a trove creation event";
