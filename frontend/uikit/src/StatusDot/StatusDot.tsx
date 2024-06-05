@@ -11,7 +11,7 @@ export function StatusDot({
     <div
       className={css({
         borderRadius: "50%",
-        "--status-dot-positive": "token(colors.positive)",
+        "--status-dot-positive": "token(colors.positiveAlt)",
         "--status-dot-warning": "token(colors.warning)",
         "--status-dot-negative": "token(colors.negative)",
       })}

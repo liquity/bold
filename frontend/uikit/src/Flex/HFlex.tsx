@@ -3,6 +3,7 @@ import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 import { css, cx } from "../../styled-system/css";
 
 export function HFlex({
+  alignItems = "center",
   children,
   className,
   gap = 8,
@@ -10,6 +11,7 @@ export function HFlex({
   style = {},
   ...props
 }: {
+  alignItems?: CSSProperties["alignItems"];
   children: ReactNode;
   className?: string;
   gap?: number;
@@ -22,11 +24,11 @@ export function HFlex({
         css({
           display: "flex",
           flexDirection: "row",
-          alignItems: "center",
         }),
       )}
       style={{
         ...style,
+        alignItems,
         gap,
         justifyContent,
       }}

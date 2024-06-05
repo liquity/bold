@@ -1,15 +1,19 @@
 import type { ReactNode } from "react";
 
 import { css } from "@/styled-system/css";
+import { StatusDot } from "@liquity2/uikit";
+import { match } from "ts-pattern";
 
 export function Field({
   field,
-  footerStart,
   footerEnd,
+  footerStart,
+  label,
 }: {
   field: ReactNode;
   footerStart?: ReactNode;
   footerEnd?: ReactNode;
+  label?: ReactNode;
 }) {
   return (
     <div
@@ -19,7 +23,26 @@ export function Field({
         gap: 16,
       })}
     >
-      {field}
+      {label
+        ? (
+          <div
+            className={css({
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            })}
+          >
+            <div
+              className={css({
+                color: "contentAlt",
+              })}
+            >
+              {label}
+            </div>
+            {field}
+          </div>
+        )
+        : field}
       <div
         className={css({
           display: "flex",
@@ -47,7 +70,7 @@ export function Field({
   );
 }
 
-export function FieldInfo({
+function FooterInfo({
   label,
   value,
 }: {
@@ -82,7 +105,7 @@ export function FieldInfo({
   );
 }
 
-export function FieldInfoWarnLevel({
+function FooterInfoWarnLevel({
   label,
   level,
 }: {
@@ -90,7 +113,7 @@ export function FieldInfoWarnLevel({
   level: "low" | "medium" | "high";
 }) {
   return (
-    <FieldInfo
+    <FooterInfo
       value={
         <div
           className={css({
@@ -99,18 +122,12 @@ export function FieldInfoWarnLevel({
             alignItems: "center",
           })}
         >
-          <div
-            className={css({
-              width: 12,
-              height: 12,
-              "--warn-color-low": "token(colors.positive)",
-              "--warn-color-medium": "token(colors.warning)",
-              "--warn-color-high": "token(colors.negative)",
-              borderRadius: "50%",
-            })}
-            style={{
-              background: `var(--warn-color-${level})`,
-            }}
+          <StatusDot
+            mode={match(level)
+              .with("low", () => "positive" as const)
+              .with("medium", () => "warning" as const)
+              .with("high", () => "negative" as const)
+              .exhaustive()}
           />
           {label}
         </div>
@@ -118,3 +135,6 @@ export function FieldInfoWarnLevel({
     />
   );
 }
+
+Field.FooterInfo = FooterInfo;
+Field.FooterInfoWarnLevel = FooterInfoWarnLevel;

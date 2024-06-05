@@ -3,11 +3,11 @@
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
-import { Field, FieldInfo, FieldInfoWarnLevel } from "@/src/comps/Field/Field";
+import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { POOLS } from "@/src/demo-data";
-import { parseInputFloat } from "@/src/form-utils";
+import { useInputFieldValue } from "@/src/form-utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
@@ -162,7 +162,7 @@ export function BorrowLeverageScreen() {
             </HFlex>
           }
           footerEnd={
-            <FieldInfo
+            <Field.FooterInfo
               label="Max LTV"
               value={
                 <HFlex gap={4}>
@@ -221,7 +221,7 @@ export function BorrowLeverageScreen() {
               }
               footerStart={liquidationRisk && (
                 <>
-                  <FieldInfoWarnLevel
+                  <Field.FooterInfoWarnLevel
                     label={`${
                       match(liquidationRisk.level)
                         .with("low", () => "Low")
@@ -231,7 +231,7 @@ export function BorrowLeverageScreen() {
                     } liq. risk`}
                     level={liquidationRisk.level}
                   />
-                  <FieldInfo
+                  <Field.FooterInfo
                     label="LTV"
                     value={
                       <HFlex gap={4}>
@@ -246,7 +246,7 @@ export function BorrowLeverageScreen() {
                 </>
               )}
               footerEnd={liquidationRisk && (
-                <FieldInfo
+                <Field.FooterInfo
                   label="Liq. ETH Price"
                   value={
                     <HFlex gap={4}>
@@ -332,7 +332,7 @@ export function BorrowLeverageScreen() {
               }
               footerStart={liquidationRisk && (
                 <>
-                  <FieldInfoWarnLevel
+                  <Field.FooterInfoWarnLevel
                     label={`${
                       match(liquidationRisk.level)
                         .with("low", () => "Low")
@@ -342,7 +342,7 @@ export function BorrowLeverageScreen() {
                     } liq. risk`}
                     level={liquidationRisk.level}
                   />
-                  <FieldInfo
+                  <Field.FooterInfo
                     label="LTV"
                     value={
                       <HFlex gap={4}>
@@ -357,7 +357,7 @@ export function BorrowLeverageScreen() {
                 </>
               )}
               footerEnd={liquidationRisk && (
-                <FieldInfo
+                <Field.FooterInfo
                   label="Liq. ETH Price"
                   value={
                     <HFlex gap={4}>
@@ -419,7 +419,7 @@ export function BorrowLeverageScreen() {
           footerStart={
             // e.g. “Medium redemption risk”
             redemptionRiskLevel && (
-              <FieldInfoWarnLevel
+              <Field.FooterInfoWarnLevel
                 label={`${
                   match(redemptionRiskLevel)
                     .with("low", () => "Low")
@@ -457,23 +457,6 @@ export function BorrowLeverageScreen() {
       </div>
     </Screen>
   );
-}
-
-function useInputFieldValue(format: (value: Dnum) => string) {
-  const [value, setValue] = useState("");
-  const [focused, setFocused] = useState(false);
-  const parsed = parseInputFloat(value);
-  return {
-    inputFieldProps: {
-      onBlur: () => setFocused(false),
-      onChange: (value: string) => setValue(value),
-      onFocus: () => setFocused(true),
-      value: focused || !parsed || !value.trim() ? value : format(parsed),
-    },
-    parsed,
-    setValue,
-    value,
-  };
 }
 
 function StaticAction({

@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from "react";
+import type { HTMLAttributes, ReactElement, ReactNode } from "react";
 
 import { a, useSpring } from "@react-spring/web";
 import { forwardRef, useState } from "react";
@@ -12,19 +12,19 @@ type Cell = {
 
 type ElementOrString = ReactElement | string;
 
-export const StrongCard = forwardRef<HTMLAnchorElement, {
-  heading: ElementOrString | ElementOrString[];
-  href?: string;
-  rows: [
-    [Cell | null, Cell | null],
-    [Cell | null, Cell | null],
-  ];
-  title?: string;
-}>(function StrongCard({
+export const StrongCard = forwardRef<
+  HTMLAnchorElement,
+  {
+    heading: ElementOrString | ElementOrString[];
+    rows: [
+      [Cell | null, Cell | null],
+      [Cell | null, Cell | null],
+    ];
+  } & HTMLAttributes<HTMLAnchorElement>
+>(function StrongCard({
   heading,
-  href,
   rows,
-  title,
+  ...anchorProps
 }, ref) {
   const [heading1, heading2] = Array.isArray(heading) ? heading : [heading];
 
@@ -52,13 +52,12 @@ export const StrongCard = forwardRef<HTMLAnchorElement, {
   return (
     <a.a
       ref={ref}
-      href={href}
+      {...anchorProps}
       onBlur={() => setActive(false)}
       onMouseDown={() => setActive(true)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onMouseUp={() => setActive(false)}
-      title={title}
       className={cx(
         "group",
         css({

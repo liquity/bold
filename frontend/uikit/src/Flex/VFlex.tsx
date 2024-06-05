@@ -1,17 +1,20 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 
 import { css, cx } from "../../styled-system/css";
 
 export function VFlex({
+  alignItems,
   children,
   className,
   gap = 8,
+  justifyContent,
   style = {},
   ...props
 }: {
+  alignItems?: CSSProperties["alignItems"];
   children: ReactNode;
-  className?: string;
   gap?: number;
+  justifyContent?: CSSProperties["justifyContent"];
 } & HTMLAttributes<HTMLDivElement>) {
   return (
     <div
@@ -24,7 +27,9 @@ export function VFlex({
       )}
       style={{
         ...style,
+        alignItems,
         gap,
+        justifyContent,
       }}
       {...props}
     >

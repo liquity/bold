@@ -1,4 +1,4 @@
-import type { Position } from "@/src/types";
+import type { Position, PositionLoan } from "@/src/types";
 
 import * as dn from "dnum";
 
@@ -18,25 +18,31 @@ export const ACCOUNT_BALANCES = {
   bold: dn.from(3_987, 18),
 };
 
+function addLtv(loan: Omit<PositionLoan, "ltv">): PositionLoan {
+  const depositUsd = dn.mul(loan.deposit, ETH_PRICE);
+  return {
+    ...loan,
+    ltv: dn.div(loan.borrowed, depositUsd),
+  };
+}
+
 export const ACCOUNT_POSITIONS: Position[] = [
-  {
+  addLtv({
     type: "loan",
     borrowed: dn.from(25_789, 18),
     collateral: "RETH",
     deposit: dn.from(5.5, 18),
     interestRate: dn.from(0.057, 18),
-    ltv: dn.from(0.61, 18),
     troveId: 1n,
-  },
-  {
+  }),
+  addLtv({
     type: "loan",
     borrowed: dn.from(1000, 18),
     collateral: "ETH",
     deposit: dn.from(1, 18),
     interestRate: dn.from(0.057, 18),
-    ltv: dn.from(0.61, 18),
     troveId: 2n,
-  },
+  }),
   {
     type: "earn",
     apy: dn.from(0.078, 18),

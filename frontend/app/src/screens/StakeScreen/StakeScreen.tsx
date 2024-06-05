@@ -4,16 +4,15 @@ import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
 import { Details } from "@/src/comps/Details/Details";
-import { Field, FieldInfo } from "@/src/comps/Field/Field";
+import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { ACCOUNT_BALANCES, ACCOUNT_STAKED_LQTY, ETH_PRICE, STAKED_LQTY_TOTAL } from "@/src/demo-data";
-import { parseInputFloat } from "@/src/form-utils";
+import { useInputFieldValue } from "@/src/form-utils";
 import { css } from "@/styled-system/css";
 import { Button, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
 
 const TABS = [
   { label: content.stakeScreen.tabs.deposit, id: "deposit" },
@@ -131,7 +130,7 @@ export function StakeScreen() {
                   />
                 }
                 footerStart={
-                  <FieldInfo
+                  <Field.FooterInfo
                     label="Voting power"
                     value={
                       <HFlex>
@@ -360,23 +359,6 @@ function StaticAction({
       </div>
     </div>
   );
-}
-
-function useInputFieldValue(format: (value: Dnum) => string) {
-  const [value, setValue] = useState("");
-  const [focused, setFocused] = useState(false);
-  const parsed = parseInputFloat(value);
-  return {
-    inputFieldProps: {
-      onBlur: () => setFocused(false),
-      onChange: (value: string) => setValue(value),
-      onFocus: () => setFocused(true),
-      value: focused || !parsed || !value.trim() ? value : format(parsed),
-    },
-    parsed,
-    setValue,
-    value,
-  };
 }
 
 function votingPower(deposit?: Dnum | null, digits?: number) {
