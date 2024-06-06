@@ -62,14 +62,13 @@ contract LiquityBase is ILiquityBase {
         return activeColl + liquidatedColl;
     }
 
-    function getEntireSystemDebt() public view returns (uint256 entireSystemDebtLowerBound) {
+    function getEntireSystemDebt() public view returns (uint256 entireSystemDebt) {
         uint256 activeDebt = activePool.getBoldDebt();
         uint256 closedDebt = defaultPool.getBoldDebt();
 
         return activeDebt + closedDebt;
     }
 
-    // Returns a lower bound on the TCR, based on our upper bound on total system debt.
     function _getTCR(uint256 _price) internal view returns (uint256 TCR) {
         uint256 entireSystemColl = getEntireSystemColl();
         uint256 entireSystemDebt = getEntireSystemDebt();
