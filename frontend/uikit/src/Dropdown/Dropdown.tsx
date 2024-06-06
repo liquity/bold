@@ -8,10 +8,15 @@ import { css, cx } from "../../styled-system/css";
 import { IconChevronDown } from "../icons";
 import { Root } from "../Root/Root";
 
-export type DropdownItem = ReactNode | {
+export type DropdownItem = {
   icon?: ReactNode;
   label: ReactNode;
   value?: ReactNode;
+};
+
+export type DropdownGroup = {
+  label: ReactNode;
+  items: DropdownItem[];
 };
 
 export function Dropdown({
@@ -23,14 +28,23 @@ export function Dropdown({
   placeholder,
   selected,
 }: {
-  buttonDisplay?: "normal" | "label-only";
-  items: DropdownItem[];
+  buttonDisplay?:
+    | "normal"
+    | "label-only"
+    | ((item: DropdownItem, index: number) => {
+      icon?: ReactNode;
+      label: ReactNode;
+    });
+  items: DropdownItem[] | DropdownGroup[];
   menuPlacement?: "start" | "end";
   menuWidth?: number;
   onSelect: (index: number) => void;
-  placeholder?: Exclude<DropdownItem, "value">;
+  placeholder?: ReactNode | Exclude<DropdownItem, "value">;
   selected: number;
 }) {
+  const groups = getGroups(items);
+  const itemsOnly = groups.reduce((acc, { items }) => acc.concat(items), [] as DropdownItem[]);
+
   const { refs: floatingRefs, floatingStyles } = useFloating<HTMLButtonElement>({
     placement: `bottom-${menuPlacement}`,
     whileElementsMounted: (referenceEl, floatingEl, update) => (
@@ -100,7 +114,7 @@ export function Dropdown({
 
   useKeyboardNavigation({
     focused,
-    itemsLength: items.length,
+    itemsLength: itemsOnly.length,
     menuVisible: showMenu,
     onClose: hide,
     onFocus: setFocused,
@@ -118,7 +132,10 @@ export function Dropdown({
     }, 0);
   }, [focused, showMenu]);
 
-  let buttonItem = getItem(items[selected] || placeholder);
+  let buttonItem = getItem(itemsOnly[selected] || placeholder);
+  if (typeof buttonDisplay === "function" && itemsOnly[selected]) {
+    buttonItem = buttonDisplay(itemsOnly[selected], selected);
+  }
   if (!buttonItem) {
     throw new Error("Invalid selected index or placeholder not provided");
   }
@@ -217,6 +234,7 @@ export function Dropdown({
                   overflow: "hidden",
                   display: "flex",
                   flexDirection: "column",
+                  gap: 12,
                   background: "controlSurface",
                   borderRadius: 20,
                   border: "1px solid token(colors.border)",
@@ -229,77 +247,103 @@ export function Dropdown({
                 })}
                 style={appearStyles}
               >
-                {items.map((item, index) => {
-                  item = getItem(item);
-                  return item && (
-                    <button
-                      key={index}
-                      tabIndex={index === focused ? 0 : -1}
-                      type="button"
-                      onMouseOver={() => {
-                        setFocused(index);
-                      }}
-                      onClick={() => {
-                        onSelect(index);
-                        hide();
-                      }}
-                      onBlur={({ relatedTarget: focusTarget }) => {
-                        // focus outside
-                        if (!focusContainer.current?.contains(focusTarget)) {
-                          hide(false); // do not refocus the opening button
-                        }
-                      }}
-                      className={cx(
-                        "group",
-                        css({
-                          display: "flex",
-                          height: 56,
-                          padding: 4,
-                          cursor: "pointer",
-                          _focus: {
-                            outline: 0,
-                          },
-                        }),
-                      )}
-                    >
+                {groups.map((group, groupIndex) => (
+                  <div
+                    className={css({
+                      display: "flex",
+                      flexDirection: "column",
+                    })}
+                  >
+                    {group.label && (
                       <div
+                        key={groupIndex}
                         className={css({
                           display: "flex",
-                          justifyContent: "space-between",
                           alignItems: "center",
-                          gap: 16,
-                          width: "100%",
-                          height: "100%",
-                          padding: "0 16px",
-                          borderRadius: 16,
-                          transition: "background 80ms",
-                          _groupFocus: {
-                            background: "focusedSurface",
-                          },
-                          _groupActive: {
-                            background: "focusedSurfaceActive",
-                          },
+                          padding: "12px 16px 8px",
+                          textTransform: "uppercase",
+                          fontSize: 12,
+                          color: "contentAlt",
+                          userSelect: "none",
                         })}
                       >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 12,
-                          }}
-                        >
-                          {item.icon && (
-                            <div>
-                              {item.icon}
-                            </div>
-                          )}
-                          <div>{item.label}</div>
-                        </div>
-                        {item.value && <div>{item.value}</div>}
+                        {group.label}
                       </div>
-                    </button>
-                  );
-                })}
+                    )}
+                    {group.items.map((item_) => {
+                      const item = getItem(item_);
+                      const index = item ? itemsOnly.indexOf(item) : -1;
+                      return item && (
+                        <button
+                          key={`${groupIndex}${index}`}
+                          tabIndex={index === focused ? 0 : -1}
+                          type="button"
+                          onMouseOver={() => {
+                            setFocused(index);
+                          }}
+                          onClick={() => {
+                            onSelect(index);
+                            hide();
+                          }}
+                          onBlur={({ relatedTarget: focusTarget }) => {
+                            // focus outside
+                            if (!focusContainer.current?.contains(focusTarget)) {
+                              hide(false); // do not refocus the opening button
+                            }
+                          }}
+                          className={cx(
+                            "group",
+                            css({
+                              display: "flex",
+                              height: 56,
+                              padding: 4,
+                              cursor: "pointer",
+                              _focus: {
+                                outline: 0,
+                              },
+                            }),
+                          )}
+                        >
+                          <div
+                            className={css({
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              gap: 16,
+                              width: "100%",
+                              height: "100%",
+                              padding: "0 16px",
+                              borderRadius: 16,
+                              transition: "background 80ms",
+                              _groupFocus: {
+                                background: "focusedSurface",
+                              },
+                              _groupActive: {
+                                background: "focusedSurfaceActive",
+                              },
+                            })}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 12,
+                              }}
+                            >
+                              {item.icon && (
+                                <div>
+                                  {item.icon}
+                                </div>
+                              )}
+                              <div>{item.label}</div>
+                            </div>
+                            {item.value && <div>{item.value}</div>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
               </a.div>
             </a.div>
           )
@@ -351,9 +395,24 @@ function useKeyboardNavigation({
   }, [itemsLength, onClose, onFocus, focused, menuVisible]);
 }
 
-function getItem(item: DropdownItem): null | Exclude<DropdownItem, ReactNode> {
+function getItem(item: DropdownItem | ReactNode): null | DropdownItem {
   if (!item) {
     return null;
   }
   return typeof item === "object" && "label" in item ? item : { label: item };
+}
+
+function isGroup(item: DropdownItem | DropdownGroup): item is DropdownGroup {
+  return Boolean(typeof item === "object" && item && "items" in item);
+}
+
+// Convert items to groups if necessary
+function getGroups(itemsOrGroup: DropdownItem[] | DropdownGroup[]): DropdownGroup[] {
+  const [firstItem] = itemsOrGroup;
+  if (!firstItem) {
+    return [];
+  }
+  return isGroup(firstItem)
+    ? (itemsOrGroup as DropdownGroup[])
+    : [{ label: null, items: itemsOrGroup }];
 }
