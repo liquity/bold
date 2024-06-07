@@ -707,7 +707,7 @@ contract Redemptions is DevTestSetup {
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
         // fast-forward time such that trove is Stale
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
         // Confirm Trove is stale
         assertTrue(troveManager.troveIsStale(troveIDs.A));
 

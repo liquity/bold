@@ -45,6 +45,7 @@ contract BaseTest is Test {
     uint256 SP_YIELD_SPLIT;
     uint256 UPFRONT_INTEREST_PERIOD;
     uint256 INTEREST_RATE_ADJ_COOLDOWN;
+    uint256 STALE_TROVE_DURATION;
 
     // Core contracts
     IActivePool activePool;

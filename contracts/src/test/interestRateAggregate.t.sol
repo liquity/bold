@@ -1322,7 +1322,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, 25e16);
 
         // fast-forward past such that trove is Stale
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
         // Confirm Trove is stale
         assertTrue(troveManager.troveIsStale(ATroveId));
 
@@ -1345,7 +1345,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, 25e16);
 
         // fast-forward time such that trove is Stale
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
         // Confirm Trove is stale
         assertTrue(troveManager.troveIsStale(ATroveId));
 
@@ -1365,7 +1365,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, 25e16);
 
         // fast-forward time such that trove is Stale
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
         // Confirm Trove is stale
         assertTrue(troveManager.troveIsStale(ATroveId));
 
@@ -1391,7 +1391,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, 25e16);
 
         // fast-forward time such that trove is Stale
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
         // Confirm Trove is stale
         assertTrue(troveManager.troveIsStale(ATroveId));
 
@@ -1416,7 +1416,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 oldRecordedWeightedDebt = troveManager.getTroveWeightedRecordedDebt(ATroveId);
 
         // fast-forward time such that trove is Stale
-        vm.warp(block.timestamp + 90 days + 1);
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
         // Confirm Trove is stale
         assertTrue(troveManager.troveIsStale(ATroveId));
 
