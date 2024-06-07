@@ -7,23 +7,17 @@ import { usePathname } from "next/navigation";
 import { MenuItem } from "./MenuItem";
 
 export function Menu({
-  hovered = -1,
   menuItems,
-  onHover,
-  onMouseLeave,
 }: {
-  hovered: number;
   menuItems: [
     string,
     string,
     ComponentType<{ color: string }>,
   ][];
-  onHover: (index: number) => void;
-  onMouseLeave: () => void;
 }) {
   const pathname = usePathname();
   return (
-    <nav onMouseLeave={onMouseLeave}>
+    <nav>
       <ul
         className={css({
           position: "relative",
@@ -33,15 +27,12 @@ export function Menu({
           height: "100%",
         })}
       >
-        {menuItems.map(([label, href, Icon], index) => {
-          const selected = hovered === -1
-            ? pathname.startsWith(href)
-            : hovered === index;
+        {menuItems.map(([label, href, Icon]) => {
+          const selected = pathname.startsWith(href);
           return (
             <li key={label + href}>
               <Link
                 href={href}
-                onMouseEnter={() => onHover(index)}
                 className={css({
                   display: "flex",
                   height: "100%",
