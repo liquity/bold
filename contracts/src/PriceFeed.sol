@@ -7,7 +7,6 @@ import "./Interfaces/ITellorCaller.sol";
 import "./Dependencies/AggregatorV3Interface.sol";
 import "./Dependencies/Ownable.sol";
 import "./Dependencies/CheckContract.sol";
-import "./Dependencies/BaseMath.sol";
 import "./Dependencies/LiquityMath.sol";
 
 /*
@@ -18,7 +17,7 @@ import "./Dependencies/LiquityMath.sol";
 * switching oracles based on oracle failures, timeouts, and conditions for returning to the primary
 * Chainlink oracle.
 */
-contract PriceFeed is Ownable, CheckContract, BaseMath, IPriceFeed {
+contract PriceFeed is Ownable, CheckContract, IPriceFeed {
     string public constant NAME = "PriceFeed";
 
     AggregatorV3Interface public priceAggregator; // Mainnet Chainlink aggregator
@@ -32,6 +31,7 @@ contract PriceFeed is Ownable, CheckContract, BaseMath, IPriceFeed {
 
     // Use to convert a price answer to an 18-digit precision uint
     uint256 public constant TARGET_DIGITS = 18;
+    uint256 public constant DECIMAL_PRECISION = 10 ** TARGET_DIGITS;
     uint256 public constant TELLOR_DIGITS = 6;
 
     // Maximum time period allowed since Chainlink's latest round data timestamp, beyond which Chainlink is considered frozen.

@@ -83,8 +83,8 @@ contract("ActivePool", async (accounts) => {
     assert.equal(recordedETHBalance, 0);
   });
 
-  it("getTotalActiveDebt(): gets the total BOLD debt balance", async () => {
-    const recordedETHBalance = await activePool.getTotalActiveDebt();
+  it("getBoldDebt(): gets the total BOLD debt balance", async () => {
+    const recordedETHBalance = await activePool.getBoldDebt();
     assert.equal(recordedETHBalance, 0);
   });
 

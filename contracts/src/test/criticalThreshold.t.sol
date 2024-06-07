@@ -31,46 +31,38 @@ contract CriticalThresholdTest is DevTestSetup {
         setUpBelowCT();
 
         vm.expectRevert("BorrowerOps: Operation not permitted below CT");
-        openTroveNoHints100pct(B, 100 ether, 10000e18, 1e17); // CR: ~1500%
+        this.openTroveNoHints100pct(B, 100 ether, 10000e18, 1e17); // CR: ~1500%
     }
 
     function testNoIncreaseDebtAloneBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.startPrank(A);
         vm.expectRevert("BorrowerOps: Borrowing not permitted below CT");
-        borrowerOperations.adjustTrove(ATroveId, 0, false, 1, true);
+        this.adjustTrove100pct(A, ATroveId, 0, 1, false, true);
 
         vm.expectRevert("BorrowerOps: Borrowing not permitted below CT");
-        borrowerOperations.withdrawBold(ATroveId, 1);
-        vm.stopPrank();
+        this.withdrawBold100pct(A, ATroveId, 1);
     }
 
     function testNoIncreaseDebtWithAddCollBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.startPrank(A);
         vm.expectRevert("BorrowerOps: Borrowing not permitted below CT");
-        borrowerOperations.adjustTrove(ATroveId, 1e18, true, 1, true);
-        vm.stopPrank();
+        this.adjustTrove100pct(A, ATroveId, 1e18, 1, true, true);
     }
 
     function testNoIncreaseDebtWithWithdrawCollBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.startPrank(A);
         vm.expectRevert("BorrowerOps: Borrowing not permitted below CT");
-        borrowerOperations.adjustTrove(ATroveId, 1, false, 1, true);
-        vm.stopPrank();
+        this.adjustTrove100pct(A, ATroveId, 1, 1, false, true);
     }
 
     function testWithdrawCollAlongWithRepaymentBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
         uint256 initialColl = troveManager.getTroveEntireColl(ATroveId);
-        vm.startPrank(A);
-        borrowerOperations.adjustTrove(ATroveId, 1e18, false, 1499e18, false);
-        vm.stopPrank();
+        adjustTrove100pct(A, ATroveId, 1e18, 1499e18, false, false);
 
         assertEq(troveManager.getTroveEntireColl(ATroveId), initialColl - 1e18);
     }
@@ -78,21 +70,38 @@ contract CriticalThresholdTest is DevTestSetup {
     function testNoCollWithdrawalWithLowRepaymentBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.startPrank(A);
         vm.expectRevert("BorrowerOps: below CT, repayment must be >= coll withdrawal");
-        borrowerOperations.adjustTrove(ATroveId, 1e18, false, 1498999999999999999999, false); // 1 gwei short
-        vm.stopPrank();
+        this.adjustTrove100pct(A, ATroveId, 1e18, 1498999999999999999999, false, false); // 1 gwei short
     }
 
     function testNoCollWithdrawalWithNoRepaymentBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.startPrank(A);
         vm.expectRevert("BorrowerOps: below CT, repayment must be >= coll withdrawal");
-        borrowerOperations.adjustTrove(ATroveId, 1, false, 0, false);
+        this.adjustTrove100pct(A, ATroveId, 1, 0, false, false);
 
         vm.expectRevert("BorrowerOps: below CT, repayment must be >= coll withdrawal");
-        borrowerOperations.withdrawColl(ATroveId, 1);
-        vm.stopPrank();
+        this.withdrawColl(A, ATroveId, 1);
+    }
+
+    function testNoPrematureInterestRateAdjustmentIfItWouldPullTCRBelowCCR() public {
+        uint256 price = CCR; // set price such that TCR=CCR when nominalTCR=100%
+        priceFeed.setPrice(price);
+
+        uint256 interestRate = 0.1 ether;
+        uint256 targetDebt = 10_000 ether;
+        (uint256 borrow,) = findAmountToBorrowWithOpenTrove(targetDebt, interestRate);
+        uint256 troveId = openTroveNoHints100pct(A, targetDebt, borrow, interestRate);
+        assertEq(troveManager.getTCR(price), CCR, "TCR should equal CCR");
+
+        vm.expectRevert("BorrowerOps: An operation that would result in TCR < CCR is not permitted");
+        this.changeInterestRateNoHints(A, troveId, 0.3 ether);
+    }
+
+    function testPrematureInterestRateAdjustmentDisallowedIfTCRAlreadyBelowCCR() public {
+        (uint256 ATroveId,,) = setUpBelowCT();
+
+        vm.expectRevert("BorrowerOps: An operation that would result in TCR < CCR is not permitted");
+        this.changeInterestRateNoHints(A, ATroveId, 0.3 ether);
     }
 }

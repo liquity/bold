@@ -66,13 +66,14 @@ contract DeployLiquity2Script is Script, StdCheats {
             WETH.approve(address(borrowerOperations), type(uint256).max);
 
             borrowerOperations.openTrove(
-                vm.addr(troves[i].owner), //      _owner
-                troves[i].ownerIndex, // _ownerIndex
-                troves[i].coll, //         _ETHAmount
-                troves[i].debt, //         _boldAmount
-                0, //                      _upperHint
-                0, //                      _lowerHint
-                0.05e18 //                 _annualInterestRate
+                vm.addr(troves[i].owner), // _owner
+                troves[i].ownerIndex, //     _ownerIndex
+                troves[i].coll, //           _ETHAmount
+                troves[i].debt, //           _boldAmount
+                0, //                        _upperHint
+                0, //                        _lowerHint
+                0.05e18, //                  _annualInterestRate
+                type(uint256).max //         _maxUpfrontFee
             );
 
             vm.stopBroadcast();

@@ -234,14 +234,11 @@ contract.skip("HintHelpers", async (accounts) => {
   it("getApproxHint(): returns the head of the list if the CR is the max uint256 value", async () => {
     const sqrtLength = Math.ceil(Math.sqrt(numAccounts));
 
-    // CR = Maximum value, i.e. 2**256 -1
-    const CR_Max = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-
     let hintId;
 
     // const hintId_Max = await functionCaller.troveManager_getApproxHint(CR_Max, sqrtLength * 10)
     ({ hintId, latestRandomSeed } = await hintHelpers.getApproxHint(
-      CR_Max,
+      th.MAX_UINT256,
       sqrtLength * 10,
       latestRandomSeed,
     ));

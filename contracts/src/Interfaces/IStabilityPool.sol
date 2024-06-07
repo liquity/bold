@@ -7,6 +7,7 @@ import "./ILiquityBase.sol";
 import "./IBorrowerOperations.sol";
 import "./IBoldToken.sol";
 import "./ITroveManager.sol";
+import "./IBoldRewardsReceiver.sol";
 
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
@@ -28,7 +29,7 @@ import "./ITroveManager.sol";
  * https://github.com/liquity/liquity/blob/master/papers/Scalable_Reward_Distribution_with_Compounding_Stakes.pdf
  *
 */
-interface IStabilityPool is ILiquityBase {
+interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     function borrowerOperations() external view returns (IBorrowerOperations);
     function boldToken() external view returns (IBoldToken);
     function troveManager() external view returns (ITroveManager);
@@ -74,8 +75,6 @@ interface IStabilityPool is ILiquityBase {
      * Only called by liquidation functions in the TroveManager.
      */
     function offset(uint256 _debt, uint256 _coll) external;
-
-    function triggerBoldRewards(uint256 _boldYield) external;
 
     function stashedETH(address _depositor) external view returns (uint256);
 

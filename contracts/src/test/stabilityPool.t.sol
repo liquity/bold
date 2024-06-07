@@ -1,42 +1,18 @@
 pragma solidity 0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
+import {mulDivCeil} from "./Utils/math.sol";
 
 contract SPTest is DevTestSetup {
-    struct ExpectedShareOfReward {
-        uint256 _1_A;
-        uint256 _1_B;
-        uint256 _2_A;
-        uint256 _2_B;
-        uint256 _2_C;
-        uint256 _2_D;
-        uint256 _3_A;
-        uint256 _3_B;
-        uint256 _3_C;
-        uint256 _3_D;
-    }
-
-    struct PendingAggInterest {
-        uint256 _1;
-        uint256 _2;
-        uint256 _3;
-    }
-
-    struct ExpectedSPYield {
-        uint256 _1;
-        uint256 _2;
-        uint256 _3;
-    }
-
-    function _setupStashedAndCurrentETHGains() internal { 
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+    function _setupStashedAndCurrentETHGains() internal {
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         // A stashes first gain
         makeSPDepositNoClaim(A, 1e18);
 
         // A liqs D
         liquidate(A, troveIDs.D);
-        assertEq(troveManager.getTroveStatus(troveIDs.D), 3); // Check D has Status 3 - closed by liquidation
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(TroveManager.Status.closedByLiquidation));
 
         // Check A has both stashed and current gains
         uint256 stashedETHGain_A = stabilityPool.stashedETH(A);
@@ -69,7 +45,7 @@ contract SPTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), ETHBal_A + currentETHGain);
     }
 
-     function testProvideToSPWithClaim_WithOnlyCurrentETHGainsDoesntChangeStashedETHGain() public {
+    function testProvideToSPWithClaim_WithOnlyCurrentETHGainsDoesntChangeStashedETHGain() public {
         _setupForSPDepositAdjustments();
 
         uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
@@ -83,7 +59,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testProvideToSPWithClaim_WithCurrentAndStashedETHGainsSendsTotalETHGainToDepositor() public {
-       // A has stashed & current gains, B has only current
+        // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
         // Check A has both stashed and current gains
@@ -153,10 +129,10 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), 0);
     }
 
-     // --- provideToSP, doClaim == true, BOLD gains ---
+    // --- provideToSP, doClaim == true, BOLD gains ---
 
     function testProvideToSPWithClaim_WithOnlyCurrentBOLDGainsSendsTotalBOLDGainToDepositor() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -175,7 +151,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testProvideToSPWithClaim_WithCurrentBOLDGainsZerosCurrentBOLDGains() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -236,7 +212,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testProvideToSPNoClaim_WithCurrentAndStashedETHGainsIncreasedStashedETHGainByCurrentGain() public {
-      // A has stashed & current gains, B has only current
+        // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
         // Check A has both stashed and current gains
@@ -287,10 +263,10 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.stashedETH(A), stashedETHGain);
     }
 
-     // --- provideToSP, doClaim == false, BOLD gains ---
+    // --- provideToSP, doClaim == false, BOLD gains ---
 
     function testProvideToSPNoClaimAddsBOLDGainsToDeposit() public {
-       TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -309,7 +285,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testProvideToSPNoClaimZerosCurrentBoldGains() public {
-       TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -326,7 +302,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testProvideToSPNoClaimReducesDepositorBoldBalanceByOnlyTheTopUp() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -446,7 +422,7 @@ contract SPTest is DevTestSetup {
 
     // --- withdrawFromSP, doClaim == true, BOLD gains ---
     function testWithdrawFromSPWithClaim_WithCurrentBOLDGainsSendsBOLDGainToDepositor() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -466,7 +442,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testWithdrawFromSPWithClaim_WithCurrentBOLDGainsZerosCurrentBoldGains() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -532,7 +508,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testWithdrawFromSPNoClaim_WithCurrentAndStashedETHGainsIncreasedStashedGainByCurrentETHGain() public {
-       // A has stashed & current gains, B has only current
+        // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
         uint256 stashedETHGain = stabilityPool.stashedETH(A);
@@ -583,7 +559,7 @@ contract SPTest is DevTestSetup {
     // --- withdrawFromSP, doClaim == false, BOLD gains ---
 
     function testWithdrawFromSPNoClaimAddsBOLDGainsToDeposit() public {
-       TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -602,7 +578,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testWithdrawFromSPNoClaimZerosCurrentBoldGains() public {
-       TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -619,7 +595,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testWithdrawFromSPNoClaimReducesDepositorBoldBalanceByOnlyTheTopUp() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -657,7 +633,7 @@ contract SPTest is DevTestSetup {
         // A has stashed & current gains, B has only current
         _setupStashedAndCurrentETHGains();
 
-        // A withdraws deposit 
+        // A withdraws deposit
         uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
         makeSPWithdrawalNoClaim(A, deposit_A);
 
@@ -672,7 +648,7 @@ contract SPTest is DevTestSetup {
 
     function testClaimAllETHGainsDoesntChangeCurrentETHGain() public {
         _setupForSPDepositAdjustments();
- 
+
         // A withdraws deposit and stashes gain
         uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
         makeSPWithdrawalNoClaim(A, deposit_A);
@@ -690,7 +666,7 @@ contract SPTest is DevTestSetup {
 
     function testClaimAllETHGainsZerosStashedETHGain() public {
         _setupForSPDepositAdjustments();
- 
+
         // A withdraws deposit and stashes gain
         uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
         makeSPWithdrawalNoClaim(A, deposit_A);
@@ -708,7 +684,7 @@ contract SPTest is DevTestSetup {
 
     function testClaimAllETHGainsIncreasesUserBalanceByStashedETHGain() public {
         _setupForSPDepositAdjustments();
- 
+
         // A withdraws deposit and stashes gain
         uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
         makeSPWithdrawalNoClaim(A, deposit_A);
@@ -728,7 +704,7 @@ contract SPTest is DevTestSetup {
 
     // --- Bold reward sum 'B' tests ---
 
-     function testBoldRewardsSumDoesntChangeWhenSPIsEmpty() public {
+    function testBoldRewardsSumDoesntChangeWhenSPIsEmpty() public {
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pct(A, 3 ether, 2000e18, 25e16);
 
@@ -740,27 +716,28 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
         assertEq(boldRewardSum_1, 0);
 
         openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertEq(boldRewardSum_2, boldRewardSum_1);
     }
 
-     function testBoldRewardSumDoesntChangeWhenNoYieldMinted() public {
-        _setupForSPDepositAdjustments();
+    function testBoldRewardSumDoesntChangeWhenNoYieldMinted() public {
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertEq(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
         assertEq(boldRewardSum_1, 0);
 
-        openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+        // Adjust a Trove in a way that doesn't incur an upfront fee
+        repayBold(B, troveIDs.B, 1_000 ether);
 
-        uint256 boldRewardSum_2 = stabilityPool.getYieldGainsOwed();
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertEq(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -772,34 +749,34 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
         assertEq(boldRewardSum_1, 0);
 
         openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
-    
+
     function testBoldRewardSumIncreasesWhenTroveInterestRateAdjusted() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
         assertEq(boldRewardSum_1, 0);
 
         changeInterestRateNoHints(B, troveIDs.B, 75e16);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
     function testBoldRewardSumIncreasesWhenTroveClosed() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
         troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
         troveIDs.F = openTroveNoHints100pct(F, 3 ether, 2000e18, 25e16);
 
@@ -808,8 +785,8 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
-        assertEq(boldRewardSum_1, 0);
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        assertGt(boldRewardSum_1, 0); // yield from upfront fee
 
         // F sends E his bold so he can close
         vm.startPrank(F);
@@ -817,80 +794,73 @@ contract SPTest is DevTestSetup {
         vm.stopPrank();
         closeTrove(E, troveIDs.E);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
     function testBoldRewardSumIncreasesWhenTroveDebtAndCollAdjusted() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
         assertEq(boldRewardSum_1, 0);
 
-        adjustTrove100pct(
-            A,
-            troveIDs.A,
-            1,
-            1,
-            true,
-            true
-        );
+        adjustTrove100pct(A, troveIDs.A, 1, 1, true, true);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
     function testBoldRewardSumIncreasesWhenInterestAppliedPermissionlessly() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
         assertEq(boldRewardSum_1, 0);
 
         // B applies A's pending interest
         applyTroveInterestPermissionless(B, troveIDs.A);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
     function testBoldRewardSumIncreasesWhenTroveLiquidated() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
         assertEq(boldRewardSum_1, 0);
 
         // A liquidates D
         liquidate(A, troveIDs.D);
-        assertEq(troveManager.getTroveStatus(troveIDs.D), 3); // Status 3 - closed by liq
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(TroveManager.Status.closedByLiquidation));
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
     function testBoldRewardSumIncreasesWhenRedemptionOccurs() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
         assertEq(boldRewardSum_1, 0);
 
         uint256 wethBalBefore_A = WETH.balanceOf(A);
@@ -898,12 +868,12 @@ contract SPTest is DevTestSetup {
         redeem(A, 1e18);
         assertGt(WETH.balanceOf(A), wethBalBefore_A);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
     function testBoldRewardSumIncreasesWhenNewDepositIsMade() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
         troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
         vm.warp(block.timestamp + 90 days + 1);
@@ -911,18 +881,18 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
-        assertEq(boldRewardSum_1, 0);
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        assertGt(boldRewardSum_1, 0); // yield from upfront fee
 
         // E Makes deposit
         makeSPDepositAndClaim(E, 1e18);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
     function testBoldRewardSumIncreasesWhenDepositToppedUp() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
         troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
         vm.warp(block.timestamp + 90 days + 1);
@@ -930,18 +900,18 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
-        assertEq(boldRewardSum_1, 0);
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        assertGt(boldRewardSum_1, 0); // yield from upfront fee
 
         // A tops up deposit
         makeSPDepositAndClaim(A, 1e18);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
     function testBoldRewardSumIncreasesWhenDepositWithdrawn() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
         troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
         vm.warp(block.timestamp + 90 days + 1);
@@ -949,13 +919,13 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0,0);
-        assertEq(boldRewardSum_1, 0);
+        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        assertGt(boldRewardSum_1, 0); // yield from upfront fee
 
         // A withdraws some deposit
         makeSPWithdrawalAndClaim(A, 1e18);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0,0);
+        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -978,11 +948,11 @@ contract SPTest is DevTestSetup {
 
         openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
-        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertEq(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
-     function testBoldRewardsOwedDoesntChangeWhenNoYieldMinted() public {
+    function testBoldRewardsOwedOnlyIcreasesByUpfrontFeeYieldWhenNoInterestMinted() public {
         _setupForSPDepositAdjustments();
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
@@ -991,10 +961,10 @@ contract SPTest is DevTestSetup {
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
         assertEq(yieldGainsOwed_1, 0);
 
-        openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
+        (, uint256 upfrontFee) = openTroveHelper(E, 0, 3 ether, 2000e18, 25e16);
 
-        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_2, yieldGainsOwed_1);
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
+        assertEq(yieldGainsOwed_2, yieldGainsOwed_1 + _getSPYield(upfrontFee));
     }
 
     function testBoldRewardsOwedIncreasesWhenTroveOpened() public {
@@ -1010,12 +980,12 @@ contract SPTest is DevTestSetup {
 
         openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
-        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
-    
+
     function testBoldRewardsOwedIncreasesWhenTroveInterestRateAdjusted() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -1027,12 +997,12 @@ contract SPTest is DevTestSetup {
 
         changeInterestRateNoHints(B, troveIDs.B, 75e16);
 
-        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenTroveClosed() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
         troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
         troveIDs.F = openTroveNoHints100pct(F, 3 ether, 2000e18, 25e16);
 
@@ -1042,7 +1012,7 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_1, 0);
+        assertGt(yieldGainsOwed_1, 0); // yield from upfront fee
 
         // F sends E his bold so he can close
         vm.startPrank(F);
@@ -1050,12 +1020,12 @@ contract SPTest is DevTestSetup {
         vm.stopPrank();
         closeTrove(E, troveIDs.E);
 
-        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenTroveDebtAndCollAdjusted() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -1065,21 +1035,14 @@ contract SPTest is DevTestSetup {
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
         assertEq(yieldGainsOwed_1, 0);
 
-        adjustTrove100pct(
-            A,
-            troveIDs.A,
-            1,
-            1,
-            true,
-            true
-        );
+        adjustTrove100pct(A, troveIDs.A, 1, 1, true, true);
 
-        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenInterestAppliedPermissionlessly() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -1092,12 +1055,12 @@ contract SPTest is DevTestSetup {
         // B applies A's pending interest
         applyTroveInterestPermissionless(B, troveIDs.A);
 
-        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenTroveLiquidated() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -1109,14 +1072,14 @@ contract SPTest is DevTestSetup {
 
         // A liquidates D
         liquidate(A, troveIDs.D);
-        assertEq(troveManager.getTroveStatus(troveIDs.D), 3); // Status 3 - closed by liq
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(TroveManager.Status.closedByLiquidation));
 
-        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenRedemptionOccurs() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -1130,12 +1093,12 @@ contract SPTest is DevTestSetup {
         redeem(A, 1e18);
         assertGt(WETH.balanceOf(A), wethBalBefore_A);
 
-        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenNewDepositIsMade() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
         troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
         vm.warp(block.timestamp + 90 days + 1);
@@ -1144,17 +1107,17 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_1, 0);
+        assertGt(yieldGainsOwed_1, 0); // yield from upfront fee
 
         // E Makes deposit
         makeSPDepositAndClaim(E, 1e18);
 
-        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenDepositToppedUp() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
         troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
         vm.warp(block.timestamp + 90 days + 1);
@@ -1163,17 +1126,17 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_1, 0);
+        assertGt(yieldGainsOwed_1, 0); // yield from upfront fee
 
         // A tops up deposit
         makeSPDepositAndClaim(A, 1e18);
 
-        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     function testBoldRewardsOwedIncreasesWhenDepositWithdrawn() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
         troveIDs.E = openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
         vm.warp(block.timestamp + 90 days + 1);
@@ -1182,19 +1145,19 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_1, 0);
+        assertGt(yieldGainsOwed_1, 0); // yield from upfront fee
 
         // A withdraws some deposit
         makeSPWithdrawalAndClaim(A, 1e18);
 
-        uint256 yieldGainsOwed_2 =  stabilityPool.getYieldGainsOwed();
+        uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
     }
 
     // --- depositor BOLD rewards tests ---
 
     function testGetDepositorBoldGain_1SPDepositor1RewardEvent_EarnsAllSPYield() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         // B withdraws entirely
         makeSPWithdrawalAndClaim(B, stabilityPool.getCompoundedBoldDeposit(B));
@@ -1216,7 +1179,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testGetDepositorBoldGain_2SPDepositor1RewardEvent_EarnFairShareOfSPYield() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -1238,8 +1201,8 @@ contract SPTest is DevTestSetup {
         assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward_B, 1e4);
     }
 
-     function testGetDepositorBoldGain_1SPDepositor2RewardEvent_EarnsAllSPYield() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+    function testGetDepositorBoldGain_1SPDepositor2RewardEvent_EarnsAllSPYield() public {
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         // B withdraws entirely
         makeSPWithdrawalAndClaim(B, stabilityPool.getCompoundedBoldDeposit(B));
@@ -1274,7 +1237,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testGetDepositorBoldGain_2SPDepositor2RewardEvent_EarnFairShareOfSPYield() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -1286,8 +1249,8 @@ contract SPTest is DevTestSetup {
         uint256 expectedShareOfReward1_B = getShareofSPReward(B, expectedSpYield_1);
         assertGt(expectedShareOfReward1_A, 0);
         assertGt(expectedShareOfReward1_B, 0);
-    
-        // Confirm the expected shares sum up to the total expected yield 
+
+        // Confirm the expected shares sum up to the total expected yield
         assertApproximatelyEqual(expectedShareOfReward1_A + expectedShareOfReward1_B, expectedSpYield_1, 1e3);
 
         // A trove gets poked, interst minted and yield paid to SP
@@ -1304,20 +1267,24 @@ contract SPTest is DevTestSetup {
         uint256 expectedShareOfReward2_B = getShareofSPReward(B, expectedSpYield_2);
         assertGt(expectedShareOfReward2_A, 0);
         assertGt(expectedShareOfReward2_B, 0);
-    
-        // Confirm the expected shares sum up to the total expected yield 
+
+        // Confirm the expected shares sum up to the total expected yield
         assertApproximatelyEqual(expectedShareOfReward2_A + expectedShareOfReward2_B, expectedSpYield_2, 1e3);
 
-         // A trove gets poked again, interst minted and yield paid to SP
+        // A trove gets poked again, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
 
         // Check both depositors earn their expected shares of the yield
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward1_A + expectedShareOfReward2_A, 1e4);
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward1_B + expectedShareOfReward2_B, 1e4);
+        assertApproximatelyEqual(
+            stabilityPool.getDepositorYieldGain(A), expectedShareOfReward1_A + expectedShareOfReward2_A, 1e4
+        );
+        assertApproximatelyEqual(
+            stabilityPool.getDepositorYieldGain(B), expectedShareOfReward1_B + expectedShareOfReward2_B, 1e4
+        );
     }
 
     function testGetDepositorBoldGain_2SPDepositor1Liq1FreshDeposit_EarnFairShareOfSPYield() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + 90 days + 1);
 
@@ -1330,13 +1297,13 @@ contract SPTest is DevTestSetup {
         assertGt(expectedShareOfReward1_A, 0);
         assertGt(expectedShareOfReward1_B, 0);
         uint256 totalSPDeposits_1 = stabilityPool.getTotalBoldDeposits();
-    
-        // Confirm the expected shares sum up to the total expected yield 
+
+        // Confirm the expected shares sum up to the total expected yield
         assertApproximatelyEqual(expectedShareOfReward1_A + expectedShareOfReward1_B, expectedSpYield_1, 1e3);
 
         // A trove gets poked, interest minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
-        assertEq( activePool.calcPendingAggInterest(), 0);
+        assertEq(activePool.calcPendingAggInterest(), 0);
 
         // A liquidates D
         liquidate(A, troveIDs.D);
@@ -1364,41 +1331,47 @@ contract SPTest is DevTestSetup {
         assertGt(expectedShareOfReward2_A, 0);
         assertGt(expectedShareOfReward2_B, 0);
         assertGt(expectedShareOfReward2_C, 0);
-    
-        // Confirm the expected shares sum up to the total expected yield 
-        assertApproximatelyEqual(expectedShareOfReward2_A + expectedShareOfReward2_B + expectedShareOfReward2_C, expectedSpYield_2, 1e4);
+
+        // Confirm the expected shares sum up to the total expected yield
+        assertApproximatelyEqual(
+            expectedShareOfReward2_A + expectedShareOfReward2_B + expectedShareOfReward2_C, expectedSpYield_2, 1e4
+        );
 
         // A trove gets poked again, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
 
         // Check both depositors earn their expected shares of the yield
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward1_A + expectedShareOfReward2_A, 1e4);
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward1_B + expectedShareOfReward2_B, 1e4);
+        assertApproximatelyEqual(
+            stabilityPool.getDepositorYieldGain(A), expectedShareOfReward1_A + expectedShareOfReward2_A, 1e4
+        );
+        assertApproximatelyEqual(
+            stabilityPool.getDepositorYieldGain(B), expectedShareOfReward1_B + expectedShareOfReward2_B, 1e4
+        );
     }
 
     function testGetDepositorBoldGain_2SPDepositor1LiqEmptiesPoolFreshDeposit_EarnFairShareOfSPYield() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
-        ExpectedShareOfReward memory expectedShareOfReward;
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF[3] memory expectedShareOfReward;
 
         vm.warp(block.timestamp + 90 days + 1);
 
-        uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
-        assertGt(pendingAggInterest_1, 0);
-        uint256 expectedSpYield_1 = SP_YIELD_SPLIT * pendingAggInterest_1 / 1e18;
+        uint256 pendingAggInterest_0 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_0, 0);
+        uint256 expectedSpYield_0 = SP_YIELD_SPLIT * pendingAggInterest_0 / 1e18;
 
-        expectedShareOfReward._1_A = getShareofSPReward(A, expectedSpYield_1);
-        expectedShareOfReward._1_B = getShareofSPReward(B, expectedSpYield_1);
-        assertGt(expectedShareOfReward._1_A, 0);
-        assertGt(expectedShareOfReward._1_B, 0);
-        uint256 totalSPDeposits_1 = stabilityPool.getTotalBoldDeposits();
-    
-        // Confirm the expected shares sum up to the total expected yield 
-        assertApproximatelyEqual(expectedShareOfReward._1_A + expectedShareOfReward._1_B, expectedSpYield_1, 1e3);
+        expectedShareOfReward[0].A = getShareofSPReward(A, expectedSpYield_0);
+        expectedShareOfReward[0].B = getShareofSPReward(B, expectedSpYield_0);
+        assertGt(expectedShareOfReward[0].A, 0);
+        assertGt(expectedShareOfReward[0].B, 0);
+        uint256 totalSPDeposits_0 = stabilityPool.getTotalBoldDeposits();
+
+        // Confirm the expected shares sum up to the total expected yield
+        assertApproximatelyEqual(expectedShareOfReward[0].A + expectedShareOfReward[0].B, expectedSpYield_0, 1e3);
 
         // A withdraws some deposit so that D's liq will empty the pool. This also mints interest and pays the yield to the SP
         makeSPWithdrawalAndClaim(A, 100e18);
         assertEq(stabilityPool.getDepositorYieldGain(A), 0);
-        assertEq( activePool.calcPendingAggInterest(), 0);
+        assertEq(activePool.calcPendingAggInterest(), 0);
 
         // A liquidates D
         liquidate(A, troveIDs.D);
@@ -1413,76 +1386,74 @@ contract SPTest is DevTestSetup {
         makeSPDepositAndClaim(D, deposit_D);
 
         // Check SP still has funds
-        uint256 totalSPDeposits_2 = stabilityPool.getTotalBoldDeposits();
-        assertGt(totalSPDeposits_2, 0);
-        assertLt(totalSPDeposits_2, totalSPDeposits_1);
+        uint256 totalSPDeposits_1 = stabilityPool.getTotalBoldDeposits();
+        assertGt(totalSPDeposits_1, 0);
+        assertLt(totalSPDeposits_1, totalSPDeposits_0);
 
         // fast-forward time again and accrue interest
-        vm.warp(block.timestamp + 90 days + 1);
-
-        uint256 pendingAggInterest_2 = activePool.calcPendingAggInterest();
-        assertGt(pendingAggInterest_2, 0);
-        uint256 expectedSpYield_2 = SP_YIELD_SPLIT * pendingAggInterest_2 / 1e18;
-
-        // Expected reward round 2 calculated with a different totalSPDeposits denominator. Expect A and B to earn 0 of
-        // this reward.
-        expectedShareOfReward._2_A = getShareofSPReward(A, expectedSpYield_2);
-        expectedShareOfReward._2_B = getShareofSPReward(B, expectedSpYield_2);
-        expectedShareOfReward._2_C = getShareofSPReward(C, expectedSpYield_2);
-        expectedShareOfReward._2_D = getShareofSPReward(C, expectedSpYield_2);
-        // A and B should get 0 from reward 2
-        assertEq(expectedShareOfReward._2_A, 0);
-        assertEq(expectedShareOfReward._2_B, 0);
-        // C and D should split the entire reward 2
-        assertGt(expectedShareOfReward._2_C, 0);
-        assertGt(expectedShareOfReward._2_D, 0);
-    
-        // Confirm the expected shares sum up to the total expected yield 
-        assertApproximatelyEqual(
-            expectedShareOfReward._2_A + 
-            expectedShareOfReward._2_B + 
-            expectedShareOfReward._2_C + 
-            expectedShareOfReward._2_D, 
-            expectedSpYield_2, 1e4
-        );
-
-        // // A trove gets poked again, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
-
-        // Expect A to receive 0 - they already claimed his gain 1, and gets 0 from 2nd reward
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), 0, 1e4);
-        // Expect B to receive only their share of reward 1, and get 0 for 2nd reward
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward._1_B, 1e4);
-        // Expect C to receive a share of both reward 1 and 2
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward._2_C, 1e4);
-    }
-
-
-    function testGetDepositorBoldGain_2SPDepositor1LiqScaleChangeFreshDeposit_EarnFairShareOfSPYield() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
-        ExpectedShareOfReward memory expectedShareOfReward;
-
         vm.warp(block.timestamp + 90 days + 1);
 
         uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest_1, 0);
         uint256 expectedSpYield_1 = SP_YIELD_SPLIT * pendingAggInterest_1 / 1e18;
 
-        expectedShareOfReward._1_A = getShareofSPReward(A, expectedSpYield_1);
-        expectedShareOfReward._1_B = getShareofSPReward(B, expectedSpYield_1);
-        assertGt(expectedShareOfReward._1_A, 0);
-        assertGt(expectedShareOfReward._1_B, 0);
-        uint256 totalSPDeposits_1 = stabilityPool.getTotalBoldDeposits();
-    
-        // Confirm the expected shares sum up to the total expected yield 
-        assertApproximatelyEqual(expectedShareOfReward._1_A + expectedShareOfReward._1_B, expectedSpYield_1, 1e3);
+        // Expected reward round 2 calculated with a different totalSPDeposits denominator. Expect A and B to earn 0 of
+        // this reward.
+        expectedShareOfReward[1].A = getShareofSPReward(A, expectedSpYield_1);
+        expectedShareOfReward[1].B = getShareofSPReward(B, expectedSpYield_1);
+        expectedShareOfReward[1].C = getShareofSPReward(C, expectedSpYield_1);
+        expectedShareOfReward[1].D = getShareofSPReward(D, expectedSpYield_1);
+        // A and B should get 0 from reward 2
+        assertEq(expectedShareOfReward[1].A, 0);
+        assertEq(expectedShareOfReward[1].B, 0);
+        // C and D should split the entire reward 2
+        assertGt(expectedShareOfReward[1].C, 0);
+        assertGt(expectedShareOfReward[1].D, 0);
+
+        // Confirm the expected shares sum up to the total expected yield
+        assertApproximatelyEqual(
+            expectedShareOfReward[1].A + expectedShareOfReward[1].B + expectedShareOfReward[1].C
+                + expectedShareOfReward[1].D,
+            expectedSpYield_1,
+            1e4
+        );
+
+        // A trove gets poked again, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        // Expect A to receive 0 - they already claimed his gain 1, and gets 0 from 2nd reward
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), 0, 1e4);
+        // Expect B to receive only their share of reward 1, and get 0 for 2nd reward
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward[0].B, 1e4);
+        // Expect C to receive a share of both reward 1 and 2
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward[1].C, 1e4);
+    }
+
+    function testGetDepositorBoldGain_2SPDepositor1LiqScaleChangeFreshDeposit_EarnFairShareOfSPYield() public {
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF[3] memory expectedShareOfReward;
+
+        vm.warp(block.timestamp + 90 days + 1);
+
+        uint256 pendingAggInterest_0 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_0, 0);
+        uint256 expectedSpYield_0 = SP_YIELD_SPLIT * pendingAggInterest_0 / 1e18;
+
+        expectedShareOfReward[0].A = getShareofSPReward(A, expectedSpYield_0);
+        expectedShareOfReward[0].B = getShareofSPReward(B, expectedSpYield_0);
+        assertGt(expectedShareOfReward[0].A, 0);
+        assertGt(expectedShareOfReward[0].B, 0);
+        uint256 totalSPDeposits_0 = stabilityPool.getTotalBoldDeposits();
+
+        // Confirm the expected shares sum up to the total expected yield
+        assertApproximatelyEqual(expectedShareOfReward[0].A + expectedShareOfReward[0].B, expectedSpYield_0, 1e3);
 
         // A withdraws some deposit so that D's liq will *almost* empty the pool - triggers a scale change.
         // This also mints interest and pays the yield to the SP
-        uint256 debtSPDelta = totalSPDeposits_1 - troveManager.getTroveEntireDebt(troveIDs.D);
+        uint256 debtSPDelta = totalSPDeposits_0 - troveManager.getTroveEntireDebt(troveIDs.D);
         makeSPWithdrawalAndClaim(A, debtSPDelta - 1e12);
         assertEq(stabilityPool.getDepositorYieldGain(A), 0);
-        assertEq( activePool.calcPendingAggInterest(), 0);
+        assertEq(activePool.calcPendingAggInterest(), 0);
 
         assertEq(stabilityPool.currentScale(), 0);
 
@@ -1502,74 +1473,75 @@ contract SPTest is DevTestSetup {
         // fast-forward time again and accrue interest
         vm.warp(block.timestamp + 90 days + 1);
 
-        uint256 pendingAggInterest_2 = activePool.calcPendingAggInterest();
-        assertGt(pendingAggInterest_2, 0);
-        uint256 expectedSpYield_2 = SP_YIELD_SPLIT * pendingAggInterest_2 / 1e18;
+        uint256 pendingAggInterest_1 = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest_1, 0);
+        uint256 expectedSpYield_1 = SP_YIELD_SPLIT * pendingAggInterest_1 / 1e18;
 
         // Expected reward round 2 calculated with a different totalSPDeposits denominator. Expect A and B to earn 0 of
         // this reward.
-        expectedShareOfReward._2_A = getShareofSPReward(A, expectedSpYield_2);
-        expectedShareOfReward._2_B = getShareofSPReward(B, expectedSpYield_2);
-        expectedShareOfReward._2_C = getShareofSPReward(C, expectedSpYield_2);
-        expectedShareOfReward._2_D = getShareofSPReward(D, expectedSpYield_2);
-        
+        expectedShareOfReward[1].A = getShareofSPReward(A, expectedSpYield_1);
+        expectedShareOfReward[1].B = getShareofSPReward(B, expectedSpYield_1);
+        expectedShareOfReward[1].C = getShareofSPReward(C, expectedSpYield_1);
+        expectedShareOfReward[1].D = getShareofSPReward(D, expectedSpYield_1);
+
         // Expect A and B to get nearly 0 (in practice, 0 due to rounding)
-        assertEq(expectedShareOfReward._2_A, 0);
-        assertEq(expectedShareOfReward._2_B, 0);
+        assertEq(expectedShareOfReward[1].A, 0);
+        assertEq(expectedShareOfReward[1].B, 0);
         // Expect C and D to get reward 2
-        assertGt(expectedShareOfReward._2_C, 0);
-        assertGt(expectedShareOfReward._2_D, 0);
-        
+        assertGt(expectedShareOfReward[1].C, 0);
+        assertGt(expectedShareOfReward[1].D, 0);
+
         // Expect C and D to share almost the entirety of reward 2.
         // More precision loss tolerance here, since there's an extra div by 1e9 in A and B's reward calcs.
-        assertApproximatelyEqual(expectedShareOfReward._2_C + expectedShareOfReward._2_D, expectedSpYield_2, 1e14);
+        assertApproximatelyEqual(expectedShareOfReward[1].C + expectedShareOfReward[1].D, expectedSpYield_1, 1e14);
 
         // A trove gets poked again, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
 
         // A only gets reward 2 since already claimed reward 1
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward._2_A, 1e15);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward[1].A, 1e15);
 
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward._1_B + expectedShareOfReward._2_B, 1e14);
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward._2_C, 1e14);
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(D), expectedShareOfReward._2_D, 1e14);
+        assertApproximatelyEqual(
+            stabilityPool.getDepositorYieldGain(B), expectedShareOfReward[0].B + expectedShareOfReward[1].B, 1e14
+        );
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward[1].C, 1e14);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(D), expectedShareOfReward[1].D, 1e14);
     }
 
-   
     function testGetDepositorBoldGain_2SPDepositor2LiqScaleChangesFreshDeposit_EarnFairShareOfSPYield() public {
-        TroveIDs memory troveIDs = _setupForSPDepositAdjustments();
-        ExpectedShareOfReward memory expectedShareOfReward;
-        PendingAggInterest memory pendingAggInterest;
-        ExpectedSPYield memory expectedSpYield;
-        
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF[3] memory expectedShareOfReward;
+        uint256[3] memory pendingAggInterest;
+        uint256[3] memory expectedSpYield;
+
         vm.warp(block.timestamp + 90 days + 1);
 
-        pendingAggInterest._1 = activePool.calcPendingAggInterest();
-        assertGt(pendingAggInterest._1, 0);
-        expectedSpYield._1 = SP_YIELD_SPLIT * pendingAggInterest._1 / 1e18;
+        pendingAggInterest[0] = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest[0], 0);
+        expectedSpYield[0] = SP_YIELD_SPLIT * pendingAggInterest[0] / 1e18;
 
-        expectedShareOfReward._1_A = getShareofSPReward(A, expectedSpYield._1);
-        expectedShareOfReward._1_B = getShareofSPReward(B, expectedSpYield._1);
-        assertGt(expectedShareOfReward._1_A, 0);
-        assertGt(expectedShareOfReward._1_B, 0);
-        uint256 totalSPDeposits_1 = stabilityPool.getTotalBoldDeposits();
-    
-        // Confirm the expected shares sum up to the total expected yield 
-        assertApproximatelyEqual(expectedShareOfReward._1_A + expectedShareOfReward._1_B, expectedSpYield._1, 1e3);
+        expectedShareOfReward[0].A = getShareofSPReward(A, expectedSpYield[0]);
+        expectedShareOfReward[0].B = getShareofSPReward(B, expectedSpYield[0]);
+        assertGt(expectedShareOfReward[0].A, 0);
+        assertGt(expectedShareOfReward[0].B, 0);
+        uint256 totalSPDeposits_0 = stabilityPool.getTotalBoldDeposits();
+
+        // Confirm the expected shares sum up to the total expected yield
+        assertApproximatelyEqual(expectedShareOfReward[0].A + expectedShareOfReward[0].B, expectedSpYield[0], 1e3);
 
         // A withdraws some deposit so that D's liq will *almost* empty the pool - triggers a scale change.
         // This also mints interest and pays the yield to the SP
-        uint256 debtSPDelta = totalSPDeposits_1 - troveManager.getTroveEntireDebt(troveIDs.D);
+        uint256 debtSPDelta = totalSPDeposits_0 - troveManager.getTroveEntireDebt(troveIDs.D);
         makeSPWithdrawalAndClaim(A, debtSPDelta - 1e12);
         assertEq(stabilityPool.getDepositorYieldGain(A), 0);
-        assertEq( activePool.calcPendingAggInterest(), 0);
+        assertEq(activePool.calcPendingAggInterest(), 0);
 
         assertEq(stabilityPool.currentScale(), 0);
 
         // A liquidates D
         liquidate(A, troveIDs.D);
 
-          // Check scale increased
+        // Check scale increased
         assertEq(stabilityPool.currentScale(), 1);
 
         // C makes fresh deposit
@@ -1579,41 +1551,46 @@ contract SPTest is DevTestSetup {
         // fast-forward time again and accrue interest
         vm.warp(block.timestamp + 90 days + 1);
 
-        pendingAggInterest._2 = activePool.calcPendingAggInterest();
-        assertGt(pendingAggInterest._2, 0);
-        expectedSpYield._2 = SP_YIELD_SPLIT * pendingAggInterest._2 / 1e18;
+        pendingAggInterest[1] = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest[1], 0);
+
+        // E opens a Trove with debt slightly lower than the SP size
+        uint256 targetDebt_E = stabilityPool.getTotalBoldDeposits() - 1e9;
+        uint256 interestRate_E = 5e16;
+        (uint256 debtRequest_E, uint256 upfrontFee_E) = findAmountToBorrowWithOpenTrove(targetDebt_E, interestRate_E);
+        uint256 price = priceFeed.getPrice();
+        uint256 coll_E = mulDivCeil(targetDebt_E, MCR, price);
+        troveIDs.E = openTroveNoHints100pct(E, coll_E, debtRequest_E, interestRate_E);
+
+        // SP depositors benefit from the upfront fee paid by E, in addition to interest
+        expectedSpYield[1] = SP_YIELD_SPLIT * (pendingAggInterest[1] + upfrontFee_E) / 1e18;
 
         // Expected reward round 2 calculated with a different totalSPDeposits denominator. Expect A and B to earn 0 of
         // this reward.
-        expectedShareOfReward._2_A = getShareofSPReward(A, expectedSpYield._2);
-        expectedShareOfReward._2_B = getShareofSPReward(B, expectedSpYield._2);
-        expectedShareOfReward._2_C = getShareofSPReward(C, expectedSpYield._2);
-        
-        // Expect A and B to get nearly no share (in practice, 0 due to rounding down)
-        assertEq(expectedShareOfReward._2_A, 0);
-        assertEq(expectedShareOfReward._2_B, 0);
-        // Expect C to get almost the full share
-        assertGt(expectedShareOfReward._2_C, 0);
-        
-        // // Expect C to get most of reward 2
-        //  More precision loss tolerance here,since there's an extra div by 1e9 in A and B's reward calcs.
-        assertApproximatelyEqual(expectedShareOfReward._2_C, expectedSpYield._2, 1e14);
+        expectedShareOfReward[1].A = getShareofSPReward(A, expectedSpYield[1]);
+        expectedShareOfReward[1].B = getShareofSPReward(B, expectedSpYield[1]);
+        expectedShareOfReward[1].C = getShareofSPReward(C, expectedSpYield[1]);
 
-        // E creates Trove and gets liquidated
-        
-        uint256 debtRequest_E = stabilityPool.getTotalBoldDeposits() - BOLD_GAS_COMP - 1e9; // make E's debt slightly lower than the SP size
-        uint256 price = priceFeed.getPrice();
-        uint256 coll_E =  (debtRequest_E + BOLD_GAS_COMP + 1000) * MCR / price;
-        troveIDs.E = openTroveNoHints100pct(E, coll_E, debtRequest_E, 5e16);
+        // Expect A and B to get nearly no share (in practice, 0 due to rounding down)
+        assertEq(expectedShareOfReward[1].A, 0);
+        assertEq(expectedShareOfReward[1].B, 0);
+        // Expect C to get almost the full share
+        assertGt(expectedShareOfReward[1].C, 0);
+
+        // Expect C to get most of reward 2
+        //  More precision loss tolerance here,since there's an extra div by 1e9 in A and B's reward calcs.
+        assertApproximatelyEqual(expectedShareOfReward[1].C, expectedSpYield[1], 1e14);
+
         // Price drops slightly
         priceFeed.setPrice(price - 1e18);
+        // E gets liquidated
         liquidate(E, troveIDs.E);
 
         // 2000000001000000000000
-         // Check scale increased again
+        // Check scale increased again
         assertEq(stabilityPool.currentScale(), 2);
 
-        // // D makes fresh deposit (and interest minted and reward 2 yield paid to SP)
+        // D makes fresh deposit (and interest minted and reward 2 yield paid to SP)
         uint256 deposit_D = 1e18;
         transferBold(E, D, deposit_D);
         makeSPDepositAndClaim(D, deposit_D);
@@ -1621,37 +1598,37 @@ contract SPTest is DevTestSetup {
         // fast-forward time again and accrue interest
         vm.warp(block.timestamp + 180 days);
 
-        pendingAggInterest._3 = activePool.calcPendingAggInterest();
-        assertGt(pendingAggInterest._3, 0);
-        expectedSpYield._3 = SP_YIELD_SPLIT * pendingAggInterest._3 / 1e18;
+        pendingAggInterest[2] = activePool.calcPendingAggInterest();
+        assertGt(pendingAggInterest[2], 0);
+        expectedSpYield[2] = SP_YIELD_SPLIT * pendingAggInterest[2] / 1e18;
 
-        expectedShareOfReward._3_A = getShareofSPReward(A, expectedSpYield._3);
-        expectedShareOfReward._3_B = getShareofSPReward(B, expectedSpYield._3);
-        expectedShareOfReward._3_C = getShareofSPReward(C, expectedSpYield._3);
-        expectedShareOfReward._3_D = getShareofSPReward(D, expectedSpYield._3);
-        
+        expectedShareOfReward[2].A = getShareofSPReward(A, expectedSpYield[2]);
+        expectedShareOfReward[2].B = getShareofSPReward(B, expectedSpYield[2]);
+        expectedShareOfReward[2].C = getShareofSPReward(C, expectedSpYield[2]);
+        expectedShareOfReward[2].D = getShareofSPReward(D, expectedSpYield[2]);
+
         // Expect A, B, C get nearly no share of reward 3 (in practice, 0 due to rounding down)
-        assertEq(expectedShareOfReward._3_A, 0);
-        assertEq(expectedShareOfReward._3_B, 0);
-        assertEq(expectedShareOfReward._3_C, 0);
-        // // Expect D gets the entire reward 3
-        assertGt(expectedShareOfReward._3_D, 0);
+        assertEq(expectedShareOfReward[2].A, 0);
+        assertEq(expectedShareOfReward[2].B, 0);
+        assertEq(expectedShareOfReward[2].C, 0);
+        // Expect D gets the entire reward 3
+        assertGt(expectedShareOfReward[2].D, 0);
 
         // Expect D to get most of reward 3
         // More precision loss tolerance here, since there's an extra div by 1e9 in B's reward calc.
-        assertApproximatelyEqual(expectedShareOfReward._3_D, expectedSpYield._3, 1e14);
+        assertApproximatelyEqual(expectedShareOfReward[2].D, expectedSpYield[2], 1e14, "1");
 
         // Interest minted and reward 3 triggered again
-         // A trove gets poked again, interst minted and yield paid to SP
+        // A trove gets poked again, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
 
         // Expect A only gets a share of reward 2 as they already claimed their share of reward 1
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward._2_A, 1e14);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward[1].A, 1e14, "2");
 
         // Expect B, C and D only get shares of rewards 1, 2 and 3 respectively
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward._1_B, 1e14);
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward._2_C, 1e14);
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(D), expectedShareOfReward._3_D, 1e14);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward[0].B, 1e14, "3");
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward[1].C, 1e14, "4");
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(D), expectedShareOfReward[2].D, 1e14, "5");
     }
 }
 

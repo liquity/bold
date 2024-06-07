@@ -10,12 +10,12 @@ contract LiquidationsTest is DevTestSetup {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
         uint256 ATroveId = borrowerOperations.openTrove(
-            A, 0, collAmount, liquidationAmount - troveManager.BOLD_GAS_COMPENSATION(), 0, 0, 0
+            A, 0, collAmount, liquidationAmount - troveManager.BOLD_GAS_COMPENSATION(), 0, 0, 0, 0
         );
         vm.stopPrank();
 
         vm.startPrank(B);
-        borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount, 0, 0, 0);
+        borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount, 0, 0, 0, 0);
         vm.stopPrank();
         // B deposits to SP
         makeSPDepositAndClaim(B, liquidationAmount);
@@ -78,12 +78,12 @@ contract LiquidationsTest is DevTestSetup {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
         uint256 ATroveId = borrowerOperations.openTrove(
-            A, 0, collAmount, liquidationAmount - troveManager.BOLD_GAS_COMPENSATION(), 0, 0, 0
+            A, 0, collAmount, liquidationAmount - troveManager.BOLD_GAS_COMPENSATION(), 0, 0, 0, 0
         );
         vm.stopPrank();
 
         vm.startPrank(B);
-        borrowerOperations.openTrove(B, 0, 3 * collAmount, liquidationAmount, 0, 0, 0);
+        borrowerOperations.openTrove(B, 0, 3 * collAmount, liquidationAmount, 0, 0, 0, 0);
         vm.stopPrank();
         // B deposits to SP
         makeSPDepositAndClaim(B, liquidationAmount);
@@ -137,12 +137,12 @@ contract LiquidationsTest is DevTestSetup {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
         uint256 ATroveId = borrowerOperations.openTrove(
-            A, 0, collAmount, liquidationAmount - troveManager.BOLD_GAS_COMPENSATION(), 0, 0, 0
+            A, 0, collAmount, liquidationAmount - troveManager.BOLD_GAS_COMPENSATION(), 0, 0, 0, 0
         );
         vm.stopPrank();
 
         vm.startPrank(B);
-        uint256 BTroveId = borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount, 0, 0, 0);
+        uint256 BTroveId = borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount, 0, 0, 0, 0);
 
         // Price drops
         priceFeed.setPrice(1100e18 - 1);
@@ -203,12 +203,12 @@ contract LiquidationsTest is DevTestSetup {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
         uint256 ATroveId = borrowerOperations.openTrove(
-            A, 0, collAmount, liquidationAmount - troveManager.BOLD_GAS_COMPENSATION(), 0, 0, 0
+            A, 0, collAmount, liquidationAmount - troveManager.BOLD_GAS_COMPENSATION(), 0, 0, 0, 0
         );
         vm.stopPrank();
 
         vm.startPrank(B);
-        uint256 BTroveId = borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount, 0, 0, 0);
+        uint256 BTroveId = borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount, 0, 0, 0, 0);
         vm.stopPrank();
         // B deposits to SP
         makeSPDepositAndClaim(B, liquidationAmount / 2);

@@ -3,14 +3,16 @@
 pragma solidity 0.8.18;
 
 import "./IInterestRouter.sol";
-import "./IStabilityPool.sol";
+import "./IBoldRewardsReceiver.sol";
+import "../Types/TroveChange.sol";
 
 interface IActivePool {
     function defaultPoolAddress() external view returns (address);
     function borrowerOperationsAddress() external view returns (address);
     function troveManagerAddress() external view returns (address);
     function interestRouter() external view returns (IInterestRouter);
-    function stabilityPool() external view returns (IStabilityPool);
+    // We avoid IStabilityPool here in order to prevent creating a dependency cycle that would break flattening
+    function stabilityPool() external view returns (IBoldRewardsReceiver);
     function setAddresses(
         address _borrowerOperationsAddress,
         address _troveManagerAddress,
@@ -22,19 +24,18 @@ interface IActivePool {
 
     function SP_YIELD_SPLIT() external view returns (uint256);
     function getETHBalance() external view returns (uint256);
-    function getTotalActiveDebt() external view returns (uint256);
+    function getBoldDebt() external view returns (uint256);
     function lastAggUpdateTime() external view returns (uint256);
     function aggRecordedDebt() external view returns (uint256);
     function aggWeightedDebtSum() external view returns (uint256);
     function calcPendingAggInterest() external view returns (uint256);
+    function getNewApproxAvgInterestRateFromTroveChange(TroveChange calldata _troveChange)
+        external
+        view
+        returns (uint256);
 
     function mintAggInterest() external;
-    function mintAggInterestAndAccountForTroveChange(
-        uint256 _troveDebtIncrease,
-        uint256 _troveDebtDecrease,
-        uint256 _newWeightedRecordedTroveDebt,
-        uint256 _oldWeightedRecordedTroveDebt
-    ) external;
+    function mintAggInterestAndAccountForTroveChange(TroveChange calldata _troveChange) external;
 
     function sendETH(address _account, uint256 _amount) external;
     function sendETHToDefaultPool(uint256 _amount) external;

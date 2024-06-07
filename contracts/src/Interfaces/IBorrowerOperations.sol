@@ -29,14 +29,15 @@ interface IBorrowerOperations is ILiquityBase {
         uint256 _boldAmount,
         uint256 _upperHint,
         uint256 _lowerHint,
-        uint256 _annualInterestRate
+        uint256 _annualInterestRate,
+        uint256 _maxUpfrontFee
     ) external returns (uint256);
 
     function addColl(uint256 _troveId, uint256 _ETHAmount) external;
 
     function withdrawColl(uint256 _troveId, uint256 _amount) external;
 
-    function withdrawBold(uint256 _troveId, uint256 _amount) external;
+    function withdrawBold(uint256 _troveId, uint256 _amount, uint256 _maxUpfrontFee) external;
 
     function repayBold(uint256 _troveId, uint256 _amount) external;
 
@@ -47,7 +48,8 @@ interface IBorrowerOperations is ILiquityBase {
         uint256 _collChange,
         bool _isCollIncrease,
         uint256 _debtChange,
-        bool isDebtIncrease
+        bool isDebtIncrease,
+        uint256 _maxUpfrontFee
     ) external;
 
     function adjustUnredeemableTrove(
@@ -57,13 +59,16 @@ interface IBorrowerOperations is ILiquityBase {
         uint256 _boldChange,
         bool _isDebtIncrease,
         uint256 _upperHint,
-        uint256 _lowerHint
+        uint256 _lowerHint,
+        uint256 _maxUpfrontFee
     ) external;
 
     function claimCollateral() external;
 
     function setAddManager(uint256 _troveId, address _manager) external;
     function setRemoveManager(uint256 _troveId, address _manager) external;
+    function addManagerOf(uint256 _troveId) external view returns (address);
+    function removeManagerOf(uint256 _troveId) external view returns (address);
 
     // TODO: addRepayWhitelistedAddress?(see github issue #64)
 
@@ -73,7 +78,8 @@ interface IBorrowerOperations is ILiquityBase {
         uint256 _troveId,
         uint256 _newAnnualInterestRate,
         uint256 _upperHint,
-        uint256 _lowerHint
+        uint256 _lowerHint,
+        uint256 _maxUpfrontFee
     ) external;
 
     function applyTroveInterestPermissionless(uint256 _troveId) external;

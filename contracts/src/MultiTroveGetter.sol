@@ -79,13 +79,11 @@ contract MultiTroveGetter {
                 _troves[idx].debt,
                 _troves[idx].coll,
                 _troves[idx].stake,
-                /* status */
-                ,
-                /* arrayIndex */
-                ,
-                /* annualInterestRate */
-                ,
-                /* lastDebtUpdateTime */
+                , // status
+                , // arrayIndex
+                , // annualInterestRate
+                , // lastDebtUpdateTime
+                    // lastInterestRateAdjTime
             ) = troveManager.Troves(currentTroveId);
             (_troves[idx].snapshotETH, _troves[idx].snapshotBoldDebt) = troveManager.rewardSnapshots(currentTroveId);
 
@@ -112,13 +110,11 @@ contract MultiTroveGetter {
                 _troves[idx].debt,
                 _troves[idx].coll,
                 _troves[idx].stake,
-                /* status */
-                ,
-                /* arrayIndex */
-                ,
-                /* annualInterestRate */
-                ,
-                /* lastDebtUpdateTime */
+                , // status
+                , // arrayIndex
+                , // annualInterestRate
+                , // lastDebtUpdateTime
+                    // lastInterestRateAdjTime
             ) = troveManager.Troves(currentTroveId);
             (_troves[idx].snapshotETH, _troves[idx].snapshotBoldDebt) = troveManager.rewardSnapshots(currentTroveId);
 

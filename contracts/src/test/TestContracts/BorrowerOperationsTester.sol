@@ -9,18 +9,6 @@ for testing the parent's internal functions. */
 contract BorrowerOperationsTester is BorrowerOperations {
     constructor(IERC20 _ETH, ITroveManager _troveManager) BorrowerOperations(_ETH, _troveManager) {}
 
-    function getNewICRFromTroveChange(
-        uint256 _coll,
-        uint256 _debt,
-        uint256 _collChange,
-        bool isCollIncrease,
-        uint256 _debtChange,
-        bool isDebtIncrease,
-        uint256 _price
-    ) external pure returns (uint256) {
-        return _getNewICRFromTroveChange(_coll, _debt, _collChange, isCollIncrease, _debtChange, isDebtIncrease, _price);
-    }
-
     function getNewTCRFromTroveChange(
         uint256 _collChange,
         bool isCollIncrease,
@@ -28,7 +16,9 @@ contract BorrowerOperationsTester is BorrowerOperations {
         bool isDebtIncrease,
         uint256 _price
     ) external view returns (uint256) {
-        return _getNewTCRFromTroveChange(_collChange, isCollIncrease, _debtChange, isDebtIncrease, _price);
+        TroveChange memory troveChange;
+        _initTroveChange(troveChange, _collChange, isCollIncrease, _debtChange, isDebtIncrease);
+        return _getNewTCRFromTroveChange(troveChange, _price);
     }
 
     function getUSDValue(uint256 _coll, uint256 _price) external pure returns (uint256) {

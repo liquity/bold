@@ -91,8 +91,8 @@ contract InterestRateBasic is DevTestSetup {
 
         // B (who is not delegate) tries to adjust it
         vm.startPrank(B);
-        vm.expectRevert("BO: Only owner");
-        borrowerOperations.adjustTroveInterestRate(A_Id, 40e16, 0, 0);
+        vm.expectRevert("BorrowerOps: sender is not Trove owner");
+        borrowerOperations.adjustTroveInterestRate(A_Id, 40e16, 0, 0, 0);
         vm.stopPrank();
     }
 
@@ -164,12 +164,13 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
-    function testAdjustTroveInterestRateDoesNotChangeEntireTroveDebt() public {
+    function testAdjustTroveInterestRateDoesNotChangeEntireTroveDebtUnlessPremature() public {
         priceFeed.setPrice(2000e18);
 
         uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2000e18, 5e17);
 
-        vm.warp(block.timestamp + 1 days);
+        // Wait for the cooldown to pass, so the adjustment will be free
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN);
 
         (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
         assertGt(entireTroveDebt_1, 0);
@@ -178,24 +179,41 @@ contract InterestRateBasic is DevTestSetup {
 
         (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
         assertEq(entireTroveDebt_1, entireTroveDebt_2);
+
+        // Wait less than the cooldown, so the adjustment will cost
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN / 2);
+
+        (uint256 entireTroveDebt_3,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        assertGt(entireTroveDebt_3, entireTroveDebt_2);
     }
 
-    function testAdjustTroveInterestRateNoRedistGainsIncreasesRecordedDebtByAccruedInterest() public {
+    function testAdjustTroveInterestRateIncreasesRecordedDebtByAccruedInterestAndUpfrontFee() public {
         priceFeed.setPrice(2000e18);
 
         uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2000e18, 5e17);
 
-        vm.warp(block.timestamp + 1 days);
+        // Wait for the cooldown to pass, so the adjustment will be free
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN);
 
         uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
         assertGt(recordedTroveDebt_1, 0);
 
         uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
-
         changeInterestRateNoHints(A, ATroveId, 75e16);
 
+        // Recorded debt only increases by accrued interest
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
+
+        // Wait less than the cooldown, so the adjustment will cost
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN / 2);
+
+        accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
+        uint256 upfrontFee = changeInterestRateNoHints(A, ATroveId, 75e16);
+
+        // Recorded debt increases by accrued interest + upfront fee
+        uint256 recordedTroveDebt_3 = troveManager.getTroveDebt(ATroveId);
+        assertEq(recordedTroveDebt_3, recordedTroveDebt_2 + accruedTroveInterest + upfrontFee);
     }
 
     function testAdjustTroveInterestRateInsertsToCorrectPositionInSortedList() public {
@@ -320,7 +338,7 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
-    function testWithdrawBoldIncreasesEntireTroveDebtByWithdrawnAmount() public {
+    function testWithdrawBoldIncreasesEntireTroveDebtByWithdrawnAmountPlusUpfrontFee() public {
         priceFeed.setPrice(2000e18);
         uint256 troveDebtRequest = 2000e18;
         uint256 interestRate = 25e16;
@@ -330,18 +348,20 @@ contract InterestRateBasic is DevTestSetup {
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
+
+        uint256 upfrontFee = predictAdjustTroveUpfrontFee(ATroveId, boldWithdrawal);
+        assertGt(upfrontFee, 0);
 
         // A draws more debt
         withdrawBold100pct(A, ATroveId, boldWithdrawal);
 
-        (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
-
-        assertEq(entireTroveDebt_2, entireTroveDebt_1 + boldWithdrawal);
+        uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
+        assertEq(entireTroveDebt_2, entireTroveDebt_1 + boldWithdrawal + upfrontFee);
     }
 
-    function testWithdrawBoldIncreasesRecordedTroveDebtByAccruedInterestPlusWithdrawnAmount() public {
+    function testWithdrawBoldIncreasesRecordedTroveDebtByAccruedInterestPlusWithdrawnAmountPlusUpfrontFee() public {
         priceFeed.setPrice(2000e18);
         uint256 troveDebtRequest = 2000e18;
         uint256 interestRate = 25e16;
@@ -353,13 +373,13 @@ contract InterestRateBasic is DevTestSetup {
 
         uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
         uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
+        uint256 upfrontFee = predictAdjustTroveUpfrontFee(ATroveId, boldWithdrawal);
 
         // A draws more debt
         withdrawBold100pct(A, ATroveId, boldWithdrawal);
 
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
-
-        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest + boldWithdrawal);
+        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest + boldWithdrawal + upfrontFee);
     }
 
     // --- repayBold ---
@@ -410,14 +430,13 @@ contract InterestRateBasic is DevTestSetup {
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // A repays bold
         repayBold(A, ATroveId, boldRepayment);
 
-        (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
-
+        uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_2, entireTroveDebt_1 - boldRepayment);
     }
 
@@ -431,15 +450,12 @@ contract InterestRateBasic is DevTestSetup {
 
         vm.warp(block.timestamp + 1 days);
 
-        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
-        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
-
+        LatestTroveData memory preRepay = troveManager.getLatestTroveData(ATroveId);
         // A repays bold
         repayBold(A, ATroveId, boldRepayment);
+        LatestTroveData memory postRepay = troveManager.getLatestTroveData(ATroveId);
 
-        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
-
-        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest - boldRepayment);
+        assertEq(postRepay.recordedDebt, preRepay.recordedDebt + preRepay.accruedInterest - boldRepayment);
     }
 
     // --- addColl ---
@@ -490,14 +506,13 @@ contract InterestRateBasic is DevTestSetup {
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // A adds coll
         addColl(A, ATroveId, collIncrease);
 
-        (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
-
+        uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_2, entireTroveDebt_1);
     }
 
@@ -570,14 +585,13 @@ contract InterestRateBasic is DevTestSetup {
 
         vm.warp(block.timestamp + 1 days);
 
-        (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // A withdraws coll
         withdrawColl(A, ATroveId, collDecrease);
 
-        (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
-
+        uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_2, entireTroveDebt_1);
     }
 
@@ -656,14 +670,13 @@ contract InterestRateBasic is DevTestSetup {
         // Confirm Trove is stale
         assertTrue(troveManager.troveIsStale(ATroveId));
 
-        (uint256 entireTroveDebt_1,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
+        uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // B applies A's pending interest
         applyTroveInterestPermissionless(B, ATroveId);
 
-        (uint256 entireTroveDebt_2,,,,) = troveManager.getEntireDebtAndColl(ATroveId);
-
+        uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_2, entireTroveDebt_1);
     }
 
@@ -717,7 +730,7 @@ contract InterestRateBasic is DevTestSetup {
     // --- redemptions ---
 
     function testRedemptionSetsTroveLastDebtUpdateTimeToNow() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -733,7 +746,7 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testRedemptionReducesTroveAccruedInterestTo0() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -749,7 +762,7 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testRedemptionReducesEntireTroveDebtByRedeemedAmount() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
@@ -768,21 +781,39 @@ contract InterestRateBasic is DevTestSetup {
     }
 
     function testRedemptionChangesRecordedTroveDebtByAccruedInterestMinusRedeemedAmount() public {
-        (,, TroveIDs memory troveIDs) = _setupForRedemptionAscendingInterest();
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         // Fast-forward to generate interest
         vm.warp(block.timestamp + 1 days);
 
-        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(troveIDs.A);
-        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(troveIDs.A);
-
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         // E redeems, hitting A partially
         uint256 redeemAmount = debt_A / 2;
+
+        LatestTroveData memory preRedeem = troveManager.getLatestTroveData(troveIDs.A);
         redeem(E, redeemAmount);
+        LatestTroveData memory postRedeem = troveManager.getLatestTroveData(troveIDs.A);
 
-        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(troveIDs.A);
+        assertEq(postRedeem.recordedDebt, preRedeem.recordedDebt + preRedeem.accruedInterest - redeemAmount);
+    }
 
-        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest - redeemAmount);
+    // --- upfront fee ---
+
+    function testOpenTroveMintsUpfrontFeeToInterestReceivers() public {
+        priceFeed.setPrice(2000e18);
+
+        uint256 borrow = 2_000 ether;
+        uint256 interestRate = 0.1 ether;
+        openTroveNoHints100pct(A, 2 ether, borrow, interestRate);
+
+        uint256 debtWithoutFee = borrow + BOLD_GAS_COMP;
+        uint256 fee = calcUpfrontFee(debtWithoutFee, interestRate);
+
+        assertEqDecimal(
+            boldToken.balanceOf(address(stabilityPool)) + boldToken.balanceOf(address(mockInterestRouter)),
+            fee,
+            18,
+            "Wrong amount minted to interest receivers"
+        );
     }
 }

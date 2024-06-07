@@ -33,7 +33,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     IBoldToken boldToken;
 
     IInterestRouter public interestRouter;
-    IStabilityPool public stabilityPool;
+    IBoldRewardsReceiver public stabilityPool;
 
     uint256 public constant SECONDS_IN_ONE_YEAR = 31536000; // 60 * 60 * 24 * 365,
 
@@ -91,7 +91,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         defaultPoolAddress = _defaultPoolAddress;
         boldToken = IBoldToken(_boldTokenAddress);
         interestRouter = IInterestRouter(_interestRouterAddress);
-        stabilityPool = IStabilityPool(_stabilityPoolAddress);
+        stabilityPool = IBoldRewardsReceiver(_stabilityPoolAddress);
 
         emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
         emit TroveManagerAddressChanged(_troveManagerAddress);
@@ -119,8 +119,31 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         return aggWeightedDebtSum * (block.timestamp - lastAggUpdateTime) / SECONDS_IN_ONE_YEAR / 1e18;
     }
 
+    function getNewApproxAvgInterestRateFromTroveChange(TroveChange calldata _troveChange)
+        external
+        view
+        returns (uint256)
+    {
+        // We are ignoring the upfront fee when calculating the approx. avg. interest rate.
+        // This is a simple way to resolve the circularity in:
+        //   fee depends on avg. interest rate -> avg. interest rate is weighted by debt -> debt includes fee -> ...
+        assert(_troveChange.upfrontFee == 0);
+
+        uint256 newAggRecordedDebt = aggRecordedDebt;
+        newAggRecordedDebt += calcPendingAggInterest();
+        newAggRecordedDebt += _troveChange.appliedRedistBoldDebtGain;
+        newAggRecordedDebt += _troveChange.debtIncrease;
+        newAggRecordedDebt -= _troveChange.debtDecrease;
+
+        uint256 newAggWeightedDebtSum = aggWeightedDebtSum;
+        newAggWeightedDebtSum += _troveChange.newWeightedRecordedDebt;
+        newAggWeightedDebtSum -= _troveChange.oldWeightedRecordedDebt;
+
+        return newAggWeightedDebtSum / newAggRecordedDebt;
+    }
+
     // Returns sum of agg.recorded debt plus agg. pending interest. Excludes pending redist. gains.
-    function getTotalActiveDebt() public view returns (uint256) {
+    function getBoldDebt() external view returns (uint256) {
         return aggRecordedDebt + calcPendingAggInterest();
     }
 
@@ -181,19 +204,15 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     // It does *not* include the Trove's individual accrued interest - this gets accounted for in the aggregate accrued interest.
     // The net Trove debt change could be positive or negative in a repayment (depending on whether its redistribution gain or repayment amount is larger),
     // so this function accepts both the increase and the decrease to avoid using (and converting to/from) signed ints.
-    function mintAggInterestAndAccountForTroveChange(
-        uint256 _troveDebtIncrease,
-        uint256 _troveDebtDecrease,
-        uint256 _newWeightedRecordedTroveDebt,
-        uint256 _oldWeightedRecordedTroveDebt
-    ) external {
+    function mintAggInterestAndAccountForTroveChange(TroveChange calldata _troveChange) external {
         _requireCallerIsBOorTroveM();
 
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
         uint256 newAggRecordedDebt = aggRecordedDebt; // 1 SLOAD
-        newAggRecordedDebt += _mintAggInterest();
-        newAggRecordedDebt += _troveDebtIncrease;
-        newAggRecordedDebt -= _troveDebtDecrease;
+        newAggRecordedDebt += _mintAggInterest(_troveChange.upfrontFee); // adds minted agg. interest + upfront fee
+        newAggRecordedDebt += _troveChange.appliedRedistBoldDebtGain;
+        newAggRecordedDebt += _troveChange.debtIncrease;
+        newAggRecordedDebt -= _troveChange.debtDecrease;
         aggRecordedDebt = newAggRecordedDebt; // 1 SSTORE
 
         // assert(aggRecordedDebt >= 0) // This should never be negative. If all redistribution gians and all aggregate interest was applied
@@ -201,25 +220,25 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
         uint256 newAggWeightedDebtSum = aggWeightedDebtSum; // 1 SLOAD
-        newAggWeightedDebtSum += _newWeightedRecordedTroveDebt;
-        newAggWeightedDebtSum -= _oldWeightedRecordedTroveDebt;
+        newAggWeightedDebtSum += _troveChange.newWeightedRecordedDebt;
+        newAggWeightedDebtSum -= _troveChange.oldWeightedRecordedDebt;
         aggWeightedDebtSum = newAggWeightedDebtSum; // 1 SSTORE
     }
 
     function mintAggInterest() external override {
         _requireCallerIsSP();
-        aggRecordedDebt +=  _mintAggInterest();
+        aggRecordedDebt += _mintAggInterest(0);
     }
 
-    function _mintAggInterest() internal returns (uint256) {
-        uint256 aggInterest = calcPendingAggInterest();
+    function _mintAggInterest(uint256 _upfrontFee) internal returns (uint256 mintedAmount) {
+        mintedAmount = calcPendingAggInterest() + _upfrontFee;
+
         // Mint part of the BOLD interest to the SP.
         // TODO: implement interest minting to LPs
-        
-        if (aggInterest > 0) {
-            uint256 spYield = SP_YIELD_SPLIT * aggInterest / 1e18;
-            uint256 remainderToLPs = aggInterest - spYield;
-           
+        if (mintedAmount > 0) {
+            uint256 spYield = SP_YIELD_SPLIT * mintedAmount / 1e18;
+            uint256 remainderToLPs = mintedAmount - spYield;
+
             boldToken.mint(address(interestRouter), remainderToLPs);
             boldToken.mint(address(stabilityPool), spYield);
 
@@ -227,8 +246,6 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         }
 
         lastAggUpdateTime = block.timestamp;
-
-        return aggInterest;
     }
 
     // --- 'require' functions ---
