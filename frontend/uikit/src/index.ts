@@ -6,6 +6,7 @@ export * from "./icons";
 export * from "./react-utils";
 export * from "./tokens";
 
+export { AnchorButton } from "./Button/AnchorButton";
 export { Button } from "./Button/Button";
 export { Checkbox } from "./Checkbox/Checkbox";
 export { Dropdown } from "./Dropdown/Dropdown";

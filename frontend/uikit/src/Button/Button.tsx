@@ -4,6 +4,14 @@ import { match, P } from "ts-pattern";
 import { css } from "../../styled-system/css";
 import { useTheme } from "../Theme/Theme";
 
+export type ButtonProps = {
+  size?: "mini" | "small" | "medium" | "large";
+  label: string;
+  maxWidth?: number;
+  wide?: boolean;
+  mode?: "primary" | "secondary" | "tertiary" | "positive" | "negative";
+};
+
 export function Button({
   size = "medium",
   label,
@@ -11,19 +19,40 @@ export function Button({
   wide,
   mode = "secondary",
   ...props
-}: ComponentPropsWithoutRef<"button"> & {
-  size?: "mini" | "small" | "medium" | "large";
-  label: string;
-  maxWidth?: number;
-  wide?: boolean;
-  mode?: "primary" | "secondary" | "tertiary" | "positive" | "negative";
-}) {
+}: ComponentPropsWithoutRef<"button"> & ButtonProps) {
+  const buttonStyles = useButtonStyles(size, mode);
+  return (
+    <button
+      className={buttonStyles.className}
+      style={{
+        maxWidth,
+        width: wide ? "100%" : undefined,
+        ...buttonStyles.styles,
+      }}
+      {...props}
+    >
+      <span
+        style={{
+          // prevents a jump due to the border when the button gets disabled
+          padding: props.disabled ? 0 : "0 1px",
+        }}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
+export function useButtonStyles(
+  size: ButtonProps["size"] = "medium",
+  mode: ButtonProps["mode"] = "secondary",
+) {
   const { color } = useTheme();
 
   const geometry = match(size)
     .with("mini", () => ({
       height: 26,
-      padding: "0 6px",
+      padding: "0 8px",
       fontSize: 14,
       borderRadius: 8,
     }))
@@ -74,55 +103,47 @@ export function Button({
     }))
     .exhaustive();
 
-  return (
-    <button
-      className={css({
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        whiteSpace: "nowrap",
-        cursor: "pointer",
-        transition: "background 50ms",
-        _enabled: {
-          color: "var(--color)",
-          background: {
-            base: "var(--background)",
-            _hover: "var(--backgroundHover)",
-            _active: "var(--backgroundPressed)",
-          },
-        },
-        _disabled: {
-          color: "disabledContent",
-          background: "disabledSurface",
-          cursor: "not-allowed",
-          border: "1px solid token(colors.disabledBorder)",
-        },
-        _active: {
-          _enabled: {
-            translate: "0 1px",
-          },
-        },
-        _focusVisible: {
-          outline: "2px solid token(colors.focused)",
-        },
-      })}
-      style={{
-        maxWidth,
-        width: wide ? "100%" : undefined,
-        outlineOffset: mode === "primary" ? 2 : 0, // primary mode background === focus ring color
-        ...colors,
-        ...geometry,
-      }}
-      {...props}
-    >
-      <span
-        style={{
-          // prevents a jump due to the border when the button gets disabled
-          padding: props.disabled ? 0 : "0 1px",
-        }}
-      >
-        {label}
-      </span>
-    </button>
-  );
+  const className = css({
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    whiteSpace: "nowrap",
+    cursor: "pointer",
+    transition: "background 50ms",
+    color: "var(--color)",
+    background: {
+      base: "var(--background)",
+      _hover: "var(--backgroundHover)",
+      _active: "var(--backgroundPressed)",
+    },
+    _active: {
+      _enabled: {
+        translate: "0 1px",
+      },
+    },
+    _focusVisible: {
+      outline: "2px solid token(colors.focused)",
+    },
+    _disabled: {
+      color: "disabledContent",
+      background: {
+        base: "disabledSurface",
+        _hover: "disabledSurface",
+        _active: "disabledSurface",
+      },
+      cursor: "not-allowed",
+      border: "1px solid token(colors.disabledBorder)",
+    },
+  });
+
+  return {
+    className,
+    styles: {
+      ...geometry,
+      ...colors,
+
+      // primary mode background === focus ring color
+      outlineOffset: mode === "primary" ? 2 : 0,
+    },
+  };
 }
