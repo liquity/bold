@@ -505,8 +505,8 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     assert.isAtMost(getDifference(D_entireColl_1, D_collAfterL1), 1e8);
     assert.isAtMost(getDifference(E_entireColl_1, E_collAfterL1), 1e8);
 
-    // Bob adds 1 ETH to his trove
-    const addedColl1 = toBN(dec(1, "ether"));
+    // Bob adds 125 ETH to his trove
+    const addedColl1 = toBN(dec(125, "ether"));
     await th.addCollWrapper(contracts, { from: B, value: addedColl1 });
 
     // Liquidate C
@@ -548,8 +548,8 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     assert.isAtMost(getDifference(D_entireColl_2, D_collAfterL2), 1e8);
     assert.isAtMost(getDifference(E_entireColl_2, E_collAfterL2), 1e8);
 
-    // Bob adds 1 ETH to his trove
-    const addedColl2 = toBN(dec(1, "ether"));
+    // Bob adds 50 ETH to his trove
+    const addedColl2 = toBN(dec(50, "ether"));
     await th.addCollWrapper(contracts, { from: B, value: addedColl2 });
 
     // Liquidate E
@@ -660,10 +660,10 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     assert.isAtMost(getDifference(D_expectedPendingETH_1, D_ETHGain_1), 1e8);
     assert.isAtMost(getDifference(E_expectedPendingETH_1, E_ETHGain_1), 1e8);
 
-    // // Bob adds 1 ETH to his trove
+    // Bob adds 125 ETH to his trove
     await th.addCollWrapper(contracts, {
       from: B,
-      value: dec(1, "ether"),
+      value: dec(125, "ether"),
     });
 
     // Check entireColl for each trove
@@ -711,10 +711,10 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     assert.isAtMost(getDifference(D_expectedPendingETH_2, D_ETHGain_2), 1e8);
     assert.isAtMost(getDifference(E_expectedPendingETH_2, E_ETHGain_2), 1e8);
 
-    // // Bob adds 1 ETH to his trove
+    // Bob adds 50 ETH to his trove
     await th.addCollWrapper(contracts, {
       from: B,
-      value: dec(1, "ether"),
+      value: dec(50, "ether"),
     });
 
     // Check entireColl for each trove

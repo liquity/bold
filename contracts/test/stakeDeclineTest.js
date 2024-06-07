@@ -80,7 +80,7 @@ contract("TroveManager", async (accounts) => {
       ZERO_ADDRESS,
       ZERO_ADDRESS,
       0,
-      { from: B, value: dec(4, 28) },
+      { from: B, value: dec(5, 28) },
     );
     await th.openTroveWrapper(
       contracts,
