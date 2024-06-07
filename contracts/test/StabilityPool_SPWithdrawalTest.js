@@ -1714,7 +1714,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
     //
     // TODO: Changes since v1 have introduced very slight precision error in this test. Potentially due to slightly different rounding
     // in helper functon getOpenTroveBoldAmount due to now-zero borrow fees. Double-check this when we write new SP arithmetic tests and fix the "P" issue.
-    it.skip("withdrawFromSP(): deposit spans one scale factor change: Single depositor withdraws correct compounded deposit and ETH Gain after one liquidation", async () => {
+    it("withdrawFromSP(): deposit spans one scale factor change: Single depositor withdraws correct compounded deposit and ETH Gain after one liquidation", async () => {
       // Whale opens Trove with 100k ETH
       await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
         from: whale,
@@ -1751,7 +1751,9 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
 
       // Defaulter 1 liquidated.  Value of P reduced to 9e9.
       await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
-      assert.equal((await stabilityPool.P()).toString(), dec(9, 9));
+      // it gives 8999999999, due to this line in StabilityPool._computeETHRewardsPerUnitStaked function
+      // boldLossPerUnitStaked = boldLossNumerator / _totalBoldDeposits + 1;
+      th.assertIsApproximatelyEqual((await stabilityPool.P()).toString(), dec(9, 9), 1);
 
       // Increasing the price for a moment to avoid pending liquidations to block withdrawal
       await priceFeed.setPrice(dec(200, 18));
@@ -1788,7 +1790,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
     //
     // TODO: Changes since v1 have introduced very slight precision error in this test. Potentially due to slightly different rounding
     // in helper functon getOpenTroveBoldAmount due to now-zero borrow fees. Double-check this when we write new SP arithmetic tests and fix the "P" issue.
-    it.skip("withdrawFromSP(): Several deposits of varying amounts span one scale factor change. Depositors withdraw correct compounded deposit and ETH Gain after one liquidation", async () => {
+    it("withdrawFromSP(): Several deposits of varying amounts span one scale factor change. Depositors withdraw correct compounded deposit and ETH Gain after one liquidation", async () => {
       // Whale opens Trove with 100k ETH
       await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
         from: whale,
@@ -1823,7 +1825,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
 
       // Defaulter 1 liquidated.  Value of P reduced to 9e9
       await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
-      assert.equal((await stabilityPool.P()).toString(), dec(9, 9));
+      th.assertIsApproximatelyEqual((await stabilityPool.P()).toString(), dec(9, 9), 1);
 
       assert.equal(await stabilityPool.currentScale(), "0");
 
@@ -1886,7 +1888,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
     //
     // TODO: Changes since v1 have introduced very slight precision error in this test. Potentially due to slightly different rounding
     // in helper functon getOpenTroveBoldAmount due to now-zero borrow fees. Double-check this when we write new SP arithmetic tests and fix the "P" issue.
-    it.skip("withdrawFromSP(): deposit spans one scale factor change: Single depositor withdraws correct compounded deposit and ETH Gain after one liquidation", async () => {
+    it("withdrawFromSP(): deposit spans one scale factor change: Single depositor withdraws correct compounded deposit and ETH Gain after one liquidation", async () => {
       // Whale opens Trove with 100k ETH
       await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
         from: whale,
@@ -1921,7 +1923,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       const txL1 = await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
       assert.isTrue(txL1.receipt.status);
       th.logBN("P", await stabilityPool.P()); //  0.000009999999999999, so 1 wei less than expected
-      assert.equal(await stabilityPool.P(), dec(1, 13)); // P decreases. Expect P = 1e(18-5) = 1e13
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), toBN(dec(1, 13))); // P decreases. Expect P = 1e(18-5) = 1e13
       assert.equal(await stabilityPool.currentScale(), "0");
 
       // Alice withdraws
@@ -1937,7 +1939,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       // Defaulter 2 liquidated
       const txL2 = await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
       assert.isTrue(txL2.receipt.status);
-      assert.equal(await stabilityPool.P(), dec(1, 17)); // Scale changes and P changes. P = 1e(13-5+9) = 1e17
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), toBN(dec(1, 17)), 1); // Scale changes and P changes. P = 1e(13-5+9) = 1e17
       assert.equal(await stabilityPool.currentScale(), "1");
 
       const txB = await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: bob });
@@ -1959,7 +1961,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
     //
     // TODO: Changes since v1 have introduced very slight precision error in this test. Potentially due to slightly different rounding
     // in helper functon getOpenTroveBoldAmount due to now-zero borrow fees. Double-check this when we write new SP arithmetic tests and fix the "P" issue.
-    it.skip("withdrawFromSP(): Several deposits of varying amounts span one scale factor change. Depositors withdraws correct compounded deposit and ETH Gain after one liquidation", async () => {
+    it("withdrawFromSP(): Several deposits of varying amounts span one scale factor change. Depositors withdraws correct compounded deposit and ETH Gain after one liquidation", async () => {
       // Whale opens Trove with 100k ETH
       await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
         from: whale,
@@ -1993,7 +1995,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       // Defaulter 1 liquidated.  Value of P updated to 1e13
       const txL1 = await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
       th.logBN("P", await stabilityPool.P()); // P = 0.000009999999999999, i.e. 1 wei less than expected
-      assert.equal(await stabilityPool.P(), dec(1, 13)); // P decreases. Expect P = 1e(18-5) = 1e13
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), toBN(dec(1, 13))); // P decreases. Expect P = 1e(18-5) = 1e13
       assert.equal(await stabilityPool.currentScale(), "0");
 
       // Alice withdraws
@@ -2015,7 +2017,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       // Defaulter 2 liquidated
       const txL2 = await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
       assert.isTrue(txL2.receipt.status);
-      assert.equal(await stabilityPool.P(), dec(1, 17)); // P decreases. P = 1e(13-5+9) = 1e17
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), toBN(dec(1, 17)), 10000); // P decreases. P = 1e(13-5+9) = 1e17
       assert.equal(await stabilityPool.currentScale(), "1");
 
       const txB = await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: bob });
@@ -2086,7 +2088,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
     */
     // TODO: Changes since v1 have introduced very slight precision error in this test. Potentially due to slightly different rounding
     // in helper functon getOpenTroveBoldAmount due to now-zero borrow fees. Double-check this when we write new SP arithmetic tests and fix the "P" issue.
-    it.skip("withdrawFromSP(): Several deposits of 10000 Bold span one scale factor change. Depositors withdraws correct compounded deposit and ETH Gain after one liquidation", async () => {
+    it("withdrawFromSP(): Several deposits of 10000 Bold span one scale factor change. Depositors withdraws correct compounded deposit and ETH Gain after one liquidation", async () => {
       // Whale opens Trove with 100k ETH
       await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
         from: whale,
@@ -2137,7 +2139,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       const txL1 = await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
       assert.isTrue(txL1.receipt.status);
       th.logBN("P", await stabilityPool.P()); // P  0.000009999999999999, 1 wei less than expecteed
-      assert.equal(await stabilityPool.P(), dec(1, 13)); // Expect P decreases to 1e(18-5) = 1e13
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), toBN(dec(1, 13))); // Expect P decreases to 1e(18-5) = 1e13
       assert.equal(await stabilityPool.currentScale(), "0");
 
       // B deposits 9999.9 Bold
@@ -2147,7 +2149,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       // Defaulter 2 liquidated
       const txL2 = await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
       assert.isTrue(txL2.receipt.status);
-      assert.equal(await stabilityPool.P(), dec(1, 17)); // Scale changes and P changes to 1e(13-5+9) = 1e17
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), toBN(dec(1, 17)), 10000); // Scale changes and P changes to 1e(13-5+9) = 1e17
       assert.equal(await stabilityPool.currentScale(), "1");
 
       // C deposits 9999.9 Bold
@@ -2157,7 +2159,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       // Defaulter 3 liquidated
       const txL3 = await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
       assert.isTrue(txL3.receipt.status);
-      assert.equal(await stabilityPool.P(), dec(1, 12)); // P decreases to 1e(17-5) = 1e12
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), dec(1, 12), 1); // P decreases to 1e(17-5) = 1e12
       assert.equal(await stabilityPool.currentScale(), "1");
 
       // D deposits 9999.9 Bold
@@ -2167,7 +2169,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       // Defaulter 4 liquidated
       const txL4 = await troveManager.liquidate(defaulter_4_TroveId, { from: owner });
       assert.isTrue(txL4.receipt.status);
-      assert.equal(await stabilityPool.P(), dec(1, 16)); // Scale changes and P changes to 1e(12-5+9) = 1e16
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), dec(1, 16), 10000); // Scale changes and P changes to 1e(12-5+9) = 1e16
       assert.equal(await stabilityPool.currentScale(), "2");
 
       const txA = await th.withdrawFromSPAndClaim(contracts, dec(10000, 18), { from: alice });
@@ -2347,7 +2349,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
 
     // TODO: Changes since v1 have introduced very slight precision error in this test. Potentially due to slightly different rounding
     // in helper functon getOpenTroveBoldAmount due to now-zero borrow fees. Double-check this when we write new SP arithmetic tests and fix the "P" issue.
-    it.skip("withdrawFromSP(): Depositor's ETH gain stops increasing after two scale changes", async () => {
+    it("withdrawFromSP(): Depositor's ETH gain stops increasing after two scale changes", async () => {
       // Whale opens Trove with 100k ETH
       await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
         from: whale,
@@ -2406,7 +2408,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       const txL1 = await troveManager.liquidate(defaulter_1_TroveId, { from: owner });
       assert.isTrue(txL1.receipt.status);
       th.logBN("P", await stabilityPool.P()); // P = 0.000009999999999999, 1 wei less than expected
-      assert.equal(await stabilityPool.P(), dec(1, 13)); // Expect P decreases to 1e(18-5) = 1e13
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), toBN(dec(1, 13))); // Expect P decreases to 1e(18-5) = 1e13
       assert.equal(await stabilityPool.currentScale(), "0");
 
       // B deposits 9999.9 Bold
@@ -2416,7 +2418,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       // Defaulter 2 liquidated
       const txL2 = await troveManager.liquidate(defaulter_2_TroveId, { from: owner });
       assert.isTrue(txL2.receipt.status);
-      assert.equal(await stabilityPool.P(), dec(1, 17)); // Scale changes and P changes to 1e(13-5+9) = 1e17
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), toBN(dec(1, 17)), 10000); // Scale changes and P changes to 1e(13-5+9) = 1e17
       assert.equal(await stabilityPool.currentScale(), "1");
 
       // C deposits 9999.9 Bold
@@ -2426,7 +2428,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       // Defaulter 3 liquidated
       const txL3 = await troveManager.liquidate(defaulter_3_TroveId, { from: owner });
       assert.isTrue(txL3.receipt.status);
-      assert.equal(await stabilityPool.P(), dec(1, 12)); // P decreases to 1e(17-5) = 1e12
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), dec(1, 12), 1); // P decreases to 1e(17-5) = 1e12
       assert.equal(await stabilityPool.currentScale(), "1");
 
       // D deposits 9999.9 Bold
@@ -2436,7 +2438,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       // Defaulter 4 liquidated
       const txL4 = await troveManager.liquidate(defaulter_4_TroveId, { from: owner });
       assert.isTrue(txL4.receipt.status);
-      assert.equal(await stabilityPool.P(), dec(1, 16)); // Scale changes and P changes to 1e(12-5+9) = 1e16
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), dec(1, 16), 10000); // Scale changes and P changes to 1e(12-5+9) = 1e16
       assert.equal(await stabilityPool.currentScale(), "2");
 
       const alice_ETHGainAt2ndScaleChange = (await stabilityPool.getDepositorETHGain(alice)).toString();
@@ -2448,7 +2450,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       // Defaulter 5 liquidated
       const txL5 = await troveManager.liquidate(defaulter_5_TroveId, { from: owner });
       assert.isTrue(txL5.receipt.status);
-      assert.equal(await stabilityPool.P(), dec(1, 11)); // P decreases to 1e(16-5) = 1e11
+      th.assertIsApproximatelyEqual(await stabilityPool.P(), dec(1, 11), 1); // P decreases to 1e(16-5) = 1e11
       assert.equal(await stabilityPool.currentScale(), "2");
 
       const alice_ETHGainAfterFurtherLiquidation = (await stabilityPool.getDepositorETHGain(alice)).toString();
@@ -2531,7 +2533,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
     // TODO: Changes since v1 have made the error margin in this test  i.e. aliceBoldBalanceDiff increase 100x (but still low relative to the huge values used in test).
     // Potentially due to slightly different rounding in helper getOpenTroveBoldAmount due to now-zero borrow fees.
     // Double-check this when we write new SP arithmetic tests and fix the "P" issue.
-    it.skip("withdrawFromSP(): Small liquidated coll/debt, large deposits and ETH price", async () => {
+    it("withdrawFromSP(): Small liquidated coll/debt, large deposits and ETH price", async () => {
       // Whale opens Trove with 100k ETH
       await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
         from: whale,
@@ -2544,7 +2546,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
 
       const depositors = [alice, bob];
       for (const account of depositors) {
-        await th.openTroveWrapper(contracts, dec(1, 38), account, account, {
+        await th.openTroveWrapper(contracts, dec(1, 38), account, account, 0, {
           from: account,
           value: dec(2, 29),
         });
@@ -2577,8 +2579,11 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       const aliceExpectedBoldBalance = toBN("99999999999999997500000000000000000000");
       const aliceBoldBalDiff = aliceBoldBalance.sub(aliceExpectedBoldBalance).abs();
 
-      th.logBN("aliceBoldBalDiff", aliceBoldBalDiff);
-      assert.isTrue(aliceBoldBalDiff.lte(toBN(dec(1, 18))));
+      //th.logBN("aliceBoldBalDiff", aliceBoldBalDiff);
+      // the error is now 100, due to this line in StabilityPool._computeETHRewardsPerUnitStaked function
+      // boldLossPerUnitStaked = boldLossNumerator / _totalBoldDeposits + 1;
+      // if we remove the `+ 1`, the error would be 1 (dec(1, 18)) as before
+      assert.isTrue(aliceBoldBalDiff.lte(toBN(dec(1, 20))));
 
       const bobBoldBalance = await boldToken.balanceOf(bob);
       const bobExpectedBoldBalance = toBN("99999999999999997500000000000000000000");
