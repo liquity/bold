@@ -10,7 +10,7 @@ import "../../Interfaces/IDefaultPool.sol";
 import "../../Interfaces/IPriceFeed.sol";
 import "../../Interfaces/ISortedTroves.sol";
 import "../../Interfaces/IStabilityPool.sol";
-import "../../Interfaces/ITroveManager.sol";
+import "./TroveManagerTester.sol";
 import "../../Interfaces/ICollateralRegistry.sol";
 import "./PriceFeedTestnet.sol";
 import "../../Interfaces/IInterestRouter.sol";
@@ -54,7 +54,7 @@ contract BaseTest is Test {
     IDefaultPool defaultPool;
     ISortedTroves sortedTroves;
     IStabilityPool stabilityPool;
-    ITroveManager troveManager;
+    TroveManagerTester troveManager;
     IBoldToken boldToken;
     ICollateralRegistry collateralRegistry;
     IPriceFeedTestnet priceFeed;
