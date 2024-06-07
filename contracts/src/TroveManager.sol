@@ -987,7 +987,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool) {
         uint256 totalDebt = getEntireSystemDebt();
         uint256 spSize = stabilityPool.getTotalBoldDeposits();
-        uint256 unbackedPortion = totalDebt - spSize;
+        uint256 unbackedPortion = totalDebt > spSize ? totalDebt - spSize : 0;
 
         uint256 price = priceFeed.fetchPrice();
         bool redeemable = _getTCR(price) >= _100pct;
