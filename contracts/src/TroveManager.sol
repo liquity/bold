@@ -377,6 +377,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 _price
     ) internal pure returns (uint256 seizedColl, uint256 collSurplus) {
         uint256 maxSeizedColl = _debtToLiquidate * (DECIMAL_PRECISION + _penaltyRatio) / _price;
+
         if (_collToLiquidate > maxSeizedColl) {
             seizedColl = maxSeizedColl;
             collSurplus = _collToLiquidate - maxSeizedColl;
