@@ -1,4 +1,4 @@
-export default function BorrowLeveragePage() {
+export default function Page() {
   // see layout in this folder
   return null;
 }
