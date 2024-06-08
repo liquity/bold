@@ -55,51 +55,33 @@ export const ACCOUNT_POSITIONS: Position[] = [
   },
 ];
 
-export const BORROW_FROM = {
+export const BORROW_STATS = {
   ETH: {
-    avgIr: "5.6%",
-    maxTvl: "91%",
+    borrowRate: dn.from(0.05, 18),
+    tvl: dn.from(75_000_000, 18),
   },
   RETH: {
-    avgIr: "4.9%",
-    maxTvl: "85%",
+    borrowRate: dn.from(0.04, 18),
+    tvl: dn.from(55_000_000, 18),
   },
   WSTETH: {
-    avgIr: "4.1%",
-    maxTvl: "80%",
-  },
-} as const;
-
-export const LEVERAGE_FROM = {
-  ETH: {
-    avgIr: "4.6%",
-    avgLeverage: "5.6x",
-    maxLeverage: "7.2x",
-  },
-  RETH: {
-    avgIr: "3.7%",
-    avgLeverage: "6.2x",
-    maxLeverage: "10.6x",
-  },
-  WSTETH: {
-    avgIr: "3.0%",
-    avgLeverage: "3.7x",
-    maxLeverage: "3.9x",
+    borrowRate: dn.from(0.055, 18),
+    tvl: dn.from(45_000_000, 18),
   },
 } as const;
 
 export const EARN_POOLS = {
   ETH: {
-    apy: [6_800n, 3],
+    apy: dn.from(0.068, 18),
     boldQty: [65_700_000n, 0],
   },
   RETH: {
-    apy: [5_700n, 3],
-    boldQty: [46_100_000n, 0],
+    apy: dn.from(0.057, 18),
+    boldQty: [44_100_000n, 0],
   },
   WSTETH: {
-    apy: [5_400n, 3],
-    boldQty: [55_700_000n, 0],
+    apy: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
   },
 } as const;
 
