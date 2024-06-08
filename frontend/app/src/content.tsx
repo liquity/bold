@@ -156,6 +156,24 @@ export default {
     action: "Open loan",
   },
 
+  leverageScreen: {
+    headline: (tokensIcons: N) => (
+      <>
+        Leverage your exposure to {tokensIcons}
+      </>
+    ),
+    depositField: {
+      label: "You deposit",
+    },
+    liquidationPriceField: {
+      label: "ETH Liquidation price",
+    },
+    interestRateField: {
+      label: "Interest rate",
+    },
+    action: "Open leveraged loan",
+  },
+
   // Stake screen
   stakeScreen: {
     header: (lqtyIcon: N, lusdEthIcons: N) => (

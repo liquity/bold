@@ -24,7 +24,7 @@ export function Screen({
         alignItems: "center",
         width: "100%",
         padding: 24,
-        gap: 64,
+        gap: 56,
       })}
     >
       {title && (
@@ -34,6 +34,7 @@ export function Screen({
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
+            gap: 12,
           })}
         >
           <h1
@@ -41,7 +42,6 @@ export function Screen({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              paddingBottom: 12,
               fontSize: 28,
             })}
           >
