@@ -8,6 +8,7 @@ import {IBorrowerOperations} from "../../Interfaces/IBorrowerOperations.sol";
 import {IBoldToken} from "../../Interfaces/IBoldToken.sol";
 import {IStabilityPool} from "../../Interfaces/IStabilityPool.sol";
 import {ITroveManager} from "../../Interfaces/ITroveManager.sol";
+import {ICollSurplusPool} from "../../Interfaces/ICollSurplusPool.sol";
 import {IPriceFeedTestnet} from "./Interfaces/IPriceFeedTestnet.sol";
 import {mulDivCeil} from "../Utils/math.sol";
 
@@ -26,7 +27,6 @@ uint256 constant CCR = 1.5 ether;
 uint256 constant GAS_COMPENSATION = 200 ether;
 uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200;
 
-
 contract SPInvariantsTestHandler is Test {
     struct Contracts {
         IBoldToken boldToken;
@@ -35,6 +35,7 @@ contract SPInvariantsTestHandler is Test {
         IPriceFeedTestnet priceFeed;
         IStabilityPool stabilityPool;
         ITroveManager troveManager;
+        ICollSurplusPool collSurplusPool;
     }
 
     IBoldToken immutable boldToken;
@@ -43,6 +44,7 @@ contract SPInvariantsTestHandler is Test {
     IPriceFeedTestnet immutable priceFeed;
     IStabilityPool immutable stabilityPool;
     ITroveManager immutable troveManager;
+    ICollSurplusPool immutable collSurplusPool;
 
     uint256 immutable initialPrice;
 
@@ -61,6 +63,7 @@ contract SPInvariantsTestHandler is Test {
         priceFeed = contracts.priceFeed;
         stabilityPool = contracts.stabilityPool;
         troveManager = contracts.troveManager;
+        collSurplusPool = contracts.collSurplusPool;
 
         initialPrice = priceFeed.getPrice();
     }
@@ -87,7 +90,7 @@ contract SPInvariantsTestHandler is Test {
         vm.prank(msg.sender);
         collateralToken.approve(address(borrowerOperations), coll);
         vm.prank(msg.sender);
-        uint256 troveId = borrowerOperations.openTrove(msg.sender, i + 1, coll, borrowed, 0, 0, 0);
+        uint256 troveId = borrowerOperations.openTrove(msg.sender, i + 1, coll, borrowed, 0, 0, 0, type(uint256).max);
         (uint256 actualDebt,,,,) = troveManager.getEntireDebtAndColl(troveId);
         assertEqDecimal(debt, actualDebt, 18, "Wrong debt");
 
@@ -111,7 +114,7 @@ contract SPInvariantsTestHandler is Test {
         // Poor man's fixturing, because Foundry's fixtures don't seem to work under invariant testing
         if (useFixture && fixtureDeposited.length > 0) {
             deposited = fixtureDeposited[_bound(deposited, 0, fixtureDeposited.length - 1)];
-            vm.assume(deposited <= myBold);
+            deposited = _bound(deposited, 0, myBold);
         } else {
             deposited = _bound(deposited, 1, myBold);
         }
@@ -141,33 +144,18 @@ contract SPInvariantsTestHandler is Test {
         (uint256 debt, uint256 coll,,,) = troveManager.getEntireDebtAndColl(troveId);
 
         vm.assume(debt <= spBold); // only interested in SP offset, no redistribution
-
-        uint256 ethBefore = collateralToken.balanceOf(address(this));
-        uint256 ethCompensation = coll / COLL_GAS_COMPENSATION_DIVISOR;
-        // Calc claimable coll based on the remaining coll to liquidate, less the liq. penalty that goes to the SP depositors
-        uint256 claimableColl = (coll - ethCompensation) * (MCR - ONE - troveManager.LIQUIDATION_PENALTY_SP()) / 1e18;
-        console.log("coll", coll);
-        console.log("claimableColl", claimableColl);
-
-        console.log("MCR", MCR);
-        console.log("troveManager.LIQUIDATION_PENALTY_SP()", troveManager.LIQUIDATION_PENALTY_SP());
-
-
-    // 110%
-    // 5% goes to SP depositors
-    // 0.5% goes to liquidator
-    // 4.5% goes to claimable
-
-    // or 4.5% to SP depositors, 5% claimable?
-
-//                                   MCR 1100000000000000000
-//   troveManager.LIQUIDATION_PENALTY_SP() 50000000000000000
-//          coll 16500000000000000000   
-//   claimableColl 825000000000000000
         
         console.log("XXXX     liquidate  ", vm.getLabel(msg.sender));
         priceFeed.setPrice(initialPrice * LIQUIDATION_ICR / OPEN_TROVE_ICR);
 
+        uint256 ethBefore = collateralToken.balanceOf(address(this));
+        uint256 accountSurplusBefore = collSurplusPool.getCollateral(msg.sender);
+        uint256 ethCompensation = coll / COLL_GAS_COMPENSATION_DIVISOR;
+        // Calc claimable coll based on the remaining coll to liquidate, less the liq. penalty that goes to the SP depositors
+        uint256 seizedColl = debt * (ONE +  troveManager.LIQUIDATION_PENALTY_SP()) / priceFeed.getPrice();
+        // The Trove owner bears the gas compensation costs
+        uint256 claimableColl = coll - seizedColl - ethCompensation;
+       
         try troveManager.liquidate(troveId) {}
         catch Panic(uint256 errorCode) {
             // XXX ignore assertion failure inside liquidation (due to P = 0)
@@ -180,19 +168,16 @@ contract SPInvariantsTestHandler is Test {
         emit log_named_decimal_uint("                 P ", stabilityPool.P(), 18);
 
         uint256 ethAfter = collateralToken.balanceOf(address(this));
+        uint256 accountSurplusAfter = collSurplusPool.getCollateral(msg.sender);
         // Check liquidator got the compensation
-        assertEqDecimal(ethAfter, ethBefore + ethCompensation, 18, "Wrong ETH compensation");
+        assertEqDecimal(ethAfter, ethBefore + ethCompensation, 18, "Wrong ETH compensation");  
+        // Check claimable coll surplus is correct
+        uint256 accountSurplusDelta = accountSurplusAfter - accountSurplusBefore;
+        assertEqDecimal(accountSurplusDelta, claimableColl, 18, "Wrong account surplus");
 
         spBold -= debt;
-        console.log("spBold after", spBold);
-        console.log("spEth before", spEth);
-        spEth += coll - ethCompensation;
-        console.log("spEth after", spEth);
-        // 15592500000000000000
-        // 15894495412844036697
-
-        console.log(stabilityPool.getETHBalance(), "actual SP eth bal");
-
+        spEth += coll - claimableColl - ethCompensation;
+    
         assertEqDecimal(spBold, stabilityPool.getTotalBoldDeposits(), 18, "Wrong SP BOLD balance");
         assertEqDecimal(spEth, stabilityPool.getETHBalance(), 18, "Wrong SP ETH balance");
     }

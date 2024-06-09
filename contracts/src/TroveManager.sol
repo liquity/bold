@@ -290,7 +290,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         );
 
         singleLiquidation.collGasCompensation = _getCollGasCompensation(singleLiquidation.trove.entireColl);
+        // console2.log(singleLiquidation.collGasCompensation, "singleLiquidation.collGasCompensation");
         uint256 collToLiquidate = singleLiquidation.trove.entireColl - singleLiquidation.collGasCompensation;
+        // console2.log(collToLiquidate, "collToLiquidate");
 
         (
             singleLiquidation.debtToOffset,
@@ -303,7 +305,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         );
 
         _closeTrove(_troveId, Status.closedByLiquidation);
-
+        // console2.log(singleLiquidation.collSurplus, "singleLiquidation.collSurplus");
         // Differencen between liquidation penalty and liquidation threshold
         if (singleLiquidation.collSurplus > 0) {
             collSurplusPool.accountSurplus(owner, singleLiquidation.collSurplus);
@@ -377,7 +379,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         uint256 _price
     ) internal pure returns (uint256 seizedColl, uint256 collSurplus) {
         uint256 maxSeizedColl = _debtToLiquidate * (DECIMAL_PRECISION + _penaltyRatio) / _price;
-
+        // console2.log(_price, "tm::_price");
+        // console2.log(maxSeizedColl, "maxSeizedColl");
+        // console2.log(_debtToLiquidate, "_debtToLiquidate");
+        // console2.log(_penaltyRatio, "_penaltyRatio");
         if (_collToLiquidate > maxSeizedColl) {
             seizedColl = maxSeizedColl;
             collSurplus = _collToLiquidate - maxSeizedColl;
@@ -385,6 +390,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
             seizedColl = _collToLiquidate;
             collSurplus = 0;
         }
+        //  console2.log(seizedColl, "tm::seizedColl");
     }
 
     /*

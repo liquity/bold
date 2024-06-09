@@ -25,7 +25,8 @@ contract SPInvariantsTest is Test {
                 collateralToken: contracts.WETH,
                 priceFeed: contracts.priceFeed,
                 stabilityPool: contracts.stabilityPool,
-                troveManager: contracts.troveManager
+                troveManager: contracts.troveManager,
+                collSurplusPool: contracts.collSurplusPool
             })
         );
 
@@ -70,36 +71,36 @@ contract SPInvariantsTest is Test {
         vm.prank(barb);
         handler.liquidateMe();
 
-        // vm.prank(barb);
-        // debt = handler.openTrove(2_000 ether);
-        // vm.prank(barb);
-        // handler.provideToSp(debt, true);
-        // vm.prank(barb);
-        // handler.liquidateMe();
+        vm.prank(barb);
+        debt = handler.openTrove(2_000 ether);
+        vm.prank(barb);
+        handler.provideToSp(debt, true);
+        vm.prank(barb);
+        handler.liquidateMe();
 
-        // this.invariant_allFundsClaimable();
+        this.invariant_allFundsClaimable();
 
-        // vm.prank(adam);
-        // handler.provideToSp(80_000 ether, true);
+        vm.prank(adam);
+        handler.provideToSp(80_000 ether, true);
 
-        // this.invariant_allFundsClaimable();
+        this.invariant_allFundsClaimable();
 
-        // vm.prank(barb);
-        // debt = handler.openTrove(2_000 ether);
-        // vm.prank(barb);
-        // handler.liquidateMe();
+        vm.prank(barb);
+        debt = handler.openTrove(2_000 ether);
+        vm.prank(barb);
+        handler.liquidateMe();
 
-        // this.invariant_allFundsClaimable();
+        this.invariant_allFundsClaimable();
 
-        // vm.prank(barb);
-        // debt = handler.openTrove(2_000 ether);
-        // vm.prank(barb);
-        // handler.liquidateMe();
+        vm.prank(barb);
+        debt = handler.openTrove(2_000 ether);
+        vm.prank(barb);
+        handler.liquidateMe();
 
-        // // Expect SP LUSD ~ claimable LUSD: ...
-        // this.invariant_allFundsClaimable();
+       // Expect SP LUSD ~ claimable LUSD: ...
+        this.invariant_allFundsClaimable();
 
-        // // Adam still has non-zero deposit
-        // assertGt(stabilityPool.getCompoundedBoldDeposit(adam), 0, "Adam deposit 0");
+        // Adam still has non-zero deposit
+        assertGt(stabilityPool.getCompoundedBoldDeposit(adam), 0, "Adam deposit 0");
     }
 }

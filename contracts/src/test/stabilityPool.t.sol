@@ -1878,8 +1878,6 @@ contract SPTest is DevTestSetup {
 
         ABCDEF memory troveIDs = _setupForPTests();
 
-        uint256 scale1 = stabilityPool.currentScale();
-
         uint256 troveDebt = troveManager.getTroveEntireDebt(troveIDs.D);
         uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits(); 
         // Make the surplus high enough  - in range [0.01, 1] BOLD - to leave each depositor with non-zero deposit after the liq, yet still trigger a scale change
@@ -2051,29 +2049,6 @@ contract SPTest is DevTestSetup {
         // Confirm that P has not fallen below 1e9
         assertGe(stabilityPool.P(), 1e9);   
     }
-
-//     diff --git a/contracts/src/StabilityPool.sol b/contracts/src/StabilityPool.sol
-// index 5efeff4..d4fa36d 100644
-// --- a/contracts/src/StabilityPool.sol
-// +++ b/contracts/src/StabilityPool.sol
-// @@ -465,6 +465,12 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
-//              newP = currentP * newProductFactor * SCALE_FACTOR / DECIMAL_PRECISION;
-//              currentScale = currentScaleCached + 1;
-//              emit ScaleUpdated(currentScale);
-// +
-// +            if (newP < SCALE_FACTOR) {
-// +                newP *= SCALE_FACTOR;
-// +                currentScale = currentScaleCached + 2;
-// +                emit ScaleUpdated(currentScale);
-// +            }
-//          } else {
-//              newP = currentP * newProductFactor / DECIMAL_PRECISION;
-//          }
-
-
-    // function testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors() public {}
-
-    // function testLiquidationsWithLowPRetainCorrectDepositForAllFreshDepositors() public {}
 }
 
 // TODO:
