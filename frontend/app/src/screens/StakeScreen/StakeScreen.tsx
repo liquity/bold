@@ -118,10 +118,10 @@ export function StakeScreen() {
                     secondaryStart="$0.00"
                     secondaryEnd={
                       <TextButton
-                        label={`Max. ${dn.format(ACCOUNT_BALANCES.lqty, 2)} LQTY`}
+                        label={`Max. ${dn.format(ACCOUNT_BALANCES.LQTY, 2)} LQTY`}
                         onClick={() => {
                           deposit.setValue(
-                            dn.toString(ACCOUNT_BALANCES.lqty),
+                            dn.toString(ACCOUNT_BALANCES.LQTY),
                           );
                         }}
                       />
