@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
+import { ACCOUNT_BALANCES, ETH_PRICE, BOLD_PRICE } from "@/src/demo-data";
 import { useInputFieldValue } from "@/src/form-utils";
 import { css } from "@/styled-system/css";
 import {
@@ -36,7 +37,12 @@ export function BorrowScreen() {
   // useParams() can return an array, but not with the current
   // routing setup so we can safely assume it’s a string
   const collateral = String(useParams().collateral ?? "eth").toUpperCase();
-  const collateralIndex = isCollateralSymbol(collateral) ? collateralSymbols.indexOf(collateral) : 0;
+
+  if (!isCollateralSymbol(collateral)) {
+    throw new Error(`Invalid collateral symbol: ${collateral}`);
+  }
+
+  const collateralIndex = collateralSymbols.indexOf(collateral);
 
   const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral}`);
   const borrowing = useInputFieldValue((value) => `${dn.format(value)} BOLD`);
@@ -99,11 +105,12 @@ export function BorrowScreen() {
                   items={COLLATERALS.map(({ symbol, name }) => ({
                     icon: <TokenIcon symbol={symbol} />,
                     label: name,
-                    value: "0.00",
+                    value: dn.format(ACCOUNT_BALANCES[symbol]),
                   }))}
                   menuPlacement="end"
                   menuWidth={300}
                   onSelect={(index) => {
+                    deposit.setValue("");
                     router.push(
                       `/borrow/${COLLATERALS[index].symbol.toLowerCase()}`,
                       { scroll: false },
@@ -114,27 +121,25 @@ export function BorrowScreen() {
               }
               label={content.borrowScreen.depositField.label}
               placeholder="0.00"
-              secondaryStart="$0.00"
+              secondaryStart={`$${
+                deposit.parsed
+                  ? dn.format(
+                    dn.mul(ETH_PRICE, deposit.parsed),
+                    { digits: 2, trailingZeros: true },
+                  )
+                  : "0.00"
+              }`}
               secondaryEnd={
                 <TextButton
-                  label={`Max. 10.00 ${collateral}`}
-                  onClick={() => deposit.setValue("10.00")}
+                  label={`Max. ${dn.format(ACCOUNT_BALANCES[collateral])} ${collateral}`}
+                  onClick={() =>
+                    deposit.setValue(
+                      dn.format(ACCOUNT_BALANCES[collateral]).replace(",", ""),
+                    )}
                 />
               }
               {...deposit.inputFieldProps}
             />
-          }
-          footerStart={
-            <HFlex>
-              <span
-                className={css({
-                  color: "contentAlt",
-                })}
-              >
-                ETH stats
-              </span>
-              <span>{0}</span>
-            </HFlex>
           }
           footerEnd={
             <Field.FooterInfo
@@ -164,7 +169,14 @@ export function BorrowScreen() {
               }
               label={content.borrowScreen.borrowField.label}
               placeholder="0.00"
-              secondaryStart="$0.00"
+              secondaryStart={`$${
+                borrowing.parsed
+                  ? dn.format(
+                    dn.mul(BOLD_PRICE, borrowing.parsed),
+                    { digits: 2, trailingZeros: true },
+                  )
+                  : "0.00"
+              }`}
               secondaryEnd={deposit.parsed && dn.gt(deposit.parsed, 0) && (
                 <HFlex>
                   <div>Max LTV 80%:</div>

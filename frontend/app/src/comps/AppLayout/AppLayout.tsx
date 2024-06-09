@@ -17,6 +17,7 @@ export function AppLayout({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
+        width: LAYOUT_WIDTH,
         minHeight: "100vh",
         margin: "0 auto",
       })}
@@ -33,13 +34,13 @@ export function AppLayout({
       </div>
       <div
         className={css({
+          width: "100%",
           flexGrow: 1,
           flexShrink: 1,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           flexDirection: "column",
-          width: LAYOUT_WIDTH,
         })}
       >
         {children}

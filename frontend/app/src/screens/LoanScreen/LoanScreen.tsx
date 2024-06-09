@@ -113,10 +113,10 @@ function UpdatePositionPanel() {
                 : "$0.00"}
               secondaryEnd={
                 <TextButton
-                  label={`Max. ${dn.format(ACCOUNT_BALANCES.eth, 2)} ETH`}
+                  label={`Max. ${dn.format(ACCOUNT_BALANCES.ETH, 2)} ETH`}
                   onClick={() => {
                     deposit.setValue(
-                      dn.toString(ACCOUNT_BALANCES.eth),
+                      dn.toString(ACCOUNT_BALANCES.ETH),
                     );
                   }}
                 />

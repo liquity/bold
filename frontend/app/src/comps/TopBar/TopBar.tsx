@@ -24,7 +24,6 @@ export function TopBar() {
       className={css({
         position: "relative",
         zIndex: 2,
-        width: "100%",
         height: 72,
       })}
     >

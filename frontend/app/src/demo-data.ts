@@ -4,19 +4,23 @@ import * as dn from "dnum";
 
 export const LQTY_PRICE = dn.from(1.54832, 18);
 export const ETH_PRICE = dn.from(3_839.293872, 18);
+export const BOLD_PRICE = dn.from(1.0031, 18);
+
 export const STAKED_LQTY_TOTAL = [43_920_716_739_092_664_364_409_174n, 18] as const;
 
 export const ACCOUNT_STAKED_LQTY = {
   deposit: [100n * 10n ** 18n, 18] as const,
   rewardEth: dn.from(0.0054, 18),
   rewardLusd: dn.from(234.24, 18),
-};
+} as const;
 
 export const ACCOUNT_BALANCES = {
-  eth: dn.from(2.429387, 18),
-  lqty: dn.from(208.987, 18),
-  bold: dn.from(3_987, 18),
-};
+  BOLD: dn.from(3_987, 18),
+  ETH: dn.from(2.429387, 18),
+  LQTY: dn.from(208.987, 18),
+  RETH: dn.from(1.3732, 18),
+  WSTETH: dn.from(17.912, 18),
+} as const;
 
 function addLtv(loan: Omit<PositionLoan, "ltv">): PositionLoan {
   const depositUsd = dn.mul(loan.deposit, ETH_PRICE);
