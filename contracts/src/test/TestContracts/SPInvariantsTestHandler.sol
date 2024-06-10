@@ -10,7 +10,7 @@ import {IStabilityPool} from "../../Interfaces/IStabilityPool.sol";
 import {ITroveManager} from "../../Interfaces/ITroveManager.sol";
 import {ICollSurplusPool} from "../../Interfaces/ICollSurplusPool.sol";
 import {IPriceFeedTestnet} from "./Interfaces/IPriceFeedTestnet.sol";
-import {mulDivCeil} from "../Utils/math.sol";
+import {mulDivCeil} from "../Utils/Math.sol";
 
 using {mulDivCeil} for uint256;
 
