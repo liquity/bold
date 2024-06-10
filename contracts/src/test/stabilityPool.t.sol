@@ -1,7 +1,7 @@
 pragma solidity 0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
-import {mulDivCeil} from "./Utils/math.sol";
+import {mulDivCeil} from "./Utils/Math.sol";
 
 contract SPTest is DevTestSetup {
 
