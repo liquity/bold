@@ -114,7 +114,7 @@ contract SPInvariantsTestHandler is Test {
         // Poor man's fixturing, because Foundry's fixtures don't seem to work under invariant testing
         if (useFixture && fixtureDeposited.length > 0) {
             deposited = fixtureDeposited[_bound(deposited, 0, fixtureDeposited.length - 1)];
-            deposited = _bound(deposited, 0, myBold);
+            deposited = _bound(deposited, 1, myBold);
         } else {
             deposited = _bound(deposited, 1, myBold);
         }
