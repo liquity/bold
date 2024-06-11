@@ -9,6 +9,7 @@ import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import { Config } from "@/src/comps/Config/Config";
 import { ConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
 import { Ethereum } from "@/src/comps/Ethereum/Ethereum";
+import { Prices } from "@/src/prices";
 import { UiKit } from "@liquity2/uikit";
 import { GeistSans } from "geist/font/sans";
 
@@ -28,13 +29,15 @@ export default function Layout({
         <UiKit>
           <Config>
             <Ethereum>
-              <ConfigModal>
-                <AboutModal>
-                  <AppLayout>
-                    {children}
-                  </AppLayout>
-                </AboutModal>
-              </ConfigModal>
+              <Prices>
+                <ConfigModal>
+                  <AboutModal>
+                    <AppLayout>
+                      {children}
+                    </AppLayout>
+                  </AboutModal>
+                </ConfigModal>
+              </Prices>
             </Ethereum>
           </Config>
         </UiKit>

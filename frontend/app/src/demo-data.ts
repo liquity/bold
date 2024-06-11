@@ -1,4 +1,4 @@
-import type { Position, PositionLoan } from "@/src/types";
+import type { Position, PositionLoan, RiskLevel } from "@/src/types";
 
 import * as dn from "dnum";
 
@@ -7,6 +7,20 @@ export const ETH_PRICE = dn.from(3_839.293872, 18);
 export const BOLD_PRICE = dn.from(1.0031, 18);
 
 export const STAKED_LQTY_TOTAL = [43_920_716_739_092_664_364_409_174n, 18] as const;
+
+// ltv risk levels
+export const LTV_RISK: Record<RiskLevel, number> = {
+  low: 0,
+  medium: 0.5,
+  high: 0.7,
+};
+
+// redemption risk levels
+export const REDEMPTION_RISK: Record<RiskLevel, number> = {
+  high: 0,
+  medium: 3.5,
+  low: 5.0,
+};
 
 export const ACCOUNT_STAKED_LQTY = {
   deposit: [100n * 10n ** 18n, 18] as const,

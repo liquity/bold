@@ -1,20 +1,9 @@
 import type { ReactNode } from "react";
 
-import { useId } from "react";
+import { forwardRef, useId } from "react";
 import { css, cx } from "../../styled-system/css";
 
-export function InputField({
-  action,
-  actionLabel,
-  label,
-  onBlur,
-  onChange,
-  onFocus,
-  placeholder,
-  secondaryEnd,
-  secondaryStart,
-  value,
-}: {
+type InputFieldProps = {
   action?: ReactNode;
   actionLabel?: ReactNode;
   label?: string;
@@ -25,7 +14,20 @@ export function InputField({
   secondaryEnd?: ReactNode;
   secondaryStart?: ReactNode;
   value?: string;
-}) {
+};
+
+export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputField({
+  action,
+  actionLabel,
+  label,
+  onBlur,
+  onChange,
+  onFocus,
+  placeholder,
+  secondaryEnd,
+  secondaryStart,
+  value,
+}, ref) {
   const id = useId();
   return (
     <div
@@ -56,6 +58,7 @@ export function InputField({
         {actionLabel && <div>{actionLabel}</div>}
       </div>
       <input
+        ref={ref}
         id={id}
         type="text"
         placeholder={placeholder}
@@ -117,6 +120,10 @@ export function InputField({
           justifyContent: "space-between",
           fontSize: 16,
           color: "contentAlt",
+          pointerEvents: "none",
+          "& > div": {
+            pointerEvents: "auto",
+          },
         })}
       >
         <div>
@@ -128,4 +135,4 @@ export function InputField({
       </div>
     </div>
   );
-}
+});

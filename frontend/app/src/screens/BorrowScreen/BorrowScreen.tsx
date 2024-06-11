@@ -1,12 +1,12 @@
 "use client";
 
-import type { Dnum } from "dnum";
+import type { RiskLevel } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { ACCOUNT_BALANCES, ETH_PRICE, BOLD_PRICE } from "@/src/demo-data";
+import { ACCOUNT_BALANCES, BOLD_PRICE, ETH_PRICE, LTV_RISK, REDEMPTION_RISK } from "@/src/demo-data";
 import { useInputFieldValue } from "@/src/form-utils";
 import { css } from "@/styled-system/css";
 import {
@@ -22,7 +22,8 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { match } from "ts-pattern";
+import { match, P } from "ts-pattern";
+import { useAccount } from "wagmi";
 
 const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
 
@@ -32,43 +33,58 @@ function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[
 }
 
 export function BorrowScreen() {
+  const account = useAccount();
   const router = useRouter();
 
   // useParams() can return an array, but not with the current
   // routing setup so we can safely assume it’s a string
   const collateral = String(useParams().collateral ?? "eth").toUpperCase();
-
   if (!isCollateralSymbol(collateral)) {
     throw new Error(`Invalid collateral symbol: ${collateral}`);
   }
-
   const collateralIndex = collateralSymbols.indexOf(collateral);
 
   const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral}`);
   const borrowing = useInputFieldValue((value) => `${dn.format(value)} BOLD`);
   const interestRate = useInputFieldValue((value) => `${dn.format(value)}%`);
 
-  const liquidationRisk: null | {
-    ethPrice: Dnum;
-    level: "low" | "medium" | "high";
-    ltv: string;
-  } = deposit.parsed && dn.gt(deposit.parsed, 0)
-      && borrowing.parsed && dn.gt(borrowing.parsed, 0)
-    ? {
-      ethPrice: dn.from(1200),
-      level: "low",
-      ltv: "33.00%",
-    }
+  const depositBoldValue = deposit.parsed && dn.mul(
+    dn.mul(deposit.parsed, ETH_PRICE),
+    BOLD_PRICE,
+  );
+
+  const ltv = depositBoldValue && dn.gt(depositBoldValue, 0) && borrowing.parsed
+    ? dn.div(borrowing.parsed, depositBoldValue)
     : null;
 
-  const redemptionRiskLevel = interestRate.parsed
-    && dn.gt(interestRate.parsed, 0)
-    && (
-      match(interestRate.parsed)
-        .when((r) => dn.lt(r, 3.6), () => "high" as const)
-        .when((r) => dn.lt(r, 5.1), () => "medium" as const)
-        .otherwise(() => "low" as const)
-    );
+  const maxBorrowing = deposit.parsed && dn.gt(deposit.parsed, 0)
+    ? dn.mul(
+      dn.mul(
+        dn.mul(deposit.parsed, ETH_PRICE),
+        BOLD_PRICE,
+      ),
+      0.8,
+    )
+    : null;
+
+  const liquidationRisk: null | RiskLevel = match(ltv)
+    .with(P.nullish, () => null)
+    .when((ltv) => dn.gt(ltv, LTV_RISK.high), () => "high" as const)
+    .when((ltv) => dn.gt(ltv, LTV_RISK.medium), () => "medium" as const)
+    .otherwise(() => "low" as const);
+
+  const redemptionRisk: null | RiskLevel = match(interestRate.parsed)
+    .with(P.nullish, () => null)
+    .when((r) => dn.gt(r, REDEMPTION_RISK.low), () => "low" as const)
+    .when((r) => dn.gt(r, REDEMPTION_RISK.medium), () => "medium" as const)
+    .otherwise(() => "high" as const);
+
+  const allowSubmit = deposit.parsed
+    && dn.gt(deposit.parsed, 0)
+    && borrowing.parsed
+    && dn.gt(borrowing.parsed, 0)
+    && interestRate.parsed
+    && dn.gt(interestRate.parsed, 0);
 
   return (
     <Screen
@@ -105,7 +121,7 @@ export function BorrowScreen() {
                   items={COLLATERALS.map(({ symbol, name }) => ({
                     icon: <TokenIcon symbol={symbol} />,
                     label: name,
-                    value: dn.format(ACCOUNT_BALANCES[symbol]),
+                    value: account.isConnected ? dn.format(ACCOUNT_BALANCES[symbol]) : "−",
                   }))}
                   menuPlacement="end"
                   menuWidth={300}
@@ -129,15 +145,16 @@ export function BorrowScreen() {
                   )
                   : "0.00"
               }`}
-              secondaryEnd={
+              secondaryEnd={account.isConnected && (
                 <TextButton
                   label={`Max. ${dn.format(ACCOUNT_BALANCES[collateral])} ${collateral}`}
-                  onClick={() =>
+                  onClick={() => {
                     deposit.setValue(
                       dn.format(ACCOUNT_BALANCES[collateral]).replace(",", ""),
-                    )}
+                    );
+                  }}
                 />
-              }
+              )}
               {...deposit.inputFieldProps}
             />
           }
@@ -177,12 +194,12 @@ export function BorrowScreen() {
                   )
                   : "0.00"
               }`}
-              secondaryEnd={deposit.parsed && dn.gt(deposit.parsed, 0) && (
+              secondaryEnd={maxBorrowing && (
                 <HFlex>
                   <div>Max LTV 80%:</div>
                   <TextButton
-                    label="24,405.69 BOLD"
-                    onClick={() => borrowing.setValue("24405.69")}
+                    label={`${dn.format(maxBorrowing, 2)} BOLD`}
+                    onClick={() => borrowing.setValue(dn.format(maxBorrowing, 2).replace(",", ""))}
                   />
                 </HFlex>
               )}
@@ -192,20 +209,18 @@ export function BorrowScreen() {
           footerStart={liquidationRisk && (
             <>
               <Field.FooterInfoWarnLevel
-                label={`${
-                  match(liquidationRisk.level)
-                    .with("low", () => "Low")
-                    .with("medium", () => "Medium")
-                    .with("high", () => "High")
-                    .exhaustive()
-                } liq. risk`}
-                level={liquidationRisk.level}
+                label={match(liquidationRisk)
+                  .with("low", () => "Low liq. risk")
+                  .with("medium", () => "Medium liq. risk")
+                  .with("high", () => "High liq. risk")
+                  .exhaustive()}
+                level={liquidationRisk}
               />
               <Field.FooterInfo
                 label="LTV"
                 value={
                   <HFlex gap={4}>
-                    {liquidationRisk.ltv}
+                    {ltv && dn.format(dn.mul(ltv, 100), 2)}%
                     <InfoTooltip heading="LTV">
                       A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount
                       of Bold stablecoins. At the time of the exchange a borrower does not lose any money.
@@ -220,7 +235,7 @@ export function BorrowScreen() {
               label="Liq. ETH Price"
               value={
                 <HFlex gap={4}>
-                  ${dn.format(liquidationRisk.ethPrice, 2)}
+                  ${dn.format(ETH_PRICE, 2)}
                   <InfoTooltip heading="LTV">
                     A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
                     Bold stablecoins. At the time of the exchange a borrower does not lose any money.
@@ -240,7 +255,14 @@ export function BorrowScreen() {
               placeholder="0.00"
               secondaryStart={
                 <HFlex gap={4}>
-                  <div>0 BOLD / year</div>
+                  <div>
+                    {interestRate.parsed && borrowing.parsed
+                      ? dn.format(
+                        dn.mul(borrowing.parsed, dn.div(interestRate.parsed, 100)),
+                        { digits: 2, trailingZeros: false },
+                      )
+                      : "−"} BOLD / year
+                  </div>
                   <InfoTooltip heading="Interest rate">
                     A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
                     Bold stablecoins. At the time of the exchange a borrower does not lose any money.
@@ -273,21 +295,16 @@ export function BorrowScreen() {
               {...interestRate.inputFieldProps}
             />
           }
-          footerStart={
-            // e.g. “Medium redemption risk”
-            redemptionRiskLevel && (
-              <Field.FooterInfoWarnLevel
-                label={`${
-                  match(redemptionRiskLevel)
-                    .with("low", () => "Low")
-                    .with("medium", () => "Medium")
-                    .with("high", () => "High")
-                    .exhaustive()
-                } redemption risk`}
-                level={redemptionRiskLevel}
-              />
-            )
-          }
+          footerStart={redemptionRisk && (
+            <Field.FooterInfoWarnLevel
+              label={match(redemptionRisk)
+                .with("low", () => "Low redemption risk")
+                .with("medium", () => "Medium redemption risk")
+                .with("high", () => "High redemption risk")
+                .exhaustive()}
+              level={redemptionRisk}
+            />
+          )}
         />
         <div
           style={{
@@ -297,14 +314,7 @@ export function BorrowScreen() {
           }}
         >
           <Button
-            disabled={!(
-              deposit.parsed
-              && dn.gt(deposit.parsed, 0)
-              && borrowing.parsed
-              && dn.gt(borrowing.parsed, 0)
-              && interestRate.parsed
-              && dn.gt(interestRate.parsed, 0)
-            )}
+            disabled={!allowSubmit}
             label={content.borrowScreen.action}
             mode="primary"
             size="large"
