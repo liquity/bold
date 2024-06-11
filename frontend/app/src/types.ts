@@ -2,6 +2,8 @@ import type { Token } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
+export type RiskLevel = "low" | "medium" | "high";
+
 export type TroveId = bigint;
 
 // Utility type to get type-safe entries of an object,
