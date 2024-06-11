@@ -67,6 +67,14 @@ contract TroveManagerTester is TroveManager {
         return ICollateralRegistry(collateralRegistryAddress).getEffectiveRedemptionFeeInBold(_redeemAmount) * DECIMAL_PRECISION / _price;
     }
 
+    function predictOpenTroveUpfrontFee(uint256 borrowedAmount, uint256 interestRate) external view returns (uint256) {
+        TroveChange memory openTrove;
+        openTrove.debtIncrease = borrowedAmount + BOLD_GAS_COMPENSATION;
+        openTrove.newWeightedRecordedDebt = openTrove.debtIncrease * interestRate;
+
+        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(openTrove);
+        return _calcUpfrontFee(openTrove.debtIncrease, avgInterestRate);
+    }
 
     function callInternalRemoveTroveId(uint256 _troveId) external {
         uint256 troveOwnersArrayLength = TroveIds.length;

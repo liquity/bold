@@ -329,7 +329,7 @@ contract(
           const txAlice = await sortedTroves.remove(bob, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
-          assert.include(err.message, " Caller is not the TroveManager");
+          assert.include(err.message, "SortedTroves: Caller is not BorrowerOperations nor TroveManager");
         }
       });
 

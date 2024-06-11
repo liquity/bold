@@ -367,6 +367,12 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
+    function applyBatchInterestPermissionless(address _from, address _batchAddress) public {
+        vm.startPrank(_from);
+        borrowerOperations.applyBatchInterestPermissionless(_batchAddress);
+        vm.stopPrank();
+    }
+
     function transferBold(address _from, address _to, uint256 _amount) public {
         vm.startPrank(_from);
         boldToken.transfer(_to, _amount);
