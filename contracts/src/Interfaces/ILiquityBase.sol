@@ -11,6 +11,7 @@ interface ILiquityBase {
     function defaultPool() external view returns (IDefaultPool);
     function priceFeed() external view returns (IPriceFeed);
     function BOLD_GAS_COMPENSATION() external view returns (uint256);
+    function COLL_GAS_COMPENSATION_DIVISOR() external view returns (uint256);
     function MIN_NET_DEBT() external view returns (uint256);
     function MIN_DEBT() external view returns (uint256);
     function UPFRONT_INTEREST_PERIOD() external view returns (uint256);

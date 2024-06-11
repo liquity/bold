@@ -13,6 +13,8 @@ import "../Types/LatestTroveData.sol";
 // Common interface for the Trove Manager.
 interface ITroveManager is IERC721, ILiquityBase {
     function MCR() external view returns (uint256);
+    function LIQUIDATION_PENALTY_SP() external view returns (uint256);
+    function LIQUIDATION_PENALTY_REDISTRIBUTION() external view returns (uint256);
 
     function setAddresses(
         address _borrowerOperationsAddress,
@@ -93,8 +95,14 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     // -- permissioned functions called by BorrowerOperations
 
-    function onOpenTrove(address _owner, uint256 _troveId, uint256 _coll, uint256 _debt, uint256 _annualInterestRate)
-        external;
+    function onOpenTrove(
+        address _owner,
+        uint256 _troveId,
+        uint256 _coll,
+        uint256 _debt,
+        uint256 _annualInterestRate,
+        uint256 _upfrontFee
+    ) external;
 
     // Called from `adjustUnredeemableTrove()`
     function setTroveStatusToActive(uint256 _troveId) external;
@@ -104,28 +112,20 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _newColl,
         uint256 _newDebt,
         uint256 _newAnnualInterestRate,
-        uint256 _appliedRedistETHGain,
-        uint256 _appliedRedistBoldDebtGain
+        TroveChange calldata _troveChange
     ) external;
 
-    function onAdjustTrove(
-        uint256 _troveId,
-        uint256 _newColl,
-        uint256 _newDebt,
-        uint256 _appliedRedistETHGain,
-        uint256 _appliedRedistBoldDebtGain
-    ) external;
+    function onAdjustTrove(uint256 _troveId, uint256 _newColl, uint256 _newDebt, TroveChange calldata _troveChange)
+        external;
 
     function onApplyTroveInterest(
         uint256 _troveId,
         uint256 _newColl,
         uint256 _newDebt,
-        uint256 _appliedRedistETHGain,
-        uint256 _appliedRedistBoldDebtGain
+        TroveChange calldata _troveChange
     ) external;
 
-    function onCloseTrove(uint256 _troveId, uint256 _appliedRedistETHGain, uint256 _appliedRedistBoldDebtGain)
-        external;
+    function onCloseTrove(uint256 _troveId, TroveChange calldata _troveChange) external;
 
     // -- end of permissioned functions --
 

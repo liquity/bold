@@ -263,6 +263,12 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         return _calcRedemptionRate(_calcDecayedBaseRate());
     }
 
+    function getRedemptionRateForRedeemedAmount(uint256 _redeemAmount) external view returns (uint256) {
+        uint256 totalBoldSupply = boldToken.totalSupply();
+        uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_redeemAmount, totalBoldSupply);
+        return _calcRedemptionRate(newBaseRate);
+    }
+
     function getRedemptionFeeWithDecay(uint256 _ETHDrawn) external view override returns (uint256) {
         return _calcRedemptionFee(getRedemptionRateWithDecay(), _ETHDrawn);
     }

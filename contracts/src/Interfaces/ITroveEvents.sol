@@ -14,16 +14,44 @@ interface ITroveEvents {
     }
 
     event Liquidation(
-        uint256 _liquidatedDebt, uint256 _liquidatedColl, uint256 _collGasCompensation, uint256 _boldGasCompensation
+        uint256 _debtOffsetBySP,
+        uint256 _debtRedistributed,
+        uint256 _boldGasCompensation,
+        uint256 _collGasCompensation,
+        uint256 _collSentToSP,
+        uint256 _collRedistributed,
+        uint256 _collSurplus,
+        uint256 _L_ETH,
+        uint256 _L_boldDebt,
+        uint256 _price
     );
-    event Redemption(uint256 _attemptedBoldAmount, uint256 _actualBoldAmount, uint256 _ETHSent, uint256 _ETHFee);
-    event TroveCreated(address indexed _owner, uint256 _troveId);
-    event TroveUpdated(uint256 indexed _troveId, uint256 _debt, uint256 _coll, Operation _operation);
-    event TroveLiquidated(uint256 indexed _troveId, uint256 _debt, uint256 _coll, Operation _operation);
-    event TotalStakesUpdated(uint256 _newTotalStakes);
-    event SystemSnapshotsUpdated(uint256 _totalStakesSnapshot, uint256 _totalCollateralSnapshot);
-    event LTermsUpdated(uint256 _L_ETH, uint256 _L_boldDebt);
-    event TroveSnapshotsUpdated(uint256 _L_ETH, uint256 _L_boldDebt);
-    event TroveIndexUpdated(uint256 _troveId, uint256 _newIndex);
+
+    event Redemption(
+        uint256 _attemptedBoldAmount, uint256 _actualBoldAmount, uint256 _ETHSent, uint256 _ETHFee, uint256 _price
+    );
+
+    // A snapshot of the Trove's latest state on-chain
+    event TroveUpdated(
+        uint256 indexed _troveId,
+        uint256 _debt,
+        uint256 _coll,
+        uint256 _stake,
+        uint256 _annualInterestRate,
+        uint256 _snapshotOfTotalDebtRedist,
+        uint256 _snapshotOfTotalCollRedist
+    );
+
+    // Details of an operation that modifies a Trove
+    event TroveOperation(
+        uint256 indexed _troveId,
+        Operation _operation,
+        uint256 _annualInterestRate,
+        uint256 _debtIncreaseFromRedist,
+        uint256 _debtIncreaseFromUpfrontFee,
+        int256 _debtChangeFromOperation,
+        uint256 _collIncreaseFromRedist,
+        int256 _collChangeFromOperation
+    );
+
     event RedemptionFeePaidToTrove(uint256 indexed _troveId, uint256 _ETHFee);
 }

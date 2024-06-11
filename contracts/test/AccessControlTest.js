@@ -9,6 +9,19 @@ on the Liquity admin address's capabilities during the first year are found in:
 
 test/launchSequenceTest/DuringLockupPeriodTest.js */
 
+// A TroveChange with all zeroes
+const noChange = {
+  appliedRedistBoldDebtGain: 0,
+  appliedRedistETHGain: 0,
+  collIncrease: 0,
+  collDecrease: 0,
+  debtIncrease: 0,
+  debtDecrease: 0,
+  newWeightedRecordedDebt: 0,
+  oldWeightedRecordedDebt: 0,
+  upfrontFee: 0,
+};
+
 contract(
   "Access Control: Liquity functions with the caller restricted to Liquity contract(s)",
   async (accounts) => {
@@ -64,7 +77,7 @@ contract(
       it("onOpenTrove(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          await troveManager.onOpenTrove(bob, th.addressToTroveId(bob), 0, 0, 0, { from: alice });
+          await troveManager.onOpenTrove(bob, th.addressToTroveId(bob), 0, 0, 0, 0, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           // assert.include(err.message, "Caller is not the BorrowerOperations contract")
@@ -74,7 +87,7 @@ contract(
       it("onCloseTrove(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          await troveManager.onCloseTrove(th.addressToTroveId(bob), 0, 0, { from: alice });
+          await troveManager.onCloseTrove(th.addressToTroveId(bob), noChange, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           // assert.include(err.message, "Caller is not the BorrowerOperations contract")
@@ -84,7 +97,7 @@ contract(
       it("onAdjustTroveInterestRate(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          await troveManager.onAdjustTroveInterestRate(th.addressToTroveId(bob), 0, 0, 0, 0, 0, { from: alice });
+          await troveManager.onAdjustTroveInterestRate(th.addressToTroveId(bob), 0, 0, 0, noChange, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           // assert.include(err.message, "Caller is not the BorrowerOperations contract")
@@ -94,7 +107,7 @@ contract(
       it("onAdjustTrove(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          await troveManager.onAdjustTrove(th.addressToTroveId(bob), 0, 0, 0, 0, { from: alice });
+          await troveManager.onAdjustTrove(th.addressToTroveId(bob), 0, 0, noChange, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           // assert.include(err.message, "Caller is not the BorrowerOperations contract")
@@ -104,7 +117,7 @@ contract(
       it("onApplyTroveInterest(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          await troveManager.onApplyTroveInterest(th.addressToTroveId(bob), 0, 0, 0, 0, { from: alice });
+          await troveManager.onApplyTroveInterest(th.addressToTroveId(bob), 0, 0, noChange, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           // assert.include(err.message, "Caller is not the BorrowerOperations contract")

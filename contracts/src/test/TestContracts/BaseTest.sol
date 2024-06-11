@@ -15,6 +15,7 @@ import "../../Interfaces/ICollateralRegistry.sol";
 import "./PriceFeedTestnet.sol";
 import "../../Interfaces/IInterestRouter.sol";
 import "../../GasPool.sol";
+import {mulDivCeil} from "../Utils/math.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -40,12 +41,15 @@ contract BaseTest is Test {
     address public constant ZERO_ADDRESS = address(0);
 
     uint256 BOLD_GAS_COMP;
+    uint256 COLL_GAS_COMP_DIVISOR;
     uint256 MIN_NET_DEBT;
     uint256 MIN_DEBT;
     uint256 SP_YIELD_SPLIT;
     uint256 UPFRONT_INTEREST_PERIOD;
     uint256 INTEREST_RATE_ADJ_COOLDOWN;
     uint256 STALE_TROVE_DURATION;
+    uint256 LIQUIDATION_PENALTY_SP;
+    uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
 
     // Core contracts
     IActivePool activePool;
@@ -80,10 +84,6 @@ contract BaseTest is Test {
 
     function calcUpfrontFee(uint256 debt, uint256 avgInterestRate) internal view returns (uint256) {
         return calcInterest(debt * avgInterestRate, UPFRONT_INTEREST_PERIOD);
-    }
-
-    function predictTroveId(address owner, uint256 ownerIndex) internal pure returns (uint256) {
-        return uint256(keccak256(abi.encode(owner, ownerIndex)));
     }
 
     function predictOpenTroveUpfrontFee(uint256 borrowedAmount, uint256 interestRate) internal view returns (uint256) {
@@ -185,6 +185,10 @@ contract BaseTest is Test {
         }
     }
 
+    function getRedeemableDebt(uint256 troveId) internal view returns (uint256) {
+        return troveManager.getTroveEntireDebt(troveId) - BOLD_GAS_COMP;
+    }
+
     function createAccounts() public {
         address[10] memory tempAccounts;
         for (uint256 i = 0; i < accounts.getAccountsCount(); i++) {
@@ -242,6 +246,34 @@ contract BaseTest is Test {
         );
 
         vm.stopPrank();
+    }
+
+    function openTroveWithExactDebt(
+        address _account,
+        uint256 _index,
+        uint256 _coll,
+        uint256 _debt,
+        uint256 _interestRate
+    ) public returns (uint256 troveId) {
+        (uint256 borrow, uint256 upfrontFee) = findAmountToBorrowWithOpenTrove(_debt, _interestRate);
+
+        vm.prank(_account);
+        troveId = borrowerOperations.openTrove(_account, _index, _coll, borrow, 0, 0, _interestRate, upfrontFee);
+    }
+
+    function openTroveWithExactICRAndDebt(
+        address _account,
+        uint256 _index,
+        uint256 _ICR,
+        uint256 _debt,
+        uint256 _interestRate
+    ) public returns (uint256 troveId, uint256 coll) {
+        (uint256 borrow, uint256 upfrontFee) = findAmountToBorrowWithOpenTrove(_debt, _interestRate);
+        uint256 price = priceFeed.getPrice();
+        coll = mulDivCeil(_debt, _ICR, price);
+
+        vm.prank(_account);
+        troveId = borrowerOperations.openTrove(_account, _index, coll, borrow, 0, 0, _interestRate, upfrontFee);
     }
 
     function adjustTrove100pct(

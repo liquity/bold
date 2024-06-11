@@ -71,6 +71,7 @@ contract DevTestSetup is BaseTest {
         }
 
         BOLD_GAS_COMP = troveManager.BOLD_GAS_COMPENSATION();
+        COLL_GAS_COMP_DIVISOR = troveManager.COLL_GAS_COMPENSATION_DIVISOR();
         MIN_NET_DEBT = troveManager.MIN_NET_DEBT();
         MIN_DEBT = troveManager.MIN_DEBT();
         SP_YIELD_SPLIT = activePool.SP_YIELD_SPLIT();
@@ -78,6 +79,8 @@ contract DevTestSetup is BaseTest {
         INTEREST_RATE_ADJ_COOLDOWN = troveManager.INTEREST_RATE_ADJ_COOLDOWN();
         MCR = troveManager.MCR();
         STALE_TROVE_DURATION = troveManager.STALE_TROVE_DURATION();
+        LIQUIDATION_PENALTY_SP = troveManager.LIQUIDATION_PENALTY_SP();
+        LIQUIDATION_PENALTY_REDISTRIBUTION = troveManager.LIQUIDATION_PENALTY_REDISTRIBUTION();
     }
 
     function _setupForWithdrawETHGainToTrove() internal returns (uint256, uint256, uint256) {

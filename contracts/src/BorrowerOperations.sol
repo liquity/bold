@@ -202,7 +202,9 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // --- Effects & interactions ---
 
         // Set the stored Trove properties and mint the NFT
-        contractsCache.troveManager.onOpenTrove(_owner, troveId, _ETHAmount, vars.entireDebt, _annualInterestRate);
+        contractsCache.troveManager.onOpenTrove(
+            _owner, troveId, _ETHAmount, vars.entireDebt, _annualInterestRate, vars.troveChange.upfrontFee
+        );
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(vars.troveChange);
         sortedTroves.insert(troveId, _annualInterestRate, _upperHint, _lowerHint);
@@ -354,6 +356,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         TroveChange memory troveChange;
         troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
+        troveChange.appliedRedistETHGain = trove.redistETHGain;
         troveChange.newWeightedRecordedDebt = newDebt * _newAnnualInterestRate;
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
 
@@ -383,7 +386,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         }
 
         contractsCache.troveManager.onAdjustTroveInterestRate(
-            _troveId, trove.entireColl, newDebt, _newAnnualInterestRate, trove.redistETHGain, trove.redistBoldDebtGain
+            _troveId, trove.entireColl, newDebt, _newAnnualInterestRate, troveChange
         );
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
@@ -436,6 +439,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         vars.newDebt = vars.trove.entireDebt + _troveChange.debtIncrease - _troveChange.debtDecrease;
 
         _troveChange.appliedRedistBoldDebtGain = vars.trove.redistBoldDebtGain;
+        _troveChange.appliedRedistETHGain = vars.trove.redistETHGain;
         _troveChange.oldWeightedRecordedDebt = vars.trove.weightedRecordedDebt;
         _troveChange.newWeightedRecordedDebt = vars.newDebt * vars.trove.annualInterestRate;
 
@@ -462,12 +466,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // --- Effects and interactions ---
 
-        _contractsCache.troveManager.onAdjustTrove(
-            _troveId, vars.newColl, vars.newDebt, vars.trove.redistETHGain, vars.trove.redistBoldDebtGain
-        );
-
+        _contractsCache.troveManager.onAdjustTrove(_troveId, vars.newColl, vars.newDebt, _troveChange);
         _contractsCache.activePool.mintAggInterestAndAccountForTroveChange(_troveChange);
-
         _moveTokensAndETHfromAdjustment(owner, _troveChange, _contractsCache);
     }
 
@@ -487,6 +487,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         TroveChange memory troveChange;
         troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
+        troveChange.appliedRedistETHGain = trove.redistETHGain;
         troveChange.collDecrease = trove.entireColl;
         troveChange.debtDecrease = trove.entireDebt;
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
@@ -496,7 +497,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // --- Effects and interactions ---
 
-        contractsCache.troveManager.onCloseTrove(_troveId, trove.redistETHGain, trove.redistBoldDebtGain);
+        contractsCache.troveManager.onCloseTrove(_troveId, troveChange);
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
 
         // Burn the 200 BOLD gas compensation
@@ -517,13 +518,11 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         LatestTroveData memory trove = contractsCache.troveManager.getLatestTroveData(_troveId);
         TroveChange memory troveChange;
         troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
+        troveChange.appliedRedistETHGain = trove.redistETHGain;
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
         troveChange.newWeightedRecordedDebt = trove.entireDebt * trove.annualInterestRate;
 
-        contractsCache.troveManager.onApplyTroveInterest(
-            _troveId, trove.entireColl, trove.entireDebt, trove.redistETHGain, trove.redistBoldDebtGain
-        );
-
+        contractsCache.troveManager.onApplyTroveInterest(_troveId, trove.entireColl, trove.entireDebt, troveChange);
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
     }
 
