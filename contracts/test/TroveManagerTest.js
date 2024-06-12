@@ -15,6 +15,7 @@ const {
 } = th;
 
 const GAS_PRICE = 10000000;
+let BOLD_GAS_COMPENSATION;
 
 /* NOTE: Some tests involving ETH redemption fees do not test for specific fee values.
  * Some only test that the fees are non-zero when they should occur.
@@ -85,6 +86,8 @@ contract("TroveManager", async (accounts) => {
     stabilityPool = contracts.stabilityPool;
     defaultPool = contracts.defaultPool;
     borrowerOperations = contracts.borrowerOperations;
+
+    BOLD_GAS_COMPENSATION = await borrowerOperations.BOLD_GAS_COMPENSATION();
   });
 
   it("liquidate(): closes a Trove that has ICR < MCR", async () => {
@@ -422,7 +425,6 @@ contract("TroveManager", async (accounts) => {
     );
 
     assert.isTrue(await sortedTroves.contains(bobTroveId));
-    // th.logBN("bob icr", await troveManager.getCurrentICR(bob, await priceFeed.getPrice()));
     // Bob now withdraws Bold, bringing his ICR to 1.11
     const { increasedTotalDebt: B_increasedTotalDebt } = await withdrawBold({
       ICR: toBN(dec(111, 16)),
@@ -1800,9 +1802,6 @@ contract("TroveManager", async (accounts) => {
     );
   });
 
-  // TODO: revisit the relevance of this test since it relies on liquidateTroves(), which now no longer works due to ordering by interest rate.
-  // Can we achieve / test the same thing using another liquidation function?
-
   it("batchLiquidateTroves(): liquidates a Trove that a) was skipped in a previous liquidation and b) has pending rewards", async () => {
     // A, B, C, D, E open troves
     const { troveId: CTroveId } = await openTrove({ ICR: toBN(dec(300, 16)), extraParams: { from: C } });
@@ -2305,95 +2304,30 @@ contract("TroveManager", async (accounts) => {
 
   // --- redemptions ---
 
-  // TODO: Revisit all redemption tests when implementing redeeming by interest rate ordering, and leaving fully redeemed Troves open.
-  //  Many of these tests rely on specific ICR ordering in the setup, and close fully redeemed.
-  //  It may be more efficient to write wholly new redemption tests in Solidity for Foundry.
-  it.skip("getRedemptionHints(): gets the address of the first Trove and the final ICR of the last Trove involved in a redemption", async () => {
-    // --- SETUP ---
-    const partialRedemptionAmount = toBN(dec(100, 18));
-    const { collateral: A_coll, totalDebt: A_totalDebt } = await openTrove({
-      ICR: toBN(dec(310, 16)),
-      extraBoldAmount: partialRedemptionAmount,
-      extraParams: { from: alice },
-    });
-    const { netDebt: B_debt } = await openTrove({
-      ICR: toBN(dec(290, 16)),
-      extraParams: { from: bob },
-    });
-    const { netDebt: C_debt } = await openTrove({
-      ICR: toBN(dec(250, 16)),
-      extraParams: { from: carol },
-    });
-    // Dennis' Trove should be untouched by redemption, because its ICR will be < 110% after the price drop
-    await openTrove({ ICR: toBN(dec(120, 16)), extraParams: { from: dennis } });
-
-    // Drop the price
-    const price = toBN(dec(100, 18));
-    await priceFeed.setPrice(price);
-
-    // --- TEST ---
-    const redemptionAmount = C_debt.add(B_debt).add(partialRedemptionAmount);
-    const { firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-      redemptionAmount,
-      price,
-      0,
-    );
-
-    assert.equal(firstRedemptionHint, carol);
-    const expectedICR = A_coll.mul(price)
-      .sub(partialRedemptionAmount.mul(mv._1e18BN))
-      .div(A_totalDebt.sub(partialRedemptionAmount));
-    th.assertIsApproximatelyEqual(partialRedemptionHintNICR, expectedICR);
-  });
-
-  it.skip("getRedemptionHints(): returns 0 as partialRedemptionHintNICR when reaching _maxIterations", async () => {
-    // --- SETUP ---
-    await openTrove({ ICR: toBN(dec(310, 16)), extraParams: { from: alice } });
-    await openTrove({ ICR: toBN(dec(290, 16)), extraParams: { from: bob } });
-    await openTrove({ ICR: toBN(dec(250, 16)), extraParams: { from: carol } });
-    await openTrove({ ICR: toBN(dec(180, 16)), extraParams: { from: dennis } });
-
-    const price = await priceFeed.getPrice();
-
-    // --- TEST ---
-
-    // Get hints for a redemption of 170 + 30 + some extra Bold. At least 3 iterations are needed
-    // for total redemption of the given amount.
-    const { partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-      "210" + _18_zeros,
-      price,
-      2,
-    ); // limit _maxIterations to 2
-
-    assert.equal(partialRedemptionHintNICR, "0");
-  });
-
-  it.skip("redeemCollateral(): cancels the provided Bold with debt from Troves with the lowest ICRs and sends an equivalent amount of Ether", async () => {
+  it("redeemCollateral(): cancels the provided Bold with debt from Troves with the lowest ICRs and sends an equivalent amount of Ether", async () => {
     // --- SETUP ---
     const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(310, 16)),
       extraBoldAmount: dec(10, 18),
-      extraParams: { from: alice },
+      extraParams: { from: alice, annualInterestRate: dec(5, 16) },
     });
     const { troveId: bobTroveId, netDebt: B_netDebt } = await openTrove({
       ICR: toBN(dec(290, 16)),
       extraBoldAmount: dec(8, 18),
-      extraParams: { from: bob },
+      extraParams: { from: bob, annualInterestRate: dec(4, 16) },
     });
     const { troveId: carolTroveId, netDebt: C_netDebt } = await openTrove({
       ICR: toBN(dec(250, 16)),
       extraBoldAmount: dec(10, 18),
-      extraParams: { from: carol },
+      extraParams: { from: carol, annualInterestRate: dec(3, 16) },
     });
     const partialRedemptionAmount = toBN(2);
-    const redemptionAmount = C_netDebt.add(B_netDebt).add(
-      partialRedemptionAmount,
-    );
-    // start Dennis with a high ICR
+    const redemptionAmount = C_netDebt.add(B_netDebt).add(partialRedemptionAmount).add(toBN("5398095758126238615"));
+    // start Dennis with a high interest
     await openTrove({
       ICR: toBN(dec(100, 18)),
       extraBoldAmount: redemptionAmount,
-      extraParams: { from: dennis },
+      extraParams: { from: dennis, annualInterestRate: dec(50, 16) },
     });
 
     const dennis_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(dennis));
@@ -2405,21 +2339,6 @@ contract("TroveManager", async (accounts) => {
 
     // --- TEST ---
 
-    // Find hints for redeeming 20 Bold
-    const { firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-      redemptionAmount,
-      price,
-      0,
-    );
-
-    // We don't need to use getApproxHint for this test, since it's not the subject of this
-    // test case, and the list is very small, so the correct position is quickly found
-    const { 0: upperPartialRedemptionHint, 1: lowerPartialRedemptionHint } = await sortedTroves.findInsertPosition(
-      partialRedemptionHintNICR,
-      dennis,
-      dennis,
-    );
-
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
@@ -2427,18 +2346,13 @@ contract("TroveManager", async (accounts) => {
 
     // Dennis redeems 20 Bold
     // Don't pay for gas, as it makes it easier to calculate the received Ether
-    const redemptionTx = await troveManager.redeemCollateral(
+    const redemptionTx = await th.redeemCollateralAndGetTxObject(
+      dennis,
+      contracts,
       redemptionAmount,
-      firstRedemptionHint,
-      upperPartialRedemptionHint,
-      lowerPartialRedemptionHint,
-      partialRedemptionHintNICR,
-      0,
+      10,
       th._100pct,
-      {
-        from: dennis,
-        gasPrice: GAS_PRICE,
-      },
+      GAS_PRICE
     );
 
     const alice_Trove_After = await troveManager.Troves(aliceTroveId);
@@ -2456,14 +2370,14 @@ contract("TroveManager", async (accounts) => {
       alice_debt_After,
       A_totalDebt.sub(partialRedemptionAmount),
     );
-    assert.equal(bob_debt_After, "0");
-    assert.equal(carol_debt_After, "0");
+    assert.equal(bob_debt_After.toString(), BOLD_GAS_COMPENSATION.toString());
+    assert.equal(carol_debt_After.toString(), BOLD_GAS_COMPENSATION.toString());
 
     const dennis_ETHBalance_After = toBN(await contracts.WETH.balanceOf(dennis));
     const receivedETH = dennis_ETHBalance_After.sub(dennis_ETHBalance_Before);
 
     const expectedTotalETHDrawn = redemptionAmount.div(toBN(200)); // convert redemptionAmount Bold to ETH, at ETH:USD price 200
-    const expectedReceivedETH = expectedTotalETHDrawn.sub(toBN(ETHFee));
+    const expectedReceivedETH = expectedTotalETHDrawn.sub(ETHFee);
 
     // console.log("*********************************************************************************")
     // console.log("ETHFee: " + ETHFee)
@@ -2485,365 +2399,36 @@ contract("TroveManager", async (accounts) => {
     );
   });
 
-  it.skip("redeemCollateral(): with invalid first hint, zero address", async () => {
+  it("redeemCollateral(): ends the redemption sequence when the token redemption request has been filled", async () => {
     // --- SETUP ---
-    const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
-      ICR: toBN(dec(310, 16)),
-      extraBoldAmount: dec(10, 18),
-      extraParams: { from: alice },
-    });
-    const { troveId: bobTroveId, netDebt: B_netDebt } = await openTrove({
-      ICR: toBN(dec(290, 16)),
-      extraBoldAmount: dec(8, 18),
-      extraParams: { from: bob },
-    });
-    const { troveId: carolTroveId, netDebt: C_netDebt } = await openTrove({
-      ICR: toBN(dec(250, 16)),
-      extraBoldAmount: dec(10, 18),
-      extraParams: { from: carol },
-    });
-    const partialRedemptionAmount = toBN(2);
-    const redemptionAmount = C_netDebt.add(B_netDebt).add(
-      partialRedemptionAmount,
-    );
-    // start Dennis with a high ICR
-    await openTrove({
-      ICR: toBN(dec(100, 18)),
-      extraBoldAmount: redemptionAmount,
-      extraParams: { from: dennis },
-    });
-
-    const dennis_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(dennis));
-
-    const dennis_BoldBalance_Before = await boldToken.balanceOf(dennis);
-
-    const price = await priceFeed.getPrice();
-    assert.equal(price, dec(200, 18));
-
-    // --- TEST ---
-
-    // Find hints for redeeming 20 Bold
-    const { firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-      redemptionAmount,
-      price,
-      0,
-    );
-
-    // We don't need to use getApproxHint for this test, since it's not the subject of this
-    // test case, and the list is very small, so the correct position is quickly found
-    const { 0: upperPartialRedemptionHint, 1: lowerPartialRedemptionHint } = await sortedTroves.findInsertPosition(
-      partialRedemptionHintNICR,
-      dennis,
-      dennis,
-    );
-
-    // skip bootstrapping phase
-    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
-
-    // Dennis redeems 20 Bold
-    // Don't pay for gas, as it makes it easier to calculate the received Ether
-    const redemptionTx = await troveManager.redeemCollateral(
-      redemptionAmount,
-      ZERO_ADDRESS, // invalid first hint
-      upperPartialRedemptionHint,
-      lowerPartialRedemptionHint,
-      partialRedemptionHintNICR,
-      0,
-      th._100pct,
-      {
-        from: dennis,
-        gasPrice: GAS_PRICE,
-      },
-    );
-
-    const ETHFee = th.getEmittedRedemptionValues(redemptionTx)[3];
-
-    const alice_Trove_After = await troveManager.Troves(aliceTroveId);
-    const bob_Trove_After = await troveManager.Troves(bobTroveId);
-    const carol_Trove_After = await troveManager.Troves(carolTroveId);
-
-    const alice_debt_After = alice_Trove_After[0].toString();
-    const bob_debt_After = bob_Trove_After[0].toString();
-    const carol_debt_After = carol_Trove_After[0].toString();
-
-    /* check that Dennis' redeemed 20 Bold has been cancelled with debt from Bobs's Trove (8) and Carol's Trove (10).
-    The remaining lot (2) is sent to Alice's Trove, who had the best ICR.
-    It leaves her with (3) Bold debt + 50 for gas compensation. */
-    th.assertIsApproximatelyEqual(
-      alice_debt_After,
-      A_totalDebt.sub(partialRedemptionAmount),
-    );
-    assert.equal(bob_debt_After, "0");
-    assert.equal(carol_debt_After, "0");
-
-    const dennis_ETHBalance_After = toBN(await contracts.WETH.balanceOf(dennis));
-    const receivedETH = dennis_ETHBalance_After.sub(dennis_ETHBalance_Before);
-
-    const expectedTotalETHDrawn = redemptionAmount.div(toBN(200)); // convert redemptionAmount Bold to ETH, at ETH:USD price 200
-    const expectedReceivedETH = expectedTotalETHDrawn.sub(toBN(ETHFee));
-
-    th.assertIsApproximatelyEqual(expectedReceivedETH, receivedETH);
-
-    const dennis_BoldBalance_After = (
-      await boldToken.balanceOf(dennis)
-    ).toString();
-    assert.equal(
-      dennis_BoldBalance_After,
-      dennis_BoldBalance_Before.sub(redemptionAmount),
-    );
-  });
-
-  it.skip("redeemCollateral(): with invalid first hint, non-existent trove", async () => {
-    // --- SETUP ---
-    const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
-      ICR: toBN(dec(310, 16)),
-      extraBoldAmount: dec(10, 18),
-      extraParams: { from: alice },
-    });
-    const { troveId: bobTroveId, netDebt: B_netDebt } = await openTrove({
-      ICR: toBN(dec(290, 16)),
-      extraBoldAmount: dec(8, 18),
-      extraParams: { from: bob },
-    });
-    const { troveId: carolTroveId, netDebt: C_netDebt } = await openTrove({
-      ICR: toBN(dec(250, 16)),
-      extraBoldAmount: dec(10, 18),
-      extraParams: { from: carol },
-    });
-    const partialRedemptionAmount = toBN(2);
-    const redemptionAmount = C_netDebt.add(B_netDebt).add(
-      partialRedemptionAmount,
-    );
-    // start Dennis with a high ICR
-    await openTrove({
-      ICR: toBN(dec(100, 18)),
-      extraBoldAmount: redemptionAmount,
-      extraParams: { from: dennis },
-    });
-
-    const dennis_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(dennis));
-
-    const dennis_BoldBalance_Before = await boldToken.balanceOf(dennis);
-
-    const price = await priceFeed.getPrice();
-    assert.equal(price, dec(200, 18));
-
-    // --- TEST ---
-
-    // Find hints for redeeming 20 Bold
-    const { firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-      redemptionAmount,
-      price,
-      0,
-    );
-
-    // We don't need to use getApproxHint for this test, since it's not the subject of this
-    // test case, and the list is very small, so the correct position is quickly found
-    const { 0: upperPartialRedemptionHint, 1: lowerPartialRedemptionHint } = await sortedTroves.findInsertPosition(
-      partialRedemptionHintNICR,
-      dennis,
-      dennis,
-    );
-
-    // skip bootstrapping phase
-    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
-
-    // Dennis redeems 20 Bold
-    // Don't pay for gas, as it makes it easier to calculate the received Ether
-    const redemptionTx = await troveManager.redeemCollateral(
-      redemptionAmount,
-      erin, // invalid first hint, it doesn’t have a trove
-      upperPartialRedemptionHint,
-      lowerPartialRedemptionHint,
-      partialRedemptionHintNICR,
-      0,
-      th._100pct,
-      {
-        from: dennis,
-        gasPrice: GAS_PRICE,
-      },
-    );
-
-    const ETHFee = th.getEmittedRedemptionValues(redemptionTx)[3];
-
-    const alice_Trove_After = await troveManager.Troves(aliceTroveId);
-    const bob_Trove_After = await troveManager.Troves(bobTroveId);
-    const carol_Trove_After = await troveManager.Troves(carolTroveId);
-
-    const alice_debt_After = alice_Trove_After[0].toString();
-    const bob_debt_After = bob_Trove_After[0].toString();
-    const carol_debt_After = carol_Trove_After[0].toString();
-
-    /* check that Dennis' redeemed 20 Bold has been cancelled with debt from Bobs's Trove (8) and Carol's Trove (10).
-    The remaining lot (2) is sent to Alice's Trove, who had the best ICR.
-    It leaves her with (3) Bold debt + 50 for gas compensation. */
-    th.assertIsApproximatelyEqual(
-      alice_debt_After,
-      A_totalDebt.sub(partialRedemptionAmount),
-    );
-    assert.equal(bob_debt_After, "0");
-    assert.equal(carol_debt_After, "0");
-
-    const dennis_ETHBalance_After = toBN(await contracts.WETH.balanceOf(dennis));
-    const receivedETH = dennis_ETHBalance_After.sub(dennis_ETHBalance_Before);
-
-    const expectedTotalETHDrawn = redemptionAmount.div(toBN(200)); // convert redemptionAmount Bold to ETH, at ETH:USD price 200
-    const expectedReceivedETH = expectedTotalETHDrawn.sub(toBN(ETHFee));
-
-    th.assertIsApproximatelyEqual(expectedReceivedETH, receivedETH);
-
-    const dennis_BoldBalance_After = (
-      await boldToken.balanceOf(dennis)
-    ).toString();
-    assert.equal(
-      dennis_BoldBalance_After,
-      dennis_BoldBalance_Before.sub(redemptionAmount),
-    );
-  });
-
-  it.skip("redeemCollateral(): with invalid first hint, trove below MCR", async () => {
-    // --- SETUP ---
-    const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
-      ICR: toBN(dec(310, 16)),
-      extraBoldAmount: dec(10, 18),
-      extraParams: { from: alice },
-    });
-    const { troveId: bobTroveId, netDebt: B_netDebt } = await openTrove({
-      ICR: toBN(dec(290, 16)),
-      extraBoldAmount: dec(8, 18),
-      extraParams: { from: bob },
-    });
-    const { troveId: carolTroveId, netDebt: C_netDebt } = await openTrove({
-      ICR: toBN(dec(250, 16)),
-      extraBoldAmount: dec(10, 18),
-      extraParams: { from: carol },
-    });
-    const partialRedemptionAmount = toBN(2);
-    const redemptionAmount = C_netDebt.add(B_netDebt).add(
-      partialRedemptionAmount,
-    );
-    // start Dennis with a high ICR
-    await openTrove({
-      ICR: toBN(dec(100, 18)),
-      extraBoldAmount: redemptionAmount,
-      extraParams: { from: dennis },
-    });
-
-    const dennis_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(dennis));
-
-    const dennis_BoldBalance_Before = await boldToken.balanceOf(dennis);
-
-    const price = await priceFeed.getPrice();
-    assert.equal(price, dec(200, 18));
-
-    // Increase price to start Erin, and decrease it again so its ICR is under MCR
-    await priceFeed.setPrice(price.mul(toBN(2)));
-    await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: erin } });
-    await priceFeed.setPrice(price);
-
-    // --- TEST ---
-
-    // Find hints for redeeming 20 Bold
-    const { firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-      redemptionAmount,
-      price,
-      0,
-    );
-
-    // We don't need to use getApproxHint for this test, since it's not the subject of this
-    // test case, and the list is very small, so the correct position is quickly found
-    const { 0: upperPartialRedemptionHint, 1: lowerPartialRedemptionHint } = await sortedTroves.findInsertPosition(
-      partialRedemptionHintNICR,
-      dennis,
-      dennis,
-    );
-
-    // skip bootstrapping phase
-    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
-
-    // Dennis redeems 20 Bold
-    // Don't pay for gas, as it makes it easier to calculate the received Ether
-    const redemptionTx = await troveManager.redeemCollateral(
-      redemptionAmount,
-      erin, // invalid trove, below MCR
-      upperPartialRedemptionHint,
-      lowerPartialRedemptionHint,
-      partialRedemptionHintNICR,
-      0,
-      th._100pct,
-      {
-        from: dennis,
-        gasPrice: GAS_PRICE,
-      },
-    );
-
-    const ETHFee = th.getEmittedRedemptionValues(redemptionTx)[3];
-
-    const alice_Trove_After = await troveManager.Troves(aliceTroveId);
-    const bob_Trove_After = await troveManager.Troves(bobTroveId);
-    const carol_Trove_After = await troveManager.Troves(carolTroveId);
-
-    const alice_debt_After = alice_Trove_After[0].toString();
-    const bob_debt_After = bob_Trove_After[0].toString();
-    const carol_debt_After = carol_Trove_After[0].toString();
-
-    /* check that Dennis' redeemed 20 Bold has been cancelled with debt from Bobs's Trove (8) and Carol's Trove (10).
-    The remaining lot (2) is sent to Alice's Trove, who had the best ICR.
-    It leaves her with (3) Bold debt + 50 for gas compensation. */
-    th.assertIsApproximatelyEqual(
-      alice_debt_After,
-      A_totalDebt.sub(partialRedemptionAmount),
-    );
-    assert.equal(bob_debt_After, "0");
-    assert.equal(carol_debt_After, "0");
-
-    const dennis_ETHBalance_After = toBN(await contracts.WETH.balanceOf(dennis));
-    const receivedETH = dennis_ETHBalance_After.sub(dennis_ETHBalance_Before);
-
-    const expectedTotalETHDrawn = redemptionAmount.div(toBN(200)); // convert redemptionAmount Bold to ETH, at ETH:USD price 200
-    const expectedReceivedETH = expectedTotalETHDrawn.sub(toBN(ETHFee));
-
-    th.assertIsApproximatelyEqual(expectedReceivedETH, receivedETH);
-
-    const dennis_BoldBalance_After = (
-      await boldToken.balanceOf(dennis)
-    ).toString();
-    assert.equal(
-      dennis_BoldBalance_After,
-      dennis_BoldBalance_Before.sub(redemptionAmount),
-    );
-  });
-
-  it.skip("redeemCollateral(): ends the redemption sequence when the token redemption request has been filled", async () => {
-    // --- SETUP ---
-    await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale } });
+    await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale, annualInterestRate: dec(90, 16) } });
 
     // Alice, Bob, Carol, Dennis, Erin open troves
     const { troveId: aliceTroveId, netDebt: A_debt } = await openTrove({
       ICR: toBN(dec(290, 16)),
       extraBoldAmount: dec(20, 18),
-      extraParams: { from: alice },
+      extraParams: { from: alice, annualInterestRate: dec(5, 16) },
     });
     const { troveId: bobTroveId, netDebt: B_debt } = await openTrove({
       ICR: toBN(dec(290, 16)),
       extraBoldAmount: dec(20, 18),
-      extraParams: { from: bob },
+      extraParams: { from: bob, annualInterestRate: dec(5, 16) },
     });
     const { troveId: carolTroveId, netDebt: C_debt } = await openTrove({
       ICR: toBN(dec(290, 16)),
       extraBoldAmount: dec(20, 18),
-      extraParams: { from: carol },
+      extraParams: { from: carol, annualInterestRate: dec(5, 16) },
     });
-    const redemptionAmount = A_debt.add(B_debt).add(C_debt);
+    const redemptionAmount = A_debt.add(B_debt).add(C_debt).add(toBN(11701736130990849939)); // A+B+C+interest
     const { troveId: dennisTroveId, totalDebt: D_totalDebt, collateral: D_coll } = await openTrove({
       ICR: toBN(dec(300, 16)),
       extraBoldAmount: dec(10, 18),
-      extraParams: { from: dennis },
+      extraParams: { from: dennis, annualInterestRate: dec(6, 16) },
     });
-    const { troveId: erinTroveId, totalDebt: E_totalDebt, collateral: E_coll } = await openTrove({
+    const { troveId: erinTroveId, totalDebt: E_totalDebt, netDebt: E_netDebt, collateral: E_coll } = await openTrove({
       ICR: toBN(dec(300, 16)),
       extraBoldAmount: dec(10, 18),
-      extraParams: { from: erin },
+      extraParams: { from: erin, annualInterestRate: dec(6, 16) },
     });
 
     // --- TEST ---
@@ -2852,22 +2437,19 @@ contract("TroveManager", async (accounts) => {
     const { boldAmount: F_boldAmount } = await openTrove({
       ICR: toBN(dec(200, 18)),
       extraBoldAmount: redemptionAmount.mul(toBN(2)),
-      extraParams: { from: flyn },
+      extraParams: { from: flyn, annualInterestRate: dec(50, 16) },
     });
 
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
+    const E_interest = await troveManager.calcTroveAccruedInterest(erinTroveId);
 
     // Flyn redeems collateral
-    await troveManager.redeemCollateral(
+    await th.redeemCollateral(
+      flyn,
+      contracts,
       redemptionAmount,
-      alice,
-      alice,
-      alice,
-      0,
-      0,
       th._100pct,
-      { from: flyn },
     );
 
     // Check Flyn's redemption has reduced his balance from 100 to (100-60) = 40 Bold
@@ -2882,11 +2464,104 @@ contract("TroveManager", async (accounts) => {
     const bob_Debt = await troveManager.getTroveDebt(bobTroveId);
     const carol_Debt = await troveManager.getTroveDebt(carolTroveId);
 
-    assert.equal(alice_Debt, 0);
-    assert.equal(bob_Debt, 0);
-    assert.equal(carol_Debt, 0);
+    assert.equal(alice_Debt.toString(), BOLD_GAS_COMPENSATION.toString());
+    assert.equal(bob_Debt.toString(), BOLD_GAS_COMPENSATION.toString());
+    assert.equal(carol_Debt.toString(), BOLD_GAS_COMPENSATION.toString());
 
-    // check Alice, Bob and Carol troves are closed by redemption
+    // check Alice, Bob and Carol troves are in status unredeemable
+    const alice_Status = await troveManager.getTroveStatus(aliceTroveId);
+    const bob_Status = await troveManager.getTroveStatus(bobTroveId);
+    const carol_Status = await troveManager.getTroveStatus(carolTroveId);
+    assert.equal(alice_Status, 4);
+    assert.equal(bob_Status, 4);
+    assert.equal(carol_Status, 4);
+
+    // check debt and coll of Dennis, Erin has not been impacted by redemption
+    // (Erin has a small impact, ~600e-18 Bold, which makes it update the interest)
+    const dennis_Debt = await troveManager.getTroveDebt(dennisTroveId);
+    const erin_Debt = await troveManager.getTroveDebt(erinTroveId);
+
+    th.assertIsApproximatelyEqual(dennis_Debt, D_totalDebt);
+    th.assertIsApproximatelyEqual(erin_Debt, E_totalDebt.add(E_interest), 1e13);
+
+    const dennis_Coll = await troveManager.getTroveColl(dennisTroveId);
+    const erin_Coll = await troveManager.getTroveColl(erinTroveId);
+
+    assert.equal(dennis_Coll.toString(), D_coll.toString());
+    th.assertIsApproximatelyEqual(erin_Coll, E_coll);
+  });
+
+  it("redeemCollateral(): ends the redemption sequence when the token redemption request has been filled", async () => {
+    // --- SETUP ---
+    await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale, annualInterestRate: dec(90, 16) } });
+
+    // Alice, Bob, Carol, Dennis, Erin open troves
+    const { troveId: aliceTroveId, netDebt: A_debt } = await openTrove({
+      ICR: toBN(dec(290, 16)),
+      extraBoldAmount: dec(20, 18),
+      extraParams: { from: alice, annualInterestRate: dec(5, 16) },
+    });
+    const { troveId: bobTroveId, netDebt: B_debt } = await openTrove({
+      ICR: toBN(dec(290, 16)),
+      extraBoldAmount: dec(20, 18),
+      extraParams: { from: bob, annualInterestRate: dec(5, 16) },
+    });
+    const { troveId: carolTroveId, netDebt: C_debt } = await openTrove({
+      ICR: toBN(dec(290, 16)),
+      extraBoldAmount: dec(20, 18),
+      extraParams: { from: carol, annualInterestRate: dec(5, 16) },
+    });
+    const redemptionAmount = A_debt.add(B_debt).add(C_debt).add(toBN(11701736130990849339)); // A+B+C+interest+upfront fee
+    // .add(BOLD_GAS_COMPENSATION.mul(3))
+    const { troveId: dennisTroveId, totalDebt: D_totalDebt, collateral: D_coll } = await openTrove({
+      ICR: toBN(dec(300, 16)),
+      extraBoldAmount: dec(10, 18),
+      extraParams: { from: dennis, annualInterestRate: dec(6, 16) },
+    });
+    const { troveId: erinTroveId, totalDebt: E_totalDebt, collateral: E_coll } = await openTrove({
+      ICR: toBN(dec(300, 16)),
+      extraBoldAmount: dec(10, 18),
+      extraParams: { from: erin, annualInterestRate: dec(6, 16) },
+    });
+
+    // --- TEST ---
+
+    // open trove from redeemer.  Redeemer has highest ICR (100ETH, 100 Bold), 20000%
+    const { troveId: flynTroveId, boldAmount: F_boldAmount } = await openTrove({
+      ICR: toBN(dec(200, 18)),
+      extraBoldAmount: redemptionAmount.mul(toBN(2)),
+      extraParams: { from: flyn, annualInterestRate: dec(50, 16) },
+    });
+
+    // skip bootstrapping phase
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
+
+    // Flyn redeems collateral
+    await th.redeemCollateralAndGetTxObject(
+      flyn,
+      contracts,
+      redemptionAmount,
+      10,
+      th._100pct,
+    );
+
+    // Check Flyn's redemption has reduced his balance from 100 to (100-60) = 40 Bold
+    const flynBalance = await boldToken.balanceOf(flyn);
+    th.assertIsApproximatelyEqual(
+      flynBalance,
+      F_boldAmount.sub(redemptionAmount),
+    );
+
+    // Check debt of Alice, Bob, Carol
+    const alice_Debt = await troveManager.getTroveDebt(aliceTroveId);
+    const bob_Debt = await troveManager.getTroveDebt(bobTroveId);
+    const carol_Debt = await troveManager.getTroveDebt(carolTroveId);
+
+    assert.equal(alice_Debt.toString(), BOLD_GAS_COMPENSATION.toString());
+    assert.equal(bob_Debt.toString(), BOLD_GAS_COMPENSATION.toString());
+    assert.equal(carol_Debt.toString(), BOLD_GAS_COMPENSATION.toString());
+
+    // check Alice, Bob and Carol troves are in status undreedemable
     const alice_Status = await troveManager.getTroveStatus(aliceTroveId);
     const bob_Status = await troveManager.getTroveStatus(bobTroveId);
     const carol_Status = await troveManager.getTroveStatus(carolTroveId);
@@ -2899,37 +2574,45 @@ contract("TroveManager", async (accounts) => {
     const erin_Debt = await troveManager.getTroveDebt(erinTroveId);
 
     th.assertIsApproximatelyEqual(dennis_Debt, D_totalDebt);
-    th.assertIsApproximatelyEqual(erin_Debt, E_totalDebt);
+    assert(erin_Debt.gte(E_totalDebt));
 
     const dennis_Coll = await troveManager.getTroveColl(dennisTroveId);
     const erin_Coll = await troveManager.getTroveColl(erinTroveId);
 
     assert.equal(dennis_Coll.toString(), D_coll.toString());
-    assert.equal(erin_Coll.toString(), E_coll.toString());
+    th.assertIsApproximatelyEqual(erin_Coll, E_coll);
   });
 
-  it.skip("redeemCollateral(): ends the redemption sequence when max iterations have been reached", async () => {
+  const calcInterest = (amount, interestRate, seconds) => {
+    return amount
+      .mul(toBN(interestRate))
+      .div(toBN(dec(1, 18)))
+      .mul(toBN(seconds))
+      .div(toBN(timeValues.SECONDS_IN_ONE_YEAR));
+  };
+
+  it("redeemCollateral(): ends the redemption sequence when max iterations have been reached", async () => {
     // --- SETUP ---
-    await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale } });
+    await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale, annualInterestRate: dec(90, 16) } });
 
     // Alice, Bob, Carol open troves with equal collateral ratio
-    const { troveId: aliceTroveId, netDebt: A_debt } = await openTrove({
+    const { troveId: aliceTroveId, netDebt: A_debt, totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(286, 16)),
       extraBoldAmount: dec(20, 18),
-      extraParams: { from: alice },
+      extraParams: { from: alice, annualInterestRate: dec(5, 16) },
     });
-    const { troveId: bobTroveId, netDebt: B_debt } = await openTrove({
+    const { troveId: bobTroveId, netDebt: B_debt, totalDebt: B_totalDebt } = await openTrove({
       ICR: toBN(dec(286, 16)),
       extraBoldAmount: dec(20, 18),
-      extraParams: { from: bob },
+      extraParams: { from: bob, annualInterestRate: dec(5, 16) },
     });
     const { troveId: carolTroveId, netDebt: C_debt, totalDebt: C_totalDebt } = await openTrove({
       ICR: toBN(dec(286, 16)),
       extraBoldAmount: dec(20, 18),
-      extraParams: { from: carol },
+      extraParams: { from: carol, annualInterestRate: dec(5, 16) },
     });
-    const redemptionAmount = A_debt.add(B_debt);
-    const attemptedRedemptionAmount = redemptionAmount.add(C_debt);
+    const redemptionAmount = C_debt.add(B_debt).add(calcInterest(C_totalDebt.add(B_totalDebt), dec(5, 16), timeValues.SECONDS_IN_ONE_WEEK * 2 + 85));
+    const attemptedRedemptionAmount = redemptionAmount.add(A_debt);
 
     // --- TEST ---
 
@@ -2937,29 +2620,28 @@ contract("TroveManager", async (accounts) => {
     const { troveId: flynTroveId, boldAmount: F_boldAmount } = await openTrove({
       ICR: toBN(dec(200, 18)),
       extraBoldAmount: redemptionAmount.mul(toBN(2)),
-      extraParams: { from: flyn },
+      extraParams: { from: flyn, annualInterestRate: dec(95, 16) },
     });
 
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Flyn redeems collateral with only two iterations
-    await troveManager.redeemCollateral(
+    await th.redeemCollateralAndGetTxObject(
+      flyn,
+      contracts,
       attemptedRedemptionAmount,
-      alice,
-      alice,
-      alice,
-      0,
       2,
       th._100pct,
-      { from: flyn },
     );
 
-    // Check Flyn's redemption has reduced his balance from 100 to (100-40) = 60 Bold
-    const flynBalance = (await boldToken.balanceOf(flyn)).toString();
+    // Check Flyn's redemption has reduced his balance
+    const flynBalance = await boldToken.balanceOf(flyn);
+
     th.assertIsApproximatelyEqual(
       flynBalance,
       F_boldAmount.sub(redemptionAmount),
+      1e15
     );
 
     // Check debt of Alice, Bob, Carol
@@ -2967,53 +2649,60 @@ contract("TroveManager", async (accounts) => {
     const bob_Debt = await troveManager.getTroveDebt(bobTroveId);
     const carol_Debt = await troveManager.getTroveDebt(carolTroveId);
 
-    assert.equal(alice_Debt, 0);
-    assert.equal(bob_Debt, 0);
-    th.assertIsApproximatelyEqual(carol_Debt, C_totalDebt);
+    th.assertIsApproximatelyEqual(alice_Debt, A_totalDebt);
+    assert.equal(bob_Debt.toString(), BOLD_GAS_COMPENSATION.toString());
+    assert.equal(carol_Debt.toString(), BOLD_GAS_COMPENSATION.toString());
 
-    // check Alice and Bob troves are closed, but Carol is not
+    // check Alice and Bob troves are unreedemable, but Carol is not
     const alice_Status = await troveManager.getTroveStatus(aliceTroveId);
     const bob_Status = await troveManager.getTroveStatus(bobTroveId);
     const carol_Status = await troveManager.getTroveStatus(carolTroveId);
-    assert.equal(alice_Status, 4);
+    assert.equal(alice_Status, 1);
     assert.equal(bob_Status, 4);
-    assert.equal(carol_Status, 1);
+    assert.equal(carol_Status, 4);
   });
 
-  it.skip("redeemCollateral(): performs partial redemption if resultant debt is > minimum net debt", async () => {
+  it("redeemCollateral(): doesn’t perform partial redemption if resultant debt is > minimum net debt", async () => {
     const ATroveId = await th.openTroveWrapper(
       contracts,
-      th._100pct,
       await getOpenTroveBoldAmount(dec(10000, 18)),
       A,
       A,
+      dec(5, 16),
       { from: A, value: dec(1000, "ether") },
     );
     const BTroveId = await th.openTroveWrapper(
       contracts,
-      th._100pct,
       await getOpenTroveBoldAmount(dec(20000, 18)),
       B,
       B,
+      dec(4, 16),
       { from: B, value: dec(1000, "ether") },
     );
     const CTroveId = await th.openTroveWrapper(
       contracts,
-      th._100pct,
       await getOpenTroveBoldAmount(dec(30000, 18)),
       C,
       C,
+      dec(3, 16),
       { from: C, value: dec(1000, "ether") },
     );
+
+    const AInitialDebt = await troveManager.getTroveEntireDebt(ATroveId);
+    const BInitialDebt = await troveManager.getTroveEntireDebt(BTroveId);
+    const CInitialDebt = await troveManager.getTroveEntireDebt(CTroveId);
 
     // A and C send all their tokens to B
     await boldToken.transfer(B, await boldToken.balanceOf(A), { from: A });
     await boldToken.transfer(B, await boldToken.balanceOf(C), { from: C });
 
-    await troveManager.setBaseRate(0);
+    await contracts.collateralRegistry.setBaseRate(0);
 
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
+    const interestA = await troveManager.calcTroveAccruedInterest(ATroveId);
+    const interestB = await troveManager.calcTroveAccruedInterest(BTroveId);
+    const interestC = await troveManager.calcTroveAccruedInterest(CTroveId);
 
     // Bold redemption is 55000 US
     const BoldRedemption = dec(55000, 18);
@@ -3021,6 +2710,7 @@ contract("TroveManager", async (accounts) => {
       B,
       contracts,
       BoldRedemption,
+      10,
       th._100pct,
     );
 
@@ -3029,45 +2719,53 @@ contract("TroveManager", async (accounts) => {
     assert.isFalse(await sortedTroves.contains(BTroveId));
     assert.isFalse(await sortedTroves.contains(CTroveId));
 
-    // A's remaining debt = 29800 + 19800 + 9800 + 200 - 55000 = 4600
+    // A's remaining debt = 29800 + 19800 + 9800 + 200 - 55000 = 4600, + interest
     const A_debt = await troveManager.getTroveDebt(ATroveId);
-    await th.assertIsApproximatelyEqual(A_debt, dec(4600, 18), 1000);
+    await th.assertIsApproximatelyEqual(A_debt, AInitialDebt.add(BInitialDebt).add(CInitialDebt).sub(toBN(dec(55400, 18))).add(interestA).add(interestB).add(interestC), 6e15);
   });
 
-  it.skip("redeemCollateral(): doesn't perform partial redemption if resultant debt would be < minimum net debt", async () => {
+  it("redeemCollateral(): hits trove even if resultant debt would be < minimum net debt", async () => {
     const ATroveId = await th.openTroveWrapper(
       contracts,
-      th._100pct,
       await getOpenTroveBoldAmount(dec(6000, 18)),
       A,
       A,
+      dec(5, 16),
       { from: A, value: dec(1000, "ether") },
     );
     const BTroveId = await th.openTroveWrapper(
       contracts,
-      th._100pct,
       await getOpenTroveBoldAmount(dec(20000, 18)),
       B,
       B,
+      dec(4, 16),
       { from: B, value: dec(1000, "ether") },
     );
     const CTroveId = await th.openTroveWrapper(
       contracts,
-      th._100pct,
       await getOpenTroveBoldAmount(dec(30000, 18)),
       C,
       C,
+      dec(3, 16),
       { from: C, value: dec(1000, "ether") },
     );
+
+    const AInitialDebt = await troveManager.getTroveEntireDebt(ATroveId);
+    const BInitialDebt = await troveManager.getTroveEntireDebt(BTroveId);
+    const CInitialDebt = await troveManager.getTroveEntireDebt(CTroveId);
 
     // A and C send all their tokens to B
     await boldToken.transfer(B, await boldToken.balanceOf(A), { from: A });
     await boldToken.transfer(B, await boldToken.balanceOf(C), { from: C });
 
-    await troveManager.setBaseRate(0);
+    await contracts.collateralRegistry.setBaseRate(0);
 
     // Skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
+
+    const interestA = await troveManager.calcTroveAccruedInterest(ATroveId);
+    const interestB = await troveManager.calcTroveAccruedInterest(BTroveId);
+    const interestC = await troveManager.calcTroveAccruedInterest(CTroveId);
 
     // Bold redemption is 55000 Bold
     const BoldRedemption = dec(55000, 18);
@@ -3075,157 +2773,28 @@ contract("TroveManager", async (accounts) => {
       B,
       contracts,
       BoldRedemption,
+      10,
       th._100pct,
     );
 
-    // Check B, C closed and A remains active
-    assert.isTrue(await sortedTroves.contains(ATroveId));
+    // Check B, C out of sorted list (unredeemable) and A too, despite being partially redeemed and ended up below min debt
+    assert.isFalse(await sortedTroves.contains(ATroveId));
     assert.isFalse(await sortedTroves.contains(BTroveId));
     assert.isFalse(await sortedTroves.contains(CTroveId));
 
-    // A's remaining debt would be 29950 + 19950 + 5950 + 50 - 55000 = 900.
-    // Since this is below the min net debt of 100, A should be skipped and untouched by the redemption
+    // A's remaining debt would be 29800 + 19800 + 6000 - 55000 + interest = 600 + interest.
+    // This is below the min net debt of 2000, but still it’s redeemed and debt gets reduced
     const A_debt = await troveManager.getTroveDebt(ATroveId);
-    await th.assertIsApproximatelyEqual(A_debt, dec(6000, 18));
-  });
-
-  it.skip("redeemCollateral(): doesnt perform the final partial redemption in the sequence if the hint is out-of-date", async () => {
-    // --- SETUP ---
-    const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
-      ICR: toBN(dec(363, 16)),
-      extraBoldAmount: dec(5, 18),
-      extraParams: { from: alice },
-    });
-    const { troveId: bobTroveId, netDebt: B_netDebt } = await openTrove({
-      ICR: toBN(dec(344, 16)),
-      extraBoldAmount: dec(8, 18),
-      extraParams: { from: bob },
-    });
-    const { troveId: carolTroveId, netDebt: C_netDebt } = await openTrove({
-      ICR: toBN(dec(333, 16)),
-      extraBoldAmount: dec(10, 18),
-      extraParams: { from: carol },
-    });
-
-    const partialRedemptionAmount = toBN(2);
-    const fullfilledRedemptionAmount = C_netDebt.add(B_netDebt);
-    const redemptionAmount = fullfilledRedemptionAmount.add(
-      partialRedemptionAmount,
-    );
-
-    await openTrove({
-      ICR: toBN(dec(100, 18)),
-      extraBoldAmount: redemptionAmount,
-      extraParams: { from: dennis },
-    });
-
-    const dennis_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(dennis));
-
-    const dennis_BoldBalance_Before = await boldToken.balanceOf(dennis);
-
-    const price = await priceFeed.getPrice();
-    assert.equal(price, dec(200, 18));
-
-    // --- TEST ---
-
-    const { firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-      redemptionAmount,
-      price,
-      0,
-    );
-
-    const { 0: upperPartialRedemptionHint, 1: lowerPartialRedemptionHint } = await sortedTroves.findInsertPosition(
-      partialRedemptionHintNICR,
-      dennis,
-      dennis,
-    );
-
-    const frontRunRedepmtion = toBN(dec(1, 18));
-    // Oops, another transaction gets in the way
-    {
-      const { firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-        dec(1, 18),
-        price,
-        0,
-      );
-
-      const { 0: upperPartialRedemptionHint, 1: lowerPartialRedemptionHint } = await sortedTroves.findInsertPosition(
-        partialRedemptionHintNICR,
-        dennis,
-        dennis,
-      );
-
-      // skip bootstrapping phase
-      await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
-
-      // Alice redeems 1 Bold from Carol's Trove
-      await troveManager.redeemCollateral(
-        frontRunRedepmtion,
-        firstRedemptionHint,
-        upperPartialRedemptionHint,
-        lowerPartialRedemptionHint,
-        partialRedemptionHintNICR,
-        0,
-        th._100pct,
-        { from: alice },
-      );
-    }
-
-    // Dennis tries to redeem 20 Bold
-    const redemptionTx = await troveManager.redeemCollateral(
-      redemptionAmount,
-      firstRedemptionHint,
-      upperPartialRedemptionHint,
-      lowerPartialRedemptionHint,
-      partialRedemptionHintNICR,
-      0,
-      th._100pct,
-      {
-        from: dennis,
-        gasPrice: GAS_PRICE,
-      },
-    );
-
-    const ETHFee = th.getEmittedRedemptionValues(redemptionTx)[3];
-
-    // Since Alice already redeemed 1 Bold from Carol's Trove, Dennis was  able to redeem:
-    //  - 9 Bold from Carol's
-    //  - 8 Bold from Bob's
-    // for a total of 17 Bold.
-
-    // Dennis calculated his hint for redeeming 2 Bold from Alice's Trove, but after Alice's transaction
-    // got in the way, he would have needed to redeem 3 Bold to fully complete his redemption of 20 Bold.
-    // This would have required a different hint, therefore he ended up with a partial redemption.
-
-    const dennis_ETHBalance_After = toBN(await contracts.WETH.balanceOf(dennis));
-    const receivedETH = dennis_ETHBalance_After.sub(dennis_ETHBalance_Before);
-
-    // Expect only 17 worth of ETH drawn
-    const expectedTotalETHDrawn = fullfilledRedemptionAmount
-      .sub(frontRunRedepmtion)
-      .div(toBN(200)); // redempted Bold converted to ETH, at ETH:USD price 200
-    const expectedReceivedETH = expectedTotalETHDrawn.sub(ETHFee);
-
-    th.assertIsApproximatelyEqual(expectedReceivedETH, receivedETH);
-
-    const dennis_BoldBalance_After = (
-      await boldToken.balanceOf(dennis)
-    ).toString();
-    th.assertIsApproximatelyEqual(
-      dennis_BoldBalance_After,
-      dennis_BoldBalance_Before.sub(
-        fullfilledRedemptionAmount.sub(frontRunRedepmtion),
-      ),
-    );
+    await th.assertIsApproximatelyEqual(A_debt, AInitialDebt.add(BInitialDebt).add(CInitialDebt).sub(toBN(dec(55400, 18))).add(interestA).add(interestB).add(interestC), 6e15);
   });
 
   // active debt cannot be zero, as there’s a positive min debt enforced, and at least a trove must exist
-  it.skip("redeemCollateral(): can redeem if there is zero active debt but non-zero debt in DefaultPool", async () => {
+  it("redeemCollateral(): can redeem if there is zero active debt but non-zero debt in DefaultPool", async () => {
     // --- SETUP ---
 
-    const amount = await getOpenTroveBoldAmount(dec(110, 18));
+    const amount = await getOpenTroveBoldAmount(dec(2110, 18));
     await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: alice } });
-    await openTrove({
+    const { troveId: bobTroveId } = await openTrove({
       ICR: toBN(dec(133, 16)),
       extraBoldAmount: amount,
       extraParams: { from: bob },
@@ -3237,7 +2806,7 @@ contract("TroveManager", async (accounts) => {
     await priceFeed.setPrice(price);
 
     // Liquidate Bob's Trove
-    await troveManager.liquidateTroves(1);
+    await troveManager.liquidate(bobTroveId);
 
     // --- TEST ---
 
@@ -3252,16 +2821,9 @@ contract("TroveManager", async (accounts) => {
       carol,
       contracts,
       amount,
-      alice,
-      "0x0000000000000000000000000000000000000000",
-      "0x0000000000000000000000000000000000000000",
-      "10367038690476190477",
-      0,
+      10,
       th._100pct,
-      {
-        from: carol,
-        gasPrice: GAS_PRICE,
-      },
+      GAS_PRICE,
     );
 
     const carol_ETHBalance_After = toBN(await contracts.WETH.balanceOf(carol));
@@ -3278,147 +2840,52 @@ contract("TroveManager", async (accounts) => {
     assert.equal(carol_BoldBalance_After, "0");
   });
 
-  it.skip("redeemCollateral(): doesn't touch Troves with ICR < 110%", async () => {
+  it("redeemCollateral(): doesn’t redeem Troves with ICR < 100%", async () => {
     // --- SETUP ---
 
     const { troveId: aliceTroveId, netDebt: A_debt } = await openTrove({
       ICR: toBN(dec(13, 18)),
-      extraParams: { from: alice },
+      extraParams: { from: alice, annualInterestRate: dec(5, 16) },
     });
     const { troveId: bobTroveId, boldAmount: B_boldAmount, totalDebt: B_totalDebt } = await openTrove({
       ICR: toBN(dec(133, 16)),
       extraBoldAmount: A_debt,
-      extraParams: { from: bob },
+      extraParams: { from: bob, annualInterestRate: dec(4, 16) },
     });
 
     await boldToken.transfer(carol, B_boldAmount, { from: bob });
 
-    // Put Bob's Trove below 110% ICR
+    // Put Bob's Trove below 100% ICR
     const price = dec(100, 18);
     await priceFeed.setPrice(price);
+
+    assert((await troveManager.getCurrentICR(bobTroveId, price)).lt(toBN(dec(100, 16))));
 
     // --- TEST ---
 
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
-    await troveManager.redeemCollateral(
-      A_debt,
-      alice,
-      "0x0000000000000000000000000000000000000000",
-      "0x0000000000000000000000000000000000000000",
-      0,
-      0,
+    await th.redeemCollateralAndGetTxObject(
+      carol,
+      contracts,
+      A_debt.add(toBN("3839310296821028196")),
+      10,
       th._100pct,
-      { from: carol },
     );
 
     // Alice's Trove was cleared of debt
     const { debt: alice_Debt_After } = await troveManager.Troves(aliceTroveId);
-    assert.equal(alice_Debt_After, "0");
+    assert.equal(alice_Debt_After.toString(), BOLD_GAS_COMPENSATION.toString());
 
     // Bob's Trove was left untouched
     const { debt: bob_Debt_After } = await troveManager.Troves(bobTroveId);
+    th.logBN('bob_Debt_After', bob_Debt_After)
+    th.logBN('B_totalDebt', B_totalDebt)
     th.assertIsApproximatelyEqual(bob_Debt_After, B_totalDebt);
   });
 
-  it.skip("redeemCollateral(): finds the last Trove with ICR == 110% even if there is more than one", async () => {
-    // --- SETUP ---
-    const amount1 = toBN(dec(100, 18));
-    const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
-      ICR: toBN(dec(200, 16)),
-      extraBoldAmount: amount1,
-      extraParams: { from: alice },
-    });
-    const { troveId: bobTroveId, totalDebt: B_totalDebt } = await openTrove({
-      ICR: toBN(dec(200, 16)),
-      extraBoldAmount: amount1,
-      extraParams: { from: bob },
-    });
-    const { troveId: carolTroveId, totalDebt: C_totalDebt } = await openTrove({
-      ICR: toBN(dec(200, 16)),
-      extraBoldAmount: amount1,
-      extraParams: { from: carol },
-    });
-    const redemptionAmount = C_totalDebt.add(B_totalDebt).add(A_totalDebt);
-    const { troveId: dennisTroveId, totalDebt: D_totalDebt } = await openTrove({
-      ICR: toBN(dec(195, 16)),
-      extraBoldAmount: redemptionAmount,
-      extraParams: { from: dennis },
-    });
-
-    // This will put Dennis slightly below 110%, and everyone else exactly at 110%
-    const price = "110" + _18_zeros;
-    await priceFeed.setPrice(price);
-
-    const orderOfTroves = [];
-    let current = await sortedTroves.getFirst();
-
-    while (current !== "0x0000000000000000000000000000000000000000") {
-      orderOfTroves.push(current);
-      current = await sortedTroves.getNext(current);
-    }
-
-    assert.deepEqual(orderOfTroves, [carol, bob, alice, dennis]);
-
-    await openTrove({
-      ICR: toBN(dec(100, 18)),
-      extraBoldAmount: dec(10, 18),
-      extraParams: { from: whale },
-    });
-
-    // skip bootstrapping phase
-    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
-
-    const tx = await troveManager.redeemCollateral(
-      redemptionAmount,
-      carol, // try to trick redeemCollateral by passing a hint that doesn't exactly point to the
-      // last Trove with ICR == 110% (which would be Alice's)
-      "0x0000000000000000000000000000000000000000",
-      "0x0000000000000000000000000000000000000000",
-      0,
-      0,
-      th._100pct,
-      { from: dennis },
-    );
-
-    const { debt: alice_Debt_After } = await troveManager.Troves(aliceTroveId);
-    assert.equal(alice_Debt_After, "0");
-
-    const { debt: bob_Debt_After } = await troveManager.Troves(bobTroveId);
-    assert.equal(bob_Debt_After, "0");
-
-    const { debt: carol_Debt_After } = await troveManager.Troves(carolTroveId);
-    assert.equal(carol_Debt_After, "0");
-
-    const { debt: dennis_Debt_After } = await troveManager.Troves(dennisTroveId);
-    th.assertIsApproximatelyEqual(dennis_Debt_After, D_totalDebt);
-  });
-
-  it.skip("redeemCollateral(): reverts when TCR < MCR", async () => {
-    await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: alice } });
-    await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: bob } });
-    const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: carol } });
-    await openTrove({ ICR: toBN(dec(196, 16)), extraParams: { from: dennis } });
-
-    // This will put Dennis slightly below 110%, and everyone else exactly at 110%
-
-    await priceFeed.setPrice("110" + _18_zeros);
-    const price = await priceFeed.getPrice();
-
-    const TCR = await th.getTCR(contracts);
-    assert.isTrue(TCR.lt(toBN("1100000000000000000")));
-
-    // skip bootstrapping phase
-    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
-
-    await assertRevert(
-      th.redeemCollateral(carolTroveId, contracts, GAS_PRICE, dec(270, 18)),
-      "TroveManager: Cannot redeem when TCR < MCR",
-    );
-  });
-
-  it.skip("redeemCollateral(): reverts when argument _amount is 0", async () => {
+  it("redeemCollateral(): reverts when argument _amount is 0", async () => {
     await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale } });
 
     // Alice opens trove and transfers 500Bold to Erin, the would-be redeemer
@@ -3438,15 +2905,12 @@ contract("TroveManager", async (accounts) => {
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Erin attempts to redeem with _amount = 0
-    const redemptionTxPromise = troveManager.redeemCollateral(
-      0,
+    const redemptionTxPromise = th.redeemCollateralAndGetTxObject(
       erin,
-      erin,
-      erin,
+      contracts,
       0,
-      0,
+      10,
       th._100pct,
-      { from: erin },
     );
     await assertRevert(
       redemptionTxPromise,
@@ -3454,7 +2918,7 @@ contract("TroveManager", async (accounts) => {
     );
   });
 
-  it.skip("redeemCollateral(): reverts if max fee > 100%", async () => {
+  it("redeemCollateral(): reverts if max fee > 100%", async () => {
     await openTrove({
       ICR: toBN(dec(400, 16)),
       extraBoldAmount: dec(10, 18),
@@ -3484,6 +2948,7 @@ contract("TroveManager", async (accounts) => {
         A,
         contracts,
         dec(10, 18),
+        10,
         GAS_PRICE,
         dec(2, 18),
       ),
@@ -3494,6 +2959,7 @@ contract("TroveManager", async (accounts) => {
         A,
         contracts,
         dec(10, 18),
+        10,
         GAS_PRICE,
         "1000000000000000001",
       ),
@@ -3501,7 +2967,7 @@ contract("TroveManager", async (accounts) => {
     );
   });
 
-  it.skip("redeemCollateral(): reverts if max fee < 0.5%", async () => {
+  it("redeemCollateral(): reverts if max fee < 0.5%", async () => {
     await openTrove({
       ICR: toBN(dec(400, 16)),
       extraBoldAmount: dec(10, 18),
@@ -3530,9 +2996,10 @@ contract("TroveManager", async (accounts) => {
       th.redeemCollateralAndGetTxObject(
         A,
         contracts,
-        GAS_PRICE,
+        10,
         dec(10, 18),
         0,
+        GAS_PRICE,
       ),
       "Max fee percentage must be between 0.5% and 100%",
     );
@@ -3540,9 +3007,10 @@ contract("TroveManager", async (accounts) => {
       th.redeemCollateralAndGetTxObject(
         A,
         contracts,
-        GAS_PRICE,
         dec(10, 18),
+        10,
         1,
+        GAS_PRICE,
       ),
       "Max fee percentage must be between 0.5% and 100%",
     );
@@ -3550,15 +3018,16 @@ contract("TroveManager", async (accounts) => {
       th.redeemCollateralAndGetTxObject(
         A,
         contracts,
-        GAS_PRICE,
+        10,
         dec(10, 18),
         "4999999999999999",
+        GAS_PRICE,
       ),
       "Max fee percentage must be between 0.5% and 100%",
     );
   });
 
-  it.skip("redeemCollateral(): reverts if fee exceeds max fee percentage", async () => {
+  it("redeemCollateral(): reverts if fee exceeds max fee percentage", async () => {
     const { totalDebt: A_totalDebt } = await openTrove({
       ICR: toBN(dec(400, 16)),
       extraBoldAmount: dec(80, 18),
@@ -3580,7 +3049,7 @@ contract("TroveManager", async (accounts) => {
     const totalSupply = await boldToken.totalSupply();
     th.assertIsApproximatelyEqual(totalSupply, expectedTotalSupply);
 
-    await troveManager.setBaseRate(0);
+    await contracts.collateralRegistry.setBaseRate(0);
 
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
@@ -3595,12 +3064,13 @@ contract("TroveManager", async (accounts) => {
         A,
         contracts,
         attemptedBoldRedemption,
+        10,
         lessThan5pct,
       ),
       "Fee exceeded provided maximum",
     );
 
-    await troveManager.setBaseRate(0); // artificially zero the baseRate
+    await contracts.collateralRegistry.setBaseRate(0); // artificially zero the baseRate
 
     // Max fee is 1%
     await assertRevert(
@@ -3608,12 +3078,13 @@ contract("TroveManager", async (accounts) => {
         A,
         contracts,
         attemptedBoldRedemption,
+        10,
         dec(1, 16),
       ),
       "Fee exceeded provided maximum",
     );
 
-    await troveManager.setBaseRate(0);
+    await contracts.collateralRegistry.setBaseRate(0);
 
     // Max fee is 3.754%
     await assertRevert(
@@ -3621,12 +3092,13 @@ contract("TroveManager", async (accounts) => {
         A,
         contracts,
         attemptedBoldRedemption,
+        10,
         dec(3754, 13),
       ),
       "Fee exceeded provided maximum",
     );
 
-    await troveManager.setBaseRate(0);
+    await contracts.collateralRegistry.setBaseRate(0);
 
     // Max fee is 0.5%
     await assertRevert(
@@ -3634,35 +3106,36 @@ contract("TroveManager", async (accounts) => {
         A,
         contracts,
         attemptedBoldRedemption,
+        10,
         dec(5, 15),
       ),
       "Fee exceeded provided maximum",
     );
   });
 
-  it.skip("redeemCollateral(): doesn't affect the Stability Pool deposits or ETH gain of redeemed-from troves", async () => {
-    await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale } });
+  it("redeemCollateral(): doesn't affect the Stability Pool deposits or ETH gain of redeemed-from troves", async () => {
+    await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale, annualInterestRate: dec(90, 16) } });
 
     // B, C, D, F open trove
     const { troveId: bobTroveId, totalDebt: B_totalDebt } = await openTrove({
       ICR: toBN(dec(200, 16)),
       extraBoldAmount: dec(100, 18),
-      extraParams: { from: bob },
+      extraParams: { from: bob, annualInterestRate: dec(5, 16) },
     });
     const { troveId: carolTroveId, totalDebt: C_totalDebt } = await openTrove({
       ICR: toBN(dec(195, 16)),
       extraBoldAmount: dec(200, 18),
-      extraParams: { from: carol },
+      extraParams: { from: carol, annualInterestRate: dec(4, 16) },
     });
     const { troveId: dennisTroveId, totalDebt: D_totalDebt } = await openTrove({
       ICR: toBN(dec(190, 16)),
       extraBoldAmount: dec(400, 18),
-      extraParams: { from: dennis },
+      extraParams: { from: dennis, annualInterestRate: dec(3, 16) },
     });
     const { troveId: flynTroveId, totalDebt: F_totalDebt } = await openTrove({
       ICR: toBN(dec(200, 16)),
       extraBoldAmount: dec(100, 18),
-      extraParams: { from: flyn },
+      extraParams: { from: flyn, annualInterestRate: dec(5, 16) },
     });
 
     const redemptionAmount = B_totalDebt.add(C_totalDebt)
@@ -3672,7 +3145,7 @@ contract("TroveManager", async (accounts) => {
     await openTrove({
       ICR: toBN(dec(300, 16)),
       extraBoldAmount: redemptionAmount,
-      extraParams: { from: alice },
+      extraParams: { from: alice, annualInterestRate: dec(10, 16) },
     });
     await boldToken.transfer(erin, redemptionAmount, { from: alice });
 
@@ -3774,7 +3247,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal(dennis_ETHGain_before, dennis_ETHGain_after);
   });
 
-  it.skip("redeemCollateral(): caller can redeem their entire BoldToken balance", async () => {
+  it("redeemCollateral(): caller can redeem their entire BoldToken balance", async () => {
     const { collateral: W_coll, totalDebt: W_totalDebt } = await openTrove({
       ICR: toBN(dec(20, 18)),
       extraParams: { from: whale },
@@ -3830,27 +3303,13 @@ contract("TroveManager", async (accounts) => {
     const ETHFee = await contracts.troveManager.getEffectiveRedemptionFeeInColl(dec(400, 18), price);
 
     // Erin attempts to redeem 400 Bold
-    const { firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-      dec(400, 18),
-      price,
-      0,
-    );
 
-    const { 0: upperPartialRedemptionHint, 1: lowerPartialRedemptionHint } = await sortedTroves.findInsertPosition(
-      partialRedemptionHintNICR,
+    await th.redeemCollateralAndGetTxObject(
       erin,
-      erin,
-    );
-
-    await troveManager.redeemCollateral(
+      contracts,
       dec(400, 18),
-      firstRedemptionHint,
-      upperPartialRedemptionHint,
-      lowerPartialRedemptionHint,
-      partialRedemptionHintNICR,
-      0,
+      10,
       th._100pct,
-      { from: erin },
     );
 
     // Check activePool debt reduced by  400 Bold
@@ -3866,8 +3325,8 @@ contract("TroveManager", async (accounts) => {
     const activePool_coll_after = await activePool.getETHBalance();
     // console.log(`activePool_coll_after: ${activePool_coll_after}`)
     assert.equal(
-      activePool_coll_after.toString(),
-      activePool_coll_before.sub(toBN(dec(2, 18))),
+      activePool_coll_after.sub(ETHFee).toString(),
+      activePool_coll_before.sub(toBN(dec(2, 18))).toString(),
     );
 
     // Check Erin's balance after
@@ -3875,7 +3334,7 @@ contract("TroveManager", async (accounts) => {
     assert.equal(erin_balance_after, "0");
   });
 
-  it.skip("redeemCollateral(): reverts when requested redemption amount exceeds caller's Bold token balance", async () => {
+  it("redeemCollateral(): reverts when requested redemption amount exceeds caller's Bold token balance", async () => {
     const { collateral: W_coll, totalDebt: W_totalDebt } = await openTrove({
       ICR: toBN(dec(20, 18)),
       extraParams: { from: whale },
@@ -3925,38 +3384,17 @@ contract("TroveManager", async (accounts) => {
 
     const price = await priceFeed.getPrice();
 
-    let firstRedemptionHint;
-    let partialRedemptionHintNICR;
-
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Erin tries to redeem 1000 Bold
     try {
-      ({ firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-        dec(1000, 18),
-        price,
-        0,
-      ));
-
-      const {
-        0: upperPartialRedemptionHint_1,
-        1: lowerPartialRedemptionHint_1,
-      } = await sortedTroves.findInsertPosition(
-        partialRedemptionHintNICR,
+      const redemptionTx = await th.redeemCollateralAndGetTxObject(
         erin,
-        erin,
-      );
-
-      const redemptionTx = await troveManager.redeemCollateral(
+        contracts,
         dec(1000, 18),
-        firstRedemptionHint,
-        upperPartialRedemptionHint_1,
-        lowerPartialRedemptionHint_1,
-        partialRedemptionHintNICR,
-        0,
+        10,
         th._100pct,
-        { from: erin },
       );
 
       assert.isFalse(redemptionTx.receipt.status);
@@ -3970,30 +3408,12 @@ contract("TroveManager", async (accounts) => {
 
     // Erin tries to redeem 401 Bold
     try {
-      ({ firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-        "401000000000000000000",
-        price,
-        0,
-      ));
-
-      const {
-        0: upperPartialRedemptionHint_2,
-        1: lowerPartialRedemptionHint_2,
-      } = await sortedTroves.findInsertPosition(
-        partialRedemptionHintNICR,
+      const redemptionTx = await th.redeemCollateralAndGetTxObject(
         erin,
-        erin,
-      );
-
-      const redemptionTx = await troveManager.redeemCollateral(
+        contracts,
         "401000000000000000000",
-        firstRedemptionHint,
-        upperPartialRedemptionHint_2,
-        lowerPartialRedemptionHint_2,
-        partialRedemptionHintNICR,
-        0,
+        10,
         th._100pct,
-        { from: erin },
       );
       assert.isFalse(redemptionTx.receipt.status);
     } catch (error) {
@@ -4006,30 +3426,12 @@ contract("TroveManager", async (accounts) => {
 
     // Erin tries to redeem 239482309 Bold
     try {
-      ({ firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-        "239482309000000000000000000",
-        price,
-        0,
-      ));
-
-      const {
-        0: upperPartialRedemptionHint_3,
-        1: lowerPartialRedemptionHint_3,
-      } = await sortedTroves.findInsertPosition(
-        partialRedemptionHintNICR,
+      const redemptionTx = await th.redeemCollateralAndGetTxObject(
         erin,
-        erin,
-      );
-
-      const redemptionTx = await troveManager.redeemCollateral(
+        contracts,
         "239482309000000000000000000",
-        firstRedemptionHint,
-        upperPartialRedemptionHint_3,
-        lowerPartialRedemptionHint_3,
-        partialRedemptionHintNICR,
-        0,
+        10,
         th._100pct,
-        { from: erin },
       );
       assert.isFalse(redemptionTx.receipt.status);
     } catch (error) {
@@ -4041,32 +3443,17 @@ contract("TroveManager", async (accounts) => {
     }
 
     // Erin tries to redeem 2^256 - 1 Bold
+    const maxBytes32 = toBN(
+      "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    );
 
     try {
-      ({ firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-        "239482309000000000000000000",
-        price,
-        0,
-      ));
-
-      const {
-        0: upperPartialRedemptionHint_4,
-        1: lowerPartialRedemptionHint_4,
-      } = await sortedTroves.findInsertPosition(
-        partialRedemptionHintNICR,
+      const redemptionTx = await th.redeemCollateralAndGetTxObject(
         erin,
-        erin,
-      );
-
-      const redemptionTx = await troveManager.redeemCollateral(
-        th.MAX_UINT256,
-        firstRedemptionHint,
-        upperPartialRedemptionHint_4,
-        lowerPartialRedemptionHint_4,
-        partialRedemptionHintNICR,
-        0,
+        contracts,
+        maxBytes32,
+        10,
         th._100pct,
-        { from: erin },
       );
       assert.isFalse(redemptionTx.receipt.status);
     } catch (error) {
@@ -4078,7 +3465,7 @@ contract("TroveManager", async (accounts) => {
     }
   });
 
-  it.skip("redeemCollateral(): value of issued ETH == face value of redeemed Bold (assuming 1 Bold has value of $1)", async () => {
+  it("redeemCollateral(): value of issued ETH == face value of redeemed Bold (assuming 1 Bold has value of $1)", async () => {
     const { collateral: W_coll } = await openTrove({
       ICR: toBN(dec(20, 18)),
       extraParams: { from: whale },
@@ -4123,18 +3510,6 @@ contract("TroveManager", async (accounts) => {
     const activeETH_0 = await activePool.getETHBalance();
     assert.equal(activeETH_0, totalColl.toString());
 
-    let firstRedemptionHint;
-    let partialRedemptionHintNICR;
-
-    // Erin redeems 120 Bold
-    ({ firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(_120_Bold, price, 0));
-
-    const { 0: upperPartialRedemptionHint_1, 1: lowerPartialRedemptionHint_1 } = await sortedTroves.findInsertPosition(
-      partialRedemptionHintNICR,
-      erin,
-      erin,
-    );
-
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
@@ -4144,13 +3519,8 @@ contract("TroveManager", async (accounts) => {
       erin,
       contracts,
       _120_Bold,
-      firstRedemptionHint,
-      upperPartialRedemptionHint_1,
-      lowerPartialRedemptionHint_1,
-      partialRedemptionHintNICR,
-      0,
+      10,
       th._100pct,
-      { from: erin },
     );
 
     assert.isTrue(redemption_1.receipt.status);
@@ -4161,29 +3531,18 @@ contract("TroveManager", async (accounts) => {
 
     const activeETH_1 = await activePool.getETHBalance();
     assert.equal(
-      activeETH_1.toString(),
-      activeETH_0.sub(toBN(_120_Bold).mul(mv._1e18BN).div(price)),
+      activeETH_1.sub(ETHFee_1).toString(),
+      activeETH_0.sub(toBN(_120_Bold).mul(mv._1e18BN).div(price)).toString(),
     );
 
     const ETHFee_2 = await contracts.troveManager.getEffectiveRedemptionFeeInColl(_373_Bold, price);
     // Flyn redeems 373 Bold
-    ({ firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(_373_Bold, price, 0));
-
-    const { 0: upperPartialRedemptionHint_2, 1: lowerPartialRedemptionHint_2 } = await sortedTroves.findInsertPosition(
-      partialRedemptionHintNICR,
+    const redemption_2 = await th.redeemCollateralAndGetTxObject(
       flyn,
-      flyn,
-    );
-
-    const redemption_2 = await troveManager.redeemCollateral(
+      contracts,
       _373_Bold,
-      firstRedemptionHint,
-      upperPartialRedemptionHint_2,
-      lowerPartialRedemptionHint_2,
-      partialRedemptionHintNICR,
-      0,
+      10,
       th._100pct,
-      { from: flyn },
     );
 
     assert.isTrue(redemption_2.receipt.status);
@@ -4193,29 +3552,18 @@ contract("TroveManager", async (accounts) => {
     Total active ETH = 279.4 - 1.865 = 277.535 ETH */
     const activeETH_2 = await activePool.getETHBalance();
     assert.equal(
-      activeETH_2.toString(),
-      activeETH_1.sub(toBN(_373_Bold).mul(mv._1e18BN).div(price)),
+      activeETH_2.sub(ETHFee_2).toString(),
+      activeETH_1.sub(toBN(_373_Bold).mul(mv._1e18BN).div(price)).toString(),
     );
 
     const ETHFee_3 = await contracts.troveManager.getEffectiveRedemptionFeeInColl(_950_Bold, price);
     // Graham redeems 950 Bold
-    ({ firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(_950_Bold, price, 0));
-
-    const { 0: upperPartialRedemptionHint_3, 1: lowerPartialRedemptionHint_3 } = await sortedTroves.findInsertPosition(
-      partialRedemptionHintNICR,
+    const redemption_3 = await th.redeemCollateralAndGetTxObject(
       graham,
-      graham,
-    );
-
-    const redemption_3 = await troveManager.redeemCollateral(
+      contracts,
       _950_Bold,
-      firstRedemptionHint,
-      upperPartialRedemptionHint_3,
-      lowerPartialRedemptionHint_3,
-      partialRedemptionHintNICR,
-      0,
+      10,
       th._100pct,
-      { from: graham },
     );
 
     assert.isTrue(redemption_3.receipt.status);
@@ -4223,16 +3571,16 @@ contract("TroveManager", async (accounts) => {
     /* 950 Bold redeemed.  Expect $950 worth of ETH removed. At ETH:USD price of $200,
     ETH removed = (950/200) = 4.75 ETH
     Total active ETH = 277.535 - 4.75 = 272.785 ETH */
-    const activeETH_3 = (await activePool.getETHBalance()).toString();
+    const activeETH_3 = await activePool.getETHBalance();
     assert.equal(
-      activeETH_3.toString(),
-      activeETH_2.sub(toBN(_950_Bold).mul(mv._1e18BN).div(price)),
+      activeETH_3.sub(ETHFee_3).toString(),
+      activeETH_2.sub(toBN(_950_Bold).mul(mv._1e18BN).div(price)).toString(),
     );
   });
 
   // it doesn’t make much sense as there’s now min debt enforced and at least one trove must remain active
   // the only way to test it is before any trove is opened
-  it.skip("redeemCollateral(): reverts if there is zero outstanding system debt", async () => {
+  it("redeemCollateral(): reverts if there is zero outstanding system debt", async () => {
     // --- SETUP --- illegally mint Bold to Bob
     await boldToken.unprotectedMint(bob, dec(100, 18));
 
@@ -4240,29 +3588,14 @@ contract("TroveManager", async (accounts) => {
 
     const price = await priceFeed.getPrice();
 
-    const { firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-      dec(100, 18),
-      price,
-      0,
-    );
-
-    const { 0: upperPartialRedemptionHint, 1: lowerPartialRedemptionHint } = await sortedTroves.findInsertPosition(
-      partialRedemptionHintNICR,
-      bob,
-      bob,
-    );
-
     // Bob tries to redeem his illegally obtained Bold
     try {
-      const redemptionTx = await troveManager.redeemCollateral(
+      const redemptionTx = await th.redeemCollateralAndGetTxObject(
+        bob,
+        contracts,
         dec(100, 18),
-        firstRedemptionHint,
-        upperPartialRedemptionHint,
-        lowerPartialRedemptionHint,
-        partialRedemptionHintNICR,
-        0,
+        10,
         th._100pct,
-        { from: bob },
       );
     } catch (error) {
       assert.include(
@@ -4274,7 +3607,7 @@ contract("TroveManager", async (accounts) => {
     // assert.isFalse(redemptionTx.receipt.status);
   });
 
-  it.skip("redeemCollateral(): reverts if caller's tries to redeem more than the outstanding system debt", async () => {
+  it("redeemCollateral(): reverts if caller's tries to redeem more than the outstanding system debt", async () => {
     // --- SETUP --- illegally mint Bold to Bob
     await boldToken.unprotectedMint(bob, "101000000000000000000");
 
@@ -4298,32 +3631,18 @@ contract("TroveManager", async (accounts) => {
     );
 
     const price = await priceFeed.getPrice();
-    const { firstRedemptionHint, partialRedemptionHintNICR } = await hintHelpers.getRedemptionHints(
-      "101000000000000000000",
-      price,
-      0,
-    );
-
-    const { 0: upperPartialRedemptionHint, 1: lowerPartialRedemptionHint } = await sortedTroves.findInsertPosition(
-      partialRedemptionHintNICR,
-      bob,
-      bob,
-    );
 
     // skip bootstrapping phase
     await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
 
     // Bob attempts to redeem his ill-gotten 101 Bold, from a system that has 100 Bold outstanding debt
     try {
-      const redemptionTx = await troveManager.redeemCollateral(
+      const redemptionTx = await th.redeemCollateralAndGetTxObject(
+        bob,
+        contracts,
         totalDebt.add(toBN(dec(100, 18))),
-        firstRedemptionHint,
-        upperPartialRedemptionHint,
-        lowerPartialRedemptionHint,
-        partialRedemptionHintNICR,
-        0,
+        10,
         th._100pct,
-        { from: bob },
       );
     } catch (error) {
       assert.include(
@@ -4333,7 +3652,7 @@ contract("TroveManager", async (accounts) => {
     }
   });
 
-  it.skip("redeemCollateral(): a redemption sends the ETH remainder (ETHDrawn - gas) to the redeemer", async () => {
+  it("redeemCollateral(): a redemption sends the ETH remainder (ETHDrawn - gas) to the redeemer", async () => {
     // time fast-forwards 1 year, and multisig stakes 1 LQTY
     await time.increase(timeValues.SECONDS_IN_ONE_YEAR);
 
@@ -4370,6 +3689,7 @@ contract("TroveManager", async (accounts) => {
     const totalBoldSupply = activeBold.add(defaultBold);
     th.assertIsApproximatelyEqual(totalBoldSupply, totalDebt);
 
+
     // A redeems 9 Bold
     const redemptionAmount = toBN(dec(9, 18));
     const price = await priceFeed.getPrice();
@@ -4378,6 +3698,7 @@ contract("TroveManager", async (accounts) => {
       A,
       contracts,
       redemptionAmount,
+      th._100pct,
       GAS_PRICE,
     );
 
@@ -4392,40 +3713,40 @@ contract("TroveManager", async (accounts) => {
     const ETHDrawn = redemptionAmount.mul(mv._1e18BN).div(price);
     th.assertIsApproximatelyEqual(
       A_balanceAfter.sub(A_balanceBefore),
-      ETHDrawn,
+      ETHDrawn.sub(ETHFee),
       100000,
     );
   });
 
-  it.skip("redeemCollateral(): a full redemption (leaving trove with 0 debt), closes the trove", async () => {
+  it("redeemCollateral(): a full redemption (leaving trove with 0 debt), closes the trove", async () => {
     // time fast-forwards 1 year, and multisig stakes 1 LQTY
     await time.increase(timeValues.SECONDS_IN_ONE_YEAR);
 
     const { netDebt: W_netDebt } = await openTrove({
       ICR: toBN(dec(20, 18)),
       extraBoldAmount: dec(10000, 18),
-      extraParams: { from: whale },
+      extraParams: { from: whale, annualInterestRate: dec(50, 16) },
     });
 
     const { troveId: ATroveId, netDebt: A_netDebt } = await openTrove({
       ICR: toBN(dec(200, 16)),
       extraBoldAmount: dec(100, 18),
-      extraParams: { from: A },
+      extraParams: { from: A, annualInterestRate: dec(5, 16) },
     });
     const { troveId: BTroveId, netDebt: B_netDebt } = await openTrove({
       ICR: toBN(dec(190, 16)),
       extraBoldAmount: dec(100, 18),
-      extraParams: { from: B },
+      extraParams: { from: B, annualInterestRate: dec(4, 16) },
     });
     const { troveId: CTroveId, netDebt: C_netDebt } = await openTrove({
       ICR: toBN(dec(180, 16)),
       extraBoldAmount: dec(100, 18),
-      extraParams: { from: C },
+      extraParams: { from: C, annualInterestRate: dec(3, 16) },
     });
     const { troveId: DTroveId, netDebt: D_netDebt } = await openTrove({
       ICR: toBN(dec(280, 16)),
       extraBoldAmount: dec(100, 18),
-      extraParams: { from: D },
+      extraParams: { from: D, annualInterestRate: dec(10, 16) },
     });
     const redemptionAmount = A_netDebt.add(B_netDebt)
       .add(C_netDebt)
@@ -4436,7 +3757,7 @@ contract("TroveManager", async (accounts) => {
     const C_balanceBefore = toBN(await contracts.WETH.balanceOf(C));
 
     // whale redeems 360 Bold.  Expect this to fully redeem A, B, C, and partially redeem D.
-    await th.redeemCollateral(whale, contracts, redemptionAmount, GAS_PRICE);
+    await th.redeemCollateral(whale, contracts, redemptionAmount, th._100pct, GAS_PRICE);
 
     // Check A, B, C have been closed
     assert.isFalse(await sortedTroves.contains(ATroveId));
@@ -4447,35 +3768,35 @@ contract("TroveManager", async (accounts) => {
     assert.isTrue(await sortedTroves.contains(DTroveId));
   });
 
-  const redeemCollateral3Full1Partial = async () => {
+  const redeemCollateral3Full1Partial = async (close=false) => {
     // time fast-forwards 1 year, and multisig stakes 1 LQTY
     await time.increase(timeValues.SECONDS_IN_ONE_YEAR);
 
     const { netDebt: W_netDebt } = await openTrove({
       ICR: toBN(dec(20, 18)),
       extraBoldAmount: dec(10000, 18),
-      extraParams: { from: whale },
+      extraParams: { from: whale, annualInterestRate: dec(90, 16) },
     });
 
     const { troveId: ATroveId, netDebt: A_netDebt, collateral: A_coll } = await openTrove({
       ICR: toBN(dec(200, 16)),
       extraBoldAmount: dec(100, 18),
-      extraParams: { from: A },
+      extraParams: { from: A, annualInterestRate: dec(5, 16) },
     });
     const { troveId: BTroveId, netDebt: B_netDebt, collateral: B_coll } = await openTrove({
       ICR: toBN(dec(190, 16)),
       extraBoldAmount: dec(100, 18),
-      extraParams: { from: B },
+      extraParams: { from: B, annualInterestRate: dec(4, 16) },
     });
     const { troveId: CTroveId, netDebt: C_netDebt, collateral: C_coll } = await openTrove({
       ICR: toBN(dec(180, 16)),
       extraBoldAmount: dec(100, 18),
-      extraParams: { from: C },
+      extraParams: { from: C, annualInterestRate: dec(3, 16) },
     });
     const { troveId: DTroveId, netDebt: D_netDebt } = await openTrove({
       ICR: toBN(dec(280, 16)),
       extraBoldAmount: dec(100, 18),
-      extraParams: { from: D },
+      extraParams: { from: D, annualInterestRate: dec(10, 16) },
     });
     const redemptionAmount = A_netDebt.add(B_netDebt)
       .add(C_netDebt)
@@ -4491,8 +3812,9 @@ contract("TroveManager", async (accounts) => {
     const C_collBefore = await troveManager.getTroveColl(CTroveId);
     const D_collBefore = await troveManager.getTroveColl(DTroveId);
 
+    await contracts.collateralRegistry.setBaseRate(0);
     // Confirm baseRate before redemption is 0
-    const baseRate = await troveManager.baseRate();
+    const baseRate = await contracts.collateralRegistry.baseRate();
     assert.equal(baseRate, "0");
 
     const interestA = await troveManager.calcTroveAccruedInterest(ATroveId);
@@ -4503,9 +3825,9 @@ contract("TroveManager", async (accounts) => {
     const ETHFee = await contracts.troveManager.getEffectiveRedemptionFeeInColl(redemptionAmount, price);
 
     // whale redeems Bold.  Expect this to fully redeem A, B, C, and partially redeem D.
-    await th.redeemCollateral(whale, contracts, redemptionAmount, GAS_PRICE);
+    await th.redeemCollateral(whale, contracts, redemptionAmount, th._100pct, GAS_PRICE);
 
-    // Check A, B, C have been closed
+    // Check A, B, C have not been closed
     assert.isFalse(await sortedTroves.contains(ATroveId));
     assert.isFalse(await sortedTroves.contains(BTroveId));
     assert.isFalse(await sortedTroves.contains(CTroveId));
@@ -4513,26 +3835,38 @@ contract("TroveManager", async (accounts) => {
     // Check D stays active
     assert.isTrue(await sortedTroves.contains(DTroveId));
 
-    /*
-    At ETH:USD price of 200, with full redemptions from A, B, C:
-
-    ETHDrawn from A = 100/200 = 0.5 ETH --> Surplus = (1-0.5) = 0.5
-    ETHDrawn from B = 120/200 = 0.6 ETH --> Surplus = (1-0.6) = 0.4
-    ETHDrawn from C = 130/200 = 0.65 ETH --> Surplus = (2-0.65) = 1.35
-    */
-
     const A_balanceAfter = toBN(await contracts.WETH.balanceOf(A));
     const B_balanceAfter = toBN(await contracts.WETH.balanceOf(B));
     const C_balanceAfter = toBN(await contracts.WETH.balanceOf(C));
     const D_balanceAfter = toBN(await contracts.WETH.balanceOf(D));
 
-    // Check A, B, C’s trove collateral balance is zero (fully redeemed-from troves)
+    // Check A, B, C’s trove collateral balance
     const A_collAfter = await troveManager.getTroveColl(ATroveId);
     const B_collAfter = await troveManager.getTroveColl(BTroveId);
     const C_collAfter = await troveManager.getTroveColl(CTroveId);
-    assert.isTrue(A_collAfter.eq(toBN(0)));
-    assert.isTrue(B_collAfter.eq(toBN(0)));
-    assert.isTrue(C_collAfter.eq(toBN(0)));
+
+    const A_debtToEth = A_netDebt.add(interestA).div(priceWithoutDecimals);
+    const B_debtToEth = B_netDebt.add(interestB).div(priceWithoutDecimals);
+    const C_debtToEth = C_netDebt.add(interestC).div(priceWithoutDecimals);
+    const A_surplus = A_collBefore.sub(A_debtToEth).add(ETHFee.mul(A_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)));
+    const B_surplus = B_collBefore.sub(B_debtToEth).add(ETHFee.mul(B_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)));
+    const C_surplus = C_collBefore.sub(C_debtToEth).add(ETHFee.mul(C_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)));
+
+    th.assertIsApproximatelyEqual(
+      A_collAfter,
+      A_surplus,
+      1e13
+    );
+    th.assertIsApproximatelyEqual(
+      B_collAfter,
+      B_surplus,
+      1e13
+    );
+    th.assertIsApproximatelyEqual(
+      C_collAfter,
+      C_surplus,
+      1e13
+    );
 
     // check D's trove collateral balances have decreased (the partially redeemed-from trove)
     const D_collAfter = await troveManager.getTroveColl(DTroveId);
@@ -4546,155 +3880,83 @@ contract("TroveManager", async (accounts) => {
 
     // D is not closed, so cannot open trove
     await assertRevert(
-      th.openTroveWrapper(contracts, th._100pct, 0, ZERO_ADDRESS, ZERO_ADDRESS, {
+      th.openTroveWrapper(contracts, 0, ZERO_ADDRESS, ZERO_ADDRESS, th._100pct, {
         from: D,
         value: dec(10, 18),
       }),
       "BorrowerOps: Trove is active",
     );
 
+    if (close) {
+      // redemptions don’t close troves, so we need to close them manually
+      await borrowerOperations.closeTrove(ATroveId, { from: A });
+      await borrowerOperations.closeTrove(BTroveId, { from: B });
+      await borrowerOperations.closeTrove(CTroveId, { from: C });
+
+      const A_balanceAfterClose = toBN(await contracts.WETH.balanceOf(A));
+      const B_balanceAfterClose = toBN(await contracts.WETH.balanceOf(B));
+      const C_balanceAfterClose = toBN(await contracts.WETH.balanceOf(C));
+
+      th.assertIsApproximatelyEqual(
+        A_balanceAfterClose,
+        A_balanceAfter.add(A_surplus),
+        1e13
+      );
+      th.assertIsApproximatelyEqual(
+        B_balanceAfterClose,
+        B_balanceAfter.add(B_surplus),
+        1e13
+      );
+      th.assertIsApproximatelyEqual(
+        C_balanceAfterClose,
+        C_balanceAfter.add(C_surplus),
+        1e13
+      );
+    }
+
     return {
       A_netDebt,
       A_coll,
+      interestA,
       B_netDebt,
       B_coll,
+      interestB,
       C_netDebt,
       C_coll,
+      interestC,
     };
   };
 
-  it.skip("redeemCollateral(): emits correct debt and coll values in each redeemed trove's TroveUpdated event", async () => {
-    const { netDebt: W_netDebt } = await openTrove({
-      ICR: toBN(dec(20, 18)),
-      extraBoldAmount: dec(10000, 18),
-      extraParams: { from: whale },
-    });
-
-    const { troveId: ATroveId, netDebt: A_netDebt } = await openTrove({
-      ICR: toBN(dec(200, 16)),
-      extraBoldAmount: dec(100, 18),
-      extraParams: { from: A },
-    });
-    const { troveId: BTroveId, netDebt: B_netDebt } = await openTrove({
-      ICR: toBN(dec(190, 16)),
-      extraBoldAmount: dec(100, 18),
-      extraParams: { from: B },
-    });
-    const { troveId: CTroveId, netDebt: C_netDebt } = await openTrove({
-      ICR: toBN(dec(180, 16)),
-      extraBoldAmount: dec(100, 18),
-      extraParams: { from: C },
-    });
-    const { troveId: DTroveId, totalDebt: D_totalDebt, collateral: D_coll } = await openTrove({
-      ICR: toBN(dec(280, 16)),
-      extraBoldAmount: dec(100, 18),
-      extraParams: { from: D },
-    });
-    const partialAmount = toBN(dec(15, 18));
-    const redemptionAmount = A_netDebt.add(B_netDebt)
-      .add(C_netDebt)
-      .add(partialAmount);
-
-    // skip bootstrapping phase
-    await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
-
-    // whale redeems Bold.  Expect this to fully redeem A, B, C, and partially redeem 15 Bold from D.
-    const redemptionTx = await th.redeemCollateralAndGetTxObject(
-      whale,
-      contracts,
-      redemptionAmount,
-      GAS_PRICE,
-      th._100pct,
-    );
-
-    // Check A, B, C have been closed
-    assert.isFalse(await sortedTroves.contains(ATroveId));
-    assert.isFalse(await sortedTroves.contains(BTroveId));
-    assert.isFalse(await sortedTroves.contains(CTroveId));
-
-    // Check D stays active
-    assert.isTrue(await sortedTroves.contains(DTroveId));
-
-    const troveUpdatedEvents = th.getAllEventsByName(
-      redemptionTx,
-      "TroveUpdated",
-    );
-
-    // Get each trove's emitted debt and coll
-    const [A_emittedDebt, A_emittedColl] = th.getDebtAndCollFromTroveUpdatedEvents(troveUpdatedEvents, A);
-    const [B_emittedDebt, B_emittedColl] = th.getDebtAndCollFromTroveUpdatedEvents(troveUpdatedEvents, B);
-    const [C_emittedDebt, C_emittedColl] = th.getDebtAndCollFromTroveUpdatedEvents(troveUpdatedEvents, C);
-    const [D_emittedDebt, D_emittedColl] = th.getDebtAndCollFromTroveUpdatedEvents(troveUpdatedEvents, D);
-
-    // Expect A, B, C to have 0 emitted debt and coll, since they were closed
-    assert.equal(A_emittedDebt, "0");
-    assert.equal(A_emittedColl, "0");
-    assert.equal(B_emittedDebt, "0");
-    assert.equal(B_emittedColl, "0");
-    assert.equal(C_emittedDebt, "0");
-    assert.equal(C_emittedColl, "0");
-
-    /* Expect D to have lost 15 debt and (at ETH price of 200) 15/200 = 0.075 ETH.
-    So, expect remaining debt = (85 - 15) = 70, and remaining ETH = 1 - 15/200 = 0.925 remaining. */
-    const price = await priceFeed.getPrice();
-    th.assertIsApproximatelyEqual(
-      D_emittedDebt,
-      D_totalDebt.sub(partialAmount),
-    );
-    th.assertIsApproximatelyEqual(
-      D_emittedColl,
-      D_coll.sub(partialAmount.mul(mv._1e18BN).div(price)),
-    );
-  });
-
-  it.skip("redeemCollateral(): a redemption that closes a trove leaves the trove's ETH surplus (collateral - ETH drawn) available for the trove owner to claim", async () => {
-    const { A_netDebt, A_coll, B_netDebt, B_coll, C_netDebt, C_coll } = await redeemCollateral3Full1Partial();
+  it("redeemCollateral(): a redemption that closes a trove leaves the trove's ETH surplus (collateral - ETH drawn) available for the trove owner to claim", async () => {
+    const { A_netDebt, A_coll, B_netDebt, B_coll, C_netDebt, C_coll } = await redeemCollateral3Full1Partial(false);
 
     const A_balanceBefore = toBN(await contracts.WETH.balanceOf(A));
     const B_balanceBefore = toBN(await contracts.WETH.balanceOf(B));
     const C_balanceBefore = toBN(await contracts.WETH.balanceOf(C));
 
-    // CollSurplusPool endpoint cannot be called directly
-    await assertRevert(
-      collSurplusPool.claimColl(ATroveId),
-      "CollSurplusPool: Caller is not Borrower Operations",
-    );
-
     const A_balanceAfter = toBN(await contracts.WETH.balanceOf(A));
     const B_balanceAfter = toBN(await contracts.WETH.balanceOf(B));
     const C_balanceAfter = toBN(await contracts.WETH.balanceOf(C));
 
-    const price = toBN(await priceFeed.getPrice());
-
-    th.assertIsApproximatelyEqual(
-      A_balanceAfter,
-      A_balanceBefore.add(A_coll.sub(A_netDebt.mul(mv._1e18BN).div(price))),
-    );
-    th.assertIsApproximatelyEqual(
-      B_balanceAfter,
-      B_balanceBefore.add(B_coll.sub(B_netDebt.mul(mv._1e18BN).div(price))),
-    );
-    th.assertIsApproximatelyEqual(
-      C_balanceAfter,
-      C_balanceBefore.add(C_coll.sub(C_netDebt.mul(mv._1e18BN).div(price))),
-    );
+    assert.equal(A_balanceAfter.toString(), A_balanceBefore.toString(),);
+    assert.equal(B_balanceAfter.toString(), B_balanceBefore.toString(),);
+    assert.equal(C_balanceAfter.toString(), C_balanceBefore.toString(),);
   });
 
-  it.skip("redeemCollateral(): a redemption that closes a trove leaves the trove's ETH surplus (collateral - ETH drawn) available for the trove owner after re-opening trove", async () => {
+  it("redeemCollateral(): a redemption that closes a trove leaves the trove's ETH surplus (collateral - ETH drawn) available for the trove owner after re-opening trove", async () => {
     const {
       A_netDebt,
       A_coll: A_collBefore,
+      interestA,
       B_netDebt,
       B_coll: B_collBefore,
+      interestB,
       C_netDebt,
       C_coll: C_collBefore,
-    } = await redeemCollateral3Full1Partial();
+      interestC,
+    } = await redeemCollateral3Full1Partial(true);
 
-    const price = await priceFeed.getPrice();
-    const A_surplus = A_collBefore.sub(A_netDebt.mul(mv._1e18BN).div(price));
-    const B_surplus = B_collBefore.sub(B_netDebt.mul(mv._1e18BN).div(price));
-    const C_surplus = C_collBefore.sub(C_netDebt.mul(mv._1e18BN).div(price));
-
+    // Can re-open again the same trove
     const { troveId: ATroveId, collateral: A_coll } = await openTrove({
       ICR: toBN(dec(200, 16)),
       extraBoldAmount: dec(100, 18),
@@ -4718,27 +3980,6 @@ contract("TroveManager", async (accounts) => {
     assert.isTrue(A_collAfter.eq(A_coll));
     assert.isTrue(B_collAfter.eq(B_coll));
     assert.isTrue(C_collAfter.eq(C_coll));
-
-    const A_balanceBefore = toBN(await contracts.WETH.balanceOf(A));
-    const B_balanceBefore = toBN(await contracts.WETH.balanceOf(B));
-    const C_balanceBefore = toBN(await contracts.WETH.balanceOf(C));
-
-    const A_balanceAfter = toBN(await contracts.WETH.balanceOf(A));
-    const B_balanceAfter = toBN(await contracts.WETH.balanceOf(B));
-    const C_balanceAfter = toBN(await contracts.WETH.balanceOf(C));
-
-    th.assertIsApproximatelyEqual(
-      A_balanceAfter,
-      A_balanceBefore.add(A_surplus),
-    );
-    th.assertIsApproximatelyEqual(
-      B_balanceAfter,
-      B_balanceBefore.add(B_surplus),
-    );
-    th.assertIsApproximatelyEqual(
-      C_balanceAfter,
-      C_balanceBefore.add(C_surplus),
-    );
   });
 
   it("getPendingBoldDebtReward(): Returns 0 if there is no pending BoldDebt reward", async () => {

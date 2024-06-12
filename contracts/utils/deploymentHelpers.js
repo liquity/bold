@@ -8,12 +8,12 @@ const GasPool = artifacts.require("./GasPool.sol");
 const CollSurplusPool = artifacts.require("./CollSurplusPool.sol");
 const BorrowerOperations = artifacts.require("./BorrowerOperations.sol");
 const HintHelpers = artifacts.require("./HintHelpers.sol");
-const BoldToken = artifacts.require("./BoldToken.sol");
+const BoldToken = artifacts.require("./BoldTokenTester.sol");
 const StabilityPool = artifacts.require("./StabilityPool.sol");
 const PriceFeedMock = artifacts.require("./PriceFeedMock.sol");
 const MockInterestRouter = artifacts.require("./MockInterestRouter.sol");
 const ERC20 = artifacts.require("./ERC20MinterMock.sol");
-const CollateralRegistry = artifacts.require("./CollateralRegistry.sol");
+const CollateralRegistry = artifacts.require("./CollateralRegistryTester.sol");
 //  "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol"
 //  "../node_modules/@openzeppelin/contracts/build/contracts/ERC20PresetMinterPauser.json"
 // );
@@ -154,6 +154,9 @@ class DeploymentHelper {
       contracts.boldToken.address,
       contracts.sortedTroves.address,
     );
+    await contracts.troveManager.setCollateralRegistry(
+      contracts.collateralRegistry.address,
+    );
 
     await contracts.stabilityPool.setAddresses(
       contracts.borrowerOperations.address,
@@ -207,6 +210,10 @@ class DeploymentHelper {
     await contracts.hintHelpers.setAddresses(
       contracts.sortedTroves.address,
       contracts.troveManager.address,
+    );
+
+    await contracts.boldToken.setCollateralRegistry(
+      contracts.collateralRegistry.address,
     );
   }
 }
