@@ -1,17 +1,21 @@
 import type { MenuSection } from "@/src/types";
-import type { ReactNode } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 
 import { css, cx } from "@/styled-system/css";
 import { TokenIcon } from "@liquity2/uikit";
 import { IconArrowRight, useElementSize } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 export function MenuDrawer({
+  onMouseEnter,
+  onMouseLeave,
   opened,
   sections,
 }: {
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
   opened: number;
   sections: MenuSection[];
 }) {
@@ -39,6 +43,8 @@ export function MenuDrawer({
 
   return (
     <div
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       className={css({
         position: "absolute",
         zIndex: 1,
@@ -91,14 +97,9 @@ export function MenuDrawer({
         {sections.map((section, index) => (
           <DrawerSection
             key={section.label + section.href}
-            onHeight={(height) => {
-              setHeights((heights) =>
-                heights.map((h, j) => (
-                  index === j ? height : h
-                ))
-              );
-            }}
             section={section}
+            sectionIndex={index}
+            setSectionsHeights={setHeights}
             visible={opened === index}
           />
         ))}
@@ -108,21 +109,27 @@ export function MenuDrawer({
 }
 
 function DrawerSection({
-  onHeight,
   section,
+  sectionIndex,
+  setSectionsHeights,
   visible,
 }: {
-  onHeight: (height: number) => void;
   section: MenuSection;
+  sectionIndex: number;
+  setSectionsHeights: Dispatch<SetStateAction<number[]>>;
   visible: boolean;
 }) {
-  const { ref, size } = useElementSize<HTMLDivElement>();
-
-  useEffect(() => {
-    if (size) {
-      onHeight(size.blockSize);
-    }
-  }, [size]);
+  const ref = useRef<HTMLDivElement>(null);
+  useElementSize(
+    ref,
+    useCallback((size: ResizeObserverSize) => {
+      setSectionsHeights((heights) => (
+        heights.map((height, j) => (
+          sectionIndex === j ? size.blockSize : height
+        ))
+      ));
+    }, [sectionIndex, setSectionsHeights]),
+  );
 
   const spring = useSpring({
     opacity: visible ? 1 : 0,

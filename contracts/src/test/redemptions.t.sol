@@ -146,7 +146,7 @@ contract Redemptions is DevTestSetup {
         // E redeems enough to partly redeem from A
         uint256 redeemAmount = troveManager.getTroveDebt(troveIDs.A) / 2;
         uint256 correspondingETH = redeemAmount * DECIMAL_PRECISION / price;
-        uint256 predictedETHFee = collateralRegistry.getEffectiveRedemptionFee(redeemAmount, price);
+        uint256 predictedETHFee = troveManager.getEffectiveRedemptionFeeInColl(redeemAmount, price);
         assertGt(correspondingETH, 0);
         assertGt(predictedETHFee, 0);
 
@@ -167,7 +167,7 @@ contract Redemptions is DevTestSetup {
         // E redeems enough to partly redeem from A
         uint256 redeemAmount = troveManager.getTroveDebt(troveIDs.A) / 2;
         uint256 correspondingETH = redeemAmount * DECIMAL_PRECISION / price;
-        uint256 predictedETHFee = collateralRegistry.getEffectiveRedemptionFee(redeemAmount, price);
+        uint256 predictedETHFee = troveManager.getEffectiveRedemptionFeeInColl(redeemAmount, price);
         assertGt(correspondingETH, 0);
         assertGt(predictedETHFee, 0);
         // Expect Active pool to reduce by the ETH removed from the Trove

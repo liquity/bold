@@ -5,5 +5,11 @@ export type Direction = -1 | 1;
 export type Token = {
   icon: string;
   name: string;
-  symbol: "BOLD" | "LQTY" | "WETH" | "RETH" | "WSTETH";
+  symbol:
+    | "BOLD"
+    | "ETH"
+    | "LQTY"
+    | "RETH"
+    | "LUSD"
+    | "WSTETH";
 };

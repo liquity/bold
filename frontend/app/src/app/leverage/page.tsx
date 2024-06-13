@@ -1,7 +1,4 @@
-export default function Leverage() {
-  return (
-    <div>
-      Leverage
-    </div>
-  );
+export default function Page() {
+  // see layout in this folder
+  return null;
 }

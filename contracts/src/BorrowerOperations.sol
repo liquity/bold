@@ -670,15 +670,18 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         *
         * In Normal Mode, ensure:
         *
-        * - The new ICR is above MCR
         * - The adjustment won't pull the TCR below CCR
+        *
+        * In Both cases:
+        * - The new ICR is above MCR
         */
+        _requireICRisAboveMCR(_vars.newICR);
+
         if (_vars.isBelowCriticalThreshold) {
             _requireNoBorrowing(_troveChange.debtIncrease);
             _requireDebtRepaymentGeCollWithdrawal(_troveChange, _vars.price);
         } else {
             // if Normal Mode
-            _requireICRisAboveMCR(_vars.newICR);
             uint256 newTCR = _getNewTCRFromTroveChange(_troveChange, _vars.price);
             _requireNewTCRisAboveCCR(newTCR);
         }

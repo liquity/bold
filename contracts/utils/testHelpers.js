@@ -842,7 +842,6 @@ class TestHelper {
     else if (typeof ICR == "string") ICR = this.toBN(ICR);
 
     const totalDebt = await this.getOpenTroveTotalDebt(contracts, boldAmount);
-    const netDebt = await this.getActualDebtFromComposite(totalDebt, contracts);
 
     if (ICR) {
       const price = await contracts.priceFeedTestnet.getPrice();
@@ -872,11 +871,14 @@ class TestHelper {
 
     const troveId = this.getTroveIdFromTx(tx, contracts);
 
+    const realTotalDebt = await contracts.troveManager.getTroveDebt(troveId);
+    const netDebt = await this.getActualDebtFromComposite(realTotalDebt, contracts);
+
     return {
       troveId,
       boldAmount,
       netDebt,
-      totalDebt,
+      totalDebt: realTotalDebt,
       ICR,
       collateral: extraParams.value,
       tx,
@@ -1384,8 +1386,8 @@ class TestHelper {
     redeemer,
     contracts,
     BoldAmount,
-    gasPrice = 0,
     maxFee = this._100pct,
+    gasPrice = 0,
   ) {
     const price = await contracts.priceFeedTestnet.getPrice();
     const tx = await this.performRedemptionTx(
@@ -1393,6 +1395,7 @@ class TestHelper {
       price,
       contracts,
       BoldAmount,
+      10,
       maxFee,
       gasPrice,
     );
@@ -1404,8 +1407,9 @@ class TestHelper {
     redeemer,
     contracts,
     BoldAmount,
-    gasPrice,
+    maxIterations=10,
     maxFee = this._100pct,
+    gasPrice,
   ) {
     // console.log("GAS PRICE:  " + gasPrice)
     if (gasPrice == undefined) {
@@ -1417,6 +1421,7 @@ class TestHelper {
       price,
       contracts,
       BoldAmount,
+      maxIterations,
       maxFee,
       gasPrice,
     );
@@ -1452,12 +1457,13 @@ class TestHelper {
     price,
     contracts,
     BoldAmount,
+    maxIterations=10,
     maxFee = 0,
     gasPrice_toUse = 0,
   ) {
-    const tx = await contracts.troveManager.redeemCollateral(
+    const tx = await contracts.collateralRegistry.redeemCollateral(
       BoldAmount,
-      0,
+      maxIterations,
       maxFee,
       { from: redeemer, gasPrice: gasPrice_toUse },
     );

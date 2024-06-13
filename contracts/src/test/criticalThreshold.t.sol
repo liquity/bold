@@ -104,4 +104,62 @@ contract CriticalThresholdTest is DevTestSetup {
         vm.expectRevert("BorrowerOps: An operation that would result in TCR < CCR is not permitted");
         this.changeInterestRateNoHints(A, ATroveId, 0.3 ether);
     }
+
+    function testNoAdjustmentIfFinalICRLtMCRFromAbove100AddingColl() public {
+        (, uint256 BTroveId,) = setUpBelowCT();
+        uint256 price = 1110e18;
+        priceFeed.setPrice(price); // B ICR ~101%
+        assertGt(troveManager.getCurrentICR(BTroveId, price), 1e18);
+        assertLt(troveManager.getCurrentICR(BTroveId, price), 110e16);
+
+        vm.startPrank(B);
+        vm.expectRevert("BorrowerOps: An operation that would result in ICR < MCR is not permitted");
+        borrowerOperations.addColl(BTroveId, 1 ether); // 1 ETH is ~1% of trove coll, so not enough to bring it back to 100%
+
+        // With sufficient coll it works
+        borrowerOperations.addColl(BTroveId, 10 ether);
+    }
+
+    function testNoAdjustmentIfFinalICRLtMCRFromAbove100Repaying() public {
+        (, uint256 BTroveId,) = setUpBelowCT();
+        uint256 price = 1110e18;
+        priceFeed.setPrice(price); // B ICR ~101%
+        assertGt(troveManager.getCurrentICR(BTroveId, price), 1e18);
+        assertLt(troveManager.getCurrentICR(BTroveId, price), 110e16);
+
+        vm.startPrank(B);
+        vm.expectRevert("BorrowerOps: An operation that would result in ICR < MCR is not permitted");
+        borrowerOperations.repayBold(BTroveId, 1000e18); // 1k bold is less than 1% of trove debt, so not enough to bring it back to 100%
+
+        // With sufficient repayment it works
+        borrowerOperations.repayBold(BTroveId, 15000e18);
+    }
+
+    function testNoAdjustmentIfFinalICRLtMCRFromBelow100AddingColl() public {
+        (, uint256 BTroveId,) = setUpBelowCT();
+        uint256 price = 1059e18;
+        priceFeed.setPrice(price); // B ICR < 100%
+        assertLt(troveManager.getCurrentICR(BTroveId, price), 1e18);
+
+        vm.startPrank(B);
+        vm.expectRevert("BorrowerOps: An operation that would result in ICR < MCR is not permitted");
+        borrowerOperations.addColl(BTroveId, 1 ether); // 1 ETH is ~1% of trove coll, so not enough to bring it back to 100%
+
+        // With sufficient coll it works
+        borrowerOperations.addColl(BTroveId, 15 ether);
+    }
+
+    function testNoAdjustmentIfFinalICRLtMCRFromBelow100Repaying() public {
+        (, uint256 BTroveId,) = setUpBelowCT();
+        uint256 price = 1059e18;
+        priceFeed.setPrice(price); // B ICR < 100%
+        assertLt(troveManager.getCurrentICR(BTroveId, price), 1e18);
+
+        vm.startPrank(B);
+        vm.expectRevert("BorrowerOps: An operation that would result in ICR < MCR is not permitted");
+        borrowerOperations.repayBold(BTroveId, 1000e18); // 1k bold is less than 1% of trove debt, so not enough to bring it back to 100%
+
+        // With sufficient repayment it works
+        borrowerOperations.repayBold(BTroveId, 15000e18);
+    }
 }

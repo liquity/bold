@@ -1,5 +1,8 @@
 import type { Token } from "@liquity2/uikit";
+import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
+
+export type RiskLevel = "low" | "medium" | "high";
 
 export type TroveId = bigint;
 
@@ -19,3 +22,26 @@ export type MenuSection = {
   href: string;
   label: ReactNode;
 };
+
+export type PositionLoan = {
+  type: "loan";
+  borrowed: Dnum;
+  collateral: Token["symbol"];
+  deposit: Dnum;
+  interestRate: Dnum;
+  ltv: Dnum;
+  troveId: TroveId;
+};
+
+export type PositionEarn = {
+  type: "earn";
+  apy: Dnum;
+  collateral: Token["symbol"];
+  deposit: Dnum;
+  rewards: {
+    bold: Dnum;
+    eth: Dnum;
+  };
+};
+
+export type Position = PositionLoan | PositionEarn;

@@ -735,12 +735,13 @@ contract("Fee arithmetic tests", async (accounts) => {
       }
     });
 
+    // The test works, but it timeouts. Let’s avoid using too much CI time
     it.skip("decPow(): overflow test: doesn't overflow for exponent = minutes in 1000 years", async () => {
       const exponent = (timeValues.MINUTES_IN_ONE_YEAR * 1000) + 9;
 
       // Test base = 0
       const response_0 = await mathTester.callDecPowTx(0, exponent);
-      console.log(response_0);
+      //console.log(response_0);
       assert.isTrue(response_0.receipt.status);
 
       // test base = 1
@@ -763,7 +764,7 @@ contract("Fee arithmetic tests", async (accounts) => {
 
         const error = expected.sub(result).abs();
 
-        console.log(`run: ${i}. base: ${base}, exp: ${exponent}, res: ${result}, error: ${error}`);
+        //console.log(`run: ${i}. base: ${base}, exp: ${exponent}, res: ${result}, error: ${error}`);
       }
 
       // Use a high base to fully test high exponent, without prematurely decaying to 0
@@ -782,7 +783,7 @@ contract("Fee arithmetic tests", async (accounts) => {
 
         const error = expected.sub(result).abs();
 
-        console.log(`run: ${i}. base: ${base}, exp: ${exponent}, res: ${result}, error: ${error}`);
+        //console.log(`run: ${i}. base: ${base}, exp: ${exponent}, res: ${result}, error: ${error}`);
       }
     });
   });

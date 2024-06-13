@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.18;
 
+import "../../Interfaces/ICollateralRegistry.sol";
 import "../../TroveManager.sol";
 
 /* Tester contract inherits from TroveManager, and provides external functions 
@@ -57,6 +58,15 @@ contract TroveManagerTester is TroveManager {
     function getActualDebtFromComposite(uint256 _debtVal) external pure returns (uint256) {
         return _debtVal - BOLD_GAS_COMPENSATION;
     }
+
+    function getEffectiveRedemptionFeeInColl(uint256 _redeemAmount, uint256 _price)
+        external
+        view
+        returns (uint256)
+    {
+        return ICollateralRegistry(collateralRegistryAddress).getEffectiveRedemptionFeeInBold(_redeemAmount) * DECIMAL_PRECISION / _price;
+    }
+
 
     function callInternalRemoveTroveId(uint256 _troveId) external {
         uint256 troveOwnersArrayLength = TroveIds.length;

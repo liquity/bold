@@ -1,6 +1,8 @@
+import type { Dnum } from "dnum";
+
 import { ADDRESS_ZERO, isAddress } from "@/src/eth-utils";
 import * as dn from "dnum";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const inputValueRegex = /^[0-9]*\.?[0-9]*?$/;
 export function isInputFloat(value: string) {
@@ -108,4 +110,71 @@ export function useForm<Form extends Record<string, FormValue<unknown>>>(
     fill,
     values: parsedValues,
   } as const;
+}
+
+export function useInputFieldValue(
+  format: (value: Dnum) => string,
+  {
+    defaultValue = "",
+    onChange,
+    onFocusChange,
+  }: {
+    defaultValue?: string;
+    onChange?: ({
+      parsed,
+      value,
+    }: {
+      parsed: Dnum | null;
+      value: string;
+    }) => void;
+    onFocusChange?: (data: {
+      focus: boolean;
+      parsed: Dnum | null;
+      value: string;
+    }) => void;
+  } = {},
+) {
+  const [{ value, focused, parsed }, set] = useState<{
+    value: string;
+    focused: boolean;
+    parsed: Dnum | null;
+  }>({
+    value: defaultValue,
+    focused: false,
+    parsed: parseInputFloat(defaultValue),
+  });
+
+  const ref = useRef<HTMLInputElement>(null);
+
+  const setValue = (value: string) => {
+    const parsed = parseInputFloat(value);
+    set((s) => ({ ...s, parsed, value }));
+    onChange?.({ parsed, value });
+  };
+
+  const setFocused = (focused: boolean) => {
+    set((s) => ({ ...s, focused }));
+  };
+
+  return {
+    focus: () => {
+      ref.current?.focus();
+    },
+    inputFieldProps: {
+      ref,
+      onBlur: () => {
+        setFocused(false);
+        onFocusChange?.({ focus: false, parsed, value });
+      },
+      onFocus: () => {
+        setFocused(true);
+        onFocusChange?.({ focus: true, parsed, value });
+      },
+      onChange: setValue,
+      value: focused || !parsed || !value.trim() ? value : format(parsed),
+    },
+    parsed,
+    setValue,
+    value,
+  };
 }

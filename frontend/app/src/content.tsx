@@ -25,19 +25,19 @@ export default {
     actions: {
       borrow: {
         title: "Borrow BOLD",
-        description: "Set your own interest rate and borrow BOLD against ETH and staked ETH.",
+        description: "Set your own interest rate or borrow BOLD against ETH and staked ETH.",
       },
       leverage: {
         title: "Leverage ETH",
-        description: "Set your own interest rate and increase your exposure to ETH and staked ETH.",
+        description: "Set your own interest rate or increase your exposure to ETH and staked ETH.",
       },
       earn: {
         title: "Earn with BOLD",
-        description: "Earn defi-native yield with your BOLD.",
+        description: "Cover liquidations to earn BOLD and collateral assets",
       },
       stake: {
         title: "Stake LQTY",
-        description: "Use LQTY to generate yield without a minimum lockup period.",
+        description: "Accrue voting power by staking your LQTY without a minimum lockup period",
       },
     },
     products: {
@@ -127,7 +127,7 @@ export default {
       label: "You claim",
       details: (usdAmount: N, fee: N) => (
         <>
-          ~{usdAmount} USD • Expected gas fee ~{fee} USD
+          ~${usdAmount} • Expected gas fee ~${fee}
         </>
       ),
       action: "Claim rewards",
@@ -138,19 +138,89 @@ export default {
   borrowScreen: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Deposit {tokensIcons} to Borrow {boldIcon} BOLD
+        Borrow {boldIcon} BOLD with {tokensIcons} ETH
       </>
     ),
-    subheading: "With your own interest rate or ready-to-use strategies",
     depositField: {
       label: "You deposit",
     },
     borrowField: {
       label: "You borrow",
     },
+    liquidationPriceField: {
+      label: "ETH Liquidation price",
+    },
     interestRateField: {
       label: "Interest rate",
     },
-    action: "Open new loan",
+    action: "Open loan",
+  },
+
+  leverageScreen: {
+    headline: (tokensIcons: N) => (
+      <>
+        Leverage your exposure to {tokensIcons}
+      </>
+    ),
+    depositField: {
+      label: "You deposit",
+    },
+    liquidationPriceField: {
+      label: "ETH Liquidation price",
+    },
+    interestRateField: {
+      label: "Interest rate",
+    },
+    action: "Open leveraged loan",
+  },
+
+  // Stake screen
+  stakeScreen: {
+    header: (lqtyIcon: N, lusdEthIcons: N) => (
+      <>
+        <span>Stake</span>
+        {lqtyIcon} <span>LQTY & get</span>
+        {lusdEthIcons} <span>LUSD + ETH</span>
+      </>
+    ),
+    accountDetails: {
+      myDeposit: "My deposit",
+      votingPower: "Voting power",
+      votingPowerHelp: (
+        <>
+          Voting power is the percentage of the total staked LQTY that you own.
+        </>
+      ),
+      unclaimed: "Unclaimed rewards",
+    },
+    tabs: {
+      deposit: "Deposit",
+      withdraw: "Withdraw",
+      claim: "Claim rewards",
+    },
+    depositPanel: {
+      label: "You deposit",
+      shareLabel: (share: N) => (
+        <>
+          Share in the pool {share}
+        </>
+      ),
+      claimCheckbox: "Also claim rewards",
+      action: "Add deposit",
+    },
+    withdrawPanel: {
+      label: "You withdraw",
+      claimCheckbox: "Also claim rewards",
+      action: "Withdraw",
+    },
+    rewardsPanel: {
+      label: "You claim",
+      details: (usdAmount: N, fee: N) => (
+        <>
+          ~${usdAmount} • Expected gas fee ~${fee}
+        </>
+      ),
+      action: "Claim rewards",
+    },
   },
 };

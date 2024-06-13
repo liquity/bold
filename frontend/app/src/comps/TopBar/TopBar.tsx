@@ -1,19 +1,15 @@
 "use client";
 
-import type { MenuSection } from "@/src/types";
 import type { ComponentProps } from "react";
 
 import { Logo } from "@/src/comps/Logo/Logo";
 import content from "@/src/content";
 import { css } from "@/styled-system/css";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import { LAYOUT_WIDTH } from "../AppLayout/AppLayout";
 import { AccountButton } from "./AccountButton";
 import { IconBorrow, IconEarn, IconLeverage, IconStake } from "./icons";
 import { Menu } from "./Menu";
-import { MenuDrawer } from "./MenuDrawer";
 
 const menuItems: ComponentProps<typeof Menu>["menuItems"] = [
   [content.menu.borrow, "/borrow", IconBorrow],
@@ -22,103 +18,12 @@ const menuItems: ComponentProps<typeof Menu>["menuItems"] = [
   [content.menu.stake, "/stake", IconStake],
 ];
 
-const menuSections: MenuSection[] = [
-  {
-    actions: [
-      {
-        href: "/borrow",
-        name: "ETH pool",
-        secondary: "91% Max LTV",
-        token: "WETH",
-      },
-      {
-        href: "/borrow",
-        name: "rETH pool",
-        secondary: "91% Max LTV",
-        token: "RETH",
-      },
-      {
-        href: "/borrow",
-        name: "wstETH pool",
-        secondary: "91% Max LTV",
-        token: "WSTETH",
-      },
-    ],
-    href: "/borrow",
-    label: content.home.actions.borrow.description,
-  },
-  {
-    actions: [
-      {
-        href: "/leverage/eth",
-        name: "ETH pool",
-        secondary: "91% Max LTV",
-        token: "WETH",
-      },
-      {
-        href: "/leverage/reth",
-        name: "rETH pool",
-        secondary: "91% Max LTV",
-        token: "RETH",
-      },
-      {
-        href: "/leverage/wsteth",
-        name: "wstETH pool",
-        secondary: "91% Max LTV",
-        token: "WSTETH",
-      },
-    ],
-    href: "/leverage",
-    label: content.home.actions.leverage.description,
-  },
-  {
-    actions: [
-      {
-        href: "/earn/eth",
-        name: "ETH pool",
-        secondary: "4.3% APY",
-        token: "WETH",
-      },
-      {
-        href: "/earn/reth",
-        name: "rETH pool",
-        secondary: "6.3% APY",
-        token: "RETH",
-      },
-      {
-        href: "/earn/wsteth",
-        name: "wstETH pool",
-        secondary: "5.1% APY",
-        token: "WSTETH",
-      },
-    ],
-    href: "/earn",
-    label: content.home.actions.earn.description,
-  },
-  {
-    actions: [],
-    href: "/stake",
-    label: content.home.actions.stake.description,
-  },
-];
-
 export function TopBar() {
-  const pathname = usePathname();
-
-  const [hoveredItem, setHoveredItem] = useState(-1);
-
-  // close the drawer when the route changes
-  useEffect(() => {
-    setHoveredItem(-1);
-  }, [pathname]);
-
   return (
     <div
-      onMouseLeave={() => setHoveredItem(-1)}
       className={css({
         position: "relative",
         zIndex: 2,
-        width: "100%",
         height: 72,
       })}
     >
@@ -157,26 +62,8 @@ export function TopBar() {
           <Logo />
           {content.appName}
         </Link>
-        <Menu
-          hovered={hoveredItem}
-          menuItems={menuItems}
-          onHover={(index) => setHoveredItem(index)}
-        />
+        <Menu menuItems={menuItems} />
         <AccountButton />
-      </div>
-
-      <div
-        className={css({
-          position: "absolute",
-          inset: "72px 0 auto",
-          zIndex: 1,
-          height: 0,
-        })}
-      >
-        <MenuDrawer
-          opened={hoveredItem}
-          sections={menuSections}
-        />
       </div>
     </div>
   );

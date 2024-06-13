@@ -12,7 +12,7 @@ import "./HintHelpers.sol";
 import "./MultiTroveGetter.sol";
 import "./SortedTroves.sol";
 import "./StabilityPool.sol";
-import "./TroveManager.sol";
+import "./test/TestContracts/TroveManagerTester.sol";
 import "./CollateralRegistry.sol";
 import "./MockInterestRouter.sol";
 import "./test/TestContracts/PriceFeedTestnet.sol";
@@ -27,7 +27,7 @@ struct LiquityContracts {
     IDefaultPool defaultPool;
     ISortedTroves sortedTroves;
     IStabilityPool stabilityPool;
-    ITroveManager troveManager;
+    TroveManagerTester troveManager;
     IPriceFeedTestnet priceFeed;
     GasPool gasPool;
     IInterestRouter interestRouter;
@@ -112,7 +112,7 @@ function _deployAndConnectCollateralContracts(
 
     // Deploy all contracts
     contracts.activePool = new ActivePool(address(_collateralToken));
-    contracts.troveManager = new TroveManager(
+    contracts.troveManager = new TroveManagerTester(
         troveManagerParams.MCR,
         troveManagerParams.LIQUIDATION_PENALTY_SP,
         troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION

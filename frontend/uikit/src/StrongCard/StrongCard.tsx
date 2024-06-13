@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from "react";
+import type { HTMLAttributes, ReactElement, ReactNode } from "react";
 
 import { a, useSpring } from "@react-spring/web";
 import { forwardRef, useState } from "react";
@@ -12,17 +12,19 @@ type Cell = {
 
 type ElementOrString = ReactElement | string;
 
-export const StrongCard = forwardRef<HTMLAnchorElement, {
-  heading: ElementOrString | ElementOrString[];
-  href?: string;
-  rows: [
-    [Cell | null, Cell | null],
-    [Cell | null, Cell | null],
-  ];
-}>(function StrongCard({
+export const StrongCard = forwardRef<
+  HTMLAnchorElement,
+  {
+    heading: ElementOrString | ElementOrString[];
+    rows: [
+      [Cell | null, Cell | null],
+      [Cell | null, Cell | null],
+    ];
+  } & HTMLAttributes<HTMLAnchorElement>
+>(function StrongCard({
   heading,
-  href,
   rows,
+  ...anchorProps
 }, ref) {
   const [heading1, heading2] = Array.isArray(heading) ? heading : [heading];
 
@@ -50,7 +52,7 @@ export const StrongCard = forwardRef<HTMLAnchorElement, {
   return (
     <a.a
       ref={ref}
-      href={href}
+      {...anchorProps}
       onBlur={() => setActive(false)}
       onMouseDown={() => setActive(true)}
       onMouseEnter={() => setHovered(true)}
@@ -64,6 +66,10 @@ export const StrongCard = forwardRef<HTMLAnchorElement, {
           padding: 16,
           background: "strongSurface",
           borderRadius: 8,
+          outline: "none",
+          _focusVisible: {
+            outline: "2px solid token(colors.focused)",
+          },
         }),
       )}
       style={hoverSpring}
