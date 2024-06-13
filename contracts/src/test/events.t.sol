@@ -48,10 +48,7 @@ function concat(string memory a, string memory b) pure returns (string memory ab
     return string(abi.encodePacked(a, b));
 }
 
-contract TroveEventsTest is DevTestSetup, ITroveEvents {
-    using {aggregateLiquidation} for LiquidationParams;
-    using {filter} for Vm.Log[];
-
+contract EventsTest is DevTestSetup {
     function assertEqLogs(Vm.Log[] memory a, Vm.Log[] memory b, string memory errPrefix) internal {
         assertEq(a.length, b.length, concat(errPrefix, " - log count mismatch"));
 
@@ -65,6 +62,11 @@ contract TroveEventsTest is DevTestSetup, ITroveEvents {
             assertEq0(a[i].data, b[i].data, concat(errPrefix, " - data mismatch"));
         }
     }
+}
+
+contract TroveEventsTest is EventsTest, ITroveEvents {
+    using {filter} for Vm.Log[];
+    using {aggregateLiquidation} for LiquidationParams;
 
     function test_OpenTroveEmitsTroveUpdated() external {
         address owner = A;
@@ -630,5 +632,282 @@ contract TroveEventsTest is DevTestSetup, ITroveEvents {
 
         Vm.Log[] memory actualTroveUpdatedEvents = vm.getRecordedLogs().filter(TroveOperation.selector);
         assertEqLogs(actualTroveUpdatedEvents, expectedTroveUpdatedEvents, "Wrong TroveOperation events");
+    }
+}
+
+struct Deposit {
+    uint256 recordedBold;
+    uint256 stashedETH;
+    uint256 pendingBoldLoss;
+    uint256 pendingETHGain;
+    uint256 pendingBoldYieldGain;
+}
+
+struct StabilityPoolRewardsState {
+    uint128 scale;
+    uint128 epoch;
+    uint256 P;
+    uint256 S;
+    uint256 B;
+}
+
+contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
+    function makeSPDepositAndGenerateRewards()
+        internal
+        returns (Deposit memory deposit, StabilityPoolRewardsState memory current)
+    {
+        uint256 liquidatedDebt = 10_000 ether;
+
+        openTroveWithExactICRAndDebt(A, 0, 10 * CCR, 10 * liquidatedDebt, 0.01 ether);
+
+        uint256[3] memory liquidatedTroveId;
+        (liquidatedTroveId[0],) = openTroveWithExactICRAndDebt(B, 0, MCR, liquidatedDebt, 0.01 ether);
+        (liquidatedTroveId[1],) = openTroveWithExactICRAndDebt(C, 0, MCR, liquidatedDebt, 0.01 ether);
+        (liquidatedTroveId[2],) = openTroveWithExactICRAndDebt(D, 0, MCR, liquidatedDebt, 0.01 ether);
+
+        priceFeed.setPrice(priceFeed.getPrice() * 99 / 100);
+
+        // Increase epoch
+        makeSPDepositNoClaim(A, liquidatedDebt);
+        troveManager.liquidate(liquidatedTroveId[0]);
+
+        current.epoch = stabilityPool.currentEpoch();
+        assertEq(current.epoch, 1, "Expected new epoch");
+
+        // Increase scale
+        makeSPDepositNoClaim(A, liquidatedDebt + liquidatedDebt / 1e9); // XXX magic const
+        troveManager.liquidate(liquidatedTroveId[1]);
+
+        current.scale = stabilityPool.currentScale();
+        assertEq(current.scale, 1, "Expected scale change");
+
+        // Touch the deposit for one last time
+        makeSPDepositNoClaim(A, 2 * liquidatedDebt);
+
+        deposit.recordedBold = stabilityPool.getCompoundedBoldDeposit(A);
+        assertGt(deposit.recordedBold, 0, "Recorded BOLD deposit should be > 0");
+
+        deposit.stashedETH = stabilityPool.stashedETH(A);
+        assertGt(deposit.stashedETH, 0, "Stashed ETH should be > 0");
+
+        // Generate ETH gain (P, S)
+        troveManager.liquidate(liquidatedTroveId[2]);
+
+        current.P = stabilityPool.P();
+        assertLt(current.P, DECIMAL_PRECISION, "P should be < 1");
+
+        current.S = stabilityPool.epochToScaleToS(current.epoch, current.scale);
+        assertGt(current.S, 0, "S should be > 0");
+
+        deposit.pendingBoldLoss = deposit.recordedBold - stabilityPool.getCompoundedBoldDeposit(A);
+        assertGt(deposit.pendingBoldLoss, 0, "Pending BOLD loss should be > 0");
+
+        deposit.pendingETHGain = stabilityPool.getDepositorETHGain(A);
+        assertGt(deposit.pendingETHGain, 0, "Pending ETH gain should be > 0");
+
+        // Generate yield gain (B)
+        vm.warp(block.timestamp + 100 days);
+        openTroveWithExactICRAndDebt(E, 0, MCR, 10_000 ether, 0.01 ether); // dummy Trove to trigger interest minting
+
+        current.B = stabilityPool.epochToScaleToB(current.epoch, current.scale);
+        assertGt(current.B, 0, "B should be > 0");
+
+        deposit.pendingBoldYieldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(deposit.pendingBoldYieldGain, 0, "Pending BOLD yield gain should be > 0");
+    }
+
+    function test_ProvideToSPNoClaimEmitsDepositUpdated() external {
+        (Deposit memory deposit, StabilityPoolRewardsState memory current) = makeSPDepositAndGenerateRewards();
+
+        uint256 topUp = 20_000 ether;
+
+        vm.expectEmit();
+        emit DepositUpdated(
+            A,
+            deposit.recordedBold - deposit.pendingBoldLoss + deposit.pendingBoldYieldGain + topUp,
+            deposit.stashedETH + deposit.pendingETHGain,
+            current.P,
+            current.S,
+            current.B,
+            current.scale,
+            current.epoch
+        );
+
+        makeSPDepositNoClaim(A, topUp);
+    }
+
+    function test_ProvideToSPAndClaimEmitsDepositUpdated() external {
+        (Deposit memory deposit, StabilityPoolRewardsState memory current) = makeSPDepositAndGenerateRewards();
+
+        uint256 topUp = 20_000 ether;
+
+        vm.expectEmit();
+        emit DepositUpdated(
+            A,
+            deposit.recordedBold - deposit.pendingBoldLoss + topUp,
+            0,
+            current.P,
+            current.S,
+            current.B,
+            current.scale,
+            current.epoch
+        );
+
+        makeSPDepositAndClaim(A, topUp);
+    }
+
+    function test_ProvideToSPNoClaimEmitsDepositOperation() external {
+        (Deposit memory deposit,) = makeSPDepositAndGenerateRewards();
+
+        uint256 topUp = 20_000 ether;
+
+        vm.expectEmit();
+        emit DepositOperation(
+            A,
+            Operation.provideToSP,
+            deposit.pendingBoldLoss,
+            int256(topUp),
+            deposit.pendingBoldYieldGain,
+            0, // _yieldGainClaimed
+            deposit.pendingETHGain,
+            0 // _ethGainClaimed
+        );
+
+        makeSPDepositNoClaim(A, topUp);
+    }
+
+    function test_ProvideToSPAndClaimEmitsDepositOperation() external {
+        (Deposit memory deposit,) = makeSPDepositAndGenerateRewards();
+
+        uint256 topUp = 20_000 ether;
+
+        vm.expectEmit();
+        emit DepositOperation(
+            A,
+            Operation.provideToSP,
+            deposit.pendingBoldLoss,
+            int256(topUp),
+            deposit.pendingBoldYieldGain,
+            deposit.pendingBoldYieldGain,
+            deposit.pendingETHGain,
+            deposit.pendingETHGain + deposit.stashedETH
+        );
+
+        makeSPDepositAndClaim(A, topUp);
+    }
+
+    function test_WithdrawFromSPNoClaimEmitsDepositUpdated() external {
+        (Deposit memory deposit, StabilityPoolRewardsState memory current) = makeSPDepositAndGenerateRewards();
+
+        uint256 withdrawal = deposit.recordedBold / 2;
+
+        vm.expectEmit();
+        emit DepositUpdated(
+            A,
+            deposit.recordedBold - deposit.pendingBoldLoss + deposit.pendingBoldYieldGain - withdrawal,
+            deposit.stashedETH + deposit.pendingETHGain,
+            current.P,
+            current.S,
+            current.B,
+            current.scale,
+            current.epoch
+        );
+
+        makeSPWithdrawalNoClaim(A, withdrawal);
+    }
+
+    function test_WithdrawFromSPAndClaimEmitsDepositUpdated() external {
+        (Deposit memory deposit, StabilityPoolRewardsState memory current) = makeSPDepositAndGenerateRewards();
+
+        uint256 withdrawal = deposit.recordedBold / 2;
+
+        vm.expectEmit();
+        emit DepositUpdated(
+            A,
+            deposit.recordedBold - deposit.pendingBoldLoss - withdrawal,
+            0,
+            current.P,
+            current.S,
+            current.B,
+            current.scale,
+            current.epoch
+        );
+
+        makeSPWithdrawalAndClaim(A, withdrawal);
+    }
+
+    function test_WithdrawFromSPNoClaimEmitsDepositOperation() external {
+        (Deposit memory deposit,) = makeSPDepositAndGenerateRewards();
+
+        uint256 withdrawal = deposit.recordedBold / 2;
+
+        vm.expectEmit();
+        emit DepositOperation(
+            A,
+            Operation.withdrawFromSP,
+            deposit.pendingBoldLoss,
+            -int256(withdrawal),
+            deposit.pendingBoldYieldGain,
+            0, // _yieldGainClaimed
+            deposit.pendingETHGain,
+            0 // _ethGainClaimed
+        );
+
+        makeSPWithdrawalNoClaim(A, withdrawal);
+    }
+
+    function test_WithdrawFromSPAndClaimEmitsDepositOperation() external {
+        (Deposit memory deposit,) = makeSPDepositAndGenerateRewards();
+
+        uint256 withdrawal = deposit.recordedBold / 2;
+
+        vm.expectEmit();
+        emit DepositOperation(
+            A,
+            Operation.withdrawFromSP,
+            deposit.pendingBoldLoss,
+            -int256(withdrawal),
+            deposit.pendingBoldYieldGain,
+            deposit.pendingBoldYieldGain,
+            deposit.pendingETHGain,
+            deposit.pendingETHGain + deposit.stashedETH
+        );
+
+        makeSPWithdrawalAndClaim(A, withdrawal);
+    }
+
+    function test_ClaimAllETHGainsEmitsDepositUpdated() external {
+        (Deposit memory deposit, StabilityPoolRewardsState memory curr) = makeSPDepositAndGenerateRewards();
+
+        uint256 stashedETH = deposit.stashedETH + deposit.pendingETHGain;
+
+        vm.expectEmit();
+        emit DepositUpdated(A, deposit.pendingBoldYieldGain, stashedETH, curr.P, curr.S, curr.B, curr.scale, curr.epoch);
+        makeSPWithdrawalNoClaim(A, deposit.recordedBold - deposit.pendingBoldLoss); // can't withdraw pending yield
+
+        vm.expectEmit();
+        emit DepositUpdated(A, 0, stashedETH, 0, 0, 0, 0, 0);
+        makeSPWithdrawalNoClaim(A, deposit.pendingBoldYieldGain); // now we can withdraw previously pending yield
+
+        // Now we have a deposit with stashed ETH gains and nothing else
+
+        vm.expectEmit();
+        emit DepositUpdated(A, 0, 0, 0, 0, 0, 0, 0);
+        claimAllETHGains(A);
+    }
+
+    function test_ClaimAllETHGainsEmitsDepositOperation() external {
+        (Deposit memory deposit,) = makeSPDepositAndGenerateRewards();
+
+        uint256 stashedETH = deposit.stashedETH + deposit.pendingETHGain;
+
+        makeSPWithdrawalNoClaim(A, deposit.recordedBold - deposit.pendingBoldLoss); // can't withdraw pending yield
+        makeSPWithdrawalNoClaim(A, deposit.pendingBoldYieldGain); // now we can withdraw previously pending yield
+
+        // Now we have a deposit with stashed ETH gains and nothing else
+
+        vm.expectEmit();
+        emit DepositOperation(A, Operation.claimAllETHGains, 0, 0, 0, 0, 0, stashedETH);
+        claimAllETHGains(A);
     }
 }

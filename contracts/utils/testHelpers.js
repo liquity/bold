@@ -462,19 +462,14 @@ class TestHelper {
     throw `The transaction logs do not contain event ${eventName}`;
   }
 
-  static getEventArgByName(tx, eventName, argName) {
-    for (let i = 0; i < tx.logs.length; i++) {
-      if (tx.logs[i].event === eventName) {
-        const keys = Object.keys(tx.logs[i].args);
-        for (let j = 0; j < keys.length; j++) {
-          if (keys[j] === argName) {
-            return tx.logs[i].args[keys[j]];
-          }
-        }
+  static getEventBySignature(tx, eventSignature) {
+    for (let i = 0; i < tx.receipt.rawLogs.length; i++) {
+      if (tx.receipt.rawLogs[i].topics[0] === web3.utils.keccak256(eventSignature)) {
+        return tx.receipt.rawLogs[i];
       }
     }
 
-    throw `The transaction logs do not contain event ${eventName} and arg ${argName}`;
+    throw `The transaction logs do not contain event with signature "${eventSignature}"`;
   }
 
   static getAllEventsByName(tx, eventName) {
