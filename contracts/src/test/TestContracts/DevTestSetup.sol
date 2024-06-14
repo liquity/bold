@@ -158,6 +158,14 @@ contract DevTestSetup is BaseTest {
         assertEq(uint8(troveManager.getTroveStatus(troveIDs.C)), uint8(TroveManager.Status.closedByLiquidation));
     }
 
+    function _setupForPTests() internal returns (ABCDEF memory) {
+        ABCDEF memory troveIDs;
+        (troveIDs.A, troveIDs.B, troveIDs.C, troveIDs.D) = _setupForBatchLiquidateTrovesPureOffset();
+        // B leaves so only A is in the pool
+        makeSPWithdrawalAndClaim(B, stabilityPool.getCompoundedBoldDeposit(B));
+        return troveIDs;
+    }
+
     function _setupForBatchLiquidateTrovesPureRedist() internal returns (uint256, uint256, uint256, uint256) {
         uint256 troveDebtRequest_A = 2000e18;
         uint256 troveDebtRequest_B = 3000e18;

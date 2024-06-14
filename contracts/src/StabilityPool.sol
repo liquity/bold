@@ -562,7 +562,16 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
         } else if (currentP * newProductFactor / DECIMAL_PRECISION < SCALE_FACTOR) {
             newP = currentP * newProductFactor * SCALE_FACTOR / DECIMAL_PRECISION;
             currentScale = currentScaleCached + 1;
+
+            // Increment the scale again if it's still below the boundary. This ensures the invariant P >= 1e9 holds and addresses this issue
+            // from Liquity v1: https://github.com/liquity/dev/security/advisories/GHSA-m9f3-hrx8-x2g3
+            if (newP < SCALE_FACTOR) {
+              newP *= SCALE_FACTOR;
+               currentScale = currentScaleCached + 2;
+            }
+
             emit ScaleUpdated(currentScale);
+        // If there's no scale change and no pool-emptying, just do a standard multiplication   
         } else {
             newP = currentP * newProductFactor / DECIMAL_PRECISION;
         }
