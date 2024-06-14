@@ -284,6 +284,25 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A + topUp + currentBoldGain);
     }
 
+    function testProvideToSPNoClaimAddsBoldGainsToTotalBoldDeposits() public {
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(currentBoldGain, 0);
+
+        uint256 totalBoldDepositsBefore = stabilityPool.getTotalBoldDeposits();
+
+        uint256 topUp = 1e18;
+        makeSPDepositNoClaim(A, topUp);
+
+        assertEq(stabilityPool.getTotalBoldDeposits(), totalBoldDepositsBefore + topUp + currentBoldGain);
+    }
+
     function testProvideToSPNoClaimZerosCurrentBoldGains() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
@@ -575,6 +594,25 @@ contract SPTest is DevTestSetup {
         makeSPWithdrawalNoClaim(A, withdrawal);
 
         assertEq(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A - withdrawal + currentBoldGain);
+    }
+
+    function testWithdrawFromSPNoClaimAddsBoldGainsToTotalBoldDeposits() public {
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
+
+        // A trove gets poked, interst minted and yield paid to SP
+        applyTroveInterestPermissionless(B, troveIDs.A);
+
+        uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
+        assertGt(currentBoldGain, 0);
+
+        uint256 totalBoldDepositsBefore = stabilityPool.getTotalBoldDeposits();
+
+        uint256 withdrawal = 1e18;
+        makeSPWithdrawalNoClaim(A, withdrawal);
+
+        assertEq(stabilityPool.getTotalBoldDeposits(), totalBoldDepositsBefore - withdrawal + currentBoldGain);
     }
 
     function testWithdrawFromSPNoClaimZerosCurrentBoldGains() public {
