@@ -1,4 +1,6 @@
-import type { Position, PositionLoan, RiskLevel } from "@/src/types";
+import type { Position, PositionLoan } from "@/src/types";
+import type { CollateralToken } from "@liquity2/uikit";
+import type { Dnum } from "dnum";
 
 import * as dn from "dnum";
 
@@ -7,20 +9,6 @@ export const ETH_PRICE = dn.from(3_839.293872, 18);
 export const BOLD_PRICE = dn.from(1.0031, 18);
 
 export const STAKED_LQTY_TOTAL = [43_920_716_739_092_664_364_409_174n, 18] as const;
-
-// ltv risk levels
-export const LTV_RISK: Record<RiskLevel, number> = {
-  low: 0,
-  medium: 0.5,
-  high: 0.7,
-};
-
-// redemption risk levels
-export const REDEMPTION_RISK: Record<RiskLevel, number> = {
-  high: 0,
-  medium: 3.5,
-  low: 5.0,
-};
 
 export const ACCOUNT_STAKED_LQTY = {
   deposit: [100n * 10n ** 18n, 18] as const,
@@ -67,7 +55,7 @@ export const ACCOUNT_POSITIONS: Position[] = [
     collateral: "WSTETH",
     deposit: dn.from(5_000, 18),
     rewards: {
-      bold: dn.from(25_789, 18),
+      bold: dn.from(789.438, 18),
       eth: dn.from(0.943, 18),
     },
   },
@@ -88,7 +76,10 @@ export const BORROW_STATS = {
   },
 } as const;
 
-export const EARN_POOLS = {
+export const EARN_POOLS: Record<
+  CollateralToken["symbol"],
+  { apy: Dnum; boldQty: Dnum }
+> = {
   ETH: {
     apy: dn.from(0.068, 18),
     boldQty: [65_700_000n, 0],
@@ -101,34 +92,4 @@ export const EARN_POOLS = {
     apy: dn.from(0.054, 18),
     boldQty: [25_700_000n, 0],
   },
-} as const;
-
-export const POOLS = [
-  {
-    symbol: "ETH",
-    token: "ETH",
-    apy: "6.8%",
-    boldQty: "65.7M BOLD",
-    deposit: "21,453.00 BOLD",
-    rewards: {
-      bold: "234.24",
-      eth: "0.0054",
-    },
-  },
-  {
-    symbol: "RETH",
-    token: "rETH",
-    apy: "5.7%",
-    boldQty: "65.7M BOLD",
-    deposit: null,
-    rewards: null,
-  },
-  {
-    symbol: "WSTETH",
-    token: "wstETH",
-    apy: "5.4%",
-    boldQty: "65.7M BOLD",
-    deposit: null,
-    rewards: null,
-  },
-] as const;
+};
