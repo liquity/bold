@@ -128,13 +128,7 @@ export function EarnPoolScreen() {
             position={position}
           />
         )}
-        {tab.action === "claim" && (
-          <RewardsPanel
-            accountBoldBalance={accountBoldBalance}
-            boldQty={pool.boldQty}
-            position={position}
-          />
-        )}
+        {tab.action === "claim" && <RewardsPanel position={position} />}
       </div>
     </Screen>
   );

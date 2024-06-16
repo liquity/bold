@@ -2,7 +2,6 @@ import type { PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import content from "@/src/content";
-import { EARN_POOLS } from "@/src/demo-data";
 import { DNUM_0 } from "@/src/dnum-utils";
 import { usePrice } from "@/src/prices";
 import { css } from "@/styled-system/css";
@@ -10,12 +9,8 @@ import { Button } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 export function RewardsPanel({
-  accountBoldBalance,
-  boldQty,
   position,
 }: {
-  accountBoldBalance?: Dnum;
-  boldQty: Dnum;
   position?: PositionEarn;
 }) {
   const ethPriceUsd = usePrice("ETH");
