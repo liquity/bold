@@ -26,16 +26,16 @@ export function Prices({
     BOLD: BOLD_PRICE,
   });
 
-  // simulate a 0.5% deviation from the demo prices every 10 seconds
+  // simulate a 0.3% deviation from the demo prices every 15 seconds
   useEffect(() => {
     const timer = setInterval(() => {
-      const variation = dn.from((Math.random() - 0.5) * 0.005, 18);
+      const variation = dn.from((Math.random() - 0.5) * 0.003, 18);
       setPrices({
         ETH: dn.add(ETH_PRICE, dn.mul(ETH_PRICE, variation)),
         LQTY: dn.add(LQTY_PRICE, dn.mul(LQTY_PRICE, variation)),
         BOLD: dn.add(BOLD_PRICE, dn.mul(BOLD_PRICE, variation)),
       });
-    }, 10_000);
+    }, 15_000);
 
     return () => clearInterval(timer);
   }, []);

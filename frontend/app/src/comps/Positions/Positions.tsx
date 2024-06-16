@@ -9,10 +9,12 @@ import { StatusDot, StrongCard, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/ui
 import * as dn from "dnum";
 import Link from "next/link";
 import { match } from "ts-pattern";
-import { useAccount } from "wagmi";
+import { useDemoState } from "@/src/demo-state";
+// import { useAccount } from "wagmi";
 
 export function Positions() {
-  const account = useAccount();
+  // const account = useAccount();
+  const { account } = useDemoState();
   return account.isConnected
     ? (
       <div>

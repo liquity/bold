@@ -12,7 +12,7 @@ export function Menu({
   menuItems: [
     string,
     string,
-    ComponentType<{ color: string }>,
+    ComponentType<{}>,
   ][];
 }) {
   const pathname = usePathname();
@@ -45,15 +45,14 @@ export function Menu({
                     borderRadius: 4,
                   },
                 })}
+                style={{
+                  color: token(
+                    `colors.${selected ? "selected" : "interactive"}`,
+                  ),
+                }}
               >
                 <MenuItem
-                  icon={
-                    <Icon
-                      color={token(
-                        `colors.${selected ? "selected" : "interactive"}`,
-                      )}
-                    />
-                  }
+                  icon={<Icon />}
                   label={label}
                   selected={selected}
                 />

@@ -12,6 +12,7 @@ const HANDLE_SIZE = 26 + HANDLE_OUTLINE * 2;
 const PADDING = 5;
 const MIN_WIDTH = HANDLE_SIZE * 10;
 const HEIGHT = Math.max(HANDLE_SIZE, BAR_HEIGHT) + PADDING * 2;
+const GRADIENT_TRANSITION_BLUR = 10;
 
 export function Slider({
   disabled,
@@ -21,11 +22,13 @@ export function Slider({
   value,
 }: {
   disabled?: boolean;
-  gradientMode?: boolean;
+  gradientMode?: boolean | [number, number];
   keyboardStep?: (value: number, direction: Direction) => number;
   onChange: (value: number) => void;
   value: number;
 }) {
+  value = Math.max(0, Math.min(1, value));
+
   const [pressed, setPressed] = useState(false);
 
   const lastRect = useRef<DOMRect | null>(null);
@@ -109,9 +112,10 @@ export function Slider({
       tension: 1800,
       friction: 80,
     },
-    activeBarTransform: `scaleX(${value})`,
-    handleTransform: `translate3d(${value * 100}%, 0, 0)`,
-    value: Math.max(0, Math.min(1, value)),
+    to: {
+      activeBarTransform: `scaleX(${value})`,
+      handleTransform: `translate3d(${value * 100}%, 0, 0)`,
+    },
   });
 
   const [focused, setFocused] = useState(false);
@@ -197,37 +201,45 @@ export function Slider({
               className={css({
                 position: "absolute",
                 inset: 0,
-                "--backgroundNormal": "token(colors.controlSurfaceAlt)",
-                "--backgroundGradient": `linear-gradient(
+                "--bgNormal": "token(colors.controlSurfaceAlt)",
+                "--bgDisabled": "token(colors.disabledBorder)",
+                "--gradient": `linear-gradient(
                   90deg,
                   token(colors.positive) 0%,
-                  token(colors.warning) 50%,
+                  token(colors.positive) calc(var(--gradientStep2) - var(--gradientTransitionBlur) / 2),
+                  token(colors.warning) calc(var(--gradientStep2) + var(--gradientTransitionBlur) / 2),
+                  token(colors.warning) calc(var(--gradientStep3) - var(--gradientTransitionBlur) / 2),
+                  token(colors.negative) calc(var(--gradientStep3) + var(--gradientTransitionBlur) / 2),
                   token(colors.negative) 100%
                 )`,
-                "--backgroundDisabled": "token(colors.disabledBorder)",
               })}
               style={{
                 background: `var(${
                   disabled
-                    ? "--backgroundDisabled"
-                    : gradientMode
-                    ? "--backgroundGradient"
-                    : "--backgroundNormal"
+                    ? "--bgDisabled"
+                    : gradientMode !== undefined
+                    ? "--gradient"
+                    : "--bgNormal"
                 })`,
-              }}
+                "--gradientTransitionBlur": `${GRADIENT_TRANSITION_BLUR}%`,
+                ...(Array.isArray(gradientMode) && {
+                  "--gradientStep2": `${(gradientMode[0] ?? 0.5) * 100}%`,
+                  "--gradientStep3": `${(gradientMode[1] ?? 0.5) * 100}%`,
+                }),
+              } as CSSProperties}
             />
             <a.div
               className={css({
                 position: "absolute",
                 inset: 0,
                 transformOrigin: "0 0",
-                "--backgroundNormal": "token(colors.accent)",
-                "--backgroundPressed": "token(colors.accentActive)",
+                "--bgNormal": "token(colors.accent)",
+                "--bgPressed": "token(colors.accentActive)",
               })}
               style={{
                 display: gradientMode || disabled ? "none" : "block",
                 transform: moveSpring.activeBarTransform,
-                background: `var(${disabled ? "--backgroundPressed" : "--backgroundNormal"})`,
+                background: `var(${disabled ? "--bgPressed" : "--bgNormal"})`,
               }}
             />
           </div>

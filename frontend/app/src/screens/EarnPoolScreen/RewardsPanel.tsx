@@ -1,12 +1,28 @@
+import type { PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import content from "@/src/content";
-import { POOLS } from "@/src/demo-data";
+import { DNUM_0 } from "@/src/dnum-utils";
+import { usePrice } from "@/src/prices";
 import { css } from "@/styled-system/css";
 import { Button } from "@liquity2/uikit";
 import * as dn from "dnum";
 
-export function RewardsPanel({ pool }: { pool: typeof POOLS[number] }) {
+export function RewardsPanel({
+  position,
+}: {
+  position?: PositionEarn;
+}) {
+  const ethPriceUsd = usePrice("ETH");
+  const boldPriceUsd = usePrice("BOLD");
+
+  const totalRewards = dn.add(
+    dn.mul(position?.rewards?.bold ?? DNUM_0, boldPriceUsd),
+    dn.mul(position?.rewards?.eth ?? DNUM_0, ethPriceUsd),
+  );
+
+  const gasFeeUsd = dn.multiply(dn.from(0.0015, 18), ethPriceUsd);
+
   return (
     <div
       style={{
@@ -39,7 +55,7 @@ export function RewardsPanel({ pool }: { pool: typeof POOLS[number] }) {
           {content.earnScreen.rewardsPanel.label}
         </div>
 
-        {pool.rewards
+        {position
           ? (
             <div
               className={css({
@@ -47,8 +63,8 @@ export function RewardsPanel({ pool }: { pool: typeof POOLS[number] }) {
                 gap: 32,
               })}
             >
-              <Amount value={dn.from(pool.rewards?.bold)} symbol="BOLD" />
-              <Amount value={dn.from(pool.rewards?.eth)} symbol="ETH" />
+              <Amount value={position.rewards?.bold} symbol="BOLD" />
+              <Amount value={position.rewards?.eth} symbol="ETH" />
             </div>
           )
           : <div>N/A</div>}
@@ -63,7 +79,10 @@ export function RewardsPanel({ pool }: { pool: typeof POOLS[number] }) {
             borderTop: "1px solid token(colors.fieldBorder)",
           })}
         >
-          {content.earnScreen.rewardsPanel.details("254", "9.78")}
+          {content.earnScreen.rewardsPanel.details(
+            dn.format(totalRewards, 2),
+            dn.format(gasFeeUsd, 2),
+          )}
         </div>
       </div>
 
