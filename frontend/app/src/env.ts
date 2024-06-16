@@ -1,4 +1,4 @@
-import z from "zod";
+import { z } from "zod";
 import { EnvAddressAndBlockSchema, EnvCurrencySchema, EnvLinkSchema, zAddress } from "./zod-utils";
 
 export const EnvSchema = z.object({
