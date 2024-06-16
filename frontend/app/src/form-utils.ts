@@ -2,7 +2,7 @@ import type { Dnum } from "dnum";
 
 import { ADDRESS_ZERO, isAddress } from "@/src/eth-utils";
 import * as dn from "dnum";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 const inputValueRegex = /^[0-9]*\.?[0-9]*?$/;
 export function isInputFloat(value: string) {
@@ -146,35 +146,37 @@ export function useInputFieldValue(
 
   const ref = useRef<HTMLInputElement>(null);
 
-  const setValue = (value: string) => {
-    const parsed = parseInputFloat(value);
-    set((s) => ({ ...s, parsed, value }));
-    onChange?.({ parsed, value });
-  };
+  return useMemo(() => {
+    const setValue = (value: string) => {
+      const parsed = parseInputFloat(value);
+      set((s) => ({ ...s, parsed, value }));
+      onChange?.({ parsed, value });
+    };
 
-  const setFocused = (focused: boolean) => {
-    set((s) => ({ ...s, focused }));
-  };
+    const setFocused = (focused: boolean) => {
+      set((s) => ({ ...s, focused }));
+    };
 
-  return {
-    focus: () => {
-      ref.current?.focus();
-    },
-    inputFieldProps: {
-      ref,
-      onBlur: () => {
-        setFocused(false);
-        onFocusChange?.({ focus: false, parsed, value });
+    return ({
+      focus: () => {
+        ref.current?.focus();
       },
-      onFocus: () => {
-        setFocused(true);
-        onFocusChange?.({ focus: true, parsed, value });
+      inputFieldProps: {
+        ref,
+        onBlur: () => {
+          setFocused(false);
+          onFocusChange?.({ focus: false, parsed, value });
+        },
+        onFocus: () => {
+          setFocused(true);
+          onFocusChange?.({ focus: true, parsed, value });
+        },
+        onChange: setValue,
+        value: focused || !parsed || !value.trim() ? value : format(parsed),
       },
-      onChange: setValue,
-      value: focused || !parsed || !value.trim() ? value : format(parsed),
-    },
-    parsed,
-    setValue,
-    value,
-  };
+      parsed,
+      setValue,
+      value,
+    });
+  }, [focused, format, onChange, onFocusChange, parsed, value]);
 }
