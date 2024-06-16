@@ -73,12 +73,15 @@ export function Field({
 function FooterInfo({
   label,
   value,
+  title,
 }: {
   label?: ReactNode;
   value: ReactNode;
+  title?: string;
 }) {
   return (
     <div
+      title={title}
       style={{
         display: "flex",
         gap: 8,
@@ -108,14 +111,19 @@ function FooterInfo({
 function FooterInfoWarnLevel({
   label,
   level,
+  help,
+  title,
 }: {
   label: ReactNode;
-  level: "low" | "medium" | "high";
+  level: "low" | "medium" | "high" | "none";
+  help?: ReactNode;
+  title?: string;
 }) {
   return (
     <FooterInfo
       value={
         <div
+          title={title}
           className={css({
             display: "flex",
             gap: 8,
@@ -127,9 +135,11 @@ function FooterInfoWarnLevel({
               .with("low", () => "positive" as const)
               .with("medium", () => "warning" as const)
               .with("high", () => "negative" as const)
+              .with("none", () => "neutral" as const)
               .exhaustive()}
           />
           {label}
+          {help}
         </div>
       }
     />

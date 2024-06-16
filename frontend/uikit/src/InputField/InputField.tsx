@@ -118,6 +118,7 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function
           inset: "auto 16px 16px",
           display: "flex",
           justifyContent: "space-between",
+          gap: 16,
           fontSize: 16,
           color: "contentAlt",
           pointerEvents: "none",
@@ -126,10 +127,27 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function
           },
         })}
       >
-        <div>
+        <div
+          className={css({
+            flexGrow: 0,
+            flexShrink: 1,
+            display: "flex",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+            maxWidth: "50%",
+          })}
+        >
           {secondaryStart}
         </div>
-        <div>
+        <div
+          className={css({
+            flexGrow: 0,
+            flexShrink: 1,
+            display: "flex",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+          })}
+        >
           {secondaryEnd}
         </div>
       </div>

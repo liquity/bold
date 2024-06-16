@@ -5,7 +5,7 @@ export function StatusDot({
   mode,
 }: {
   size?: number;
-  mode: "positive" | "warning" | "negative";
+  mode: "positive" | "warning" | "negative" | "neutral";
 }) {
   return (
     <div
@@ -14,6 +14,7 @@ export function StatusDot({
         "--status-dot-positive": "token(colors.positiveAlt)",
         "--status-dot-warning": "token(colors.warning)",
         "--status-dot-negative": "token(colors.negative)",
+        "--status-dot-neutral": "token(colors.contentAlt2)",
       })}
       style={{
         background: `var(--status-dot-${mode})`,
