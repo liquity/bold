@@ -22,34 +22,34 @@ export function HomeScreen() {
       <Positions />
       <div
         className={css({
-          display: "flex",
-          flexDirection: "column",
-          gap: 80,
+          padding: "24px 0 2px",
+          border: "1px solid token(colors.tableBorder)",
+          borderRadius: 8,
         })}
       >
         <table
           className={css({
+            width: "100%",
             fontSize: 14,
             "& th": {
               fontWeight: "inherit",
               whiteSpace: "nowrap",
               textAlign: "left",
             },
+            "& th:first-of-type, & td:first-of-type": {
+              paddingLeft: 24,
+            },
             "& thead tr:first-of-type th": {
-              paddingBottom: 32,
-              textTransform: "uppercase",
-              fontSize: 12,
+              paddingBottom: 28,
+              fontSize: 20,
             },
             "& thead tr + tr th": {
-              padding: "0 0 12px",
+              paddingBottom: 8,
               color: "contentAlt2",
-              borderBottom: "1px solid token(colors.tableBorder)",
             },
             "& tbody td": {
               padding: "12px 0",
-            },
-            "& tbody tr:first-of-type td": {
-              paddingTop: 20,
+              borderTop: "1px solid token(colors.tableBorder)",
             },
           })}
         >
@@ -78,20 +78,44 @@ export function HomeScreen() {
             </tr>
             <tr>
               <th>Token</th>
-              <th title="Borrow rate average">Avg. borrow rate</th>
               <th
-                colSpan={2}
+                title="Borrow rate average"
+                className={css({
+                  width: 0,
+                  paddingRight: 48,
+                })}
+              >
+                Borrow rate
+              </th>
+              <th
                 title="Total Value Locked (collateral)"
+                className={css({
+                  width: 0,
+                  paddingRight: 48,
+                })}
               >
                 TVL
               </th>
+              <th />
               <th
-                colSpan={2}
                 title="Annual Percentage Yield (earn pools)"
+                className={css({
+                  width: 0,
+                  paddingRight: 48,
+                })}
               >
                 Earn APY
               </th>
-              <th title="Total Value Locked (earn pools)">TVL</th>
+              <th
+                title="Total Value Locked (earn pools)"
+                className={css({
+                  width: 0,
+                  paddingRight: 48,
+                })}
+              >
+                TVL
+              </th>
+              <th />
             </tr>
           </thead>
           <tbody>

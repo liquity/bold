@@ -5,9 +5,12 @@ import type { ReactNode } from "react";
 
 import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
+import { LTV_RISK, MAX_LTV_ALLOWED, REDEMPTION_RISK } from "@/src/constants";
 import content from "@/src/content";
-import { ACCOUNT_BALANCES, BOLD_PRICE, ETH_PRICE, LTV_RISK, REDEMPTION_RISK } from "@/src/demo-data";
+import { ACCOUNT_BALANCES } from "@/src/demo-data";
+import { useDemoState } from "@/src/demo-state";
 import { useInputFieldValue } from "@/src/form-utils";
+import { usePrice } from "@/src/prices";
 import { css } from "@/styled-system/css";
 import {
   Button,
@@ -23,7 +26,7 @@ import {
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { match, P } from "ts-pattern";
-import { useAccount } from "wagmi";
+// import { useAccount } from "wagmi";
 
 const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
 
@@ -33,8 +36,11 @@ function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[
 }
 
 export function BorrowScreen() {
-  const account = useAccount();
+  const { account } = useDemoState();
+  // const account = useAccount();
   const router = useRouter();
+  const ethPriceUsd = usePrice("ETH");
+  const boldPriceUsd = usePrice("BOLD");
 
   // useParams() can return an array, but not with the current
   // routing setup so we can safely assume it’s a string
@@ -43,29 +49,36 @@ export function BorrowScreen() {
     throw new Error(`Invalid collateral symbol: ${collateral}`);
   }
   const collateralIndex = collateralSymbols.indexOf(collateral);
+  const { collateralRatio } = COLLATERALS[collateralIndex];
 
   const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral}`);
   const borrowing = useInputFieldValue((value) => `${dn.format(value)} BOLD`);
   const interestRate = useInputFieldValue((value) => `${dn.format(value)}%`);
 
-  const depositBoldValue = deposit.parsed && dn.mul(
-    dn.mul(deposit.parsed, ETH_PRICE),
-    BOLD_PRICE,
-  );
+  const depositUsdValue = deposit.parsed && dn.mul(deposit.parsed, ethPriceUsd);
 
-  const ltv = depositBoldValue && dn.gt(depositBoldValue, 0) && borrowing.parsed
-    ? dn.div(borrowing.parsed, depositBoldValue)
+  const ltv = depositUsdValue && dn.gt(depositUsdValue, 0) && borrowing.parsed
+    ? dn.div(borrowing.parsed, depositUsdValue)
     : null;
 
-  const maxBorrowing = deposit.parsed && dn.gt(deposit.parsed, 0)
-    ? dn.mul(
-      dn.mul(
-        dn.mul(deposit.parsed, ETH_PRICE),
-        BOLD_PRICE,
-      ),
-      0.8,
-    )
+  const maxLtv = dn.div(dn.from(1, 18), collateralRatio);
+  const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED);
+
+  const maxBorrowing = depositUsdValue && dn.gt(depositUsdValue, 0)
+    ? dn.mul(depositUsdValue, maxLtvAllowed)
     : null;
+
+  let liquidationPriceUsd = deposit.parsed
+      && dn.gt(deposit.parsed, 0)
+      && borrowing.parsed
+      && dn.gt(borrowing.parsed, 0)
+      && dn.gt(maxLtv, 0)
+    ? dn.div(dn.mul(borrowing.parsed, maxLtv), deposit.parsed)
+    : null;
+
+  if (liquidationPriceUsd && ltv && dn.gt(ltv, maxLtv)) {
+    liquidationPriceUsd = ethPriceUsd;
+  }
 
   const liquidationRisk: null | RiskLevel = match(ltv)
     .with(P.nullish, () => null)
@@ -75,6 +88,7 @@ export function BorrowScreen() {
 
   const redemptionRisk: null | RiskLevel = match(interestRate.parsed)
     .with(P.nullish, () => null)
+    .when((r) => dn.eq(r, 0), () => null)
     .when((r) => dn.gt(r, REDEMPTION_RISK.low), () => "low" as const)
     .when((r) => dn.gt(r, REDEMPTION_RISK.medium), () => "medium" as const)
     .otherwise(() => "high" as const);
@@ -140,14 +154,14 @@ export function BorrowScreen() {
               secondaryStart={`$${
                 deposit.parsed
                   ? dn.format(
-                    dn.mul(ETH_PRICE, deposit.parsed),
-                    { digits: 2, trailingZeros: true },
+                    dn.mul(ethPriceUsd, deposit.parsed),
+                    2,
                   )
                   : "0.00"
               }`}
               secondaryEnd={account.isConnected && (
                 <TextButton
-                  label={`Max. ${dn.format(ACCOUNT_BALANCES[collateral])} ${collateral}`}
+                  label={`Max ${dn.format(ACCOUNT_BALANCES[collateral])} ${collateral}`}
                   onClick={() => {
                     deposit.setValue(
                       dn.format(ACCOUNT_BALANCES[collateral]).replace(",", ""),
@@ -163,8 +177,33 @@ export function BorrowScreen() {
               label="Max LTV"
               value={
                 <HFlex gap={4}>
-                  <div>80.00%</div>
+                  <div>
+                    {dn.format(dn.mul(maxLtv, 100), { digits: 2, trailingZeros: true })}%
+                  </div>
                   <InfoTooltip heading="Max LTV">
+                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
+                    Bold stablecoins. At the time of the exchange a borrower does not lose any money.
+                  </InfoTooltip>
+                </HFlex>
+              }
+            />
+          }
+          footerStart={
+            <Field.FooterInfo
+              label="ETH Price"
+              value={
+                <HFlex gap={4}>
+                  <span
+                    className={css({
+                      fontVariantNumeric: "tabular-nums",
+                    })}
+                  >
+                    ${dn.format(ethPriceUsd, {
+                      digits: 2,
+                      trailingZeros: true,
+                    })}
+                  </span>
+                  <InfoTooltip heading="LTV">
                     A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
                     Bold stablecoins. At the time of the exchange a borrower does not lose any money.
                   </InfoTooltip>
@@ -188,39 +227,88 @@ export function BorrowScreen() {
               placeholder="0.00"
               secondaryStart={`$${
                 borrowing.parsed
-                  ? dn.format(
-                    dn.mul(BOLD_PRICE, borrowing.parsed),
-                    { digits: 2, trailingZeros: true },
-                  )
+                  ? dn.gt(
+                      dn.mul(boldPriceUsd, borrowing.parsed),
+                      1_000_000_000_000,
+                    )
+                    ? "−"
+                    : dn.format(
+                      dn.mul(boldPriceUsd, borrowing.parsed),
+                      {
+                        digits: 2,
+                        trailingZeros: true,
+                        compact: dn.gt(borrowing.parsed, 1_000_000_000),
+                      },
+                    )
                   : "0.00"
               }`}
               secondaryEnd={maxBorrowing && (
-                <HFlex>
-                  <div>Max LTV 80%:</div>
-                  <TextButton
-                    label={`${dn.format(maxBorrowing, 2)} BOLD`}
-                    onClick={() => borrowing.setValue(dn.format(maxBorrowing, 2).replace(",", ""))}
-                  />
-                </HFlex>
+                <div
+                  className={css({
+                    flexGrow: 0,
+                    flexShrink: 1,
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: 8,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  })}
+                >
+                  <div>
+                    {`Max LTV ${
+                      dn.format(
+                        dn.mul(maxLtvAllowed, 100),
+                        { digits: 2, trailingZeros: false },
+                      )
+                    }%:`}
+                  </div>
+                  <div>
+                    <TextButton
+                      label={`${dn.format(maxBorrowing, 2)} BOLD`}
+                      onClick={() => borrowing.setValue(dn.format(maxBorrowing, 2).replace(",", ""))}
+                    />
+                  </div>
+                </div>
               )}
               {...borrowing.inputFieldProps}
             />
           }
-          footerStart={liquidationRisk && (
+          footerStart={
             <>
               <Field.FooterInfoWarnLevel
+                help={<InfoTooltip heading="Liquidation risk" />}
                 label={match(liquidationRisk)
+                  .with(P.nullish, () => "Liquidation risk")
                   .with("low", () => "Low liq. risk")
                   .with("medium", () => "Medium liq. risk")
                   .with("high", () => "High liq. risk")
                   .exhaustive()}
-                level={liquidationRisk}
+                level={liquidationRisk ?? "none"}
+                title={match(liquidationRisk)
+                  .with(P.nullish, () => undefined)
+                  .with("low", () => "Low liquidation risk")
+                  .with("medium", () => "Medium liquidation risk")
+                  .with("high", () => "High liquidation risk")
+                  .exhaustive()}
               />
               <Field.FooterInfo
                 label="LTV"
                 value={
                   <HFlex gap={4}>
-                    {ltv && dn.format(dn.mul(ltv, 100), 2)}%
+                    {ltv
+                      ? (
+                        <span
+                          className={css({
+                            fontVariantNumeric: "tabular-nums",
+                          })}
+                        >
+                          {dn.lt(ltv, maxLtv)
+                            ? dn.format(dn.mul(ltv, 100), { digits: 2, trailingZeros: true })
+                            : `>${dn.format(dn.mul(maxLtv, 100), { digits: 2, trailingZeros: true })}`}%
+                        </span>
+                      )
+                      : "−"}
                     <InfoTooltip heading="LTV">
                       A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount
                       of Bold stablecoins. At the time of the exchange a borrower does not lose any money.
@@ -229,13 +317,23 @@ export function BorrowScreen() {
                 }
               />
             </>
-          )}
+          }
           footerEnd={liquidationRisk && (
             <Field.FooterInfo
-              label="Liq. ETH Price"
+              label="Liq. ETH price"
+              title={`Liquidation ETH price: ${
+                liquidationPriceUsd
+                  ? `$${dn.format(liquidationPriceUsd, 2)}`
+                  : "−"
+              }`}
               value={
                 <HFlex gap={4}>
-                  ${dn.format(ETH_PRICE, 2)}
+                  ${liquidationPriceUsd
+                    ? dn.format(
+                      liquidationPriceUsd,
+                      { digits: 2, trailingZeros: true },
+                    )
+                    : "−"}
                   <InfoTooltip heading="LTV">
                     A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
                     Bold stablecoins. At the time of the exchange a borrower does not lose any money.
@@ -295,16 +393,18 @@ export function BorrowScreen() {
               {...interestRate.inputFieldProps}
             />
           }
-          footerStart={redemptionRisk && (
+          footerStart={
             <Field.FooterInfoWarnLevel
               label={match(redemptionRisk)
+                .with(P.nullish, () => "Redemption risk")
                 .with("low", () => "Low redemption risk")
                 .with("medium", () => "Medium redemption risk")
                 .with("high", () => "High redemption risk")
                 .exhaustive()}
-              level={redemptionRisk}
+              level={redemptionRisk ?? "none"}
+              help={<InfoTooltip heading="Redemption risk" />}
             />
-          )}
+          }
         />
         <div
           style={{
@@ -319,6 +419,9 @@ export function BorrowScreen() {
             mode="primary"
             size="large"
             wide
+            onClick={() => {
+              router.push("/transactions/borrow");
+            }}
           />
         </div>
       </div>

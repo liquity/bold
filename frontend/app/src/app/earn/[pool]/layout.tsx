@@ -1,9 +1,9 @@
-import { POOLS } from "@/src/demo-data";
+import { EARN_POOLS } from "@/src/demo-data";
 import { EarnPoolScreen } from "@/src/screens/EarnPoolScreen/EarnPoolScreen";
 
 export function generateStaticParams() {
-  return POOLS.map((pool) => ({
-    pool: pool.symbol.toLowerCase(),
+  return Object.keys(EARN_POOLS).map((symbol) => ({
+    pool: symbol.toLowerCase(),
   }));
 }
 

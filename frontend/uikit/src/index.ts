@@ -1,5 +1,6 @@
 export type { DropdownItem } from "./Dropdown/Dropdown";
 export type { ThemeColorName, ThemeDescriptor } from "./Theme/Theme";
+export type * from "./tokens";
 export type * from "./types";
 
 export * from "./icons";

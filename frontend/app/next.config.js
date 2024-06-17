@@ -11,6 +11,7 @@ const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
 export default {
   output: "export",
   reactStrictMode: false,
+  images: { unoptimized: true },
   env: {
     APP_VERSION: pkg.version,
     COMMIT_HASH: commitHash,

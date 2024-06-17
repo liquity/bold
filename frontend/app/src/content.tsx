@@ -110,11 +110,7 @@ export default {
     },
     depositPanel: {
       label: "You deposit",
-      shareLabel: (share: N) => (
-        <>
-          Share in the pool {share}
-        </>
-      ),
+      shareLabel: "New pool share",
       claimCheckbox: "Also claim rewards",
       action: "Add deposit",
     },
@@ -200,11 +196,7 @@ export default {
     },
     depositPanel: {
       label: "You deposit",
-      shareLabel: (share: N) => (
-        <>
-          Share in the pool {share}
-        </>
-      ),
+      shareLabel: "New pool share",
       claimCheckbox: "Also claim rewards",
       action: "Add deposit",
     },

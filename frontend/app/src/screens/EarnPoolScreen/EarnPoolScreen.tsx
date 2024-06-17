@@ -1,12 +1,17 @@
 "use client";
 
+import type { PositionEarn } from "@/src/types";
+import type { Dnum } from "dnum";
+
 import { BackButton } from "@/src/comps/BackButton/BackButton";
 import { Details } from "@/src/comps/Details/Details";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { POOLS } from "@/src/demo-data";
+import { ACCOUNT_BALANCES, ACCOUNT_POSITIONS, EARN_POOLS } from "@/src/demo-data";
+import { useDemoState } from "@/src/demo-state";
 import { css } from "@/styled-system/css";
-import { HFlex, Tabs, TokenIcon, TokenIconGroup } from "@liquity2/uikit";
+import { COLLATERALS, HFlex, InfoTooltip, Tabs, TokenIcon, TokenIconGroup, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { DepositPanel } from "./DepositPanel";
 import { RewardsPanel } from "./RewardsPanel";
@@ -18,27 +23,52 @@ const TABS = [
   { action: "claim", label: content.earnScreen.tabs.claim },
 ] as const;
 
-export function EarnPoolScreen() {
-  const { pool: poolName, action = "deposit" } = useParams();
+const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
+function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[number] {
+  console.log(symbol, collateralSymbols);
+  const c: string[] = collateralSymbols;
+  return c.includes(symbol);
+}
 
+export function EarnPoolScreen() {
+  const { account } = useDemoState();
   const router = useRouter();
-  const pool = POOLS.find(({ symbol }) => symbol.toLowerCase() === poolName);
-  const tab = TABS.find((tab) => tab.action === action);
+  const params = useParams();
+
+  const collateralSymbol = String(params.pool).toUpperCase();
+
+  if (!isCollateralSymbol(collateralSymbol)) {
+    return null;
+  }
+
+  const pool = EARN_POOLS[collateralSymbol];
+
+  const position: PositionEarn | undefined = ACCOUNT_POSITIONS.find((position) => (
+    position.type === "earn" && position.collateral === collateralSymbol
+  )) as PositionEarn | undefined;
+
+  const accountBoldBalance = account.isConnected ? ACCOUNT_BALANCES.BOLD : undefined;
+
+  const tab = TABS.find((tab) => tab.action === params.action) ?? TABS[0];
 
   return pool && tab && (
     <Screen>
       <BackButton href="/earn" label={content.earnScreen.backButton} />
-      <PoolSummary pool={pool} />
-      {pool.deposit && (
+      <PoolSummary
+        apy={pool.apy}
+        boldQty={pool.boldQty}
+        symbol={collateralSymbol}
+      />
+      {position && (
         <Details
           items={[
             {
               label: content.earnScreen.accountPosition.depositLabel,
-              value: pool.deposit,
+              value: `${dn.format(position.deposit, { digits: 2, trailingZeros: true })} BOLD`,
             },
             {
               label: content.earnScreen.accountPosition.rewardsLabel,
-              value: pool.rewards && (
+              value: position.rewards && (
                 <HFlex
                   gap={8}
                   justifyContent="flex-start"
@@ -47,7 +77,7 @@ export function EarnPoolScreen() {
                     color: "positive",
                   })}
                 >
-                  {pool.rewards.bold} BOLD
+                  {dn.format(position.rewards.bold, 2)} BOLD
                   <div
                     className={css({
                       display: "flex",
@@ -57,7 +87,7 @@ export function EarnPoolScreen() {
                       backgroundColor: "dimmed",
                     })}
                   />
-                  {pool.rewards.eth} ETH
+                  {dn.format(position.rewards.eth, 2)} ETH
                 </HFlex>
               ),
             },
@@ -75,7 +105,7 @@ export function EarnPoolScreen() {
         <Tabs
           selected={TABS.indexOf(tab)}
           onSelect={(index) => {
-            router.push(`/earn/${poolName}/${TABS[index].action}`, {
+            router.push(`/earn/${collateralSymbol.toLowerCase()}/${TABS[index].action}`, {
               scroll: false,
             });
           }}
@@ -85,15 +115,35 @@ export function EarnPoolScreen() {
             tabId: `tab-${tab.action}`,
           }))}
         />
-        {tab.action === "deposit" && <DepositPanel pool={pool} />}
-        {tab.action === "withdraw" && <WithdrawPanel pool={pool} />}
-        {tab.action === "claim" && <RewardsPanel pool={pool} />}
+        {tab.action === "deposit" && (
+          <DepositPanel
+            accountBoldBalance={accountBoldBalance}
+            boldQty={pool.boldQty}
+            position={position}
+          />
+        )}
+        {tab.action === "withdraw" && (
+          <WithdrawPanel
+            boldQty={pool.boldQty}
+            position={position}
+          />
+        )}
+        {tab.action === "claim" && <RewardsPanel position={position} />}
       </div>
     </Screen>
   );
 }
 
-function PoolSummary({ pool }: { pool: typeof POOLS[number] }) {
+function PoolSummary({
+  apy,
+  boldQty,
+  symbol,
+}: {
+  apy: Dnum;
+  boldQty: Dnum;
+  symbol: keyof typeof EARN_POOLS;
+}) {
+  const poolToken = TOKENS_BY_SYMBOL[symbol];
   return (
     <div
       className={css({
@@ -119,7 +169,7 @@ function PoolSummary({ pool }: { pool: typeof POOLS[number] }) {
         >
           <TokenIconGroup size="large">
             <TokenIcon symbol="BOLD" />
-            <TokenIcon symbol={pool.symbol} />
+            <TokenIcon symbol={symbol} />
           </TokenIconGroup>
         </div>
         <div
@@ -134,15 +184,24 @@ function PoolSummary({ pool }: { pool: typeof POOLS[number] }) {
               fontSize: 24,
             })}
           >
-            {pool.token} pool
+            {poolToken.name} pool
           </div>
           <div
             className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
               color: "contentAlt",
               whiteSpace: "nowrap",
             })}
           >
-            {content.earnScreen.headerTvl(pool.boldQty)}
+            <div>
+              {content.earnScreen.headerTvl(`${dn.format(boldQty, { compact: true })} BOLD`)}
+            </div>
+            <InfoTooltip heading="Max LTV">
+              A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of Bold
+              stablecoins. At the time of the exchange a borrower does not lose any money.
+            </InfoTooltip>
           </div>
         </div>
       </div>
@@ -159,7 +218,7 @@ function PoolSummary({ pool }: { pool: typeof POOLS[number] }) {
             fontSize: 24,
           })}
         >
-          {pool.apy}
+          {dn.format(dn.mul(apy, 100), 2)}%
         </div>
         <div
           className={css({

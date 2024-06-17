@@ -1,13 +1,13 @@
 "use client";
 
 import { palette } from "@/src/colors";
-import { useAboutModal } from "@/src/comps/AboutModal/AboutModal";
+// import { useAboutModal } from "@/src/comps/AboutModal/AboutModal";
 import { css } from "@/styled-system/css";
 import { TextButton } from "@liquity2/uikit";
 import Link from "next/link";
 
 export function Footer() {
-  const aboutModal = useAboutModal();
+  // const aboutModal = useAboutModal();
 
   const links: Array<[
     string | [string, string],
@@ -16,8 +16,8 @@ export function Footer() {
     // ["Liquity", "https://liquity.org"],
     // ["Disclaimer", "https://example.org"],
     // ["Privacy Policy", "https://example.org"],
-    ["Contracts", "/contracts"],
-    ["About", aboutModal.open],
+    // ["Contracts", "/contracts"],
+    // ["About", aboutModal.open],
   ];
 
   return (
@@ -26,7 +26,7 @@ export function Footer() {
         display: "flex",
         justifyContent: "flex-end",
         alignItems: "center",
-        height: 120,
+        // height: 120,
       })}
     >
       <div

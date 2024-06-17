@@ -70,11 +70,15 @@ export function Dropdown({
 
   const [showMenu, setShowMenu] = useState(false);
 
+  // prevent the popup from reopening
+  // if the user clicks the button to close it
+  const preventOpenOnRelease = useRef(false);
+
   const hide = (refocusReference = true) => {
     setShowMenu(false);
 
-    // refocus the opening button
     if (refocusReference) {
+      // refocus the opening button
       floatingRefs.reference?.current?.focus();
     }
   };
@@ -82,6 +86,8 @@ export function Dropdown({
   const show = () => {
     setFocused(selected === -1 ? 0 : selected); // reset focus to the selected item
     setShowMenu(true);
+
+    preventOpenOnRelease.current = false;
 
     // focus the selected item in the menu
     const { current: container } = focusContainer;
@@ -146,11 +152,12 @@ export function Dropdown({
         ref={floatingRefs.setReference}
         type="button"
         onClick={() => {
-          if (showMenu) {
-            hide();
-          } else {
+          if (!preventOpenOnRelease.current) {
             show();
           }
+        }}
+        onMouseDown={() => {
+          preventOpenOnRelease.current = showMenu;
         }}
         className={cx(
           "group",
@@ -249,6 +256,7 @@ export function Dropdown({
               >
                 {groups.map((group, groupIndex) => (
                   <div
+                    key={groupIndex}
                     className={css({
                       display: "flex",
                       flexDirection: "column",

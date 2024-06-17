@@ -1,9 +1,6 @@
-import content from "@/src/content";
+import { useDemoState } from "@/src/demo-state";
 import { css } from "@/styled-system/css";
-import { Button } from "@liquity2/uikit";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { match, P } from "ts-pattern";
-import { IconAccount } from "./icons";
+import { Button, IconAccount } from "@liquity2/uikit";
 import { MenuItem } from "./MenuItem";
 
 type ButtonData = {
@@ -13,49 +10,82 @@ type ButtonData = {
 };
 
 export function AccountButton() {
+  const { account, setDemoState } = useDemoState();
   return (
-    <ConnectButton.Custom>
-      {({ account, chain, openAccountModal, openChainModal, openConnectModal }) => {
-        const button = match({ account, chain })
-          .returnType<ButtonData>()
-          .with(
-            // wrong network
-            { chain: { unsupported: true } },
-            () => ({
-              label: content.accountButton.wrongNetwork,
-              onClick: openChainModal,
-            }),
-          )
-          .with(
-            // connected
-            { account: P.nonNullable },
-            ({ account }) => ({
-              label: account.displayName,
-              onClick: openAccountModal,
-              variant: "connected",
-            }),
-          )
-          .otherwise(
-            // disconnected / not ready
-            () => ({
-              label: content.accountButton.connectAccount,
-              onClick: openConnectModal,
-            }),
-          );
-
-        return button.variant === "connected"
-          ? <ButtonConnected button={button} />
-          : (
-            <Button
-              mode="primary"
-              label={button.label}
-              onClick={button.onClick}
-            />
-          );
-      }}
-    </ConnectButton.Custom>
+    account.isConnected
+      ? (
+        <ButtonConnected
+          button={{
+            label: "demo.eth",
+            onClick: () => {
+              setDemoState({
+                account: { isConnected: false },
+              });
+            },
+          }}
+        />
+      )
+      : (
+        <Button
+          mode="primary"
+          label="Connect"
+          onClick={() => {
+            setDemoState({
+              account: { isConnected: true },
+            });
+          }}
+        />
+      )
   );
 }
+
+// import { ConnectButton } from "@rainbow-me/rainbowkit";
+// import content from "@/src/content";
+// import { match, P } from "ts-pattern";
+// export function AccountButton() {
+//   return (
+//     <ConnectButton.Custom>
+//       {({ account, chain, openAccountModal, openChainModal, openConnectModal }) => {
+//         const button = match({ account, chain })
+//           .returnType<ButtonData>()
+//           .with(
+//             // wrong network
+//             { chain: { unsupported: true } },
+//             () => ({
+//               label: content.accountButton.wrongNetwork,
+//               onClick: openChainModal,
+//             }),
+//           )
+//           .with(
+//             // connected
+//             { account: P.nonNullable },
+//             ({ account }) => ({
+//               label: account.displayName,
+//               onClick: openAccountModal,
+//               variant: "connected",
+//             }),
+//           )
+//           .otherwise(
+//             // disconnected / not ready
+//             () => ({
+//               label: content.accountButton.connectAccount,
+//               onClick: openConnectModal,
+//             }),
+//           );
+
+//         return button.variant === "connected"
+//           ? <ButtonConnected button={button} />
+//           : (
+//             <Button
+//               mode="primary"
+//               label={button.label}
+//               onClick={button.onClick}
+//             />
+//           );
+//       }}
+//     </ConnectButton.Custom>
+//   );
+// }
 
 function ButtonConnected({ button }: { button: ButtonData }) {
   return (

@@ -1,29 +1,41 @@
+import type { PositionEarn } from "@/src/types";
+import type { Dnum } from "dnum";
+
 import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
-import { POOLS } from "@/src/demo-data";
 import { parseInputFloat } from "@/src/form-utils";
 import { css } from "@/styled-system/css";
-import { Button, Checkbox, InputField, TextButton, TokenIcon } from "@liquity2/uikit";
+import { Button, Checkbox, HFlex, InfoTooltip, InputField, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 
-export function DepositPanel({ pool }: { pool: typeof POOLS[number] }) {
+export function DepositPanel({
+  accountBoldBalance,
+  boldQty,
+  position,
+}: {
+  accountBoldBalance?: Dnum;
+  boldQty: Dnum;
+  position?: PositionEarn;
+}) {
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const [claimRewards, setClaimRewards] = useState(false);
 
   const parsedValue = parseInputFloat(value);
 
-  const secondaryStart = "Share in the pool";
+  const value_ = (focused || !parsedValue) ? value : `${dn.format(parsedValue)} BOLD`;
 
-  const secondaryEnd = (
-    <TextButton
-      label="Max. 10,000.00 BOLD"
-      onClick={() => setValue("10000")}
-    />
+  const depositDifference = parsedValue ?? dn.from(0, 18);
+
+  const updatedDeposit = dn.add(
+    position?.deposit ?? dn.from(0, 18),
+    depositDifference,
   );
 
-  const value_ = (focused || !parsedValue) ? value : `${dn.format(parsedValue)} BOLD`;
+  const updatedPoolShare = depositDifference
+    ? dn.div(updatedDeposit, dn.add(boldQty, depositDifference))
+    : null;
 
   return (
     <div
@@ -69,8 +81,27 @@ export function DepositPanel({ pool }: { pool: typeof POOLS[number] }) {
             onBlur={() => setFocused(false)}
             value={value_}
             placeholder="0.00"
-            secondaryStart={secondaryStart}
-            secondaryEnd={secondaryEnd}
+            secondaryStart={
+              <HFlex gap={4}>
+                <div>
+                  {content.earnScreen.depositPanel.shareLabel}
+                </div>
+                <div>
+                  {updatedPoolShare
+                    ? dn.format(dn.mul(updatedPoolShare, 100), 2)
+                    : "0"}%
+                </div>
+                <InfoTooltip heading="Pool share">
+                  …
+                </InfoTooltip>
+              </HFlex>
+            }
+            secondaryEnd={accountBoldBalance && (
+              <TextButton
+                label={`Max ${dn.format(accountBoldBalance)} BOLD`}
+                onClick={() => setValue(dn.toString(accountBoldBalance))}
+              />
+            )}
           />
         }
         footerStart={
@@ -88,9 +119,13 @@ export function DepositPanel({ pool }: { pool: typeof POOLS[number] }) {
               onChange={setClaimRewards}
             />
             {content.earnScreen.depositPanel.claimCheckbox}
+            <InfoTooltip heading="LTV">
+              A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of Bold
+              stablecoins. At the time of the exchange a borrower does not lose any money.
+            </InfoTooltip>
           </label>
         }
-        footerEnd={pool.rewards && (
+        footerEnd={position && (
           <div
             className={css({
               display: "flex",
@@ -98,7 +133,7 @@ export function DepositPanel({ pool }: { pool: typeof POOLS[number] }) {
             })}
           >
             <div>
-              {pool.rewards.bold}{" "}
+              {dn.format(position.rewards.bold, 2)}{" "}
               <span
                 className={css({
                   color: "contentAlt",
@@ -108,13 +143,13 @@ export function DepositPanel({ pool }: { pool: typeof POOLS[number] }) {
               </span>
             </div>
             <div>
-              {pool.rewards.eth}{" "}
+              {dn.format(position.rewards.eth, 2)}{" "}
               <span
                 className={css({
                   color: "contentAlt",
                 })}
               >
-                BOLD
+                ETH
               </span>
             </div>
           </div>

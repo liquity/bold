@@ -5,10 +5,10 @@ import type { ComponentProps } from "react";
 import { Logo } from "@/src/comps/Logo/Logo";
 import content from "@/src/content";
 import { css } from "@/styled-system/css";
+import { IconBorrow, IconEarn, IconLeverage, IconStake } from "@liquity2/uikit";
 import Link from "next/link";
 import { LAYOUT_WIDTH } from "../AppLayout/AppLayout";
 import { AccountButton } from "./AccountButton";
-import { IconBorrow, IconEarn, IconLeverage, IconStake } from "./icons";
 import { Menu } from "./Menu";
 
 const menuItems: ComponentProps<typeof Menu>["menuItems"] = [

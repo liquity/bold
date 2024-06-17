@@ -19,7 +19,9 @@ export const TextButton = forwardRef<
       className={cx(
         className,
         css({
-          display: "inline",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
           fontSize: 16,
           color: "accent",
           borderRadius: 4,

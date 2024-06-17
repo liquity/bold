@@ -15,7 +15,7 @@ import "../../Interfaces/ICollateralRegistry.sol";
 import "./PriceFeedTestnet.sol";
 import "../../Interfaces/IInterestRouter.sol";
 import "../../GasPool.sol";
-import {mulDivCeil} from "../Utils/math.sol";
+import {mulDivCeil} from "../Utils/Math.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";

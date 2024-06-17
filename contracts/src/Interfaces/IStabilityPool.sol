@@ -110,6 +110,7 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
 
     function epochToScaleToB(uint128 _epoch, uint128 _scale) external view returns (uint256);
 
+    function P() external view returns (uint256);
     function currentScale() external view returns (uint128);
     function currentEpoch() external view returns (uint128);
 

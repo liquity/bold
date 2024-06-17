@@ -1,4 +1,4 @@
-import type { Token } from "@liquity2/uikit";
+import type { CollateralSymbol, Token } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
@@ -36,7 +36,7 @@ export type PositionLoan = {
 export type PositionEarn = {
   type: "earn";
   apy: Dnum;
-  collateral: Token["symbol"];
+  collateral: CollateralSymbol;
   deposit: Dnum;
   rewards: {
     bold: Dnum;
