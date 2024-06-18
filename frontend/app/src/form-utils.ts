@@ -174,9 +174,17 @@ export function useInputFieldValue(
         onChange: setValue,
         value: focused || !parsed || !value.trim() ? value : format(parsed),
       },
+      isEmpty: value.trim() === "",
       parsed,
       setValue,
       value,
     });
-  }, [focused, format, onChange, onFocusChange, parsed, value]);
+  }, [
+    focused,
+    format,
+    onChange,
+    onFocusChange,
+    parsed,
+    value,
+  ]);
 }

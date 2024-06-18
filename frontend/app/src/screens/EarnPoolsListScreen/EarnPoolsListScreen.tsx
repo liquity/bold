@@ -79,7 +79,7 @@ export function EarnPoolsListScreen() {
         <thead>
           <tr>
             <th>Pool</th>
-            <th>APY</th>
+            <th>APR</th>
             <th
               className={css({
                 paddingRight: "88px!",
@@ -92,7 +92,7 @@ export function EarnPoolsListScreen() {
         </thead>
         <tbody>
           {(Object.entries(EARN_POOLS) as Entries<typeof EARN_POOLS>).map(
-            ([symbol, { boldQty, apy }]) => {
+            ([symbol, { boldQty, apr }]) => {
               const token = TOKENS_BY_SYMBOL[symbol];
 
               const earnPosition = earnPositions.get(symbol);
@@ -162,7 +162,7 @@ export function EarnPoolsListScreen() {
                         height: "100%",
                       })}
                     >
-                      {dn.format(dn.mul(apy, 100), 2)}%
+                      {dn.format(dn.mul(apr, 100), 2)}%
                     </div>
                   </td>
                   <td>

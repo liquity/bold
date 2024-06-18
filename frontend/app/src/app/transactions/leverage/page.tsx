@@ -74,7 +74,7 @@ export default function Page() {
           }}
         >
           <TextButton
-            label="Back to editing"
+            label="Back"
             onClick={() => {
               router.push("/leverage");
             }}

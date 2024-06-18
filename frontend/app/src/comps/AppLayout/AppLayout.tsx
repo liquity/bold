@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-import { Footer } from "@/src/comps/Footer/Footer";
 import { TopBar } from "@/src/comps/TopBar/TopBar";
 import { css } from "@/styled-system/css";
 
@@ -44,16 +43,6 @@ export function AppLayout({
         })}
       >
         {children}
-      </div>
-      <div
-        className={css({
-          flexGrow: 0,
-          flexShrink: 0,
-          width: LAYOUT_WIDTH,
-          paddingTop: 40,
-        })}
-      >
-        <Footer />
       </div>
     </div>
   );
