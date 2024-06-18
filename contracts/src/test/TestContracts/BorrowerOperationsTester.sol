@@ -20,8 +20,4 @@ contract BorrowerOperationsTester is BorrowerOperations {
         _initTroveChange(troveChange, _collChange, isCollIncrease, _debtChange, isDebtIncrease);
         return _getNewTCRFromTroveChange(troveChange, _price);
     }
-
-    function getUSDValue(uint256 _coll, uint256 _price) external pure returns (uint256) {
-        return _getUSDValue(_coll, _price);
-    }
 }
