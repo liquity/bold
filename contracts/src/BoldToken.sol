@@ -162,7 +162,12 @@ contract BoldToken is Ownable, IBoldToken {
     function transferFrom(address sender, address recipient, uint256 amount) external override returns (bool) {
         _requireValidRecipient(recipient);
         _transfer(sender, recipient, amount);
-        _approve(sender, msg.sender, _allowances[sender][msg.sender] - amount);
+
+        uint256 currentAllowance = _allowances[sender][msg.sender];
+        if (currentAllowance != type(uint256).max) {
+            _approve(sender, msg.sender, currentAllowance - amount);
+        }
+
         return true;
     }
 
