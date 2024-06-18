@@ -921,11 +921,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
         return status == Status.unredeemable;
     }
 
-    function _getRedemptionFee(uint256 _ETHDrawn, uint256 _redemptionRate) internal pure returns (uint256) {
-        uint256 redemptionFee = _redemptionRate * _ETHDrawn / DECIMAL_PRECISION;
-        return redemptionFee;
-    }
-
     // --- Interest rate calculations ---
 
     // TODO: analyze precision loss in interest functions and decide upon the minimum granularity

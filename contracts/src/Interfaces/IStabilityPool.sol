@@ -113,9 +113,4 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     function P() external view returns (uint256);
     function currentScale() external view returns (uint128);
     function currentEpoch() external view returns (uint128);
-
-    /*
-     * Only callable by Active Pool, it pulls ETH and accounts for ETH received
-     */
-    function receiveETH(uint256 _amount) external;
 }

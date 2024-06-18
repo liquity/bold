@@ -235,22 +235,6 @@ contract(
           assert.include(err.message, "Caller is not TroveManager");
         }
       });
-
-      // --- onlyActivePool ---
-
-      // receiveETH (payment)
-      it("receiveETH(): reverts when called by an account that is not the Active Pool", async () => {
-        // Attempt call from alice
-        try {
-          await stabilityPool.receiveETH(100, { from: alice });
-        } catch (err) {
-          assert.include(err.message, "revert");
-          assert.include(
-            err.message,
-            "StabilityPool: Caller is not ActivePool",
-          );
-        }
-      });
     });
 
     describe("BoldToken", async (accounts) => {
