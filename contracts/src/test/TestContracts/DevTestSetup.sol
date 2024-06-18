@@ -155,7 +155,7 @@ contract DevTestSetup is BaseTest {
         transferBold(D, A, boldToken.balanceOf(D) / 2);
         transferBold(D, B, boldToken.balanceOf(D));
 
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.C)), uint8(TroveManager.Status.closedByLiquidation));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.C)), uint8(ITroveManager.Status.closedByLiquidation));
     }
 
     function _setupForPTests() internal returns (ABCDEF memory) {
@@ -239,8 +239,8 @@ contract DevTestSetup is BaseTest {
         assertLt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP, MIN_NET_DEBT);
 
         // Check A and B tagged as Zombie troves
-        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(TroveManager.Status.unredeemable));
-        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(TroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.unredeemable));
     }
 
     function _redeemAndCreateZombieTroveAAndHitB(ABCDEF memory _troveIDs) internal {
@@ -257,8 +257,8 @@ contract DevTestSetup is BaseTest {
         assertGt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP, MIN_NET_DEBT);
 
         // // Check A is zombie Trove but B is not
-        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(TroveManager.Status.unredeemable));
-        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.B)), uint8(TroveManager.Status.active));
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.B)), uint8(ITroveManager.Status.active));
     }
 
     function _getSPYield(uint256 _aggInterest) internal returns (uint256) {

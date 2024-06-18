@@ -38,14 +38,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
     // Liquidation penalty for troves redistributed
     uint256 public immutable LIQUIDATION_PENALTY_REDISTRIBUTION;
 
-    enum Status {
-        nonExistent,
-        active,
-        closedByOwner,
-        closedByLiquidation,
-        unredeemable
-    }
-
     // Store the necessary data for a trove
     struct Trove {
         uint256 debt;

@@ -12,6 +12,14 @@ import "../Types/LatestTroveData.sol";
 
 // Common interface for the Trove Manager.
 interface ITroveManager is IERC721, ILiquityBase {
+    enum Status {
+        nonExistent,
+        active,
+        closedByOwner,
+        closedByLiquidation,
+        unredeemable
+    }
+
     function MCR() external view returns (uint256);
     function LIQUIDATION_PENALTY_SP() external view returns (uint256);
 
@@ -32,6 +40,22 @@ interface ITroveManager is IERC721, ILiquityBase {
     function boldToken() external view returns (IBoldToken);
     function sortedTroves() external view returns (ISortedTroves);
     function borrowerOperationsAddress() external view returns (address);
+
+    function Troves(uint256 _id)
+        external
+        view
+        returns (
+            uint256 debt,
+            uint256 coll,
+            uint256 stake,
+            Status status,
+            uint64 arrayIndex,
+            uint64 lastDebtUpdateTime,
+            uint64 lastInterestRateAdjTime,
+            uint256 annualInterestRate
+        );
+
+    function rewardSnapshots(uint256 _id) external view returns (uint256 ETH, uint256 boldDebt);
 
     // function BOLD_GAS_COMPENSATION() external view returns (uint256);
 
