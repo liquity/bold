@@ -162,11 +162,6 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=8192
 
       # Merge
-      - name: ls
-        id: ls
-        run: |
-          ls && ls coverage
-
       - name: Remove path from contract names in Hardhat
         id: remove_contract_path
         run: |
