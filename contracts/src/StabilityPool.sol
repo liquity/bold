@@ -586,9 +586,13 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool, I
         boldToken.burn(address(this), _debtToOffset);
 
         // Update internal ETH balance tracker
-        ETHBalance = ETHBalance + _collToAdd;
+        uint256 newETHBalance = ETHBalance + _collToAdd;
+        ETHBalance = newETHBalance;
+
         // Pull ETH from Active Pool
         activePoolCached.sendETH(address(this), _collToAdd);
+
+        emit StabilityPoolETHBalanceUpdated(newETHBalance);
     }
 
     function _updateTotalBoldDeposits(uint256 _depositIncrease, uint256 _depositDecrease) internal {
