@@ -75,6 +75,7 @@ export function Tooltip({
     middleware: [
       offset(8),
       shift({
+        crossAxis: true,
         padding: 8,
       }),
     ],

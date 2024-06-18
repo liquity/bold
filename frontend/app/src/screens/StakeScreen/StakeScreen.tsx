@@ -8,7 +8,9 @@ import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { ACCOUNT_BALANCES, ACCOUNT_STAKED_LQTY, ETH_PRICE, STAKED_LQTY_TOTAL } from "@/src/demo-data";
+import { formatPercentage } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
+import { usePrice } from "@/src/prices";
 import { css } from "@/styled-system/css";
 import { Button, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -23,6 +25,8 @@ const TABS = [
 export function StakeScreen() {
   const router = useRouter();
   const { action = "deposit" } = useParams();
+
+  const lqtyPrice = usePrice("LQTY");
 
   const tab = TABS.findIndex(({ id }) => id === action);
 
@@ -55,7 +59,7 @@ export function StakeScreen() {
               label: content.stakeScreen.accountDetails.votingPower,
               value: (
                 <HFlex justifyContent="flex-start" gap={4}>
-                  <div>{votingPower(ACCOUNT_STAKED_LQTY.deposit, 4)}</div>
+                  <div>{depositShare(ACCOUNT_STAKED_LQTY.deposit, 4)}</div>
                   <InfoTooltip>
                     {content.stakeScreen.accountDetails.votingPowerHelp}
                   </InfoTooltip>
@@ -115,7 +119,7 @@ export function StakeScreen() {
                     }
                     label="You deposit"
                     placeholder="0.00"
-                    secondaryStart="$0.00"
+                    secondaryStart={deposit.parsed && `$${dn.format(dn.mul(deposit.parsed, lqtyPrice), 2)}`}
                     secondaryEnd={
                       <TextButton
                         label={`Max. ${dn.format(ACCOUNT_BALANCES.LQTY, 2)} LQTY`}
@@ -131,10 +135,12 @@ export function StakeScreen() {
                 }
                 footerStart={
                   <Field.FooterInfo
-                    label="Voting power"
+                    label="New voting power"
                     value={
                       <HFlex>
-                        <div>{votingPower(deposit.parsed)}</div>
+                        <div>
+                          {depositShare(deposit.parsed && dn.add(ACCOUNT_STAKED_LQTY.deposit, deposit.parsed), 4)}
+                        </div>
                         <InfoTooltip>
                           Voting power is the percentage of the total staked LQTY that you own.
                         </InfoTooltip>
@@ -142,7 +148,6 @@ export function StakeScreen() {
                     }
                   />
                 }
-                footerEnd={null}
               />
               <div
                 className={css({
@@ -191,7 +196,7 @@ export function StakeScreen() {
                     }
                     label="You withdraw"
                     placeholder="0.00"
-                    secondaryStart="$0.00"
+                    secondaryStart={withdraw.parsed && `$${dn.format(dn.mul(withdraw.parsed, lqtyPrice), 2)}`}
                     secondaryEnd={
                       <TextButton
                         label={`Max. ${dn.format(ACCOUNT_STAKED_LQTY.deposit, 2)} LQTY`}
@@ -203,6 +208,21 @@ export function StakeScreen() {
                       />
                     }
                     {...withdraw.inputFieldProps}
+                  />
+                }
+                footerStart={
+                  <Field.FooterInfo
+                    label="New voting power"
+                    value={
+                      <HFlex>
+                        <div>
+                          {depositShare(withdraw.parsed && dn.sub(ACCOUNT_STAKED_LQTY.deposit, withdraw.parsed), 4)}
+                        </div>
+                        <InfoTooltip>
+                          Voting power is the percentage of the total staked LQTY that you own.
+                        </InfoTooltip>
+                      </HFlex>
+                    }
                   />
                 }
               />
@@ -266,8 +286,8 @@ export function StakeScreen() {
                     value={ACCOUNT_STAKED_LQTY.rewardLusd}
                     symbol="LUSD"
                     help={
-                      <InfoTooltip>
-                        LUSD lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                      <InfoTooltip heading="LUSD rewards">
+                        −
                       </InfoTooltip>
                     }
                   />
@@ -275,8 +295,8 @@ export function StakeScreen() {
                     value={ACCOUNT_STAKED_LQTY.rewardEth}
                     symbol="ETH"
                     help={
-                      <InfoTooltip>
-                        ETH lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                      <InfoTooltip heading="ETH rewards">
+                        −
                       </InfoTooltip>
                     }
                   />
@@ -361,17 +381,8 @@ function StaticAction({
   );
 }
 
-function votingPower(deposit?: Dnum | null, digits?: number) {
-  return deposit && dn.gt(deposit, 0)
-    ? (dn.gt(deposit, STAKED_LQTY_TOTAL)
-      ? "100%"
-      : `${
-        dn.format(
-          dn.mul(dn.div(deposit, STAKED_LQTY_TOTAL), 100),
-          { digits: digits },
-        )
-      }%`)
-    : "−";
+function depositShare(deposit?: Dnum | null, digits?: number) {
+  return formatPercentage(deposit && dn.div(deposit, STAKED_LQTY_TOTAL), { digits });
 }
 
 function RewardAmount({

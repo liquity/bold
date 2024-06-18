@@ -6,8 +6,14 @@ import type { ReactNode } from "react";
 import { Field } from "@/src/comps/Field/Field";
 import { Position } from "@/src/comps/Position/Position";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { ACCOUNT_BALANCES, ACCOUNT_POSITIONS, ETH_PRICE } from "@/src/demo-data";
+import { DEBT_SUGGESTIONS, ETH_MAX_RESERVE } from "@/src/constants";
+import content from "@/src/content";
+import { ACCOUNT_BALANCES, ACCOUNT_POSITIONS } from "@/src/demo-data";
+import { useDemoState } from "@/src/demo-state";
 import { useInputFieldValue } from "@/src/form-utils";
+import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
+import { usePrice } from "@/src/prices";
+import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
@@ -20,11 +26,12 @@ import {
   Tabs,
   TextButton,
   TokenIcon,
+  TOKENS_BY_SYMBOL,
   VFlex,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const TABS = [
   { label: "Update position", id: "update" },
@@ -76,7 +83,7 @@ export function LoanScreen() {
               router.push(`/loan/${TABS[index].id}?id=${troveId}`);
             }}
           />
-          {action === "update" && <UpdatePositionPanel />}
+          {action === "update" && <UpdatePositionPanel loan={trove} />}
           {action === "close" && <ClosePositionPanel loan={trove} />}
         </VFlex>
       </VFlex>
@@ -84,15 +91,58 @@ export function LoanScreen() {
   );
 }
 
-function UpdatePositionPanel() {
-  const deposit = useInputFieldValue((value) => `${dn.format(value)} ETH`);
-  const debt = useInputFieldValue((value) => `${dn.format(value)} BOLD`);
-  const interestRate = useInputFieldValue((value) => `${dn.format(value)} %`);
+function UpdatePositionPanel({
+  loan,
+}: {
+  loan: PositionLoan;
+}) {
+  const { account, setDemoState } = useDemoState();
+  const collateral = TOKENS_BY_SYMBOL[loan.collateral];
+  const ethPriceUsd = usePrice("ETH");
+  const boldPriceUsd = usePrice("BOLD");
 
-  const depositUsd = dn.mul(deposit.parsed ?? 0, ETH_PRICE);
-  const debtLtv = debt.parsed && dn.gt(depositUsd, 0)
-    ? dn.div(dn.mul(debt.parsed, 100), depositUsd)
+  const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral.symbol}`, {
+    defaultValue: dn.toString(loan.deposit),
+  });
+  const debt = useInputFieldValue((value) => `${dn.format(value)} BOLD`, {
+    defaultValue: dn.toString(loan.borrowed),
+  });
+  const interestRate = useInputFieldValue((value) => `${dn.format(value)} %`, {
+    defaultValue: dn.toString(dn.mul(loan.interestRate, 100)),
+  });
+
+  const ethMax = dn.add(
+    loan.deposit,
+    dn.sub(
+      ACCOUNT_BALANCES[collateral.symbol],
+      ETH_MAX_RESERVE,
+    ),
+  );
+
+  const loanDetails = getLoanDetails(
+    deposit.isEmpty ? null : deposit.parsed,
+    debt.isEmpty ? null : debt.parsed,
+    interestRate.parsed && dn.div(interestRate.parsed, 100),
+    dn.div(dn.from(1, 18), collateral.collateralRatio),
+    ethPriceUsd,
+  );
+
+  const debtSuggestions = loanDetails.maxDebt && loanDetails.depositUsd
+    ? DEBT_SUGGESTIONS.map((ratio) => {
+      const debt = loanDetails.maxDebt && dn.mul(loanDetails.maxDebt, ratio);
+      const ltv = debt && loanDetails.depositUsd && getLtv(debt, loanDetails.depositUsd);
+      const risk = ltv && getLiquidationRisk(ltv, loanDetails.maxLtv);
+      return { debt, ltv, risk };
+    })
     : null;
+
+  const allowSubmit = account.isConnected
+    && deposit.parsed
+    && dn.gt(deposit.parsed, 0)
+    && debt.parsed
+    && dn.gt(debt.parsed, 0)
+    && interestRate.parsed
+    && dn.gt(interestRate.parsed, 0);
 
   return (
     <>
@@ -102,41 +152,33 @@ function UpdatePositionPanel() {
             <InputField
               action={
                 <InputTokenBadge
-                  icon={<TokenIcon symbol="ETH" />}
-                  label="ETH"
+                  icon={<TokenIcon symbol={collateral.symbol} />}
+                  label={collateral.name}
                 />
               }
               label="Deposit"
               placeholder="0.00"
-              secondaryStart={deposit.parsed
-                ? "$" + dn.format(depositUsd, 2)
+              secondaryStart={loanDetails.depositUsd
+                ? "$" + dn.format(loanDetails.depositUsd, 2)
                 : "$0.00"}
               secondaryEnd={
                 <TextButton
-                  label={`Max. ${dn.format(ACCOUNT_BALANCES.ETH, 2)} ETH`}
+                  label={`Max ${dn.format(ethMax, 2)} ${collateral.symbol}`}
                   onClick={() => {
-                    deposit.setValue(
-                      dn.toString(ACCOUNT_BALANCES.ETH),
-                    );
+                    deposit.setValue(dn.toString(ethMax));
                   }}
                 />
               }
               {...deposit.inputFieldProps}
             />
           }
-          footerEnd={
-            <Field.FooterInfo
-              label="Max. LTV"
-              value={
-                <HFlex gap={4}>
-                  <div>80.00%</div>
-                  <InfoTooltip heading="Max. LTV">
-                    The maximum Loan-to-Value ratio allowed by the system.
-                  </InfoTooltip>
-                </HFlex>
-              }
-            />
-          }
+          footer={[[
+            // eslint-disable-next-line react/jsx-key
+            <Field.FooterInfoEthPrice ethPriceUsd={ethPriceUsd} />,
+
+            // eslint-disable-next-line react/jsx-key
+            <Field.FooterInfoMaxLtv maxLtv={loanDetails.maxLtv} />,
+          ]]}
         />
         <Field
           field={
@@ -149,63 +191,51 @@ function UpdatePositionPanel() {
               }
               label="Debt"
               placeholder="0.00"
-              secondaryStart={debt.parsed ? "$" + dn.format(debt.parsed, 2) : "$0.00"}
-              secondaryEnd={
-                <HFlex gap={8}>
-                  Max LTV 80%:
-                  <TextButton
-                    label={`${dn.format(dn.mul(depositUsd, 0.8), 2)} BOLD`}
-                    onClick={() => {
-                      debt.setValue(dn.toString(dn.mul(depositUsd, 0.8), 2));
-                    }}
-                  />
+              secondaryStart={debt.parsed ? `$${dn.format(dn.mul(debt.parsed, boldPriceUsd), 2)}` : "$0.00"}
+              secondaryEnd={debtSuggestions && (
+                <HFlex gap={6}>
+                  {debtSuggestions.map((s) => (
+                    s.debt && s.risk && (
+                      <PillButton
+                        key={dn.toString(s.debt)}
+                        label={`$${dn.format(s.debt, { compact: true, digits: 0 })}`}
+                        onClick={() => {
+                          if (s.debt) {
+                            debt.setValue(dn.toString(s.debt, 0));
+                          }
+                        }}
+                        warnLevel={s.risk}
+                      />
+                    )
+                  ))}
+                  {debtSuggestions.length > 0 && (
+                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
+                  )}
                 </HFlex>
-              }
+              )}
               {...debt.inputFieldProps}
             />
           }
-          footerStart={
-            <VFlex gap={4}>
-              <Field.FooterInfoWarnLevel
-                label="Low liquidation risk"
-                level="low"
-              />
-              <Field.FooterInfo
-                label="LTV"
-                value={
-                  <HFlex gap={4}>
-                    <span
-                      className={css({
-                        "--color-negative": "token(colors.negative)",
-                      })}
-                      style={{
-                        color: "",
-                      }}
-                    >
-                      {debtLtv
-                        ? dn.format(debtLtv, 2)
-                        : "0.00"}%
-                    </span>
-                    <InfoTooltip heading="Loan-to-Value ratio">
-                      Loan-to-Value ratio is the ratio of the debt to the collateral value.
-                    </InfoTooltip>
-                  </HFlex>
-                }
-              />
-            </VFlex>
-          }
-          footerEnd={
-            <VFlex gap={4} alignItems="flex-end">
-              <Field.FooterInfo
-                label="ETH Price"
-                value={`$${dn.format(ETH_PRICE, 2)}`}
-              />
-              <Field.FooterInfo
-                label="Liquidation Price"
-                value={`$${dn.format(ETH_PRICE, 2)}`}
-              />
-            </VFlex>
-          }
+          footer={[
+            [
+              // eslint-disable-next-line react/jsx-key
+              <Field.FooterInfoLiquidationRisk
+                riskLevel={loanDetails.liquidationRisk}
+              />,
+              // eslint-disable-next-line react/jsx-key
+              <Field.FooterInfoLiquidationPrice
+                liquidationPrice={loanDetails.liquidationPriceUsd}
+              />,
+            ],
+            [
+              null,
+              // eslint-disable-next-line react/jsx-key
+              <Field.FooterInfoLoanToValue
+                ltvRatio={loanDetails.ltv}
+                maxLtvRatio={loanDetails.maxLtv}
+              />,
+            ],
+          ]}
         />
         <Field
           // “Interest rate”
@@ -249,23 +279,52 @@ function UpdatePositionPanel() {
               {...interestRate.inputFieldProps}
             />
           }
-          footerStart={
-            <Field.FooterInfoWarnLevel
-              label="Low redemption risk"
-              level="low"
-            />
-          }
+          footer={[[
+            // eslint-disable-next-line react/jsx-key
+            <Field.FooterInfoRedemptionRisk riskLevel={loanDetails.redemptionRisk} />,
+            null,
+          ]]}
         />
       </VFlex>
+
       <div
         style={{
           display: "flex",
+          flexDirection: "column",
           justifyContent: "center",
+          gap: 32,
           width: "100%",
         }}
       >
+        {!account.isConnected && (
+          <div
+            className={css({
+              paddingTop: 16,
+            })}
+          >
+            <div
+              className={css({
+                padding: "20px 24px",
+                textAlign: "center",
+                background: "secondary",
+                borderRadius: 8,
+              })}
+            >
+              Please{" "}
+              <TextButton
+                label="connect"
+                onClick={() => {
+                  setDemoState({
+                    account: { isConnected: true },
+                  });
+                }}
+              />{" "}
+              your wallet to continue.
+            </div>
+          </div>
+        )}
         <Button
-          disabled={!(deposit.parsed && dn.gt(deposit.parsed, 0))}
+          disabled={!allowSubmit}
           label="Update position"
           mode="primary"
           size="large"
@@ -281,6 +340,23 @@ function ClosePositionPanel({
 }: {
   loan: PositionLoan;
 }) {
+  const { account, setDemoState } = useDemoState();
+  const ethPriceUsd = usePrice("ETH");
+  const boldPriceUsd = usePrice("BOLD");
+  const [tokenIndex, setTokenIndex] = useState(0);
+
+  const collateral = TOKENS_BY_SYMBOL[loan.collateral];
+
+  const loanDetails = getLoanDetails(
+    loan.deposit,
+    loan.borrowed,
+    loan.interestRate,
+    dn.div(dn.from(1, 18), collateral.collateralRatio),
+    ethPriceUsd,
+  );
+
+  const allowSubmit = account.isConnected;
+
   return (
     <>
       <VFlex gap={48}>
@@ -303,18 +379,33 @@ function ClosePositionPanel({
                 })}
               >
                 <div>
-                  {dn.format(loan.borrowed, { digits: 2, trailingZeros: true })}
+                  {dn.format(
+                    tokenIndex === 0
+                      ? (loanDetails.debt ?? dn.from(0))
+                      : (dn.div(loanDetails.debt ?? dn.from(0), ethPriceUsd)),
+                    { digits: 2, trailingZeros: true },
+                  )}
                 </div>
               </div>
-              <TokensDropdown selected={0} setSelected={() => {}} />
+              <Dropdown
+                items={(["BOLD", "ETH"] as const).map((symbol) => ({
+                  icon: <TokenIcon symbol={symbol} />,
+                  label: symbol,
+                }))}
+                menuWidth={300}
+                onSelect={setTokenIndex}
+                selected={tokenIndex}
+              />
             </div>
           }
-          footerStart={
+          footer={[[
+            // eslint-disable-next-line react/jsx-key
             <Field.FooterInfo
-              label={`$${dn.format(loan.borrowed, 2)}`}
+              label={`$${dn.format(dn.mul(loan.borrowed, boldPriceUsd), 2)}`}
               value={null}
-            />
-          }
+            />,
+            null,
+          ]]}
           label="You repay with"
         />
         <Field
@@ -336,7 +427,10 @@ function ClosePositionPanel({
                 })}
               >
                 <div>
-                  {dn.format([1n, 0], { digits: 2, trailingZeros: true })}
+                  {dn.format(
+                    loanDetails.deposit ?? dn.from(0),
+                    { digits: 2, trailingZeros: true },
+                  )}
                 </div>
               </div>
               <div>
@@ -348,8 +442,10 @@ function ClosePositionPanel({
                     fontSize: 24,
                   })}
                 >
-                  <TokenIcon symbol="ETH" />
-                  <div>ETH</div>
+                  <TokenIcon symbol={collateral.symbol} />
+                  <div>
+                    {collateral.name}
+                  </div>
                 </div>
               </div>
             </div>
@@ -393,11 +489,41 @@ function ClosePositionPanel({
       <div
         style={{
           display: "flex",
+          flexDirection: "column",
           justifyContent: "center",
+          gap: 32,
           width: "100%",
         }}
       >
+        {!account.isConnected && (
+          <div
+            className={css({
+              paddingTop: 16,
+            })}
+          >
+            <div
+              className={css({
+                padding: "20px 24px",
+                textAlign: "center",
+                background: "secondary",
+                borderRadius: 8,
+              })}
+            >
+              Please{" "}
+              <TextButton
+                label="connect"
+                onClick={() => {
+                  setDemoState({
+                    account: { isConnected: true },
+                  });
+                }}
+              />{" "}
+              your wallet to continue.
+            </div>
+          </div>
+        )}
         <Button
+          disabled={!allowSubmit}
           label="Repay & close"
           mode="primary"
           size="large"
@@ -437,28 +563,5 @@ function InputTokenBadge({
         {label}
       </div>
     </div>
-  );
-}
-
-function TokensDropdown({
-  selected,
-  setSelected,
-}: {
-  selected: number;
-  setSelected: (index: number) => void;
-}) {
-  return (
-    <Dropdown
-      items={([
-        "BOLD",
-        "ETH",
-      ] as const).map((symbol) => ({
-        icon: <TokenIcon symbol={symbol} />,
-        label: symbol,
-      }))}
-      menuWidth={300}
-      onSelect={setSelected}
-      selected={selected}
-    />
   );
 }

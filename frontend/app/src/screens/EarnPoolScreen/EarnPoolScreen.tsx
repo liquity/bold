@@ -9,6 +9,7 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { ACCOUNT_BALANCES, ACCOUNT_POSITIONS, EARN_POOLS } from "@/src/demo-data";
 import { useDemoState } from "@/src/demo-state";
+import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { COLLATERALS, HFlex, InfoTooltip, Tabs, TokenIcon, TokenIconGroup, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -51,11 +52,13 @@ export function EarnPoolScreen() {
 
   const tab = TABS.find((tab) => tab.action === params.action) ?? TABS[0];
 
+  const poolSharePercentage = position && dn.mul(dn.div(position.deposit, pool.boldQty), 100);
+
   return pool && tab && (
     <Screen>
       <BackButton href="/earn" label={content.earnScreen.backButton} />
       <PoolSummary
-        apy={pool.apy}
+        apr={pool.apr}
         boldQty={pool.boldQty}
         symbol={collateralSymbol}
       />
@@ -67,6 +70,14 @@ export function EarnPoolScreen() {
               value: `${dn.format(position.deposit, { digits: 2, trailingZeros: true })} BOLD`,
             },
             {
+              label: content.earnScreen.accountPosition.shareLabel,
+              value: poolSharePercentage && (
+                <span title={`${dn.format(poolSharePercentage)}%`}>
+                  {`${dn.format(poolSharePercentage, { digits: 2, trailingZeros: true })}%`}
+                </span>
+              ),
+            },
+            {
               label: content.earnScreen.accountPosition.rewardsLabel,
               value: position.rewards && (
                 <HFlex
@@ -75,6 +86,7 @@ export function EarnPoolScreen() {
                   className={css({
                     fontSize: 14,
                     color: "positive",
+                    whiteSpace: "nowrap",
                   })}
                 >
                   {dn.format(position.rewards.bold, 2)} BOLD
@@ -135,11 +147,11 @@ export function EarnPoolScreen() {
 }
 
 function PoolSummary({
-  apy,
+  apr,
   boldQty,
   symbol,
 }: {
-  apy: Dnum;
+  apr: Dnum;
   boldQty: Dnum;
   symbol: keyof typeof EARN_POOLS;
 }) {
@@ -198,10 +210,7 @@ function PoolSummary({
             <div>
               {content.earnScreen.headerTvl(`${dn.format(boldQty, { compact: true })} BOLD`)}
             </div>
-            <InfoTooltip heading="Max LTV">
-              A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of Bold
-              stablecoins. At the time of the exchange a borrower does not lose any money.
-            </InfoTooltip>
+            <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.tvl(poolToken.name))} />
           </div>
         </div>
       </div>
@@ -218,7 +227,7 @@ function PoolSummary({
             fontSize: 24,
           })}
         >
-          {dn.format(dn.mul(apy, 100), 2)}%
+          {dn.format(dn.mul(apr, 100), 2)}%
         </div>
         <div
           className={css({
@@ -226,7 +235,7 @@ function PoolSummary({
             whiteSpace: "nowrap",
           })}
         >
-          {content.earnScreen.headerApy()}
+          {content.earnScreen.headerApr()}
         </div>
       </div>
     </div>

@@ -26,16 +26,15 @@ export type MenuSection = {
 export type PositionLoan = {
   type: "loan";
   borrowed: Dnum;
-  collateral: Token["symbol"];
+  collateral: CollateralSymbol;
   deposit: Dnum;
   interestRate: Dnum;
-  ltv: Dnum;
   troveId: TroveId;
 };
 
 export type PositionEarn = {
   type: "earn";
-  apy: Dnum;
+  apr: Dnum;
   collateral: CollateralSymbol;
   deposit: Dnum;
   rewards: {

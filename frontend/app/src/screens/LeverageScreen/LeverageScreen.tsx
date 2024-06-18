@@ -1,24 +1,18 @@
 "use client";
 
-import type { RiskLevel } from "@/src/types";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
 import { Field } from "@/src/comps/Field/Field";
 import { Forecast } from "@/src/comps/Forecast/Forecast";
 import { Screen } from "@/src/comps/Screen/Screen";
-import {
-  LEVERAGE_FACTOR_MIN,
-  LEVERAGE_FACTOR_SUGGESTIONS,
-  LTV_RISK,
-  MAX_LTV_ALLOWED,
-  REDEMPTION_RISK,
-} from "@/src/constants";
+import { LEVERAGE_FACTOR_MIN, LEVERAGE_FACTOR_SUGGESTIONS, LTV_RISK, MAX_LTV_ALLOWED } from "@/src/constants";
 import content from "@/src/content";
 import { ACCOUNT_BALANCES } from "@/src/demo-data";
 import { useInputFieldValue } from "@/src/form-utils";
 import { lerp, norm } from "@/src/math-utils";
 import { usePrice } from "@/src/prices";
+import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
@@ -37,9 +31,17 @@ import {
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { match, P } from "ts-pattern";
+import { match } from "ts-pattern";
 // import { useAccount } from "wagmi";
 import { useDemoState } from "@/src/demo-state";
+import {
+  getLeveragedLiquidationPrice,
+  getLeverageFactorFromLiquidationPrice,
+  getLeverageFactorFromLtv,
+  getLiquidationRiskFromLeverageFactor,
+  getLtvFromLeverageFactor,
+  getRedemptionRisk,
+} from "@/src/liquity-math";
 
 const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
 
@@ -49,7 +51,7 @@ function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[
 }
 
 export function LeverageScreen() {
-  const { account } = useDemoState();
+  const { account, setDemoState } = useDemoState();
   // const account = useAccount();
   const router = useRouter();
   const ethPriceUsd = usePrice("ETH");
@@ -68,26 +70,26 @@ export function LeverageScreen() {
 
   const maxLtv = dn.from(1 / collateralRatio, 18);
   const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED);
-  const maxLeverageFactor = leverageFactorFromLtv(maxLtv);
-  const maxLeverageFactorAllowed = leverageFactorFromLtv(maxLtvAllowed);
-  const mediumRiskLeverageFactor = leverageFactorFromLtv(dn.mul(maxLtv, LTV_RISK.medium));
-  const highRiskLeverageFactor = leverageFactorFromLtv(dn.mul(maxLtv, LTV_RISK.high));
+  const maxLeverageFactor = getLeverageFactorFromLtv(maxLtv);
+  const maxLeverageFactorAllowed = getLeverageFactorFromLtv(maxLtvAllowed);
+  const mediumRiskLeverageFactor = getLeverageFactorFromLtv(dn.mul(maxLtv, LTV_RISK.medium));
+  const highRiskLeverageFactor = getLeverageFactorFromLtv(dn.mul(maxLtv, LTV_RISK.high));
 
   const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral}`);
   const interestRate = useInputFieldValue((value) => `${dn.format(value)}%`);
 
-  const getLeverageFactorFromLiquidationPrice = (liquidationPrice: Dnum) => {
-    const liquidationPriceMin = leveragedLiquidationPrice(
+  const getLeverageFactorFromLiquidationPriceClamped = (liquidationPrice: Dnum) => {
+    const liquidationPriceMin = getLeveragedLiquidationPrice(
       ethPriceBold,
       LEVERAGE_FACTOR_MIN,
       collateralRatio,
     );
-    const liquidationPriceMax = leveragedLiquidationPrice(
+    const liquidationPriceMax = getLeveragedLiquidationPrice(
       ethPriceBold,
       maxLeverageFactor,
       collateralRatio,
     );
-    const leverageFactor = leverageFactorFromLiquidationPrice(
+    const leverageFactor = getLeverageFactorFromLiquidationPrice(
       ethPriceBold,
       liquidationPrice,
       collateralRatio,
@@ -106,11 +108,9 @@ export function LeverageScreen() {
 
   const [liqPriceFocused, setLiqPriceFocused] = useState(false);
   const [leverageFactor, setLeverageFactor] = useState(() => (
-    getLeverageFactorFromLiquidationPrice(leveragedLiquidationPrice(
-      ethPriceBold,
-      leverageFactorSuggestions[0],
-      collateralRatio,
-    ))
+    getLeverageFactorFromLiquidationPriceClamped(
+      getLeveragedLiquidationPrice(ethPriceBold, leverageFactorSuggestions[0], collateralRatio),
+    )
   ));
 
   const depositUsd = deposit.parsed && dn.mul(deposit.parsed, ethPriceUsd);
@@ -118,11 +118,11 @@ export function LeverageScreen() {
   const leveragedDeposit = deposit.parsed ? dn.mul(deposit.parsed, leverageFactor) : null;
   const totalDebtBold = depositBold && dn.mul(dn.sub(leverageFactor, dn.from(1, 18)), depositBold);
 
-  const ltv = ltvFromLeverageFactor(leverageFactor);
+  const ltv = getLtvFromLeverageFactor(leverageFactor);
 
   const ethLiqPrice = useInputFieldValue((value) => `$ ${dn.format(value)}`, {
     defaultValue: dn.toString(
-      leveragedLiquidationPrice(
+      getLeveragedLiquidationPrice(
         ethPriceBold,
         leverageFactorSuggestions[0],
         collateralRatio,
@@ -131,9 +131,7 @@ export function LeverageScreen() {
     ),
     onChange: ({ parsed: price }) => {
       if (price) {
-        setLeverageFactor(
-          getLeverageFactorFromLiquidationPrice(price),
-        );
+        setLeverageFactor(getLeverageFactorFromLiquidationPriceClamped(price));
       }
     },
     onFocusChange: ({ focus }) => {
@@ -142,7 +140,7 @@ export function LeverageScreen() {
       // recalculate exact liquidation price based on the selected leverage factor
       if (!focus) {
         ethLiqPrice.setValue(dn.toString(
-          leveragedLiquidationPrice(
+          getLeveragedLiquidationPrice(
             ethPriceBold,
             leverageFactor,
             collateralRatio,
@@ -158,29 +156,32 @@ export function LeverageScreen() {
   useEffect(() => {
     if (!liqPriceFocused && !dn.eq(ethPriceBold, lastEthPriceBold.current)) {
       ethLiqPrice.setValue(
-        dn.toString(leveragedLiquidationPrice(ethPriceBold, leverageFactor, collateralRatio), 2),
+        dn.toString(getLeveragedLiquidationPrice(ethPriceBold, leverageFactor, collateralRatio), 2),
       );
       lastEthPriceBold.current = ethPriceBold;
     }
-  }, [ethPriceBold, leverageFactor, liqPriceFocused, collateralRatio]);
-
-  const liquidationRisk = leverageFactor && liquidationRiskFromLeverageFactor(
+  }, [
+    collateralRatio,
+    ethLiqPrice,
+    ethPriceBold,
     leverageFactor,
-    mediumRiskLeverageFactor,
-    highRiskLeverageFactor,
-  );
+    liqPriceFocused,
+  ]);
 
-  const redemptionRisk: null | RiskLevel = match(interestRate.parsed)
-    .with(P.nullish, () => null)
-    .when((r) => dn.eq(r, 0), () => null)
-    .when((r) => dn.gt(r, REDEMPTION_RISK.low), () => "low" as const)
-    .when((r) => dn.gt(r, REDEMPTION_RISK.medium), () => "medium" as const)
-    .otherwise(() => "high" as const);
+  const liquidationRisk = leverageFactor
+    ? getLiquidationRiskFromLeverageFactor(
+      leverageFactor,
+      mediumRiskLeverageFactor,
+      highRiskLeverageFactor,
+    )
+    : null;
+
+  const redemptionRisk = getRedemptionRisk(interestRate.parsed && dn.div(interestRate.parsed, 100));
 
   const updateLeverageFactor = useCallback((factor: number) => {
     setLeverageFactor(factor);
     ethLiqPrice.setValue(
-      dn.toString(leveragedLiquidationPrice(ethPriceBold, factor, collateralRatio), 2),
+      dn.toString(getLeveragedLiquidationPrice(ethPriceBold, factor, collateralRatio), 2),
     );
   }, [collateralRatio, ethLiqPrice, ethPriceBold]);
 
@@ -190,6 +191,12 @@ export function LeverageScreen() {
   }, [collateral, leverageFactorSuggestions]);
 
   const [showForecast, setShowForecast] = useState(false);
+
+  const allowSubmit = account.isConnected
+    && deposit.parsed
+    && dn.gt(deposit.parsed, 0)
+    && interestRate.parsed
+    && dn.gt(interestRate.parsed, 0);
 
   return (
     <Screen
@@ -244,7 +251,12 @@ export function LeverageScreen() {
               }
               label={content.leverageScreen.depositField.label}
               placeholder="0.00"
-              secondaryStart={depositUsd && `$${dn.format(depositUsd, 2)}`}
+              secondaryStart={depositUsd && `$${
+                dn.format(depositUsd, {
+                  digits: 2,
+                  trailingZeros: true,
+                })
+              }`}
               secondaryEnd={account.isConnected && (
                 <TextButton
                   label={`Max ${dn.format(ACCOUNT_BALANCES[collateral])} ${collateral}`}
@@ -256,48 +268,13 @@ export function LeverageScreen() {
               {...deposit.inputFieldProps}
             />
           }
-          footerStart={
-            <Field.FooterInfo
-              label="ETH Price"
-              value={
-                <HFlex gap={4}>
-                  <span
-                    className={css({
-                      fontVariantNumeric: "tabular-nums",
-                    })}
-                  >
-                    ${dn.format(ethPriceBold, {
-                      digits: 2,
-                      trailingZeros: true,
-                    })}
-                  </span>
-                  <InfoTooltip heading="LTV">
-                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
-                    Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                  </InfoTooltip>
-                </HFlex>
-              }
-            />
-          }
-          footerEnd={
-            <Field.FooterInfo
-              label="Max LTV"
-              value={
-                <HFlex gap={4}>
-                  <div>
-                    {dn.format(
-                      dn.mul(dn.div(dn.from(1, 18), collateralRatio), 100),
-                      { digits: 2, trailingZeros: true },
-                    )}%
-                  </div>
-                  <InfoTooltip heading="Max LTV">
-                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
-                    Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                  </InfoTooltip>
-                </HFlex>
-              }
-            />
-          }
+          footer={[[
+            // eslint-disable-next-line react/jsx-key
+            <Field.FooterInfoEthPrice ethPriceUsd={ethPriceUsd} />,
+
+            // eslint-disable-next-line react/jsx-key
+            <Field.FooterInfoMaxLtv maxLtv={dn.div(dn.from(1, 18), collateralRatio)} />,
+          ]]}
         />
 
         <Field
@@ -387,66 +364,31 @@ export function LeverageScreen() {
                       key={factor}
                       label={`${factor.toFixed(1)}x`}
                       onClick={() => updateLeverageFactor(factor)}
-                      warnLevel={liquidationRiskFromLeverageFactor(
+                      warnLevel={getLiquidationRiskFromLeverageFactor(
                         factor,
                         mediumRiskLeverageFactor,
                         highRiskLeverageFactor,
                       )}
                     />
                   ))}
-                  <InfoTooltip heading="Leverage level">
-                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
-                    Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                  </InfoTooltip>
+                  <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.leverageLevel)} />
                 </HFlex>
               }
               {...ethLiqPrice.inputFieldProps}
             />
           }
-          footerStart={liquidationRisk && (
+          footer={[[
+            // eslint-disable-next-line react/jsx-key
             <>
-              <Field.FooterInfoWarnLevel
-                help={<InfoTooltip heading="Liquidation risk" />}
-                label={match(liquidationRisk)
-                  .with("low", () => "Low liq. risk")
-                  .with("medium", () => "Medium liq. risk")
-                  .with("high", () => "High liq. risk")
-                  .exhaustive()}
-                level={liquidationRisk}
-                title={match(liquidationRisk)
-                  .with("low", () => "Low liquidation risk")
-                  .with("medium", () => "Medium liquidation risk")
-                  .with("high", () => "High liquidation risk")
-                  .exhaustive()}
+              <Field.FooterInfoLiquidationRisk
+                riskLevel={liquidationRisk}
               />
-              <Field.FooterInfo
-                label="LTV"
-                value={
-                  <HFlex gap={4}>
-                    {ltv
-                      ? (
-                        <span
-                          className={css({
-                            fontVariantNumeric: "tabular-nums",
-                          })}
-                        >
-                          {dn.format(dn.mul(ltv, 100), {
-                            digits: 2,
-                            trailingZeros: true,
-                          })}%
-                        </span>
-                      )
-                      : "−"}
-                    <InfoTooltip heading="LTV">
-                      A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount
-                      of Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                    </InfoTooltip>
-                  </HFlex>
-                }
+              <Field.FooterInfoLoanToValue
+                ltvRatio={ltv}
+                maxLtvRatio={maxLtv}
               />
-            </>
-          )}
-          footerEnd={
+            </>,
+            // eslint-disable-next-line react/jsx-key
             <HFlex>
               <span
                 className={css({
@@ -469,12 +411,9 @@ export function LeverageScreen() {
                   } ETH`
                   : "−"}
               </span>
-              <InfoTooltip heading="Leveraged deposit">
-                A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of Bold
-                stablecoins. At the time of the exchange a borrower does not lose any money.
-              </InfoTooltip>
-            </HFlex>
-          }
+              <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.exposure)} />
+            </HFlex>,
+          ]]}
         />
 
         <VFlex gap={0}>
@@ -495,10 +434,7 @@ export function LeverageScreen() {
                         })
                         : "−"} BOLD / year
                     </div>
-                    <InfoTooltip heading="Interest rate">
-                      A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount
-                      of Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                    </InfoTooltip>
+                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
                   </HFlex>
                 }
                 secondaryEnd={
@@ -518,28 +454,17 @@ export function LeverageScreen() {
                       onClick={() => interestRate.setValue("3.5")}
                       warnLevel="high"
                     />
-                    <InfoTooltip heading="Interest rate">
-                      A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount
-                      of Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                    </InfoTooltip>
+                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
                   </HFlex>
                 }
                 {...interestRate.inputFieldProps}
               />
             }
-            footerStart={
-              <Field.FooterInfoWarnLevel
-                label={match(redemptionRisk)
-                  .with(P.nullish, () => "Redemption risk")
-                  .with("low", () => "Low redemption risk")
-                  .with("medium", () => "Medium redemption risk")
-                  .with("high", () => "High redemption risk")
-                  .exhaustive()}
-                level={redemptionRisk ?? "none"}
-                help={<InfoTooltip heading="Redemption risk" />}
-              />
-            }
-            footerEnd={
+            footer={[[
+              // eslint-disable-next-line react/jsx-key
+              <Field.FooterInfoRedemptionRisk riskLevel={redemptionRisk} />,
+
+              // eslint-disable-next-line react/jsx-key
               <TextButton
                 onClick={() => setShowForecast(!showForecast)}
                 label={
@@ -557,8 +482,8 @@ export function LeverageScreen() {
                     </div>
                   </>
                 }
-              />
-            }
+              />,
+            ]]}
           />
           <Forecast opened={showForecast} />
         </VFlex>
@@ -566,17 +491,41 @@ export function LeverageScreen() {
         <div
           style={{
             display: "flex",
+            flexDirection: "column",
             justifyContent: "center",
+            gap: 32,
             width: "100%",
           }}
         >
+          {!account.isConnected && (
+            <div
+              className={css({
+                paddingTop: 16,
+              })}
+            >
+              <div
+                className={css({
+                  padding: "20px 24px",
+                  textAlign: "center",
+                  background: "secondary",
+                  borderRadius: 8,
+                })}
+              >
+                Please{" "}
+                <TextButton
+                  label="connect"
+                  onClick={() => {
+                    setDemoState({
+                      account: { isConnected: true },
+                    });
+                  }}
+                />{" "}
+                your wallet to continue.
+              </div>
+            </div>
+          )}
           <Button
-            disabled={!(
-              deposit.parsed
-              && dn.gt(deposit.parsed, 0)
-              && interestRate.parsed
-              && dn.gt(interestRate.parsed, 0)
-            )}
+            disabled={!allowSubmit}
             label={content.leverageScreen.action}
             mode="primary"
             size="large"
@@ -623,62 +572,4 @@ function StaticAction({
       </div>
     </div>
   );
-}
-
-// e.g. $4000 / ETH and 1.5x leverage = $3248.63 liq. price
-function leveragedLiquidationPrice(
-  ethPrice: Dnum,
-  leverage: number,
-  collateralRatio: number,
-) {
-  return dn.div(
-    dn.sub(dn.mul(leverage, ethPrice), ethPrice),
-    dn.sub(leverage, dn.div(dn.from(1, 18), collateralRatio)),
-  );
-}
-
-// e.g. $4000 / ETH and $3248.63 liq. price = 1.5x leverage
-function leverageFactorFromLiquidationPrice(
-  ethPrice: Dnum,
-  liquidationPrice: Dnum,
-  collateralRatio: number,
-) {
-  return Math.round(
-    dn.toNumber(dn.div(
-      dn.sub(
-        dn.mul(liquidationPrice, dn.div(dn.from(1, 18), collateralRatio)),
-        ethPrice,
-      ),
-      dn.sub(liquidationPrice, ethPrice),
-    )) * 10,
-  ) / 10;
-}
-
-function leverageFactorFromLtv(ltv: Dnum) {
-  return Math.round(1 / (1 - dn.toNumber(ltv)) * 10) / 10;
-}
-
-function ltvFromLeverageFactor(leverageFactor: number) {
-  return dn.div(
-    dn.sub(leverageFactor, dn.from(1, 18)),
-    leverageFactor,
-  );
-}
-
-function liquidationRiskFromLeverageFactor(
-  leverageFactor: number,
-  mediumRiskLeverageFactor: number,
-  highRiskLeverageFactor: number,
-) {
-  return match(leverageFactor)
-    .returnType<RiskLevel>()
-    .when(
-      (lf) => dn.eq(lf, highRiskLeverageFactor) || dn.gt(lf, highRiskLeverageFactor),
-      () => "high" as const,
-    )
-    .when(
-      (ltv) => dn.eq(ltv, mediumRiskLeverageFactor) || dn.gt(ltv, mediumRiskLeverageFactor),
-      () => "medium" as const,
-    )
-    .otherwise(() => "low" as const);
 }

@@ -1,11 +1,14 @@
 import type { PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
+import { ReactNode } from "react";
 
 import content from "@/src/content";
+import { useDemoState } from "@/src/demo-state";
 import { DNUM_0 } from "@/src/dnum-utils";
 import { usePrice } from "@/src/prices";
+import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { Button } from "@liquity2/uikit";
+import { Button, InfoTooltip, TextButton } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 export function RewardsPanel({
@@ -13,6 +16,8 @@ export function RewardsPanel({
 }: {
   position?: PositionEarn;
 }) {
+  const { account, setDemoState } = useDemoState();
+
   const ethPriceUsd = usePrice("ETH");
   const boldPriceUsd = usePrice("BOLD");
 
@@ -22,6 +27,8 @@ export function RewardsPanel({
   );
 
   const gasFeeUsd = dn.multiply(dn.from(0.0015, 18), ethPriceUsd);
+
+  const allowSubmit = account.isConnected;
 
   return (
     <div
@@ -63,8 +70,16 @@ export function RewardsPanel({
                 gap: 32,
               })}
             >
-              <Amount value={position.rewards?.bold} symbol="BOLD" />
-              <Amount value={position.rewards?.eth} symbol="ETH" />
+              <Amount
+                symbol="BOLD"
+                tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsBold)} />}
+                value={position.rewards?.bold}
+              />
+              <Amount
+                symbol="ETH"
+                tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsEth)} />}
+                value={position.rewards?.eth}
+              />
             </div>
           )
           : <div>N/A</div>}
@@ -89,11 +104,41 @@ export function RewardsPanel({
       <div
         style={{
           display: "flex",
+          flexDirection: "column",
           justifyContent: "center",
+          gap: 24,
           width: "100%",
         }}
       >
+        {!account.isConnected && (
+          <div
+            className={css({
+              paddingTop: 16,
+            })}
+          >
+            <div
+              className={css({
+                padding: "20px 24px",
+                textAlign: "center",
+                background: "secondary",
+                borderRadius: 8,
+              })}
+            >
+              Please{" "}
+              <TextButton
+                label="connect"
+                onClick={() => {
+                  setDemoState({
+                    account: { isConnected: true },
+                  });
+                }}
+              />{" "}
+              your wallet to continue.
+            </div>
+          </div>
+        )}
         <Button
+          disabled={!allowSubmit}
           label={content.earnScreen.rewardsPanel.action}
           mode="primary"
           size="large"
@@ -106,9 +151,11 @@ export function RewardsPanel({
 
 function Amount({
   symbol,
+  tooltip,
   value,
 }: {
   symbol: string;
+  tooltip?: ReactNode;
   value: Dnum;
 }) {
   return (
@@ -128,11 +175,15 @@ function Amount({
       </div>
       <div
         className={css({
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
           paddingBottom: 3,
           color: "contentAlt",
         })}
       >
-        {symbol}
+        <div>{symbol}</div>
+        {tooltip}
       </div>
     </div>
   );
