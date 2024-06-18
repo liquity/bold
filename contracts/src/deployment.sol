@@ -41,24 +41,40 @@ struct TroveManagerParams {
 }
 
 function _deployAndConnectContracts()
-    returns (LiquityContracts memory contracts, ICollateralRegistry collateralRegistry, IBoldToken boldToken)
+    returns (
+        LiquityContracts memory contracts,
+        ICollateralRegistry collateralRegistry,
+        IBoldToken boldToken,
+        MultiTroveGetter multiTroveGetter
+    )
 {
     return _deployAndConnectContracts(TroveManagerParams(110e16, 5e16, 10e16));
 }
 
 function _deployAndConnectContracts(TroveManagerParams memory troveManagerParams)
-    returns (LiquityContracts memory contracts, ICollateralRegistry collateralRegistry, IBoldToken boldToken)
+    returns (
+        LiquityContracts memory contracts,
+        ICollateralRegistry collateralRegistry,
+        IBoldToken boldToken,
+        MultiTroveGetter multiTroveGetter
+    )
 {
     LiquityContracts[] memory contractsArray;
     TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](1);
 
     troveManagerParamsArray[0] = troveManagerParams;
-    (contractsArray, collateralRegistry, boldToken) = _deployAndConnectContracts(troveManagerParamsArray);
+    (contractsArray, collateralRegistry, boldToken, multiTroveGetter) =
+        _deployAndConnectContracts(troveManagerParamsArray);
     contracts = contractsArray[0];
 }
 
 function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerParamsArray)
-    returns (LiquityContracts[] memory contractsArray, ICollateralRegistry collateralRegistry, IBoldToken boldToken)
+    returns (
+        LiquityContracts[] memory contractsArray,
+        ICollateralRegistry collateralRegistry,
+        IBoldToken boldToken,
+        MultiTroveGetter multiTroveGetter
+    )
 {
     uint256 numCollaterals = troveManagerParamsArray.length;
     boldToken = new BoldToken();
@@ -94,6 +110,7 @@ function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerPara
     }
 
     collateralRegistry = new CollateralRegistry(boldToken, collaterals, troveManagers);
+    multiTroveGetter = new MultiTroveGetter(collateralRegistry);
     boldToken.setCollateralRegistry(address(collateralRegistry));
     // Set registry in TroveManagers
     for (uint256 i = 0; i < numCollaterals; i++) {
