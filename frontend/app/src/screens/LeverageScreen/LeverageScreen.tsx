@@ -13,7 +13,6 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { lerp, norm } from "@/src/math-utils";
 import { usePrice } from "@/src/prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
-import { capitalizeFirstLetter } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
@@ -32,7 +31,7 @@ import {
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { match, P } from "ts-pattern";
+import { match } from "ts-pattern";
 // import { useAccount } from "wagmi";
 import { useDemoState } from "@/src/demo-state";
 import {

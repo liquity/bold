@@ -13,7 +13,6 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
 import { usePrice } from "@/src/prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
-import { capitalizeFirstLetter } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
@@ -31,7 +30,6 @@ import {
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { match, P } from "ts-pattern";
 // import { useAccount } from "wagmi";
 
 const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);

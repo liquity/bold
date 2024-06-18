@@ -14,7 +14,6 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
 import { usePrice } from "@/src/prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
-import { capitalizeFirstLetter } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
