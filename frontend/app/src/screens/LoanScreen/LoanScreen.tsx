@@ -96,6 +96,7 @@ function UpdatePositionPanel({
 }: {
   loan: PositionLoan;
 }) {
+  const router = useRouter();
   const { account, setDemoState } = useDemoState();
   const collateral = TOKENS_BY_SYMBOL[loan.collateral];
   const ethPriceUsd = usePrice("ETH");
@@ -127,6 +128,28 @@ function UpdatePositionPanel({
     ethPriceUsd,
   );
 
+  const boldInterestPerYear = interestRate.parsed
+    && debt.parsed
+    && dn.mul(debt.parsed, dn.div(interestRate.parsed, 100));
+
+  const depositDifference = deposit.parsed && dn.sub(deposit.parsed, loan.deposit);
+  const showDepositDifference = depositDifference
+    && !dn.eq(depositDifference, 0)
+    && !deposit.isEmpty
+    && !deposit.isFocused;
+
+  const debtDifference = debt.parsed && dn.sub(debt.parsed, loan.borrowed);
+  const showDebtDifference = debtDifference
+    && !dn.eq(debtDifference, 0)
+    && !debt.isEmpty
+    && !debt.isFocused;
+
+  const interestRateDifference = interestRate.parsed && dn.sub(interestRate.parsed, dn.mul(loan.interestRate, 100));
+  const showInterestRateDifference = interestRateDifference
+    && !dn.eq(interestRateDifference, 0)
+    && !interestRate.isEmpty
+    && !interestRate.isFocused;
+
   const debtSuggestions = loanDetails.maxDebt && loanDetails.depositUsd
     ? DEBT_SUGGESTIONS.map((ratio) => {
       const debt = loanDetails.maxDebt && dn.mul(loanDetails.maxDebt, ratio);
@@ -156,6 +179,15 @@ function UpdatePositionPanel({
                   label={collateral.name}
                 />
               }
+              difference={showDepositDifference && `${
+                dn.format(depositDifference, {
+                  digits: 2,
+                  signDisplay: "always",
+                })
+              }`}
+              onDifferenceClick={() => {
+                deposit.setValue(dn.toString(loan.deposit));
+              }}
               label="Deposit"
               placeholder="0.00"
               secondaryStart={loanDetails.depositUsd
@@ -189,6 +221,15 @@ function UpdatePositionPanel({
                   label="BOLD"
                 />
               }
+              difference={showDebtDifference && `${
+                dn.format(debtDifference, {
+                  digits: 2,
+                  signDisplay: "always",
+                })
+              }`}
+              onDifferenceClick={() => {
+                debt.setValue(dn.toString(loan.borrowed));
+              }}
               label="Debt"
               placeholder="0.00"
               secondaryStart={debt.parsed ? `$${dn.format(dn.mul(debt.parsed, boldPriceUsd), 2)}` : "$0.00"}
@@ -242,15 +283,25 @@ function UpdatePositionPanel({
           field={
             <InputField
               action={<InputTokenBadge label="% per year" />}
+              difference={showInterestRateDifference && `${
+                dn.format(interestRateDifference, {
+                  digits: 2,
+                  signDisplay: "always",
+                })
+              }`}
+              onDifferenceClick={() => {
+                interestRate.setValue(dn.toString(dn.mul(loan.interestRate, 100)));
+              }}
               label="Interest rate"
               placeholder="0.00"
               secondaryStart={
                 <HFlex gap={4}>
-                  <div>0 BOLD / year</div>
-                  <InfoTooltip heading="Interest rate">
-                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
-                    Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                  </InfoTooltip>
+                  <div>
+                    {boldInterestPerYear
+                      ? dn.format(boldInterestPerYear, { digits: 2, trailingZeros: false })
+                      : "−"} BOLD / year
+                  </div>
+                  <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
                 </HFlex>
               }
               secondaryEnd={
@@ -270,10 +321,7 @@ function UpdatePositionPanel({
                     onClick={() => interestRate.setValue("3.5")}
                     warnLevel="high"
                   />
-                  <InfoTooltip heading="Interest rate">
-                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
-                    Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                  </InfoTooltip>
+                  <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
                 </HFlex>
               }
               {...interestRate.inputFieldProps}
@@ -329,6 +377,9 @@ function UpdatePositionPanel({
           mode="primary"
           size="large"
           wide
+          onClick={() => {
+            router.push("/transactions/update-loan");
+          }}
         />
       </div>
     </>
@@ -340,6 +391,7 @@ function ClosePositionPanel({
 }: {
   loan: PositionLoan;
 }) {
+  const router = useRouter();
   const { account, setDemoState } = useDemoState();
   const ethPriceUsd = usePrice("ETH");
   const boldPriceUsd = usePrice("BOLD");
@@ -528,6 +580,9 @@ function ClosePositionPanel({
           mode="primary"
           size="large"
           wide
+          onClick={() => {
+            router.push("/transactions/close-loan");
+          }}
         />
       </div>
     </>
