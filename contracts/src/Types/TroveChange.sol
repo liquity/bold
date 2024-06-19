@@ -12,4 +12,5 @@ struct TroveChange {
     uint256 newWeightedRecordedDebt;
     uint256 oldWeightedRecordedDebt;
     uint256 upfrontFee;
+    uint256 batchAccruedFee;
 }

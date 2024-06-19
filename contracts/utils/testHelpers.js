@@ -1003,6 +1003,7 @@ class TestHelper {
       );
     }
 
+    this.logBN('withdraw helper boldAmount', boldAmount)
     await contracts.borrowerOperations.withdrawBold(
       troveId,
       boldAmount,

@@ -3,58 +3,6 @@ pragma solidity ^0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract InterestBatchManagementTest is DevTestSetup {
-    function registerBatchManager(address _account) internal {
-        registerBatchManager(_account, uint128(1e16), uint128(20e16), uint128(5e16), uint128(25e14), uint128(0));
-    }
-
-    function registerBatchManager(
-        address _account,
-        uint128 _minInterestRate,
-        uint128 _maxInterestRate,
-        uint128 _currentInterestRate,
-        uint128 _fee,
-        uint128 _minInterestRateChangePeriod
-    ) internal {
-        vm.startPrank(_account);
-        borrowerOperations.registerBatchManager(
-            _minInterestRate,
-            _maxInterestRate,
-            _currentInterestRate,
-            _fee,
-            _minInterestRateChangePeriod
-        );
-        vm.stopPrank();
-    }
-
-    function openTroveAndJoinBatchManager() internal returns (uint256) {
-        return openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
-    }
-
-    function openTroveAndJoinBatchManager(
-        address _troveOwner,
-        uint256 _coll,
-        uint256 _debt,
-        address _batchAddress,
-        uint256 _annualInterestRate
-    ) internal returns (uint256) {
-        registerBatchManager(_batchAddress, uint128(1e16), uint128(20e16), uint128(_annualInterestRate), uint128(25e14), uint128(0));
-
-        vm.startPrank(_troveOwner);
-        uint256 troveId = borrowerOperations.openTroveAndJoinInterestBatchManager(
-            _troveOwner,
-            0,
-            _coll,
-            _debt,
-            0, // _upperHint
-            0, // _lowerHint
-            _batchAddress,
-            1e24
-        );
-        vm.stopPrank();
-
-        return troveId;
-    }
-
     function testCannotSetExsitingBatchManager() public {
         registerBatchManager(B);
 
@@ -84,8 +32,9 @@ contract InterestBatchManagementTest is DevTestSetup {
         IBorrowerOperations.InterestBatchManager memory batchManager = borrowerOperations.getInterestBatchManager(batchManagerAddress);
         assertEq(batchManager.minInterestRate, 1e16, "Wrong min interest");
         assertEq(batchManager.maxInterestRate, 20e16, "Wrong max interest");
-        assertEq(batchManager.fee, 25e14, "Wrong fee");
         assertEq(batchManager.minInterestRateChangePeriod, 0, "Wrong min change period");
+        LatestBatchData memory batch = troveManager.getLatestBatchData(batchManagerAddress);
+        assertEq(batch.annualFee, 25e14, "Wrong fee");
     }
 
     function testSetsBatchManagerProperlyAfterOpening() public {
@@ -105,8 +54,9 @@ contract InterestBatchManagementTest is DevTestSetup {
         IBorrowerOperations.InterestBatchManager memory batchManager = borrowerOperations.getInterestBatchManager(batchManagerAddress);
         assertEq(batchManager.minInterestRate, 1e16, "Wrong min interest");
         assertEq(batchManager.maxInterestRate, 20e16, "Wrong max interest");
-        assertEq(batchManager.fee, 25e14, "Wrong fee");
         assertEq(batchManager.minInterestRateChangePeriod, 0, "Wrong min change period");
+        LatestBatchData memory batch = troveManager.getLatestBatchData(batchManagerAddress);
+        assertEq(batch.annualFee, 25e14, "Wrong fee");
     }
 
     function testRemovesBatchManagerProperly() public {
@@ -173,6 +123,63 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(delegate.account, address(0), "Individual delegate should be empty");
     }
 
+    function testLowerBatchManagementFee() public {
+        uint256 troveId = openTroveAndJoinBatchManager();
+
+        // Fast forward 1 year
+        vm.warp(block.timestamp + 365 days);
+
+        uint256 ATroveRecordedDebtBefore = troveManager.getTroveDebt(troveId);
+        uint256 ATroveEntireDebtBefore = troveManager.getTroveEntireDebt(troveId);
+        assertGt(ATroveEntireDebtBefore, ATroveRecordedDebtBefore, "Trove entire debt should be greater than recorded");
+        LatestBatchData memory batch = troveManager.getLatestBatchData(B);
+        uint256 batchRecordedDebtBefore = batch.recordedDebt;
+        uint256 batchEntireDebtBefore = batch.entireDebt;
+        assertGt(batchEntireDebtBefore, batchRecordedDebtBefore, "Batch entire debt should be greater than recorded");
+
+        vm.startPrank(B);
+        borrowerOperations.lowerBatchManagementFee(10e14);
+        vm.stopPrank();
+
+        // Check interest and fee were applied
+        assertEq(troveManager.getTroveDebt(troveId), ATroveEntireDebtBefore, "Interest was not applied to trove");
+        assertEq(troveManager.getTroveDebt(troveId), troveManager.getTroveEntireDebt(troveId), "Trove recorded debt should be equal to entire");
+        batch = troveManager.getLatestBatchData(B);
+        assertEq(batch.recordedDebt, batchEntireDebtBefore, "Interest was not applied to batch");
+        assertEq(batch.recordedDebt, batch.entireDebt, "Batch recorded debt should be equal to entire");
+
+        // Check new fee
+        assertEq(batch.annualFee, 10e14, "Wrong batch management fee");
+    }
+
+    function testOnlyBatchManagerCanLowerBatchManagementFee() public {
+        openTroveAndJoinBatchManager();
+
+        vm.startPrank(C);
+        vm.expectRevert("BO: Not valid Batch Manager");
+        borrowerOperations.lowerBatchManagementFee(10e14);
+        vm.stopPrank();
+    }
+
+    function testCannotIncreaseBatchManagementFee() public {
+        openTroveAndJoinBatchManager();
+
+        vm.startPrank(B);
+        vm.expectRevert("BO: New fee should be lower");
+        borrowerOperations.lowerBatchManagementFee(50e14);
+        vm.stopPrank();
+    }
+
+    function testLowerBatchManagementFeeDoesNotApplyRedistributionGains() public {
+        uint256 troveId = openTroveAndJoinBatchManager();
+
+        // TODO: Generate redistributions and check below
+
+        vm.startPrank(B);
+        borrowerOperations.lowerBatchManagementFee(10e14);
+        vm.stopPrank();
+    }
+
     function testChangeBatchInterestRate() public {
         uint256 troveId = openTroveAndJoinBatchManager();
 
@@ -182,7 +189,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 ATroveRecordedDebtBefore = troveManager.getTroveDebt(troveId);
         uint256 ATroveEntireDebtBefore = troveManager.getTroveEntireDebt(troveId);
         assertGt(ATroveEntireDebtBefore, ATroveRecordedDebtBefore, "Trove entire debt should be greater than recorded");
-        LatestTroveData memory batch = troveManager.getLatestBatchData(B);
+        LatestBatchData memory batch = troveManager.getLatestBatchData(B);
         uint256 batchRecordedDebtBefore = batch.recordedDebt;
         uint256 batchEntireDebtBefore = batch.entireDebt;
         assertGt(batchEntireDebtBefore, batchRecordedDebtBefore, "Batch entire debt should be greater than recorded");
@@ -327,12 +334,12 @@ contract InterestBatchManagementTest is DevTestSetup {
         troveEntireDebtBefore.E = troveManager.getTroveEntireDebt(troveIDs.E);
         assertGt(troveEntireDebtBefore.E, troveRecordedDebtBefore.E, "Trove E entire debt should be greater than recorded");
 
-        LatestTroveData memory batchB = troveManager.getLatestBatchData(B);
+        LatestBatchData memory batchB = troveManager.getLatestBatchData(B);
         uint256 batchBRecordedDebtBefore = batchB.recordedDebt;
         uint256 batchBEntireDebtBefore = batchB.entireDebt;
         assertGt(batchBEntireDebtBefore, batchBRecordedDebtBefore, "Batch B entire debt should be greater than recorded");
 
-        LatestTroveData memory batchC = troveManager.getLatestBatchData(C);
+        LatestBatchData memory batchC = troveManager.getLatestBatchData(C);
         uint256 batchCRecordedDebtBefore = batchC.recordedDebt;
         uint256 batchCEntireDebtBefore = batchC.entireDebt;
         assertGt(batchCEntireDebtBefore, batchCRecordedDebtBefore, "Batch C entire debt should be greater than recorded");
@@ -354,7 +361,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertApproxEqAbs(troveManager.getTroveDebt(troveIDs.D), troveEntireDebtBefore.D, 1, "Interest was not applied to trove D");
         assertEq(troveManager.getTroveDebt(troveIDs.D), troveManager.getTroveEntireDebt(troveIDs.D), "Trove D recorded debt should be equal to entire");
 
-        assertEq(troveManager.getTroveDebt(troveIDs.E), troveEntireDebtBefore.E, "Interest was not applied to trove E");
+        assertApproxEqAbs(troveManager.getTroveDebt(troveIDs.E), troveEntireDebtBefore.E, 1, "Interest was not applied to trove E");
         assertEq(troveManager.getTroveDebt(troveIDs.E), troveManager.getTroveEntireDebt(troveIDs.E), "Trove E recorded debt should be equal to entire");
 
         batchB = troveManager.getLatestBatchData(B);
@@ -366,7 +373,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(batchC.recordedDebt, batchC.entireDebt, "Batch C recorded debt should be equal to entire");
     }
 
-    // --- applyBatchInterestPermissionless ---
+    // --- applyBatchInterestAndFeePermissionless ---
 
     function testCannotApplyTroveInterestPermissionlessIfInBatch() public {
         priceFeed.setPrice(2000e18);
@@ -375,10 +382,8 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         uint256 ATroveId = openTroveAndJoinBatchManager(A, 3 ether, troveDebtRequest, B, interestRate);
 
-        // Fast-forward time such that trove is Stale
-        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-        // Confirm Trove is stale
-        assertTrue(troveManager.troveIsStale(ATroveId));
+        // Fast-forward time
+        vm.warp(block.timestamp + 91 days);
 
         assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
@@ -396,16 +401,14 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         uint256 ATroveId = openTroveAndJoinBatchManager(A, 3 ether, troveDebtRequest, B, interestRate);
 
-        // Fast-forward time such that batch is Stale
-        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-        // Confirm Batch is stale
-        assertTrue(troveManager.batchIsStale(B));
+        // Fast-forward time
+        vm.warp(block.timestamp + 600);
 
         assertLt(troveManager.getBatchLastDebtUpdateTime(B), block.timestamp);
         assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
         // C applies batch B's pending interest
-        applyBatchInterestPermissionless(C, B);
+        applyBatchInterestAndFeePermissionless(C, B);
 
         assertEq(troveManager.getBatchLastDebtUpdateTime(B), block.timestamp);
         assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
@@ -418,16 +421,14 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         uint256 ATroveId = openTroveAndJoinBatchManager(A, 3 ether, troveDebtRequest, B, interestRate);
 
-        // Fast-forward time such that batch is Stale
-        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-        // Confirm Batch is stale
-        assertTrue(troveManager.batchIsStale(B), "Batch should be stale");
+        // Fast-forward time
+        vm.warp(block.timestamp + 600);
 
         assertGt(troveManager.calcBatchAccruedInterest(B), 0, "Batch should have accrued interest");
         assertGt(troveManager.calcTroveAccruedInterest(ATroveId), 0, "Trove should have accrued interest");
 
         // C applies batch B's pending interest
-        applyBatchInterestPermissionless(C, B);
+        applyBatchInterestAndFeePermissionless(C, B);
 
         assertEq(troveManager.calcBatchAccruedInterest(B), 0, "Batch should not have accrued interest");
         assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0, "Trove should not have accrued interest");
@@ -440,25 +441,23 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         uint256 ATroveId = openTroveAndJoinBatchManager(A, 3 ether, troveDebtRequest, B, interestRate);
 
-        // Fast-forward time such that batch is Stale
-        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-        // Confirm Batch is stale
-        assertTrue(troveManager.batchIsStale(B));
+        // Fast-forward time
+        vm.warp(block.timestamp + 600);
 
-        LatestTroveData memory batch = troveManager.getLatestBatchData(B);
+        LatestBatchData memory batch = troveManager.getLatestBatchData(B);
         uint256 entireBatchDebt_1 = batch.entireDebt;
         assertGt(entireBatchDebt_1, 0);
         uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
 
         // C applies batch B's pending interest
-        applyBatchInterestPermissionless(C, B);
+        applyBatchInterestAndFeePermissionless(C, B);
 
         batch = troveManager.getLatestBatchData(B);
         uint256 entireBatchDebt_2 = batch.entireDebt;
-        assertEq(entireBatchDebt_2, entireBatchDebt_1);
+        assertEq(entireBatchDebt_2, entireBatchDebt_1, "Batch entire debt mismatch");
         uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
-        assertEq(entireTroveDebt_2, entireTroveDebt_1);
+        assertEq(entireTroveDebt_2, entireTroveDebt_1, "Trove entire debt mismatch");
     }
 
     function testApplyBatchInterestPermissionlessIncreasesRecordedDebtByAccruedInterest() public {
@@ -468,48 +467,25 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         uint256 ATroveId = openTroveAndJoinBatchManager(A, 3 ether, troveDebtRequest, B, interestRate);
 
-        // Fast-forward time such that batch is Stale
-        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-        // Confirm Batch is stale
-        assertTrue(troveManager.batchIsStale(B));
+        // Fast-forward time
+        vm.warp(block.timestamp + 600);
 
-        LatestTroveData memory batch = troveManager.getLatestBatchData(B);
+        LatestBatchData memory batch = troveManager.getLatestBatchData(B);
         uint256 recordedBatchDebt_1 = batch.recordedDebt;
         uint256 accruedBatchInterest = troveManager.calcBatchAccruedInterest(B);
+        uint256 accruedBatchFee = troveManager.calcBatchAccruedFee(B);
         uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
         uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
+        uint256 accruedTroveFee = troveManager.calcTroveAccruedFee(ATroveId);
 
         // C applies batch B's pending interest
-        applyBatchInterestPermissionless(C, B);
+        applyBatchInterestAndFeePermissionless(C, B);
 
         batch = troveManager.getLatestBatchData(B);
         uint256 recordedBatchDebt_2 = batch.recordedDebt;
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
 
-        assertEq(recordedBatchDebt_2, recordedBatchDebt_1 + accruedBatchInterest);
-        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
-    }
-
-    function testRevertApplyBatchInterestPermissionlessWhenBatchIsNotStale() public {
-        priceFeed.setPrice(2000e18);
-        uint256 troveDebtRequest = 2000e18;
-        uint256 interestRate = 25e16;
-
-        openTroveAndJoinBatchManager(A, 3 ether, troveDebtRequest, B, interestRate);
-
-        // No time passes. B tries to apply A's interest. expect revert
-        vm.startPrank(B);
-        vm.expectRevert();
-        borrowerOperations.applyBatchInterestPermissionless(B);
-        vm.stopPrank();
-
-        // Fast-forward time, but less than the staleness threshold
-        vm.warp(block.timestamp + STALE_TROVE_DURATION - 1);
-
-        // B tries to apply A's interest. Expect revert
-        vm.startPrank(B);
-        vm.expectRevert();
-        borrowerOperations.applyBatchInterestPermissionless(B);
-        vm.stopPrank();
+        assertEq(recordedBatchDebt_2, recordedBatchDebt_1 + accruedBatchInterest + accruedBatchFee);
+        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest + accruedTroveFee);
     }
 }

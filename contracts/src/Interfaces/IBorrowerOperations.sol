@@ -81,6 +81,10 @@ interface IBorrowerOperations is ILiquityBase {
     function addManagerOf(uint256 _troveId) external view returns (address);
     function removeManagerOf(uint256 _troveId) external view returns (address);
 
+    function getCompositeDebt(uint256 _debt) external pure returns (uint256);
+    function checkBatchManagerExists(address _batchMananger) external view returns (bool);
+
+    // -- individual delegation --
     struct InterestIndividualDelegate {
         address account;
         uint128 minInterestRate; // TODO: If we change decimal precision for interest across all codebase, we can switch to uint48 and save 1 storage slot
@@ -105,11 +109,11 @@ interface IBorrowerOperations is ILiquityBase {
     struct InterestBatchManager {
         uint128 minInterestRate;
         uint128 maxInterestRate;
-        uint128 fee;
         uint256 minInterestRateChangePeriod;
     }
 
     function registerBatchManager(uint128 minInterestRate, uint128 maxInterestRate, uint128 currentInterestRate, uint128 fee, uint128 minInterestRateChangePeriod) external;
+    function lowerBatchManagementFee(uint256 _newAnnualFee) external;
     function setBatchManagerAnnualInterestRate(
         uint128 _newAnnualInterestRate,
         uint256 _upperHint,
@@ -132,10 +136,7 @@ interface IBorrowerOperations is ILiquityBase {
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) external;
-    function applyBatchInterestPermissionless(address _batchAddress) external;
-
-    function getCompositeDebt(uint256 _debt) external pure returns (uint256);
-
+    function applyBatchInterestAndFeePermissionless(address _batchAddress) external;
     function adjustTroveInterestRate(
         uint256 _troveId,
         uint256 _newAnnualInterestRate,

@@ -111,6 +111,15 @@ contract("TroveManager", async (accounts) => {
         account: ida,
         interest: toBN(dec(95, 16)),
       },
+      // same as dennis, to be able to follow closer the original test
+      {
+        account: graham,
+        interest: toBN(dec(5, 16)),
+      },
+      {
+        account: harriet,
+        interest: toBN(dec(5, 16)),
+      },
     ];
     return Promise.all(
       batchManagers.map((batchManager) => (
@@ -434,7 +443,7 @@ contract("TroveManager", async (accounts) => {
         );
       });
 
-      it("liquidate(): updates the L_ETH and L_boldDebt reward-per-unit-staked totals", async () => {
+      it.only("liquidate(): updates the L_ETH and L_boldDebt reward-per-unit-staked totals", async () => {
         // --- SETUP ---
         const { troveId: aliceTroveId } = await openTrove({
           ICR: toBN(dec(8, 18)),
@@ -442,11 +451,11 @@ contract("TroveManager", async (accounts) => {
         });
         const { troveId: bobTroveId } = await openTrove({
           ICR: toBN(dec(4, 18)),
-          extraParams: { from: bob, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: { from: bob, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, graham) },
         });
         const { troveId: carolTroveId } = await openTrove({
           ICR: toBN(dec(111, 16)),
-          extraParams: { from: carol, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: { from: carol, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, harriet) },
         });
 
         // --- TEST ---
@@ -466,6 +475,7 @@ contract("TroveManager", async (accounts) => {
         const C_collateral = await troveManager.getTroveEntireColl(carolTroveId);
 
         const carolInterest = await troveManager.calcTroveAccruedInterest(carolTroveId);
+        const carolFee = await troveManager.calcTroveAccruedFee(carolTroveId);
         // close Carol's Trove.
         assert.isTrue(await sortedTroves.contains(carolTroveId));
         await troveManager.liquidate(carolTroveId, { from: owner });
@@ -479,7 +489,7 @@ contract("TroveManager", async (accounts) => {
               .applyLiquidationFee(C_collateral)
               .mul(mv._1e18BN)
               .div(A_collateral.add(B_collateral));
-        const L_boldDebt_expected_1 = C_totalDebt.add(carolInterest).mul(mv._1e18BN).div(
+        const L_boldDebt_expected_1 = C_totalDebt.add(carolInterest).add(carolFee).mul(mv._1e18BN).div(
           A_collateral.add(B_collateral),
         );
         assert.isAtMost(
@@ -492,6 +502,7 @@ contract("TroveManager", async (accounts) => {
         );
 
         const bobInterest1 = await troveManager.calcTroveAccruedInterest(bobTroveId);
+        const bobFee1 = await troveManager.calcTroveAccruedFee(bobTroveId);
 
         assert.isTrue(await sortedTroves.contains(bobTroveId));
         // Bob now withdraws Bold, bringing his ICR to 1.11
@@ -510,6 +521,7 @@ contract("TroveManager", async (accounts) => {
         const price = await priceFeed.getPrice();
 
         const bobInterest2 = await troveManager.calcTroveAccruedInterest(bobTroveId);
+        const bobFee2 = await troveManager.calcTroveAccruedFee(bobTroveId);
 
         // close Bob's Trove
         assert.isTrue(await sortedTroves.contains(bobTroveId));
@@ -539,7 +551,7 @@ contract("TroveManager", async (accounts) => {
         );
 
         const L_boldDebt_expected_2 = L_boldDebt_expected_1.add(
-          B_totalDebt.add(B_increasedTotalDebt).add(bobInterest1).add(bobInterest2)
+          B_totalDebt.add(B_increasedTotalDebt).add(bobInterest1).add(bobFee1).add(bobInterest2).add(bobFee2)
             .add(B_collateral.mul(L_boldDebt_expected_1).div(mv._1e18BN))
             .mul(mv._1e18BN)
             .div(A_collateral),

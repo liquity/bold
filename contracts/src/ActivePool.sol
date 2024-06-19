@@ -208,6 +208,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         uint256 newAggRecordedDebt = aggRecordedDebt; // 1 SLOAD
         newAggRecordedDebt += _mintAggInterest(_troveChange.upfrontFee); // adds minted agg. interest + upfront fee
         newAggRecordedDebt += _troveChange.appliedRedistBoldDebtGain;
+        newAggRecordedDebt += _troveChange.batchAccruedFee;
         newAggRecordedDebt += _troveChange.debtIncrease;
         newAggRecordedDebt -= _troveChange.debtDecrease;
         aggRecordedDebt = newAggRecordedDebt; // 1 SSTORE

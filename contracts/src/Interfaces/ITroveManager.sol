@@ -9,6 +9,7 @@ import "./IStabilityPool.sol";
 import "./IBoldToken.sol";
 import "./ISortedTroves.sol";
 import "../Types/LatestTroveData.sol";
+import "../Types/LatestBatchData.sol";
 
 // Common interface for the Trove Manager.
 interface ITroveManager is IERC721, ILiquityBase {
@@ -115,10 +116,14 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function calcTroveAccruedInterest(uint256 _troveId) external view returns (uint256);
 
+    function calcTroveAccruedFee(uint256 _troveId) external view returns (uint256);
+
     function getTroveLastDebtUpdateTime(uint256 _troveId) external view returns (uint256);
 
-    function getLatestBatchData(address _batchAddress) external view returns (LatestTroveData memory);
+    function getLatestBatchData(address _batchAddress) external view returns (LatestBatchData memory);
     function getBatchAnnualInterestRate(address _batchAddress) external view returns (uint256);
+    function calcBatchAccruedInterest(address _batchAddress) external view returns (uint256);
+    function calcBatchAccruedFee(address _batchAddress) external view returns (uint256);
 
     // -- permissioned functions called by BorrowerOperations
 
@@ -169,11 +174,26 @@ interface ITroveManager is IERC721, ILiquityBase {
         TroveChange calldata _troveChange
     ) external;
 
-    function onCloseTrove(uint256 _troveId, TroveChange calldata _troveChange) external;
+    function onCloseTrove(
+        uint256 _troveId,
+        address _batchAddress,
+        uint256 _newTroveColl, // entire, with redistribution
+        uint256 _newTroveDebt, // entire, with interest, batch fee and redistribution
+        uint256 _newBatchColl,
+        uint256 _newBatchDebt, // entire, with interest and batch fee
+        uint256 _appliedRedistETHGain,
+        uint256 _appliedRedistBoldDebtGain
+    ) external;
+    //function onCloseTrove(uint256 _troveId, TroveChange calldata _troveChange) external;
 
     // -- batches --
-    function batchIsStale(address _batchAddress) external view returns (bool);
-    function onRegisterBatchManager(address _batchAddress, uint256 _annualInterestRate) external;
+    function onRegisterBatchManager(address _batchAddress, uint256 _annualInterestRate, uint256 _annualFee) external;
+    function onLowerBatchManagerAnnualFee(
+        address _batchAddress,
+        uint256 _newColl,
+        uint256 _newDebt,
+        uint256 _newAnnualFee
+    ) external;
     function onSetBatchManagerAnnualInterestRate(
         address _batchAddress,
         uint256 _newColl,
@@ -193,15 +213,16 @@ interface ITroveManager is IERC721, ILiquityBase {
     function onRemoveInterestBatchManager(
         uint256 _troveId,
         address _batchAddress,
-        uint256 _newTroveColl,
-        uint256 _newTroveDebt,
+        uint256 _newTroveColl, // entire, with redistribution
+        uint256 _newTroveDebt, // entire, with interest, batch fee and redistribution
         uint256 _newBatchColl,
-        uint256 _newBatchDebt,
+        uint256 _newBatchDebt, // entire, with interest and batch fee
         uint256 _newAnnualInterestRate,
+        uint256 _upfrontFee,
         uint256 _appliedRedistETHGain,
         uint256 _appliedRedistBoldDebtGain
     ) external;
-    function onApplyBatchInterest(address _batchAddress, uint256 _newColl, uint256 _newDebt) external;
+    function onApplyBatchInterestAndFee(address _batchAddress, uint256 _newColl, uint256 _newDebt) external;
 
     // -- end of permissioned functions --
 
