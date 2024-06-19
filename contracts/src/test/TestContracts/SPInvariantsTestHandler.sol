@@ -156,12 +156,13 @@ contract SPInvariantsTestHandler is Test {
         // The Trove owner bears the gas compensation costs
         uint256 claimableColl = coll - seizedColl - ethCompensation;
 
-        try troveManager.liquidate(troveId) {}
-        catch Panic(uint256 errorCode) {
-            // XXX ignore assertion failure inside liquidation (due to P = 0)
-            assertEq(errorCode, 1, "Unexpected revert in liquidate()");
-            vm.assume(false);
-        }
+        // try
+        troveManager.liquidate(troveId);
+        // {} catch Panic(uint256 errorCode) {
+        //     // XXX ignore assertion failure inside liquidation (due to P = 0)
+        //     assertEq(errorCode, 1, "Unexpected revert in liquidate()");
+        //     vm.assume(false);
+        // }
 
         priceFeed.setPrice(initialPrice);
         emit log_named_decimal_uint("            spBold ", stabilityPool.getTotalBoldDeposits(), 18);
