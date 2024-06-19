@@ -4,7 +4,9 @@ pragma solidity 0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract BoldTokenTest is DevTestSetup {
-    // TODO: need more tests covering ERC20 functionality
+    // TODO: need more tests for:
+    // - transfer protection
+    // - sendToPool() / returnFromPool()
 
     function test_InfiniteApprovalPersistsAfterTransfer() external {
         uint256 initialBalance_A = 10_000 ether;
