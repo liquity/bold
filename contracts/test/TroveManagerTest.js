@@ -87,7 +87,7 @@ contract("TroveManager", async (accounts) => {
     defaultPool = contracts.defaultPool;
     borrowerOperations = contracts.borrowerOperations;
 
-    BOLD_GAS_COMPENSATION = await borrowerOperations.BOLD_GAS_COMPENSATION();
+    BOLD_GAS_COMPENSATION = await contracts.constants._BOLD_GAS_COMPENSATION();
   });
 
   it("liquidate(): closes a Trove that has ICR < MCR", async () => {
@@ -2352,7 +2352,7 @@ contract("TroveManager", async (accounts) => {
       redemptionAmount,
       10,
       th._100pct,
-      GAS_PRICE
+      GAS_PRICE,
     );
 
     const alice_Trove_After = await troveManager.Troves(aliceTroveId);
@@ -2611,7 +2611,9 @@ contract("TroveManager", async (accounts) => {
       extraBoldAmount: dec(20, 18),
       extraParams: { from: carol, annualInterestRate: dec(5, 16) },
     });
-    const redemptionAmount = C_debt.add(B_debt).add(calcInterest(C_totalDebt.add(B_totalDebt), dec(5, 16), timeValues.SECONDS_IN_ONE_WEEK * 2 + 85));
+    const redemptionAmount = C_debt.add(B_debt).add(
+      calcInterest(C_totalDebt.add(B_totalDebt), dec(5, 16), timeValues.SECONDS_IN_ONE_WEEK * 2 + 85),
+    );
     const attemptedRedemptionAmount = redemptionAmount.add(A_debt);
 
     // --- TEST ---
@@ -2641,7 +2643,7 @@ contract("TroveManager", async (accounts) => {
     th.assertIsApproximatelyEqual(
       flynBalance,
       F_boldAmount.sub(redemptionAmount),
-      1e15
+      1e15,
     );
 
     // Check debt of Alice, Bob, Carol
@@ -2721,7 +2723,13 @@ contract("TroveManager", async (accounts) => {
 
     // A's remaining debt = 29800 + 19800 + 9800 + 200 - 55000 = 4600, + interest
     const A_debt = await troveManager.getTroveDebt(ATroveId);
-    await th.assertIsApproximatelyEqual(A_debt, AInitialDebt.add(BInitialDebt).add(CInitialDebt).sub(toBN(dec(55400, 18))).add(interestA).add(interestB).add(interestC), 6e15);
+    await th.assertIsApproximatelyEqual(
+      A_debt,
+      AInitialDebt.add(BInitialDebt).add(CInitialDebt).sub(toBN(dec(55400, 18))).add(interestA).add(interestB).add(
+        interestC,
+      ),
+      6e15,
+    );
   });
 
   it("redeemCollateral(): hits trove even if resultant debt would be < minimum net debt", async () => {
@@ -2785,7 +2793,13 @@ contract("TroveManager", async (accounts) => {
     // A's remaining debt would be 29800 + 19800 + 6000 - 55000 + interest = 600 + interest.
     // This is below the min net debt of 2000, but still it’s redeemed and debt gets reduced
     const A_debt = await troveManager.getTroveDebt(ATroveId);
-    await th.assertIsApproximatelyEqual(A_debt, AInitialDebt.add(BInitialDebt).add(CInitialDebt).sub(toBN(dec(55400, 18))).add(interestA).add(interestB).add(interestC), 6e15);
+    await th.assertIsApproximatelyEqual(
+      A_debt,
+      AInitialDebt.add(BInitialDebt).add(CInitialDebt).sub(toBN(dec(55400, 18))).add(interestA).add(interestB).add(
+        interestC,
+      ),
+      6e15,
+    );
   });
 
   // active debt cannot be zero, as there’s a positive min debt enforced, and at least a trove must exist
@@ -2880,8 +2894,8 @@ contract("TroveManager", async (accounts) => {
 
     // Bob's Trove was left untouched
     const { debt: bob_Debt_After } = await troveManager.Troves(bobTroveId);
-    th.logBN('bob_Debt_After', bob_Debt_After)
-    th.logBN('B_totalDebt', B_totalDebt)
+    th.logBN("bob_Debt_After", bob_Debt_After);
+    th.logBN("B_totalDebt", B_totalDebt);
     th.assertIsApproximatelyEqual(bob_Debt_After, B_totalDebt);
   });
 
@@ -3689,7 +3703,6 @@ contract("TroveManager", async (accounts) => {
     const totalBoldSupply = activeBold.add(defaultBold);
     th.assertIsApproximatelyEqual(totalBoldSupply, totalDebt);
 
-
     // A redeems 9 Bold
     const redemptionAmount = toBN(dec(9, 18));
     const price = await priceFeed.getPrice();
@@ -3768,7 +3781,7 @@ contract("TroveManager", async (accounts) => {
     assert.isTrue(await sortedTroves.contains(DTroveId));
   });
 
-  const redeemCollateral3Full1Partial = async (close=false) => {
+  const redeemCollateral3Full1Partial = async (close = false) => {
     // time fast-forwards 1 year, and multisig stakes 1 LQTY
     await time.increase(timeValues.SECONDS_IN_ONE_YEAR);
 
@@ -3821,7 +3834,7 @@ contract("TroveManager", async (accounts) => {
     const interestB = await troveManager.calcTroveAccruedInterest(BTroveId);
     const interestC = await troveManager.calcTroveAccruedInterest(CTroveId);
     const price = toBN(await priceFeed.getPrice());
-    const priceWithoutDecimals = price.div(toBN(dec(1,18)));
+    const priceWithoutDecimals = price.div(toBN(dec(1, 18)));
     const ETHFee = await contracts.troveManager.getEffectiveRedemptionFeeInColl(redemptionAmount, price);
 
     // whale redeems Bold.  Expect this to fully redeem A, B, C, and partially redeem D.
@@ -3848,24 +3861,30 @@ contract("TroveManager", async (accounts) => {
     const A_debtToEth = A_netDebt.add(interestA).div(priceWithoutDecimals);
     const B_debtToEth = B_netDebt.add(interestB).div(priceWithoutDecimals);
     const C_debtToEth = C_netDebt.add(interestC).div(priceWithoutDecimals);
-    const A_surplus = A_collBefore.sub(A_debtToEth).add(ETHFee.mul(A_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)));
-    const B_surplus = B_collBefore.sub(B_debtToEth).add(ETHFee.mul(B_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)));
-    const C_surplus = C_collBefore.sub(C_debtToEth).add(ETHFee.mul(C_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)));
+    const A_surplus = A_collBefore.sub(A_debtToEth).add(
+      ETHFee.mul(A_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)),
+    );
+    const B_surplus = B_collBefore.sub(B_debtToEth).add(
+      ETHFee.mul(B_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)),
+    );
+    const C_surplus = C_collBefore.sub(C_debtToEth).add(
+      ETHFee.mul(C_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)),
+    );
 
     th.assertIsApproximatelyEqual(
       A_collAfter,
       A_surplus,
-      1e13
+      1e13,
     );
     th.assertIsApproximatelyEqual(
       B_collAfter,
       B_surplus,
-      1e13
+      1e13,
     );
     th.assertIsApproximatelyEqual(
       C_collAfter,
       C_surplus,
-      1e13
+      1e13,
     );
 
     // check D's trove collateral balances have decreased (the partially redeemed-from trove)
@@ -3900,17 +3919,17 @@ contract("TroveManager", async (accounts) => {
       th.assertIsApproximatelyEqual(
         A_balanceAfterClose,
         A_balanceAfter.add(A_surplus),
-        1e13
+        1e13,
       );
       th.assertIsApproximatelyEqual(
         B_balanceAfterClose,
         B_balanceAfter.add(B_surplus),
-        1e13
+        1e13,
       );
       th.assertIsApproximatelyEqual(
         C_balanceAfterClose,
         C_balanceAfter.add(C_surplus),
-        1e13
+        1e13,
       );
     }
 
@@ -3938,9 +3957,9 @@ contract("TroveManager", async (accounts) => {
     const B_balanceAfter = toBN(await contracts.WETH.balanceOf(B));
     const C_balanceAfter = toBN(await contracts.WETH.balanceOf(C));
 
-    assert.equal(A_balanceAfter.toString(), A_balanceBefore.toString(),);
-    assert.equal(B_balanceAfter.toString(), B_balanceBefore.toString(),);
-    assert.equal(C_balanceAfter.toString(), C_balanceBefore.toString(),);
+    assert.equal(A_balanceAfter.toString(), A_balanceBefore.toString());
+    assert.equal(B_balanceAfter.toString(), B_balanceBefore.toString());
+    assert.equal(C_balanceAfter.toString(), C_balanceBefore.toString());
   });
 
   it("redeemCollateral(): a redemption that closes a trove leaves the trove's ETH surplus (collateral - ETH drawn) available for the trove owner after re-opening trove", async () => {

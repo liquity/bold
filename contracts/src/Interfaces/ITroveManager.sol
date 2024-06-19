@@ -14,6 +14,7 @@ import "../Types/LatestTroveData.sol";
 interface ITroveManager is IERC721, ILiquityBase {
     function MCR() external view returns (uint256);
     function LIQUIDATION_PENALTY_SP() external view returns (uint256);
+    function LIQUIDATION_PENALTY_REDISTRIBUTION() external view returns (uint256);
 
     function setAddresses(
         address _borrowerOperationsAddress,

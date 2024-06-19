@@ -61,8 +61,6 @@ contract DevTestSetup is BaseTest {
         troveManager = contracts.troveManager;
         mockInterestRouter = contracts.interestRouter;
 
-        MCR = troveManager.MCR();
-
         // Give some ETH to test accounts, and approve it to BorrowerOperations
         uint256 initialETHAmount = 1000_000e18;
         for (uint256 i = 0; i < 6; i++) {
@@ -70,14 +68,7 @@ contract DevTestSetup is BaseTest {
             giveAndApproveETH(accountsList[i], initialETHAmount);
         }
 
-        BOLD_GAS_COMP = troveManager.BOLD_GAS_COMPENSATION();
-        MIN_NET_DEBT = troveManager.MIN_NET_DEBT();
-        MIN_DEBT = troveManager.MIN_DEBT();
-        SP_YIELD_SPLIT = activePool.SP_YIELD_SPLIT();
-        UPFRONT_INTEREST_PERIOD = troveManager.UPFRONT_INTEREST_PERIOD();
-        INTEREST_RATE_ADJ_COOLDOWN = troveManager.INTEREST_RATE_ADJ_COOLDOWN();
         MCR = troveManager.MCR();
-        STALE_TROVE_DURATION = troveManager.STALE_TROVE_DURATION();
     }
 
     function _setupForWithdrawETHGainToTrove() internal returns (uint256, uint256, uint256) {
@@ -227,16 +218,16 @@ contract DevTestSetup is BaseTest {
 
     function _redeemAndCreateZombieTrovesAAndB(ABCDEF memory _troveIDs) internal {
         // Redeem enough to leave A with 0 net debt and B with net debt < MIN_NET_DEBT
-        uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - BOLD_GAS_COMP;
-        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP - MIN_NET_DEBT / 2;
+        uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - BOLD_GAS_COMPENSATION;
+        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMPENSATION - MIN_NET_DEBT / 2;
         uint256 redeemAmount = redeemFromA + redeemFromB;
 
         // Fully redeem A and leave B with debt < MIN_NET_DEBT
         redeem(E, redeemAmount);
 
         // Check A has net_debt == 0, and B has net_debt < min_net_debt
-        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), BOLD_GAS_COMP);
-        assertLt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP, MIN_NET_DEBT);
+        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), BOLD_GAS_COMPENSATION);
+        assertLt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMPENSATION, MIN_NET_DEBT);
 
         // Check A and B tagged as Zombie troves
         assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(TroveManager.Status.unredeemable));
@@ -245,16 +236,16 @@ contract DevTestSetup is BaseTest {
 
     function _redeemAndCreateZombieTroveAAndHitB(ABCDEF memory _troveIDs) internal {
         // Redeem enough to leave A with 0 debt but B with net debt > MIN_NET_DEBT
-        uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - BOLD_GAS_COMP;
-        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP - MIN_NET_DEBT * 2;
+        uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - BOLD_GAS_COMPENSATION;
+        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMPENSATION - MIN_NET_DEBT * 2;
         uint256 redeemAmount = redeemFromA + redeemFromB;
 
         // Fully redeem A and leave B with debt > MIN_NET_DEBT
         redeem(E, redeemAmount);
 
         // Check A has net_debt == gas_comp, and B has net_debt > min_net_debt;
-        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), BOLD_GAS_COMP);
-        assertGt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMP, MIN_NET_DEBT);
+        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), BOLD_GAS_COMPENSATION);
+        assertGt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMPENSATION, MIN_NET_DEBT);
 
         // // Check A is zombie Trove but B is not
         assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(TroveManager.Status.unredeemable));
