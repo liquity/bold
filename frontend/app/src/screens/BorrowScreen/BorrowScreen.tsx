@@ -79,6 +79,10 @@ export function BorrowScreen() {
     })
     : null;
 
+  const boldInterestPerYear = interestRate.parsed
+    && debt.parsed
+    && dn.mul(debt.parsed, dn.div(interestRate.parsed, 100));
+
   const allowSubmit = account.isConnected
     && deposit.parsed
     && dn.gt(deposit.parsed, 0)
@@ -258,11 +262,8 @@ export function BorrowScreen() {
                 secondaryStart={
                   <HFlex gap={4}>
                     <div>
-                      {interestRate.parsed && debt.parsed
-                        ? dn.format(
-                          dn.mul(debt.parsed, dn.div(interestRate.parsed, 100)),
-                          { digits: 2, trailingZeros: false },
-                        )
+                      {boldInterestPerYear
+                        ? dn.format(boldInterestPerYear, { digits: 2, trailingZeros: false })
                         : "−"} BOLD / year
                     </div>
                     <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />

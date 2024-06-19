@@ -10,12 +10,21 @@ import { useRouter } from "next/navigation";
 export default function Page() {
   const router = useRouter();
   return (
-    <Screen title="You are opening a loan">
+    <Screen title="You are adjusting your loan">
       <VFlex gap={32}>
-        <Row label="You deposit" value="8.00 ETH" />
         <Row
-          label="Liquidation price"
-          value="$2,950.00"
+          label="You deposit"
+          value={[
+            "+8.00 ETH",
+            "10.00 → 18.00 ETH",
+          ]}
+        />
+        <Row
+          label="You borrow"
+          value={[
+            "+ 2,000.00 BOLD",
+            "9,412.32 BOLD → 11,412.32 BOLD",
+          ]}
         />
         <Row
           label="Liquidation risk"
@@ -24,7 +33,15 @@ export default function Page() {
               <StatusDot mode="positive" />
               Low
             </>,
-            "LTV 16.00%",
+            "LTV 33.00% → 16.00%",
+            "Liq. price $1,200.00 → $600.00",
+          ]}
+        />
+        <Row
+          label="Interest rate"
+          value={[
+            "+0.6 %",
+            "6.00% → 6.60%",
           ]}
         />
         <Row
@@ -34,7 +51,7 @@ export default function Page() {
               <StatusDot mode="positive" />
               Low
             </>,
-            "Interest rate 5.40%",
+            "Int. rate 5.40% → 6.00%",
           ]}
         />
         <Row
@@ -43,6 +60,7 @@ export default function Page() {
             "0.0001 ETH",
             "~$22.06",
           ]}
+          valueSize="small"
         />
         <Row
           label={
@@ -86,7 +104,7 @@ export default function Page() {
           <TextButton
             label="Back"
             onClick={() => {
-              router.push("/borrow");
+              router.push("/loan?id=1");
             }}
           />
         </div>

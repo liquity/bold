@@ -175,6 +175,7 @@ export function useInputFieldValue(
         value: focused || !parsed || !value.trim() ? value : format(parsed),
       },
       isEmpty: value.trim() === "",
+      isFocused: focused,
       parsed,
       setValue,
       value,
