@@ -68,9 +68,6 @@ contract SPInvariantsTestHandler is Test {
         initialPrice = priceFeed.getPrice();
     }
 
-    // Let us receive ETH gas compensation from liquidations
-    receive() external payable {}
-
     function _getTroveId(address owner, uint256 i) internal pure returns (uint256) {
         return uint256(keccak256(abi.encode(owner, i)));
     }
