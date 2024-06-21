@@ -51,7 +51,7 @@ contract BorrowerOperationsTest is DevTestSetup {
         uint256 troveDebt = troveManager.getTroveEntireDebt(troveId);
         uint256 activePoolDebtAfter = activePool.getBoldDebt();
 
-        uint256 expectedDebt = borrow + BOLD_GAS_COMP + upfrontFee;
+        uint256 expectedDebt = borrow + BOLD_GAS_COMPENSATION + upfrontFee;
         assertEqDecimal(troveDebt, expectedDebt, 18, "Wrong Trove debt");
         assertEqDecimal(activePoolDebtAfter - activePoolDebtBefore, expectedDebt, 18, "Wrong AP debt increase");
     }

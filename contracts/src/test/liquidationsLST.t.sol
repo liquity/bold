@@ -51,9 +51,8 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 ATroveId = borrowerOperations.openTrove(
-            A, 0, collAmount, liquidationAmount - troveManager.BOLD_GAS_COMPENSATION(), 0, 0, 0, 0
-        );
+        uint256 ATroveId =
+            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount - BOLD_GAS_COMPENSATION, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
@@ -145,9 +144,8 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         priceFeed.setPrice(initialPrice);
         vm.startPrank(A);
-        uint256 ATroveId = borrowerOperations.openTrove(
-            A, 0, collAmount, liquidationAmount - troveManager.BOLD_GAS_COMPENSATION(), 0, 0, 0, 0
-        );
+        uint256 ATroveId =
+            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount - BOLD_GAS_COMPENSATION, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);

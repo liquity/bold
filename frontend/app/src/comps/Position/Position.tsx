@@ -1,8 +1,12 @@
 import type { TroveId } from "@/src/types";
 
 import { ACCOUNT_POSITIONS } from "@/src/demo-data";
+import { getLiquidationRisk, getRedemptionRisk } from "@/src/liquity-math";
+import { usePrice } from "@/src/prices";
+import { riskLevelToStatusMode } from "@/src/uikit-utils";
+import { capitalizeFirstLetter } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, InfoTooltip, StatusDot, TokenIcon } from "@liquity2/uikit";
+import { Button, HFlex, InfoTooltip, StatusDot, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 export function Position({
@@ -10,10 +14,24 @@ export function Position({
 }: {
   troveId: TroveId;
 }) {
+  const ethPriceUsd = usePrice("ETH");
+
   const position = ACCOUNT_POSITIONS.find((position) => (
     position.type === "loan" && position.troveId === troveId
   ));
-  return position && position.type === "loan" && (
+
+  if (!position || position.type !== "loan") {
+    return null;
+  }
+
+  const { collateralRatio } = TOKENS_BY_SYMBOL[position.collateral];
+  const maxLtv = dn.div(dn.from(1, 18), collateralRatio);
+
+  const ltv = dn.div(position.borrowed, dn.mul(position.deposit, ethPriceUsd));
+  const redemptionRisk = getRedemptionRisk(position.interestRate);
+  const liquidationRisk = getLiquidationRisk(ltv, maxLtv);
+
+  return (
     <section
       className={css({
         padding: "16px 16px 24px",
@@ -80,13 +98,11 @@ export function Position({
           >
             LTV
           </div>
-          <div>
-            {dn.format(dn.mul(position.ltv, 100), 2)}%
-          </div>
+          <div>{dn.format(dn.mul(ltv, 100), 2)}%</div>
         </HFlex>
         <HFlex justifyContent="flex-end">
-          <div>Low liquidation risk</div>
-          <StatusDot mode="positive" />
+          {liquidationRisk && <div>{capitalizeFirstLetter(liquidationRisk)} liquidation risk</div>}
+          <StatusDot mode={riskLevelToStatusMode(liquidationRisk)} />
         </HFlex>
         <HFlex gap={8} justifyContent="flex-start">
           <div
@@ -101,8 +117,8 @@ export function Position({
           </div>
         </HFlex>
         <HFlex justifyContent="flex-end">
-          <div>Low redemption risk</div>
-          <StatusDot mode="positive" />
+          {redemptionRisk && <div>{capitalizeFirstLetter(redemptionRisk)} redemption risk</div>}
+          <StatusDot mode={riskLevelToStatusMode(redemptionRisk)} />
         </HFlex>
       </div>
     </section>

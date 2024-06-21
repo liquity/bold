@@ -568,12 +568,12 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
             // Increment the scale again if it's still below the boundary. This ensures the invariant P >= 1e9 holds and addresses this issue
             // from Liquity v1: https://github.com/liquity/dev/security/advisories/GHSA-m9f3-hrx8-x2g3
             if (newP < SCALE_FACTOR) {
-              newP *= SCALE_FACTOR;
-               currentScale = currentScaleCached + 2;
+                newP *= SCALE_FACTOR;
+                currentScale = currentScaleCached + 2;
             }
 
             emit ScaleUpdated(currentScale);
-        // If there's no scale change and no pool-emptying, just do a standard multiplication   
+            // If there's no scale change and no pool-emptying, just do a standard multiplication
         } else {
             newP = currentP * newProductFactor / DECIMAL_PRECISION;
         }
@@ -763,18 +763,6 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool {
     function _sendBoldtoDepositor(address _depositor, uint256 _boldToSend) internal {
         if (_boldToSend == 0) return;
         boldToken.returnFromPool(address(this), _depositor, _boldToSend);
-    }
-
-    function receiveETH(uint256 _amount) external {
-        _requireCallerIsActivePool();
-
-        uint256 newETHBalance = ETHBalance + _amount;
-        ETHBalance = newETHBalance;
-
-        // Pull ETH tokens from sender
-        ETH.safeTransferFrom(msg.sender, address(this), _amount);
-
-        emit StabilityPoolETHBalanceUpdated(newETHBalance);
     }
 
     // --- Stability Pool Deposit Functionality ---

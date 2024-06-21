@@ -1,31 +1,35 @@
 "use client";
 
-import type { RiskLevel } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { Field } from "@/src/comps/Field/Field";
+import { Forecast } from "@/src/comps/Forecast/Forecast";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { LTV_RISK, MAX_LTV_ALLOWED, REDEMPTION_RISK } from "@/src/constants";
+import { DEBT_SUGGESTIONS } from "@/src/constants";
 import content from "@/src/content";
 import { ACCOUNT_BALANCES } from "@/src/demo-data";
 import { useDemoState } from "@/src/demo-state";
 import { useInputFieldValue } from "@/src/form-utils";
+import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
 import { usePrice } from "@/src/prices";
+import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
   COLLATERALS,
   Dropdown,
   HFlex,
+  IconChevronSmallUp,
   InfoTooltip,
   InputField,
   PillButton,
   TextButton,
   TokenIcon,
+  VFlex,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { match, P } from "ts-pattern";
+import { useState } from "react";
 // import { useAccount } from "wagmi";
 
 const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
@@ -36,7 +40,7 @@ function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[
 }
 
 export function BorrowScreen() {
-  const { account } = useDemoState();
+  const { account, setDemoState } = useDemoState();
   // const account = useAccount();
   const router = useRouter();
   const ethPriceUsd = usePrice("ETH");
@@ -52,53 +56,42 @@ export function BorrowScreen() {
   const { collateralRatio } = COLLATERALS[collateralIndex];
 
   const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral}`);
-  const borrowing = useInputFieldValue((value) => `${dn.format(value)} BOLD`);
+  const debt = useInputFieldValue((value) => `${dn.format(value)} BOLD`);
   const interestRate = useInputFieldValue((value) => `${dn.format(value)}%`);
 
-  const depositUsdValue = deposit.parsed && dn.mul(deposit.parsed, ethPriceUsd);
+  const loanDetails = getLoanDetails(
+    deposit.isEmpty ? null : deposit.parsed,
+    debt.isEmpty ? null : debt.parsed,
+    interestRate.parsed && dn.div(interestRate.parsed, 100),
+    dn.div(dn.from(1, 18), collateralRatio),
+    ethPriceUsd,
+  );
 
-  const ltv = depositUsdValue && dn.gt(depositUsdValue, 0) && borrowing.parsed
-    ? dn.div(borrowing.parsed, depositUsdValue)
+  const debtSuggestions = loanDetails.maxDebt
+      && loanDetails.depositUsd
+      && loanDetails.deposit
+      && dn.gt(loanDetails.deposit, 0)
+    ? DEBT_SUGGESTIONS.map((ratio) => {
+      const debt = loanDetails.maxDebt && dn.mul(loanDetails.maxDebt, ratio);
+      const ltv = debt && loanDetails.depositUsd && getLtv(debt, loanDetails.depositUsd);
+      const risk = ltv && getLiquidationRisk(ltv, loanDetails.maxLtv);
+      return { debt, ltv, risk };
+    })
     : null;
 
-  const maxLtv = dn.div(dn.from(1, 18), collateralRatio);
-  const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED);
+  const boldInterestPerYear = interestRate.parsed
+    && debt.parsed
+    && dn.mul(debt.parsed, dn.div(interestRate.parsed, 100));
 
-  const maxBorrowing = depositUsdValue && dn.gt(depositUsdValue, 0)
-    ? dn.mul(depositUsdValue, maxLtvAllowed)
-    : null;
-
-  let liquidationPriceUsd = deposit.parsed
-      && dn.gt(deposit.parsed, 0)
-      && borrowing.parsed
-      && dn.gt(borrowing.parsed, 0)
-      && dn.gt(maxLtv, 0)
-    ? dn.div(dn.mul(borrowing.parsed, maxLtv), deposit.parsed)
-    : null;
-
-  if (liquidationPriceUsd && ltv && dn.gt(ltv, maxLtv)) {
-    liquidationPriceUsd = ethPriceUsd;
-  }
-
-  const liquidationRisk: null | RiskLevel = match(ltv)
-    .with(P.nullish, () => null)
-    .when((ltv) => dn.gt(ltv, LTV_RISK.high), () => "high" as const)
-    .when((ltv) => dn.gt(ltv, LTV_RISK.medium), () => "medium" as const)
-    .otherwise(() => "low" as const);
-
-  const redemptionRisk: null | RiskLevel = match(interestRate.parsed)
-    .with(P.nullish, () => null)
-    .when((r) => dn.eq(r, 0), () => null)
-    .when((r) => dn.gt(r, REDEMPTION_RISK.low), () => "low" as const)
-    .when((r) => dn.gt(r, REDEMPTION_RISK.medium), () => "medium" as const)
-    .otherwise(() => "high" as const);
-
-  const allowSubmit = deposit.parsed
+  const allowSubmit = account.isConnected
+    && deposit.parsed
     && dn.gt(deposit.parsed, 0)
-    && borrowing.parsed
-    && dn.gt(borrowing.parsed, 0)
+    && debt.parsed
+    && dn.gt(debt.parsed, 0)
     && interestRate.parsed
     && dn.gt(interestRate.parsed, 0);
+
+  const [showForecast, setShowForecast] = useState(false);
 
   return (
     <Screen
@@ -172,45 +165,15 @@ export function BorrowScreen() {
               {...deposit.inputFieldProps}
             />
           }
-          footerEnd={
-            <Field.FooterInfo
-              label="Max LTV"
-              value={
-                <HFlex gap={4}>
-                  <div>
-                    {dn.format(dn.mul(maxLtv, 100), { digits: 2, trailingZeros: true })}%
-                  </div>
-                  <InfoTooltip heading="Max LTV">
-                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
-                    Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                  </InfoTooltip>
-                </HFlex>
-              }
-            />
-          }
-          footerStart={
-            <Field.FooterInfo
-              label="ETH Price"
-              value={
-                <HFlex gap={4}>
-                  <span
-                    className={css({
-                      fontVariantNumeric: "tabular-nums",
-                    })}
-                  >
-                    ${dn.format(ethPriceUsd, {
-                      digits: 2,
-                      trailingZeros: true,
-                    })}
-                  </span>
-                  <InfoTooltip heading="LTV">
-                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
-                    Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                  </InfoTooltip>
-                </HFlex>
-              }
-            />
-          }
+          footer={[
+            [
+              // eslint-disable-next-line react/jsx-key
+              <Field.FooterInfoEthPrice ethPriceUsd={ethPriceUsd} />,
+
+              // eslint-disable-next-line react/jsx-key
+              <Field.FooterInfoMaxLtv maxLtv={loanDetails.maxLtv} />,
+            ],
+          ]}
         />
 
         <Field
@@ -226,193 +189,175 @@ export function BorrowScreen() {
               label={content.borrowScreen.borrowField.label}
               placeholder="0.00"
               secondaryStart={`$${
-                borrowing.parsed
+                debt.parsed
                   ? dn.gt(
-                      dn.mul(boldPriceUsd, borrowing.parsed),
+                      dn.mul(boldPriceUsd, debt.parsed),
                       1_000_000_000_000,
                     )
                     ? "−"
                     : dn.format(
-                      dn.mul(boldPriceUsd, borrowing.parsed),
+                      dn.mul(boldPriceUsd, debt.parsed),
                       {
                         digits: 2,
                         trailingZeros: true,
-                        compact: dn.gt(borrowing.parsed, 1_000_000_000),
+                        compact: dn.gt(debt.parsed, 1_000_000_000),
                       },
                     )
                   : "0.00"
               }`}
-              secondaryEnd={maxBorrowing && (
-                <div
-                  className={css({
-                    flexGrow: 0,
-                    flexShrink: 1,
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: 8,
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  })}
-                >
-                  <div>
-                    {`Max LTV ${
-                      dn.format(
-                        dn.mul(maxLtvAllowed, 100),
-                        { digits: 2, trailingZeros: false },
-                      )
-                    }%:`}
-                  </div>
-                  <div>
-                    <TextButton
-                      label={`${dn.format(maxBorrowing, 2)} BOLD`}
-                      onClick={() => borrowing.setValue(dn.format(maxBorrowing, 2).replace(",", ""))}
-                    />
-                  </div>
-                </div>
-              )}
-              {...borrowing.inputFieldProps}
-            />
-          }
-          footerStart={
-            <>
-              <Field.FooterInfoWarnLevel
-                help={<InfoTooltip heading="Liquidation risk" />}
-                label={match(liquidationRisk)
-                  .with(P.nullish, () => "Liquidation risk")
-                  .with("low", () => "Low liq. risk")
-                  .with("medium", () => "Medium liq. risk")
-                  .with("high", () => "High liq. risk")
-                  .exhaustive()}
-                level={liquidationRisk ?? "none"}
-                title={match(liquidationRisk)
-                  .with(P.nullish, () => undefined)
-                  .with("low", () => "Low liquidation risk")
-                  .with("medium", () => "Medium liquidation risk")
-                  .with("high", () => "High liquidation risk")
-                  .exhaustive()}
-              />
-              <Field.FooterInfo
-                label="LTV"
-                value={
-                  <HFlex gap={4}>
-                    {ltv
-                      ? (
-                        <span
-                          className={css({
-                            fontVariantNumeric: "tabular-nums",
-                          })}
-                        >
-                          {dn.lt(ltv, maxLtv)
-                            ? dn.format(dn.mul(ltv, 100), { digits: 2, trailingZeros: true })
-                            : `>${dn.format(dn.mul(maxLtv, 100), { digits: 2, trailingZeros: true })}`}%
-                        </span>
-                      )
-                      : "−"}
-                    <InfoTooltip heading="LTV">
-                      A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount
-                      of Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                    </InfoTooltip>
-                  </HFlex>
-                }
-              />
-            </>
-          }
-          footerEnd={liquidationRisk && (
-            <Field.FooterInfo
-              label="Liq. ETH price"
-              title={`Liquidation ETH price: ${
-                liquidationPriceUsd
-                  ? `$${dn.format(liquidationPriceUsd, 2)}`
-                  : "−"
-              }`}
-              value={
-                <HFlex gap={4}>
-                  ${liquidationPriceUsd
-                    ? dn.format(
-                      liquidationPriceUsd,
-                      { digits: 2, trailingZeros: true },
+              secondaryEnd={debtSuggestions && (
+                <HFlex gap={6}>
+                  {debtSuggestions.map((s) => (
+                    s.debt && s.risk && (
+                      <PillButton
+                        key={dn.toString(s.debt)}
+                        label={`$${dn.format(s.debt, { compact: true, digits: 0 })}`}
+                        onClick={() => {
+                          if (s.debt) {
+                            debt.setValue(dn.toString(s.debt, 0));
+                          }
+                        }}
+                        warnLevel={s.risk}
+                      />
                     )
-                    : "−"}
-                  <InfoTooltip heading="LTV">
-                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
-                    Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                  </InfoTooltip>
+                  ))}
+                  {debtSuggestions.length > 0 && (
+                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
+                  )}
                 </HFlex>
-              }
+              )}
+              {...debt.inputFieldProps}
             />
-          )}
+          }
+          footer={[
+            [
+              // eslint-disable-next-line react/jsx-key
+              <Field.FooterInfoLiquidationRisk
+                riskLevel={loanDetails.liquidationRisk}
+              />,
+              // eslint-disable-next-line react/jsx-key
+              <Field.FooterInfoLiquidationPrice
+                liquidationPrice={loanDetails.liquidationPriceUsd}
+              />,
+            ],
+            [
+              null,
+              // eslint-disable-next-line react/jsx-key
+              <Field.FooterInfoLoanToValue
+                ltvRatio={loanDetails.ltv}
+                maxLtvRatio={loanDetails.maxLtv}
+              />,
+            ],
+          ]}
         />
 
-        <Field
-          // “Interest rate”
-          field={
-            <InputField
-              action={<StaticAction label="% per year" />}
-              label={content.borrowScreen.interestRateField.label}
-              placeholder="0.00"
-              secondaryStart={
-                <HFlex gap={4}>
-                  <div>
-                    {interestRate.parsed && borrowing.parsed
-                      ? dn.format(
-                        dn.mul(borrowing.parsed, dn.div(interestRate.parsed, 100)),
-                        { digits: 2, trailingZeros: false },
-                      )
-                      : "−"} BOLD / year
-                  </div>
-                  <InfoTooltip heading="Interest rate">
-                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
-                    Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                  </InfoTooltip>
-                </HFlex>
-              }
-              secondaryEnd={
-                <HFlex gap={6}>
-                  <PillButton
-                    label="6.5%"
-                    onClick={() => interestRate.setValue("6.5")}
-                    warnLevel="low"
-                  />
-                  <PillButton
-                    label="5.0%"
-                    onClick={() => interestRate.setValue("5.0")}
-                    warnLevel="medium"
-                  />
-                  <PillButton
-                    label="3.5%"
-                    onClick={() => interestRate.setValue("3.5")}
-                    warnLevel="high"
-                  />
-                  <InfoTooltip heading="Interest rate">
-                    A redemption is an event where the borrower’s collateral is exchanged for a corresponding amount of
-                    Bold stablecoins. At the time of the exchange a borrower does not lose any money.
-                  </InfoTooltip>
-                </HFlex>
-              }
-              {...interestRate.inputFieldProps}
-            />
-          }
-          footerStart={
-            <Field.FooterInfoWarnLevel
-              label={match(redemptionRisk)
-                .with(P.nullish, () => "Redemption risk")
-                .with("low", () => "Low redemption risk")
-                .with("medium", () => "Medium redemption risk")
-                .with("high", () => "High redemption risk")
-                .exhaustive()}
-              level={redemptionRisk ?? "none"}
-              help={<InfoTooltip heading="Redemption risk" />}
-            />
-          }
-        />
+        <VFlex gap={0}>
+          <Field
+            // “Interest rate”
+            field={
+              <InputField
+                action={<StaticAction label="% per year" />}
+                label={content.borrowScreen.interestRateField.label}
+                placeholder="0.00"
+                secondaryStart={
+                  <HFlex gap={4}>
+                    <div>
+                      {boldInterestPerYear
+                        ? dn.format(boldInterestPerYear, { digits: 2, trailingZeros: false })
+                        : "−"} BOLD / year
+                    </div>
+                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
+                  </HFlex>
+                }
+                secondaryEnd={
+                  <HFlex gap={6}>
+                    <PillButton
+                      label="6.5%"
+                      onClick={() => interestRate.setValue("6.5")}
+                      warnLevel="low"
+                    />
+                    <PillButton
+                      label="5.0%"
+                      onClick={() => interestRate.setValue("5.0")}
+                      warnLevel="medium"
+                    />
+                    <PillButton
+                      label="3.5%"
+                      onClick={() => interestRate.setValue("3.5")}
+                      warnLevel="high"
+                    />
+                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
+                  </HFlex>
+                }
+                {...interestRate.inputFieldProps}
+              />
+            }
+            footer={[
+              [
+                // eslint-disable-next-line react/jsx-key
+                <Field.FooterInfoRedemptionRisk riskLevel={loanDetails.redemptionRisk} />,
+
+                // eslint-disable-next-line react/jsx-key
+                <TextButton
+                  onClick={() => setShowForecast(!showForecast)}
+                  label={
+                    <>
+                      <div>
+                        Redemption forecast
+                      </div>
+                      <div
+                        className={css({
+                          transform: showForecast ? "rotate(0)" : "rotate(180deg)",
+                          transition: "transform 150ms",
+                        })}
+                      >
+                        <IconChevronSmallUp size={14} />
+                      </div>
+                    </>
+                  }
+                />,
+              ],
+            ]}
+          />
+          <Forecast opened={showForecast} />
+        </VFlex>
+
         <div
           style={{
             display: "flex",
+            flexDirection: "column",
             justifyContent: "center",
+            gap: 32,
             width: "100%",
           }}
         >
+          {!account.isConnected && (
+            <div
+              className={css({
+                paddingTop: 16,
+              })}
+            >
+              <div
+                className={css({
+                  padding: "20px 24px",
+                  textAlign: "center",
+                  background: "secondary",
+                  borderRadius: 8,
+                })}
+              >
+                Please{" "}
+                <TextButton
+                  label="connect"
+                  onClick={() => {
+                    setDemoState({
+                      account: { isConnected: true },
+                    });
+                  }}
+                />{" "}
+                your wallet to continue.
+              </div>
+            </div>
+          )}
           <Button
             disabled={!allowSubmit}
             label={content.borrowScreen.action}

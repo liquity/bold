@@ -1,3 +1,5 @@
+import type { StatusMode } from "../types";
+
 import { css } from "../../styled-system/css";
 
 export function StatusDot({
@@ -5,7 +7,7 @@ export function StatusDot({
   mode,
 }: {
   size?: number;
-  mode: "positive" | "warning" | "negative" | "neutral";
+  mode: StatusMode;
 }) {
   return (
     <div

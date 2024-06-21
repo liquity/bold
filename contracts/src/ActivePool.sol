@@ -4,6 +4,7 @@ pragma solidity 0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "./Dependencies/Constants.sol";
 import "./Interfaces/IActivePool.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/IInterestRouter.sol";
@@ -34,10 +35,6 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
     IInterestRouter public interestRouter;
     IBoldRewardsReceiver public stabilityPool;
-
-    uint256 public constant SECONDS_IN_ONE_YEAR = 31536000; // 60 * 60 * 24 * 365,
-
-    uint256 public constant SP_YIELD_SPLIT = 72e16;
 
     uint256 internal ETHBalance; // deposited ether tracker
 
@@ -116,7 +113,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     }
 
     function calcPendingAggInterest() public view returns (uint256) {
-        return aggWeightedDebtSum * (block.timestamp - lastAggUpdateTime) / SECONDS_IN_ONE_YEAR / 1e18;
+        return aggWeightedDebtSum * (block.timestamp - lastAggUpdateTime) / ONE_YEAR / DECIMAL_PRECISION;
     }
 
     function getNewApproxAvgInterestRateFromTroveChange(TroveChange calldata _troveChange)

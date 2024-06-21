@@ -827,7 +827,7 @@ class TestHelper {
 
     const MIN_DEBT = await this.getNetBorrowingAmount(
       contracts,
-      await contracts.borrowerOperations.MIN_NET_DEBT(),
+      await contracts.constants._MIN_NET_DEBT(),
     );
     // Only needed for non-zero borrow fee: .add(this.toBN(1)); // add 1 to avoid rounding issues
 
@@ -1397,7 +1397,7 @@ class TestHelper {
     redeemer,
     contracts,
     BoldAmount,
-    maxIterations=10,
+    maxIterations = 10,
     maxFee = this._100pct,
     gasPrice,
   ) {
@@ -1447,7 +1447,7 @@ class TestHelper {
     price,
     contracts,
     BoldAmount,
-    maxIterations=10,
+    maxIterations = 10,
     maxFee = 0,
     gasPrice_toUse = 0,
   ) {

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { Screen } from "@/src/comps/Screen/Screen";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, StatusDot, TextButton, VFlex } from "@liquity2/uikit";
+import { Button, HFlex, IconGas, StatusDot, TextButton, VFlex } from "@liquity2/uikit";
 import { useRouter } from "next/navigation";
 
 export default function Page() {
@@ -47,6 +47,19 @@ export default function Page() {
             "~$22.06",
           ]}
         />
+        <Row
+          label={
+            <>
+              <IconGas size={16} />
+              Gas
+            </>
+          }
+          value={[
+            "0.01 ETH",
+            "~$32.06",
+          ]}
+          valueSize="small"
+        />
       </VFlex>
       <VFlex gap={40}>
         <div
@@ -74,7 +87,7 @@ export default function Page() {
           }}
         >
           <TextButton
-            label="Back to editing"
+            label="Back"
             onClick={() => {
               router.push("/leverage");
             }}
@@ -88,9 +101,13 @@ export default function Page() {
 function Row({
   label,
   value,
+  valueSize = "normal",
+  secondarySize = "normal",
 }: {
   label: ReactNode;
   value: ReactNode;
+  valueSize?: "normal" | "small";
+  secondarySize?: "normal" | "large";
 }) {
   return (
     <HFlex
@@ -98,7 +115,35 @@ function Row({
       gap={16}
       justifyContent="space-between"
     >
-      <div>{label}</div>
+      {Array.isArray(label)
+        ? (
+          <VFlex
+            alignItems="flex-end"
+            gap={4}
+          >
+            <HFlex
+              style={{
+                fontSize: valueSize === "small" ? 16 : 24,
+              }}
+            >
+              {label[0]}
+            </HFlex>
+            {label.slice(1).map((v, i) => (
+              <div
+                key={i}
+                className={css({
+                  color: "contentAlt",
+                })}
+                style={{
+                  fontSize: secondarySize === "large" ? 16 : 14,
+                }}
+              >
+                {v}
+              </div>
+            ))}
+          </VFlex>
+        )
+        : <HFlex gap={8}>{label}</HFlex>}
       {Array.isArray(value)
         ? (
           <VFlex
@@ -106,20 +151,25 @@ function Row({
             gap={4}
           >
             <HFlex
-              className={css({
-                fontSize: 24,
-              })}
+              style={{
+                fontSize: valueSize === "small" ? 16 : 24,
+              }}
             >
               {value[0]}
             </HFlex>
-            <div
-              className={css({
-                fontSize: 14,
-                color: "contentAlt",
-              })}
-            >
-              {value[1]}
-            </div>
+            {value.slice(1).map((v, i) => (
+              <div
+                key={i}
+                className={css({
+                  color: "contentAlt",
+                })}
+                style={{
+                  fontSize: secondarySize === "large" ? 16 : 14,
+                }}
+              >
+                {v}
+              </div>
+            ))}
           </VFlex>
         )
         : (

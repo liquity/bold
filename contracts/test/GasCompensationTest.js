@@ -9,6 +9,7 @@ const ERC20 = artifacts.require("./ERC20MinterMock.sol");
 const { dec, toBN, ZERO_ADDRESS } = th;
 
 const GAS_PRICE = 10000000;
+const ONE = toBN(dec(1, 18));
 
 contract("Gas compensation tests", async (accounts) => {
   const fundedAccounts = accounts.slice(0, 16);
@@ -1025,10 +1026,7 @@ contract("Gas compensation tests", async (accounts) => {
     // Check collateral value in USD is > $10
     const aliceColl = (await troveManager.Troves(aliceTroveId))[1];
     const aliceDebt = (await troveManager.Troves(aliceTroveId))[0];
-    const aliceCollValueInUSD = await borrowerOperationsTester.getUSDValue(
-      aliceColl,
-      price_1,
-    );
+    const aliceCollValueInUSD = aliceColl.mul(price_1).div(ONE);
     assert.isTrue(aliceCollValueInUSD.gt(th.toBN(dec(10, 18))));
 
     // Check value of 0.5% of collateral in USD is < $10

@@ -1,20 +1,30 @@
+import type { RiskLevel } from "@/src/types";
+import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
+import content from "@/src/content";
+import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
+import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { StatusDot } from "@liquity2/uikit";
-import { match } from "ts-pattern";
+import { HFlex, InfoTooltip, StatusDot } from "@liquity2/uikit";
+import * as dn from "dnum";
 
 export function Field({
   field,
+  footer,
   footerEnd,
   footerStart,
   label,
 }: {
   field: ReactNode;
+  footer?: Array<[start: ReactNode | null, end: ReactNode | null]>;
   footerStart?: ReactNode;
   footerEnd?: ReactNode;
   label?: ReactNode;
 }) {
+  if ((footerEnd || footerStart) && !footer) {
+    footer = [[footerStart, footerEnd]];
+  }
   return (
     <div
       className={css({
@@ -43,29 +53,43 @@ export function Field({
           </div>
         )
         : field}
-      <div
-        className={css({
-          display: "flex",
-          justifyContent: "space-between",
-        })}
-      >
+      {footer && (
         <div
           className={css({
             display: "flex",
-            gap: 16,
+            flexDirection: "column",
+            gap: 8,
           })}
         >
-          {footerStart}
+          {footer.map(([start, end], index) => (
+            <div
+              key={index}
+              className={css({
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+              })}
+            >
+              <div
+                className={css({
+                  display: "flex",
+                  gap: 16,
+                })}
+              >
+                {start}
+              </div>
+              <div
+                className={css({
+                  display: "flex",
+                  gap: 16,
+                })}
+              >
+                {end}
+              </div>
+            </div>
+          ))}
         </div>
-        <div
-          className={css({
-            display: "flex",
-            gap: 16,
-          })}
-        >
-          {footerEnd}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -85,6 +109,7 @@ function FooterInfo({
       style={{
         display: "flex",
         gap: 8,
+        whiteSpace: "nowrap",
       }}
     >
       {label && (
@@ -115,7 +140,7 @@ function FooterInfoWarnLevel({
   title,
 }: {
   label: ReactNode;
-  level: "low" | "medium" | "high" | "none";
+  level?: "low" | "medium" | "high" | null;
   help?: ReactNode;
   title?: string;
 }) {
@@ -128,15 +153,11 @@ function FooterInfoWarnLevel({
             display: "flex",
             gap: 8,
             alignItems: "center",
+            whiteSpace: "nowrap",
           })}
         >
           <StatusDot
-            mode={match(level)
-              .with("low", () => "positive" as const)
-              .with("medium", () => "warning" as const)
-              .with("high", () => "negative" as const)
-              .with("none", () => "neutral" as const)
-              .exhaustive()}
+            mode={riskLevelToStatusMode(level)}
           />
           {label}
           {help}
@@ -146,5 +167,178 @@ function FooterInfoWarnLevel({
   );
 }
 
+export function FooterInfoLiquidationRisk({
+  riskLevel,
+}: {
+  riskLevel: RiskLevel | null;
+}) {
+  const label = formatLiquidationRisk(riskLevel);
+  return (
+    <Field.FooterInfoWarnLevel
+      help={
+        <InfoTooltip
+          {...infoTooltipProps(content.generalInfotooltips.loanLiquidationRisk)}
+        />
+      }
+      label={label}
+      level={riskLevel}
+    />
+  );
+}
+
+export function FooterInfoRedemptionRisk({
+  riskLevel,
+}: {
+  riskLevel: RiskLevel | null;
+}) {
+  const label = formatRedemptionRisk(riskLevel);
+  return (
+    <Field.FooterInfoWarnLevel
+      help={
+        <InfoTooltip
+          {...infoTooltipProps(content.generalInfotooltips.loanRedemptionRisk)}
+          heading={
+            <FooterInfoRiskLabel
+              label={label}
+              riskLevel={riskLevel}
+            />
+          }
+        />
+      }
+      label={label}
+      level={riskLevel}
+    />
+  );
+}
+
+export function FooterInfoLoanToValue({
+  ltvRatio,
+  maxLtvRatio,
+}: {
+  ltvRatio: Dnum | null;
+  maxLtvRatio: Dnum;
+}) {
+  const formatOptions = { digits: 2, trailingZeros: true };
+  const higherThanMax = ltvRatio && dn.gt(ltvRatio, maxLtvRatio);
+  return (
+    <Field.FooterInfo
+      label="LTV"
+      value={
+        <HFlex gap={4}>
+          {ltvRatio
+            ? (
+              <>
+                <span
+                  className={css({
+                    fontVariantNumeric: "tabular-nums",
+                  })}
+                >
+                  {higherThanMax && ">"}
+                  {dn.format(
+                    dn.mul(higherThanMax ? maxLtvRatio : ltvRatio, 100),
+                    formatOptions,
+                  )}
+                  {"%"}
+                </span>
+              </>
+            )
+            : "−"}
+          <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.loanLtv)} />
+        </HFlex>
+      }
+    />
+  );
+}
+
+export function FooterInfoLiquidationPrice({
+  liquidationPrice,
+}: {
+  liquidationPrice: Dnum | null;
+}) {
+  return (
+    <Field.FooterInfo
+      label="Liquidation price"
+      value={
+        <HFlex gap={4}>
+          {liquidationPrice
+            ? `$${dn.format(liquidationPrice, { digits: 2, trailingZeros: true })}`
+            : "−"}
+          <InfoTooltip
+            {...infoTooltipProps(content.generalInfotooltips.loanLiquidationPrice)}
+          />
+        </HFlex>
+      }
+    />
+  );
+}
+
+export function FooterInfoRiskLabel({
+  label,
+  riskLevel,
+}: {
+  label: ReactNode;
+  riskLevel: RiskLevel | null;
+}) {
+  return riskLevel
+    ? (
+      <HFlex gap={8} justifyContent="flex-start">
+        <StatusDot mode={riskLevelToStatusMode(riskLevel)} />
+        {label}
+      </HFlex>
+    )
+    : label;
+}
+
+export function FooterInfoEthPrice({
+  ethPriceUsd,
+}: {
+  ethPriceUsd: Dnum;
+}) {
+  return (
+    <Field.FooterInfo
+      label="ETH Price"
+      value={
+        <HFlex gap={4}>
+          <span
+            className={css({
+              fontVariantNumeric: "tabular-nums",
+            })}
+          >
+            ${dn.format(ethPriceUsd, { digits: 2, trailingZeros: true })}
+          </span>
+          <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.ethPrice)} />
+        </HFlex>
+      }
+    />
+  );
+}
+
+export function FooterInfoMaxLtv({
+  maxLtv,
+}: {
+  maxLtv: Dnum;
+}) {
+  return (
+    <Field.FooterInfo
+      label="Max LTV"
+      value={
+        <HFlex gap={4}>
+          <div>
+            {dn.format(dn.mul(maxLtv, 100), { digits: 2, trailingZeros: true })}%
+          </div>
+          <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.loanMaxLtv)} />
+        </HFlex>
+      }
+    />
+  );
+}
+
 Field.FooterInfo = FooterInfo;
+Field.FooterInfoLiquidationPrice = FooterInfoLiquidationPrice;
+Field.FooterInfoLiquidationRisk = FooterInfoLiquidationRisk;
+Field.FooterInfoLoanToValue = FooterInfoLoanToValue;
+Field.FooterInfoRedemptionRisk = FooterInfoRedemptionRisk;
+Field.FooterInfoRiskLabel = FooterInfoRiskLabel;
 Field.FooterInfoWarnLevel = FooterInfoWarnLevel;
+Field.FooterInfoEthPrice = FooterInfoEthPrice;
+Field.FooterInfoMaxLtv = FooterInfoMaxLtv;

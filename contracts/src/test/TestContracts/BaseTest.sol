@@ -31,21 +31,7 @@ contract BaseTest is Test {
     address public F;
     address public G;
 
-    uint256 public constant DECIMAL_PRECISION = 1e18;
-    uint256 public constant MAX_UINT256 = type(uint256).max;
-    uint256 public constant SECONDS_IN_1_YEAR = 31536000; // 60*60*24*365
-    uint256 _100pct = 100e16;
     uint256 MCR;
-    uint256 CCR = 150e16;
-    address public constant ZERO_ADDRESS = address(0);
-
-    uint256 BOLD_GAS_COMP;
-    uint256 MIN_NET_DEBT;
-    uint256 MIN_DEBT;
-    uint256 SP_YIELD_SPLIT;
-    uint256 UPFRONT_INTEREST_PERIOD;
-    uint256 INTEREST_RATE_ADJ_COOLDOWN;
-    uint256 STALE_TROVE_DURATION;
 
     // Core contracts
     IActivePool activePool;
@@ -78,13 +64,13 @@ contract BaseTest is Test {
         return weightedRecordedDebt * period / 365 days / DECIMAL_PRECISION;
     }
 
-    function calcUpfrontFee(uint256 debt, uint256 avgInterestRate) internal view returns (uint256) {
+    function calcUpfrontFee(uint256 debt, uint256 avgInterestRate) internal pure returns (uint256) {
         return calcInterest(debt * avgInterestRate, UPFRONT_INTEREST_PERIOD);
     }
 
     function predictOpenTroveUpfrontFee(uint256 borrowedAmount, uint256 interestRate) internal view returns (uint256) {
         TroveChange memory openTrove;
-        openTrove.debtIncrease = borrowedAmount + BOLD_GAS_COMP;
+        openTrove.debtIncrease = borrowedAmount + BOLD_GAS_COMPENSATION;
         openTrove.newWeightedRecordedDebt = openTrove.debtIncrease * interestRate;
 
         uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(openTrove);
@@ -135,14 +121,14 @@ contract BaseTest is Test {
         view
         returns (uint256 borrow, uint256 upfrontFee)
     {
-        uint256 borrowRight = targetDebt - BOLD_GAS_COMP;
+        uint256 borrowRight = targetDebt - BOLD_GAS_COMPENSATION;
         upfrontFee = predictOpenTroveUpfrontFee(borrowRight, interestRate);
         uint256 borrowLeft = borrowRight - upfrontFee;
 
         for (uint256 i = 0; i < 256; ++i) {
             borrow = (borrowLeft + borrowRight) / 2;
             upfrontFee = predictOpenTroveUpfrontFee(borrow, interestRate);
-            uint256 actualDebt = borrow + BOLD_GAS_COMP + upfrontFee;
+            uint256 actualDebt = borrow + BOLD_GAS_COMPENSATION + upfrontFee;
 
             if (actualDebt == targetDebt) {
                 break;
