@@ -45,9 +45,9 @@ contract("BorrowerOperations", async (accounts) => {
   let borrowerOperations;
   let collateralRegistry;
 
+  let CCR;
   let BOLD_GAS_COMPENSATION;
   let MIN_NET_DEBT;
-  let BORROWING_FEE_FLOOR;
 
   const getOpenTroveBoldAmount = async (totalDebt) => th.getOpenTroveBoldAmount(contracts, totalDebt);
   const getNetBorrowingAmount = async (debtWithFee) => th.getNetBorrowingAmount(contracts, debtWithFee);
@@ -65,20 +65,20 @@ contract("BorrowerOperations", async (accounts) => {
       CollateralRegistry: CollateralRegistryTester,
     },
     callback: async (contracts) => {
-      const { borrowerOperations } = contracts;
+      const { constants } = contracts;
       const [
+        CCR,
         BOLD_GAS_COMPENSATION,
         MIN_NET_DEBT,
-        BORROWING_FEE_FLOOR,
       ] = await Promise.all([
-        borrowerOperations.BOLD_GAS_COMPENSATION(),
-        borrowerOperations.MIN_NET_DEBT(),
-        borrowerOperations.BORROWING_FEE_FLOOR(),
+        constants._CCR(),
+        constants._BOLD_GAS_COMPENSATION(),
+        constants._MIN_NET_DEBT(),
       ]);
       return {
+        CCR,
         BOLD_GAS_COMPENSATION,
         MIN_NET_DEBT,
-        BORROWING_FEE_FLOOR,
       };
     },
   });
@@ -97,9 +97,9 @@ contract("BorrowerOperations", async (accounts) => {
       borrowerOperations = contracts.borrowerOperations;
       collateralRegistry = contracts.collateralRegistry;
 
+      CCR = result.CCR;
       BOLD_GAS_COMPENSATION = result.BOLD_GAS_COMPENSATION;
       MIN_NET_DEBT = result.MIN_NET_DEBT;
-      BORROWING_FEE_FLOOR = result.BORROWING_FEE_FLOOR;
     });
 
     it("addColl(): reverts when top-up would leave trove with ICR < MCR", async () => {
@@ -1609,7 +1609,6 @@ contract("BorrowerOperations", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: bob },
       });
-      const CCR = await troveManager.CCR();
 
       assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
@@ -1661,7 +1660,6 @@ contract("BorrowerOperations", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: bob },
       });
-      const CCR = await troveManager.CCR();
 
       assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
@@ -1754,7 +1752,6 @@ contract("BorrowerOperations", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: bob },
       });
-      const CCR = await troveManager.CCR();
 
       assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
@@ -1809,7 +1806,6 @@ contract("BorrowerOperations", async (accounts) => {
         ICR: toBN(dec(2, 18)),
         extraParams: { from: bob },
       });
-      const CCR = await troveManager.CCR();
 
       assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
