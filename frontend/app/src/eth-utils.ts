@@ -11,6 +11,6 @@ export function shortenAddress(address: Address, chars: number) {
 }
 
 export const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
-export function isAddress(address: string): address is Address {
-  return ADDRESS_RE.test(address);
+export function isAddress(address: unknown): address is Address {
+  return typeof address === "string" && ADDRESS_RE.test(address);
 }

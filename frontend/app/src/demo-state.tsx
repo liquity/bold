@@ -43,7 +43,7 @@ export function DemoState({
       : null;
     if (storedState) {
       try {
-        return DemoStateSchema.parse(JSON.parse(storedState));
+        return v.parse(DemoStateSchema, JSON.parse(storedState));
       } catch {
         return demoStateDefault;
       }

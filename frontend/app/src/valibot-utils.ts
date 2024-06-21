@@ -4,10 +4,7 @@ import { isAddress } from "@/src/eth-utils";
 import * as v from "valibot";
 
 export function vAddress() {
-  return v.pipe(
-    v.string(),
-    v.check(isAddress, "not a valid Ethereum address"),
-  );
+  return v.custom<Address>(isAddress, "not a valid Ethereum address");
 }
 
 // Env var link, e.g. Etherscan|https://etherscan.io

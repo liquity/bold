@@ -113,7 +113,7 @@ export function Config({ children }: { children: ReactNode }) {
       : null;
     if (storedConfig) {
       try {
-        return ConfigSchema.parse(JSON.parse(storedConfig));
+        return v.parse(ConfigSchema, JSON.parse(storedConfig));
       } catch {
         return defaultConfig;
       }
