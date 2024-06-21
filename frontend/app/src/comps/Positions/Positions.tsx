@@ -4,12 +4,15 @@ import type { ReactNode } from "react";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-data";
+import { useDemoState } from "@/src/demo-state";
+import { getLiquidationRisk, getRedemptionRisk } from "@/src/liquity-math";
+import { usePrice } from "@/src/prices";
+import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { StatusDot, StrongCard, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 import { match } from "ts-pattern";
-import { useDemoState } from "@/src/demo-state";
 // import { useAccount } from "wagmi";
 
 export function Positions() {
@@ -76,7 +79,6 @@ function PositionLoan({
   deposit,
   interestRate,
   troveId,
-  ltv,
 }: Pick<
   PositionLoan,
   | "borrowed"
@@ -84,9 +86,16 @@ function PositionLoan({
   | "deposit"
   | "interestRate"
   | "troveId"
-  | "ltv"
 >) {
   const token = TOKENS_BY_SYMBOL[collateral];
+  const ethPriceUsd = usePrice("ETH");
+
+  const ltv = dn.div(borrowed, dn.mul(deposit, ethPriceUsd));
+  const redemptionRisk = getRedemptionRisk(interestRate);
+
+  const maxLtv = dn.from(1 / token.collateralRatio, 18);
+  const liquidationRisk = getLiquidationRisk(ltv, maxLtv);
+
   return (
     <Link
       href={{
@@ -119,10 +128,11 @@ function PositionLoan({
               label: "LTV",
               value: (
                 <FlexRow>
-                  <div>
-                    {dn.format(dn.mul(ltv, 100), 2)}%
-                  </div>
-                  <StatusDot mode="positive" size={8} />
+                  <div>{dn.format(dn.mul(ltv, 100), 2)}%</div>
+                  <StatusDot
+                    mode={riskLevelToStatusMode(liquidationRisk)}
+                    size={8}
+                  />
                 </FlexRow>
               ),
             },
@@ -142,10 +152,11 @@ function PositionLoan({
               label: "Int. Rate",
               value: (
                 <FlexRow>
-                  <div>
-                    {dn.format(dn.mul(interestRate, 100), 2)}%
-                  </div>
-                  <StatusDot mode="positive" size={8} />
+                  <div>{dn.format(dn.mul(interestRate, 100), 2)}%</div>
+                  <StatusDot
+                    mode={riskLevelToStatusMode(redemptionRisk)}
+                    size={8}
+                  />
                 </FlexRow>
               ),
             },
@@ -157,13 +168,13 @@ function PositionLoan({
 }
 
 function PositionEarn({
-  apy,
+  apr,
   collateral,
   deposit,
   rewards,
 }: Pick<
   PositionEarn,
-  | "apy"
+  | "apr"
   | "collateral"
   | "deposit"
   | "rewards"
@@ -199,8 +210,8 @@ function PositionEarn({
               ),
             },
             {
-              label: "APY",
-              value: dn.format(dn.mul(apy, 100), 2) + "%",
+              label: "APR",
+              value: dn.format(dn.mul(apr, 100), 2) + "%",
             },
           ],
           [

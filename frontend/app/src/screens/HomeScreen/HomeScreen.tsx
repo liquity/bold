@@ -1,9 +1,12 @@
 "use client";
 
 import { Positions } from "@/src/comps/Positions/Positions";
+import content from "@/src/content";
 import { BORROW_STATS, EARN_POOLS } from "@/src/demo-data";
+import { usePrice } from "@/src/prices";
+import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { AnchorButton, COLLATERALS, HFlex, IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
+import { AnchorButton, COLLATERALS, HFlex, IconBorrow, IconEarn, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 // import content from "@/src/content";
@@ -79,41 +82,49 @@ export function HomeScreen() {
             <tr>
               <th>Token</th>
               <th
-                title="Borrow rate average"
                 className={css({
                   width: 0,
                   paddingRight: 48,
                 })}
               >
-                Borrow rate
+                <HFlex gap={6}>
+                  <div>Borrow rate</div>
+                  <InfoTooltip {...infoTooltipProps(content.home.infoTooltips.avgInterestRate)} />
+                </HFlex>
               </th>
               <th
-                title="Total Value Locked (collateral)"
                 className={css({
                   width: 0,
                   paddingRight: 48,
                 })}
               >
-                TVL
+                <HFlex gap={6}>
+                  <div>TVL</div>
+                  <InfoTooltip {...infoTooltipProps(content.home.infoTooltips.borrowTvl)} />
+                </HFlex>
               </th>
               <th />
               <th
-                title="Annual Percentage Yield (earn pools)"
                 className={css({
                   width: 0,
                   paddingRight: 48,
                 })}
               >
-                Earn APY
+                <HFlex gap={6}>
+                  <div>Earn APR</div>
+                  <InfoTooltip {...infoTooltipProps(content.home.infoTooltips.spApr)} />
+                </HFlex>
               </th>
               <th
-                title="Total Value Locked (earn pools)"
                 className={css({
                   width: 0,
                   paddingRight: 48,
                 })}
               >
-                TVL
+                <HFlex gap={6}>
+                  <div>TVL</div>
+                  <InfoTooltip {...infoTooltipProps(content.home.infoTooltips.spTvl)} />
+                </HFlex>
               </th>
               <th />
             </tr>
@@ -154,7 +165,7 @@ export function HomeScreen() {
                   </td>
                   <td>
                     {dn.format(
-                      dn.mul(earnPool.apy, 100),
+                      dn.mul(earnPool.apr, 100),
                       { digits: 2, trailingZeros: true },
                     )}%
                   </td>
@@ -180,6 +191,70 @@ export function HomeScreen() {
           </tbody>
         </table>
       </div>
+      <div
+        className={css({
+          paddingTop: 16,
+        })}
+      >
+        <ProtocolStats />
+      </div>
+    </div>
+  );
+}
+
+function ProtocolStats() {
+  const prices = [
+    ["LQTY", usePrice("LQTY")],
+    ["BOLD", usePrice("BOLD")],
+    ["ETH", usePrice("ETH")],
+  ] as const;
+
+  const totalTvl = Object.values(BORROW_STATS).reduce(
+    (acc, { tvl }) => dn.add(acc, tvl),
+    dn.from(0, 18),
+  );
+
+  return (
+    <div
+      className={css({
+        display: "flex",
+        justifyContent: "space-between",
+        padding: "12px 0 20px",
+        fontSize: 12,
+        borderTop: "1px solid token(colors.tableBorder)",
+      })}
+    >
+      <div>{content.home.statsBar.label}</div>
+      <HFlex gap={32}>
+        <HFlex gap={8}>
+          <span>TVL</span>{" "}
+          <span>
+            ${dn.format(totalTvl, { compact: true })}
+          </span>
+        </HFlex>
+        {prices.map(([symbol, price]) => {
+          return (
+            <HFlex
+              key={symbol}
+              gap={16}
+            >
+              <TokenIcon
+                size={16}
+                symbol={symbol}
+              />
+              <HFlex gap={8}>
+                <span>{symbol}</span>
+                <span>
+                  ${dn.format(price, {
+                    digits: 2,
+                    trailingZeros: true,
+                  })}
+                </span>
+              </HFlex>
+            </HFlex>
+          );
+        })}
+      </HFlex>
     </div>
   );
 }

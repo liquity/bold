@@ -14,6 +14,7 @@ const PriceFeedMock = artifacts.require("./PriceFeedMock.sol");
 const MockInterestRouter = artifacts.require("./MockInterestRouter.sol");
 const ERC20 = artifacts.require("./ERC20MinterMock.sol");
 const CollateralRegistry = artifacts.require("./CollateralRegistryTester.sol");
+const Constants = artifacts.require("./Constants.sol");
 //  "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol"
 //  "../node_modules/@openzeppelin/contracts/build/contracts/ERC20PresetMinterPauser.json"
 // );
@@ -48,6 +49,7 @@ class DeploymentHelper {
         BoldToken,
         HintHelpers,
         CollateralRegistry,
+        Constants,
       })
         .map(([name, contract]) => [
           name,
@@ -70,6 +72,7 @@ class DeploymentHelper {
     const priceFeed = await Contracts.PriceFeedMock.new();
     const sortedTroves = await Contracts.SortedTroves.new();
     const stabilityPool = await Contracts.StabilityPool.new(WETH.address);
+    const constants = await Contracts.Constants.new();
 
     const { boldToken } = await this.deployBoldToken({
       troveManager,
@@ -109,6 +112,7 @@ class DeploymentHelper {
     Contracts.HintHelpers.setAsDeployed(hintHelpers);
     MockInterestRouter.setAsDeployed(mockInterestRouter);
     Contracts.CollateralRegistry.setAsDeployed(troveManager);
+    Contracts.Constants.setAsDeployed(constants);
 
     const coreContracts = {
       WETH,
@@ -125,6 +129,7 @@ class DeploymentHelper {
       hintHelpers,
       mockInterestRouter,
       collateralRegistry,
+      constants,
     };
     return coreContracts;
   }

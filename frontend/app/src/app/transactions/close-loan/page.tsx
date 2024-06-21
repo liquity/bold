@@ -4,44 +4,39 @@ import type { ReactNode } from "react";
 
 import { Screen } from "@/src/comps/Screen/Screen";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, IconGas, StatusDot, TextButton, VFlex } from "@liquity2/uikit";
+import { Button, HFlex, IconGas, TextButton, VFlex } from "@liquity2/uikit";
 import { useRouter } from "next/navigation";
 
 export default function Page() {
   const router = useRouter();
   return (
-    <Screen title="You are opening a loan">
+    <Screen
+      title="You are repaying your debt & closing your loan"
+      subtitle="The deposit will be returned to your wallet"
+    >
       <VFlex gap={32}>
-        <Row label="You deposit" value="8.00 ETH" />
+        <VFlex gap={0}>
+          <Row
+            label="You repay with"
+            value="3.00 rETH"
+          />
+          <Row
+            label={[
+              null,
+              "9,412.32 BOLD ~ $9,400.01",
+            ]}
+            value={[
+              null,
+              "1 rETH = 3,100.23 BOLD",
+            ]}
+            secondarySize="large"
+          />
+        </VFlex>
         <Row
-          label="Liquidation price"
-          value="$2,950.00"
-        />
-        <Row
-          label="Liquidation risk"
+          label="You reclaim"
           value={[
-            <>
-              <StatusDot mode="positive" />
-              Low
-            </>,
-            "LTV 16.00%",
-          ]}
-        />
-        <Row
-          label="Redemption risk"
-          value={[
-            <>
-              <StatusDot mode="positive" />
-              Low
-            </>,
-            "Interest rate 5.40%",
-          ]}
-        />
-        <Row
-          label="7-days fee"
-          value={[
-            "0.0001 ETH",
-            "~$22.06",
+            "7.00 ETH",
+            "9,412.32 BOLD → 11,412.32 BOLD",
           ]}
         />
         <Row
@@ -86,7 +81,7 @@ export default function Page() {
           <TextButton
             label="Back"
             onClick={() => {
-              router.push("/borrow");
+              router.push("/loan/close?id=1");
             }}
           />
         </div>

@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.18;
 
+import "./Constants.sol";
 import "./LiquityMath.sol";
 import "../Interfaces/IActivePool.sol";
 import "../Interfaces/IDefaultPool.sol";
@@ -15,34 +16,6 @@ import "../Interfaces/ILiquityBase.sol";
 * common functions.
 */
 contract LiquityBase is ILiquityBase {
-    // TODO: Pull all constants out into a separate base contract
-
-    uint256 public constant DECIMAL_PRECISION = 1e18;
-    uint256 public constant _100pct = DECIMAL_PRECISION;
-
-    // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
-    uint256 public constant CCR = 1500000000000000000; // 150%
-
-    // Amount of Bold to be locked in gas pool on opening troves
-    uint256 public constant BOLD_GAS_COMPENSATION = 200e18;
-
-    // Fraction of collateral awarded to liquidator
-    uint256 public constant COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 0.5%
-
-    // Minimum amount of net Bold debt a trove must have
-    uint256 public constant MIN_NET_DEBT = 1800e18;
-    uint256 public constant MIN_DEBT = MIN_NET_DEBT + BOLD_GAS_COMPENSATION;
-
-    uint256 public constant MAX_ANNUAL_INTEREST_RATE = 1e18; // 100%
-
-    uint256 public constant BORROWING_FEE_FLOOR = DECIMAL_PRECISION / 1000 * 5; // 0.5%
-    uint256 public constant REDEMPTION_FEE_FLOOR = DECIMAL_PRECISION / 1000 * 5; // 0.5%
-
-    uint256 public constant ONE_YEAR = 365 days;
-    uint256 public constant UPFRONT_INTEREST_PERIOD = 7 days;
-    uint256 public constant INTEREST_RATE_ADJ_COOLDOWN = 3 days;
-    uint256 public constant STALE_TROVE_DURATION = 90 days;
-
     IActivePool public activePool;
 
     IDefaultPool public defaultPool;

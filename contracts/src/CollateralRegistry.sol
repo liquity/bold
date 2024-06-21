@@ -42,22 +42,6 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
 
     IBoldToken public immutable boldToken;
 
-    uint256 public constant SECONDS_IN_ONE_MINUTE = 60;
-
-    /*
-     * Half-life of 12h. 12h = 720 min
-     * (1/2) = d^720 => d = (1/2)^(1/720)
-     */
-    uint256 public constant MINUTE_DECAY_FACTOR = 999037758833783000;
-    // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
-    uint256 public constant INITIAL_REDEMPTION_RATE = DECIMAL_PRECISION / 100 * 5; // 5%
-
-    /*
-     * BETA: 18 digit decimal. Parameter by which to divide the redeemed fraction, in order to calc the new base rate from a redemption.
-     * Corresponds to (1 / ALPHA) in the white paper.
-     */
-    uint256 public constant BETA = 2;
-
     uint256 public baseRate;
 
     // The timestamp of the latest fee operation (redemption or new Bold issuance)
@@ -187,14 +171,14 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     function _updateLastFeeOpTime() internal {
         uint256 timePassed = block.timestamp - lastFeeOperationTime;
 
-        if (timePassed >= SECONDS_IN_ONE_MINUTE) {
+        if (timePassed >= ONE_MINUTE) {
             lastFeeOperationTime = block.timestamp;
             emit LastFeeOpTimeUpdated(block.timestamp);
         }
     }
 
     function _minutesPassedSinceLastFeeOp() internal view returns (uint256) {
-        return (block.timestamp - lastFeeOperationTime) / SECONDS_IN_ONE_MINUTE;
+        return (block.timestamp - lastFeeOperationTime) / ONE_MINUTE;
     }
 
     // Updates the `baseRate` state with math from `_getUpdatedBaseRateFromRedemption`
@@ -228,7 +212,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         // get the fraction of total supply that was redeemed
         uint256 redeemedBoldFraction = _redeemAmount * DECIMAL_PRECISION / _totalBoldSupply;
 
-        uint256 newBaseRate = decayedBaseRate + redeemedBoldFraction / BETA;
+        uint256 newBaseRate = decayedBaseRate + redeemedBoldFraction / REDEMPTION_BETA;
         newBaseRate = LiquityMath._min(newBaseRate, DECIMAL_PRECISION); // cap baseRate at a maximum of 100%
 
         return newBaseRate;
@@ -236,7 +220,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
 
     function _calcDecayedBaseRate() internal view returns (uint256) {
         uint256 minutesPassed = _minutesPassedSinceLastFeeOp();
-        uint256 decayFactor = LiquityMath._decPow(MINUTE_DECAY_FACTOR, minutesPassed);
+        uint256 decayFactor = LiquityMath._decPow(REDEMPTION_MINUTE_DECAY_FACTOR, minutesPassed);
 
         return baseRate * decayFactor / DECIMAL_PRECISION;
     }

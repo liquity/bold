@@ -4,6 +4,11 @@ import { a, useSpring } from "@react-spring/web";
 import Image from "next/image";
 import preview from "./preview.png";
 
+const IMG_HEIGHT = 200;
+const MESSAGE_HEIGHT = 120;
+const SPACING_TOP = 48;
+const SPACING_BETWEEN = 32;
+
 export function Forecast({ opened }: { opened: boolean }) {
   const springStyles = useSpring({
     from: {
@@ -15,7 +20,7 @@ export function Forecast({ opened }: { opened: boolean }) {
       ? async (next) => {
         await Promise.all([
           next({
-            height: 248,
+            height: IMG_HEIGHT + MESSAGE_HEIGHT + SPACING_BETWEEN + SPACING_TOP,
             transform: "scale(1)",
           }),
           sleep(50).then(() => next({ opacity: 1 })),
@@ -44,13 +49,33 @@ export function Forecast({ opened }: { opened: boolean }) {
     >
       <div
         className={css({
-          display: "flex",
-          alignItems: "flex-start",
-          height: 248,
-          paddingTop: 48,
+          paddingTop: SPACING_TOP,
+          paddingBottom: SPACING_BETWEEN,
         })}
       >
-        <Image src={preview} alt="" />
+        <div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            height: MESSAGE_HEIGHT,
+            padding: 24,
+            textAlign: "justify",
+            background: "secondary",
+            fontSize: 16,
+            borderRadius: 8,
+          })}
+        >
+          Positions with the lowest interest rates will be redeemed first. In this graph, you can see how large the
+          redemptions need to be before your position is affected.
+        </div>
+      </div>
+      <div
+        className={css({
+          display: "flex",
+          alignItems: "flex-start",
+        })}
+      >
+        <Image src={preview} alt="" height={IMG_HEIGHT} />
       </div>
     </a.div>
   );

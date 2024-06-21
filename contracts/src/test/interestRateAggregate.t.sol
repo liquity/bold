@@ -73,7 +73,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         // Expect weighted average of 2 * troveDebt debt at 50% interest
         uint256 expectedPendingAggInterest =
-            (debt_A * interestRate_A + debt_B * interestRate_B) * _duration / SECONDS_IN_1_YEAR / 1e18;
+            (debt_A * interestRate_A + debt_B * interestRate_B) * _duration / ONE_YEAR / DECIMAL_PRECISION;
 
         assertEq(expectedPendingAggInterest, activePool.calcPendingAggInterest());
     }
@@ -142,7 +142,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         vm.warp(block.timestamp + duration);
 
-        uint256 expectedInterest_A = annualRate_A * debt_A * duration / 1e18 / SECONDS_IN_1_YEAR;
+        uint256 expectedInterest_A = annualRate_A * debt_A * duration / ONE_YEAR / DECIMAL_PRECISION;
         assertEq(troveManager.calcTroveAccruedInterest(ATroveId), expectedInterest_A);
 
         uint256 BTroveId = openTroveNoHints100pct(B, 2 ether, debtRequest_B, annualRate_B);
@@ -152,7 +152,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         vm.warp(block.timestamp + duration);
 
-        uint256 expectedInterest_B = annualRate_B * debt_B * duration / 1e18 / SECONDS_IN_1_YEAR;
+        uint256 expectedInterest_B = annualRate_B * debt_B * duration / ONE_YEAR / DECIMAL_PRECISION;
         assertEq(troveManager.calcTroveAccruedInterest(BTroveId), expectedInterest_B);
     }
 
@@ -184,7 +184,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 troveDebtRequest = 2000e18;
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16); // 25% annual interest
-        uint256 debt_A = troveDebtRequest + BOLD_GAS_COMP;
+        uint256 debt_A = troveDebtRequest + BOLD_GAS_COMPENSATION;
         debt_A += calcUpfrontFee(debt_A, 25e16);
         uint256 weightedRecordedDebt_A = debt_A * 25e16;
 
@@ -201,7 +201,7 @@ contract InterestRateAggregate is DevTestSetup {
         debt_A += pendingInterest;
 
         uint256 BTroveId = openTroveNoHints100pct(B, 2 ether, troveDebtRequest, 25e16);
-        uint256 debt_B = troveDebtRequest + BOLD_GAS_COMP;
+        uint256 debt_B = troveDebtRequest + BOLD_GAS_COMPENSATION;
         debt_B += calcUpfrontFee(debt_B, (weightedRecordedDebt_A + debt_B * 25e16) / (debt_A + debt_B));
         assertEq(troveManager.getTroveDebt(BTroveId), debt_B);
 
@@ -720,7 +720,7 @@ contract InterestRateAggregate is DevTestSetup {
         closeTrove(B, BTroveId);
 
         // Check balance of B reduces by the Trove's entire debt less gas comp
-        assertEq(boldToken.balanceOf(B), bal_B - (entireDebt_B - troveManager.BOLD_GAS_COMPENSATION()));
+        assertEq(boldToken.balanceOf(B), bal_B - (entireDebt_B - BOLD_GAS_COMPENSATION));
     }
 
     // --- adjustTroveInterestRate ---
@@ -1854,7 +1854,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 ATroveId = openTroveNoHints100pct(A, coll, troveDebtRequest, interestRate);
 
-        uint256 debt = troveDebtRequest + BOLD_GAS_COMP;
+        uint256 debt = troveDebtRequest + BOLD_GAS_COMPENSATION;
         debt += calcUpfrontFee(debt, interestRate);
 
         uint256 expectedICR = coll * price / debt;
@@ -1883,9 +1883,9 @@ contract InterestRateAggregate is DevTestSetup {
         openTroveNoHints100pct(C, coll.C, borrow.C, r.C);
 
         ABCDEF memory debt;
-        debt.A = borrow.A + BOLD_GAS_COMP;
-        debt.B = borrow.B + BOLD_GAS_COMP;
-        debt.C = borrow.C + BOLD_GAS_COMP;
+        debt.A = borrow.A + BOLD_GAS_COMPENSATION;
+        debt.B = borrow.B + BOLD_GAS_COMPENSATION;
+        debt.C = borrow.C + BOLD_GAS_COMPENSATION;
 
         ABCDEF memory rd; // r * debt, alias weightedRecordedDebt
         debt.A += calcUpfrontFee(debt.A, r.A);
@@ -1910,7 +1910,7 @@ contract InterestRateAggregate is DevTestSetup {
         // Fast-forward time
         vm.warp(block.timestamp + 14 days);
 
-        uint256 debt = troveDebtRequest + BOLD_GAS_COMP;
+        uint256 debt = troveDebtRequest + BOLD_GAS_COMPENSATION;
         debt += calcInterest(debt * interestRate, 14 days);
         debt += calcUpfrontFee(debt, interestRate);
 
@@ -1950,9 +1950,9 @@ contract InterestRateAggregate is DevTestSetup {
         vm.warp(block.timestamp + interval);
 
         ABCDEF memory debt;
-        debt.A = borrow.A + BOLD_GAS_COMP;
-        debt.B = borrow.B + BOLD_GAS_COMP;
-        debt.C = borrow.C + BOLD_GAS_COMP;
+        debt.A = borrow.A + BOLD_GAS_COMPENSATION;
+        debt.B = borrow.B + BOLD_GAS_COMPENSATION;
+        debt.C = borrow.C + BOLD_GAS_COMPENSATION;
 
         ABCDEF memory rd; // r * debt, alias weightedRecordedDebt
 
@@ -1998,7 +1998,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 ATroveId = openTroveNoHints100pct(A, coll, troveDebtRequest, interestRate);
 
-        uint256 debt = troveDebtRequest + BOLD_GAS_COMP;
+        uint256 debt = troveDebtRequest + BOLD_GAS_COMPENSATION;
         debt += calcUpfrontFee(debt, interestRate);
 
         uint256 expectedICR = coll * price / debt;
@@ -2016,7 +2016,7 @@ contract InterestRateAggregate is DevTestSetup {
         // Fast-forward time
         vm.warp(block.timestamp + 14 days);
 
-        uint256 debt = troveDebtRequest + BOLD_GAS_COMP;
+        uint256 debt = troveDebtRequest + BOLD_GAS_COMPENSATION;
         debt += calcUpfrontFee(debt, interestRate);
         debt += calcInterest(debt * interestRate, 14 days);
 

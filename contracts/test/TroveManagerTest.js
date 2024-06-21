@@ -87,7 +87,7 @@ contract("TroveManager", async (accounts) => {
     defaultPool = contracts.defaultPool;
     borrowerOperations = contracts.borrowerOperations;
 
-    BOLD_GAS_COMPENSATION = await borrowerOperations.BOLD_GAS_COMPENSATION();
+    BOLD_GAS_COMPENSATION = await contracts.constants._BOLD_GAS_COMPENSATION();
   });
 
   it("liquidate(): closes a Trove that has ICR < MCR", async () => {

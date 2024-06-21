@@ -11,5 +11,7 @@ export type Token = {
     | "LQTY"
     | "RETH"
     | "LUSD"
-    | "WSTETH";
+    | "STETH";
 };
+
+export type StatusMode = "positive" | "warning" | "negative" | "neutral";

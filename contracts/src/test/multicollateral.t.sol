@@ -15,7 +15,7 @@ contract MulticollateralTest is DevTestSetup {
         uint256 _annualInterestRate
     ) public returns (uint256 troveId) {
         TroveChange memory troveChange;
-        troveChange.debtIncrease = _boldAmount + BOLD_GAS_COMP;
+        troveChange.debtIncrease = _boldAmount + BOLD_GAS_COMPENSATION;
         troveChange.newWeightedRecordedDebt = troveChange.debtIncrease * _annualInterestRate;
         uint256 avgInterestRate =
             contractsArray[_collIndex].activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
@@ -96,12 +96,6 @@ contract MulticollateralTest is DevTestSetup {
                 );
             }
         }
-
-        // Assuming these are universal
-        BOLD_GAS_COMP = _contractsArray[0].troveManager.BOLD_GAS_COMPENSATION();
-        MIN_NET_DEBT = _contractsArray[0].troveManager.MIN_NET_DEBT();
-        MIN_DEBT = _contractsArray[0].troveManager.MIN_DEBT();
-        UPFRONT_INTEREST_PERIOD = _contractsArray[0].troveManager.UPFRONT_INTEREST_PERIOD();
     }
 
     function testMultiCollateralDeployment() public {

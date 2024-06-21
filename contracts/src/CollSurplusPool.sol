@@ -98,8 +98,4 @@ contract CollSurplusPool is Ownable, ICollSurplusPool {
     function _requireCallerIsTroveManager() internal view {
         require(msg.sender == troveManagerAddress, "CollSurplusPool: Caller is not TroveManager");
     }
-
-    function _requireCallerIsActivePool() internal view {
-        require(msg.sender == activePoolAddress, "CollSurplusPool: Caller is not Active Pool");
-    }
 }
