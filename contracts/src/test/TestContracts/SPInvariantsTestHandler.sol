@@ -77,7 +77,7 @@ contract SPInvariantsTestHandler is Test {
 
     function openTrove(uint256 borrowed) external returns (uint256 debt) {
         uint256 i = troveManager.balanceOf(msg.sender);
-        vm.assume(troveManager.getTroveStatus(_getTroveId(msg.sender, i)) != 1);
+        vm.assume(troveManager.getTroveStatus(_getTroveId(msg.sender, i)) != ITroveManager.Status.active);
 
         borrowed = _bound(borrowed, OPEN_TROVE_BORROWED_MIN, OPEN_TROVE_BORROWED_MAX);
         uint256 price = priceFeed.getPrice();
@@ -139,12 +139,12 @@ contract SPInvariantsTestHandler is Test {
 
     function liquidateMe() external {
         uint256 troveId = _getTroveId(msg.sender, troveManager.balanceOf(msg.sender));
-        vm.assume(troveManager.getTroveStatus(troveId) == 1);
+        vm.assume(troveManager.getTroveStatus(troveId) == ITroveManager.Status.active);
 
         (uint256 debt, uint256 coll,,,) = troveManager.getEntireDebtAndColl(troveId);
 
         vm.assume(debt <= spBold); // only interested in SP offset, no redistribution
-        
+
         console.log("XXXX     liquidate  ", vm.getLabel(msg.sender));
         priceFeed.setPrice(initialPrice * LIQUIDATION_ICR / OPEN_TROVE_ICR);
 
@@ -152,10 +152,10 @@ contract SPInvariantsTestHandler is Test {
         uint256 accountSurplusBefore = collSurplusPool.getCollateral(msg.sender);
         uint256 ethCompensation = coll / COLL_GAS_COMPENSATION_DIVISOR;
         // Calc claimable coll based on the remaining coll to liquidate, less the liq. penalty that goes to the SP depositors
-        uint256 seizedColl = debt * (ONE +  troveManager.LIQUIDATION_PENALTY_SP()) / priceFeed.getPrice();
+        uint256 seizedColl = debt * (ONE + troveManager.LIQUIDATION_PENALTY_SP()) / priceFeed.getPrice();
         // The Trove owner bears the gas compensation costs
         uint256 claimableColl = coll - seizedColl - ethCompensation;
-       
+
         try troveManager.liquidate(troveId) {}
         catch Panic(uint256 errorCode) {
             // XXX ignore assertion failure inside liquidation (due to P = 0)
@@ -170,14 +170,14 @@ contract SPInvariantsTestHandler is Test {
         uint256 ethAfter = collateralToken.balanceOf(address(this));
         uint256 accountSurplusAfter = collSurplusPool.getCollateral(msg.sender);
         // Check liquidator got the compensation
-        assertEqDecimal(ethAfter, ethBefore + ethCompensation, 18, "Wrong ETH compensation");  
+        assertEqDecimal(ethAfter, ethBefore + ethCompensation, 18, "Wrong ETH compensation");
         // Check claimable coll surplus is correct
         uint256 accountSurplusDelta = accountSurplusAfter - accountSurplusBefore;
         assertEqDecimal(accountSurplusDelta, claimableColl, 18, "Wrong account surplus");
 
         spBold -= debt;
         spEth += coll - claimableColl - ethCompensation;
-    
+
         assertEqDecimal(spBold, stabilityPool.getTotalBoldDeposits(), 18, "Wrong SP BOLD balance");
         assertEqDecimal(spEth, stabilityPool.getETHBalance(), 18, "Wrong SP ETH balance");
     }

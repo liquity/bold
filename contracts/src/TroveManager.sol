@@ -946,8 +946,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager {
 
     // --- Trove property getters ---
 
-    function getTroveStatus(uint256 _troveId) external view override returns (uint256) {
-        return uint256(Troves[_troveId].status);
+    function getTroveStatus(uint256 _troveId) external view override returns (Status) {
+        return Troves[_troveId].status;
     }
 
     function getTroveStake(uint256 _troveId) external view override returns (uint256) {
