@@ -26,52 +26,52 @@ import {
   CONTRACT_STABILITY_POOL,
   CONTRACT_TROVE_MANAGER,
 } from "@/src/env";
-import { zAddress } from "@/src/zod-utils";
+import { vAddress } from "@/src/valibot-utils";
 import { createContext, useCallback, useContext, useState } from "react";
-import { z } from "zod";
+import * as v from "valibot";
 
-export const ConfigSchema = z.object({
-  chainId: z.number(),
-  chainName: z.string(),
-  chainCurrency: z.object({
-    name: z.string(),
-    symbol: z.string(),
-    decimals: z.number(),
+export const ConfigSchema = v.object({
+  chainId: v.number(),
+  chainName: v.string(),
+  chainCurrency: v.object({
+    name: v.string(),
+    symbol: v.string(),
+    decimals: v.number(),
   }),
-  chainBlockExplorer: z.object({
-    name: z.string(),
-    url: z.string(),
-  }).optional(),
-  chainContractEnsRegistry: z.object({
-    address: zAddress(),
-    block: z.number().optional(),
-  }).optional(),
-  chainContractEnsResolver: z.object({
-    address: zAddress(),
-    block: z.number().optional(),
-  }).optional(),
-  chainContractMulticall: z.object({
-    address: zAddress(),
-    block: z.number().optional(),
-  }).optional(),
-  chainRpcUrl: z.string(),
-  contractActivePool: zAddress(),
-  contractBoldToken: zAddress(),
-  contractBorrowerOperations: zAddress(),
-  contractCollSurplusPool: zAddress(),
-  contractCollToken: zAddress(),
-  contractDefaultPool: zAddress(),
-  contractFunctionCaller: zAddress(),
-  contractGasPool: zAddress(),
-  contractHintHelpers: zAddress(),
-  contractInterestRouter: zAddress(),
-  contractPriceFeed: zAddress(),
-  contractSortedTroves: zAddress(),
-  contractStabilityPool: zAddress(),
-  contractTroveManager: zAddress(),
+  chainBlockExplorer: v.optional(v.object({
+    name: v.string(),
+    url: v.string(),
+  })),
+  chainContractEnsRegistry: v.optional(v.object({
+    address: vAddress(),
+    block: v.optional(v.number()),
+  })),
+  chainContractEnsResolver: v.optional(v.object({
+    address: vAddress(),
+    block: v.optional(v.number()),
+  })),
+  chainContractMulticall: v.optional(v.object({
+    address: vAddress(),
+    block: v.optional(v.number()),
+  })),
+  chainRpcUrl: v.string(),
+  contractActivePool: vAddress(),
+  contractBoldToken: vAddress(),
+  contractBorrowerOperations: vAddress(),
+  contractCollSurplusPool: vAddress(),
+  contractCollToken: vAddress(),
+  contractDefaultPool: vAddress(),
+  contractFunctionCaller: vAddress(),
+  contractGasPool: vAddress(),
+  contractHintHelpers: vAddress(),
+  contractInterestRouter: vAddress(),
+  contractPriceFeed: vAddress(),
+  contractSortedTroves: vAddress(),
+  contractStabilityPool: vAddress(),
+  contractTroveManager: vAddress(),
 });
 
-type Config = z.infer<typeof ConfigSchema>;
+type Config = v.InferOutput<typeof ConfigSchema>;
 
 const defaultConfig: Config = {
   chainId: CHAIN_ID,
