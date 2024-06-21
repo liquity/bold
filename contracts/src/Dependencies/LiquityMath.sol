@@ -2,9 +2,9 @@
 
 pragma solidity 0.8.18;
 
-library LiquityMath {
-    uint256 internal constant DECIMAL_PRECISION = 1e18;
+import {DECIMAL_PRECISION} from "./Constants.sol";
 
+library LiquityMath {
     function _min(uint256 _a, uint256 _b) internal pure returns (uint256) {
         return (_a < _b) ? _a : _b;
     }

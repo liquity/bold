@@ -22,7 +22,6 @@ interface IActivePool {
         address _interestRouterAddress
     ) external;
 
-    function SP_YIELD_SPLIT() external view returns (uint256);
     function getETHBalance() external view returns (uint256);
     function getBoldDebt() external view returns (uint256);
     function lastAggUpdateTime() external view returns (uint256);
