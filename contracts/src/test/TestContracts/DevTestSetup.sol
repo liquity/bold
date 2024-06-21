@@ -69,6 +69,8 @@ contract DevTestSetup is BaseTest {
         }
 
         MCR = troveManager.MCR();
+        LIQUIDATION_PENALTY_SP = troveManager.LIQUIDATION_PENALTY_SP();
+        LIQUIDATION_PENALTY_REDISTRIBUTION = troveManager.LIQUIDATION_PENALTY_REDISTRIBUTION();
     }
 
     function _setupForWithdrawETHGainToTrove() internal returns (uint256, uint256, uint256) {

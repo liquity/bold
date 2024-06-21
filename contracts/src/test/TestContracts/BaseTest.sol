@@ -33,6 +33,8 @@ contract BaseTest is Test {
     address public G;
 
     uint256 MCR;
+    uint256 LIQUIDATION_PENALTY_SP;
+    uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
 
     // Core contracts
     IActivePool activePool;
@@ -169,7 +171,7 @@ contract BaseTest is Test {
     }
 
     function getRedeemableDebt(uint256 troveId) internal view returns (uint256) {
-        return troveManager.getTroveEntireDebt(troveId) - BOLD_GAS_COMP;
+        return troveManager.getTroveEntireDebt(troveId) - BOLD_GAS_COMPENSATION;
     }
 
     function createAccounts() public {

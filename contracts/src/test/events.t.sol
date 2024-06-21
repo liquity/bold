@@ -3,6 +3,7 @@ pragma solidity 0.8.18;
 
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import "./TestContracts/DevTestSetup.sol";
+import "../Dependencies/Constants.sol";
 
 struct LiquidationParams {
     uint256 collSentToSP;
@@ -74,7 +75,7 @@ contract TroveEventsTest is DevTestSetup, ITroveEvents {
 
         uint256 troveId = addressToTroveId(owner, ownerIndex);
         uint256 upfrontFee = predictOpenTroveUpfrontFee(borrow, interestRate);
-        uint256 debt = borrow + BOLD_GAS_COMP + upfrontFee;
+        uint256 debt = borrow + BOLD_GAS_COMPENSATION + upfrontFee;
         uint256 stake = coll;
 
         vm.expectEmit();
@@ -109,7 +110,7 @@ contract TroveEventsTest is DevTestSetup, ITroveEvents {
             interestRate,
             0, // _debtIncreaseFromRedist
             upfrontFee,
-            int256(borrow + BOLD_GAS_COMP),
+            int256(borrow + BOLD_GAS_COMPENSATION),
             0, // _collIncreaseFromRedist
             int256(coll)
         );
@@ -390,10 +391,10 @@ contract TroveEventsTest is DevTestSetup, ITroveEvents {
         priceFeed.setPrice(price);
 
         LiquidationParams memory l;
-        l.collGasCompensation = liquidatedColl / COLL_GAS_COMP_DIVISOR;
+        l.collGasCompensation = liquidatedColl / COLL_GAS_COMPENSATION_DIVISOR;
         l.collRedistributed = liquidatedColl - l.collGasCompensation;
         l.debtRedistributed = liquidatedDebt;
-        l.boldGasCompensation = BOLD_GAS_COMP;
+        l.boldGasCompensation = BOLD_GAS_COMPENSATION;
 
         vm.expectEmit();
         emit Liquidation(
@@ -513,8 +514,8 @@ contract TroveEventsTest is DevTestSetup, ITroveEvents {
             l.debtOffsetBySP = Math.min(liquidatedDebt[i], boldInSP - t.debtOffsetBySP);
             l.debtRedistributed = liquidatedDebt[i] - l.debtOffsetBySP;
 
-            l.boldGasCompensation = BOLD_GAS_COMP;
-            collRemaining -= l.collGasCompensation = liquidatedColl[i] / COLL_GAS_COMP_DIVISOR;
+            l.boldGasCompensation = BOLD_GAS_COMPENSATION;
+            collRemaining -= l.collGasCompensation = liquidatedColl[i] / COLL_GAS_COMPENSATION_DIVISOR;
 
             collRemaining -= l.collSentToSP = Math.min(
                 collRemaining * l.debtOffsetBySP / liquidatedDebt[i],
