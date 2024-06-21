@@ -3,17 +3,17 @@
 import type { ReactNode } from "react";
 
 import { createContext, useCallback, useContext, useState } from "react";
-import { z } from "zod";
+import * as v from "valibot";
 
 const DEMO_STATE_KEY = "liquity2:demo-state";
 
-export const DemoStateSchema = z.object({
-  account: z.object({
-    isConnected: z.boolean(),
+export const DemoStateSchema = v.object({
+  account: v.object({
+    isConnected: v.boolean(),
   }),
 });
 
-type DemoState = z.infer<typeof DemoStateSchema>;
+type DemoState = v.InferOutput<typeof DemoStateSchema>;
 
 type DemoStateContext = DemoState & {
   clearDemoState: () => void;
