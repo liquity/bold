@@ -10,7 +10,7 @@ contract HintHelpersTest is DevTestSetup {
         }
 
         uint256 redeemedTroveId = sortedTroves.getLast();
-        uint256 redeemable = troveManager.getTroveEntireDebt(redeemedTroveId) - BOLD_GAS_COMP;
+        uint256 redeemable = troveManager.getTroveEntireDebt(redeemedTroveId) - BOLD_GAS_COMPENSATION;
 
         redeem(A, redeemable);
 
