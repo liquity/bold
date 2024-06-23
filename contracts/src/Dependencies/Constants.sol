@@ -22,6 +22,7 @@ uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 
 uint256 constant MIN_NET_DEBT = 1800e18;
 uint256 constant MIN_DEBT = MIN_NET_DEBT + BOLD_GAS_COMPENSATION;
 
+uint256 constant MIN_ANNUAL_INTEREST_RATE = 0; // TODO!
 uint256 constant MAX_ANNUAL_INTEREST_RATE = _100pct;
 
 uint256 constant REDEMPTION_FEE_FLOOR = _1pct / 2; // 0.5%

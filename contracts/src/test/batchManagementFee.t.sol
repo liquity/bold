@@ -89,7 +89,7 @@ contract BatchManagementFeeTest is DevTestSetup {
         // Close first trove
         closeTrove(A, troveId);
 
-        assertEq(AIntialBalance - boldToken.balanceOf(A), troveInitialDebt + troveAccruedInterest + troveAccruedFee - BOLD_GAS_COMP);
+        assertEq(AIntialBalance - boldToken.balanceOf(A), troveInitialDebt + troveAccruedInterest + troveAccruedFee - BOLD_GAS_COMPENSATION);
     }
 
     function testCloseTroveBatchFeeDoesNotIncreaseDebtInActivePool() public {
