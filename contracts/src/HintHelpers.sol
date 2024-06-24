@@ -2,39 +2,17 @@
 
 pragma solidity 0.8.18;
 
-import "./Interfaces/ITroveManager.sol";
-import "./Interfaces/ISortedTroves.sol";
-import "./Dependencies/LiquityBase.sol";
-import "./Dependencies/Ownable.sol";
-import "./Dependencies/CheckContract.sol";
+import "./Interfaces/ICollateralRegistry.sol";
+import "./Dependencies/LiquityMath.sol";
 
-contract HintHelpers is LiquityBase, Ownable, CheckContract {
+contract HintHelpers {
     string public constant NAME = "HintHelpers";
 
-    ISortedTroves public sortedTroves;
-    ITroveManager public troveManager;
+    ICollateralRegistry public immutable collateralRegistry;
 
-    // --- Events ---
-
-    event SortedTrovesAddressChanged(address _sortedTrovesAddress);
-    event TroveManagerAddressChanged(address _troveManagerAddress);
-
-    // --- Dependency setters ---
-
-    function setAddresses(address _sortedTrovesAddress, address _troveManagerAddress) external onlyOwner {
-        checkContract(_sortedTrovesAddress);
-        checkContract(_troveManagerAddress);
-
-        sortedTroves = ISortedTroves(_sortedTrovesAddress);
-        troveManager = ITroveManager(_troveManagerAddress);
-
-        emit SortedTrovesAddressChanged(_sortedTrovesAddress);
-        emit TroveManagerAddressChanged(_troveManagerAddress);
-
-        _renounceOwnership();
+    constructor(ICollateralRegistry _collateralRegistry) {
+        collateralRegistry = _collateralRegistry;
     }
-
-    // --- Functions ---
 
     /* getApproxHint() - return id of a Trove that is, on average, (length / numTrials) positions away in the
     sortedTroves list from the correct insert position of the Trove to be inserted. 
@@ -45,11 +23,14 @@ contract HintHelpers is LiquityBase, Ownable, CheckContract {
     Submitting numTrials = k * sqrt(length), with k = 15 makes it very, very likely that the ouput id will
     be <= sqrt(length) positions away from the correct insert position.
     */
-    function getApproxHint(uint256 _interestRate, uint256 _numTrials, uint256 _inputRandomSeed)
+    function getApproxHint(uint256 _collIndex, uint256 _interestRate, uint256 _numTrials, uint256 _inputRandomSeed)
         external
         view
         returns (uint256 hintId, uint256 diff, uint256 latestRandomSeed)
     {
+        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ISortedTroves sortedTroves = troveManager.sortedTroves();
+
         uint256 arrayLength = troveManager.getTroveIdsCount();
 
         if (arrayLength == 0) {
@@ -60,9 +41,7 @@ contract HintHelpers is LiquityBase, Ownable, CheckContract {
         diff = LiquityMath._getAbsoluteDifference(_interestRate, troveManager.getTroveAnnualInterestRate(hintId));
         latestRandomSeed = _inputRandomSeed;
 
-        uint256 i = 1;
-
-        while (i < _numTrials) {
+        for (uint256 i = 1; i < _numTrials; ++i) {
             latestRandomSeed = uint256(keccak256(abi.encodePacked(latestRandomSeed)));
 
             uint256 arrayIndex = latestRandomSeed % arrayLength;
@@ -80,7 +59,6 @@ contract HintHelpers is LiquityBase, Ownable, CheckContract {
                 diff = currentDiff;
                 hintId = currentId;
             }
-            i++;
         }
     }
 }

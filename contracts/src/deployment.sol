@@ -45,6 +45,7 @@ function _deployAndConnectContracts()
         LiquityContracts memory contracts,
         ICollateralRegistry collateralRegistry,
         IBoldToken boldToken,
+        HintHelpers hintHelpers,
         MultiTroveGetter multiTroveGetter
     )
 {
@@ -56,6 +57,7 @@ function _deployAndConnectContracts(TroveManagerParams memory troveManagerParams
         LiquityContracts memory contracts,
         ICollateralRegistry collateralRegistry,
         IBoldToken boldToken,
+        HintHelpers hintHelpers,
         MultiTroveGetter multiTroveGetter
     )
 {
@@ -63,7 +65,7 @@ function _deployAndConnectContracts(TroveManagerParams memory troveManagerParams
     TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](1);
 
     troveManagerParamsArray[0] = troveManagerParams;
-    (contractsArray, collateralRegistry, boldToken, multiTroveGetter) =
+    (contractsArray, collateralRegistry, boldToken, hintHelpers, multiTroveGetter) =
         _deployAndConnectContracts(troveManagerParamsArray);
     contracts = contractsArray[0];
 }
@@ -73,6 +75,7 @@ function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerPara
         LiquityContracts[] memory contractsArray,
         ICollateralRegistry collateralRegistry,
         IBoldToken boldToken,
+        HintHelpers hintHelpers,
         MultiTroveGetter multiTroveGetter
     )
 {
@@ -110,8 +113,10 @@ function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerPara
     }
 
     collateralRegistry = new CollateralRegistry(boldToken, collaterals, troveManagers);
+    hintHelpers = new HintHelpers(collateralRegistry);
     multiTroveGetter = new MultiTroveGetter(collateralRegistry);
     boldToken.setCollateralRegistry(address(collateralRegistry));
+
     // Set registry in TroveManagers
     for (uint256 i = 0; i < numCollaterals; i++) {
         contractsArray[i].troveManager.setCollateralRegistry(address(collateralRegistry));
