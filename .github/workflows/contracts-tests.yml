@@ -20,11 +20,11 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/contracts.yml"
+      - ".github/workflows/contracts-tests.yml"
       - "contracts/**"
   pull_request:
     paths:
-      - ".github/workflows/contracts.yml"
+      - ".github/workflows/contracts-tests.yml"
       - "contracts/**"
 
 jobs:
