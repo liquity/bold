@@ -15,7 +15,7 @@ contract SPInvariantsTest is Test {
     SPInvariantsTestHandler handler;
 
     function setUp() external {
-        (LiquityContracts memory contracts,, IBoldToken boldToken,) = _deployAndConnectContracts();
+        (LiquityContracts memory contracts,, IBoldToken boldToken,,) = _deployAndConnectContracts();
         stabilityPool = contracts.stabilityPool;
 
         handler = new SPInvariantsTestHandler(

@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.18;
-pragma experimental ABIEncoderV2;
 
-import "./TroveManager.sol";
-import "./SortedTroves.sol";
+import "./Interfaces/ICollateralRegistry.sol";
 
 /*  Helper contract for grabbing Trove data for the front end. Not part of the core Liquity system. */
 contract MultiTroveGetter {
@@ -13,23 +11,30 @@ contract MultiTroveGetter {
         uint256 debt;
         uint256 coll;
         uint256 stake;
+        uint256 annualInterestRate;
+        uint256 lastDebtUpdateTime;
+        uint256 lastInterestRateAdjTime;
         uint256 snapshotETH;
         uint256 snapshotBoldDebt;
     }
 
-    TroveManager public troveManager; // XXX Troves missing from ITroveManager?
-    ISortedTroves public sortedTroves;
+    ICollateralRegistry public immutable collateralRegistry;
 
-    constructor(TroveManager _troveManager, ISortedTroves _sortedTroves) {
-        troveManager = _troveManager;
-        sortedTroves = _sortedTroves;
+    constructor(ICollateralRegistry _collateralRegistry) {
+        collateralRegistry = _collateralRegistry;
     }
 
-    function getMultipleSortedTroves(int256 _startIdx, uint256 _count)
+    function getMultipleSortedTroves(uint256 _collIndex, int256 _startIdx, uint256 _count)
         external
         view
         returns (CombinedTroveData[] memory _troves)
     {
+        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        require(address(troveManager) != address(0), "Invalid collateral index");
+
+        ISortedTroves sortedTroves = troveManager.sortedTroves();
+        assert(address(sortedTroves) != address(0));
+
         uint256 startIdx;
         bool descend;
 
@@ -53,72 +58,67 @@ contract MultiTroveGetter {
             }
 
             if (descend) {
-                _troves = _getMultipleSortedTrovesFromHead(startIdx, _count);
+                _troves = _getMultipleSortedTrovesFromHead(troveManager, sortedTroves, startIdx, _count);
             } else {
-                _troves = _getMultipleSortedTrovesFromTail(startIdx, _count);
+                _troves = _getMultipleSortedTrovesFromTail(troveManager, sortedTroves, startIdx, _count);
             }
         }
     }
 
-    function _getMultipleSortedTrovesFromHead(uint256 _startIdx, uint256 _count)
-        internal
-        view
-        returns (CombinedTroveData[] memory _troves)
-    {
-        uint256 currentTroveId = sortedTroves.getFirst();
+    function _getOneTrove(ITroveManager _troveManager, uint256 _id, CombinedTroveData memory _out) internal view {
+        _out.id = _id;
+
+        (
+            _out.debt,
+            _out.coll,
+            _out.stake,
+            , // status
+            , // arrayIndex
+            _out.annualInterestRate,
+            _out.lastDebtUpdateTime,
+            _out.lastInterestRateAdjTime
+        ) = _troveManager.Troves(_id);
+
+        (_out.snapshotETH, _out.snapshotBoldDebt) = _troveManager.rewardSnapshots(_id);
+    }
+
+    function _getMultipleSortedTrovesFromHead(
+        ITroveManager _troveManager,
+        ISortedTroves _sortedTroves,
+        uint256 _startIdx,
+        uint256 _count
+    ) internal view returns (CombinedTroveData[] memory _troves) {
+        uint256 currentTroveId = _sortedTroves.getFirst();
 
         for (uint256 idx = 0; idx < _startIdx; ++idx) {
-            currentTroveId = sortedTroves.getNext(currentTroveId);
+            currentTroveId = _sortedTroves.getNext(currentTroveId);
         }
 
         _troves = new CombinedTroveData[](_count);
 
         for (uint256 idx = 0; idx < _count; ++idx) {
-            _troves[idx].id = currentTroveId;
-            (
-                _troves[idx].debt,
-                _troves[idx].coll,
-                _troves[idx].stake,
-                , // status
-                , // arrayIndex
-                , // annualInterestRate
-                , // lastDebtUpdateTime
-                    // lastInterestRateAdjTime
-            ) = troveManager.Troves(currentTroveId);
-            (_troves[idx].snapshotETH, _troves[idx].snapshotBoldDebt) = troveManager.rewardSnapshots(currentTroveId);
-
-            currentTroveId = sortedTroves.getNext(currentTroveId);
+            _getOneTrove(_troveManager, currentTroveId, _troves[idx]);
+            currentTroveId = _sortedTroves.getNext(currentTroveId);
         }
     }
 
-    function _getMultipleSortedTrovesFromTail(uint256 _startIdx, uint256 _count)
-        internal
-        view
-        returns (CombinedTroveData[] memory _troves)
-    {
-        uint256 currentTroveId = sortedTroves.getLast();
+    function _getMultipleSortedTrovesFromTail(
+        ITroveManager _troveManager,
+        ISortedTroves _sortedTroves,
+        uint256 _startIdx,
+        uint256 _count
+    ) internal view returns (CombinedTroveData[] memory _troves) {
+        uint256 currentTroveId = _sortedTroves.getLast();
 
         for (uint256 idx = 0; idx < _startIdx; ++idx) {
-            currentTroveId = sortedTroves.getPrev(currentTroveId);
+            currentTroveId = _sortedTroves.getPrev(currentTroveId);
         }
 
         _troves = new CombinedTroveData[](_count);
 
         for (uint256 idx = 0; idx < _count; ++idx) {
-            _troves[idx].id = currentTroveId;
-            (
-                _troves[idx].debt,
-                _troves[idx].coll,
-                _troves[idx].stake,
-                , // status
-                , // arrayIndex
-                , // annualInterestRate
-                , // lastDebtUpdateTime
-                    // lastInterestRateAdjTime
-            ) = troveManager.Troves(currentTroveId);
-            (_troves[idx].snapshotETH, _troves[idx].snapshotBoldDebt) = troveManager.rewardSnapshots(currentTroveId);
-
-            currentTroveId = sortedTroves.getPrev(currentTroveId);
+            _getOneTrove(_troveManager, currentTroveId, _troves[idx]);
+            currentTroveId = _sortedTroves.getPrev(currentTroveId);
         }
     }
 }

@@ -45,7 +45,8 @@ function _deployAndConnectContracts()
         LiquityContracts memory contracts,
         ICollateralRegistry collateralRegistry,
         IBoldToken boldToken,
-        HintHelpers hintHelpers
+        HintHelpers hintHelpers,
+        MultiTroveGetter multiTroveGetter
     )
 {
     return _deployAndConnectContracts(TroveManagerParams(110e16, 5e16, 10e16));
@@ -56,14 +57,16 @@ function _deployAndConnectContracts(TroveManagerParams memory troveManagerParams
         LiquityContracts memory contracts,
         ICollateralRegistry collateralRegistry,
         IBoldToken boldToken,
-        HintHelpers hintHelpers
+        HintHelpers hintHelpers,
+        MultiTroveGetter multiTroveGetter
     )
 {
     LiquityContracts[] memory contractsArray;
     TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](1);
 
     troveManagerParamsArray[0] = troveManagerParams;
-    (contractsArray, collateralRegistry, boldToken, hintHelpers) = _deployAndConnectContracts(troveManagerParamsArray);
+    (contractsArray, collateralRegistry, boldToken, hintHelpers, multiTroveGetter) =
+        _deployAndConnectContracts(troveManagerParamsArray);
     contracts = contractsArray[0];
 }
 
@@ -72,7 +75,8 @@ function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerPara
         LiquityContracts[] memory contractsArray,
         ICollateralRegistry collateralRegistry,
         IBoldToken boldToken,
-        HintHelpers hintHelpers
+        HintHelpers hintHelpers,
+        MultiTroveGetter multiTroveGetter
     )
 {
     uint256 numCollaterals = troveManagerParamsArray.length;
@@ -110,6 +114,7 @@ function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerPara
 
     collateralRegistry = new CollateralRegistry(boldToken, collaterals, troveManagers);
     hintHelpers = new HintHelpers(collateralRegistry);
+    multiTroveGetter = new MultiTroveGetter(collateralRegistry);
     boldToken.setCollateralRegistry(address(collateralRegistry));
 
     // Set registry in TroveManagers
