@@ -59,12 +59,9 @@ contract TroveManagerTester is TroveManager {
         return _debtVal - BOLD_GAS_COMPENSATION;
     }
 
-    function getEffectiveRedemptionFeeInColl(uint256 _redeemAmount, uint256 _price)
-        external
-        view
-        returns (uint256)
-    {
-        return ICollateralRegistry(collateralRegistryAddress).getEffectiveRedemptionFeeInBold(_redeemAmount) * DECIMAL_PRECISION / _price;
+    function getEffectiveRedemptionFeeInColl(uint256 _redeemAmount, uint256 _price) external view returns (uint256) {
+        return ICollateralRegistry(collateralRegistryAddress).getEffectiveRedemptionFeeInBold(_redeemAmount)
+            * DECIMAL_PRECISION / _price;
     }
 
     function predictOpenTroveUpfrontFee(uint256 borrowedAmount, uint256 interestRate) external view returns (uint256) {

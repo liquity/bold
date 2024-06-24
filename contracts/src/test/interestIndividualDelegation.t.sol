@@ -16,7 +16,8 @@ contract InterestIndividualDelegationTest is DevTestSetup {
     function testSetsDelegateProperly() public {
         uint256 troveId = openTroveAndSetIndividualDelegate();
 
-        IBorrowerOperations.InterestIndividualDelegate memory delegate = borrowerOperations.getInterestIndividualDelegateOf(troveId);
+        IBorrowerOperations.InterestIndividualDelegate memory delegate =
+            borrowerOperations.getInterestIndividualDelegateOf(troveId);
         assertEq(delegate.account, B, "Wrong individual delegate");
         assertEq(delegate.minInterestRate, 1e16, "Wrong min interest");
         assertEq(delegate.maxInterestRate, 20e16, "Wrong max interest");
@@ -25,7 +26,8 @@ contract InterestIndividualDelegationTest is DevTestSetup {
     function testRemovesDelegateProperly() public {
         uint256 troveId = openTroveAndSetIndividualDelegate();
 
-        IBorrowerOperations.InterestIndividualDelegate memory delegate = borrowerOperations.getInterestIndividualDelegateOf(troveId);
+        IBorrowerOperations.InterestIndividualDelegate memory delegate =
+            borrowerOperations.getInterestIndividualDelegateOf(troveId);
         assertEq(delegate.account, B, "Wrong individual delegate");
 
         vm.startPrank(A);
@@ -54,7 +56,8 @@ contract InterestIndividualDelegationTest is DevTestSetup {
     function testOnlyBorrowerCanRemoveDelegate() public {
         uint256 troveId = openTroveAndSetIndividualDelegate();
 
-        IBorrowerOperations.InterestIndividualDelegate memory delegate = borrowerOperations.getInterestIndividualDelegateOf(troveId);
+        IBorrowerOperations.InterestIndividualDelegate memory delegate =
+            borrowerOperations.getInterestIndividualDelegateOf(troveId);
         assertEq(delegate.account, B, "Wrong individual delegate");
 
         vm.startPrank(B);
@@ -108,7 +111,8 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         borrowerOperations.setInterestBatchManager(troveId, B, 0, 0, 1e24);
         vm.stopPrank();
 
-        IBorrowerOperations.InterestIndividualDelegate memory delegate = borrowerOperations.getInterestIndividualDelegateOf(troveId);
+        IBorrowerOperations.InterestIndividualDelegate memory delegate =
+            borrowerOperations.getInterestIndividualDelegateOf(troveId);
         assertEq(borrowerOperations.interestBatchManagerOf(troveId), B, "Wrong batch manager");
         assertEq(delegate.account, address(0), "Individual delegate should be empty");
 

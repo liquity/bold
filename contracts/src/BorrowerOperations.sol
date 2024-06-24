@@ -209,7 +209,9 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
 
-        (uint256 troveId, uint256 entireDebt) = _openTrove(contractsCache, _owner, _ownerIndex, _ETHAmount, _boldAmount, _annualInterestRate, _maxUpfrontFee);
+        (uint256 troveId, uint256 entireDebt) = _openTrove(
+            contractsCache, _owner, _ownerIndex, _ETHAmount, _boldAmount, _annualInterestRate, _maxUpfrontFee
+        );
 
         // Set the stored Trove properties and mint the NFT
         contractsCache.troveManager.onOpenTrove(
@@ -238,7 +240,9 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         LatestBatchData memory batch = contractsCache.troveManager.getLatestBatchData(_interestBatchManager);
 
-        (uint256 troveId, uint256 entireDebt) = _openTrove(contractsCache, _owner, _ownerIndex, _ETHAmount, _boldAmount, batch.annualInterestRate, _maxUpfrontFee);
+        (uint256 troveId, uint256 entireDebt) = _openTrove(
+            contractsCache, _owner, _ownerIndex, _ETHAmount, _boldAmount, batch.annualInterestRate, _maxUpfrontFee
+        );
 
         interestBatchManagerOf[troveId] = _interestBatchManager;
 
@@ -249,7 +253,9 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // Set the stored Trove properties and mint the NFT
         contractsCache.troveManager.onOpenTroveAndJoinBatch(_owner, troveId, troveChange, _interestBatchManager, batch.entireColl, batch.entireDebt, vars.troveChange.upfrontFee);
 
-        sortedTroves.insertIntoBatch(troveId, BatchId.wrap(_interestBatchManager), batch.annualInterestRate, _upperHint, _lowerHint);
+        sortedTroves.insertIntoBatch(
+            troveId, BatchId.wrap(_interestBatchManager), batch.annualInterestRate, _upperHint, _lowerHint
+        );
 
         return troveId;
     }
@@ -447,13 +453,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         LatestTroveData memory trove = contractsCache.troveManager.getLatestTroveData(_troveId);
 
-        (uint256 newDebt,) = _changeInterestRate(
-            trove,
-            _newAnnualInterestRate,
-            _maxUpfrontFee,
-            0,
-            contractsCache.activePool
-        );
+        (uint256 newDebt,) =
+            _changeInterestRate(trove, _newAnnualInterestRate, _maxUpfrontFee, 0, contractsCache.activePool);
 
         contractsCache.troveManager.onAdjustTroveInterestRate(
             _troveId, trove.entireColl, newDebt, _newAnnualInterestRate, troveChange
@@ -540,7 +541,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             if (isTroveInBatch) {
                 batch.entireDebt += _troveChange.upfrontFee;
                 // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee
-                _troveChange.newWeightedRecordedDebt = (batchFutureDebt + _troveChange.upfrontFee) * batch.annualInterestRate;
+                _troveChange.newWeightedRecordedDebt =
+                    (batchFutureDebt + _troveChange.upfrontFee) * batch.annualInterestRate;
             } else {
                 // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee
                 _troveChange.newWeightedRecordedDebt = vars.newDebt * vars.trove.annualInterestRate;
@@ -650,9 +652,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         troveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
         troveChange.newWeightedRecordedDebt = batch.entireDebt * batch.annualInterestRate;
 
-        contractsCache.troveManager.onApplyBatchInterestAndFee(
-            _batchManager, batch.entireColl, batch.entireDebt
-        );
+        contractsCache.troveManager.onApplyBatchInterestAndFee(_batchManager, batch.entireColl, batch.entireDebt);
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
 
@@ -671,7 +671,11 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         removeManagerOf[_troveId] = _manager;
     }
 
-    function getInterestIndividualDelegateOf(uint256 _troveId) external view returns (InterestIndividualDelegate memory) {
+    function getInterestIndividualDelegateOf(uint256 _troveId)
+        external
+        view
+        returns (InterestIndividualDelegate memory)
+    {
         return interestIndividualDelegateOf[_troveId];
     }
 
@@ -687,7 +691,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 _maxUpfrontFee
     ) external {
         _requireSenderIsOwner(troveManager, _troveId);
-        interestIndividualDelegateOf[_troveId] = InterestIndividualDelegate(_delegate, _minInterestRate, _maxInterestRate);
+        interestIndividualDelegateOf[_troveId] =
+            InterestIndividualDelegate(_delegate, _minInterestRate, _maxInterestRate);
         // Can’t have both individual delegation and batch manager
         if (interestBatchManagerOf[_troveId] != address(0)) {
             removeInterestBatchManager(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint, _maxUpfrontFee);
@@ -699,13 +704,20 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         delete interestIndividualDelegateOf[_troveId];
     }
 
-    function getInterestBatchManager(address _account) external view returns (InterestBatchManager memory){
+    function getInterestBatchManager(address _account) external view returns (InterestBatchManager memory) {
         return interestBatchManagers[_account];
     }
 
-    function registerBatchManager(uint128 minInterestRate, uint128 maxInterestRate, uint128 currentInterestRate, uint128 annualFee, uint128 minInterestRateChangePeriod) external {
+    function registerBatchManager(
+        uint128 minInterestRate,
+        uint128 maxInterestRate,
+        uint128 currentInterestRate,
+        uint128 annualFee,
+        uint128 minInterestRateChangePeriod
+    ) external {
         _requireNonExistentInterestBatchManager(msg.sender);
-        interestBatchManagers[msg.sender] = InterestBatchManager(minInterestRate, maxInterestRate, minInterestRateChangePeriod);
+        interestBatchManagers[msg.sender] =
+            InterestBatchManager(minInterestRate, maxInterestRate, minInterestRateChangePeriod);
         troveManager.onRegisterBatchManager(msg.sender, currentInterestRate, annualFee);
     }
 
@@ -785,7 +797,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // Can’t have both individual delegation and batch manager
         if (interestIndividualDelegateOf[_troveId].account != address(0)) delete interestIndividualDelegateOf[_troveId];
 
-        ContractsCacheTMAPBTST memory contractsCache = ContractsCacheTMAPBTST(troveManager, activePool, boldToken, sortedTroves);
+        ContractsCacheTMAPBTST memory contractsCache =
+            ContractsCacheTMAPBTST(troveManager, activePool, boldToken, sortedTroves);
 
         LatestTroveData memory trove = contractsCache.troveManager.getLatestTroveData(_troveId);
         LatestBatchData memory oldBatch;
@@ -813,9 +826,14 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
 
         contractsCache.troveManager.onSetInterestBatchManager(
-            _troveId, troveChange, oldBatchManager, _newBatchManager,
-            oldBatch.entireColl, oldBatch.entireDebt,
-            newBatch.entireColl, newBatch.entireDebt
+            _troveId,
+            troveChange,
+            oldBatchManager,
+            _newBatchManager,
+            oldBatch.entireColl,
+            oldBatch.entireDebt,
+            newBatch.entireColl,
+            newBatch.entireDebt
         );
 
         // mint batch fee
@@ -826,7 +844,9 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         } else {
             contractsCache.sortedTroves.remove(_troveId);
         }
-        contractsCache.sortedTroves.insertIntoBatch(_troveId, BatchId.wrap(_newBatchManager), newBatch.annualInterestRate, _upperHint, _lowerHint);
+        contractsCache.sortedTroves.insertIntoBatch(
+            _troveId, BatchId.wrap(_newBatchManager), newBatch.annualInterestRate, _upperHint, _lowerHint
+        );
     }
 
     function removeInterestBatchManager(
@@ -836,7 +856,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) public override {
-        ContractsCacheTMAPBTST memory contractsCache = ContractsCacheTMAPBTST(troveManager, activePool, boldToken, sortedTroves);
+        ContractsCacheTMAPBTST memory contractsCache =
+            ContractsCacheTMAPBTST(troveManager, activePool, boldToken, sortedTroves);
         _requireSenderIsOwner(contractsCache.troveManager, _troveId);
 
         LocalVariables_removeInterestBatchManager memory vars;
@@ -854,13 +875,20 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // As opposed to other similar functions, we don’t use `uint256 newDebt` here to avoid stack too deep
         (vars.trove.entireDebt, vars.upfrontFee) = _changeInterestRate(
-            vars.trove, _newAnnualInterestRate, _maxUpfrontFee,
-            vars.batch.accruedFee,
-            contractsCache.activePool
+            vars.trove, _newAnnualInterestRate, _maxUpfrontFee, vars.batch.accruedFee, contractsCache.activePool
         );
 
         contractsCache.troveManager.onRemoveInterestBatchManager(
-            _troveId, vars.batchManager, vars.trove.entireColl, vars.trove.entireDebt, vars.batch.entireColl, vars.batch.entireDebt, _newAnnualInterestRate, vars.upfrontFee, vars.trove.redistETHGain, vars.trove.redistBoldDebtGain
+            _troveId,
+            vars.batchManager,
+            vars.trove.entireColl,
+            vars.trove.entireDebt,
+            vars.batch.entireColl,
+            vars.batch.entireDebt,
+            _newAnnualInterestRate,
+            vars.upfrontFee,
+            vars.trove.redistETHGain,
+            vars.trove.redistBoldDebtGain
         );
 
         // mint batch fee
@@ -884,7 +912,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
 
         // Apply upfront fee on premature adjustments
-        if (trove.annualInterestRate != _newAnnualInterestRate && block.timestamp < trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN) {
+        if (
+            trove.annualInterestRate != _newAnnualInterestRate
+                && block.timestamp < trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
+        ) {
             // TODO: should we fetch unconditionally? Would make the TX a bit more expensive for well-behaved users, but
             // it would be more consistent with other functions (fetching the price is the first thing we usually do).
             uint256 price = priceFeed.fetchPrice();
@@ -1016,19 +1047,36 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     function _requireInterestRateInDelegateRange(uint256 _troveId, uint256 _annualInterestRate) internal view {
         InterestIndividualDelegate memory individualDelegate = interestIndividualDelegateOf[_troveId];
         require(
-            individualDelegate.account == address(0) ||
-            (individualDelegate.minInterestRate <= _annualInterestRate && _annualInterestRate <= individualDelegate.maxInterestRate),
-            "BO: interest not in range of individual delegate");
+            individualDelegate.account == address(0)
+                || (
+                    individualDelegate.minInterestRate <= _annualInterestRate
+                        && _annualInterestRate <= individualDelegate.maxInterestRate
+                ),
+            "BO: interest not in range of individual delegate"
+        );
     }
 
-    function _requireInterestRateInBatchManagerRange(address _interestBatchManagerAddress, uint256 _annualInterestRate) internal view {
+    function _requireInterestRateInBatchManagerRange(address _interestBatchManagerAddress, uint256 _annualInterestRate)
+        internal
+        view
+    {
         InterestBatchManager memory interestBatchManager = interestBatchManagers[_interestBatchManagerAddress];
-        require(interestBatchManager.minInterestRate <= _annualInterestRate && _annualInterestRate <= interestBatchManager.maxInterestRate, "BO: interest not in range of batch manager");
+        require(
+            interestBatchManager.minInterestRate <= _annualInterestRate
+                && _annualInterestRate <= interestBatchManager.maxInterestRate,
+            "BO: interest not in range of batch manager"
+        );
     }
 
-    function _requireInterestRateChangePeriodPassed(address _interestBatchManagerAddress, uint256 _lastInterestRateAdjTime) internal view {
+    function _requireInterestRateChangePeriodPassed(
+        address _interestBatchManagerAddress,
+        uint256 _lastInterestRateAdjTime
+    ) internal view {
         InterestBatchManager memory interestBatchManager = interestBatchManagers[_interestBatchManagerAddress];
-        require(block.timestamp >= _lastInterestRateAdjTime + uint256(interestBatchManager.minInterestRateChangePeriod), "BO: cannot change interest rate again yet");
+        require(
+            block.timestamp >= _lastInterestRateAdjTime + uint256(interestBatchManager.minInterestRateChangePeriod),
+            "BO: cannot change interest rate again yet"
+        );
     }
 
     function _requireTroveIsOpen(ITroveManager _troveManager, uint256 _troveId) internal view {
@@ -1140,10 +1188,15 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     }
 
     function _requireNonExistentInterestBatchManager(address _interestBatchManagerAddress) internal view {
-        require(interestBatchManagers[_interestBatchManagerAddress].maxInterestRate == 0, "BO: Batch Manager already exists");
+        require(
+            interestBatchManagers[_interestBatchManagerAddress].maxInterestRate == 0, "BO: Batch Manager already exists"
+        );
     }
 
-    function _requireNewInterestBatchManager(address _oldBatchManagerAddress, address _newBatchManagerAddress) internal pure {
+    function _requireNewInterestBatchManager(address _oldBatchManagerAddress, address _newBatchManagerAddress)
+        internal
+        pure
+    {
         require(_oldBatchManagerAddress != _newBatchManagerAddress, "BO: Already has this Batch Manager");
     }
 

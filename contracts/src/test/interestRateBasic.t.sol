@@ -213,7 +213,11 @@ contract InterestRateBasic is DevTestSetup {
 
         // Recorded debt increases by accrued interest + upfront fee
         uint256 recordedTroveDebt_3 = troveManager.getTroveDebt(ATroveId);
-        assertEq(recordedTroveDebt_3, recordedTroveDebt_2 + accruedTroveInterest + upfrontFee, "Rec debt + interest + upfront fee mismatch");
+        assertEq(
+            recordedTroveDebt_3,
+            recordedTroveDebt_2 + accruedTroveInterest + upfrontFee,
+            "Rec debt + interest + upfront fee mismatch"
+        );
     }
 
     function testAdjustTroveInterestRateIncreasesRecordedDebtByAccruedInterestButNoUpfrontFeeIfSameRate() public {

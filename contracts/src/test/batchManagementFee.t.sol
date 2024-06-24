@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract BatchManagementFeeTest is DevTestSetup {
-
     function testAdjustTroveMintsFeeForBatch() public {
         // Open 2 troves in the same batch manager
         uint256 troveId = openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
@@ -89,7 +88,10 @@ contract BatchManagementFeeTest is DevTestSetup {
         // Close first trove
         closeTrove(A, troveId);
 
-        assertEq(AIntialBalance - boldToken.balanceOf(A), troveInitialDebt + troveAccruedInterest + troveAccruedFee - BOLD_GAS_COMPENSATION);
+        assertEq(
+            AIntialBalance - boldToken.balanceOf(A),
+            troveInitialDebt + troveAccruedInterest + troveAccruedFee - BOLD_GAS_COMPENSATION
+        );
     }
 
     function testCloseTroveBatchFeeDoesNotIncreaseDebtInActivePool() public {
@@ -206,7 +208,10 @@ contract BatchManagementFeeTest is DevTestSetup {
         // Add trove to batch
         setInterestBatchManager(C, troveId, B);
 
-        assertEq(activePool.aggRecordedDebt(), activePoolInitialDebt + batchAccruedInterest + batchAccruedFee + troveAccruedInterest);
+        assertEq(
+            activePool.aggRecordedDebt(),
+            activePoolInitialDebt + batchAccruedInterest + batchAccruedFee + troveAccruedInterest
+        );
     }
 
     function testSwitchTroveBatchMintsFeeForBatches() public {

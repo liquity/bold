@@ -91,7 +91,10 @@ interface IBorrowerOperations is ILiquityBase {
         uint128 maxInterestRate;
     }
 
-    function getInterestIndividualDelegateOf(uint256 _troveId) external view returns (InterestIndividualDelegate memory);
+    function getInterestIndividualDelegateOf(uint256 _troveId)
+        external
+        view
+        returns (InterestIndividualDelegate memory);
     function setInterestIndividualDelegate(
         uint256 _troveId,
         address _delegate,
@@ -112,7 +115,13 @@ interface IBorrowerOperations is ILiquityBase {
         uint256 minInterestRateChangePeriod;
     }
 
-    function registerBatchManager(uint128 minInterestRate, uint128 maxInterestRate, uint128 currentInterestRate, uint128 fee, uint128 minInterestRateChangePeriod) external;
+    function registerBatchManager(
+        uint128 minInterestRate,
+        uint128 maxInterestRate,
+        uint128 currentInterestRate,
+        uint128 fee,
+        uint128 minInterestRateChangePeriod
+    ) external;
     function lowerBatchManagementFee(uint256 _newAnnualFee) external;
     function setBatchManagerAnnualInterestRate(
         uint128 _newAnnualInterestRate,

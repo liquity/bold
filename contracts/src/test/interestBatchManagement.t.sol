@@ -29,7 +29,8 @@ contract InterestBatchManagementTest is DevTestSetup {
         (,,,,,,,, address tmBatchManagerAddress,,) = troveManager.Troves(troveId);
         assertEq(tmBatchManagerAddress, B, "Wrong batch manager in TM");
 
-        IBorrowerOperations.InterestBatchManager memory batchManager = borrowerOperations.getInterestBatchManager(batchManagerAddress);
+        IBorrowerOperations.InterestBatchManager memory batchManager =
+            borrowerOperations.getInterestBatchManager(batchManagerAddress);
         assertEq(batchManager.minInterestRate, 1e16, "Wrong min interest");
         assertEq(batchManager.maxInterestRate, 20e16, "Wrong max interest");
         assertEq(batchManager.minInterestRateChangePeriod, 0, "Wrong min change period");
@@ -51,7 +52,8 @@ contract InterestBatchManagementTest is DevTestSetup {
         (,,,,,,,, address tmBatchManagerAddress,,) = troveManager.Troves(troveId);
         assertEq(tmBatchManagerAddress, B, "Wrong batch manager in TM");
 
-        IBorrowerOperations.InterestBatchManager memory batchManager = borrowerOperations.getInterestBatchManager(batchManagerAddress);
+        IBorrowerOperations.InterestBatchManager memory batchManager =
+            borrowerOperations.getInterestBatchManager(batchManagerAddress);
         assertEq(batchManager.minInterestRate, 1e16, "Wrong min interest");
         assertEq(batchManager.maxInterestRate, 20e16, "Wrong max interest");
         assertEq(batchManager.minInterestRateChangePeriod, 0, "Wrong min change period");
@@ -109,7 +111,8 @@ contract InterestBatchManagementTest is DevTestSetup {
         borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, 0, 0, 0, 0);
         vm.stopPrank();
 
-        IBorrowerOperations.InterestIndividualDelegate memory delegate = borrowerOperations.getInterestIndividualDelegateOf(troveId);
+        IBorrowerOperations.InterestIndividualDelegate memory delegate =
+            borrowerOperations.getInterestIndividualDelegateOf(troveId);
         assertEq(borrowerOperations.interestBatchManagerOf(troveId), address(0), "Batch manager should be empty");
         assertEq(delegate.account, C, "Wrong individual delegate");
 
@@ -143,7 +146,11 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         // Check interest and fee were applied
         assertEq(troveManager.getTroveDebt(troveId), ATroveEntireDebtBefore, "Interest was not applied to trove");
-        assertEq(troveManager.getTroveDebt(troveId), troveManager.getTroveEntireDebt(troveId), "Trove recorded debt should be equal to entire");
+        assertEq(
+            troveManager.getTroveDebt(troveId),
+            troveManager.getTroveEntireDebt(troveId),
+            "Trove recorded debt should be equal to entire"
+        );
         batch = troveManager.getLatestBatchData(B);
         assertEq(batch.recordedDebt, batchEntireDebtBefore, "Interest was not applied to batch");
         assertEq(batch.recordedDebt, batch.entireDebt, "Batch recorded debt should be equal to entire");
@@ -200,7 +207,11 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         // Check interest was applied
         assertEq(troveManager.getTroveDebt(troveId), ATroveEntireDebtBefore, "Interest was not applied to trove");
-        assertEq(troveManager.getTroveDebt(troveId), troveManager.getTroveEntireDebt(troveId), "Trove recorded debt should be equal to entire");
+        assertEq(
+            troveManager.getTroveDebt(troveId),
+            troveManager.getTroveEntireDebt(troveId),
+            "Trove recorded debt should be equal to entire"
+        );
         batch = troveManager.getLatestBatchData(B);
         assertEq(batch.recordedDebt, batchEntireDebtBefore, "Interest was not applied to batch");
         assertEq(batch.recordedDebt, batch.entireDebt, "Batch recorded debt should be equal to entire");
@@ -244,11 +255,11 @@ contract InterestBatchManagementTest is DevTestSetup {
         // Register batch manager
         vm.startPrank(B);
         borrowerOperations.registerBatchManager(
-            1e16,  // min interest: 1%
+            1e16, // min interest: 1%
             20e16, // max interest: 20%
-            5e16,  // current interest: 5%
+            5e16, // current interest: 5%
             25e14, // fee: 0.25%,
-            6000   // min interest rate change period
+            6000 // min interest rate change period
         );
         vm.stopPrank();
 
@@ -324,25 +335,35 @@ contract InterestBatchManagementTest is DevTestSetup {
         // debts before
         troveRecordedDebtBefore.A = troveManager.getTroveDebt(troveIDs.A);
         troveEntireDebtBefore.A = troveManager.getTroveEntireDebt(troveIDs.A);
-        assertGt(troveEntireDebtBefore.A, troveRecordedDebtBefore.A, "Trove A entire debt should be greater than recorded");
+        assertGt(
+            troveEntireDebtBefore.A, troveRecordedDebtBefore.A, "Trove A entire debt should be greater than recorded"
+        );
 
         troveRecordedDebtBefore.D = troveManager.getTroveDebt(troveIDs.D);
         troveEntireDebtBefore.D = troveManager.getTroveEntireDebt(troveIDs.D);
-        assertGt(troveEntireDebtBefore.D, troveRecordedDebtBefore.D, "Trove D entire debt should be greater than recorded");
+        assertGt(
+            troveEntireDebtBefore.D, troveRecordedDebtBefore.D, "Trove D entire debt should be greater than recorded"
+        );
 
         troveRecordedDebtBefore.E = troveManager.getTroveDebt(troveIDs.E);
         troveEntireDebtBefore.E = troveManager.getTroveEntireDebt(troveIDs.E);
-        assertGt(troveEntireDebtBefore.E, troveRecordedDebtBefore.E, "Trove E entire debt should be greater than recorded");
+        assertGt(
+            troveEntireDebtBefore.E, troveRecordedDebtBefore.E, "Trove E entire debt should be greater than recorded"
+        );
 
         LatestBatchData memory batchB = troveManager.getLatestBatchData(B);
         uint256 batchBRecordedDebtBefore = batchB.recordedDebt;
         uint256 batchBEntireDebtBefore = batchB.entireDebt;
-        assertGt(batchBEntireDebtBefore, batchBRecordedDebtBefore, "Batch B entire debt should be greater than recorded");
+        assertGt(
+            batchBEntireDebtBefore, batchBRecordedDebtBefore, "Batch B entire debt should be greater than recorded"
+        );
 
         LatestBatchData memory batchC = troveManager.getLatestBatchData(C);
         uint256 batchCRecordedDebtBefore = batchC.recordedDebt;
         uint256 batchCEntireDebtBefore = batchC.entireDebt;
-        assertGt(batchCEntireDebtBefore, batchCRecordedDebtBefore, "Batch C entire debt should be greater than recorded");
+        assertGt(
+            batchCEntireDebtBefore, batchCRecordedDebtBefore, "Batch C entire debt should be greater than recorded"
+        );
 
         // Move the last trove from B to C
         vm.startPrank(E);
@@ -355,21 +376,43 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(tmBatchManagerAddress, C, "Wrong batch manager in TM");
 
         // Check interest was applied
-        assertApproxEqAbs(troveManager.getTroveDebt(troveIDs.A), troveEntireDebtBefore.A, 1, "Interest was not applied to trove A");
-        assertEq(troveManager.getTroveDebt(troveIDs.A), troveManager.getTroveEntireDebt(troveIDs.A), "Trove A recorded debt should be equal to entire");
+        assertApproxEqAbs(
+            troveManager.getTroveDebt(troveIDs.A), troveEntireDebtBefore.A, 1, "Interest was not applied to trove A"
+        );
+        assertEq(
+            troveManager.getTroveDebt(troveIDs.A),
+            troveManager.getTroveEntireDebt(troveIDs.A),
+            "Trove A recorded debt should be equal to entire"
+        );
 
-        assertApproxEqAbs(troveManager.getTroveDebt(troveIDs.D), troveEntireDebtBefore.D, 1, "Interest was not applied to trove D");
-        assertEq(troveManager.getTroveDebt(troveIDs.D), troveManager.getTroveEntireDebt(troveIDs.D), "Trove D recorded debt should be equal to entire");
+        assertApproxEqAbs(
+            troveManager.getTroveDebt(troveIDs.D), troveEntireDebtBefore.D, 1, "Interest was not applied to trove D"
+        );
+        assertEq(
+            troveManager.getTroveDebt(troveIDs.D),
+            troveManager.getTroveEntireDebt(troveIDs.D),
+            "Trove D recorded debt should be equal to entire"
+        );
 
-        assertApproxEqAbs(troveManager.getTroveDebt(troveIDs.E), troveEntireDebtBefore.E, 1, "Interest was not applied to trove E");
-        assertEq(troveManager.getTroveDebt(troveIDs.E), troveManager.getTroveEntireDebt(troveIDs.E), "Trove E recorded debt should be equal to entire");
+        assertApproxEqAbs(
+            troveManager.getTroveDebt(troveIDs.E), troveEntireDebtBefore.E, 1, "Interest was not applied to trove E"
+        );
+        assertEq(
+            troveManager.getTroveDebt(troveIDs.E),
+            troveManager.getTroveEntireDebt(troveIDs.E),
+            "Trove E recorded debt should be equal to entire"
+        );
 
         batchB = troveManager.getLatestBatchData(B);
-        assertEq(batchB.recordedDebt, batchBEntireDebtBefore - troveEntireDebtBefore.E, "Interest was not applied to batch B");
+        assertEq(
+            batchB.recordedDebt, batchBEntireDebtBefore - troveEntireDebtBefore.E, "Interest was not applied to batch B"
+        );
         assertEq(batchB.recordedDebt, batchB.entireDebt, "Batch B recorded debt should be equal to entire");
 
         batchC = troveManager.getLatestBatchData(C);
-        assertEq(batchC.recordedDebt, batchCEntireDebtBefore + troveEntireDebtBefore.E, "Interest was not applied to batch C");
+        assertEq(
+            batchC.recordedDebt, batchCEntireDebtBefore + troveEntireDebtBefore.E, "Interest was not applied to batch C"
+        );
         assertEq(batchC.recordedDebt, batchC.entireDebt, "Batch C recorded debt should be equal to entire");
     }
 

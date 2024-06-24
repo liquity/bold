@@ -415,11 +415,7 @@ contract BaseTest is Test {
     ) internal {
         vm.startPrank(_account);
         borrowerOperations.registerBatchManager(
-            _minInterestRate,
-            _maxInterestRate,
-            _currentInterestRate,
-            _fee,
-            _minInterestRateChangePeriod
+            _minInterestRate, _maxInterestRate, _currentInterestRate, _fee, _minInterestRateChangePeriod
         );
         vm.stopPrank();
     }
@@ -436,7 +432,9 @@ contract BaseTest is Test {
         uint256 _annualInterestRate
     ) internal returns (uint256) {
         if (!borrowerOperations.checkBatchManagerExists(_batchAddress)) {
-            registerBatchManager(_batchAddress, uint128(1e16), uint128(20e16), uint128(_annualInterestRate), uint128(25e14), uint128(0));
+            registerBatchManager(
+                _batchAddress, uint128(1e16), uint128(20e16), uint128(_annualInterestRate), uint128(25e14), uint128(0)
+            );
         }
 
         vm.startPrank(_troveOwner);
@@ -461,9 +459,21 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function setInterestBatchManager(address _troveOwner, uint256 _troveId, address _newBatchManager, uint256 _annualInterestRate) internal {
+    function setInterestBatchManager(
+        address _troveOwner,
+        uint256 _troveId,
+        address _newBatchManager,
+        uint256 _annualInterestRate
+    ) internal {
         if (!borrowerOperations.checkBatchManagerExists(_newBatchManager)) {
-            registerBatchManager(_newBatchManager, uint128(1e16), uint128(20e16), uint128(_annualInterestRate), uint128(25e14), uint128(0));
+            registerBatchManager(
+                _newBatchManager,
+                uint128(1e16),
+                uint128(20e16),
+                uint128(_annualInterestRate),
+                uint128(25e14),
+                uint128(0)
+            );
         }
         setInterestBatchManager(_troveOwner, _troveId, _newBatchManager);
     }
@@ -474,7 +484,9 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function removeInterestBatchManager(address _troveOwner, uint256 _troveId, uint256 _newAnnualInterestRate) internal {
+    function removeInterestBatchManager(address _troveOwner, uint256 _troveId, uint256 _newAnnualInterestRate)
+        internal
+    {
         vm.startPrank(_troveOwner);
         borrowerOperations.removeInterestBatchManager(_troveId, _newAnnualInterestRate, 0, 0, type(uint256).max);
         vm.stopPrank();
