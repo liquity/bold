@@ -86,7 +86,7 @@ class DeploymentHelper {
     ]);
 
     const mockInterestRouter = await MockInterestRouter.new();
-    const hintHelpers = await Contracts.HintHelpers.new();
+    const hintHelpers = await Contracts.HintHelpers.new(collateralRegistry.address);
 
     // // Needed?
     // const price = await priceFeed.getPrice();
@@ -209,12 +209,6 @@ class DeploymentHelper {
       contracts.borrowerOperations.address,
       contracts.troveManager.address,
       contracts.activePool.address,
-    );
-
-    // set contracts in HintHelpers
-    await contracts.hintHelpers.setAddresses(
-      contracts.sortedTroves.address,
-      contracts.troveManager.address,
     );
 
     await contracts.boldToken.setCollateralRegistry(
