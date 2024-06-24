@@ -25,9 +25,9 @@
     "react-dom": "^18",
     "sharp": "^0.33.4",
     "ts-pattern": "^5.0.8",
+    "valibot": "^0.33.2",
     "viem": "^2.9.25",
-    "wagmi": "^2.5.12",
-    "zod": "^3.23.0"
+    "wagmi": "^2.5.12"
   },
   "devDependencies": {
     "@babel/plugin-transform-private-methods": "^7.24.1",

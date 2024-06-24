@@ -4,7 +4,6 @@ import "./TestContracts/DevTestSetup.sol";
 import {mulDivCeil} from "./Utils/Math.sol";
 
 contract SPTest is DevTestSetup {
-
     struct ExpectedShareOfReward {
         uint256 _1_A;
         uint256 _1_B;
@@ -70,10 +69,9 @@ contract SPTest is DevTestSetup {
         uint256 totalDepositsBefore;
         uint256 spEthBal1;
         uint256 spEthBal2;
-
     }
 
-     function _setupStashedAndCurrentETHGains() internal {
+    function _setupStashedAndCurrentETHGains() internal {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         // A stashes first gain
@@ -81,7 +79,7 @@ contract SPTest is DevTestSetup {
 
         // A liqs D
         liquidate(A, troveIDs.D);
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(TroveManager.Status.closedByLiquidation));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(ITroveManager.Status.closedByLiquidation));
 
         // Check A has both stashed and current gains
         uint256 stashedETHGain_A = stabilityPool.stashedETH(A);
@@ -953,7 +951,7 @@ contract SPTest is DevTestSetup {
 
         // A liquidates D
         liquidate(A, troveIDs.D);
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(TroveManager.Status.closedByLiquidation));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(ITroveManager.Status.closedByLiquidation));
 
         uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
@@ -1179,7 +1177,7 @@ contract SPTest is DevTestSetup {
 
         // A liquidates D
         liquidate(A, troveIDs.D);
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(TroveManager.Status.closedByLiquidation));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(ITroveManager.Status.closedByLiquidation));
 
         uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
@@ -1744,17 +1742,18 @@ contract SPTest is DevTestSetup {
         // Choose a low value of P initially
         _cheatP = bound(_cheatP, 1e9, 1e11);
 
-       // Cheat 1: manipulate contract state to make value of P low 
-        vm.store(address(stabilityPool),
+        // Cheat 1: manipulate contract state to make value of P low
+        vm.store(
+            address(stabilityPool),
             bytes32(uint256(14)), // 14th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
-      
+
         // Confirm that storage slot 14 is set
         uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(14))));
         assertEq(storedVal, _cheatP, "value of slot 14 is not set");
         // Confirm that P specfically is set
-        assertEq(stabilityPool.P(), _cheatP, "P is not set");  
+        assertEq(stabilityPool.P(), _cheatP, "P is not set");
 
         ABCDEF memory troveIDs = _setupForPTests();
 
@@ -1762,8 +1761,8 @@ contract SPTest is DevTestSetup {
 
         uint256 troveDebt = troveManager.getTroveEntireDebt(troveIDs.D);
 
-        uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits(); 
-        
+        uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
+
         _surplus = bound(_surplus, debtDelta + 1e9, debtDelta + 10e18);
         // B deposits the surplus to SP
         makeSPDepositAndClaim(B, _surplus);
@@ -1776,17 +1775,21 @@ contract SPTest is DevTestSetup {
         assertGt(scale2, scale1, "scale didnt change");
 
         // Confirm that P has not fallen below 1e9
-        assertGe(stabilityPool.P(), 1e9);      
+        assertGe(stabilityPool.P(), 1e9);
     }
 
-    function testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fuzz(uint256 _cheatP, uint256 _surplus) public {
+    function testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fuzz(
+        uint256 _cheatP,
+        uint256 _surplus
+    ) public {
         PTestVars memory testVars;
-        
+
         // Choose a low value of P initially
         _cheatP = bound(_cheatP, 1e9, 1e11);
 
-       // Cheat 1: manipulate contract state to make value of P low 
-        vm.store(address(stabilityPool),
+        // Cheat 1: manipulate contract state to make value of P low
+        vm.store(
+            address(stabilityPool),
             bytes32(uint256(14)), // 14th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
@@ -1795,27 +1798,27 @@ contract SPTest is DevTestSetup {
         uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(14))));
         assertEq(storedVal, _cheatP, "value of slot 14 is not set");
         // Confirm that P specfically is set
-        assertEq(stabilityPool.P(), _cheatP, "P is not set");  
+        assertEq(stabilityPool.P(), _cheatP, "P is not set");
 
         ABCDEF memory troveIDs = _setupForPTests();
-    
+
         uint256 scale1 = stabilityPool.currentScale();
 
         // Check A owns entire SP
         assertEq(stabilityPool.getTotalBoldDeposits(), stabilityPool.getCompoundedBoldDeposit(A));
         // Check D's trove's debt equals the SP size
         uint256 troveDebt = troveManager.getTroveEntireDebt(troveIDs.D);
-        uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits(); 
-        
+        uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
+
         _surplus = bound(_surplus, debtDelta + 1e9, debtDelta + 10e18);
 
         // B transfers BOLD to A so he can slightly top up the SP
         transferBold(B, A, boldToken.balanceOf(B) / 2);
-        
+
         // A adds surplus to SP
         makeSPDepositAndClaim(A, _surplus);
         assertEq(stabilityPool.getDepositorYieldGain(A), 0);
-        assertEq( activePool.calcPendingAggInterest(), 0);
+        assertEq(activePool.calcPendingAggInterest(), 0);
 
         // A liquidates C
         liquidate(A, troveIDs.C);
@@ -1827,11 +1830,11 @@ contract SPTest is DevTestSetup {
         // Check A deposit reduced to ~0
         makeSPWithdrawalAndClaim(A, stabilityPool.getCompoundedBoldDeposit(A));
         assertEq(stabilityPool.getCompoundedBoldDeposit(A), 0);
-       
+
         // D sends some BOLD to C
         uint256 freshDeposit = boldToken.balanceOf(D) / 2;
         assertGt(freshDeposit, 0);
-        
+
         transferBold(D, C, freshDeposit);
 
         // D and C make deposits
@@ -1892,18 +1895,21 @@ contract SPTest is DevTestSetup {
 
         // check all BOLD and ETH gains are as expected
         uint256 boldGainE = stabilityPool.getDepositorYieldGain(E);
-     
+
         assertApproximatelyEqual(expectedShareOfYield2_E, boldGainE, 1e9);
     }
 
-    function testLiquidationsWithLowPAllowFurtherRewardsForExistingDepositors(uint256 _cheatP, uint256 _surplus) public {
+    function testLiquidationsWithLowPAllowFurtherRewardsForExistingDepositors(uint256 _cheatP, uint256 _surplus)
+        public
+    {
         PTestVars memory testVars;
 
         // Choose a low value of P initially
         _cheatP = bound(_cheatP, 1e9, 1e11);
 
-       // Cheat 1: manipulate contract state to make value of P low 
-        vm.store(address(stabilityPool),
+        // Cheat 1: manipulate contract state to make value of P low
+        vm.store(
+            address(stabilityPool),
             bytes32(uint256(14)), // 14th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
@@ -1912,18 +1918,18 @@ contract SPTest is DevTestSetup {
         uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(14))));
         assertEq(storedVal, _cheatP, "value of slot 14 is not set");
         // Confirm that P specfically is set
-        assertEq(stabilityPool.P(), _cheatP, "P is not set");  
+        assertEq(stabilityPool.P(), _cheatP, "P is not set");
 
         ABCDEF memory troveIDs = _setupForPTests();
 
         uint256 troveDebt = troveManager.getTroveEntireDebt(troveIDs.D);
-        uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits(); 
+        uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
         // Make the surplus high enough  - in range [0.01, 1] BOLD - to leave each depositor with non-zero deposit after the liq, yet still trigger a scale change
         _surplus = bound(_surplus, debtDelta + 1e15, debtDelta + 10e18);
 
         // B deposits to SP
         makeSPDepositAndClaim(B, _surplus);
-       
+
         // A liquidates C
         testVars.troveDebt_C = troveManager.getTroveEntireDebt(troveIDs.C);
         testVars.totalSPBeforeLiq_C = stabilityPool.getTotalBoldDeposits();
@@ -1937,7 +1943,7 @@ contract SPTest is DevTestSetup {
 
         testVars.expectedShareOfETH1_A = testVars.deposit1_A * testVars.spEthGain1 / testVars.totalSPBeforeLiq_C;
         testVars.expectedShareOfETH1_B = testVars.deposit1_B * testVars.spEthGain1 / testVars.totalSPBeforeLiq_C;
-        
+
         // Confirm scale change occured
         testVars.scale2 = stabilityPool.currentScale();
 
@@ -1949,8 +1955,10 @@ contract SPTest is DevTestSetup {
         testVars.deposit2_B = stabilityPool.getCompoundedBoldDeposit(B);
 
         // Check deposits after liq C are what we expect
-        testVars.expectedDeposit1_A = testVars.deposit1_A - testVars.deposit1_A * testVars.troveDebt_C / testVars.totalSPBeforeLiq_C;
-        testVars.expectedDeposit1_B = testVars.deposit1_B - testVars.deposit1_B * testVars.troveDebt_C / testVars.totalSPBeforeLiq_C;
+        testVars.expectedDeposit1_A =
+            testVars.deposit1_A - testVars.deposit1_A * testVars.troveDebt_C / testVars.totalSPBeforeLiq_C;
+        testVars.expectedDeposit1_B =
+            testVars.deposit1_B - testVars.deposit1_B * testVars.troveDebt_C / testVars.totalSPBeforeLiq_C;
 
         assertApproximatelyEqual(testVars.expectedDeposit1_A, testVars.deposit2_A, 1e18);
         assertApproximatelyEqual(testVars.expectedDeposit1_B, testVars.deposit2_B, 1e18);
@@ -1975,7 +1983,7 @@ contract SPTest is DevTestSetup {
         transferBold(B, D, boldToken.balanceOf(B));
         makeSPDepositAndClaim(D, boldToken.balanceOf(D));
         testVars.totalSPBeforeLiq_D = stabilityPool.getTotalBoldDeposits();
-        assertGt( testVars.totalSPBeforeLiq_D, testVars.troveDebt_D);
+        assertGt(testVars.totalSPBeforeLiq_D, testVars.troveDebt_D);
 
         // D's trove liquidated
         spEthBalBefore = WETH.balanceOf(address(stabilityPool));
@@ -1985,8 +1993,10 @@ contract SPTest is DevTestSetup {
         assertGt(spEthGain2, 0);
 
         // Check deposits after liq D are what we expect
-        testVars.expectedDeposit2_A = testVars.deposit2_A - testVars.deposit2_A * testVars.troveDebt_D / testVars.totalSPBeforeLiq_D;
-        testVars.expectedDeposit2_B = testVars.deposit2_B - testVars.deposit2_B * testVars.troveDebt_D / testVars.totalSPBeforeLiq_D;
+        testVars.expectedDeposit2_A =
+            testVars.deposit2_A - testVars.deposit2_A * testVars.troveDebt_D / testVars.totalSPBeforeLiq_D;
+        testVars.expectedDeposit2_B =
+            testVars.deposit2_B - testVars.deposit2_B * testVars.troveDebt_D / testVars.totalSPBeforeLiq_D;
 
         assertApproximatelyEqual(testVars.expectedDeposit2_A, stabilityPool.getCompoundedBoldDeposit(A), 1e18);
         assertApproximatelyEqual(testVars.expectedDeposit2_B, stabilityPool.getCompoundedBoldDeposit(B), 1e18);
@@ -2010,36 +2020,36 @@ contract SPTest is DevTestSetup {
         assertApproximatelyEqual(testVars.expectedShareOfETH1_B + testVars.expectedShareOfETH2_B, ethGainB, 1e15);
     }
 
-
     function testHighFractionLiqWithLowPTriggersTwoScaleChanges_Cheat_Fuzz(uint256 _cheatP, uint256 _surplus) public {
         // Choose a low value of P initially
         _cheatP = bound(_cheatP, 1e9, 1e11);
 
-       // Cheat 1: manipulate contract state to make value of P low 
-        vm.store(address(stabilityPool),
+        // Cheat 1: manipulate contract state to make value of P low
+        vm.store(
+            address(stabilityPool),
             bytes32(uint256(14)), // 14th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
-      
+
         // Confirm that storage slot 14 is set
         uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(14))));
         assertEq(storedVal, _cheatP, "value of slot 14 is not set");
         // Confirm that P specfically is set
-        assertEq(stabilityPool.P(), _cheatP, "P is not set");  
+        assertEq(stabilityPool.P(), _cheatP, "P is not set");
 
         ABCDEF memory troveIDs = _setupForPTests();
 
         uint256 scale1 = stabilityPool.currentScale();
 
         uint256 troveDebt = troveManager.getTroveEntireDebt(troveIDs.D);
-        
-        uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits(); 
+
+        uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
 
         // Tiny surplus
         _surplus = bound(_surplus, debtDelta + 1e9, debtDelta + 1e10);
         // B deposits the surplus to SP
         makeSPDepositAndClaim(B, _surplus);
-        
+
         // A liquidates D
         liquidate(A, troveIDs.D);
 
@@ -2047,30 +2057,31 @@ contract SPTest is DevTestSetup {
         uint256 scale2 = stabilityPool.currentScale();
         assertEq(scale2, scale1 + 2, "scale didnt increase by 2");
     }
- 
+
     function testHighFractionLiqWithLowPDoesNotDecreasePBelow1e9(uint256 _cheatP, uint256 _surplus) public {
         // Choose a low value of P initially
         _cheatP = bound(_cheatP, 1e9, 1e11);
 
-       // Cheat 1: manipulate contract state to make value of P low 
-        vm.store(address(stabilityPool),
+        // Cheat 1: manipulate contract state to make value of P low
+        vm.store(
+            address(stabilityPool),
             bytes32(uint256(14)), // 14th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
-      
+
         // Confirm that storage slot 14 is set
         uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(14))));
         assertEq(storedVal, _cheatP, "value of slot 14 is not set");
         // Confirm that P specfically is set
-        assertEq(stabilityPool.P(), _cheatP, "P is not set");  
+        assertEq(stabilityPool.P(), _cheatP, "P is not set");
 
         ABCDEF memory troveIDs = _setupForPTests();
 
         uint256 scale1 = stabilityPool.currentScale();
 
         uint256 troveDebt = troveManager.getTroveEntireDebt(troveIDs.D);
-        
-        uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits(); 
+
+        uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
 
         // Tiny surplus
         _surplus = bound(_surplus, debtDelta + 1e9, debtDelta + 1e10);
@@ -2085,7 +2096,7 @@ contract SPTest is DevTestSetup {
         assertGt(scale2, scale1, "scale didnt change");
 
         // Confirm that P has not fallen below 1e9
-        assertGe(stabilityPool.P(), 1e9);   
+        assertGe(stabilityPool.P(), 1e9);
     }
 }
 

@@ -39,14 +39,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     // Liquidation penalty for troves redistributed
     uint256 public immutable LIQUIDATION_PENALTY_REDISTRIBUTION;
 
-    enum Status {
-        nonExistent,
-        active,
-        closedByOwner,
-        closedByLiquidation,
-        unredeemable
-    }
-
     // Store the necessary data for a trove
     struct Trove {
         uint256 debt;
@@ -973,8 +965,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     // --- Trove property getters ---
 
-    function getTroveStatus(uint256 _troveId) external view override returns (uint256) {
-        return uint256(Troves[_troveId].status);
+    function getTroveStatus(uint256 _troveId) external view override returns (Status) {
+        return Troves[_troveId].status;
     }
 
     function getTroveStake(uint256 _troveId) external view override returns (uint256) {

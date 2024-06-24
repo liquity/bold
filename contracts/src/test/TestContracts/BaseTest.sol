@@ -15,6 +15,7 @@ import "../../Interfaces/ICollateralRegistry.sol";
 import "./PriceFeedTestnet.sol";
 import "../../Interfaces/IInterestRouter.sol";
 import "../../GasPool.sol";
+import "../../HintHelpers.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
 
 import "forge-std/Test.sol";
@@ -50,6 +51,7 @@ contract BaseTest is Test {
     GasPool gasPool;
     IInterestRouter mockInterestRouter;
     IERC20 WETH;
+    HintHelpers hintHelpers;
 
     // Structs for use in test where we need to bi-pass "stack-too-deep" errors
     struct ABCDEF {

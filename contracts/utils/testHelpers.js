@@ -500,6 +500,7 @@ class TestHelper {
       newDebt,
     );
     const { hintAddress: approxfullListHint, latestRandomSeed } = await contracts.hintHelpers.getApproxHint(
+      0,
       newNICR,
       5,
       this.latestRandomSeed,

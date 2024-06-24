@@ -15,7 +15,7 @@ contract SPInvariantsTest is Test {
     SPInvariantsTestHandler handler;
 
     function setUp() external {
-        (LiquityContracts memory contracts,, IBoldToken boldToken) = _deployAndConnectContracts();
+        (LiquityContracts memory contracts,, IBoldToken boldToken,,) = _deployAndConnectContracts();
         stabilityPool = contracts.stabilityPool;
 
         handler = new SPInvariantsTestHandler(
@@ -97,7 +97,7 @@ contract SPInvariantsTest is Test {
         vm.prank(barb);
         handler.liquidateMe();
 
-       // Expect SP LUSD ~ claimable LUSD: ...
+        // Expect SP LUSD ~ claimable LUSD: ...
         this.invariant_allFundsClaimable();
 
         // Adam still has non-zero deposit

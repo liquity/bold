@@ -24,7 +24,7 @@ contract DeployLiquity2Script is Script, StdCheats {
             vm.startBroadcast(vm.envUint("DEPLOYER"));
         }
 
-        (LiquityContracts memory contracts,,) = _deployAndConnectContracts();
+        (LiquityContracts memory contracts,,,,) = _deployAndConnectContracts();
         vm.stopBroadcast();
 
         if (vm.envOr("OPEN_DEMO_TROVES", false)) {
