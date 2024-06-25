@@ -377,8 +377,6 @@ contract BaseTest is Test {
 
     function batchLiquidateTroves(address _from, uint256[] memory _trovesList) public {
         vm.startPrank(_from);
-        console.log(_trovesList[0], "trove 0 to liq");
-        console.log(_trovesList[1], "trove 1 to liq");
         troveManager.batchLiquidateTroves(_trovesList);
         vm.stopPrank();
     }
