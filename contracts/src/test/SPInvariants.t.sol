@@ -3,7 +3,7 @@ pragma solidity 0.8.18;
 
 import {IBoldToken} from "../Interfaces/IBoldToken.sol";
 import {IStabilityPool} from "../Interfaces/IStabilityPool.sol";
-import {LiquityContracts, _deployAndConnectContracts} from "../deployment.sol";
+import {LiquityContractsDev, _deployAndConnectContracts} from "../deployment.sol";
 import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
 import {SPInvariantsTestHandler} from "./TestContracts/SPInvariantsTestHandler.sol";
 
@@ -14,7 +14,7 @@ contract SPInvariantsTest is BaseInvariantTest {
     function setUp() public override {
         super.setUp();
 
-        (LiquityContracts memory contracts,, IBoldToken boldToken,,,) = _deployAndConnectContracts();
+        (LiquityContractsDev memory contracts,, IBoldToken boldToken,,,) = _deployAndConnectContracts();
         stabilityPool = contracts.stabilityPool;
 
         handler = new SPInvariantsTestHandler(

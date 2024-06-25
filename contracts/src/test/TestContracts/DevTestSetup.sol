@@ -47,7 +47,7 @@ contract DevTestSetup is BaseTest {
             accountsList[6]
         );
 
-        LiquityContracts memory contracts;
+        LiquityContractsDev memory contracts;
         (contracts, collateralRegistry, boldToken, hintHelpers,, WETH) = _deployAndConnectContracts();
         collToken = contracts.collToken;
         activePool = contracts.activePool;
