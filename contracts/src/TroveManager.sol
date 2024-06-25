@@ -697,7 +697,12 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         emit TroveUpdated(_troveId, newDebt, newColl, newStake, trove.annualInterestRate, L_coll, L_boldDebt);
     }
 
-    function urgentRedemption(address _sender, uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral) external {
+    function urgentRedemption(
+        address _sender,
+        uint256 _boldAmount,
+        uint256[] calldata _troveIds,
+        uint256 _minCollateral
+    ) external {
         _requireCallerIsBorrowerOperations();
 
         ContractsCache memory contractsCache =
@@ -729,7 +734,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         // Burn bold
         contractsCache.boldToken.burn(_sender, totals.troveChange.debtDecrease);
     }
-
 
     // --- Helper functions ---
 

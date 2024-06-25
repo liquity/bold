@@ -2,7 +2,6 @@ pragma solidity ^0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 
-
 contract ShutdownTest is DevTestSetup {
     uint256 NUM_COLLATERALS = 4;
     LiquityContracts[] public contractsArray;
@@ -340,7 +339,11 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(boldToken.balanceOf(A), boldBalanceBefore - redemptionAmount, "Bold balance mismatch");
-        assertEq(contractsArray[0].collToken.balanceOf(A), collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100, "Coll balance mismatch");
+        assertEq(
+            contractsArray[0].collToken.balanceOf(A),
+            collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100,
+            "Coll balance mismatch"
+        );
     }
 
     function testCanUrgentReedemFullyBelow100() external {
@@ -363,7 +366,11 @@ contract ShutdownTest is DevTestSetup {
         borrowerOperations.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
         vm.stopPrank();
 
-        assertEq(boldToken.balanceOf(A), boldBalanceBefore - 11e18 * price / DECIMAL_PRECISION * 100 / 101, "Bold balance mismatch");
+        assertEq(
+            boldToken.balanceOf(A),
+            boldBalanceBefore - 11e18 * price / DECIMAL_PRECISION * 100 / 101,
+            "Bold balance mismatch"
+        );
         assertEq(contractsArray[0].collToken.balanceOf(A), collBalanceBefore + 11e18, "Coll balance mismatch");
     }
 
@@ -389,7 +396,11 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(boldToken.balanceOf(A), boldBalanceBefore - redemptionAmount, "Bold balance mismatch");
-        assertEq(contractsArray[0].collToken.balanceOf(A), collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100, "Coll balance mismatch");
+        assertEq(
+            contractsArray[0].collToken.balanceOf(A),
+            collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100,
+            "Coll balance mismatch"
+        );
     }
 
     function testCanUrgentReedemFullyBelowMCR() external {
@@ -414,7 +425,11 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(boldToken.balanceOf(A), boldBalanceBefore - redemptionAmount, "Bold balance mismatch");
-        assertEq(contractsArray[0].collToken.balanceOf(A), collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100, "Coll balance mismatch");
+        assertEq(
+            contractsArray[0].collToken.balanceOf(A),
+            collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100,
+            "Coll balance mismatch"
+        );
     }
 
     function testCanUrgentReedemPartiallyAboveMCR() external {
@@ -438,7 +453,11 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(boldToken.balanceOf(A), boldBalanceBefore - redemptionAmount, "Bold balance mismatch");
-        assertEq(contractsArray[0].collToken.balanceOf(A), collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100, "Coll balance mismatch");
+        assertEq(
+            contractsArray[0].collToken.balanceOf(A),
+            collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100,
+            "Coll balance mismatch"
+        );
     }
 
     function testCanUrgentReedemFullyAboveMCR() external {
@@ -462,6 +481,10 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(boldToken.balanceOf(A), boldBalanceBefore - redemptionAmount, "Bold balance mismatch");
-        assertEq(contractsArray[0].collToken.balanceOf(A), collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100, "Coll balance mismatch");
+        assertEq(
+            contractsArray[0].collToken.balanceOf(A),
+            collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100,
+            "Coll balance mismatch"
+        );
     }
 }

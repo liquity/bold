@@ -126,7 +126,7 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
     function _requireCallerIsCRorBOorTMorSP() internal view {
         require(
             msg.sender == collateralRegistryAddress || borrowerOperationsAddresses[msg.sender]
-            || troveManagerAddresses[msg.sender] || stabilityPoolAddresses[msg.sender],
+                || troveManagerAddresses[msg.sender] || stabilityPoolAddresses[msg.sender],
             "Bold: Caller is neither CR nor BorrowerOperations nor TroveManager nor StabilityPool"
         );
     }
