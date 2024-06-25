@@ -50,7 +50,7 @@ export function InputFieldFixture({
 
   const [leverage, setLeverage] = useState(0); // from 0 (1x) to 5.3 (6.3x)
 
-  const actionLabel = match(fixture)
+  const labelEnd = match(fixture)
     .with("slider", () => (
       <span>
         Leverage{" "}
@@ -220,16 +220,20 @@ export function InputFieldFixture({
       }}
     >
       <InputField
-        action={action}
-        actionLabel={actionLabel}
-        label={label}
+        contextual={action}
+        label={{
+          start: label,
+          end: labelEnd,
+        }}
         onFocus={() => setFocused(true)}
         onChange={setValue}
         onBlur={() => setFocused(false)}
         value={value_}
         placeholder={placeholder}
-        secondaryStart={secondaryStart}
-        secondaryEnd={secondaryEnd}
+        secondary={{
+          start: secondaryStart,
+          end: secondaryEnd,
+        }}
       />
     </div>
   );

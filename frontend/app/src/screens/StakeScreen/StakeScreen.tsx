@@ -111,25 +111,27 @@ export function StakeScreen() {
               <Field
                 field={
                   <InputField
-                    action={
-                      <StaticAction
+                    contextual={
+                      <InputField.Badge
                         icon={<TokenIcon symbol="LQTY" />}
                         label="LQTY"
                       />
                     }
                     label="You deposit"
                     placeholder="0.00"
-                    secondaryStart={deposit.parsed && `$${dn.format(dn.mul(deposit.parsed, lqtyPrice), 2)}`}
-                    secondaryEnd={
-                      <TextButton
-                        label={`Max. ${dn.format(ACCOUNT_BALANCES.LQTY, 2)} LQTY`}
-                        onClick={() => {
-                          deposit.setValue(
-                            dn.toString(ACCOUNT_BALANCES.LQTY),
-                          );
-                        }}
-                      />
-                    }
+                    secondary={{
+                      start: deposit.parsed && `$${dn.format(dn.mul(deposit.parsed, lqtyPrice), 2)}`,
+                      end: (
+                        <TextButton
+                          label={`Max. ${dn.format(ACCOUNT_BALANCES.LQTY, 2)} LQTY`}
+                          onClick={() => {
+                            deposit.setValue(
+                              dn.toString(ACCOUNT_BALANCES.LQTY),
+                            );
+                          }}
+                        />
+                      ),
+                    }}
                     {...deposit.inputFieldProps}
                   />
                 }
@@ -188,25 +190,27 @@ export function StakeScreen() {
               <Field
                 field={
                   <InputField
-                    action={
-                      <StaticAction
+                    contextual={
+                      <InputField.Badge
                         icon={<TokenIcon symbol="LQTY" />}
                         label="LQTY"
                       />
                     }
                     label="You withdraw"
                     placeholder="0.00"
-                    secondaryStart={withdraw.parsed && `$${dn.format(dn.mul(withdraw.parsed, lqtyPrice), 2)}`}
-                    secondaryEnd={
-                      <TextButton
-                        label={`Max. ${dn.format(ACCOUNT_STAKED_LQTY.deposit, 2)} LQTY`}
-                        onClick={() => {
-                          withdraw.setValue(
-                            dn.toString(ACCOUNT_STAKED_LQTY.deposit),
-                          );
-                        }}
-                      />
-                    }
+                    secondary={{
+                      start: withdraw.parsed && `$${dn.format(dn.mul(withdraw.parsed, lqtyPrice), 2)}`,
+                      end: (
+                        <TextButton
+                          label={`Max. ${dn.format(ACCOUNT_STAKED_LQTY.deposit, 2)} LQTY`}
+                          onClick={() => {
+                            withdraw.setValue(
+                              dn.toString(ACCOUNT_STAKED_LQTY.deposit),
+                            );
+                          }}
+                        />
+                      ),
+                    }}
                     {...withdraw.inputFieldProps}
                   />
                 }
@@ -344,40 +348,6 @@ export function StakeScreen() {
         </VFlex>
       </VFlex>
     </Screen>
-  );
-}
-
-function StaticAction({
-  label,
-  icon,
-}: {
-  label: ReactNode;
-  icon?: ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        height: 40,
-        padding: "0 16px",
-        paddingLeft: icon ? 8 : 16,
-        background: "#FFF",
-        borderRadius: 20,
-        userSelect: "none",
-      }}
-    >
-      {icon}
-      <div
-        style={{
-          fontSize: 24,
-          fontWeight: 500,
-        }}
-      >
-        {label}
-      </div>
-    </div>
   );
 }
 
