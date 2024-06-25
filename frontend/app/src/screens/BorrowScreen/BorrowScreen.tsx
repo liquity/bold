@@ -1,7 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
-
 import { Field } from "@/src/comps/Field/Field";
 import { Forecast } from "@/src/comps/Forecast/Forecast";
 import { Screen } from "@/src/comps/Screen/Screen";
@@ -123,7 +121,7 @@ export function BorrowScreen() {
           // “You deposit”
           field={
             <InputField
-              action={
+              contextual={
                 <Dropdown
                   items={COLLATERALS.map(({ symbol, name }) => ({
                     icon: <TokenIcon symbol={symbol} />,
@@ -144,24 +142,23 @@ export function BorrowScreen() {
               }
               label={content.borrowScreen.depositField.label}
               placeholder="0.00"
-              secondaryStart={`$${
-                deposit.parsed
-                  ? dn.format(
-                    dn.mul(ethPriceUsd, deposit.parsed),
-                    2,
-                  )
-                  : "0.00"
-              }`}
-              secondaryEnd={account.isConnected && (
-                <TextButton
-                  label={`Max ${dn.format(ACCOUNT_BALANCES[collateral])} ${collateral}`}
-                  onClick={() => {
-                    deposit.setValue(
-                      dn.format(ACCOUNT_BALANCES[collateral]).replace(",", ""),
-                    );
-                  }}
-                />
-              )}
+              secondary={{
+                start: `$${
+                  deposit.parsed
+                    ? dn.format(dn.mul(ethPriceUsd, deposit.parsed), 2)
+                    : "0.00"
+                }`,
+                end: account.isConnected && (
+                  <TextButton
+                    label={`Max ${dn.format(ACCOUNT_BALANCES[collateral])} ${collateral}`}
+                    onClick={() => {
+                      deposit.setValue(
+                        dn.format(ACCOUNT_BALANCES[collateral]).replace(",", ""),
+                      );
+                    }}
+                  />
+                ),
+              }}
               {...deposit.inputFieldProps}
             />
           }
@@ -180,52 +177,47 @@ export function BorrowScreen() {
           // “You borrow”
           field={
             <InputField
-              action={
-                <StaticAction
+              contextual={
+                <InputField.Badge
                   icon={<TokenIcon symbol="BOLD" />}
                   label="BOLD"
                 />
               }
               label={content.borrowScreen.borrowField.label}
               placeholder="0.00"
-              secondaryStart={`$${
-                debt.parsed
-                  ? dn.gt(
-                      dn.mul(boldPriceUsd, debt.parsed),
-                      1_000_000_000_000,
-                    )
-                    ? "−"
-                    : dn.format(
-                      dn.mul(boldPriceUsd, debt.parsed),
-                      {
-                        digits: 2,
-                        trailingZeros: true,
-                        compact: dn.gt(debt.parsed, 1_000_000_000),
-                      },
-                    )
-                  : "0.00"
-              }`}
-              secondaryEnd={debtSuggestions && (
-                <HFlex gap={6}>
-                  {debtSuggestions.map((s) => (
-                    s.debt && s.risk && (
-                      <PillButton
-                        key={dn.toString(s.debt)}
-                        label={`$${dn.format(s.debt, { compact: true, digits: 0 })}`}
-                        onClick={() => {
-                          if (s.debt) {
-                            debt.setValue(dn.toString(s.debt, 0));
-                          }
-                        }}
-                        warnLevel={s.risk}
-                      />
-                    )
-                  ))}
-                  {debtSuggestions.length > 0 && (
-                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
-                  )}
-                </HFlex>
-              )}
+              secondary={{
+                start: `$${
+                  debt.parsed
+                    ? dn.gt(dn.mul(boldPriceUsd, debt.parsed), 1_000_000_000_000)
+                      ? "−"
+                      : dn.format(
+                        dn.mul(boldPriceUsd, debt.parsed),
+                        { digits: 2, trailingZeros: true, compact: dn.gt(debt.parsed, 1_000_000_000) },
+                      )
+                    : "0.00"
+                }`,
+                end: debtSuggestions && (
+                  <HFlex gap={6}>
+                    {debtSuggestions.map((s) => (
+                      s.debt && s.risk && (
+                        <PillButton
+                          key={dn.toString(s.debt)}
+                          label={`$${dn.format(s.debt, { compact: true, digits: 0 })}`}
+                          onClick={() => {
+                            if (s.debt) {
+                              debt.setValue(dn.toString(s.debt, 0));
+                            }
+                          }}
+                          warnLevel={s.risk}
+                        />
+                      )
+                    ))}
+                    {debtSuggestions.length > 0 && (
+                      <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
+                    )}
+                  </HFlex>
+                ),
+              }}
               {...debt.inputFieldProps}
             />
           }
@@ -256,39 +248,41 @@ export function BorrowScreen() {
             // “Interest rate”
             field={
               <InputField
-                action={<StaticAction label="% per year" />}
+                contextual={<InputField.Badge label="% per year" />}
                 label={content.borrowScreen.interestRateField.label}
                 placeholder="0.00"
-                secondaryStart={
-                  <HFlex gap={4}>
-                    <div>
-                      {boldInterestPerYear
-                        ? dn.format(boldInterestPerYear, { digits: 2, trailingZeros: false })
-                        : "−"} BOLD / year
-                    </div>
-                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
-                  </HFlex>
-                }
-                secondaryEnd={
-                  <HFlex gap={6}>
-                    <PillButton
-                      label="6.5%"
-                      onClick={() => interestRate.setValue("6.5")}
-                      warnLevel="low"
-                    />
-                    <PillButton
-                      label="5.0%"
-                      onClick={() => interestRate.setValue("5.0")}
-                      warnLevel="medium"
-                    />
-                    <PillButton
-                      label="3.5%"
-                      onClick={() => interestRate.setValue("3.5")}
-                      warnLevel="high"
-                    />
-                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
-                  </HFlex>
-                }
+                secondary={{
+                  start: (
+                    <HFlex gap={4}>
+                      <div>
+                        {boldInterestPerYear
+                          ? dn.format(boldInterestPerYear, { digits: 2, trailingZeros: false })
+                          : "−"} BOLD / year
+                      </div>
+                      <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
+                    </HFlex>
+                  ),
+                  end: (
+                    <HFlex gap={6}>
+                      <PillButton
+                        label="6.5%"
+                        onClick={() => interestRate.setValue("6.5")}
+                        warnLevel="low"
+                      />
+                      <PillButton
+                        label="5.0%"
+                        onClick={() => interestRate.setValue("5.0")}
+                        warnLevel="medium"
+                      />
+                      <PillButton
+                        label="3.5%"
+                        onClick={() => interestRate.setValue("3.5")}
+                        warnLevel="high"
+                      />
+                      <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
+                    </HFlex>
+                  ),
+                }}
                 {...interestRate.inputFieldProps}
               />
             }
@@ -371,39 +365,5 @@ export function BorrowScreen() {
         </div>
       </div>
     </Screen>
-  );
-}
-
-function StaticAction({
-  label,
-  icon,
-}: {
-  label: ReactNode;
-  icon?: ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        height: 40,
-        padding: "0 16px",
-        paddingLeft: icon ? 8 : 16,
-        background: "#FFF",
-        borderRadius: 20,
-        userSelect: "none",
-      }}
-    >
-      {icon}
-      <div
-        style={{
-          fontSize: 24,
-          fontWeight: 500,
-        }}
-      >
-        {label}
-      </div>
-    </div>
   );
 }

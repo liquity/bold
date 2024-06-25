@@ -7,17 +7,21 @@ import { IconCross } from "../icons";
 import { useElementSize } from "../react-utils";
 
 type InputFieldProps = {
-  action?: ReactNode;
-  actionLabel?: ReactNode;
+  contextual?: ReactNode;
   difference?: ReactNode;
-  label?: string;
+  label?:
+    | ReactNode
+    | { end: ReactNode; start?: ReactNode }
+    | { end?: ReactNode; start: ReactNode };
   onBlur?: () => void;
   onChange?: (value: string) => void;
   onDifferenceClick?: () => void;
   onFocus?: () => void;
   placeholder?: string;
-  secondaryEnd?: ReactNode;
-  secondaryStart?: ReactNode;
+  secondary?:
+    | ReactNode
+    | { end: ReactNode; start?: ReactNode }
+    | { end?: ReactNode; start: ReactNode };
   value?: string;
 };
 
@@ -27,9 +31,8 @@ const diffSpringConfig = {
   friction: 120,
 };
 
-export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputField({
-  action,
-  actionLabel,
+const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputField({
+  contextual,
   difference,
   label,
   onBlur,
@@ -37,10 +40,21 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function
   onDifferenceClick,
   onFocus,
   placeholder,
-  secondaryEnd,
-  secondaryStart,
+  secondary,
   value,
 }, ref) {
+  const label_ = label
+      && typeof label === "object"
+      && ("start" in label || "end" in label)
+    ? label
+    : { start: label };
+
+  const secondary_ = secondary
+      && typeof secondary === "object"
+      && ("start" in secondary || "end" in secondary)
+    ? secondary
+    : { start: secondary };
+
   const id = useId();
 
   const valueMeasurement = useRef<HTMLDivElement>(null);
@@ -119,8 +133,8 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function
           color: "contentAlt",
         })}
       >
-        {label ? <label htmlFor={id}>{label}</label> : <div />}
-        {actionLabel && <div>{actionLabel}</div>}
+        {label_.start ? <label htmlFor={id}>{label_.start}</label> : <div />}
+        {label_.end && <div>{label_.end}</div>}
       </div>
       <div
         ref={valueMeasurement}
@@ -216,14 +230,14 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function
           },
         })}
       />
-      {action && (
+      {contextual && (
         <div
           className={css({
             position: "absolute",
             inset: "48px 16px auto auto",
           })}
         >
-          {action}
+          {contextual}
         </div>
       )}
       <div
@@ -241,30 +255,76 @@ export const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function
           },
         })}
       >
-        <div
-          className={css({
-            flexGrow: 0,
-            flexShrink: 1,
-            display: "flex",
-            whiteSpace: "nowrap",
-            textOverflow: "ellipsis",
-            maxWidth: "50%",
-          })}
-        >
-          {secondaryStart}
-        </div>
-        <div
-          className={css({
-            flexGrow: 0,
-            flexShrink: 1,
-            display: "flex",
-            whiteSpace: "nowrap",
-            textOverflow: "ellipsis",
-          })}
-        >
-          {secondaryEnd}
-        </div>
+        {secondary_.start
+          ? (
+            <div
+              className={css({
+                flexGrow: 0,
+                flexShrink: 1,
+                display: "flex",
+                whiteSpace: "nowrap",
+                textOverflow: "ellipsis",
+                maxWidth: "50%",
+              })}
+            >
+              {secondary_.start}
+            </div>
+          )
+          : <div />}
+        {secondary_.end && (
+          <div
+            className={css({
+              flexGrow: 0,
+              flexShrink: 1,
+              display: "flex",
+              whiteSpace: "nowrap",
+              textOverflow: "ellipsis",
+            })}
+          >
+            {secondary_.end}
+          </div>
+        )}
       </div>
     </div>
   );
 });
+
+export function InputFieldBadge({
+  label,
+  icon,
+}: {
+  label: ReactNode;
+  icon?: ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        height: 40,
+        padding: "0 16px",
+        paddingLeft: icon ? 8 : 16,
+        background: "#FFF",
+        borderRadius: 20,
+        userSelect: "none",
+      }}
+    >
+      {icon}
+      <div
+        style={{
+          fontSize: 24,
+          fontWeight: 500,
+        }}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
+const InputFieldCompound = Object.assign(InputField, {
+  Badge: InputFieldBadge,
+});
+
+export { InputFieldCompound as InputField };

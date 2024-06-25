@@ -1,7 +1,6 @@
 "use client";
 
 import type { Dnum } from "dnum";
-import type { ReactNode } from "react";
 
 import { Field } from "@/src/comps/Field/Field";
 import { Forecast } from "@/src/comps/Forecast/Forecast";
@@ -227,7 +226,7 @@ export function LeverageScreen() {
           // “You deposit”
           field={
             <InputField
-              action={
+              contextual={
                 <Dropdown
                   items={COLLATERALS.map(({ symbol, name }) => ({
                     icon: <TokenIcon symbol={symbol} />,
@@ -251,20 +250,22 @@ export function LeverageScreen() {
               }
               label={content.leverageScreen.depositField.label}
               placeholder="0.00"
-              secondaryStart={depositUsd && `$${
-                dn.format(depositUsd, {
-                  digits: 2,
-                  trailingZeros: true,
-                })
-              }`}
-              secondaryEnd={account.isConnected && (
-                <TextButton
-                  label={`Max ${dn.format(ACCOUNT_BALANCES[collateral])} ${collateral}`}
-                  onClick={() => {
-                    deposit.setValue(dn.toString(ACCOUNT_BALANCES[collateral]));
-                  }}
-                />
-              )}
+              secondary={{
+                start: depositUsd && `$${
+                  dn.format(depositUsd, {
+                    digits: 2,
+                    trailingZeros: true,
+                  })
+                }`,
+                end: account.isConnected && (
+                  <TextButton
+                    label={`Max ${dn.format(ACCOUNT_BALANCES[collateral])} ${collateral}`}
+                    onClick={() => {
+                      deposit.setValue(dn.toString(ACCOUNT_BALANCES[collateral]));
+                    }}
+                  />
+                ),
+              }}
               {...deposit.inputFieldProps}
             />
           }
@@ -281,7 +282,7 @@ export function LeverageScreen() {
           // ETH Liquidation price
           field={
             <InputField
-              action={
+              contextual={
                 <div
                   style={{
                     display: "flex",
@@ -318,62 +319,66 @@ export function LeverageScreen() {
                   />
                 </div>
               }
-              label={content.leverageScreen.liquidationPriceField.label}
-              actionLabel={
-                <span>
-                  Leverage{" "}
-                  <span
-                    title={dn.format([BigInt(Math.round(leverageFactor * 10)), 1])}
-                    style={{
-                      color: liquidationRisk === "high"
-                        ? "#F36740"
-                        : "#2F3037",
-                      fontVariantNumeric: "tabular-nums",
-                    }}
-                  >
-                    {dn.format([BigInt(Math.round(leverageFactor * 10)), 1], {
-                      digits: 1,
-                      trailingZeros: true,
-                    })}x
+              label={{
+                end: (
+                  <span>
+                    Leverage{" "}
+                    <span
+                      title={dn.format([BigInt(Math.round(leverageFactor * 10)), 1])}
+                      style={{
+                        color: liquidationRisk === "high"
+                          ? "#F36740"
+                          : "#2F3037",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {dn.format([BigInt(Math.round(leverageFactor * 10)), 1], {
+                        digits: 1,
+                        trailingZeros: true,
+                      })}x
+                    </span>
                   </span>
-                </span>
-              }
+                ),
+                start: content.leverageScreen.liquidationPriceField.label,
+              }}
               placeholder="0.00"
-              secondaryStart={
-                <div>
-                  Total debt {totalDebtBold && dn.gt(totalDebtBold, 0)
-                    ? (
-                      <>
-                        <span
-                          className={css({
-                            fontVariantNumeric: "tabular-nums",
-                          })}
-                        >
-                          {dn.format(totalDebtBold, { digits: 2, trailingZeros: true })}
-                        </span>
-                        {" BOLD"}
-                      </>
-                    )
-                    : "−"}
-                </div>
-              }
-              secondaryEnd={
-                <HFlex gap={6}>
-                  {leverageFactorSuggestions.map((factor) => (
-                    <PillButton
-                      key={factor}
-                      label={`${factor.toFixed(1)}x`}
-                      onClick={() => updateLeverageFactor(factor)}
-                      warnLevel={getLiquidationRiskFromLeverageFactor(
-                        factor,
-                        mediumRiskLeverageFactor,
-                        highRiskLeverageFactor,
-                      )}
-                    />
-                  ))}
-                  <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.leverageLevel)} />
-                </HFlex>
-              }
+              secondary={{
+                start: (
+                  <div>
+                    Total debt {totalDebtBold && dn.gt(totalDebtBold, 0)
+                      ? (
+                        <>
+                          <span
+                            className={css({
+                              fontVariantNumeric: "tabular-nums",
+                            })}
+                          >
+                            {dn.format(totalDebtBold, { digits: 2, trailingZeros: true })}
+                          </span>
+                          {" BOLD"}
+                        </>
+                      )
+                      : "−"}
+                  </div>
+                ),
+                end: (
+                  <HFlex gap={6}>
+                    {leverageFactorSuggestions.map((factor) => (
+                      <PillButton
+                        key={factor}
+                        label={`${factor.toFixed(1)}x`}
+                        onClick={() => updateLeverageFactor(factor)}
+                        warnLevel={getLiquidationRiskFromLeverageFactor(
+                          factor,
+                          mediumRiskLeverageFactor,
+                          highRiskLeverageFactor,
+                        )}
+                      />
+                    ))}
+                    <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.leverageLevel)} />
+                  </HFlex>
+                ),
+              }}
               {...ethLiqPrice.inputFieldProps}
             />
           }
@@ -421,42 +426,44 @@ export function LeverageScreen() {
             // “Interest rate”
             field={
               <InputField
-                action={<StaticAction label="% per year" />}
+                contextual={<InputField.Badge label="% per year" />}
                 label={content.leverageScreen.interestRateField.label}
                 placeholder="0.00"
-                secondaryStart={
-                  <HFlex gap={4}>
-                    <div>
-                      {interestRate.parsed && totalDebtBold
-                        ? dn.format(dn.mul(dn.div(interestRate.parsed, 100), totalDebtBold), {
-                          digits: 2,
-                          trailingZeros: true,
-                        })
-                        : "−"} BOLD / year
-                    </div>
-                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
-                  </HFlex>
-                }
-                secondaryEnd={
-                  <HFlex gap={6}>
-                    <PillButton
-                      label="6.5%"
-                      onClick={() => interestRate.setValue("6.5")}
-                      warnLevel="low"
-                    />
-                    <PillButton
-                      label="5.0%"
-                      onClick={() => interestRate.setValue("5.0")}
-                      warnLevel="medium"
-                    />
-                    <PillButton
-                      label="3.5%"
-                      onClick={() => interestRate.setValue("3.5")}
-                      warnLevel="high"
-                    />
-                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
-                  </HFlex>
-                }
+                secondary={{
+                  start: (
+                    <HFlex gap={4}>
+                      <div>
+                        {interestRate.parsed && totalDebtBold
+                          ? dn.format(dn.mul(dn.div(interestRate.parsed, 100), totalDebtBold), {
+                            digits: 2,
+                            trailingZeros: true,
+                          })
+                          : "−"} BOLD / year
+                      </div>
+                      <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
+                    </HFlex>
+                  ),
+                  end: (
+                    <HFlex gap={6}>
+                      <PillButton
+                        label="6.5%"
+                        onClick={() => interestRate.setValue("6.5")}
+                        warnLevel="low"
+                      />
+                      <PillButton
+                        label="5.0%"
+                        onClick={() => interestRate.setValue("5.0")}
+                        warnLevel="medium"
+                      />
+                      <PillButton
+                        label="3.5%"
+                        onClick={() => interestRate.setValue("3.5")}
+                        warnLevel="high"
+                      />
+                      <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
+                    </HFlex>
+                  ),
+                }}
                 {...interestRate.inputFieldProps}
               />
             }
@@ -537,39 +544,5 @@ export function LeverageScreen() {
         </div>
       </div>
     </Screen>
-  );
-}
-
-function StaticAction({
-  label,
-  icon,
-}: {
-  label: ReactNode;
-  icon?: ReactNode;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        height: 40,
-        padding: "0 16px",
-        paddingLeft: icon ? 8 : 16,
-        background: "#FFF",
-        borderRadius: 20,
-        userSelect: "none",
-      }}
-    >
-      {icon}
-      <div
-        style={{
-          fontSize: 24,
-          fontWeight: 500,
-        }}
-      >
-        {label}
-      </div>
-    </div>
   );
 }

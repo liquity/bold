@@ -55,7 +55,7 @@ export function WithdrawPanel({
       <Field
         field={
           <InputField
-            action={
+            contextual={
               <div
                 style={{
                   display: "flex",
@@ -86,27 +86,27 @@ export function WithdrawPanel({
             onBlur={() => setFocused(false)}
             value={value_}
             placeholder="0.00"
-            secondaryStart={
-              <HFlex gap={4}>
-                <div>
-                  {content.earnScreen.depositPanel.shareLabel}
-                </div>
-                <div>
-                  {updatedPoolShare
-                    ? dn.format(dn.mul(updatedPoolShare, 100), 2)
-                    : "0"}%
-                </div>
-                <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.depositPoolShare)} />
-              </HFlex>
-            }
-            secondaryEnd={position?.deposit && dn.gt(position?.deposit, 0) && (
-              <TextButton
-                label={`Max ${dn.format(position.deposit)} BOLD`}
-                onClick={() => {
-                  setValue(dn.toString(position.deposit));
-                }}
-              />
-            )}
+            secondary={{
+              start: (
+                <HFlex gap={4}>
+                  <div>{content.earnScreen.depositPanel.shareLabel}</div>
+                  <div>
+                    {updatedPoolShare
+                      ? dn.format(dn.mul(updatedPoolShare, 100), 2)
+                      : "0"}%
+                  </div>
+                  <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.depositPoolShare)} />
+                </HFlex>
+              ),
+              end: (position?.deposit && dn.gt(position?.deposit, 0) && (
+                <TextButton
+                  label={`Max ${dn.format(position.deposit)} BOLD`}
+                  onClick={() => {
+                    setValue(dn.toString(position.deposit));
+                  }}
+                />
+              )),
+            }}
           />
         }
       />

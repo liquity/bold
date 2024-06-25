@@ -56,7 +56,7 @@ export function DepositPanel({
       <Field
         field={
           <InputField
-            action={
+            contextual={
               <div
                 style={{
                   display: "flex",
@@ -87,25 +87,27 @@ export function DepositPanel({
             onBlur={() => setFocused(false)}
             value={value_}
             placeholder="0.00"
-            secondaryStart={
-              <HFlex gap={4}>
-                <div>
-                  {content.earnScreen.depositPanel.shareLabel}
-                </div>
-                <div>
-                  {updatedPoolShare
-                    ? dn.format(dn.mul(updatedPoolShare, 100), 2)
-                    : "0"}%
-                </div>
-                <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.depositPoolShare)} />
-              </HFlex>
-            }
-            secondaryEnd={accountBoldBalance && (
-              <TextButton
-                label={`Max ${dn.format(accountBoldBalance)} BOLD`}
-                onClick={() => setValue(dn.toString(accountBoldBalance))}
-              />
-            )}
+            secondary={{
+              start: (
+                <HFlex gap={4}>
+                  <div>
+                    {content.earnScreen.depositPanel.shareLabel}
+                  </div>
+                  <div>
+                    {updatedPoolShare
+                      ? dn.format(dn.mul(updatedPoolShare, 100), 2)
+                      : "0"}%
+                  </div>
+                  <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.depositPoolShare)} />
+                </HFlex>
+              ),
+              end: accountBoldBalance && (
+                <TextButton
+                  label={`Max ${dn.format(accountBoldBalance)} BOLD`}
+                  onClick={() => setValue(dn.toString(accountBoldBalance))}
+                />
+              ),
+            }}
           />
         }
       />

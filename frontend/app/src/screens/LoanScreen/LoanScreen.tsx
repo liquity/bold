@@ -173,7 +173,7 @@ function UpdatePositionPanel({
         <Field
           field={
             <InputField
-              action={
+              contextual={
                 <InputTokenBadge
                   icon={<TokenIcon symbol={collateral.symbol} />}
                   label={collateral.name}
@@ -190,17 +190,19 @@ function UpdatePositionPanel({
               }}
               label="Deposit"
               placeholder="0.00"
-              secondaryStart={loanDetails.depositUsd
-                ? "$" + dn.format(loanDetails.depositUsd, 2)
-                : "$0.00"}
-              secondaryEnd={
-                <TextButton
-                  label={`Max ${dn.format(ethMax, 2)} ${collateral.symbol}`}
-                  onClick={() => {
-                    deposit.setValue(dn.toString(ethMax));
-                  }}
-                />
-              }
+              secondary={{
+                start: loanDetails.depositUsd
+                  ? "$" + dn.format(loanDetails.depositUsd, 2)
+                  : "$0.00",
+                end: (
+                  <TextButton
+                    label={`Max ${dn.format(ethMax, 2)} ${collateral.symbol}`}
+                    onClick={() => {
+                      deposit.setValue(dn.toString(ethMax));
+                    }}
+                  />
+                ),
+              }}
               {...deposit.inputFieldProps}
             />
           }
@@ -215,7 +217,7 @@ function UpdatePositionPanel({
         <Field
           field={
             <InputField
-              action={
+              contextual={
                 <InputTokenBadge
                   icon={<TokenIcon symbol="BOLD" />}
                   label="BOLD"
@@ -232,28 +234,30 @@ function UpdatePositionPanel({
               }}
               label="Debt"
               placeholder="0.00"
-              secondaryStart={debt.parsed ? `$${dn.format(dn.mul(debt.parsed, boldPriceUsd), 2)}` : "$0.00"}
-              secondaryEnd={debtSuggestions && (
-                <HFlex gap={6}>
-                  {debtSuggestions.map((s) => (
-                    s.debt && s.risk && (
-                      <PillButton
-                        key={dn.toString(s.debt)}
-                        label={`$${dn.format(s.debt, { compact: true, digits: 0 })}`}
-                        onClick={() => {
-                          if (s.debt) {
-                            debt.setValue(dn.toString(s.debt, 0));
-                          }
-                        }}
-                        warnLevel={s.risk}
-                      />
-                    )
-                  ))}
-                  {debtSuggestions.length > 0 && (
-                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
-                  )}
-                </HFlex>
-              )}
+              secondary={{
+                start: debt.parsed ? `$${dn.format(dn.mul(debt.parsed, boldPriceUsd), 2)}` : "$0.00",
+                end: debtSuggestions && (
+                  <HFlex gap={6}>
+                    {debtSuggestions.map((s) => (
+                      s.debt && s.risk && (
+                        <PillButton
+                          key={dn.toString(s.debt)}
+                          label={`$${dn.format(s.debt, { compact: true, digits: 0 })}`}
+                          onClick={() => {
+                            if (s.debt) {
+                              debt.setValue(dn.toString(s.debt, 0));
+                            }
+                          }}
+                          warnLevel={s.risk}
+                        />
+                      )
+                    ))}
+                    {debtSuggestions.length > 0 && (
+                      <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
+                    )}
+                  </HFlex>
+                ),
+              }}
               {...debt.inputFieldProps}
             />
           }
@@ -282,7 +286,7 @@ function UpdatePositionPanel({
           // “Interest rate”
           field={
             <InputField
-              action={<InputTokenBadge label="% per year" />}
+              contextual={<InputTokenBadge label="% per year" />}
               difference={showInterestRateDifference && `${
                 dn.format(interestRateDifference, {
                   digits: 2,
@@ -294,36 +298,38 @@ function UpdatePositionPanel({
               }}
               label="Interest rate"
               placeholder="0.00"
-              secondaryStart={
-                <HFlex gap={4}>
-                  <div>
-                    {boldInterestPerYear
-                      ? dn.format(boldInterestPerYear, { digits: 2, trailingZeros: false })
-                      : "−"} BOLD / year
-                  </div>
-                  <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
-                </HFlex>
-              }
-              secondaryEnd={
-                <HFlex gap={6}>
-                  <PillButton
-                    label="6.5%"
-                    onClick={() => interestRate.setValue("6.5")}
-                    warnLevel="low"
-                  />
-                  <PillButton
-                    label="5.0%"
-                    onClick={() => interestRate.setValue("5.0")}
-                    warnLevel="medium"
-                  />
-                  <PillButton
-                    label="3.5%"
-                    onClick={() => interestRate.setValue("3.5")}
-                    warnLevel="high"
-                  />
-                  <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
-                </HFlex>
-              }
+              secondary={{
+                start: (
+                  <HFlex gap={4}>
+                    <div>
+                      {boldInterestPerYear
+                        ? dn.format(boldInterestPerYear, { digits: 2, trailingZeros: false })
+                        : "−"} BOLD / year
+                    </div>
+                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
+                  </HFlex>
+                ),
+                end: (
+                  <HFlex gap={6}>
+                    <PillButton
+                      label="6.5%"
+                      onClick={() => interestRate.setValue("6.5")}
+                      warnLevel="low"
+                    />
+                    <PillButton
+                      label="5.0%"
+                      onClick={() => interestRate.setValue("5.0")}
+                      warnLevel="medium"
+                    />
+                    <PillButton
+                      label="3.5%"
+                      onClick={() => interestRate.setValue("3.5")}
+                      warnLevel="high"
+                    />
+                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
+                  </HFlex>
+                ),
+              }}
               {...interestRate.inputFieldProps}
             />
           }
