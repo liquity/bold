@@ -6,6 +6,7 @@ import "../deployment.sol";
 import "../Dependencies/AggregatorV3Interface.sol";
 import "../Interfaces/IWSTETH.sol";
 import "../Interfaces/IRETHPriceFeed.sol";
+import "../Interfaces/IWETHPriceFeed.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -19,7 +20,7 @@ contract OraclesMainnet is TestAccounts {
     AggregatorV3Interface rethOracle;
     IWSTETH wstETH;
 
-    IPriceFeed wethPriceFeed;
+    IWETHPriceFeed wethPriceFeed;
     IRETHPriceFeed rethPriceFeed;
     IWSTETHPriceFeed wstethPriceFeed;
 
@@ -58,7 +59,7 @@ contract OraclesMainnet is TestAccounts {
     
         externalAddresses.ETHOracle = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         externalAddresses.RETHOracle = 0x536218f9E9Eb48863970252233c8F271f554C2d0;
-        externalAddresses.STETHOracle = 0x86392dC19c0b719886221c78AB11eb8Cf5c52812;
+        externalAddresses.STETHOracle = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8;
         externalAddresses.WSTETHToken = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
 
         ethOracle = AggregatorV3Interface(externalAddresses.ETHOracle);
@@ -68,7 +69,7 @@ contract OraclesMainnet is TestAccounts {
         wstETH = IWSTETH(externalAddresses.WSTETHToken);
 
         oracleParams.ethUsdStalenessThreshold = _24_HOURS;
-        oracleParams.stEthEthStalenessThreshold = _24_HOURS;
+        oracleParams.stEthUsdStalenessThreshold = _24_HOURS;
         oracleParams.rEthEthStalenessThreshold = _48_HOURS;
 
         LiquityContracts[] memory _contractsArray;
@@ -101,7 +102,7 @@ contract OraclesMainnet is TestAccounts {
             vm.stopPrank();
         }
          
-        wethPriceFeed = contractsArray[0].priceFeed;
+        wethPriceFeed = IWETHPriceFeed(address(contractsArray[0].priceFeed));
         rethPriceFeed = IRETHPriceFeed(address(contractsArray[1].priceFeed));
         wstethPriceFeed = IWSTETHPriceFeed(address(contractsArray[2].priceFeed));
 
@@ -153,13 +154,11 @@ contract OraclesMainnet is TestAccounts {
     function testSetLastGoodPriceOnDeploymentWSTETH() public {
         uint256 lastGoodPriceWsteth = wstethPriceFeed.lastGoodPrice();
         assertGt(lastGoodPriceWsteth, 0);
-        console.log("lastGoodPriceReth", lastGoodPriceWsteth);
 
-        uint256 latestAnswerStethEth = _getLatestAnswerFromOracle(stethOracle);
-        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
+        uint256 latestAnswerStethUsd = _getLatestAnswerFromOracle(stethOracle);
         uint256 stethWstethExchangeRate = wstETH.stEthPerToken();
 
-        uint256 expectedStoredPrice = latestAnswerStethEth * latestAnswerEthUsd * stethWstethExchangeRate/ 1e36;
+        uint256 expectedStoredPrice =  latestAnswerStethUsd * stethWstethExchangeRate/ 1e18;
 
         assertEq(lastGoodPriceWsteth, expectedStoredPrice);
     }
@@ -194,11 +193,10 @@ contract OraclesMainnet is TestAccounts {
         assertGt(fetchedStethUsdPrice, 0);
         console.log("fetchedStethUsdPrice", fetchedStethUsdPrice);
 
-        uint256 latestAnswerStethEth = _getLatestAnswerFromOracle(stethOracle);
-        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
+        uint256 latestAnswerStethUsd = _getLatestAnswerFromOracle(stethOracle);
         uint256 stethWstethExchangeRate = wstETH.stEthPerToken();
 
-        uint256 expectedFetchedPrice = latestAnswerStethEth * latestAnswerEthUsd * stethWstethExchangeRate/ 1e36;
+        uint256 expectedFetchedPrice = latestAnswerStethUsd * stethWstethExchangeRate / 1e18;
 
         assertEq(fetchedStethUsdPrice, expectedFetchedPrice);
     }
@@ -215,18 +213,13 @@ contract OraclesMainnet is TestAccounts {
         assertEq(storedEthUsdStaleness, _24_HOURS);
     }
 
-     function testEthUsdStalenessThresholdSetWSTETH() public {
-        uint256 storedEthUsdStaleness = wstethPriceFeed.getEthUsdStalenessThreshold();
-        assertEq(storedEthUsdStaleness, _24_HOURS);
-    }
-
     function testRethEthStalenessThresholdSetRETH() public {
         uint256 storedRethEthStaleness = rethPriceFeed.getREthEthStalenessThreshold();
         assertEq(storedRethEthStaleness, _48_HOURS);
     }
 
-    function testStethEthStalenessThresholdSetWSTETH() public {
-        uint256 storedStEthEthStaleness = wstethPriceFeed.getStEthEthStalenessThreshold();
+    function testStethUsdStalenessThresholdSetWSTETH() public {
+        uint256 storedStEthEthStaleness = wstethPriceFeed.getStEthUsdStalenessThreshold();
         assertEq(storedStEthEthStaleness, _24_HOURS);
     }
 
@@ -268,11 +261,10 @@ contract OraclesMainnet is TestAccounts {
     }
 
     function testOpenTroveWSTETH() public {
-        uint256 latestAnswerStethEth = _getLatestAnswerFromOracle(stethOracle);
-        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
+        uint256 latestAnswerStethUsd= _getLatestAnswerFromOracle(stethOracle);
         uint256 wstethStethExchangeRate = wstETH.tokensPerStEth();
 
-        uint256 calcdWstethUsdPrice = latestAnswerStethEth * latestAnswerEthUsd * wstethStethExchangeRate/ 1e36;
+        uint256 calcdWstethUsdPrice = latestAnswerStethUsd * wstethStethExchangeRate/ 1e18;
 
         uint256 coll = 5 ether;
         uint256 debtRequest = coll * calcdWstethUsdPrice / 2 / 1e18;

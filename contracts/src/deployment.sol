@@ -74,7 +74,7 @@ struct ExternalAddresses {
 
 struct OracleParams {
     uint256 ethUsdStalenessThreshold;
-    uint256 stEthEthStalenessThreshold;
+    uint256 stEthUsdStalenessThreshold;
     uint256 rEthEthStalenessThreshold;
 }
 
@@ -204,10 +204,8 @@ function deployAndConnectContractsMainnet(
         oracleParams.rEthEthStalenessThreshold);
 
     priceFeeds[2] = new WSTETHPriceFeed(
-        externalAddresses.ETHOracle,
         externalAddresses.STETHOracle,
-        oracleParams.ethUsdStalenessThreshold,
-        oracleParams.stEthEthStalenessThreshold,
+        oracleParams.stEthUsdStalenessThreshold,
         externalAddresses.WSTETHToken);
 
     boldToken = new BoldToken();
