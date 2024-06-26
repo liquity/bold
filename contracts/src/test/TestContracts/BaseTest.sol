@@ -16,6 +16,7 @@ import "./PriceFeedTestnet.sol";
 import "../../Interfaces/IInterestRouter.sol";
 import "../../GasPool.sol";
 import "../../HintHelpers.sol";
+import {mulDivCeil} from "../Utils/Math.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -33,6 +34,8 @@ contract BaseTest is Test {
     address public G;
 
     uint256 MCR;
+    uint256 LIQUIDATION_PENALTY_SP;
+    uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
 
     // Core contracts
     IActivePool activePool;
@@ -138,6 +141,10 @@ contract BaseTest is Test {
         }
     }
 
+    function getRedeemableDebt(uint256 troveId) internal view returns (uint256) {
+        return troveManager.getTroveEntireDebt(troveId) - BOLD_GAS_COMPENSATION;
+    }
+
     function createAccounts() public {
         address[10] memory tempAccounts;
         for (uint256 i = 0; i < accounts.getAccountsCount(); i++) {
@@ -195,6 +202,34 @@ contract BaseTest is Test {
         );
 
         vm.stopPrank();
+    }
+
+    function openTroveWithExactDebt(
+        address _account,
+        uint256 _index,
+        uint256 _coll,
+        uint256 _debt,
+        uint256 _interestRate
+    ) public returns (uint256 troveId) {
+        (uint256 borrow, uint256 upfrontFee) = findAmountToBorrowWithOpenTrove(_debt, _interestRate);
+
+        vm.prank(_account);
+        troveId = borrowerOperations.openTrove(_account, _index, _coll, borrow, 0, 0, _interestRate, upfrontFee);
+    }
+
+    function openTroveWithExactICRAndDebt(
+        address _account,
+        uint256 _index,
+        uint256 _ICR,
+        uint256 _debt,
+        uint256 _interestRate
+    ) public returns (uint256 troveId, uint256 coll) {
+        (uint256 borrow, uint256 upfrontFee) = findAmountToBorrowWithOpenTrove(_debt, _interestRate);
+        uint256 price = priceFeed.getPrice();
+        coll = mulDivCeil(_debt, _ICR, price);
+
+        vm.prank(_account);
+        troveId = borrowerOperations.openTrove(_account, _index, coll, borrow, 0, 0, _interestRate, upfrontFee);
     }
 
     function adjustTrove100pct(

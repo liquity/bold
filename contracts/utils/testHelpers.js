@@ -406,10 +406,15 @@ class TestHelper {
   static getEmittedLiquidationValues(liquidationTx) {
     for (let i = 0; i < liquidationTx.logs.length; i++) {
       if (liquidationTx.logs[i].event === "Liquidation") {
-        const liquidatedDebt = liquidationTx.logs[i].args[0];
-        const liquidatedColl = liquidationTx.logs[i].args[1];
-        const collGasComp = liquidationTx.logs[i].args[2];
-        const boldGasComp = liquidationTx.logs[i].args[3];
+        const collSentToSP = liquidationTx.logs[i].args._collSentToSP;
+        const collRedistributed = liquidationTx.logs[i].args._collRedistributed;
+        const collGasComp = liquidationTx.logs[i].args._collGasCompensation;
+        const debtOffsetBySP = liquidationTx.logs[i].args._debtOffsetBySP;
+        const debtRedistributed = liquidationTx.logs[i].args._debtRedistributed;
+        const boldGasComp = liquidationTx.logs[i].args._boldGasCompensation;
+
+        const liquidatedColl = collSentToSP.add(collRedistributed);
+        const liquidatedDebt = debtOffsetBySP.add(debtRedistributed);
 
         return [liquidatedDebt, liquidatedColl, collGasComp, boldGasComp];
       }
@@ -865,7 +870,7 @@ class TestHelper {
       { from: extraParams.from },
     );
 
-    const troveId = this.getTroveIdFromTx(tx);
+    const troveId = this.getTroveIdFromTx(tx, contracts);
 
     const realTotalDebt = await contracts.troveManager.getTroveDebt(troveId);
     const netDebt = await this.getActualDebtFromComposite(realTotalDebt, contracts);
@@ -904,20 +909,25 @@ class TestHelper {
       { from: extraParams.from },
     );
 
-    const troveId = this.getTroveIdFromTx(tx);
+    const troveId = this.getTroveIdFromTx(tx, contracts);
 
     return troveId;
   }
 
-  static getTroveIdFromTx(tx) {
-    for (let i = 0; i < tx.logs.length; i++) {
-      if (tx.logs[i].event === "TroveCreated") {
-        const troveId = tx.logs[i].args["_troveId"];
+  static getTroveIdFromTx(tx, contracts) {
+    for (let i = 0; i < tx.receipt.rawLogs.length; i++) {
+      if (
+        tx.receipt.rawLogs[i].address === contracts.troveManager.address
+        && tx.receipt.rawLogs[i].topics[0] === web3.utils.keccak256("Transfer(address,address,uint256)")
+        && tx.receipt.rawLogs[i].topics[1] === this.ZERO_UINT256 // mint
+      ) {
+        const troveId = tx.receipt.rawLogs[i].topics[3];
 
-        return troveId;
+        return this.toBN(troveId);
       }
     }
-    throw "The transaction logs do not contain a trove creation event";
+    // throw "The transaction logs do not contain a trove creation event";
+    throw JSON.stringify(tx.receipt.rawLogs);
   }
 
   static async withdrawBold(
@@ -1694,6 +1704,7 @@ class TestHelper {
 
 TestHelper.MAX_UINT256 = web3.utils.toBN("0x" + "f".repeat(64));
 TestHelper.ZERO_ADDRESS = "0x" + "0".repeat(40);
+TestHelper.ZERO_UINT256 = "0x" + "0".repeat(64);
 TestHelper._100pct = "1000000000000000000";
 TestHelper.latestRandomSeed = 31337;
 
