@@ -71,12 +71,7 @@ contract BaseTest is Test {
     }
 
     function predictOpenTroveUpfrontFee(uint256 borrowedAmount, uint256 interestRate) internal view returns (uint256) {
-        TroveChange memory openTrove;
-        openTrove.debtIncrease = borrowedAmount + BOLD_GAS_COMPENSATION;
-        openTrove.newWeightedRecordedDebt = openTrove.debtIncrease * interestRate;
-
-        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(openTrove);
-        return calcUpfrontFee(openTrove.debtIncrease, avgInterestRate);
+        return hintHelpers.predictOpenTroveUpfrontFee(0, borrowedAmount, interestRate);
     }
 
     function predictAdjustInterestRateUpfrontFee(uint256 troveId, uint256 newInterestRate)
@@ -84,37 +79,11 @@ contract BaseTest is Test {
         view
         returns (uint256)
     {
-        LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
-
-        if (
-            trove.lastInterestRateAdjTime == 0
-                || block.timestamp >= trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
-        ) {
-            return 0;
-        }
-
-        TroveChange memory troveChange;
-        troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
-        troveChange.newWeightedRecordedDebt = trove.entireDebt * newInterestRate;
-        troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
-
-        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
-        return calcUpfrontFee(trove.entireDebt, avgInterestRate);
+        return hintHelpers.predictAdjustInterestRateUpfrontFee(0, troveId, newInterestRate);
     }
 
     function predictAdjustTroveUpfrontFee(uint256 troveId, uint256 debtIncrease) internal view returns (uint256) {
-        if (debtIncrease == 0) return 0;
-
-        LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
-
-        TroveChange memory troveChange;
-        troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
-        troveChange.debtIncrease = debtIncrease;
-        troveChange.newWeightedRecordedDebt = (trove.entireDebt + debtIncrease) * trove.annualInterestRate;
-        troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
-
-        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
-        return calcUpfrontFee(debtIncrease, avgInterestRate);
+        return hintHelpers.predictAdjustTroveUpfrontFee(0, troveId, debtIncrease);
     }
 
     // Quick and dirty binary search instead of Newton's, because it's easier
