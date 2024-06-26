@@ -46,7 +46,7 @@ contract WSTETHPriceFeed is MainnetPriceFeedBase, IWSTETHPriceFeed {
         if (shutdownFlag || ethUsdDown || stEthEthDown) {return lastGoodPrice;}
         
         // Calculate WSTETH-USD price: USD_per_WSTETH = USD_per_ETH * ETH_per_stETH * stETH_per_WSTETH
-        uint256 wstEthUsdPrice = ethUsdPrice * stEthEthPrice * wstETH.tokensPerStEth() / 1e36;
+        uint256 wstEthUsdPrice = ethUsdPrice * stEthEthPrice * wstETH.stEthPerToken() / 1e36;
         
         lastGoodPrice = wstEthUsdPrice;
 

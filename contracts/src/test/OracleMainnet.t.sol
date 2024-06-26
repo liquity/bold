@@ -157,9 +157,9 @@ contract OraclesMainnet is TestAccounts {
 
         uint256 latestAnswerStethEth = _getLatestAnswerFromOracle(stethOracle);
         uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
-        uint256 wstethStethExchangeRate = wstETH.tokensPerStEth();
+        uint256 stethWstethExchangeRate = wstETH.stEthPerToken();
 
-        uint256 expectedStoredPrice = latestAnswerStethEth * latestAnswerEthUsd * wstethStethExchangeRate/ 1e36;
+        uint256 expectedStoredPrice = latestAnswerStethEth * latestAnswerEthUsd * stethWstethExchangeRate/ 1e36;
 
         assertEq(lastGoodPriceWsteth, expectedStoredPrice);
     }
@@ -196,9 +196,9 @@ contract OraclesMainnet is TestAccounts {
 
         uint256 latestAnswerStethEth = _getLatestAnswerFromOracle(stethOracle);
         uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
-        uint256 wstethStethExchangeRate = wstETH.tokensPerStEth();
+        uint256 stethWstethExchangeRate = wstETH.stEthPerToken();
 
-        uint256 expectedFetchedPrice = latestAnswerStethEth * latestAnswerEthUsd * wstethStethExchangeRate/ 1e36;
+        uint256 expectedFetchedPrice = latestAnswerStethEth * latestAnswerEthUsd * stethWstethExchangeRate/ 1e36;
 
         assertEq(fetchedStethUsdPrice, expectedFetchedPrice);
     }
