@@ -7,20 +7,27 @@ import "../Interfaces/IRETHPriceFeed.sol";
 
 contract RETHPriceFeed is MainnetPriceFeedBase, IRETHPriceFeed {
     Oracle public rEthEthOracle;
-    
+    Oracle public ethUsdOracle;
     constructor(
         address _ethUsdOracleAddress, 
         address _rEthEthOracleAddress, 
         uint256 _ethUsdStalenessThreshold,
         uint256 _rEthEthStalenessThreshold
     ) 
-        MainnetPriceFeedBase(_ethUsdOracleAddress, _ethUsdStalenessThreshold) 
+        MainnetPriceFeedBase() 
     {
+        // Store ETH-USD oracle
+        ethUsdOracle.aggregator = AggregatorV3Interface(_ethUsdOracleAddress);
+        ethUsdOracle.stalenessThreshold = _ethUsdStalenessThreshold;
+        ethUsdOracle.decimals = ethUsdOracle.aggregator.decimals();
+
+        // Store RETH-ETH oracle
         rEthEthOracle.aggregator = AggregatorV3Interface(_rEthEthOracleAddress);
         rEthEthOracle.stalenessThreshold = _rEthEthStalenessThreshold;
         rEthEthOracle.decimals = rEthEthOracle.aggregator.decimals();
     
-        // Check aggregator has the expected 18 decimals
+        // Check aggregators have the expected decimals
+        assert(ethUsdOracle.decimals == 8);
         assert(rEthEthOracle.decimals == 18);
 
         fetchPrice();
@@ -47,5 +54,9 @@ contract RETHPriceFeed is MainnetPriceFeedBase, IRETHPriceFeed {
 
     function getREthEthStalenessThreshold() external view returns (uint256) {
         return rEthEthOracle.stalenessThreshold;
+    }
+
+    function getEthUsdStalenessThreshold() external view returns (uint256) {
+        return ethUsdOracle.stalenessThreshold;
     }
 }

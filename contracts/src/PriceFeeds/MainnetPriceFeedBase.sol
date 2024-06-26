@@ -7,7 +7,6 @@ import "../Interfaces/IPriceFeed.sol";
 // import "forge-std/console2.sol";
 
 abstract contract MainnetPriceFeedBase is Ownable, IPriceFeed {
-    Oracle public ethUsdOracle;
     
     // Dummy flag raised when the collateral branch gets shut down. 
     // Should be removed after actual shutdown logic is implemented.
@@ -29,14 +28,7 @@ abstract contract MainnetPriceFeedBase is Ownable, IPriceFeed {
         bool success;
     } 
 
-    constructor(address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold) { 
-        ethUsdOracle.aggregator = AggregatorV3Interface(_ethUsdOracleAddress);
-        ethUsdOracle.stalenessThreshold = _ethUsdStalenessThreshold;
-        ethUsdOracle.decimals = ethUsdOracle.aggregator.decimals();
-        
-        // Check ETH-USD aggregator has the expected 8 decimals
-        assert(ethUsdOracle.decimals == 8);
-
+    constructor() { 
         _renounceOwnership();
     }
 
@@ -100,9 +92,5 @@ abstract contract MainnetPriceFeedBase is Ownable, IPriceFeed {
     function _scaleChainlinkPriceTo18decimals(int256 _price, uint256 _decimals) internal pure returns (uint256) {
         // Scale an int price to a uint with 18 decimals
         return uint256(_price) * 10 ** (18 - _decimals);
-    }
-
-    function getEthUsdStalenessThreshold() external view returns (uint256) {
-        return ethUsdOracle.stalenessThreshold;
     }
 }

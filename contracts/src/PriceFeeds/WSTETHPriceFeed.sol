@@ -4,31 +4,25 @@ import "./MainnetPriceFeedBase.sol";
 import "../Interfaces/IWSTETH.sol";
 import "../Interfaces/IWSTETHPriceFeed.sol";
 
-/*
-* PriceFeed placeholder for testnet and development. The price is simply set manually and saved in a state 
-* variable. The contract does not connect to a live Chainlink price feed. 
-*/
 contract WSTETHPriceFeed is MainnetPriceFeedBase, IWSTETHPriceFeed {
-    Oracle public stEthEthOracle;
+    Oracle public stEthUsdOracle;
     IWSTETH public wstETH;
 
-    constructor(
-        address _ethUsdOracleAddress, 
-        address _stEthEthOracleAddress, 
-        uint256 _ethUsdStalenessThreshold,
-        uint256 _stEthEthStalenessThreshold,
+    constructor( 
+        address _stEthUsdOracleAddress, 
+        uint256 _stEthUsdStalenessThreshold,
         address _wstETHAddress
     ) 
-        MainnetPriceFeedBase(_ethUsdOracleAddress, _ethUsdStalenessThreshold) 
+        MainnetPriceFeedBase() 
     {
-        stEthEthOracle.aggregator = AggregatorV3Interface(_stEthEthOracleAddress);
-        stEthEthOracle.stalenessThreshold = _stEthEthStalenessThreshold;
-        stEthEthOracle.decimals = stEthEthOracle.aggregator.decimals();
+        stEthUsdOracle.aggregator = AggregatorV3Interface(_stEthUsdOracleAddress);
+        stEthUsdOracle.stalenessThreshold = _stEthUsdStalenessThreshold;
+        stEthUsdOracle.decimals = stEthUsdOracle.aggregator.decimals();
         
         wstETH = IWSTETH(_wstETHAddress);
 
-        // Check aggregator has the expected 18 decimals
-        assert(stEthEthOracle.decimals == 18);
+        // Check the STETH-USD aggregator has the expected 8 decimals
+        assert(stEthUsdOracle.decimals == 8);
 
         fetchPrice();
 
@@ -38,22 +32,21 @@ contract WSTETHPriceFeed is MainnetPriceFeedBase, IWSTETHPriceFeed {
     
     function fetchPrice() public returns (uint256) {
         // Fetch latest prices
-        (uint256 ethUsdPrice, bool ethUsdDown) = _fetchPrice(ethUsdOracle);
-        (uint256 stEthEthPrice, bool stEthEthDown) = _fetchPrice(stEthEthOracle);
+        (uint256 stEthUsdPrice, bool stEthUsdDown) = _fetchPrice(stEthUsdOracle);
 
         // If the branch was already shut down or if one of Chainlink's responses was invalid in this transaction,
         // Return the last good WSTETH-USD price calculated
-        if (shutdownFlag || ethUsdDown || stEthEthDown) {return lastGoodPrice;}
+        if (shutdownFlag || stEthUsdDown) {return lastGoodPrice;}
         
-        // Calculate WSTETH-USD price: USD_per_WSTETH = USD_per_ETH * ETH_per_stETH * stETH_per_WSTETH
-        uint256 wstEthUsdPrice = ethUsdPrice * stEthEthPrice * wstETH.stEthPerToken() / 1e36;
+        // Calculate WSTETH-USD price: USD_per_WSTETH = USD_per_STETH * STETH_per_WSTETH
+        uint256 wstEthUsdPrice = stEthUsdPrice * wstETH.stEthPerToken() / 1e18;
         
         lastGoodPrice = wstEthUsdPrice;
 
         return wstEthUsdPrice;
     }
 
-    function getStEthEthStalenessThreshold() external view returns (uint256) {
-        return stEthEthOracle.stalenessThreshold;
+    function getStEthUsdStalenessThreshold() external view returns (uint256) {
+        return stEthUsdOracle.stalenessThreshold;
     }
 }
