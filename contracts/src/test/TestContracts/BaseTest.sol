@@ -50,8 +50,9 @@ contract BaseTest is Test {
     IPriceFeedTestnet priceFeed;
     GasPool gasPool;
     IInterestRouter mockInterestRouter;
-    IERC20 WETH;
+    IERC20 collToken;
     HintHelpers hintHelpers;
+    IERC20 WETH; // used for gas compensation
 
     // Structs for use in test where we need to bi-pass "stack-too-deep" errors
     struct ABCDEF {
@@ -95,14 +96,14 @@ contract BaseTest is Test {
         view
         returns (uint256 borrow, uint256 upfrontFee)
     {
-        uint256 borrowRight = targetDebt - BOLD_GAS_COMPENSATION;
+        uint256 borrowRight = targetDebt;
         upfrontFee = predictOpenTroveUpfrontFee(borrowRight, interestRate);
         uint256 borrowLeft = borrowRight - upfrontFee;
 
         for (uint256 i = 0; i < 256; ++i) {
             borrow = (borrowLeft + borrowRight) / 2;
             upfrontFee = predictOpenTroveUpfrontFee(borrow, interestRate);
-            uint256 actualDebt = borrow + BOLD_GAS_COMPENSATION + upfrontFee;
+            uint256 actualDebt = borrow + upfrontFee;
 
             if (actualDebt == targetDebt) {
                 break;
@@ -139,10 +140,6 @@ contract BaseTest is Test {
                 borrowRight = borrow;
             }
         }
-    }
-
-    function getRedeemableDebt(uint256 troveId) internal view returns (uint256) {
-        return troveManager.getTroveEntireDebt(troveId) - BOLD_GAS_COMPENSATION;
     }
 
     function createAccounts() public {
@@ -325,9 +322,9 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function claimAllETHGains(address _account) public {
+    function claimAllCollGains(address _account) public {
         vm.startPrank(_account);
-        stabilityPool.claimAllETHGains();
+        stabilityPool.claimAllCollGains();
         vm.stopPrank();
     }
 

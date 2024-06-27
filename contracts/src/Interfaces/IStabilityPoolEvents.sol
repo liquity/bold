@@ -6,10 +6,10 @@ interface IStabilityPoolEvents {
     enum Operation {
         provideToSP,
         withdrawFromSP,
-        claimAllETHGains
+        claimAllCollGains
     }
 
-    event StabilityPoolETHBalanceUpdated(uint256 _newBalance);
+    event StabilityPoolCollBalanceUpdated(uint256 _newBalance);
     event StabilityPoolBoldBalanceUpdated(uint256 _newBalance);
 
     event P_Updated(uint256 _P);
@@ -21,7 +21,7 @@ interface IStabilityPoolEvents {
     event DepositUpdated(
         address indexed _depositor,
         uint256 _newDeposit,
-        uint256 _stashedETH,
+        uint256 _stashedColl,
         uint256 _snapshotP,
         uint256 _snapshotS,
         uint256 _snapshotB,

@@ -15,14 +15,14 @@ contract SPInvariantsTest is Test {
     SPInvariantsTestHandler handler;
 
     function setUp() external {
-        (LiquityContracts memory contracts,, IBoldToken boldToken,,) = _deployAndConnectContracts();
+        (LiquityContracts memory contracts,, IBoldToken boldToken,,,) = _deployAndConnectContracts();
         stabilityPool = contracts.stabilityPool;
 
         handler = new SPInvariantsTestHandler(
             SPInvariantsTestHandler.Contracts({
                 boldToken: boldToken,
                 borrowerOperations: contracts.borrowerOperations,
-                collateralToken: contracts.WETH,
+                collateralToken: contracts.collToken,
                 priceFeed: contracts.priceFeed,
                 stabilityPool: contracts.stabilityPool,
                 troveManager: contracts.troveManager,
@@ -43,17 +43,17 @@ contract SPInvariantsTest is Test {
     }
 
     function invariant_allFundsClaimable() external {
-        uint256 stabilityPoolEth = stabilityPool.getETHBalance();
+        uint256 stabilityPoolColl = stabilityPool.getCollBalance();
         uint256 stabilityPoolBold = stabilityPool.getTotalBoldDeposits();
-        uint256 claimableEth = 0;
+        uint256 claimableColl = 0;
         uint256 claimableBold = 0;
 
         for (uint256 i = 0; i < actors.length; ++i) {
-            claimableEth += stabilityPool.getDepositorETHGain(actors[i]);
+            claimableColl += stabilityPool.getDepositorCollGain(actors[i]);
             claimableBold += stabilityPool.getCompoundedBoldDeposit(actors[i]);
         }
 
-        assertApproxEqAbsDecimal(stabilityPoolEth, claimableEth, 0.00001 ether, 18, "SP ETH !~ claimable ETH");
+        assertApproxEqAbsDecimal(stabilityPoolColl, claimableColl, 0.00001 ether, 18, "SP Coll !~ claimable Coll");
         assertApproxEqAbsDecimal(stabilityPoolBold, claimableBold, 0.001 ether, 18, "SP BOLD !~ claimable BOLD");
     }
 

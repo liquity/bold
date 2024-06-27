@@ -605,9 +605,10 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       );
 
       // 2710 * 0.995 * {2000, 456000, 13100}/4711
-      assert.isAtMost(th.getDifference(alice_ETHWithdrawn, "11447463383570366500"), 10000000000);
-      assert.isAtMost(th.getDifference(bob_ETHWithdrawn, "2610021651454043834000"), 10000000000);
-      assert.isAtMost(th.getDifference(carol_ETHWithdrawn, "74980885162385912900"), 10000000000);
+      // EDIT: gas comp capped at 2: (50 * 0.995 + 2660 - 4) * {2000, 456000, 13100}/4711
+      assert.isAtMost(th.getDifference(alice_ETHWithdrawn, "11486945446800000000"), 10000000000);
+      assert.isAtMost(th.getDifference(bob_ETHWithdrawn, "2619023561880000000000"), 10000000000);
+      assert.isAtMost(th.getDifference(carol_ETHWithdrawn, "75239492676700000000"), 10000000000);
     });
 
     // --- Deposit enters at t > 0
@@ -2043,9 +2044,10 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       assert.isAtMost(th.getDifference((await boldToken.balanceOf(carol)).toString(), dec(2, 17)), 100000);
       assert.isAtMost(th.getDifference((await boldToken.balanceOf(dennis)).toString(), dec(3, 17)), 100000);
 
-      assert.isAtMost(th.getDifference(bob_ETHWithdrawn, dec(995, 17)), 10000000000);
-      assert.isAtMost(th.getDifference(carol_ETHWithdrawn, dec(1990, 17)), 100000000000);
-      assert.isAtMost(th.getDifference(dennis_ETHWithdrawn, dec(2985, 17)), 100000000000);
+      // deposit / 100 (price) - share of 2 ETH (capped) gas compensation
+      assert.isAtMost(th.getDifference(bob_ETHWithdrawn, dec(9966666667, 10)), 10000000000);
+      assert.isAtMost(th.getDifference(carol_ETHWithdrawn, dec(19933333333, 10)), 100000000000);
+      assert.isAtMost(th.getDifference(dennis_ETHWithdrawn, dec(299, 18)), 100000000000);
     });
 
     // A make deposit 10000 Bold
@@ -2450,7 +2452,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       th.assertIsApproximatelyEqual(await stabilityPool.P(), dec(1, 16), 10000); // Scale changes and P changes to 1e(12-5+9) = 1e16
       assert.equal(await stabilityPool.currentScale(), "2");
 
-      const alice_ETHGainAt2ndScaleChange = (await stabilityPool.getDepositorETHGain(alice)).toString();
+      const alice_ETHGainAt2ndScaleChange = (await stabilityPool.getDepositorCollGain(alice)).toString();
 
       // E deposits 9999.9 Bold
       await boldToken.transfer(erin, dec(99999, 17), { from: whale });
@@ -2462,7 +2464,7 @@ contract("StabilityPool - Withdrawal of stability deposit - Reward calculations"
       th.assertIsApproximatelyEqual(await stabilityPool.P(), dec(1, 11), 1); // P decreases to 1e(16-5) = 1e11
       assert.equal(await stabilityPool.currentScale(), "2");
 
-      const alice_ETHGainAfterFurtherLiquidation = (await stabilityPool.getDepositorETHGain(alice)).toString();
+      const alice_ETHGainAfterFurtherLiquidation = (await stabilityPool.getDepositorCollGain(alice)).toString();
 
       const alice_scaleSnapshot = (await stabilityPool.depositSnapshots(alice))[2].toString();
 

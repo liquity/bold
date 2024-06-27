@@ -24,15 +24,15 @@ contract DeployLiquity2Script is Script, StdCheats {
             vm.startBroadcast(vm.envUint("DEPLOYER"));
         }
 
-        (LiquityContracts memory contracts,,,,) = _deployAndConnectContracts();
+        (LiquityContracts memory contracts,,,,,) = _deployAndConnectContracts();
         vm.stopBroadcast();
 
         if (vm.envOr("OPEN_DEMO_TROVES", false)) {
-            openDemoTroves(contracts.WETH, contracts.borrowerOperations);
+            openDemoTroves(contracts.collToken, contracts.borrowerOperations);
         }
     }
 
-    function openDemoTroves(IERC20 WETH, IBorrowerOperations borrowerOperations) internal {
+    function openDemoTroves(IERC20 collToken, IBorrowerOperations borrowerOperations) internal {
         // Anvil accounts
         // TODO: pass accounts from env
         uint256[8] memory accounts = [
@@ -60,10 +60,10 @@ contract DeployLiquity2Script is Script, StdCheats {
         for (uint256 i = 0; i < troves.length; i++) {
             vm.startBroadcast(troves[i].owner);
 
-            ERC20Faucet(address(WETH)).tap();
+            ERC20Faucet(address(collToken)).tap();
 
-            // Approve infinite WETH to BorrowerOperations
-            WETH.approve(address(borrowerOperations), type(uint256).max);
+            // Approve infinite collToken to BorrowerOperations
+            collToken.approve(address(borrowerOperations), type(uint256).max);
 
             borrowerOperations.openTrove(
                 vm.addr(troves[i].owner), // _owner

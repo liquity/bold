@@ -5,8 +5,8 @@ import "./BaseTest.sol";
 import "../../deployment.sol";
 
 contract DevTestSetup is BaseTest {
-    function giveAndApproveETH(address _account, uint256 _amount) public {
-        return giveAndApproveCollateral(WETH, _account, _amount, address(borrowerOperations));
+    function giveAndApproveColl(address _account, uint256 _amount) public {
+        return giveAndApproveCollateral(collToken, _account, _amount, address(borrowerOperations));
     }
 
     function giveAndApproveCollateral(
@@ -21,7 +21,7 @@ contract DevTestSetup is BaseTest {
         // Check accounts are funded
         assertEq(_token.balanceOf(_account), _amount);
 
-        // Approve ETH to BorrowerOperations
+        // Approve Coll to BorrowerOperations
         vm.startPrank(_account);
         _token.approve(_borrowerOperationsAddress, _amount);
         vm.stopPrank();
@@ -48,8 +48,8 @@ contract DevTestSetup is BaseTest {
         );
 
         LiquityContracts memory contracts;
-        (contracts, collateralRegistry, boldToken, hintHelpers,) = _deployAndConnectContracts();
-        WETH = contracts.WETH;
+        (contracts, collateralRegistry, boldToken, hintHelpers,, WETH) = _deployAndConnectContracts();
+        collToken = contracts.collToken;
         activePool = contracts.activePool;
         borrowerOperations = contracts.borrowerOperations;
         collSurplusPool = contracts.collSurplusPool;
@@ -61,11 +61,11 @@ contract DevTestSetup is BaseTest {
         troveManager = contracts.troveManager;
         mockInterestRouter = contracts.interestRouter;
 
-        // Give some ETH to test accounts, and approve it to BorrowerOperations
-        uint256 initialETHAmount = 1000_000e18;
+        // Give some Coll to test accounts, and approve it to BorrowerOperations
+        uint256 initialCollAmount = 1000_000e18;
         for (uint256 i = 0; i < 6; i++) {
             // A to F
-            giveAndApproveETH(accountsList[i], initialETHAmount);
+            giveAndApproveColl(accountsList[i], initialCollAmount);
         }
 
         MCR = troveManager.MCR();
@@ -73,7 +73,7 @@ contract DevTestSetup is BaseTest {
         LIQUIDATION_PENALTY_REDISTRIBUTION = troveManager.LIQUIDATION_PENALTY_REDISTRIBUTION();
     }
 
-    function _setupForWithdrawETHGainToTrove() internal returns (uint256, uint256, uint256) {
+    function _setupForWithdrawCollGainToTrove() internal returns (uint256, uint256, uint256) {
         uint256 troveDebtRequest_A = 2000e18;
         uint256 troveDebtRequest_B = 3000e18;
         uint256 troveDebtRequest_C = 4500e18;
@@ -100,17 +100,17 @@ contract DevTestSetup is BaseTest {
         // A liquidates C
         liquidate(A, CTroveId);
 
-        // check A has an ETH gain
-        assertGt(stabilityPool.getDepositorETHGain(A), 0);
+        // check A has an Coll gain
+        assertGt(stabilityPool.getDepositorCollGain(A), 0);
 
         return (ATroveId, BTroveId, CTroveId);
     }
 
     function _setupForBatchLiquidateTrovesPureOffset() internal returns (uint256, uint256, uint256, uint256) {
-        uint256 troveDebtRequest_A = 2000e18;
-        uint256 troveDebtRequest_B = 3000e18;
-        uint256 troveDebtRequest_C = 2250e18;
-        uint256 troveDebtRequest_D = 2250e18;
+        uint256 troveDebtRequest_A = 2200e18;
+        uint256 troveDebtRequest_B = 3200e18;
+        uint256 troveDebtRequest_C = 2450e18;
+        uint256 troveDebtRequest_D = 2450e18;
         uint256 interestRate = 5e16; // 5%
 
         ABCDEF memory troveIDs;
@@ -160,10 +160,10 @@ contract DevTestSetup is BaseTest {
     }
 
     function _setupForBatchLiquidateTrovesPureRedist() internal returns (uint256, uint256, uint256, uint256) {
-        uint256 troveDebtRequest_A = 2000e18;
-        uint256 troveDebtRequest_B = 3000e18;
-        uint256 troveDebtRequest_C = 2250e18;
-        uint256 troveDebtRequest_D = 2250e18;
+        uint256 troveDebtRequest_A = 2200e18;
+        uint256 troveDebtRequest_B = 3200e18;
+        uint256 troveDebtRequest_C = 2450e18;
+        uint256 troveDebtRequest_D = 2450e18;
         uint256 interestRate = 5e16; // 5%
 
         uint256 price = 2000e18;
@@ -195,7 +195,7 @@ contract DevTestSetup is BaseTest {
         vm.warp(block.timestamp + 14 days);
 
         coll = 20 ether;
-        debtRequest = 20000e18;
+        debtRequest = 20200e18;
         troveIDs.A = openTroveNoHints100pct(A, coll, debtRequest, _troveInterestRates.A);
         troveIDs.B = openTroveNoHints100pct(B, coll, debtRequest, _troveInterestRates.B);
         troveIDs.C = openTroveNoHints100pct(C, coll, debtRequest, _troveInterestRates.C);
@@ -219,17 +219,17 @@ contract DevTestSetup is BaseTest {
     }
 
     function _redeemAndCreateZombieTrovesAAndB(ABCDEF memory _troveIDs) internal {
-        // Redeem enough to leave A with 0 net debt and B with net debt < MIN_NET_DEBT
-        uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - BOLD_GAS_COMPENSATION;
-        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMPENSATION - MIN_NET_DEBT / 2;
+        // Redeem enough to leave A with 0 debt and B with debt < MIN_DEBT
+        uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A);
+        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - MIN_DEBT / 2;
         uint256 redeemAmount = redeemFromA + redeemFromB;
 
         // Fully redeem A and leave B with debt < MIN_NET_DEBT
         redeem(E, redeemAmount);
 
-        // Check A has net_debt == 0, and B has net_debt < min_net_debt
-        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), BOLD_GAS_COMPENSATION);
-        assertLt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMPENSATION, MIN_NET_DEBT);
+        // Check A has debt == 0, and B has debt < min_debt
+        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), 0);
+        assertLt(troveManager.getTroveEntireDebt(_troveIDs.B), MIN_DEBT);
 
         // Check A and B tagged as Zombie troves
         assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.unredeemable));
@@ -237,17 +237,17 @@ contract DevTestSetup is BaseTest {
     }
 
     function _redeemAndCreateZombieTroveAAndHitB(ABCDEF memory _troveIDs) internal {
-        // Redeem enough to leave A with 0 debt but B with net debt > MIN_NET_DEBT
-        uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A) - BOLD_GAS_COMPENSATION;
-        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMPENSATION - MIN_NET_DEBT * 2;
+        // Redeem enough to leave A with 0 debt but B with debt > MIN_NET_DEBT
+        uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A);
+        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - MIN_DEBT * 2;
         uint256 redeemAmount = redeemFromA + redeemFromB;
 
         // Fully redeem A and leave B with debt > MIN_NET_DEBT
         redeem(E, redeemAmount);
 
-        // Check A has net_debt == gas_comp, and B has net_debt > min_net_debt;
-        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), BOLD_GAS_COMPENSATION);
-        assertGt(troveManager.getTroveEntireDebt(_troveIDs.B) - BOLD_GAS_COMPENSATION, MIN_NET_DEBT);
+        // Check A has debt == 0, and B has debt > min_debt;
+        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), 0);
+        assertGt(troveManager.getTroveEntireDebt(_troveIDs.B), MIN_DEBT);
 
         // // Check A is zombie Trove but B is not
         assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.unredeemable));

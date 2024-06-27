@@ -76,7 +76,7 @@ contract HintHelpers {
         IActivePool activePool = troveManager.activePool();
 
         TroveChange memory openTrove;
-        openTrove.debtIncrease = _borrowedAmount + BOLD_GAS_COMPENSATION;
+        openTrove.debtIncrease = _borrowedAmount;
         openTrove.newWeightedRecordedDebt = openTrove.debtIncrease * _interestRate;
 
         uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(openTrove);

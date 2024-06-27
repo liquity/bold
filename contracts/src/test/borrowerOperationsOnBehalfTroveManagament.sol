@@ -85,23 +85,23 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Owner can add coll
         vm.startPrank(A);
-        uint256 AInitialCollBalance = WETH.balanceOf(A);
+        uint256 AInitialCollBalance = collToken.balanceOf(A);
 
         borrowerOperations.addColl(ATroveId, 1 ether);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveColl(ATroveId), 101 ether, "Wrong trove coll");
-        assertEq(WETH.balanceOf(A), AInitialCollBalance - 1 ether, "Wrong owner balance");
+        assertEq(collToken.balanceOf(A), AInitialCollBalance - 1 ether, "Wrong owner balance");
 
         // Manager can add coll
         vm.startPrank(B);
-        uint256 BInitialCollBalance = WETH.balanceOf(B);
+        uint256 BInitialCollBalance = collToken.balanceOf(B);
 
         borrowerOperations.addColl(ATroveId, 1 ether);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveColl(ATroveId), 102 ether, "Wrong trove coll");
-        assertEq(WETH.balanceOf(B), BInitialCollBalance - 1 ether, "Wrong manager balance");
+        assertEq(collToken.balanceOf(B), BInitialCollBalance - 1 ether, "Wrong manager balance");
     }
 
     function testAddCollWithoutAddManager() public {
@@ -109,17 +109,17 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Owner can add coll
         vm.startPrank(A);
-        uint256 AInitialCollBalance = WETH.balanceOf(A);
+        uint256 AInitialCollBalance = collToken.balanceOf(A);
 
         borrowerOperations.addColl(ATroveId, 1 ether);
 
         assertEq(troveManager.getTroveColl(ATroveId), 101 ether, "Wrong trove coll");
-        assertEq(WETH.balanceOf(A), AInitialCollBalance - 1 ether, "Wrong owner balance");
+        assertEq(collToken.balanceOf(A), AInitialCollBalance - 1 ether, "Wrong owner balance");
         vm.stopPrank();
 
         // Others can’t add coll
         vm.startPrank(B);
-        uint256 BInitialCollBalance = WETH.balanceOf(B);
+        uint256 BInitialCollBalance = collToken.balanceOf(B);
 
         vm.expectRevert("BorrowerOps: sender is neither Trove owner nor add-manager");
         borrowerOperations.addColl(ATroveId, 1 ether);
@@ -136,7 +136,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(troveManager.getTroveColl(ATroveId), 101 ether, "Wrong trove coll");
-        assertEq(WETH.balanceOf(B), BInitialCollBalance, "Wrong manager balance");
+        assertEq(collToken.balanceOf(B), BInitialCollBalance, "Wrong manager balance");
     }
 
     function testWithdrawCollWithRemoveManager() public {
@@ -149,25 +149,25 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Owner can withdraw bold
         vm.startPrank(A);
-        uint256 AInitialCollBalance = WETH.balanceOf(A);
+        uint256 AInitialCollBalance = collToken.balanceOf(A);
         uint256 initialColl = troveManager.getTroveColl(ATroveId);
 
         borrowerOperations.withdrawColl(ATroveId, 1 ether);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveColl(ATroveId), initialColl - 1 ether, "Wrong trove coll");
-        assertEq(WETH.balanceOf(A), AInitialCollBalance + 1 ether, "Wrong owner balance");
+        assertEq(collToken.balanceOf(A), AInitialCollBalance + 1 ether, "Wrong owner balance");
 
         // Manager can withdraw coll
         vm.startPrank(B);
-        uint256 BInitialCollBalance = WETH.balanceOf(B);
+        uint256 BInitialCollBalance = collToken.balanceOf(B);
 
         borrowerOperations.withdrawColl(ATroveId, 1 ether);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveColl(ATroveId), initialColl - 2 ether, "Wrong trove coll");
-        assertEq(WETH.balanceOf(A), AInitialCollBalance + 2 ether, "Wrong owner balance");
-        assertEq(WETH.balanceOf(B), BInitialCollBalance, "Wrong manager balance");
+        assertEq(collToken.balanceOf(A), AInitialCollBalance + 2 ether, "Wrong owner balance");
+        assertEq(collToken.balanceOf(B), BInitialCollBalance, "Wrong manager balance");
     }
 
     function testWithdrawCollWithoutRemoveManager() public {
@@ -175,18 +175,18 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Owner can withdraw bold
         vm.startPrank(A);
-        uint256 AInitialCollBalance = WETH.balanceOf(A);
+        uint256 AInitialCollBalance = collToken.balanceOf(A);
         uint256 initialColl = troveManager.getTroveColl(ATroveId);
 
         borrowerOperations.withdrawColl(ATroveId, 1 ether);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveColl(ATroveId), initialColl - 1 ether, "Wrong trove coll");
-        assertEq(WETH.balanceOf(A), AInitialCollBalance + 1 ether, "Wrong owner balance");
+        assertEq(collToken.balanceOf(A), AInitialCollBalance + 1 ether, "Wrong owner balance");
 
         // Manager can’t withdraw coll
         vm.startPrank(B);
-        uint256 BInitialCollBalance = WETH.balanceOf(B);
+        uint256 BInitialCollBalance = collToken.balanceOf(B);
 
         vm.expectRevert("BorrowerOps: sender is neither Trove owner nor remove-manager");
         borrowerOperations.withdrawColl(ATroveId, 1 ether);
@@ -203,8 +203,8 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(troveManager.getTroveColl(ATroveId), initialColl - 1 ether, "Wrong trove coll");
-        assertEq(WETH.balanceOf(A), AInitialCollBalance + 1 ether, "Wrong owner balance");
-        assertEq(WETH.balanceOf(B), BInitialCollBalance, "Wrong manager balance");
+        assertEq(collToken.balanceOf(A), AInitialCollBalance + 1 ether, "Wrong owner balance");
+        assertEq(collToken.balanceOf(B), BInitialCollBalance, "Wrong manager balance");
     }
 
     function testRepayBoldWithAddManager() public {

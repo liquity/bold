@@ -757,7 +757,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       console.log("A's compounded BOLD deposit:");
       console.log(A_Deposit_Value.toString()); // 0
       assert.isTrue(A_Deposit_Value.gt(th.toBN(0)));
-      const A_Earned_Collateral = await stabilityPool.getDepositorETHGain(A);
+      const A_Earned_Collateral = await stabilityPool.getDepositorCollGain(A);
       console.log("A's earned ETH collateral:");
       console.log(A_Earned_Collateral.toString()); // 29.849999999999980026
       assert.isTrue(
@@ -771,7 +771,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
         )
       );
       // // Here we will cache the amount of raw ETH in the stability pool contract, the totalBOLDDeposits, and the epoch counter.
-      const Stability_Pool_ETH = await stabilityPool.getETHBalance();
+      const Stability_Pool_ETH = await stabilityPool.getCollBalance();
       console.log("Stability Pool ETH before complete liquidation LIQ4:");
       console.log(Stability_Pool_ETH.toString()); // 29.850000000000001986
       const Total_BOLD_Deposits = await stabilityPool.getTotalBoldDeposits();
@@ -791,7 +791,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       await priceFeed.setPrice(dec(200, 18));
       // // Check: we can check that the full trove was indeed offset, by ensuring that the pool's BOLD balance is now 0,
       // // the epoch counter has incremented, and the P value is reset to 1e18.
-      const Stability_Pool_ETH_2 = await stabilityPool.getETHBalance();
+      const Stability_Pool_ETH_2 = await stabilityPool.getCollBalance();
       console.log("Stability Pool ETH after complete liquidation LIQ4:");
       console.log(Stability_Pool_ETH_2.toString()); // 150.734944690956817336
       const Total_BOLD_Deposits_2 = await stabilityPool.getTotalBoldDeposits();
@@ -815,7 +815,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       console.log("A's compounded BOLD deposit after complete liquidation LIQ4:");
       console.log(A_Deposit_Value_2.toString()); // 0
       assert.isTrue(A_Deposit_Value_2.eq(th.toBN(0)));
-      const A_Earned_Collateral_2 = th.toBN(await stabilityPool.getDepositorETHGain(A));
+      const A_Earned_Collateral_2 = th.toBN(await stabilityPool.getDepositorCollGain(A));
       console.log("A's earned ETH collateral after complete liquidation LIQ4:");
       console.log(A_Earned_Collateral_2.toString()); // 29.849999999999980026 
       assert.isTrue(A_Earned_Collateral_2.gt(A_Earned_Collateral));

@@ -7,7 +7,7 @@ import "../../BorrowerOperations.sol";
 /* Tester contract inherits from BorrowerOperations, and provides external functions 
 for testing the parent's internal functions. */
 contract BorrowerOperationsTester is BorrowerOperations {
-    constructor(IERC20 _ETH, ITroveManager _troveManager) BorrowerOperations(_ETH, _troveManager) {}
+    constructor(IERC20 _collToken, ITroveManager _troveManager, IERC20 _weth) BorrowerOperations(_collToken, _troveManager, _weth) {}
 
     function getNewTCRFromTroveChange(
         uint256 _collChange,

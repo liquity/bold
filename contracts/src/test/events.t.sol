@@ -12,7 +12,7 @@ struct LiquidationParams {
     uint256 collSurplus;
     uint256 debtOffsetBySP;
     uint256 debtRedistributed;
-    uint256 boldGasCompensation;
+    uint256 ethGasCompensation;
 }
 
 function aggregateLiquidation(LiquidationParams memory aggregate, LiquidationParams memory single) pure {
@@ -22,7 +22,7 @@ function aggregateLiquidation(LiquidationParams memory aggregate, LiquidationPar
     aggregate.collSurplus += single.collSurplus;
     aggregate.debtOffsetBySP += single.debtOffsetBySP;
     aggregate.debtRedistributed += single.debtRedistributed;
-    aggregate.boldGasCompensation += single.boldGasCompensation;
+    aggregate.ethGasCompensation += single.ethGasCompensation;
 }
 
 function filter(Vm.Log[] memory logs, bytes32 selector) pure returns (Vm.Log[] memory matchingLogs) {
@@ -77,7 +77,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
 
         uint256 troveId = addressToTroveId(owner, ownerIndex);
         uint256 upfrontFee = predictOpenTroveUpfrontFee(borrow, interestRate);
-        uint256 debt = borrow + BOLD_GAS_COMPENSATION + upfrontFee;
+        uint256 debt = borrow + upfrontFee;
         uint256 stake = coll;
 
         vm.expectEmit();
@@ -112,7 +112,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
             interestRate,
             0, // _debtIncreaseFromRedist
             upfrontFee,
-            int256(borrow + BOLD_GAS_COMPENSATION),
+            int256(borrow),
             0, // _collIncreaseFromRedist
             int256(coll)
         );
@@ -396,13 +396,13 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         l.collGasCompensation = liquidatedColl / COLL_GAS_COMPENSATION_DIVISOR;
         l.collRedistributed = liquidatedColl - l.collGasCompensation;
         l.debtRedistributed = liquidatedDebt;
-        l.boldGasCompensation = BOLD_GAS_COMPENSATION;
+        l.ethGasCompensation = ETH_GAS_COMPENSATION;
 
         vm.expectEmit();
         emit Liquidation(
             l.debtOffsetBySP,
             l.debtRedistributed,
-            l.boldGasCompensation,
+            l.ethGasCompensation,
             l.collGasCompensation,
             l.collSentToSP,
             l.collRedistributed,
@@ -516,7 +516,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
             l.debtOffsetBySP = Math.min(liquidatedDebt[i], boldInSP - t.debtOffsetBySP);
             l.debtRedistributed = liquidatedDebt[i] - l.debtOffsetBySP;
 
-            l.boldGasCompensation = BOLD_GAS_COMPENSATION;
+            l.ethGasCompensation = ETH_GAS_COMPENSATION;
             collRemaining -= l.collGasCompensation = liquidatedColl[i] / COLL_GAS_COMPENSATION_DIVISOR;
 
             collRemaining -= l.collSentToSP = Math.min(
@@ -535,7 +535,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         emit Liquidation(
             t.debtOffsetBySP,
             t.debtRedistributed,
-            t.boldGasCompensation,
+            t.ethGasCompensation,
             t.collGasCompensation,
             t.collSentToSP,
             t.collRedistributed,
@@ -556,9 +556,9 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
 
         // Fully redeem first 2 Troves, and partially the 3rd
         uint256[3] memory redeemBold;
-        redeemBold[0] = getRedeemableDebt(troveId[0]);
-        redeemBold[1] = getRedeemableDebt(troveId[1]);
-        redeemBold[2] = getRedeemableDebt(troveId[2]) / 2;
+        redeemBold[0] = troveManager.getTroveEntireDebt(troveId[0]);
+        redeemBold[1] = troveManager.getTroveEntireDebt(troveId[1]);
+        redeemBold[2] = troveManager.getTroveEntireDebt(troveId[2]) / 2;
 
         uint256 price = priceFeed.getPrice();
         uint256 totalRedeemedBold = redeemBold[0] + redeemBold[1] + redeemBold[2];
@@ -600,9 +600,9 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
 
         // Fully redeem first 2 Troves, and partially the 3rd
         uint256[3] memory redeemBold;
-        redeemBold[0] = getRedeemableDebt(troveId[0]);
-        redeemBold[1] = getRedeemableDebt(troveId[1]);
-        redeemBold[2] = getRedeemableDebt(troveId[2]) / 2;
+        redeemBold[0] = troveManager.getTroveEntireDebt(troveId[0]);
+        redeemBold[1] = troveManager.getTroveEntireDebt(troveId[1]);
+        redeemBold[2] = troveManager.getTroveEntireDebt(troveId[2]) / 2;
 
         uint256 price = priceFeed.getPrice();
         uint256 totalRedeemedBold = redeemBold[0] + redeemBold[1] + redeemBold[2];
@@ -637,9 +637,9 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
 
 struct Deposit {
     uint256 recordedBold;
-    uint256 stashedETH;
+    uint256 stashedColl;
     uint256 pendingBoldLoss;
-    uint256 pendingETHGain;
+    uint256 pendingCollGain;
     uint256 pendingBoldYieldGain;
 }
 
@@ -687,10 +687,10 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
         deposit.recordedBold = stabilityPool.getCompoundedBoldDeposit(A);
         assertGt(deposit.recordedBold, 0, "Recorded BOLD deposit should be > 0");
 
-        deposit.stashedETH = stabilityPool.stashedETH(A);
-        assertGt(deposit.stashedETH, 0, "Stashed ETH should be > 0");
+        deposit.stashedColl = stabilityPool.stashedColl(A);
+        assertGt(deposit.stashedColl, 0, "Stashed Coll should be > 0");
 
-        // Generate ETH gain (P, S)
+        // Generate Coll gain (P, S)
         troveManager.liquidate(liquidatedTroveId[2]);
 
         current.P = stabilityPool.P();
@@ -702,8 +702,8 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
         deposit.pendingBoldLoss = deposit.recordedBold - stabilityPool.getCompoundedBoldDeposit(A);
         assertGt(deposit.pendingBoldLoss, 0, "Pending BOLD loss should be > 0");
 
-        deposit.pendingETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(deposit.pendingETHGain, 0, "Pending ETH gain should be > 0");
+        deposit.pendingCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(deposit.pendingCollGain, 0, "Pending Coll gain should be > 0");
 
         // Generate yield gain (B)
         vm.warp(block.timestamp + 100 days);
@@ -725,7 +725,7 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
         emit DepositUpdated(
             A,
             deposit.recordedBold - deposit.pendingBoldLoss + deposit.pendingBoldYieldGain + topUp,
-            deposit.stashedETH + deposit.pendingETHGain,
+            deposit.stashedColl + deposit.pendingCollGain,
             current.P,
             current.S,
             current.B,
@@ -769,7 +769,7 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
             int256(topUp),
             deposit.pendingBoldYieldGain,
             0, // _yieldGainClaimed
-            deposit.pendingETHGain,
+            deposit.pendingCollGain,
             0 // _ethGainClaimed
         );
 
@@ -789,8 +789,8 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
             int256(topUp),
             deposit.pendingBoldYieldGain,
             deposit.pendingBoldYieldGain,
-            deposit.pendingETHGain,
-            deposit.pendingETHGain + deposit.stashedETH
+            deposit.pendingCollGain,
+            deposit.pendingCollGain + deposit.stashedColl
         );
 
         makeSPDepositAndClaim(A, topUp);
@@ -805,7 +805,7 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
         emit DepositUpdated(
             A,
             deposit.recordedBold - deposit.pendingBoldLoss + deposit.pendingBoldYieldGain - withdrawal,
-            deposit.stashedETH + deposit.pendingETHGain,
+            deposit.stashedColl + deposit.pendingCollGain,
             current.P,
             current.S,
             current.B,
@@ -849,7 +849,7 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
             -int256(withdrawal),
             deposit.pendingBoldYieldGain,
             0, // _yieldGainClaimed
-            deposit.pendingETHGain,
+            deposit.pendingCollGain,
             0 // _ethGainClaimed
         );
 
@@ -869,45 +869,45 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
             -int256(withdrawal),
             deposit.pendingBoldYieldGain,
             deposit.pendingBoldYieldGain,
-            deposit.pendingETHGain,
-            deposit.pendingETHGain + deposit.stashedETH
+            deposit.pendingCollGain,
+            deposit.pendingCollGain + deposit.stashedColl
         );
 
         makeSPWithdrawalAndClaim(A, withdrawal);
     }
 
-    function test_ClaimAllETHGainsEmitsDepositUpdated() external {
+    function test_ClaimAllCollGainsEmitsDepositUpdated() external {
         (Deposit memory deposit, StabilityPoolRewardsState memory curr) = makeSPDepositAndGenerateRewards();
 
-        uint256 stashedETH = deposit.stashedETH + deposit.pendingETHGain;
+        uint256 stashedColl = deposit.stashedColl + deposit.pendingCollGain;
 
         vm.expectEmit();
-        emit DepositUpdated(A, deposit.pendingBoldYieldGain, stashedETH, curr.P, curr.S, curr.B, curr.scale, curr.epoch);
+        emit DepositUpdated(A, deposit.pendingBoldYieldGain, stashedColl, curr.P, curr.S, curr.B, curr.scale, curr.epoch);
         makeSPWithdrawalNoClaim(A, deposit.recordedBold - deposit.pendingBoldLoss); // can't withdraw pending yield
 
         vm.expectEmit();
-        emit DepositUpdated(A, 0, stashedETH, 0, 0, 0, 0, 0);
+        emit DepositUpdated(A, 0, stashedColl, 0, 0, 0, 0, 0);
         makeSPWithdrawalNoClaim(A, deposit.pendingBoldYieldGain); // now we can withdraw previously pending yield
 
-        // Now we have a deposit with stashed ETH gains and nothing else
+        // Now we have a deposit with stashed Coll gains and nothing else
 
         vm.expectEmit();
         emit DepositUpdated(A, 0, 0, 0, 0, 0, 0, 0);
-        claimAllETHGains(A);
+        claimAllCollGains(A);
     }
 
-    function test_ClaimAllETHGainsEmitsDepositOperation() external {
+    function test_ClaimAllCollGainsEmitsDepositOperation() external {
         (Deposit memory deposit,) = makeSPDepositAndGenerateRewards();
 
-        uint256 stashedETH = deposit.stashedETH + deposit.pendingETHGain;
+        uint256 stashedColl = deposit.stashedColl + deposit.pendingCollGain;
 
         makeSPWithdrawalNoClaim(A, deposit.recordedBold - deposit.pendingBoldLoss); // can't withdraw pending yield
         makeSPWithdrawalNoClaim(A, deposit.pendingBoldYieldGain); // now we can withdraw previously pending yield
 
-        // Now we have a deposit with stashed ETH gains and nothing else
+        // Now we have a deposit with stashed Coll gains and nothing else
 
         vm.expectEmit();
-        emit DepositOperation(A, Operation.claimAllETHGains, 0, 0, 0, 0, 0, stashedETH);
-        claimAllETHGains(A);
+        emit DepositOperation(A, Operation.claimAllCollGains, 0, 0, 0, 0, 0, stashedColl);
+        claimAllCollGains(A);
     }
 }

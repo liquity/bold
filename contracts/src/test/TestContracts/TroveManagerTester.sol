@@ -5,12 +5,12 @@ pragma solidity 0.8.18;
 import "../../Interfaces/ICollateralRegistry.sol";
 import "../../TroveManager.sol";
 
-/* Tester contract inherits from TroveManager, and provides external functions 
+/* Tester contract inherits from TroveManager, and provides external functions
 for testing the parent's internal functions. */
 
 contract TroveManagerTester is TroveManager {
-    constructor(uint256 _mcr, uint256 _liquidationPenaltySP, uint256 _liquidationPenaltyRedistribution)
-        TroveManager(_mcr, _liquidationPenaltySP, _liquidationPenaltyRedistribution)
+    constructor(uint256 _mcr, uint256 _liquidationPenaltySP, uint256 _liquidationPenaltyRedistribution, IERC20 _weth)
+        TroveManager(_mcr, _liquidationPenaltySP, _liquidationPenaltyRedistribution, _weth)
     {}
 
     function computeICR(uint256 _coll, uint256 _debt, uint256 _price) external pure returns (uint256) {
@@ -21,12 +21,8 @@ contract TroveManagerTester is TroveManager {
         return _getCollGasCompensation(_coll);
     }
 
-    function getBoldGasCompensation() external pure returns (uint256) {
-        return BOLD_GAS_COMPENSATION;
-    }
-
-    function getCompositeDebt(uint256 _debt) external pure returns (uint256) {
-        return _debt + BOLD_GAS_COMPENSATION;
+    function getETHGasCompensation() external pure returns (uint256) {
+        return ETH_GAS_COMPENSATION;
     }
 
     /*
@@ -55,10 +51,6 @@ contract TroveManagerTester is TroveManager {
     }
     */
 
-    function getActualDebtFromComposite(uint256 _debtVal) external pure returns (uint256) {
-        return _debtVal - BOLD_GAS_COMPENSATION;
-    }
-
     function getEffectiveRedemptionFeeInColl(uint256 _redeemAmount, uint256 _price)
         external
         view
@@ -67,6 +59,14 @@ contract TroveManagerTester is TroveManager {
         return ICollateralRegistry(collateralRegistryAddress).getEffectiveRedemptionFeeInBold(_redeemAmount) * DECIMAL_PRECISION / _price;
     }
 
+    function predictOpenTroveUpfrontFee(uint256 borrowedAmount, uint256 interestRate) external view returns (uint256) {
+        TroveChange memory openTrove;
+        openTrove.debtIncrease = borrowedAmount;
+        openTrove.newWeightedRecordedDebt = openTrove.debtIncrease * interestRate;
+
+        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(openTrove);
+        return _calcUpfrontFee(openTrove.debtIncrease, avgInterestRate);
+    }
 
     function callInternalRemoveTroveId(uint256 _troveId) external {
         uint256 troveOwnersArrayLength = TroveIds.length;

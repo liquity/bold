@@ -16,7 +16,7 @@ import "./IBoldRewardsReceiver.sol";
  * Bold in the Stability Pool:  that is, the offset debt evaporates, and an equal amount of Bold tokens in the Stability Pool is burned.
  *
  * Thus, a liquidation causes each depositor to receive a Bold loss, in proportion to their deposit as a share of total deposits.
- * They also receive an ETH gain, as the ETH collateral of the liquidated trove is distributed among Stability depositors,
+ * They also receive an Coll gain, as the collateral of the liquidated trove is distributed among Stability depositors,
  * in the same proportion.
  *
  * When a liquidation occurs, it depletes every deposit by the same fraction: for example, a liquidation that depletes 40%
@@ -25,7 +25,7 @@ import "./IBoldRewardsReceiver.sol";
  * A deposit that has experienced a series of liquidations is termed a "compounded deposit": each liquidation depletes the deposit,
  * multiplying it by some factor in range ]0,1[
  *
- * Please see the implementation spec in the proof document, which closely follows on from the compounded deposit / ETH gain derivations:
+ * Please see the implementation spec in the proof document, which closely follows on from the compounded deposit / Coll gain derivations:
  * https://github.com/liquity/liquity/blob/master/papers/Scalable_Reward_Distribution_with_Compounding_Stakes.pdf
  *
 */
@@ -48,15 +48,15 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     ) external;
 
     /*  provideToSP():
-    * - Calculates depositor's ETH gain
+    * - Calculates depositor's Coll gain
     * - Calculates the compounded deposit
     * - Increases deposit, and takes new snapshots of accumulators P and S
-    * - Sends depositor's accumulated ETH gains to depositor
+    * - Sends depositor's accumulated Coll gains to depositor
     */
     function provideToSP(uint256 _amount, bool _doClaim) external;
 
     /*  withdrawFromSP():
-    * - Calculates depositor's ETH gain
+    * - Calculates depositor's Coll gain
     * - Calculates the compounded deposit
     * - Sends the requested BOLD withdrawal to depositor
     * - (If _amount > userDeposit, the user withdraws all of their compounded deposit)
@@ -64,25 +64,25 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     */
     function withdrawFromSP(uint256 _amount, bool doClaim) external;
 
-    function claimAllETHGains() external;
+    function claimAllCollGains() external;
 
     /*
      * Initial checks:
      * - Caller is TroveManager
      * ---
      * Cancels out the specified debt against the Bold contained in the Stability Pool (as far as possible)
-     * and transfers the Trove's ETH collateral from ActivePool to StabilityPool.
+     * and transfers the Trove's collateral from ActivePool to StabilityPool.
      * Only called by liquidation functions in the TroveManager.
      */
     function offset(uint256 _debt, uint256 _coll) external;
 
-    function stashedETH(address _depositor) external view returns (uint256);
+    function stashedColl(address _depositor) external view returns (uint256);
 
     /*
-     * Returns the total amount of ETH held by the pool, accounted in an internal variable instead of `balance`,
-     * to exclude edge cases like ETH received from a self-destruct.
+     * Returns the total amount of Coll held by the pool, accounted in an internal variable instead of `balance`,
+     * to exclude edge cases like Coll received from a self-destruct.
      */
-    function getETHBalance() external view returns (uint256);
+    function getCollBalance() external view returns (uint256);
 
     /*
      * Returns Bold held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
@@ -92,9 +92,9 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     function getYieldGainsOwed() external view returns (uint256);
 
     /*
-     * Calculates the ETH gain earned by the deposit since its last snapshots were taken.
+     * Calculates the Coll gain earned by the deposit since its last snapshots were taken.
      */
-    function getDepositorETHGain(address _depositor) external view returns (uint256);
+    function getDepositorCollGain(address _depositor) external view returns (uint256);
 
     /*
      * Calculates the BOLD yield gain earned by the deposit since its last snapshots were taken.

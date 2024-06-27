@@ -21,9 +21,9 @@ contract LiquidationsLSTTest is DevTestSetup {
         );
 
         LiquityContracts memory contracts;
-        (contracts, collateralRegistry, boldToken,,) =
+        (contracts, collateralRegistry, boldToken,,,) =
             _deployAndConnectContracts(TroveManagerParams(120e16, 5e16, 10e16));
-        WETH = contracts.WETH;
+        collToken = contracts.collToken;
         activePool = contracts.activePool;
         borrowerOperations = contracts.borrowerOperations;
         collSurplusPool = contracts.collSurplusPool;
@@ -37,11 +37,11 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         MCR = troveManager.MCR();
 
-        // Give some ETH to test accounts, and approve it to BorrowerOperations
-        uint256 initialETHAmount = 10_000e18;
+        // Give some Coll to test accounts, and approve it to BorrowerOperations
+        uint256 initialCollAmount = 10_000e18;
         for (uint256 i = 0; i < 6; i++) {
             // A to F
-            giveAndApproveETH(accountsList[i], initialETHAmount);
+            giveAndApproveColl(accountsList[i], initialCollAmount);
         }
     }
 
@@ -52,7 +52,7 @@ contract LiquidationsLSTTest is DevTestSetup {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
         uint256 ATroveId =
-            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount - BOLD_GAS_COMPENSATION, 0, 0, 0, 0);
+            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
@@ -64,7 +64,7 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         uint256 BInitialDebt = troveManager.getTroveEntireDebt(BTroveId);
         uint256 BInitialColl = troveManager.getTroveEntireColl(BTroveId);
-        uint256 AInitialETHBalance = WETH.balanceOf(A);
+        uint256 AInitialCollBalance = collToken.balanceOf(A);
 
         // Check not RM
         assertEq(troveManager.checkBelowCriticalThreshold(price), false, "System should not be below CT");
@@ -82,7 +82,7 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         // Check SP stays the same
         assertEq(stabilityPool.getTotalBoldDeposits(), 0, "SP should be empty");
-        assertEq(stabilityPool.getETHBalance(), 0, "SP should not have ETH rewards");
+        assertEq(stabilityPool.getCollBalance(), 0, "SP should not have Coll rewards");
 
         // Check B has received debt
         assertEq(troveManager.getTroveEntireDebt(BTroveId) - BInitialDebt, liquidationAmount, "B debt mismatch");
@@ -98,10 +98,10 @@ contract LiquidationsLSTTest is DevTestSetup {
         );
 
         // Check A retains ~9.5% of the collateral (after claiming from CollSurplus)
-        // collAmount - 0.5% - (liquidationAmount to ETH + 10%)
+        // collAmount - 0.5% - (liquidationAmount to Coll + 10%)
         uint256 collSurplusAmount = collAmount * 995 / 1000 - liquidationAmount * DECIMAL_PRECISION / price * 110 / 100;
         assertApproxEqAbs(
-            WETH.balanceOf(address(collSurplusPool)),
+            collToken.balanceOf(address(collSurplusPool)),
             collSurplusAmount,
             10,
             "CollSurplusPoll should have received collateral"
@@ -110,21 +110,21 @@ contract LiquidationsLSTTest is DevTestSetup {
         borrowerOperations.claimCollateral();
         vm.stopPrank();
         assertApproxEqAbs(
-            WETH.balanceOf(A) - AInitialETHBalance, collSurplusAmount, 10, "A collateral balance mismatch"
+            collToken.balanceOf(A) - AInitialCollBalance, collSurplusAmount, 10, "A collateral balance mismatch"
         );
     }
 
     struct InitialValues {
         uint256 spBoldBalance;
-        uint256 spETHBalance;
-        uint256 AETHBalance;
+        uint256 spCollBalance;
+        uint256 ACollBalance;
         uint256 BDebt;
         uint256 BColl;
     }
 
     struct FinalValues {
         uint256 spBoldBalance;
-        uint256 spETHBalance;
+        uint256 spCollBalance;
         uint256 collToLiquidate;
         uint256 collSPPortion;
         uint256 collPenaltySP;
@@ -145,7 +145,7 @@ contract LiquidationsLSTTest is DevTestSetup {
         priceFeed.setPrice(initialPrice);
         vm.startPrank(A);
         uint256 ATroveId =
-            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount - BOLD_GAS_COMPENSATION, 0, 0, 0, 0);
+            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
@@ -162,8 +162,8 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         InitialValues memory initialValues;
         initialValues.spBoldBalance = stabilityPool.getTotalBoldDeposits();
-        initialValues.spETHBalance = stabilityPool.getETHBalance();
-        initialValues.AETHBalance = WETH.balanceOf(A);
+        initialValues.spCollBalance = stabilityPool.getCollBalance();
+        initialValues.ACollBalance = collToken.balanceOf(A);
         initialValues.BDebt = troveManager.getTroveEntireDebt(BTroveId);
         initialValues.BColl = troveManager.getTroveEntireColl(BTroveId);
 
@@ -189,17 +189,17 @@ contract LiquidationsLSTTest is DevTestSetup {
         // Check SP Bold has decreased
         finalValues.spBoldBalance = stabilityPool.getTotalBoldDeposits();
         assertEq(initialValues.spBoldBalance - finalValues.spBoldBalance, _spAmount, "SP Bold balance mismatch");
-        // Check SP ETH has  increased
-        finalValues.spETHBalance = stabilityPool.getETHBalance();
+        // Check SP Coll has  increased
+        finalValues.spCollBalance = stabilityPool.getCollBalance();
         finalValues.collSPPortion = finalValues.collToLiquidate * _spAmount / liquidationAmount;
         finalValues.collPenaltySP = _spAmount * DECIMAL_PRECISION / _finalPrice * 105 / 100;
         finalValues.collToSendToSP = LiquityMath._min(finalValues.collPenaltySP, finalValues.collSPPortion);
-        // liquidationAmount to ETH + 5%
+        // liquidationAmount to Coll + 5%
         assertApproxEqAbs(
-            finalValues.spETHBalance - initialValues.spETHBalance,
+            finalValues.spCollBalance - initialValues.spCollBalance,
             finalValues.collToSendToSP,
             10,
-            "SP ETH balance mismatch"
+            "SP Coll balance mismatch"
         );
 
         // Redistribution part
@@ -226,7 +226,7 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         // Surplus
         // Check A retains part of the collateral (after claiming from CollSurplus)
-        // collAmount - 0.5% - (liquidationAmount to ETH + penalty)
+        // collAmount - 0.5% - (liquidationAmount to Coll + penalty)
         uint256 collPenalty = finalValues.collPenaltySP + finalValues.collPenaltyRedistribution;
         console2.log(finalValues.collPenaltySP, "finalValues.collPenaltySP");
         console2.log(finalValues.collPenaltyRedistribution, "finalValues.collPenaltyRedistribution");
@@ -235,13 +235,13 @@ contract LiquidationsLSTTest is DevTestSetup {
         if (collPenalty < finalValues.collToLiquidate) {
             collSurplusAmount = finalValues.collToLiquidate - collPenalty;
         }
-        assertApproxEqAbs(WETH.balanceOf(address(collSurplusPool)), collSurplusAmount, 1e9, "CollSurplusPoll mismatch");
+        assertApproxEqAbs(collToken.balanceOf(address(collSurplusPool)), collSurplusAmount, 1e9, "CollSurplusPoll mismatch");
         if (collSurplusAmount > 0) {
             vm.startPrank(A);
             borrowerOperations.claimCollateral();
             vm.stopPrank();
             assertApproxEqAbs(
-                WETH.balanceOf(A) - initialValues.AETHBalance, collSurplusAmount, 1e9, "A collateral balance mismatch"
+                collToken.balanceOf(A) - initialValues.ACollBalance, collSurplusAmount, 1e9, "A collateral balance mismatch"
             );
         }
     }

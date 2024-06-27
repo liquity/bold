@@ -12,7 +12,7 @@ test/launchSequenceTest/DuringLockupPeriodTest.js */
 // A TroveChange with all zeroes
 const noChange = {
   appliedRedistBoldDebtGain: 0,
-  appliedRedistETHGain: 0,
+  appliedRedistCollGain: 0,
   collIncrease: 0,
   collDecrease: 0,
   debtIncrease: 0,
@@ -136,11 +136,11 @@ contract(
     });
 
     describe("ActivePool", async (accounts) => {
-      // sendETH
-      it("sendETH(): reverts when called by an account that is not BO nor TroveM nor SP", async () => {
+      // sendColl
+      it("sendColl(): reverts when called by an account that is not BO nor TroveM nor SP", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await activePool.sendETH(alice, 100, { from: alice });
+          const txAlice = await activePool.sendColl(alice, 100, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           assert.include(
@@ -150,11 +150,11 @@ contract(
         }
       });
 
-      // sendETHToDefaultPool
-      it("sendETHToDefaultPool(): reverts when called by an account that is not TroveManager", async () => {
+      // sendCollToDefaultPool
+      it("sendCollToDefaultPool(): reverts when called by an account that is not TroveManager", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await activePool.sendETHToDefaultPool(100, { from: alice });
+          const txAlice = await activePool.sendCollToDefaultPool(100, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           assert.include(
@@ -164,11 +164,11 @@ contract(
         }
       });
 
-      // receiveETH (payment)
-      it("receiveETH(): reverts when called by an account that is not Borrower Operations nor Default Pool", async () => {
+      // receiveColl (payment)
+      it("receiveColl(): reverts when called by an account that is not Borrower Operations nor Default Pool", async () => {
         // Attempt call from alice
         try {
-          await activePool.receiveETH(100, { from: alice });
+          await activePool.receiveColl(100, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           assert.include(
@@ -180,11 +180,11 @@ contract(
     });
 
     describe("DefaultPool", async (accounts) => {
-      // sendETHToActivePool
-      it("sendETHToActivePool(): reverts when called by an account that is not TroveManager", async () => {
+      // sendCollToActivePool
+      it("sendCollToActivePool(): reverts when called by an account that is not TroveManager", async () => {
         // Attempt call from alice
         try {
-          const txAlice = await defaultPool.sendETHToActivePool(100, {
+          const txAlice = await defaultPool.sendCollToActivePool(100, {
             from: alice,
           });
         } catch (err) {
@@ -219,11 +219,11 @@ contract(
         }
       });
 
-      // receiveETH (payment)
-      it("receiveETH(): reverts when called by an account that is not the Active Pool", async () => {
+      // receiveColl (payment)
+      it("receiveColl(): reverts when called by an account that is not the Active Pool", async () => {
         // Attempt call from alice
         try {
-          await defaultPool.receiveETH(100, { from: alice });
+          await defaultPool.receiveColl(100, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           assert.include(
