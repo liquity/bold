@@ -34,7 +34,8 @@ interface IActivePool {
         returns (uint256);
 
     function mintAggInterest() external;
-    function mintAggInterestAndAccountForTroveChange(TroveChange calldata _troveChange) external;
+    function mintAggInterestAndAccountForTroveChange(TroveChange calldata _troveChange, address _batchManager) external;
+    function mintBatchFeeAndAccountForChange(TroveChange calldata _troveChange, address _batchAddress) external;
 
     function sendETH(address _account, uint256 _amount) external;
     function sendETHToDefaultPool(uint256 _amount) external;

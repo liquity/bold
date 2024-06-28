@@ -443,7 +443,7 @@ contract("TroveManager", async (accounts) => {
         );
       });
 
-      it.only("liquidate(): updates the L_ETH and L_boldDebt reward-per-unit-staked totals", async () => {
+      it("liquidate(): updates the L_ETH and L_boldDebt reward-per-unit-staked totals", async () => {
         // --- SETUP ---
         const { troveId: aliceTroveId } = await openTrove({
           ICR: toBN(dec(8, 18)),

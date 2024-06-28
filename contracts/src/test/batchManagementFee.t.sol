@@ -323,4 +323,137 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         assertEq(activePool.aggRecordedDebt(), activePoolInitialDebt + batchAccruedInterest + batchAccruedFee);
     }
+
+    function testAfterBatchManagementFeeAccrualEntireSystemDebtMatchesWithOpenTrove() public {
+        // Open 1 troves in a batch
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+
+        vm.warp(block.timestamp + 10 days);
+
+        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
+        assertEq(entireSystemDebt, entireDebtA, "Entire debt should be that of trove A");
+
+        // another trove joins the batch
+        uint256 CTroveId = openTroveAndJoinBatchManager(C, 100e18, 4000e18, B, 5e16);
+
+        vm.warp(block.timestamp + 5 days);
+
+        entireSystemDebt = troveManager.getEntireSystemDebt();
+        entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
+        uint256 entireDebtC = troveManager.getTroveEntireDebt(CTroveId);
+        assertApproxEqAbs(entireSystemDebt, entireDebtA + entireDebtC, 10, "Entire debt should be A+C");
+    }
+
+    function testAfterBatchManagementFeeAccrualEntireSystemDebtMatchesWithSwitchBatch() public {
+        // Open 2 troves in the same batch
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+        uint256 CTroveId = openTroveAndJoinBatchManager(C, 100e18, 4000e18, B, 5e16);
+
+        vm.warp(block.timestamp + 10 days);
+
+        // Second trove changes batch (with a different fee)
+        registerBatchManager(D, 0, 1e18, 4e16, 50e14, 0);
+        setInterestBatchManager(C, CTroveId, D, 0);
+
+        vm.warp(block.timestamp + 5 days);
+
+        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
+        uint256 entireDebtC = troveManager.getTroveEntireDebt(CTroveId);
+        assertApproxEqAbs(entireSystemDebt, entireDebtA + entireDebtC, 10);
+    }
+
+    function testAfterBatchManagementFeeAccrualEntireSystemDebtMatchesWithRemoveBatch() public {
+        // Open 2 troves in the same batch
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+        uint256 CTroveId = openTroveAndJoinBatchManager(C, 100e18, 4000e18, B, 5e16);
+
+        vm.warp(block.timestamp + 10 days);
+
+        // First trove leaves the batch
+        removeInterestBatchManager(A, ATroveId, 3e16);
+
+        vm.warp(block.timestamp + 5 days);
+
+        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
+        uint256 entireDebtC = troveManager.getTroveEntireDebt(CTroveId);
+        assertApproxEqAbs(entireSystemDebt, entireDebtA + entireDebtC, 1);
+    }
+
+    function testAfterBatchManagementFeeAccrualEntireSystemDebtMatchesWithCloseTrove() public {
+        // Open 2 troves in the same batch
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+        uint256 CTroveId = openTroveAndJoinBatchManager(C, 100e18, 4000e18, B, 5e16);
+
+        // Second trove closes
+        transferBold(A, C, 4000e18);
+        closeTrove(C, CTroveId);
+
+        vm.warp(block.timestamp + 15 days);
+
+        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
+        assertEq(entireSystemDebt, entireDebtA);
+    }
+
+    function testAfterBatchManagementFeeAccrualEntireSystemDebtMatchesWithLiquidateTroveOffset() public {
+        priceFeed.setPrice(2000e18);
+        // Open 2 troves in the same batch
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100 ether, 5000e18, B, 5e16);
+        uint256 CTroveId = openTroveAndJoinBatchManager(C, 4 ether, 4000e18, B, 5e16);
+
+        // A deposits to SP
+        makeSPDepositAndClaim(A, 5000e18);
+
+        vm.warp(block.timestamp + 5 days);
+
+        // Second trove is liquidated
+        priceFeed.setPrice(1100e18);
+        liquidate(A, CTroveId);
+
+        vm.warp(block.timestamp + 5 days);
+
+        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
+        assertEq(entireSystemDebt, entireDebtA);
+    }
+
+    function testAfterBatchManagementFeeAccrualEntireSystemDebtMatchesWithLiquidateTroveRedistribute() public {
+        priceFeed.setPrice(2000e18);
+        // Open 2 troves in the same batch
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100 ether, 5000e18, B, 5e16);
+        uint256 CTroveId = openTroveAndJoinBatchManager(C, 4 ether, 4000e18, B, 5e16);
+
+        vm.warp(block.timestamp + 5 days);
+
+        // Second trove is liquidated
+        priceFeed.setPrice(1100e18);
+        liquidate(A, CTroveId);
+
+        vm.warp(block.timestamp + 5 days);
+
+        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
+        assertApproxEqAbs(entireSystemDebt, entireDebtA, 100);
+    }
+
+    function testAfterBatchManagementFeeAccrualEntireSystemDebtMatchesWithRedemption() public {
+        // Open 2 troves in the same batch
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+        uint256 CTroveId = openTroveAndJoinBatchManager(C, 100e18, 4000e18, B, 5e16);
+
+        vm.warp(block.timestamp + 5 days);
+
+        // A reedems 1k
+        redeem(A, 1000e18);
+
+        vm.warp(block.timestamp + 10 days);
+
+        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
+        uint256 entireDebtC = troveManager.getTroveEntireDebt(CTroveId);
+        assertApproxEqAbs(entireSystemDebt, entireDebtA + entireDebtC, 10);
+    }
 }

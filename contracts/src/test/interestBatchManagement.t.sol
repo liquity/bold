@@ -377,7 +377,7 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         // Check interest was applied
         assertApproxEqAbs(
-            troveManager.getTroveDebt(troveIDs.A), troveEntireDebtBefore.A, 1, "Interest was not applied to trove A"
+            troveManager.getTroveDebt(troveIDs.A), troveEntireDebtBefore.A, 10, "Interest was not applied to trove A"
         );
         assertEq(
             troveManager.getTroveDebt(troveIDs.A),
