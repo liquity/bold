@@ -199,12 +199,9 @@ contract SPTest is DevTestSetup {
     // --- provideToSP, doClaim == true, BOLD gains ---
 
     function testProvideToSPWithClaim_WithOnlyCurrentBOLDGainsSendsTotalBOLDGainToDepositor() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-
-        // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -218,12 +215,9 @@ contract SPTest is DevTestSetup {
     }
 
     function testProvideToSPWithClaim_WithCurrentBOLDGainsZerosCurrentBOLDGains() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-
-        // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
 
         // Check has currentBoldGain
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
@@ -333,12 +327,9 @@ contract SPTest is DevTestSetup {
     // --- provideToSP, doClaim == false, BOLD gains ---
 
     function testProvideToSPNoClaimAddsBOLDGainsToDeposit() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-
-        // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -352,12 +343,9 @@ contract SPTest is DevTestSetup {
     }
 
     function testProvideToSPNoClaimAddsBoldGainsToTotalBoldDeposits() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-
-        // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -371,12 +359,9 @@ contract SPTest is DevTestSetup {
     }
 
     function testProvideToSPNoClaimZerosCurrentBoldGains() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-
-        // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -388,12 +373,9 @@ contract SPTest is DevTestSetup {
     }
 
     function testProvideToSPNoClaimReducesDepositorBoldBalanceByOnlyTheTopUp() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-
-        // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -508,12 +490,9 @@ contract SPTest is DevTestSetup {
 
     // --- withdrawFromSP, doClaim == true, BOLD gains ---
     function testWithdrawFromSPWithClaim_WithCurrentBOLDGainsSendsBOLDGainToDepositor() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-
-        // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -528,12 +507,9 @@ contract SPTest is DevTestSetup {
     }
 
     function testWithdrawFromSPWithClaim_WithCurrentBOLDGainsZerosCurrentBoldGains() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-
-        // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -645,12 +621,9 @@ contract SPTest is DevTestSetup {
     // --- withdrawFromSP, doClaim == false, BOLD gains ---
 
     function testWithdrawFromSPNoClaimAddsBOLDGainsToDeposit() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-
-        // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -664,12 +637,9 @@ contract SPTest is DevTestSetup {
     }
 
     function testWithdrawFromSPNoClaimAddsBoldGainsToTotalBoldDeposits() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-
-        // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -683,12 +653,9 @@ contract SPTest is DevTestSetup {
     }
 
     function testWithdrawFromSPNoClaimZerosCurrentBoldGains() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-
-        // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -700,12 +667,9 @@ contract SPTest is DevTestSetup {
     }
 
     function testWithdrawFromSPNoClaimReducesDepositorBoldBalanceByOnlyTheTopUp() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustments();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
-
-        // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);

@@ -286,7 +286,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool, I
 
         uint256 initialDeposit = deposits[msg.sender].initialValue;
         uint256 currentETHGain = getDepositorETHGain(msg.sender);
-        uint256 currentYieldGain = getDepositorYieldGain(msg.sender);
+        uint256 currentYieldGain = _getDepositorYieldGain(msg.sender, 0);
         uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         (uint256 keptYieldGain, uint256 yieldGainToSend) = _getYieldToKeepOrSend(currentYieldGain, _doClaim);
         uint256 newDeposit = compoundedBoldDeposit + _topUp + keptYieldGain;
@@ -346,7 +346,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool, I
         activePool.mintAggInterest();
 
         uint256 currentETHGain = getDepositorETHGain(msg.sender);
-        uint256 currentYieldGain = getDepositorYieldGain(msg.sender);
+        uint256 currentYieldGain = _getDepositorYieldGain(msg.sender, 0);
         uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         uint256 boldToWithdraw = LiquityMath._min(_amount, compoundedBoldDeposit);
         (uint256 keptYieldGain, uint256 yieldGainToSend) = _getYieldToKeepOrSend(currentYieldGain, _doClaim);
@@ -627,13 +627,17 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool, I
     }
 
     function getDepositorYieldGain(address _depositor) public view override returns (uint256) {
+        return _getDepositorYieldGain(_depositor, activePool.calcPendingSPYield());
+    }
+
+    function _getDepositorYieldGain(address _depositor, uint256 _pendingSPYield) internal view returns (uint256) {
         uint256 initialDeposit = deposits[_depositor].initialValue;
 
         if (initialDeposit == 0) return 0;
 
         Snapshots memory snapshots = depositSnapshots[_depositor];
 
-        uint256 yieldGain = _getYieldGainFromSnapshots(initialDeposit, snapshots);
+        uint256 yieldGain = _getYieldGainFromSnapshots(initialDeposit, snapshots, _pendingSPYield);
         return yieldGain;
     }
 
@@ -660,7 +664,7 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool, I
         return ETHGain;
     }
 
-    function _getYieldGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots)
+    function _getYieldGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots, uint256 _pendingSPYield)
         internal
         view
         returns (uint256)
@@ -675,11 +679,23 @@ contract StabilityPool is LiquityBase, Ownable, CheckContract, IStabilityPool, I
         uint256 B_Snapshot = snapshots.B;
         uint256 P_Snapshot = snapshots.P;
 
-        uint256 firstPortion = epochToScaleToB[epochSnapshot][scaleSnapshot] - B_Snapshot;
-        uint256 secondPortion = epochToScaleToB[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
+        uint256 firstPortionPending;
+        uint256 secondPortionPending;
+
+        if (_pendingSPYield > 0 && epochSnapshot == currentEpoch) {
+            uint256 yieldNumerator = _pendingSPYield * DECIMAL_PRECISION + lastYieldError;
+            uint256 yieldPerUnitStaked = yieldNumerator / totalBoldDeposits;
+            uint256 marginalYieldGain = yieldPerUnitStaked * P;
+
+            if (currentScale == scaleSnapshot) firstPortionPending = marginalYieldGain;
+            else if (currentScale == scaleSnapshot + 1) secondPortionPending = marginalYieldGain;
+        }
+
+        uint256 firstPortion = epochToScaleToB[epochSnapshot][scaleSnapshot] + firstPortionPending - B_Snapshot;
+        uint256 secondPortion =
+            (epochToScaleToB[epochSnapshot][scaleSnapshot + 1] + secondPortionPending) / SCALE_FACTOR;
 
         uint256 yieldGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
-
         return yieldGain;
     }
 
