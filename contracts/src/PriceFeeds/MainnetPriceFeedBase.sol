@@ -4,7 +4,7 @@ import "../Dependencies/Ownable.sol";
 import "../Dependencies/AggregatorV3Interface.sol";
 import "../Interfaces/IPriceFeed.sol";
 
-// import "forge-std/console2.sol";
+import "forge-std/console2.sol";
 
 abstract contract MainnetPriceFeedBase is Ownable, IPriceFeed {
     
@@ -82,6 +82,10 @@ abstract contract MainnetPriceFeedBase is Ownable, IPriceFeed {
     function _isValidChainlinkPrice(ChainlinkResponse memory chainlinkResponse, uint256 _stalenessThreshold) 
     internal view returns (bool) 
     {
+        console2.log("oracle success", chainlinkResponse.success);
+        console2.log("is not stale", block.timestamp - chainlinkResponse.timestamp < _stalenessThreshold);
+        console2.log("answer", block.timestamp - chainlinkResponse.timestamp < _stalenessThreshold);
+
         return
             chainlinkResponse.success && 
             block.timestamp - chainlinkResponse.timestamp < _stalenessThreshold &&
