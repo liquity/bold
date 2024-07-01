@@ -20,7 +20,7 @@ import {ERC20Faucet} from "./test/TestContracts/ERC20Faucet.sol";
 
 import "./PriceFeeds/WETHPriceFeed.sol";
 import "./PriceFeeds/WSTETHPriceFeed.sol";
-import "./PriceFeeds/RETHPriceFeed.sol";
+import "./PriceFeeds/CompositePriceFeed.sol";
 
 // import "forge-std/console.sol";
 
@@ -69,6 +69,8 @@ struct ExternalAddresses {
     address ETHOracle;
     address STETHOracle;
     address RETHOracle;
+    address ETHXOracle;
+    address OSETHOracle;
     address WSTETHToken;
 }
 
@@ -76,6 +78,8 @@ struct OracleParams {
     uint256 ethUsdStalenessThreshold;
     uint256 stEthUsdStalenessThreshold;
     uint256 rEthEthStalenessThreshold;
+    uint256 ethXEthStalenessThreshold;
+    uint256 osEthEthStalenessThreshold;
 }
 
 // TODO: replace this with the real LST contracts
@@ -83,6 +87,8 @@ struct MockCollaterals {
     IERC20 WETH;
     IERC20 RETH;
     IERC20 WSTETH;
+    IERC20 ETHX;
+    IERC20 OSETH;
 }
 
 function _deployAndConnectContracts()
@@ -188,25 +194,38 @@ function deployAndConnectContractsMainnet(
         IBoldToken boldToken
     ) 
 {
-    contractsArray = new LiquityContracts[](3);
-    ITroveManager[] memory troveManagers = new ITroveManager[](3);
-    IPriceFeed[] memory priceFeeds = new IPriceFeed[](3);
-    IERC20[] memory collaterals = new IERC20[](3);
+    uint256 numCollaterals = 5;
+    contractsArray = new LiquityContracts[](numCollaterals);
+    ITroveManager[] memory troveManagers = new ITroveManager[](numCollaterals);
+    IPriceFeed[] memory priceFeeds = new IPriceFeed[](numCollaterals);
+    IERC20[] memory collaterals = new IERC20[](numCollaterals);
 
     priceFeeds[0] = new WETHPriceFeed(
         externalAddresses.ETHOracle, 
         oracleParams.ethUsdStalenessThreshold);
 
-    priceFeeds[1] = new RETHPriceFeed(
+    priceFeeds[1] = new CompositePriceFeed(
         externalAddresses.ETHOracle,
         externalAddresses.RETHOracle,
         oracleParams.ethUsdStalenessThreshold,
-        oracleParams.rEthEthStalenessThreshold);
+        oracleParams.rEthEthStalenessThreshold); 
 
     priceFeeds[2] = new WSTETHPriceFeed(
         externalAddresses.STETHOracle,
         oracleParams.stEthUsdStalenessThreshold,
         externalAddresses.WSTETHToken);
+
+    priceFeeds[3] = new CompositePriceFeed(
+        externalAddresses.ETHOracle,
+        externalAddresses.ETHXOracle,
+        oracleParams.ethUsdStalenessThreshold,
+        oracleParams.ethXEthStalenessThreshold);
+
+    priceFeeds[4] = new CompositePriceFeed(
+        externalAddresses.ETHOracle,
+        externalAddresses.OSETHOracle,
+        oracleParams.ethUsdStalenessThreshold,
+        oracleParams.osEthEthStalenessThreshold); 
 
     boldToken = new BoldToken();
 
@@ -235,8 +254,24 @@ function deployAndConnectContractsMainnet(
     );
     collaterals[2] = mockCollaterals.WSTETH;
 
+    mockCollaterals.ETHX = new ERC20Faucet(
+       "Mock ETHX", // _name
+        "mockETHX", // _symbol
+        100 ether, //     _tapAmount
+        1 days //         _tapPeriod
+    );
+    collaterals[3] = mockCollaterals.ETHX;
+
+    mockCollaterals.OSETH = new ERC20Faucet(
+       "Mock OSETH", // _name
+        "mockOSETH", // _symbol
+        100 ether, //     _tapAmount
+        1 days //         _tapPeriod
+    );
+    collaterals[4] = mockCollaterals.OSETH;
+
     // Deploy each set of core contracts
-    for (uint256 i = 0; i < 3; i++) {
+    for (uint256 i = 0; i < numCollaterals; i++) {
         contractsArray[i] = _deployAndConnectCollateralContractsMainnet(collaterals[i], boldToken, priceFeeds[i], troveManagerParamsArray[i]);
         troveManagers[i] = contractsArray[i].troveManager;
     }
@@ -246,7 +281,7 @@ function deployAndConnectContractsMainnet(
     boldToken.setCollateralRegistry(address(collateralRegistry));
     
     // Set registry in TroveManagers
-    for (uint256 i = 0; i < 3; i++) {
+    for (uint256 i = 0; i < numCollaterals; i++) {
         contractsArray[i].troveManager.setCollateralRegistry(address(collateralRegistry));
     }
 } 
