@@ -1172,7 +1172,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         return _calcInterest(recordedDebt * annualInterestRate, block.timestamp - lastDebtUpdateTime);
     }
 
-    function calcTroveAccruedFee(uint256 _troveId) external view returns (uint256) {
+    function calcTroveAccruedBatchFee(uint256 _troveId) external view returns (uint256) {
         Trove memory trove = Troves[_troveId];
 
         // If trove doesn’t belong to a batch, there’s no fee

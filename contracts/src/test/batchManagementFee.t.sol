@@ -28,7 +28,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
-        uint256 troveAccruedFee = troveManager.calcTroveAccruedFee(troveId);
+        uint256 troveAccruedFee = troveManager.calcTroveAccruedBatchFee(troveId);
 
         // Adjust first trove
         addColl(A, troveId, 1 ether);
@@ -83,7 +83,7 @@ contract BatchManagementFeeTest is DevTestSetup {
         uint256 AIntialBalance = boldToken.balanceOf(A);
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
-        uint256 troveAccruedFee = troveManager.calcTroveAccruedFee(troveId);
+        uint256 troveAccruedFee = troveManager.calcTroveAccruedBatchFee(troveId);
 
         // Close first trove
         closeTrove(A, troveId);
@@ -134,7 +134,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
-        uint256 troveAccruedFee = troveManager.calcTroveAccruedFee(troveId);
+        uint256 troveAccruedFee = troveManager.calcTroveAccruedBatchFee(troveId);
 
         // Change batch interest rate
         setBatchInterestRate(B, 10e16);
@@ -184,7 +184,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
-        uint256 troveAccruedFee = troveManager.calcTroveAccruedFee(troveId);
+        uint256 troveAccruedFee = troveManager.calcTroveAccruedBatchFee(troveId);
         assertEq(troveAccruedFee, 0, "Trove accrued fee should be zero");
 
         // Add trove to batch
@@ -244,7 +244,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
-        uint256 troveAccruedFee = troveManager.calcTroveAccruedFee(troveId);
+        uint256 troveAccruedFee = troveManager.calcTroveAccruedBatchFee(troveId);
 
         // Add trove to batch
         setInterestBatchManager(C, troveId, B);
@@ -299,7 +299,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
-        uint256 troveAccruedFee = troveManager.calcTroveAccruedFee(troveId);
+        uint256 troveAccruedFee = troveManager.calcTroveAccruedBatchFee(troveId);
 
         // Add trove to batch
         removeInterestBatchManager(C, troveId, 10e16);

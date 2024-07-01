@@ -119,7 +119,7 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function calcTroveAccruedInterest(uint256 _troveId) external view returns (uint256);
 
-    function calcTroveAccruedFee(uint256 _troveId) external view returns (uint256);
+    function calcTroveAccruedBatchFee(uint256 _troveId) external view returns (uint256);
 
     function getTroveLastDebtUpdateTime(uint256 _troveId) external view returns (uint256);
 

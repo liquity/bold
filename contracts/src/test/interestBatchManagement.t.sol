@@ -519,7 +519,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 accruedBatchFee = troveManager.calcBatchAccruedFee(B);
         uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
         uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
-        uint256 accruedTroveFee = troveManager.calcTroveAccruedFee(ATroveId);
+        uint256 accruedTroveFee = troveManager.calcTroveAccruedBatchFee(ATroveId);
 
         // C applies batch B's pending interest
         applyBatchInterestAndFeePermissionless(C, B);
