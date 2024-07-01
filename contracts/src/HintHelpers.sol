@@ -125,4 +125,25 @@ contract HintHelpers {
         uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
         return _calcUpfrontFee(_debtIncrease, avgInterestRate);
     }
+
+    function predictAdjustBatchInterestRateUpfrontFee(uint256 _collIndex, address _batchAddress, uint256 _newInterestRate)
+        external
+        view
+        returns (uint256)
+    {
+        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        IActivePool activePool = troveManager.activePool();
+        LatestBatchData memory batch = troveManager.getLatestBatchData(_batchAddress);
+
+        if (block.timestamp >= batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN) {
+            return 0;
+        }
+
+        TroveChange memory troveChange;
+        troveChange.newWeightedRecordedDebt = batch.entireDebt * _newInterestRate;
+        troveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
+
+        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
+        return _calcUpfrontFee(batch.entireDebt, avgInterestRate);
+    }
 }
