@@ -26,7 +26,7 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         address batchManagerAddress = borrowerOperations.interestBatchManagerOf(troveId);
         assertEq(batchManagerAddress, B, "Wrong batch manager in BO");
-        (,,,,,,,, address tmBatchManagerAddress,,) = troveManager.Troves(troveId);
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
         assertEq(tmBatchManagerAddress, B, "Wrong batch manager in TM");
 
         IBorrowerOperations.InterestBatchManager memory batchManager =
@@ -49,7 +49,7 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         address batchManagerAddress = borrowerOperations.interestBatchManagerOf(troveId);
         assertEq(batchManagerAddress, B, "Wrong batch manager in BO");
-        (,,,,,,,, address tmBatchManagerAddress,,) = troveManager.Troves(troveId);
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
         assertEq(tmBatchManagerAddress, B, "Wrong batch manager in TM");
 
         IBorrowerOperations.InterestBatchManager memory batchManager =
@@ -69,7 +69,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(borrowerOperations.interestBatchManagerOf(troveId), address(0), "Wrong batch manager in BO");
-        (,,,,,,,, address tmBatchManagerAddress,,) = troveManager.Troves(troveId);
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
         assertEq(tmBatchManagerAddress, address(0), "Wrong batch manager in TM");
     }
 
@@ -372,7 +372,7 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         // Check new batch manager
         assertEq(borrowerOperations.interestBatchManagerOf(troveIDs.E), C, "Wrong batch manager in BO");
-        (,,,,,,,, address tmBatchManagerAddress,,) = troveManager.Troves(troveIDs.E);
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveIDs.E);
         assertEq(tmBatchManagerAddress, C, "Wrong batch manager in TM");
 
         // Check interest was applied

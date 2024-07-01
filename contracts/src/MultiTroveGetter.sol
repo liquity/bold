@@ -81,8 +81,7 @@ contract MultiTroveGetter {
             _out.lastDebtUpdateTime,
             _out.lastInterestRateAdjTime,
             _out.interestBatchManager,
-            ,//_out.batchDebtShares,
-            //_out.batchCollShares
+            //_out.batchDebtShares,
         ) = _troveManager.Troves(_id);
 
         (_out.snapshotETH, _out.snapshotBoldDebt) = _troveManager.rewardSnapshots(_id);

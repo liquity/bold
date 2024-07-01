@@ -51,7 +51,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint256 annualInterestRate;
         address interestBatchManager;
         uint256 batchDebtShares;
-        uint256 batchCollShares;
     }
     // TODO: optimize this struct packing for gas reduction, which may break v1 tests that assume a certain order of properties
 
@@ -68,7 +67,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint256 annualInterestRate;
         uint256 annualFee;
         uint256 totalDebtShares;
-        uint256 totalCollShares;
     }
 
     mapping(address => Batch) public batches;
@@ -832,9 +830,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         Trove memory trove = Troves[_troveId];
         Batch memory batch = batches[_batchAddress];
         uint256 batchDebtShares = trove.batchDebtShares;
-        uint256 batchCollShares = trove.batchCollShares;
         uint256 totalDebtShares = batch.totalDebtShares;
-        uint256 totalCollShares = batch.totalCollShares;
 
         uint256 stake = trove.stake;
         //uint256 batchRedistBoldDebtGain = stake * (L_boldDebt - rewardBatchSnapshots[_batchAddress].boldDebt) / DECIMAL_PRECISION;
@@ -852,8 +848,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         // We can’t do pro-rata batch entireDebt, because redist gains are proportional to coll, not to debt
         _latestTroveData.entireDebt = _latestTroveData.recordedDebt + _latestTroveData.redistBoldDebtGain
             + _latestTroveData.accruedInterest + _latestTroveData.accruedBatchFee;
-        _latestTroveData.entireColl =
-            _latestBatchData.entireColl * batchCollShares / totalCollShares + _latestTroveData.redistETHGain;
+        _latestTroveData.entireColl = trove.coll + _latestTroveData.redistETHGain;
         _latestTroveData.lastInterestRateAdjTime = LiquityMath._max(_latestBatchData.lastInterestRateAdjTime, trove.lastInterestRateAdjTime);
     }
 
@@ -1240,11 +1235,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     function getTroveColl(uint256 _troveId) external view override returns (uint256) {
         Trove memory trove = Troves[_troveId];
-        address batchAddress = _getBatchManager(trove);
-        if (batchAddress != address(0)) {
-            Batch memory batch = batches[batchAddress];
-            return batch.coll * trove.batchCollShares / batch.totalCollShares;
-        }
         return trove.coll;
     }
 
@@ -1662,8 +1652,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         batches[_batchAddress].lastDebtUpdateTime = uint64(block.timestamp);
 
         // Collateral
-        uint256 currentBatchCollShares = batches[_batchAddress].totalCollShares;
-        uint256 batchCollSharesDelta;
         uint256 collIncrease = _troveChange.collIncrease + _troveChange.appliedRedistETHGain;
         uint256 collDecrease;
         if (collIncrease > _troveChange.collDecrease) {
@@ -1678,22 +1666,12 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         } else {
             if (collIncrease > 0) {
                 // Add coll
-                if (_batchColl == 0) {
-                    batchCollSharesDelta = collIncrease;
-                } else {
-                    batchCollSharesDelta = currentBatchCollShares * collIncrease / _batchColl;
-                }
-
-                Troves[_troveId].batchCollShares += batchCollSharesDelta;
+                Troves[_troveId].coll += collIncrease;
                 batches[_batchAddress].coll = _batchColl + collIncrease;
-                batches[_batchAddress].totalCollShares = currentBatchCollShares + batchCollSharesDelta;
             } else if (collDecrease > 0) {
                 // Subtract coll
-                batchCollSharesDelta = currentBatchCollShares * collDecrease / _batchColl;
-
-                Troves[_troveId].batchCollShares -= batchCollSharesDelta;
+                Troves[_troveId].coll -= collDecrease;
                 batches[_batchAddress].coll = _batchColl - collDecrease;
-                batches[_batchAddress].totalCollShares = currentBatchCollShares - batchCollSharesDelta;
             }
         }
     }
@@ -1752,13 +1730,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint256 batchCollDecrease = _newTroveColl - _troveChange.appliedRedistETHGain;
 
         batches[_batchAddress].totalDebtShares -= trove.batchDebtShares;
-        batches[_batchAddress].totalCollShares -= trove.batchCollShares;
         batches[_batchAddress].debt = _newBatchDebt - batchDebtDecrease;
         batches[_batchAddress].coll = _newBatchColl - batchCollDecrease;
         batches[_batchAddress].lastDebtUpdateTime = uint64(block.timestamp);
 
         Troves[_troveId].interestBatchManager = address(0);
         Troves[_troveId].batchDebtShares = 0;
-        Troves[_troveId].batchCollShares = 0;
     }
 }

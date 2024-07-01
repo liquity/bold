@@ -56,8 +56,7 @@ interface ITroveManager is IERC721, ILiquityBase {
             uint64 lastInterestRateAdjTime,
             uint256 annualInterestRate,
             address interestBatchManager,
-            uint256 batchDebtShares,
-            uint256 batchCollShares
+            uint256 batchDebtShares
         );
 
     function rewardSnapshots(uint256 _id) external view returns (uint256 ETH, uint256 boldDebt);
