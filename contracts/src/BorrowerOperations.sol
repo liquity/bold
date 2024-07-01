@@ -477,6 +477,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
 
         // Apply upfront fee on premature adjustments
+        // TODO: Does it make sense to allow adjusting to the same interest?
         if (
             trove.annualInterestRate != _newAnnualInterestRate
             && block.timestamp < trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
@@ -794,6 +795,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         LatestBatchData memory batch = contractsCache.troveManager.getLatestBatchData(msg.sender);
         _requireInterestRateChangePeriodPassed(msg.sender, uint256(batch.lastInterestRateAdjTime));
 
+        bool batchWasEmpty = batch.entireDebt == 0 && batch.entireColl == 0;
         uint256 newDebt = batch.entireDebt;
 
         TroveChange memory troveChange;
@@ -804,6 +806,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         troveChange.oldWeightedRecordedBatchFee = batch.weightedRecordedBatchFee;
 
         // Apply upfront fee on premature adjustments
+        // TODO: Does it make sense to allow adjusting to the same interest?
         if (
             batch.annualInterestRate != _newAnnualInterestRate
                 && block.timestamp < batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
@@ -835,8 +838,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             msg.sender, batch.entireColl, newDebt, _newAnnualInterestRate
         );
 
-        // TODO: Check batch is not empty
-        sortedTroves.reInsertBatch(BatchId.wrap(msg.sender), _newAnnualInterestRate, _upperHint, _lowerHint);
+        // Check batch is not empty, and then reinsert in sorted list
+        if (!batchWasEmpty) {
+            sortedTroves.reInsertBatch(BatchId.wrap(msg.sender), _newAnnualInterestRate, _upperHint, _lowerHint);
+        }
     }
 
     // TODO: change fee?
@@ -894,8 +899,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         // as a change. It’s probably not so common to join a batch with the exact same interest rate.
         // Apply upfront fee on premature adjustments
         if (
-            vars.trove.annualInterestRate != vars.newBatch.annualInterestRate
-            && block.timestamp < vars.trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
+            block.timestamp < vars.trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
         ) {
             vars.trove.entireDebt = _applyUpfrontFee(vars.trove.entireColl, vars.trove.entireDebt, newBatchTroveChange, _maxUpfrontFee);
         }

@@ -854,7 +854,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             + _latestTroveData.accruedInterest + _latestTroveData.accruedBatchFee;
         _latestTroveData.entireColl =
             _latestBatchData.entireColl * batchCollShares / totalCollShares + _latestTroveData.redistETHGain;
-        _latestTroveData.lastInterestRateAdjTime = _latestBatchData.lastInterestRateAdjTime;
+        _latestTroveData.lastInterestRateAdjTime = LiquityMath._max(_latestBatchData.lastInterestRateAdjTime, trove.lastInterestRateAdjTime);
     }
 
     function getLatestTroveData(uint256 _troveId) external view returns (LatestTroveData memory trove) {
@@ -1601,10 +1601,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             Troves[_troveId].coll = 0;
             Troves[_troveId].annualInterestRate = 0;
             Troves[_troveId].lastDebtUpdateTime = 0;
-            Troves[_troveId].lastInterestRateAdjTime = 0;
         }
 
         Troves[_troveId].interestBatchManager = _newBatchAddress;
+        Troves[_troveId].lastInterestRateAdjTime = uint64(block.timestamp);
 
         _troveChange.collIncrease = _troveColl;
         _troveChange.debtIncrease = _troveDebt - _troveChange.upfrontFee - _troveChange.appliedRedistBoldDebtGain;

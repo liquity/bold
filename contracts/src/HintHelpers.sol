@@ -6,6 +6,8 @@ import "./Interfaces/ICollateralRegistry.sol";
 import "./Dependencies/LiquityMath.sol";
 import "./Dependencies/Constants.sol";
 
+// import "forge-std/console2.sol";
+
 contract HintHelpers {
     string public constant NAME = "HintHelpers";
 
