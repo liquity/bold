@@ -316,12 +316,12 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         );
 
         if (isTroveInBatch) {
-            singleLiquidation.oldWeightedRecordedDebt = singleLiquidation.batch.weightedRecordedDebt;
-            singleLiquidation.newWeightedRecordedDebt = (singleLiquidation.batch.entireDebt - singleLiquidation.trove.entireDebt) * singleLiquidation.batch.annualInterestRate;
+            singleLiquidation.oldWeightedRecordedDebt = singleLiquidation.batch.weightedRecordedDebt + (singleLiquidation.trove.entireDebt - singleLiquidation.trove.redistBoldDebtGain) * singleLiquidation.batch.annualInterestRate;
+            singleLiquidation.newWeightedRecordedDebt = singleLiquidation.batch.entireDebt * singleLiquidation.batch.annualInterestRate;
             // Mint batch management fee
             troveChange.batchAccruedManagementFee = singleLiquidation.batch.accruedManagementFee;
-            troveChange.oldWeightedRecordedBatchManagementFee = singleLiquidation.batch.weightedRecordedBatchManagementFee;
-            troveChange.newWeightedRecordedBatchManagementFee = (singleLiquidation.batch.entireDebt - singleLiquidation.trove.entireDebt) * singleLiquidation.batch.annualManagementFee;
+            troveChange.oldWeightedRecordedBatchManagementFee = singleLiquidation.batch.weightedRecordedBatchManagementFee + (singleLiquidation.trove.entireDebt - singleLiquidation.trove.redistBoldDebtGain) * singleLiquidation.batch.annualManagementFee;
+            troveChange.newWeightedRecordedBatchManagementFee = singleLiquidation.batch.entireDebt * singleLiquidation.batch.annualManagementFee;
             activePool.mintBatchManagementFeeAndAccountForChange(troveChange, batchAddress);
         } else {
             singleLiquidation.oldWeightedRecordedDebt = singleLiquidation.trove.weightedRecordedDebt;
@@ -601,15 +601,17 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
         if (isTroveInBatch) {
             _getLatestBatchData(singleRedemption.batchAddress, singleRedemption.batch);
-            singleRedemption.oldWeightedRecordedDebt = singleRedemption.batch.weightedRecordedDebt;
-            singleRedemption.newWeightedRecordedDebt = (singleRedemption.batch.entireDebt - singleRedemption.BoldLot) * singleRedemption.batch.annualInterestRate;
+            singleRedemption.oldWeightedRecordedDebt = singleRedemption.batch.weightedRecordedDebt + singleRedemption.BoldLot * singleRedemption.batch.annualInterestRate;
+            singleRedemption.newWeightedRecordedDebt = singleRedemption.batch.entireDebt * singleRedemption.batch.annualInterestRate;
+
             TroveChange memory troveChange;
             troveChange.debtDecrease = singleRedemption.BoldLot;
             troveChange.collDecrease = singleRedemption.ETHLot;
             troveChange.appliedRedistBoldDebtGain = singleRedemption.trove.redistBoldDebtGain;
             troveChange.appliedRedistETHGain = singleRedemption.trove.redistETHGain;
-            troveChange.oldWeightedRecordedBatchManagementFee = singleRedemption.batch.weightedRecordedBatchManagementFee;
-            troveChange.newWeightedRecordedBatchManagementFee = (singleRedemption.batch.entireDebt - singleRedemption.BoldLot) * singleRedemption.batch.annualManagementFee;
+            // batchAccruedManagementFee is handled in the outer function
+            troveChange.oldWeightedRecordedBatchManagementFee = singleRedemption.batch.weightedRecordedBatchManagementFee + singleRedemption.BoldLot * singleRedemption.batch.annualManagementFee;
+            troveChange.newWeightedRecordedBatchManagementFee = singleRedemption.batch.entireDebt * singleRedemption.batch.annualManagementFee;
 
             // TODO: optimize: as redemptions are consecutive inside a batch, we can do this in the outer loop, only once per batch
             activePool.mintBatchManagementFeeAndAccountForChange(troveChange, singleRedemption.batchAddress);
@@ -1724,7 +1726,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
         // We don’t need to increase the shares corresponding to redistribution first, because they would be subtracted immediately after
         // We don’t need to account for interest nor batch fee because it’s proportional to debt shares
-
         uint256 batchDebtDecrease = _newTroveDebt - _troveChange.upfrontFee - _troveChange.appliedRedistBoldDebtGain;
         uint256 batchCollDecrease = _newTroveColl - _troveChange.appliedRedistETHGain;
 
