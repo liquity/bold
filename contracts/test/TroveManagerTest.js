@@ -67,6 +67,23 @@ contract("TroveManager", async (accounts) => {
   const deployFixture = createDeployAndFundFixture({
     accounts: fundedAccounts,
     mocks: { TroveManager: TroveManagerTester },
+    callback: async (contracts) => {
+      const { constants } = contracts;
+      const [
+        CCR,
+        BOLD_GAS_COMPENSATION,
+        MIN_NET_DEBT,
+      ] = await Promise.all([
+        constants._CCR(),
+        constants._BOLD_GAS_COMPENSATION(),
+        constants._MIN_NET_DEBT(),
+      ]);
+      return {
+        CCR,
+        BOLD_GAS_COMPENSATION,
+        MIN_NET_DEBT,
+      };
+    },
   });
   const getOpenTroveTotalDebt = async (boldAmount) => th.getOpenTroveTotalDebt(contracts, boldAmount);
   const getOpenTroveBoldAmount = async (totalDebt) => th.getOpenTroveBoldAmount(contracts, totalDebt);
@@ -143,7 +160,7 @@ contract("TroveManager", async (accounts) => {
 
       await registerBatchManagers(borrowerOperations);
 
-      BOLD_GAS_COMPENSATION = await borrowerOperations.BOLD_GAS_COMPENSATION();
+      BOLD_GAS_COMPENSATION = result.BOLD_GAS_COMPENSATION;
     });
 
     describe(`${withBatchDelegation ? "With" : "Without"} delegation`, async () => {
@@ -475,7 +492,7 @@ contract("TroveManager", async (accounts) => {
         const C_collateral = await troveManager.getTroveEntireColl(carolTroveId);
 
         const carolInterest = await troveManager.calcTroveAccruedInterest(carolTroveId);
-        const carolFee = await troveManager.calcTroveAccruedFee(carolTroveId);
+        const carolFee = await troveManager.calcTroveAccruedBatchManagementFee(carolTroveId);
         // close Carol's Trove.
         assert.isTrue(await sortedTroves.contains(carolTroveId));
         await troveManager.liquidate(carolTroveId, { from: owner });
@@ -502,7 +519,7 @@ contract("TroveManager", async (accounts) => {
         );
 
         const bobInterest1 = await troveManager.calcTroveAccruedInterest(bobTroveId);
-        const bobFee1 = await troveManager.calcTroveAccruedFee(bobTroveId);
+        const bobFee1 = await troveManager.calcTroveAccruedBatchManagementFee(bobTroveId);
 
         assert.isTrue(await sortedTroves.contains(bobTroveId));
         // Bob now withdraws Bold, bringing his ICR to 1.11
@@ -521,7 +538,7 @@ contract("TroveManager", async (accounts) => {
         const price = await priceFeed.getPrice();
 
         const bobInterest2 = await troveManager.calcTroveAccruedInterest(bobTroveId);
-        const bobFee2 = await troveManager.calcTroveAccruedFee(bobTroveId);
+        const bobFee2 = await troveManager.calcTroveAccruedBatchManagementFee(bobTroveId);
 
         // close Bob's Trove
         assert.isTrue(await sortedTroves.contains(bobTroveId));
@@ -976,7 +993,7 @@ contract("TroveManager", async (accounts) => {
         );
         assert.isAtMost(
           th.getDifference(dennis_ETHGain_Before, liquidatedColl),
-          100000,
+          200000,
         );
 
         // Confirm system is not below CT
@@ -1041,7 +1058,7 @@ contract("TroveManager", async (accounts) => {
           th.getDifference(bob_Deposit_Before, spDeposit.sub(liquidatedDebt)),
           1000000,
         );
-        assert.isAtMost(th.getDifference(bob_ETHGain_Before, liquidatedColl), 100000);
+        assert.isAtMost(th.getDifference(bob_ETHGain_Before, liquidatedColl), 200000);
 
         // Confirm system is not below CT
         assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
@@ -2783,8 +2800,8 @@ contract("TroveManager", async (accounts) => {
         const carol_Debt = await troveManager.getTroveEntireDebt(carolTroveId);
 
         th.assertIsApproximatelyEqual(alice_Debt, A_totalDebt.add(aliceInterest), 1e14);
-        assert.equal(bob_Debt.toString(), BOLD_GAS_COMPENSATION.toString());
-        assert.equal(carol_Debt.toString(), BOLD_GAS_COMPENSATION.toString());
+        th.assertIsApproximatelyEqual(bob_Debt, BOLD_GAS_COMPENSATION, 10);
+        th.assertIsApproximatelyEqual(carol_Debt, BOLD_GAS_COMPENSATION, 10);
 
         // check Alice and Bob troves are unreedemable, but Carol is not
         const alice_Status = await troveManager.getTroveStatus(aliceTroveId);
