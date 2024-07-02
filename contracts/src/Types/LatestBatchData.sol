@@ -9,9 +9,9 @@ struct LatestBatchData {
     uint256 recordedDebt;
     uint256 annualInterestRate;
     uint256 weightedRecordedDebt;
-    uint256 annualFee;
-    uint256 accruedFee;
-    uint256 weightedRecordedBatchFee;
+    uint256 annualManagementFee;
+    uint256 accruedManagementFee;
+    uint256 weightedRecordedBatchManagementFee;
     uint256 lastDebtUpdateTime;
     uint256 lastInterestRateAdjTime;
 }

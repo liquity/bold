@@ -51,13 +51,13 @@ contract ActivePool is Ownable, IActivePool {
     uint256 public lastAggUpdateTime;
 
     // Aggregate batch fees tracker
-    uint256 public aggBatchFees;
+    uint256 public aggBatchManagementFees;
     /* Sum of individual recorded Trove debts weighted by their respective batch management fees
      * Updated at individual batched Trove operations.
      */
-    uint256 public aggWeightedBatchFeeSum;
+    uint256 public aggWeightedBatchManagementFeeSum;
     // Last time at which the aggregate batch fees and weighted sum were updated
-    uint256 public lastAggBatchFeesUpdateTime;
+    uint256 public lastAggBatchManagementFeesUpdateTime;
 
     // --- Events ---
 
@@ -116,8 +116,8 @@ contract ActivePool is Ownable, IActivePool {
         return aggWeightedDebtSum * (block.timestamp - lastAggUpdateTime) / ONE_YEAR / DECIMAL_PRECISION;
     }
 
-    function calcPendingAggBatchFee() public view returns (uint256) {
-        return aggWeightedBatchFeeSum * (block.timestamp - lastAggBatchFeesUpdateTime) / ONE_YEAR / DECIMAL_PRECISION;
+    function calcPendingAggBatchManagementFee() public view returns (uint256) {
+        return aggWeightedBatchManagementFeeSum * (block.timestamp - lastAggBatchManagementFeesUpdateTime) / ONE_YEAR / DECIMAL_PRECISION;
     }
 
     function getNewApproxAvgInterestRateFromTroveChange(TroveChange calldata _troveChange)
@@ -145,7 +145,7 @@ contract ActivePool is Ownable, IActivePool {
 
     // Returns sum of agg.recorded debt plus agg. pending interest. Excludes pending redist. gains.
     function getBoldDebt() external view returns (uint256) {
-        return aggRecordedDebt + calcPendingAggInterest() + aggBatchFees + calcPendingAggBatchFee();
+        return aggRecordedDebt + calcPendingAggInterest() + aggBatchManagementFees + calcPendingAggBatchManagementFee();
     }
 
     // --- Pool functionality ---
@@ -227,7 +227,7 @@ contract ActivePool is Ownable, IActivePool {
 
         // Batch management fees
         if (_batchAddress != address(0)) {
-            _mintBatchFeeAndAccountForChange(boldToken, _troveChange, _batchAddress);
+            _mintBatchManagementFeeAndAccountForChange(boldToken, _troveChange, _batchAddress);
         }
     }
 
@@ -254,29 +254,29 @@ contract ActivePool is Ownable, IActivePool {
         lastAggUpdateTime = block.timestamp;
     }
 
-    function mintBatchFeeAndAccountForChange(TroveChange calldata _troveChange, address _batchAddress) external override {
+    function mintBatchManagementFeeAndAccountForChange(TroveChange calldata _troveChange, address _batchAddress) external override {
         _requireCallerIsBOorTroveM();
-        _mintBatchFeeAndAccountForChange(boldToken, _troveChange, _batchAddress);
+        _mintBatchManagementFeeAndAccountForChange(boldToken, _troveChange, _batchAddress);
     }
 
-    function _mintBatchFeeAndAccountForChange(IBoldToken _boldToken, TroveChange memory _troveChange, address _batchAddress) internal {
-        aggRecordedDebt += _troveChange.batchAccruedFee;
+    function _mintBatchManagementFeeAndAccountForChange(IBoldToken _boldToken, TroveChange memory _troveChange, address _batchAddress) internal {
+        aggRecordedDebt += _troveChange.batchAccruedManagementFee;
 
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
-        uint256 newAggBatchFees = aggBatchFees; // 1 SLOAD
-        newAggBatchFees += calcPendingAggBatchFee();
-        newAggBatchFees -= _troveChange.batchAccruedFee;
-        aggBatchFees = newAggBatchFees; // 1 SSTORE
+        uint256 newAggBatchManagementFees = aggBatchManagementFees; // 1 SLOAD
+        newAggBatchManagementFees += calcPendingAggBatchManagementFee();
+        newAggBatchManagementFees -= _troveChange.batchAccruedManagementFee;
+        aggBatchManagementFees = newAggBatchManagementFees; // 1 SSTORE
 
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
-        uint256 newAggWeightedBatchFeeSum = aggWeightedBatchFeeSum; // 1 SLOAD
-        newAggWeightedBatchFeeSum += _troveChange.newWeightedRecordedBatchFee;
-        newAggWeightedBatchFeeSum -= _troveChange.oldWeightedRecordedBatchFee;
-        aggWeightedBatchFeeSum = newAggWeightedBatchFeeSum; // 1 SSTORE
+        uint256 newAggWeightedBatchManagementFeeSum = aggWeightedBatchManagementFeeSum; // 1 SLOAD
+        newAggWeightedBatchManagementFeeSum += _troveChange.newWeightedRecordedBatchManagementFee;
+        newAggWeightedBatchManagementFeeSum -= _troveChange.oldWeightedRecordedBatchManagementFee;
+        aggWeightedBatchManagementFeeSum = newAggWeightedBatchManagementFeeSum; // 1 SSTORE
 
         // mint fee to batch address
-        if (_troveChange.batchAccruedFee > 0) _boldToken.mint(_batchAddress, _troveChange.batchAccruedFee);
-        lastAggBatchFeesUpdateTime = block.timestamp;
+        if (_troveChange.batchAccruedManagementFee > 0) _boldToken.mint(_batchAddress, _troveChange.batchAccruedManagementFee);
+        lastAggBatchManagementFeesUpdateTime = block.timestamp;
     }
 
     // --- 'require' functions ---

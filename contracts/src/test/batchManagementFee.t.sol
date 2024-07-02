@@ -11,12 +11,12 @@ contract BatchManagementFeeTest is DevTestSetup {
         vm.warp(block.timestamp + 10 days);
 
         uint256 batchInitialBalance = boldToken.balanceOf(B);
-        uint256 batchAccruedFee = troveManager.calcBatchAccruedFee(B);
+        uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
 
         // Adjust first trove
         addColl(A, troveId, 1 ether);
 
-        assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedFee);
+        assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedManagementFee);
     }
 
     function testAdjustTroveIncreasesTroveDebtByFee() public {
@@ -28,12 +28,12 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
-        uint256 troveAccruedFee = troveManager.calcTroveAccruedBatchFee(troveId);
+        uint256 troveAccruedManagementFee = troveManager.calcTroveAccruedBatchManagementFee(troveId);
 
         // Adjust first trove
         addColl(A, troveId, 1 ether);
 
-        assertEq(troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedFee);
+        assertEq(troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedManagementFee);
     }
 
     function testAdjustTroveIncreasesDebtInActivePoolByFee() public {
@@ -45,12 +45,12 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 activePoolInitialDebt = activePool.aggRecordedDebt();
         uint256 batchAccruedInterest = troveManager.calcBatchAccruedInterest(B);
-        uint256 batchAccruedFee = troveManager.calcBatchAccruedFee(B);
+        uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
 
         // Adjust first trove
         addColl(A, troveId, 1 ether);
 
-        assertEq(activePool.aggRecordedDebt(), activePoolInitialDebt + batchAccruedInterest + batchAccruedFee);
+        assertEq(activePool.aggRecordedDebt(), activePoolInitialDebt + batchAccruedInterest + batchAccruedManagementFee);
     }
 
     function testCloseTroveMintsFeeForBatch() public {
@@ -63,12 +63,12 @@ contract BatchManagementFeeTest is DevTestSetup {
         vm.warp(block.timestamp + 10 days);
 
         uint256 batchInitialBalance = boldToken.balanceOf(B);
-        uint256 batchAccruedFee = troveManager.calcBatchAccruedFee(B);
+        uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
 
         // Close first trove
         closeTrove(A, troveId);
 
-        assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedFee);
+        assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedManagementFee);
     }
 
     function testCloseTroveIncreasesTroveDebtFee() public {
@@ -83,18 +83,18 @@ contract BatchManagementFeeTest is DevTestSetup {
         uint256 AIntialBalance = boldToken.balanceOf(A);
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
-        uint256 troveAccruedFee = troveManager.calcTroveAccruedBatchFee(troveId);
+        uint256 troveAccruedManagementFee = troveManager.calcTroveAccruedBatchManagementFee(troveId);
 
         // Close first trove
         closeTrove(A, troveId);
 
         assertEq(
             AIntialBalance - boldToken.balanceOf(A),
-            troveInitialDebt + troveAccruedInterest + troveAccruedFee - BOLD_GAS_COMPENSATION
+            troveInitialDebt + troveAccruedInterest + troveAccruedManagementFee - BOLD_GAS_COMPENSATION
         );
     }
 
-    function testCloseTroveBatchFeeDoesNotIncreaseDebtInActivePool() public {
+    function testCloseTroveBatchManagementFeeDoesNotIncreaseDebtInActivePool() public {
         // Open 2 troves in the same batch manager
         uint256 ATroveId = openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
         uint256 BTroveId = openTroveAndJoinBatchManager(C, 200e18, 5000e18, B, 5e16);
@@ -117,12 +117,12 @@ contract BatchManagementFeeTest is DevTestSetup {
         vm.warp(block.timestamp + 10 days);
 
         uint256 batchInitialBalance = boldToken.balanceOf(B);
-        uint256 batchAccruedFee = troveManager.calcBatchAccruedFee(B);
+        uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
 
         // Change batch interest rate
         setBatchInterestRate(B, 10e16);
 
-        assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedFee);
+        assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedManagementFee);
     }
 
     function testChangeBatchInterestRateIncreasesTroveDebtByFee() public {
@@ -134,12 +134,12 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
-        uint256 troveAccruedFee = troveManager.calcTroveAccruedBatchFee(troveId);
+        uint256 troveAccruedManagementFee = troveManager.calcTroveAccruedBatchManagementFee(troveId);
 
         // Change batch interest rate
         setBatchInterestRate(B, 10e16);
 
-        assertEq(troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedFee);
+        assertEq(troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedManagementFee);
     }
 
     function testChangeBatchInterestRateIncreasesDebtInActivePoolByFee() public {
@@ -151,12 +151,12 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 activePoolInitialDebt = activePool.aggRecordedDebt();
         uint256 batchAccruedInterest = troveManager.calcBatchAccruedInterest(B);
-        uint256 batchAccruedFee = troveManager.calcBatchAccruedFee(B);
+        uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
 
         // Change batch interest rate
         setBatchInterestRate(B, 10e16);
 
-        assertEq(activePool.aggRecordedDebt(), activePoolInitialDebt + batchAccruedInterest + batchAccruedFee);
+        assertEq(activePool.aggRecordedDebt(), activePoolInitialDebt + batchAccruedInterest + batchAccruedManagementFee);
     }
 
     function testAddTroveToBatchMintsFeeForBatch() public {
@@ -167,12 +167,12 @@ contract BatchManagementFeeTest is DevTestSetup {
         vm.warp(block.timestamp + 10 days);
 
         uint256 batchInitialBalance = boldToken.balanceOf(B);
-        uint256 batchAccruedFee = troveManager.calcBatchAccruedFee(B);
+        uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
 
         // Add trove to batch
         setInterestBatchManager(C, troveId, B);
 
-        assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedFee);
+        assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedManagementFee);
     }
 
     function testAddTroveToBatchDoesNotIncreaseTroveDebtByFee() public {
@@ -184,8 +184,8 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
-        uint256 troveAccruedFee = troveManager.calcTroveAccruedBatchFee(troveId);
-        assertEq(troveAccruedFee, 0, "Trove accrued fee should be zero");
+        uint256 troveAccruedManagementFee = troveManager.calcTroveAccruedBatchManagementFee(troveId);
+        assertEq(troveAccruedManagementFee, 0, "Trove accrued fee should be zero");
 
         // Add trove to batch
         setInterestBatchManager(C, troveId, B);
@@ -202,7 +202,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 activePoolInitialDebt = activePool.aggRecordedDebt();
         uint256 batchAccruedInterest = troveManager.calcBatchAccruedInterest(B);
-        uint256 batchAccruedFee = troveManager.calcBatchAccruedFee(B);
+        uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
 
         // Add trove to batch
@@ -210,7 +210,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         assertEq(
             activePool.aggRecordedDebt(),
-            activePoolInitialDebt + batchAccruedInterest + batchAccruedFee + troveAccruedInterest
+            activePoolInitialDebt + batchAccruedInterest + batchAccruedManagementFee + troveAccruedInterest
         );
     }
 
@@ -223,16 +223,16 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         // Batch B
         uint256 batchBInitialBalance = boldToken.balanceOf(B);
-        uint256 batchBAccruedFee = troveManager.calcBatchAccruedFee(B);
+        uint256 batchBAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
         // Batch D
         uint256 batchDInitialBalance = boldToken.balanceOf(D);
-        uint256 batchDAccruedFee = troveManager.calcBatchAccruedFee(D);
+        uint256 batchDAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(D);
 
         // Add trove to batch
         setInterestBatchManager(C, troveId, B);
 
-        assertEq(boldToken.balanceOf(B), batchBInitialBalance + batchBAccruedFee);
-        assertEq(boldToken.balanceOf(D), batchDInitialBalance + batchDAccruedFee);
+        assertEq(boldToken.balanceOf(B), batchBInitialBalance + batchBAccruedManagementFee);
+        assertEq(boldToken.balanceOf(D), batchDInitialBalance + batchDAccruedManagementFee);
     }
 
     function testSwitchTroveBatchIncreasesTroveDebtByFee() public {
@@ -244,12 +244,12 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
-        uint256 troveAccruedFee = troveManager.calcTroveAccruedBatchFee(troveId);
+        uint256 troveAccruedManagementFee = troveManager.calcTroveAccruedBatchManagementFee(troveId);
 
         // Add trove to batch
         setInterestBatchManager(C, troveId, B);
 
-        assertEq(troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedFee);
+        assertEq(troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedManagementFee);
     }
 
     function testSwitchTroveBatchIncreasesDebtInActivePoolByFee() public {
@@ -261,16 +261,16 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 activePoolInitialDebt = activePool.aggRecordedDebt();
         uint256 batchBAccruedInterest = troveManager.calcBatchAccruedInterest(B);
-        uint256 batchBAccruedFee = troveManager.calcBatchAccruedFee(B);
+        uint256 batchBAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
         uint256 batchDAccruedInterest = troveManager.calcBatchAccruedInterest(B);
-        uint256 batchDAccruedFee = troveManager.calcBatchAccruedFee(B);
+        uint256 batchDAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
 
         // Add trove to batch
         setInterestBatchManager(C, troveId, B);
 
         assertEq(
             activePool.aggRecordedDebt(),
-            activePoolInitialDebt + batchBAccruedInterest + batchBAccruedFee + batchDAccruedInterest + batchDAccruedFee
+            activePoolInitialDebt + batchBAccruedInterest + batchBAccruedManagementFee + batchDAccruedInterest + batchDAccruedManagementFee
         );
     }
 
@@ -282,12 +282,12 @@ contract BatchManagementFeeTest is DevTestSetup {
         vm.warp(block.timestamp + 10 days);
 
         uint256 batchInitialBalance = boldToken.balanceOf(B);
-        uint256 batchAccruedFee = troveManager.calcBatchAccruedFee(B);
+        uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
 
         // Add trove to batch
         removeInterestBatchManager(C, troveId, 10e16);
 
-        assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedFee);
+        assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedManagementFee);
     }
 
     function testRemoveTroveFromBatchIncreasesTroveDebtByFee() public {
@@ -299,12 +299,12 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
-        uint256 troveAccruedFee = troveManager.calcTroveAccruedBatchFee(troveId);
+        uint256 troveAccruedManagementFee = troveManager.calcTroveAccruedBatchManagementFee(troveId);
 
         // Add trove to batch
         removeInterestBatchManager(C, troveId, 10e16);
 
-        assertEq(troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedFee);
+        assertEq(troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedManagementFee);
     }
 
     function testRemoveTroveFromBatchIncreasesDebtInActivePoolByFee() public {
@@ -316,12 +316,12 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         uint256 activePoolInitialDebt = activePool.aggRecordedDebt();
         uint256 batchAccruedInterest = troveManager.calcBatchAccruedInterest(B);
-        uint256 batchAccruedFee = troveManager.calcBatchAccruedFee(B);
+        uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
 
         // Add trove to batch
         removeInterestBatchManager(C, troveId, 10e16);
 
-        assertEq(activePool.aggRecordedDebt(), activePoolInitialDebt + batchAccruedInterest + batchAccruedFee);
+        assertEq(activePool.aggRecordedDebt(), activePoolInitialDebt + batchAccruedInterest + batchAccruedManagementFee);
     }
 
     function testAfterBatchManagementFeeAccrualEntireSystemDebtMatchesWithOpenTrove() public {

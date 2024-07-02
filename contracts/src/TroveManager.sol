@@ -65,7 +65,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint64 lastDebtUpdateTime;
         uint64 lastInterestRateAdjTime;
         uint256 annualInterestRate;
-        uint256 annualFee;
+        uint256 annualManagementFee;
         uint256 totalDebtShares;
     }
 
@@ -319,10 +319,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             singleLiquidation.oldWeightedRecordedDebt = singleLiquidation.batch.weightedRecordedDebt;
             singleLiquidation.newWeightedRecordedDebt = (singleLiquidation.batch.entireDebt - singleLiquidation.trove.entireDebt) * singleLiquidation.batch.annualInterestRate;
             // Mint batch management fee
-            troveChange.batchAccruedFee = singleLiquidation.batch.accruedFee;
-            troveChange.oldWeightedRecordedBatchFee = singleLiquidation.batch.weightedRecordedBatchFee;
-            troveChange.newWeightedRecordedBatchFee = (singleLiquidation.batch.entireDebt - singleLiquidation.trove.entireDebt) * singleLiquidation.batch.annualFee;
-            activePool.mintBatchFeeAndAccountForChange(troveChange, batchAddress);
+            troveChange.batchAccruedManagementFee = singleLiquidation.batch.accruedManagementFee;
+            troveChange.oldWeightedRecordedBatchManagementFee = singleLiquidation.batch.weightedRecordedBatchManagementFee;
+            troveChange.newWeightedRecordedBatchManagementFee = (singleLiquidation.batch.entireDebt - singleLiquidation.trove.entireDebt) * singleLiquidation.batch.annualManagementFee;
+            activePool.mintBatchManagementFeeAndAccountForChange(troveChange, batchAddress);
         } else {
             singleLiquidation.oldWeightedRecordedDebt = singleLiquidation.trove.weightedRecordedDebt;
         }
@@ -609,11 +609,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             troveChange.collDecrease = singleRedemption.ETHLot;
             troveChange.appliedRedistBoldDebtGain = singleRedemption.trove.redistBoldDebtGain;
             troveChange.appliedRedistETHGain = singleRedemption.trove.redistETHGain;
-            troveChange.oldWeightedRecordedBatchFee = singleRedemption.batch.weightedRecordedBatchFee;
-            troveChange.newWeightedRecordedBatchFee = (singleRedemption.batch.entireDebt - singleRedemption.BoldLot) * singleRedemption.batch.annualFee;
+            troveChange.oldWeightedRecordedBatchManagementFee = singleRedemption.batch.weightedRecordedBatchManagementFee;
+            troveChange.newWeightedRecordedBatchManagementFee = (singleRedemption.batch.entireDebt - singleRedemption.BoldLot) * singleRedemption.batch.annualManagementFee;
 
             // TODO: optimize: as redemptions are consecutive inside a batch, we can do this in the outer loop, only once per batch
-            activePool.mintBatchFeeAndAccountForChange(troveChange, singleRedemption.batchAddress);
+            activePool.mintBatchManagementFeeAndAccountForChange(troveChange, singleRedemption.batchAddress);
 
             // interest and fee were updated in the outer function
             _updateBatchShares(
@@ -716,9 +716,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
                 TroveChange memory batchTroveChange;
                 batchTroveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
                 batchTroveChange.newWeightedRecordedDebt = batch.entireDebt * batch.annualInterestRate;
-                batchTroveChange.batchAccruedFee = batch.accruedFee;
-                batchTroveChange.oldWeightedRecordedBatchFee = batch.weightedRecordedBatchFee;
-                batchTroveChange.newWeightedRecordedBatchFee = batch.entireDebt * batch.annualFee;
+                batchTroveChange.batchAccruedManagementFee = batch.accruedManagementFee;
+                batchTroveChange.oldWeightedRecordedBatchManagementFee = batch.weightedRecordedBatchManagementFee;
+                batchTroveChange.newWeightedRecordedBatchManagementFee = batch.entireDebt * batch.annualManagementFee;
 
                 activePool.mintAggInterestAndAccountForTroveChange(batchTroveChange, singleRedemption.batchAddress);
             }
@@ -843,11 +843,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         _latestTroveData.weightedRecordedDebt =
             _latestBatchData.weightedRecordedDebt * batchDebtShares / totalDebtShares;
         _latestTroveData.accruedInterest = _latestBatchData.accruedInterest * batchDebtShares / totalDebtShares;
-        _latestTroveData.accruedBatchFee = _latestBatchData.accruedFee * batchDebtShares / totalDebtShares;
+        _latestTroveData.accruedBatchManagementFee = _latestBatchData.accruedManagementFee * batchDebtShares / totalDebtShares;
 
         // We can’t do pro-rata batch entireDebt, because redist gains are proportional to coll, not to debt
         _latestTroveData.entireDebt = _latestTroveData.recordedDebt + _latestTroveData.redistBoldDebtGain
-            + _latestTroveData.accruedInterest + _latestTroveData.accruedBatchFee;
+            + _latestTroveData.accruedInterest + _latestTroveData.accruedBatchManagementFee;
         _latestTroveData.entireColl = trove.coll + _latestTroveData.redistETHGain;
         _latestTroveData.lastInterestRateAdjTime = LiquityMath._max(_latestBatchData.lastInterestRateAdjTime, trove.lastInterestRateAdjTime);
     }
@@ -903,13 +903,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         latestBatchData.weightedRecordedDebt = latestBatchData.recordedDebt * latestBatchData.annualInterestRate;
         uint256 timeSinceLastUpdate = block.timestamp - batch.lastDebtUpdateTime;
         latestBatchData.accruedInterest = _calcInterest(latestBatchData.weightedRecordedDebt, timeSinceLastUpdate);
-        latestBatchData.annualFee = batch.annualFee;
-        latestBatchData.accruedFee =
-            _calcInterest(latestBatchData.recordedDebt * latestBatchData.annualFee, timeSinceLastUpdate);
-        latestBatchData.weightedRecordedBatchFee = latestBatchData.recordedDebt * latestBatchData.annualFee;
+        latestBatchData.annualManagementFee = batch.annualManagementFee;
+        latestBatchData.accruedManagementFee =
+            _calcInterest(latestBatchData.recordedDebt * latestBatchData.annualManagementFee, timeSinceLastUpdate);
+        latestBatchData.weightedRecordedBatchManagementFee = latestBatchData.recordedDebt * latestBatchData.annualManagementFee;
 
         latestBatchData.entireDebt =
-            latestBatchData.recordedDebt + latestBatchData.accruedInterest + latestBatchData.accruedFee;
+            latestBatchData.recordedDebt + latestBatchData.accruedInterest + latestBatchData.accruedManagementFee;
         latestBatchData.entireColl = batch.coll;
         latestBatchData.lastDebtUpdateTime = batch.lastDebtUpdateTime;
         latestBatchData.lastInterestRateAdjTime = batch.lastInterestRateAdjTime;
@@ -1167,7 +1167,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         return _calcInterest(recordedDebt * annualInterestRate, block.timestamp - lastDebtUpdateTime);
     }
 
-    function calcTroveAccruedBatchFee(uint256 _troveId) external view returns (uint256) {
+    function calcTroveAccruedBatchManagementFee(uint256 _troveId) external view returns (uint256) {
         Trove memory trove = Troves[_troveId];
 
         // If trove doesn’t belong to a batch, there’s no fee
@@ -1175,14 +1175,14 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         if (batchAddress == address(0)) return 0;
 
         // If trove belongs to a batch, we fetch the batch and apply its share to obtained values
-        uint256 batchAccruedFee = calcBatchAccruedFee(batchAddress);
-        return batchAccruedFee * trove.batchDebtShares / batches[batchAddress].totalDebtShares;
+        uint256 batchAccruedManagementFee = calcBatchAccruedManagementFee(batchAddress);
+        return batchAccruedManagementFee * trove.batchDebtShares / batches[batchAddress].totalDebtShares;
     }
 
-    function calcBatchAccruedFee(address _batchAddress) public view returns (uint256) {
+    function calcBatchAccruedManagementFee(address _batchAddress) public view returns (uint256) {
         Batch memory batch = batches[_batchAddress];
         // convert annual interest to per-second and multiply by the principal
-        return _calcInterest(batch.debt * batch.annualFee, block.timestamp - batch.lastDebtUpdateTime);
+        return _calcInterest(batch.debt * batch.annualManagementFee, block.timestamp - batch.lastDebtUpdateTime);
     }
 
     // --- 'require' wrapper functions ---
@@ -1517,12 +1517,12 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         batches[_batchAddress].lastDebtUpdateTime = uint64(block.timestamp);
     }
 
-    function onRegisterBatchManager(address _account, uint256 _annualInterestRate, uint256 _annualFee) external {
+    function onRegisterBatchManager(address _account, uint256 _annualInterestRate, uint256 _annualManagementFee) external {
         _requireCallerIsBorrowerOperations();
 
         batches[_account].arrayIndex = uint64(batchIds.length);
         batches[_account].annualInterestRate = _annualInterestRate;
-        batches[_account].annualFee = _annualFee;
+        batches[_account].annualManagementFee = _annualManagementFee;
         batches[_account].lastInterestRateAdjTime = uint64(block.timestamp);
 
         batchIds.push(_account);
@@ -1532,13 +1532,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         address _batchAddress,
         uint256 _newColl,
         uint256 _newDebt,
-        uint256 _newAnnualFee
+        uint256 _newAnnualManagementFee
     ) external {
         _requireCallerIsBorrowerOperations();
 
         batches[_batchAddress].coll = _newColl;
         batches[_batchAddress].debt = _newDebt;
-        batches[_batchAddress].annualFee = _newAnnualFee;
+        batches[_batchAddress].annualManagementFee = _newAnnualManagementFee;
         batches[_batchAddress].lastDebtUpdateTime = uint64(block.timestamp);
     }
 

@@ -35,7 +35,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(batchManager.maxInterestRate, 20e16, "Wrong max interest");
         assertEq(batchManager.minInterestRateChangePeriod, 0, "Wrong min change period");
         LatestBatchData memory batch = troveManager.getLatestBatchData(batchManagerAddress);
-        assertEq(batch.annualFee, 25e14, "Wrong fee");
+        assertEq(batch.annualManagementFee, 25e14, "Wrong fee");
     }
 
     function testSetsBatchManagerProperlyAfterOpening() public {
@@ -58,7 +58,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(batchManager.maxInterestRate, 20e16, "Wrong max interest");
         assertEq(batchManager.minInterestRateChangePeriod, 0, "Wrong min change period");
         LatestBatchData memory batch = troveManager.getLatestBatchData(batchManagerAddress);
-        assertEq(batch.annualFee, 25e14, "Wrong fee");
+        assertEq(batch.annualManagementFee, 25e14, "Wrong fee");
     }
 
     function testRemovesBatchManagerProperly() public {
@@ -156,7 +156,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(batch.recordedDebt, batch.entireDebt, "Batch recorded debt should be equal to entire");
 
         // Check new fee
-        assertEq(batch.annualFee, 10e14, "Wrong batch management fee");
+        assertEq(batch.annualManagementFee, 10e14, "Wrong batch management fee");
     }
 
     function testOnlyBatchManagerCanLowerBatchManagementFee() public {
@@ -516,10 +516,10 @@ contract InterestBatchManagementTest is DevTestSetup {
         LatestBatchData memory batch = troveManager.getLatestBatchData(B);
         uint256 recordedBatchDebt_1 = batch.recordedDebt;
         uint256 accruedBatchInterest = troveManager.calcBatchAccruedInterest(B);
-        uint256 accruedBatchFee = troveManager.calcBatchAccruedFee(B);
+        uint256 accruedBatchManagementFee = troveManager.calcBatchAccruedManagementFee(B);
         uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
         uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
-        uint256 accruedTroveFee = troveManager.calcTroveAccruedBatchFee(ATroveId);
+        uint256 accruedTroveFee = troveManager.calcTroveAccruedBatchManagementFee(ATroveId);
 
         // C applies batch B's pending interest
         applyBatchInterestAndFeePermissionless(C, B);
@@ -528,7 +528,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 recordedBatchDebt_2 = batch.recordedDebt;
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
 
-        assertEq(recordedBatchDebt_2, recordedBatchDebt_1 + accruedBatchInterest + accruedBatchFee);
+        assertEq(recordedBatchDebt_2, recordedBatchDebt_1 + accruedBatchInterest + accruedBatchManagementFee);
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest + accruedTroveFee);
     }
 

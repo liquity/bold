@@ -118,14 +118,14 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function calcTroveAccruedInterest(uint256 _troveId) external view returns (uint256);
 
-    function calcTroveAccruedBatchFee(uint256 _troveId) external view returns (uint256);
+    function calcTroveAccruedBatchManagementFee(uint256 _troveId) external view returns (uint256);
 
     function getTroveLastDebtUpdateTime(uint256 _troveId) external view returns (uint256);
 
     function getLatestBatchData(address _batchAddress) external view returns (LatestBatchData memory);
     function getBatchAnnualInterestRate(address _batchAddress) external view returns (uint256);
     function calcBatchAccruedInterest(address _batchAddress) external view returns (uint256);
-    function calcBatchAccruedFee(address _batchAddress) external view returns (uint256);
+    function calcBatchAccruedManagementFee(address _batchAddress) external view returns (uint256);
 
     // -- permissioned functions called by BorrowerOperations
 
@@ -188,7 +188,7 @@ interface ITroveManager is IERC721, ILiquityBase {
         address _batchAddress,
         uint256 _newColl,
         uint256 _newDebt,
-        uint256 _newAnnualFee
+        uint256 _newAnnualManagementFee
     ) external;
     function onSetBatchManagerAnnualInterestRate(
         address _batchAddress,
