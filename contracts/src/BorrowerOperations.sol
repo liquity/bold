@@ -573,6 +573,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
             _troveChange.newWeightedRecordedBatchManagementFee = batchFutureDebt * batch.annualManagementFee;
         } else {
             _troveChange.appliedRedistBoldDebtGain = vars.trove.redistBoldDebtGain;
+            _troveChange.appliedRedistETHGain = vars.trove.redistETHGain;
             _troveChange.oldWeightedRecordedDebt = vars.trove.weightedRecordedDebt;
             _troveChange.newWeightedRecordedDebt = vars.newDebt * vars.trove.annualInterestRate;
         }
