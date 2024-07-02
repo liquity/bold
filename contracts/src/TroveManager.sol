@@ -592,7 +592,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             Troves[singleRedemption.troveId].status = Status.unredeemable;
             if (isTroveInBatch) {
                 sortedTroves.removeFromBatch(singleRedemption.troveId);
-                // TODO: When restored, will it be back in the batch???
             } else {
                 sortedTroves.remove(singleRedemption.troveId);
             }

@@ -445,9 +445,18 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         contractsCache.troveManager.setTroveStatusToActive(_troveId);
 
-        sortedTroves.insert(
-            _troveId, contractsCache.troveManager.getTroveAnnualInterestRate(_troveId), _upperHint, _lowerHint
-        );
+        // If it was in a batch, we need to put it back, otherwise we insert it normally
+        address batchManager = interestBatchManagerOf[_troveId];
+        if (batchManager == address(0)) {
+            sortedTroves.insert(
+                _troveId, contractsCache.troveManager.getTroveAnnualInterestRate(_troveId), _upperHint, _lowerHint
+            );
+        } else {
+            LatestBatchData memory batch = contractsCache.troveManager.getLatestBatchData(batchManager);
+            sortedTroves.insertIntoBatch(
+                _troveId, BatchId.wrap(batchManager), batch.annualInterestRate, _upperHint, _lowerHint
+            );
+        }
     }
 
     function adjustTroveInterestRate(

@@ -592,4 +592,24 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         assertEq(troveManager.getTroveEntireDebt(troveId), ADebtBefore, "A debt should be the same");
     }
+
+    function testAnUnredeemableTroveGoesBackToTheBatch() public {
+        // A opens trove and joins batch manager B
+        uint256 troveId = openTroveAndJoinBatchManager(A, 100 ether, 2000e18, B, 5e16);
+
+        // Open another trove with higher interest
+        openTroveNoHints100pct(C, 100 ether, 2000e18, 10e16);
+
+        vm.warp(block.timestamp + 10 days);
+
+        // C redeems and makes A unredeemable
+        redeem(C, 1000e18);
+
+        // A adjusts back to normal
+        adjustUnredeemableTrove(A, troveId, 0, false, 1000e18, true);
+
+        assertEq(borrowerOperations.interestBatchManagerOf(troveId), B, "A should be in batch (BO)");
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
+        assertEq(tmBatchManagerAddress, B, "A should be in batch (TM)");
+    }
 }
