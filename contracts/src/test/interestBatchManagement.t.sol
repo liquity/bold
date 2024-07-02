@@ -137,7 +137,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertGt(ATroveEntireDebtBefore, ATroveRecordedDebtBefore, "Trove entire debt should be greater than recorded");
         LatestBatchData memory batch = troveManager.getLatestBatchData(B);
         uint256 batchRecordedDebtBefore = batch.recordedDebt;
-        uint256 batchEntireDebtBefore = batch.entireDebt;
+        uint256 batchEntireDebtBefore = batch.entireDebtWithoutRedistribution;
         assertGt(batchEntireDebtBefore, batchRecordedDebtBefore, "Batch entire debt should be greater than recorded");
 
         vm.startPrank(B);
@@ -153,7 +153,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         );
         batch = troveManager.getLatestBatchData(B);
         assertEq(batch.recordedDebt, batchEntireDebtBefore, "Interest was not applied to batch");
-        assertEq(batch.recordedDebt, batch.entireDebt, "Batch recorded debt should be equal to entire");
+        assertEq(batch.recordedDebt, batch.entireDebtWithoutRedistribution, "Batch recorded debt should be equal to entire");
 
         // Check new fee
         assertEq(batch.annualManagementFee, 10e14, "Wrong batch management fee");
@@ -198,7 +198,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertGt(ATroveEntireDebtBefore, ATroveRecordedDebtBefore, "Trove entire debt should be greater than recorded");
         LatestBatchData memory batch = troveManager.getLatestBatchData(B);
         uint256 batchRecordedDebtBefore = batch.recordedDebt;
-        uint256 batchEntireDebtBefore = batch.entireDebt;
+        uint256 batchEntireDebtBefore = batch.entireDebtWithoutRedistribution;
         assertGt(batchEntireDebtBefore, batchRecordedDebtBefore, "Batch entire debt should be greater than recorded");
 
         vm.startPrank(B);
@@ -214,7 +214,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         );
         batch = troveManager.getLatestBatchData(B);
         assertEq(batch.recordedDebt, batchEntireDebtBefore, "Interest was not applied to batch");
-        assertEq(batch.recordedDebt, batch.entireDebt, "Batch recorded debt should be equal to entire");
+        assertEq(batch.recordedDebt, batch.entireDebtWithoutRedistribution, "Batch recorded debt should be equal to entire");
 
         // Check new interest rate
         assertEq(troveManager.getBatchAnnualInterestRate(B), 6e16, "Wrong batch interest rate");
@@ -353,14 +353,14 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         LatestBatchData memory batchB = troveManager.getLatestBatchData(B);
         uint256 batchBRecordedDebtBefore = batchB.recordedDebt;
-        uint256 batchBEntireDebtBefore = batchB.entireDebt;
+        uint256 batchBEntireDebtBefore = batchB.entireDebtWithoutRedistribution;
         assertGt(
             batchBEntireDebtBefore, batchBRecordedDebtBefore, "Batch B entire debt should be greater than recorded"
         );
 
         LatestBatchData memory batchC = troveManager.getLatestBatchData(C);
         uint256 batchCRecordedDebtBefore = batchC.recordedDebt;
-        uint256 batchCEntireDebtBefore = batchC.entireDebt;
+        uint256 batchCEntireDebtBefore = batchC.entireDebtWithoutRedistribution;
         assertGt(
             batchCEntireDebtBefore, batchCRecordedDebtBefore, "Batch C entire debt should be greater than recorded"
         );
@@ -407,13 +407,13 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(
             batchB.recordedDebt, batchBEntireDebtBefore - troveEntireDebtBefore.E, "Interest was not applied to batch B"
         );
-        assertEq(batchB.recordedDebt, batchB.entireDebt, "Batch B recorded debt should be equal to entire");
+        assertEq(batchB.recordedDebt, batchB.entireDebtWithoutRedistribution, "Batch B recorded debt should be equal to entire");
 
         batchC = troveManager.getLatestBatchData(C);
         assertEq(
             batchC.recordedDebt, batchCEntireDebtBefore + troveEntireDebtBefore.E, "Interest was not applied to batch C"
         );
-        assertEq(batchC.recordedDebt, batchC.entireDebt, "Batch C recorded debt should be equal to entire");
+        assertEq(batchC.recordedDebt, batchC.entireDebtWithoutRedistribution, "Batch C recorded debt should be equal to entire");
     }
 
     // --- applyBatchInterestAndFeePermissionless ---
@@ -488,7 +488,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         vm.warp(block.timestamp + 600);
 
         LatestBatchData memory batch = troveManager.getLatestBatchData(B);
-        uint256 entireBatchDebt_1 = batch.entireDebt;
+        uint256 entireBatchDebt_1 = batch.entireDebtWithoutRedistribution;
         assertGt(entireBatchDebt_1, 0);
         uint256 entireTroveDebt_1 = troveManager.getTroveEntireDebt(ATroveId);
         assertGt(entireTroveDebt_1, 0);
@@ -497,7 +497,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         applyBatchInterestAndFeePermissionless(C, B);
 
         batch = troveManager.getLatestBatchData(B);
-        uint256 entireBatchDebt_2 = batch.entireDebt;
+        uint256 entireBatchDebt_2 = batch.entireDebtWithoutRedistribution;
         assertEq(entireBatchDebt_2, entireBatchDebt_1, "Batch entire debt mismatch");
         uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_2, entireTroveDebt_1, "Trove entire debt mismatch");

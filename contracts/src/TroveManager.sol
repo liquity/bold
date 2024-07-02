@@ -310,18 +310,18 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             _troveId,
             troveChange,
             batchAddress,
-            singleLiquidation.batch.entireColl,
-            singleLiquidation.batch.entireDebt,
+            singleLiquidation.batch.entireCollWithoutRedistribution,
+            singleLiquidation.batch.entireDebtWithoutRedistribution,
             Status.closedByLiquidation
         );
 
         if (isTroveInBatch) {
             singleLiquidation.oldWeightedRecordedDebt = singleLiquidation.batch.weightedRecordedDebt + (singleLiquidation.trove.entireDebt - singleLiquidation.trove.redistBoldDebtGain) * singleLiquidation.batch.annualInterestRate;
-            singleLiquidation.newWeightedRecordedDebt = singleLiquidation.batch.entireDebt * singleLiquidation.batch.annualInterestRate;
+            singleLiquidation.newWeightedRecordedDebt = singleLiquidation.batch.entireDebtWithoutRedistribution * singleLiquidation.batch.annualInterestRate;
             // Mint batch management fee
             troveChange.batchAccruedManagementFee = singleLiquidation.batch.accruedManagementFee;
             troveChange.oldWeightedRecordedBatchManagementFee = singleLiquidation.batch.weightedRecordedBatchManagementFee + (singleLiquidation.trove.entireDebt - singleLiquidation.trove.redistBoldDebtGain) * singleLiquidation.batch.annualManagementFee;
-            troveChange.newWeightedRecordedBatchManagementFee = singleLiquidation.batch.entireDebt * singleLiquidation.batch.annualManagementFee;
+            troveChange.newWeightedRecordedBatchManagementFee = singleLiquidation.batch.entireDebtWithoutRedistribution * singleLiquidation.batch.annualManagementFee;
             activePool.mintBatchManagementFeeAndAccountForChange(troveChange, batchAddress);
         } else {
             singleLiquidation.oldWeightedRecordedDebt = singleLiquidation.trove.weightedRecordedDebt;
@@ -602,7 +602,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         if (isTroveInBatch) {
             _getLatestBatchData(singleRedemption.batchAddress, singleRedemption.batch);
             singleRedemption.oldWeightedRecordedDebt = singleRedemption.batch.weightedRecordedDebt + singleRedemption.BoldLot * singleRedemption.batch.annualInterestRate;
-            singleRedemption.newWeightedRecordedDebt = singleRedemption.batch.entireDebt * singleRedemption.batch.annualInterestRate;
+            singleRedemption.newWeightedRecordedDebt = singleRedemption.batch.entireDebtWithoutRedistribution * singleRedemption.batch.annualInterestRate;
 
             TroveChange memory troveChange;
             troveChange.debtDecrease = singleRedemption.BoldLot;
@@ -611,14 +611,14 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             troveChange.appliedRedistETHGain = singleRedemption.trove.redistETHGain;
             // batchAccruedManagementFee is handled in the outer function
             troveChange.oldWeightedRecordedBatchManagementFee = singleRedemption.batch.weightedRecordedBatchManagementFee + singleRedemption.BoldLot * singleRedemption.batch.annualManagementFee;
-            troveChange.newWeightedRecordedBatchManagementFee = singleRedemption.batch.entireDebt * singleRedemption.batch.annualManagementFee;
+            troveChange.newWeightedRecordedBatchManagementFee = singleRedemption.batch.entireDebtWithoutRedistribution * singleRedemption.batch.annualManagementFee;
 
             // TODO: optimize: as redemptions are consecutive inside a batch, we can do this in the outer loop, only once per batch
             activePool.mintBatchManagementFeeAndAccountForChange(troveChange, singleRedemption.batchAddress);
 
             // interest and fee were updated in the outer function
             _updateBatchShares(
-                singleRedemption.troveId, singleRedemption.batchAddress, troveChange, singleRedemption.batch.entireColl, singleRedemption.batch.entireDebt
+                singleRedemption.troveId, singleRedemption.batchAddress, troveChange, singleRedemption.batch.entireCollWithoutRedistribution, singleRedemption.batch.entireDebtWithoutRedistribution
             );
         } else {
             singleRedemption.oldWeightedRecordedDebt = singleRedemption.trove.weightedRecordedDebt;
@@ -710,16 +710,16 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             ) {
                 LatestBatchData memory batch;
                 _getLatestBatchData(singleRedemption.batchAddress, batch);
-                batches[singleRedemption.batchAddress].debt = batch.entireDebt;
+                batches[singleRedemption.batchAddress].debt = batch.entireDebtWithoutRedistribution;
                 batches[singleRedemption.batchAddress].lastDebtUpdateTime = uint64(block.timestamp);
                 lastBatchUpdatedInterest = singleRedemption.batchAddress;
                 // As we are updating the batch, we update the ActivePool weighted sum too
                 TroveChange memory batchTroveChange;
                 batchTroveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
-                batchTroveChange.newWeightedRecordedDebt = batch.entireDebt * batch.annualInterestRate;
+                batchTroveChange.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
                 batchTroveChange.batchAccruedManagementFee = batch.accruedManagementFee;
                 batchTroveChange.oldWeightedRecordedBatchManagementFee = batch.weightedRecordedBatchManagementFee;
-                batchTroveChange.newWeightedRecordedBatchManagementFee = batch.entireDebt * batch.annualManagementFee;
+                batchTroveChange.newWeightedRecordedBatchManagementFee = batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
 
                 activePool.mintAggInterestAndAccountForTroveChange(batchTroveChange, singleRedemption.batchAddress);
             }
@@ -909,9 +909,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             _calcInterest(latestBatchData.recordedDebt * latestBatchData.annualManagementFee, timeSinceLastUpdate);
         latestBatchData.weightedRecordedBatchManagementFee = latestBatchData.recordedDebt * latestBatchData.annualManagementFee;
 
-        latestBatchData.entireDebt =
+        latestBatchData.entireDebtWithoutRedistribution =
             latestBatchData.recordedDebt + latestBatchData.accruedInterest + latestBatchData.accruedManagementFee;
-        latestBatchData.entireColl = batch.coll;
+        latestBatchData.entireCollWithoutRedistribution = batch.coll;
         latestBatchData.lastDebtUpdateTime = batch.lastDebtUpdateTime;
         latestBatchData.lastInterestRateAdjTime = batch.lastInterestRateAdjTime;
     }

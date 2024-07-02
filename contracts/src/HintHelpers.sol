@@ -142,10 +142,10 @@ contract HintHelpers {
         }
 
         TroveChange memory troveChange;
-        troveChange.newWeightedRecordedDebt = batch.entireDebt * _newInterestRate;
+        troveChange.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * _newInterestRate;
         troveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
 
         uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
-        return _calcUpfrontFee(batch.entireDebt, avgInterestRate);
+        return _calcUpfrontFee(batch.entireDebtWithoutRedistribution, avgInterestRate);
     }
 }
