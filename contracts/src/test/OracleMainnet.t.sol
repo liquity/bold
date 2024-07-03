@@ -12,6 +12,7 @@ import "../Interfaces/IWETHPriceFeed.sol";
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
+
 contract OraclesMainnet is TestAccounts {
     uint256 constant public _24_HOURS = 86400;
     uint256 constant public _48_HOURS = 172800;
@@ -263,46 +264,46 @@ contract OraclesMainnet is TestAccounts {
     // --- Thresholds set at deployment ---
 
     function testEthUsdStalenessThresholdSetWETH() public {
-        uint256 storedEthUsdStaleness = wethPriceFeed.getEthUsdStalenessThreshold();
+        (, uint256 storedEthUsdStaleness, ) = wethPriceFeed.ethUsdOracle();
         assertEq(storedEthUsdStaleness, _24_HOURS);
     }
 
     function testEthUsdStalenessThresholdSetRETH() public {
-        uint256 storedEthUsdStaleness = rethPriceFeed.getEthUsdStalenessThreshold();
+        (, uint256 storedEthUsdStaleness, ) = rethPriceFeed.ethUsdOracle();
         assertEq(storedEthUsdStaleness, _24_HOURS);
     }
 
     function testRethEthStalenessThresholdSetRETH() public {
-        uint256 storedRethEthStaleness = rethPriceFeed.getLstEthStalenessThreshold();
+        (, uint256 storedRethEthStaleness, ) = rethPriceFeed.lstEthOracle();
         assertEq(storedRethEthStaleness, _48_HOURS);
     }
 
     function testEthUsdStalenessThresholdSetETHX() public {
-        uint256 storedEthUsdStaleness = ethXPriceFeed.getEthUsdStalenessThreshold();
+        (, uint256 storedEthUsdStaleness, ) = ethXPriceFeed.ethUsdOracle();
         assertEq(storedEthUsdStaleness, _24_HOURS);
     }
 
     function testEthXEthStalenessThresholdSetETHX() public {
-        uint256 storedEthXEthStaleness = ethXPriceFeed.getLstEthStalenessThreshold();
+        (, uint256 storedEthXEthStaleness, ) = ethXPriceFeed.lstEthOracle();
         assertEq(storedEthXEthStaleness, _48_HOURS);
     }
 
      function testEthUsdStalenessThresholdSetOSETH() public {
-        uint256 storedEthUsdStaleness = osEthPriceFeed.getEthUsdStalenessThreshold();
+        (, uint256 storedEthUsdStaleness, ) = osEthPriceFeed.ethUsdOracle();
         assertEq(storedEthUsdStaleness, _24_HOURS);
     }
 
     function testOsEthEthStalenessThresholdSetOSETH() public {
-        uint256 storedOsEthStaleness = osEthPriceFeed.getLstEthStalenessThreshold();
+        (, uint256 storedOsEthStaleness, ) = osEthPriceFeed.lstEthOracle();
         assertEq(storedOsEthStaleness, _48_HOURS);
     }
 
     function testStethUsdStalenessThresholdSetWSTETH() public {
-        uint256 storedStEthUsdStaleness = wstethPriceFeed.getStEthUsdStalenessThreshold();
+        (, uint256 storedStEthUsdStaleness, ) = wstethPriceFeed.stEthUsdOracle();
         assertEq(storedStEthUsdStaleness, _24_HOURS);
     }
 
-    // --- Basic actions ---
+    // // --- Basic actions ---
 
     function testOpenTroveWETH() public {
         uint256 price = _getLatestAnswerFromOracle(ethOracle);

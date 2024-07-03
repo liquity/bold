@@ -4,9 +4,9 @@ import "../Dependencies/Ownable.sol";
 import "../Dependencies/AggregatorV3Interface.sol";
 import "../Interfaces/IPriceFeed.sol";
 
-import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
-abstract contract MainnetPriceFeedBase is Ownable, IPriceFeed {
+abstract contract MainnetPriceFeedBase is IPriceFeed {
     
     // Dummy flag raised when the collateral branch gets shut down. 
     // Should be removed after actual shutdown logic is implemented.
@@ -14,7 +14,7 @@ abstract contract MainnetPriceFeedBase is Ownable, IPriceFeed {
 
     // Last good price tracker for the derived USD price
     uint256 public lastGoodPrice;
-   
+
     struct Oracle {
         AggregatorV3Interface aggregator;
         uint256 stalenessThreshold;
@@ -28,16 +28,11 @@ abstract contract MainnetPriceFeedBase is Ownable, IPriceFeed {
         bool success;
     } 
 
-    constructor() { 
-        _renounceOwnership();
-    }
-
     function _fetchPrice(Oracle memory _oracle) 
         internal 
         returns (uint256, bool) {
         ChainlinkResponse memory chainlinkResponse = _getCurrentChainlinkResponse(_oracle.aggregator);
 
-        // console2.log("_fp::rawanswer", chainlinkResponse.answer);
         uint256 scaledPrice;
         bool isShutdown;
 
@@ -82,10 +77,6 @@ abstract contract MainnetPriceFeedBase is Ownable, IPriceFeed {
     function _isValidChainlinkPrice(ChainlinkResponse memory chainlinkResponse, uint256 _stalenessThreshold) 
     internal view returns (bool) 
     {
-        console2.log("oracle success", chainlinkResponse.success);
-        console2.log("is not stale", block.timestamp - chainlinkResponse.timestamp < _stalenessThreshold);
-        console2.log("answer", block.timestamp - chainlinkResponse.timestamp < _stalenessThreshold);
-
         return
             chainlinkResponse.success && 
             block.timestamp - chainlinkResponse.timestamp < _stalenessThreshold &&

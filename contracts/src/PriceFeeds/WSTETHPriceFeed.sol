@@ -45,8 +45,4 @@ contract WSTETHPriceFeed is MainnetPriceFeedBase, IWSTETHPriceFeed {
 
         return wstEthUsdPrice;
     }
-
-    function getStEthUsdStalenessThreshold() external view returns (uint256) {
-        return stEthUsdOracle.stalenessThreshold;
-    }
 }
