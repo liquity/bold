@@ -52,6 +52,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
             LiquityContracts memory c = branches[i];
 
             assertEq(c.troveManager.getTroveIdsCount(), handler.numTroves(i), "Wrong number of Troves");
+            assertEq(c.sortedTroves.getSize(), handler.numTroves(i) - handler.numZombies(i), "Wrong SortedTroves size");
             assertEqDecimal(c.activePool.getETHBalance(), handler.activeColl(i), 18, "Wrong ActivePool coll");
             assertEqDecimal(
                 c.activePool.getBoldDebt(),
@@ -61,9 +62,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
             );
             assertEqDecimal(c.defaultPool.getETHBalance(), handler.defaultColl(i), 18, "Wrong DefaultPool coll");
             assertEqDecimal(c.defaultPool.getBoldDebt(), handler.defaultDebt(i), 18, "Wrong DefaultPool debt");
-            assertEqDecimal(
-                boldToken.balanceOf(address(c.gasPool)), handler.boldGasComp(i), 18, "Wrong GasPool balance"
-            );
+            assertEqDecimal(boldToken.balanceOf(address(c.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool balance");
             assertEqDecimal(
                 c.collSurplusPool.getETHBalance(), handler.collSurplus(i), 18, "Wrong CollSurplusPool balance"
             );

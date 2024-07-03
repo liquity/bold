@@ -4,8 +4,10 @@ pragma solidity 0.8.18;
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {REDEMPTION_FEE_FLOOR} from "../../Dependencies/Constants.sol";
 import {LiquityContracts} from "../../deployment.sol";
 import {IBorrowerOperations} from "../../Interfaces/IBorrowerOperations.sol";
+import {ISortedTroves} from "../../Interfaces/ISortedTroves.sol";
 import {ITroveManager} from "../../Interfaces/ITroveManager.sol";
 import {LatestTroveData} from "../../Types/LatestTroveData.sol";
 import {TroveChange} from "../../Types/TroveChange.sol";
@@ -54,7 +56,11 @@ struct LiquidationTotals {
     uint256 spETHIncrease;
     uint256 collSurplus;
     uint256 collGasComp;
-    uint256 boldGasComp;
+}
+
+struct TroveIDAndData {
+    uint256 id;
+    LatestTroveData data;
 }
 
 function equals(string memory a, string memory b) pure returns (bool) {
@@ -74,6 +80,31 @@ function isOpen(ITroveManager troveManager, uint256 troveId) view returns (bool)
     return status == ITroveManager.Status.active || status == ITroveManager.Status.unredeemable;
 }
 
+// Convert a SortedTroves list to an array in redemption order, and include LatestTroveData for each Trove
+function toArray(ISortedTroves sortedTroves) view returns (TroveIDAndData[] memory arr) {
+    ITroveManager troveManager = sortedTroves.troveManager();
+    arr = new TroveIDAndData[](sortedTroves.getSize());
+    uint256 id = sortedTroves.getLast();
+
+    for (uint256 i = 0; i < arr.length; ++i) {
+        assert(id != 0);
+        arr[i].id = id;
+        arr[i].data = troveManager.getLatestTroveData(id);
+        id = sortedTroves.getPrev(id);
+    }
+
+    assert(id == 0);
+}
+
+function toString(ITroveManager.Status status) pure returns (string memory) {
+    if (status == ITroveManager.Status.nonExistent) return "ITroveManager.Status.nonExistent";
+    if (status == ITroveManager.Status.active) return "ITroveManager.Status.active";
+    if (status == ITroveManager.Status.closedByOwner) return "ITroveManager.Status.closedByOwner";
+    if (status == ITroveManager.Status.closedByLiquidation) return "ITroveManager.Status.closedByLiquidation";
+    if (status == ITroveManager.Status.unredeemable) return "ITroveManager.Status.unredeemable";
+    revert("Invalid status");
+}
+
 contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     using Strings for uint256;
     using Strings for int256;
@@ -83,6 +114,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     using {equals} for string;
     using {update} for mapping(uint256 => uint256);
     using {isOpen} for TroveManagerTester;
+    using {toArray} for ISortedTroves;
+    using {toString} for ITroveManager.Status;
 
     uint256 constant OWNER_INDEX = 0;
 
@@ -97,11 +130,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     // Ghost variables
     mapping(uint256 => uint256) public numTroves;
+    mapping(uint256 => uint256) public numZombies;
     mapping(uint256 => uint256) public activeDebt;
     mapping(uint256 => uint256) public activeColl;
     mapping(uint256 => uint256) public defaultDebt;
     mapping(uint256 => uint256) public defaultColl;
-    mapping(uint256 => uint256) public boldGasComp;
     mapping(uint256 => uint256) public collSurplus;
     mapping(uint256 => uint256) public spBoldDeposits;
     mapping(uint256 => uint256) public spBoldYield;
@@ -125,8 +158,18 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         return uint256(keccak256(abi.encode(owner, OWNER_INDEX)));
     }
 
+    function getGasPool(uint256 i) external view returns (uint256) {
+        return numTroves[i] * BOLD_GAS_COMPENSATION;
+    }
+
     function getPendingInterest(uint256 i) public view returns (uint256) {
         return pendingInterest[i] / ONE_YEAR / DECIMAL_PRECISION;
+    }
+
+    function _getRedemptionFeePct(uint256 amount) internal view returns (uint256) {
+        return boldToken.totalSupply() > 0
+            ? collateralRegistry.getRedemptionRateForRedeemedAmount(amount)
+            : DECIMAL_PRECISION;
     }
 
     function _mintYield(uint256 i, uint256 upfrontFee) internal {
@@ -198,9 +241,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Apply pending ETH redist
             t.activeCollDelta += int256(trove.redistETHGain);
             t.defaultCollDelta -= int256(trove.redistETHGain);
-
-            // BOLD gas comp
-            t.boldGasComp += BOLD_GAS_COMPENSATION;
 
             // Coll gas comp
             uint256 collGasComp = trove.entireColl / COLL_GAS_COMPENSATION_DIVISOR;
@@ -300,6 +340,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         info("coll: ", coll.decimal());
         info("debt: ", debt.decimal());
+        info("upfront fee: ", upfrontFee.decimal());
         logCall("openTrove", i.toString(), borrowed.decimal(), icr.decimal(), interestRate.decimal());
 
         uint256 troveId = _troveIdOf(msg.sender);
@@ -310,24 +351,34 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         vm.prank(msg.sender);
         try c.borrowerOperations.openTrove(msg.sender, OWNER_INDEX, coll, borrowed, 0, 0, interestRate, upfrontFee) {
+            // Preconditions
             assertFalse(wasOpen, "Should have failed as Trove was open");
             assertGeDecimal(coll * price / debt, c.troveManager.MCR(), 18, "Should have failed as ICR < MCR");
             assertGeDecimal(c.troveManager.getTCR(price), CCR, 18, "Should have failed as TCR < CCR");
 
-            assertEqDecimal(c.troveManager.getTroveEntireDebt(troveId), debt, 18, "Wrong debt");
+            // Effects (Trove)
             assertEqDecimal(c.troveManager.getTroveEntireColl(troveId), coll, 18, "Wrong coll");
+            assertEqDecimal(c.troveManager.getTroveEntireDebt(troveId), debt, 18, "Wrong debt");
+            assertEq(
+                uint8(c.troveManager.getTroveStatus(troveId)),
+                uint8(ITroveManager.Status.active),
+                "Status should have been set to active"
+            );
+            assertTrue(c.sortedTroves.contains(troveId), "Trove should have been inserted into SortedTroves");
 
+            // Effects (system)
             numTroves[i] += 1;
             activeColl[i] += coll;
             activeDebt[i] += debt - upfrontFee;
-            boldGasComp[i] += BOLD_GAS_COMPENSATION;
 
             _mintYield(i, upfrontFee);
             interestAccrual[i] += debt * interestRate;
 
+            // Cleanup
             _sweepColl(i, msg.sender, 0); // there should be no ETH left
             _sweepBold(msg.sender, borrowed);
         } catch Error(string memory reason) {
+            // Justify failures
             if (reason.equals("BorrowerOps: Trove is open")) {
                 assertTrue(wasOpen, "Should not have failed as Trove wasn't open");
             } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
@@ -336,12 +387,12 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 uint256 totalColl = c.troveManager.getEntireSystemColl();
                 uint256 totalDebt = c.troveManager.getEntireSystemDebt();
                 uint256 newTCR = (totalColl + coll) * price / (totalDebt + debt);
-                assertLtDecimal(newTCR, CCR, 18, "Should not have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
+                assertLtDecimal(newTCR, CCR, 18, "Should not have failed as new TCR >= CCR");
             } else if (reason.equals("BorrowerOps: Operation not permitted below CT")) {
                 uint256 tcr = c.troveManager.getTCR(price);
-                assertLtDecimal(tcr, CCR, 18, "Should not have failed as TCR >= CCR");
                 info("TCR: ", tcr.decimal());
+                assertLtDecimal(tcr, CCR, 18, "Should not have failed as TCR >= CCR");
             } else {
                 revert(reason);
             }
@@ -350,6 +401,74 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _log();
 
             _sweepColl(i, msg.sender, coll); // Take back the coll that was dealt
+        }
+    }
+
+    function adjustTroveInterestRate(uint256 i, uint256 newInterestRate) external {
+        i = _bound(i, 0, branches.length - 1);
+        newInterestRate = _bound(newInterestRate, INTEREST_RATE_MIN, INTEREST_RATE_MAX);
+
+        LiquityContracts memory c = branches[i];
+        uint256 troveId = _troveIdOf(msg.sender);
+        LatestTroveData memory trove = c.troveManager.getLatestTroveData(troveId);
+        ITroveManager.Status status = c.troveManager.getTroveStatus(troveId);
+        uint256 price = c.priceFeed.getPrice();
+        uint256 upfrontFee;
+
+        if (status == ITroveManager.Status.active) {
+            upfrontFee = hintHelpers.predictAdjustInterestRateUpfrontFee(i, troveId, newInterestRate);
+            info("upfront fee: ", upfrontFee.decimal());
+        }
+
+        logCall("adjustTroveInterestRate", i.toString(), newInterestRate.decimal());
+
+        vm.prank(msg.sender);
+        try c.borrowerOperations.adjustTroveInterestRate(troveId, newInterestRate, 0, 0, upfrontFee) {
+            // Preconditions
+            assertEq(
+                status.toString(), ITroveManager.Status.active.toString(), "Should have failed as Trove was not active"
+            );
+
+            // Effects (Trove)
+            assertEqDecimal(c.troveManager.getTroveEntireColl(troveId), trove.entireColl, 18, "Wrong coll");
+            assertEqDecimal(c.troveManager.getTroveEntireDebt(troveId), trove.entireDebt + upfrontFee, 18, "Wrong debt");
+
+            // Effects (system)
+            _mintYield(i, upfrontFee);
+            interestAccrual[i] -= trove.recordedDebt * trove.annualInterestRate;
+            interestAccrual[i] += (trove.entireDebt + upfrontFee) * newInterestRate;
+
+            activeColl[i] += trove.redistETHGain;
+            defaultColl[i] -= trove.redistETHGain;
+
+            activeDebt[i] += trove.redistBoldDebtGain;
+            defaultDebt[i] -= trove.redistBoldDebtGain;
+        } catch Error(string memory reason) {
+            // Justify failures
+            if (reason.equals("ERC721: invalid token ID")) {
+                assertTrue(
+                    status != ITroveManager.Status.active && status != ITroveManager.Status.unredeemable,
+                    string.concat("Trove with ", status.toString(), " status should have an NFT")
+                );
+            } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
+                assertLtDecimal(
+                    trove.entireColl * price / (trove.entireDebt + upfrontFee),
+                    c.troveManager.MCR(),
+                    18,
+                    "Should not have failed as new ICR >= MCR"
+                );
+            } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
+                uint256 totalColl = c.troveManager.getEntireSystemColl();
+                uint256 totalDebt = c.troveManager.getEntireSystemDebt();
+                uint256 newTCR = (totalColl) * price / (totalDebt + upfrontFee);
+                info("New TCR would have been: ", newTCR.decimal());
+                assertLtDecimal(newTCR, CCR, 18, "Should not have failed as new TCR >= CCR");
+            } else {
+                revert(reason);
+            }
+
+            info("Expected revert: ", reason);
+            _log();
         }
     }
 
@@ -375,26 +494,12 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             info("P: ", c.stabilityPool.P().decimal());
             _log();
 
+            // Preconditions
             assertGt(liqBatch.length, 0, "Should have failed as batch was empty");
             assertGt(liqBatchLiquidatable.length, 0, "Should have failed as there was nothing to liquidate");
             assertGt(numTroves[i], 1, "Should have failed as there was only one Trove in the system");
 
-            _mintYield(i, 0);
-            interestAccrual.update(i, t.interestAccrualDelta);
-
-            info("Ghost deposits: ", spBoldDeposits[i].decimal());
-            info("Decrease: ", t.spBoldDepositsDecrease.decimal());
-
-            numTroves[i] -= liqBatchLiquidatable.length;
-            activeColl.update(i, t.activeCollDelta);
-            activeDebt.update(i, t.activeDebtDelta);
-            defaultColl.update(i, t.defaultCollDelta);
-            defaultDebt.update(i, t.defaultDebtDelta);
-            spBoldDeposits[i] -= t.spBoldDepositsDecrease;
-            spETH[i] += t.spETHIncrease;
-            collSurplus[i] += t.collSurplus;
-            boldGasComp[i] -= t.boldGasComp;
-
+            // Effects (Troves)
             for (uint256 j = 0; j < liqBatchLiquidatable.length; ++j) {
                 uint256 troveId = liqBatchLiquidatable[j];
                 assertEqDecimal(c.troveManager.getTroveEntireColl(troveId), 0, 18, "Coll should have been zeroed");
@@ -404,11 +509,27 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                     uint8(ITroveManager.Status.closedByLiquidation),
                     "Status should have been set to closedByLiquidation"
                 );
+                assertFalse(c.sortedTroves.contains(troveId), "Trove should have been removed from SortedTroves");
             }
 
+            // Effects (system)
+            _mintYield(i, 0);
+            interestAccrual.update(i, t.interestAccrualDelta);
+
+            numTroves[i] -= liqBatchLiquidatable.length;
+            activeColl.update(i, t.activeCollDelta);
+            activeDebt.update(i, t.activeDebtDelta);
+            defaultColl.update(i, t.defaultCollDelta);
+            defaultDebt.update(i, t.defaultDebtDelta);
+            spBoldDeposits[i] -= t.spBoldDepositsDecrease;
+            spETH[i] += t.spETHIncrease;
+            collSurplus[i] += t.collSurplus;
+
+            // Cleanup
             _sweepColl(i, msg.sender, t.collGasComp);
-            _sweepBold(msg.sender, t.boldGasComp);
+            _sweepBold(msg.sender, liqBatchLiquidatable.length * BOLD_GAS_COMPENSATION);
         } catch Error(string memory reason) {
+            // Justify failures
             if (reason.equals("TroveManager: Calldata address array must not be empty")) {
                 assertEq(liqBatch.length, 0, "Should not have failed as batch was not empty");
             } else if (reason.equals("TroveManager: nothing to liquidate")) {
@@ -453,32 +574,39 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         vm.prank(msg.sender);
         try c.stabilityPool.provideToSP(amount, claim) {
+            // Preconditions
             assertGtDecimal(amount, 0, 18, "Should have failed as amount was zero");
 
-            _mintYield(i, 0);
+            // Effects (deposit)
+            uint256 ethClaimed = claim ? ethStash + ethGain : 0;
+            uint256 boldClaimed = claim ? boldYield : 0;
+
+            ethStash += ethGain;
+            ethStash -= ethClaimed;
+
             boldDeposit += amount;
-            spBoldDeposits[i] += amount;
-
-            if (claim) {
-                _sweepBold(msg.sender, boldYield);
-                _sweepColl(i, msg.sender, ethGain + ethStash);
-                spETH[i] -= ethGain + ethStash;
-                ethStash = 0;
-            } else {
-                boldDeposit += boldYield;
-                spBoldDeposits[i] += boldYield;
-                ethStash += ethGain;
-            }
-
-            spBoldYield[i] -= boldYield;
-            boldYield = 0;
-            ethGain = 0;
+            boldDeposit += boldYield;
+            boldDeposit -= boldClaimed;
 
             assertEqDecimal(c.stabilityPool.getCompoundedBoldDeposit(msg.sender), boldDeposit, 18, "Wrong deposit");
-            assertEqDecimal(c.stabilityPool.getDepositorYieldGain(msg.sender), boldYield, 18, "Wrong yield gain");
-            assertEqDecimal(c.stabilityPool.getDepositorETHGain(msg.sender), ethGain, 18, "Wrong ETH gain");
+            assertEqDecimal(c.stabilityPool.getDepositorYieldGain(msg.sender), 0, 18, "Wrong yield gain");
+            assertEqDecimal(c.stabilityPool.getDepositorETHGain(msg.sender), 0, 18, "Wrong ETH gain");
             assertEqDecimal(c.stabilityPool.stashedETH(msg.sender), ethStash, 18, "Wrong stashed ETH");
+
+            // Effects (system)
+            _mintYield(i, 0);
+
+            spETH[i] -= ethClaimed;
+            spBoldDeposits[i] += amount;
+            spBoldDeposits[i] += boldYield;
+            spBoldDeposits[i] -= boldClaimed;
+            spBoldYield[i] -= boldYield;
+
+            // Cleanup
+            _sweepBold(msg.sender, boldClaimed);
+            _sweepColl(i, msg.sender, ethClaimed);
         } catch Error(string memory reason) {
+            // Justify failures
             if (reason.equals("StabilityPool: Amount must be non-zero")) {
                 assertEqDecimal(amount, 0, 18, "Should not have failed as amount was non-zero");
             } else {
@@ -514,33 +642,39 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         vm.prank(msg.sender);
         try c.stabilityPool.withdrawFromSP(amount, claim) {
+            // Preconditions
             assertGtDecimal(initialBoldDeposit, 0, 18, "Should have failed as user had zero deposit");
 
-            _mintYield(i, 0);
+            // Effects (deposit)
+            uint256 ethClaimed = claim ? ethStash + ethGain : 0;
+            uint256 boldClaimed = claim ? boldYield : 0;
+
+            ethStash += ethGain;
+            ethStash -= ethClaimed;
+
+            boldDeposit += boldYield;
+            boldDeposit -= boldClaimed;
             boldDeposit -= withdrawn;
-            spBoldDeposits[i] -= withdrawn;
-            _sweepBold(msg.sender, withdrawn);
-
-            if (claim) {
-                _sweepBold(msg.sender, boldYield);
-                _sweepColl(i, msg.sender, ethGain + ethStash);
-                spETH[i] -= ethGain + ethStash;
-                ethStash = 0;
-            } else {
-                boldDeposit += boldYield;
-                spBoldDeposits[i] += boldYield;
-                ethStash += ethGain;
-            }
-
-            spBoldYield[i] -= boldYield;
-            boldYield = 0;
-            ethGain = 0;
 
             assertEqDecimal(c.stabilityPool.getCompoundedBoldDeposit(msg.sender), boldDeposit, 18, "Wrong deposit");
-            assertEqDecimal(c.stabilityPool.getDepositorYieldGain(msg.sender), boldYield, 18, "Wrong yield gain");
-            assertEqDecimal(c.stabilityPool.getDepositorETHGain(msg.sender), ethGain, 18, "Wrong ETH gain");
+            assertEqDecimal(c.stabilityPool.getDepositorYieldGain(msg.sender), 0, 18, "Wrong yield gain");
+            assertEqDecimal(c.stabilityPool.getDepositorETHGain(msg.sender), 0, 18, "Wrong ETH gain");
             assertEqDecimal(c.stabilityPool.stashedETH(msg.sender), ethStash, 18, "Wrong stashed ETH");
+
+            // Effects (system)
+            _mintYield(i, 0);
+
+            spETH[i] -= ethClaimed;
+            spBoldDeposits[i] += boldYield;
+            spBoldDeposits[i] -= boldClaimed;
+            spBoldDeposits[i] -= withdrawn;
+            spBoldYield[i] -= boldYield;
+
+            // Cleanup
+            _sweepBold(msg.sender, boldClaimed + withdrawn);
+            _sweepColl(i, msg.sender, ethClaimed);
         } catch Error(string memory reason) {
+            // Justify failures
             if (reason.equals("StabilityPool: User must have a non-zero deposit")) {
                 assertEqDecimal(
                     c.stabilityPool.deposits(msg.sender), 0, 18, "Should not have failed as user had a non-zero deposit"
@@ -553,4 +687,47 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _log();
         }
     }
+
+    // XXX unfinished
+    // function redeemCollateral(uint256 amount, uint256 maxIterationsPerCollateral) external {
+    //     uint256 maxNumTroves;
+    //     TroveIDAndData[][] memory troves = new TroveIDAndData[][](branches.length);
+
+    //     for (uint256 i = 0; i < branches.length; ++i) {
+    //         maxNumTroves = Math.max(numTroves[i], maxNumTroves);
+    //         troves[i] = branches[i].sortedTroves.toArray();
+    //     }
+
+    //     amount = _bound(amount, 0, handlerBold);
+    //     maxIterationsPerCollateral = _bound(maxIterationsPerCollateral, 0, maxNumTroves);
+
+    //     uint256 feePct = _getRedemptionFeePct(amount);
+    //     info("fee %: ", feePct.decimal());
+    //     logCall("redeemCollateral", amount.decimal(), maxIterationsPerCollateral.toString());
+
+    //     // TODO: randomly deal less than amount?
+    //     _dealBold(msg.sender, amount);
+
+    //     vm.prank(msg.sender);
+    //     try collateralRegistry.redeemCollateral(amount, maxIterationsPerCollateral, feePct) {
+    //         assertGtDecimal(amount, 0, 18, "Should have failed as amount was zero");
+    //     } catch Error(string memory reason) {
+    //         if (reason.equals("TroveManager: Amount must be greater than zero")) {
+    //             assertEqDecimal(amount, 0, 18, "Should not have failed as amount was greater than zero");
+    //         } else {
+    //             revert(reason);
+    //         }
+
+    //         info("Expected revert: ", reason);
+    //         _log();
+    //     } catch Panic(uint256 code) {
+    //         assertEq(code, 1, "Unexpected panic code");
+    //         if (feePct == REDEMPTION_FEE_FLOOR) {
+    //             info("Expected assertion failure due to newBaseRate == 0");
+    //         } else {
+    //             revert("Unexpected assertion failure");
+    //         }
+    //         _log();
+    //     }
+    // }
 }
