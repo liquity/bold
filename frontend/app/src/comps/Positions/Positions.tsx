@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
-import { ACCOUNT_POSITIONS } from "@/src/demo-data";
-import { useDemoState } from "@/src/demo-state";
+import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
+import { useAccount } from "@/src/eth/Ethereum";
 import { getLiquidationRisk, getRedemptionRisk } from "@/src/liquity-math";
 import { usePrice } from "@/src/prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
@@ -13,11 +13,9 @@ import { StatusDot, StrongCard, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/ui
 import * as dn from "dnum";
 import Link from "next/link";
 import { match } from "ts-pattern";
-// import { useAccount } from "wagmi";
 
 export function Positions() {
-  // const account = useAccount();
-  const { account } = useDemoState();
+  const account = useAccount();
   return account.isConnected
     ? (
       <div>
@@ -89,6 +87,10 @@ function PositionLoan({
 >) {
   const token = TOKENS_BY_SYMBOL[collateral];
   const ethPriceUsd = usePrice("ETH");
+
+  if (!ethPriceUsd) {
+    return null;
+  }
 
   const ltv = dn.div(borrowed, dn.mul(deposit, ethPriceUsd));
   const redemptionRisk = getRedemptionRisk(interestRate);

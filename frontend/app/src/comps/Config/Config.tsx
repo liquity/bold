@@ -71,7 +71,7 @@ export const ConfigSchema = v.object({
   contractTroveManager: vAddress(),
 });
 
-type Config = v.InferOutput<typeof ConfigSchema>;
+export type Config = v.InferOutput<typeof ConfigSchema>;
 
 const defaultConfig: Config = {
   chainId: CHAIN_ID,

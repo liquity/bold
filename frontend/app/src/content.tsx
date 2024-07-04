@@ -15,7 +15,7 @@ export default {
 
   accountButton: {
     wrongNetwork: "Wrong network",
-    connectAccount: "Connect wallet",
+    connectAccount: "Connect",
   },
 
   generalInfotooltips: {

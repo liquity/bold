@@ -3,13 +3,14 @@
 import type { PositionLoan } from "@/src/types";
 import type { ReactNode } from "react";
 
+import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import { Position } from "@/src/comps/Position/Position";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { DEBT_SUGGESTIONS, ETH_MAX_RESERVE } from "@/src/constants";
 import content from "@/src/content";
-import { ACCOUNT_BALANCES, ACCOUNT_POSITIONS } from "@/src/demo-data";
-import { useDemoState } from "@/src/demo-state";
+import { ACCOUNT_BALANCES, ACCOUNT_POSITIONS } from "@/src/demo-mode";
+import { useAccount } from "@/src/eth/Ethereum";
 import { useInputFieldValue } from "@/src/form-utils";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
 import { usePrice } from "@/src/prices";
@@ -97,10 +98,11 @@ function UpdatePositionPanel({
   loan: PositionLoan;
 }) {
   const router = useRouter();
-  const { account, setDemoState } = useDemoState();
+  const account = useAccount();
+
   const collateral = TOKENS_BY_SYMBOL[loan.collateral];
-  const ethPriceUsd = usePrice("ETH");
-  const boldPriceUsd = usePrice("BOLD");
+  const ethPriceUsd = usePrice("ETH") ?? dn.from(0, 18);
+  const boldPriceUsd = usePrice("BOLD") ?? dn.from(0, 18);
 
   const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral.symbol}`, {
     defaultValue: dn.toString(loan.deposit),
@@ -350,33 +352,7 @@ function UpdatePositionPanel({
           width: "100%",
         }}
       >
-        {!account.isConnected && (
-          <div
-            className={css({
-              paddingTop: 16,
-            })}
-          >
-            <div
-              className={css({
-                padding: "20px 24px",
-                textAlign: "center",
-                background: "secondary",
-                borderRadius: 8,
-              })}
-            >
-              Please{" "}
-              <TextButton
-                label="connect"
-                onClick={() => {
-                  setDemoState({
-                    account: { isConnected: true },
-                  });
-                }}
-              />{" "}
-              your wallet to continue.
-            </div>
-          </div>
-        )}
+        <ConnectWarningBox />
         <Button
           disabled={!allowSubmit}
           label="Update position"
@@ -398,12 +374,16 @@ function ClosePositionPanel({
   loan: PositionLoan;
 }) {
   const router = useRouter();
-  const { account, setDemoState } = useDemoState();
+  const account = useAccount();
   const ethPriceUsd = usePrice("ETH");
   const boldPriceUsd = usePrice("BOLD");
   const [tokenIndex, setTokenIndex] = useState(0);
 
   const collateral = TOKENS_BY_SYMBOL[loan.collateral];
+
+  if (!ethPriceUsd || !boldPriceUsd) {
+    return null;
+  }
 
   const loanDetails = getLoanDetails(
     loan.deposit,
@@ -553,33 +533,7 @@ function ClosePositionPanel({
           width: "100%",
         }}
       >
-        {!account.isConnected && (
-          <div
-            className={css({
-              paddingTop: 16,
-            })}
-          >
-            <div
-              className={css({
-                padding: "20px 24px",
-                textAlign: "center",
-                background: "secondary",
-                borderRadius: 8,
-              })}
-            >
-              Please{" "}
-              <TextButton
-                label="connect"
-                onClick={() => {
-                  setDemoState({
-                    account: { isConnected: true },
-                  });
-                }}
-              />{" "}
-              your wallet to continue.
-            </div>
-          </div>
-        )}
+        <ConnectWarningBox />
         <Button
           disabled={!allowSubmit}
           label="Repay & close"

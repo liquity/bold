@@ -2,12 +2,14 @@
 
 import type { Dnum } from "dnum";
 
+import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import { Forecast } from "@/src/comps/Forecast/Forecast";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { LEVERAGE_FACTOR_MIN, LEVERAGE_FACTOR_SUGGESTIONS, LTV_RISK, MAX_LTV_ALLOWED } from "@/src/constants";
 import content from "@/src/content";
-import { ACCOUNT_BALANCES } from "@/src/demo-data";
+import { ACCOUNT_BALANCES } from "@/src/demo-mode";
+import { useAccount } from "@/src/eth/Ethereum";
 import { useInputFieldValue } from "@/src/form-utils";
 import { lerp, norm } from "@/src/math-utils";
 import { usePrice } from "@/src/prices";
@@ -31,8 +33,7 @@ import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { match } from "ts-pattern";
-// import { useAccount } from "wagmi";
-import { useDemoState } from "@/src/demo-state";
+// import { useAction } from "@/src/actions";
 import {
   getLeveragedLiquidationPrice,
   getLeverageFactorFromLiquidationPrice,
@@ -50,12 +51,12 @@ function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[
 }
 
 export function LeverageScreen() {
-  const { account, setDemoState } = useDemoState();
-  // const account = useAccount();
+  const account = useAccount();
   const router = useRouter();
-  const ethPriceUsd = usePrice("ETH");
-  const boldPriceUsd = usePrice("BOLD");
-  const ethPriceBold = dn.mul(ethPriceUsd, boldPriceUsd);
+  const ethPriceUsd = usePrice("ETH") ?? dn.from(0, 18);
+  const boldPriceUsd = usePrice("BOLD") ?? dn.from(0, 18);
+
+  // const { action, setAction } = useAction();
 
   // useParams() can return an array, but not with the current
   // routing setup so we can safely assume it’s a string
@@ -76,6 +77,8 @@ export function LeverageScreen() {
 
   const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral}`);
   const interestRate = useInputFieldValue((value) => `${dn.format(value)}%`);
+
+  const ethPriceBold = dn.mul(ethPriceUsd, boldPriceUsd);
 
   const getLeverageFactorFromLiquidationPriceClamped = (liquidationPrice: Dnum) => {
     const liquidationPriceMin = getLeveragedLiquidationPrice(
@@ -504,33 +507,7 @@ export function LeverageScreen() {
             width: "100%",
           }}
         >
-          {!account.isConnected && (
-            <div
-              className={css({
-                paddingTop: 16,
-              })}
-            >
-              <div
-                className={css({
-                  padding: "20px 24px",
-                  textAlign: "center",
-                  background: "secondary",
-                  borderRadius: 8,
-                })}
-              >
-                Please{" "}
-                <TextButton
-                  label="connect"
-                  onClick={() => {
-                    setDemoState({
-                      account: { isConnected: true },
-                    });
-                  }}
-                />{" "}
-                your wallet to continue.
-              </div>
-            </div>
-          )}
+          <ConnectWarningBox />
           <Button
             disabled={!allowSubmit}
             label={content.leverageScreen.action}

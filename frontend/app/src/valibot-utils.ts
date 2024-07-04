@@ -1,10 +1,16 @@
 import type { Address } from "@liquity2/uikit";
+import type { Dnum } from "dnum";
 
 import { isAddress } from "@/src/eth-utils";
+import { isDnum } from "dnum";
 import * as v from "valibot";
 
 export function vAddress() {
   return v.custom<Address>(isAddress, "not a valid Ethereum address");
+}
+
+export function vDnum() {
+  return v.custom<Dnum>(isDnum, "not a Dnum");
 }
 
 // Env var link, e.g. Etherscan|https://etherscan.io
@@ -21,6 +27,22 @@ export function vEnvLink() {
       return { name, url };
     }),
   );
+}
+
+// Env var flag, true/false or 1/0
+export function vEnvFlag() {
+  return v.union([
+    v.pipe(
+      v.string(),
+      v.trim(),
+      v.regex(/^(true|false)$/),
+      v.transform((value) => value === "true"),
+    ),
+    v.pipe(
+      v.number(),
+      v.transform((value) => value !== 0),
+    ),
+  ]);
 }
 
 // Env var address + creation block, e.g. 0xca11bde05977b3631167028862be2a173976ca11|14353601

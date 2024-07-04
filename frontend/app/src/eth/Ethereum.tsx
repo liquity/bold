@@ -7,12 +7,20 @@ import type { ComponentProps, ReactNode } from "react";
 import type { Chain } from "wagmi/chains";
 
 import { useConfig } from "@/src/comps/Config/Config";
+import { useDemoMode } from "@/src/demo-mode";
 import { WALLET_CONNECT_PROJECT_ID } from "@/src/env";
+import { noop } from "@/src/utils";
 import { useTheme } from "@liquity2/uikit";
-import { getDefaultConfig, lightTheme, RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import {
+  getDefaultConfig,
+  lightTheme,
+  RainbowKitProvider,
+  useAccountModal,
+  useConnectModal,
+} from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { http, WagmiProvider } from "wagmi";
+import { http, useAccount as useAccountWagmi, useEnsName, WagmiProvider } from "wagmi";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +38,27 @@ export function Ethereum({ children }: { children: ReactNode }) {
   );
 }
 
+export function useAccount():
+  & Omit<ReturnType<typeof useAccountWagmi>, "connector">
+  & {
+    connect: () => void;
+    disconnect: () => void;
+    ensName: string | undefined;
+  }
+{
+  const demoMode = useDemoMode();
+  const account = useAccountWagmi();
+  const { openConnectModal } = useConnectModal();
+  const { openAccountModal } = useAccountModal();
+  const ensName = useEnsName({ address: account?.address });
+  return demoMode.enabled ? demoMode.account : {
+    ...account,
+    connect: account.isConnected && openConnectModal || noop,
+    disconnect: account.isConnected && openAccountModal || noop,
+    ensName: ensName.data ?? undefined,
+  };
+}
+
 function useRainbowKitProps(): Omit<ComponentProps<typeof RainbowKitProvider>, "children"> {
   const theme = useTheme();
   return {
@@ -40,7 +69,7 @@ function useRainbowKitProps(): Omit<ComponentProps<typeof RainbowKitProvider>, "
   };
 }
 
-function useWagmiConfig() {
+export function useWagmiConfig() {
   const { config } = useConfig();
   return useMemo(() => {
     const chain = createChain({

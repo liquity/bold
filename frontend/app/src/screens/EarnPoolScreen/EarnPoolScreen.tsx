@@ -7,8 +7,8 @@ import { BackButton } from "@/src/comps/BackButton/BackButton";
 import { Details } from "@/src/comps/Details/Details";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { ACCOUNT_BALANCES, ACCOUNT_POSITIONS, EARN_POOLS } from "@/src/demo-data";
-import { useDemoState } from "@/src/demo-state";
+import { ACCOUNT_BALANCES, ACCOUNT_POSITIONS, EARN_POOLS } from "@/src/demo-mode";
+import { useAccount } from "@/src/eth/Ethereum";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { COLLATERALS, HFlex, InfoTooltip, Tabs, TokenIcon, TokenIconGroup, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
@@ -32,7 +32,7 @@ function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[
 }
 
 export function EarnPoolScreen() {
-  const { account } = useDemoState();
+  const account = useAccount();
   const router = useRouter();
   const params = useParams();
 

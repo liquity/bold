@@ -5,19 +5,21 @@ import type { CollateralSymbol } from "@liquity2/uikit";
 
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { ACCOUNT_POSITIONS, EARN_POOLS } from "@/src/demo-data";
-import { useDemoState } from "@/src/demo-state";
+import { ACCOUNT_POSITIONS, EARN_POOLS, useDemoMode } from "@/src/demo-mode";
 import { formatAmountCompact } from "@/src/dnum-utils";
+import { useAccount } from "@/src/eth/Ethereum";
 import { css, cx } from "@/styled-system/css";
 import { IconArrowRight, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 
 export function EarnPoolsListScreen() {
-  const { account } = useDemoState();
+  const demoMode = useDemoMode();
+  const account = useAccount();
 
   const earnPositions = new Map<CollateralSymbol, PositionEarn>();
-  if (account.isConnected) {
+
+  if (account.isConnected && demoMode.enabled) {
     for (const position of ACCOUNT_POSITIONS) {
       if (position.type === "earn") {
         earnPositions.set(position.collateral, position);
