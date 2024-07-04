@@ -10,7 +10,7 @@ for testing the parent's internal functions. */
 
 contract TroveManagerTester is TroveManager {
     constructor(uint256 _mcr, uint256 _liquidationPenaltySP, uint256 _liquidationPenaltyRedistribution, IERC20 _weth)
-        TroveManager(_mcr, _liquidationPenaltySP, _liquidationPenaltyRedistribution, _weth)
+        TroveManager(_mcr, _scr, _liquidationPenaltySP, _liquidationPenaltyRedistribution, _weth)
     {}
 
     function computeICR(uint256 _coll, uint256 _debt, uint256 _price) external pure returns (uint256) {

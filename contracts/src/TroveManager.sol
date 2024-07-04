@@ -36,6 +36,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     // Minimum collateral ratio for individual troves
     uint256 public immutable MCR;
+    // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
+    // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
+    uint256 public immutable SCR;
     // Liquidation penalty for troves offset to the SP
     uint256 public immutable LIQUIDATION_PENALTY_SP;
     // Liquidation penalty for troves redistributed
@@ -166,15 +169,17 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
-    constructor(uint256 _mcr, uint256 _liquidationPenaltySP, uint256 _liquidationPenaltyRedistribution, IERC20 _weth)
+    constructor(uint256 _mcr, uint256 _scr, uint256 _liquidationPenaltySP, uint256 _liquidationPenaltyRedistribution, IERC20 _weth)
         ERC721(NAME, SYMBOL)
     {
         require(_mcr > 1e18 && _mcr < 2e18, "Invalid MCR");
+        require(_scr > 1e18 && _scr < 2e18, "Invalid SCR");
         require(_liquidationPenaltySP >= 5e16, "SP penalty too low");
         require(_liquidationPenaltySP <= _liquidationPenaltyRedistribution, "SP penalty cannot be > redist");
         require(_liquidationPenaltyRedistribution <= 10e16, "Redistribution penalty too high");
 
         MCR = _mcr;
+        SCR = _scr;
         LIQUIDATION_PENALTY_SP = _liquidationPenaltySP;
         LIQUIDATION_PENALTY_REDISTRIBUTION = _liquidationPenaltyRedistribution;
 
@@ -1071,7 +1076,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint256 unbackedPortion = totalDebt > spSize ? totalDebt - spSize : 0;
 
         uint256 price = priceFeed.fetchPrice();
-        bool redeemable = _getTCR(price) >= _100pct;
+        bool redeemable = _getTCR(price) >= SCR && shutdownTime == 0;
 
         return (unbackedPortion, price, redeemable);
     }

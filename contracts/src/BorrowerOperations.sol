@@ -103,15 +103,13 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
 
     event ShutDown(uint256 _tcr);
 
-    constructor(IERC20 _collToken, ITroveManager _troveManager, IERC20 _weth, uint256 _scr) {
-        require(_scr > 1e18 && _scr < 2e18, "BO: Invalid SCR");
-
+    constructor(IERC20 _collToken, ITroveManager _troveManager, IERC20 _weth) {
         collToken = _collToken;
-
         troveManager = _troveManager;
+        
         WETH = _weth;
-
-        SCR = _scr;
+      
+        SCR = _troveManager.SCR();
         MCR = _troveManager.MCR();
 
         emit TroveManagerAddressChanged(address(_troveManager));
