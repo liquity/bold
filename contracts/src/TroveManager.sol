@@ -316,11 +316,15 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         );
 
         if (isTroveInBatch) {
-            singleLiquidation.oldWeightedRecordedDebt = singleLiquidation.batch.weightedRecordedDebt + (singleLiquidation.trove.entireDebt - singleLiquidation.trove.redistBoldDebtGain) * singleLiquidation.batch.annualInterestRate;
+            singleLiquidation.oldWeightedRecordedDebt =
+                singleLiquidation.batch.weightedRecordedDebt +
+                (singleLiquidation.trove.entireDebt - singleLiquidation.trove.redistBoldDebtGain) * singleLiquidation.batch.annualInterestRate;
             singleLiquidation.newWeightedRecordedDebt = singleLiquidation.batch.entireDebtWithoutRedistribution * singleLiquidation.batch.annualInterestRate;
             // Mint batch management fee
             troveChange.batchAccruedManagementFee = singleLiquidation.batch.accruedManagementFee;
-            troveChange.oldWeightedRecordedBatchManagementFee = singleLiquidation.batch.weightedRecordedBatchManagementFee + (singleLiquidation.trove.entireDebt - singleLiquidation.trove.redistBoldDebtGain) * singleLiquidation.batch.annualManagementFee;
+            troveChange.oldWeightedRecordedBatchManagementFee =
+                singleLiquidation.batch.weightedRecordedBatchManagementFee +
+                (singleLiquidation.trove.entireDebt - singleLiquidation.trove.redistBoldDebtGain) * singleLiquidation.batch.annualManagementFee;
             troveChange.newWeightedRecordedBatchManagementFee = singleLiquidation.batch.entireDebtWithoutRedistribution * singleLiquidation.batch.annualManagementFee;
             activePool.mintBatchManagementFeeAndAccountForChange(troveChange, batchAddress);
         } else {
