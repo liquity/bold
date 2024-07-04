@@ -1342,14 +1342,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint256 newStake = _computeNewStake(_troveChange.collIncrease);
 
         // Trove memory newTrove;
-        Troves[_troveId].debt = 0;
-        Troves[_troveId].coll = 0;
         Troves[_troveId].stake = newStake;
         Troves[_troveId].status = Status.active;
         Troves[_troveId].arrayIndex = uint64(TroveIds.length);
-        Troves[_troveId].annualInterestRate = 0;
-        Troves[_troveId].lastDebtUpdateTime = 0;
-        Troves[_troveId].lastInterestRateAdjTime = 0;
         Troves[_troveId].interestBatchManager = _batchAddress;
 
         _updateTroveRewardSnapshots(_troveId);
