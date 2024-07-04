@@ -7,7 +7,7 @@ import { Details } from "@/src/comps/Details/Details";
 import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { ACCOUNT_BALANCES, ACCOUNT_STAKED_LQTY, ETH_PRICE, STAKED_LQTY_TOTAL } from "@/src/demo-data";
+import { ACCOUNT_BALANCES, ACCOUNT_STAKED_LQTY, ETH_PRICE, STAKED_LQTY_TOTAL } from "@/src/demo-mode";
 import { formatPercentage } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { usePrice } from "@/src/prices";
@@ -32,6 +32,10 @@ export function StakeScreen() {
 
   const deposit = useInputFieldValue((value) => `${dn.format(value)} LQTY`);
   const withdraw = useInputFieldValue((value) => `${dn.format(value)} LQTY`);
+
+  if (!lqtyPrice) {
+    return null;
+  }
 
   return (
     <Screen

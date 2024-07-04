@@ -1,5 +1,5 @@
 import * as v from "valibot";
-import { vAddress, vEnvAddressAndBlock, vEnvCurrency, vEnvLink } from "./valibot-utils";
+import { vAddress, vEnvAddressAndBlock, vEnvCurrency, vEnvFlag, vEnvLink } from "./valibot-utils";
 
 export const EnvSchema = v.object({
   APP_VERSION: v.string(),
@@ -35,6 +35,7 @@ export const EnvSchema = v.object({
   CONTRACT_SORTED_TROVES: vAddress(),
   CONTRACT_STABILITY_POOL: vAddress(),
   CONTRACT_TROVE_MANAGER: vAddress(),
+  DEMO_MODE: vEnvFlag(),
   WALLET_CONNECT_PROJECT_ID: v.string(),
 });
 
@@ -65,6 +66,7 @@ const parsedEnv = v.parse(EnvSchema, {
   CONTRACT_SORTED_TROVES: process.env.NEXT_PUBLIC_CONTRACT_SORTED_TROVES,
   CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_CONTRACT_STABILITY_POOL,
   CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_CONTRACT_TROVE_MANAGER,
+  DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
   WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 });
 
@@ -93,5 +95,6 @@ export const {
   CONTRACT_SORTED_TROVES,
   CONTRACT_STABILITY_POOL,
   CONTRACT_TROVE_MANAGER,
+  DEMO_MODE,
   WALLET_CONNECT_PROJECT_ID,
 } = parsedEnv;

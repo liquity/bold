@@ -1,12 +1,13 @@
 "use client";
 
+import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import { Forecast } from "@/src/comps/Forecast/Forecast";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { DEBT_SUGGESTIONS } from "@/src/constants";
 import content from "@/src/content";
-import { ACCOUNT_BALANCES } from "@/src/demo-data";
-import { useDemoState } from "@/src/demo-state";
+import { ACCOUNT_BALANCES } from "@/src/demo-mode";
+import { useAccount } from "@/src/eth/Ethereum";
 import { useInputFieldValue } from "@/src/form-utils";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
 import { usePrice } from "@/src/prices";
@@ -28,7 +29,6 @@ import {
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-// import { useAccount } from "wagmi";
 
 const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
 
@@ -38,8 +38,9 @@ function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[
 }
 
 export function BorrowScreen() {
-  const { account, setDemoState } = useDemoState();
-  // const account = useAccount();
+  // const demoMode = useDemoMode();
+  const account = useAccount();
+
   const router = useRouter();
   const ethPriceUsd = usePrice("ETH");
   const boldPriceUsd = usePrice("BOLD");
@@ -56,6 +57,10 @@ export function BorrowScreen() {
   const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral}`);
   const debt = useInputFieldValue((value) => `${dn.format(value)} BOLD`);
   const interestRate = useInputFieldValue((value) => `${dn.format(value)}%`);
+
+  if (!ethPriceUsd || !boldPriceUsd) {
+    return null;
+  }
 
   const loanDetails = getLoanDetails(
     deposit.isEmpty ? null : deposit.parsed,
@@ -325,33 +330,7 @@ export function BorrowScreen() {
             width: "100%",
           }}
         >
-          {!account.isConnected && (
-            <div
-              className={css({
-                paddingTop: 16,
-              })}
-            >
-              <div
-                className={css({
-                  padding: "20px 24px",
-                  textAlign: "center",
-                  background: "secondary",
-                  borderRadius: 8,
-                })}
-              >
-                Please{" "}
-                <TextButton
-                  label="connect"
-                  onClick={() => {
-                    setDemoState({
-                      account: { isConnected: true },
-                    });
-                  }}
-                />{" "}
-                your wallet to continue.
-              </div>
-            </div>
-          )}
+          <ConnectWarningBox />
           <Button
             disabled={!allowSubmit}
             label={content.borrowScreen.action}

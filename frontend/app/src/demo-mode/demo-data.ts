@@ -4,6 +4,9 @@ import type { Dnum } from "dnum";
 
 import * as dn from "dnum";
 
+export const PRICE_UPDATE_INTERVAL = 15_000;
+export const PRICE_UPDATE_VARIATION = 0.003;
+
 export const LQTY_PRICE = dn.from(1.54832, 18);
 export const ETH_PRICE = dn.from(3_839.293872, 18);
 export const RETH_PRICE = dn.from(4_228.72294, 18);
