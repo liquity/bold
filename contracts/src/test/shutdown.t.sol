@@ -209,14 +209,15 @@ contract ShutdownTest is DevTestSetup {
         uint256 troveId = openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 10000e18, 5e16);
         openMulticollateralTroveNoHints100pctWithIndex(0, B, 0, 22e18, 20000e18, 6e16);
 
-        contractsArray[0].priceFeed.setPrice(1000e18);
-        contractsArray[0].borrowerOperations.shutdown();
-
         // B redeems from A’s trove, to make it unredeemable
         //deal(address(boldToken), B, 20000e18);
         vm.startPrank(B);
         collateralRegistry.redeemCollateral(10000e18, 0, 1e18);
         vm.stopPrank();
+
+        // Price goes down and shutdown is triggered
+        contractsArray[0].priceFeed.setPrice(772e18);
+        contractsArray[0].borrowerOperations.shutdown();
 
         // Check A’s trove is unredeemable
         assertEq(troveManager.checkTroveIsUnredeemable(troveId), true, "A trove should be unredeemable");

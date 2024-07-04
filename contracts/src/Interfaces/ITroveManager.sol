@@ -77,6 +77,7 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _maxIterations
     ) external returns (uint256 _redemeedAmount);
 
+    function shutdown() external;
     function urgentRedemption(
         address _sender,
         uint256 _boldAmount,

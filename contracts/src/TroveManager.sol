@@ -39,6 +39,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
     // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
     uint256 public immutable SCR;
+    bool public hasBeenShutDown;
+
     // Liquidation penalty for troves offset to the SP
     uint256 public immutable LIQUIDATION_PENALTY_SP;
     // Liquidation penalty for troves redistributed
@@ -700,6 +702,17 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         _movePendingTroveRewardsToActivePool(_defaultPool, trove.redistBoldDebtGain, trove.redistCollGain);
 
         emit TroveUpdated(_troveId, newDebt, newColl, newStake, trove.annualInterestRate, L_coll, L_boldDebt);
+
+        emit TroveOperation(
+            _troveId,
+            Operation.redeemCollateral,
+            trove.annualInterestRate,
+            trove.redistBoldDebtGain,
+            0, // _debtIncreaseFromUpfrontFee
+            -int256(singleRedemption.BoldLot),
+            trove.redistETHGain,
+            -int256(singleRedemption.ETHLot)
+        );
     }
 
     function urgentRedemption(
@@ -738,6 +751,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         contractsCache.activePool.sendColl(_sender, totals.troveChange.collDecrease);
         // Burn bold
         contractsCache.boldToken.burn(_sender, totals.troveChange.debtDecrease);
+    }
+
+    function shutdown() external {
+        _requireCallerIsBorrowerOperations();
+        hasBeenShutDown = true;
     }
 
     // --- Helper functions ---

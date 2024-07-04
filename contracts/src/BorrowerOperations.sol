@@ -570,6 +570,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
 
         hasBeenShutDown = true;
 
+        troveManager.shutdown();
+
         emit ShutDown(TCR);
     }
 
