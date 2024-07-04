@@ -285,7 +285,7 @@ contract BatchManagementFeeTest is DevTestSetup {
         uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
 
         // Add trove to batch
-        removeInterestBatchManager(C, troveId, 10e16);
+        removeFromBatch(C, troveId, 10e16);
 
         assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedManagementFee);
     }
@@ -302,7 +302,7 @@ contract BatchManagementFeeTest is DevTestSetup {
         uint256 troveAccruedManagementFee = troveManager.calcTroveAccruedBatchManagementFee(troveId);
 
         // Add trove to batch
-        removeInterestBatchManager(C, troveId, 10e16);
+        removeFromBatch(C, troveId, 10e16);
 
         assertEq(troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedManagementFee);
     }
@@ -319,7 +319,7 @@ contract BatchManagementFeeTest is DevTestSetup {
         uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
 
         // Add trove to batch
-        removeInterestBatchManager(C, troveId, 10e16);
+        removeFromBatch(C, troveId, 10e16);
 
         assertEq(activePool.aggRecordedDebt(), activePoolInitialDebt + batchAccruedInterest + batchAccruedManagementFee);
     }
@@ -372,7 +372,7 @@ contract BatchManagementFeeTest is DevTestSetup {
         vm.warp(block.timestamp + 10 days);
 
         // First trove leaves the batch
-        removeInterestBatchManager(A, ATroveId, 3e16);
+        removeFromBatch(A, ATroveId, 3e16);
 
         vm.warp(block.timestamp + 5 days);
 

@@ -208,7 +208,7 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _newBatchColl, // updated collateral for new batch manager
         uint256 _newBatchDebt // updated debt for new batch manager
     ) external;
-    function onRemoveInterestBatchManager(
+    function onRemoveFromBatch(
         uint256 _troveId,
         uint256 _newTroveColl, // entire, with redistribution
         uint256 _newTroveDebt, // entire, with interest, batch fee and redistribution

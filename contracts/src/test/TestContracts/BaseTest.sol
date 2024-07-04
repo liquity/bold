@@ -484,11 +484,11 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function removeInterestBatchManager(address _troveOwner, uint256 _troveId, uint256 _newAnnualInterestRate)
+    function removeFromBatch(address _troveOwner, uint256 _troveId, uint256 _newAnnualInterestRate)
         internal
     {
         vm.startPrank(_troveOwner);
-        borrowerOperations.removeInterestBatchManager(_troveId, _newAnnualInterestRate, 0, 0, type(uint256).max);
+        borrowerOperations.removeFromBatch(_troveId, _newAnnualInterestRate, 0, 0, type(uint256).max);
         vm.stopPrank();
     }
 

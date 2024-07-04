@@ -65,7 +65,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 troveId = openTroveAndJoinBatchManager();
 
         vm.startPrank(A);
-        borrowerOperations.removeInterestBatchManager(troveId, 4e16, 0, 0, 1e24);
+        borrowerOperations.removeFromBatch(troveId, 4e16, 0, 0, 1e24);
         vm.stopPrank();
 
         assertEq(borrowerOperations.interestBatchManagerOf(troveId), address(0), "Wrong batch manager in BO");

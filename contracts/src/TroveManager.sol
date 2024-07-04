@@ -1677,7 +1677,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         }
     }
 
-    function onRemoveInterestBatchManager(
+    function onRemoveFromBatch(
         uint256 _troveId,
         uint256 _newTroveColl, // entire, with redistribution
         uint256 _newTroveDebt, // entire, with interest, batch fee and redistribution

@@ -138,7 +138,7 @@ interface IBorrowerOperations is ILiquityBase {
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) external;
-    function removeInterestBatchManager(
+    function removeFromBatch(
         uint256 _troveId,
         uint256 _newAnnualInterestRate,
         uint256 _upperHint,
