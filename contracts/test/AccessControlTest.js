@@ -20,6 +20,9 @@ const noChange = {
   newWeightedRecordedDebt: 0,
   oldWeightedRecordedDebt: 0,
   upfrontFee: 0,
+  batchAccruedManagementFee: 0,
+  newWeightedRecordedBatchManagementFee: 0,
+  oldWeightedRecordedBatchManagementFee: 0,
 };
 
 contract(
@@ -77,7 +80,7 @@ contract(
       it("onOpenTrove(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          await troveManager.onOpenTrove(bob, th.addressToTroveId(bob), 0, 0, 0, 0, { from: alice });
+          await troveManager.onOpenTrove(bob, th.addressToTroveId(bob), noChange, 0, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           // assert.include(err.message, "Caller is not the BorrowerOperations contract")
@@ -87,7 +90,7 @@ contract(
       it("onCloseTrove(): reverts when called by an account that is not BorrowerOperations", async () => {
         // Attempt call from alice
         try {
-          await troveManager.onCloseTrove(th.addressToTroveId(bob), noChange, { from: alice });
+          await troveManager.onCloseTrove(th.addressToTroveId(bob), noChange, bob, 0, 0, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
           // assert.include(err.message, "Caller is not the BorrowerOperations contract")
@@ -329,7 +332,7 @@ contract(
           const txAlice = await sortedTroves.remove(bob, { from: alice });
         } catch (err) {
           assert.include(err.message, "revert");
-          assert.include(err.message, " Caller is not the TroveManager");
+          assert.include(err.message, "SortedTroves: Caller is not BorrowerOperations nor TroveManager");
         }
       });
 

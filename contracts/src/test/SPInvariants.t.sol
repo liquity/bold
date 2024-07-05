@@ -6,7 +6,7 @@ import {IStabilityPool} from "../Interfaces/IStabilityPool.sol";
 import {HintHelpers} from "../HintHelpers.sol";
 import {LiquityContractsDev, _deployAndConnectContracts} from "../deployment.sol";
 import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
-import {SPInvariantsTestHandler} from "./TestContracts/SPInvariantsTestHandler.sol";
+import {SPInvariantsTestHandler} from "./TestContracts/SPInvariantsTestHandler.t.sol";
 
 contract SPInvariantsTest is BaseInvariantTest {
     IStabilityPool stabilityPool;

@@ -164,7 +164,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _id Trove's id
      */
     function remove(uint256 _id) external override {
-        _requireCallerIsTroveManager();
+        _requireCallerIsBOorTM();
         require(contains(_id), "SortedTroves: List does not contain the id");
         require(!isBatchedNode(_id), "SortedTroves: Must use removeFromBatch() to remove batched node");
 
@@ -254,7 +254,7 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
      * @param _id Trove's id
      */
     function removeFromBatch(uint256 _id) external override {
-        _requireCallerIsTroveManager();
+        _requireCallerIsBOorTM();
         BatchId batchId = nodes[_id].batchId;
         // batchId.isNotZero() implies that the list contains the node
         require(batchId.isNotZero(), "SortedTroves: Must use remove() to remove non-batched node");
@@ -553,8 +553,11 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
 
     // --- 'require' functions ---
 
-    function _requireCallerIsTroveManager() internal view {
-        require(msg.sender == address(troveManager), "SortedTroves: Caller is not the TroveManager");
+    function _requireCallerIsBOorTM() internal view {
+        require(
+            msg.sender == borrowerOperationsAddress || msg.sender == address(troveManager),
+            "SortedTroves: Caller is not BorrowerOperations nor TroveManager"
+        );
     }
 
     function _requireCallerIsBorrowerOperations() internal view {

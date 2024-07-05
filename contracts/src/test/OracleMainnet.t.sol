@@ -372,7 +372,9 @@ contract OraclesMainnet is TestAccounts {
         assertEq(trovesCount, 0);
 
         vm.startPrank(A);
-        contractsArray[0].borrowerOperations.openTrove(A, 0, coll, debtRequest, 0, 0, 0, 0);
+        contractsArray[0].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 0, 0, address(0), address(0), address(0)
+        );
 
         trovesCount = contractsArray[0].troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
@@ -391,7 +393,9 @@ contract OraclesMainnet is TestAccounts {
         assertEq(trovesCount, 0);
 
         vm.startPrank(A);
-        contractsArray[1].borrowerOperations.openTrove(A, 0, coll, debtRequest, 0, 0, 0, 0);
+        contractsArray[1].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 0, 0, address(0), address(0), address(0)
+        );
 
         trovesCount = contractsArray[1].troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
@@ -410,7 +414,9 @@ contract OraclesMainnet is TestAccounts {
         assertEq(trovesCount, 0);
 
         vm.startPrank(A);
-        contractsArray[3].borrowerOperations.openTrove(A, 0, coll, debtRequest, 0, 0, 0, 0);
+        contractsArray[3].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 0, 0, address(0), address(0), address(0)
+        );
 
         trovesCount = contractsArray[3].troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
@@ -429,7 +435,9 @@ contract OraclesMainnet is TestAccounts {
         assertEq(trovesCount, 0);
 
         vm.startPrank(A);
-        contractsArray[4].borrowerOperations.openTrove(A, 0, coll, debtRequest, 0, 0, 0, 0);
+        contractsArray[4].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 0, 0, address(0), address(0), address(0)
+        );
 
         trovesCount = contractsArray[4].troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
@@ -448,7 +456,9 @@ contract OraclesMainnet is TestAccounts {
         assertEq(trovesCount, 0);
 
         vm.startPrank(A);
-        contractsArray[2].borrowerOperations.openTrove(A, 0, coll, debtRequest, 0, 0, 0, 0);
+        contractsArray[2].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 0, 0, address(0), address(0), address(0)
+        );
 
         trovesCount = contractsArray[2].troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);

@@ -130,15 +130,15 @@ contract InterestRateAggregate is DevTestSetup {
 
         vm.startPrank(A);
         vm.expectRevert();
-        activePool.mintAggInterestAndAccountForTroveChange(noChange);
+        activePool.mintAggInterestAndAccountForTroveChange(noChange, address(0));
         vm.stopPrank();
 
         vm.startPrank(address(borrowerOperations));
-        activePool.mintAggInterestAndAccountForTroveChange(noChange);
+        activePool.mintAggInterestAndAccountForTroveChange(noChange, address(0));
         vm.stopPrank();
 
         vm.startPrank(address(troveManager));
-        activePool.mintAggInterestAndAccountForTroveChange(noChange);
+        activePool.mintAggInterestAndAccountForTroveChange(noChange, address(0));
         vm.stopPrank();
     }
 

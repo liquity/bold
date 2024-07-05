@@ -6,6 +6,8 @@ import "./Interfaces/ICollateralRegistry.sol";
 import "./Dependencies/LiquityMath.sol";
 import "./Dependencies/Constants.sol";
 
+// import "forge-std/console2.sol";
+
 contract HintHelpers {
     string public constant NAME = "HintHelpers";
 
@@ -29,7 +31,7 @@ contract HintHelpers {
         view
         returns (uint256 hintId, uint256 diff, uint256 latestRandomSeed)
     {
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
         ISortedTroves sortedTroves = troveManager.sortedTroves();
 
         uint256 arrayLength = troveManager.getTroveIdsCount();
@@ -72,7 +74,7 @@ contract HintHelpers {
         view
         returns (uint256)
     {
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
         IActivePool activePool = troveManager.activePool();
 
         TroveChange memory openTrove;
@@ -88,7 +90,7 @@ contract HintHelpers {
         view
         returns (uint256)
     {
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
         IActivePool activePool = troveManager.activePool();
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
 
@@ -112,7 +114,7 @@ contract HintHelpers {
     {
         if (_debtIncrease == 0) return 0;
 
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
         IActivePool activePool = troveManager.activePool();
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
 
@@ -124,5 +126,26 @@ contract HintHelpers {
 
         uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
         return _calcUpfrontFee(_debtIncrease, avgInterestRate);
+    }
+
+    function predictAdjustBatchInterestRateUpfrontFee(
+        uint256 _collIndex,
+        address _batchAddress,
+        uint256 _newInterestRate
+    ) external view returns (uint256) {
+        ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
+        IActivePool activePool = troveManager.activePool();
+        LatestBatchData memory batch = troveManager.getLatestBatchData(_batchAddress);
+
+        if (block.timestamp >= batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN) {
+            return 0;
+        }
+
+        TroveChange memory troveChange;
+        troveChange.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * _newInterestRate;
+        troveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
+
+        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
+        return _calcUpfrontFee(batch.entireDebtWithoutRedistribution, avgInterestRate);
     }
 }

@@ -85,7 +85,7 @@ contract InterestRateBasic is DevTestSetup {
 
         // B (who is not delegate) tries to adjust it
         vm.startPrank(B);
-        vm.expectRevert("BorrowerOps: sender is not Trove owner");
+        vm.expectRevert(BorrowerOperations.NotOwnerNorInterestManager.selector);
         borrowerOperations.adjustTroveInterestRate(A_Id, 40e16, 0, 0, 0);
         vm.stopPrank();
     }
@@ -197,17 +197,50 @@ contract InterestRateBasic is DevTestSetup {
 
         // Recorded debt only increases by accrued interest
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
-        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
+        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest, "Rec debt + interest mismatch");
 
         // Wait less than the cooldown, so the adjustment will cost
         vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN / 2);
 
         accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
-        uint256 upfrontFee = changeInterestRateNoHints(A, ATroveId, 75e16);
+        uint256 upfrontFee = changeInterestRateNoHints(A, ATroveId, 80e16);
 
         // Recorded debt increases by accrued interest + upfront fee
         uint256 recordedTroveDebt_3 = troveManager.getTroveDebt(ATroveId);
-        assertEq(recordedTroveDebt_3, recordedTroveDebt_2 + accruedTroveInterest + upfrontFee);
+        assertEq(
+            recordedTroveDebt_3,
+            recordedTroveDebt_2 + accruedTroveInterest + upfrontFee,
+            "Rec debt + interest + upfront fee mismatch"
+        );
+    }
+
+    function testAdjustTroveInterestRateIncreasesRecordedDebtByAccruedInterestButNoUpfrontFeeIfSameRate() public {
+        priceFeed.setPrice(2000e18);
+
+        uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2000e18, 5e17);
+
+        // Wait for the cooldown to pass, so the adjustment will be free
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN);
+
+        uint256 recordedTroveDebt_1 = troveManager.getTroveDebt(ATroveId);
+        assertGt(recordedTroveDebt_1, 0);
+
+        uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
+        changeInterestRateNoHints(A, ATroveId, 75e16);
+
+        // Recorded debt only increases by accrued interest
+        uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
+        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest, "Rec debt + interest mismatch");
+
+        // Wait less than the cooldown, so the adjustment would cost, except it’s no real change
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN / 2);
+
+        accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
+        changeInterestRateNoHints(A, ATroveId, 75e16);
+
+        // Recorded debt increases by accrued interest + upfront fee
+        uint256 recordedTroveDebt_3 = troveManager.getTroveDebt(ATroveId);
+        assertEq(recordedTroveDebt_3, recordedTroveDebt_2 + accruedTroveInterest, "2nd rec debt + interest mismatch");
     }
 
     function testAdjustTroveInterestRateInsertsToCorrectPositionInSortedList() public {

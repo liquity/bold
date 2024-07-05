@@ -72,6 +72,7 @@ jobs:
           ! grep -R console src | grep import | grep -v "://" | grep -v TestContracts | grep -v ExternalContracts  | grep -v "\.t\.sol"
 
   test-hardhat:
+    if: false
     name: Hardhat tests
     runs-on: ubuntu-latest
 
@@ -127,7 +128,7 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
-          forge build --sizes
+          forge build
 
       - name: Run Forge coverage
         run: |

@@ -1,6 +1,7 @@
 // Borrowing contracts
 const SortedTroves = artifacts.require("./SortedTroves.sol");
 const TroveManager = artifacts.require("./TroveManager.sol");
+const TroveNFT = artifacts.require("./TroveNFT.sol");
 const PriceFeedTestnet = artifacts.require("./PriceFeedTestnet.sol");
 const ActivePool = artifacts.require("./ActivePool.sol");
 const DefaultPool = artifacts.require("./DefaultPool.sol");
@@ -37,6 +38,7 @@ class DeploymentHelper {
     const Contracts = Object.fromEntries(
       Object.entries({
         ActivePool,
+        TroveNFT,
         BorrowerOperations,
         CollSurplusPool,
         DefaultPool,
@@ -59,33 +61,43 @@ class DeploymentHelper {
 
     // Borrowing contracts
     const activePool = await Contracts.ActivePool.new(WETH.address);
-    const troveManager = await Contracts.TroveManager.new(
-      web3.utils.toBN("1100000000000000000"),
-      web3.utils.toBN("1100000000000000000"),
-      web3.utils.toBN("100000000000000000"),
-      web3.utils.toBN("100000000000000000"),
+    const troveNFT = await Contracts.TroveNFT.new();
+    const borrowerOperations = await Contracts.BorrowerOperations.new(
+      web3.utils.toBN("1100000000000000000"), // MCR
+      web3.utils.toBN("1100000000000000000"), // SCR
+      WETH.address,
+      troveNFT.address,
       WETH.address
     );
-    const borrowerOperations = await Contracts.BorrowerOperations.new(WETH.address, troveManager.address, WETH.address);
     const collSurplusPool = await Contracts.CollSurplusPool.new(WETH.address);
     const defaultPool = await Contracts.DefaultPool.new(WETH.address);
-    const gasPool = await Contracts.GasPool.new(WETH.address, borrowerOperations.address, troveManager.address);
+    const gasPool = await Contracts.GasPool.new();
     const priceFeedTestnet = await Contracts.PriceFeedTestnet.new();
     const priceFeed = await Contracts.PriceFeedMock.new();
     const sortedTroves = await Contracts.SortedTroves.new();
     const stabilityPool = await Contracts.StabilityPool.new(WETH.address);
     const constants = await Contracts.Constants.new();
 
-    const { boldToken } = await this.deployBoldToken({
-      troveManager,
-      stabilityPool,
-      borrowerOperations,
-      activePool,
-    }, Contracts.BoldToken);
+    const boldToken = await Contracts.BoldToken.new();
 
-    const collateralRegistry = await Contracts.CollateralRegistry.new(boldToken.address, [WETH.address], [
-      troveManager.address,
-    ]);
+    const collateralRegistry = await Contracts.CollateralRegistry.new(boldToken.address, [WETH.address]);
+    const troveManagerParams = {
+      liquidationPenaltySP: "100000000000000000",
+      liquidationPenaltyRedistribution: "100000000000000000",
+      troveNFT: troveNFT.address,
+      borrowerOperations: borrowerOperations.address,
+      activePool: activePool.address,
+      defaultPool: defaultPool.address,
+      stabilityPool: stabilityPool.address,
+      gasPoolAddress: gasPool.address,
+      collSurplusPool: collSurplusPool.address,
+      priceFeed: priceFeedTestnet.address,
+      boldToken: boldToken.address,
+      sortedTroves: sortedTroves.address,
+      weth: WETH.address,
+      collateralRegistry: collateralRegistry.address
+    };
+    const troveManager = await Contracts.TroveManager.new(troveManagerParams);
 
     const mockInterestRouter = await MockInterestRouter.new();
     const hintHelpers = await Contracts.HintHelpers.new(collateralRegistry.address);
@@ -122,6 +134,7 @@ class DeploymentHelper {
       boldToken,
       sortedTroves,
       troveManager,
+      troveNFT,
       activePool,
       stabilityPool,
       gasPool,
@@ -136,33 +149,13 @@ class DeploymentHelper {
     return coreContracts;
   }
 
-  static async deployBoldToken(contracts, MockedBoldToken = BoldToken) {
-    contracts.boldToken = await MockedBoldToken.new();
-    contracts.boldToken.setBranchAddresses(
+  // Connect contracts to their dependencies
+  static async connectCoreContracts(contracts) {
+    await contracts.boldToken.setBranchAddresses(
       contracts.troveManager.address,
       contracts.stabilityPool.address,
       contracts.borrowerOperations.address,
       contracts.activePool.address,
-    );
-    return contracts;
-  }
-
-  // Connect contracts to their dependencies
-  static async connectCoreContracts(contracts) {
-    // set contracts in the Trove Manager
-    await contracts.troveManager.setAddresses(
-      contracts.borrowerOperations.address,
-      contracts.activePool.address,
-      contracts.defaultPool.address,
-      contracts.stabilityPool.address,
-      contracts.gasPool.address,
-      contracts.collSurplusPool.address,
-      contracts.priceFeedTestnet.address,
-      contracts.boldToken.address,
-      contracts.sortedTroves.address,
-    );
-    await contracts.troveManager.setCollateralRegistry(
-      contracts.collateralRegistry.address,
     );
 
     await contracts.stabilityPool.setAddresses(
@@ -181,6 +174,7 @@ class DeploymentHelper {
 
     // set contracts in BorrowerOperations
     await contracts.borrowerOperations.setAddresses(
+      contracts.troveManager.address,
       contracts.activePool.address,
       contracts.defaultPool.address,
       contracts.gasPool.address,
@@ -190,6 +184,8 @@ class DeploymentHelper {
       contracts.boldToken.address,
       // contracts.stETH.address
     );
+
+    await contracts.troveNFT.setAddresses(contracts.troveManager.address);
 
     await contracts.activePool.setAddresses(
       contracts.borrowerOperations.address,
@@ -213,9 +209,17 @@ class DeploymentHelper {
       contracts.activePool.address,
     );
 
+    await contracts.gasPool.setAllowance(
+      contracts.WETH.address,
+      contracts.borrowerOperations.address,
+      contracts.troveManager.address
+    );
+
     await contracts.boldToken.setCollateralRegistry(
       contracts.collateralRegistry.address,
     );
+
+    await contracts.collateralRegistry.setTroveManager(0, contracts.troveManager.address);
   }
 }
 module.exports = DeploymentHelper;

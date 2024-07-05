@@ -13,6 +13,9 @@ import {ISortedTroves} from "../../Interfaces/ISortedTroves.sol";
 import {ITroveManager} from "../../Interfaces/ITroveManager.sol";
 import {LatestTroveData} from "../../Types/LatestTroveData.sol";
 import {TroveChange} from "../../Types/TroveChange.sol";
+import {BorrowerOperations} from "../../BorrowerOperations.sol";
+import {AddRemoveManagers} from "../../Dependencies/AddRemoveManagers.sol";
+import {TroveManager} from "../../TroveManager.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
 import {mulDivCeil, pow} from "../Utils/Math.sol";
 import {IPriceFeedTestnet} from "./Interfaces/IPriceFeedTestnet.sol";
@@ -31,6 +34,7 @@ import {
     INTEREST_RATE_ADJ_COOLDOWN,
     MIN_ANNUAL_INTEREST_RATE,
     MAX_ANNUAL_INTEREST_RATE,
+    MIN_ANNUAL_INTEREST_RATE,
     MIN_DEBT,
     ONE_MINUTE,
     ONE_YEAR,
@@ -241,11 +245,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         for (uint256 i = 0; i < branches.length; ++i) {
             LiquityContractsDev memory c = branches[i];
-            CCR[i] = c.troveManager.CCR();
-            MCR[i] = c.troveManager.MCR();
-            SCR[i] = c.troveManager.SCR();
-            LIQ_PENALTY_SP[i] = c.troveManager.LIQUIDATION_PENALTY_SP();
-            LIQ_PENALTY_REDIST[i] = c.troveManager.LIQUIDATION_PENALTY_REDISTRIBUTION();
+            CCR[i] = c.troveManager.get_CCR();
+            MCR[i] = c.troveManager.get_MCR();
+            SCR[i] = c.troveManager.get_SCR();
+            LIQ_PENALTY_SP[i] = c.troveManager.get_LIQUIDATION_PENALTY_SP();
+            LIQ_PENALTY_REDIST[i] = c.troveManager.get_LIQUIDATION_PENALTY_REDISTRIBUTION();
             _price[i] = c.priceFeed.getPrice();
         }
     }
@@ -354,9 +358,21 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         _dealCollAndApprove(i, msg.sender, v.coll, address(v.c.borrowerOperations));
         _dealWETHAndApprove(msg.sender, ETH_GAS_COMPENSATION, address(v.c.borrowerOperations));
 
+        string memory errorString;
         vm.prank(msg.sender);
+
         try v.c.borrowerOperations.openTrove(
-            msg.sender, OWNER_INDEX, v.coll, borrowed, v.upperHint, v.lowerHint, interestRate, v.upfrontFee
+            msg.sender,
+            OWNER_INDEX,
+            v.coll,
+            borrowed,
+            v.upperHint,
+            v.lowerHint,
+            interestRate,
+            v.upfrontFee,
+            address(0),
+            address(0),
+            address(0)
         ) {
             uint256 icr_ = _CR(i, v.coll, v.debt); // can be slightly different from `icr` due to int division
             uint256 newTCR = _TCR(i, int256(v.coll), int256(borrowed), v.upfrontFee);
@@ -387,42 +403,47 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             _interestAccrual[i] += v.debt * interestRate;
             numTroves[i] += 1;
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, errorString) = _decodeCustomError(revertData);
 
-            // Cleanup
-            _sweepBold(msg.sender, borrowed);
-        } catch Error(string memory reason) {
             // Justify failures
-            if (reason.equals("BO: Branch shut down")) {
+            if (selector == BorrowerOperations.IsShutDown.selector) {
                 assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
-            } else if (reason.equals("BorrowerOps: Trove is open")) {
+            } else if (selector == BorrowerOperations.TroveOpen.selector) {
                 assertTrue(v.wasOpen, "Shouldn't have failed as Trove wasn't open");
-            } else if (reason.equals("Interest rate must not be lower than min")) {
+            } else if (selector == BorrowerOperations.InterestRateTooLow.selector) {
                 assertLtDecimal(interestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate >= min");
-            } else if (reason.equals("Interest rate must not be greater than max")) {
+            } else if (selector == BorrowerOperations.InterestRateTooHigh.selector) {
                 assertGtDecimal(interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate <= max");
-            } else if (reason.equals("BorrowerOps: Trove's debt must be greater than minimum")) {
+            } else if (selector == BorrowerOperations.DebtBelowMin.selector) {
                 assertLtDecimal(v.debt, MIN_DEBT, 18, "Shouldn't have failed as debt >= min");
-            } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
+            } else if (selector == BorrowerOperations.ICRBelowMCR.selector) {
                 uint256 icr_ = _CR(i, v.coll, v.debt);
                 assertLtDecimal(icr_, MCR[i], 18, "Shouldn't have failed as ICR >= MCR");
-            } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
+            } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
                 uint256 newTCR = _TCR(i, int256(v.coll), int256(borrowed), v.upfrontFee);
                 assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
-            } else if (reason.equals("BorrowerOps: Operation not permitted below CT")) {
+            } else if (selector == BorrowerOperations.BelowCriticalThreshold.selector) {
                 uint256 tcr = _TCR(i);
                 assertLtDecimal(tcr, CCR[i], 18, "Shouldn't have failed as TCR >= CCR");
                 info("TCR: ", tcr.decimal());
             } else {
-                revert(reason);
+                revert(string.concat("Unexpected error: ", errorString));
             }
+        }
 
-            info("Expected revert: ", reason);
+        if (bytes(errorString).length > 0) {
+            info("Expected error: ", errorString);
             _log();
 
-            // Cleanup
+            // Cleanup (failure)
             _sweepCollAndUnapprove(i, msg.sender, v.coll, address(v.c.borrowerOperations));
             _sweepWETHAndUnapprove(msg.sender, ETH_GAS_COMPENSATION, address(v.c.borrowerOperations));
+        } else {
+            // Cleanup (success)
+            _sweepBold(msg.sender, borrowed);
         }
     }
 
@@ -475,7 +496,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         if (isCollIncrease) _dealCollAndApprove(i, msg.sender, collChange, address(v.c.borrowerOperations));
         if (!isDebtIncrease) _dealBold(msg.sender, debtChange);
 
+        string memory errorString;
         vm.prank(msg.sender);
+
         try _functionCaller.call(
             address(v.c.borrowerOperations),
             _encodeTroveAdjustment(
@@ -525,52 +548,57 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             _interestAccrual[i] += newDebt * v.t.annualInterestRate;
             _interestAccrual[i] -= v.t.recordedDebt * v.t.annualInterestRate;
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, errorString) = _decodeCustomError(revertData);
 
-            // Cleanup
-            if (!isCollIncrease) _sweepColl(i, msg.sender, collChange);
-            if (isDebtIncrease) _sweepBold(msg.sender, debtChange);
-        } catch Error(string memory reason) {
-            // Justify errors
-            if (reason.equals("BO: Branch shut down")) {
+            // Justify failures
+            if (selector == BorrowerOperations.IsShutDown.selector) {
                 assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
-            } else if (reason.equals("BorrowerOps: There must be either a collateral change or a debt change")) {
+            } else if (selector == BorrowerOperations.ZeroAdjustment.selector) {
                 assertEqDecimal(collChange, 0, 18, "Shouldn't have failed as there was a coll change");
                 assertEqDecimal(debtChange, 0, 18, "Shouldn't have failed as there was a debt change");
-            } else if (reason.equals("BorrowerOps: Trove does not have active status")) {
+            } else if (selector == BorrowerOperations.TroveNotActive.selector) {
                 assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
-            } else if (reason.equals("BorrowerOps: Can't withdraw more than the Trove's entire collateral")) {
+            } else if (selector == BorrowerOperations.CollWithdrawalTooHigh.selector) {
                 assertGtDecimal(-v.collDelta, int256(v.t.entireColl), 18, "Shouldn't have failed as withdrawal <= coll");
-            } else if (reason.equals("BorrowerOps: Amount repaid must not be larger than the Trove's debt")) {
+            } else if (selector == BorrowerOperations.RepaymentTooHigh.selector) {
                 assertGtDecimal(-v.debtDelta, int256(v.t.entireDebt), 18, "Shouldn't have failed as repayment <= debt");
-            } else if (reason.equals("BorrowerOps: Trove's debt must be greater than minimum")) {
+            } else if (selector == BorrowerOperations.DebtBelowMin.selector) {
                 uint256 newDebt = (v.t.entireDebt + v.upfrontFee).add(v.debtDelta);
                 assertLtDecimal(newDebt, MIN_DEBT, 18, "Shouldn't have failed as new debt >= MIN_DEBT");
                 info("New debt would have been: ", newDebt.decimal());
-            } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
+            } else if (selector == BorrowerOperations.ICRBelowMCR.selector) {
                 uint256 newICR = _ICR(i, v.collDelta, v.debtDelta, v.upfrontFee, v.t);
                 assertLtDecimal(newICR, MCR[i], 18, "Shouldn't have failed as new ICR >= MCR");
                 info("New ICR would have been: ", newICR.decimal());
-            } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
+            } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
                 uint256 newTCR = _TCR(i, v.collDelta, v.debtDelta, v.upfrontFee);
                 assertGeDecimal(v.oldTCR, CCR[i], 18, "TCR was already < CCR");
                 assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
-            } else if (reason.equals("BorrowerOps: Borrowing not permitted below CT")) {
+            } else if (selector == BorrowerOperations.BorrowingNotPermittedBelowCT.selector) {
                 assertLtDecimal(v.oldTCR, CCR[i], 18, "Shouldn't have failed as TCR >= CCR");
                 assertGtDecimal(v.debtDelta, 0, 18, "Shouldn't have failed as there was no borrowing");
-            } else if (reason.equals("BorrowerOps: below CT, repayment must be >= coll withdrawal")) {
+            } else if (selector == BorrowerOperations.RepaymentNotMatchingCollWithdrawal.selector) {
                 assertLtDecimal(v.oldTCR, CCR[i], 18, "Shouldn't have failed as TCR >= CCR");
                 assertLtDecimal(-v.debtDelta, -v.$collDelta, 18, "Shouldn't have failed as repayment >= withdrawal");
             } else {
-                revert(reason);
+                revert(string.concat("Unexpected error: ", errorString));
             }
+        }
 
-            info("Expected revert: ", reason);
+        if (bytes(errorString).length > 0) {
+            info("Expected error: ", errorString);
             _log();
 
-            // Cleanup
+            // Cleanup (failure)
             if (isCollIncrease) _sweepCollAndUnapprove(i, msg.sender, collChange, address(v.c.borrowerOperations));
             if (!isDebtIncrease) _sweepBold(msg.sender, debtChange);
+        } else {
+            // Cleanup (success)
+            if (!isCollIncrease) _sweepColl(i, msg.sender, collChange);
+            if (isDebtIncrease) _sweepBold(msg.sender, debtChange);
         }
     }
 
@@ -603,7 +631,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             lowerHintSeed.toString()
         );
 
+        string memory errorString;
         vm.prank(msg.sender);
+
         try v.c.borrowerOperations.adjustTroveInterestRate(
             v.troveId, newInterestRate, v.upperHint, v.lowerHint, v.upfrontFee
         ) {
@@ -643,32 +673,44 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _interestAccrual[i] += (v.t.entireDebt + v.upfrontFee) * newInterestRate;
             _interestAccrual[i] -= v.t.recordedDebt * v.t.annualInterestRate;
         } catch Error(string memory reason) {
+            errorString = reason;
+
             // Justify failures
-            if (reason.equals("BO: Branch shut down")) {
-                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
-            } else if (reason.equals("ERC721: invalid token ID")) {
+            if (reason.equals("ERC721: invalid token ID")) {
                 assertFalse(_isOpen(i, v.troveId), "Open Trove should have an NFT");
-            } else if (reason.equals("BorrowerOps: Trove does not have active status")) {
+            } else {
+                revert(reason);
+            }
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, errorString) = _decodeCustomError(revertData);
+
+            // Justify failures
+            if (selector == BorrowerOperations.IsShutDown.selector) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else if (selector == BorrowerOperations.TroveNotActive.selector) {
                 assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
-            } else if (reason.equals("Interest rate must not be lower than min")) {
+            } else if (selector == BorrowerOperations.InterestRateTooLow.selector) {
                 assertLtDecimal(newInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate >= min");
-            } else if (reason.equals("Interest rate must not be greater than max")) {
+            } else if (selector == BorrowerOperations.InterestRateTooHigh.selector) {
                 assertGtDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate <= max");
-            } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
+            } else if (selector == BorrowerOperations.ICRBelowMCR.selector) {
                 uint256 newICR = _ICR(i, 0, 0, v.upfrontFee, v.t);
                 assertTrue(v.premature, "Shouldn't have failed as adjustment was not premature");
                 assertLtDecimal(newICR, MCR[i], 18, "Shouldn't have failed as new ICR >= MCR");
                 info("New ICR would have been: ", newICR.decimal());
-            } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
+            } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
                 uint256 newTCR = _TCR(i, 0, 0, v.upfrontFee);
                 assertTrue(v.premature, "Shouldn't have failed as adjustment was not premature");
                 assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
             } else {
-                revert(reason);
+                revert(string.concat("Unexpected error: ", errorString));
             }
+        }
 
-            info("Expected revert: ", reason);
+        if (bytes(errorString).length > 0) {
+            info("Expected error: ", errorString);
             _log();
         }
     }
@@ -686,7 +728,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 dealt = Math.min(t.entireDebt, _handlerBold);
         _dealBold(msg.sender, dealt);
 
+        string memory errorString;
         vm.prank(msg.sender);
+
         try c.borrowerOperations.closeTrove(troveId) {
             uint256 newTCR = _TCR(i, -int256(t.entireColl), -int256(t.entireDebt), 0);
 
@@ -716,32 +760,44 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _interestAccrual[i] -= t.recordedDebt * t.annualInterestRate;
             numTroves[i] -= 1;
             if (t.recordedDebt < MIN_DEBT) numZombies[i] -= 1;
-
-            // Cleanup
-            _sweepColl(i, msg.sender, t.entireColl);
-            _sweepWETH(msg.sender, ETH_GAS_COMPENSATION);
         } catch Error(string memory reason) {
+            errorString = reason;
+
             // Justify failures
             if (reason.equals("ERC721: invalid token ID")) {
                 assertFalse(wasOpen, "Open Trove should have an NFT");
-            } else if (reason.equals("BorrowerOps: Caller doesnt have enough Bold to make repayment")) {
+            } else {
+                revert(reason);
+            }
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, errorString) = _decodeCustomError(revertData);
+
+            // Justify failures
+            if (selector == BorrowerOperations.NotEnoughBoldBalance.selector) {
                 assertLtDecimal(dealt, t.entireDebt, 18, "Shouldn't have failed as caller had enough Bold");
-            } else if (reason.equals("TroveManager: Only one trove in the system")) {
-                assertEq(numTroves[i], 1, "Shouldn't have failed as there was at least one Trove left in the system");
-            } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
+            } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
                 uint256 newTCR = _TCR(i, -int256(t.entireColl), -int256(t.entireDebt), 0);
                 assertFalse(isShutdown[i], "Shouldn't have failed as branch had been shut down");
                 assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
+            } else if (selector == TroveManager.OnlyOneTroveLeft.selector) {
+                assertEq(numTroves[i], 1, "Shouldn't have failed as there was at least one Trove left in the system");
             } else {
-                revert(reason);
+                revert(string.concat("Unexpected error: ", errorString));
             }
+        }
 
-            info("Expected revert: ", reason);
+        if (bytes(errorString).length > 0) {
+            info("Expected error: ", errorString);
             _log();
 
-            // Cleanup
+            // Cleanup (failure)
             _sweepBold(msg.sender, dealt);
+        } else {
+            // Cleanup (success)
+            _sweepColl(i, msg.sender, t.entireColl);
+            _sweepWETH(msg.sender, ETH_GAS_COMPENSATION);
         }
     }
 
@@ -761,7 +817,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         info("liquidatable: [", _labelsFrom(_liquidationPlan).join(", "), "]");
         logCall("batchLiquidateTroves", i.toString());
 
+        string memory errorString;
         vm.prank(msg.sender);
+
         try c.troveManager.batchLiquidateTroves(_troveIdsFrom(_liquidationBatch)) {
             info("SP BOLD: ", c.stabilityPool.getTotalBoldDeposits().decimal());
             info("P: ", c.stabilityPool.P().decimal());
@@ -808,24 +866,29 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             activeColl[i] -= t.collGasComp;
             _interestAccrual[i] -= t.interestAccrualDecrease;
             numTroves[i] -= _liquidationPlan.length;
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, errorString) = _decodeCustomError(revertData);
 
-            // Cleanup
-            _sweepColl(i, msg.sender, t.collGasComp);
-            _sweepWETH(msg.sender, _liquidationPlan.length * ETH_GAS_COMPENSATION);
-        } catch Error(string memory reason) {
             // Justify failures
-            if (reason.equals("TroveManager: Calldata address array must not be empty")) {
+            if (selector == TroveManager.EmptyData.selector) {
                 assertEq(_liquidationBatch.length, 0, "Shouldn't have failed as batch was not empty");
-            } else if (reason.equals("TroveManager: nothing to liquidate")) {
+            } else if (selector == TroveManager.NothingToLiquidate.selector) {
                 assertEq(_liquidationPlan.length, 0, "Shouldn't have failed as there were liquidatable Troves");
-            } else if (reason.equals("TroveManager: Only one trove in the system")) {
+            } else if (selector == TroveManager.OnlyOneTroveLeft.selector) {
                 assertEq(numTroves[i] - _liquidationPlan.length, 0, "Shouldn't have failed as there were Troves left");
             } else {
-                revert(reason);
+                revert(string.concat("Unexpected error: ", errorString));
             }
+        }
 
-            info("Expected revert: ", reason);
+        if (bytes(errorString).length > 0) {
+            info("Expected error: ", errorString);
             _log();
+        } else {
+            // Cleanup (success)
+            _sweepColl(i, msg.sender, t.collGasComp);
+            _sweepWETH(msg.sender, _liquidationPlan.length * ETH_GAS_COMPENSATION);
         }
 
         _resetLiquidation();
@@ -860,7 +923,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         // TODO: randomly deal less than amount?
         _dealBold(msg.sender, amount);
 
+        string memory errorString;
         vm.prank(msg.sender);
+
         try collateralRegistry.redeemCollateral(amount, maxIterationsPerCollateral, redemptionRate) {
             // Preconditions
             assertGtDecimal(amount, 0, 18, "Should have failed as amount was zero");
@@ -910,26 +975,31 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                     numZombies[j] += troves.length - 1; // all except last are guaranteed zombies
                     if (troves[troves.length - 1].newDebt < MIN_DEBT) numZombies[j] += 1;
                 }
-
-                // Cleanup (coll)
-                _sweepColl(j, msg.sender, t[j].collRedeemed);
             }
-
-            // Cleanup (remaining BOLD)
-            _sweepBold(msg.sender, amount - redeemedBold);
         } catch Error(string memory reason) {
+            errorString = reason;
+
             // Justify failures
             if (reason.equals("TroveManager: Amount must be greater than zero")) {
                 assertEqDecimal(amount, 0, 18, "Shouldn't have failed as amount was greater than zero");
             } else {
                 revert(reason);
             }
+        }
 
-            info("Expected revert: ", reason);
+        if (bytes(errorString).length > 0) {
+            info("Expected error: ", errorString);
             _log();
 
-            // Cleanup
+            // Cleanup (failure)
             _sweepBold(msg.sender, amount);
+        } else {
+            // Cleanup (success)
+            _sweepBold(msg.sender, amount - redeemedBold);
+
+            for (uint256 i = 0; i < branches.length; ++i) {
+                _sweepColl(i, msg.sender, t[i].collRedeemed);
+            }
         }
 
         _resetRedemption();
@@ -941,7 +1011,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         logCall("shutdown", i.toString());
 
+        string memory errorString;
         vm.prank(msg.sender);
+
         try c.borrowerOperations.shutdown() {
             // Preconditions
             assertLtDecimal(_TCR(i), SCR[i], 18, "Should have failed as TCR >= SCR");
@@ -950,17 +1022,22 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Effects
             isShutdown[i] = true;
             _mintYield(i, 0);
-        } catch Error(string memory reason) {
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, errorString) = _decodeCustomError(revertData);
+
             // Justify failures
-            if (reason.equals("BO: TCR is not below SCR")) {
+            if (selector == BorrowerOperations.TCRNotBelowSCR.selector) {
                 assertGeDecimal(_TCR(i), SCR[i], 18, "Shouldn't have failed as TCR < SCR");
-            } else if (reason.equals("BO: already shutdown")) {
+            } else if (selector == BorrowerOperations.IsShutDown.selector) {
                 assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
             } else {
-                revert(reason);
+                revert(string.concat("Unexpected error: ", errorString));
             }
+        }
 
-            info("Expected revert: ", reason);
+        if (bytes(errorString).length > 0) {
+            info("Expected error: ", errorString);
             _log();
         }
     }
@@ -986,7 +1063,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         // TODO: randomly deal less than amount?
         _dealBold(msg.sender, amount);
 
+        string memory errorString;
         vm.prank(msg.sender);
+
         try c.troveManager.urgentRedemption(amount, _troveIdsFrom(_urgentRedemptionBatch), t.collRedeemed) {
             // Preconditions
             assertTrue(isShutdown[i], "Should have failed as branch hadn't been shut down");
@@ -1011,25 +1090,28 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             activeDebt[i] -= t.debtRedeemed;
 
             _interestAccrual.update(i, t.interestAccrualDelta);
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, errorString) = _decodeCustomError(revertData);
 
-            // Cleanup (coll)
-            _sweepColl(i, msg.sender, t.collRedeemed);
-
-            // Cleanup (remaining BOLD)
-            _sweepBold(msg.sender, amount - t.debtRedeemed);
-        } catch Error(string memory reason) {
             // Justify failures
-            if (reason.equals("TroveManager: Branch is not shut down")) {
+            if (selector == TroveManager.NotShutDown.selector) {
                 assertFalse(isShutdown[i], "Shouldn't have failed as branch had been shut down");
             } else {
-                revert(reason);
+                revert(string.concat("Unexpected error: ", errorString));
             }
+        }
 
-            info("Expected revert: ", reason);
+        if (bytes(errorString).length > 0) {
+            info("Expected error: ", errorString);
             _log();
 
-            // Cleanup
+            // Cleanup (failure)
             _sweepBold(msg.sender, amount);
+        } else {
+            // Cleanup (success)
+            _sweepBold(msg.sender, amount - t.debtRedeemed);
+            _sweepColl(i, msg.sender, t.collRedeemed);
         }
 
         _resetUrgentRedemption();
@@ -1045,6 +1127,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 boldYield = c.stabilityPool.getDepositorYieldGainWithPending(msg.sender);
         uint256 ethGain = c.stabilityPool.getDepositorCollGain(msg.sender);
         uint256 ethStash = c.stabilityPool.stashedColl(msg.sender);
+        uint256 ethClaimed = claim ? ethStash + ethGain : 0;
+        uint256 boldClaimed = claim ? boldYield : 0;
 
         info("initial deposit: ", initialBoldDeposit.decimal());
         info("compounded deposit: ", boldDeposit.decimal());
@@ -1056,15 +1140,14 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         // TODO: randomly deal less than amount?
         _dealBold(msg.sender, amount);
 
+        string memory errorString;
         vm.prank(msg.sender);
+
         try c.stabilityPool.provideToSP(amount, claim) {
             // Preconditions
             assertGtDecimal(amount, 0, 18, "Should have failed as amount was zero");
 
             // Effects (deposit)
-            uint256 ethClaimed = claim ? ethStash + ethGain : 0;
-            uint256 boldClaimed = claim ? boldYield : 0;
-
             ethStash += ethGain;
             ethStash -= ethClaimed;
 
@@ -1085,23 +1168,27 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             spBoldDeposits[i] += boldYield;
             spBoldDeposits[i] -= boldClaimed;
             spBoldYield[i] -= boldYield;
-
-            // Cleanup
-            _sweepBold(msg.sender, boldClaimed);
-            _sweepColl(i, msg.sender, ethClaimed);
         } catch Error(string memory reason) {
+            errorString = reason;
+
             // Justify failures
             if (reason.equals("StabilityPool: Amount must be non-zero")) {
                 assertEqDecimal(amount, 0, 18, "Shouldn't have failed as amount was non-zero");
             } else {
                 revert(reason);
             }
+        }
 
-            info("Expected revert: ", reason);
+        if (bytes(errorString).length > 0) {
+            info("Expected error: ", errorString);
             _log();
 
-            // Cleanup
+            // Cleanup (failure)
             _sweepBold(msg.sender, amount); // Take back the BOLD that was dealt
+        } else {
+            // Cleanup (success)
+            _sweepBold(msg.sender, boldClaimed);
+            _sweepColl(i, msg.sender, ethClaimed);
         }
     }
 
@@ -1114,6 +1201,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 boldYield = c.stabilityPool.getDepositorYieldGainWithPending(msg.sender);
         uint256 ethGain = c.stabilityPool.getDepositorCollGain(msg.sender);
         uint256 ethStash = c.stabilityPool.stashedColl(msg.sender);
+        uint256 ethClaimed = claim ? ethStash + ethGain : 0;
+        uint256 boldClaimed = claim ? boldYield : 0;
 
         amount = _bound(amount, 0, boldDeposit * 11 / 10); // sometimes try withdrawing too much
         uint256 withdrawn = Math.min(amount, boldDeposit);
@@ -1125,15 +1214,14 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         info("stashed coll: ", ethStash.decimal());
         logCall("withdrawFromSP", i.toString(), amount.decimal(), claim.toString());
 
+        string memory errorString;
         vm.prank(msg.sender);
+
         try c.stabilityPool.withdrawFromSP(amount, claim) {
             // Preconditions
             assertGtDecimal(initialBoldDeposit, 0, 18, "Should have failed as user had zero deposit");
 
             // Effects (deposit)
-            uint256 ethClaimed = claim ? ethStash + ethGain : 0;
-            uint256 boldClaimed = claim ? boldYield : 0;
-
             ethStash += ethGain;
             ethStash -= ethClaimed;
 
@@ -1154,11 +1242,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             spBoldDeposits[i] -= boldClaimed;
             spBoldDeposits[i] -= withdrawn;
             spBoldYield[i] -= boldYield;
-
-            // Cleanup
-            _sweepBold(msg.sender, boldClaimed + withdrawn);
-            _sweepColl(i, msg.sender, ethClaimed);
         } catch Error(string memory reason) {
+            errorString = reason;
+
             // Justify failures
             if (reason.equals("StabilityPool: User must have a non-zero deposit")) {
                 assertEqDecimal(
@@ -1167,9 +1253,15 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             } else {
                 revert(reason);
             }
+        }
 
-            info("Expected revert: ", reason);
+        if (bytes(errorString).length > 0) {
+            info("Expected error: ", errorString);
             _log();
+        } else {
+            // Cleanup (success)
+            _sweepBold(msg.sender, boldClaimed + withdrawn);
+            _sweepColl(i, msg.sender, ethClaimed);
         }
     }
 
@@ -1663,5 +1755,201 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         revert("Invalid prop");
+    }
+
+    // The only way to catch custom errors is through the generic `catch (bytes memory revertData)`.
+    // This will catch more than just custom errors though. If we manage to catch something that's not an error we
+    // intended to catch, there's no built-in way of rethrowing it, thus we need to resort to assembly.
+    function _revert(bytes memory revertData) internal pure {
+        assembly {
+            revert(
+                add(32, revertData), // offset (skip first 32 bytes, where the size of the array is stored)
+                mload(revertData) // size
+            )
+        }
+    }
+
+    function _decodeCustomError(bytes memory revertData)
+        public
+        pure
+        returns (bytes4 selector, string memory errorString)
+    {
+        selector = bytes4(revertData);
+
+        if (revertData.length == 4) {
+            if (selector == BorrowerOperations.InvalidMCR.selector) {
+                return (selector, "BorrowerOperations.InvalidMCR()");
+            }
+
+            if (selector == BorrowerOperations.InvalidSCR.selector) {
+                return (selector, "BorrowerOperations.InvalidSCR()");
+            }
+
+            if (selector == BorrowerOperations.IsShutDown.selector) {
+                return (selector, "BorrowerOperations.IsShutDown()");
+            }
+
+            if (selector == BorrowerOperations.NotShutDown.selector) {
+                return (selector, "BorrowerOperations.NotShutDown()");
+            }
+
+            if (selector == BorrowerOperations.TCRNotBelowSCR.selector) {
+                return (selector, "BorrowerOperations.TCRNotBelowSCR()");
+            }
+
+            if (selector == AddRemoveManagers.NotBorrower.selector) {
+                return (selector, "BorrowerOperations.NotBorrower()");
+            }
+
+            if (selector == BorrowerOperations.ZeroAdjustment.selector) {
+                return (selector, "BorrowerOperations.ZeroAdjustment()");
+            }
+
+            if (selector == AddRemoveManagers.NotOwnerNorAddManager.selector) {
+                return (selector, "BorrowerOperations.NotOwnerNorAddManager()");
+            }
+
+            if (selector == AddRemoveManagers.NotOwnerNorRemoveManager.selector) {
+                return (selector, "BorrowerOperations.NotOwnerNorRemoveManager()");
+            }
+
+            if (selector == BorrowerOperations.NotOwnerNorInterestManager.selector) {
+                return (selector, "BorrowerOperations.NotOwnerNorInterestManager()");
+            }
+
+            if (selector == BorrowerOperations.TroveInBatch.selector) {
+                return (selector, "BorrowerOperations.TroveInBatch()");
+            }
+
+            if (selector == BorrowerOperations.InterestNotInRange.selector) {
+                return (selector, "BorrowerOperations.InterestNotInRange()");
+            }
+
+            if (selector == BorrowerOperations.BatchInterestRateChangePeriodNotPassed.selector) {
+                return (selector, "BorrowerOperations.BatchInterestRateChangePeriodNotPassed()");
+            }
+
+            if (selector == BorrowerOperations.TroveNotOpen.selector) {
+                return (selector, "BorrowerOperations.TroveNotOpen()");
+            }
+
+            if (selector == BorrowerOperations.TroveNotActive.selector) {
+                return (selector, "BorrowerOperations.TroveNotActive()");
+            }
+
+            if (selector == BorrowerOperations.TroveNotUnredeemable.selector) {
+                return (selector, "BorrowerOperations.TroveNotUnredeemable()");
+            }
+
+            if (selector == BorrowerOperations.TroveOpen.selector) {
+                return (selector, "BorrowerOperations.TroveOpen()");
+            }
+
+            if (selector == BorrowerOperations.UpfrontFeeTooHigh.selector) {
+                return (selector, "BorrowerOperations.UpfrontFeeTooHigh()");
+            }
+
+            if (selector == BorrowerOperations.BelowCriticalThreshold.selector) {
+                return (selector, "BorrowerOperations.BelowCriticalThreshold()");
+            }
+
+            if (selector == BorrowerOperations.BorrowingNotPermittedBelowCT.selector) {
+                return (selector, "BorrowerOperations.BorrowingNotPermittedBelowCT()");
+            }
+
+            if (selector == BorrowerOperations.ICRBelowMCR.selector) {
+                return (selector, "BorrowerOperations.ICRBelowMCR()");
+            }
+
+            if (selector == BorrowerOperations.RepaymentNotMatchingCollWithdrawal.selector) {
+                return (selector, "BorrowerOperations.RepaymentNotMatchingCollWithdrawal()");
+            }
+
+            if (selector == BorrowerOperations.TCRBelowCCR.selector) {
+                return (selector, "BorrowerOperations.TCRBelowCCR()");
+            }
+
+            if (selector == BorrowerOperations.DebtBelowMin.selector) {
+                return (selector, "BorrowerOperations.DebtBelowMin()");
+            }
+
+            if (selector == BorrowerOperations.RepaymentTooHigh.selector) {
+                return (selector, "BorrowerOperations.RepaymentTooHigh()");
+            }
+
+            if (selector == BorrowerOperations.CollWithdrawalTooHigh.selector) {
+                return (selector, "BorrowerOperations.CollWithdrawalTooHigh()");
+            }
+
+            if (selector == BorrowerOperations.NotEnoughBoldBalance.selector) {
+                return (selector, "BorrowerOperations.NotEnoughBoldBalance()");
+            }
+
+            if (selector == BorrowerOperations.InterestRateTooLow.selector) {
+                return (selector, "BorrowerOperations.InterestRateTooLow()");
+            }
+
+            if (selector == BorrowerOperations.InterestRateTooHigh.selector) {
+                return (selector, "BorrowerOperations.InterestRateTooHigh()");
+            }
+
+            if (selector == BorrowerOperations.InvalidInterestBatchManager.selector) {
+                return (selector, "BorrowerOperations.InvalidInterestBatchManager()");
+            }
+
+            if (selector == BorrowerOperations.BatchManagerExists.selector) {
+                return (selector, "BorrowerOperations.BatchManagerExists()");
+            }
+
+            if (selector == BorrowerOperations.BatchManagerNotNew.selector) {
+                return (selector, "BorrowerOperations.BatchManagerNotNew()");
+            }
+
+            if (selector == BorrowerOperations.NewFeeNotLower.selector) {
+                return (selector, "BorrowerOperations.NewFeeNotLower()");
+            }
+
+            if (selector == BorrowerOperations.CallerNotPriceFeed.selector) {
+                return (selector, "BorrowerOperations.CallerNotPriceFeed()");
+            }
+
+            if (selector == TroveManager.EmptyData.selector) {
+                return (selector, "TroveManager.EmptyData()");
+            }
+
+            if (selector == TroveManager.NothingToLiquidate.selector) {
+                return (selector, "TroveManager.NothingToLiquidate()");
+            }
+
+            if (selector == TroveManager.CallerNotBorrowerOperations.selector) {
+                return (selector, "TroveManager.CallerNotBorrowerOperations()");
+            }
+
+            if (selector == TroveManager.CallerNotCollateralRegistry.selector) {
+                return (selector, "TroveManager.CallerNotCollateralRegistry()");
+            }
+
+            if (selector == TroveManager.OnlyOneTroveLeft.selector) {
+                return (selector, "TroveManager.OnlyOneTroveLeft()");
+            }
+
+            if (selector == TroveManager.NotShutDown.selector) {
+                return (selector, "TroveManager.NotShutDown()");
+            }
+        }
+
+        if (revertData.length == 4 + 32) {
+            bytes32 param = bytes32(revertData.slice(4));
+
+            if (selector == TroveManager.TroveNotOpen.selector) {
+                return (selector, string.concat("TroveManager.TroveNotOpen(", uint256(param).toString(), ")"));
+            }
+
+            if (selector == TroveManager.MinCollNotReached.selector) {
+                return (selector, string.concat("TroveManager.MinCollNotReached(", uint256(param).toString(), ")"));
+            }
+        }
+
+        _revert(revertData);
     }
 }

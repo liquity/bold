@@ -35,7 +35,7 @@ contract LiquidationsLSTTest is DevTestSetup {
         troveManager = contracts.troveManager;
         mockInterestRouter = contracts.interestRouter;
 
-        MCR = troveManager.MCR();
+        MCR = troveManager.get_MCR();
 
         // Give some Coll to test accounts, and approve it to BorrowerOperations
         uint256 initialCollAmount = 10_000e18;
@@ -60,13 +60,34 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 ATroveId =
-            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
+        uint256 ATroveId = borrowerOperations.openTrove(
+            A,
+            0,
+            collAmount,
+            liquidationAmount,
+            0,
+            0,
+            MIN_ANNUAL_INTEREST_RATE,
+            1000e18,
+            address(0),
+            address(0),
+            address(0)
+        );
         vm.stopPrank();
 
         vm.startPrank(B);
         uint256 BTroveId = borrowerOperations.openTrove(
-            B, 0, 2 * collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18
+            B,
+            0,
+            2 * collAmount,
+            liquidationAmount,
+            0,
+            0,
+            MIN_ANNUAL_INTEREST_RATE,
+            1000e18,
+            address(0),
+            address(0),
+            address(0)
         );
 
         // Price drops
@@ -155,13 +176,34 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         priceFeed.setPrice(initialPrice);
         vm.startPrank(A);
-        uint256 ATroveId =
-            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
+        uint256 ATroveId = borrowerOperations.openTrove(
+            A,
+            0,
+            collAmount,
+            liquidationAmount,
+            0,
+            0,
+            MIN_ANNUAL_INTEREST_RATE,
+            1000e18,
+            address(0),
+            address(0),
+            address(0)
+        );
         vm.stopPrank();
 
         vm.startPrank(B);
         uint256 BTroveId = borrowerOperations.openTrove(
-            B, 0, 3 * collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18
+            B,
+            0,
+            3 * collAmount,
+            liquidationAmount,
+            0,
+            0,
+            MIN_ANNUAL_INTEREST_RATE,
+            1000e18,
+            address(0),
+            address(0),
+            address(0)
         );
         vm.stopPrank();
         // B deposits to SP
