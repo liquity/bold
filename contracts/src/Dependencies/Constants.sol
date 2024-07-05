@@ -13,7 +13,7 @@ uint256 constant _1pct = DECIMAL_PRECISION / 100;
 uint256 constant CCR = 150 * _1pct; // 150%
 
 // Amount of ETH to be locked in gas pool on opening troves
-uint256 constant ETH_GAS_COMPENSATION = 375e14; // 0.0375 ETH
+uint256 constant ETH_GAS_COMPENSATION = 0.0375 ether;
 
 // Fraction of collateral awarded to liquidator
 uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 0.5%

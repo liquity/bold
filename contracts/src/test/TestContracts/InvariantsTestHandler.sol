@@ -21,10 +21,11 @@ import {TroveManagerTester} from "./TroveManagerTester.sol";
 import {
     _100pct,
     _1pct,
-    ETH_GAS_COMPENSATION,
     CCR,
+    COLL_GAS_COMPENSATION_CAP,
     COLL_GAS_COMPENSATION_DIVISOR,
     DECIMAL_PRECISION,
+    ETH_GAS_COMPENSATION,
     MAX_ANNUAL_INTEREST_RATE,
     ONE_YEAR,
     SP_YIELD_SPLIT,
@@ -158,6 +159,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         return uint256(keccak256(abi.encode(owner, OWNER_INDEX)));
     }
 
+    function getGasPool(uint256 i) external view returns (uint256) {
+        return numTroves[i] * ETH_GAS_COMPENSATION;
+    }
+
     function getPendingInterest(uint256 i) public view returns (uint256) {
         return pendingInterest[i] / ONE_YEAR / DECIMAL_PRECISION;
     }
@@ -183,16 +188,43 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
     }
 
+    function _dealWETHAndApprove(address to, uint256 amount, address spender) internal {
+        uint256 balance = weth.balanceOf(to);
+        uint256 allowance = weth.allowance(to, spender);
+
+        deal(address(weth), to, balance + amount);
+        vm.prank(to);
+        weth.approve(spender, allowance + amount);
+    }
+
     function _dealCollAndApprove(uint256 i, address to, uint256 amount, address spender) internal {
         IERC20 collToken = branches[i].collToken;
-        deal(address(collToken), to, amount);
+        uint256 balance = collToken.balanceOf(to);
+        uint256 allowance = collToken.allowance(to, spender);
+
+        deal(address(collToken), to, balance + amount);
         vm.prank(to);
-        collToken.approve(spender, amount);
+        collToken.approve(spender, allowance + amount);
+    }
+
+    function _sweepWETH(address from, uint256 amount) internal {
+        vm.prank(from);
+        weth.transfer(address(this), amount);
     }
 
     function _sweepColl(uint256 i, address from, uint256 amount) internal {
         vm.prank(from);
         branches[i].collToken.transfer(address(this), amount);
+    }
+
+    function _unapproveWETH(address from, address spender) internal {
+        vm.prank(from);
+        weth.approve(spender, 0);
+    }
+
+    function _unapproveColl(uint256 i, address from, address spender) internal {
+        vm.prank(from);
+        branches[i].collToken.approve(spender, 0);
     }
 
     function _dealBold(address to, uint256 amount) internal {
@@ -234,12 +266,12 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             t.activeDebtDelta += int256(trove.redistBoldDebtGain);
             t.defaultDebtDelta -= int256(trove.redistBoldDebtGain);
 
-            // Apply pending Coll redist
+            // Apply pending coll redist
             t.activeCollDelta += int256(trove.redistCollGain);
             t.defaultCollDelta -= int256(trove.redistCollGain);
 
             // Coll gas comp
-            uint256 collGasComp = trove.entireColl / COLL_GAS_COMPENSATION_DIVISOR;
+            uint256 collGasComp = Math.min(trove.entireColl / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
             t.activeCollDelta -= int256(collGasComp);
             t.collGasComp += collGasComp;
             collRemaining -= collGasComp;
@@ -344,6 +376,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         // TODO: randomly deal less than coll?
         _dealCollAndApprove(i, msg.sender, coll, address(c.borrowerOperations));
+        _dealWETHAndApprove(msg.sender, ETH_GAS_COMPENSATION, address(c.borrowerOperations));
 
         vm.prank(msg.sender);
         try c.borrowerOperations.openTrove(msg.sender, OWNER_INDEX, coll, borrowed, 0, 0, interestRate, upfrontFee) {
@@ -373,7 +406,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             interestAccrual[i] += debt * interestRate;
 
             // Cleanup
-            _sweepColl(i, msg.sender, 0); // there should be no Coll left
             _sweepBold(msg.sender, borrowed);
         } catch Error(string memory reason) {
             // Justify failures
@@ -403,6 +435,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _log();
 
             _sweepColl(i, msg.sender, coll); // Take back the coll that was dealt
+            _sweepWETH(msg.sender, ETH_GAS_COMPENSATION); // Take back the gas comp
+
+            // Undo approvals
+            _unapproveColl(i, msg.sender, address(c.borrowerOperations));
+            _unapproveWETH(msg.sender, address(c.borrowerOperations));
         }
     }
 
@@ -537,6 +574,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // Cleanup
             _sweepColl(i, msg.sender, t.collGasComp);
+            _sweepWETH(msg.sender, liqBatchLiquidatable.length * ETH_GAS_COMPENSATION);
         } catch Error(string memory reason) {
             // Justify failures
             if (reason.equals("TroveManager: Calldata address array must not be empty")) {
@@ -574,8 +612,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         info("initial deposit: ", initialBoldDeposit.decimal());
         info("compounded deposit: ", boldDeposit.decimal());
         info("yield gain: ", boldYield.decimal());
-        info("Coll gain: ", ethGain.decimal());
-        info("stashed Coll: ", ethStash.decimal());
+        info("coll gain: ", ethGain.decimal());
+        info("stashed coll: ", ethStash.decimal());
         logCall("provideToSP", i.toString(), amount.decimal(), claim.toString());
 
         // TODO: randomly deal less than amount?
@@ -599,8 +637,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             assertEqDecimal(c.stabilityPool.getCompoundedBoldDeposit(msg.sender), boldDeposit, 18, "Wrong deposit");
             assertEqDecimal(c.stabilityPool.getDepositorYieldGain(msg.sender), 0, 18, "Wrong yield gain");
-            assertEqDecimal(c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong Coll gain");
-            assertEqDecimal(c.stabilityPool.stashedColl(msg.sender), ethStash, 18, "Wrong stashed Coll");
+            assertEqDecimal(c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
+            assertEqDecimal(c.stabilityPool.stashedColl(msg.sender), ethStash, 18, "Wrong stashed coll");
 
             // Effects (system)
             _mintYield(i, 0);
@@ -645,8 +683,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         info("initial deposit: ", initialBoldDeposit.decimal());
         info("compounded deposit: ", boldDeposit.decimal());
         info("yield gain: ", boldYield.decimal());
-        info("Coll gain: ", ethGain.decimal());
-        info("stashed Coll: ", ethStash.decimal());
+        info("coll gain: ", ethGain.decimal());
+        info("stashed coll: ", ethStash.decimal());
         logCall("withdrawFromSP", i.toString(), amount.decimal(), claim.toString());
 
         vm.prank(msg.sender);
@@ -667,8 +705,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             assertEqDecimal(c.stabilityPool.getCompoundedBoldDeposit(msg.sender), boldDeposit, 18, "Wrong deposit");
             assertEqDecimal(c.stabilityPool.getDepositorYieldGain(msg.sender), 0, 18, "Wrong yield gain");
-            assertEqDecimal(c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong Coll gain");
-            assertEqDecimal(c.stabilityPool.stashedColl(msg.sender), ethStash, 18, "Wrong stashed Coll");
+            assertEqDecimal(c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
+            assertEqDecimal(c.stabilityPool.stashedColl(msg.sender), ethStash, 18, "Wrong stashed coll");
 
             // Effects (system)
             _mintYield(i, 0);
