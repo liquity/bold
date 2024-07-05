@@ -8,14 +8,15 @@ import { AboutModal } from "@/src/comps/AboutModal/AboutModal";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import { Config } from "@/src/comps/Config/Config";
 import { ConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
-import { Ethereum } from "@/src/comps/Ethereum/Ethereum";
-import { DemoState } from "@/src/demo-state";
+import { APP_TITLE } from "@/src/constants";
+import { DemoMode } from "@/src/demo-mode";
+import { Ethereum } from "@/src/eth/Ethereum";
 import { Prices } from "@/src/prices";
 import { UiKit } from "@liquity2/uikit";
 import { GeistSans } from "geist/font/sans";
 
 export const metadata: Metadata = {
-  title: "Liquity v2",
+  title: APP_TITLE,
   icons: "/favicon.svg",
 };
 
@@ -29,7 +30,7 @@ export default function Layout({
       <body className={GeistSans.className}>
         <UiKit>
           <Config>
-            <DemoState>
+            <DemoMode>
               <Ethereum>
                 <Prices>
                   <ConfigModal>
@@ -41,7 +42,7 @@ export default function Layout({
                   </ConfigModal>
                 </Prices>
               </Ethereum>
-            </DemoState>
+            </DemoMode>
           </Config>
         </UiKit>
       </body>

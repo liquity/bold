@@ -254,7 +254,7 @@ contract DevTestSetup is BaseTest {
         assertEq(uint8(troveManager.getTroveStatus(_troveIDs.B)), uint8(ITroveManager.Status.active));
     }
 
-    function _getSPYield(uint256 _aggInterest) internal returns (uint256) {
+    function _getSPYield(uint256 _aggInterest) internal pure returns (uint256) {
         uint256 spYield = SP_YIELD_SPLIT * _aggInterest / 1e18;
         assertGt(spYield, 0);
         assertLe(spYield, _aggInterest);

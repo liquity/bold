@@ -1,4 +1,4 @@
-import { EARN_POOLS } from "@/src/demo-data";
+import { EARN_POOLS } from "@/src/demo-mode";
 import { EarnPoolScreen } from "@/src/screens/EarnPoolScreen/EarnPoolScreen";
 
 export function generateStaticParams() {

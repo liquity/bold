@@ -49,7 +49,7 @@ function concat(string memory a, string memory b) pure returns (string memory ab
 }
 
 contract EventsTest is DevTestSetup {
-    function assertEqLogs(Vm.Log[] memory a, Vm.Log[] memory b, string memory errPrefix) internal {
+    function assertEqLogs(Vm.Log[] memory a, Vm.Log[] memory b, string memory errPrefix) internal pure {
         assertEq(a.length, b.length, concat(errPrefix, " - log count mismatch"));
 
         for (uint256 i = 0; i < a.length; ++i) {

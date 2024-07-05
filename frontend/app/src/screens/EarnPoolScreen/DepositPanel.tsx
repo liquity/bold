@@ -1,9 +1,10 @@
 import type { PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 
+import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
-import { useDemoState } from "@/src/demo-state";
+import { useAccount } from "@/src/eth/Ethereum";
 import { parseInputFloat } from "@/src/form-utils";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -20,7 +21,7 @@ export function DepositPanel({
   boldQty: Dnum;
   position?: PositionEarn;
 }) {
-  const { account, setDemoState } = useDemoState();
+  const account = useAccount();
 
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
@@ -168,33 +169,7 @@ export function DepositPanel({
             </div>
           )}
         </HFlex>
-        {!account.isConnected && (
-          <div
-            className={css({
-              paddingTop: 16,
-            })}
-          >
-            <div
-              className={css({
-                padding: "20px 24px",
-                textAlign: "center",
-                background: "secondary",
-                borderRadius: 8,
-              })}
-            >
-              Please{" "}
-              <TextButton
-                label="connect"
-                onClick={() => {
-                  setDemoState({
-                    account: { isConnected: true },
-                  });
-                }}
-              />{" "}
-              your wallet to continue.
-            </div>
-          </div>
-        )}
+        <ConnectWarningBox />
         <Button
           disabled={!allowSubmit}
           label={claimRewards ? content.earnScreen.depositPanel.actionClaim : content.earnScreen.depositPanel.action}

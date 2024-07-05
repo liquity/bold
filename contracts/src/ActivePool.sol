@@ -115,6 +115,10 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         return aggWeightedDebtSum * (block.timestamp - lastAggUpdateTime) / ONE_YEAR / DECIMAL_PRECISION;
     }
 
+    function calcPendingSPYield() external view returns (uint256) {
+        return calcPendingAggInterest() * SP_YIELD_SPLIT / DECIMAL_PRECISION;
+    }
+
     function getNewApproxAvgInterestRateFromTroveChange(TroveChange calldata _troveChange)
         external
         view
@@ -232,7 +236,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         // Mint part of the BOLD interest to the SP.
         // TODO: implement interest minting to LPs
         if (mintedAmount > 0) {
-            uint256 spYield = SP_YIELD_SPLIT * mintedAmount / 1e18;
+            uint256 spYield = SP_YIELD_SPLIT * mintedAmount / DECIMAL_PRECISION;
             uint256 remainderToLPs = mintedAmount - spYield;
 
             boldToken.mint(address(interestRouter), remainderToLPs);

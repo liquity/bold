@@ -302,10 +302,6 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
         _decreaseYieldGainsOwed(currentYieldGain);
         _sendBoldtoDepositor(msg.sender, yieldGainToSend);
         _sendCollGainToDepositor(collToSend);
-
-        // TODO: these assertions should be in a handler contract
-        assert(getDepositorCollGain(msg.sender) == 0);
-        assert(getDepositorYieldGain(msg.sender) == 0);
     }
 
     function _getYieldToKeepOrSend(uint256 _currentYieldGain, bool _doClaim) internal pure returns (uint256, uint256) {
@@ -362,10 +358,6 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
         _updateTotalBoldDeposits(keptYieldGain, boldToWithdraw);
         _sendBoldtoDepositor(msg.sender, boldToWithdraw + yieldGainToSend);
         _sendCollGainToDepositor(collToSend);
-
-        // TODO: these assertions should be in a handler contract
-        assert(getDepositorCollGain(msg.sender) == 0);
-        assert(getDepositorYieldGain(msg.sender) == 0);
     }
 
     function _getNewStashedCollAndCollToSend(address _depositor, uint256 _currentCollGain, bool _doClaim)
@@ -386,10 +378,6 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
     function claimAllCollGains() external {
         _requireUserHasNoDeposit(msg.sender);
 
-        // TODO: these assertions should be in a handler contract
-        assert(getDepositorCollGain(msg.sender) == 0);
-        assert(getDepositorYieldGain(msg.sender) == 0);
-
         activePool.mintAggInterest();
 
         uint256 collToSend = stashedColl[msg.sender];
@@ -399,10 +387,6 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
         emit DepositUpdated(msg.sender, 0, 0, 0, 0, 0, 0, 0);
 
         _sendCollGainToDepositor(collToSend);
-
-        // TODO: these assertions should be in a handler contract
-        assert(getDepositorCollGain(msg.sender) == 0);
-        assert(getDepositorYieldGain(msg.sender) == 0);
     }
 
     // --- BOLD reward functions ---
@@ -630,7 +614,34 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
         return yieldGain;
     }
 
-    function _getCollGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots)
+    function getDepositorYieldGainWithPending(address _depositor) external view override returns (uint256) {
+        uint256 initialDeposit = deposits[_depositor].initialValue;
+
+        if (initialDeposit == 0) return 0;
+
+        Snapshots memory snapshots = depositSnapshots[_depositor];
+
+        uint256 pendingSPYield = activePool.calcPendingSPYield();
+        uint256 firstPortionPending;
+        uint256 secondPortionPending;
+
+        if (pendingSPYield > 0 && snapshots.epoch == currentEpoch) {
+            uint256 yieldNumerator = pendingSPYield * DECIMAL_PRECISION + lastYieldError;
+            uint256 yieldPerUnitStaked = yieldNumerator / totalBoldDeposits;
+            uint256 marginalYieldGain = yieldPerUnitStaked * P;
+
+            if (currentScale == snapshots.scale) firstPortionPending = marginalYieldGain;
+            else if (currentScale == snapshots.scale + 1) secondPortionPending = marginalYieldGain;
+        }
+
+        uint256 firstPortion = epochToScaleToB[snapshots.epoch][snapshots.scale] + firstPortionPending - snapshots.B;
+        uint256 secondPortion =
+            (epochToScaleToB[snapshots.epoch][snapshots.scale + 1] + secondPortionPending) / SCALE_FACTOR;
+
+        return initialDeposit * (firstPortion + secondPortion) / snapshots.P / DECIMAL_PRECISION;
+    }
+
+    function _getETHGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots)
         internal
         view
         returns (uint256)

@@ -76,6 +76,7 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
      */
     function offset(uint256 _debt, uint256 _coll) external;
 
+    function deposits(address _depositor) external view returns (uint256 initialValue);
     function stashedColl(address _depositor) external view returns (uint256);
 
     /*
@@ -100,6 +101,11 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
      * Calculates the BOLD yield gain earned by the deposit since its last snapshots were taken.
      */
     function getDepositorYieldGain(address _depositor) external view returns (uint256);
+
+    /*
+     * Calculates what `getDepositorYieldGain` will be if interest is minted now.
+     */
+    function getDepositorYieldGainWithPending(address _depositor) external view returns (uint256);
 
     /*
      * Return the user's compounded deposit.

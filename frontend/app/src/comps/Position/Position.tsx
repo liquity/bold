@@ -1,6 +1,7 @@
 import type { TroveId } from "@/src/types";
 
-import { ACCOUNT_POSITIONS } from "@/src/demo-data";
+import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
+import { DEMO_MODE } from "@/src/env";
 import { getLiquidationRisk, getRedemptionRisk } from "@/src/liquity-math";
 import { usePrice } from "@/src/prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
@@ -16,11 +17,11 @@ export function Position({
 }) {
   const ethPriceUsd = usePrice("ETH");
 
-  const position = ACCOUNT_POSITIONS.find((position) => (
+  const position = DEMO_MODE && ACCOUNT_POSITIONS.find((position) => (
     position.type === "loan" && position.troveId === troveId
   ));
 
-  if (!position || position.type !== "loan") {
+  if (!position || position.type !== "loan" || !ethPriceUsd) {
     return null;
   }
 

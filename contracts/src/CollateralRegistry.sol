@@ -139,9 +139,6 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
             }
         }
 
-        // The amount redeemed has to be outside SPs, and therefore unbacked
-        assert(totals.unbacked >= _boldAmount);
-
         // Compute redemption amount for each collateral and redeem against the corresponding TroveManager
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
             //uint256 unbackedPortion = unbackedPortions[index];

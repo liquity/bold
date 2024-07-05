@@ -2,9 +2,10 @@ import type { PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 import { ReactNode } from "react";
 
+import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import content from "@/src/content";
-import { useDemoState } from "@/src/demo-state";
 import { DNUM_0 } from "@/src/dnum-utils";
+import { useAccount } from "@/src/eth/Ethereum";
 import { usePrice } from "@/src/prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -16,10 +17,14 @@ export function RewardsPanel({
 }: {
   position?: PositionEarn;
 }) {
-  const { account, setDemoState } = useDemoState();
+  const account = useAccount();
 
   const ethPriceUsd = usePrice("ETH");
   const boldPriceUsd = usePrice("BOLD");
+
+  if (!ethPriceUsd || !boldPriceUsd) {
+    return null;
+  }
 
   const totalRewards = dn.add(
     dn.mul(position?.rewards?.bold ?? DNUM_0, boldPriceUsd),
@@ -110,33 +115,7 @@ export function RewardsPanel({
           width: "100%",
         }}
       >
-        {!account.isConnected && (
-          <div
-            className={css({
-              paddingTop: 16,
-            })}
-          >
-            <div
-              className={css({
-                padding: "20px 24px",
-                textAlign: "center",
-                background: "secondary",
-                borderRadius: 8,
-              })}
-            >
-              Please{" "}
-              <TextButton
-                label="connect"
-                onClick={() => {
-                  setDemoState({
-                    account: { isConnected: true },
-                  });
-                }}
-              />{" "}
-              your wallet to continue.
-            </div>
-          </div>
-        )}
+        <ConnectWarningBox />
         <Button
           disabled={!allowSubmit}
           label={content.earnScreen.rewardsPanel.action}
