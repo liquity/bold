@@ -781,14 +781,14 @@ contract ShutdownTest is DevTestSetup {
 
         // Check Trove's debt after redemption is > 0
         (uint256 debtAfter3,,,,) = troveManager.getEntireDebtAndColl(troveId3);
-        assertGt(debtAfter3, 0);
-        assertEq(debtAfter3, debtBefore3 - redemptionAmount);
+        assertGt(debtAfter3, 0, "Debt should be positive");
+        assertEq(debtAfter3, debtBefore3 - redemptionAmount, "Debt mismatch");
 
         // fast forward time
         vm.warp(block.timestamp + 1 days);
 
         // Check Trove still has no interest
-        assertEq(troveManager.calcTroveAccruedInterest(troveId3), 0);
+        assertEq(troveManager.calcTroveAccruedInterest(troveId3), 0, "Trove accrued interest should be zero");
     }
 
     function testUrgentRedemptionReducesAggRecordedDebtByRedeemedAmount() public {

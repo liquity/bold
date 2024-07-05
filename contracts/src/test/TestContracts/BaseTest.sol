@@ -347,6 +347,12 @@ contract BaseTest is TestAccounts {
         vm.stopPrank();
     }
 
+    function applyBatchInterestAndFeePermissionless(address _from, address _batchAddress) public {
+        vm.startPrank(_from);
+        borrowerOperations.applyBatchInterestAndFeePermissionless(_batchAddress);
+        vm.stopPrank();
+    }
+
     function transferBold(address _from, address _to, uint256 _amount) public {
         vm.startPrank(_from);
         boldToken.transfer(_to, _amount);
@@ -373,6 +379,95 @@ contract BaseTest is TestAccounts {
 
     function getShareofSPReward(address _depositor, uint256 _reward) public view returns (uint256) {
         return _reward * stabilityPool.getCompoundedBoldDeposit(_depositor) / stabilityPool.getTotalBoldDeposits();
+    }
+
+    function registerBatchManager(address _account) internal {
+        registerBatchManager(_account, uint128(1e16), uint128(20e16), uint128(5e16), uint128(25e14), uint128(0));
+    }
+
+    function registerBatchManager(
+        address _account,
+        uint128 _minInterestRate,
+        uint128 _maxInterestRate,
+        uint128 _currentInterestRate,
+        uint128 _fee,
+        uint128 _minInterestRateChangePeriod
+    ) internal {
+        vm.startPrank(_account);
+        borrowerOperations.registerBatchManager(
+            _minInterestRate, _maxInterestRate, _currentInterestRate, _fee, _minInterestRateChangePeriod
+        );
+        vm.stopPrank();
+    }
+
+    function openTroveAndJoinBatchManager() internal returns (uint256) {
+        return openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+    }
+
+    function openTroveAndJoinBatchManager(
+        address _troveOwner,
+        uint256 _coll,
+        uint256 _debt,
+        address _batchAddress,
+        uint256 _annualInterestRate
+    ) internal returns (uint256) {
+        if (!borrowerOperations.checkBatchManagerExists(_batchAddress)) {
+            registerBatchManager(
+                _batchAddress, uint128(1e16), uint128(20e16), uint128(_annualInterestRate), uint128(25e14), uint128(0)
+            );
+        }
+
+        vm.startPrank(_troveOwner);
+        uint256 troveId = borrowerOperations.openTroveAndJoinInterestBatchManager(
+            _troveOwner,
+            0,
+            _coll,
+            _debt,
+            0, // _upperHint
+            0, // _lowerHint
+            _batchAddress,
+            1e24
+        );
+        vm.stopPrank();
+
+        return troveId;
+    }
+
+    function setBatchInterestRate(address _batchAddress, uint256 _newAnnualInterestRate) internal {
+        vm.startPrank(_batchAddress);
+        borrowerOperations.setBatchManagerAnnualInterestRate(uint128(_newAnnualInterestRate), 0, 0, type(uint256).max);
+        vm.stopPrank();
+    }
+
+    function setInterestBatchManager(
+        address _troveOwner,
+        uint256 _troveId,
+        address _newBatchManager,
+        uint256 _annualInterestRate
+    ) internal {
+        if (!borrowerOperations.checkBatchManagerExists(_newBatchManager)) {
+            registerBatchManager(
+                _newBatchManager,
+                uint128(1e16),
+                uint128(20e16),
+                uint128(_annualInterestRate),
+                uint128(25e14),
+                uint128(0)
+            );
+        }
+        setInterestBatchManager(_troveOwner, _troveId, _newBatchManager);
+    }
+
+    function setInterestBatchManager(address _troveOwner, uint256 _troveId, address _newBatchManager) internal {
+        vm.startPrank(_troveOwner);
+        borrowerOperations.setInterestBatchManager(_troveId, _newBatchManager, 0, 0, type(uint256).max);
+        vm.stopPrank();
+    }
+
+    function removeFromBatch(address _troveOwner, uint256 _troveId, uint256 _newAnnualInterestRate) internal {
+        vm.startPrank(_troveOwner);
+        borrowerOperations.removeFromBatch(_troveId, _newAnnualInterestRate, 0, 0, type(uint256).max);
+        vm.stopPrank();
     }
 
     function logContractAddresses() public view {

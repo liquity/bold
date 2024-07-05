@@ -118,7 +118,7 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
 
   describe("ActivePool", async (accounts) => {
     it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testDeploymentSetter(activePool, 6);
+      await testDeploymentSetter(activePool, 6, false);
     });
   });
 

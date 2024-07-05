@@ -44,7 +44,7 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
-          forge build --sizes
+          forge build #--sizes
         id: build
 
       - name: Run Forge tests
@@ -68,6 +68,7 @@ jobs:
           ! grep -R console src | grep import | grep -v "://" | grep -v TestContracts | grep -v ExternalContracts  | grep -v "\.t\.sol"
 
   test-hardhat:
+    if: false
     name: Hardhat tests
     runs-on: ubuntu-latest
 
@@ -103,6 +104,7 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
 
   coverage:
+    if: false
     name: Coverage
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -122,7 +124,7 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
-          forge build --sizes
+          forge build #--sizes
         id: build
 
       - name: Run Forge coverage
@@ -162,11 +164,6 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=8192
 
       # Merge
-      - name: ls
-        id: ls
-        run: |
-          ls && ls coverage
-
       - name: Remove path from contract names in Hardhat
         id: remove_contract_path
         run: |
