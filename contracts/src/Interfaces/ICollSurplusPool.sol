@@ -6,7 +6,7 @@ interface ICollSurplusPool {
     function setAddresses(address _borrowerOperationsAddress, address _troveManagerAddress, address _activePoolAddress)
         external;
 
-    function getETHBalance() external view returns (uint256);
+    function getCollBalance() external view returns (uint256);
 
     function getCollateral(address _account) external view returns (uint256);
 

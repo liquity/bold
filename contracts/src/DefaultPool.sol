@@ -21,7 +21,7 @@ contract DefaultPool is Ownable, CheckContract, IDefaultPool {
 
     string public constant NAME = "DefaultPool";
 
-    IERC20 public immutable coll;
+    IERC20 public immutable collToken;
     address public troveManagerAddress;
     address public activePoolAddress;
     uint256 internal collBalance; // deposited Coll tracker
@@ -35,7 +35,7 @@ contract DefaultPool is Ownable, CheckContract, IDefaultPool {
 
     constructor(address _collAddress) {
         checkContract(_collAddress);
-        coll = IERC20(_collAddress);
+        collToken = IERC20(_collAddress);
     }
 
     // --- Dependency setters ---
@@ -51,7 +51,7 @@ contract DefaultPool is Ownable, CheckContract, IDefaultPool {
         emit ActivePoolAddressChanged(_activePoolAddress);
 
         // Allow funds movements between Liquity contracts
-        coll.approve(_activePoolAddress, type(uint256).max);
+        collToken.approve(_activePoolAddress, type(uint256).max);
 
         _renounceOwnership();
     }
@@ -92,7 +92,7 @@ contract DefaultPool is Ownable, CheckContract, IDefaultPool {
         collBalance = newCollBalance;
 
         // Pull Coll tokens from ActivePool
-        coll.safeTransferFrom(msg.sender, address(this), _amount);
+        collToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         emit DefaultPoolCollBalanceUpdated(newCollBalance);
     }

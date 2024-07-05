@@ -51,14 +51,6 @@ contract TroveManagerTester is TroveManager {
     }
     */
 
-    function getEffectiveRedemptionFeeInColl(uint256 _redeemAmount, uint256 _price)
-        external
-        view
-        returns (uint256)
-    {
-        return ICollateralRegistry(collateralRegistryAddress).getEffectiveRedemptionFeeInBold(_redeemAmount) * DECIMAL_PRECISION / _price;
-    }
-
     function predictOpenTroveUpfrontFee(uint256 borrowedAmount, uint256 interestRate) external view returns (uint256) {
         TroveChange memory openTrove;
         openTrove.debtIncrease = borrowedAmount;

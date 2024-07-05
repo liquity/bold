@@ -26,7 +26,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
     string public constant NAME = "ActivePool";
 
-    IERC20 public immutable coll;
+    IERC20 public immutable collToken;
     address public borrowerOperationsAddress;
     address public troveManagerAddress;
     address public defaultPoolAddress;
@@ -62,7 +62,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     event ActivePoolCollBalanceUpdated(uint256 _collBalance);
 
     constructor(address _collAddress) {
-        coll = IERC20(_collAddress);
+        collToken = IERC20(_collAddress);
     }
 
     // --- Contract setters ---
@@ -95,7 +95,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         emit DefaultPoolAddressChanged(_defaultPoolAddress);
 
         // Allow funds movements between Liquity contracts
-        coll.approve(_defaultPoolAddress, type(uint256).max);
+        collToken.approve(_defaultPoolAddress, type(uint256).max);
 
         _renounceOwnership();
     }
@@ -154,7 +154,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
 
         _accountForSendColl(_account, _amount);
 
-        coll.safeTransfer(_account, _amount);
+        collToken.safeTransfer(_account, _amount);
     }
 
     function sendCollToDefaultPool(uint256 _amount) external override {
@@ -179,7 +179,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         _accountForReceivedColl(_amount);
 
         // Pull Coll tokens from sender
-        coll.safeTransferFrom(msg.sender, address(this), _amount);
+        collToken.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     function accountForReceivedColl(uint256 _amount) public {

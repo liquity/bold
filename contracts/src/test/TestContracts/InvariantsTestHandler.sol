@@ -21,7 +21,7 @@ import {TroveManagerTester} from "./TroveManagerTester.sol";
 import {
     _100pct,
     _1pct,
-    BOLD_GAS_COMPENSATION,
+    ETH_GAS_COMPENSATION,
     CCR,
     COLL_GAS_COMPENSATION_DIVISOR,
     DECIMAL_PRECISION,
@@ -53,7 +53,7 @@ struct LiquidationTotals {
     int256 defaultDebtDelta;
     int256 interestAccrualDelta;
     uint256 spBoldDepositsDecrease;
-    uint256 spETHIncrease;
+    uint256 spCollIncrease;
     uint256 collSurplus;
     uint256 collGasComp;
 }
@@ -138,7 +138,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     mapping(uint256 => uint256) public collSurplus;
     mapping(uint256 => uint256) public spBoldDeposits;
     mapping(uint256 => uint256) public spBoldYield;
-    mapping(uint256 => uint256) public spETH;
+    mapping(uint256 => uint256) public spColl;
 
     // Used to keep track of interest accrual
     mapping(uint256 => uint256) interestAccrual;
@@ -156,10 +156,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     // as Troves aren't enumerable per user, only globally.
     function _troveIdOf(address owner) internal pure returns (uint256) {
         return uint256(keccak256(abi.encode(owner, OWNER_INDEX)));
-    }
-
-    function getGasPool(uint256 i) external view returns (uint256) {
-        return numTroves[i] * BOLD_GAS_COMPENSATION;
     }
 
     function getPendingInterest(uint256 i) public view returns (uint256) {
@@ -188,7 +184,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     }
 
     function _dealCollAndApprove(uint256 i, address to, uint256 amount, address spender) internal {
-        IERC20 collToken = branches[i].WETH;
+        IERC20 collToken = branches[i].collToken;
         deal(address(collToken), to, amount);
         vm.prank(to);
         collToken.approve(spender, amount);
@@ -196,7 +192,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     function _sweepColl(uint256 i, address from, uint256 amount) internal {
         vm.prank(from);
-        branches[i].WETH.transfer(address(this), amount);
+        branches[i].collToken.transfer(address(this), amount);
     }
 
     function _dealBold(address to, uint256 amount) internal {
@@ -238,9 +234,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             t.activeDebtDelta += int256(trove.redistBoldDebtGain);
             t.defaultDebtDelta -= int256(trove.redistBoldDebtGain);
 
-            // Apply pending ETH redist
-            t.activeCollDelta += int256(trove.redistETHGain);
-            t.defaultCollDelta -= int256(trove.redistETHGain);
+            // Apply pending Coll redist
+            t.activeCollDelta += int256(trove.redistCollGain);
+            t.defaultCollDelta -= int256(trove.redistCollGain);
 
             // Coll gas comp
             uint256 collGasComp = trove.entireColl / COLL_GAS_COMPENSATION_DIVISOR;
@@ -259,7 +255,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 debtOffset * (_100pct + c.troveManager.LIQUIDATION_PENALTY_SP()) / price
             );
             t.activeCollDelta -= int256(collOffset);
-            t.spETHIncrease += collOffset;
+            t.spCollIncrease += collOffset;
             collRemaining -= collOffset;
 
             // Redistribute debt
@@ -334,7 +330,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         LiquityContracts memory c = branches[i];
         uint256 upfrontFee = hintHelpers.predictOpenTroveUpfrontFee(i, borrowed, interestRate);
-        uint256 debt = borrowed + BOLD_GAS_COMPENSATION + upfrontFee;
+        uint256 debt = borrowed + upfrontFee;
         uint256 price = c.priceFeed.getPrice();
         uint256 coll = debt * icr / price;
 
@@ -377,7 +373,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             interestAccrual[i] += debt * interestRate;
 
             // Cleanup
-            _sweepColl(i, msg.sender, 0); // there should be no ETH left
+            _sweepColl(i, msg.sender, 0); // there should be no Coll left
             _sweepBold(msg.sender, borrowed);
         } catch Error(string memory reason) {
             // Justify failures
@@ -448,8 +444,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             interestAccrual[i] -= trove.recordedDebt * trove.annualInterestRate;
             interestAccrual[i] += (trove.entireDebt + upfrontFee) * newInterestRate;
 
-            activeColl[i] += trove.redistETHGain;
-            defaultColl[i] -= trove.redistETHGain;
+            activeColl[i] += trove.redistCollGain;
+            defaultColl[i] -= trove.redistCollGain;
 
             activeDebt[i] += trove.redistBoldDebtGain;
             defaultDebt[i] -= trove.redistBoldDebtGain;
@@ -536,12 +532,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             defaultColl.update(i, t.defaultCollDelta);
             defaultDebt.update(i, t.defaultDebtDelta);
             spBoldDeposits[i] -= t.spBoldDepositsDecrease;
-            spETH[i] += t.spETHIncrease;
+            spColl[i] += t.spCollIncrease;
             collSurplus[i] += t.collSurplus;
 
             // Cleanup
             _sweepColl(i, msg.sender, t.collGasComp);
-            _sweepBold(msg.sender, liqBatchLiquidatable.length * BOLD_GAS_COMPENSATION);
         } catch Error(string memory reason) {
             // Justify failures
             if (reason.equals("TroveManager: Calldata address array must not be empty")) {
@@ -573,14 +568,14 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 initialBoldDeposit = c.stabilityPool.deposits(msg.sender);
         uint256 boldDeposit = c.stabilityPool.getCompoundedBoldDeposit(msg.sender);
         uint256 boldYield = c.stabilityPool.getDepositorYieldGainWithPending(msg.sender);
-        uint256 ethGain = c.stabilityPool.getDepositorETHGain(msg.sender);
-        uint256 ethStash = c.stabilityPool.stashedETH(msg.sender);
+        uint256 ethGain = c.stabilityPool.getDepositorCollGain(msg.sender);
+        uint256 ethStash = c.stabilityPool.stashedColl(msg.sender);
 
         info("initial deposit: ", initialBoldDeposit.decimal());
         info("compounded deposit: ", boldDeposit.decimal());
         info("yield gain: ", boldYield.decimal());
-        info("ETH gain: ", ethGain.decimal());
-        info("stashed ETH: ", ethStash.decimal());
+        info("Coll gain: ", ethGain.decimal());
+        info("stashed Coll: ", ethStash.decimal());
         logCall("provideToSP", i.toString(), amount.decimal(), claim.toString());
 
         // TODO: randomly deal less than amount?
@@ -604,13 +599,13 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             assertEqDecimal(c.stabilityPool.getCompoundedBoldDeposit(msg.sender), boldDeposit, 18, "Wrong deposit");
             assertEqDecimal(c.stabilityPool.getDepositorYieldGain(msg.sender), 0, 18, "Wrong yield gain");
-            assertEqDecimal(c.stabilityPool.getDepositorETHGain(msg.sender), 0, 18, "Wrong ETH gain");
-            assertEqDecimal(c.stabilityPool.stashedETH(msg.sender), ethStash, 18, "Wrong stashed ETH");
+            assertEqDecimal(c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong Coll gain");
+            assertEqDecimal(c.stabilityPool.stashedColl(msg.sender), ethStash, 18, "Wrong stashed Coll");
 
             // Effects (system)
             _mintYield(i, 0);
 
-            spETH[i] -= ethClaimed;
+            spColl[i] -= ethClaimed;
             spBoldDeposits[i] += amount;
             spBoldDeposits[i] += boldYield;
             spBoldDeposits[i] -= boldClaimed;
@@ -641,8 +636,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 initialBoldDeposit = c.stabilityPool.deposits(msg.sender);
         uint256 boldDeposit = c.stabilityPool.getCompoundedBoldDeposit(msg.sender);
         uint256 boldYield = c.stabilityPool.getDepositorYieldGainWithPending(msg.sender);
-        uint256 ethGain = c.stabilityPool.getDepositorETHGain(msg.sender);
-        uint256 ethStash = c.stabilityPool.stashedETH(msg.sender);
+        uint256 ethGain = c.stabilityPool.getDepositorCollGain(msg.sender);
+        uint256 ethStash = c.stabilityPool.stashedColl(msg.sender);
 
         amount = _bound(amount, 0, boldDeposit * 11 / 10); // sometimes try withdrawing too much
         uint256 withdrawn = Math.min(amount, boldDeposit);
@@ -650,8 +645,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         info("initial deposit: ", initialBoldDeposit.decimal());
         info("compounded deposit: ", boldDeposit.decimal());
         info("yield gain: ", boldYield.decimal());
-        info("ETH gain: ", ethGain.decimal());
-        info("stashed ETH: ", ethStash.decimal());
+        info("Coll gain: ", ethGain.decimal());
+        info("stashed Coll: ", ethStash.decimal());
         logCall("withdrawFromSP", i.toString(), amount.decimal(), claim.toString());
 
         vm.prank(msg.sender);
@@ -672,13 +667,13 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             assertEqDecimal(c.stabilityPool.getCompoundedBoldDeposit(msg.sender), boldDeposit, 18, "Wrong deposit");
             assertEqDecimal(c.stabilityPool.getDepositorYieldGain(msg.sender), 0, 18, "Wrong yield gain");
-            assertEqDecimal(c.stabilityPool.getDepositorETHGain(msg.sender), 0, 18, "Wrong ETH gain");
-            assertEqDecimal(c.stabilityPool.stashedETH(msg.sender), ethStash, 18, "Wrong stashed ETH");
+            assertEqDecimal(c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong Coll gain");
+            assertEqDecimal(c.stabilityPool.stashedColl(msg.sender), ethStash, 18, "Wrong stashed Coll");
 
             // Effects (system)
             _mintYield(i, 0);
 
-            spETH[i] -= ethClaimed;
+            spColl[i] -= ethClaimed;
             spBoldDeposits[i] += boldYield;
             spBoldDeposits[i] -= boldClaimed;
             spBoldDeposits[i] -= withdrawn;

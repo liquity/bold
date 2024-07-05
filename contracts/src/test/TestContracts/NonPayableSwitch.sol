@@ -9,10 +9,10 @@ contract NonPayableSwitch {
     using SafeERC20 for IERC20;
 
     bool isPayable;
-    IERC20 public coll;
+    IERC20 public collToken;
 
     function setColl(IERC20 _eth) external {
-        coll = _eth;
+        collToken = _eth;
     }
 
     function setPayable(bool _isPayable) external {
@@ -30,7 +30,7 @@ contract NonPayableSwitch {
 
     function receiveColl(uint256 _amount) external {
         // Pull Coll tokens from sender
-        coll.safeTransferFrom(msg.sender, address(this), _amount);
+        collToken.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     receive() external payable {

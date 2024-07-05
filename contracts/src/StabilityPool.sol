@@ -135,7 +135,7 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
 
     string public constant NAME = "StabilityPool";
 
-    IERC20 public immutable coll;
+    IERC20 public immutable collToken;
     IBorrowerOperations public borrowerOperations;
     ITroveManager public troveManager;
     IBoldToken public boldToken;
@@ -215,7 +215,7 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
     event PriceFeedAddressChanged(address _newPriceFeedAddress);
 
     constructor(address _collAddress) {
-        coll = IERC20(_collAddress);
+        collToken = IERC20(_collAddress);
     }
 
     // --- Contract setters ---
@@ -244,7 +244,7 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
         emit PriceFeedAddressChanged(_priceFeedAddress);
 
         // Allow funds movements between Liquity contracts
-        coll.approve(_borrowerOperationsAddress, type(uint256).max);
+        collToken.approve(_borrowerOperationsAddress, type(uint256).max);
 
         _renounceOwnership();
     }
@@ -641,7 +641,7 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
         return initialDeposit * (firstPortion + secondPortion) / snapshots.P / DECIMAL_PRECISION;
     }
 
-    function _getETHGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots)
+    function _getCollGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots)
         internal
         view
         returns (uint256)
@@ -755,7 +755,7 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
         collBalance = newCollBalance;
         emit StabilityPoolCollBalanceUpdated(newCollBalance);
         emit EtherSent(msg.sender, _collAmount);
-        coll.safeTransfer(msg.sender, _collAmount);
+        collToken.safeTransfer(msg.sender, _collAmount);
     }
 
     // Send Bold to user and decrease Bold in Pool

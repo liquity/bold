@@ -21,7 +21,7 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
 
     // --- Connected contract declarations ---
 
-    IERC20 public immutable coll;
+    IERC20 public immutable collToken;
     ITroveManager public immutable troveManager;
     address gasPoolAddress;
     ICollSurplusPool collSurplusPool;
@@ -96,8 +96,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
 
-    constructor(IERC20 _coll, ITroveManager _troveManager, IERC20 _weth) {
-        coll = _coll;
+    constructor(IERC20 _collToken, ITroveManager _troveManager, IERC20 _weth) {
+        collToken = _collToken;
         troveManager = _troveManager;
         WETH = _weth;
 
@@ -137,7 +137,7 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         emit BoldTokenAddressChanged(_boldTokenAddress);
 
         // Allow funds movements between Liquity contracts
-        coll.approve(_activePoolAddress, type(uint256).max);
+        collToken.approve(_activePoolAddress, type(uint256).max);
 
         _renounceOwnership();
     }
@@ -561,7 +561,7 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
 
     function _pullCollAndSendToActivePool(IActivePool _activePool, uint256 _amount) internal {
         // Send Coll tokens from sender to active pool
-        coll.safeTransferFrom(msg.sender, address(_activePool), _amount);
+        collToken.safeTransferFrom(msg.sender, address(_activePool), _amount);
         // Make sure Active Pool accountancy is right
         _activePool.accountForReceivedColl(_amount);
     }
