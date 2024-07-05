@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import {Test} from "forge-std/Test.sol";
 import {IBoldToken} from "../Interfaces/IBoldToken.sol";
 import {IStabilityPool} from "../Interfaces/IStabilityPool.sol";
 import {LiquityContracts, _deployAndConnectContracts} from "../deployment.sol";
+import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
 import {SPInvariantsTestHandler} from "./TestContracts/SPInvariantsTestHandler.sol";
 
-contract SPInvariantsTest is Test {
-    string[] actorLabels = ["Adam", "Barb", "Carl", "Dana", "Eric", "Fran", "Gabe", "Hope"];
-    address[] actors;
-
+contract SPInvariantsTest is BaseInvariantTest {
     IStabilityPool stabilityPool;
     SPInvariantsTestHandler handler;
 
-    function setUp() external {
+    function setUp() public override {
+        super.setUp();
+
         (LiquityContracts memory contracts,, IBoldToken boldToken,,) = _deployAndConnectContracts();
         stabilityPool = contracts.stabilityPool;
 
         handler = new SPInvariantsTestHandler(
+            "handler",
             SPInvariantsTestHandler.Contracts({
                 boldToken: boldToken,
                 borrowerOperations: contracts.borrowerOperations,
@@ -31,26 +31,17 @@ contract SPInvariantsTest is Test {
         );
 
         targetContract(address(handler));
-
-        for (uint160 i = 0; i < actorLabels.length; ++i) {
-            address actor = address((i + 1) * uint160(0x1111111111111111111111111111111111111111));
-            vm.label(actor, actorLabels[i]);
-            targetSender(actor);
-            actors.push(actor);
-        }
-
-        assert(actors.length == actorLabels.length);
     }
 
-    function invariant_allFundsClaimable() external {
+    function invariant_allFundsClaimable() external view {
         uint256 stabilityPoolEth = stabilityPool.getETHBalance();
         uint256 stabilityPoolBold = stabilityPool.getTotalBoldDeposits();
         uint256 claimableEth = 0;
         uint256 claimableBold = 0;
 
         for (uint256 i = 0; i < actors.length; ++i) {
-            claimableEth += stabilityPool.getDepositorETHGain(actors[i]);
-            claimableBold += stabilityPool.getCompoundedBoldDeposit(actors[i]);
+            claimableEth += stabilityPool.getDepositorETHGain(actors[i].account);
+            claimableBold += stabilityPool.getCompoundedBoldDeposit(actors[i].account);
         }
 
         assertApproxEqAbsDecimal(stabilityPoolEth, claimableEth, 0.00001 ether, 18, "SP ETH !~ claimable ETH");
@@ -58,9 +49,6 @@ contract SPInvariantsTest is Test {
     }
 
     function test_Issue_NoLossOfFundsAfterAnyTwoLiquidationsFollowingTinyP() external {
-        address adam = actors[0];
-        address barb = actors[1];
-
         vm.prank(adam);
         handler.openTrove(100_000 ether); // used as funds
 
