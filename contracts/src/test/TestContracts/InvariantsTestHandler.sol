@@ -38,7 +38,7 @@ uint256 constant BORROWED_MIN = 2_000 ether;
 uint256 constant BORROWED_MAX = 100_000 ether;
 
 uint256 constant INTEREST_RATE_MIN = 0; // TODO
-uint256 constant INTEREST_RATE_MAX = MAX_ANNUAL_INTEREST_RATE;
+uint256 constant INTEREST_RATE_MAX = MAX_ANNUAL_INTEREST_RATE * 11 / 10; // Sometimes try rates exceeding the max
 
 uint256 constant ICR_MIN = 0.9 ether;
 uint256 constant ICR_MAX = 2 * CCR;
@@ -353,12 +353,14 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         try c.borrowerOperations.openTrove(msg.sender, OWNER_INDEX, coll, borrowed, 0, 0, interestRate, upfrontFee) {
             // Preconditions
             assertFalse(wasOpen, "Should have failed as Trove was open");
+            assertLeDecimal(interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as interest rate > max");
             assertGeDecimal(coll * price / debt, c.troveManager.MCR(), 18, "Should have failed as ICR < MCR");
             assertGeDecimal(c.troveManager.getTCR(price), CCR, 18, "Should have failed as TCR < CCR");
 
             // Effects (Trove)
             assertEqDecimal(c.troveManager.getTroveEntireColl(troveId), coll, 18, "Wrong coll");
             assertEqDecimal(c.troveManager.getTroveEntireDebt(troveId), debt, 18, "Wrong debt");
+            assertEqDecimal(c.troveManager.getTroveAnnualInterestRate(troveId), interestRate, 18, "Wrong interest rate");
             assertEq(
                 uint8(c.troveManager.getTroveStatus(troveId)),
                 uint8(ITroveManager.Status.active),
@@ -381,6 +383,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Justify failures
             if (reason.equals("BorrowerOps: Trove is open")) {
                 assertTrue(wasOpen, "Should not have failed as Trove wasn't open");
+            } else if (reason.equals("Interest rate must not be greater than max")) {
+                assertGtDecimal(
+                    interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should not have failed as interest rate <= max"
+                );
             } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
                 assertLtDecimal(coll * price / debt, c.troveManager.MCR(), 18, "Should not have failed as ICR >= MCR");
             } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
@@ -428,10 +434,14 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             assertEq(
                 status.toString(), ITroveManager.Status.active.toString(), "Should have failed as Trove was not active"
             );
+            assertLeDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as interest rate > max");
 
             // Effects (Trove)
             assertEqDecimal(c.troveManager.getTroveEntireColl(troveId), trove.entireColl, 18, "Wrong coll");
             assertEqDecimal(c.troveManager.getTroveEntireDebt(troveId), trove.entireDebt + upfrontFee, 18, "Wrong debt");
+            assertEqDecimal(
+                c.troveManager.getTroveAnnualInterestRate(troveId), newInterestRate, 18, "Wrong interest rate"
+            );
 
             // Effects (system)
             _mintYield(i, upfrontFee);
@@ -449,6 +459,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertTrue(
                     status != ITroveManager.Status.active && status != ITroveManager.Status.unredeemable,
                     string.concat("Trove with ", status.toString(), " status should have an NFT")
+                );
+            } else if (reason.equals("Interest rate must not be greater than max")) {
+                assertGtDecimal(
+                    newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should not have failed as interest rate <= max"
                 );
             } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
                 assertLtDecimal(
@@ -687,6 +701,47 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _log();
         }
     }
+
+    // XXX unfinished
+    // function registerBatchManager(
+    //     uint256 i,
+    //     uint128 minInterestRate,
+    //     uint128 maxInterestRate,
+    //     uint128 currentInterestRate,
+    //     uint128 annualManagementFee,
+    //     uint128 minInterestRateChangePeriod
+    // ) external {
+    //     i = _bound(i, 0, branches.length - 1);
+    //     minInterestRate = uint128(_bound(minInterestRate, INTEREST_RATE_MIN, INTEREST_RATE_MAX));
+    //     maxInterestRate = uint128(_bound(maxInterestRate, minInterestRate * 9 / 10, INTEREST_RATE_MAX));
+    //     currentInterestRate = uint128(_bound(currentInterestRate, minInterestRate * 9 / 10, maxInterestRate * 11 / 10));
+
+    //     LiquityContracts memory c = branches[i];
+    //     bool existed = c.borrowerOperations.getInterestBatchManager(msg.sender).maxInterestRate > 0;
+
+    //     vm.prank(msg.sender);
+    //     try c.borrowerOperations.registerBatchManager(
+    //         minInterestRate, maxInterestRate, currentInterestRate, annualManagementFee, minInterestRateChangePeriod
+    //     ) {
+    //         // Preconditions
+    //         assertFalse(existed, "Should have failed as batch manager already existed");
+
+    //         // Effects
+    //         IBorrowerOperations.InterestBatchManager memory params =
+    //             c.borrowerOperations.getInterestBatchManager(msg.sender);
+
+    //     } catch Error(string memory reason) {
+    //         // Justify failures
+    //         if (reason.equals("BO: Batch Manager already exists")) {
+    //             assertTrue(existed, "Should not have failed as batch manager did not exist");
+    //         } else {
+    //             revert(reason);
+    //         }
+
+    //         info("Expected revert: ", reason);
+    //         _log();
+    //     }
+    // }
 
     // XXX unfinished
     // function redeemCollateral(uint256 amount, uint256 maxIterationsPerCollateral) external {
