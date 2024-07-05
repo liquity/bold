@@ -35,7 +35,11 @@ interface IActivePool {
         returns (uint256);
 
     function mintAggInterest() external;
-    function mintAggInterestAndAccountForTroveChange(TroveChange calldata _troveChange) external;
+    function mintAggInterestAndAccountForTroveChange(TroveChange calldata _troveChange, address _batchManager)
+        external;
+    function mintBatchManagementFeeAndAccountForChange(TroveChange calldata _troveChange, address _batchAddress)
+        external;
+
     function setShutdownFlag() external;
     function hasBeenShutDown() external returns (bool);
 

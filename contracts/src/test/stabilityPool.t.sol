@@ -204,7 +204,7 @@ contract SPTest is DevTestSetup {
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -223,7 +223,7 @@ contract SPTest is DevTestSetup {
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         // Check has currentBoldGain
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
@@ -338,7 +338,7 @@ contract SPTest is DevTestSetup {
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -357,7 +357,7 @@ contract SPTest is DevTestSetup {
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -376,7 +376,7 @@ contract SPTest is DevTestSetup {
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -393,7 +393,7 @@ contract SPTest is DevTestSetup {
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -513,7 +513,7 @@ contract SPTest is DevTestSetup {
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -533,7 +533,7 @@ contract SPTest is DevTestSetup {
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -650,7 +650,7 @@ contract SPTest is DevTestSetup {
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -669,7 +669,7 @@ contract SPTest is DevTestSetup {
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -688,7 +688,7 @@ contract SPTest is DevTestSetup {
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -705,7 +705,7 @@ contract SPTest is DevTestSetup {
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 currentBoldGain = stabilityPool.getDepositorYieldGain(A);
         assertGt(currentBoldGain, 0);
@@ -932,7 +932,7 @@ contract SPTest is DevTestSetup {
         assertEq(boldRewardSum_1, 0);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
@@ -1158,7 +1158,7 @@ contract SPTest is DevTestSetup {
         assertEq(yieldGainsOwed_1, 0);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
@@ -1278,7 +1278,7 @@ contract SPTest is DevTestSetup {
         uint256 expectedSpYield = SP_YIELD_SPLIT * pendingAggInterest / 1e18;
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedSpYield, 1e4);
     }
@@ -1299,7 +1299,7 @@ contract SPTest is DevTestSetup {
         assertGt(expectedShareOfReward_B, expectedShareOfReward_A);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         // Check both depositors earn their expected shares of the yield
         assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward_A, 1e4);
@@ -1323,7 +1323,7 @@ contract SPTest is DevTestSetup {
         uint256 expectedSpYield_1 = SP_YIELD_SPLIT * pendingAggInterest_1 / 1e18;
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_1, 0);
 
@@ -1334,7 +1334,7 @@ contract SPTest is DevTestSetup {
         uint256 expectedSpYield_2 = SP_YIELD_SPLIT * pendingAggInterest_2 / 1e18;
 
         // A trove gets poked, interest minted and yield paid to SP again
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
         uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, 0);
 
@@ -1359,7 +1359,7 @@ contract SPTest is DevTestSetup {
         assertApproximatelyEqual(expectedShareOfReward1_A + expectedShareOfReward1_B, expectedSpYield_1, 1e3);
 
         // A trove gets poked, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         // fast-forward time again and accrue interest
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
@@ -1377,7 +1377,7 @@ contract SPTest is DevTestSetup {
         assertApproximatelyEqual(expectedShareOfReward2_A + expectedShareOfReward2_B, expectedSpYield_2, 1e3);
 
         // A trove gets poked again, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         // Check both depositors earn their expected shares of the yield
         assertApproximatelyEqual(
@@ -1407,7 +1407,7 @@ contract SPTest is DevTestSetup {
         assertApproximatelyEqual(expectedShareOfReward1_A + expectedShareOfReward1_B, expectedSpYield_1, 1e3);
 
         // A trove gets poked, interest minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
         assertEq(activePool.calcPendingAggInterest(), 0);
 
         // A liquidates D
@@ -1443,7 +1443,7 @@ contract SPTest is DevTestSetup {
         );
 
         // A trove gets poked again, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         // Check both depositors earn their expected shares of the yield
         assertApproximatelyEqual(
@@ -1525,7 +1525,7 @@ contract SPTest is DevTestSetup {
         );
 
         // A trove gets poked again, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         // Expect A to receive 0 - they already claimed his gain 1, and gets 0 from 2nd reward
         assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), 0, 1e4, "A should receive 0");
@@ -1612,7 +1612,7 @@ contract SPTest is DevTestSetup {
         assertApproximatelyEqual(expectedShareOfReward[1].C + expectedShareOfReward[1].D, expectedSpYield_1, 1e14);
 
         // A trove gets poked again, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         // A only gets reward 2 since already claimed reward 1
         assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward[1].A, 1e15);
@@ -1736,7 +1736,7 @@ contract SPTest is DevTestSetup {
 
         // Interest minted and reward 3 triggered again
         // A trove gets poked again, interst minted and yield paid to SP
-        applyTroveInterestPermissionless(B, troveIDs.A);
+        applyPendingDebt(B, troveIDs.A);
 
         // Expect A only gets a share of reward 2 as they already claimed their share of reward 1
         assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward[1].A, 1e14, "2");
@@ -1902,7 +1902,7 @@ contract SPTest is DevTestSetup {
         assertGt(expectedShareOfYield2_E, 0);
 
         // Interest gets minted and awarded to SP
-        applyTroveInterestPermissionless(A, troveIDs.A);
+        applyPendingDebt(A, troveIDs.A);
 
         // check all BOLD and Coll gains are as expected
         uint256 boldGainE = stabilityPool.getDepositorYieldGain(E);

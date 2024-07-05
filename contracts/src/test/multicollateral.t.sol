@@ -31,7 +31,10 @@ contract MulticollateralTest is DevTestSetup {
             0, // _upperHint
             0, // _lowerHint
             _annualInterestRate,
-            upfrontFee
+            upfrontFee,
+            address(0),
+            address(0),
+            address(0)
         );
 
         vm.stopPrank();
@@ -108,11 +111,11 @@ contract MulticollateralTest is DevTestSetup {
         assertEq(collateralRegistry.totalCollaterals(), NUM_COLLATERALS, "Wrong number of branches");
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
             assertNotEq(address(collateralRegistry.getToken(c)), ZERO_ADDRESS, "Missing collateral token");
-            assertNotEq(address(collateralRegistry.getTroveManager(c)), ZERO_ADDRESS, "Missing TroveManager");
+            assertNotEq(address(collateralRegistry.troveManagers(c)), ZERO_ADDRESS, "Missing TroveManager");
         }
         for (uint256 c = NUM_COLLATERALS; c < 10; c++) {
             assertEq(address(collateralRegistry.getToken(c)), ZERO_ADDRESS, "Extra collateral token");
-            assertEq(address(collateralRegistry.getTroveManager(c)), ZERO_ADDRESS, "Extra TroveManager");
+            assertEq(address(collateralRegistry.troveManagers(c)), ZERO_ADDRESS, "Extra TroveManager");
         }
     }
 
@@ -639,7 +642,7 @@ contract MulticollateralTest is DevTestSetup {
         assertEq(contractsArray[0].troveManager.shutdownTime(), 0, "First branch should not be shut down");
         assertLt(
             contractsArray[0].troveManager.getTCR(testValues1.price),
-            contractsArray[0].troveManager.SCR(),
+            contractsArray[0].troveManager.get_SCR(),
             "First branch should be below SCR"
         );
         (uint256 unbackedPortion1,,) = contractsArray[1].troveManager.getUnbackedPortionPriceAndRedeemability();

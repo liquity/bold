@@ -14,6 +14,9 @@ contract MultiTroveGetter {
         uint256 annualInterestRate;
         uint256 lastDebtUpdateTime;
         uint256 lastInterestRateAdjTime;
+        address interestBatchManager;
+        uint256 batchDebtShares;
+        uint256 batchCollShares;
         uint256 snapshotETH;
         uint256 snapshotBoldDebt;
     }
@@ -29,7 +32,7 @@ contract MultiTroveGetter {
         view
         returns (CombinedTroveData[] memory _troves)
     {
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
         require(address(troveManager) != address(0), "Invalid collateral index");
 
         ISortedTroves sortedTroves = troveManager.sortedTroves();
@@ -76,7 +79,9 @@ contract MultiTroveGetter {
             , // arrayIndex
             _out.annualInterestRate,
             _out.lastDebtUpdateTime,
-            _out.lastInterestRateAdjTime
+            _out.lastInterestRateAdjTime,
+            _out.interestBatchManager,
+            //_out.batchDebtShares,
         ) = _troveManager.Troves(_id);
 
         (_out.snapshotETH, _out.snapshotBoldDebt) = _troveManager.rewardSnapshots(_id);

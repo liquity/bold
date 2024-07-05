@@ -150,6 +150,54 @@ contract BaseHandler is Test {
         return string.concat(strs[0], ", ", strs[1], ", ", strs[2], ", ", strs[3], ", ", strs[4], ", ", strs[5]);
     }
 
+    function _csv(string[7] memory strs) internal pure returns (string memory) {
+        return string.concat(
+            strs[0], ", ", strs[1], ", ", strs[2], ", ", strs[3], ", ", strs[4], ", ", strs[5], ", ", strs[6]
+        );
+    }
+
+    function _csv(string[8] memory strs) internal pure returns (string memory) {
+        return string.concat(
+            strs[0],
+            ", ",
+            strs[1],
+            ", ",
+            strs[2],
+            ", ",
+            strs[3],
+            ", ",
+            strs[4],
+            ", ",
+            strs[5],
+            ", ",
+            strs[6],
+            ", ",
+            strs[7]
+        );
+    }
+
+    function _csv(string[9] memory strs) internal pure returns (string memory) {
+        return string.concat(
+            strs[0],
+            ", ",
+            strs[1],
+            ", ",
+            strs[2],
+            ", ",
+            strs[3],
+            ", ",
+            strs[4],
+            ", ",
+            strs[5],
+            ", ",
+            strs[6],
+            ", ",
+            strs[7],
+            ", ",
+            strs[8]
+        );
+    }
+
     function _logCaller() internal view {
         _log("vm.prank(", vm.getLabel(msg.sender), ");");
     }
@@ -211,6 +259,54 @@ contract BaseHandler is Test {
     ) internal view {
         _logCaller();
         _log(_callPrefix(), functionName, "(", _csv([a, b, c, d, e, f]), ");");
+        _log();
+    }
+
+    function logCall(
+        string memory functionName,
+        string memory a,
+        string memory b,
+        string memory c,
+        string memory d,
+        string memory e,
+        string memory f,
+        string memory g
+    ) internal view {
+        _logCaller();
+        _log(_callPrefix(), functionName, "(", _csv([a, b, c, d, e, f, g]), ");");
+        _log();
+    }
+
+    function logCall(
+        string memory functionName,
+        string memory a,
+        string memory b,
+        string memory c,
+        string memory d,
+        string memory e,
+        string memory f,
+        string memory g,
+        string memory h
+    ) internal view {
+        _logCaller();
+        _log(_callPrefix(), functionName, "(", _csv([a, b, c, d, e, f, g, h]), ");");
+        _log();
+    }
+
+    function logCall(
+        string memory functionName,
+        string memory a,
+        string memory b,
+        string memory c,
+        string memory d,
+        string memory e,
+        string memory f,
+        string memory g,
+        string memory h,
+        string memory i
+    ) internal view {
+        _logCaller();
+        _log(_callPrefix(), functionName, "(", _csv([a, b, c, d, e, f, g, h, i]), ");");
         _log();
     }
 }

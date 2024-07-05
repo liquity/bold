@@ -1910,11 +1910,11 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       th.applyLiquidationFee(A_coll),
     );
     th.assertIsApproximatelyEqual(
-      await troveManager.totalStakesSnapshot(),
+      await troveManager.getTotalStakesSnapshot(),
       totalStakesSnapshotAfterL1,
     );
     th.assertIsApproximatelyEqual(
-      await troveManager.totalCollateralSnapshot(),
+      await troveManager.getTotalCollateralSnapshot(),
       totalCollateralSnapshotAfterL1,
     );
 
@@ -1999,11 +1999,11 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       .add(D_coll)
       .add(defaultedAmountAfterL2);
     th.assertIsApproximatelyEqual(
-      await troveManager.totalStakesSnapshot(),
+      await troveManager.getTotalStakesSnapshot(),
       totalStakesSnapshotAfterL2,
     );
     th.assertIsApproximatelyEqual(
-      await troveManager.totalCollateralSnapshot(),
+      await troveManager.getTotalCollateralSnapshot(),
       totalCollateralSnapshotAfterL2,
     );
 
@@ -2126,10 +2126,10 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       .add(defaultedAmountAfterL2)
       .add(th.applyLiquidationFee(F_coll));
     const totalStakesSnapshot = (
-      await troveManager.totalStakesSnapshot()
+      await troveManager.getTotalStakesSnapshot()
     ).toString();
     const totalCollateralSnapshot = (
-      await troveManager.totalCollateralSnapshot()
+      await troveManager.getTotalCollateralSnapshot()
     ).toString();
     th.assertIsApproximatelyEqual(
       totalStakesSnapshot,
@@ -2201,11 +2201,11 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       th.applyLiquidationFee(A_coll),
     );
     th.assertIsApproximatelyEqual(
-      await troveManager.totalStakesSnapshot(),
+      await troveManager.getTotalStakesSnapshot(),
       totalStakesSnapshotAfterL1,
     );
     th.assertIsApproximatelyEqual(
-      await troveManager.totalCollateralSnapshot(),
+      await troveManager.getTotalCollateralSnapshot(),
       totalCollateralSnapshotAfterL1,
     );
 
@@ -2290,11 +2290,11 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       .add(D_coll)
       .add(defaultedAmountAfterL2);
     th.assertIsApproximatelyEqual(
-      await troveManager.totalStakesSnapshot(),
+      await troveManager.getTotalStakesSnapshot(),
       totalStakesSnapshotAfterL2,
     );
     th.assertIsApproximatelyEqual(
-      await troveManager.totalCollateralSnapshot(),
+      await troveManager.getTotalCollateralSnapshot(),
       totalCollateralSnapshotAfterL2,
     );
 
@@ -2421,10 +2421,10 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       .add(defaultedAmountAfterL2)
       .add(th.applyLiquidationFee(F_coll));
     const totalStakesSnapshot = (
-      await troveManager.totalStakesSnapshot()
+      await troveManager.getTotalStakesSnapshot()
     ).toString();
     const totalCollateralSnapshot = (
-      await troveManager.totalCollateralSnapshot()
+      await troveManager.getTotalCollateralSnapshot()
     ).toString();
     th.assertIsApproximatelyEqual(
       totalStakesSnapshot,

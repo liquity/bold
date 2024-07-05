@@ -760,16 +760,12 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       const A_Earned_Collateral = await stabilityPool.getDepositorCollGain(A);
       console.log("A's earned ETH collateral:");
       console.log(A_Earned_Collateral.toString()); // 29.849999999999980026
-      assert.isTrue(
-        A_Earned_Collateral.gt(
-          th.toBN(2 * dec(15, "ether") * 0.995 - ethers.utils.parseUnits("1", "gwei"))
-        )
+      th.assertIsApproximatelyEqual(
+        A_Earned_Collateral,
+        th.toBN(2 * dec(15, "ether") * 0.995),
+        1e5
       );
-      assert.isTrue(
-        A_Earned_Collateral.lt(
-          th.toBN(2 * dec(15, "ether") * 0.995 + ethers.utils.parseUnits("1", "gwei"))
-        )
-      );
+
       // // Here we will cache the amount of raw ETH in the stability pool contract, the totalBOLDDeposits, and the epoch counter.
       const Stability_Pool_ETH = await stabilityPool.getCollBalance();
       console.log("Stability Pool ETH before complete liquidation LIQ4:");

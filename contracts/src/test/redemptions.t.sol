@@ -358,7 +358,7 @@ contract Redemptions is DevTestSetup {
         priceFeed.setPrice(price);
 
         assertFalse(troveManager.checkBelowCriticalThreshold(price));
-        assertLt(troveManager.getCurrentICR(troveIDs.E, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(troveIDs.E, price), MCR);
 
         // A liquidates E
         liquidate(A, troveIDs.E);
@@ -440,7 +440,7 @@ contract Redemptions is DevTestSetup {
         priceFeed.setPrice(price);
 
         // assertFalse(troveManager.checkBelowCriticalThreshold(price));
-        assertLt(troveManager.getCurrentICR(troveID_E, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(troveID_E, price), MCR);
 
         assertLt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
         assertLt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT);
@@ -608,10 +608,10 @@ contract Redemptions is DevTestSetup {
         (uint256 borrow_B,) = findAmountToBorrowWithAdjustTrove(troveIDs.B, MIN_DEBT - debtDeficiency);
 
         // A and B attempt to withdraw Bold, but not enough
-        vm.expectRevert("BorrowerOps: Trove's debt must be greater than minimum");
+        vm.expectRevert(BorrowerOperations.DebtBelowMin.selector);
         this.adjustUnredeemableTrove(A, troveIDs.A, 0, false, borrow_A, true);
 
-        vm.expectRevert("BorrowerOps: Trove's debt must be greater than minimum");
+        vm.expectRevert(BorrowerOperations.DebtBelowMin.selector);
         this.adjustUnredeemableTrove(B, troveIDs.B, 0, false, borrow_B, true);
     }
 
@@ -627,12 +627,12 @@ contract Redemptions is DevTestSetup {
         transferBold(E, B, boldToken.balanceOf(E));
 
         vm.startPrank(A);
-        vm.expectRevert("BorrowerOps: Trove does not have active status");
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
         borrowerOperations.repayBold(troveIDs.A, debtRepayment);
         vm.stopPrank();
 
         vm.startPrank(B);
-        vm.expectRevert("BorrowerOps: Trove does not have active status");
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
         borrowerOperations.repayBold(troveIDs.B, debtRepayment);
         vm.stopPrank();
     }
@@ -645,12 +645,12 @@ contract Redemptions is DevTestSetup {
         uint256 debtWithdrawal = 1;
 
         vm.startPrank(A);
-        vm.expectRevert("BorrowerOps: Trove does not have active status");
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
         borrowerOperations.withdrawBold(troveIDs.A, debtWithdrawal, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
-        vm.expectRevert("BorrowerOps: Trove does not have active status");
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
         borrowerOperations.withdrawBold(troveIDs.B, debtWithdrawal, 0);
         vm.stopPrank();
     }
@@ -662,10 +662,10 @@ contract Redemptions is DevTestSetup {
 
         uint256 debtWithdrawal = 1;
 
-        vm.expectRevert("BorrowerOps: Trove does not have active status");
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
         this.adjustTrove100pct(A, troveIDs.A, 0, debtWithdrawal, false, true);
 
-        vm.expectRevert("BorrowerOps: Trove does not have active status");
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
         this.adjustTrove100pct(B, troveIDs.B, 0, debtWithdrawal, false, true);
     }
 
@@ -678,13 +678,13 @@ contract Redemptions is DevTestSetup {
 
         // A attempts to add coll
         vm.startPrank(A);
-        vm.expectRevert("BorrowerOps: Trove does not have active status");
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
         borrowerOperations.addColl(troveIDs.A, collTopUp);
         vm.stopPrank();
 
         // B attempts to repay and can't (since would leave Trove at debt  < MIN_DEBT)
         vm.startPrank(B);
-        vm.expectRevert("BorrowerOps: Trove does not have active status");
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
         borrowerOperations.addColl(troveIDs.B, collTopUp);
         vm.stopPrank();
     }
@@ -698,12 +698,12 @@ contract Redemptions is DevTestSetup {
 
         // A and B attempt to change interes rates
         vm.startPrank(A);
-        vm.expectRevert("BorrowerOps: Trove does not have active status");
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
         borrowerOperations.adjustTroveInterestRate(troveIDs.A, newInterestRate, troveIDs.A, troveIDs.A, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
-        vm.expectRevert("BorrowerOps: Trove does not have active status");
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
         borrowerOperations.adjustTroveInterestRate(troveIDs.B, newInterestRate, troveIDs.B, troveIDs.B, 0);
         vm.stopPrank();
     }
@@ -727,8 +727,8 @@ contract Redemptions is DevTestSetup {
         assertFalse(sortedTroves.contains(troveIDs.B));
 
         // E applies interest on A and B's Troves
-        applyTroveInterestPermissionless(E, troveIDs.A);
-        applyTroveInterestPermissionless(E, troveIDs.B);
+        applyPendingDebt(E, troveIDs.A);
+        applyPendingDebt(E, troveIDs.B);
 
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
@@ -757,8 +757,8 @@ contract Redemptions is DevTestSetup {
         assertFalse(sortedTroves.contains(troveIDs.B));
 
         // E applies interest on A and B's Troves
-        applyTroveInterestPermissionless(E, troveIDs.A);
-        applyTroveInterestPermissionless(E, troveIDs.B);
+        applyPendingDebt(E, troveIDs.A);
+        applyPendingDebt(E, troveIDs.B);
 
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);

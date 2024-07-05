@@ -4,16 +4,16 @@ pragma solidity 0.8.18;
 import {console2 as console} from "forge-std/console2.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {IActivePool} from "../Interfaces/IActivePool.sol";
+import {BatchId} from "../Types/BatchId.sol";
 import {ISortedTroves} from "../Interfaces/ISortedTroves.sol";
 import {IStabilityPool} from "../Interfaces/IStabilityPool.sol";
 import {ITroveManager} from "../Interfaces/ITroveManager.sol";
-import {BatchId} from "../Types/BatchId.sol";
 import {_deployAndConnectContractsMultiColl, LiquityContractsDev, TroveManagerParams} from "../deployment.sol";
 import {StringFormatting} from "./Utils/StringFormatting.sol";
+import {ITroveManagerTester} from "./TestContracts/Interfaces/ITroveManagerTester.sol";
 import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
 import {BaseMultiCollateralTest} from "./TestContracts/BaseMultiCollateralTest.sol";
-import {AdjustedTroveProperties, InvariantsTestHandler} from "./TestContracts/InvariantsTestHandler.sol";
+import {AdjustedTroveProperties, InvariantsTestHandler} from "./TestContracts/InvariantsTestHandler.t.sol";
 
 struct BatchIdSet {
     mapping(BatchId => bool) _has;
@@ -164,7 +164,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
 
     function invariant_AllCollClaimable() external view {
         for (uint256 j = 0; j < branches.length; ++j) {
-            ITroveManager troveManager = branches[j].troveManager;
+            ITroveManagerTester troveManager = branches[j].troveManager;
             uint256 numTroves = troveManager.getTroveIdsCount();
             uint256 systemColl = troveManager.getEntireSystemColl();
             uint256 trovesColl = 0;

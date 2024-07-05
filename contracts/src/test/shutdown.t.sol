@@ -69,7 +69,8 @@ contract ShutdownTest is DevTestSetup {
         // Set first branch as default
         borrowerOperations = contractsArray[0].borrowerOperations;
         troveManager = contractsArray[0].troveManager;
-        MCR = troveManager.MCR();
+        MCR = troveManager.get_MCR();
+        SCR = troveManager.get_SCR();
     }
 
     function openMulticollateralTroveNoHints100pctWithIndex(
@@ -97,7 +98,10 @@ contract ShutdownTest is DevTestSetup {
             0, // _upperHint
             0, // _lowerHint
             _annualInterestRate,
-            upfrontFee
+            upfrontFee,
+            address(0),
+            address(0),
+            address(0)
         );
 
         vm.stopPrank();
@@ -122,28 +126,28 @@ contract ShutdownTest is DevTestSetup {
         vm.startPrank(A);
 
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
-            vm.expectRevert("BO: TCR is not below SCR");
+            vm.expectRevert(BorrowerOperations.TCRNotBelowSCR.selector);
             contractsArray[i].borrowerOperations.shutdown();
         }
 
         contractsArray[0].priceFeed.setPrice(1000e18);
         contractsArray[0].borrowerOperations.shutdown();
         for (uint256 i = 1; i < NUM_COLLATERALS; i++) {
-            vm.expectRevert("BO: TCR is not below SCR");
+            vm.expectRevert(BorrowerOperations.TCRNotBelowSCR.selector);
             contractsArray[i].borrowerOperations.shutdown();
         }
 
         contractsArray[1].priceFeed.setPrice(100e18);
         contractsArray[1].borrowerOperations.shutdown();
         for (uint256 i = 2; i < NUM_COLLATERALS; i++) {
-            vm.expectRevert("BO: TCR is not below SCR");
+            vm.expectRevert(BorrowerOperations.TCRNotBelowSCR.selector);
             contractsArray[i].borrowerOperations.shutdown();
         }
 
         contractsArray[2].priceFeed.setPrice(10000e18);
         contractsArray[2].borrowerOperations.shutdown();
         for (uint256 i = 3; i < NUM_COLLATERALS; i++) {
-            vm.expectRevert("BO: TCR is not below SCR");
+            vm.expectRevert(BorrowerOperations.TCRNotBelowSCR.selector);
             contractsArray[i].borrowerOperations.shutdown();
         }
 
@@ -161,7 +165,7 @@ contract ShutdownTest is DevTestSetup {
         contractsArray[0].priceFeed.setPrice(1000e18);
         contractsArray[0].borrowerOperations.shutdown();
 
-        vm.expectRevert("BO: already shutdown");
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         contractsArray[0].borrowerOperations.shutdown();
     }
 
@@ -169,8 +173,8 @@ contract ShutdownTest is DevTestSetup {
         prepareAndShutdownFirstBranch();
 
         vm.startPrank(B);
-        vm.expectRevert("BO: Branch shut down");
-        borrowerOperations.openTrove(B, 0, 20e18, 5000e18, 0, 0, 5e16, 10000e18);
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
+        borrowerOperations.openTrove(B, 0, 20e18, 5000e18, 0, 0, 5e16, 10000e18, address(0), address(0), address(0));
         vm.stopPrank();
     }
 
@@ -178,7 +182,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 troveId = prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
-        vm.expectRevert("BO: Branch shut down");
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         borrowerOperations.addColl(troveId, 1e18);
         vm.stopPrank();
     }
@@ -187,7 +191,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 troveId = prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
-        vm.expectRevert("BO: Branch shut down");
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         borrowerOperations.withdrawColl(troveId, 1);
         vm.stopPrank();
     }
@@ -196,7 +200,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 troveId = prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
-        vm.expectRevert("BO: Branch shut down");
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         borrowerOperations.withdrawBold(troveId, 1, 10000e18);
         vm.stopPrank();
     }
@@ -205,7 +209,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 troveId = prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
-        vm.expectRevert("BO: Branch shut down");
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         borrowerOperations.repayBold(troveId, 1000e18);
         vm.stopPrank();
     }
@@ -229,7 +233,7 @@ contract ShutdownTest is DevTestSetup {
         assertEq(troveManager.checkTroveIsUnredeemable(troveId), true, "A trove should be unredeemable");
 
         vm.startPrank(A);
-        vm.expectRevert("BO: Branch shut down");
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         borrowerOperations.adjustUnredeemableTrove(troveId, 1e18, true, 0, false, 0, 0, 1000e18);
         vm.stopPrank();
     }
@@ -253,7 +257,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 troveId = prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
-        vm.expectRevert("BO: Branch shut down");
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         borrowerOperations.adjustTroveInterestRate(troveId, 4e16, 0, 0, 10000e18);
         vm.stopPrank();
     }
@@ -262,8 +266,8 @@ contract ShutdownTest is DevTestSetup {
         uint256 troveId = prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
-        vm.expectRevert("BO: Branch shut down");
-        borrowerOperations.applyTroveInterestPermissionless(troveId);
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
+        borrowerOperations.applyPendingDebt(troveId);
         vm.stopPrank();
     }
 
@@ -273,9 +277,9 @@ contract ShutdownTest is DevTestSetup {
         // TODO
         /*
         vm.startPrank(A);
-        vm.expectRevert("BO: Branch shut down");
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         troveManager.liquitate(troveId);
-        vm.expectRevert("BO: Branch shut down");
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         troveManager.batchLiquitate(uintToArray(troveId));
         vm.stopPrank();
         */
@@ -287,7 +291,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 troveId = prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
-        vm.expectRevert("BO: Branch shut down");
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         borrowerOperations.();
         vm.stopPrank();
     }
@@ -299,7 +303,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 troveId = openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 110e18, 10000e18, 5e16);
 
         vm.startPrank(A);
-        vm.expectRevert("TroveManager: Branch is not shut down");
+        vm.expectRevert(TroveManager.NotShutDown.selector);
         contractsArray[1].troveManager.urgentRedemption(100e18, uintToArray(troveId), 0);
         vm.stopPrank();
     }
@@ -309,7 +313,7 @@ contract ShutdownTest is DevTestSetup {
 
         // Min not reached
         vm.startPrank(A);
-        vm.expectRevert("TM: Min collateral not reached");
+        vm.expectRevert(abi.encodeWithSelector(TroveManager.MinCollNotReached.selector, 101e16));
         troveManager.urgentRedemption(1000e18, uintToArray(troveId), 102e16);
         vm.stopPrank();
 
@@ -508,7 +512,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
@@ -537,7 +541,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
@@ -561,7 +565,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
@@ -597,7 +601,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
@@ -631,7 +635,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
@@ -656,7 +660,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
 
         assertTrue(contractsArray[0].borrowerOperations.hasBeenShutDown());
@@ -678,7 +682,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves, branch can be shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
 
         // Random EOA tries to call setShutdownFlag and fails
@@ -699,7 +703,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
@@ -731,7 +735,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
@@ -764,7 +768,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
@@ -781,14 +785,14 @@ contract ShutdownTest is DevTestSetup {
 
         // Check Trove's debt after redemption is > 0
         (uint256 debtAfter3,,,,) = troveManager.getEntireDebtAndColl(troveId3);
-        assertGt(debtAfter3, 0);
-        assertEq(debtAfter3, debtBefore3 - redemptionAmount);
+        assertGt(debtAfter3, 0, "Debt should be positive");
+        assertEq(debtAfter3, debtBefore3 - redemptionAmount, "Debt mismatch");
 
         // fast forward time
         vm.warp(block.timestamp + 1 days);
 
         // Check Trove still has no interest
-        assertEq(troveManager.calcTroveAccruedInterest(troveId3), 0);
+        assertEq(troveManager.calcTroveAccruedInterest(troveId3), 0, "Trove accrued interest should be zero");
     }
 
     function testUrgentRedemptionReducesAggRecordedDebtByRedeemedAmount() public {
@@ -801,7 +805,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
@@ -830,7 +834,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
@@ -857,7 +861,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
@@ -898,7 +902,7 @@ contract ShutdownTest is DevTestSetup {
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
-        assertLt(troveManager.getTCR(price), troveManager.SCR());
+        assertLt(troveManager.getTCR(price), SCR);
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 

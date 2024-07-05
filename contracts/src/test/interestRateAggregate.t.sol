@@ -130,15 +130,15 @@ contract InterestRateAggregate is DevTestSetup {
 
         vm.startPrank(A);
         vm.expectRevert();
-        activePool.mintAggInterestAndAccountForTroveChange(noChange);
+        activePool.mintAggInterestAndAccountForTroveChange(noChange, address(0));
         vm.stopPrank();
 
         vm.startPrank(address(borrowerOperations));
-        activePool.mintAggInterestAndAccountForTroveChange(noChange);
+        activePool.mintAggInterestAndAccountForTroveChange(noChange, address(0));
         vm.stopPrank();
 
         vm.startPrank(address(troveManager));
-        activePool.mintAggInterestAndAccountForTroveChange(noChange);
+        activePool.mintAggInterestAndAccountForTroveChange(noChange, address(0));
         vm.stopPrank();
     }
 
@@ -1277,7 +1277,7 @@ contract InterestRateAggregate is DevTestSetup {
         );
     }
 
-    // --- applyTroveInterestPermissionless ---
+    // --- applyPendingDebt ---
 
     function testApplyTroveInterestPermissionlessWithNoRedistGainsIncreasesAggRecordedDebtByPendingAggInterest()
         public
@@ -1299,7 +1299,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest);
     }
@@ -1319,7 +1319,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(activePool.calcPendingAggInterest(), 0);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         assertEq(activePool.calcPendingAggInterest(), 0);
     }
@@ -1344,7 +1344,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 expectedSPYield = _getSPYield(pendingAggInterest);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         // Check SP Bold bal has increased by the pending agg interest
         assertEq(boldToken.balanceOf(address(stabilityPool)) - balanceBefore, expectedSPYield);
@@ -1366,7 +1366,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertLt(activePool.lastAggUpdateTime(), block.timestamp);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         // Check last agg update time increased to now
         assertEq(activePool.lastAggUpdateTime(), block.timestamp);
@@ -1391,7 +1391,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(aggWeightedDebtSum_1, 0);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         uint256 entireTroveDebt = troveManager.getTroveEntireDebt(ATroveId);
         uint256 expectedNewRecordedWeightedDebt = entireTroveDebt * interestRate;

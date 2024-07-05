@@ -5,8 +5,11 @@ pragma solidity 0.8.18;
 import "../../../Interfaces/IBorrowerOperations.sol";
 
 interface IBorrowerOperationsTester is IBorrowerOperations {
-    function get_CCR() external view returns (uint256);
-    function applyTroveInterestPermissionless(uint256 _troveId) external;
+    function getCollToken() external view returns (IERC20);
+    function getSortedTroves() external view returns (ISortedTroves);
+    function getBoldToken() external view returns (IBoldToken);
+
+    function applyPendingDebt(uint256 _troveId) external;
     function getNewTCRFromTroveChange(
         uint256 _collChange,
         bool isCollIncrease,

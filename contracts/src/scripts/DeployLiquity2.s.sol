@@ -79,7 +79,10 @@ contract DeployLiquity2Script is Script, StdCheats {
                 0, //                    _upperHint
                 0, //                    _lowerHint
                 0.05e18, //              _annualInterestRate
-                type(uint256).max //     _maxUpfrontFee
+                type(uint256).max, //    _maxUpfrontFee
+                address(0), //           _addManager
+                address(0), //           _removeManager
+                address(0) //           _receiver
             );
 
             vm.stopBroadcast();
