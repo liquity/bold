@@ -11,6 +11,7 @@ import {IPriceFeedTestnet} from "./Interfaces/IPriceFeedTestnet.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
 import {BaseHandler} from "./BaseHandler.sol";
+import {TroveManagerTester} from "./TroveManagerTester.sol";
 
 import {
     DECIMAL_PRECISION,
@@ -147,6 +148,7 @@ contract SPInvariantsTestHandler is BaseHandler {
     }
 
     function liquidateMe() external {
+        vm.assume(troveManager.getTroveIdsCount() > 1);
         uint256 troveId = _getTroveId(msg.sender, troveManager.balanceOf(msg.sender));
         vm.assume(troveManager.getTroveStatus(troveId) == ITroveManager.Status.active);
 
@@ -159,7 +161,7 @@ contract SPInvariantsTestHandler is BaseHandler {
 
         uint256 collBefore = collateralToken.balanceOf(address(this));
         uint256 accountSurplusBefore = collSurplusPool.getCollateral(msg.sender);
-        uint256 collCompensation = coll / COLL_GAS_COMPENSATION_DIVISOR;
+        uint256 collCompensation = TroveManagerTester(address(troveManager)).getCollGasCompensation(coll);
         // Calc claimable coll based on the remaining coll to liquidate, less the liq. penalty that goes to the SP depositors
         uint256 seizedColl = debt * (_100pct + troveManager.LIQUIDATION_PENALTY_SP()) / priceFeed.getPrice();
         // The Trove owner bears the gas compensation costs
