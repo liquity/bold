@@ -20,41 +20,45 @@ struct BatchIdSet {
     BatchId[] _batchIds;
 }
 
-function add(BatchIdSet storage set, BatchId batchId) {
-    if (!set._has[batchId]) {
-        set._has[batchId] = true;
-        set._batchIds.push(batchId);
+library BatchIdSetMethods {
+    function add(BatchIdSet storage set, BatchId batchId) internal {
+        if (!set._has[batchId]) {
+            set._has[batchId] = true;
+            set._batchIds.push(batchId);
+        }
+    }
+
+    function clear(BatchIdSet storage set) internal {
+        for (uint256 i = 0; i < set._batchIds.length; ++i) {
+            delete set._has[set._batchIds[i]];
+        }
+        delete set._batchIds;
+    }
+
+    function has(BatchIdSet storage set, BatchId batchId) internal view returns (bool) {
+        return set._has[batchId];
     }
 }
 
-function clear(BatchIdSet storage set) {
-    for (uint256 i = 0; i < set._batchIds.length; ++i) {
-        delete set._has[set._batchIds[i]];
+library SortedTrovesHelpers {
+    function getBatchOf(ISortedTroves sortedTroves, uint256 troveId) internal view returns (BatchId batchId) {
+        (,, batchId,) = sortedTroves.nodes(troveId);
     }
-    delete set._batchIds;
-}
 
-function has(BatchIdSet storage set, BatchId batchId) view returns (bool) {
-    return set._has[batchId];
-}
+    function getBatchHead(ISortedTroves sortedTroves, BatchId batchId) internal view returns (uint256 batchHead) {
+        (batchHead,) = sortedTroves.batches(batchId);
+    }
 
-function getBatchOf(ISortedTroves sortedTroves, uint256 troveId) view returns (BatchId batchId) {
-    (,, batchId,) = sortedTroves.nodes(troveId);
-}
-
-function getBatchHead(ISortedTroves sortedTroves, BatchId batchId) view returns (uint256 batchHead) {
-    (batchHead,) = sortedTroves.batches(batchId);
-}
-
-function getBatchTail(ISortedTroves sortedTroves, BatchId batchId) view returns (uint256 batchTail) {
-    (, batchTail) = sortedTroves.batches(batchId);
+    function getBatchTail(ISortedTroves sortedTroves, BatchId batchId) internal view returns (uint256 batchTail) {
+        (, batchTail) = sortedTroves.batches(batchId);
+    }
 }
 
 contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
     using Strings for uint256;
     using StringFormatting for uint256;
-    using {add, clear, has} for BatchIdSet;
-    using {getBatchOf, getBatchHead, getBatchTail} for ISortedTroves;
+    using BatchIdSetMethods for BatchIdSet;
+    using SortedTrovesHelpers for ISortedTroves;
 
     InvariantsTestHandler handler;
     BatchIdSet seenBatches;
