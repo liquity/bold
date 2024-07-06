@@ -51,8 +51,7 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 ATroveId =
-            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
+        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
@@ -144,8 +143,7 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         priceFeed.setPrice(initialPrice);
         vm.startPrank(A);
-        uint256 ATroveId =
-            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
+        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
@@ -235,13 +233,18 @@ contract LiquidationsLSTTest is DevTestSetup {
         if (collPenalty < finalValues.collToLiquidate) {
             collSurplusAmount = finalValues.collToLiquidate - collPenalty;
         }
-        assertApproxEqAbs(collToken.balanceOf(address(collSurplusPool)), collSurplusAmount, 1e9, "CollSurplusPoll mismatch");
+        assertApproxEqAbs(
+            collToken.balanceOf(address(collSurplusPool)), collSurplusAmount, 1e9, "CollSurplusPoll mismatch"
+        );
         if (collSurplusAmount > 0) {
             vm.startPrank(A);
             borrowerOperations.claimCollateral();
             vm.stopPrank();
             assertApproxEqAbs(
-                collToken.balanceOf(A) - initialValues.ACollBalance, collSurplusAmount, 1e9, "A collateral balance mismatch"
+                collToken.balanceOf(A) - initialValues.ACollBalance,
+                collSurplusAmount,
+                1e9,
+                "A collateral balance mismatch"
             );
         }
     }

@@ -9,8 +9,7 @@ contract LiquidationsTest is DevTestSetup {
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 ATroveId =
-            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
+        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
@@ -76,8 +75,7 @@ contract LiquidationsTest is DevTestSetup {
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 ATroveId =
-            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
+        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
@@ -134,8 +132,7 @@ contract LiquidationsTest is DevTestSetup {
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 ATroveId =
-            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
+        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);
@@ -199,8 +196,7 @@ contract LiquidationsTest is DevTestSetup {
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 ATroveId =
-            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
+        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);

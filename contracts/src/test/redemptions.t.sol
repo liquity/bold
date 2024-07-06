@@ -151,7 +151,8 @@ contract Redemptions is DevTestSetup {
         assertGt(predictedCollFee, 0);
 
         // Expect Trove's coll reduced by the Coll corresponding to the BOLD redeemed (less the Coll fee)
-        uint256 expectedRemainingColl = troveManager.getTroveEntireColl(troveIDs.B) - correspondingColl + predictedCollFee;
+        uint256 expectedRemainingColl =
+            troveManager.getTroveEntireColl(troveIDs.B) - correspondingColl + predictedCollFee;
         assertGt(expectedRemainingColl, 0);
 
         redeem(E, redeemAmount);

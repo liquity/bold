@@ -1530,9 +1530,19 @@ contract SPTest is DevTestSetup {
         // Expect A to receive 0 - they already claimed his gain 1, and gets 0 from 2nd reward
         assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), 0, 1e4, "A should receive 0");
         // Expect B to receive only their share of reward 1, and get 0 for 2nd reward
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward[0].B, 1e4, "B should receive only their share of reward 1");
+        assertApproximatelyEqual(
+            stabilityPool.getDepositorYieldGain(B),
+            expectedShareOfReward[0].B,
+            1e4,
+            "B should receive only their share of reward 1"
+        );
         // Expect C to receive a share of both reward 1 and 2
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward[1].C, 1e4, "C should receive a share of both reward 1 and 2");
+        assertApproximatelyEqual(
+            stabilityPool.getDepositorYieldGain(C),
+            expectedShareOfReward[1].C,
+            1e4,
+            "C should receive a share of both reward 1 and 2"
+        );
     }
 
     function testGetDepositorBoldGain_2SPDepositor1LiqScaleChangeFreshDeposit_EarnFairShareOfSPYield() public {

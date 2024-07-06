@@ -560,7 +560,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         // TODO: Gas optimize? We update totalStakes N times for a sequence of N Troves(!).
         uint256 newStake = _updateStakeAndTotalStakes(_troveId, newColl);
         // TODO: Gas optimize? We move pending rewards N times for a sequence of N Troves(!).
-        _movePendingTroveRewardsToActivePool(_contractsCache.defaultPool, trove.redistBoldDebtGain, trove.redistCollGain);
+        _movePendingTroveRewardsToActivePool(
+            _contractsCache.defaultPool, trove.redistBoldDebtGain, trove.redistCollGain
+        );
         _updateTroveRewardSnapshots(_troveId);
 
         emit TroveUpdated(_troveId, newDebt, newColl, newStake, trove.annualInterestRate, L_coll, L_boldDebt);
@@ -1093,7 +1095,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             _troveChange.upfrontFee,
             0, // debt increase / decrease
             _troveChange.appliedRedistCollGain,
-            0  // coll increase / decrease
+            0 // coll increase / decrease
         );
     }
 
@@ -1148,7 +1150,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         _updateTroveRewardSnapshots(_troveId);
 
         emit TroveUpdated(
-            _troveId, _newDebt, _newColl, Troves[_troveId].stake, Troves[_troveId].annualInterestRate, L_coll, L_boldDebt
+            _troveId,
+            _newDebt,
+            _newColl,
+            Troves[_troveId].stake,
+            Troves[_troveId].annualInterestRate,
+            L_coll,
+            L_boldDebt
         );
 
         emit TroveOperation(

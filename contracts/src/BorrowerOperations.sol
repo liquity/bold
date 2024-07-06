@@ -679,10 +679,7 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     }
 
     function _requireValidBoldRepayment(uint256 _currentDebt, uint256 _debtRepayment) internal pure {
-        require(
-            _debtRepayment <= _currentDebt,
-            "BorrowerOps: Amount repaid must not be larger than the Trove's debt"
-        );
+        require(_debtRepayment <= _currentDebt, "BorrowerOps: Amount repaid must not be larger than the Trove's debt");
     }
 
     function _requireValidCollWithdrawal(uint256 _currentColl, uint256 _collWithdrawal) internal pure {

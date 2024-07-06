@@ -228,7 +228,6 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
         address _sortedTrovesAddress,
         address _priceFeedAddress
     ) external override onlyOwner {
-
         borrowerOperations = IBorrowerOperations(_borrowerOperationsAddress);
         troveManager = ITroveManager(_troveManagerAddress);
         activePool = IActivePool(_activePoolAddress);
@@ -283,7 +282,8 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
         uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         (uint256 keptYieldGain, uint256 yieldGainToSend) = _getYieldToKeepOrSend(currentYieldGain, _doClaim);
         uint256 newDeposit = compoundedBoldDeposit + _topUp + keptYieldGain;
-        (uint256 newStashedColl, uint256 collToSend) = _getNewStashedCollAndCollToSend(msg.sender, currentCollGain, _doClaim);
+        (uint256 newStashedColl, uint256 collToSend) =
+            _getNewStashedCollAndCollToSend(msg.sender, currentCollGain, _doClaim);
 
         emit DepositOperation(
             msg.sender,
@@ -340,7 +340,8 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
         uint256 boldToWithdraw = LiquityMath._min(_amount, compoundedBoldDeposit);
         (uint256 keptYieldGain, uint256 yieldGainToSend) = _getYieldToKeepOrSend(currentYieldGain, _doClaim);
         uint256 newDeposit = compoundedBoldDeposit - boldToWithdraw + keptYieldGain;
-        (uint256 newStashedColl, uint256 collToSend) = _getNewStashedCollAndCollToSend(msg.sender, currentCollGain, _doClaim);
+        (uint256 newStashedColl, uint256 collToSend) =
+            _getNewStashedCollAndCollToSend(msg.sender, currentCollGain, _doClaim);
 
         emit DepositOperation(
             msg.sender,

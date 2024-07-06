@@ -882,7 +882,9 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
         uint256 stashedColl = deposit.stashedColl + deposit.pendingCollGain;
 
         vm.expectEmit();
-        emit DepositUpdated(A, deposit.pendingBoldYieldGain, stashedColl, curr.P, curr.S, curr.B, curr.scale, curr.epoch);
+        emit DepositUpdated(
+            A, deposit.pendingBoldYieldGain, stashedColl, curr.P, curr.S, curr.B, curr.scale, curr.epoch
+        );
         makeSPWithdrawalNoClaim(A, deposit.recordedBold - deposit.pendingBoldLoss); // can't withdraw pending yield
 
         vm.expectEmit();
