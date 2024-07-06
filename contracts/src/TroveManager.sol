@@ -39,7 +39,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
     // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
     uint256 public immutable SCR;
-    bool public hasBeenShutDown;
 
     // Liquidation penalty for troves offset to the SP
     uint256 public immutable LIQUIDATION_PENALTY_SP;
@@ -95,6 +94,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     // Error trackers for the trove redistribution calculation
     uint256 public lastCollError_Redistribution;
     uint256 public lastBoldDebtError_Redistribution;
+
+    // Timestamp at which branch was shut down. 0 if not shut down.
+    uint256 public shutdownTime;
 
     /*
     * --- Variable container structs for liquidations ---
@@ -755,7 +757,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     function shutdown() external {
         _requireCallerIsBorrowerOperations();
-        hasBeenShutDown = true;
+        // TODO: potentially refactor so that we only store one value. Though, current approach is gas efficient 
+        // and avoids cross-contract calls.
+        shutdownTime = block.timestamp;
+        activePool.setShutdownFlag();
     }
 
     // --- Helper functions ---
@@ -806,12 +811,18 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         trove.recordedDebt = Troves[_troveId].debt;
         trove.annualInterestRate = Troves[_troveId].annualInterestRate;
         trove.weightedRecordedDebt = trove.recordedDebt * trove.annualInterestRate;
-        trove.accruedInterest =
-            _calcInterest(trove.weightedRecordedDebt, block.timestamp - Troves[_troveId].lastDebtUpdateTime);
+
+        uint256 period = _getInterestPeriod(Troves[_troveId].lastDebtUpdateTime);
+        trove.accruedInterest = _calcInterest(trove.weightedRecordedDebt, period);
 
         trove.entireDebt = trove.recordedDebt + trove.redistBoldDebtGain + trove.accruedInterest;
         trove.entireColl = Troves[_troveId].coll + trove.redistCollGain;
         trove.lastInterestRateAdjTime = Troves[_troveId].lastInterestRateAdjTime;
+    }
+
+    function _getInterestPeriod(uint256 _lastDebtUpdateTime) internal view returns (uint256) {
+        // If shutdown occured, interest is earned up to that timestamp. Otherwise, interest is earned up to now.
+        return shutdownTime > 0 ? shutdownTime - _lastDebtUpdateTime : block.timestamp - _lastDebtUpdateTime;
     }
 
     function getLatestTroveData(uint256 _troveId) external view returns (LatestTroveData memory trove) {
@@ -1031,9 +1042,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint256 recordedDebt = Troves[_troveId].debt;
         // convert annual interest to per-second and multiply by the principal
         uint256 annualInterestRate = Troves[_troveId].annualInterestRate;
-        uint256 lastDebtUpdateTime = Troves[_troveId].lastDebtUpdateTime;
 
-        return _calcInterest(recordedDebt * annualInterestRate, (block.timestamp - lastDebtUpdateTime));
+        uint256 period = _getInterestPeriod(Troves[_troveId].lastDebtUpdateTime);
+
+        return _calcInterest(recordedDebt * annualInterestRate, period);
     }
 
     // --- 'require' wrapper functions ---
@@ -1094,6 +1106,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint256 unbackedPortion = totalDebt > spSize ? totalDebt - spSize : 0;
 
         uint256 price = priceFeed.fetchPrice();
+        // It's redeemable if the TCR is above the shutdown threshold, and branch has not been shut down
         bool redeemable = _getTCR(price) >= SCR && shutdownTime == 0;
 
         return (unbackedPortion, price, redeemable);

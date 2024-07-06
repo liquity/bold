@@ -560,6 +560,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     function shutdown() external {
         require(!hasBeenShutDown, "BO: already shutdown");
 
+        activePool.mintAggInterest();
+        
         uint256 totalColl = getEntireSystemColl();
         uint256 totalDebt = getEntireSystemDebt();
         uint256 price = priceFeed.fetchPrice();

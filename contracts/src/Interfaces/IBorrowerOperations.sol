@@ -65,6 +65,7 @@ interface IBorrowerOperations is ILiquityBase {
 
     function claimCollateral() external;
 
+    function hasBeenShutDown() external view returns (bool);
     function shutdown() external;
     function urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral) external;
 

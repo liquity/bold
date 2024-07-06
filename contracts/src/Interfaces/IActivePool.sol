@@ -36,6 +36,8 @@ interface IActivePool {
 
     function mintAggInterest() external;
     function mintAggInterestAndAccountForTroveChange(TroveChange calldata _troveChange) external;
+    function setShutdownFlag() external;
+    function hasBeenShutDown() external returns (bool);
 
     function sendColl(address _account, uint256 _amount) external;
     function sendCollToDefaultPool(uint256 _amount) external;

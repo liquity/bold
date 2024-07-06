@@ -51,6 +51,8 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     // Last time at which the aggregate recorded debt and weighted sum were updated
     uint256 public lastAggUpdateTime;
 
+    bool public hasBeenShutDown;
+
     // --- Events ---
 
     event DefaultPoolAddressChanged(address _newDefaultPoolAddress);
@@ -112,6 +114,8 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     }
 
     function calcPendingAggInterest() public view returns (uint256) {
+        if (hasBeenShutDown) {return 0;}
+
         return aggWeightedDebtSum * (block.timestamp - lastAggUpdateTime) / ONE_YEAR / DECIMAL_PRECISION;
     }
 
@@ -229,7 +233,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     }
 
     function mintAggInterest() external override {
-        _requireCallerIsSP();
+        _requireCallerIsBOorSP();
         aggRecordedDebt += _mintAggInterest(0);
     }
 
@@ -251,6 +255,13 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         lastAggUpdateTime = block.timestamp;
     }
 
+    // --- Shutdown ---
+
+    function setShutdownFlag() external {
+        _requireCallerIsTroveManager(); 
+        hasBeenShutDown = true;   
+    }
+
     // --- 'require' functions ---
 
     function _requireCallerIsBorrowerOperationsOrDefaultPool() internal view {
@@ -268,8 +279,10 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         );
     }
 
-    function _requireCallerIsSP() internal view {
-        require(msg.sender == address(stabilityPool), "ActivePool: Caller is not StabilityPool");
+    function _requireCallerIsBOorSP() internal view {
+        require(msg.sender == borrowerOperationsAddress || msg.sender == address(stabilityPool), 
+            "ActivePool: Caller is not BorrowerOperations nor StabilityPool"
+        );
     }
 
     function _requireCallerIsBOorTroveM() internal view {
