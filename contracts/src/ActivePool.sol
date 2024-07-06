@@ -132,6 +132,8 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         // This is a simple way to resolve the circularity in:
         //   fee depends on avg. interest rate -> avg. interest rate is weighted by debt -> debt includes fee -> ...
         assert(_troveChange.upfrontFee == 0);
+        
+        if (hasBeenShutDown) {return 0;}
 
         uint256 newAggRecordedDebt = aggRecordedDebt;
         newAggRecordedDebt += calcPendingAggInterest();
