@@ -190,6 +190,9 @@ class TestHelper {
   }
 
   static applyLiquidationFee(ethAmount) {
+    if (ethAmount.mul(this.toBN(this.dec(5, 15))).div(MoneyValues._1e18BN).gt(this.toBN(this.dec(2,  18)))) {
+      return ethAmount.sub(this.toBN(this.dec(2, 18)));
+    }
     return ethAmount.mul(this.toBN(this.dec(995, 15))).div(MoneyValues._1e18BN);
   }
   // --- Logging functions ---
@@ -302,16 +305,12 @@ class TestHelper {
   // Given a composite debt, returns the actual debt  - i.e. subtracts the virtual debt.
   // Virtual debt = 50 Bold.
   static async getActualDebtFromComposite(compositeDebt, contracts) {
-    const issuedDebt = await contracts.troveManager.getActualDebtFromComposite(
-      compositeDebt,
-    );
-    return issuedDebt;
+    return compositeDebt;
   }
 
   // Adds the gas compensation (50 Bold)
   static async getCompositeDebt(contracts, debt) {
-    const compositeDebt = contracts.borrowerOperations.getCompositeDebt(debt);
-    return compositeDebt;
+    return debt;
   }
 
   static async getTroveEntireCollByAddress(contracts, account) {
@@ -394,10 +393,10 @@ class TestHelper {
       if (redemptionTx.logs[i].event === "Redemption") {
         const BoldAmount = redemptionTx.logs[i].args[0];
         const totalBoldRedeemed = redemptionTx.logs[i].args[1];
-        const totalETHDrawn = redemptionTx.logs[i].args[2];
-        const ETHFee = redemptionTx.logs[i].args[3];
+        const totalCollDrawn = redemptionTx.logs[i].args[2];
+        const collFee = redemptionTx.logs[i].args[3];
 
-        return [BoldAmount, totalBoldRedeemed, totalETHDrawn, ETHFee];
+        return [BoldAmount, totalBoldRedeemed, totalCollDrawn, collFee];
       }
     }
     throw "The transaction logs do not contain a redemption event";
@@ -518,11 +517,11 @@ class TestHelper {
     // console.log(`troveId: ${troveId}`)
     const rawColl = (await contracts.troveManager.Troves(troveId))[1];
     const rawDebt = (await contracts.troveManager.Troves(troveId))[0];
-    const pendingETHReward = await contracts.troveManager.getPendingETHReward(
+    const pendingCollReward = await contracts.troveManager.getPendingCollReward(
       troveId,
     );
     const pendingBoldDebtReward = await contracts.troveManager.getPendingBoldDebtReward(troveId);
-    const entireColl = rawColl.add(pendingETHReward);
+    const entireColl = rawColl.add(pendingCollReward);
     const entireDebt = rawDebt.add(pendingBoldDebtReward);
 
     return { entireColl, entireDebt };
@@ -580,7 +579,7 @@ class TestHelper {
   static async getCollAndDebtFromAdjustment(
     contracts,
     account,
-    ETHChange,
+    collChange,
     BoldChange,
   ) {
     const { entireColl, entireDebt } = await this.getEntireCollAndDebt(
@@ -594,7 +593,7 @@ class TestHelper {
     const fee = BoldChange.gt(this.toBN("0"))
       ? await contracts.troveManager.getBorrowingFee(BoldChange)
       : this.toBN("0");
-    const newColl = entireColl.add(ETHChange);
+    const newColl = entireColl.add(collChange);
     const newDebt = entireDebt.add(BoldChange).add(fee);
 
     return { newColl, newDebt };
@@ -605,7 +604,7 @@ class TestHelper {
   static async openTrove_allAccounts(
     accounts,
     contracts,
-    ETHAmount,
+    collAmount,
     BoldAmount,
   ) {
     const gasCostList = [];
@@ -614,13 +613,13 @@ class TestHelper {
     for (const account of accounts) {
       const { upperHint, lowerHint } = await this.getBorrowerOpsListHint(
         contracts,
-        ETHAmount,
+        collAmount,
         totalDebt,
       );
 
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
-        ETHAmount,
+        collAmount,
         BoldAmount,
         upperHint,
         lowerHint,
@@ -763,7 +762,7 @@ class TestHelper {
     maxBold,
     accounts,
     contracts,
-    ETHAmount,
+    collAmount,
   ) {
     const gasCostList = [];
 
@@ -775,13 +774,13 @@ class TestHelper {
       );
       const { upperHint, lowerHint } = await this.getBorrowerOpsListHint(
         contracts,
-        ETHAmount,
+        collAmount,
         totalDebt,
       );
 
       const tx = await contracts.borrowerOperations.openTrove(
         this._100pct,
-        ETHAmount,
+        collAmount,
         randBoldAmount,
         upperHint,
         lowerHint,
@@ -828,8 +827,9 @@ class TestHelper {
 
     const MIN_DEBT = await this.getNetBorrowingAmount(
       contracts,
-      await contracts.constants._MIN_NET_DEBT(),
+      await contracts.constants._MIN_DEBT(),
     );
+
     // Only needed for non-zero borrow fee: .add(this.toBN(1)); // add 1 to avoid rounding issues
 
     const boldAmount = MIN_DEBT.add(extraBoldAmount);
@@ -843,14 +843,10 @@ class TestHelper {
       const price = await contracts.priceFeedTestnet.getPrice();
       extraParams.value = ICR.mul(totalDebt).div(price);
     }
-    // await contracts.stETH.approve(
-    //   contracts.borrowerOperations.address,
-    //   extraParams.value,
-    //   { from: extraParams.from }
-    // );
 
     // approve ERC20 ETH
-    await contracts.WETH.approve(contracts.borrowerOperations.address, extraParams.value, { from: extraParams.from });
+    const ETH_GAS_COMPENSATION = await contracts.constants._ETH_GAS_COMPENSATION();
+    await contracts.WETH.approve(contracts.borrowerOperations.address, this.toBN(extraParams.value).add(ETH_GAS_COMPENSATION), { from: extraParams.from });
 
     const tx = await contracts.borrowerOperations.openTrove(
       extraParams.from,
@@ -890,7 +886,8 @@ class TestHelper {
     extraParams,
   ) {
     // approve ERC20 ETH
-    await contracts.WETH.approve(contracts.borrowerOperations.address, extraParams.value, { from: extraParams.from });
+    const ETH_GAS_COMPENSATION = await contracts.constants._ETH_GAS_COMPENSATION();
+    await contracts.WETH.approve(contracts.borrowerOperations.address, this.toBN(extraParams.value).add(ETH_GAS_COMPENSATION), { from: extraParams.from });
 
     const tx = await contracts.borrowerOperations.openTrove(
       extraParams.from,
@@ -974,7 +971,7 @@ class TestHelper {
   static async adjustTrove_allAccounts(
     accounts,
     contracts,
-    ETHAmount,
+    collAmount,
     BoldAmount,
   ) {
     const gasCostList = [];
@@ -982,13 +979,13 @@ class TestHelper {
     for (const account of accounts) {
       let tx;
 
-      let ETHChangeBN = this.toBN(ETHAmount);
+      let collChangeBN = this.toBN(collAmount);
       let BoldChangeBN = this.toBN(BoldAmount);
 
       const { newColl, newDebt } = await this.getCollAndDebtFromAdjustment(
         contracts,
         account,
-        ETHChangeBN,
+        collChangeBN,
         BoldChangeBN,
       );
       const { upperHint, lowerHint } = await this.getBorrowerOpsListHint(
@@ -1003,10 +1000,10 @@ class TestHelper {
       BoldChangeBN = BoldChangeBN.abs();
 
       // Add ETH to trove
-      if (ETHChangeBN.gt(zero)) {
+      if (collChangeBN.gt(zero)) {
         tx = await contracts.borrowerOperations.adjustTrove(
           this._100pct,
-          ETHChangeBN,
+          collChangeBN,
           true,
           BoldChangeBN,
           isDebtIncrease,
@@ -1015,11 +1012,11 @@ class TestHelper {
           { from: account },
         );
         // Withdraw ETH from trove
-      } else if (ETHChangeBN.lt(zero)) {
-        ETHChangeBN = ETHChangeBN.neg();
+      } else if (collChangeBN.lt(zero)) {
+        collChangeBN = collChangeBN.neg();
         tx = await contracts.borrowerOperations.adjustTrove(
           this._100pct,
-          ETHChangeBN,
+          collChangeBN,
           false,
           BoldChangeBN,
           isDebtIncrease,
@@ -1048,13 +1045,13 @@ class TestHelper {
     for (const account of accounts) {
       let tx;
 
-      let ETHChangeBN = this.toBN(this.randAmountInWei(ETHMin, ETHMax));
+      let collChangeBN = this.toBN(this.randAmountInWei(ETHMin, ETHMax));
       let BoldChangeBN = this.toBN(this.randAmountInWei(BoldMin, BoldMax));
 
       const { newColl, newDebt } = await this.getCollAndDebtFromAdjustment(
         contracts,
         account,
-        ETHChangeBN,
+        collChangeBN,
         BoldChangeBN,
       );
       const { upperHint, lowerHint } = await this.getBorrowerOpsListHint(
@@ -1069,10 +1066,10 @@ class TestHelper {
       BoldChangeBN = BoldChangeBN.abs();
 
       // Add ETH to trove
-      if (ETHChangeBN.gt(zero)) {
+      if (collChangeBN.gt(zero)) {
         tx = await contracts.borrowerOperations.adjustTrove(
           this._100pct,
-          ETHChangeBN,
+          collChangeBN,
           true,
           BoldChangeBN,
           isDebtIncrease,
@@ -1081,11 +1078,11 @@ class TestHelper {
           { from: account },
         );
         // Withdraw ETH from trove
-      } else if (ETHChangeBN.lt(zero)) {
-        ETHChangeBN = ETHChangeBN.neg();
+      } else if (collChangeBN.lt(zero)) {
+        collChangeBN = collChangeBN.neg();
         tx = await contracts.borrowerOperations.adjustTrove(
           this._100pct,
-          ETHChangeBN,
+          collChangeBN,
           false,
           BoldChangeBN,
           isDebtIncrease,
@@ -1096,7 +1093,7 @@ class TestHelper {
       }
 
       const gas = this.gasUsed(tx);
-      // console.log(`ETH change: ${ETHChangeBN},  BoldChange: ${BoldChangeBN}, gas: ${gas} `)
+      // console.log(`ETH change: ${collChangeBN},  BoldChange: ${BoldChangeBN}, gas: ${gas} `)
 
       gasCostList.push(gas);
     }

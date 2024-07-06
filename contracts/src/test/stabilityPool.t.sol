@@ -50,10 +50,10 @@ contract SPTest is DevTestSetup {
         uint256 troveDebt_D;
         uint256 totalSPBeforeLiq_C;
         uint256 totalSPBeforeLiq_D;
-        uint256 expectedShareOfETH1_A;
-        uint256 expectedShareOfETH1_B;
-        uint256 expectedShareOfETH2_A;
-        uint256 expectedShareOfETH2_B;
+        uint256 expectedShareOfColl1_A;
+        uint256 expectedShareOfColl1_B;
+        uint256 expectedShareOfColl2_A;
+        uint256 expectedShareOfColl2_B;
         uint256 boldGainA;
         uint256 boldGainB;
         uint256 boldGainC;
@@ -64,14 +64,14 @@ contract SPTest is DevTestSetup {
         uint256 ethGainB;
         uint256 ethGainC;
         uint256 ethGainD;
-        uint256 expectedShareOfETH;
+        uint256 expectedShareOfColl;
         uint256 spEthGain;
         uint256 totalDepositsBefore;
         uint256 spEthBal1;
         uint256 spEthBal2;
     }
 
-    function _setupStashedAndCurrentETHGains() internal {
+    function _setupStashedAndCurrentCollGains() internal {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         // A stashes first gain
@@ -82,118 +82,118 @@ contract SPTest is DevTestSetup {
         assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(ITroveManager.Status.closedByLiquidation));
 
         // Check A has both stashed and current gains
-        uint256 stashedETHGain_A = stabilityPool.stashedETH(A);
-        uint256 currentETHGain_A = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain_A, 0);
-        assertGt(currentETHGain_A, 0);
+        uint256 stashedCollGain_A = stabilityPool.stashedColl(A);
+        uint256 currentCollGain_A = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain_A, 0);
+        assertGt(currentCollGain_A, 0);
 
         // Check B has only current gains, no stashed
-        uint256 stashedETHGain_B = stabilityPool.stashedETH(B);
-        uint256 currentETHGain_B = stabilityPool.getDepositorETHGain(B);
-        assertEq(stashedETHGain_B, 0);
-        assertGt(currentETHGain_B, 0);
+        uint256 stashedCollGain_B = stabilityPool.stashedColl(B);
+        uint256 currentCollGain_B = stabilityPool.getDepositorCollGain(B);
+        assertEq(stashedCollGain_B, 0);
+        assertGt(currentCollGain_B, 0);
     }
 
-    // --- provideToSP, doClaim == true, ETH gains ---
-    function testProvideToSPWithClaim_WithOnlyCurrentETHGainsSendsTotalETHGainToDepositor() public {
+    // --- provideToSP, doClaim == true, Coll gains ---
+    function testProvideToSPWithClaim_WithOnlyCurrentCollGainsSendsTotalCollGainToDepositor() public {
         _setupForSPDepositAdjustments();
 
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(currentETHGain, 0);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(currentCollGain, 0);
 
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
 
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        assertEq(stashedETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        assertEq(stashedCollGain, 0);
 
         makeSPDepositAndClaim(A, 1e18);
 
-        assertEq(WETH.balanceOf(A), ETHBal_A + currentETHGain);
+        assertEq(collToken.balanceOf(A), collBal_A + currentCollGain);
     }
 
-    function testProvideToSPWithClaim_WithOnlyCurrentETHGainsDoesntChangeStashedETHGain() public {
+    function testProvideToSPWithClaim_WithOnlyCurrentCollGainsDoesntChangeStashedCollGain() public {
         _setupForSPDepositAdjustments();
 
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(currentETHGain, 0);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(currentCollGain, 0);
 
-        assertEq(stabilityPool.stashedETH(A), 0);
-
-        makeSPDepositAndClaim(A, 1e18);
-
-        assertEq(stabilityPool.stashedETH(A), 0);
-    }
-
-    function testProvideToSPWithClaim_WithCurrentAndStashedETHGainsSendsTotalETHGainToDepositor() public {
-        // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
-
-        // Check A has both stashed and current gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain, 0);
-        assertGt(currentETHGain, 0);
-
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        assertEq(stabilityPool.stashedColl(A), 0);
 
         makeSPDepositAndClaim(A, 1e18);
 
-        // Check A's ETH balance increases by total (stashed + current) ETH gain
-        assertEq(WETH.balanceOf(A), ETHBal_A + stashedETHGain + currentETHGain);
+        assertEq(stabilityPool.stashedColl(A), 0);
     }
 
-    function testProvideToSPWithClaim_WithCurrentAndStashedETHGainsZerosStashedETHBalance() public {
+    function testProvideToSPWithClaim_WithCurrentAndStashedCollGainsSendsTotalCollGainToDepositor() public {
         // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
+        _setupStashedAndCurrentCollGains();
 
         // Check A has both stashed and current gains
-        stabilityPool.stashedETH(A);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain, 0);
+        assertGt(currentCollGain, 0);
+
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
+
+        makeSPDepositAndClaim(A, 1e18);
+
+        // Check A's Coll balance increases by total (stashed + current) Coll gain
+        assertEq(collToken.balanceOf(A), collBal_A + stashedCollGain + currentCollGain);
+    }
+
+    function testProvideToSPWithClaim_WithCurrentAndStashedCollGainsZerosStashedCollBalance() public {
+        // A has stashed & current gains, B has only current
+        _setupStashedAndCurrentCollGains();
+
+        // Check A has both stashed and current gains
+        stabilityPool.stashedColl(A);
 
         makeSPDepositAndClaim(A, 1e18);
 
         // Check A's stashed balance reduced to 0
-        assertEq(stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedColl(A), 0);
     }
 
-    function testProvideToSPWithClaim_WithOnlyStashedETHGainsSendsStashedETHGainToDepositor() public {
+    function testProvideToSPWithClaim_WithOnlyStashedCollGainsSendsStashedCollGainToDepositor() public {
         _setupForSPDepositAdjustments();
 
         // Stash gains
         makeSPDepositNoClaim(A, 1e18);
 
         // Check A has only stashed gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain, 0);
-        assertEq(currentETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain, 0);
+        assertEq(currentCollGain, 0);
 
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
 
         makeSPDepositAndClaim(A, 1e18);
 
-        // Check A's ETH balance increases by total stashed ETH gain
-        assertEq(WETH.balanceOf(A), ETHBal_A + stashedETHGain);
+        // Check A's Coll balance increases by total stashed Coll gain
+        assertEq(collToken.balanceOf(A), collBal_A + stashedCollGain);
     }
 
-    function testProvideToSPWithClaim_WithOnlyStashedETHGainsZerosStashedETHBalance() public {
+    function testProvideToSPWithClaim_WithOnlyStashedCollGainsZerosStashedCollBalance() public {
         _setupForSPDepositAdjustments();
 
         // Stash gains
         makeSPDepositNoClaim(A, 1e18);
 
         // Check A has only stashed gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain, 0);
-        assertEq(currentETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain, 0);
+        assertEq(currentCollGain, 0);
 
         makeSPDepositAndClaim(A, 1e18);
 
         // Check A's stashed balance reduced to 0
-        assertEq(stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedColl(A), 0);
     }
 
     // --- provideToSP, doClaim == true, BOLD gains ---
@@ -236,98 +236,98 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.getDepositorYieldGain(A), 0);
     }
 
-    // --- provideToSP, doClaim == false, ETH gains ---
+    // --- provideToSP, doClaim == false, Coll gains ---
 
-    function testProvideToSPNoClaim_WithOnlyCurrentETHGainsDoesntChangeDepositorETHBalance() public {
+    function testProvideToSPNoClaim_WithOnlyCurrentCollGainsDoesntChangeDepositorCollBalance() public {
         _setupForSPDepositAdjustments();
 
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(currentETHGain, 0);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(currentCollGain, 0);
 
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
 
         makeSPDepositNoClaim(A, 1e18);
 
-        assertEq(WETH.balanceOf(A), ETHBal_A);
+        assertEq(collToken.balanceOf(A), collBal_A);
     }
 
-    function testProvideToSPNoClaim_WithOnlyCurrentETHGainsStashesETHGains() public {
+    function testProvideToSPNoClaim_WithOnlyCurrentCollGainsStashesCollGains() public {
         _setupForSPDepositAdjustments();
 
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(currentETHGain, 0);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(currentCollGain, 0);
 
         // Check A has no stashed gains
-        assertEq(stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedColl(A), 0);
 
         makeSPDepositNoClaim(A, 1e18);
 
         // Check A's gain got stashed
-        assertEq(stabilityPool.stashedETH(A), currentETHGain);
+        assertEq(stabilityPool.stashedColl(A), currentCollGain);
     }
 
-    function testProvideToSPNoClaim_WithCurrentAndStashedETHGainsDoesntChangeDepositorETHBalance() public {
-        _setupStashedAndCurrentETHGains();
+    function testProvideToSPNoClaim_WithCurrentAndStashedCollGainsDoesntChangeDepositorCollBalance() public {
+        _setupStashedAndCurrentCollGains();
 
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
 
         makeSPDepositNoClaim(A, 1e18);
 
-        assertEq(WETH.balanceOf(A), ETHBal_A);
+        assertEq(collToken.balanceOf(A), collBal_A);
     }
 
-    function testProvideToSPNoClaim_WithCurrentAndStashedETHGainsIncreasedStashedETHGainByCurrentGain() public {
+    function testProvideToSPNoClaim_WithCurrentAndStashedCollGainsIncreasedStashedCollGainByCurrentGain() public {
         // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
+        _setupStashedAndCurrentCollGains();
 
         // Check A has both stashed and current gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain, 0);
-        assertGt(currentETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain, 0);
+        assertGt(currentCollGain, 0);
 
         makeSPDepositNoClaim(A, 1e18);
 
-        assertEq(stabilityPool.stashedETH(A), stashedETHGain + currentETHGain);
+        assertEq(stabilityPool.stashedColl(A), stashedCollGain + currentCollGain);
     }
 
-    function testProvideToSPNoClaim_WithOnlyStashedETHGainDoesntChangeDepositorETHBalance() public {
+    function testProvideToSPNoClaim_WithOnlyStashedCollGainDoesntChangeDepositorCollBalance() public {
         _setupForSPDepositAdjustments();
 
         // A stashes first gain
         makeSPDepositNoClaim(A, 1e18);
 
         // Check A has only stashed  gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain, 0);
-        assertEq(currentETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain, 0);
+        assertEq(currentCollGain, 0);
 
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
 
         makeSPDepositNoClaim(A, 1e18);
 
-        assertEq(WETH.balanceOf(A), ETHBal_A);
+        assertEq(collToken.balanceOf(A), collBal_A);
     }
 
-    function testProvideToSPNoClaim_WithOnlyStashedETHGainDoesntChangeStashedETHGain() public {
+    function testProvideToSPNoClaim_WithOnlyStashedCollGainDoesntChangeStashedCollGain() public {
         _setupForSPDepositAdjustments();
 
         // A stashes first gain
         makeSPDepositNoClaim(A, 1e18);
 
         // Check A has only stashed gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain, 0);
-        assertEq(currentETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain, 0);
+        assertEq(currentCollGain, 0);
 
         makeSPDepositNoClaim(A, 1e18);
 
-        assertEq(stabilityPool.stashedETH(A), stashedETHGain);
+        assertEq(stabilityPool.stashedColl(A), stashedCollGain);
     }
 
     // --- provideToSP, doClaim == false, BOLD gains ---
@@ -406,104 +406,104 @@ contract SPTest is DevTestSetup {
         assertEq(boldToken.balanceOf(A), boldBalBefore_A - topUp);
     }
 
-    // --- withdrawFromSP, doClaim == true, ETH gains ---
-    function testWithdrawFromSPWithClaim_WithOnlyCurrentETHGainsSendsTotalETHGainToDepositor() public {
+    // --- withdrawFromSP, doClaim == true, Coll gains ---
+    function testWithdrawFromSPWithClaim_WithOnlyCurrentCollGainsSendsTotalCollGainToDepositor() public {
         _setupForSPDepositAdjustments();
 
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(currentETHGain, 0);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(currentCollGain, 0);
 
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
 
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        assertEq(stashedETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        assertEq(stashedCollGain, 0);
 
         makeSPWithdrawalAndClaim(A, 1e18);
 
-        assertEq(WETH.balanceOf(A), ETHBal_A + currentETHGain);
+        assertEq(collToken.balanceOf(A), collBal_A + currentCollGain);
     }
 
-    function testWithdrawFromSPWithClaim_WithOnlyCurrentETHGainsDoesntChangeStashedETHGain() public {
+    function testWithdrawFromSPWithClaim_WithOnlyCurrentCollGainsDoesntChangeStashedCollGain() public {
         _setupForSPDepositAdjustments();
 
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(currentETHGain, 0);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(currentCollGain, 0);
 
-        assertEq(stabilityPool.stashedETH(A), 0);
-
-        makeSPWithdrawalAndClaim(A, 1e18);
-
-        assertEq(stabilityPool.stashedETH(A), 0);
-    }
-
-    function testWithdrawFromSPWithClaim_WithCurrentAndStashedETHGainsSendsTotalETHGainToDepositor() public {
-        // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
-
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        assertEq(stabilityPool.stashedColl(A), 0);
 
         makeSPWithdrawalAndClaim(A, 1e18);
 
-        // Check A's ETH balance increases by total (stashed + current) ETH gain
-        assertEq(WETH.balanceOf(A), ETHBal_A + stashedETHGain + currentETHGain);
+        assertEq(stabilityPool.stashedColl(A), 0);
     }
 
-    function testWithdrawFromSPWithClaim_WithCurrentAndStashedETHGainsZerosStashedETHBalance() public {
+    function testWithdrawFromSPWithClaim_WithCurrentAndStashedCollGainsSendsTotalCollGainToDepositor() public {
         // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
+        _setupStashedAndCurrentCollGains();
+
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
+
+        makeSPWithdrawalAndClaim(A, 1e18);
+
+        // Check A's Coll balance increases by total (stashed + current) Coll gain
+        assertEq(collToken.balanceOf(A), collBal_A + stashedCollGain + currentCollGain);
+    }
+
+    function testWithdrawFromSPWithClaim_WithCurrentAndStashedCollGainsZerosStashedCollBalance() public {
+        // A has stashed & current gains, B has only current
+        _setupStashedAndCurrentCollGains();
 
         // Check A has both stashed and current gains
-        stabilityPool.stashedETH(A);
-        stabilityPool.getDepositorETHGain(A);
+        stabilityPool.stashedColl(A);
+        stabilityPool.getDepositorCollGain(A);
 
         makeSPWithdrawalAndClaim(A, 1e18);
 
         // Check A's stashed balance reduced to 0
-        assertEq(stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedColl(A), 0);
     }
 
-    function testWithdrawFromSPPWithClaim_WithOnlyStashedETHGainsSendsStashedETHGainToDepositor() public {
+    function testWithdrawFromSPPWithClaim_WithOnlyStashedCollGainsSendsStashedCollGainToDepositor() public {
         _setupForSPDepositAdjustments();
 
         // Stash gains
         makeSPDepositNoClaim(A, 1e18);
 
         // Check A has only stashed gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain, 0);
-        assertEq(currentETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain, 0);
+        assertEq(currentCollGain, 0);
 
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
 
         makeSPWithdrawalAndClaim(A, 1e18);
 
-        // Check A's ETH balance increases by total stashed ETH gain
-        assertEq(WETH.balanceOf(A), ETHBal_A + stashedETHGain);
+        // Check A's Coll balance increases by total stashed Coll gain
+        assertEq(collToken.balanceOf(A), collBal_A + stashedCollGain);
     }
 
-    function testWithdrawFromSPWithClaim_WithOnlyStashedETHGainsZerosStashedETHBalance() public {
+    function testWithdrawFromSPWithClaim_WithOnlyStashedCollGainsZerosStashedCollBalance() public {
         _setupForSPDepositAdjustments();
 
         // Stash gains
         makeSPDepositNoClaim(A, 1e18);
 
         // Check A has only stashed gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain, 0);
-        assertEq(currentETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain, 0);
+        assertEq(currentCollGain, 0);
 
         makeSPWithdrawalAndClaim(A, 1e18);
 
         // Check A's stashed balance reduced to 0
-        assertEq(stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedColl(A), 0);
     }
 
     // --- withdrawFromSP, doClaim == true, BOLD gains ---
@@ -546,100 +546,100 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.getDepositorYieldGain(A), 0);
     }
 
-    // --- withdrawFromSP, doClaim == false, ETH gains ---
+    // --- withdrawFromSP, doClaim == false, Coll gains ---
 
-    function testWithdrawFromSPNoClaim_WithOnlyCurrentETHGainsDoesntChangeDepositorETHBalance() public {
+    function testWithdrawFromSPNoClaim_WithOnlyCurrentCollGainsDoesntChangeDepositorCollBalance() public {
         _setupForSPDepositAdjustments();
 
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(currentETHGain, 0);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(currentCollGain, 0);
 
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
 
         makeSPWithdrawalNoClaim(A, 1e18);
 
-        assertEq(WETH.balanceOf(A), ETHBal_A);
+        assertEq(collToken.balanceOf(A), collBal_A);
     }
 
-    function testWithdrawFromSPNoClaim_WithOnlyCurrentETHGainsStashesETHGains() public {
+    function testWithdrawFromSPNoClaim_WithOnlyCurrentCollGainsStashesCollGains() public {
         _setupForSPDepositAdjustments();
 
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(currentETHGain, 0);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(currentCollGain, 0);
 
         // Check A has no stashed gains
-        assertEq(stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedColl(A), 0);
 
         makeSPWithdrawalNoClaim(A, 1e18);
 
         // Check A's gain got stashed
-        assertEq(stabilityPool.stashedETH(A), currentETHGain);
+        assertEq(stabilityPool.stashedColl(A), currentCollGain);
     }
 
-    function testWithdrawFromSPNoClaim_WithCurrentAndStashedETHGainsDoesntChangeDepositorETHBalance() public {
+    function testWithdrawFromSPNoClaim_WithCurrentAndStashedCollGainsDoesntChangeDepositorCollBalance() public {
         // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
+        _setupStashedAndCurrentCollGains();
 
         // Check A has both stashed and current gains
-        stabilityPool.stashedETH(A);
-        stabilityPool.getDepositorETHGain(A);
+        stabilityPool.stashedColl(A);
+        stabilityPool.getDepositorCollGain(A);
 
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
 
         makeSPWithdrawalNoClaim(A, 1e18);
 
-        assertEq(WETH.balanceOf(A), ETHBal_A);
+        assertEq(collToken.balanceOf(A), collBal_A);
     }
 
-    function testWithdrawFromSPNoClaim_WithCurrentAndStashedETHGainsIncreasedStashedGainByCurrentETHGain() public {
+    function testWithdrawFromSPNoClaim_WithCurrentAndStashedCollGainsIncreasedStashedGainByCurrentCollGain() public {
         // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
+        _setupStashedAndCurrentCollGains();
 
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
 
         makeSPWithdrawalNoClaim(A, 1e18);
 
-        assertEq(stabilityPool.stashedETH(A), stashedETHGain + currentETHGain);
+        assertEq(stabilityPool.stashedColl(A), stashedCollGain + currentCollGain);
     }
 
-    function testWithdrawFromSPNoClaim_WithOnlyStashedGainDoesntChangeDepositorETHBalance() public {
+    function testWithdrawFromSPNoClaim_WithOnlyStashedGainDoesntChangeDepositorCollBalance() public {
         _setupForSPDepositAdjustments();
 
         // A stashes first gain
         makeSPDepositNoClaim(A, 1e18);
 
         // Check A has only stashed  gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain, 0);
-        assertEq(currentETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain, 0);
+        assertEq(currentCollGain, 0);
 
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
 
         makeSPWithdrawalNoClaim(A, 1e18);
 
-        assertEq(WETH.balanceOf(A), ETHBal_A);
+        assertEq(collToken.balanceOf(A), collBal_A);
     }
 
-    function testWithdrawFromSPNoClaim_WithOnlyStashedETHGainDoesntChangeStashedETHGain() public {
+    function testWithdrawFromSPNoClaim_WithOnlyStashedCollGainDoesntChangeStashedCollGain() public {
         _setupForSPDepositAdjustments();
 
         // A stashes first gain
         makeSPDepositNoClaim(A, 1e18);
 
         // Check A has only stashed gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        uint256 currentETHGain = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain, 0);
-        assertEq(currentETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        uint256 currentCollGain = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain, 0);
+        assertEq(currentCollGain, 0);
 
         makeSPWithdrawalNoClaim(A, 1e18);
 
-        assertEq(stabilityPool.stashedETH(A), stashedETHGain);
+        assertEq(stabilityPool.stashedColl(A), stashedCollGain);
     }
 
     // --- withdrawFromSP, doClaim == false, BOLD gains ---
@@ -718,11 +718,11 @@ contract SPTest is DevTestSetup {
         assertEq(boldToken.balanceOf(A), boldBalBefore_A + withdrawal);
     }
 
-    // --- claimAllETHGains ---
+    // --- claimAllCollGains ---
 
-    function testClaimAllETHGainsRevertsWhenUserHasNoDeposit() public {
+    function testClaimAllCollGainsRevertsWhenUserHasNoDeposit() public {
         // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
+        _setupStashedAndCurrentCollGains();
 
         // A
         uint256 compoundedDeposit_A = stabilityPool.getCompoundedBoldDeposit(A);
@@ -730,13 +730,13 @@ contract SPTest is DevTestSetup {
 
         vm.startPrank(A);
         vm.expectRevert("StabilityPool: User must have no deposit");
-        stabilityPool.claimAllETHGains();
+        stabilityPool.claimAllCollGains();
         vm.stopPrank();
     }
 
-    function testClaimAllETHGainsDoesNotChangeCompoundedDeposit() public {
+    function testClaimAllCollGainsDoesNotChangeCompoundedDeposit() public {
         // A has stashed & current gains, B has only current
-        _setupStashedAndCurrentETHGains();
+        _setupStashedAndCurrentCollGains();
 
         // A withdraws deposit
         uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
@@ -746,12 +746,12 @@ contract SPTest is DevTestSetup {
         uint256 compoundedDeposit_A = stabilityPool.getCompoundedBoldDeposit(A);
         assertEq(compoundedDeposit_A, 0);
 
-        claimAllETHGains(A);
+        claimAllCollGains(A);
 
         assertEq(compoundedDeposit_A, stabilityPool.getCompoundedBoldDeposit(A));
     }
 
-    function testClaimAllETHGainsDoesntChangeCurrentETHGain() public {
+    function testClaimAllCollGainsDoesntChangeCurrentCollGain() public {
         _setupForSPDepositAdjustments();
 
         // A withdraws deposit and stashes gain
@@ -759,17 +759,17 @@ contract SPTest is DevTestSetup {
         makeSPWithdrawalNoClaim(A, deposit_A);
 
         // Check A has only stashed gains
-        uint256 stashedETHGain_A = stabilityPool.stashedETH(A);
-        uint256 currentETHGain_A = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain_A, 0);
-        assertEq(currentETHGain_A, 0);
+        uint256 stashedCollGain_A = stabilityPool.stashedColl(A);
+        uint256 currentCollGain_A = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain_A, 0);
+        assertEq(currentCollGain_A, 0);
 
-        claimAllETHGains(A);
+        claimAllCollGains(A);
 
-        assertEq(stabilityPool.getDepositorETHGain(A), 0);
+        assertEq(stabilityPool.getDepositorCollGain(A), 0);
     }
 
-    function testClaimAllETHGainsZerosStashedETHGain() public {
+    function testClaimAllCollGainsZerosStashedCollGain() public {
         _setupForSPDepositAdjustments();
 
         // A withdraws deposit and stashes gain
@@ -777,17 +777,17 @@ contract SPTest is DevTestSetup {
         makeSPWithdrawalNoClaim(A, deposit_A);
 
         // Check A has only stashed gains
-        uint256 stashedETHGain_A = stabilityPool.stashedETH(A);
-        uint256 currentETHGain_A = stabilityPool.getDepositorETHGain(A);
-        assertGt(stashedETHGain_A, 0);
-        assertEq(currentETHGain_A, 0);
+        uint256 stashedCollGain_A = stabilityPool.stashedColl(A);
+        uint256 currentCollGain_A = stabilityPool.getDepositorCollGain(A);
+        assertGt(stashedCollGain_A, 0);
+        assertEq(currentCollGain_A, 0);
 
-        claimAllETHGains(A);
+        claimAllCollGains(A);
 
-        assertEq(stabilityPool.stashedETH(A), 0);
+        assertEq(stabilityPool.stashedColl(A), 0);
     }
 
-    function testClaimAllETHGainsIncreasesUserBalanceByStashedETHGain() public {
+    function testClaimAllCollGainsIncreasesUserBalanceByStashedCollGain() public {
         _setupForSPDepositAdjustments();
 
         // A withdraws deposit and stashes gain
@@ -795,16 +795,16 @@ contract SPTest is DevTestSetup {
         makeSPWithdrawalNoClaim(A, deposit_A);
 
         // Check A has only stashed gains
-        uint256 stashedETHGain_A = stabilityPool.stashedETH(A);
-        assertGt(stashedETHGain_A, 0);
+        uint256 stashedCollGain_A = stabilityPool.stashedColl(A);
+        assertGt(stashedCollGain_A, 0);
 
-        uint256 ETHBal_A = WETH.balanceOf(A);
-        assertGt(ETHBal_A, 0);
+        uint256 collBal_A = collToken.balanceOf(A);
+        assertGt(collBal_A, 0);
 
-        claimAllETHGains(A);
+        claimAllCollGains(A);
 
-        assertEq(stabilityPool.stashedETH(A), 0);
-        assertEq(WETH.balanceOf(A), ETHBal_A + stashedETHGain_A);
+        assertEq(stabilityPool.stashedColl(A), 0);
+        assertEq(collToken.balanceOf(A), collBal_A + stashedCollGain_A);
     }
 
     // --- Bold reward sum 'B' tests ---
@@ -968,10 +968,10 @@ contract SPTest is DevTestSetup {
         uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
         assertEq(boldRewardSum_1, 0);
 
-        uint256 wethBalBefore_A = WETH.balanceOf(A);
+        uint256 wethBalBefore_A = collToken.balanceOf(A);
         // A redeems
         redeem(A, 1e18);
-        assertGt(WETH.balanceOf(A), wethBalBefore_A);
+        assertGt(collToken.balanceOf(A), wethBalBefore_A);
 
         uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
@@ -1193,10 +1193,10 @@ contract SPTest is DevTestSetup {
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
         assertEq(yieldGainsOwed_1, 0);
-        uint256 wethBalBefore_A = WETH.balanceOf(A);
+        uint256 wethBalBefore_A = collToken.balanceOf(A);
         // A redeems
         redeem(A, 1e18);
-        assertGt(WETH.balanceOf(A), wethBalBefore_A);
+        assertGt(collToken.balanceOf(A), wethBalBefore_A);
 
         uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);
@@ -1474,14 +1474,14 @@ contract SPTest is DevTestSetup {
         assertApproximatelyEqual(expectedShareOfReward[0].A + expectedShareOfReward[0].B, expectedSpYield_0, 1e3);
 
         // A withdraws some deposit so that D's liq will empty the pool. This also mints interest and pays the yield to the SP
-        makeSPWithdrawalAndClaim(A, 100e18);
-        assertEq(stabilityPool.getDepositorYieldGain(A), 0);
-        assertEq(activePool.calcPendingAggInterest(), 0);
+        makeSPWithdrawalAndClaim(A, 500e18);
+        assertEq(stabilityPool.getDepositorYieldGain(A), 0, "A yield gain should be 0");
+        assertEq(activePool.calcPendingAggInterest(), 0, "Pending agg interest should be 0");
 
         // A liquidates D
         liquidate(A, troveIDs.D);
         // Check SP has no funds now
-        assertEq(stabilityPool.getTotalBoldDeposits(), 0);
+        assertEq(stabilityPool.getTotalBoldDeposits(), 0, "SP total bold deposits should be 0");
 
         // C and D makes fresh deposit
         uint256 deposit_C = 1e18;
@@ -1509,8 +1509,8 @@ contract SPTest is DevTestSetup {
         expectedShareOfReward[1].C = getShareofSPReward(C, expectedSpYield_1);
         expectedShareOfReward[1].D = getShareofSPReward(D, expectedSpYield_1);
         // A and B should get 0 from reward 2
-        assertEq(expectedShareOfReward[1].A, 0);
-        assertEq(expectedShareOfReward[1].B, 0);
+        assertEq(expectedShareOfReward[1].A, 0, "A expected share of reward should be 0");
+        assertEq(expectedShareOfReward[1].B, 0, "B expected share of reward should be 0");
         // C and D should split the entire reward 2
         assertGt(expectedShareOfReward[1].C, 0);
         assertGt(expectedShareOfReward[1].D, 0);
@@ -1520,18 +1520,19 @@ contract SPTest is DevTestSetup {
             expectedShareOfReward[1].A + expectedShareOfReward[1].B + expectedShareOfReward[1].C
                 + expectedShareOfReward[1].D,
             expectedSpYield_1,
-            1e4
+            1e4,
+            "expected shares should sum up to the total expected yield"
         );
 
         // A trove gets poked again, interst minted and yield paid to SP
         applyTroveInterestPermissionless(B, troveIDs.A);
 
         // Expect A to receive 0 - they already claimed his gain 1, and gets 0 from 2nd reward
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), 0, 1e4);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), 0, 1e4, "A should receive 0");
         // Expect B to receive only their share of reward 1, and get 0 for 2nd reward
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward[0].B, 1e4);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward[0].B, 1e4, "B should receive only their share of reward 1");
         // Expect C to receive a share of both reward 1 and 2
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward[1].C, 1e4);
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward[1].C, 1e4, "C should receive a share of both reward 1 and 2");
     }
 
     function testGetDepositorBoldGain_2SPDepositor1LiqScaleChangeFreshDeposit_EarnFairShareOfSPYield() public {
@@ -1857,25 +1858,25 @@ contract SPTest is DevTestSetup {
         testVars.totalDepositsBefore = stabilityPool.getTotalBoldDeposits();
 
         // // D's trove liquidated
-        testVars.spEthBal1 = WETH.balanceOf(address(stabilityPool));
+        testVars.spEthBal1 = collToken.balanceOf(address(stabilityPool));
         liquidate(A, troveIDs.D);
-        testVars.spEthBal2 = WETH.balanceOf(address(stabilityPool));
+        testVars.spEthBal2 = collToken.balanceOf(address(stabilityPool));
 
         testVars.spEthGain = testVars.spEthBal2 - testVars.spEthBal1;
         assertGt(testVars.spEthGain, 0);
-        testVars.expectedShareOfETH = freshDeposit * testVars.spEthGain / testVars.totalDepositsBefore;
-        assertGt(testVars.expectedShareOfETH, 0);
+        testVars.expectedShareOfColl = freshDeposit * testVars.spEthGain / testVars.totalDepositsBefore;
+        assertGt(testVars.expectedShareOfColl, 0);
 
         testVars.boldGainC = stabilityPool.getDepositorYieldGain(C);
         testVars.boldGainD = stabilityPool.getDepositorYieldGain(D);
         assertApproximatelyEqual(testVars.expectedShareOfYield1_C, testVars.boldGainC, 1e4);
         assertApproximatelyEqual(testVars.expectedShareOfYield1_D, testVars.boldGainD, 1e4);
 
-        testVars.ethGainC = stabilityPool.getDepositorETHGain(C);
-        testVars.ethGainD = stabilityPool.getDepositorETHGain(D);
+        testVars.ethGainC = stabilityPool.getDepositorCollGain(C);
+        testVars.ethGainD = stabilityPool.getDepositorCollGain(D);
 
-        assertApproximatelyEqual(testVars.expectedShareOfETH, testVars.ethGainC, 1e4);
-        assertApproximatelyEqual(testVars.expectedShareOfETH, testVars.ethGainD, 1e4);
+        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainC, 1e4);
+        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainD, 1e4);
 
         // E makes deposit after 2nd liq
         transferBold(C, E, boldToken.balanceOf(C));
@@ -1893,7 +1894,7 @@ contract SPTest is DevTestSetup {
         // Interest gets minted and awarded to SP
         applyTroveInterestPermissionless(A, troveIDs.A);
 
-        // check all BOLD and ETH gains are as expected
+        // check all BOLD and Coll gains are as expected
         uint256 boldGainE = stabilityPool.getDepositorYieldGain(E);
 
         assertApproximatelyEqual(expectedShareOfYield2_E, boldGainE, 1e9);
@@ -1936,13 +1937,13 @@ contract SPTest is DevTestSetup {
         testVars.deposit1_A = stabilityPool.getCompoundedBoldDeposit(A);
         testVars.deposit1_B = stabilityPool.getCompoundedBoldDeposit(B);
 
-        uint256 spEthBalBefore = WETH.balanceOf(address(stabilityPool));
+        uint256 spEthBalBefore = collToken.balanceOf(address(stabilityPool));
         liquidate(A, troveIDs.C);
-        uint256 spEthBalAfter = WETH.balanceOf(address(stabilityPool));
+        uint256 spEthBalAfter = collToken.balanceOf(address(stabilityPool));
         testVars.spEthGain1 = spEthBalAfter - spEthBalBefore;
 
-        testVars.expectedShareOfETH1_A = testVars.deposit1_A * testVars.spEthGain1 / testVars.totalSPBeforeLiq_C;
-        testVars.expectedShareOfETH1_B = testVars.deposit1_B * testVars.spEthGain1 / testVars.totalSPBeforeLiq_C;
+        testVars.expectedShareOfColl1_A = testVars.deposit1_A * testVars.spEthGain1 / testVars.totalSPBeforeLiq_C;
+        testVars.expectedShareOfColl1_B = testVars.deposit1_B * testVars.spEthGain1 / testVars.totalSPBeforeLiq_C;
 
         // Confirm scale change occured
         testVars.scale2 = stabilityPool.currentScale();
@@ -1986,9 +1987,9 @@ contract SPTest is DevTestSetup {
         assertGt(testVars.totalSPBeforeLiq_D, testVars.troveDebt_D);
 
         // D's trove liquidated
-        spEthBalBefore = WETH.balanceOf(address(stabilityPool));
+        spEthBalBefore = collToken.balanceOf(address(stabilityPool));
         liquidate(A, troveIDs.D);
-        spEthBalAfter = WETH.balanceOf(address(stabilityPool));
+        spEthBalAfter = collToken.balanceOf(address(stabilityPool));
         uint256 spEthGain2 = spEthBalAfter - spEthBalBefore;
         assertGt(spEthGain2, 0);
 
@@ -2003,21 +2004,21 @@ contract SPTest is DevTestSetup {
         assertGt(stabilityPool.getCompoundedBoldDeposit(A), 0);
         assertGt(stabilityPool.getCompoundedBoldDeposit(B), 0);
 
-        testVars.expectedShareOfETH2_A = testVars.deposit2_A * spEthGain2 / testVars.totalSPBeforeLiq_D;
-        testVars.expectedShareOfETH2_B = testVars.deposit2_B * spEthGain2 / testVars.totalSPBeforeLiq_D;
+        testVars.expectedShareOfColl2_A = testVars.deposit2_A * spEthGain2 / testVars.totalSPBeforeLiq_D;
+        testVars.expectedShareOfColl2_B = testVars.deposit2_B * spEthGain2 / testVars.totalSPBeforeLiq_D;
 
-        // Check all BOLD and ETH gains are as expected
+        // Check all BOLD and Coll gains are as expected
         testVars.boldGainA = stabilityPool.getDepositorYieldGain(A);
         testVars.boldGainB = stabilityPool.getDepositorYieldGain(B);
         assertApproximatelyEqual(testVars.expectedShareOfYield1_A, testVars.boldGainA, 1e4);
         assertApproximatelyEqual(testVars.expectedShareOfYield1_B, testVars.boldGainB, 1e4);
 
-        uint256 ethGainA = stabilityPool.getDepositorETHGain(A);
-        uint256 ethGainB = stabilityPool.getDepositorETHGain(B);
+        uint256 ethGainA = stabilityPool.getDepositorCollGain(A);
+        uint256 ethGainB = stabilityPool.getDepositorCollGain(B);
 
         // High error tolerance needed here due to initial liq
-        assertApproximatelyEqual(testVars.expectedShareOfETH1_A + testVars.expectedShareOfETH2_A, ethGainA, 1e15);
-        assertApproximatelyEqual(testVars.expectedShareOfETH1_B + testVars.expectedShareOfETH2_B, ethGainB, 1e15);
+        assertApproximatelyEqual(testVars.expectedShareOfColl1_A + testVars.expectedShareOfColl2_A, ethGainA, 1e15);
+        assertApproximatelyEqual(testVars.expectedShareOfColl1_B + testVars.expectedShareOfColl2_B, ethGainB, 1e15);
     }
 
     function testHighFractionLiqWithLowPTriggersTwoScaleChanges_Cheat_Fuzz(uint256 _cheatP, uint256 _surplus) public {
@@ -2101,8 +2102,8 @@ contract SPTest is DevTestSetup {
 }
 
 // TODO:
-// 1) claim tests for withdrawETHGainToTrove (if we don't remove it)
+// 1) claim tests for withdrawCollGainToTrove (if we don't remove it)
 //
-// 2) tests for claimAllETHGains (requires deposit data & getter refactor):
+// 2) tests for claimAllCollGains (requires deposit data & getter refactor):
 //    - updates recorded deposit value
 //    - updates deposit snapshots

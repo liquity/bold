@@ -4,6 +4,8 @@ const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
 const { dec, toBN, ZERO_ADDRESS } = th;
 
+let ETH_GAS_COMPENSATION;
+
 /* NOTE: Some tests involving ETH redemption fees do not test for specific fee values.
  * Some only test that the fees are non-zero when they should occur.
  *
@@ -58,6 +60,8 @@ contract("TroveManager", async (accounts) => {
     collSurplusPool = contracts.collSurplusPool;
     borrowerOperations = contracts.borrowerOperations;
     hintHelpers = contracts.hintHelpers;
+
+    ETH_GAS_COMPENSATION = await contracts.constants._ETH_GAS_COMPENSATION();
   });
 
   it("A given trove's stake decline is negligible with adjustments and tiny liquidations", async () => {
@@ -119,7 +123,7 @@ contract("TroveManager", async (accounts) => {
     const tinyTroves = accounts.slice(10, 20);
     const eth_amount = dec(2, 20);
     for (const account of tinyTroves) {
-      await contracts.WETH.mint(account, eth_amount);
+      await contracts.WETH.mint(account, toBN(eth_amount).add(ETH_GAS_COMPENSATION));
       await th.openTroveWrapper(
         contracts,
         await getOpenTroveBoldAmount(dec(1, 22)),
@@ -145,7 +149,7 @@ contract("TroveManager", async (accounts) => {
     // );
     // console.log(`Snapshots ratio after L1: ${await getSnapshotsRatio()}`);
     // console.log(
-    //   `B pending ETH reward after L1: ${await troveManager.getPendingETHReward(
+    //   `B pending ETH reward after L1: ${await troveManager.getPendingCollReward(
     //     B
     //   )}`
     // );

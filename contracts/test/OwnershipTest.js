@@ -23,6 +23,7 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
     contracts.borrowerOperations = await BorrowerOperationsTester.new(
       contracts.WETH.address,
       contracts.troveManager.address,
+      contracts.WETH.address,
     );
     contracts = await deploymentHelper.deployBoldToken(contracts);
 
@@ -56,7 +57,7 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
     twice = true,
     method = "setAddresses",
   ) => {
-    const dumbContract = await GasPool.new();
+    const dumbContract = await GasPool.new(contracts.WETH.address, contracts.borrowerOperations.address, contracts.troveManager.address);
     const params = Array(numberOfAddresses).fill(dumbContract.address);
 
     // Attempt call from alice
@@ -98,7 +99,7 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
 
   describe("BorrowerOperations", async (accounts) => {
     it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testDeploymentSetter(borrowerOperations, 7);
+      await testDeploymentSetter(borrowerOperations, 7, false);
     });
   });
 
@@ -110,7 +111,7 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
 
   describe("StabilityPool", async (accounts) => {
     it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testDeploymentSetter(stabilityPool, 6);
+      await testDeploymentSetter(stabilityPool, 6, false);
     });
   });
 
@@ -122,7 +123,7 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
 
   describe("SortedTroves", async (accounts) => {
     it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      const dumbContract = await GasPool.new();
+      const dumbContract = await GasPool.new(contracts.WETH.address, contracts.borrowerOperations.address, contracts.troveManager.address);
       const params = [dumbContract.address, dumbContract.address];
 
       // Attempt call from alice

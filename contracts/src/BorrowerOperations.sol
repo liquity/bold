@@ -11,24 +11,25 @@ import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
-import "./Dependencies/CheckContract.sol";
 
 // import "forge-std/console2.sol";
 
-contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOperations {
+contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     using SafeERC20 for IERC20;
 
     string public constant NAME = "BorrowerOperations";
 
     // --- Connected contract declarations ---
 
-    IERC20 public immutable ETH;
+    IERC20 public immutable collToken;
     ITroveManager public immutable troveManager;
     address gasPoolAddress;
     ICollSurplusPool collSurplusPool;
     IBoldToken public boldToken;
     // A doubly linked list of Troves, sorted by their collateral ratios
     ISortedTroves public sortedTroves;
+    // Wrapped ETH for liquidation reserve (gas compensation)
+    IERC20 public immutable WETH;
 
     // Minimum collateral ratio for individual troves
     uint256 public immutable MCR;
@@ -95,12 +96,10 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
 
-    constructor(IERC20 _ETH, ITroveManager _troveManager) {
-        checkContract(address(_ETH));
-        checkContract(address(_troveManager));
-
-        ETH = _ETH;
+    constructor(IERC20 _collToken, ITroveManager _troveManager, IERC20 _weth) {
+        collToken = _collToken;
         troveManager = _troveManager;
+        WETH = _weth;
 
         MCR = _troveManager.MCR();
 
@@ -119,15 +118,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         address _boldTokenAddress
     ) external override onlyOwner {
         // This makes impossible to open a trove with zero withdrawn Bold
-        assert(MIN_NET_DEBT > 0);
-
-        checkContract(_activePoolAddress);
-        checkContract(_defaultPoolAddress);
-        checkContract(_gasPoolAddress);
-        checkContract(_collSurplusPoolAddress);
-        checkContract(_priceFeedAddress);
-        checkContract(_sortedTrovesAddress);
-        checkContract(_boldTokenAddress);
+        assert(MIN_DEBT > 0);
 
         activePool = IActivePool(_activePoolAddress);
         defaultPool = IDefaultPool(_defaultPoolAddress);
@@ -146,7 +137,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         emit BoldTokenAddressChanged(_boldTokenAddress);
 
         // Allow funds movements between Liquity contracts
-        ETH.approve(_activePoolAddress, type(uint256).max);
+        collToken.approve(_activePoolAddress, type(uint256).max);
 
         _renounceOwnership();
     }
@@ -156,7 +147,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
     function openTrove(
         address _owner,
         uint256 _ownerIndex,
-        uint256 _ETHAmount,
+        uint256 _collAmount,
         uint256 _boldAmount,
         uint256 _upperHint,
         uint256 _lowerHint,
@@ -176,8 +167,8 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint256 troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
         _requireTroveIsNotOpen(contractsCache.troveManager, troveId);
 
-        vars.troveChange.collIncrease = _ETHAmount;
-        vars.troveChange.debtIncrease = _boldAmount + BOLD_GAS_COMPENSATION;
+        vars.troveChange.collIncrease = _collAmount;
+        vars.troveChange.debtIncrease = _boldAmount;
 
         // For simplicity, we ignore the fee when calculating the approx. interest rate
         vars.troveChange.newWeightedRecordedDebt = vars.troveChange.debtIncrease * _annualInterestRate;
@@ -193,7 +184,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         vars.troveChange.newWeightedRecordedDebt = vars.entireDebt * _annualInterestRate;
 
         // ICR is based on the composite debt, i.e. the requested Bold amount + Bold gas comp + upfront fee.
-        vars.ICR = LiquityMath._computeCR(_ETHAmount, vars.entireDebt, vars.price);
+        vars.ICR = LiquityMath._computeCR(_collAmount, vars.entireDebt, vars.price);
         _requireICRisAboveMCR(vars.ICR);
 
         vars.newTCR = _getNewTCRFromTroveChange(vars.troveChange, vars.price);
@@ -203,29 +194,29 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         // Set the stored Trove properties and mint the NFT
         contractsCache.troveManager.onOpenTrove(
-            _owner, troveId, _ETHAmount, vars.entireDebt, _annualInterestRate, vars.troveChange.upfrontFee
+            _owner, troveId, _collAmount, vars.entireDebt, _annualInterestRate, vars.troveChange.upfrontFee
         );
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(vars.troveChange);
         sortedTroves.insert(troveId, _annualInterestRate, _upperHint, _lowerHint);
 
-        // Pull ETH tokens from sender and move them to the Active Pool
-        _pullETHAndSendToActivePool(contractsCache.activePool, _ETHAmount);
+        // Pull coll tokens from sender and move them to the Active Pool
+        _pullCollAndSendToActivePool(contractsCache.activePool, _collAmount);
 
         // Mint the requested _boldAmount to the borrower and mint the gas comp to the GasPool
         contractsCache.boldToken.mint(msg.sender, _boldAmount);
-        contractsCache.boldToken.mint(gasPoolAddress, BOLD_GAS_COMPENSATION);
+        WETH.transferFrom(msg.sender, gasPoolAddress, ETH_GAS_COMPENSATION);
 
         return troveId;
     }
 
-    // Send ETH as collateral to a trove
-    function addColl(uint256 _troveId, uint256 _ETHAmount) external override {
+    // Send collateral to a trove
+    function addColl(uint256 _troveId, uint256 _collAmount) external override {
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
 
         TroveChange memory troveChange;
-        troveChange.collIncrease = _ETHAmount;
+        troveChange.collIncrease = _collAmount;
 
         _adjustTrove(
             contractsCache,
@@ -235,7 +226,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         );
     }
 
-    // Withdraw ETH collateral from a trove
+    // Withdraw collateral from a trove
     function withdrawColl(uint256 _troveId, uint256 _collWithdrawal) external override {
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
@@ -356,7 +347,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         TroveChange memory troveChange;
         troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
-        troveChange.appliedRedistETHGain = trove.redistETHGain;
+        troveChange.appliedRedistCollGain = trove.redistCollGain;
         troveChange.newWeightedRecordedDebt = newDebt * _newAnnualInterestRate;
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
 
@@ -439,7 +430,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         vars.newDebt = vars.trove.entireDebt + _troveChange.debtIncrease - _troveChange.debtDecrease;
 
         _troveChange.appliedRedistBoldDebtGain = vars.trove.redistBoldDebtGain;
-        _troveChange.appliedRedistETHGain = vars.trove.redistETHGain;
+        _troveChange.appliedRedistCollGain = vars.trove.redistCollGain;
         _troveChange.oldWeightedRecordedDebt = vars.trove.weightedRecordedDebt;
         _troveChange.newWeightedRecordedDebt = vars.newDebt * vars.trove.annualInterestRate;
 
@@ -468,7 +459,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         _contractsCache.troveManager.onAdjustTrove(_troveId, vars.newColl, vars.newDebt, _troveChange);
         _contractsCache.activePool.mintAggInterestAndAccountForTroveChange(_troveChange);
-        _moveTokensAndETHfromAdjustment(owner, _troveChange, _contractsCache);
+        _moveTokensFromAdjustment(owner, _troveChange, _contractsCache);
     }
 
     function closeTrove(uint256 _troveId) external override {
@@ -482,12 +473,12 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
         LatestTroveData memory trove = contractsCache.troveManager.getLatestTroveData(_troveId);
 
-        // The borrower must repay their entire debt including accrued interest and redist. gains (and less the gas comp.)
-        _requireSufficientBoldBalance(contractsCache.boldToken, msg.sender, trove.entireDebt - BOLD_GAS_COMPENSATION);
+        // The borrower must repay their entire debt including accrued interest and redist. gains
+        _requireSufficientBoldBalance(contractsCache.boldToken, msg.sender, trove.entireDebt);
 
         TroveChange memory troveChange;
         troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
-        troveChange.appliedRedistETHGain = trove.redistETHGain;
+        troveChange.appliedRedistCollGain = trove.redistCollGain;
         troveChange.collDecrease = trove.entireColl;
         troveChange.debtDecrease = trove.entireDebt;
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
@@ -500,13 +491,13 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         contractsCache.troveManager.onCloseTrove(_troveId, troveChange);
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
 
-        // Burn the 200 BOLD gas compensation
-        contractsCache.boldToken.burn(gasPoolAddress, BOLD_GAS_COMPENSATION);
+        // Return ETH gas compensation
+        WETH.transferFrom(gasPoolAddress, msg.sender, ETH_GAS_COMPENSATION);
         // Burn the remainder of the Trove's entire debt from the user
-        contractsCache.boldToken.burn(msg.sender, trove.entireDebt - BOLD_GAS_COMPENSATION);
+        contractsCache.boldToken.burn(msg.sender, trove.entireDebt);
 
         // Send the collateral back to the user
-        contractsCache.activePool.sendETH(msg.sender, trove.entireColl);
+        contractsCache.activePool.sendColl(msg.sender, trove.entireColl);
     }
 
     function applyTroveInterestPermissionless(uint256 _troveId) external {
@@ -518,7 +509,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         LatestTroveData memory trove = contractsCache.troveManager.getLatestTroveData(_troveId);
         TroveChange memory troveChange;
         troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
-        troveChange.appliedRedistETHGain = trove.redistETHGain;
+        troveChange.appliedRedistCollGain = trove.redistCollGain;
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
         troveChange.newWeightedRecordedDebt = trove.entireDebt * trove.annualInterestRate;
 
@@ -540,7 +531,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
      * Claim remaining collateral from a liquidation with ICR exceeding the liquidation penalty
      */
     function claimCollateral() external override {
-        // send ETH from CollSurplus Pool to owner
+        // send coll from CollSurplus Pool to owner
         collSurplusPool.claimColl(msg.sender);
     }
 
@@ -548,7 +539,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     // This function mints the BOLD corresponding to the borrower's chosen debt increase
     // (it does not mint the accrued interest).
-    function _moveTokensAndETHfromAdjustment(
+    function _moveTokensFromAdjustment(
         address withdrawalReceiver,
         TroveChange memory _troveChange,
         ContractsCacheTMAPBT memory _contractsCache
@@ -560,19 +551,19 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         }
 
         if (_troveChange.collIncrease > 0) {
-            // Pull ETH tokens from sender and move them to the Active Pool
-            _pullETHAndSendToActivePool(_contractsCache.activePool, _troveChange.collIncrease);
+            // Pull coll tokens from sender and move them to the Active Pool
+            _pullCollAndSendToActivePool(_contractsCache.activePool, _troveChange.collIncrease);
         } else if (_troveChange.collDecrease > 0) {
-            // Pull ETH from Active Pool and decrease its recorded ETH balance
-            _contractsCache.activePool.sendETH(withdrawalReceiver, _troveChange.collDecrease);
+            // Pull Coll from Active Pool and decrease its recorded Coll balance
+            _contractsCache.activePool.sendColl(withdrawalReceiver, _troveChange.collDecrease);
         }
     }
 
-    function _pullETHAndSendToActivePool(IActivePool _activePool, uint256 _amount) internal {
-        // Send ETH tokens from sender to active pool
-        ETH.safeTransferFrom(msg.sender, address(_activePool), _amount);
+    function _pullCollAndSendToActivePool(IActivePool _activePool, uint256 _amount) internal {
+        // Send Coll tokens from sender to active pool
+        collToken.safeTransferFrom(msg.sender, address(_activePool), _amount);
         // Make sure Active Pool accountancy is right
-        _activePool.accountForReceivedETH(_amount);
+        _activePool.accountForReceivedColl(_amount);
     }
 
     // --- 'Require' wrapper functions ---
@@ -689,7 +680,7 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
 
     function _requireValidBoldRepayment(uint256 _currentDebt, uint256 _debtRepayment) internal pure {
         require(
-            _debtRepayment <= _currentDebt - BOLD_GAS_COMPENSATION,
+            _debtRepayment <= _currentDebt,
             "BorrowerOps: Amount repaid must not be larger than the Trove's debt"
         );
     }
@@ -733,9 +724,5 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         totalDebt -= _troveChange.debtDecrease;
 
         newTCR = LiquityMath._computeCR(totalColl, totalDebt, _price);
-    }
-
-    function getCompositeDebt(uint256 _debt) external pure override returns (uint256) {
-        return _debt + BOLD_GAS_COMPENSATION;
     }
 }

@@ -184,7 +184,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 troveDebtRequest = 2000e18;
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16); // 25% annual interest
-        uint256 debt_A = troveDebtRequest + BOLD_GAS_COMPENSATION;
+        uint256 debt_A = troveDebtRequest;
         debt_A += calcUpfrontFee(debt_A, 25e16);
         uint256 weightedRecordedDebt_A = debt_A * 25e16;
 
@@ -201,7 +201,7 @@ contract InterestRateAggregate is DevTestSetup {
         debt_A += pendingInterest;
 
         uint256 BTroveId = openTroveNoHints100pct(B, 2 ether, troveDebtRequest, 25e16);
-        uint256 debt_B = troveDebtRequest + BOLD_GAS_COMPENSATION;
+        uint256 debt_B = troveDebtRequest;
         debt_B += calcUpfrontFee(debt_B, (weightedRecordedDebt_A + debt_B * 25e16) / (debt_A + debt_B));
         assertEq(troveManager.getTroveDebt(BTroveId), debt_B);
 
@@ -719,8 +719,8 @@ contract InterestRateAggregate is DevTestSetup {
         // B closes Trove
         closeTrove(B, BTroveId);
 
-        // Check balance of B reduces by the Trove's entire debt less gas comp
-        assertEq(boldToken.balanceOf(B), bal_B - (entireDebt_B - BOLD_GAS_COMPENSATION));
+        // Check balance of B reduces by the Trove's entire debt
+        assertEq(boldToken.balanceOf(B), bal_B - (entireDebt_B));
     }
 
     // --- adjustTroveInterestRate ---
@@ -1854,7 +1854,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 ATroveId = openTroveNoHints100pct(A, coll, troveDebtRequest, interestRate);
 
-        uint256 debt = troveDebtRequest + BOLD_GAS_COMPENSATION;
+        uint256 debt = troveDebtRequest;
         debt += calcUpfrontFee(debt, interestRate);
 
         uint256 expectedICR = coll * price / debt;
@@ -1883,9 +1883,9 @@ contract InterestRateAggregate is DevTestSetup {
         openTroveNoHints100pct(C, coll.C, borrow.C, r.C);
 
         ABCDEF memory debt;
-        debt.A = borrow.A + BOLD_GAS_COMPENSATION;
-        debt.B = borrow.B + BOLD_GAS_COMPENSATION;
-        debt.C = borrow.C + BOLD_GAS_COMPENSATION;
+        debt.A = borrow.A;
+        debt.B = borrow.B;
+        debt.C = borrow.C;
 
         ABCDEF memory rd; // r * debt, alias weightedRecordedDebt
         debt.A += calcUpfrontFee(debt.A, r.A);
@@ -1910,7 +1910,7 @@ contract InterestRateAggregate is DevTestSetup {
         // Fast-forward time
         vm.warp(block.timestamp + 14 days);
 
-        uint256 debt = troveDebtRequest + BOLD_GAS_COMPENSATION;
+        uint256 debt = troveDebtRequest;
         debt += calcInterest(debt * interestRate, 14 days);
         debt += calcUpfrontFee(debt, interestRate);
 
@@ -1950,9 +1950,9 @@ contract InterestRateAggregate is DevTestSetup {
         vm.warp(block.timestamp + interval);
 
         ABCDEF memory debt;
-        debt.A = borrow.A + BOLD_GAS_COMPENSATION;
-        debt.B = borrow.B + BOLD_GAS_COMPENSATION;
-        debt.C = borrow.C + BOLD_GAS_COMPENSATION;
+        debt.A = borrow.A;
+        debt.B = borrow.B;
+        debt.C = borrow.C;
 
         ABCDEF memory rd; // r * debt, alias weightedRecordedDebt
 
@@ -1998,7 +1998,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 ATroveId = openTroveNoHints100pct(A, coll, troveDebtRequest, interestRate);
 
-        uint256 debt = troveDebtRequest + BOLD_GAS_COMPENSATION;
+        uint256 debt = troveDebtRequest;
         debt += calcUpfrontFee(debt, interestRate);
 
         uint256 expectedICR = coll * price / debt;
@@ -2016,7 +2016,7 @@ contract InterestRateAggregate is DevTestSetup {
         // Fast-forward time
         vm.warp(block.timestamp + 14 days);
 
-        uint256 debt = troveDebtRequest + BOLD_GAS_COMPENSATION;
+        uint256 debt = troveDebtRequest;
         debt += calcUpfrontFee(debt, interestRate);
         debt += calcInterest(debt * interestRate, 14 days);
 
@@ -2175,9 +2175,9 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(debtBefore, debtAfter, "Adjusting interest rate shouldn't change Trove's debt");
     }
 
-    // --- claimALLETHGains ---
+    // --- claimALLCollGains ---
 
-    function testClaimAllETHGainsIncreasesAggRecordedDebtByPendingAggInterest() public {
+    function testClaimAllCollGainsIncreasesAggRecordedDebtByPendingAggInterest() public {
         _setupForSPDepositAdjustments();
 
         // A withdraws depsoiit and stashes gain
@@ -2187,20 +2187,20 @@ contract InterestRateAggregate is DevTestSetup {
         vm.warp(block.timestamp + 1 days);
 
         // Check A has stashed gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        assertGt(stashedETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        assertGt(stashedCollGain, 0);
 
         uint256 aggRecordedDebt_1 = activePool.aggRecordedDebt();
         assertGt(aggRecordedDebt_1, 0);
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        claimAllETHGains(A);
+        claimAllCollGains(A);
 
         assertEq(activePool.aggRecordedDebt(), aggRecordedDebt_1 + pendingAggInterest);
     }
 
-    function testClaimAllETHGainsReducesPendingAggInterestTo0() public {
+    function testClaimAllCollGainsReducesPendingAggInterestTo0() public {
         _setupForSPDepositAdjustments();
 
         // A withdraws depsoiit and stashes gain
@@ -2210,18 +2210,18 @@ contract InterestRateAggregate is DevTestSetup {
         vm.warp(block.timestamp + 1 days);
 
         // Check A has stashed gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        assertGt(stashedETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        assertGt(stashedCollGain, 0);
 
         assertGt(activePool.calcPendingAggInterest(), 0);
 
-        claimAllETHGains(A);
+        claimAllCollGains(A);
 
         assertEq(activePool.calcPendingAggInterest(), 0);
     }
 
     // // Update last agg. update time to now
-    function testClaimAllETHGainsUpdatesLastAggUpdateTimeToNow() public {
+    function testClaimAllCollGainsUpdatesLastAggUpdateTimeToNow() public {
         _setupForSPDepositAdjustments();
 
         // A withdraws deposit and stashes gain
@@ -2231,20 +2231,20 @@ contract InterestRateAggregate is DevTestSetup {
         vm.warp(block.timestamp + 1 days);
 
         // Check A has stashed gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        assertGt(stashedETHGain, 0);
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        assertGt(stashedCollGain, 0);
 
         assertGt(activePool.lastAggUpdateTime(), 0);
         assertLt(activePool.lastAggUpdateTime(), block.timestamp);
 
-        claimAllETHGains(A);
+        claimAllCollGains(A);
 
         // Check last agg update time increased to now
         assertEq(activePool.lastAggUpdateTime(), block.timestamp);
     }
 
     // mints interest to SP
-    function testClaimAllETHGainsMintsAggInterestToSP() public {
+    function testClaimAllCollGainsMintsAggInterestToSP() public {
         ABCDEF memory troveIDs;
         troveIDs = _setupForSPDepositAdjustments();
 
@@ -2261,11 +2261,11 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 expectedSPYield = _getSPYield(pendingAggInterest);
         uint256 expectedBoldGain_A = getShareofSPReward(A, expectedSPYield);
 
-        // Check A has stashed ETH gains
-        uint256 stashedETHGain = stabilityPool.stashedETH(A);
-        assertGt(stashedETHGain, 0);
+        // Check A has stashed Coll gains
+        uint256 stashedCollGain = stabilityPool.stashedColl(A);
+        assertGt(stashedCollGain, 0);
 
-        claimAllETHGains(A);
+        claimAllCollGains(A);
 
         // Check SP Bold bal has changed as expected - by the pendingAggInterest, minus A's share of it which gets paid out
         uint256 boldBalSP_2 = boldToken.balanceOf(address(stabilityPool));

@@ -10,10 +10,10 @@ import "./Dependencies/CheckContract.sol";
 import "./Interfaces/IDefaultPool.sol";
 
 /*
- * The Default Pool holds the ETH and Bold debt (but not Bold tokens) from liquidations that have been redistributed
+ * The Default Pool holds the Coll and Bold debt (but not Bold tokens) from liquidations that have been redistributed
  * to active troves but not yet "applied", i.e. not yet recorded on a recipient active trove's struct.
  *
- * When a trove makes an operation that applies its pending ETH and Bold debt, its pending ETH and Bold debt is moved
+ * When a trove makes an operation that applies its pending Coll and Bold debt, its pending Coll and Bold debt is moved
  * from the Default Pool to the Active Pool.
  */
 contract DefaultPool is Ownable, CheckContract, IDefaultPool {
@@ -21,21 +21,21 @@ contract DefaultPool is Ownable, CheckContract, IDefaultPool {
 
     string public constant NAME = "DefaultPool";
 
-    IERC20 public immutable ETH;
+    IERC20 public immutable collToken;
     address public troveManagerAddress;
     address public activePoolAddress;
-    uint256 internal ETHBalance; // deposited ETH tracker
+    uint256 internal collBalance; // deposited Coll tracker
     uint256 internal BoldDebt; // debt
 
     event ActivePoolAddressChanged(address _newActivePoolAddress);
     event EtherSent(address _to, uint256 _amount);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event DefaultPoolBoldDebtUpdated(uint256 _boldDebt);
-    event DefaultPoolETHBalanceUpdated(uint256 _ETHBalance);
+    event DefaultPoolCollBalanceUpdated(uint256 _collBalance);
 
-    constructor(address _ETHAddress) {
-        checkContract(_ETHAddress);
-        ETH = IERC20(_ETHAddress);
+    constructor(address _collAddress) {
+        checkContract(_collAddress);
+        collToken = IERC20(_collAddress);
     }
 
     // --- Dependency setters ---
@@ -51,7 +51,7 @@ contract DefaultPool is Ownable, CheckContract, IDefaultPool {
         emit ActivePoolAddressChanged(_activePoolAddress);
 
         // Allow funds movements between Liquity contracts
-        ETH.approve(_activePoolAddress, type(uint256).max);
+        collToken.approve(_activePoolAddress, type(uint256).max);
 
         _renounceOwnership();
     }
@@ -59,12 +59,12 @@ contract DefaultPool is Ownable, CheckContract, IDefaultPool {
     // --- Getters for public variables. Required by IPool interface ---
 
     /*
-    * Returns the ETHBalance state variable.
+    * Returns the collBalance state variable.
     *
-    * Not necessarily equal to the the contract's raw ETH balance - ether can be forcibly sent to contracts.
+    * Not necessarily equal to the the contract's raw Coll balance - ether can be forcibly sent to contracts.
     */
-    function getETHBalance() external view override returns (uint256) {
-        return ETHBalance;
+    function getCollBalance() external view override returns (uint256) {
+        return collBalance;
     }
 
     function getBoldDebt() external view override returns (uint256) {
@@ -73,28 +73,28 @@ contract DefaultPool is Ownable, CheckContract, IDefaultPool {
 
     // --- Pool functionality ---
 
-    function sendETHToActivePool(uint256 _amount) external override {
+    function sendCollToActivePool(uint256 _amount) external override {
         _requireCallerIsTroveManager();
         address activePool = activePoolAddress; // cache to save an SLOAD
-        uint256 newETHBalance = ETHBalance - _amount;
-        ETHBalance = newETHBalance;
-        emit DefaultPoolETHBalanceUpdated(newETHBalance);
+        uint256 newCollBalance = collBalance - _amount;
+        collBalance = newCollBalance;
+        emit DefaultPoolCollBalanceUpdated(newCollBalance);
         emit EtherSent(activePool, _amount);
 
-        // Send ETH to Active Pool and increase its recorded ETH balance
-        IActivePool(activePool).receiveETH(_amount);
+        // Send Coll to Active Pool and increase its recorded Coll balance
+        IActivePool(activePool).receiveColl(_amount);
     }
 
-    function receiveETH(uint256 _amount) external {
+    function receiveColl(uint256 _amount) external {
         _requireCallerIsActivePool();
 
-        uint256 newETHBalance = ETHBalance + _amount;
-        ETHBalance = newETHBalance;
+        uint256 newCollBalance = collBalance + _amount;
+        collBalance = newCollBalance;
 
-        // Pull ETH tokens from ActivePool
-        ETH.safeTransferFrom(msg.sender, address(this), _amount);
+        // Pull Coll tokens from ActivePool
+        collToken.safeTransferFrom(msg.sender, address(this), _amount);
 
-        emit DefaultPoolETHBalanceUpdated(newETHBalance);
+        emit DefaultPoolCollBalanceUpdated(newCollBalance);
     }
 
     function increaseBoldDebt(uint256 _amount) external override {

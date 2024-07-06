@@ -12,13 +12,13 @@ contract CollSurplusPool is Ownable, ICollSurplusPool {
 
     string public constant NAME = "CollSurplusPool";
 
-    IERC20 public immutable ETH;
+    IERC20 public immutable collToken;
     address public borrowerOperationsAddress;
     address public troveManagerAddress;
     address public activePoolAddress;
 
     // deposited ether tracker
-    uint256 internal ETHBalance;
+    uint256 internal collBalance;
     // Collateral surplus claimable by trove owners
     mapping(address => uint256) internal balances;
 
@@ -29,10 +29,10 @@ contract CollSurplusPool is Ownable, ICollSurplusPool {
     event ActivePoolAddressChanged(address _newActivePoolAddress);
 
     event CollBalanceUpdated(address indexed _account, uint256 _newBalance);
-    event EtherSent(address _to, uint256 _amount);
+    event CollSent(address _to, uint256 _amount);
 
-    constructor(address _ETHAddress) {
-        ETH = IERC20(_ETHAddress);
+    constructor(address _collAddress) {
+        collToken = IERC20(_collAddress);
     }
 
     // --- Contract setters ---
@@ -53,10 +53,10 @@ contract CollSurplusPool is Ownable, ICollSurplusPool {
         _renounceOwnership();
     }
 
-    /* Returns the ETHBalance state variable
-       Not necessarily equal to the raw ether balance - ether can be forcibly sent to contracts. */
-    function getETHBalance() external view override returns (uint256) {
-        return ETHBalance;
+    /* Returns the collBalance state variable
+       Not necessarily equal to the raw coll balance - coll can be forcibly sent to contracts. */
+    function getCollBalance() external view override returns (uint256) {
+        return collBalance;
     }
 
     function getCollateral(address _account) external view override returns (uint256) {
@@ -70,7 +70,7 @@ contract CollSurplusPool is Ownable, ICollSurplusPool {
 
         uint256 newAmount = balances[_account] + _amount;
         balances[_account] = newAmount;
-        ETHBalance = ETHBalance + _amount;
+        collBalance = collBalance + _amount;
 
         emit CollBalanceUpdated(_account, newAmount);
     }
@@ -83,10 +83,10 @@ contract CollSurplusPool is Ownable, ICollSurplusPool {
         balances[_account] = 0;
         emit CollBalanceUpdated(_account, 0);
 
-        ETHBalance = ETHBalance - claimableColl;
-        emit EtherSent(_account, claimableColl);
+        collBalance = collBalance - claimableColl;
+        emit CollSent(_account, claimableColl);
 
-        ETH.safeTransfer(_account, claimableColl);
+        collToken.safeTransfer(_account, claimableColl);
     }
 
     // --- 'require' functions ---

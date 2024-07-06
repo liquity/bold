@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IActivePool} from "../Interfaces/IActivePool.sol";
 import {IStabilityPool} from "../Interfaces/IStabilityPool.sol";
@@ -26,8 +27,8 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         params[3] = TroveManagerParams(1.2 ether, 0.05 ether, 0.1 ether);
 
         Contracts memory contracts;
-        (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,) =
-            _deployAndConnectContracts(params);
+        (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth)
+        = _deployAndConnectContracts(params);
         setupContracts(contracts);
 
         handler = new InvariantsTestHandler("handler", contracts);
@@ -37,12 +38,18 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
     // Not a real invariant, but we want to make sure our actors always have empty wallets before a handler call
     function invariant_FundsAreSwept() external view {
         for (uint256 i = 0; i < actors.length; ++i) {
-            assertEqDecimal(boldToken.balanceOf(actors[i].account), 0, 18, "Incomplete BOLD sweep");
-        }
+            address actor = actors[i].account;
 
-        for (uint256 j = 0; j < branches.length; ++j) {
-            for (uint256 i = 0; i < actors.length; ++i) {
-                assertEqDecimal(branches[j].WETH.balanceOf(actors[i].account), 0, 18, "Incomplete coll sweep");
+            assertEqDecimal(boldToken.balanceOf(actor), 0, 18, "Incomplete BOLD sweep");
+            assertEqDecimal(weth.balanceOf(actor), 0, 18, "Incomplete WETH sweep");
+
+            for (uint256 j = 0; j < branches.length; ++j) {
+                IERC20 collToken = branches[j].collToken;
+                address borrowerOperations = address(branches[j].borrowerOperations);
+
+                assertEqDecimal(weth.allowance(actor, borrowerOperations), 0, 18, "WETH allowance != 0");
+                assertEqDecimal(collToken.balanceOf(actor), 0, 18, "Incomplete coll sweep");
+                assertEqDecimal(collToken.allowance(actor, borrowerOperations), 0, 18, "Coll allowance != 0");
             }
         }
     }
@@ -53,18 +60,18 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
 
             assertEq(c.troveManager.getTroveIdsCount(), handler.numTroves(i), "Wrong number of Troves");
             assertEq(c.sortedTroves.getSize(), handler.numTroves(i) - handler.numZombies(i), "Wrong SortedTroves size");
-            assertEqDecimal(c.activePool.getETHBalance(), handler.activeColl(i), 18, "Wrong ActivePool coll");
+            assertEqDecimal(c.activePool.getCollBalance(), handler.activeColl(i), 18, "Wrong ActivePool coll");
             assertEqDecimal(
                 c.activePool.getBoldDebt(),
                 handler.activeDebt(i) + handler.getPendingInterest(i),
                 18,
                 "Wrong ActivePool debt"
             );
-            assertEqDecimal(c.defaultPool.getETHBalance(), handler.defaultColl(i), 18, "Wrong DefaultPool coll");
+            assertEqDecimal(c.defaultPool.getCollBalance(), handler.defaultColl(i), 18, "Wrong DefaultPool coll");
             assertEqDecimal(c.defaultPool.getBoldDebt(), handler.defaultDebt(i), 18, "Wrong DefaultPool debt");
-            assertEqDecimal(boldToken.balanceOf(address(c.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool balance");
+            assertEqDecimal(weth.balanceOf(address(c.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool balance");
             assertEqDecimal(
-                c.collSurplusPool.getETHBalance(), handler.collSurplus(i), 18, "Wrong CollSurplusPool balance"
+                c.collSurplusPool.getCollBalance(), handler.collSurplus(i), 18, "Wrong CollSurplusPool balance"
             );
             assertEqDecimal(
                 c.stabilityPool.getTotalBoldDeposits(),
@@ -75,7 +82,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
             assertEqDecimal(
                 c.stabilityPool.getYieldGainsOwed(), handler.spBoldYield(i), 18, "Wrong StabilityPool yield gains owed"
             );
-            assertEqDecimal(c.stabilityPool.getETHBalance(), handler.spETH(i), 18, "Wrong StabilityPool ETH balance");
+            assertEqDecimal(c.stabilityPool.getCollBalance(), handler.spColl(i), 18, "Wrong StabilityPool Coll balance");
         }
     }
 
@@ -160,15 +167,15 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_StabilityPool_AllETHClaimable() external view {
+    function invariant_StabilityPool_AllCollClaimable() external view {
         for (uint256 j = 0; j < branches.length; ++j) {
             IStabilityPool stabilityPool = branches[j].stabilityPool;
-            uint256 stabilityPoolEth = stabilityPool.getETHBalance();
+            uint256 stabilityPoolEth = stabilityPool.getCollBalance();
             uint256 claimableEth = 0;
 
             for (uint256 i = 0; i < actors.length; ++i) {
-                claimableEth += stabilityPool.getDepositorETHGain(actors[i].account);
-                claimableEth += stabilityPool.stashedETH(actors[i].account);
+                claimableEth += stabilityPool.getDepositorCollGain(actors[i].account);
+                claimableEth += stabilityPool.stashedColl(actors[i].account);
             }
 
             assertApproxEqAbsDecimal(
@@ -176,7 +183,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
                 claimableEth,
                 1e-5 ether,
                 18,
-                string.concat("Branch #", j.toString(), ": SP ETH !~= claimable ETH")
+                string.concat("Branch #", j.toString(), ": SP Coll !~= claimable Coll")
             );
         }
     }

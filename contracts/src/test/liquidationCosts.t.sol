@@ -33,7 +33,11 @@ contract LiquidationCostsTest is DevTestSetup {
 
         // Check all troves were liquidated
         for (uint256 i = 0; i < N_TROVES; i++) {
-            assertEq(uint8(troveManager.getTroveStatus(trovesToLiq[i])), uint8(ITroveManager.Status.closedByLiquidation), "Trove should have been liquidated");
+            assertEq(
+                uint8(troveManager.getTroveStatus(trovesToLiq[i])),
+                uint8(ITroveManager.Status.closedByLiquidation),
+                "Trove should have been liquidated"
+            );
         }
     }
 
@@ -63,7 +67,11 @@ contract LiquidationCostsTest is DevTestSetup {
 
         // Check all troves were liquidated
         for (uint256 i = 0; i < N_TROVES; i++) {
-            assertEq(uint8(troveManager.getTroveStatus(trovesToLiq[i])), uint8(ITroveManager.Status.closedByLiquidation), "Trove should have been liquidated");
+            assertEq(
+                uint8(troveManager.getTroveStatus(trovesToLiq[i])),
+                uint8(ITroveManager.Status.closedByLiquidation),
+                "Trove should have been liquidated"
+            );
         }
     }
 }

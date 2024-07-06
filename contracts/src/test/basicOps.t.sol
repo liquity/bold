@@ -16,7 +16,7 @@ contract BasicOps is DevTestSetup {
         priceFeed.setPrice(2000e18);
 
         vm.startPrank(G);
-        WETH.approve(address(borrowerOperations), 2e18);
+        collToken.approve(address(borrowerOperations), 2e18);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
         borrowerOperations.openTrove(G, 0, 2e18, 2000e18, 0, 0, 0, 0);
         vm.stopPrank();
@@ -110,7 +110,7 @@ contract BasicOps is DevTestSetup {
     function testLiquidation() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 A_Id = borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, 0, 0);
+        uint256 A_Id = borrowerOperations.openTrove(A, 0, 2e18, 2200e18, 0, 0, 0, 0);
         vm.stopPrank();
 
         vm.startPrank(B);

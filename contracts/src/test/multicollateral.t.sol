@@ -15,7 +15,7 @@ contract MulticollateralTest is DevTestSetup {
         uint256 _annualInterestRate
     ) public returns (uint256 troveId) {
         TroveChange memory troveChange;
-        troveChange.debtIncrease = _boldAmount + BOLD_GAS_COMPENSATION;
+        troveChange.debtIncrease = _boldAmount;
         troveChange.newWeightedRecordedDebt = troveChange.debtIncrease * _annualInterestRate;
         uint256 avgInterestRate =
             contractsArray[_collIndex].activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
@@ -67,7 +67,7 @@ contract MulticollateralTest is DevTestSetup {
         troveManagerParams[3] = TroveManagerParams(125e16, 5e16, 10e16);
 
         LiquityContracts[] memory _contractsArray;
-        (_contractsArray, collateralRegistry, boldToken,,) = _deployAndConnectContracts(troveManagerParams);
+        (_contractsArray, collateralRegistry, boldToken,,, WETH) = _deployAndConnectContracts(troveManagerParams);
         // Unimplemented feature (...):Copying of type struct LiquityContracts memory[] memory to storage not yet supported.
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
             contractsArray.push(_contractsArray[c]);
@@ -89,11 +89,15 @@ contract MulticollateralTest is DevTestSetup {
             for (uint256 i = 0; i < 6; i++) {
                 // A to F
                 giveAndApproveCollateral(
-                    contractsArray[c].WETH,
+                    contractsArray[c].collToken,
                     accountsList[i],
                     initialCollateralAmount,
                     address(contractsArray[c].borrowerOperations)
                 );
+                // Approve WETH for gas compensation in all branches
+                vm.startPrank(accountsList[i]);
+                WETH.approve(address(contractsArray[c].borrowerOperations), type(uint256).max);
+                vm.stopPrank();
             }
         }
     }
@@ -120,7 +124,7 @@ contract MulticollateralTest is DevTestSetup {
         uint256 collInitialBalance;
         uint256 collFinalBalance;
         uint256 branchDebt;
-        uint256 WETHBalBefore_A;
+        uint256 collTokenBalBefore_A;
         uint256 redeemed;
         uint256 correspondingETH;
         uint256 ETHFee;
@@ -154,10 +158,10 @@ contract MulticollateralTest is DevTestSetup {
         assertEq(boldToken.balanceOf(A), 16000e18, "Wrong Bold balance before redemption");
 
         // initial balances
-        testValues1.collInitialBalance = contractsArray[0].WETH.balanceOf(A);
-        testValues2.collInitialBalance = contractsArray[1].WETH.balanceOf(A);
-        testValues3.collInitialBalance = contractsArray[2].WETH.balanceOf(A);
-        testValues4.collInitialBalance = contractsArray[3].WETH.balanceOf(A);
+        testValues1.collInitialBalance = contractsArray[0].collToken.balanceOf(A);
+        testValues2.collInitialBalance = contractsArray[1].collToken.balanceOf(A);
+        testValues3.collInitialBalance = contractsArray[2].collToken.balanceOf(A);
+        testValues4.collInitialBalance = contractsArray[3].collToken.balanceOf(A);
 
         testValues1.price = contractsArray[0].priceFeed.getPrice();
         testValues2.price = contractsArray[1].priceFeed.getPrice();
@@ -192,10 +196,10 @@ contract MulticollateralTest is DevTestSetup {
 
         // Check collateral balances
         // final balances
-        testValues1.collFinalBalance = contractsArray[0].WETH.balanceOf(A);
-        testValues2.collFinalBalance = contractsArray[1].WETH.balanceOf(A);
-        testValues3.collFinalBalance = contractsArray[2].WETH.balanceOf(A);
-        testValues4.collFinalBalance = contractsArray[3].WETH.balanceOf(A);
+        testValues1.collFinalBalance = contractsArray[0].collToken.balanceOf(A);
+        testValues2.collFinalBalance = contractsArray[1].collToken.balanceOf(A);
+        testValues3.collFinalBalance = contractsArray[2].collToken.balanceOf(A);
+        testValues4.collFinalBalance = contractsArray[3].collToken.balanceOf(A);
 
         assertApproxEqAbs(
             testValues1.collFinalBalance - testValues1.collInitialBalance,
@@ -302,10 +306,10 @@ contract MulticollateralTest is DevTestSetup {
         uint256 redeemAmount = boldBalance * _redemptionFraction / DECIMAL_PRECISION;
 
         // initial balances
-        testValues1.collInitialBalance = contractsArray[0].WETH.balanceOf(A);
-        testValues2.collInitialBalance = contractsArray[1].WETH.balanceOf(A);
-        testValues3.collInitialBalance = contractsArray[2].WETH.balanceOf(A);
-        testValues4.collInitialBalance = contractsArray[3].WETH.balanceOf(A);
+        testValues1.collInitialBalance = contractsArray[0].collToken.balanceOf(A);
+        testValues2.collInitialBalance = contractsArray[1].collToken.balanceOf(A);
+        testValues3.collInitialBalance = contractsArray[2].collToken.balanceOf(A);
+        testValues4.collInitialBalance = contractsArray[3].collToken.balanceOf(A);
 
         testValues1.unbackedPortion = contractsArray[0].troveManager.getEntireSystemDebt() - _spBoldAmount1;
         testValues2.unbackedPortion = contractsArray[1].troveManager.getEntireSystemDebt() - _spBoldAmount2;
@@ -341,10 +345,10 @@ contract MulticollateralTest is DevTestSetup {
 
         // Check collateral balances
         // final balances
-        testValues1.collFinalBalance = contractsArray[0].WETH.balanceOf(A);
-        testValues2.collFinalBalance = contractsArray[1].WETH.balanceOf(A);
-        testValues3.collFinalBalance = contractsArray[2].WETH.balanceOf(A);
-        testValues4.collFinalBalance = contractsArray[3].WETH.balanceOf(A);
+        testValues1.collFinalBalance = contractsArray[0].collToken.balanceOf(A);
+        testValues2.collFinalBalance = contractsArray[1].collToken.balanceOf(A);
+        testValues3.collFinalBalance = contractsArray[2].collToken.balanceOf(A);
+        testValues4.collFinalBalance = contractsArray[3].collToken.balanceOf(A);
 
         console.log(redeemAmount, "redeemAmount");
         console.log(testValues1.unbackedPortion, "testValues1.unbackedPortion");
@@ -424,10 +428,10 @@ contract MulticollateralTest is DevTestSetup {
         testValues2.branchDebt = contractsArray[2].troveManager.getEntireSystemDebt();
         testValues3.branchDebt = contractsArray[3].troveManager.getEntireSystemDebt();
 
-        testValues0.WETHBalBefore_A = contractsArray[0].WETH.balanceOf(A);
-        testValues1.WETHBalBefore_A = contractsArray[1].WETH.balanceOf(A);
-        testValues2.WETHBalBefore_A = contractsArray[2].WETH.balanceOf(A);
-        testValues3.WETHBalBefore_A = contractsArray[3].WETH.balanceOf(A);
+        testValues0.collTokenBalBefore_A = contractsArray[0].collToken.balanceOf(A);
+        testValues1.collTokenBalBefore_A = contractsArray[1].collToken.balanceOf(A);
+        testValues2.collTokenBalBefore_A = contractsArray[2].collToken.balanceOf(A);
+        testValues3.collTokenBalBefore_A = contractsArray[3].collToken.balanceOf(A);
 
         // A redeems
         redeem(A, redeemAmount);
@@ -458,24 +462,24 @@ contract MulticollateralTest is DevTestSetup {
         assertGt(testValues2.ETHFee, 0);
         assertGt(testValues3.ETHFee, 0);
 
-        // Expect WETH balance of redeemer increased by drawn ETH, leaving the ETH fee in the branch
+        // Expect collToken balance of redeemer increased by drawn ETH, leaving the ETH fee in the branch
         assertApproxEqAbs(
-            contractsArray[0].WETH.balanceOf(A) - testValues0.WETHBalBefore_A,
+            contractsArray[0].collToken.balanceOf(A) - testValues0.collTokenBalBefore_A,
             testValues0.correspondingETH - testValues0.ETHFee,
             20
         );
         assertApproxEqAbs(
-            contractsArray[1].WETH.balanceOf(A) - testValues1.WETHBalBefore_A,
+            contractsArray[1].collToken.balanceOf(A) - testValues1.collTokenBalBefore_A,
             testValues1.correspondingETH - testValues1.ETHFee,
             100
         );
         assertApproxEqAbs(
-            contractsArray[2].WETH.balanceOf(A) - testValues2.WETHBalBefore_A,
+            contractsArray[2].collToken.balanceOf(A) - testValues2.collTokenBalBefore_A,
             testValues2.correspondingETH - testValues2.ETHFee,
             20
         );
         assertApproxEqAbs(
-            contractsArray[3].WETH.balanceOf(A) - testValues3.WETHBalBefore_A,
+            contractsArray[3].collToken.balanceOf(A) - testValues3.collTokenBalBefore_A,
             testValues3.correspondingETH - testValues3.ETHFee,
             20
         );
