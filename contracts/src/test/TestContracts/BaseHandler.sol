@@ -5,10 +5,8 @@ import {Test} from "forge-std/Test.sol";
 import {console2 as console} from "forge-std/console2.sol";
 
 contract BaseHandler is Test {
-    string callPrefix;
-
-    constructor(string memory handlerName) {
-        callPrefix = string.concat(handlerName, ".");
+    function _callPrefix() internal view returns (string memory) {
+        return string.concat(vm.getLabel(address(this)), ".");
     }
 
     function _log() internal pure {
@@ -144,31 +142,39 @@ contract BaseHandler is Test {
         return string.concat(strs[0], ", ", strs[1], ", ", strs[2], ", ", strs[3]);
     }
 
+    function _csv(string[5] memory strs) internal pure returns (string memory) {
+        return string.concat(strs[0], ", ", strs[1], ", ", strs[2], ", ", strs[3], ", ", strs[4]);
+    }
+
+    function _csv(string[6] memory strs) internal pure returns (string memory) {
+        return string.concat(strs[0], ", ", strs[1], ", ", strs[2], ", ", strs[3], ", ", strs[4], ", ", strs[5]);
+    }
+
     function _logCaller() internal view {
         _log("vm.prank(", vm.getLabel(msg.sender), ");");
     }
 
     function logCall(string memory functionName) internal view {
         _logCaller();
-        _log(callPrefix, functionName, "();");
+        _log(_callPrefix(), functionName, "();");
         _log();
     }
 
     function logCall(string memory functionName, string memory a) internal view {
         _logCaller();
-        _log(callPrefix, functionName, "(", a, ");");
+        _log(_callPrefix(), functionName, "(", a, ");");
         _log();
     }
 
     function logCall(string memory functionName, string memory a, string memory b) internal view {
         _logCaller();
-        _log(callPrefix, functionName, "(", _csv([a, b]), ");");
+        _log(_callPrefix(), functionName, "(", _csv([a, b]), ");");
         _log();
     }
 
     function logCall(string memory functionName, string memory a, string memory b, string memory c) internal view {
         _logCaller();
-        _log(callPrefix, functionName, "(", _csv([a, b, c]), ");");
+        _log(_callPrefix(), functionName, "(", _csv([a, b, c]), ");");
         _log();
     }
 
@@ -177,7 +183,34 @@ contract BaseHandler is Test {
         view
     {
         _logCaller();
-        _log(callPrefix, functionName, "(", _csv([a, b, c, d]), ");");
+        _log(_callPrefix(), functionName, "(", _csv([a, b, c, d]), ");");
+        _log();
+    }
+
+    function logCall(
+        string memory functionName,
+        string memory a,
+        string memory b,
+        string memory c,
+        string memory d,
+        string memory e
+    ) internal view {
+        _logCaller();
+        _log(_callPrefix(), functionName, "(", _csv([a, b, c, d, e]), ");");
+        _log();
+    }
+
+    function logCall(
+        string memory functionName,
+        string memory a,
+        string memory b,
+        string memory c,
+        string memory d,
+        string memory e,
+        string memory f
+    ) internal view {
+        _logCaller();
+        _log(_callPrefix(), functionName, "(", _csv([a, b, c, d, e, f]), ");");
         _log();
     }
 }

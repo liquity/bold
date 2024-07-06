@@ -18,7 +18,6 @@ contract SPInvariantsTest is BaseInvariantTest {
         stabilityPool = contracts.stabilityPool;
 
         handler = new SPInvariantsTestHandler(
-            "handler",
             SPInvariantsTestHandler.Contracts({
                 boldToken: boldToken,
                 borrowerOperations: contracts.borrowerOperations,
@@ -30,6 +29,7 @@ contract SPInvariantsTest is BaseInvariantTest {
             })
         );
 
+        vm.label(address(handler), "handler");
         targetContract(address(handler));
     }
 

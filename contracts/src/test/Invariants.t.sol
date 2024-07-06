@@ -1,20 +1,63 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
+import {console2 as console} from "forge-std/console2.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IActivePool} from "../Interfaces/IActivePool.sol";
+import {ISortedTroves} from "../Interfaces/ISortedTroves.sol";
 import {IStabilityPool} from "../Interfaces/IStabilityPool.sol";
 import {ITroveManager} from "../Interfaces/ITroveManager.sol";
+import {BatchId} from "../Types/BatchId.sol";
 import {_deployAndConnectContracts, LiquityContracts, TroveManagerParams} from "../deployment.sol";
+import {StringFormatting} from "./Utils/StringFormatting.sol";
 import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
 import {BaseMultiCollateralTest} from "./TestContracts/BaseMultiCollateralTest.sol";
 import {InvariantsTestHandler} from "./TestContracts/InvariantsTestHandler.sol";
 
+struct BatchIdSet {
+    mapping(BatchId => bool) _has;
+    BatchId[] _batchIds;
+}
+
+function add(BatchIdSet storage set, BatchId batchId) {
+    if (!set._has[batchId]) {
+        set._has[batchId] = true;
+        set._batchIds.push(batchId);
+    }
+}
+
+function clear(BatchIdSet storage set) {
+    for (uint256 i = 0; i < set._batchIds.length; ++i) {
+        delete set._has[set._batchIds[i]];
+    }
+    delete set._batchIds;
+}
+
+function has(BatchIdSet storage set, BatchId batchId) view returns (bool) {
+    return set._has[batchId];
+}
+
+function getBatchOf(ISortedTroves sortedTroves, uint256 troveId) view returns (BatchId batchId) {
+    (,, batchId,) = sortedTroves.nodes(troveId);
+}
+
+function getBatchHead(ISortedTroves sortedTroves, BatchId batchId) view returns (uint256 batchHead) {
+    (batchHead,) = sortedTroves.batches(batchId);
+}
+
+function getBatchTail(ISortedTroves sortedTroves, BatchId batchId) view returns (uint256 batchTail) {
+    (, batchTail) = sortedTroves.batches(batchId);
+}
+
 contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
     using Strings for uint256;
+    using StringFormatting for uint256;
+    using {add, clear, has} for BatchIdSet;
+    using {getBatchOf, getBatchHead, getBatchTail} for ISortedTroves;
 
     InvariantsTestHandler handler;
+    BatchIdSet seenBatches;
 
     function setUp() public override {
         super.setUp();
@@ -31,7 +74,8 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         = _deployAndConnectContracts(params);
         setupContracts(contracts);
 
-        handler = new InvariantsTestHandler("handler", contracts);
+        handler = new InvariantsTestHandler(contracts);
+        vm.label(address(handler), "handler");
         targetContract(address(handler));
     }
 
@@ -185,6 +229,148 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
                 18,
                 string.concat("Branch #", j.toString(), ": SP Coll !~= claimable Coll")
             );
+        }
+    }
+
+    function invariant_SortedTroves_OrderedByInterestRate() external view {
+        for (uint256 j = 0; j < branches.length; ++j) {
+            ITroveManager troveManager = branches[j].troveManager;
+            ISortedTroves sortedTroves = branches[j].sortedTroves;
+
+            uint256 i = 0;
+            uint256 size = sortedTroves.getSize();
+            uint256[] memory troveIds = new uint256[](size);
+            uint256 curr = sortedTroves.getFirst();
+
+            if (curr == 0) {
+                assertEq(
+                    size,
+                    0,
+                    string.concat("Branch #", j.toString(), ": SortedTroves forward node count doesn't match size")
+                );
+
+                assertEq(
+                    sortedTroves.getLast(),
+                    0,
+                    string.concat("Branch #", j.toString(), ": SortedTroves reverse node count doesn't match size")
+                );
+
+                // empty list is ordered by definition
+                continue;
+            }
+
+            troveIds[i++] = curr;
+            uint256 prevAnnualInterestRate = troveManager.getTroveAnnualInterestRate(curr);
+            curr = sortedTroves.getNext(curr);
+
+            while (curr != 0) {
+                uint256 currAnnualInterestRate = troveManager.getTroveAnnualInterestRate(curr);
+
+                assertLeDecimal(
+                    currAnnualInterestRate,
+                    prevAnnualInterestRate,
+                    18,
+                    string.concat("Branch #", j.toString(), ": SortedTroves ordering is broken")
+                );
+
+                troveIds[i++] = curr;
+                prevAnnualInterestRate = currAnnualInterestRate;
+                curr = sortedTroves.getNext(curr);
+            }
+
+            assertEq(
+                i, size, string.concat("Branch #", j.toString(), ": SortedTroves forward node count doesn't match size")
+            );
+
+            // Verify reverse ordering
+            curr = sortedTroves.getLast();
+
+            while (i > 0) {
+                assertNotEq(
+                    curr,
+                    0,
+                    string.concat("Branch #", j.toString(), ": SortedTroves reverse node count doesn't match size")
+                );
+
+                assertEq(
+                    curr,
+                    troveIds[--i],
+                    string.concat("Branch #", j.toString(), ": SortedTroves reverse ordering is broken")
+                );
+
+                curr = sortedTroves.getPrev(curr);
+            }
+
+            assertEq(
+                curr, 0, string.concat("Branch #", j.toString(), ": SortedTroves reverse node count doesn't match size")
+            );
+        }
+    }
+
+    function invariant_SortedTroves_BatchesAreContiguous() external {
+        for (uint256 j = 0; j < branches.length; ++j) {
+            ISortedTroves sortedTroves = branches[j].sortedTroves;
+            uint256 prev = sortedTroves.getFirst();
+
+            if (prev == 0) {
+                continue;
+            }
+
+            BatchId prevBatch = sortedTroves.getBatchOf(prev);
+
+            if (prevBatch.isNotZero()) {
+                assertEq(
+                    prev,
+                    sortedTroves.getBatchHead(prevBatch),
+                    string.concat("Branch #", j.toString(), ": Wrong batch head")
+                );
+            }
+
+            uint256 curr = sortedTroves.getNext(prev);
+            BatchId currBatch = sortedTroves.getBatchOf(curr);
+
+            while (curr != 0) {
+                if (currBatch.notEquals(prevBatch)) {
+                    if (prevBatch.isNotZero()) {
+                        assertFalse(
+                            seenBatches.has(prevBatch), string.concat("Branch #", j.toString(), ": Batch already seen")
+                        );
+
+                        seenBatches.add(prevBatch);
+
+                        assertEq(
+                            prev,
+                            sortedTroves.getBatchTail(prevBatch),
+                            string.concat("Branch #", j.toString(), ": Wrong batch tail")
+                        );
+                    }
+
+                    if (currBatch.isNotZero()) {
+                        assertEq(
+                            curr,
+                            sortedTroves.getBatchHead(currBatch),
+                            string.concat("Branch #", j.toString(), ": Wrong batch head")
+                        );
+                    }
+                }
+
+                prev = curr;
+                prevBatch = currBatch;
+
+                curr = sortedTroves.getNext(prev);
+                currBatch = sortedTroves.getBatchOf(curr);
+            }
+
+            if (prevBatch.isNotZero()) {
+                assertFalse(seenBatches.has(prevBatch), string.concat("Branch #", j.toString(), ": Batch already seen"));
+                assertEq(
+                    prev,
+                    sortedTroves.getBatchTail(prevBatch),
+                    string.concat("Branch #", j.toString(), ": Wrong batch tail")
+                );
+            }
+
+            seenBatches.clear();
         }
     }
 }
