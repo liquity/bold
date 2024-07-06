@@ -192,13 +192,13 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
 
         // --- Effects & interactions ---
 
+        contractsCache.activePool.mintAggInterestAndAccountForTroveChange(vars.troveChange);
+        sortedTroves.insert(troveId, _annualInterestRate, _upperHint, _lowerHint);
+
         // Set the stored Trove properties and mint the NFT
         contractsCache.troveManager.onOpenTrove(
             _owner, troveId, _collAmount, vars.entireDebt, _annualInterestRate, vars.troveChange.upfrontFee
         );
-
-        contractsCache.activePool.mintAggInterestAndAccountForTroveChange(vars.troveChange);
-        sortedTroves.insert(troveId, _annualInterestRate, _upperHint, _lowerHint);
 
         // Pull coll tokens from sender and move them to the Active Pool
         _pullCollAndSendToActivePool(contractsCache.activePool, _collAmount);
@@ -321,11 +321,11 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         _initTroveChange(troveChange, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
         _adjustTrove(contractsCache, _troveId, troveChange, _maxUpfrontFee);
 
-        contractsCache.troveManager.setTroveStatusToActive(_troveId);
-
         sortedTroves.insert(
             _troveId, contractsCache.troveManager.getTroveAnnualInterestRate(_troveId), _upperHint, _lowerHint
         );
+
+        contractsCache.troveManager.setTroveStatusToActive(_troveId);
     }
 
     function adjustTroveInterestRate(
@@ -376,12 +376,11 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
             _requireNewTCRisAboveCCR(newTCR);
         }
 
+        contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
+        sortedTroves.reInsert(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint);
         contractsCache.troveManager.onAdjustTroveInterestRate(
             _troveId, trove.entireColl, newDebt, _newAnnualInterestRate, troveChange
         );
-
-        contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
-        sortedTroves.reInsert(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint);
     }
 
     /*
@@ -457,9 +456,9 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
 
         // --- Effects and interactions ---
 
-        _contractsCache.troveManager.onAdjustTrove(_troveId, vars.newColl, vars.newDebt, _troveChange);
         _contractsCache.activePool.mintAggInterestAndAccountForTroveChange(_troveChange);
         _moveTokensFromAdjustment(owner, _troveChange, _contractsCache);
+        _contractsCache.troveManager.onAdjustTrove(_troveId, vars.newColl, vars.newDebt, _troveChange);
     }
 
     function closeTrove(uint256 _troveId) external override {
@@ -488,8 +487,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
 
         // --- Effects and interactions ---
 
-        contractsCache.troveManager.onCloseTrove(_troveId, troveChange);
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
+        contractsCache.troveManager.onCloseTrove(_troveId, troveChange);
 
         // Return ETH gas compensation
         WETH.transferFrom(gasPoolAddress, msg.sender, ETH_GAS_COMPENSATION);
@@ -513,8 +512,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
         troveChange.newWeightedRecordedDebt = trove.entireDebt * trove.annualInterestRate;
 
-        contractsCache.troveManager.onApplyTroveInterest(_troveId, trove.entireColl, trove.entireDebt, troveChange);
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
+        contractsCache.troveManager.onApplyTroveInterest(_troveId, trove.entireColl, trove.entireDebt, troveChange);
     }
 
     function setAddManager(uint256 _troveId, address _manager) external {
