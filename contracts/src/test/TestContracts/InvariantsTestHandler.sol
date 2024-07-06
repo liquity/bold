@@ -545,13 +545,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         LatestTroveData memory trove = c.troveManager.getLatestTroveData(troveId);
         ITroveManager.Status status = c.troveManager.getTroveStatus(troveId);
         uint256 price = c.priceFeed.getPrice();
-        uint256 upfrontFee;
+        uint256 upfrontFee = hintHelpers.predictAdjustInterestRateUpfrontFee(i, troveId, newInterestRate);
 
-        if (status == ITroveManager.Status.active) {
-            upfrontFee = hintHelpers.predictAdjustInterestRateUpfrontFee(i, troveId, newInterestRate);
-            info("upfront fee: ", upfrontFee.decimal());
-        }
-
+        info("upfront fee: ", upfrontFee.decimal());
         info("upper hint: ", _hintToString(i, upperHint));
         info("lower hint: ", _hintToString(i, lowerHint));
 

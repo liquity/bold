@@ -139,7 +139,10 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         newAggWeightedDebtSum += _troveChange.newWeightedRecordedDebt;
         newAggWeightedDebtSum -= _troveChange.oldWeightedRecordedDebt;
 
-        return newAggWeightedDebtSum / newAggRecordedDebt;
+        // Avoid division by 0 if the first ever borrower tries to borrow 0 BOLD
+        // Borrowing 0 BOLD is not allowed, but our check of debt >= MIN_DEBT happens _after_ calculating the upfront
+        // fee, which involves getting the new approx. avg. interest rate
+        return newAggRecordedDebt > 0 ? newAggWeightedDebtSum / newAggRecordedDebt : 0;
     }
 
     // Returns sum of agg.recorded debt plus agg. pending interest. Excludes pending redist. gains.
