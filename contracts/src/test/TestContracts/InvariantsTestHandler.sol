@@ -27,6 +27,7 @@ import {
     DECIMAL_PRECISION,
     ETH_GAS_COMPENSATION,
     MAX_ANNUAL_INTEREST_RATE,
+    MIN_DEBT,
     ONE_YEAR,
     SP_YIELD_SPLIT,
     UPFRONT_INTEREST_PERIOD
@@ -35,7 +36,7 @@ import {
 uint256 constant WARP_SECONDS_MIN = 0;
 uint256 constant WARP_SECONDS_MAX = ONE_YEAR;
 
-uint256 constant BORROWED_MIN = 2_000 ether;
+uint256 constant BORROWED_MIN = 0 ether; // Sometimes try borrowing too little
 uint256 constant BORROWED_MAX = 100_000 ether;
 
 uint256 constant INTEREST_RATE_MIN = 0; // TODO
@@ -464,6 +465,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Preconditions
             assertFalse(v.wasOpen, "Should have failed as Trove was open");
             assertLeDecimal(interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as interest rate > max");
+            assertGeDecimal(v.debt, MIN_DEBT, 18, "Should have failed as debt < min");
             assertGeDecimal(v.coll * v.price / v.debt, c.troveManager.MCR(), 18, "Should have failed as ICR < MCR");
             assertGeDecimal(c.troveManager.getTCR(v.price), CCR, 18, "Should have failed as TCR < CCR");
 
@@ -498,6 +500,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertGtDecimal(
                     interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should not have failed as interest rate <= max"
                 );
+            } else if (reason.equals("BorrowerOps: Trove's debt must be greater than minimum")) {
+                assertLtDecimal(v.debt, MIN_DEBT, 18, "Should not have failed as debt >= min");
             } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
                 assertLtDecimal(
                     v.coll * v.price / v.debt, c.troveManager.MCR(), 18, "Should not have failed as ICR >= MCR"
