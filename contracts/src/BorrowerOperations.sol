@@ -764,8 +764,14 @@ contract BorrowerOperations is LiquityBase, Ownable, CheckContract, IBorrowerOpe
         uint128 minInterestRateChangePeriod
     ) external {
         _requireNonExistentInterestBatchManager(msg.sender);
+        _requireValidAnnualInterestRate(minInterestRate);
+        _requireValidAnnualInterestRate(maxInterestRate);
+        _requireValidAnnualInterestRate(currentInterestRate);
+        require(minInterestRate < maxInterestRate, "BO: min should be less than max");
+
         interestBatchManagers[msg.sender] =
             InterestBatchManager(minInterestRate, maxInterestRate, minInterestRateChangePeriod);
+
         troveManager.onRegisterBatchManager(msg.sender, currentInterestRate, annualManagementFee);
     }
 
