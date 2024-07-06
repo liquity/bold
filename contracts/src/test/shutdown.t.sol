@@ -293,8 +293,8 @@ contract ShutdownTest is DevTestSetup {
         uint256 troveId = openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 110e18, 10000e18, 5e16);
 
         vm.startPrank(A);
-        vm.expectRevert("BO: Branch is not shut down");
-        contractsArray[1].borrowerOperations.urgentRedemption(100e18, uintToArray(troveId), 0);
+        vm.expectRevert("TroveManager: Branch is not shut down");
+        contractsArray[1].troveManager.urgentRedemption(100e18, uintToArray(troveId), 0);
         vm.stopPrank();
     }
 
@@ -304,12 +304,12 @@ contract ShutdownTest is DevTestSetup {
         // Min not reached
         vm.startPrank(A);
         vm.expectRevert("TM: Min collateral not reached");
-        borrowerOperations.urgentRedemption(1000e18, uintToArray(troveId), 102e16);
+        troveManager.urgentRedemption(1000e18, uintToArray(troveId), 102e16);
         vm.stopPrank();
 
         // Min just reached
         vm.startPrank(A);
-        borrowerOperations.urgentRedemption(1000e18, uintToArray(troveId), 101e16);
+        troveManager.urgentRedemption(1000e18, uintToArray(troveId), 101e16);
         vm.stopPrank();
     }
 
@@ -330,7 +330,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 collBalanceBefore = contractsArray[0].collToken.balanceOf(A);
         uint256 redemptionAmount = 100e18;
         vm.startPrank(A);
-        borrowerOperations.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
+        troveManager.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
         vm.stopPrank();
 
         assertEq(boldToken.balanceOf(A), boldBalanceBefore - redemptionAmount, "Bold balance mismatch");
@@ -358,7 +358,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 collBalanceBefore = contractsArray[0].collToken.balanceOf(A);
         uint256 redemptionAmount = troveManager.getTroveEntireDebt(troveId);
         vm.startPrank(A);
-        borrowerOperations.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
+        troveManager.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
         vm.stopPrank();
 
         assertEq(
@@ -387,7 +387,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 collBalanceBefore = contractsArray[0].collToken.balanceOf(A);
         uint256 redemptionAmount = 100e18;
         vm.startPrank(A);
-        borrowerOperations.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
+        troveManager.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
         vm.stopPrank();
 
         assertEq(boldToken.balanceOf(A), boldBalanceBefore - redemptionAmount, "Bold balance mismatch");
@@ -416,7 +416,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 collBalanceBefore = contractsArray[0].collToken.balanceOf(A);
         uint256 redemptionAmount = troveManager.getTroveEntireDebt(troveId);
         vm.startPrank(A);
-        borrowerOperations.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
+        troveManager.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
         vm.stopPrank();
 
         assertEq(boldToken.balanceOf(A), boldBalanceBefore - redemptionAmount, "Bold balance mismatch");
@@ -444,7 +444,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 collBalanceBefore = contractsArray[0].collToken.balanceOf(A);
         uint256 redemptionAmount = 100e18;
         vm.startPrank(A);
-        borrowerOperations.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
+        troveManager.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
         vm.stopPrank();
 
         assertEq(boldToken.balanceOf(A), boldBalanceBefore - redemptionAmount, "Bold balance mismatch");
@@ -472,7 +472,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 collBalanceBefore = contractsArray[0].collToken.balanceOf(A);
         uint256 redemptionAmount = troveManager.getTroveEntireDebt(troveId);
         vm.startPrank(A);
-        borrowerOperations.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
+        troveManager.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
         vm.stopPrank();
 
         assertEq(boldToken.balanceOf(A), boldBalanceBefore - redemptionAmount, "Bold balance mismatch");

@@ -38,7 +38,7 @@ uint256 constant REDEMPTION_BETA = 2;
 uint256 constant INITIAL_REDEMPTION_RATE = 5 * _1pct; // 5%
 
 // Discount to be used once the shutdown thas been triggered
-uint256 constant URGENT_REDEMPTION_DISCOUNT = 1e16; // 1%
+uint256 constant URGENT_REDEMPTION_BONUS = 1e16; // 1%
 
 uint256 constant ONE_MINUTE = 1 minutes;
 uint256 constant ONE_YEAR = 365 days;

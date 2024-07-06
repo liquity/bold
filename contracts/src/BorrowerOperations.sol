@@ -551,17 +551,11 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         collSurplusPool.claimColl(msg.sender);
     }
 
-    // TODO: move it to TroveManager
-    function urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral) external {
-        _requireIsShutDown();
-        troveManager.urgentRedemption(msg.sender, _boldAmount, _troveIds, _minCollateral);
-    }
-
     function shutdown() external {
         require(!hasBeenShutDown, "BO: already shutdown");
 
         activePool.mintAggInterest();
-        
+
         uint256 totalColl = getEntireSystemColl();
         uint256 totalDebt = getEntireSystemDebt();
         uint256 price = priceFeed.fetchPrice();

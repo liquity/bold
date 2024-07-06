@@ -81,7 +81,6 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function shutdown() external;
     function urgentRedemption(
-        address _sender,
         uint256 _boldAmount,
         uint256[] calldata _troveIds,
         uint256 _minCollateral

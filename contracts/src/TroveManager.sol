@@ -682,11 +682,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         singleRedemption.boldLot = LiquityMath._min(_maxBoldamount, trove.entireDebt);
 
         // Get the amount of ETH equal in USD value to the BOLD lot redeemed
-        singleRedemption.collLot = singleRedemption.boldLot * (DECIMAL_PRECISION + URGENT_REDEMPTION_DISCOUNT) / _price;
+        singleRedemption.collLot = singleRedemption.boldLot * (DECIMAL_PRECISION + URGENT_REDEMPTION_BONUS) / _price;
         // As here we can redeem when CR < 100%, we need to cap by collateral too
         if (singleRedemption.collLot > trove.entireColl) {
             singleRedemption.collLot = trove.entireColl;
-            singleRedemption.boldLot = trove.entireColl * _price / (DECIMAL_PRECISION + URGENT_REDEMPTION_DISCOUNT);
+            singleRedemption.boldLot = trove.entireColl * _price / (DECIMAL_PRECISION + URGENT_REDEMPTION_BONUS);
         }
 
         // Decrease the debt and collateral of the current Trove according to the Bold lot and corresponding ETH to send
@@ -718,12 +718,11 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     }
 
     function urgentRedemption(
-        address _sender,
         uint256 _boldAmount,
         uint256[] calldata _troveIds,
         uint256 _minCollateral
     ) external {
-        _requireCallerIsBorrowerOperations();
+        _requireIsShutDown();
 
         ContractsCache memory contractsCache =
             ContractsCache(activePool, defaultPool, boldToken, sortedTroves, collSurplusPool, gasPoolAddress);
@@ -750,9 +749,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         emit Redemption(_boldAmount, totals.troveChange.debtDecrease, totals.troveChange.collDecrease, 0, price);
 
         // Send the redeemed coll to sender
-        contractsCache.activePool.sendColl(_sender, totals.troveChange.collDecrease);
+        contractsCache.activePool.sendColl(msg.sender, totals.troveChange.collDecrease);
         // Burn bold
-        contractsCache.boldToken.burn(_sender, totals.troveChange.debtDecrease);
+        contractsCache.boldToken.burn(msg.sender, totals.troveChange.debtDecrease);
     }
 
     function shutdown() external {
@@ -1064,6 +1063,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     function _requireMoreThanOneTroveInSystem(uint256 TroveIdsArrayLength) internal view {
         require(TroveIdsArrayLength > 1 && sortedTroves.getSize() > 1, "TroveManager: Only one trove in the system");
+    }
+
+    function _requireIsShutDown() internal view {
+        require(shutdownTime > 0, "TroveManager: Branch is not shut down");
     }
 
     // --- Trove property getters ---
