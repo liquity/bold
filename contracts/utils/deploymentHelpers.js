@@ -61,6 +61,7 @@ class DeploymentHelper {
     const activePool = await Contracts.ActivePool.new(WETH.address);
     const troveManager = await Contracts.TroveManager.new(
       web3.utils.toBN("1100000000000000000"),
+      web3.utils.toBN("1100000000000000000"),
       web3.utils.toBN("100000000000000000"),
       web3.utils.toBN("100000000000000000"),
       WETH.address

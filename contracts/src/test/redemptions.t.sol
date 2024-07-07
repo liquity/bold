@@ -20,6 +20,12 @@ contract Redemptions is DevTestSetup {
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
+        console.log(troveIDs.A, "A id");
+        console.log(troveIDs.B, "B id");
+        console.log(sortedTroves.contains(troveIDs.B), "B is in list t0");
+        console.log(troveManager.getTroveEntireDebt(troveIDs.B), "A debt t0");
+        console.log(troveManager.getTroveEntireDebt(troveIDs.B), "B debt t0");
+        console.log(sortedTroves.getLast(), "first to redeem t0");
         uint256 debt_C = troveManager.getTroveEntireDebt(troveIDs.C);
         uint256 debt_D = troveManager.getTroveEntireDebt(troveIDs.D);
 

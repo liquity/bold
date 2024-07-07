@@ -31,6 +31,11 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     // Wrapped ETH for liquidation reserve (gas compensation)
     IERC20 public immutable WETH;
 
+    // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
+    // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
+    uint256 public immutable SCR;
+    bool public hasBeenShutDown;
+
     // Minimum collateral ratio for individual troves
     uint256 public immutable MCR;
 
@@ -96,11 +101,15 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
 
+    event ShutDown(uint256 _tcr);
+
     constructor(IERC20 _collToken, ITroveManager _troveManager, IERC20 _weth) {
         collToken = _collToken;
         troveManager = _troveManager;
+        
         WETH = _weth;
-
+      
+        SCR = _troveManager.SCR();
         MCR = _troveManager.MCR();
 
         emit TroveManagerAddressChanged(address(_troveManager));
@@ -154,6 +163,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         uint256 _annualInterestRate,
         uint256 _maxUpfrontFee
     ) external override returns (uint256) {
+        _requireIsNotShutDown();
+
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         LocalVariables_openTrove memory vars;
 
@@ -335,6 +346,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) external {
+        _requireIsNotShutDown();
+
         ContractsCacheTMAP memory contractsCache = ContractsCacheTMAP(troveManager, activePool);
 
         _requireValidAnnualInterestRate(_newAnnualInterestRate);
@@ -392,6 +405,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         TroveChange memory _troveChange,
         uint256 _maxUpfrontFee
     ) internal {
+        _requireIsNotShutDown();
+
         LocalVariables_adjustTrove memory vars;
 
         vars.price = priceFeed.fetchPrice();
@@ -483,7 +498,7 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
 
         uint256 newTCR = _getNewTCRFromTroveChange(troveChange, price);
-        _requireNewTCRisAboveCCR(newTCR);
+        if (!hasBeenShutDown) _requireNewTCRisAboveCCR(newTCR);
 
         // --- Effects and interactions ---
 
@@ -500,6 +515,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     }
 
     function applyTroveInterestPermissionless(uint256 _troveId) external {
+        _requireIsNotShutDown();
+
         ContractsCacheTMAP memory contractsCache = ContractsCacheTMAP(troveManager, activePool);
 
         _requireTroveIsStale(contractsCache.troveManager, _troveId);
@@ -534,6 +551,26 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         collSurplusPool.claimColl(msg.sender);
     }
 
+    function shutdown() external {
+        require(!hasBeenShutDown, "BO: already shutdown");
+
+        activePool.mintAggInterest();
+
+        uint256 totalColl = getEntireSystemColl();
+        uint256 totalDebt = getEntireSystemDebt();
+        uint256 price = priceFeed.fetchPrice();
+
+        uint256 TCR = LiquityMath._computeCR(totalColl, totalDebt, price);
+
+        require(TCR < SCR, "BO: TCR is not below SCR");
+
+        hasBeenShutDown = true;
+
+        troveManager.shutdown();
+
+        emit ShutDown(TCR);
+    }
+
     // --- Helper functions ---
 
     // This function mints the BOLD corresponding to the borrower's chosen debt increase
@@ -566,6 +603,14 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     }
 
     // --- 'Require' wrapper functions ---
+
+    function _requireIsNotShutDown() internal view {
+        require(!hasBeenShutDown, "BO: Branch shut down");
+    }
+
+    function _requireIsShutDown() internal view {
+        require(hasBeenShutDown, "BO: Branch is not shut down");
+    }
 
     function _requireCallerIsBorrower(ITroveManager _troveManager, uint256 _troveId) internal view {
         require(

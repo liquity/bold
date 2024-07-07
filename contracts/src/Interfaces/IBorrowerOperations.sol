@@ -65,6 +65,9 @@ interface IBorrowerOperations is ILiquityBase {
 
     function claimCollateral() external;
 
+    function hasBeenShutDown() external view returns (bool);
+    function shutdown() external;
+
     function setAddManager(uint256 _troveId, address _manager) external;
     function setRemoveManager(uint256 _troveId, address _manager) external;
     function addManagerOf(uint256 _troveId) external view returns (address);

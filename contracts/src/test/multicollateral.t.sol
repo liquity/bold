@@ -61,10 +61,10 @@ contract MulticollateralTest is DevTestSetup {
         );
 
         TroveManagerParams[] memory troveManagerParams = new TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParams[0] = TroveManagerParams(110e16, 5e16, 10e16);
-        troveManagerParams[1] = TroveManagerParams(120e16, 5e16, 10e16);
-        troveManagerParams[2] = TroveManagerParams(120e16, 5e16, 10e16);
-        troveManagerParams[3] = TroveManagerParams(125e16, 5e16, 10e16);
+        troveManagerParams[0] = TroveManagerParams(110e16, 110e16, 5e16, 10e16);
+        troveManagerParams[1] = TroveManagerParams(120e16, 120e16, 5e16, 10e16);
+        troveManagerParams[2] = TroveManagerParams(120e16, 120e16, 5e16, 10e16);
+        troveManagerParams[3] = TroveManagerParams(125e16, 125e16, 5e16, 10e16);
 
         LiquityContracts[] memory _contractsArray;
         (_contractsArray, collateralRegistry, boldToken,,, WETH) = _deployAndConnectContracts(troveManagerParams);

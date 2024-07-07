@@ -21,8 +21,11 @@ interface ITroveManager is IERC721, ILiquityBase {
     }
 
     function MCR() external view returns (uint256);
+    function SCR() external view returns (uint256);
     function LIQUIDATION_PENALTY_SP() external view returns (uint256);
     function LIQUIDATION_PENALTY_REDISTRIBUTION() external view returns (uint256);
+
+    function shutdownTime() external view returns (uint256);
 
     function setAddresses(
         address _borrowerOperationsAddress,
@@ -75,6 +78,13 @@ interface ITroveManager is IERC721, ILiquityBase {
         uint256 _redemptionRate,
         uint256 _maxIterations
     ) external returns (uint256 _redemeedAmount);
+
+    function shutdown() external;
+    function urgentRedemption(
+        uint256 _boldAmount,
+        uint256[] calldata _troveIds,
+        uint256 _minCollateral
+    ) external;
 
     function getPendingCollReward(uint256 _troveId) external view returns (uint256);
 

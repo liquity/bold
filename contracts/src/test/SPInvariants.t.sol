@@ -33,7 +33,7 @@ contract SPInvariantsTest is BaseInvariantTest {
         targetContract(address(handler));
     }
 
-    function invariant_allFundsClaimable() external view {
+    function invariant_allFundsClaimable() external {
         uint256 stabilityPoolColl = stabilityPool.getCollBalance();
         uint256 stabilityPoolBold = stabilityPool.getTotalBoldDeposits();
         uint256 claimableColl = 0;

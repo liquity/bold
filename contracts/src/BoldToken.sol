@@ -77,7 +77,7 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
     }
 
     function burn(address _account, uint256 _amount) external override {
-        _requireCallerIsCRorBOorSP();
+        _requireCallerIsCRorBOorTMorSP();
         _burn(_account, _amount);
     }
 
@@ -123,11 +123,11 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
         );
     }
 
-    function _requireCallerIsCRorBOorSP() internal view {
+    function _requireCallerIsCRorBOorTMorSP() internal view {
         require(
             msg.sender == collateralRegistryAddress || borrowerOperationsAddresses[msg.sender]
-                || stabilityPoolAddresses[msg.sender],
-            "Bold: Caller is neither BorrowerOperations nor TroveManager nor StabilityPool"
+                || troveManagerAddresses[msg.sender] || stabilityPoolAddresses[msg.sender],
+            "Bold: Caller is neither CR nor BorrowerOperations nor TroveManager nor StabilityPool"
         );
     }
 
