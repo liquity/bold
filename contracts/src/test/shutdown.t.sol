@@ -268,7 +268,7 @@ contract ShutdownTest is DevTestSetup {
     }
 
     function testCannotLiquidateAfterShutdown() public {
-        // uint256 troveId = prepareAndShutdownFirstBranch();
+        //uint256 troveId = prepareAndShutdownFirstBranch();
 
         // TODO
         /*

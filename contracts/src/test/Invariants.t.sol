@@ -237,7 +237,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_SortedTroves_OrderedByInterestRate() external {
+    function invariant_SortedTroves_OrderedByInterestRate() external view {
         for (uint256 j = 0; j < branches.length; ++j) {
             ITroveManager troveManager = branches[j].troveManager;
             ISortedTroves sortedTroves = branches[j].sortedTroves;
