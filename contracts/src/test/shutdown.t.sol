@@ -4,7 +4,7 @@ import "./TestContracts/DevTestSetup.sol";
 
 contract ShutdownTest is DevTestSetup {
     uint256 NUM_COLLATERALS = 4;
-    LiquityContracts[] public contractsArray;
+    LiquityContractsDev[] public contractsArray;
 
     function setUp() public override {
         // Start tests at a non-zero timestamp
@@ -29,8 +29,8 @@ contract ShutdownTest is DevTestSetup {
         troveManagerParams[2] = TroveManagerParams(120e16, 120e16, 5e16, 10e16);
         troveManagerParams[3] = TroveManagerParams(125e16, 125e16, 5e16, 10e16);
 
-        LiquityContracts[] memory _contractsArray;
-        (_contractsArray, collateralRegistry, boldToken,,, WETH) = _deployAndConnectContracts(troveManagerParams);
+        LiquityContractsDev[] memory _contractsArray;
+        (_contractsArray, collateralRegistry, boldToken,,, WETH) = _deployAndConnectContractsMultiColl(troveManagerParams);
         // Unimplemented feature (...):Copying of type struct LiquityContracts memory[] memory to storage not yet supported.
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
             contractsArray.push(_contractsArray[c]);

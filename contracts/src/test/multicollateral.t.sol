@@ -66,7 +66,7 @@ contract MulticollateralTest is DevTestSetup {
         troveManagerParamsArray[2] = TroveManagerParams(120e16, 120e16, 5e16, 10e16);
         troveManagerParamsArray[3] = TroveManagerParams(125e16, 125e16, 5e16, 10e16);
 
-        LiquityContracts[] memory _contractsArray;
+        LiquityContractsDev[] memory _contractsArray;
         (_contractsArray, collateralRegistry, boldToken,,, WETH) = _deployAndConnectContractsMultiColl(troveManagerParamsArray);
         // Unimplemented feature (...):Copying of type struct LiquityContracts memory[] memory to storage not yet supported.
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
