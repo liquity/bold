@@ -16,7 +16,6 @@ interface IBorrowerOperations is ILiquityBase {
         address _activePoolAddress,
         address _defaultPoolAddress,
         address _gasPoolAddress,
-        address _collSurplusPoolAddress,
         address _priceFeedAddress,
         address _sortedTrovesAddress,
         address _boldTokenAddress
@@ -62,8 +61,6 @@ interface IBorrowerOperations is ILiquityBase {
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) external;
-
-    function claimCollateral() external;
 
     function hasBeenShutDown() external view returns (bool);
     function shutdown() external;

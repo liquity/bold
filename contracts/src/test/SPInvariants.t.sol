@@ -24,8 +24,7 @@ contract SPInvariantsTest is BaseInvariantTest {
                 collateralToken: contracts.collToken,
                 priceFeed: contracts.priceFeed,
                 stabilityPool: contracts.stabilityPool,
-                troveManager: contracts.troveManager,
-                collSurplusPool: contracts.collSurplusPool
+                troveManager: contracts.troveManager
             })
         );
 

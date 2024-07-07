@@ -406,7 +406,6 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
             l.collGasCompensation,
             l.collSentToSP,
             l.collRedistributed,
-            l.collSurplus,
             l.collRedistributed * DECIMAL_PRECISION / otherColl,
             l.debtRedistributed * DECIMAL_PRECISION / otherColl,
             price
@@ -539,7 +538,6 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
             t.collGasCompensation,
             t.collSentToSP,
             t.collRedistributed,
-            t.collSurplus,
             t.collRedistributed * DECIMAL_PRECISION / otherColl,
             t.debtRedistributed * DECIMAL_PRECISION / otherColl,
             price

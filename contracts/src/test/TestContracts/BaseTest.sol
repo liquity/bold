@@ -292,7 +292,7 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
-    function checkBelowCriticalThreshold(bool _true) public {
+    function checkBelowCriticalThreshold(bool _true) public view {
         uint256 price = priceFeed.getPrice();
         bool belowCriticalThreshold = troveManager.checkBelowCriticalThreshold(price);
         assertEq(belowCriticalThreshold, _true);
@@ -408,11 +408,11 @@ contract BaseTest is Test {
         return x > y ? x - y : y - x;
     }
 
-    function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin) public {
+    function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin) public pure {
         assertApproxEqAbs(_x, _y, _margin, "");
     }
 
-    function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin, string memory _reason) public {
+    function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin, string memory _reason) public pure {
         assertApproxEqAbs(_x, _y, _margin, _reason);
     }
 

@@ -15,8 +15,7 @@ interface ITroveManager is IERC721, ILiquityBase {
     enum Status {
         nonExistent,
         active,
-        closedByOwner,
-        closedByLiquidation,
+        closed,
         unredeemable
     }
 
@@ -33,7 +32,6 @@ interface ITroveManager is IERC721, ILiquityBase {
         address _defaultPoolAddress,
         address _stabilityPoolAddress,
         address _gasPoolAddress,
-        address _collSurplusPoolAddress,
         address _priceFeedAddress,
         address _boldTokenAddress,
         address _sortedTrovesAddress

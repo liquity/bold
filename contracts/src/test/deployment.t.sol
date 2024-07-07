@@ -7,7 +7,6 @@ contract Deployment is DevTestSetup {
         assertNotEq(address(activePool), address(0));
         assertNotEq(address(boldToken), address(0));
         assertNotEq(address(borrowerOperations), address(0));
-        assertNotEq(address(collSurplusPool), address(0));
         assertNotEq(address(gasPool), address(0));
         assertNotEq(address(priceFeed), address(0));
         assertNotEq(address(sortedTroves), address(0));

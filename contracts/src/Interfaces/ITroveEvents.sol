@@ -20,7 +20,6 @@ interface ITroveEvents {
         uint256 _collGasCompensation,
         uint256 _collSentToSP,
         uint256 _collRedistributed,
-        uint256 _collSurplus,
         uint256 _L_ETH,
         uint256 _L_boldDebt,
         uint256 _price

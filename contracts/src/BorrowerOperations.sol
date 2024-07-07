@@ -7,7 +7,6 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
-import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
@@ -24,7 +23,6 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     IERC20 public immutable collToken;
     ITroveManager public immutable troveManager;
     address gasPoolAddress;
-    ICollSurplusPool collSurplusPool;
     IBoldToken public boldToken;
     // A doubly linked list of Troves, sorted by their collateral ratios
     ISortedTroves public sortedTroves;
@@ -96,7 +94,6 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     event ActivePoolAddressChanged(address _activePoolAddress);
     event DefaultPoolAddressChanged(address _defaultPoolAddress);
     event GasPoolAddressChanged(address _gasPoolAddress);
-    event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event PriceFeedAddressChanged(address _newPriceFeedAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
@@ -121,7 +118,6 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         address _activePoolAddress,
         address _defaultPoolAddress,
         address _gasPoolAddress,
-        address _collSurplusPoolAddress,
         address _priceFeedAddress,
         address _sortedTrovesAddress,
         address _boldTokenAddress
@@ -132,7 +128,6 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         activePool = IActivePool(_activePoolAddress);
         defaultPool = IDefaultPool(_defaultPoolAddress);
         gasPoolAddress = _gasPoolAddress;
-        collSurplusPool = ICollSurplusPool(_collSurplusPoolAddress);
         priceFeed = IPriceFeed(_priceFeedAddress);
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
         boldToken = IBoldToken(_boldTokenAddress);
@@ -140,7 +135,6 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         emit ActivePoolAddressChanged(_activePoolAddress);
         emit DefaultPoolAddressChanged(_defaultPoolAddress);
         emit GasPoolAddressChanged(_gasPoolAddress);
-        emit CollSurplusPoolAddressChanged(_collSurplusPoolAddress);
         emit PriceFeedAddressChanged(_priceFeedAddress);
         emit SortedTrovesAddressChanged(_sortedTrovesAddress);
         emit BoldTokenAddressChanged(_boldTokenAddress);
@@ -541,14 +535,6 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     function setRemoveManager(uint256 _troveId, address _manager) external {
         _requireSenderIsOwner(troveManager, _troveId);
         removeManagerOf[_troveId] = _manager;
-    }
-
-    /**
-     * Claim remaining collateral from a liquidation with ICR exceeding the liquidation penalty
-     */
-    function claimCollateral() external override {
-        // send coll from CollSurplus Pool to owner
-        collSurplusPool.claimColl(msg.sender);
     }
 
     function shutdown() external {

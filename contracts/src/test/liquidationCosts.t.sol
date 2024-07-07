@@ -35,7 +35,7 @@ contract LiquidationCostsTest is DevTestSetup {
         for (uint256 i = 0; i < N_TROVES; i++) {
             assertEq(
                 uint8(troveManager.getTroveStatus(trovesToLiq[i])),
-                uint8(ITroveManager.Status.closedByLiquidation),
+                uint8(ITroveManager.Status.unredeemable),
                 "Trove should have been liquidated"
             );
         }
@@ -69,7 +69,7 @@ contract LiquidationCostsTest is DevTestSetup {
         for (uint256 i = 0; i < N_TROVES; i++) {
             assertEq(
                 uint8(troveManager.getTroveStatus(trovesToLiq[i])),
-                uint8(ITroveManager.Status.closedByLiquidation),
+                uint8(ITroveManager.Status.unredeemable),
                 "Trove should have been liquidated"
             );
         }

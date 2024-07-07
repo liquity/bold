@@ -129,9 +129,9 @@ contract BasicOps is DevTestSetup {
 
         troveManager.liquidate(A_Id);
 
-        // Check Troves count reduced by 1
+        // Check Troves count is the same
         trovesCount = troveManager.getTroveIdsCount();
-        assertEq(trovesCount, 1);
+        assertEq(trovesCount, 2);
     }
 
     function testSPDeposit() public {

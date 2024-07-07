@@ -6,7 +6,6 @@ import {IBorrowerOperations} from "../../Interfaces/IBorrowerOperations.sol";
 import {IBoldToken} from "../../Interfaces/IBoldToken.sol";
 import {IStabilityPool} from "../../Interfaces/IStabilityPool.sol";
 import {ITroveManager} from "../../Interfaces/ITroveManager.sol";
-import {ICollSurplusPool} from "../../Interfaces/ICollSurplusPool.sol";
 import {IPriceFeedTestnet} from "./Interfaces/IPriceFeedTestnet.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
@@ -43,7 +42,6 @@ contract SPInvariantsTestHandler is BaseHandler {
         IPriceFeedTestnet priceFeed;
         IStabilityPool stabilityPool;
         ITroveManager troveManager;
-        ICollSurplusPool collSurplusPool;
     }
 
     IBoldToken immutable boldToken;
@@ -52,7 +50,6 @@ contract SPInvariantsTestHandler is BaseHandler {
     IPriceFeedTestnet immutable priceFeed;
     IStabilityPool immutable stabilityPool;
     ITroveManager immutable troveManager;
-    ICollSurplusPool immutable collSurplusPool;
 
     uint256 immutable initialPrice;
 
@@ -71,7 +68,6 @@ contract SPInvariantsTestHandler is BaseHandler {
         priceFeed = contracts.priceFeed;
         stabilityPool = contracts.stabilityPool;
         troveManager = contracts.troveManager;
-        collSurplusPool = contracts.collSurplusPool;
 
         initialPrice = priceFeed.getPrice();
     }
@@ -160,7 +156,7 @@ contract SPInvariantsTestHandler is BaseHandler {
         priceFeed.setPrice(initialPrice * LIQUIDATION_ICR / OPEN_TROVE_ICR);
 
         uint256 collBefore = collateralToken.balanceOf(address(this));
-        uint256 accountSurplusBefore = collSurplusPool.getCollateral(msg.sender);
+        //uint256 accountSurplusBefore = collSurplusPool.getCollateral(msg.sender);
         uint256 collCompensation = TroveManagerTester(address(troveManager)).getCollGasCompensation(coll);
         // Calc claimable coll based on the remaining coll to liquidate, less the liq. penalty that goes to the SP depositors
         uint256 seizedColl = debt * (_100pct + troveManager.LIQUIDATION_PENALTY_SP()) / priceFeed.getPrice();
@@ -182,13 +178,11 @@ contract SPInvariantsTestHandler is BaseHandler {
         _log();
 
         uint256 collAfter = collateralToken.balanceOf(address(this));
-        uint256 accountSurplusAfter = collSurplusPool.getCollateral(msg.sender);
         // Check liquidator got the compensation
         // This is first branch, so coll token is WETH (used for ETH liquidation reserve)
         assertEqDecimal(collAfter, collBefore + collCompensation + ETH_GAS_COMPENSATION, 18, "Wrong Coll compensation");
         // Check claimable coll surplus is correct
-        uint256 accountSurplusDelta = accountSurplusAfter - accountSurplusBefore;
-        assertEqDecimal(accountSurplusDelta, claimableColl, 18, "Wrong account surplus");
+        assertEqDecimal(troveManager.getTroveEntireColl(troveId), claimableColl, 18, "Wrong account surplus");
 
         spBold -= debt;
         spColl += coll - claimableColl - collCompensation;

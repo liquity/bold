@@ -362,7 +362,7 @@ contract Redemptions is DevTestSetup {
 
         // A liquidates E
         liquidate(A, troveIDs.E);
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.E)), uint8(ITroveManager.Status.closedByLiquidation));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.E)), uint8(ITroveManager.Status.unredeemable));
 
         // // Check A and B have redist. gains
         assertTrue(troveManager.hasRedistributionGains(troveIDs.A));
@@ -447,7 +447,7 @@ contract Redemptions is DevTestSetup {
 
         // A liquidates E
         liquidate(A, troveID_E);
-        assertEq(uint8(troveManager.getTroveStatus(troveID_E)), uint8(ITroveManager.Status.closedByLiquidation));
+        assertEq(uint8(troveManager.getTroveStatus(troveID_E)), uint8(ITroveManager.Status.unredeemable));
 
         assertTrue(troveManager.hasRedistributionGains(troveIDs.A));
         assertTrue(troveManager.hasRedistributionGains(troveIDs.B));
@@ -473,8 +473,8 @@ contract Redemptions is DevTestSetup {
         closeTrove(A, troveIDs.A);
         closeTrove(B, troveIDs.B);
 
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(ITroveManager.Status.closedByOwner));
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.closedByOwner));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(ITroveManager.Status.closed));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.closed));
     }
 
     function testZombieBorrowerCanDrawFreshDebtToAboveMIN_DEBT() public {
@@ -753,7 +753,7 @@ contract Redemptions is DevTestSetup {
 
         // E liquidates B
         liquidate(E, troveIDs.B);
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.closedByLiquidation));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.unredeemable));
     }
 
     // TODO: tests borrower for combined adjustments - debt changes and coll add/withdrawals.

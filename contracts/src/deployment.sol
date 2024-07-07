@@ -5,7 +5,6 @@ pragma solidity 0.8.18;
 import "./ActivePool.sol";
 import "./BoldToken.sol";
 import "./BorrowerOperations.sol";
-import "./CollSurplusPool.sol";
 import "./DefaultPool.sol";
 import "./GasPool.sol";
 import "./HintHelpers.sol";
@@ -23,7 +22,6 @@ import {ERC20Faucet} from "./test/TestContracts/ERC20Faucet.sol";
 struct LiquityContracts {
     IActivePool activePool;
     IBorrowerOperations borrowerOperations;
-    ICollSurplusPool collSurplusPool;
     IDefaultPool defaultPool;
     ISortedTroves sortedTroves;
     IStabilityPool stabilityPool;
@@ -157,7 +155,6 @@ function _deployAndConnectCollateralContracts(
         _weth
     );
     contracts.borrowerOperations = new BorrowerOperations(_collToken, contracts.troveManager, _weth);
-    contracts.collSurplusPool = new CollSurplusPool(address(_collToken));
     contracts.defaultPool = new DefaultPool(address(_collToken));
     contracts.gasPool = new GasPool(_weth, contracts.borrowerOperations, contracts.troveManager);
     contracts.priceFeed = new PriceFeedTestnet();
@@ -182,7 +179,6 @@ function _deployAndConnectCollateralContracts(
         address(contracts.defaultPool),
         address(contracts.stabilityPool),
         address(contracts.gasPool),
-        address(contracts.collSurplusPool),
         address(contracts.priceFeed),
         address(_boldToken),
         address(contracts.sortedTroves)
@@ -193,7 +189,6 @@ function _deployAndConnectCollateralContracts(
         address(contracts.activePool),
         address(contracts.defaultPool),
         address(contracts.gasPool),
-        address(contracts.collSurplusPool),
         address(contracts.priceFeed),
         address(contracts.sortedTroves),
         address(_boldToken)
@@ -219,8 +214,4 @@ function _deployAndConnectCollateralContracts(
     );
 
     contracts.defaultPool.setAddresses(address(contracts.troveManager), address(contracts.activePool));
-
-    contracts.collSurplusPool.setAddresses(
-        address(contracts.borrowerOperations), address(contracts.troveManager), address(contracts.activePool)
-    );
 }

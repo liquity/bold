@@ -79,7 +79,7 @@ contract SPTest is DevTestSetup {
 
         // A liqs D
         liquidate(A, troveIDs.D);
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(ITroveManager.Status.closedByLiquidation));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(ITroveManager.Status.unredeemable));
 
         // Check A has both stashed and current gains
         uint256 stashedCollGain_A = stabilityPool.stashedColl(A);
@@ -951,7 +951,7 @@ contract SPTest is DevTestSetup {
 
         // A liquidates D
         liquidate(A, troveIDs.D);
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(ITroveManager.Status.closedByLiquidation));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(ITroveManager.Status.unredeemable));
 
         uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
@@ -1177,7 +1177,7 @@ contract SPTest is DevTestSetup {
 
         // A liquidates D
         liquidate(A, troveIDs.D);
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(ITroveManager.Status.closedByLiquidation));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(ITroveManager.Status.unredeemable));
 
         uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         assertGt(yieldGainsOwed_2, yieldGainsOwed_1);

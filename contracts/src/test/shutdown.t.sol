@@ -245,7 +245,7 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
 
         // Check trove is closed
-        assertEq(uint8(troveManager.getTroveStatus(troveId)), uint8(ITroveManager.Status.closedByOwner));
+        assertEq(uint8(troveManager.getTroveStatus(troveId)), uint8(ITroveManager.Status.closed));
     }
 
     function testCannotAdjustInterestAfterShutdown() public {

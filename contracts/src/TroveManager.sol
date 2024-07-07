@@ -6,7 +6,6 @@ import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IStabilityPool.sol";
-import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Interfaces/ITroveEvents.sol";
@@ -24,7 +23,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     address public borrowerOperationsAddress;
     IStabilityPool public override stabilityPool;
     address gasPoolAddress;
-    ICollSurplusPool collSurplusPool;
     IBoldToken public override boldToken;
     // A doubly linked list of Troves, sorted by their sorted by their collateral ratios
     ISortedTroves public sortedTroves;
@@ -132,7 +130,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint256 totalCollToSendToSP;
         uint256 totalDebtToRedistribute;
         uint256 totalCollToRedistribute;
-        uint256 totalCollSurplus;
     }
 
     struct ContractsCache {
@@ -140,7 +137,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         IDefaultPool defaultPool;
         IBoldToken boldToken;
         ISortedTroves sortedTroves;
-        ICollSurplusPool collSurplusPool;
         address gasPoolAddress;
     }
 
@@ -169,7 +165,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     event DefaultPoolAddressChanged(address _defaultPoolAddress);
     event StabilityPoolAddressChanged(address _stabilityPoolAddress);
     event GasPoolAddressChanged(address _gasPoolAddress);
-    event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
@@ -202,7 +197,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         address _defaultPoolAddress,
         address _stabilityPoolAddress,
         address _gasPoolAddress,
-        address _collSurplusPoolAddress,
         address _priceFeedAddress,
         address _boldTokenAddress,
         address _sortedTrovesAddress
@@ -212,7 +206,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         defaultPool = IDefaultPool(_defaultPoolAddress);
         stabilityPool = IStabilityPool(_stabilityPoolAddress);
         gasPoolAddress = _gasPoolAddress;
-        collSurplusPool = ICollSurplusPool(_collSurplusPoolAddress);
         priceFeed = IPriceFeed(_priceFeedAddress);
         boldToken = IBoldToken(_boldTokenAddress);
         sortedTroves = ISortedTroves(_sortedTrovesAddress);
@@ -222,7 +215,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         emit DefaultPoolAddressChanged(_defaultPoolAddress);
         emit StabilityPoolAddressChanged(_stabilityPoolAddress);
         emit GasPoolAddressChanged(_gasPoolAddress);
-        emit CollSurplusPoolAddressChanged(_collSurplusPoolAddress);
         emit PriceFeedAddressChanged(_priceFeedAddress);
         emit BoldTokenAddressChanged(_boldTokenAddress);
         emit SortedTrovesAddressChanged(_sortedTrovesAddress);
@@ -266,7 +258,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint256 _price,
         LiquidationValues memory singleLiquidation
     ) internal {
-        address owner = ownerOf(_troveId);
+        ISortedTroves sortedTrovesCached = sortedTroves;
+        uint256 TroveIdsArrayLength = TroveIds.length;
+        _requireMoreThanOneTroveInSystem(TroveIdsArrayLength, _troveId, sortedTrovesCached);
 
         _getLatestTroveData(_troveId, singleLiquidation.trove);
 
@@ -287,18 +281,32 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             singleLiquidation.trove.entireDebt, collToLiquidate, _boldInStabPool, _price
         );
 
-        _closeTrove(_troveId, Status.closedByLiquidation);
+        //_closeTrove(_troveId, Status.closedByLiquidation);
 
-        // Differencen between liquidation penalty and liquidation threshold
-        if (singleLiquidation.collSurplus > 0) {
-            collSurplusPool.accountSurplus(owner, singleLiquidation.collSurplus);
+        //_singleRedemption.appliedRedistBoldDebtGain = _trove.redistBoldDebtGain;
+        //_singleRedemption.oldWeightedRecordedDebt = _trove.weightedRecordedDebt;
+        //_singleRedemption.newWeightedRecordedDebt = newDebt * _trove.annualInterestRate;
+
+        // Decrease the debt and collateral of the current Trove
+        Troves[_troveId].debt = 0;
+        Troves[_troveId].coll = singleLiquidation.collSurplus;
+        Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
+
+        uint256 newStake = _updateStakeAndTotalStakes(_troveId, singleLiquidation.collSurplus);
+        _updateTroveRewardSnapshots(_troveId);
+
+        // As it will have zero debt, make Trove unredeemable, in order to prevent griefing future (normal, sequential) redemptions
+        // TODO: batches
+        if (Troves[_troveId].status == Status.active) {
+            sortedTrovesCached.remove(_troveId);
         }
+        Troves[_troveId].status = Status.unredeemable;
 
         emit TroveUpdated(
             _troveId,
             0, // _debt
-            0, // _coll
-            0, // _stake
+            singleLiquidation.collSurplus, // _coll
+            newStake, // _stake
             0, // _annualInterestRate
             0, // _snapshotOfTotalDebtRedist
             0 // _snapshotOfTotalCollRedist
@@ -417,9 +425,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         _redistributeDebtAndColl(
             activePoolCached, defaultPoolCached, totals.totalDebtToRedistribute, totals.totalCollToRedistribute
         );
-        if (totals.totalCollSurplus > 0) {
-            activePoolCached.sendColl(address(collSurplusPool), totals.totalCollSurplus);
-        }
 
         // Update system snapshots
         _updateSystemSnapshots_excludeCollRemainder(activePoolCached, totals.totalCollGasCompensation);
@@ -431,7 +436,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             totals.totalCollGasCompensation,
             totals.totalCollToSendToSP,
             totals.totalCollToRedistribute,
-            totals.totalCollSurplus,
             L_coll,
             L_boldDebt,
             price
@@ -496,7 +500,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         totals.totalCollToSendToSP += singleLiquidation.collToSendToSP;
         totals.totalDebtToRedistribute += singleLiquidation.debtToRedistribute;
         totals.totalCollToRedistribute += singleLiquidation.collToRedistribute;
-        totals.totalCollSurplus += singleLiquidation.collSurplus;
     }
 
     function _sendGasCompensation(IActivePool _activePool, address _liquidator, uint256 _eth, uint256 _coll) internal {
@@ -628,7 +631,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         _requireCallerIsCollateralRegistry();
 
         ContractsCache memory contractsCache =
-            ContractsCache(activePool, defaultPool, boldToken, sortedTroves, collSurplusPool, gasPoolAddress);
+            ContractsCache(activePool, defaultPool, boldToken, sortedTroves, gasPoolAddress);
         RedemptionTotals memory totals;
 
         uint256 remainingBold = _boldamount;
@@ -716,7 +719,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         _requireIsShutDown();
 
         ContractsCache memory contractsCache =
-            ContractsCache(activePool, defaultPool, boldToken, sortedTroves, collSurplusPool, gasPoolAddress);
+            ContractsCache(activePool, defaultPool, boldToken, sortedTroves, gasPoolAddress);
         RedemptionTotals memory totals;
 
         uint256 price = priceFeed.fetchPrice();
@@ -932,7 +935,31 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     function onCloseTrove(uint256 _troveId, TroveChange calldata _troveChange) external override {
         _requireCallerIsBorrowerOperations();
-        _closeTrove(_troveId, Status.closedByOwner);
+
+        ISortedTroves sortedTrovesCached = sortedTroves;
+        uint256 TroveIdsArrayLength = TroveIds.length;
+        _requireMoreThanOneTroveInSystem(TroveIdsArrayLength, _troveId, sortedTrovesCached);
+
+        _removeTroveId(_troveId, TroveIdsArrayLength);
+
+        if (Troves[_troveId].status == Status.active) {
+            sortedTrovesCached.remove(_troveId);
+        }
+
+        uint256 newTotalStakes = totalStakes - Troves[_troveId].stake;
+        totalStakes = newTotalStakes;
+
+        // Zero Trove properties
+        delete Troves[_troveId];
+        Troves[_troveId].status = Status.closed;
+
+        // Zero Trove snapshots
+        delete rewardSnapshots[_troveId];
+
+        // burn ERC721
+        // TODO: Should we do it?
+        _burn(_troveId);
+
         _movePendingTroveRewardsToActivePool(
             defaultPool, _troveChange.appliedRedistBoldDebtGain, _troveChange.appliedRedistCollGain
         );
@@ -957,33 +984,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             _troveChange.appliedRedistCollGain,
             int256(_troveChange.collIncrease) - int256(_troveChange.collDecrease)
         );
-    }
-
-    function _closeTrove(uint256 _troveId, Status closedStatus) internal {
-        assert(closedStatus == Status.closedByLiquidation || closedStatus == Status.closedByOwner);
-
-        uint256 TroveIdsArrayLength = TroveIds.length;
-        _requireMoreThanOneTroveInSystem(TroveIdsArrayLength);
-
-        _removeTroveId(_troveId, TroveIdsArrayLength);
-
-        if (Troves[_troveId].status == Status.active) {
-            sortedTroves.remove(_troveId);
-        }
-
-        uint256 newTotalStakes = totalStakes - Troves[_troveId].stake;
-        totalStakes = newTotalStakes;
-
-        // Zero Trove properties
-        delete Troves[_troveId];
-        Troves[_troveId].status = closedStatus;
-
-        // Zero Trove snapshots
-        delete rewardSnapshots[_troveId];
-
-        // burn ERC721
-        // TODO: Should we do it?
-        _burn(_troveId);
     }
 
     /*
@@ -1069,8 +1069,12 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         require(checkTroveIsOpen(_troveId), "TroveManager: Trove does not exist or is closed");
     }
 
-    function _requireMoreThanOneTroveInSystem(uint256 TroveIdsArrayLength) internal view {
-        require(TroveIdsArrayLength > 1 && sortedTroves.getSize() > 1, "TroveManager: Only one trove in the system");
+    function _requireMoreThanOneTroveInSystem(uint256 TroveIdsArrayLength, uint256 _troveIdToRemove, ISortedTroves _sortedTroves) internal view {
+        if (_sortedTroves.contains(_troveIdToRemove)) {
+            require(TroveIdsArrayLength > 1 && sortedTroves.getSize() > 1, "TroveManager: Only one trove in the system");
+        } else {
+            require(TroveIdsArrayLength > 1, "TroveManager: Only one trove in the system");
+        }
     }
 
     function _requireIsShutDown() internal view {

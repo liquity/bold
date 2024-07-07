@@ -97,8 +97,8 @@ function troveIdOf(address owner) pure returns (uint256) {
 function toString(ITroveManager.Status status) pure returns (string memory) {
     if (status == ITroveManager.Status.nonExistent) return "ITroveManager.Status.nonExistent";
     if (status == ITroveManager.Status.active) return "ITroveManager.Status.active";
-    if (status == ITroveManager.Status.closedByOwner) return "ITroveManager.Status.closedByOwner";
-    if (status == ITroveManager.Status.closedByLiquidation) return "ITroveManager.Status.closedByLiquidation";
+    if (status == ITroveManager.Status.closed) return "ITroveManager.Status.closed";
+    if (status == ITroveManager.Status.unredeemable) return "ITroveManager.Status.unredeemable";
     if (status == ITroveManager.Status.unredeemable) return "ITroveManager.Status.unredeemable";
     revert("Invalid status");
 }
@@ -651,8 +651,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertEqDecimal(c.troveManager.getTroveEntireDebt(troveId), 0, 18, "Debt should have been zeroed");
                 assertEq(
                     uint8(c.troveManager.getTroveStatus(troveId)),
-                    uint8(ITroveManager.Status.closedByLiquidation),
-                    "Status should have been set to closedByLiquidation"
+                    uint8(ITroveManager.Status.unredeemable),
+                    "Status should have been set to unredeemable"
                 );
                 assertFalse(c.sortedTroves.contains(troveId), "Trove should have been removed from SortedTroves");
             }
