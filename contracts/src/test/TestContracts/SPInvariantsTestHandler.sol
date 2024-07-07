@@ -64,7 +64,7 @@ contract SPInvariantsTestHandler is BaseHandler {
     // Fixtures
     uint256[] fixtureDeposited;
 
-    constructor(string memory handlerName, Contracts memory contracts) BaseHandler(handlerName) {
+    constructor(Contracts memory contracts) {
         boldToken = contracts.boldToken;
         borrowerOperations = contracts.borrowerOperations;
         collateralToken = contracts.collateralToken;
