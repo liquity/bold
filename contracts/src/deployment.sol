@@ -31,11 +31,11 @@ struct LiquityContractsDev {
     IDefaultPool defaultPool;
     ISortedTroves sortedTroves;
     IStabilityPool stabilityPool;
-    ITroveManagerTester troveManager;
-    IPriceFeedTestnet priceFeed;
+    ITroveManagerTester troveManager; // Tester
+    IPriceFeedTestnet priceFeed; // Tester
     GasPool gasPool;
     IInterestRouter interestRouter;
-    IERC20 WETH;
+    IERC20 collToken;
 }
 
 struct LiquityContracts {
@@ -146,17 +146,18 @@ function _deployAndConnectContractsMultiColl(TroveManagerParams[] memory troveMa
         1 days //         _tapPeriod
     );
 
-    contractsArray = new LiquityContracts[](vars.numCollaterals);
+    contractsArray = new LiquityContractsDev[](vars.numCollaterals);
     vars.collaterals = new IERC20[](vars.numCollaterals);
     vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
+    // Deploy the first branch with WETH collateral
     LiquityContractsDev memory contracts;
     contracts = _deployAndConnectCollateralContractsDev(WETH, boldToken, WETH, troveManagerParamsArray[0]);
-    contractsArray[0] = vars.contracts;
-    vars.collaterals[0] = vars.contracts.collToken;
-    vars.troveManagers[0] = vars.contracts.troveManager;
+    contractsArray[0] = contracts;
+    vars.collaterals[0] = contracts.collToken;
+    vars.troveManagers[0] = contracts.troveManager;
 
-    // Multicollateral registry
+    // Deploy the remaining branches with LST collateral
     for (uint256 i = 1; i < vars.numCollaterals; i++) {
         IERC20 stETH = new ERC20Faucet(
             string.concat("Staked ETH", string(abi.encode(i))), // _name
@@ -165,9 +166,9 @@ function _deployAndConnectContractsMultiColl(TroveManagerParams[] memory troveMa
             1 days //         _tapPeriod
         );
         contracts = _deployAndConnectCollateralContractsDev(stETH, boldToken, WETH, troveManagerParamsArray[i]);
-        vars.collaterals[i] = vars.contracts.collToken;
-        vars.troveManagers[i] = vars.contracts.troveManager;
-        contractsArray[i] = vars.contracts;
+        vars.collaterals[i] = contracts.collToken;
+        vars.troveManagers[i] = contracts.troveManager;
+        contractsArray[i] = contracts;
     }
 
     collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers);
@@ -272,7 +273,13 @@ function deployAndConnectContractsMainnet(
 
     // Deploy each set of core contracts
     for (uint256 i = 0; i < numCollaterals; i++) {
-        contractsArray[i] = _deployAndConnectCollateralContractsMainnet(collaterals[i], boldToken, priceFeeds[i], troveManagerParamsArray[i]);
+        contractsArray[i] = _deployAndConnectCollateralContractsMainnet(
+            collaterals[i], 
+            boldToken, 
+            priceFeeds[i], 
+            troveManagerParamsArray[i],
+            mockCollaterals.WETH
+        );
         troveManagers[i] = contractsArray[i].troveManager;
     }
 
@@ -343,19 +350,22 @@ function _deployAndConnectCollateralContractsMainnet(
     IERC20 _collateralToken,
     IBoldToken _boldToken,
     IPriceFeed _priceFeed,
-    TroveManagerParams memory troveManagerParams
+    TroveManagerParams memory _troveManagerParams,
+    IERC20 _weth
 ) returns (LiquityContracts memory contracts) {
 
     contracts.activePool = new ActivePool(address(_collateralToken));
     contracts.troveManager = new TroveManager(  
-        troveManagerParams.MCR,
-        troveManagerParams.LIQUIDATION_PENALTY_SP,
-        troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
+        _troveManagerParams.MCR,
+        _troveManagerParams.SCR,
+        _troveManagerParams.LIQUIDATION_PENALTY_SP,
+        _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION,
+        _weth
     );
-    contracts.borrowerOperations = new BorrowerOperations(_collateralToken, contracts.troveManager);
+    contracts.borrowerOperations = new BorrowerOperations(_collateralToken, contracts.troveManager, _weth);
     contracts.collSurplusPool = new CollSurplusPool(address(_collateralToken));
     contracts.defaultPool = new DefaultPool(address(_collateralToken));
-    contracts.gasPool = new GasPool();
+    contracts.gasPool =  new GasPool(_weth, contracts.borrowerOperations, contracts.troveManager);
     contracts.priceFeed = _priceFeed;
     contracts.sortedTroves = new SortedTroves();
     contracts.stabilityPool = new StabilityPool(address(_collateralToken));

@@ -59,7 +59,7 @@ contract OraclesMainnet is TestAccounts {
         OracleParams memory oracleParams;
 
         uint256 numCollaterals = 5;
-        TroveManagerParams memory tmParams = TroveManagerParams(110e16, 5e16, 10e16);
+        TroveManagerParams memory tmParams = TroveManagerParams(110e16, 110e16, 5e16, 10e16);
         TroveManagerParams[] memory tmParamsArray = new TroveManagerParams[](numCollaterals);
         for (uint i = 0; i < tmParamsArray.length; i++) {
             tmParamsArray[i] = tmParams;
@@ -110,9 +110,16 @@ contract OraclesMainnet is TestAccounts {
             deal(address(mockCollaterals.WSTETH), accountsList[i], initialColl);
             deal(address(mockCollaterals.ETHX), accountsList[i], initialColl);
             deal(address(mockCollaterals.OSETH), accountsList[i], initialColl);
-            // Approve all BorrowerOps to use the user's funds
+            
             vm.startPrank(accountsList[i]);
+            // Approve all Borrower Ops to use the user's WETH funds
             mockCollaterals.WETH.approve(address(contractsArray[0].borrowerOperations), initialColl);
+            mockCollaterals.WETH.approve(address(contractsArray[1].borrowerOperations), initialColl);
+            mockCollaterals.WETH.approve(address(contractsArray[2].borrowerOperations), initialColl);
+            mockCollaterals.WETH.approve(address(contractsArray[3].borrowerOperations), initialColl);
+             mockCollaterals.WETH.approve(address(contractsArray[4].borrowerOperations), initialColl);
+
+            // Approve Borrower Ops in LST branches to use the user's respective LST funds
             mockCollaterals.RETH.approve(address(contractsArray[1].borrowerOperations), initialColl);
             mockCollaterals.WSTETH.approve(address(contractsArray[2].borrowerOperations), initialColl);
             mockCollaterals.ETHX.approve(address(contractsArray[3].borrowerOperations), initialColl);
@@ -135,7 +142,7 @@ contract OraclesMainnet is TestAccounts {
         console.log(stethOracle.decimals(), "STETHETH decimals");
     }
 
-    function _getLatestAnswerFromOracle(AggregatorV3Interface _oracle) internal returns (uint256) {
+    function _getLatestAnswerFromOracle(AggregatorV3Interface _oracle) internal view returns (uint256) {
         (,int256 answer,,,) = _oracle.latestRoundData();
         uint256 decimals = _oracle.decimals();
         assertLe(decimals, 18);
@@ -263,42 +270,42 @@ contract OraclesMainnet is TestAccounts {
 
     // --- Thresholds set at deployment ---
 
-    function testEthUsdStalenessThresholdSetWETH() public {
+    function testEthUsdStalenessThresholdSetWETH() public view {
         (, uint256 storedEthUsdStaleness, ) = wethPriceFeed.ethUsdOracle();
         assertEq(storedEthUsdStaleness, _24_HOURS);
     }
 
-    function testEthUsdStalenessThresholdSetRETH() public {
+    function testEthUsdStalenessThresholdSetRETH() public view {
         (, uint256 storedEthUsdStaleness, ) = rethPriceFeed.ethUsdOracle();
         assertEq(storedEthUsdStaleness, _24_HOURS);
     }
 
-    function testRethEthStalenessThresholdSetRETH() public {
+    function testRethEthStalenessThresholdSetRETH() public view {
         (, uint256 storedRethEthStaleness, ) = rethPriceFeed.lstEthOracle();
         assertEq(storedRethEthStaleness, _48_HOURS);
     }
 
-    function testEthUsdStalenessThresholdSetETHX() public {
+    function testEthUsdStalenessThresholdSetETHX() public view {
         (, uint256 storedEthUsdStaleness, ) = ethXPriceFeed.ethUsdOracle();
         assertEq(storedEthUsdStaleness, _24_HOURS);
     }
 
-    function testEthXEthStalenessThresholdSetETHX() public {
+    function testEthXEthStalenessThresholdSetETHX() public view {
         (, uint256 storedEthXEthStaleness, ) = ethXPriceFeed.lstEthOracle();
         assertEq(storedEthXEthStaleness, _48_HOURS);
     }
 
-     function testEthUsdStalenessThresholdSetOSETH() public {
+     function testEthUsdStalenessThresholdSetOSETH() public view {
         (, uint256 storedEthUsdStaleness, ) = osEthPriceFeed.ethUsdOracle();
         assertEq(storedEthUsdStaleness, _24_HOURS);
     }
 
-    function testOsEthEthStalenessThresholdSetOSETH() public {
+    function testOsEthEthStalenessThresholdSetOSETH() public view {
         (, uint256 storedOsEthStaleness, ) = osEthPriceFeed.lstEthOracle();
         assertEq(storedOsEthStaleness, _48_HOURS);
     }
 
-    function testStethUsdStalenessThresholdSetWSTETH() public {
+    function testStethUsdStalenessThresholdSetWSTETH() public view {
         (, uint256 storedStEthUsdStaleness, ) = wstethPriceFeed.stEthUsdOracle();
         assertEq(storedStEthUsdStaleness, _24_HOURS);
     }
