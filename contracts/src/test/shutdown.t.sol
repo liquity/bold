@@ -426,6 +426,7 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(boldToken.balanceOf(A), boldBalanceBefore - redemptionAmount, "Bold balance mismatch");
+        // TODO: determine why this is off by 1 wei - it should be exact
         assertApproximatelyEqual(
             contractsArray[0].collToken.balanceOf(A),
             collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100,
