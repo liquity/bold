@@ -558,8 +558,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         SingleRedemptionValues memory _singleRedemption
     ) internal returns (uint256) {
         // Decrease the debt and collateral of the current Trove according to the Bold lot and corresponding ETH to send
-        uint256 newDebt = _trove.entireDebt - _singleRedemption.BoldLot;
-        uint256 newColl = _trove.entireColl - _singleRedemption.ETHLot;
+        uint256 newDebt = _trove.entireDebt - _singleRedemption.boldLot;
+        uint256 newColl = _trove.entireColl - _singleRedemption.collLot;
 
         _singleRedemption.appliedRedistBoldDebtGain = _trove.redistBoldDebtGain;
         _singleRedemption.oldWeightedRecordedDebt = _trove.weightedRecordedDebt;
@@ -572,10 +572,10 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         // TODO: Gas optimize? We update totalStakes N times for a sequence of N Troves(!).
         uint256 newStake = _updateStakeAndTotalStakes(_troveId, newColl);
         // TODO: Gas optimize? We move pending rewards N times for a sequence of N Troves(!).
-        _movePendingTroveRewardsToActivePool(_defaultPool, trove.redistBoldDebtGain, trove.redistCollGain);
+        _movePendingTroveRewardsToActivePool(_defaultPool, _trove.redistBoldDebtGain, _trove.redistCollGain);
         _updateTroveRewardSnapshots(_troveId);
 
-        emit TroveUpdated(_troveId, newDebt, newColl, newStake, trove.annualInterestRate, L_coll, L_boldDebt);
+        emit TroveUpdated(_troveId, newDebt, newColl, newStake, _trove.annualInterestRate, L_coll, L_boldDebt);
 
         emit TroveOperation(
             _troveId,
@@ -584,11 +584,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             _trove.redistBoldDebtGain,
             0, // _debtIncreaseFromUpfrontFee
             -int256(_singleRedemption.boldLot),
-            trove.redistCollGain,
+            _trove.redistCollGain,
             -int256(_singleRedemption.collLot)
         );
 
         emit RedemptionFeePaidToTrove(_troveId, _singleRedemption.collFee);
+
+        return newDebt;
     }
 
     /* Send _boldamount Bold to the system and redeem the corresponding amount of collateral from as many Troves as are needed to fill the redemption

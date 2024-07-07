@@ -9,7 +9,7 @@ import "../../TroveManager.sol";
 for testing the parent's internal functions. */
 
 contract TroveManagerTester is TroveManager {
-    constructor(uint256 _mcr, uint256 _liquidationPenaltySP, uint256 _liquidationPenaltyRedistribution, IERC20 _weth)
+    constructor(uint256 _mcr, uint256 _scr, uint256 _liquidationPenaltySP, uint256 _liquidationPenaltyRedistribution, IERC20 _weth)
         TroveManager(_mcr, _scr, _liquidationPenaltySP, _liquidationPenaltyRedistribution, _weth)
     {}
 

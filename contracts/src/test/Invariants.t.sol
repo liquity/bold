@@ -68,21 +68,15 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
 
         // TODO: randomize params? How to do it with Foundry invariant testing?
         TroveManagerParams[] memory params = new TroveManagerParams[](4);
-        params[0] = TroveManagerParams(1.1 ether, 0.05 ether, 0.1 ether);
-        params[1] = TroveManagerParams(1.2 ether, 0.05 ether, 0.1 ether);
-        params[2] = TroveManagerParams(1.2 ether, 0.05 ether, 0.1 ether);
-        params[3] = TroveManagerParams(1.2 ether, 0.05 ether, 0.1 ether);
+        params[0] = TroveManagerParams(1.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        params[1] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        params[2] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        params[3] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
 
-        // pass 0 as the SCR to all branches so we effectively dont get shutdowns in these invariant tests
-        uint256[] memory scrs = new uint256[](4);
-        scrs[0] = 0; 
-        scrs[1] = 0; 
-        scrs[2] = 0;
-        scrs[3] = 0;  
 
         Contracts memory contracts;
         (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers, , contracts.weth)
-        = _deployAndConnectContracts(params, scrs); 
+        = _deployAndConnectContracts(params); 
         setupContracts(contracts);
 
         handler = new InvariantsTestHandler(contracts);
@@ -91,7 +85,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
     }
 
     // Not a real invariant, but we want to make sure our actors always have empty wallets before a handler call
-    function invariant_FundsAreSwept() external view {
+    function invariant_FundsAreSwept() external {
         for (uint256 i = 0; i < actors.length; ++i) {
             address actor = actors[i].account;
 
@@ -109,7 +103,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_SystemVariablesMatchGhostVariables() external view {
+    function invariant_SystemVariablesMatchGhostVariables() external {
         for (uint256 i = 0; i < branches.length; ++i) {
             LiquityContracts memory c = branches[i];
 
@@ -141,7 +135,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_AllBoldBackedByTroveDebt() external view {
+    function invariant_AllBoldBackedByTroveDebt() external {
         uint256 totalBold = boldToken.totalSupply();
         uint256 totalDebt = 0;
         uint256 totalPendingInterest = 0;
@@ -162,7 +156,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         );
     }
 
-    function invariant_AllCollClaimable() external view {
+    function invariant_AllCollClaimable() external {
         for (uint256 j = 0; j < branches.length; ++j) {
             ITroveManager troveManager = branches[j].troveManager;
             uint256 numTroves = troveManager.getTroveIdsCount();
@@ -183,7 +177,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_StabilityPool_AllBoldClaimable_ExceptYieldReceivedWhileEmpty() external view {
+    function invariant_StabilityPool_AllBoldClaimable_ExceptYieldReceivedWhileEmpty() external {
         for (uint256 j = 0; j < branches.length; ++j) {
             IStabilityPool stabilityPool = branches[j].stabilityPool;
 
@@ -222,7 +216,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_StabilityPool_AllCollClaimable() external view {
+    function invariant_StabilityPool_AllCollClaimable() external {
         for (uint256 j = 0; j < branches.length; ++j) {
             IStabilityPool stabilityPool = branches[j].stabilityPool;
             uint256 stabilityPoolEth = stabilityPool.getCollBalance();
