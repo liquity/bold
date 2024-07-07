@@ -61,11 +61,12 @@ class DeploymentHelper {
     const activePool = await Contracts.ActivePool.new(WETH.address);
     const troveManager = await Contracts.TroveManager.new(
       web3.utils.toBN("1100000000000000000"),
+      web3.utils.toBN("1100000000000000000"),
       web3.utils.toBN("100000000000000000"),
       web3.utils.toBN("100000000000000000"),
       WETH.address
     );
-    const borrowerOperations = await Contracts.BorrowerOperations.new(WETH.address, troveManager.address, WETH.address, web3.utils.toBN("1100000000000000000"));
+    const borrowerOperations = await Contracts.BorrowerOperations.new(WETH.address, troveManager.address, WETH.address);
     const collSurplusPool = await Contracts.CollSurplusPool.new(WETH.address);
     const defaultPool = await Contracts.DefaultPool.new(WETH.address);
     const gasPool = await Contracts.GasPool.new(WETH.address, borrowerOperations.address, troveManager.address);
