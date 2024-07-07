@@ -1,5 +1,6 @@
 const deploymentHelper = require("../utils/deploymentHelpers.js");
 const { TestHelper: th, MoneyValues: mv } = require("../utils/testHelpers.js");
+const { dec, toBN } = th;
 
 const GasPool = artifacts.require("./GasPool.sol");
 const BorrowerOperationsTester = artifacts.require("./BorrowerOperationsTester.sol");
@@ -24,6 +25,7 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
       contracts.WETH.address,
       contracts.troveManager.address,
       contracts.WETH.address,
+      toBN(dec(110, 16))
     );
     contracts = await deploymentHelper.deployBoldToken(contracts);
 

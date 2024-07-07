@@ -78,6 +78,8 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function getPendingCollReward(uint256 _troveId) external view returns (uint256);
 
+    function urgentRedemption(address _sender, uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral) external;
+    
     function getPendingBoldDebtReward(uint256 _troveId) external view returns (uint256);
 
     function hasRedistributionGains(uint256 _troveId) external view returns (bool);

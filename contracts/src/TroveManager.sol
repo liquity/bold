@@ -262,9 +262,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         );
 
         singleLiquidation.collGasCompensation = _getCollGasCompensation(singleLiquidation.trove.entireColl);
-        // console2.log(singleLiquidation.collGasCompensation, "singleLiquidation.collGasCompensation");
         uint256 collToLiquidate = singleLiquidation.trove.entireColl - singleLiquidation.collGasCompensation;
-        // console2.log(collToLiquidate, "collToLiquidate");
 
         (
             singleLiquidation.debtToOffset,
@@ -367,10 +365,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint256 _price
     ) internal pure returns (uint256 seizedColl, uint256 collSurplus) {
         uint256 maxSeizedColl = _debtToLiquidate * (DECIMAL_PRECISION + _penaltyRatio) / _price;
-        // console2.log(_price, "tm::_price");
-        // console2.log(maxSeizedColl, "maxSeizedColl");
-        // console2.log(_debtToLiquidate, "_debtToLiquidate");
-        // console2.log(_penaltyRatio, "_penaltyRatio");
         if (_collToLiquidate > maxSeizedColl) {
             seizedColl = maxSeizedColl;
             collSurplus = _collToLiquidate - maxSeizedColl;
@@ -378,7 +372,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             seizedColl = _collToLiquidate;
             collSurplus = 0;
         }
-        //  console2.log(seizedColl, "tm::seizedColl");
     }
 
     /*
@@ -518,7 +511,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     // Redeem as much collateral as possible from _borrower's Trove in exchange for Bold up to _maxBoldamount
     function _redeemCollateralFromTrove(
-        ContractsCache memory _contractsCache,
+        IDefaultPool _defaultPool,
         uint256 _troveId,
         uint256 _maxBoldamount,
         uint256 _price,
@@ -560,9 +553,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         // TODO: Gas optimize? We update totalStakes N times for a sequence of N Troves(!).
         uint256 newStake = _updateStakeAndTotalStakes(_troveId, newColl);
         // TODO: Gas optimize? We move pending rewards N times for a sequence of N Troves(!).
-        _movePendingTroveRewardsToActivePool(
-            _contractsCache.defaultPool, trove.redistBoldDebtGain, trove.redistCollGain
-        );
+        _movePendingTroveRewardsToActivePool(_defaultPool, trove.redistBoldDebtGain, trove.redistCollGain);
         _updateTroveRewardSnapshots(_troveId);
 
         emit TroveUpdated(_troveId, newDebt, newColl, newStake, trove.annualInterestRate, L_coll, L_boldDebt);
@@ -634,7 +625,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
             SingleRedemptionValues memory singleRedemption;
             _redeemCollateralFromTrove(
-                contractsCache, currentTroveId, remainingBold, _price, _redemptionRate, singleRedemption
+                contractsCache.defaultPool, currentTroveId, remainingBold, _price, _redemptionRate, singleRedemption
             );
 
             totals.troveChange.collDecrease += singleRedemption.collLot;
@@ -666,6 +657,79 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
         return totals.troveChange.debtDecrease;
     }
+
+    // Redeem as much collateral as possible from _borrower's Trove in exchange for Bold up to _maxBoldamount
+    function _urgentRedeemCollateralFromTrove(
+        IDefaultPool _defaultPool,
+        uint256 _troveId,
+        uint256 _maxBoldamount,
+        uint256 _price,
+        SingleRedemptionValues memory singleRedemption
+    ) internal {
+        LatestTroveData memory trove;
+        _getLatestTroveData(_troveId, trove);
+
+        // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove minus the liquidation reserve
+        singleRedemption.boldLot = LiquityMath._min(_maxBoldamount, trove.entireDebt);
+
+        // Get the amount of ETH equal in USD value to the BOLD lot redeemed
+        singleRedemption.collLot = singleRedemption.boldLot * (DECIMAL_PRECISION + URGENT_REDEMPTION_DISCOUNT) / _price;
+        // As here we can redeem when CR < 100%, we need to cap by collateral too
+        if (singleRedemption.collLot > trove.entireColl) {
+            singleRedemption.collLot = trove.entireColl;
+            singleRedemption.boldLot = trove.entireColl * _price / (DECIMAL_PRECISION + URGENT_REDEMPTION_DISCOUNT);
+        }
+
+        // Decrease the debt and collateral of the current Trove according to the Bold lot and corresponding ETH to send
+        uint256 newDebt = trove.entireDebt - singleRedemption.boldLot;
+        uint256 newColl = trove.entireColl - singleRedemption.collLot;
+
+        Troves[_troveId].debt = newDebt;
+        Troves[_troveId].coll = newColl;
+        //Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
+
+        // TODO: Gas optimize? We update totalStakes N times for a sequence of N Troves(!).
+        uint256 newStake = _updateStakeAndTotalStakes(_troveId, newColl);
+        _updateTroveRewardSnapshots(_troveId);
+        // TODO: Gas optimize? We move pending rewards N times for a sequence of N Troves(!).
+        _movePendingTroveRewardsToActivePool(_defaultPool, trove.redistBoldDebtGain, trove.redistCollGain);
+
+        emit TroveUpdated(_troveId, newDebt, newColl, newStake, trove.annualInterestRate, L_coll, L_boldDebt);
+    }
+
+    function urgentRedemption(address _sender, uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral) external {
+        _requireCallerIsBorrowerOperations();
+
+        ContractsCache memory contractsCache =
+            ContractsCache(activePool, defaultPool, boldToken, sortedTroves, collSurplusPool, gasPoolAddress);
+        RedemptionTotals memory totals;
+
+        uint256 price = priceFeed.fetchPrice();
+
+        uint256 remainingBold = _boldAmount;
+        for (uint256 i = 0; i < _troveIds.length; i++) {
+            SingleRedemptionValues memory singleRedemption;
+            _urgentRedeemCollateralFromTrove(
+                contractsCache.defaultPool, _troveIds[i], remainingBold, price, singleRedemption
+            );
+            totals.troveChange.collDecrease += singleRedemption.collLot;
+            totals.troveChange.debtDecrease += singleRedemption.boldLot;
+            // After shutdown troves stop accruing interest, so we don’t need to take into account redistributions
+            // nor call the ActivePool mint function
+
+            remainingBold -= singleRedemption.boldLot;
+        }
+
+        require(totals.troveChange.collDecrease >= _minCollateral, "TM: Min collateral not reached");
+
+        emit Redemption(_boldAmount, totals.troveChange.debtDecrease, totals.troveChange.collDecrease, 0, price);
+
+        // Send the redeemed coll to sender
+        contractsCache.activePool.sendColl(_sender, totals.troveChange.collDecrease);
+        // Burn bold
+        contractsCache.boldToken.burn(_sender, totals.troveChange.debtDecrease);
+    }
+
 
     // --- Helper functions ---
 

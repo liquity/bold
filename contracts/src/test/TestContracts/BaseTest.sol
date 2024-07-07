@@ -415,4 +415,9 @@ contract BaseTest is Test {
     function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin, string memory _reason) public {
         assertApproxEqAbs(_x, _y, _margin, _reason);
     }
+
+    function uintToArray(uint256 _value) public pure returns (uint256[] memory result) {
+        result = new uint256[](1);
+        result[0] = _value;
+    }
 }
