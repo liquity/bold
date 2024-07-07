@@ -301,11 +301,11 @@ contract SortedTrovesTest is Test {
     /// Custom assertions
     ///
 
-    function assertEq(TroveId a, TroveId b, string memory err) internal pure {
+    function assertEq(TroveId a, TroveId b, string memory err) internal {
         assertEq(TroveId.unwrap(a), TroveId.unwrap(b), err);
     }
 
-    function assertNe(TroveId a, TroveId b, string memory err) internal pure {
+    function assertNe(TroveId a, TroveId b, string memory err) internal {
         assertTrue(a.notEquals(b), err);
     }
 
@@ -313,7 +313,7 @@ contract SortedTrovesTest is Test {
     /// Invariant checks
     ///
 
-    function _checkOrdering() internal view {
+    function _checkOrdering() internal {
         uint256 i = 0;
         uint256 troveCount = tm.getTroveCount();
         TroveId[] memory troveIds = new TroveId[](troveCount);
