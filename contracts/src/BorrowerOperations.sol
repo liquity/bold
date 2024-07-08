@@ -106,9 +106,9 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     constructor(IERC20 _collToken, ITroveManager _troveManager, IERC20 _weth) {
         collToken = _collToken;
         troveManager = _troveManager;
-        
+
         WETH = _weth;
-      
+
         SCR = _troveManager.SCR();
         MCR = _troveManager.MCR();
 

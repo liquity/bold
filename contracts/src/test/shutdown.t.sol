@@ -29,9 +29,8 @@ contract ShutdownTest is DevTestSetup {
         troveManagerParams[2] = TroveManagerParams(120e16, 120e16, 5e16, 10e16);
         troveManagerParams[3] = TroveManagerParams(125e16, 125e16, 5e16, 10e16);
 
-    
         LiquityContracts[] memory _contractsArray;
-        (_contractsArray, collateralRegistry, boldToken, , , WETH) =  _deployAndConnectContracts(troveManagerParams);
+        (_contractsArray, collateralRegistry, boldToken,,, WETH) = _deployAndConnectContracts(troveManagerParams);
         // Unimplemented feature (...):Copying of type struct LiquityContracts memory[] memory to storage not yet supported.
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
             contractsArray.push(_contractsArray[c]);
@@ -487,14 +486,14 @@ contract ShutdownTest is DevTestSetup {
         // TODO: determine why this is off by 1 wei - it should be exact
         assertApproximatelyEqual(
             contractsArray[0].collToken.balanceOf(A),
-            collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100, 
+            collBalanceBefore + redemptionAmount * DECIMAL_PRECISION / price * 101 / 100,
             1, // 1 wei tolerance
             "Coll balance mismatch"
         );
     }
-    
+
     function testShutdownZerosPendingAggInterest() public {
-        // Open troves with time in between so they each accrue interest 
+        // Open troves with time in between so they each accrue interest
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 9000e18, 5e16);
         vm.warp(block.timestamp + 1 days);
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 6e16);
@@ -502,7 +501,7 @@ contract ShutdownTest is DevTestSetup {
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 11e18, 11000e18, 7e16);
         vm.warp(block.timestamp + 1 days);
 
-        uint256 accruedAggInterest =  contractsArray[0].activePool.calcPendingAggInterest();
+        uint256 accruedAggInterest = contractsArray[0].activePool.calcPendingAggInterest();
         assertGt(accruedAggInterest, 0);
 
         // Price halves and first branch is shut down
@@ -518,7 +517,7 @@ contract ShutdownTest is DevTestSetup {
     }
 
     function testShutdownZerosMintsPendingAggInterestToSP() public {
-        // Open troves with time in between so they each accrue interest 
+        // Open troves with time in between so they each accrue interest
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 9000e18, 5e16);
         vm.warp(block.timestamp + 1 days);
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 6e16);
@@ -526,14 +525,14 @@ contract ShutdownTest is DevTestSetup {
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 11e18, 11000e18, 7e16);
         vm.warp(block.timestamp + 1 days);
 
-        uint256 accruedAggInterest =  contractsArray[0].activePool.calcPendingAggInterest();
+        uint256 accruedAggInterest = contractsArray[0].activePool.calcPendingAggInterest();
         assertGt(accruedAggInterest, 0);
 
         uint256 expectedSPYield = _getSPYield(accruedAggInterest);
         assertGt(expectedSPYield, 0);
 
         uint256 spBal1 = boldToken.balanceOf(address(contractsArray[0].stabilityPool));
-       
+
         // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
@@ -547,7 +546,7 @@ contract ShutdownTest is DevTestSetup {
     }
 
     function testPendingAggInterestRemainsZeroAfterShutdown() public {
-        // Open troves with time in between so they each accrue interest 
+        // Open troves with time in between so they each accrue interest
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 9000e18, 5e16);
         vm.warp(block.timestamp + 1 days);
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 6e16);
@@ -555,7 +554,7 @@ contract ShutdownTest is DevTestSetup {
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 11e18, 11000e18, 7e16);
         vm.warp(block.timestamp + 1 days);
 
-        uint256 accruedAggInterest =  contractsArray[0].activePool.calcPendingAggInterest();
+        uint256 accruedAggInterest = contractsArray[0].activePool.calcPendingAggInterest();
         assertGt(accruedAggInterest, 0);
 
         // Price halves and first branch is shut down
@@ -578,7 +577,7 @@ contract ShutdownTest is DevTestSetup {
     }
 
     function testIndividualTrovesDontAcrrueInterestAfterShutdown() public {
-        // Open troves with time in between so they each accrue interest 
+        // Open troves with time in between so they each accrue interest
         uint256 troveId1 = openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 9000e18, 5e16);
         vm.warp(block.timestamp + 1 days);
         uint256 troveId2 = openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 6e16);
@@ -617,13 +616,13 @@ contract ShutdownTest is DevTestSetup {
 
     // - Trove with 0 interest accrues 0 interest after shutdown
     function testTroveWith0InterestAccrues0InterestShutdown() public {
-        // Open troves with time in between so they each accrue interest 
+        // Open troves with time in between so they each accrue interest
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 9000e18, 5e16);
         vm.warp(block.timestamp + 1 days);
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 6e16);
         vm.warp(block.timestamp + 1 days);
         uint256 troveId3 = openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 11e18, 11000e18, 7e16);
-    
+
         // Check Trove 3 has no interest
         uint256 interest3_t0 = troveManager.calcTroveAccruedInterest((troveId3));
         assertEq(interest3_t0, 0);
@@ -643,8 +642,8 @@ contract ShutdownTest is DevTestSetup {
         assertEq(interest3_t1, interest3_t0);
     }
 
-    function testSetShutdownSetsShutdownFlagsAndTime() public { 
-        // Open troves with time in between so they each accrue interest 
+    function testSetShutdownSetsShutdownFlagsAndTime() public {
+        // Open troves with time in between so they each accrue interest
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 9000e18, 5e16);
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 6e16);
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 11e18, 11000e18, 7e16);
@@ -653,19 +652,19 @@ contract ShutdownTest is DevTestSetup {
         assertFalse(contractsArray[0].activePool.hasBeenShutDown());
         assertEq(troveManager.shutdownTime(), 0);
 
-       // Price halves and first branch is shut down
+        // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
         assertLt(troveManager.getTCR(price), troveManager.SCR());
         contractsArray[0].borrowerOperations.shutdown();
-    
+
         assertTrue(contractsArray[0].borrowerOperations.hasBeenShutDown());
         assertTrue(contractsArray[0].activePool.hasBeenShutDown());
         assertEq(troveManager.shutdownTime(), block.timestamp);
     }
 
     function testSetShutdownFlagOnActivePoolRevertWhenNotCalledByTM() public {
-        // Open troves with time in between so they each accrue interest 
+        // Open troves with time in between so they each accrue interest
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 9000e18, 5e16);
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 6e16);
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 11e18, 11000e18, 7e16);
@@ -688,7 +687,7 @@ contract ShutdownTest is DevTestSetup {
     }
 
     function testUrgentRedemptionAppliesInterestEarnedUpToShutdownTimeToTrove() public {
-        // Open troves with time in between so they each accrue interest 
+        // Open troves with time in between so they each accrue interest
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 9000e18, 5e16);
         vm.warp(block.timestamp + 1 days);
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 6e16);
@@ -719,7 +718,7 @@ contract ShutdownTest is DevTestSetup {
         vm.warp(block.timestamp + 1 days);
 
         // Check Trove 3's recorded debt changed correctly: increased by interest up to shutdown, decreased by redeemed amount
-       assertEq(troveManager.getTroveDebt(troveId3), recordedDebt3 - redemptionAmount + interest3_t0);
+        assertEq(troveManager.getTroveDebt(troveId3), recordedDebt3 - redemptionAmount + interest3_t0);
     }
 
     function testTroveAfterUrgentRedemptionHas0AccruedInterest() public {
@@ -727,15 +726,15 @@ contract ShutdownTest is DevTestSetup {
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 6e16);
         uint256 troveId3 = openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 11e18, 11000e18, 7e16);
         vm.warp(block.timestamp + 1 days);
-        
-       // Price halves and first branch is shut down
+
+        // Price halves and first branch is shut down
         uint256 price = 1000e18;
         contractsArray[0].priceFeed.setPrice(price);
         assertLt(troveManager.getTCR(price), troveManager.SCR());
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
-        (uint256 debtBefore3, , , , ) = troveManager.getEntireDebtAndColl(troveId3);
+        (uint256 debtBefore3,,,,) = troveManager.getEntireDebtAndColl(troveId3);
         assertGt(debtBefore3, 0);
 
         // Check Trove has some pending interest
@@ -747,7 +746,7 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
 
         // Check Trove's debt is reduced
-        (uint256 debtAfter3, , , , ) = troveManager.getEntireDebtAndColl(troveId3);
+        (uint256 debtAfter3,,,,) = troveManager.getEntireDebtAndColl(troveId3);
         assertGt(debtAfter3, 0);
         assertEq(debtAfter3, debtBefore3 - redemptionAmount);
 
@@ -768,7 +767,7 @@ contract ShutdownTest is DevTestSetup {
         contractsArray[0].borrowerOperations.shutdown();
         assertTrue(borrowerOperations.hasBeenShutDown());
 
-        (uint256 debtBefore3, , , , ) = troveManager.getEntireDebtAndColl(troveId3);
+        (uint256 debtBefore3,,,,) = troveManager.getEntireDebtAndColl(troveId3);
         assertGt(debtBefore3, 0);
 
         uint256 redemptionAmount = 100e18;
@@ -780,19 +779,19 @@ contract ShutdownTest is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(troveId3), 0);
 
         // Check Trove's debt after redemption is > 0
-        (uint256 debtAfter3, , , , ) = troveManager.getEntireDebtAndColl(troveId3);
+        (uint256 debtAfter3,,,,) = troveManager.getEntireDebtAndColl(troveId3);
         assertGt(debtAfter3, 0);
         assertEq(debtAfter3, debtBefore3 - redemptionAmount);
 
         // fast forward time
         vm.warp(block.timestamp + 1 days);
-    
+
         // Check Trove still has no interest
         assertEq(troveManager.calcTroveAccruedInterest(troveId3), 0);
     }
 
     function testUrgentRedemptionReducesAggRecordedDebtByRedeemedAmount() public {
-        // Open troves with time in between so they each accrue interest 
+        // Open troves with time in between so they each accrue interest
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 9000e18, 5e16);
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 6e16);
         uint256 troveId3 = openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 11e18, 11000e18, 7e16);
@@ -817,11 +816,11 @@ contract ShutdownTest is DevTestSetup {
         vm.warp(block.timestamp + 1 days);
 
         // Check agg. recorded debt decreased only by the redemption amount (since there is no pending agg. interest)
-       assertEq(contractsArray[0].activePool.aggRecordedDebt(), aggRecordedDebt_t0 - redemptionAmount);
+        assertEq(contractsArray[0].activePool.aggRecordedDebt(), aggRecordedDebt_t0 - redemptionAmount);
     }
 
-     function testUrgentRedemptionMintsNoInterestToSP() public {
-        // Open troves with time in between so they each accrue interest 
+    function testUrgentRedemptionMintsNoInterestToSP() public {
+        // Open troves with time in between so they each accrue interest
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 9000e18, 5e16);
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 6e16);
         uint256 troveId3 = openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 11e18, 11000e18, 7e16);
@@ -844,11 +843,11 @@ contract ShutdownTest is DevTestSetup {
         uint256 spBoldBal_t1 = boldToken.balanceOf(address(contractsArray[0].stabilityPool));
 
         // Check SP bold bal didnt change from urgent redemption
-       assertEq(spBoldBal_t1, spBoldBal_t0);
+        assertEq(spBoldBal_t1, spBoldBal_t0);
     }
 
     function testUrgentRedemptionReducesAggWeightedDebtSumByNetWeightedAmountRemoved() public {
-        // Open troves with time in between so they each accrue interest 
+        // Open troves with time in between so they each accrue interest
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 9000e18, 5e16);
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 6e16);
         uint256 troveId3 = openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 11e18, 11000e18, 7e16);
@@ -868,7 +867,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 aggWeightedDebtSum_t0 = contractsArray[0].activePool.aggWeightedDebtSum();
         assertGt(aggWeightedDebtSum_t0, 0);
 
-        uint256 redemptionAmount = 100e18; 
+        uint256 redemptionAmount = 100e18;
         vm.startPrank(A);
         troveManager.urgentRedemption(redemptionAmount, uintToArray(troveId3), 0);
         vm.stopPrank();
@@ -876,7 +875,8 @@ contract ShutdownTest is DevTestSetup {
         // fast forward time
         vm.warp(block.timestamp + 1 days);
 
-        uint256 netWeightedDebtRemoved = (redemptionAmount - interest_t3) * troveManager.getTroveAnnualInterestRate((troveId3));
+        uint256 netWeightedDebtRemoved =
+            (redemptionAmount - interest_t3) * troveManager.getTroveAnnualInterestRate((troveId3));
 
         // Check recorded debt sum decreased by redemption amount weighted by trove 3's interest rate
         assertEq(contractsArray[0].activePool.aggWeightedDebtSum(), aggWeightedDebtSum_t0 - netWeightedDebtRemoved);

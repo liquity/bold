@@ -114,7 +114,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     }
 
     function calcPendingAggInterest() public view returns (uint256) {
-        if (hasBeenShutDown) {return 0;}
+        if (hasBeenShutDown) return 0;
 
         return aggWeightedDebtSum * (block.timestamp - lastAggUpdateTime) / ONE_YEAR / DECIMAL_PRECISION;
     }
@@ -132,8 +132,8 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         // This is a simple way to resolve the circularity in:
         //   fee depends on avg. interest rate -> avg. interest rate is weighted by debt -> debt includes fee -> ...
         assert(_troveChange.upfrontFee == 0);
-        
-        if (hasBeenShutDown) {return 0;}
+
+        if (hasBeenShutDown) return 0;
 
         uint256 newAggRecordedDebt = aggRecordedDebt;
         newAggRecordedDebt += calcPendingAggInterest();
@@ -260,8 +260,8 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     // --- Shutdown ---
 
     function setShutdownFlag() external {
-        _requireCallerIsTroveManager(); 
-        hasBeenShutDown = true;   
+        _requireCallerIsTroveManager();
+        hasBeenShutDown = true;
     }
 
     // --- 'require' functions ---
@@ -282,7 +282,8 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     }
 
     function _requireCallerIsBOorSP() internal view {
-        require(msg.sender == borrowerOperationsAddress || msg.sender == address(stabilityPool), 
+        require(
+            msg.sender == borrowerOperationsAddress || msg.sender == address(stabilityPool),
             "ActivePool: Caller is not BorrowerOperations nor StabilityPool"
         );
     }

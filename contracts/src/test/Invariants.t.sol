@@ -73,10 +73,9 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         params[2] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
         params[3] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
 
-
         Contracts memory contracts;
-        (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers, , contracts.weth)
-        = _deployAndConnectContracts(params); 
+        (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth)
+        = _deployAndConnectContracts(params);
         setupContracts(contracts);
 
         handler = new InvariantsTestHandler(contracts);

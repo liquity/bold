@@ -173,9 +173,13 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
-    constructor(uint256 _mcr, uint256 _scr, uint256 _liquidationPenaltySP, uint256 _liquidationPenaltyRedistribution, IERC20 _weth)
-        ERC721(NAME, SYMBOL)
-    {
+    constructor(
+        uint256 _mcr,
+        uint256 _scr,
+        uint256 _liquidationPenaltySP,
+        uint256 _liquidationPenaltyRedistribution,
+        IERC20 _weth
+    ) ERC721(NAME, SYMBOL) {
         require(_mcr > 1e18 && _mcr < 2e18, "Invalid MCR");
         require(_scr > 1e18 && _scr < 2e18, "Invalid SCR");
         require(_liquidationPenaltySP >= 5e16, "SP penalty too low");
@@ -554,7 +558,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     function _applySingleRedemption(
         IDefaultPool _defaultPool,
         uint256 _troveId,
-        LatestTroveData memory _trove, 
+        LatestTroveData memory _trove,
         SingleRedemptionValues memory _singleRedemption
     ) internal returns (uint256) {
         // Decrease the debt and collateral of the current Trove according to the Bold lot and corresponding ETH to send
@@ -708,11 +712,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         // - Urgent redemptions aren't sequential, so they can't be griefed by tiny Troves.
     }
 
-    function urgentRedemption(
-        uint256 _boldAmount,
-        uint256[] calldata _troveIds,
-        uint256 _minCollateral
-    ) external {
+    function urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral) external {
         _requireIsShutDown();
 
         ContractsCache memory contractsCache =
@@ -755,7 +755,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     function shutdown() external {
         _requireCallerIsBorrowerOperations();
-        // TODO: potentially refactor so that we only store one value. Though, current approach is gas efficient 
+        // TODO: potentially refactor so that we only store one value. Though, current approach is gas efficient
         // and avoids cross-contract calls.
         shutdownTime = block.timestamp;
         activePool.setShutdownFlag();
@@ -825,7 +825,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         } else if (shutdownTime > 0 && _lastDebtUpdateTime < shutdownTime) {
             // If branch is shut down and the Trove was not updated since shut down, interest is earned up to the shutdown time.
             return shutdownTime - _lastDebtUpdateTime;
-        } else { // if (shutdownTime > 0 && _lastDebtUpdateTime >= shutdownTime)
+        } else {
+            // if (shutdownTime > 0 && _lastDebtUpdateTime >= shutdownTime)
             // If branch is shut down and the Trove was updated after shutdown, no interest is earned since.
             return 0;
         }
