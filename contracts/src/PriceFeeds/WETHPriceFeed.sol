@@ -3,7 +3,7 @@ pragma solidity 0.8.18;
 import "./MainnetPriceFeedBase.sol";
 import "../Interfaces/IWETHPriceFeed.sol";
 
-// import "forge-std/console2.sol";
+import "forge-std/console2.sol";
 
 contract WETHPriceFeed is MainnetPriceFeedBase, IWETHPriceFeed {
     Oracle public ethUsdOracle;
@@ -18,18 +18,17 @@ contract WETHPriceFeed is MainnetPriceFeedBase, IWETHPriceFeed {
         // Check ETH-USD aggregator has the expected 8 decimals
         assert(ethUsdOracle.decimals == 8);
 
-        fetchPrice();
+        _fetchPrice();
 
         // Check the oracle didn't already fail
-        assert(shutdownFlag == false);
+        assert(priceFeedDisabled == false);
     }
 
-    function fetchPrice() public returns (uint256) {
-        (uint256 ethUsdPrice, bool ethUsdDown) = _fetchPrice(ethUsdOracle);
+    function _fetchPrice() internal override returns (uint256) {
+        (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
 
-         // If the branch was already shut down or if the Chainlink response was invalid in this transaction,
-        // Return the last good ETH-USD price calculated
-        if (shutdownFlag || ethUsdDown) {return lastGoodPrice;}
+        // If the Chainlink response was invalid in this transaction, return the last good ETH-USD price calculated
+        if (ethUsdOracleDown) {return _disableFeed(address(ethUsdOracle.aggregator));}
 
         lastGoodPrice = ethUsdPrice;
 

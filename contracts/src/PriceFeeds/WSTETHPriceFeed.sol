@@ -24,19 +24,18 @@ contract WSTETHPriceFeed is MainnetPriceFeedBase, IWSTETHPriceFeed {
         // Check the STETH-USD aggregator has the expected 8 decimals
         assert(stEthUsdOracle.decimals == 8);
 
-        fetchPrice();
+        _fetchPrice();
 
         // Check the oracle didn't already fail
-        assert(shutdownFlag == false);
+        assert(priceFeedDisabled == false);
     }
     
-    function fetchPrice() public returns (uint256) {
-        // Fetch latest prices
-        (uint256 stEthUsdPrice, bool stEthUsdDown) = _fetchPrice(stEthUsdOracle);
+    function _fetchPrice() internal override returns (uint256) {
+        (uint256 stEthUsdPrice, bool stEthUsdOracleDown) = _getOracleAnswer(stEthUsdOracle);
 
-        // If the branch was already shut down or if one of Chainlink's responses was invalid in this transaction,
-        // Return the last good WSTETH-USD price calculated
-        if (shutdownFlag || stEthUsdDown) {return lastGoodPrice;}
+        // If one of Chainlink's responses was invalid in this transaction, disable this PriceFeed and
+        // return the last good WSTETH-USD price calculated
+        if (stEthUsdOracleDown) {return _disableFeed(address(stEthUsdOracle.aggregator));}
         
         // Calculate WSTETH-USD price: USD_per_WSTETH = USD_per_STETH * STETH_per_WSTETH
         uint256 wstEthUsdPrice = stEthUsdPrice * wstETH.stEthPerToken() / 1e18;

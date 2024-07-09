@@ -10,7 +10,7 @@ abstract contract MainnetPriceFeedBase is IPriceFeed {
     
     // Dummy flag raised when the collateral branch gets shut down. 
     // Should be removed after actual shutdown logic is implemented.
-    bool shutdownFlag;
+    bool priceFeedDisabled;
 
     // Last good price tracker for the derived USD price
     uint256 public lastGoodPrice;
@@ -28,24 +28,37 @@ abstract contract MainnetPriceFeedBase is IPriceFeed {
         bool success;
     } 
 
-    function _fetchPrice(Oracle memory _oracle) 
+    function fetchPrice() public returns (uint256) {
+        if (priceFeedDisabled) {return lastGoodPrice;}
+        
+        return _fetchPrice(); 
+    }
+
+    // An individual Pricefeed instance implements _fetchPrice according to the data sources it uses.
+    function _fetchPrice() virtual internal returns (uint256) {}
+
+    function _getOracleAnswer(Oracle memory _oracle) 
         internal 
         returns (uint256, bool) {
         ChainlinkResponse memory chainlinkResponse = _getCurrentChainlinkResponse(_oracle.aggregator);
 
         uint256 scaledPrice;
-        bool isShutdown;
+        bool oracleIsDown;
 
         // Check oracle is serving an up-to-date and sensible price. If not, shut down this collateral branch.
         if (!_isValidChainlinkPrice(chainlinkResponse, _oracle.stalenessThreshold)) {
-            // TODO: Call into collateral registry and shut down this branch.
-            shutdownFlag = true;
-            isShutdown = true;
+            oracleIsDown = true;
         } else {
             scaledPrice = _scaleChainlinkPriceTo18decimals(chainlinkResponse.answer, _oracle.decimals);
         }
 
-        return (scaledPrice, isShutdown);
+        return (scaledPrice, oracleIsDown);
+    }
+
+    function _disableFeed(address _oracleAddress) internal returns (uint256) {
+        // TODO: Call into collateral registry and shut down this branch.
+        priceFeedDisabled = true;
+        return lastGoodPrice;
     }
 
     function _getCurrentChainlinkResponse(AggregatorV3Interface _aggregator) 
