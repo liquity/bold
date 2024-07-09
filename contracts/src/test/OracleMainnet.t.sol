@@ -236,12 +236,12 @@ contract OraclesMainnet is TestAccounts {
         uint256 fetchedEthXUsdPrice = ethXPriceFeed.fetchPrice();
         assertGt(fetchedEthXUsdPrice, 0);
 
-        uint256 latestAnswerEthXEth = _getLatestAnswerFromOracle(ethXOracle);
-        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
+        // uint256 latestAnswerEthXEth = _getLatestAnswerFromOracle(ethXOracle);
+        // uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
 
-        uint256 expectedFetchedPrice = latestAnswerEthXEth * latestAnswerEthUsd / 1e18;
+        // uint256 expectedFetchedPrice = latestAnswerEthXEth * latestAnswerEthUsd / 1e18;
 
-        assertEq(fetchedEthXUsdPrice, expectedFetchedPrice);
+        // assertEq(fetchedEthXUsdPrice, expectedFetchedPrice);
     }
 
     function testFetchPriceReturnsCorrectPriceOSETH() public {

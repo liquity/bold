@@ -29,20 +29,21 @@ contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {
         lstEthOracle.stalenessThreshold = _lstEthStalenessThreshold;
         lstEthOracle.decimals = lstEthOracle.aggregator.decimals();
     
-        fetchPrice();
+        _fetchPrice();
 
-        // Check the oracle didn't already fail
-        assert(shutdownFlag == false);
+        // Check an oracle didn't already fail
+        assert(priceFeedDisabled == false);
     }
 
-    function fetchPrice() public returns (uint256) {
-        (uint256 ethUsdPrice, bool ethUsdDown) = _fetchPrice(ethUsdOracle);
-        (uint256 lstEthPrice, bool lstEthDown) = _fetchPrice(lstEthOracle);
+    function _fetchPrice() internal override returns (uint256) {
+        (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
+        (uint256 lstEthPrice, bool lstEthOracleDown) = _getOracleAnswer(lstEthOracle);
 
-        // If the branch was already shut down or if one of Chainlink's responses was invalid in this transaction,
-        // Return the last good ETH-USD price calculated
-        if (shutdownFlag || ethUsdDown || lstEthDown) {return lastGoodPrice;}
-        
+        // If one of Chainlink's responses was invalid in this transaction, disable this PriceFeed and
+        // return the last good LST-USD price calculated
+        if (ethUsdOracleDown) {return _disableFeed(address(ethUsdOracle.aggregator));}
+        if (ethUsdOracleDown) {return _disableFeed(address(lstEthOracle.aggregator));}
+            
         // Calculate LST-USD price: USD_per_LST = USD_per_ETH * ETH_per_LST
         uint256 lstUsdPrice = ethUsdPrice * lstEthPrice / 1e18;
 
