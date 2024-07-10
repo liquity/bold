@@ -1,13 +1,16 @@
-const { $ } = require("dax-sh");
-const path = require("path");
-const fs = require("fs").promises;
+import { $ } from "dax-sh";
+import * as fs from "fs/promises";
+import * as path from "path";
 import * as v from "valibot";
 
-const rootDir = path.resolve(`${__dirname}/../..`);
-const frontendDir = `${rootDir}/frontend`;
+const dirname = path.dirname(new URL(import.meta.url).pathname);
+
+const rootDir = path.resolve(`${dirname}/../../..`);
+
+const appDir = `${rootDir}/frontend/app`;
 const contractsDir = `${rootDir}/contracts`;
-const artifactsDir = `${frontendDir}/liquity-artifacts`;
-const abisDir = `${rootDir}/frontend/src/abi`;
+const artifactsTmpDir = `${appDir}/liquity-artifacts`;
+const appAbisDir = `${appDir}/src/abi`;
 
 const ABIS = [
   "ActivePool",
@@ -39,24 +42,24 @@ async function writeAbiFromArtifact(artifactPath: string, abiName: string) {
     `export const ${abiName} = ${JSON.stringify(artifact.abi)} as const;`,
   ].join("\n");
 
-  await fs.writeFile(`${abisDir}/${abiName}.ts`, tsFileContent);
-  await $`dprint --log-level silent fmt ${abisDir}/${abiName}.ts`;
+  await fs.writeFile(`${appAbisDir}/${abiName}.ts`, tsFileContent);
+  await $`dprint --log-level silent fmt ${appAbisDir}/${abiName}.ts`;
 }
 
 async function main() {
   console.log("👉 Building Liquity contracts…\n");
-  await $`forge build --root ${contractsDir} --out ${artifactsDir}`;
+  await $`forge build --root ${contractsDir} --out ${artifactsTmpDir}`;
 
   console.log("👉 Building promises…");
   await Promise.all(ABIS.map(async (abiName) => (
     writeAbiFromArtifact(
-      `${artifactsDir}/${abiName}.sol/${abiName}.json`,
+      `${artifactsTmpDir}/${abiName}.sol/${abiName}.json`,
       abiName,
     )
   )));
 
   console.log("👉 Removing temporary artifacts…");
-  await $`rm -rf ${artifactsDir}`;
+  await $`rm -rf ${artifactsTmpDir}`;
   console.log("\nDone.");
   console.log("");
 }
