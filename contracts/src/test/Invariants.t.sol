@@ -13,7 +13,7 @@ import {_deployAndConnectContracts, LiquityContracts, TroveManagerParams} from "
 import {StringFormatting} from "./Utils/StringFormatting.sol";
 import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
 import {BaseMultiCollateralTest} from "./TestContracts/BaseMultiCollateralTest.sol";
-import {InvariantsTestHandler} from "./TestContracts/InvariantsTestHandler.sol";
+import {AdjustedTroveProperties, InvariantsTestHandler} from "./TestContracts/InvariantsTestHandler.sol";
 
 struct BatchIdSet {
     mapping(BatchId => bool) _has;
@@ -376,5 +376,220 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
 
             seenBatches.clear();
         }
+    }
+
+    function test_XXX() external {
+        // batch: []
+        // liquidatable: []
+        vm.prank(dana);
+        handler.batchLiquidateTroves(2);
+
+        // Expected revert: TroveManager: Calldata address array must not be empty
+
+        // upper hint: 30246076129467464594090080447872540948197330609836947493093576206562742804430
+        // lower hint: 0
+        // upfront fee: 0 ether
+        // coll: 0.000000000000000044 ether
+        // debt: 0.000000000000004272 ether
+        vm.prank(carl);
+        handler.openTrove(
+            3, 0.000000000000004272 ether, 2.100000000000012482 ether, 0.000000000000015575 ether, 7723, 19858
+        );
+
+        // Expected revert: BorrowerOps: Trove's debt must be greater than minimum
+
+        vm.prank(dana);
+        handler.addMeToLiquidationBatch();
+
+        // upper hint: 27750008343791586097295710466941256554010738621566943407062180607643822645792
+        // lower hint: 16067009688728882652490097800170345506102883954093153296105590916951930111500
+        // upfront fee: 1_201.566489794206439726 ether
+        // coll: 864.846482193828959226 ether
+        // debt: 101_201.566489794206439726 ether
+        vm.prank(adam);
+        handler.openTrove(
+            1, 100_000 ether, 1.709156314850216161 ether, 0.626531098249836215 ether, 4294967295, 83662261
+        );
+
+        // upper hint: 0
+        // lower hint: 0
+        // upfront fee: 450.373510990799953282 ether
+        // coll: 142.535628344860862273 ether
+        // debt: 31_674.584076635747171997 ether
+        vm.prank(gabe);
+        handler.openTrove(2, 31_224.210565644947218715 ether, 0.9 ether, 0.752101052968133473 ether, 4, 28);
+
+        // Expected revert: BorrowerOps: An operation that would result in ICR < MCR is not permitted
+
+        vm.prank(barb);
+        handler.addMeToLiquidationBatch();
+
+        // batch: [dana, barb]
+        // liquidatable: []
+        vm.prank(carl);
+        handler.batchLiquidateTroves(3);
+
+        // Expected revert: TroveManager: nothing to liquidate
+
+        // initial deposit: 0 ether
+        // compounded deposit: 0 ether
+        // yield gain: 0 ether
+        // coll gain: 0 ether
+        // stashed coll: 0 ether
+        vm.prank(dana);
+        handler.provideToSP(3, 13_244.021558651854363757 ether, true);
+
+        vm.prank(dana);
+        handler.warp(8_052_444);
+
+        // upper hint: adam
+        // lower hint: adam
+        // upfront fee: 0 ether
+        vm.prank(hope);
+        handler.adjustTroveInterestRate(1, 0.854936278466460882 ether, 206417, 47238097);
+
+        // Expected revert: ERC721: invalid token ID
+
+        // upfront fee: 0 ether
+        // coll: 0 ether
+        // debt: 0 ether
+        // coll redist: 0 ether
+        // debt redist: 0 ether
+        // accrued interest: 0 ether
+        vm.prank(gabe);
+        handler.adjustTrove(0, uint8(AdjustedTroveProperties.both), 0 ether, true, 0 ether, false);
+
+        // Expected revert: BorrowerOps: Trove does not have active status
+
+        // batch: []
+        // liquidatable: []
+        vm.prank(hope);
+        handler.batchLiquidateTroves(0);
+
+        // Expected revert: TroveManager: Calldata address array must not be empty
+
+        // initial deposit: 0 ether
+        // compounded deposit: 0 ether
+        // yield gain: 0 ether
+        // coll gain: 0 ether
+        // stashed coll: 0 ether
+        vm.prank(hope);
+        handler.withdrawFromSP(3, 0 ether, true);
+
+        // Expected revert: StabilityPool: User must have a non-zero deposit
+
+        // upper hint: 910030357925706599779227635327256991071043935031835496317309045580501137596
+        // lower hint: 5367099133711769804941217402111576108035736495091864510656482702915891540584
+        // upfront fee: 0 ether
+        vm.prank(dana);
+        handler.adjustTroveInterestRate(3, 0.002666393566627752 ether, 7847, 70435);
+
+        // Expected revert: ERC721: invalid token ID
+
+        // upper hint: 13536707816115945274445152639204998904240288430085816120759684370747458632973
+        // lower hint: 31043029142677115247611143645140544890284207797318024896150045075920477918961
+        // upfront fee: 0 ether
+        vm.prank(adam);
+        handler.adjustTroveInterestRate(1, 0.189729080289350284 ether, 221143, 18771);
+
+        // batch: []
+        // liquidatable: []
+        vm.prank(eric);
+        handler.batchLiquidateTroves(2);
+
+        // Expected revert: TroveManager: Calldata address array must not be empty
+
+        // initial deposit: 0 ether
+        // compounded deposit: 0 ether
+        // yield gain: 0 ether
+        // coll gain: 0 ether
+        // stashed coll: 0 ether
+        vm.prank(fran);
+        handler.withdrawFromSP(1, 0 ether, true);
+
+        // Expected revert: StabilityPool: User must have a non-zero deposit
+
+        // upper hint: 85132265227373323920646982008700665285372487404100026353002862162415903746185
+        // lower hint: 0
+        // upfront fee: 0 ether
+        // coll: 0.000000000000000177 ether
+        // debt: 0.000000000000016878 ether
+        vm.prank(eric);
+        handler.openTrove(
+            3, 0.000000000000016878 ether, 2.100000000000003881 ether, 0.000000000000003564 ether, 1869881427, 1216
+        );
+
+        // Expected revert: BorrowerOps: Trove's debt must be greater than minimum
+
+        vm.prank(adam);
+        handler.warp(18_459);
+
+        // initial deposit: 0 ether
+        // compounded deposit: 0 ether
+        // yield gain: 0 ether
+        // coll gain: 0 ether
+        // stashed coll: 0 ether
+        vm.prank(hope);
+        handler.withdrawFromSP(1, 0 ether, false);
+
+        // Expected revert: StabilityPool: User must have a non-zero deposit
+
+        // initial deposit: 0 ether
+        // compounded deposit: 0 ether
+        // yield gain: 0 ether
+        // coll gain: 0 ether
+        // stashed coll: 0 ether
+        vm.prank(hope);
+        handler.withdrawFromSP(0, 0 ether, true);
+
+        // Expected revert: StabilityPool: User must have a non-zero deposit
+
+        // upper hint: 25023245989019577020304678245203235786251334281572637956179059632869372434080
+        // lower hint: 87903029871075914254377627908054574944891091886930582284385770809450030037083
+        // upfront fee: 0 ether
+        vm.prank(gabe);
+        handler.adjustTroveInterestRate(0, 0.000000000044489335 ether, 25021, 3);
+
+        // Expected revert: ERC721: invalid token ID
+
+        vm.prank(carl);
+        handler.addMeToLiquidationBatch();
+
+        // initial deposit: 0 ether
+        // compounded deposit: 0 ether
+        // yield gain: 0 ether
+        // coll gain: 0 ether
+        // stashed coll: 0 ether
+        vm.prank(hope);
+        handler.withdrawFromSP(2, 0 ether, false);
+
+        // Expected revert: StabilityPool: User must have a non-zero deposit
+
+        // batch: [carl]
+        // liquidatable: []
+        vm.prank(dana);
+        handler.batchLiquidateTroves(2);
+
+        // Expected revert: TroveManager: nothing to liquidate
+
+        // batch: []
+        // liquidatable: []
+        vm.prank(carl);
+        handler.batchLiquidateTroves(0);
+
+        // Expected revert: TroveManager: Calldata address array must not be empty
+
+        // batch: []
+        // liquidatable: []
+        vm.prank(dana);
+        handler.batchLiquidateTroves(0);
+
+        // Expected revert: TroveManager: Calldata address array must not be empty
+
+        // upper hint: 0
+        // lower hint: 98197216311439117187599629143273946693421604893830872388540787401495566614597
+        // upfront fee: 0 ether
+        vm.prank(adam);
+        handler.adjustTroveInterestRate(1, 0 ether, 904, 63306);
     }
 }
