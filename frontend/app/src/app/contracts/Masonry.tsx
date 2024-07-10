@@ -16,8 +16,9 @@ export function Masonry({
         columnGap: 40,
       })}
     >
-      {Children.map(children, child => (
+      {Children.map(children, (child, index) => (
         <div
+          key={index}
           className={css({
             breakInside: "avoid",
             marginBottom: 40,
