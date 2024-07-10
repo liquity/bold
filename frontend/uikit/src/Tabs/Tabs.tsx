@@ -231,7 +231,7 @@ function useKeyboardNavigation({
     return () => {
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [itemsLength, onSelect, selected]);
+  }, [isFocused, itemsLength, onSelect, selected]);
 }
 
 // Focuses the selected tab when the selection changes
@@ -252,5 +252,5 @@ function useFocusSelected({
       "[tabindex=\"0\"]",
     ) as HTMLElement;
     selectedButton?.focus();
-  }, [selected]);
+  }, [isFocused, container, selected]);
 }

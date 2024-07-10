@@ -40,9 +40,9 @@
     }
   },
   "scripts": {
-    "build": "pnpm panda-codegen && tsc && vite build",
+    "build": "pnpm panda-codegen && pnpm lint && tsc && vite build",
     "dev": "vite build --watch",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "pnpm oxlint ./src --import-plugin --react-perf-plugin --jsx-a11y-plugin --allow pedantic",
     "panda-codegen": "panda codegen --silent",
     "update-icons": "pnpm tsx scripts/update-icons.ts"
   },
@@ -54,26 +54,23 @@
     "ts-pattern": "^5.0.8"
   },
   "dependencies": {
-    "@floating-ui/react-dom": "^2.0.9",
+    "@floating-ui/react-dom": "^2.1.1",
     "focus-trap-react": "^10.2.3"
   },
   "devDependencies": {
     "@svgr/core": "^8.1.0",
     "@svgr/plugin-jsx": "^8.1.0",
     "@svgr/plugin-svgo": "^8.1.0",
-    "@types/react": "^18.2.66",
+    "@types/react": "^18.3.3",
     "@types/react-dom": "^18.2.22",
-    "@typescript-eslint/eslint-plugin": "^7.2.0",
-    "@typescript-eslint/parser": "^7.2.0",
-    "@vitejs/plugin-react-swc": "^3.5.0",
-    "dprint": "^0.45.0",
-    "eslint": "^8.57.0",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-react-refresh": "^0.4.6",
-    "tsx": "^4.7.1",
-    "typescript": "^5.4.5",
-    "vite": "^5.2.10",
-    "vite-plugin-dts": "^3.8.3",
-    "zx": "^7.2.3"
+    "@vitejs/plugin-react-swc": "^3.7.0",
+    "dprint": "^0.46.3",
+    "globals": "^15.6.0",
+    "oxlint": "^0.5.2",
+    "tsx": "^4.15.7",
+    "typescript": "^5.5.2",
+    "vite": "^5.3.2",
+    "vite-plugin-dts": "^3.9.1",
+    "zx": "^8.1.3"
   }
 }
