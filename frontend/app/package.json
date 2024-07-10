@@ -11,7 +11,7 @@
     "lint": "next lint",
     "panda-codegen": "panda codegen --silent",
     "test": "vitest",
-    "update-liquity-abis": "ts-node ./scripts/update-liquity-abis.ts"
+    "update-liquity-abis": "node --loader ts-node/esm ./scripts/update-liquity-abis.ts"
   },
   "dependencies": {
     "@liquity2/uikit": "workspace:*",

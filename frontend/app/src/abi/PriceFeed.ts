@@ -2,12 +2,6 @@
 // please do not edit it manually
 export const PriceFeed = [{
   "type": "function",
-  "name": "DECIMAL_PRECISION",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
   "name": "ETHUSD_TELLOR_REQ_ID",
   "inputs": [],
   "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
