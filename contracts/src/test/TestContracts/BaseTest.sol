@@ -40,7 +40,7 @@ contract BaseTest is TestAccounts {
     IInterestRouter mockInterestRouter;
     IERC20 collToken;
     HintHelpers hintHelpers;
-    IERC20 WETH; // used for gas compensation
+    IWETH WETH; // used for gas compensation
 
     // Structs for use in test where we need to bi-pass "stack-too-deep" errors
     struct ABCDEF {

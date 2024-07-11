@@ -3,14 +3,17 @@
 pragma solidity 0.8.18;
 
 import "./ILiquityBase.sol";
-import "./ITroveManager.sol";
+import "./IAddRemoveManagers.sol";
 import "./IPriceFeed.sol";
 import "./ISortedTroves.sol";
+import "./IWETH.sol";
 
-// Common interface for the Trove Manager.
-interface IBorrowerOperations is ILiquityBase {
-    function troveManager() external view returns (ITroveManager);
+// Common interface for the Borrower Operations.
+interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
     function sortedTroves() external view returns (ISortedTroves);
+    function collToken() external view returns (IERC20);
+    function boldToken() external view returns (IBoldToken);
+    function WETH() external view returns (IWETH);
 
     function setAddresses(
         address _activePoolAddress,
@@ -41,7 +44,7 @@ interface IBorrowerOperations is ILiquityBase {
 
     function repayBold(uint256 _troveId, uint256 _amount) external;
 
-    function closeTrove(uint256 _troveId) external;
+    function closeTrove(uint256 _troveId) external returns (uint256);
 
     function adjustTrove(
         uint256 _troveId,
@@ -68,11 +71,6 @@ interface IBorrowerOperations is ILiquityBase {
     function hasBeenShutDown() external view returns (bool);
     function shutdown() external;
     function shutdownFromOracleFailure(address _failedOracleAddr) external;
-
-    function setAddManager(uint256 _troveId, address _manager) external;
-    function setRemoveManager(uint256 _troveId, address _manager) external;
-    function addManagerOf(uint256 _troveId) external view returns (address);
-    function removeManagerOf(uint256 _troveId) external view returns (address);
 
     function adjustTroveInterestRate(
         uint256 _troveId,
