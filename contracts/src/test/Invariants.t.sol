@@ -13,7 +13,7 @@ import {_deployAndConnectContracts, LiquityContracts, TroveManagerParams} from "
 import {StringFormatting} from "./Utils/StringFormatting.sol";
 import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
 import {BaseMultiCollateralTest} from "./TestContracts/BaseMultiCollateralTest.sol";
-import {InvariantsTestHandler} from "./TestContracts/InvariantsTestHandler.sol";
+import {AdjustedTroveProperties, InvariantsTestHandler} from "./TestContracts/InvariantsTestHandler.sol";
 
 struct BatchIdSet {
     mapping(BatchId => bool) _has;
@@ -84,7 +84,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
     }
 
     // Not a real invariant, but we want to make sure our actors always have empty wallets before a handler call
-    function invariant_FundsAreSwept() external {
+    function invariant_FundsAreSwept() external view {
         for (uint256 i = 0; i < actors.length; ++i) {
             address actor = actors[i].account;
 
@@ -102,7 +102,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_SystemVariablesMatchGhostVariables() external {
+    function invariant_SystemVariablesMatchGhostVariables() external view {
         for (uint256 i = 0; i < branches.length; ++i) {
             LiquityContracts memory c = branches[i];
 
@@ -134,7 +134,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_AllBoldBackedByTroveDebt() external {
+    function invariant_AllBoldBackedByTroveDebt() external view {
         uint256 totalBold = boldToken.totalSupply();
         uint256 totalDebt = 0;
         uint256 totalPendingInterest = 0;
@@ -155,7 +155,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         );
     }
 
-    function invariant_AllCollClaimable() external {
+    function invariant_AllCollClaimable() external view {
         for (uint256 j = 0; j < branches.length; ++j) {
             ITroveManager troveManager = branches[j].troveManager;
             uint256 numTroves = troveManager.getTroveIdsCount();
@@ -176,7 +176,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_StabilityPool_AllBoldClaimable_ExceptYieldReceivedWhileEmpty() external {
+    function invariant_StabilityPool_AllBoldClaimable_ExceptYieldReceivedWhileEmpty() external view {
         for (uint256 j = 0; j < branches.length; ++j) {
             IStabilityPool stabilityPool = branches[j].stabilityPool;
 
@@ -215,7 +215,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_StabilityPool_AllCollClaimable() external {
+    function invariant_StabilityPool_AllCollClaimable() external view {
         for (uint256 j = 0; j < branches.length; ++j) {
             IStabilityPool stabilityPool = branches[j].stabilityPool;
             uint256 stabilityPoolEth = stabilityPool.getCollBalance();
