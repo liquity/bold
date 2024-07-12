@@ -20,17 +20,14 @@ contract AddRemoveManagers is IAddRemoveManagers {
     mapping(uint256 => address) public addManagerOf;
 
     /*
-     * Mapping from TroveId to granted address for operations that "withdraw" money from the trove (withdraw collateral, borrow).
-     * Useful for instance for cold/hot wallet setups.
-     * If its value is zero address, only owner is allowed to do those operations.
-     * Otherwise, only the address in this mapping (and the trove owner) will be allowed.
+     * Mapping from TroveId to granted addresses for operations that "withdraw" money from the trove (withdraw collateral, borrow),
+     * and for each of those addresses another mapping to the receiver of those withdrawn funds.
+     * Useful for instance for cold/hot wallet setups or for automations.
+     * Only the address in this mapping, if any, and the trove owner, be allowed.
      * Therefore, by default this permission is restricted to no one.
-     * Trove owner be set in this mapping is equivalent to zero address.
+     * The receiver can never be zero.
      */
-    mapping(uint256 => address) public removeManagerOf;
-
-    // Same as removeManagerOf, but the manager instead of the owner would receive the funds.
-    mapping(uint256 => address) public receiveManagerOf;
+    mapping(uint256 => mapping(address => address)) public removeManagerReceiverOf;
 
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
 
@@ -45,13 +42,26 @@ contract AddRemoveManagers is IAddRemoveManagers {
     }
 
     function setRemoveManager(uint256 _troveId, address _manager) external {
-        _requireSenderIsOwner(troveManager, _troveId);
-        removeManagerOf[_troveId] = _manager;
+        setRemoveManager(_troveId, _manager, troveManager.ownerOf(_troveId));
     }
 
-    function setReceiveManager(uint256 _troveId, address _manager) external {
+    function setRemoveManager(uint256 _troveId, address _manager, address _receiver) public {
         _requireSenderIsOwner(troveManager, _troveId);
-        receiveManagerOf[_troveId] = _manager;
+        _requireNonZeroManager(_manager);
+        _setRemoveManager(_troveId, _manager, _receiver);
+    }
+
+    function _setRemoveManager(uint256 _troveId, address _manager, address _receiver) internal {
+        _requireNonZeroReceiver(_receiver);
+        removeManagerReceiverOf[_troveId][_manager] = _receiver;
+    }
+
+    function _requireNonZeroManager(address _manager) internal pure {
+        require(_manager != address(0), "BorrowerOps: manager cannot be zero");
+    }
+
+    function _requireNonZeroReceiver(address _receiver) internal pure {
+        require(_receiver != address(0), "BorrowerOps: receiver cannot be zero");
     }
 
     function _requireSenderIsOwner(ITroveManager _troveManager, uint256 _troveId) internal view {
@@ -67,13 +77,14 @@ contract AddRemoveManagers is IAddRemoveManagers {
     }
 
     function _requireSenderIsOwnerOrRemoveManager(uint256 _troveId, address _owner) internal view returns(address) {
-        if (msg.sender == receiveManagerOf[_troveId]) {
-            return msg.sender;
+        address receiver = removeManagerReceiverOf[_troveId][msg.sender];
+        if (receiver == address(0)) {
+            require(
+                msg.sender == _owner,
+                "BorrowerOps: sender is neither Trove owner nor remove-manager"
+            );
+            return _owner;
         }
-        require(
-            msg.sender == _owner || msg.sender == removeManagerOf[_troveId],
-            "BorrowerOps: sender is neither Trove owner nor remove-manager"
-        );
-        return _owner;
+        return receiver;
     }
 }

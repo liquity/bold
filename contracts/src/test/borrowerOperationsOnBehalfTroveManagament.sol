@@ -39,11 +39,8 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         assertEq(borrowerOperations.addManagerOf(ATroveId), ZERO_ADDRESS);
     }
 
-    function testRemoveAddManager() public {
+    function testSetRemoveAddManager() public {
         uint256 ATroveId = openTroveNoHints100pct(A, 100 ether, 10000e18, 1e17);
-
-        // Check it’s initially empty
-        assertEq(borrowerOperations.removeManagerOf(ATroveId), ZERO_ADDRESS);
 
         // Set remove manager
         vm.startPrank(A);
@@ -51,7 +48,31 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         vm.stopPrank();
 
         // Check it’s properly set
-        assertEq(borrowerOperations.removeManagerOf(ATroveId), B);
+        assertEq(borrowerOperations.removeManagerReceiverOf(ATroveId, B), A);
+    }
+
+    function testSetRemoveAddManagerWithRemoveAsReceiver() public {
+        uint256 ATroveId = openTroveNoHints100pct(A, 100 ether, 10000e18, 1e17);
+
+        // Set remove manager
+        vm.startPrank(A);
+        borrowerOperations.setRemoveManager(ATroveId, B, B);
+        vm.stopPrank();
+
+        // Check it’s properly set
+        assertEq(borrowerOperations.removeManagerReceiverOf(ATroveId, B), B);
+    }
+
+    function testSetRemoveAddManagerWithOtherAsReceiver() public {
+        uint256 ATroveId = openTroveNoHints100pct(A, 100 ether, 10000e18, 1e17);
+
+        // Set remove manager
+        vm.startPrank(A);
+        borrowerOperations.setRemoveManager(ATroveId, B, C);
+        vm.stopPrank();
+
+        // Check it’s properly set
+        assertEq(borrowerOperations.removeManagerReceiverOf(ATroveId, B), C);
     }
 
     function testSetRemoveManagerFailsFromNonOwner() public {
@@ -64,7 +85,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         vm.stopPrank();
 
         // Check it’s still unset
-        assertEq(borrowerOperations.removeManagerOf(ATroveId), ZERO_ADDRESS);
+        assertEq(borrowerOperations.removeManagerReceiverOf(ATroveId, B), ZERO_ADDRESS);
 
         vm.startPrank(C);
         vm.expectRevert("BorrowerOps: sender is not Trove owner");
@@ -72,7 +93,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         vm.stopPrank();
 
         // Check it’s still unset
-        assertEq(borrowerOperations.removeManagerOf(ATroveId), ZERO_ADDRESS);
+        assertEq(borrowerOperations.removeManagerReceiverOf(ATroveId, B), ZERO_ADDRESS);
     }
 
     function testAddCollWithAddManager() public {
@@ -178,8 +199,6 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
     function testWithdrawCollWithoutRemoveManager() public {
         uint256 ATroveId = openTroveNoHints100pct(A, 100 ether, 10000e18, 1e17);
-
-        assertEq(borrowerOperations.removeManagerOf(ATroveId), address(0));
 
         // Owner can withdraw coll
         vm.startPrank(A);
@@ -361,7 +380,6 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         vm.stopPrank();
 
         uint256 AInitialCollBalance = collToken.balanceOf(A);
-        uint256 initialColl = troveManager.getTroveColl(ATroveId);
 
         // Owner can close trove
         deal(address(boldToken), A, troveManager.getTroveEntireDebt(ATroveId));
@@ -420,8 +438,6 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         // open a second trove so that we don’t try to close the last one
         openTroveNoHints100pct(D, 100 ether, 10000e18, 1e17);
 
-        assertEq(borrowerOperations.removeManagerOf(ATroveId), address(0));
-
         uint256 BInitialCollBalance = collToken.balanceOf(B);
 
         // Other can’t close trove
@@ -444,7 +460,6 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Owner can close trove
         uint256 AInitialCollBalance = collToken.balanceOf(A);
-        uint256 initialColl = troveManager.getTroveColl(ATroveId);
 
         deal(address(boldToken), A, troveManager.getTroveEntireDebt(ATroveId));
         vm.startPrank(A);

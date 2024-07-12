@@ -53,7 +53,7 @@ contract WETHZapper is AddRemoveManagers {
         // Add this contract as add/receive manager to be able to fully adjust trove,
         // while keeping the same management functionality
         borrowerOperationsCached.setAddManager(troveId, address(this));
-        borrowerOperationsCached.setReceiveManager(troveId, address(this));
+        borrowerOperationsCached.setRemoveManager(troveId, address(this), address(this));
 
         // Send trove to owner
         troveManager.transferFrom(address(this), _owner, troveId);
