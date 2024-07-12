@@ -179,6 +179,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 oldTCR;
         int256 collDelta;
         int256 debtDelta;
+        int256 $collDelta;
         uint256 upfrontFee;
     }
 
@@ -608,8 +609,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 v.c.troveManager.getTroveAnnualInterestRate(v.troveId), interestRate, 18, "Wrong interest rate"
             );
             assertEq(
-                uint8(v.c.troveManager.getTroveStatus(v.troveId)),
-                uint8(ITroveManager.Status.active),
+                v.c.troveManager.getTroveStatus(v.troveId).toString(),
+                ITroveManager.Status.active.toString(),
                 "Status should have been set to active"
             );
             assertTrue(v.c.sortedTroves.contains(v.troveId), "Trove should have been inserted into SortedTroves");
@@ -683,6 +684,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         v.collDelta = isCollIncrease ? int256(collChange) : -int256(collChange);
         v.debtDelta = isDebtIncrease ? int256(debtChange) : -int256(debtChange);
+        v.$collDelta = v.collDelta * int256(v.c.priceFeed.getPrice()) / int256(DECIMAL_PRECISION);
         v.upfrontFee = hintHelpers.predictAdjustTroveUpfrontFee(i, v.troveId, isDebtIncrease ? debtChange : 0);
 
         info("upfront fee: ", v.upfrontFee.decimal());
@@ -722,17 +724,23 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 "Should have failed as Trove was not active"
             );
 
-            assertGeDecimal(v.collDelta, -int256(v.t.entireColl), 18, "Should have failed as coll decrease > coll");
+            if (v.upfrontFee > 0) assertGtDecimal(v.debtDelta, 0, 18, "Only debt increase should incur upfront fee");
+
+            assertLeDecimal(-v.collDelta, int256(v.t.entireColl), 18, "Should have failed as coll decrease > coll");
             uint256 newColl = v.t.entireColl.add(v.collDelta);
 
-            if (v.upfrontFee > 0) assertGtDecimal(v.debtDelta, 0, 18, "Only debt increase should incur upfront fee");
-            assertGeDecimal(v.debtDelta, -int256(v.t.entireDebt), 18, "Should have failed as debt decrease > debt");
+            assertLeDecimal(-v.debtDelta, int256(v.t.entireDebt), 18, "Should have failed as debt decrease > debt");
             uint256 newDebt = (v.t.entireDebt + v.upfrontFee).add(v.debtDelta);
 
-            assertGeDecimal(_ICR(i, v.troveId), _MCR(i), 18, "Should have failed as new ICR < MCR");
-            if (v.oldTCR >= CCR) assertGeDecimal(_TCR(i), CCR, 18, "Should have failed as new TCR < CCR");
-            if (v.oldTCR < CCR) assertLeDecimal(v.debtDelta, 0, 18, "Borrowing should have failed as TCR < CCR");
             assertGeDecimal(newDebt, MIN_DEBT, 28, "Should have failed as new debt < MIN_DEBT");
+            assertGeDecimal(_ICR(i, v.troveId), _MCR(i), 18, "Should have failed as new ICR < MCR");
+
+            if (v.oldTCR >= CCR) {
+                assertGeDecimal(_TCR(i), CCR, 18, "Should have failed as new TCR < CCR");
+            } else {
+                assertLeDecimal(v.debtDelta, 0, 18, "Borrowing should have failed as TCR < CCR");
+                assertGeDecimal(-v.debtDelta, -v.$collDelta, 18, "Repayment < withdrawal when TCR < CCR");
+            }
 
             // Effects (Trove)
             assertEqDecimal(v.c.troveManager.getTroveEntireColl(v.troveId), newColl, 18, "Wrong coll");
@@ -770,6 +778,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertGtDecimal(-v.collDelta, int256(v.t.entireColl), 18, "Shouldn't have failed as withdrawal <= coll");
             } else if (reason.equals("BorrowerOps: Amount repaid must not be larger than the Trove's debt")) {
                 assertGtDecimal(-v.debtDelta, int256(v.t.entireDebt), 18, "Shouldn't have failed as repayment <= debt");
+            } else if (reason.equals("BorrowerOps: Trove's debt must be greater than minimum")) {
+                uint256 newDebt = (v.t.entireDebt + v.upfrontFee).add(v.debtDelta);
+                assertLtDecimal(newDebt, MIN_DEBT, 18, "Shouldn't have failed as new debt >= MIN_DEBT");
+                info("New debt would have been: ", newDebt.decimal());
             } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
                 uint256 newICR = _ICR(i, v.troveId, v.collDelta, v.debtDelta, v.upfrontFee);
                 assertLtDecimal(newICR, _MCR(i), 18, "Shouldn't have failed as new ICR >= MCR");
@@ -783,23 +795,33 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertLtDecimal(v.oldTCR, CCR, 18, "Shouldn't have failed as TCR >= CCR");
                 assertGtDecimal(v.debtDelta, 0, 18, "Shouldn't have failed as there was no borrowing");
             } else if (reason.equals("BorrowerOps: below CT, repayment must be >= coll withdrawal")) {
-                uint256 price = v.c.priceFeed.getPrice();
                 assertLtDecimal(v.oldTCR, CCR, 18, "Shouldn't have failed as TCR >= CCR");
-                assertLtDecimal(
-                    -v.debtDelta,
-                    -v.collDelta * int256(price) / int256(DECIMAL_PRECISION),
-                    18,
-                    "Shouldn't have failed as repayment >= withdrawal"
-                );
-            } else if (reason.equals("BorrowerOps: Trove's debt must be greater than minimum")) {
-                uint256 newDebt = (v.t.entireDebt + v.upfrontFee).add(v.debtDelta);
-                assertLtDecimal(newDebt, MIN_DEBT, 18, "Shouldn't have failed as new debt >= MIN_DEBT");
-                info("New debt would have been: ", newDebt.decimal());
+                assertLtDecimal(-v.debtDelta, -v.$collDelta, 18, "Shouldn't have failed as repayment >= withdrawal");
             } else {
                 revert(reason);
             }
 
             info("Expected revert: ", reason);
+            _log();
+
+            // Cleanup
+            if (isCollIncrease) _sweepCollAndUnapprove(i, msg.sender, collChange, address(v.c.borrowerOperations));
+            if (!isDebtIncrease) _sweepBold(msg.sender, debtChange);
+        } catch Panic(uint256 code) {
+            // TODO: instead of checking for debtDecrease <= entireDebt in adjustTrove,
+            // check debtDecrease <= entireDebt - MIN_DEBT to avoid underflow
+            assertEq(code, 0x11, "Unexpected panic code");
+
+            int256 newActiveDebt = int256(activeDebt[i]);
+            newActiveDebt += int256(getPendingInterest(i));
+            newActiveDebt += int256(v.t.redistBoldDebtGain);
+            newActiveDebt -= int256(v.t.entireDebt);
+
+            assertLtDecimal(newActiveDebt, 0, 18, "Unexpected underflow or overflow");
+            assertLtDecimal(-newActiveDebt, 100, 18, "Unexpectedly large underflow");
+
+            info("Expected arithmetic underflow when trying to adjust debt of last Trove to 0");
+            info("New active debt would have been: ", newActiveDebt.decimal());
             _log();
 
             // Cleanup
@@ -902,6 +924,102 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
     }
 
+    function closeTrove(uint256 i) external {
+        i = _bound(i, 0, branches.length - 1);
+
+        LiquityContracts memory c = branches[i];
+        uint256 troveId = troveIdOf(msg.sender);
+        LatestTroveData memory t = c.troveManager.getLatestTroveData(troveId);
+        ITroveManager.Status status = c.troveManager.getTroveStatus(troveId);
+
+        logCall("closeTrove", i.toString());
+
+        uint256 dealt = Math.min(t.entireDebt, handlerBold);
+        _dealBold(msg.sender, dealt);
+
+        vm.prank(msg.sender);
+        try c.borrowerOperations.closeTrove(troveId) {
+            // Preconditions
+            assertTrue(
+                status == ITroveManager.Status.active || status == ITroveManager.Status.unredeemable,
+                "Should have failed as Trove wasn't open"
+            );
+            assertGt(numTroves[i], 1, "Should have failed to close last Trove in the system");
+            assertGeDecimal(_TCR(i), CCR, 18, "Should have failed as new TCR < CCR");
+
+            // Effects (Trove)
+            assertEqDecimal(c.troveManager.getTroveEntireColl(troveId), 0, 18, "Coll should have been zeroed");
+            assertEqDecimal(c.troveManager.getTroveEntireDebt(troveId), 0, 18, "Debt should have been zeroed");
+            assertEq(
+                c.troveManager.getTroveStatus(troveId).toString(),
+                ITroveManager.Status.closedByOwner.toString(),
+                "Status should have been set to closedByOwner"
+            );
+            assertFalse(c.sortedTroves.contains(troveId), "Trove should have been removed from SortedTroves");
+
+            // Effects (system)
+            numTroves[i] -= 1;
+
+            activeColl[i] += t.redistCollGain;
+            defaultColl[i] -= t.redistCollGain;
+
+            activeDebt[i] += t.redistBoldDebtGain;
+            defaultDebt[i] -= t.redistBoldDebtGain;
+
+            _mintYield(i, 0);
+            activeColl[i] -= t.entireColl;
+            activeDebt[i] -= t.entireDebt;
+
+            interestAccrual[i] -= t.recordedDebt * t.annualInterestRate;
+
+            // Cleanup
+            _sweepColl(i, msg.sender, t.entireColl);
+            _sweepWETH(msg.sender, ETH_GAS_COMPENSATION);
+        } catch Error(string memory reason) {
+            // Justify failures
+            if (reason.equals("ERC721: invalid token ID")) {
+                assertTrue(
+                    status != ITroveManager.Status.active && status != ITroveManager.Status.unredeemable,
+                    string.concat("Trove with ", status.toString(), " status should have an NFT")
+                );
+            } else if (reason.equals("BorrowerOps: Caller doesnt have enough Bold to make repayment")) {
+                assertLtDecimal(dealt, t.entireDebt, 18, "Shouldn't have failed as caller had enough Bold");
+            } else if (reason.equals("TroveManager: Only one trove in the system")) {
+                assertEq(numTroves[i], 1, "Shouldn't have failed as there was at least one Trove left in the system");
+            } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
+                uint256 newTCR = _TCR(i, -int256(t.entireColl), -int256(t.entireDebt), 0);
+                assertLtDecimal(newTCR, CCR, 18, "Shouldn't have failed as new TCR >= CCR");
+                info("New TCR would have been: ", newTCR.decimal());
+            } else {
+                revert(reason);
+            }
+
+            info("Expected revert: ", reason);
+            _log();
+
+            // Cleanup
+            _sweepBold(msg.sender, dealt);
+        } catch Panic(uint256 code) {
+            // TODO: check for this being the last Trove earlier in closeTrove, so we don't run into underflow
+            assertEq(code, 0x11, "Unexpected panic code");
+
+            int256 newActiveDebt = int256(activeDebt[i]);
+            newActiveDebt += int256(getPendingInterest(i));
+            newActiveDebt += int256(t.redistBoldDebtGain);
+            newActiveDebt -= int256(t.entireDebt);
+
+            assertLtDecimal(newActiveDebt, 0, 18, "Unexpected underflow or overflow");
+            assertLtDecimal(-newActiveDebt, 100, 18, "Unexpectedly large underflow");
+
+            info("Expected arithmetic underflow when trying to close last Trove");
+            info("New active debt would have been: ", newActiveDebt.decimal());
+            _log();
+
+            // Cleanup
+            _sweepBold(msg.sender, dealt);
+        }
+    }
+
     function addMeToLiquidationBatch() external {
         logCall("addMeToLiquidationBatch");
         _addToLiquidationBatch(msg.sender);
@@ -927,7 +1045,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Preconditions
             assertGt(liqBatch.length, 0, "Should have failed as batch was empty");
             assertGt(liqBatchLiquidatable.length, 0, "Should have failed as there was nothing to liquidate");
-            assertGt(numTroves[i], 1, "Should have failed as there was only one Trove in the system");
+            assertGt(
+                numTroves[i] - liqBatchLiquidatable.length,
+                0,
+                "Should have failed to liquidate last Trove in the system"
+            );
 
             // Effects (Troves)
             for (uint256 j = 0; j < liqBatchLiquidatable.length; ++j) {
@@ -935,8 +1057,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertEqDecimal(c.troveManager.getTroveEntireColl(troveId), 0, 18, "Coll should have been zeroed");
                 assertEqDecimal(c.troveManager.getTroveEntireDebt(troveId), 0, 18, "Debt should have been zeroed");
                 assertEq(
-                    uint8(c.troveManager.getTroveStatus(troveId)),
-                    uint8(ITroveManager.Status.closedByLiquidation),
+                    c.troveManager.getTroveStatus(troveId).toString(),
+                    ITroveManager.Status.closedByLiquidation.toString(),
                     "Status should have been set to closedByLiquidation"
                 );
                 assertFalse(c.sortedTroves.contains(troveId), "Trove should have been removed from SortedTroves");
