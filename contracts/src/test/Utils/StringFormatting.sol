@@ -17,6 +17,10 @@ library StringFormatting {
     uint256 constant DECIMALS = 18;
     uint256 constant ONE = 10 ** DECIMALS;
 
+    function equals(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(bytes(a)) == keccak256(bytes(b));
+    }
+
     function toString(bytes memory str) internal pure returns (string memory) {
         return string(str);
     }
