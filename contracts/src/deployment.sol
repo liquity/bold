@@ -181,19 +181,20 @@ function _deployAndConnectContractsMultiColl(TroveManagerParams[] memory troveMa
         contractsArray[i].troveManager.setCollateralRegistry(address(collateralRegistry));
     }
 }
-// Creates individual PriceFeed contracts based on oracle addresses. 
+// Creates individual PriceFeed contracts based on oracle addresses.
 // Still uses mock collaterals rather than real mainnet WETH and LST addresses.
+
 function deployAndConnectContractsMainnet(
     ExternalAddresses memory externalAddresses,
     TroveManagerParams[] memory troveManagerParamsArray,
     OracleParams memory oracleParams
-) 
+)
     returns (
-        LiquityContracts[] memory contractsArray, 
+        LiquityContracts[] memory contractsArray,
         MockCollaterals memory mockCollaterals,
-        ICollateralRegistry collateralRegistry, 
+        ICollateralRegistry collateralRegistry,
         IBoldToken boldToken
-    ) 
+    )
 {
     uint256 numCollaterals = 5;
     contractsArray = new LiquityContracts[](numCollaterals);
@@ -201,32 +202,32 @@ function deployAndConnectContractsMainnet(
     IPriceFeed[] memory priceFeeds = new IPriceFeed[](numCollaterals);
     IERC20[] memory collaterals = new IERC20[](numCollaterals);
 
-    priceFeeds[0] = new WETHPriceFeed(
-        externalAddresses.ETHOracle, 
-        oracleParams.ethUsdStalenessThreshold);
+    priceFeeds[0] = new WETHPriceFeed(externalAddresses.ETHOracle, oracleParams.ethUsdStalenessThreshold);
 
     priceFeeds[1] = new CompositePriceFeed(
         externalAddresses.ETHOracle,
         externalAddresses.RETHOracle,
         oracleParams.ethUsdStalenessThreshold,
-        oracleParams.rEthEthStalenessThreshold); 
+        oracleParams.rEthEthStalenessThreshold
+    );
 
     priceFeeds[2] = new WSTETHPriceFeed(
-        externalAddresses.STETHOracle,
-        oracleParams.stEthUsdStalenessThreshold,
-        externalAddresses.WSTETHToken);
+        externalAddresses.STETHOracle, oracleParams.stEthUsdStalenessThreshold, externalAddresses.WSTETHToken
+    );
 
     priceFeeds[3] = new CompositePriceFeed(
         externalAddresses.ETHOracle,
         externalAddresses.ETHXOracle,
         oracleParams.ethUsdStalenessThreshold,
-        oracleParams.ethXEthStalenessThreshold);
+        oracleParams.ethXEthStalenessThreshold
+    );
 
     priceFeeds[4] = new CompositePriceFeed(
         externalAddresses.ETHOracle,
         externalAddresses.OSETHOracle,
         oracleParams.ethUsdStalenessThreshold,
-        oracleParams.osEthEthStalenessThreshold); 
+        oracleParams.osEthEthStalenessThreshold
+    );
 
     boldToken = new BoldToken();
 
@@ -238,7 +239,7 @@ function deployAndConnectContractsMainnet(
         1 days //         _tapPeriod
     );
     collaterals[0] = mockCollaterals.WETH;
-   
+
     mockCollaterals.RETH = new ERC20Faucet(
         "Mock rETH", // _name
         "mockRETH", // _symbol
@@ -248,7 +249,7 @@ function deployAndConnectContractsMainnet(
     collaterals[1] = mockCollaterals.RETH;
 
     mockCollaterals.WSTETH = new ERC20Faucet(
-       "Mock wstETH", // _name
+        "Mock wstETH", // _name
         "mockWSTETH", // _symbol
         100 ether, //     _tapAmount
         1 days //         _tapPeriod
@@ -256,7 +257,7 @@ function deployAndConnectContractsMainnet(
     collaterals[2] = mockCollaterals.WSTETH;
 
     mockCollaterals.ETHX = new ERC20Faucet(
-       "Mock ETHX", // _name
+        "Mock ETHX", // _name
         "mockETHX", // _symbol
         100 ether, //     _tapAmount
         1 days //         _tapPeriod
@@ -264,7 +265,7 @@ function deployAndConnectContractsMainnet(
     collaterals[3] = mockCollaterals.ETHX;
 
     mockCollaterals.OSETH = new ERC20Faucet(
-       "Mock OSETH", // _name
+        "Mock OSETH", // _name
         "mockOSETH", // _symbol
         100 ether, //     _tapAmount
         1 days //         _tapPeriod
@@ -274,11 +275,7 @@ function deployAndConnectContractsMainnet(
     // Deploy each set of core contracts
     for (uint256 i = 0; i < numCollaterals; i++) {
         contractsArray[i] = _deployAndConnectCollateralContractsMainnet(
-            collaterals[i], 
-            boldToken, 
-            priceFeeds[i], 
-            troveManagerParamsArray[i],
-            mockCollaterals.WETH
+            collaterals[i], boldToken, priceFeeds[i], troveManagerParamsArray[i], mockCollaterals.WETH
         );
         troveManagers[i] = contractsArray[i].troveManager;
     }
@@ -286,12 +283,12 @@ function deployAndConnectContractsMainnet(
     // Deploy registry and register the TMs
     collateralRegistry = new CollateralRegistry(boldToken, collaterals, troveManagers);
     boldToken.setCollateralRegistry(address(collateralRegistry));
-    
+
     // Set registry in TroveManagers
     for (uint256 i = 0; i < numCollaterals; i++) {
         contractsArray[i].troveManager.setCollateralRegistry(address(collateralRegistry));
     }
-} 
+}
 
 function _deployAndConnectCollateralContractsDev(
     IERC20 _collToken,
@@ -306,7 +303,7 @@ function _deployAndConnectCollateralContractsDev(
 
     // Deploy all contracts, using testers for TM and PriceFeed
     contracts.activePool = new ActivePool(address(_collToken));
-    contracts.troveManager = new TroveManagerTester(  // Tester
+    contracts.troveManager = new TroveManagerTester( // Tester
         troveManagerParams.MCR,
         troveManagerParams.SCR,
         troveManagerParams.LIQUIDATION_PENALTY_SP,
@@ -335,12 +332,12 @@ function _deployAndConnectCollateralContractsDev(
     // Hacky: copy the contracts to a new ContractsDev struct which has the right types for the tester contracts TM and PriceFeed.
     // This should very probably be refactored.
     contractsDev.troveManager = ITroveManagerTester(address(contracts.troveManager));
-    contractsDev.priceFeed = IPriceFeedTestnet(address(contracts.priceFeed)); 
+    contractsDev.priceFeed = IPriceFeedTestnet(address(contracts.priceFeed));
     contractsDev.activePool = contracts.activePool;
     contractsDev.borrowerOperations = contracts.borrowerOperations;
-    contractsDev.collSurplusPool =  contracts.collSurplusPool;
+    contractsDev.collSurplusPool = contracts.collSurplusPool;
     contractsDev.defaultPool = contracts.defaultPool;
-    contractsDev.gasPool =  contracts.gasPool;
+    contractsDev.gasPool = contracts.gasPool;
     contractsDev.sortedTroves = contracts.sortedTroves;
     contractsDev.stabilityPool = contracts.stabilityPool;
     contractsDev.interestRouter = contracts.interestRouter;
@@ -353,9 +350,8 @@ function _deployAndConnectCollateralContractsMainnet(
     TroveManagerParams memory _troveManagerParams,
     IERC20 _weth
 ) returns (LiquityContracts memory contracts) {
-
     contracts.activePool = new ActivePool(address(_collateralToken));
-    contracts.troveManager = new TroveManager(  
+    contracts.troveManager = new TroveManager(
         _troveManagerParams.MCR,
         _troveManagerParams.SCR,
         _troveManagerParams.LIQUIDATION_PENALTY_SP,
@@ -365,7 +361,7 @@ function _deployAndConnectCollateralContractsMainnet(
     contracts.borrowerOperations = new BorrowerOperations(_collateralToken, contracts.troveManager, _weth);
     contracts.collSurplusPool = new CollSurplusPool(address(_collateralToken));
     contracts.defaultPool = new DefaultPool(address(_collateralToken));
-    contracts.gasPool =  new GasPool(_weth, contracts.borrowerOperations, contracts.troveManager);
+    contracts.gasPool = new GasPool(_weth, contracts.borrowerOperations, contracts.troveManager);
     contracts.priceFeed = _priceFeed;
     contracts.sortedTroves = new SortedTroves();
     contracts.stabilityPool = new StabilityPool(address(_collateralToken));
