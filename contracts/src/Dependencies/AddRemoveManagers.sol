@@ -38,6 +38,10 @@ contract AddRemoveManagers is IAddRemoveManagers {
 
     function setAddManager(uint256 _troveId, address _manager) external {
         _requireSenderIsOwner(troveManager, _troveId);
+        _setAddManager(_troveId, _manager);
+    }
+
+    function _setAddManager(uint256 _troveId, address _manager) internal {
         addManagerOf[_troveId] = _manager;
     }
 

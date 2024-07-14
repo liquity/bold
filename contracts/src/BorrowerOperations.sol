@@ -54,6 +54,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
     }
 
     struct LocalVariables_openTrove {
+        ContractsCacheTMAPBT contractsCache;
+        uint256 troveId;
         TroveChange troveChange;
         uint256 price;
         uint256 avgInterestRate;
@@ -141,10 +143,26 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         uint256 _annualInterestRate,
         uint256 _maxUpfrontFee
     ) external override returns (uint256) {
+        return openTrove(_owner, _ownerIndex, _collAmount, _boldAmount, _upperHint, _lowerHint, _annualInterestRate, _maxUpfrontFee, address(0), address(0), address(0));
+    }
+
+    function openTrove(
+        address _owner,
+        uint256 _ownerIndex,
+        uint256 _collAmount,
+        uint256 _boldAmount,
+        uint256 _upperHint,
+        uint256 _lowerHint,
+        uint256 _annualInterestRate,
+        uint256 _maxUpfrontFee,
+        address _addManager,
+        address _removeManager,
+        address _receiver
+    ) public override returns (uint256) {
         _requireIsNotShutDown();
 
-        ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         LocalVariables_openTrove memory vars;
+        vars.contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
 
         vars.price = priceFeed.fetchPrice();
 
@@ -153,8 +171,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         _requireNotBelowCriticalThreshold(vars.price);
         _requireValidAnnualInterestRate(_annualInterestRate);
 
-        uint256 troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
-        _requireTroveIsNotOpen(contractsCache.troveManager, troveId);
+        vars.troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
+        _requireTroveIsNotOpen(vars.contractsCache.troveManager, vars.troveId);
 
         vars.troveChange.collIncrease = _collAmount;
         vars.troveChange.debtIncrease = _boldAmount;
@@ -162,7 +180,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         // For simplicity, we ignore the fee when calculating the approx. interest rate
         vars.troveChange.newWeightedRecordedDebt = vars.troveChange.debtIncrease * _annualInterestRate;
 
-        vars.avgInterestRate = contractsCache.activePool.getNewApproxAvgInterestRateFromTroveChange(vars.troveChange);
+        vars.avgInterestRate = vars.contractsCache.activePool.getNewApproxAvgInterestRateFromTroveChange(vars.troveChange);
         vars.troveChange.upfrontFee = _calcUpfrontFee(vars.troveChange.debtIncrease, vars.avgInterestRate);
         _requireUserAcceptsUpfrontFee(vars.troveChange.upfrontFee, _maxUpfrontFee);
 
@@ -181,22 +199,30 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
 
         // --- Effects & interactions ---
 
-        contractsCache.activePool.mintAggInterestAndAccountForTroveChange(vars.troveChange);
-        sortedTroves.insert(troveId, _annualInterestRate, _upperHint, _lowerHint);
+        // Set add/remove managers
+        if (_addManager != address(0)) {
+            _setAddManager(vars.troveId, _addManager);
+        }
+        if (_removeManager != address(0)) {
+            _setRemoveManager(vars.troveId, _removeManager, _receiver);
+        }
+
+        vars.contractsCache.activePool.mintAggInterestAndAccountForTroveChange(vars.troveChange);
+        sortedTroves.insert(vars.troveId, _annualInterestRate, _upperHint, _lowerHint);
 
         // Set the stored Trove properties and mint the NFT
-        contractsCache.troveManager.onOpenTrove(
-            _owner, troveId, _collAmount, vars.entireDebt, _annualInterestRate, vars.troveChange.upfrontFee
+        vars.contractsCache.troveManager.onOpenTrove(
+            _owner, vars.troveId, _collAmount, vars.entireDebt, _annualInterestRate, vars.troveChange.upfrontFee
         );
 
         // Pull coll tokens from sender and move them to the Active Pool
-        _pullCollAndSendToActivePool(contractsCache.activePool, _collAmount);
+        _pullCollAndSendToActivePool(vars.contractsCache.activePool, _collAmount);
 
         // Mint the requested _boldAmount to the borrower and mint the gas comp to the GasPool
-        contractsCache.boldToken.mint(msg.sender, _boldAmount);
+        vars.contractsCache.boldToken.mint(msg.sender, _boldAmount);
         WETH.transferFrom(msg.sender, gasPoolAddress, ETH_GAS_COMPENSATION);
 
-        return troveId;
+        return vars.troveId;
     }
 
     // Send collateral to a trove
