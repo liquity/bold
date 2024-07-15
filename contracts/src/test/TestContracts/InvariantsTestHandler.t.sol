@@ -67,7 +67,7 @@ function update(mapping(uint256 => uint256) storage m, uint256 i, int256 delta) 
     }
 }
 
-function isOpen(ITroveManager troveManager, uint256 troveId) view returns (bool) {
+function isOpen(ITroveManagerTester troveManager, uint256 troveId) view returns (bool) {
     ITroveManager.Status status = troveManager.getTroveStatus(troveId);
     return status == ITroveManager.Status.active || status == ITroveManager.Status.unredeemable;
 }
@@ -303,7 +303,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     function _aggregateLiquidationBatch(uint256 i, LiquidationTotals memory t) internal {
         LiquityContractsDev memory c = branches[i];
-        uint256 MCR = c.troveManager.MCR();
+        uint256 MCR = c.troveManager.get_MCR();
         uint256 price = c.priceFeed.getPrice();
 
         for (uint256 j = 0; j < liqBatch.length; ++j) {
@@ -342,7 +342,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Send coll to SP
             uint256 collOffset = Math.min(
                 collRemaining * debtOffset / trove.entireDebt,
-                debtOffset * (_100pct + c.troveManager.LIQUIDATION_PENALTY_SP()) / price
+                debtOffset * (_100pct + c.troveManager.get_LIQUIDATION_PENALTY_SP()) / price
             );
             t.activeCollDelta -= int256(collOffset);
             t.spCollIncrease += collOffset;
@@ -355,7 +355,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // Redistribute coll
             uint256 collRedist = Math.min(
-                collRemaining, debtRedist * (_100pct + c.troveManager.LIQUIDATION_PENALTY_REDISTRIBUTION()) / price
+                collRemaining, debtRedist * (_100pct + c.troveManager.get_LIQUIDATION_PENALTY_REDISTRIBUTION()) / price
             );
             t.activeCollDelta -= int256(collRedist);
             t.defaultCollDelta += int256(collRedist);
@@ -466,7 +466,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             assertFalse(v.wasOpen, "Should have failed as Trove was open");
             assertLeDecimal(interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as interest rate > max");
             assertGeDecimal(v.debt, MIN_DEBT, 18, "Should have failed as debt < min");
-            assertGeDecimal(v.coll * v.price / v.debt, c.troveManager.MCR(), 18, "Should have failed as ICR < MCR");
+            assertGeDecimal(v.coll * v.price / v.debt, c.troveManager.get_MCR(), 18, "Should have failed as ICR < MCR");
             assertGeDecimal(c.troveManager.getTCR(v.price), CCR, 18, "Should have failed as TCR < CCR");
 
             // Effects (Trove)
@@ -504,7 +504,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertLtDecimal(v.debt, MIN_DEBT, 18, "Should not have failed as debt >= min");
             } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
                 assertLtDecimal(
-                    v.coll * v.price / v.debt, c.troveManager.MCR(), 18, "Should not have failed as ICR >= MCR"
+                    v.coll * v.price / v.debt, c.troveManager.get_MCR(), 18, "Should not have failed as ICR >= MCR"
                 );
             } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
                 uint256 totalColl = c.troveManager.getEntireSystemColl();
@@ -598,7 +598,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
                 assertLtDecimal(
                     trove.entireColl * price / (trove.entireDebt + upfrontFee),
-                    c.troveManager.MCR(),
+                    c.troveManager.get_MCR(),
                     18,
                     "Should not have failed as new ICR >= MCR"
                 );

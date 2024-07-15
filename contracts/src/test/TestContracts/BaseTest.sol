@@ -10,7 +10,7 @@ import "../../Interfaces/IDefaultPool.sol";
 import "../../Interfaces/IPriceFeed.sol";
 import "../../Interfaces/ISortedTroves.sol";
 import "../../Interfaces/IStabilityPool.sol";
-import "./TroveManagerTester.sol";
+import "./TroveManagerTester.t.sol";
 import "../../Interfaces/ICollateralRegistry.sol";
 import "./PriceFeedTestnet.sol";
 import "../../Interfaces/IInterestRouter.sol";
@@ -22,6 +22,7 @@ import "forge-std/console2.sol";
 
 contract BaseTest is TestAccounts {
     uint256 MCR;
+    uint256 SCR;
     uint256 LIQUIDATION_PENALTY_SP;
     uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
 

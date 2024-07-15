@@ -31,7 +31,7 @@ contract HintHelpers {
         view
         returns (uint256 hintId, uint256 diff, uint256 latestRandomSeed)
     {
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
         ISortedTroves sortedTroves = troveManager.sortedTroves();
 
         uint256 arrayLength = troveManager.getTroveIdsCount();
@@ -74,7 +74,7 @@ contract HintHelpers {
         view
         returns (uint256)
     {
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
         IActivePool activePool = troveManager.activePool();
 
         TroveChange memory openTrove;
@@ -90,7 +90,7 @@ contract HintHelpers {
         view
         returns (uint256)
     {
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
         IActivePool activePool = troveManager.activePool();
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
 
@@ -114,7 +114,7 @@ contract HintHelpers {
     {
         if (_debtIncrease == 0) return 0;
 
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
         IActivePool activePool = troveManager.activePool();
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
 
@@ -133,7 +133,7 @@ contract HintHelpers {
         address _batchAddress,
         uint256 _newInterestRate
     ) external view returns (uint256) {
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
         IActivePool activePool = troveManager.activePool();
         LatestBatchData memory batch = troveManager.getLatestBatchData(_batchAddress);
 

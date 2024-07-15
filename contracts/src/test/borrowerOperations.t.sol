@@ -16,7 +16,7 @@ contract BorrowerOperationsTest is DevTestSetup {
 
         // Alice attempts to close her trove
         vm.startPrank(A);
-        vm.expectRevert("TroveManager: Only one trove in the system");
+        vm.expectRevert(TroveManager.OnlyOneTroveLeft.selector);
         borrowerOperations.closeTrove(ATroveId);
         vm.stopPrank();
     }
@@ -25,14 +25,14 @@ contract BorrowerOperationsTest is DevTestSetup {
         uint256 troveId = openTroveNoHints100pct(A, 100 ether, 2_000 ether, 0.01 ether);
         deal(address(boldToken), A, 1_000 ether);
         vm.prank(A);
-        vm.expectRevert("BorrowerOps: Amount repaid must not be larger than the Trove's debt");
+        vm.expectRevert(BorrowerOperations.RepaymentTooHigh.selector);
         borrowerOperations.repayBold(troveId, 3_000 ether);
     }
 
     function testWithdrawingTooMuchCollateralReverts() public {
         uint256 troveId = openTroveNoHints100pct(A, 100 ether, 2_000 ether, 0.01 ether);
         vm.prank(A);
-        vm.expectRevert("BorrowerOps: Can't withdraw more than the Trove's entire collateral");
+        vm.expectRevert(BorrowerOperations.CollWithdrawalTooHigh.selector);
         borrowerOperations.withdrawColl(troveId, 200 ether);
     }
 
@@ -64,7 +64,7 @@ contract BorrowerOperationsTest is DevTestSetup {
         assertGt(upfrontFee, 0);
 
         vm.prank(A);
-        vm.expectRevert("BorrowerOps: Upfront fee exceeded provided maximum");
+        vm.expectRevert(BorrowerOperations.UpfrontFeeTooHigh.selector);
         borrowerOperations.openTrove(A, 0, 100 ether, borrow, 0, 0, interestRate, upfrontFee - 1);
     }
 
@@ -99,7 +99,7 @@ contract BorrowerOperationsTest is DevTestSetup {
         assertGt(upfrontFee, 0);
 
         vm.prank(A);
-        vm.expectRevert("BorrowerOps: Upfront fee exceeded provided maximum");
+        vm.expectRevert(BorrowerOperations.UpfrontFeeTooHigh.selector);
         borrowerOperations.withdrawBold(troveId, withdrawal, upfrontFee - 1);
     }
 
@@ -172,7 +172,7 @@ contract BorrowerOperationsTest is DevTestSetup {
         assertGt(upfrontFee, 0);
 
         vm.prank(A);
-        vm.expectRevert("BorrowerOps: Upfront fee exceeded provided maximum");
+        vm.expectRevert(BorrowerOperations.UpfrontFeeTooHigh.selector);
         borrowerOperations.adjustTroveInterestRate(troveId, interestRate, 0, 0, upfrontFee - 1);
     }
 }

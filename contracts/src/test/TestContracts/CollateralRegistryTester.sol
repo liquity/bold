@@ -8,9 +8,7 @@ import "../../CollateralRegistry.sol";
 for testing the parent's internal functions. */
 
 contract CollateralRegistryTester is CollateralRegistry {
-    constructor(IBoldToken _boldToken, IERC20[] memory _tokens, ITroveManager[] memory _troveManagers)
-        CollateralRegistry(_boldToken, _tokens, _troveManagers)
-    {}
+    constructor(IBoldToken _boldToken, IERC20[] memory _tokens) CollateralRegistry(_boldToken, _tokens) {}
 
     function unprotectedDecayBaseRateFromBorrowing() external returns (uint256) {
         baseRate = _calcDecayedBaseRate();

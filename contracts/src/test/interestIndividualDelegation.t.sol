@@ -44,11 +44,11 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         uint256 troveId = openTroveNoHints100pct(A, 100e18, 2000e18, 5e16);
 
         vm.startPrank(B);
-        vm.expectRevert("BorrowerOps: sender is not Trove owner");
+        vm.expectRevert(BorrowerOperations.NotBorrower.selector);
         borrowerOperations.setInterestIndividualDelegate(troveId, B, 1e16, 20e16, 0, 0, 0, 0);
-        vm.expectRevert("BorrowerOps: sender is not Trove owner");
+        vm.expectRevert(BorrowerOperations.NotBorrower.selector);
         borrowerOperations.setInterestIndividualDelegate(troveId, A, 1e16, 20e16, 0, 0, 0, 0);
-        vm.expectRevert("BorrowerOps: sender is not Trove owner");
+        vm.expectRevert(BorrowerOperations.NotBorrower.selector);
         borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, 0, 0, 0, 0);
         vm.stopPrank();
     }
@@ -61,12 +61,12 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         assertEq(delegate.account, B, "Wrong individual delegate");
 
         vm.startPrank(B);
-        vm.expectRevert("BorrowerOps: sender is not Trove owner");
+        vm.expectRevert(BorrowerOperations.NotBorrower.selector);
         borrowerOperations.removeInterestIndividualDelegate(troveId);
         vm.stopPrank();
 
         vm.startPrank(C);
-        vm.expectRevert("BorrowerOps: sender is not Trove owner");
+        vm.expectRevert(BorrowerOperations.NotBorrower.selector);
         borrowerOperations.removeInterestIndividualDelegate(troveId);
         vm.stopPrank();
     }
@@ -85,7 +85,7 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         uint256 troveId = openTroveAndSetIndividualDelegate();
 
         vm.startPrank(B);
-        vm.expectRevert("BO: interest not in range of individual delegate");
+        vm.expectRevert(BorrowerOperations.InterestNotInDelegateRange.selector);
         borrowerOperations.adjustTroveInterestRate(troveId, 1e15, 0, 0, 1e24);
         vm.stopPrank();
     }
@@ -94,7 +94,7 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         uint256 troveId = openTroveAndSetIndividualDelegate();
 
         vm.startPrank(B);
-        vm.expectRevert("BO: interest not in range of individual delegate");
+        vm.expectRevert(BorrowerOperations.InterestNotInDelegateRange.selector);
         borrowerOperations.adjustTroveInterestRate(troveId, 50e16, 0, 0, 1e24);
         vm.stopPrank();
     }

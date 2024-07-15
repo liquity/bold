@@ -11,7 +11,7 @@ import {IPriceFeedTestnet} from "./Interfaces/IPriceFeedTestnet.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
 import {BaseHandler} from "./BaseHandler.sol";
-import {TroveManagerTester} from "./TroveManagerTester.sol";
+import {TroveManagerTester} from "./TroveManagerTester.t.sol";
 
 import {
     DECIMAL_PRECISION,
@@ -81,8 +81,11 @@ contract SPInvariantsTestHandler is BaseHandler {
     }
 
     function openTrove(uint256 borrowed) external returns (uint256 debt) {
-        uint256 i = troveManager.balanceOf(msg.sender);
-        vm.assume(troveManager.getTroveStatus(_getTroveId(msg.sender, i)) != ITroveManager.Status.active);
+        uint256 i = TroveManagerTester(address(troveManager)).balanceOf(msg.sender);
+        vm.assume(
+            TroveManagerTester(address(troveManager)).getTroveStatus(_getTroveId(msg.sender, i))
+                != ITroveManager.Status.active
+        );
 
         borrowed = _bound(borrowed, OPEN_TROVE_BORROWED_MIN, OPEN_TROVE_BORROWED_MAX);
         uint256 price = priceFeed.getPrice();
@@ -98,7 +101,7 @@ contract SPInvariantsTestHandler is BaseHandler {
         collateralToken.approve(address(borrowerOperations), coll + ETH_GAS_COMPENSATION);
         vm.prank(msg.sender);
         uint256 troveId = borrowerOperations.openTrove(msg.sender, i + 1, coll, borrowed, 0, 0, 0, type(uint256).max);
-        (uint256 actualDebt,,,,) = troveManager.getEntireDebtAndColl(troveId);
+        (uint256 actualDebt,,,,) = TroveManagerTester(address(troveManager)).getEntireDebtAndColl(troveId);
         assertEqDecimal(debt, actualDebt, 18, "Wrong debt");
 
         // Sweep funds
@@ -149,10 +152,10 @@ contract SPInvariantsTestHandler is BaseHandler {
 
     function liquidateMe() external {
         vm.assume(troveManager.getTroveIdsCount() > 1);
-        uint256 troveId = _getTroveId(msg.sender, troveManager.balanceOf(msg.sender));
-        vm.assume(troveManager.getTroveStatus(troveId) == ITroveManager.Status.active);
+        uint256 troveId = _getTroveId(msg.sender, TroveManagerTester(address(troveManager)).balanceOf(msg.sender));
+        vm.assume(TroveManagerTester(address(troveManager)).getTroveStatus(troveId) == ITroveManager.Status.active);
 
-        (uint256 debt, uint256 coll,,,) = troveManager.getEntireDebtAndColl(troveId);
+        (uint256 debt, uint256 coll,,,) = TroveManagerTester(address(troveManager)).getEntireDebtAndColl(troveId);
         vm.assume(debt <= spBold); // only interested in SP offset, no redistribution
 
         logCall("liquidateMe");
@@ -163,7 +166,8 @@ contract SPInvariantsTestHandler is BaseHandler {
         uint256 accountSurplusBefore = collSurplusPool.getCollateral(msg.sender);
         uint256 collCompensation = TroveManagerTester(address(troveManager)).getCollGasCompensation(coll);
         // Calc claimable coll based on the remaining coll to liquidate, less the liq. penalty that goes to the SP depositors
-        uint256 seizedColl = debt * (_100pct + troveManager.LIQUIDATION_PENALTY_SP()) / priceFeed.getPrice();
+        uint256 seizedColl = debt * (_100pct + TroveManagerTester(address(troveManager)).get_LIQUIDATION_PENALTY_SP())
+            / priceFeed.getPrice();
         // The Trove owner bears the gas compensation costs
         uint256 claimableColl = coll - seizedColl - collCompensation;
 

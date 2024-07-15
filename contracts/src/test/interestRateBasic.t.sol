@@ -91,7 +91,7 @@ contract InterestRateBasic is DevTestSetup {
 
         // B (who is not delegate) tries to adjust it
         vm.startPrank(B);
-        vm.expectRevert("BorrowerOps: sender is neither Trove owner nor interest manager");
+        vm.expectRevert(BorrowerOperations.NotOwnerNorInterestManager.selector);
         borrowerOperations.adjustTroveInterestRate(A_Id, 40e16, 0, 0, 0);
         vm.stopPrank();
     }
@@ -734,29 +734,6 @@ contract InterestRateBasic is DevTestSetup {
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
 
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
-    }
-
-    function testRevertApplyTroveInterestPermissionlessWhenTroveIsNotStale() public {
-        priceFeed.setPrice(2000e18);
-        uint256 troveDebtRequest = 2000e18;
-        uint256 interestRate = 25e16;
-
-        uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, interestRate);
-
-        // No time passes. B tries to apply A's interest. expect revert
-        vm.startPrank(B);
-        vm.expectRevert();
-        borrowerOperations.applyTroveInterestPermissionless(ATroveId);
-        vm.stopPrank();
-
-        // Fast-forward time, but less than the staleness threshold
-        vm.warp(block.timestamp + STALE_TROVE_DURATION - 1);
-
-        // B tries to apply A's interest. Expect revert
-        vm.startPrank(B);
-        vm.expectRevert();
-        borrowerOperations.applyTroveInterestPermissionless(ATroveId);
-        vm.stopPrank();
     }
 
     // --- redemptions ---

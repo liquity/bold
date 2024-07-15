@@ -9,10 +9,13 @@ import "./ISortedTroves.sol";
 
 // Common interface for the Trove Manager.
 interface IBorrowerOperations is ILiquityBase {
+    function MCR() external view returns (uint256);
+    function SCR() external view returns (uint256);
     function troveManager() external view returns (ITroveManager);
     function sortedTroves() external view returns (ISortedTroves);
 
     function setAddresses(
+        address _troveManagerAddress,
         address _activePoolAddress,
         address _defaultPoolAddress,
         address _gasPoolAddress,

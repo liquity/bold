@@ -35,7 +35,7 @@ contract LiquidationsLSTTest is DevTestSetup {
         troveManager = contracts.troveManager;
         mockInterestRouter = contracts.interestRouter;
 
-        MCR = troveManager.MCR();
+        MCR = troveManager.get_MCR();
 
         // Give some Coll to test accounts, and approve it to BorrowerOperations
         uint256 initialCollAmount = 10_000e18;

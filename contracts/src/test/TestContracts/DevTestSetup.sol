@@ -68,9 +68,9 @@ contract DevTestSetup is BaseTest {
             giveAndApproveColl(accountsList[i], initialCollAmount);
         }
 
-        MCR = troveManager.MCR();
-        LIQUIDATION_PENALTY_SP = troveManager.LIQUIDATION_PENALTY_SP();
-        LIQUIDATION_PENALTY_REDISTRIBUTION = troveManager.LIQUIDATION_PENALTY_REDISTRIBUTION();
+        MCR = troveManager.get_MCR();
+        LIQUIDATION_PENALTY_SP = troveManager.get_LIQUIDATION_PENALTY_SP();
+        LIQUIDATION_PENALTY_REDISTRIBUTION = troveManager.get_LIQUIDATION_PENALTY_REDISTRIBUTION();
     }
 
     function _setupForWithdrawCollGainToTrove() internal returns (uint256, uint256, uint256) {
@@ -95,7 +95,7 @@ contract DevTestSetup is BaseTest {
         priceFeed.setPrice(price);
 
         assertFalse(troveManager.checkBelowCriticalThreshold(price));
-        assertLt(troveManager.getCurrentICR(CTroveId, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(CTroveId, price), MCR);
 
         // A liquidates C
         liquidate(A, CTroveId);
@@ -132,8 +132,8 @@ contract DevTestSetup is BaseTest {
         priceFeed.setPrice(price);
 
         assertFalse(troveManager.checkBelowCriticalThreshold(price));
-        assertLt(troveManager.getCurrentICR(troveIDs.C, price), troveManager.MCR());
-        assertLt(troveManager.getCurrentICR(troveIDs.D, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(troveIDs.C, price), MCR);
+        assertLt(troveManager.getCurrentICR(troveIDs.D, price), MCR);
 
         return (troveIDs.A, troveIDs.B, troveIDs.C, troveIDs.D);
     }
@@ -179,8 +179,8 @@ contract DevTestSetup is BaseTest {
         priceFeed.setPrice(price);
 
         assertFalse(troveManager.checkBelowCriticalThreshold(price));
-        assertLt(troveManager.getCurrentICR(CTroveId, price), troveManager.MCR());
-        assertLt(troveManager.getCurrentICR(DTroveId, price), troveManager.MCR());
+        assertLt(troveManager.getCurrentICR(CTroveId, price), MCR);
+        assertLt(troveManager.getCurrentICR(DTroveId, price), MCR);
 
         return (ATroveId, BTroveId, CTroveId, DTroveId);
     }
