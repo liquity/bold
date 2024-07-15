@@ -6,5 +6,5 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.s
 
 interface IWETH is IERC20Metadata {
     function deposit() external payable;
-    function withdraw(uint wad) external;
+    function withdraw(uint256 wad) external;
 }

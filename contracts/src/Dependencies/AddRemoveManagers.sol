@@ -5,9 +5,7 @@ pragma solidity ^0.8.18;
 import "../Interfaces/IAddRemoveManagers.sol";
 import "../Interfaces/ITroveManager.sol";
 
-
 contract AddRemoveManagers is IAddRemoveManagers {
-
     ITroveManager public immutable troveManager;
 
     /*
@@ -80,13 +78,10 @@ contract AddRemoveManagers is IAddRemoveManagers {
         );
     }
 
-    function _requireSenderIsOwnerOrRemoveManager(uint256 _troveId, address _owner) internal view returns(address) {
+    function _requireSenderIsOwnerOrRemoveManager(uint256 _troveId, address _owner) internal view returns (address) {
         address receiver = removeManagerReceiverOf[_troveId][msg.sender];
         if (receiver == address(0)) {
-            require(
-                msg.sender == _owner,
-                "BorrowerOps: sender is neither Trove owner nor remove-manager"
-            );
+            require(msg.sender == _owner, "BorrowerOps: sender is neither Trove owner nor remove-manager");
             return _owner;
         }
         return receiver;

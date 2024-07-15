@@ -23,7 +23,8 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         uint256 ATroveId = borrowerOperations.openTrove(
             A, // owner
             0, //index
-            100 ether, ///coll
+            100 ether,
+            ///coll
             10000e18, //boldAmount
             0, // _upperHint
             0, // _lowerHint
@@ -31,7 +32,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
             10000e18, // maxUpfrontFee
             B, // add manager
             address(0), // remove manager
-            address(0)  // receiver of remove manager
+            address(0) // receiver of remove manager
         );
         vm.stopPrank();
 
@@ -77,7 +78,8 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         uint256 ATroveId = borrowerOperations.openTrove(
             A, // owner
             0, //index
-            100 ether, ///coll
+            100 ether,
+            ///coll
             10000e18, //boldAmount
             0, // _upperHint
             0, // _lowerHint
@@ -85,7 +87,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
             10000e18, // maxUpfrontFee
             address(0), // add manager
             B, // remove manager
-            A  // receiver of remove manager
+            A // receiver of remove manager
         );
         vm.stopPrank();
 
@@ -110,7 +112,8 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         uint256 ATroveId = borrowerOperations.openTrove(
             A, // owner
             0, //index
-            100 ether, ///coll
+            100 ether,
+            ///coll
             10000e18, //boldAmount
             0, // _upperHint
             0, // _lowerHint
@@ -118,7 +121,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
             10000e18, // maxUpfrontFee
             address(0), // add manager
             B, // remove manager
-            B  // receiver of remove manager
+            B // receiver of remove manager
         );
         vm.stopPrank();
 
@@ -143,7 +146,8 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         uint256 ATroveId = borrowerOperations.openTrove(
             A, // owner
             0, //index
-            100 ether, ///coll
+            100 ether,
+            ///coll
             10000e18, //boldAmount
             0, // _upperHint
             0, // _lowerHint
@@ -151,7 +155,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
             10000e18, // maxUpfrontFee
             address(0), // add manager
             B, // remove manager
-            C  // receiver of remove manager
+            C // receiver of remove manager
         );
         vm.stopPrank();
 
@@ -178,7 +182,8 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         uint256 ATroveId = borrowerOperations.openTrove(
             A, // owner
             0, //index
-            100 ether, ///coll
+            100 ether,
+            ///coll
             10000e18, //boldAmount
             0, // _upperHint
             0, // _lowerHint
@@ -186,7 +191,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
             10000e18, // maxUpfrontFee
             address(0), // add manager
             B, // remove manager
-            address(0)  // receiver of remove manager
+            address(0) // receiver of remove manager
         );
         vm.stopPrank();
 

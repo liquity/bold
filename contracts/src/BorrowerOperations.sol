@@ -143,7 +143,19 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         uint256 _annualInterestRate,
         uint256 _maxUpfrontFee
     ) external override returns (uint256) {
-        return openTrove(_owner, _ownerIndex, _collAmount, _boldAmount, _upperHint, _lowerHint, _annualInterestRate, _maxUpfrontFee, address(0), address(0), address(0));
+        return openTrove(
+            _owner,
+            _ownerIndex,
+            _collAmount,
+            _boldAmount,
+            _upperHint,
+            _lowerHint,
+            _annualInterestRate,
+            _maxUpfrontFee,
+            address(0),
+            address(0),
+            address(0)
+        );
     }
 
     function openTrove(
@@ -180,7 +192,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         // For simplicity, we ignore the fee when calculating the approx. interest rate
         vars.troveChange.newWeightedRecordedDebt = vars.troveChange.debtIncrease * _annualInterestRate;
 
-        vars.avgInterestRate = vars.contractsCache.activePool.getNewApproxAvgInterestRateFromTroveChange(vars.troveChange);
+        vars.avgInterestRate =
+            vars.contractsCache.activePool.getNewApproxAvgInterestRateFromTroveChange(vars.troveChange);
         vars.troveChange.upfrontFee = _calcUpfrontFee(vars.troveChange.debtIncrease, vars.avgInterestRate);
         _requireUserAcceptsUpfrontFee(vars.troveChange.upfrontFee, _maxUpfrontFee);
 

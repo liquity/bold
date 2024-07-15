@@ -4,7 +4,6 @@ import "./TestContracts/DevTestSetup.sol";
 import "./TestContracts/WETH.sol";
 import "../Zappers/WETHZapper.sol";
 
-
 contract ZapperWETHTest is DevTestSetup {
     WETHZapper wethZapper;
 
@@ -348,8 +347,6 @@ contract ZapperWETHTest is DevTestSetup {
             10000e18 // upfrontFee
         );
         vm.stopPrank();
-
-
 
         vm.startPrank(A);
         boldToken.approve(address(wethZapper), boldAmount);

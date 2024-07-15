@@ -4,7 +4,6 @@ pragma solidity 0.8.18;
 
 import "./ITroveManager.sol";
 
-
 interface IAddRemoveManagers {
     function troveManager() external view returns (ITroveManager);
 

@@ -6,7 +6,6 @@ import "../Interfaces/IWETH.sol";
 import "../Dependencies/AddRemoveManagers.sol";
 import "../Dependencies/Constants.sol";
 
-
 contract WETHZapper is AddRemoveManagers {
     IBorrowerOperations public immutable borrowerOperations; // First branch (i.e., using WETH as collateral)
     IWETH public immutable WETH;
@@ -63,7 +62,7 @@ contract WETHZapper is AddRemoveManagers {
             // while keeping the same management functionality
             address(this), // add manager
             address(this), // remove manager
-            address(this)  // receiver for remove manager
+            address(this) // receiver for remove manager
         );
 
         boldToken.transfer(msg.sender, _params.boldAmount);
@@ -94,7 +93,7 @@ contract WETHZapper is AddRemoveManagers {
 
         // Convert WETH to ETH
         WETH.withdraw(_amount);
-        (bool success, ) = receiver.call{value: _amount}("");
+        (bool success,) = receiver.call{value: _amount}("");
         require(success, "WZ: Sending ETH failed");
     }
 
@@ -127,7 +126,9 @@ contract WETHZapper is AddRemoveManagers {
         uint256 _maxUpfrontFee
     ) external payable {
         address payable receiver = _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
-        borrowerOperations.adjustTrove(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxUpfrontFee);
+        borrowerOperations.adjustTrove(
+            _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxUpfrontFee
+        );
         _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver);
     }
 
@@ -142,10 +143,9 @@ contract WETHZapper is AddRemoveManagers {
         uint256 _maxUpfrontFee
     ) external {
         address payable receiver = _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
-        borrowerOperations.adjustUnredeemableTrove(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease,
-            _upperHint,
-            _lowerHint,
-            _maxUpfrontFee);
+        borrowerOperations.adjustUnredeemableTrove(
+            _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _upperHint, _lowerHint, _maxUpfrontFee
+        );
         _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver);
     }
 
@@ -155,10 +155,7 @@ contract WETHZapper is AddRemoveManagers {
         bool _isCollIncrease,
         uint256 _boldChange,
         bool _isDebtIncrease
-    )
-        internal
-        returns (address payable)
-    {
+    ) internal returns (address payable) {
         if (_isCollIncrease) {
             require(_collChange == msg.value, "WZ: Wrong coll amount");
         } else {
@@ -169,7 +166,7 @@ contract WETHZapper is AddRemoveManagers {
         address owner = troveManager.ownerOf(_troveId);
         address payable receiver = payable(owner);
 
-        if (! _isCollIncrease || _isDebtIncrease) {
+        if (!_isCollIncrease || _isDebtIncrease) {
             receiver = payable(_requireSenderIsOwnerOrRemoveManager(_troveId, owner));
         }
 
@@ -201,7 +198,7 @@ contract WETHZapper is AddRemoveManagers {
         // WETH -> ETH
         if (!_isCollIncrease) {
             WETH.withdraw(_collChange);
-            (bool success, ) = _receiver.call{value: _collChange}("");
+            (bool success,) = _receiver.call{value: _collChange}("");
             require(success, "WZ: Sending ETH failed");
         }
         // Send Bold
@@ -220,9 +217,9 @@ contract WETHZapper is AddRemoveManagers {
         uint256 collLeft = borrowerOperations.closeTrove(_troveId);
 
         WETH.withdraw(collLeft + ETH_GAS_COMPENSATION);
-        (bool success, ) = receiver.call{value: collLeft + ETH_GAS_COMPENSATION}("");
+        (bool success,) = receiver.call{value: collLeft + ETH_GAS_COMPENSATION}("");
         require(success, "WZ: Sending ETH failed");
     }
 
-    receive() payable external {}
+    receive() external payable {}
 }

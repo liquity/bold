@@ -4,10 +4,12 @@ import {ERC20Faucet} from "./ERC20Faucet.sol";
 import "../../Interfaces/IWETH.sol";
 
 contract WETHTester is ERC20Faucet, IWETH {
-    event  Deposit(address indexed dst, uint wad);
-    event  Withdrawal(address indexed src, uint wad);
+    event Deposit(address indexed dst, uint256 wad);
+    event Withdrawal(address indexed src, uint256 wad);
 
-    constructor(uint256 _tapAmount, uint256 _tapPeriod) ERC20Faucet("Wrapped Ether Tester", "WETH", _tapAmount, _tapPeriod) {}
+    constructor(uint256 _tapAmount, uint256 _tapPeriod)
+        ERC20Faucet("Wrapped Ether Tester", "WETH", _tapAmount, _tapPeriod)
+    {}
 
     receive() external payable {
         deposit();
@@ -18,7 +20,7 @@ contract WETHTester is ERC20Faucet, IWETH {
         emit Deposit(msg.sender, msg.value);
     }
 
-    function withdraw(uint wad) public {
+    function withdraw(uint256 wad) public {
         require(balanceOf(msg.sender) >= wad);
         _burn(msg.sender, wad);
         payable(msg.sender).transfer(wad);
