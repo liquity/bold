@@ -11,6 +11,7 @@ import { ConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
 import { APP_TITLE } from "@/src/constants";
 import { DemoMode } from "@/src/demo-mode";
 import { Ethereum } from "@/src/eth/Ethereum";
+import { TransactionFlow } from "@/src/eth/TransactionFlow";
 import { Prices } from "@/src/prices";
 import { UiKit } from "@liquity2/uikit";
 import { GeistSans } from "geist/font/sans";

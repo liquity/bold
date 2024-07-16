@@ -13,7 +13,6 @@ import {
   useStabilityPoolStats,
   useTapCollTokenFaucet,
   useTroveDetails,
-  useTrovesStats,
 } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { Button } from "@liquity2/uikit";
@@ -45,8 +44,6 @@ export default function Contracts() {
           Liquity v2
         </h1>
         <CardsGrid>
-          <LiquityStats />
-          <TrovesStats />
           <StabilityPool />
         </CardsGrid>
       </section>
@@ -207,8 +204,8 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
             P.union(
               "nonExistent",
               "closedByOwner",
-              "closedByRedemption",
               "closedByLiquidation",
+              "unredeemable",
             ),
             P.not(undefined),
           ],
@@ -300,77 +297,6 @@ function TroveDetails({ ownerIndex }: { ownerIndex: bigint }) {
   );
 }
 
-function LiquityStats() {
-  const stats = useTrovesStats();
-  return (
-    <Card
-      lines={3}
-      title="Protocol"
-    >
-      {match(stats)
-        .with({ status: "error" }, () => "error")
-        .with({ status: "pending" }, () => "loading…")
-        .with({ status: "success" }, ({
-          data: { redemptionRate, recoveryMode, tcr },
-        }) => (
-          <>
-            <CardRow
-              name={
-                <>
-                  <abbr title="Total Collateral Ratio">TCR</abbr> ($200/ETH)
-                </>
-              }
-              value={dn.format(dn.mul(tcr, 100n), 2) + "%"}
-            />
-            <CardRow
-              name="Redemption Rate"
-              value={dn.format(dn.mul(redemptionRate, 100n), 2) + "%"}
-            />
-            <CardRow
-              name="Recovery Mode"
-              value={recoveryMode ? "Yes" : "No"}
-            />
-          </>
-        ))
-        .otherwise(() => null)}
-    </Card>
-  );
-}
-
-function TrovesStats() {
-  const stats = useTrovesStats();
-  return (
-    <Card title="Troves">
-      {match(stats)
-        .with({ status: "error" }, () => "error")
-        .with({ status: "pending" }, () => "loading…")
-        .with({ status: "success" }, ({
-          data: {
-            totalCollateral,
-            totalDebt,
-            trovesCount,
-          },
-        }) => (
-          <>
-            <CardRow
-              name="Active Troves"
-              value={trovesCount}
-            />
-            <CardRow
-              name="Total Collateral"
-              value={dn.format(totalCollateral) + " ETH"}
-            />
-            <CardRow
-              name="Total Debt"
-              value={dn.format(totalDebt, 2) + " BOLD"}
-            />
-          </>
-        ))
-        .otherwise(() => null)}
-    </Card>
-  );
-}
-
 function StabilityPool() {
   const stats = useStabilityPoolStats();
   return (
@@ -388,8 +314,8 @@ function StabilityPool() {
               value={dn.format(data.totalBoldDeposits, 2) + " BOLD"}
             />
             <CardRow
-              name="ETH Balance"
-              value={dn.format(data.ethBalance, 2) + " ETH"}
+              name="Collateral Balance"
+              value={dn.format(data.collBalance, 2) + " ETH"}
             />
           </>
         ))
