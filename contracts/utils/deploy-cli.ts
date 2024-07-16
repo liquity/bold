@@ -221,7 +221,7 @@ async function getDeployedContracts(jsonPath: string) {
 }
 
 function argInt(name: string) {
-  return typeof argv[name] === "number" ? parseInt(argv[name], 10) : undefined;
+  return typeof argv[name] === "number" ? Math.round(argv[name]) : undefined;
 }
 
 function argBoolean(name: string) {

@@ -119,6 +119,7 @@ function contractNameToAppEnvVariable(contractName: string) {
     case "StabilityPool":
       return "NEXT_PUBLIC_CONTRACT_STABILITY_POOL";
     case "TroveManager":
+    case "TroveManagerTester":
       return "NEXT_PUBLIC_CONTRACT_TROVE_MANAGER";
   }
   return null;
