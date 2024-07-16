@@ -35,7 +35,7 @@ uint256 constant REDEMPTION_MINUTE_DECAY_FACTOR = 999037758833783000;
 uint256 constant REDEMPTION_BETA = 2;
 
 // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
-uint256 constant INITIAL_REDEMPTION_RATE = 5 * _1pct; // 5%
+uint256 constant INITIAL_BASE_RATE = 5 * _1pct - REDEMPTION_FEE_FLOOR; // 5% initial redemption rate
 
 // Discount to be used once the shutdown thas been triggered
 uint256 constant URGENT_REDEMPTION_BONUS = 1e16; // 1%

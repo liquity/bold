@@ -89,10 +89,9 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         token9 = numTokens > 9 ? _tokens[9] : IERC20(address(0));
         troveManager9 = numTokens > 9 ? _troveManagers[9] : ITroveManager(address(0));
 
-        // Update the baseRate state variable
-        // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
-        baseRate = INITIAL_REDEMPTION_RATE;
-        emit BaseRateUpdated(INITIAL_REDEMPTION_RATE);
+        // Initialize the baseRate state variable
+        baseRate = INITIAL_BASE_RATE;
+        emit BaseRateUpdated(INITIAL_BASE_RATE);
     }
 
     struct RedemptionTotals {

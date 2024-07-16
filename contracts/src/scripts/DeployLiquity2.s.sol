@@ -47,7 +47,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         ];
 
         TroveParams[8] memory troves = [
-            TroveParams({owner: accounts[0], ownerIndex: 0, coll: 20e18, debt: 1800e18}),
+            TroveParams({owner: accounts[0], ownerIndex: 0, coll: 25e18, debt: 2800e18}),
             TroveParams({owner: accounts[1], ownerIndex: 0, coll: 32e18, debt: 2800e18}),
             TroveParams({owner: accounts[2], ownerIndex: 0, coll: 30e18, debt: 4000e18}),
             TroveParams({owner: accounts[3], ownerIndex: 0, coll: 65e18, debt: 6000e18}),
@@ -68,7 +68,7 @@ contract DeployLiquity2Script is Script, StdCheats {
             borrowerOperations.openTrove(
                 vm.addr(troves[i].owner), // _owner
                 troves[i].ownerIndex, //     _ownerIndex
-                troves[i].coll, //           _ETHAmount
+                troves[i].coll, //           _collAmount
                 troves[i].debt, //           _boldAmount
                 0, //                        _upperHint
                 0, //                        _lowerHint

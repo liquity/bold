@@ -55,12 +55,12 @@ contract TroveManagerTest is DevTestSetup {
         assertLt(collB2, collB1, "B coll mismatch");
     }
 
-    function testInitialRedemptionBaseRate() public {
-        assertEq(collateralRegistry.baseRate(), 5e16);
+    function testInitialRedemptionBaseRate() public view {
+        assertEq(collateralRegistry.baseRate(), INITIAL_BASE_RATE);
     }
 
     function testRedemptionBaseRateAfter2Weeks() public {
-        assertEq(collateralRegistry.baseRate(), 5e16);
+        assertEq(collateralRegistry.baseRate(), INITIAL_BASE_RATE);
 
         // Two weeks go by
         vm.warp(block.timestamp + 14 days);
