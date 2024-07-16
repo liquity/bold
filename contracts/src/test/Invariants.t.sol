@@ -134,6 +134,9 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
 
         assertEqDecimal(boldToken.totalSupply(), handler.getBoldSupply(), 18, "Wrong BOLD supply");
+        assertEqDecimal(
+            collateralRegistry.getRedemptionRateWithDecay(), handler.getRedemptionRate(), 18, "Wrong redemption rate"
+        );
     }
 
     function invariant_AllBoldBackedByTroveDebt() external view {

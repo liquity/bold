@@ -45,7 +45,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     uint256 public baseRate;
 
     // The timestamp of the latest fee operation (redemption or new Bold issuance)
-    uint256 public lastFeeOperationTime;
+    uint256 public lastFeeOperationTime = block.timestamp;
 
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
@@ -182,7 +182,6 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_boldAmount, _totalBoldSupplyAtStart);
 
         //assert(newBaseRate <= DECIMAL_PRECISION); // This is already enforced in `_getUpdatedBaseRateFromRedemption`
-        assert(newBaseRate > 0); // Base rate is always non-zero after redemption
 
         // Update the baseRate state variable
         baseRate = newBaseRate;

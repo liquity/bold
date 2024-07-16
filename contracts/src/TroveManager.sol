@@ -963,7 +963,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         assert(closedStatus == Status.closedByLiquidation || closedStatus == Status.closedByOwner);
 
         uint256 TroveIdsArrayLength = TroveIds.length;
-        _requireMoreThanOneTroveInSystem(TroveIdsArrayLength);
+        require(TroveIdsArrayLength > 1, "TroveManager: Only one trove in the system");
 
         _removeTroveId(_troveId, TroveIdsArrayLength);
 
@@ -1067,10 +1067,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     function _requireTroveIsOpen(uint256 _troveId) internal view {
         require(checkTroveIsOpen(_troveId), "TroveManager: Trove does not exist or is closed");
-    }
-
-    function _requireMoreThanOneTroveInSystem(uint256 TroveIdsArrayLength) internal view {
-        require(TroveIdsArrayLength > 1 && sortedTroves.getSize() > 1, "TroveManager: Only one trove in the system");
     }
 
     function _requireIsShutDown() internal view {
