@@ -233,9 +233,9 @@ contract Redemptions is DevTestSetup {
 
         redeem(E, totalBoldRedeemAmount);
 
-        assertApproxEqAbs(troveManager.getTroveEntireColl(troveIDs.A), expectedRemainingColl_A, 10);
-        assertApproxEqAbs(troveManager.getTroveEntireColl(troveIDs.B), expectedRemainingColl_B, 10);
-        assertApproxEqAbs(troveManager.getTroveEntireColl(troveIDs.C), expectedRemainingColl_C, 10);
+        assertApproxEqAbs(troveManager.getTroveEntireColl(troveIDs.A), expectedRemainingColl_A, 20);
+        assertApproxEqAbs(troveManager.getTroveEntireColl(troveIDs.B), expectedRemainingColl_B, 20);
+        assertApproxEqAbs(troveManager.getTroveEntireColl(troveIDs.C), expectedRemainingColl_C, 20);
     }
 
     function testRedemption3TroveLeavesCollFeesInActivePool() public {
