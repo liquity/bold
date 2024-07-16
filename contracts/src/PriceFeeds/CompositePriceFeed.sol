@@ -16,7 +16,7 @@ contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {
         uint256 _ethUsdStalenessThreshold,
         uint256 _lstEthStalenessThreshold
     ) 
-        MainnetPriceFeedBase() 
+        MainnetPriceFeedBase()
     {
         // Store ETH-USD oracle
         ethUsdOracle.aggregator = AggregatorV3Interface(_ethUsdOracleAddress);
@@ -41,8 +41,8 @@ contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {
 
         // If one of Chainlink's responses was invalid in this transaction, disable this PriceFeed and
         // return the last good LST-USD price calculated
-        if (ethUsdOracleDown) {return _disableFeed(address(ethUsdOracle.aggregator));}
-        if (ethUsdOracleDown) {return _disableFeed(address(lstEthOracle.aggregator));}
+        if (ethUsdOracleDown) {return _disableFeedAndShutDown(address(ethUsdOracle.aggregator));}
+        if (lstEthOracleDown) {return _disableFeedAndShutDown(address(lstEthOracle.aggregator));}
             
         // Calculate LST-USD price: USD_per_LST = USD_per_ETH * ETH_per_LST
         uint256 lstUsdPrice = ethUsdPrice * lstEthPrice / 1e18;

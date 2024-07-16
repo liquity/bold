@@ -287,9 +287,10 @@ function deployAndConnectContractsMainnet(
     collateralRegistry = new CollateralRegistry(boldToken, collaterals, troveManagers);
     boldToken.setCollateralRegistry(address(collateralRegistry));
     
-    // Set registry in TroveManagers
+    // Set registry in TroveManagers, and each branch' BO in its price feed  
     for (uint256 i = 0; i < numCollaterals; i++) {
         contractsArray[i].troveManager.setCollateralRegistry(address(collateralRegistry));
+        priceFeeds[i].setAddresses(address(contractsArray[i].borrowerOperations));
     }
 } 
 

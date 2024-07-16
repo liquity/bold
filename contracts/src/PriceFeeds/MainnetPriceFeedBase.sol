@@ -3,10 +3,11 @@ pragma solidity 0.8.18;
 import "../Dependencies/Ownable.sol";
 import "../Dependencies/AggregatorV3Interface.sol";
 import "../Interfaces/IPriceFeed.sol";
+import "../BorrowerOperations.sol";
 
 // import "forge-std/console2.sol";
 
-abstract contract MainnetPriceFeedBase is IPriceFeed {
+abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
     
     // Dummy flag raised when the collateral branch gets shut down. 
     // Should be removed after actual shutdown logic is implemented.
@@ -26,6 +27,14 @@ abstract contract MainnetPriceFeedBase is IPriceFeed {
         int256 answer;
         uint256 timestamp;
         bool success;
+    } 
+
+    IBorrowerOperations borrowerOperations;
+
+    function setAddresses(address _borrowOperationsAddress) external onlyOwner {
+        borrowerOperations = IBorrowerOperations(_borrowOperationsAddress);
+
+        _renounceOwnership();
     } 
 
     function fetchPrice() public returns (uint256) {
@@ -55,8 +64,10 @@ abstract contract MainnetPriceFeedBase is IPriceFeed {
         return (scaledPrice, oracleIsDown);
     }
 
-    function _disableFeed(address _oracleAddress) internal returns (uint256) {
-        // TODO: Call into collateral registry and shut down this branch.
+    function _disableFeedAndShutDown(address _failedOracleAddr) internal returns (uint256) {
+        // Shut down the branch
+        borrowerOperations.shutdownFromOracleFailure(_failedOracleAddr);
+
         priceFeedDisabled = true;
         return lastGoodPrice;
     }

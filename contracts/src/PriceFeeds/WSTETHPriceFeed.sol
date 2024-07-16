@@ -13,7 +13,7 @@ contract WSTETHPriceFeed is MainnetPriceFeedBase, IWSTETHPriceFeed {
         uint256 _stEthUsdStalenessThreshold,
         address _wstETHAddress
     ) 
-        MainnetPriceFeedBase() 
+        MainnetPriceFeedBase()
     {
         stEthUsdOracle.aggregator = AggregatorV3Interface(_stEthUsdOracleAddress);
         stEthUsdOracle.stalenessThreshold = _stEthUsdStalenessThreshold;
@@ -35,7 +35,7 @@ contract WSTETHPriceFeed is MainnetPriceFeedBase, IWSTETHPriceFeed {
 
         // If one of Chainlink's responses was invalid in this transaction, disable this PriceFeed and
         // return the last good WSTETH-USD price calculated
-        if (stEthUsdOracleDown) {return _disableFeed(address(stEthUsdOracle.aggregator));}
+        if (stEthUsdOracleDown) {return _disableFeedAndShutDown(address(stEthUsdOracle.aggregator));}
         
         // Calculate WSTETH-USD price: USD_per_WSTETH = USD_per_STETH * STETH_per_WSTETH
         uint256 wstEthUsdPrice = stEthUsdPrice * wstETH.stEthPerToken() / 1e18;

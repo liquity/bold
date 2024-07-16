@@ -28,7 +28,7 @@ contract WETHPriceFeed is MainnetPriceFeedBase, IWETHPriceFeed {
         (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
 
         // If the Chainlink response was invalid in this transaction, return the last good ETH-USD price calculated
-        if (ethUsdOracleDown) {return _disableFeed(address(ethUsdOracle.aggregator));}
+        if (ethUsdOracleDown) {return _disableFeedAndShutDown(address(ethUsdOracle.aggregator));}
 
         lastGoodPrice = ethUsdPrice;
 

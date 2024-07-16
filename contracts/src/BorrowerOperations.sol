@@ -567,15 +567,16 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         emit ShutDown(TCR);
     }
 
-    // TODO: not technically a "Borrower op", but seems best placed here given current shutdown logic.
-    //  Should we move it/refactor?
-    function shutdownFromOracleFailure(address _oracleAddress) external {
+    // Not technically a "Borrower op", but seems best placed here given current shutdown logic.
+    function shutdownFromOracleFailure(address _failedOracleAddr) external {
         _requireCallerIsPriceFeed();
+        
+        // No-op rather than revert here, so that the outer function call which fetches the price does not revert
         if (hasBeenShutDown) return;
 
         _applyShutdown();
 
-        emit ShutDownFromOracleFailure(_oracleAddress);
+        emit ShutDownFromOracleFailure(_failedOracleAddr);
     }
 
     function _applyShutdown() internal {
