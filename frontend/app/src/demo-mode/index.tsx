@@ -9,7 +9,6 @@ import { noop } from "@/src/utils";
 import { vAddress } from "@/src/valibot-utils";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import * as v from "valibot";
-
 export * from "./demo-data";
 
 const DEMO_STATE_KEY = `${LOCAL_STORAGE_PREFIX}demo_state`;

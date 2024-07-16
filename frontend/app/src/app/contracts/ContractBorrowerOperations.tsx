@@ -1,5 +1,5 @@
 import { BorrowerOperationsContract } from "@/src/contracts";
-import { formValue, parseInputInt, parseInputPercentage, parseInputFloat, useForm } from "@/src/form-utils";
+import { formValue, parseInputFloat, parseInputInt, parseInputPercentage, useForm } from "@/src/form-utils";
 import { getTroveId, useCollTokenAllowance } from "@/src/liquity-utils";
 import { FormField, TextInput } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -265,6 +265,7 @@ function AdjustTroveInterestRate() {
     newAnnualInterestRate: formValue(dn.from(0, 18), parseInputPercentage),
     upperHint: formValue(dn.from(0, 18), parseInputFloat),
     lowerHint: formValue(dn.from(0, 18), parseInputFloat),
+    maxUpfrontFee: formValue(dn.from(0, 18), parseInputFloat),
   }), reset);
 
   const onSubmit = () => {
@@ -277,6 +278,7 @@ function AdjustTroveInterestRate() {
           values.newAnnualInterestRate[0],
           values.upperHint[0],
           values.lowerHint[0],
+          values.maxUpfrontFee[0],
         ],
       });
     }
@@ -300,6 +302,9 @@ function AdjustTroveInterestRate() {
       <FormField label="Lower Hint">
         <TextInput {...fieldsProps.lowerHint} />
       </FormField>
+      <FormField label="Max Upfront Fee">
+        <TextInput {...fieldsProps.maxUpfrontFee} />
+      </FormField>
     </ContractAction>
   );
 }
@@ -310,11 +315,11 @@ function AdjustTrove() {
 
   const { fieldsProps, values } = useForm(() => ({
     ownerIndex: formValue(0n, parseInputInt),
-    maxFeePercentage: formValue(dn.from(0, 18), parseInputFloat),
     collChange: formValue(dn.from(0, 18), parseInputFloat),
     isCollIncrease: formValue(false, (value) => value === "true"),
     boldChange: formValue(dn.from(0, 18), parseInputFloat),
     isDebtIncrease: formValue(false, (value) => value === "true"),
+    maxUpfrontFee: formValue(dn.from(0, 18), parseInputFloat),
   }), reset);
 
   const onSubmit = () => {
@@ -324,11 +329,11 @@ function AdjustTrove() {
         functionName: "adjustTrove",
         args: [
           getTroveId(account.address, values.ownerIndex),
-          values.maxFeePercentage[0],
           values.collChange[0],
           values.isCollIncrease,
           values.boldChange[0],
           values.isDebtIncrease,
+          values.maxUpfrontFee[0],
         ],
       });
     }
@@ -343,9 +348,6 @@ function AdjustTrove() {
       <FormField label="Owner Index">
         <TextInput {...fieldsProps.ownerIndex} />
       </FormField>
-      <FormField label="Max Fee Percentage">
-        <TextInput {...fieldsProps.maxFeePercentage} />
-      </FormField>
       <FormField label="Coll Change">
         <TextInput {...fieldsProps.collChange} />
       </FormField>
@@ -357,6 +359,9 @@ function AdjustTrove() {
       </FormField>
       <FormField label="Is Debt Increase">
         <TextInput {...fieldsProps.isDebtIncrease} />
+      </FormField>
+      <FormField label="Max Upfront Fee">
+        <TextInput {...fieldsProps.maxUpfrontFee} />
       </FormField>
     </ContractAction>
   );

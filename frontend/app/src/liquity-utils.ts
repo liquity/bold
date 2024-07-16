@@ -11,19 +11,18 @@ import {
 } from "@/src/contracts";
 import { ADDRESS_ZERO } from "@/src/eth-utils";
 import { useWatchQueries } from "@/src/wagmi-utils";
+import { useState } from "react";
 import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, maxUint256, parseAbiParameters } from "viem";
 import { useAccount, useBalance, useReadContract, useReadContracts, useWriteContract } from "wagmi";
 
-// hardcoded for now
-const ETH_PRICE_IN_USD = 200n;
-
+// As defined in ITroveManager.sol
 export type TroveStatus =
   | "nonExistent"
   | "active"
   | "closedByOwner"
   | "closedByLiquidation"
-  | "closedByRedemption";
+  | "unredeemable";
 
 type TroveDetails = {
   status: TroveStatus;
@@ -44,7 +43,7 @@ function troveStatusFromNumber(value: number): TroveStatus {
     .with(1, () => "active")
     .with(2, () => "closedByOwner")
     .with(3, () => "closedByLiquidation")
-    .with(4, () => "closedByRedemption")
+    .with(4, () => "unredeemable")
     .otherwise(() => {
       throw new Error(`Unknown trove status number: ${value}`);
     });
@@ -56,7 +55,7 @@ export function troveStatusToLabel(status: TroveStatus) {
     .with("active", () => "Active")
     .with("closedByOwner", () => "Closed by owner")
     .with("closedByLiquidation", () => "Closed by liquidation")
-    .with("closedByRedemption", () => "Closed by redemption")
+    .with("unredeemable", () => "Unredeemable")
     .exhaustive();
 }
 
@@ -164,7 +163,7 @@ export function useTroveRewards(troveId: TroveId) {
     contracts: [
       {
         ...TroveManagerContract,
-        functionName: "getPendingETHReward",
+        functionName: "getPendingCollReward",
         args: [troveId],
       },
       {
@@ -204,7 +203,7 @@ export function useStabilityPoolStats() {
       },
       {
         ...StabilityPoolContract,
-        functionName: "getETHBalance",
+        functionName: "getCollBalance",
       },
     ],
   });
@@ -219,74 +218,16 @@ export function useStabilityPoolStats() {
 
   const data = {
     totalBoldDeposits: [read.data[0], 18],
-    ethBalance: [read.data[1], 18],
+    collBalance: [read.data[1], 18],
   } as const;
 
   return { ...read, data };
 }
 
-export function useTrovesStats() {
-  const read = useReadContracts({
-    allowFailure: false,
-    contracts: [
-      {
-        ...TroveManagerContract,
-        functionName: "getTroveIdsCount",
-        args: [],
-      },
-      {
-        ...TroveManagerContract,
-        functionName: "getEntireSystemColl",
-        args: [],
-      },
-      {
-        ...TroveManagerContract,
-        functionName: "getEntireSystemDebt",
-        args: [],
-      },
-      {
-        ...TroveManagerContract,
-        functionName: "getTCR",
-        args: [ETH_PRICE_IN_USD * 10n ** 18n],
-      },
-      {
-        ...TroveManagerContract,
-        functionName: "checkRecoveryMode",
-        args: [ETH_PRICE_IN_USD * 10n ** 18n],
-      },
-      {
-        ...TroveManagerContract,
-        functionName: "getRedemptionRate",
-        args: [],
-      },
-    ],
-    query: {
-      select: ([
-        trovesCount,
-        totalCollateral,
-        totalDebt,
-        tcr,
-        recoveryMode,
-        redemptionRate,
-      ]) => ({
-        redemptionRate: [redemptionRate, 18] as const,
-        recoveryMode,
-        tcr: [tcr && tcr <= 10n ** 18n ? tcr : 0n, 18] as const,
-        totalCollateral: [totalCollateral, 18] as const,
-        totalDebt: [totalDebt, 18] as const,
-        trovesCount: Number(trovesCount),
-      }),
-    },
-  });
-  useWatchQueries([read]);
-
-  return read;
-}
-
-export function getTroveId(owner: Address, ownerIndex: bigint) {
+export function getTroveId(owner: Address, ownerIndex: bigint | number) {
   return BigInt(keccak256(encodeAbiParameters(
     parseAbiParameters("address, uint256"),
-    [owner, ownerIndex],
+    [owner, BigInt(ownerIndex)],
   )));
 }
 
