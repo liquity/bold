@@ -85,8 +85,7 @@ The core Liquity contracts are organized in this manner:
 
 -An entire collateral branch is deployed for each LST collateral. A collateral branch contains all the logic necessary for opening and managing Troves, liquidating Troves, Stability Pool deposits, and redemptions (from that branch).
 
-<img width="698" alt="image" src="https://github.com/user-attachments/assets/0d9c1fef-3edb-40bb-b991-d5c676b551dc">
-
+<img width="731" alt="image" src="https://github.com/user-attachments/assets/b7fd9a4f-353b-4b1a-b32f-0abf0b8c0405">
 
 
 
