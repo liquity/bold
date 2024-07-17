@@ -3,6 +3,7 @@
 pragma solidity 0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 import "./Dependencies/Constants.sol";
 import "./Interfaces/IActivePool.sol";
@@ -116,7 +117,12 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     function calcPendingAggInterest() public view returns (uint256) {
         if (hasBeenShutDown) return 0;
 
-        return aggWeightedDebtSum * (block.timestamp - lastAggUpdateTime) / ONE_YEAR / DECIMAL_PRECISION;
+        // We use the ceiling of the division here to ensure positive error, while we use regular floor division
+        // when calculating the interest accrued by individual Troves.
+        // This ensures that `system debt >= sum(trove debt)` always holds, and thus system debt won't turn negative
+        // even if all Trove debt is repaid. The difference should be small and it should scale with the number of
+        // interest minting events.
+        return Math.ceilDiv(aggWeightedDebtSum * (block.timestamp - lastAggUpdateTime), ONE_YEAR * DECIMAL_PRECISION);
     }
 
     function calcPendingSPYield() external view returns (uint256) {

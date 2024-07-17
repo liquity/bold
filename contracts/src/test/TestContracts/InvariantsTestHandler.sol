@@ -554,26 +554,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Cleanup
             if (isCollIncrease) _sweepCollAndUnapprove(i, msg.sender, collChange, address(v.c.borrowerOperations));
             if (!isDebtIncrease) _sweepBold(msg.sender, debtChange);
-        } catch Panic(uint256 code) {
-            // TODO: instead of checking for debtDecrease <= entireDebt in adjustTrove,
-            // check debtDecrease <= entireDebt - MIN_DEBT to avoid underflow
-            assertEq(code, 0x11, "Unexpected panic code");
-
-            int256 newActiveDebt = int256(activeDebt[i]);
-            newActiveDebt += int256(getPendingInterest(i));
-            newActiveDebt += int256(v.t.redistBoldDebtGain);
-            newActiveDebt -= int256(v.t.entireDebt);
-
-            assertLtDecimal(newActiveDebt, 0, 18, "Unexpected underflow or overflow");
-            assertLtDecimal(-newActiveDebt, 100, 18, "Unexpectedly large underflow");
-
-            info("Expected arithmetic underflow when trying to adjust debt of last Trove to 0");
-            info("New active debt would have been: ", newActiveDebt.decimal());
-            _log();
-
-            // Cleanup
-            if (isCollIncrease) _sweepCollAndUnapprove(i, msg.sender, collChange, address(v.c.borrowerOperations));
-            if (!isDebtIncrease) _sweepBold(msg.sender, debtChange);
         }
     }
 
@@ -736,24 +716,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             }
 
             info("Expected revert: ", reason);
-            _log();
-
-            // Cleanup
-            _sweepBold(msg.sender, dealt);
-        } catch Panic(uint256 code) {
-            // TODO: check for this being the last Trove earlier in closeTrove, so we don't run into underflow
-            assertEq(code, 0x11, "Unexpected panic code");
-
-            int256 newActiveDebt = int256(activeDebt[i]);
-            newActiveDebt += int256(getPendingInterest(i));
-            newActiveDebt += int256(t.redistBoldDebtGain);
-            newActiveDebt -= int256(t.entireDebt);
-
-            assertLtDecimal(newActiveDebt, 0, 18, "Unexpected underflow or overflow");
-            assertLtDecimal(-newActiveDebt, 100, 18, "Unexpectedly large underflow");
-
-            info("Expected arithmetic underflow when trying to close last Trove");
-            info("New active debt would have been: ", newActiveDebt.decimal());
             _log();
 
             // Cleanup

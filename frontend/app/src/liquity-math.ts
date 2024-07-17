@@ -37,7 +37,7 @@ export function getLiquidationRiskFromLeverageFactor(
 }
 
 export function getLtvFromLeverageFactor(leverageFactor: number) {
-  return dn.div(
+  return leverageFactor === 0 ? dn.from(0, 18) : dn.div(
     dn.sub(leverageFactor, dn.from(1, 18)),
     leverageFactor,
   );
@@ -65,14 +65,17 @@ export function getLeverageFactorFromLiquidationPrice(
   liquidationPrice: Dnum,
   collateralRatio: number,
 ) {
-  return Math.round(
-    dn.toNumber(dn.div(
-      dn.sub(
-        dn.mul(liquidationPrice, dn.div(dn.from(1, 18), collateralRatio)),
-        ethPrice,
+  const divider = dn.sub(liquidationPrice, ethPrice);
+  return dn.eq(divider, 0) ? 0 : Math.round(
+    dn.toNumber(
+      dn.div(
+        dn.sub(
+          dn.mul(liquidationPrice, dn.div(dn.from(1, 18), collateralRatio)),
+          ethPrice,
+        ),
+        divider,
       ),
-      dn.sub(liquidationPrice, ethPrice),
-    )) * 10,
+    ) * 10,
   ) / 10;
 }
 

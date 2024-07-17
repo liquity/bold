@@ -7,6 +7,6 @@
   "bugs": "https://github.com/liquity/bold/issues",
   "homepage": "https://github.com/liquity/bold#readme",
   "devDependencies": {
-    "dprint": "^0.45.0"
+    "dprint": "^0.47.2"
   }
 }
