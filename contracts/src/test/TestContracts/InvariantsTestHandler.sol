@@ -37,7 +37,8 @@ import {
     REDEMPTION_BETA,
     REDEMPTION_MINUTE_DECAY_FACTOR,
     SP_YIELD_SPLIT,
-    UPFRONT_INTEREST_PERIOD
+    UPFRONT_INTEREST_PERIOD,
+    URGENT_REDEMPTION_BONUS
 } from "../../Dependencies/Constants.sol";
 
 uint256 constant TIME_DELTA_MIN = 0;
@@ -177,18 +178,19 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     ITroveManager.Status constant NON_EXISTENT = ITroveManager.Status.nonExistent;
     ITroveManager.Status constant ACTIVE = ITroveManager.Status.active;
     ITroveManager.Status constant CLOSED_BY_OWNER = ITroveManager.Status.closedByOwner;
-    ITroveManager.Status constant CLOSED_BY_LIQUIDATION = ITroveManager.Status.closedByLiquidation;
+    ITroveManager.Status constant CLOSED_BY_LIQ = ITroveManager.Status.closedByLiquidation;
     ITroveManager.Status constant UNREDEEMABLE = ITroveManager.Status.unredeemable;
 
     FunctionCaller immutable _functionCaller;
 
-    // Per-branch constants
+    // Constants (per branch)
     mapping(uint256 => uint256) MCR;
     mapping(uint256 => uint256) SCR;
     mapping(uint256 => uint256) LIQ_PENALTY_SP;
     mapping(uint256 => uint256) LIQ_PENALTY_REDIST;
 
     // Ghost variables (per branch)
+    // TODO: also ghost Troves?
     mapping(uint256 => uint256) public numTroves;
     mapping(uint256 => uint256) public numZombies;
     mapping(uint256 => uint256) public activeDebt;
@@ -199,13 +201,14 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     mapping(uint256 => uint256) public spBoldDeposits;
     mapping(uint256 => uint256) public spBoldYield;
     mapping(uint256 => uint256) public spColl;
+    mapping(uint256 => bool) public isShutdown;
 
     // Price per branch
     mapping(uint256 => uint256) _price;
 
     // Bold yield sent to the SP at a time when there are no deposits is lost forever
     // We keep track of the lost amount so we can use it in invariants
-    mapping(uint256 => uint256) public spUnclaimableBoldYield;
+    mapping(uint256 => uint256) public spUnclaimableBoldYield; // branch index =>
 
     // All free-floating BOLD is kept in the handler, to be dealt out to actors as needed
     uint256 _handlerBold;
@@ -214,17 +217,22 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     uint256 _baseRate = INITIAL_BASE_RATE;
     uint256 _timeSinceLastRedemption = 0;
 
-    // Used to keep track of interest accrual
+    // Used to keep track of interest accrual (per branch)
     mapping(uint256 => uint256) _interestAccrual;
     mapping(uint256 => uint256) _pendingInterest;
 
     // Batch liquidation transient state
-    mapping(uint256 => bool) _liquidationHasSeen;
+    mapping(uint256 => bool) _liquidationHasSeen; // TroveID =>
     address[] _liquidationBatch;
-    address[] _liquidatable;
+    address[] _liquidationPlan;
 
-    // Redemption transient state
+    // Redemption transient state (redeemed Troves per branch)
     mapping(uint256 => RedeemedTrove[]) _redemptionPlan;
+
+    // Urgent redemption transient state
+    mapping(uint256 => bool) _urgentRedemptionHasSeen; // TroveID =>
+    address[] _urgentRedemptionBatch;
+    RedeemedTrove[] _urgentRedemptionPlan;
 
     constructor(Contracts memory contracts) {
         _functionCaller = new FunctionCaller();
@@ -276,7 +284,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         _timeSinceLastRedemption += timeDelta;
 
         for (uint256 i = 0; i < branches.length; ++i) {
-            _pendingInterest[i] += _interestAccrual[i] * timeDelta;
+            if (!isShutdown[i]) _pendingInterest[i] += _interestAccrual[i] * timeDelta;
         }
     }
 
@@ -352,6 +360,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             uint256 newTCR = _TCR(i, int256(v.coll), int256(borrowed), v.upfrontFee);
 
             // Preconditions
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertFalse(v.wasOpen, "Should have failed as Trove was open");
             assertLeDecimal(interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as interest rate > max");
             assertGeDecimal(v.debt, MIN_DEBT, 18, "Should have failed as debt < min");
@@ -380,7 +389,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _sweepBold(msg.sender, borrowed);
         } catch Error(string memory reason) {
             // Justify failures
-            if (reason.equals("BorrowerOps: Trove is open")) {
+            if (reason.equals("BO: Branch shut down")) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else if (reason.equals("BorrowerOps: Trove is open")) {
                 assertTrue(v.wasOpen, "Shouldn't have failed as Trove wasn't open");
             } else if (reason.equals("Interest rate must not be greater than max")) {
                 assertGtDecimal(
@@ -472,6 +483,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             uint256 newTCR = _TCR(i, v.collDelta, v.debtDelta, v.upfrontFee);
 
             // Preconditions
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertTrue(collChange > 0 || debtChange > 0, "Should have failed as there was no change");
             assertTrue(v.wasActive, "Should have failed as Trove was not active");
 
@@ -516,7 +528,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             if (isDebtIncrease) _sweepBold(msg.sender, debtChange);
         } catch Error(string memory reason) {
             // Justify errors
-            if (reason.equals("BorrowerOps: There must be either a collateral change or a debt change")) {
+            if (reason.equals("BO: Branch shut down")) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else if (reason.equals("BorrowerOps: There must be either a collateral change or a debt change")) {
                 assertEqDecimal(collChange, 0, 18, "Shouldn't have failed as there was a coll change");
                 assertEqDecimal(debtChange, 0, 18, "Shouldn't have failed as there was a debt change");
             } else if (reason.equals("BorrowerOps: Trove does not have active status")) {
@@ -594,6 +608,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             uint256 newTCR = _TCR(i, 0, 0, v.upfrontFee);
 
             // Preconditions
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertTrue(v.wasActive, "Should have failed as Trove was not active");
             assertLeDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as interest rate > max");
 
@@ -625,7 +640,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _interestAccrual[i] -= v.t.recordedDebt * v.t.annualInterestRate;
         } catch Error(string memory reason) {
             // Justify failures
-            if (reason.equals("ERC721: invalid token ID")) {
+            if (reason.equals("BO: Branch shut down")) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else if (reason.equals("ERC721: invalid token ID")) {
                 assertFalse(_isOpen(i, v.troveId), "Open Trove should have an NFT");
             } else if (reason.equals("BorrowerOps: Trove does not have active status")) {
                 assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
@@ -672,7 +689,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Preconditions
             assertTrue(wasOpen, "Should have failed as Trove wasn't open");
             assertGt(numTroves[i], 1, "Should have failed to close last Trove in the system");
-            assertGeDecimal(newTCR, CCR, 18, "Should have failed as new TCR < CCR");
+            if (!isShutdown[i]) assertGeDecimal(newTCR, CCR, 18, "Should have failed as new TCR < CCR");
 
             // Effects (Trove)
             assertEqDecimal(c.troveManager.getTroveEntireColl(troveId), 0, 18, "Coll should have been zeroed");
@@ -709,6 +726,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertEq(numTroves[i], 1, "Shouldn't have failed as there was at least one Trove left in the system");
             } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
                 uint256 newTCR = _TCR(i, -int256(t.entireColl), -int256(t.entireDebt), 0);
+                assertFalse(isShutdown[i], "Shouldn't have failed as branch had been shut down");
                 assertLtDecimal(newTCR, CCR, 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
             } else {
@@ -736,7 +754,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         _planLiquidation(i, t);
 
         info("batch: [", _labelsFrom(_liquidationBatch).join(", "), "]");
-        info("liquidatable: [", _labelsFrom(_liquidatable).join(", "), "]");
+        info("liquidatable: [", _labelsFrom(_liquidationPlan).join(", "), "]");
         logCall("batchLiquidateTroves", i.toString());
 
         vm.prank(msg.sender);
@@ -747,17 +765,15 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // Preconditions
             assertGt(_liquidationBatch.length, 0, "Should have failed as batch was empty");
-            assertGt(_liquidatable.length, 0, "Should have failed as there was nothing to liquidate");
-            assertGt(numTroves[i] - _liquidatable.length, 0, "Should have failed to liquidate last Trove in the system");
+            assertGt(_liquidationPlan.length, 0, "Should have failed as there was nothing to liquidate");
+            assertGt(numTroves[i] - _liquidationPlan.length, 0, "Should have failed to liquidate last Trove");
 
             // Effects (Troves)
-            for (uint256 j = 0; j < _liquidatable.length; ++j) {
-                uint256 troveId = _troveIdOf(_liquidatable[j]);
+            for (uint256 j = 0; j < _liquidationPlan.length; ++j) {
+                uint256 troveId = _troveIdOf(_liquidationPlan[j]);
                 assertEqDecimal(c.troveManager.getTroveEntireColl(troveId), 0, 18, "Coll should have been zeroed");
                 assertEqDecimal(c.troveManager.getTroveEntireDebt(troveId), 0, 18, "Debt should have been zeroed");
-                assertEq(
-                    c.troveManager.getTroveStatus(troveId).toString(), CLOSED_BY_LIQUIDATION.toString(), "Wrong status"
-                );
+                assertEq(c.troveManager.getTroveStatus(troveId).toString(), CLOSED_BY_LIQ.toString(), "Wrong status");
                 assertFalse(c.sortedTroves.contains(troveId), "Trove should have been removed from SortedTroves");
             }
 
@@ -787,23 +803,19 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             activeColl[i] -= t.collGasComp;
             _interestAccrual[i] -= t.interestAccrualDecrease;
-            numTroves[i] -= _liquidatable.length;
+            numTroves[i] -= _liquidationPlan.length;
 
             // Cleanup
             _sweepColl(i, msg.sender, t.collGasComp);
-            _sweepWETH(msg.sender, _liquidatable.length * ETH_GAS_COMPENSATION);
+            _sweepWETH(msg.sender, _liquidationPlan.length * ETH_GAS_COMPENSATION);
         } catch Error(string memory reason) {
             // Justify failures
             if (reason.equals("TroveManager: Calldata address array must not be empty")) {
                 assertEq(_liquidationBatch.length, 0, "Shouldn't have failed as batch was not empty");
             } else if (reason.equals("TroveManager: nothing to liquidate")) {
-                assertEq(_liquidatable.length, 0, "Shouldn't have failed as there were liquidatable Troves");
+                assertEq(_liquidationPlan.length, 0, "Shouldn't have failed as there were liquidatable Troves");
             } else if (reason.equals("TroveManager: Only one trove in the system")) {
-                assertEq(
-                    numTroves[i] - _liquidatable.length,
-                    0,
-                    "Shouldn't have failed as there was at least one Trove left in the system"
-                );
+                assertEq(numTroves[i] - _liquidationPlan.length, 0, "Shouldn't have failed as there were Troves left");
             } else {
                 revert(reason);
             }
@@ -812,7 +824,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _log();
         }
 
-        _resetLiquidationBatch();
+        _resetLiquidation();
     }
 
     function redeemCollateral(uint256 amount, uint256 maxIterationsPerCollateral) external {
@@ -836,7 +848,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         info("redeemed BOLD: ", redeemedBold.decimal());
         info("redeemed Troves: [");
         for (uint256 i = 0; i < branches.length; ++i) {
-            info("  [", _labelsFrom(_redemptionPlan, i).join(", "), "],");
+            info("  [", isShutdown[i] ? "/* shutdown */" : _labelsFrom(_redemptionPlan, i).join(", "), "],");
         }
         info("]");
         logCall("redeemCollateral", amount.decimal(), maxIterationsPerCollateral.toString());
@@ -862,10 +874,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 // Effects (Troves)
                 for (uint256 i = 0; i < troves.length; ++i) {
                     RedeemedTrove memory trove = troves[i];
-
-                    if (i < troves.length - 1) {
-                        assertEqDecimal(trove.newDebt, 0, 18, "Only last Trove redeemed in branch may have debt left");
-                    }
 
                     assertEqDecimal(c.troveManager.getTroveEntireColl(trove.id), trove.newColl, 18, "Wrong coll");
                     assertEqDecimal(c.troveManager.getTroveEntireDebt(trove.id), trove.newDebt, 18, "Wrong debt");
@@ -920,7 +928,107 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _sweepBold(msg.sender, amount);
         }
 
-        _resetRedemptionPlan();
+        _resetRedemption();
+    }
+
+    function shutdown(uint256 i) external {
+        i = _bound(i, 0, branches.length - 1);
+        LiquityContracts memory c = branches[i];
+
+        logCall("shutdown", i.toString());
+
+        vm.prank(msg.sender);
+        try c.borrowerOperations.shutdown() {
+            // Preconditions
+            assertLtDecimal(_TCR(i), SCR[i], 18, "Should have failed as TCR >= SCR");
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
+
+            // Effects
+            isShutdown[i] = true;
+            _mintYield(i, 0);
+        } catch Error(string memory reason) {
+            // Justify failures
+            if (reason.equals("BO: TCR is not below SCR")) {
+                assertGeDecimal(_TCR(i), SCR[i], 18, "Shouldn't have failed as TCR < SCR");
+            } else if (reason.equals("BO: already shutdown")) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else {
+                revert(reason);
+            }
+
+            info("Expected revert: ", reason);
+            _log();
+        }
+    }
+
+    function addMeToUrgentRedemptionBatch() external {
+        logCall("addMeToUrgentRedemptionBatch");
+        _addToUrgentRedemptionBatch(msg.sender);
+    }
+
+    function urgentRedemption(uint256 i, uint256 amount) external {
+        i = _bound(i, 0, branches.length - 1);
+        amount = _bound(amount, 0, _handlerBold);
+
+        LiquityContracts memory c = branches[i];
+        RedemptionTotals memory t;
+        _planUrgentRedemption(i, amount, t);
+        assertLeDecimal(t.debtRedeemed, amount, 18, "Total redeemed exceeds input amount");
+
+        info("redeemed BOLD: ", t.debtRedeemed.decimal());
+        info("batch: [", _labelsFrom(_urgentRedemptionBatch).join(", "), "]");
+        logCall("urgentRedemption", i.toString(), amount.decimal());
+
+        // TODO: randomly deal less than amount?
+        _dealBold(msg.sender, amount);
+
+        vm.prank(msg.sender);
+        try c.troveManager.urgentRedemption(amount, _troveIdsFrom(_urgentRedemptionBatch), t.collRedeemed) {
+            // Preconditions
+            assertTrue(isShutdown[i], "Should have failed as branch hadn't been shut down");
+
+            // Effects (Troves)
+            for (uint256 j = 0; j < _urgentRedemptionPlan.length; ++j) {
+                RedeemedTrove memory trove = _urgentRedemptionPlan[j];
+                assertEqDecimal(c.troveManager.getTroveEntireColl(trove.id), trove.newColl, 18, "Wrong coll");
+                assertEqDecimal(c.troveManager.getTroveEntireDebt(trove.id), trove.newDebt, 18, "Wrong debt");
+            }
+
+            // Effects (system)
+            _mintYield(i, 0);
+
+            activeColl[i] += t.appliedCollRedist;
+            defaultColl[i] -= t.appliedCollRedist;
+
+            activeDebt[i] += t.appliedDebtRedist;
+            defaultDebt[i] -= t.appliedDebtRedist;
+
+            activeColl[i] -= t.collRedeemed;
+            activeDebt[i] -= t.debtRedeemed;
+
+            _interestAccrual.update(i, t.interestAccrualDelta);
+
+            // Cleanup (coll)
+            _sweepColl(i, msg.sender, t.collRedeemed);
+
+            // Cleanup (remaining BOLD)
+            _sweepBold(msg.sender, amount - t.debtRedeemed);
+        } catch Error(string memory reason) {
+            // Justify failures
+            if (reason.equals("TroveManager: Branch is not shut down")) {
+                assertFalse(isShutdown[i], "Shouldn't have failed as branch had been shut down");
+            } else {
+                revert(reason);
+            }
+
+            info("Expected revert: ", reason);
+            _log();
+
+            // Cleanup
+            _sweepBold(msg.sender, amount);
+        }
+
+        _resetUrgentRedemption();
     }
 
     function provideToSP(uint256 i, uint256 amount, bool claim) external {
@@ -1376,18 +1484,18 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
             if (trove.entireDebt == 0 || _ICR(i, trove) >= MCR[i]) continue;
 
-            _liquidatable.push(_liquidationBatch[j]);
+            _liquidationPlan.push(_liquidationBatch[j]);
             _aggregateLiquidation(i, trove, t);
         }
     }
 
-    function _resetLiquidationBatch() internal {
+    function _resetLiquidation() internal {
         for (uint256 i = 0; i < _liquidationBatch.length; ++i) {
             delete _liquidationHasSeen[_troveIdOf(_liquidationBatch[i])];
         }
 
         delete _liquidationBatch;
-        delete _liquidatable;
+        delete _liquidationPlan;
     }
 
     function _planRedemption(
@@ -1397,24 +1505,17 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         RedemptionTotals[] memory t
     ) internal returns (uint256 totalRedeemed) {
         uint256 totalUnbacked = 0;
-        bool[] memory redeemFromBranch = new bool[](branches.length);
+        uint256[] memory unbacked = new uint256[](branches.length);
 
         for (uint256 j = 0; j < branches.length; ++j) {
-            if (_TCR(j) < SCR[j]) continue;
-
-            uint256 unbacked = _getUnbacked(j);
-            if (unbacked == 0) continue;
-
-            totalUnbacked += unbacked;
-            redeemFromBranch[j] = true;
+            if (isShutdown[j] || _TCR(j) < SCR[j]) continue;
+            totalUnbacked += unbacked[j] = _getUnbacked(j);
         }
 
         if (totalUnbacked == 0) return 0;
 
         for (uint256 j = 0; j < branches.length; ++j) {
-            if (!redeemFromBranch[j]) continue;
-
-            t[j].attemptedAmount = amount * _getUnbacked(j) / totalUnbacked;
+            t[j].attemptedAmount = amount * unbacked[j] / totalUnbacked;
             if (t[j].attemptedAmount == 0) continue;
 
             LiquityContracts memory c = branches[j];
@@ -1459,10 +1560,61 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
     }
 
-    function _resetRedemptionPlan() internal {
+    function _resetRedemption() internal {
         for (uint256 i = 0; i < branches.length; ++i) {
             delete _redemptionPlan[i];
         }
+    }
+
+    function _addToUrgentRedemptionBatch(address owner) internal {
+        _urgentRedemptionBatch.push(owner);
+    }
+
+    function _planUrgentRedemption(uint256 i, uint256 amount, RedemptionTotals memory t) internal {
+        for (uint256 j = 0; j < _urgentRedemptionBatch.length; ++j) {
+            uint256 troveId = _troveIdOf(_urgentRedemptionBatch[j]);
+
+            if (_urgentRedemptionHasSeen[troveId]) continue; // skip duplicate entry
+            _urgentRedemptionHasSeen[troveId] = true;
+
+            LatestTroveData memory trove = branches[i].troveManager.getLatestTroveData(troveId);
+            uint256 debtRedeemed = Math.min(amount, trove.entireDebt);
+            uint256 collRedeemed = debtRedeemed * (DECIMAL_PRECISION + URGENT_REDEMPTION_BONUS) / _price[i];
+
+            if (collRedeemed > trove.entireColl) {
+                collRedeemed = trove.entireColl;
+                debtRedeemed = trove.entireColl * _price[i] / (DECIMAL_PRECISION + URGENT_REDEMPTION_BONUS);
+            }
+
+            RedeemedTrove storage redeemedTrove = _urgentRedemptionPlan.push() = RedeemedTrove({
+                id: troveId,
+                newColl: trove.entireColl - collRedeemed,
+                newDebt: trove.entireDebt - debtRedeemed
+            });
+
+            // Pending redist
+            t.appliedDebtRedist += trove.redistBoldDebtGain;
+            t.appliedCollRedist += trove.redistCollGain;
+
+            // Total redeemed
+            t.collRedeemed += collRedeemed;
+            t.debtRedeemed += debtRedeemed;
+
+            // Interest accrual (although accrual has stopped, it doesn't hurt to keep track of this)
+            t.interestAccrualDelta += int256(redeemedTrove.newDebt * trove.annualInterestRate);
+            t.interestAccrualDelta -= int256(trove.recordedDebt * trove.annualInterestRate);
+
+            amount -= debtRedeemed;
+        }
+    }
+
+    function _resetUrgentRedemption() internal {
+        for (uint256 i = 0; i < _urgentRedemptionBatch.length; ++i) {
+            delete _urgentRedemptionHasSeen[_troveIdOf(_urgentRedemptionBatch[i])];
+        }
+
+        delete _urgentRedemptionBatch;
+        delete _urgentRedemptionPlan;
     }
 
     function _encodeTroveAdjustment(

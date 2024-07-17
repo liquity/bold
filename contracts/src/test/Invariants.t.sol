@@ -155,6 +155,8 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
             }
         }
 
+        // TODO: precisely track upper bound of error by counting int divisions in interest accrual.
+        // (Redistributions have a feedback loop that prevents errors from accumulating there).
         assertApproxEqAbsDecimal(
             totalBold + totalPendingInterest, totalDebt, 1e-10 ether, 18, "Total Bold !~= total debt"
         );
