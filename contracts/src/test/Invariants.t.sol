@@ -132,22 +132,27 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
             );
             assertEqDecimal(c.stabilityPool.getCollBalance(), handler.spColl(i), 18, "Wrong StabilityPool Coll balance");
         }
+
+        assertEqDecimal(boldToken.totalSupply(), handler.getBoldSupply(), 18, "Wrong BOLD supply");
+        assertEqDecimal(
+            collateralRegistry.getRedemptionRateWithDecay(), handler.getRedemptionRate(), 18, "Wrong redemption rate"
+        );
     }
 
     function invariant_AllBoldBackedByTroveDebt() external view {
         uint256 totalBold = boldToken.totalSupply();
-        uint256 totalDebt = 0;
         uint256 totalPendingInterest = 0;
+        uint256 totalDebt = 0;
 
         for (uint256 j = 0; j < branches.length; ++j) {
             LiquityContracts memory c = branches[j];
             uint256 numTroves = c.troveManager.getTroveIdsCount();
 
+            totalPendingInterest += c.activePool.calcPendingAggInterest();
+
             for (uint256 i = 0; i < numTroves; ++i) {
                 totalDebt += c.troveManager.getTroveEntireDebt(c.troveManager.getTroveFromTroveIdsArray(i));
             }
-
-            totalPendingInterest += c.activePool.calcPendingAggInterest();
         }
 
         assertApproxEqAbsDecimal(
