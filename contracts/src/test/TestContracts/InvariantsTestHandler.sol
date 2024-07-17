@@ -189,6 +189,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     mapping(uint256 => uint256) LIQ_PENALTY_REDIST;
 
     // Ghost variables (per branch)
+    // TODO: also ghost Troves?
     mapping(uint256 => uint256) public numTroves;
     mapping(uint256 => uint256) public numZombies;
     mapping(uint256 => uint256) public activeDebt;
@@ -199,6 +200,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     mapping(uint256 => uint256) public spBoldDeposits;
     mapping(uint256 => uint256) public spBoldYield;
     mapping(uint256 => uint256) public spColl;
+    mapping(uint256 => bool) public isShutdown;
 
     // Price per branch
     mapping(uint256 => uint256) _price;
@@ -276,7 +278,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         _timeSinceLastRedemption += timeDelta;
 
         for (uint256 i = 0; i < branches.length; ++i) {
-            _pendingInterest[i] += _interestAccrual[i] * timeDelta;
+            if (!isShutdown[i]) _pendingInterest[i] += _interestAccrual[i] * timeDelta;
         }
     }
 
@@ -352,6 +354,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             uint256 newTCR = _TCR(i, int256(v.coll), int256(borrowed), v.upfrontFee);
 
             // Preconditions
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertFalse(v.wasOpen, "Should have failed as Trove was open");
             assertLeDecimal(interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as interest rate > max");
             assertGeDecimal(v.debt, MIN_DEBT, 18, "Should have failed as debt < min");
@@ -380,7 +383,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _sweepBold(msg.sender, borrowed);
         } catch Error(string memory reason) {
             // Justify failures
-            if (reason.equals("BorrowerOps: Trove is open")) {
+            if (reason.equals("BO: Branch shut down")) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else if (reason.equals("BorrowerOps: Trove is open")) {
                 assertTrue(v.wasOpen, "Shouldn't have failed as Trove wasn't open");
             } else if (reason.equals("Interest rate must not be greater than max")) {
                 assertGtDecimal(
@@ -472,6 +477,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             uint256 newTCR = _TCR(i, v.collDelta, v.debtDelta, v.upfrontFee);
 
             // Preconditions
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertTrue(collChange > 0 || debtChange > 0, "Should have failed as there was no change");
             assertTrue(v.wasActive, "Should have failed as Trove was not active");
 
@@ -516,7 +522,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             if (isDebtIncrease) _sweepBold(msg.sender, debtChange);
         } catch Error(string memory reason) {
             // Justify errors
-            if (reason.equals("BorrowerOps: There must be either a collateral change or a debt change")) {
+            if (reason.equals("BO: Branch shut down")) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else if (reason.equals("BorrowerOps: There must be either a collateral change or a debt change")) {
                 assertEqDecimal(collChange, 0, 18, "Shouldn't have failed as there was a coll change");
                 assertEqDecimal(debtChange, 0, 18, "Shouldn't have failed as there was a debt change");
             } else if (reason.equals("BorrowerOps: Trove does not have active status")) {
@@ -594,6 +602,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             uint256 newTCR = _TCR(i, 0, 0, v.upfrontFee);
 
             // Preconditions
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertTrue(v.wasActive, "Should have failed as Trove was not active");
             assertLeDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as interest rate > max");
 
@@ -625,7 +634,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _interestAccrual[i] -= v.t.recordedDebt * v.t.annualInterestRate;
         } catch Error(string memory reason) {
             // Justify failures
-            if (reason.equals("ERC721: invalid token ID")) {
+            if (reason.equals("BO: Branch shut down")) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else if (reason.equals("ERC721: invalid token ID")) {
                 assertFalse(_isOpen(i, v.troveId), "Open Trove should have an NFT");
             } else if (reason.equals("BorrowerOps: Trove does not have active status")) {
                 assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
@@ -836,7 +847,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         info("redeemed BOLD: ", redeemedBold.decimal());
         info("redeemed Troves: [");
         for (uint256 i = 0; i < branches.length; ++i) {
-            info("  [", _labelsFrom(_redemptionPlan, i).join(", "), "],");
+            info("  [", isShutdown[i] ? "/* shutdown */" : _labelsFrom(_redemptionPlan, i).join(", "), "],");
         }
         info("]");
         logCall("redeemCollateral", amount.decimal(), maxIterationsPerCollateral.toString());
@@ -921,6 +932,36 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         _resetRedemptionPlan();
+    }
+
+    function shutdown(uint256 i) external {
+        i = _bound(i, 0, branches.length - 1);
+        LiquityContracts memory c = branches[i];
+
+        logCall("shutdown", i.toString());
+
+        vm.prank(msg.sender);
+        try c.borrowerOperations.shutdown() {
+            // Preconditions
+            assertLtDecimal(_TCR(i), SCR[i], 18, "Should have failed as TCR >= SCR");
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
+
+            // Effects
+            isShutdown[i] = true;
+            _mintYield(i, 0);
+        } catch Error(string memory reason) {
+            // Justify failures
+            if (reason.equals("BO: TCR is not below SCR")) {
+                assertGeDecimal(_TCR(i), SCR[i], 18, "Shouldn't have failed as TCR < SCR");
+            } else if (reason.equals("BO: already shutdown")) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else {
+                revert(reason);
+            }
+
+            info("Expected revert: ", reason);
+            _log();
+        }
     }
 
     function provideToSP(uint256 i, uint256 amount, bool claim) external {
@@ -1397,24 +1438,17 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         RedemptionTotals[] memory t
     ) internal returns (uint256 totalRedeemed) {
         uint256 totalUnbacked = 0;
-        bool[] memory redeemFromBranch = new bool[](branches.length);
+        uint256[] memory unbacked = new uint256[](branches.length);
 
         for (uint256 j = 0; j < branches.length; ++j) {
-            if (_TCR(j) < SCR[j]) continue;
-
-            uint256 unbacked = _getUnbacked(j);
-            if (unbacked == 0) continue;
-
-            totalUnbacked += unbacked;
-            redeemFromBranch[j] = true;
+            if (isShutdown[j] || _TCR(j) < SCR[j]) continue;
+            totalUnbacked += unbacked[j] = _getUnbacked(j);
         }
 
         if (totalUnbacked == 0) return 0;
 
         for (uint256 j = 0; j < branches.length; ++j) {
-            if (!redeemFromBranch[j]) continue;
-
-            t[j].attemptedAmount = amount * _getUnbacked(j) / totalUnbacked;
+            t[j].attemptedAmount = amount * unbacked[j] / totalUnbacked;
             if (t[j].attemptedAmount == 0) continue;
 
             LiquityContracts memory c = branches[j];
