@@ -384,6 +384,4 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
             seenBatches.clear();
         }
     }
-
-    function test_XXX() external {}
 }
