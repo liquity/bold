@@ -1,7 +1,6 @@
 pragma solidity 0.8.18;
 
 import "./Interfaces/IPriceFeedMock.sol";
-import "../../PriceFeed.sol";
 
 contract PriceFeedMock is IPriceFeedMock {
     uint256 private PRICE;
@@ -17,4 +16,14 @@ contract PriceFeedMock is IPriceFeedMock {
     function fetchPrice() external view returns (uint256) {
         return PRICE;
     }
+
+    function lastGoodPrice() external view returns (uint256) {
+        return PRICE;
+    }
+
+    function getEthUsdStalenessThreshold() external view returns (uint256) {
+        return 0;
+    }
+
+    function setAddresses(address _borrowerOperationsAddress) external {}
 }

@@ -9,7 +9,7 @@ import {ISortedTroves} from "../Interfaces/ISortedTroves.sol";
 import {IStabilityPool} from "../Interfaces/IStabilityPool.sol";
 import {ITroveManager} from "../Interfaces/ITroveManager.sol";
 import {BatchId} from "../Types/BatchId.sol";
-import {_deployAndConnectContracts, LiquityContracts, TroveManagerParams} from "../deployment.sol";
+import {_deployAndConnectContractsMultiColl, LiquityContractsDev, TroveManagerParams} from "../deployment.sol";
 import {StringFormatting} from "./Utils/StringFormatting.sol";
 import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
 import {BaseMultiCollateralTest} from "./TestContracts/BaseMultiCollateralTest.sol";
@@ -67,15 +67,15 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         super.setUp();
 
         // TODO: randomize params? How to do it with Foundry invariant testing?
-        TroveManagerParams[] memory params = new TroveManagerParams[](4);
-        params[0] = TroveManagerParams(1.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        params[1] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        params[2] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        params[3] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        TroveManagerParams[] memory paramsList = new TroveManagerParams[](4);
+        paramsList[0] = TroveManagerParams(1.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        paramsList[1] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        paramsList[2] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        paramsList[3] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
 
         Contracts memory contracts;
         (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth)
-        = _deployAndConnectContracts(params);
+        = _deployAndConnectContractsMultiColl(paramsList);
         setupContracts(contracts);
 
         handler = new InvariantsTestHandler(contracts);
@@ -104,7 +104,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
 
     function invariant_SystemVariablesMatchGhostVariables() external view {
         for (uint256 i = 0; i < branches.length; ++i) {
-            LiquityContracts memory c = branches[i];
+            LiquityContractsDev memory c = branches[i];
 
             assertEq(c.troveManager.getTroveIdsCount(), handler.numTroves(i), "Wrong number of Troves");
             assertEq(c.sortedTroves.getSize(), handler.numTroves(i) - handler.numZombies(i), "Wrong SortedTroves size");
@@ -145,7 +145,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         uint256 totalDebt = 0;
 
         for (uint256 j = 0; j < branches.length; ++j) {
-            LiquityContracts memory c = branches[j];
+            LiquityContractsDev memory c = branches[j];
             uint256 numTroves = c.troveManager.getTroveIdsCount();
 
             totalPendingInterest += c.activePool.calcPendingAggInterest();

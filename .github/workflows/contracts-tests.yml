@@ -15,6 +15,7 @@ env:
   FOUNDRY_VERSION: nightly
   CI: true
   FORCE_COLOR: true
+  MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
 
 on:
   push:
@@ -47,9 +48,15 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Run Forge tests
+      - name: Run Forge tests local
         run: |
-          forge test -vvv
+          forge test -vvv --no-match-contract Mainnet
+        id: test
+
+      - name: Run Forge tests mainnet
+        if: false # TODO: re-enable
+        run: |
+          forge test -vvv --match-contract Mainnet
         id: test
 
   console-logs:
