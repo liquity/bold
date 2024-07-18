@@ -155,7 +155,7 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     error BatchInterestRateChangePeriodNotPassed();
     error TroveNotOpen();
     error TroveNotActive();
-    error TroveRedeemable();
+    error TroveNotUnredeemable();
     error TroveOpen();
     error UpfrontFeeTooHigh();
     error BelowCriticalThreshold();
@@ -1325,7 +1325,7 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
 
     function _requireTroveIsUnredeemable(ITroveManager _troveManager, uint256 _troveId) internal view {
         if (!_troveManager.checkTroveIsUnredeemable(_troveId)) {
-            revert TroveRedeemable();
+            revert TroveNotUnredeemable();
         }
     }
 
