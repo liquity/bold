@@ -980,7 +980,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             errorString = reason;
 
             // Justify failures
-            if (reason.equals("TroveManager: Amount must be greater than zero")) {
+            if (reason.equals("CollateralRegistry: Amount must be greater than zero")) {
                 assertEqDecimal(amount, 0, 18, "Shouldn't have failed as amount was greater than zero");
             } else {
                 revert(reason);
