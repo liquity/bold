@@ -1777,6 +1777,18 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         selector = bytes4(revertData);
 
         if (revertData.length == 4) {
+            if (selector == AddRemoveManagers.NotBorrower.selector) {
+                return (selector, "AddRemoveManagers.NotBorrower()");
+            }
+
+            if (selector == AddRemoveManagers.NotOwnerNorAddManager.selector) {
+                return (selector, "AddRemoveManagers.NotOwnerNorAddManager()");
+            }
+
+            if (selector == AddRemoveManagers.NotOwnerNorRemoveManager.selector) {
+                return (selector, "AddRemoveManagers.NotOwnerNorRemoveManager()");
+            }
+
             if (selector == BorrowerOperations.InvalidMCR.selector) {
                 return (selector, "BorrowerOperations.InvalidMCR()");
             }
@@ -1797,20 +1809,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 return (selector, "BorrowerOperations.TCRNotBelowSCR()");
             }
 
-            if (selector == AddRemoveManagers.NotBorrower.selector) {
-                return (selector, "BorrowerOperations.NotBorrower()");
-            }
-
             if (selector == BorrowerOperations.ZeroAdjustment.selector) {
                 return (selector, "BorrowerOperations.ZeroAdjustment()");
-            }
-
-            if (selector == AddRemoveManagers.NotOwnerNorAddManager.selector) {
-                return (selector, "BorrowerOperations.NotOwnerNorAddManager()");
-            }
-
-            if (selector == AddRemoveManagers.NotOwnerNorRemoveManager.selector) {
-                return (selector, "BorrowerOperations.NotOwnerNorRemoveManager()");
             }
 
             if (selector == BorrowerOperations.NotOwnerNorInterestManager.selector) {
