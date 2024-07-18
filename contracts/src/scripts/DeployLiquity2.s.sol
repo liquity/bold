@@ -48,7 +48,7 @@ contract DeployLiquity2Script is Script, StdCheats {
             demoTroves[3] = DemoTroveParams({owner: demoAccounts[3], ownerIndex: 0, coll: 65e18, debt: 6000e18});
 
             tapFaucet(demoAccounts, contracts);
-            openDemoTroves(demoAccounts, demoTroves, contracts);
+            openDemoTroves(demoTroves, contracts);
         }
     }
 
@@ -60,11 +60,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         }
     }
 
-    function openDemoTroves(
-        uint256[] memory accounts,
-        DemoTroveParams[] memory troves,
-        LiquityContracts memory contracts
-    ) internal {
+    function openDemoTroves(DemoTroveParams[] memory troves, LiquityContracts memory contracts) internal {
         for (uint256 i = 0; i < troves.length; i++) {
             DemoTroveParams memory trove = troves[i];
 
