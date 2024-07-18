@@ -30,7 +30,7 @@ contract ZapperGasCompTest is DevTestSetup {
         troveManagerParams[0] = TroveManagerParams(110e16, 110e16, 5e16, 10e16);
         troveManagerParams[1] = TroveManagerParams(120e16, 120e16, 5e16, 10e16);
 
-        LiquityContracts[] memory contractsArray;
+        LiquityContractsDev[] memory contractsArray;
         (contractsArray, collateralRegistry, boldToken,,) = _deployAndConnectContracts(troveManagerParams, WETH);
 
         // Set price feeds

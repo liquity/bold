@@ -29,7 +29,7 @@ contract ZapperWETHTest is DevTestSetup {
         TroveManagerParams[] memory troveManagerParams = new TroveManagerParams[](1);
         troveManagerParams[0] = TroveManagerParams(110e16, 110e16, 5e16, 10e16);
 
-        LiquityContracts[] memory contractsArray;
+        LiquityContractsDev[] memory contractsArray;
         (contractsArray, collateralRegistry, boldToken,,) = _deployAndConnectContracts(troveManagerParams, WETH);
 
         // Set price feeds

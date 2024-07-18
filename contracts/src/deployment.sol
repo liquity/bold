@@ -66,6 +66,7 @@ struct DeploymentVars {
     uint256 numCollaterals;
     IERC20[] collaterals;
     ITroveManager[] troveManagers;
+    LiquityContractsDev contracts;
 }
 
 struct ExternalAddresses {
@@ -90,7 +91,7 @@ struct OracleParams {
 
 // TODO: replace this with the real LST contracts
 struct MockCollaterals {
-    IERC20 WETH;
+    IWETH WETH;
     IERC20 RETH;
     IERC20 WSTETH;
     IERC20 ETHX;
@@ -151,7 +152,7 @@ function _deployAndConnectContractsMultiColl(TroveManagerParams[] memory troveMa
 
 function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerParamsArray, IWETH _WETH)
     returns (
-        LiquityContracts[] memory contractsArray,
+        LiquityContractsDev[] memory contractsArray,
         ICollateralRegistry collateralRegistry,
         IBoldToken boldToken,
         HintHelpers hintHelpers,
@@ -167,7 +168,6 @@ function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerPara
     vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
     // Deploy the first branch with WETH collateral
-    LiquityContractsDev memory contracts;
     vars.contracts = _deployAndConnectCollateralContractsDev(_WETH, boldToken, _WETH, troveManagerParamsArray[0]);
     contractsArray[0] = vars.contracts;
     vars.collaterals[0] = vars.contracts.collToken;
@@ -252,9 +252,7 @@ function deployAndConnectContractsMainnet(
     boldToken = new BoldToken();
 
     // TODO: replace mock collaterals with connections to the real tokens for later mainnet testing
-    mockCollaterals.WETH = new ERC20Faucet(
-        "Mock Wrapped ETH", // _name
-        "mockWETH", //        _symbol
+    mockCollaterals.WETH = new WETHTester(
         100 ether, //     _tapAmount
         1 days //         _tapPeriod
     );
@@ -369,7 +367,7 @@ function _deployAndConnectCollateralContractsMainnet(
     IBoldToken _boldToken,
     IPriceFeed _priceFeed,
     TroveManagerParams memory _troveManagerParams,
-    IERC20 _weth
+    IWETH _weth
 ) returns (LiquityContracts memory contracts) {
     contracts.activePool = new ActivePool(address(_collateralToken));
     contracts.troveManager = new TroveManager(
