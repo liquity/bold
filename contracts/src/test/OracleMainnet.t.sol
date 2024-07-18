@@ -9,6 +9,11 @@ import "../Interfaces/IWSTETH.sol";
 import "../Interfaces/ICompositePriceFeed.sol";
 import "../Interfaces/IWETHPriceFeed.sol";
 
+import "../Dependencies/IRETHToken.sol";
+import "../Dependencies/IOsTokenVaultController.sol";
+import "../Dependencies/IStaderOracle.sol";
+
+
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
@@ -30,6 +35,10 @@ contract OraclesMainnet is TestAccounts {
     IWSTETHPriceFeed wstethPriceFeed;
     ICompositePriceFeed ethXPriceFeed;
     ICompositePriceFeed osEthPriceFeed;
+
+    IRETHToken rETHToken;
+    IOsTokenVaultController osTokenVaultController;
+    IStaderOracle staderOracle;
 
     LiquityContracts[] contractsArray;
     MockCollaterals mockCollaterals;
@@ -69,8 +78,14 @@ contract OraclesMainnet is TestAccounts {
         externalAddresses.RETHOracle = 0x536218f9E9Eb48863970252233c8F271f554C2d0;
         externalAddresses.STETHOracle = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8;
         externalAddresses.ETHXOracle = 0xC5f8c4aB091Be1A899214c0C3636ca33DcA0C547;
-        externalAddresses.OSETHOracle = 0x66ac817f997Efd114EDFcccdce99F3268557B32C; // Redstone Oracle with CL interface
         externalAddresses.WSTETHToken = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+        // Redstone Oracle with CL interface
+        // TODO: obtain the Chainlink market price feed and use that, when it's ready
+        externalAddresses.OSETHOracle = 0x66ac817f997Efd114EDFcccdce99F3268557B32C; 
+
+        externalAddresses.RETHToken = 0xae78736Cd615f374D3085123A210448E74Fc6393;
+        externalAddresses.StaderOracle = 0xF64bAe65f6f2a5277571143A24FaaFDFC0C2a737;
+        externalAddresses.OsTokenVaultController = 0x2A261e60FB14586B474C208b1B7AC6D0f5000306;
 
         ethOracle = AggregatorV3Interface(externalAddresses.ETHOracle);
         rethOracle = AggregatorV3Interface(externalAddresses.RETHOracle);
@@ -78,6 +93,10 @@ contract OraclesMainnet is TestAccounts {
         ethXOracle = AggregatorV3Interface(externalAddresses.ETHXOracle);
         osEthOracle = AggregatorV3Interface(externalAddresses.OSETHOracle);
        
+        rETHToken = IRETHToken(externalAddresses.RETHToken);
+        staderOracle = IStaderOracle(externalAddresses.StaderOracle);
+        osTokenVaultController = IOsTokenVaultController(externalAddresses.OsTokenVaultController);
+
         wstETH = IWSTETH(externalAddresses.WSTETHToken);
 
         oracleParams.ethUsdStalenessThreshold = _24_HOURS;
@@ -168,9 +187,16 @@ contract OraclesMainnet is TestAccounts {
         uint256 latestAnswerREthEth = _getLatestAnswerFromOracle(rethOracle);
         uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
 
-        uint256 expectedStoredPrice = latestAnswerREthEth * latestAnswerEthUsd / 1e18;
+        uint256 expectedMarketPrice = latestAnswerREthEth * latestAnswerEthUsd / 1e18;
 
-        assertEq(lastGoodPriceReth, expectedStoredPrice);
+        uint256 rate = rETHToken.getExchangeRate();
+        assertGt(rate, 1e18);
+       
+        uint256 expectedCanonicalPrice = rate * latestAnswerEthUsd / 1e18;
+
+        uint256 expectedPrice = LiquityMath._min(expectedMarketPrice, expectedCanonicalPrice);
+
+        assertEq(lastGoodPriceReth, expectedPrice);
     }
 
     function testSetLastGoodPriceOnDeploymentETHX() public {
@@ -180,21 +206,36 @@ contract OraclesMainnet is TestAccounts {
         uint256 latestAnswerEthXEth = _getLatestAnswerFromOracle(ethXOracle);
         uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
 
-        uint256 expectedStoredPrice = latestAnswerEthXEth * latestAnswerEthUsd / 1e18;
+        uint256 expectedMarketPrice = latestAnswerEthXEth * latestAnswerEthUsd / 1e18;
 
-        assertEq(lastGoodPriceEthX, expectedStoredPrice);
+        ( , uint256 ethBalance, uint256 ethXSupply) = staderOracle.exchangeRate();
+        uint256 rate = ethBalance * 1e18 / ethXSupply;
+        assertGt(rate, 1e18);
+
+        uint256 expectedCanonicalPrice =  rate * latestAnswerEthUsd / 1e18;
+
+        uint256 expectedPrice = LiquityMath._min(expectedMarketPrice, expectedCanonicalPrice);
+
+        assertEq(lastGoodPriceEthX, expectedPrice);
     }
 
     function testSetLastGoodPriceOnDeploymentOSETH() public {
-        uint256 lastGoodPriceOsEth = osEthPriceFeed.lastGoodPrice();
-        assertGt(lastGoodPriceOsEth, 0);
+        uint256 lastGoodPriceOsUsd = osEthPriceFeed.lastGoodPrice();
+        assertGt(lastGoodPriceOsUsd, 0);
 
         uint256 latestAnswerOsEthEth = _getLatestAnswerFromOracle(osEthOracle);
         uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
 
-        uint256 expectedStoredPrice = latestAnswerOsEthEth * latestAnswerEthUsd / 1e18;
+        uint256 expectedMarketPrice = latestAnswerOsEthEth * latestAnswerEthUsd / 1e18;
 
-        assertEq(lastGoodPriceOsEth, expectedStoredPrice);
+        uint256 rate = osTokenVaultController.convertToAssets(1e18);
+        assertGt(rate, 1e18);
+
+        uint256 expectedCanonicalPrice =  rate * latestAnswerEthUsd / 1e18;
+
+        uint256 expectedPrice = LiquityMath._min(expectedMarketPrice, expectedCanonicalPrice);
+        
+        assertEq(lastGoodPriceOsUsd, expectedPrice);
     }
 
     function testSetLastGoodPriceOnDeploymentWSTETH() public {
@@ -227,21 +268,38 @@ contract OraclesMainnet is TestAccounts {
         uint256 latestAnswerREthEth = _getLatestAnswerFromOracle(rethOracle);
         uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
 
-        uint256 expectedFetchedPrice = latestAnswerREthEth * latestAnswerEthUsd / 1e18;
+        uint256 expectedMarketPrice = latestAnswerREthEth * latestAnswerEthUsd / 1e18;
 
-        assertEq(fetchedRethUsdPrice, expectedFetchedPrice);
+        uint256 rate = rETHToken.getExchangeRate();
+        assertGt(rate, 1e18);
+       
+        uint256 expectedCanonicalPrice =  rate * latestAnswerEthUsd / 1e18;
+
+        uint256 expectedPrice = LiquityMath._min(expectedMarketPrice, expectedCanonicalPrice);
+
+        assertEq(fetchedRethUsdPrice, expectedPrice);
     }
 
     function testFetchPriceReturnsCorrectPriceETHX() public {
         uint256 fetchedEthXUsdPrice = ethXPriceFeed.fetchPrice();
         assertGt(fetchedEthXUsdPrice, 0);
 
-        // uint256 latestAnswerEthXEth = _getLatestAnswerFromOracle(ethXOracle);
-        // uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
+        uint256 latestAnswerEthXEth = _getLatestAnswerFromOracle(ethXOracle);
+        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
 
-        // uint256 expectedFetchedPrice = latestAnswerEthXEth * latestAnswerEthUsd / 1e18;
+        uint256 expectedMarketPrice = latestAnswerEthXEth * latestAnswerEthUsd / 1e18;
 
-        // assertEq(fetchedEthXUsdPrice, expectedFetchedPrice);
+
+        ( , uint256 ethBalance, uint256 ethXSupply) = staderOracle.exchangeRate();
+        uint256 rate = ethBalance * 1e18 / ethXSupply;
+        assertGt(rate, 1e18);
+
+        uint256 expectedCanonicalPrice =  rate * latestAnswerEthUsd / 1e18;
+
+        uint256 expectedPrice = LiquityMath._min(expectedMarketPrice, expectedCanonicalPrice);
+
+
+        assertEq(fetchedEthXUsdPrice, expectedPrice);
     }
 
     function testFetchPriceReturnsCorrectPriceOSETH() public {
@@ -251,9 +309,16 @@ contract OraclesMainnet is TestAccounts {
         uint256 latestAnswerOsEthEth = _getLatestAnswerFromOracle(osEthOracle);
         uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
 
-        uint256 expectedFetchedPrice = latestAnswerOsEthEth * latestAnswerEthUsd / 1e18;
+        uint256 expectedMarketPrice = latestAnswerOsEthEth * latestAnswerEthUsd / 1e18;
 
-        assertEq(fetchedOsEthUsdPrice, expectedFetchedPrice);
+        uint256 rate = osTokenVaultController.convertToAssets(1e18);
+        assertGt(rate, 1e18);
+
+        uint256 expectedCanonicalPrice =  rate * latestAnswerEthUsd / 1e18;
+
+        uint256 expectedPrice = LiquityMath._min(expectedMarketPrice, expectedCanonicalPrice);
+
+        assertEq(fetchedOsEthUsdPrice, expectedPrice);
     }
 
     function testFetchPriceReturnsCorrectPriceWSTETH() public {

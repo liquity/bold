@@ -20,7 +20,9 @@ import {ERC20Faucet} from "./test/TestContracts/ERC20Faucet.sol";
 
 import "./PriceFeeds/WETHPriceFeed.sol";
 import "./PriceFeeds/WSTETHPriceFeed.sol";
-import "./PriceFeeds/CompositePriceFeed.sol";
+import "./PriceFeeds/RETHPriceFeed.sol";
+import "./PriceFeeds/OSETHPriceFeed.sol";
+import "./PriceFeeds/ETHXPriceFeed.sol";
 
 // import "forge-std/console.sol";
 
@@ -72,6 +74,9 @@ struct ExternalAddresses {
     address ETHXOracle;
     address OSETHOracle;
     address WSTETHToken;
+    address RETHToken; 
+    address StaderOracle; // "StaderOracle" is the ETHX contract that manages the canonical exchange rate. Not a market price oracle.
+    address OsTokenVaultController;
 }
 
 struct OracleParams {
@@ -205,9 +210,11 @@ function deployAndConnectContractsMainnet(
         externalAddresses.ETHOracle, 
         oracleParams.ethUsdStalenessThreshold);
 
-    priceFeeds[1] = new CompositePriceFeed(
+    // RETH
+    priceFeeds[1] = new RETHPriceFeed(
         externalAddresses.ETHOracle,
         externalAddresses.RETHOracle,
+        externalAddresses.RETHToken,
         oracleParams.ethUsdStalenessThreshold,
         oracleParams.rEthEthStalenessThreshold); 
 
@@ -216,15 +223,17 @@ function deployAndConnectContractsMainnet(
         oracleParams.stEthUsdStalenessThreshold,
         externalAddresses.WSTETHToken);
 
-    priceFeeds[3] = new CompositePriceFeed(
+    priceFeeds[3] = new ETHXPriceFeed(
         externalAddresses.ETHOracle,
         externalAddresses.ETHXOracle,
+        externalAddresses.StaderOracle, 
         oracleParams.ethUsdStalenessThreshold,
         oracleParams.ethXEthStalenessThreshold);
 
-    priceFeeds[4] = new CompositePriceFeed(
+    priceFeeds[4] = new OSETHPriceFeed(
         externalAddresses.ETHOracle,
         externalAddresses.OSETHOracle,
+        externalAddresses.OsTokenVaultController,
         oracleParams.ethUsdStalenessThreshold,
         oracleParams.osEthEthStalenessThreshold); 
 
