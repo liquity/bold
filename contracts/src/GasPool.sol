@@ -15,7 +15,7 @@ import "./Interfaces/ITroveManager.sol";
  * When a trove is liquidated, this gas compensation is paid to liquidator
  */
 contract GasPool {
-    constructor(IERC20 _weth, IBorrowerOperations _borrowerOperations, ITroveManager _troveManager) {
+    constructor(IWETH _weth, IBorrowerOperations _borrowerOperations, ITroveManager _troveManager) {
         // Allow BorrowerOperations to refund gas compensation
         _weth.approve(address(_borrowerOperations), type(uint256).max);
         // Allow TroveManager to pay gas compensation to liquidator

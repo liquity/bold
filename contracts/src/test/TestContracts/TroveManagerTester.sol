@@ -15,7 +15,7 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         uint256 _scr,
         uint256 _liquidationPenaltySP,
         uint256 _liquidationPenaltyRedistribution,
-        IERC20 _weth
+        IWETH _weth
     ) TroveManager(_mcr, _scr, _liquidationPenaltySP, _liquidationPenaltyRedistribution, _weth) {}
 
     function computeICR(uint256 _coll, uint256 _debt, uint256 _price) external pure returns (uint256) {

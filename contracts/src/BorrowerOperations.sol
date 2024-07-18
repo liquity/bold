@@ -10,11 +10,12 @@ import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
+import "./Dependencies/AddRemoveManagers.sol";
 import "./Dependencies/Ownable.sol";
 
 // import "forge-std/console2.sol";
 
-contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
+contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowerOperations {
     using SafeERC20 for IERC20;
 
     string public constant NAME = "BorrowerOperations";
@@ -22,14 +23,13 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     // --- Connected contract declarations ---
 
     IERC20 public immutable collToken;
-    ITroveManager public immutable troveManager;
     address gasPoolAddress;
     ICollSurplusPool collSurplusPool;
     IBoldToken public boldToken;
     // A doubly linked list of Troves, sorted by their collateral ratios
     ISortedTroves public sortedTroves;
     // Wrapped ETH for liquidation reserve (gas compensation)
-    IERC20 public immutable WETH;
+    IWETH public immutable WETH;
 
     // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
     // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
@@ -38,25 +38,6 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
 
     // Minimum collateral ratio for individual troves
     uint256 public immutable MCR;
-
-    /*
-     * Mapping from TroveId to granted address for operations that "give" money to the trove (add collateral, pay debt).
-     * Useful for instance for cold/hot wallet setups.
-     * If its value is zero address, any address is allowed to do those operations on behalf of trove owner.
-     * Otherwise, only the address in this mapping (and the trove owner) will be allowed.
-     * To restrict this permission to no one, trove owner should be set in this mapping.
-     */
-    mapping(uint256 => address) public addManagerOf;
-
-    /*
-     * Mapping from TroveId to granted address for operations that "withdraw" money from the trove (withdraw collateral, borrow).
-     * Useful for instance for cold/hot wallet setups.
-     * If its value is zero address, only owner is allowed to do those operations.
-     * Otherwise, only the address in this mapping (and the trove owner) will be allowed.
-     * Therefore, by default this permission is restricted to no one.
-     * Trove owner be set in this mapping is equivalent to zero address.
-     */
-    mapping(uint256 => address) public removeManagerOf;
 
     /* --- Variable container structs  ---
 
@@ -73,6 +54,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     }
 
     struct LocalVariables_openTrove {
+        ContractsCacheTMAPBT contractsCache;
+        uint256 troveId;
         TroveChange troveChange;
         uint256 price;
         uint256 avgInterestRate;
@@ -92,7 +75,6 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         IBoldToken boldToken;
     }
 
-    event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event ActivePoolAddressChanged(address _activePoolAddress);
     event DefaultPoolAddressChanged(address _defaultPoolAddress);
     event GasPoolAddressChanged(address _gasPoolAddress);
@@ -104,16 +86,13 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     event ShutDown(uint256 _tcr);
     event ShutDownFromOracleFailure(address _oracleAddress);
 
-    constructor(IERC20 _collToken, ITroveManager _troveManager, IERC20 _weth) {
+    constructor(IERC20 _collToken, ITroveManager _troveManager, IWETH _weth) AddRemoveManagers(_troveManager) {
         collToken = _collToken;
-        troveManager = _troveManager;
 
         WETH = _weth;
 
         SCR = _troveManager.SCR();
         MCR = _troveManager.MCR();
-
-        emit TroveManagerAddressChanged(address(_troveManager));
     }
 
     // --- Dependency setters ---
@@ -164,10 +143,38 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         uint256 _annualInterestRate,
         uint256 _maxUpfrontFee
     ) external override returns (uint256) {
+        return openTrove(
+            _owner,
+            _ownerIndex,
+            _collAmount,
+            _boldAmount,
+            _upperHint,
+            _lowerHint,
+            _annualInterestRate,
+            _maxUpfrontFee,
+            address(0),
+            address(0),
+            address(0)
+        );
+    }
+
+    function openTrove(
+        address _owner,
+        uint256 _ownerIndex,
+        uint256 _collAmount,
+        uint256 _boldAmount,
+        uint256 _upperHint,
+        uint256 _lowerHint,
+        uint256 _annualInterestRate,
+        uint256 _maxUpfrontFee,
+        address _addManager,
+        address _removeManager,
+        address _receiver
+    ) public override returns (uint256) {
         _requireIsNotShutDown();
 
-        ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
         LocalVariables_openTrove memory vars;
+        vars.contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
 
         vars.price = priceFeed.fetchPrice();
 
@@ -176,8 +183,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         _requireNotBelowCriticalThreshold(vars.price);
         _requireValidAnnualInterestRate(_annualInterestRate);
 
-        uint256 troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
-        _requireTroveIsNotOpen(contractsCache.troveManager, troveId);
+        vars.troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
+        _requireTroveIsNotOpen(vars.contractsCache.troveManager, vars.troveId);
 
         vars.troveChange.collIncrease = _collAmount;
         vars.troveChange.debtIncrease = _boldAmount;
@@ -185,7 +192,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         // For simplicity, we ignore the fee when calculating the approx. interest rate
         vars.troveChange.newWeightedRecordedDebt = vars.troveChange.debtIncrease * _annualInterestRate;
 
-        vars.avgInterestRate = contractsCache.activePool.getNewApproxAvgInterestRateFromTroveChange(vars.troveChange);
+        vars.avgInterestRate =
+            vars.contractsCache.activePool.getNewApproxAvgInterestRateFromTroveChange(vars.troveChange);
         vars.troveChange.upfrontFee = _calcUpfrontFee(vars.troveChange.debtIncrease, vars.avgInterestRate);
         _requireUserAcceptsUpfrontFee(vars.troveChange.upfrontFee, _maxUpfrontFee);
 
@@ -204,22 +212,30 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
 
         // --- Effects & interactions ---
 
-        contractsCache.activePool.mintAggInterestAndAccountForTroveChange(vars.troveChange);
-        sortedTroves.insert(troveId, _annualInterestRate, _upperHint, _lowerHint);
+        // Set add/remove managers
+        if (_addManager != address(0)) {
+            _setAddManager(vars.troveId, _addManager);
+        }
+        if (_removeManager != address(0)) {
+            _setRemoveManager(vars.troveId, _removeManager, _receiver);
+        }
+
+        vars.contractsCache.activePool.mintAggInterestAndAccountForTroveChange(vars.troveChange);
+        sortedTroves.insert(vars.troveId, _annualInterestRate, _upperHint, _lowerHint);
 
         // Set the stored Trove properties and mint the NFT
-        contractsCache.troveManager.onOpenTrove(
-            _owner, troveId, _collAmount, vars.entireDebt, _annualInterestRate, vars.troveChange.upfrontFee
+        vars.contractsCache.troveManager.onOpenTrove(
+            _owner, vars.troveId, _collAmount, vars.entireDebt, _annualInterestRate, vars.troveChange.upfrontFee
         );
 
         // Pull coll tokens from sender and move them to the Active Pool
-        _pullCollAndSendToActivePool(contractsCache.activePool, _collAmount);
+        _pullCollAndSendToActivePool(vars.contractsCache.activePool, _collAmount);
 
         // Mint the requested _boldAmount to the borrower and mint the gas comp to the GasPool
-        contractsCache.boldToken.mint(msg.sender, _boldAmount);
+        vars.contractsCache.boldToken.mint(msg.sender, _boldAmount);
         WETH.transferFrom(msg.sender, gasPoolAddress, ETH_GAS_COMPENSATION);
 
-        return troveId;
+        return vars.troveId;
     }
 
     // Send collateral to a trove
@@ -419,9 +435,10 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         _requireTroveIsOpen(_contractsCache.troveManager, _troveId);
 
         address owner = _contractsCache.troveManager.ownerOf(_troveId);
+        address receiver = owner; // If it’s a withdrawal, and manager has receive privilege, manager would be the receiver
 
         if (_troveChange.collDecrease > 0 || _troveChange.debtIncrease > 0) {
-            _requireSenderIsOwnerOrRemoveManager(_troveId, owner);
+            receiver = _requireSenderIsOwnerOrRemoveManager(_troveId, owner);
         }
 
         if (_troveChange.collIncrease > 0 || _troveChange.debtDecrease > 0) {
@@ -473,16 +490,17 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         // --- Effects and interactions ---
 
         _contractsCache.activePool.mintAggInterestAndAccountForTroveChange(_troveChange);
-        _moveTokensFromAdjustment(owner, _troveChange, _contractsCache);
+        _moveTokensFromAdjustment(receiver, _troveChange, _contractsCache);
         _contractsCache.troveManager.onAdjustTrove(_troveId, vars.newColl, vars.newDebt, _troveChange);
     }
 
-    function closeTrove(uint256 _troveId) external override {
+    function closeTrove(uint256 _troveId) external override returns (uint256) {
         ContractsCacheTMAPBT memory contractsCache = ContractsCacheTMAPBT(troveManager, activePool, boldToken);
 
         // --- Checks ---
 
-        _requireCallerIsBorrower(contractsCache.troveManager, _troveId);
+        address owner = contractsCache.troveManager.ownerOf(_troveId);
+        address receiver = _requireSenderIsOwnerOrRemoveManager(_troveId, owner);
         _requireTroveIsOpen(contractsCache.troveManager, _troveId);
         uint256 price = priceFeed.fetchPrice();
 
@@ -507,12 +525,14 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         contractsCache.troveManager.onCloseTrove(_troveId, troveChange);
 
         // Return ETH gas compensation
-        WETH.transferFrom(gasPoolAddress, msg.sender, ETH_GAS_COMPENSATION);
+        WETH.transferFrom(gasPoolAddress, receiver, ETH_GAS_COMPENSATION);
         // Burn the remainder of the Trove's entire debt from the user
         contractsCache.boldToken.burn(msg.sender, trove.entireDebt);
 
         // Send the collateral back to the user
-        contractsCache.activePool.sendColl(msg.sender, trove.entireColl);
+        contractsCache.activePool.sendColl(receiver, trove.entireColl);
+
+        return trove.entireColl;
     }
 
     function applyTroveInterestPermissionless(uint256 _troveId) external {
@@ -532,16 +552,6 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
         contractsCache.troveManager.onApplyTroveInterest(_troveId, trove.entireColl, trove.entireDebt, troveChange);
-    }
-
-    function setAddManager(uint256 _troveId, address _manager) external {
-        _requireSenderIsOwner(troveManager, _troveId);
-        addManagerOf[_troveId] = _manager;
-    }
-
-    function setRemoveManager(uint256 _troveId, address _manager) external {
-        _requireSenderIsOwner(troveManager, _troveId);
-        removeManagerOf[_troveId] = _manager;
     }
 
     /**
@@ -626,36 +636,11 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
         require(hasBeenShutDown, "BO: Branch is not shut down");
     }
 
-    function _requireCallerIsBorrower(ITroveManager _troveManager, uint256 _troveId) internal view {
-        require(
-            msg.sender == _troveManager.ownerOf(_troveId), "BorrowerOps: Caller must be the borrower for a withdrawal"
-        );
-    }
-
     function _requireNonZeroAdjustment(TroveChange memory _troveChange) internal pure {
         require(
             _troveChange.collIncrease > 0 || _troveChange.collDecrease > 0 || _troveChange.debtIncrease > 0
                 || _troveChange.debtDecrease > 0,
             "BorrowerOps: There must be either a collateral change or a debt change"
-        );
-    }
-
-    function _requireSenderIsOwner(ITroveManager _troveManager, uint256 _troveId) internal view {
-        require(_troveManager.ownerOf(_troveId) == msg.sender, "BorrowerOps: sender is not Trove owner");
-    }
-
-    function _requireSenderIsOwnerOrAddManager(uint256 _troveId, address _owner) internal view {
-        address addManager = addManagerOf[_troveId];
-        require(
-            msg.sender == _owner || addManager == address(0) || msg.sender == addManager,
-            "BorrowerOps: sender is neither Trove owner nor add-manager"
-        );
-    }
-
-    function _requireSenderIsOwnerOrRemoveManager(uint256 _troveId, address _owner) internal view {
-        require(
-            msg.sender == _owner || msg.sender == removeManagerOf[_troveId],
-            "BorrowerOps: sender is neither Trove owner nor remove-manager"
         );
     }
 
