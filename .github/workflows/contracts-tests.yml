@@ -15,6 +15,7 @@ env:
   FOUNDRY_VERSION: nightly
   CI: true
   FORCE_COLOR: true
+  MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
 
 on:
   push:
