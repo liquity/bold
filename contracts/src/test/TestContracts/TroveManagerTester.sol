@@ -4,11 +4,12 @@ pragma solidity 0.8.18;
 
 import "../../Interfaces/ICollateralRegistry.sol";
 import "../../TroveManager.sol";
+import "./Interfaces/ITroveManagerTester.sol";
 
 /* Tester contract inherits from TroveManager, and provides external functions
 for testing the parent's internal functions. */
 
-contract TroveManagerTester is TroveManager {
+contract TroveManagerTester is ITroveManagerTester, TroveManager {
     constructor(
         uint256 _mcr,
         uint256 _scr,

@@ -102,6 +102,7 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     event BoldTokenAddressChanged(address _boldTokenAddress);
 
     event ShutDown(uint256 _tcr);
+    event ShutDownFromOracleFailure(address _oracleAddress);
 
     constructor(IERC20 _collToken, ITroveManager _troveManager, IERC20 _weth) {
         collToken = _collToken;
@@ -554,21 +555,34 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     function shutdown() external {
         require(!hasBeenShutDown, "BO: already shutdown");
 
-        activePool.mintAggInterest();
-
         uint256 totalColl = getEntireSystemColl();
         uint256 totalDebt = getEntireSystemDebt();
         uint256 price = priceFeed.fetchPrice();
 
         uint256 TCR = LiquityMath._computeCR(totalColl, totalDebt, price);
-
         require(TCR < SCR, "BO: TCR is not below SCR");
 
-        hasBeenShutDown = true;
-
-        troveManager.shutdown();
+        _applyShutdown();
 
         emit ShutDown(TCR);
+    }
+
+    // Not technically a "Borrower op", but seems best placed here given current shutdown logic.
+    function shutdownFromOracleFailure(address _failedOracleAddr) external {
+        _requireCallerIsPriceFeed();
+
+        // No-op rather than revert here, so that the outer function call which fetches the price does not revert
+        if (hasBeenShutDown) return;
+
+        _applyShutdown();
+
+        emit ShutDownFromOracleFailure(_failedOracleAddr);
+    }
+
+    function _applyShutdown() internal {
+        activePool.mintAggInterest();
+        hasBeenShutDown = true;
+        troveManager.shutdown();
     }
 
     // --- Helper functions ---
@@ -747,6 +761,10 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
 
     function _requireTroveIsStale(ITroveManager _troveManager, uint256 _troveId) internal view {
         require(_troveManager.troveIsStale(_troveId), "BO: Trove must be stale");
+    }
+
+    function _requireCallerIsPriceFeed() internal view {
+        require(msg.sender == address(priceFeed), "BO: Caller must be PriceFeed");
     }
 
     // --- ICR and TCR getters ---

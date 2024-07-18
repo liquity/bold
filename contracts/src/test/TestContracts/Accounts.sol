@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
+import "forge-std/Test.sol";
+
 contract Accounts {
     // Private keys for first 10 Hardhat test accounts
     uint256[10] public accountsPks = [
@@ -18,5 +20,27 @@ contract Accounts {
 
     function getAccountsCount() external view returns (uint256) {
         return accountsPks.length;
+    }
+}
+
+contract TestAccounts is Test {
+    Accounts accounts;
+
+    address[] accountsList;
+    address public A;
+    address public B;
+    address public C;
+    address public D;
+    address public E;
+    address public F;
+    address public G;
+
+    function createAccounts() public {
+        address[10] memory tempAccounts;
+        for (uint256 i = 0; i < accounts.getAccountsCount(); i++) {
+            tempAccounts[i] = vm.addr(uint256(accounts.accountsPks(i)));
+        }
+
+        accountsList = tempAccounts;
     }
 }

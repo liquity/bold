@@ -67,6 +67,7 @@ interface IBorrowerOperations is ILiquityBase {
 
     function hasBeenShutDown() external view returns (bool);
     function shutdown() external;
+    function shutdownFromOracleFailure(address _failedOracleAddr) external;
 
     function setAddManager(uint256 _troveId, address _manager) external;
     function setRemoveManager(uint256 _troveId, address _manager) external;
