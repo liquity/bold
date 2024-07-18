@@ -113,7 +113,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     struct OpenTroveContext {
         uint256 upperHint;
         uint256 lowerHint;
-        LiquityContracts c;
+        LiquityContractsDev c;
         uint256 upfrontFee;
         uint256 debt;
         uint256 coll;
@@ -123,7 +123,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     struct AdjustTroveContext {
         AdjustedTroveProperties prop;
-        LiquityContracts c;
+        LiquityContractsDev c;
         uint256 troveId;
         LatestTroveData t;
         bool wasActive;
@@ -137,7 +137,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     struct AdjustTroveInterestRateContext {
         uint256 upperHint;
         uint256 lowerHint;
-        LiquityContracts c;
+        LiquityContractsDev c;
         uint256 troveId;
         LatestTroveData t;
         bool wasActive;
@@ -239,7 +239,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         setupContracts(contracts);
 
         for (uint256 i = 0; i < branches.length; ++i) {
-            LiquityContracts memory c = branches[i];
+            LiquityContractsDev memory c = branches[i];
             MCR[i] = c.troveManager.MCR();
             SCR[i] = c.troveManager.SCR();
             LIQ_PENALTY_SP[i] = c.troveManager.LIQUIDATION_PENALTY_SP();
@@ -672,7 +672,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     function closeTrove(uint256 i) external {
         i = _bound(i, 0, branches.length - 1);
 
-        LiquityContracts memory c = branches[i];
+        LiquityContractsDev memory c = branches[i];
         uint256 troveId = _troveIdOf(msg.sender);
         LatestTroveData memory t = c.troveManager.getLatestTroveData(troveId);
         bool wasOpen = _isOpen(i, troveId);
@@ -868,7 +868,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             for (uint256 j = 0; j < branches.length; ++j) {
                 if (t[j].attemptedAmount == 0) continue; // no effects on unredeemed branches
 
-                LiquityContracts memory c = branches[j];
+                LiquityContractsDev memory c = branches[j];
                 RedeemedTrove[] storage troves = _redemptionPlan[j];
 
                 // Effects (Troves)
@@ -933,7 +933,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     function shutdown(uint256 i) external {
         i = _bound(i, 0, branches.length - 1);
-        LiquityContracts memory c = branches[i];
+        LiquityContractsDev memory c = branches[i];
 
         logCall("shutdown", i.toString());
 
@@ -970,7 +970,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         i = _bound(i, 0, branches.length - 1);
         amount = _bound(amount, 0, _handlerBold);
 
-        LiquityContracts memory c = branches[i];
+        LiquityContractsDev memory c = branches[i];
         RedemptionTotals memory t;
         _planUrgentRedemption(i, amount, t);
         assertLeDecimal(t.debtRedeemed, amount, 18, "Total redeemed exceeds input amount");
@@ -1333,7 +1333,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     }
 
     function _hintToString(uint256 i, uint256 troveId) internal view returns (string memory) {
-        TroveManagerTester troveManager = branches[i].troveManager;
+        ITroveManagerTester troveManager = branches[i].troveManager;
 
         if (_isOpen(i, troveId)) {
             return vm.getLabel(troveManager.ownerOf(troveId));
@@ -1518,7 +1518,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             t[j].attemptedAmount = amount * unbacked[j] / totalUnbacked;
             if (t[j].attemptedAmount == 0) continue;
 
-            LiquityContracts memory c = branches[j];
+            LiquityContractsDev memory c = branches[j];
             uint256 remainingAmount = t[j].attemptedAmount;
             uint256 troveId = 0; // "root node" ID
 
