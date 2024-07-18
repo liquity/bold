@@ -224,7 +224,7 @@ contract("BorrowerOperations", async (accounts) => {
 
         const alice_Trove_Before = await troveManager.Troves(aliceTroveId);
         const alice_Stake_Before = alice_Trove_Before[2];
-        const totalStakes_Before = await troveManager.totalStakes();
+        const totalStakes_Before = await troveManager.getTotalStakes();
 
         assert.isTrue(totalStakes_Before.eq(alice_Stake_Before));
 
@@ -237,7 +237,7 @@ contract("BorrowerOperations", async (accounts) => {
         // Check stake and total stakes get updated
         const alice_Trove_After = await troveManager.Troves(aliceTroveId);
         const alice_Stake_After = alice_Trove_After[2];
-        const totalStakes_After = await troveManager.totalStakes();
+        const totalStakes_After = await troveManager.getTotalStakes();
 
         assert.isTrue(
           alice_Stake_After.eq(alice_Stake_Before.add(toBN(dec(2, "ether")))),
@@ -276,8 +276,8 @@ contract("BorrowerOperations", async (accounts) => {
 
         assert.isFalse(await sortedTroves.contains(carolTroveId));
 
-        const L_coll = await troveManager.L_coll();
-        const L_boldDebt = await troveManager.L_boldDebt();
+        const L_coll = await troveManager.get_L_coll();
+        const L_boldDebt = await troveManager.get_L_boldDebt();
 
         // check Alice and Bob's reward snapshots are zero before they alter their Troves
         const alice_rewardSnapshot_Before = await troveManager.rewardSnapshots(
@@ -732,7 +732,7 @@ contract("BorrowerOperations", async (accounts) => {
 
         const alice_Trove_Before = await troveManager.Troves(aliceTroveId);
         const alice_Stake_Before = alice_Trove_Before[2];
-        const totalStakes_Before = await troveManager.totalStakes();
+        const totalStakes_Before = await troveManager.getTotalStakes();
 
         assert.isTrue(alice_Stake_Before.eq(aliceColl));
         assert.isTrue(totalStakes_Before.eq(aliceColl));
@@ -745,7 +745,7 @@ contract("BorrowerOperations", async (accounts) => {
         // Check stake and total stakes get updated
         const alice_Trove_After = await troveManager.Troves(aliceTroveId);
         const alice_Stake_After = alice_Trove_After[2];
-        const totalStakes_After = await troveManager.totalStakes();
+        const totalStakes_After = await troveManager.getTotalStakes();
 
         assert.isTrue(
           alice_Stake_After.eq(alice_Stake_Before.sub(toBN(dec(1, "ether")))),
@@ -807,8 +807,8 @@ contract("BorrowerOperations", async (accounts) => {
         // close Carol's Trove, liquidating her 1 ether and 180Bold.
         await troveManager.liquidate(carol_Id, { from: owner });
 
-        const L_coll = await troveManager.L_coll();
-        const L_boldDebt = await troveManager.L_boldDebt();
+        const L_coll = await troveManager.get_L_coll();
+        const L_boldDebt = await troveManager.get_L_boldDebt();
 
         // check Alice and Bob's reward snapshots are zero before they alter their Troves
         const alice_rewardSnapshot_Before = await troveManager.rewardSnapshots(
@@ -2232,7 +2232,7 @@ contract("BorrowerOperations", async (accounts) => {
         });
 
         const stakeBefore = await troveManager.getTroveStake(aliceTroveId);
-        const totalStakesBefore = await troveManager.totalStakes();
+        const totalStakesBefore = await troveManager.getTotalStakes();
         assert.isTrue(stakeBefore.gt(toBN("0")));
         assert.isTrue(totalStakesBefore.gt(toBN("0")));
 
@@ -2250,7 +2250,7 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const stakeAfter = await troveManager.getTroveStake(aliceTroveId);
-        const totalStakesAfter = await troveManager.totalStakes();
+        const totalStakesAfter = await troveManager.getTotalStakes();
 
         assert.isTrue(stakeAfter.eq(stakeBefore.add(toBN(dec(1, 18)))));
         assert.isTrue(
@@ -2272,7 +2272,7 @@ contract("BorrowerOperations", async (accounts) => {
         });
 
         const stakeBefore = await troveManager.getTroveStake(aliceTroveId);
-        const totalStakesBefore = await troveManager.totalStakes();
+        const totalStakesBefore = await troveManager.getTotalStakes();
         assert.isTrue(stakeBefore.gt(toBN("0")));
         assert.isTrue(totalStakesBefore.gt(toBN("0")));
 
@@ -2288,7 +2288,7 @@ contract("BorrowerOperations", async (accounts) => {
         );
 
         const stakeAfter = await troveManager.getTroveStake(aliceTroveId);
-        const totalStakesAfter = await troveManager.totalStakes();
+        const totalStakesAfter = await troveManager.getTotalStakes();
 
         assert.isTrue(stakeAfter.eq(stakeBefore.sub(toBN(dec(5, 17)))));
         assert.isTrue(
@@ -3075,7 +3075,7 @@ contract("BorrowerOperations", async (accounts) => {
         assert.isTrue(bobStakeBefore.gt("0"));
         assert.isTrue(dennisStakeBefore.gt("0"));
 
-        const totalStakesBefore = await troveManager.totalStakes();
+        const totalStakesBefore = await troveManager.getTotalStakes();
 
         assert.isTrue(
           totalStakesBefore.eq(
@@ -3093,7 +3093,7 @@ contract("BorrowerOperations", async (accounts) => {
 
         // Check stake and total stakes get updated
         const aliceStakeAfter = await getTroveStake(aliceTroveId);
-        const totalStakesAfter = await troveManager.totalStakes();
+        const totalStakesAfter = await troveManager.getTotalStakes();
 
         assert.equal(aliceStakeAfter, 0);
         assert.isTrue(
@@ -3647,7 +3647,7 @@ contract("BorrowerOperations", async (accounts) => {
 
       it("openTrove(): creates a stake and adds it to total stakes", async () => {
         // const aliceStakeBefore = await getTroveStake(aliceTroveId);
-        const totalStakesBefore = await troveManager.totalStakes();
+        const totalStakesBefore = await troveManager.getTotalStakes();
 
         // assert.equal(aliceStakeBefore, "0");
         assert.equal(totalStakesBefore, "0");
@@ -3662,7 +3662,7 @@ contract("BorrowerOperations", async (accounts) => {
         assert.isTrue(aliceCollAfter.gt(toBN("0")));
         assert.isTrue(aliceStakeAfter.eq(aliceCollAfter));
 
-        const totalStakesAfter = await troveManager.totalStakes();
+        const totalStakesAfter = await troveManager.getTotalStakes();
 
         assert.isTrue(totalStakesAfter.eq(aliceStakeAfter));
       });
@@ -3738,8 +3738,8 @@ contract("BorrowerOperations", async (accounts) => {
         /* with total stakes = 10 ether, after liquidation, L_coll should equal 1/10 ether per-ether-staked,
            and L_Bold should equal 18 Bold per-ether-staked. */
 
-        const L_coll = await troveManager.L_coll();
-        const L_Bold = await troveManager.L_boldDebt();
+        const L_coll = await troveManager.get_L_coll();
+        const L_Bold = await troveManager.get_L_boldDebt();
 
         assert.isTrue(L_coll.gt(toBN("0")));
         assert.isTrue(L_Bold.gt(toBN("0")));

@@ -951,7 +951,7 @@ class TestHelper {
   static getTroveIdFromTx(tx, contracts) {
     for (let i = 0; i < tx.receipt.rawLogs.length; i++) {
       if (
-        tx.receipt.rawLogs[i].address === contracts.troveManager.address
+        tx.receipt.rawLogs[i].address === contracts.troveNFT.address
         && tx.receipt.rawLogs[i].topics[0] === web3.utils.keccak256("Transfer(address,address,uint256)")
         && tx.receipt.rawLogs[i].topics[1] === this.ZERO_UINT256 // mint
       ) {

@@ -10,6 +10,16 @@ interface ITroveManagerTester is ITroveManager {
     function get_LIQUIDATION_PENALTY_SP() external view returns (uint256);
     function get_LIQUIDATION_PENALTY_REDISTRIBUTION() external view returns (uint256);
 
+    function getBoldToken() external view returns (IBoldToken);
+    function getBorrowerOperations() external view returns (IBorrowerOperations);
+
+    function get_L_coll() external view returns (uint256);
+    function get_L_boldDebt() external view returns (uint256);
+    function getTotalStakes() external view returns (uint256);
+    function getTotalStakesSnapshot() external view returns (uint256);
+    function getTotalCollateralSnapshot() external view returns (uint256);
+    function getTroveId(uint256 _index) external view returns (uint256);
+
     function computeICR(uint256 _coll, uint256 _debt, uint256 _price) external pure returns (uint256);
     function getCollGasCompensation(uint256 _coll) external pure returns (uint256);
 

@@ -184,7 +184,7 @@ contract("TroveManager", async (accounts) => {
         th.logBN('ICR_Before', ICR_Before)
         th.assertIsApproximatelyEqual(ICR_Before, toBN(dec(4, 18)), 1e8);
 
-        const MCR = (await troveManager.MCR()).toString();
+        const MCR = (await troveManager.get_MCR()).toString();
         assert.equal(MCR.toString(), "1100000000000000000");
 
         // Alice increases debt to 180 Bold, lowering her ICR to 1.11
@@ -339,7 +339,7 @@ contract("TroveManager", async (accounts) => {
         // --- TEST ---
 
         // check totalStakes before
-        const totalStakes_Before = (await troveManager.totalStakes()).toString();
+        const totalStakes_Before = (await troveManager.getTotalStakes()).toString();
         assert.equal(totalStakes_Before, A_collateral.add(B_collateral));
 
         // price drops to 1ETH:100Bold, reducing Bob's ICR below MCR
@@ -352,7 +352,7 @@ contract("TroveManager", async (accounts) => {
         await troveManager.liquidate(bobTroveId, { from: owner });
 
         // check totalStakes after
-        const totalStakes_After = (await troveManager.totalStakes()).toString();
+        const totalStakes_After = (await troveManager.getTotalStakes()).toString();
         assert.equal(totalStakes_After, A_collateral);
       });
 
@@ -394,11 +394,11 @@ contract("TroveManager", async (accounts) => {
            [W, A, B, E, D]
 
            Check all remaining troves in the array are in the correct order */
-        const trove_0 = await troveManager.TroveIds(0);
-        const trove_1 = await troveManager.TroveIds(1);
-        const trove_2 = await troveManager.TroveIds(2);
-        const trove_3 = await troveManager.TroveIds(3);
-        const trove_4 = await troveManager.TroveIds(4);
+        const trove_0 = await troveManager.getTroveId(0);
+        const trove_1 = await troveManager.getTroveId(1);
+        const trove_2 = await troveManager.getTroveId(2);
+        const trove_3 = await troveManager.getTroveId(3);
+        const trove_4 = await troveManager.getTroveId(4);
 
         assert.isTrue(trove_0.eq(whaleTroveId));
         assert.isTrue(trove_1.eq(aliceTroveId));
@@ -436,10 +436,10 @@ contract("TroveManager", async (accounts) => {
 
         // check snapshots before
         const totalStakesSnapshot_Before = (
-          await troveManager.totalStakesSnapshot()
+          await troveManager.getTotalStakesSnapshot()
         ).toString();
         const totalCollateralSnapshot_Before = (
-          await troveManager.totalCollateralSnapshot()
+          await troveManager.getTotalCollateralSnapshot()
         ).toString();
         assert.equal(totalStakesSnapshot_Before, "0");
         assert.equal(totalCollateralSnapshot_Before, "0");
@@ -459,10 +459,10 @@ contract("TroveManager", async (accounts) => {
            Total collateral should be equal to Alice's collateral plus her pending ETH reward (Bob’s collaterale*0.995 ether), earned
            from the liquidation of Bob's Trove */
         const totalStakesSnapshot_After = (
-          await troveManager.totalStakesSnapshot()
+          await troveManager.getTotalStakesSnapshot()
         ).toString();
         const totalCollateralSnapshot_After = (
-          await troveManager.totalCollateralSnapshot()
+          await troveManager.getTotalCollateralSnapshot()
         ).toString();
 
         assert.equal(totalStakesSnapshot_After, A_collateral);
@@ -511,8 +511,8 @@ contract("TroveManager", async (accounts) => {
         assert.isFalse(await sortedTroves.contains(carolTroveId));
 
         // Carol's ether*0.995 and Bold should be added to the DefaultPool.
-        const L_coll_AfterCarolLiquidated = await troveManager.L_coll();
-        const L_boldDebt_AfterCarolLiquidated = await troveManager.L_boldDebt();
+        const L_coll_AfterCarolLiquidated = await troveManager.get_L_coll();
+        const L_boldDebt_AfterCarolLiquidated = await troveManager.get_L_boldDebt();
 
         const L_coll_expected_1 = th
               .applyLiquidationFee(C_collateral)
@@ -567,8 +567,8 @@ contract("TroveManager", async (accounts) => {
 
            L_coll = (0.995 / 20) + (10.4975*0.995  / 10) = 1.09425125 ETH
            L_boldDebt = (180 / 20) + (890 / 10) = 98 Bold */
-        const L_coll_AfterBobLiquidated = await troveManager.L_coll();
-        const L_boldDebt_AfterBobLiquidated = await troveManager.L_boldDebt();
+        const L_coll_AfterBobLiquidated = await troveManager.get_L_coll();
+        const L_boldDebt_AfterBobLiquidated = await troveManager.get_L_boldDebt();
 
         const L_coll_expected_2 = L_coll_expected_1.add(
           th
@@ -4206,7 +4206,7 @@ contract("TroveManager", async (accounts) => {
         assert.isFalse(await sortedTroves.contains(defaulter_1_TroveId));
 
         // Confirm there are no pending rewards from liquidation
-        const current_L_boldDebt = await troveManager.L_boldDebt();
+        const current_L_boldDebt = await troveManager.get_L_boldDebt();
         assert.equal(current_L_boldDebt.toString(), "0");
 
         const carolSnapshot_L_boldDebt = (
@@ -4251,7 +4251,7 @@ contract("TroveManager", async (accounts) => {
         assert.isFalse(await sortedTroves.contains(defaulter_1_TroveId));
 
         // Confirm there are no pending rewards from liquidation
-        const current_L_coll = await troveManager.L_coll();
+        const current_L_coll = await troveManager.get_L_coll();
         assert.equal(current_L_coll.toString(), "0");
 
         const carolSnapshot_L_coll = (await troveManager.rewardSnapshots(carolTroveId))[0];

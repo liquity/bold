@@ -28,6 +28,38 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         return LIQUIDATION_PENALTY_REDISTRIBUTION;
     }
 
+    function getBoldToken() external view returns (IBoldToken) {
+        return boldToken;
+    }
+
+    function getBorrowerOperations() external view returns (IBorrowerOperations) {
+        return borrowerOperations;
+    }
+
+    function get_L_coll() external view returns (uint256) {
+        return L_coll;
+    }
+
+    function get_L_boldDebt() external view returns (uint256) {
+        return L_boldDebt;
+    }
+
+    function getTotalStakes() external view returns (uint256) {
+        return totalStakes;
+    }
+
+    function getTotalStakesSnapshot() external view returns (uint256) {
+        return totalStakesSnapshot;
+    }
+
+    function getTotalCollateralSnapshot() external view returns (uint256) {
+        return totalCollateralSnapshot;
+    }
+
+    function getTroveId(uint256 _index) external view returns (uint256) {
+        return TroveIds[_index];
+    }
+
     function computeICR(uint256 _coll, uint256 _debt, uint256 _price) external pure returns (uint256) {
         return LiquityMath._computeCR(_coll, _debt, _price);
     }
