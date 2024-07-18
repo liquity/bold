@@ -12,6 +12,7 @@ contract PriceFeedTestnet is IPriceFeedTestnet {
     event LastGoodPriceUpdated(uint256 _lastGoodPrice);
 
     uint256 private _price = 200 * 1e18;
+    uint256 public lastGoodPrice = 200 * 1e18;
 
     // --- Functions ---
 

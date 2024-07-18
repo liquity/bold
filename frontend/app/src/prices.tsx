@@ -3,6 +3,7 @@
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
+import { useContracts } from "@/src/contracts";
 import {
   BOLD_PRICE as DEMO_BOLD_PRICE,
   ETH_PRICE as DEMO_ETH_PRICE,
@@ -15,22 +16,36 @@ import {
 import { DEMO_MODE } from "@/src/env";
 import * as dn from "dnum";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useReadContract } from "wagmi";
 
 type PriceToken = "ETH" | "LQTY" | "BOLD" | "RETH" | "STETH";
 
 type Prices = Record<PriceToken, Dnum | null>;
 
 const initialPrices: Prices = {
-  BOLD: null,
+  BOLD: dn.from(1, 18),
   ETH: null,
   LQTY: null,
   RETH: null,
   STETH: null,
 };
 
-// TODO: implement a price watcher
 let useWatchPrices = function useWatchPrices(): Prices {
-  return initialPrices;
+  const contracts = useContracts();
+  const priceFeedAddress = useReadContract({
+    ...contracts.TroveManager,
+    functionName: "priceFeed",
+  });
+  const ethPrice = useReadContract({
+    abi: contracts.PriceFeed.abi,
+    address: priceFeedAddress.data,
+    functionName: "lastGoodPrice",
+  });
+  return {
+    // TODO: fetch prices for LQTY, BOLD, RETH, STETH
+    ...initialPrices,
+    ETH: ethPrice.data ? [ethPrice.data, 18] : null,
+  };
 };
 
 if (DEMO_MODE) {
