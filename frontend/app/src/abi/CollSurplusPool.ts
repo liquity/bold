@@ -2,14 +2,8 @@
 // please do not edit it manually
 export const CollSurplusPool = [{
   "type": "constructor",
-  "inputs": [{ "name": "_ETHAddress", "type": "address", "internalType": "address" }],
+  "inputs": [{ "name": "_collAddress", "type": "address", "internalType": "address" }],
   "stateMutability": "nonpayable",
-}, {
-  "type": "function",
-  "name": "ETH",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "address", "internalType": "contract IERC20" }],
-  "stateMutability": "view",
 }, {
   "type": "function",
   "name": "NAME",
@@ -19,7 +13,7 @@ export const CollSurplusPool = [{
 }, {
   "type": "function",
   "name": "accountSurplus",
-  "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }, {
+  "inputs": [{ "name": "_account", "type": "address", "internalType": "address" }, {
     "name": "_amount",
     "type": "uint256",
     "internalType": "uint256",
@@ -41,23 +35,25 @@ export const CollSurplusPool = [{
 }, {
   "type": "function",
   "name": "claimColl",
-  "inputs": [{ "name": "_account", "type": "address", "internalType": "address" }, {
-    "name": "_troveId",
-    "type": "uint256",
-    "internalType": "uint256",
-  }],
+  "inputs": [{ "name": "_account", "type": "address", "internalType": "address" }],
   "outputs": [],
   "stateMutability": "nonpayable",
 }, {
   "type": "function",
-  "name": "getCollateral",
-  "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }],
+  "name": "collToken",
+  "inputs": [],
+  "outputs": [{ "name": "", "type": "address", "internalType": "contract IERC20" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "getCollBalance",
+  "inputs": [],
   "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
   "stateMutability": "view",
 }, {
   "type": "function",
-  "name": "getETHBalance",
-  "inputs": [],
+  "name": "getCollateral",
+  "inputs": [{ "name": "_account", "type": "address", "internalType": "address" }],
   "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
   "stateMutability": "view",
 }, {
@@ -106,7 +102,7 @@ export const CollSurplusPool = [{
 }, {
   "type": "event",
   "name": "CollBalanceUpdated",
-  "inputs": [{ "name": "_troveId", "type": "uint256", "indexed": true, "internalType": "uint256" }, {
+  "inputs": [{ "name": "_account", "type": "address", "indexed": true, "internalType": "address" }, {
     "name": "_newBalance",
     "type": "uint256",
     "indexed": false,
@@ -115,7 +111,7 @@ export const CollSurplusPool = [{
   "anonymous": false,
 }, {
   "type": "event",
-  "name": "EtherSent",
+  "name": "CollSent",
   "inputs": [{ "name": "_to", "type": "address", "indexed": false, "internalType": "address" }, {
     "name": "_amount",
     "type": "uint256",

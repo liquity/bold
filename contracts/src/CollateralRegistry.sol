@@ -37,7 +37,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     uint256 public baseRate;
 
     // The timestamp of the latest fee operation (redemption or new Bold issuance)
-    uint256 public lastFeeOperationTime;
+    uint256 public lastFeeOperationTime = block.timestamp;
 
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
@@ -61,10 +61,9 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         token8 = numTokens > 8 ? _tokens[8] : IERC20(address(0));
         token9 = numTokens > 9 ? _tokens[9] : IERC20(address(0));
 
-        // Update the baseRate state variable
-        // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
-        baseRate = INITIAL_REDEMPTION_RATE;
-        emit BaseRateUpdated(INITIAL_REDEMPTION_RATE);
+        // Initialize the baseRate state variable
+        baseRate = INITIAL_BASE_RATE;
+        emit BaseRateUpdated(INITIAL_BASE_RATE);
     }
 
     function setTroveManager(uint256 _branch, ITroveManager _troveManager) external {
@@ -160,7 +159,6 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_boldAmount, _totalBoldSupplyAtStart);
 
         //assert(newBaseRate <= DECIMAL_PRECISION); // This is already enforced in `_getUpdatedBaseRateFromRedemption`
-        assert(newBaseRate > 0); // Base rate is always non-zero after redemption
 
         // Update the baseRate state variable
         baseRate = newBaseRate;

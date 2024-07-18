@@ -17,6 +17,10 @@ library StringFormatting {
     uint256 constant DECIMALS = 18;
     uint256 constant ONE = 10 ** DECIMALS;
 
+    function equals(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(bytes(a)) == keccak256(bytes(b));
+    }
+
     function toString(bytes memory str) internal pure returns (string memory) {
         return string(str);
     }
@@ -26,7 +30,11 @@ library StringFormatting {
     }
 
     function decimal(int256 n) internal pure returns (string memory) {
-        if (n < 0) {
+        if (n == type(int256).max) {
+            return "type(int256).max";
+        } else if (n == type(int256).min) {
+            return "type(int256).min";
+        } else if (n < 0) {
             return string.concat("-", uint256(-n).decimal());
         } else {
             return uint256(n).decimal();
@@ -34,6 +42,10 @@ library StringFormatting {
     }
 
     function decimal(uint256 n) internal pure returns (string memory) {
+        if (n == type(uint256).max) {
+            return "type(uint256).max";
+        }
+
         uint256 integerPart = n / ONE;
         uint256 fractionalPart = n % ONE;
 

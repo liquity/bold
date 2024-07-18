@@ -2,14 +2,8 @@
 // please do not edit it manually
 export const DefaultPool = [{
   "type": "constructor",
-  "inputs": [{ "name": "_ETHAddress", "type": "address", "internalType": "address" }],
+  "inputs": [{ "name": "_collAddress", "type": "address", "internalType": "address" }],
   "stateMutability": "nonpayable",
-}, {
-  "type": "function",
-  "name": "ETH",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "address", "internalType": "contract IERC20" }],
-  "stateMutability": "view",
 }, {
   "type": "function",
   "name": "NAME",
@@ -21,6 +15,12 @@ export const DefaultPool = [{
   "name": "activePoolAddress",
   "inputs": [],
   "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "collToken",
+  "inputs": [],
+  "outputs": [{ "name": "", "type": "address", "internalType": "contract IERC20" }],
   "stateMutability": "view",
 }, {
   "type": "function",
@@ -36,7 +36,7 @@ export const DefaultPool = [{
   "stateMutability": "view",
 }, {
   "type": "function",
-  "name": "getETHBalance",
+  "name": "getCollBalance",
   "inputs": [],
   "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
   "stateMutability": "view",
@@ -60,13 +60,13 @@ export const DefaultPool = [{
   "stateMutability": "view",
 }, {
   "type": "function",
-  "name": "receiveETH",
+  "name": "receiveColl",
   "inputs": [{ "name": "_amount", "type": "uint256", "internalType": "uint256" }],
   "outputs": [],
   "stateMutability": "nonpayable",
 }, {
   "type": "function",
-  "name": "sendETHToActivePool",
+  "name": "sendCollToActivePool",
   "inputs": [{ "name": "_amount", "type": "uint256", "internalType": "uint256" }],
   "outputs": [],
   "stateMutability": "nonpayable",
@@ -98,8 +98,8 @@ export const DefaultPool = [{
   "anonymous": false,
 }, {
   "type": "event",
-  "name": "DefaultPoolETHBalanceUpdated",
-  "inputs": [{ "name": "_ETHBalance", "type": "uint256", "indexed": false, "internalType": "uint256" }],
+  "name": "DefaultPoolCollBalanceUpdated",
+  "inputs": [{ "name": "_collBalance", "type": "uint256", "indexed": false, "internalType": "uint256" }],
   "anonymous": false,
 }, {
   "type": "event",

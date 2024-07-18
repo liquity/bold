@@ -227,20 +227,18 @@ export function FooterInfoLoanToValue({
         <HFlex gap={4}>
           {ltvRatio
             ? (
-              <>
-                <span
-                  className={css({
-                    fontVariantNumeric: "tabular-nums",
-                  })}
-                >
-                  {higherThanMax && ">"}
-                  {dn.format(
-                    dn.mul(higherThanMax ? maxLtvRatio : ltvRatio, 100),
-                    formatOptions,
-                  )}
-                  {"%"}
-                </span>
-              </>
+              <span
+                className={css({
+                  fontVariantNumeric: "tabular-nums",
+                })}
+              >
+                {higherThanMax && ">"}
+                {dn.format(
+                  dn.mul(higherThanMax ? maxLtvRatio : ltvRatio, 100),
+                  formatOptions,
+                )}
+                {"%"}
+              </span>
             )
             : "−"}
           <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.loanLtv)} />

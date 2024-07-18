@@ -1,4 +1,5 @@
 import content from "@/src/content";
+import { shortenAddress } from "@/src/eth-utils";
 import { useAccount } from "@/src/eth/Ethereum";
 import { css } from "@/styled-system/css";
 import { Button, IconAccount } from "@liquity2/uikit";
@@ -9,6 +10,7 @@ import { MenuItem } from "./MenuItem";
 type ButtonData = {
   label: string;
   onClick: () => void;
+  title?: string;
   variant?: "normal" | "connected";
 };
 
@@ -31,8 +33,9 @@ export function AccountButton() {
             // connected
             { account: { address: P.nonNullable } },
             ({ account }) => ({
-              label: account.ensName ?? account.address,
+              label: account.ensName ?? shortenAddress(account.address, 3),
               onClick: account.disconnect,
+              title: account.address,
               variant: "connected",
             }),
           )
@@ -56,6 +59,7 @@ function ButtonConnected({ button }: { button: ButtonData }) {
   return (
     <button
       onClick={button.onClick}
+      title={button.title}
       className={css({
         display: "flex",
         height: "100%",

@@ -14,7 +14,7 @@ import {_deployAndConnectContractsMultiColl, LiquityContractsDev, TroveManagerPa
 import {StringFormatting} from "./Utils/StringFormatting.sol";
 import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
 import {BaseMultiCollateralTest} from "./TestContracts/BaseMultiCollateralTest.sol";
-import {InvariantsTestHandler} from "./TestContracts/InvariantsTestHandler.t.sol";
+import {AdjustedTroveProperties, InvariantsTestHandler} from "./TestContracts/InvariantsTestHandler.t.sol";
 
 struct BatchIdSet {
     mapping(BatchId => bool) _has;
@@ -85,7 +85,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
     }
 
     // Not a real invariant, but we want to make sure our actors always have empty wallets before a handler call
-    function invariant_FundsAreSwept() external {
+    function invariant_FundsAreSwept() external view {
         for (uint256 i = 0; i < actors.length; ++i) {
             address actor = actors[i].account;
 
@@ -103,7 +103,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_SystemVariablesMatchGhostVariables() external {
+    function invariant_SystemVariablesMatchGhostVariables() external view {
         for (uint256 i = 0; i < branches.length; ++i) {
             LiquityContractsDev memory c = branches[i];
 
@@ -133,30 +133,37 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
             );
             assertEqDecimal(c.stabilityPool.getCollBalance(), handler.spColl(i), 18, "Wrong StabilityPool Coll balance");
         }
+
+        assertEqDecimal(boldToken.totalSupply(), handler.getBoldSupply(), 18, "Wrong BOLD supply");
+        assertEqDecimal(
+            collateralRegistry.getRedemptionRateWithDecay(), handler.getRedemptionRate(), 18, "Wrong redemption rate"
+        );
     }
 
-    function invariant_AllBoldBackedByTroveDebt() external {
+    function invariant_AllBoldBackedByTroveDebt() external view {
         uint256 totalBold = boldToken.totalSupply();
-        uint256 totalDebt = 0;
         uint256 totalPendingInterest = 0;
+        uint256 totalDebt = 0;
 
         for (uint256 j = 0; j < branches.length; ++j) {
             LiquityContractsDev memory c = branches[j];
             uint256 numTroves = c.troveManager.getTroveIdsCount();
 
+            totalPendingInterest += c.activePool.calcPendingAggInterest();
+
             for (uint256 i = 0; i < numTroves; ++i) {
                 totalDebt += c.troveManager.getTroveEntireDebt(c.troveManager.getTroveFromTroveIdsArray(i));
             }
-
-            totalPendingInterest += c.activePool.calcPendingAggInterest();
         }
 
+        // TODO: precisely track upper bound of error by counting int divisions in interest accrual.
+        // (Redistributions have a feedback loop that prevents errors from accumulating there).
         assertApproxEqAbsDecimal(
             totalBold + totalPendingInterest, totalDebt, 1e-10 ether, 18, "Total Bold !~= total debt"
         );
     }
 
-    function invariant_AllCollClaimable() external {
+    function invariant_AllCollClaimable() external view {
         for (uint256 j = 0; j < branches.length; ++j) {
             ITroveManagerTester troveManager = branches[j].troveManager;
             uint256 numTroves = troveManager.getTroveIdsCount();
@@ -177,7 +184,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_StabilityPool_AllBoldClaimable_ExceptYieldReceivedWhileEmpty() external {
+    function invariant_StabilityPool_AllBoldClaimable_ExceptYieldReceivedWhileEmpty() external view {
         for (uint256 j = 0; j < branches.length; ++j) {
             IStabilityPool stabilityPool = branches[j].stabilityPool;
 
@@ -216,7 +223,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_StabilityPool_AllCollClaimable() external {
+    function invariant_StabilityPool_AllCollClaimable() external view {
         for (uint256 j = 0; j < branches.length; ++j) {
             IStabilityPool stabilityPool = branches[j].stabilityPool;
             uint256 stabilityPoolEth = stabilityPool.getCollBalance();

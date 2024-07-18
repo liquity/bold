@@ -9,7 +9,7 @@ import { useAccount } from "@/src/eth/Ethereum";
 import { usePrice } from "@/src/prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { Button, InfoTooltip, TextButton } from "@liquity2/uikit";
+import { Button, InfoTooltip } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 export function RewardsPanel({

@@ -1251,7 +1251,8 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     }
 
     function _requireSenderIsOwnerOrAddManager(uint256 _troveId, address _owner) internal view {
-        if (msg.sender != _owner && msg.sender != addManagerOf[_troveId]) {
+        address addManager = addManagerOf[_troveId];
+        if (msg.sender != _owner && addManager != address(0) && msg.sender != addManager) {
             revert NotOwnerNorAddManager();
         }
     }

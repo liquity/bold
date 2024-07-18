@@ -73,7 +73,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         // Expect weighted average of 2 * troveDebt debt at 50% interest
         uint256 expectedPendingAggInterest =
-            (debt_A * interestRate_A + debt_B * interestRate_B) * _duration / ONE_YEAR / DECIMAL_PRECISION;
+            Math.ceilDiv((debt_A * interestRate_A + debt_B * interestRate_B) * _duration, ONE_YEAR * DECIMAL_PRECISION);
 
         assertEq(expectedPendingAggInterest, activePool.calcPendingAggInterest());
     }
@@ -197,7 +197,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         // check there's pending interest
         uint256 pendingInterest = activePool.calcPendingAggInterest();
-        assertEq(pendingInterest, calcInterest(weightedRecordedDebt_A, 1 days));
+        assertApproxEqAbs(pendingInterest, calcInterest(weightedRecordedDebt_A, 1 days), 1);
         debt_A += pendingInterest;
 
         uint256 BTroveId = openTroveNoHints100pct(B, 2 ether, troveDebtRequest, 25e16);

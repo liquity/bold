@@ -1,6 +1,5 @@
 import { StabilityPoolContract } from "@/src/contracts";
-import { formValue, parseInputInt, parseInputFloat, useForm } from "@/src/form-utils";
-import { getTroveId } from "@/src/liquity-utils";
+import { formValue, parseInputFloat, useForm } from "@/src/form-utils";
 import { FormField, TextInput } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useAccount, useWriteContract } from "wagmi";
@@ -12,7 +11,6 @@ export function ContractStabilityPool() {
     <Contract name="StabilityPool.sol">
       <ProvideToSp />
       <WithdrawFromSp />
-      <WithdrawEthGainToTrove />
     </Contract>
   );
 }
@@ -22,7 +20,8 @@ function ProvideToSp() {
   const { writeContract, error, reset } = useWriteContract();
 
   const { fieldsProps, values } = useForm(() => ({
-    amount: formValue(dn.from(0, 18), parseInputFloat),
+    topUp: formValue(dn.from(0, 18), parseInputFloat),
+    doClaim: formValue(false, (value) => value === "true"),
   }), reset);
 
   const onSubmit = () => {
@@ -31,7 +30,8 @@ function ProvideToSp() {
         ...StabilityPoolContract,
         functionName: "provideToSP",
         args: [
-          values.amount[0],
+          values.topUp[0],
+          values.doClaim,
         ],
       });
     }
@@ -43,8 +43,11 @@ function ProvideToSp() {
       onSubmit={onSubmit}
       title="Provide to SP"
     >
-      <FormField label="Amount">
-        <TextInput {...fieldsProps.amount} />
+      <FormField label="Top Up">
+        <TextInput {...fieldsProps.topUp} />
+      </FormField>
+      <FormField label="Do Claim">
+        <TextInput {...fieldsProps.doClaim} />
       </FormField>
     </ContractAction>
   );
@@ -56,6 +59,7 @@ function WithdrawFromSp() {
 
   const { fieldsProps, values } = useForm(() => ({
     amount: formValue(dn.from(0, 18), parseInputFloat),
+    doClaim: formValue(false, (value) => value === "true"),
   }), reset);
 
   const onSubmit = () => {
@@ -65,6 +69,7 @@ function WithdrawFromSp() {
         functionName: "withdrawFromSP",
         args: [
           values.amount[0],
+          values.doClaim,
         ],
       });
     }
@@ -79,38 +84,8 @@ function WithdrawFromSp() {
       <FormField label="Amount">
         <TextInput {...fieldsProps.amount} />
       </FormField>
-    </ContractAction>
-  );
-}
-
-function WithdrawEthGainToTrove() {
-  const account = useAccount();
-  const { writeContract, error, reset } = useWriteContract();
-
-  const { fieldsProps, values } = useForm(() => ({
-    ownerIndex: formValue(0n, parseInputInt),
-  }), reset);
-
-  const onSubmit = () => {
-    if (account.address) {
-      writeContract({
-        ...StabilityPoolContract,
-        functionName: "withdrawETHGainToTrove",
-        args: [
-          getTroveId(account.address, values.ownerIndex),
-        ],
-      });
-    }
-  };
-
-  return (
-    <ContractAction
-      error={error}
-      onSubmit={onSubmit}
-      title="Withdraw ETH Gain to Trove"
-    >
-      <FormField label="Trove Owner Index">
-        <TextInput {...fieldsProps.ownerIndex} />
+      <FormField label="Do Claim">
+        <TextInput {...fieldsProps.doClaim} />
       </FormField>
     </ContractAction>
   );
