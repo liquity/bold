@@ -122,19 +122,31 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 coll;
         uint256 troveId;
         bool wasOpen;
+        string errorString;
     }
 
     struct AdjustTroveContext {
         AdjustedTroveProperties prop;
+        uint256 upperHint;
+        uint256 lowerHint;
         LiquityContractsDev c;
+        uint256 oldTCR;
         uint256 troveId;
         LatestTroveData t;
+        ITroveManager.Status status;
         bool wasActive;
-        uint256 oldTCR;
+        bool wasUnredeemable;
+        bool useUnredeemable;
         int256 collDelta;
         int256 debtDelta;
         int256 $collDelta;
         uint256 upfrontFee;
+        string functionName;
+        uint256 newICR;
+        uint256 newTCR;
+        uint256 newColl;
+        uint256 newDebt;
+        string errorString;
     }
 
     struct AdjustTroveInterestRateContext {
@@ -146,6 +158,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         bool wasActive;
         bool premature;
         uint256 upfrontFee;
+        string errorString;
     }
 
     struct LiquidationTotals {
@@ -332,11 +345,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.debt = borrowed + v.upfrontFee;
         v.coll = v.debt * icr / _price[i];
 
+        info("coll: ", v.coll.decimal());
+        info("debt: ", v.debt.decimal());
         info("upper hint: ", _hintToString(i, v.upperHint));
         info("lower hint: ", _hintToString(i, v.lowerHint));
         info("upfront fee: ", v.upfrontFee.decimal());
-        info("coll: ", v.coll.decimal());
-        info("debt: ", v.debt.decimal());
 
         logCall(
             "openTrove",
@@ -355,9 +368,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         _dealCollAndApprove(i, msg.sender, v.coll, address(v.c.borrowerOperations));
         _dealWETHAndApprove(msg.sender, ETH_GAS_COMPENSATION, address(v.c.borrowerOperations));
 
-        string memory errorString;
         vm.prank(msg.sender);
-
         try v.c.borrowerOperations.openTrove(
             msg.sender, OWNER_INDEX, v.coll, borrowed, v.upperHint, v.lowerHint, interestRate, v.upfrontFee
         ) {
@@ -391,7 +402,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             numTroves[i] += 1;
         } catch (bytes memory revertData) {
             bytes4 selector;
-            (selector, errorString) = _decodeCustomError(revertData);
+            (selector, v.errorString) = _decodeCustomError(revertData);
 
             // Justify failures
             if (selector == BorrowerOperations.IsShutDown.selector) {
@@ -416,12 +427,12 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertLtDecimal(tcr, CCR, 18, "Shouldn't have failed as TCR >= CCR");
                 info("TCR: ", tcr.decimal());
             } else {
-                revert(string.concat("Unexpected error: ", errorString));
+                revert(string.concat("Unexpected error: ", v.errorString));
             }
         }
 
-        if (bytes(errorString).length > 0) {
-            info("Expected error: ", errorString);
+        if (bytes(v.errorString).length > 0) {
+            info("Expected error: ", v.errorString);
             _log();
 
             // Cleanup (failure)
@@ -437,87 +448,118 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 i,
         uint8 prop,
         uint256 collChange,
-        bool isCollIncrease,
+        bool isCollInc,
         uint256 debtChange,
-        bool isDebtIncrease
+        bool isDebtInc,
+        uint32 useUnredeemableSeed,
+        uint32 upperHintSeed,
+        uint32 lowerHintSeed
     ) external {
         AdjustTroveContext memory v;
 
         i = _bound(i, 0, branches.length - 1);
         v.prop = AdjustedTroveProperties(_bound(prop, 0, uint8(AdjustedTroveProperties._COUNT) - 1));
+        useUnredeemableSeed %= 10;
+        v.upperHint = _pickHint(i, upperHintSeed);
+        v.lowerHint = _pickHint(i, lowerHintSeed);
 
         v.c = branches[i];
+        v.oldTCR = _TCR(i);
         v.troveId = _troveIdOf(msg.sender);
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
-        v.wasActive = v.c.troveManager.getTroveStatus(v.troveId) == ACTIVE;
-        v.oldTCR = _TCR(i);
+        v.status = v.c.troveManager.getTroveStatus(v.troveId);
+        v.wasActive = v.status == ACTIVE;
+        v.wasUnredeemable = v.status == UNREDEEMABLE;
+
+        if (v.wasActive || v.wasUnredeemable) {
+            // Choose the wrong type of adjustment 10% of the time
+            if (v.wasUnredeemable) {
+                v.useUnredeemable = useUnredeemableSeed != 0;
+            } else {
+                v.useUnredeemable = useUnredeemableSeed == 0;
+            }
+        } else {
+            // Choose with equal probability between normal vs. unredeemable adjustment
+            v.useUnredeemable = useUnredeemableSeed < 5;
+        }
 
         collChange = v.prop != AdjustedTroveProperties.onlyDebt ? _bound(collChange, 0, v.t.entireColl * 11 / 10) : 0;
         debtChange = v.prop != AdjustedTroveProperties.onlyColl ? _bound(debtChange, 0, v.t.entireDebt * 11 / 10) : 0;
-        if (!isDebtIncrease) debtChange = Math.min(debtChange, _handlerBold);
+        if (!isDebtInc) debtChange = Math.min(debtChange, _handlerBold);
 
-        v.collDelta = isCollIncrease ? int256(collChange) : -int256(collChange);
-        v.debtDelta = isDebtIncrease ? int256(debtChange) : -int256(debtChange);
+        v.collDelta = isCollInc ? int256(collChange) : -int256(collChange);
+        v.debtDelta = isDebtInc ? int256(debtChange) : -int256(debtChange);
         v.$collDelta = v.collDelta * int256(_price[i]) / int256(DECIMAL_PRECISION);
-        v.upfrontFee = hintHelpers.predictAdjustTroveUpfrontFee(i, v.troveId, isDebtIncrease ? debtChange : 0);
+        v.upfrontFee = hintHelpers.predictAdjustTroveUpfrontFee(i, v.troveId, isDebtInc ? debtChange : 0);
+        v.functionName = _getAdjustmentFunctionName(v.prop, isCollInc, isDebtInc, v.useUnredeemable);
 
-        info("upfront fee: ", v.upfrontFee.decimal());
+        info("status: ", v.status.toString());
         info("coll: ", v.t.entireColl.decimal());
         info("debt: ", v.t.entireDebt.decimal());
         info("coll redist: ", v.t.redistCollGain.decimal());
         info("debt redist: ", v.t.redistBoldDebtGain.decimal());
         info("accrued interest: ", v.t.accruedInterest.decimal());
+        info("upper hint: ", _hintToString(i, v.upperHint));
+        info("lower hint: ", _hintToString(i, v.lowerHint));
+        info("upfront fee: ", v.upfrontFee.decimal());
+        info("function: ", v.functionName);
 
         logCall(
             "adjustTrove",
             i.toString(),
             v.prop.toString(),
             collChange.decimal(),
-            isCollIncrease.toString(),
+            isCollInc.toString(),
             debtChange.decimal(),
-            isDebtIncrease.toString()
+            isDebtInc.toString(),
+            useUnredeemableSeed.toString(),
+            upperHintSeed.toString(),
+            lowerHintSeed.toString()
         );
 
         // TODO: randomly deal less?
-        if (isCollIncrease) _dealCollAndApprove(i, msg.sender, collChange, address(v.c.borrowerOperations));
-        if (!isDebtIncrease) _dealBold(msg.sender, debtChange);
+        if (isCollInc) _dealCollAndApprove(i, msg.sender, collChange, address(v.c.borrowerOperations));
+        if (!isDebtInc) _dealBold(msg.sender, debtChange);
 
-        string memory errorString;
         vm.prank(msg.sender);
-
         try _functionCaller.call(
             address(v.c.borrowerOperations),
-            _encodeTroveAdjustment(
-                v.prop, v.troveId, collChange, isCollIncrease, debtChange, isDebtIncrease, v.upfrontFee
-            )
+            v.useUnredeemable
+                ? _encodeUnredeemableTroveAdjustment(
+                    v.troveId, collChange, isCollInc, debtChange, isDebtInc, v.upperHint, v.lowerHint, v.upfrontFee
+                )
+                : _encodeActiveTroveAdjustment(
+                    v.prop, v.troveId, collChange, isCollInc, debtChange, isDebtInc, v.upfrontFee
+                )
         ) {
-            uint256 newICR = _ICR(i, v.collDelta, v.debtDelta, v.upfrontFee, v.t);
-            uint256 newTCR = _TCR(i, v.collDelta, v.debtDelta, v.upfrontFee);
+            v.newICR = _ICR(i, v.collDelta, v.debtDelta, v.upfrontFee, v.t);
+            v.newTCR = _TCR(i, v.collDelta, v.debtDelta, v.upfrontFee);
 
             // Preconditions
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertTrue(collChange > 0 || debtChange > 0, "Should have failed as there was no change");
-            assertTrue(v.wasActive, "Should have failed as Trove was not active");
+            if (v.useUnredeemable) assertTrue(v.wasUnredeemable, "Should have failed as Trove was not unredeemable");
+            if (!v.useUnredeemable) assertTrue(v.wasActive, "Should have failed as Trove was not active");
 
             assertLeDecimal(-v.collDelta, int256(v.t.entireColl), 18, "Should have failed as coll decrease > coll");
-            uint256 newColl = v.t.entireColl.add(v.collDelta);
+            v.newColl = v.t.entireColl.add(v.collDelta);
 
             assertLeDecimal(-v.debtDelta, int256(v.t.entireDebt), 18, "Should have failed as debt decrease > debt");
-            uint256 newDebt = (v.t.entireDebt + v.upfrontFee).add(v.debtDelta);
+            v.newDebt = (v.t.entireDebt + v.upfrontFee).add(v.debtDelta);
 
-            assertGeDecimal(newDebt, MIN_DEBT, 28, "Should have failed as new debt < MIN_DEBT");
-            assertGeDecimal(newICR, MCR[i], 18, "Should have failed as new ICR < MCR");
+            assertGeDecimal(v.newDebt, MIN_DEBT, 28, "Should have failed as new debt < MIN_DEBT");
+            assertGeDecimal(v.newICR, MCR[i], 18, "Should have failed as new ICR < MCR");
 
             if (v.oldTCR >= CCR) {
-                assertGeDecimal(newTCR, CCR, 18, "Should have failed as new TCR < CCR");
+                assertGeDecimal(v.newTCR, CCR, 18, "Should have failed as new TCR < CCR");
             } else {
                 assertLeDecimal(v.debtDelta, 0, 18, "Borrowing should have failed as TCR < CCR");
                 assertGeDecimal(-v.debtDelta, -v.$collDelta, 18, "Repayment < withdrawal when TCR < CCR");
             }
 
             // Effects (Trove)
-            assertEqDecimal(v.c.troveManager.getTroveEntireColl(v.troveId), newColl, 18, "Wrong coll");
-            assertEqDecimal(v.c.troveManager.getTroveEntireDebt(v.troveId), newDebt, 18, "Wrong debt");
+            assertEqDecimal(v.c.troveManager.getTroveEntireColl(v.troveId), v.newColl, 18, "Wrong coll");
+            assertEqDecimal(v.c.troveManager.getTroveEntireDebt(v.troveId), v.newDebt, 18, "Wrong debt");
             if (v.upfrontFee > 0) assertGtDecimal(v.debtDelta, 0, 18, "Only debt increase should incur upfront fee");
 
             // Effects (system)
@@ -532,11 +574,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             activeColl.update(i, v.collDelta);
             activeDebt.update(i, v.debtDelta);
 
-            _interestAccrual[i] += newDebt * v.t.annualInterestRate;
+            _interestAccrual[i] += v.newDebt * v.t.annualInterestRate;
             _interestAccrual[i] -= v.t.recordedDebt * v.t.annualInterestRate;
         } catch (bytes memory revertData) {
             bytes4 selector;
-            (selector, errorString) = _decodeCustomError(revertData);
+            (selector, v.errorString) = _decodeCustomError(revertData);
 
             // Justify failures
             if (selector == BorrowerOperations.IsShutDown.selector) {
@@ -545,24 +587,28 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertEqDecimal(collChange, 0, 18, "Shouldn't have failed as there was a coll change");
                 assertEqDecimal(debtChange, 0, 18, "Shouldn't have failed as there was a debt change");
             } else if (selector == BorrowerOperations.TroveNotActive.selector) {
+                assertFalse(v.useUnredeemable, string.concat("Shouldn't have been thrown by ", v.functionName));
                 assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
+            } else if (selector == BorrowerOperations.TroveNotUnredeemable.selector) {
+                assertTrue(v.useUnredeemable, string.concat("Shouldn't have been thrown by ", v.functionName));
+                assertFalse(v.wasUnredeemable, "Shouldn't have failed as Trove was unredeemable");
             } else if (selector == BorrowerOperations.CollWithdrawalTooHigh.selector) {
                 assertGtDecimal(-v.collDelta, int256(v.t.entireColl), 18, "Shouldn't have failed as withdrawal <= coll");
             } else if (selector == BorrowerOperations.RepaymentTooHigh.selector) {
                 assertGtDecimal(-v.debtDelta, int256(v.t.entireDebt), 18, "Shouldn't have failed as repayment <= debt");
             } else if (selector == BorrowerOperations.DebtBelowMin.selector) {
-                uint256 newDebt = (v.t.entireDebt + v.upfrontFee).add(v.debtDelta);
-                assertLtDecimal(newDebt, MIN_DEBT, 18, "Shouldn't have failed as new debt >= MIN_DEBT");
-                info("New debt would have been: ", newDebt.decimal());
+                v.newDebt = (v.t.entireDebt + v.upfrontFee).add(v.debtDelta);
+                assertLtDecimal(v.newDebt, MIN_DEBT, 18, "Shouldn't have failed as new debt >= MIN_DEBT");
+                info("New debt would have been: ", v.newDebt.decimal());
             } else if (selector == BorrowerOperations.ICRBelowMCR.selector) {
-                uint256 newICR = _ICR(i, v.collDelta, v.debtDelta, v.upfrontFee, v.t);
-                assertLtDecimal(newICR, MCR[i], 18, "Shouldn't have failed as new ICR >= MCR");
-                info("New ICR would have been: ", newICR.decimal());
+                v.newICR = _ICR(i, v.collDelta, v.debtDelta, v.upfrontFee, v.t);
+                assertLtDecimal(v.newICR, MCR[i], 18, "Shouldn't have failed as new ICR >= MCR");
+                info("New ICR would have been: ", v.newICR.decimal());
             } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
-                uint256 newTCR = _TCR(i, v.collDelta, v.debtDelta, v.upfrontFee);
+                v.newTCR = _TCR(i, v.collDelta, v.debtDelta, v.upfrontFee);
                 assertGeDecimal(v.oldTCR, CCR, 18, "TCR was already < CCR");
-                assertLtDecimal(newTCR, CCR, 18, "Shouldn't have failed as new TCR >= CCR");
-                info("New TCR would have been: ", newTCR.decimal());
+                assertLtDecimal(v.newTCR, CCR, 18, "Shouldn't have failed as new TCR >= CCR");
+                info("New TCR would have been: ", v.newTCR.decimal());
             } else if (selector == BorrowerOperations.BorrowingNotPermittedBelowCT.selector) {
                 assertLtDecimal(v.oldTCR, CCR, 18, "Shouldn't have failed as TCR >= CCR");
                 assertGtDecimal(v.debtDelta, 0, 18, "Shouldn't have failed as there was no borrowing");
@@ -570,21 +616,21 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertLtDecimal(v.oldTCR, CCR, 18, "Shouldn't have failed as TCR >= CCR");
                 assertLtDecimal(-v.debtDelta, -v.$collDelta, 18, "Shouldn't have failed as repayment >= withdrawal");
             } else {
-                revert(string.concat("Unexpected error: ", errorString));
+                revert(string.concat("Unexpected error: ", v.errorString));
             }
         }
 
-        if (bytes(errorString).length > 0) {
-            info("Expected error: ", errorString);
+        if (bytes(v.errorString).length > 0) {
+            info("Expected error: ", v.errorString);
             _log();
 
             // Cleanup (failure)
-            if (isCollIncrease) _sweepCollAndUnapprove(i, msg.sender, collChange, address(v.c.borrowerOperations));
-            if (!isDebtIncrease) _sweepBold(msg.sender, debtChange);
+            if (isCollInc) _sweepCollAndUnapprove(i, msg.sender, collChange, address(v.c.borrowerOperations));
+            if (!isDebtInc) _sweepBold(msg.sender, debtChange);
         } else {
             // Cleanup (success)
-            if (!isCollIncrease) _sweepColl(i, msg.sender, collChange);
-            if (isDebtIncrease) _sweepBold(msg.sender, debtChange);
+            if (!isCollInc) _sweepColl(i, msg.sender, collChange);
+            if (isDebtInc) _sweepBold(msg.sender, debtChange);
         }
     }
 
@@ -617,9 +663,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             lowerHintSeed.toString()
         );
 
-        string memory errorString;
         vm.prank(msg.sender);
-
         try v.c.borrowerOperations.adjustTroveInterestRate(
             v.troveId, newInterestRate, v.upperHint, v.lowerHint, v.upfrontFee
         ) {
@@ -658,7 +702,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _interestAccrual[i] += (v.t.entireDebt + v.upfrontFee) * newInterestRate;
             _interestAccrual[i] -= v.t.recordedDebt * v.t.annualInterestRate;
         } catch Error(string memory reason) {
-            errorString = reason;
+            v.errorString = reason;
 
             // Justify failures
             if (reason.equals("ERC721: invalid token ID")) {
@@ -668,7 +712,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             }
         } catch (bytes memory revertData) {
             bytes4 selector;
-            (selector, errorString) = _decodeCustomError(revertData);
+            (selector, v.errorString) = _decodeCustomError(revertData);
 
             // Justify failures
             if (selector == BorrowerOperations.IsShutDown.selector) {
@@ -690,12 +734,12 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertLtDecimal(newTCR, CCR, 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
             } else {
-                revert(string.concat("Unexpected error: ", errorString));
+                revert(string.concat("Unexpected error: ", v.errorString));
             }
         }
 
-        if (bytes(errorString).length > 0) {
-            info("Expected error: ", errorString);
+        if (bytes(v.errorString).length > 0) {
+            info("Expected error: ", v.errorString);
             _log();
         }
     }
@@ -1698,7 +1742,40 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         delete _urgentRedemptionPlan;
     }
 
-    function _encodeTroveAdjustment(
+    function _getAdjustmentFunctionName(
+        AdjustedTroveProperties prop,
+        bool isCollIncrease,
+        bool isDebtIncrease,
+        bool unredeemable
+    ) internal pure returns (string memory) {
+        if (unredeemable) {
+            return "adjustUnredeemableTrove()";
+        }
+
+        if (prop == AdjustedTroveProperties.onlyColl) {
+            if (isCollIncrease) {
+                return "addColl()";
+            } else {
+                return "withdrawColl()";
+            }
+        }
+
+        if (prop == AdjustedTroveProperties.onlyDebt) {
+            if (isDebtIncrease) {
+                return "withdrawBold()";
+            } else {
+                return "repayBold()";
+            }
+        }
+
+        if (prop == AdjustedTroveProperties.both) {
+            return "adjustTrove()";
+        }
+
+        revert("Invalid prop");
+    }
+
+    function _encodeActiveTroveAdjustment(
         AdjustedTroveProperties prop,
         uint256 troveId,
         uint256 collChange,
@@ -1731,6 +1808,22 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         revert("Invalid prop");
+    }
+
+    function _encodeUnredeemableTroveAdjustment(
+        uint256 troveId,
+        uint256 collChange,
+        bool isCollIncrease,
+        uint256 debtChange,
+        bool isDebtIncrease,
+        uint256 upperHint,
+        uint256 lowerHint,
+        uint256 maxUpfrontFee
+    ) internal pure returns (bytes memory) {
+        return abi.encodeCall(
+            IBorrowerOperations.adjustUnredeemableTrove,
+            (troveId, collChange, isCollIncrease, debtChange, isDebtIncrease, upperHint, lowerHint, maxUpfrontFee)
+        );
     }
 
     // The only way to catch custom errors is through the generic `catch (bytes memory revertData)`.
