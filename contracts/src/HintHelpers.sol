@@ -94,7 +94,10 @@ contract HintHelpers {
         IActivePool activePool = troveManager.activePool();
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
 
-        if (block.timestamp >= trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN) {
+        if (
+            trove.annualInterestRate == _newInterestRate
+                || block.timestamp >= trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
+        ) {
             return 0;
         }
 
@@ -137,7 +140,10 @@ contract HintHelpers {
         IActivePool activePool = troveManager.activePool();
         LatestBatchData memory batch = troveManager.getLatestBatchData(_batchAddress);
 
-        if (block.timestamp >= batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN) {
+        if (
+            batch.annualInterestRate == _newInterestRate
+                || block.timestamp >= batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
+        ) {
             return 0;
         }
 
