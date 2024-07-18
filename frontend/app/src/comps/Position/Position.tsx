@@ -3,7 +3,7 @@ import type { TroveId } from "@/src/types";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
 import { getLiquidationRisk, getRedemptionRisk } from "@/src/liquity-math";
-import { usePrice } from "@/src/prices";
+import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { capitalizeFirstLetter } from "@/src/utils";
 import { css } from "@/styled-system/css";

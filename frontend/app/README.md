@@ -167,3 +167,16 @@ A WalletConnect project ID which can be obtained by [creating a WalletConnect pr
 Addresses of the Liquity contracts.
 
 </details>
+
+## Folder Structure
+
+```
+src/
+  abi/         # ABIs of the Liquity contracts
+  app/         # The Next.js app (mostly routing only)
+  comps/       # UI Components
+  demo-mode/   # Files related to the app running in demo mode
+  screens/     # App Screens (used by /app routing components)
+  services/    # Service Components
+  tx-flows/    # Transaction Flows
+```

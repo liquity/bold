@@ -10,7 +10,7 @@ import content from "@/src/content";
 import { ACCOUNT_BALANCES, ACCOUNT_STAKED_LQTY, ETH_PRICE, STAKED_LQTY_TOTAL } from "@/src/demo-mode";
 import { formatPercentage } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
-import { usePrice } from "@/src/prices";
+import { usePrice } from "@/src/services/Prices";
 import { css } from "@/styled-system/css";
 import { Button, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";

@@ -4,7 +4,6 @@ import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
 import { ERC20Faucet } from "@/src/abi/ERC20Faucet";
 import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
-import { useConfig } from "@/src/comps/Config/Config";
 import {
   CONTRACT_BOLD_TOKEN,
   CONTRACT_BORROWER_OPERATIONS,
@@ -12,6 +11,7 @@ import {
   CONTRACT_STABILITY_POOL,
   CONTRACT_TROVE_MANAGER,
 } from "@/src/env";
+import { useConfig } from "@/src/services/Config";
 import { useMemo } from "react";
 import { BoldToken } from "./abi/BoldToken";
 import { PriceFeed } from "./abi/PriceFeed";

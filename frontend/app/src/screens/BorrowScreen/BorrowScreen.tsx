@@ -7,10 +7,10 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import { DEBT_SUGGESTIONS } from "@/src/constants";
 import content from "@/src/content";
 import { ACCOUNT_BALANCES } from "@/src/demo-mode";
-import { useAccount } from "@/src/eth/Ethereum";
 import { useInputFieldValue } from "@/src/form-utils";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
-import { usePrice } from "@/src/prices";
+import { useAccount } from "@/src/services/Ethereum";
+import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {

@@ -1,6 +1,6 @@
 import content from "@/src/content";
 import { shortenAddress } from "@/src/eth-utils";
-import { useAccount } from "@/src/eth/Ethereum";
+import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
 import { Button, IconAccount } from "@liquity2/uikit";
 import { ConnectButton } from "@rainbow-me/rainbowkit";

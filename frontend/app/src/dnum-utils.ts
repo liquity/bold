@@ -69,3 +69,26 @@ export function dnumLte(a: Dnum, b: Dnum) {
 
 export const DNUM_0 = dn.from(0, 18);
 export const DNUM_1 = dn.from(1, 18);
+
+export const jsonStringifyWithDnum: typeof JSON.stringify = (data, replacer, space) => {
+  return JSON.stringify(
+    data,
+    (key, value) => {
+      const value_ = dn.isDnum(value) ? `dn${dn.toJSON(value)}` : value;
+      return typeof replacer === "function" ? replacer(key, value_) : value_;
+    },
+    space,
+  );
+};
+
+export const jsonParseWithDnum: typeof JSON.parse = (data, reviver) => {
+  return JSON.parse(
+    data,
+    (key, value) => {
+      if (typeof value === "string" && value.startsWith("dn[\"")) {
+        return dn.fromJSON(value.slice(2));
+      }
+      return typeof reviver === "function" ? reviver(key, value) : value;
+    },
+  );
+};

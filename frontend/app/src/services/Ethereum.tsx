@@ -6,7 +6,7 @@ import type { Address } from "@liquity2/uikit";
 import type { ComponentProps, ReactNode } from "react";
 import type { Chain } from "wagmi/chains";
 
-import { useConfig } from "@/src/comps/Config/Config";
+import { useConfig } from "@/src/services/Config";
 import { useDemoMode } from "@/src/demo-mode";
 import { WALLET_CONNECT_PROJECT_ID } from "@/src/env";
 import { noop } from "@/src/utils";

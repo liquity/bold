@@ -11,7 +11,7 @@ import {
 } from "@/src/contracts";
 import { ADDRESS_ZERO } from "@/src/eth-utils";
 import { useWatchQueries } from "@/src/wagmi-utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, maxUint256, parseAbiParameters } from "viem";
 import { useAccount, useBalance, useReadContract, useReadContracts, useWriteContract } from "wagmi";
@@ -108,6 +108,89 @@ export function useTroveDetails(troveId: TroveId = 0n) {
   };
 
   return { ...read, data };
+}
+
+export function useFindAvailableTroveIndex(owner?: Address | null):
+  | {
+    data: number;
+    error: undefined;
+    status: "success";
+  }
+  | {
+    data: undefined;
+    error: undefined;
+    status: "loading";
+  }
+  | {
+    data: undefined;
+    error: Error;
+    status: "error";
+  }
+  | {
+    data: undefined;
+    error: undefined;
+    status: "idle";
+  }
+{
+  const [troveIndex, setTroveIndex] = useState(0);
+
+  // reset trove search when owner changes
+  useEffect(() => {
+    if (owner) {
+      setTroveIndex(0);
+    }
+  }, [owner]);
+
+  const read = useReadContract(
+    owner
+      ? {
+        ...TroveManagerContract,
+        functionName: "checkTroveIsOpen",
+        args: [getTroveId(owner, BigInt(troveIndex))],
+      }
+      : {},
+  );
+
+  useWatchQueries([read]);
+
+  if (owner === null || owner === undefined) {
+    return {
+      data: undefined,
+      error: undefined,
+      status: "idle",
+    };
+  }
+
+  if (read.data === true) {
+    setTroveIndex(troveIndex + 1);
+    return {
+      data: undefined,
+      error: undefined,
+      status: "loading",
+    };
+  }
+
+  if (read.data === false) {
+    return {
+      data: troveIndex,
+      error: undefined,
+      status: "success",
+    };
+  }
+
+  if (read.status === "error") {
+    return {
+      data: undefined,
+      error: read.error,
+      status: "error",
+    };
+  }
+
+  return {
+    data: undefined,
+    error: undefined,
+    status: "loading",
+  };
 }
 
 export function useOpenTrove(owner: Address, {

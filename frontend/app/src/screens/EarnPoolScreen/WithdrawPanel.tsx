@@ -5,8 +5,8 @@ import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningB
 import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
-import { useAccount } from "@/src/eth/Ethereum";
 import { parseInputFloat } from "@/src/form-utils";
+import { useAccount } from "@/src/services/Ethereum";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { Button, Checkbox, HFlex, InfoTooltip, InputField, TextButton, TokenIcon } from "@liquity2/uikit";

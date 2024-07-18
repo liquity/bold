@@ -6,13 +6,13 @@ import type { ReactNode } from "react";
 
 import { AboutModal } from "@/src/comps/AboutModal/AboutModal";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
-import { Config } from "@/src/comps/Config/Config";
 import { ConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
 import { APP_TITLE } from "@/src/constants";
 import { DemoMode } from "@/src/demo-mode";
-import { Ethereum } from "@/src/eth/Ethereum";
-import { TransactionFlow } from "@/src/eth/TransactionFlow";
-import { Prices } from "@/src/prices";
+import { Config } from "@/src/services/Config";
+import { Ethereum } from "@/src/services/Ethereum";
+import { Prices } from "@/src/services/Prices";
+import { TransactionFlow } from "@/src/services/TransactionFlow";
 import { UiKit } from "@liquity2/uikit";
 import { GeistSans } from "geist/font/sans";
 
@@ -34,13 +34,15 @@ export default function Layout({
             <DemoMode>
               <Ethereum>
                 <Prices>
-                  <ConfigModal>
-                    <AboutModal>
-                      <AppLayout>
-                        {children}
-                      </AppLayout>
-                    </AboutModal>
-                  </ConfigModal>
+                  <TransactionFlow>
+                    <ConfigModal>
+                      <AboutModal>
+                        <AppLayout>
+                          {children}
+                        </AppLayout>
+                      </AboutModal>
+                    </ConfigModal>
+                  </TransactionFlow>
                 </Prices>
               </Ethereum>
             </DemoMode>

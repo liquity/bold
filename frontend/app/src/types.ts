@@ -1,6 +1,8 @@
-import type { CollateralSymbol, Token } from "@liquity2/uikit";
+import type { Address, CollateralSymbol, Token } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
+
+export type { Address, CollateralSymbol, Dnum, Token };
 
 export type RiskLevel = "low" | "medium" | "high";
 

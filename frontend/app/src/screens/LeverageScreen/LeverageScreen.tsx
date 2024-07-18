@@ -9,10 +9,10 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import { LEVERAGE_FACTOR_MIN, LEVERAGE_FACTOR_SUGGESTIONS, LTV_RISK, MAX_LTV_ALLOWED } from "@/src/constants";
 import content from "@/src/content";
 import { ACCOUNT_BALANCES } from "@/src/demo-mode";
-import { useAccount } from "@/src/eth/Ethereum";
 import { useInputFieldValue } from "@/src/form-utils";
 import { lerp, norm } from "@/src/math-utils";
-import { usePrice } from "@/src/prices";
+import { useAccount } from "@/src/services/Ethereum";
+import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
