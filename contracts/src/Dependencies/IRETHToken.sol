@@ -1,5 +1,5 @@
 pragma solidity 0.8.18;
 
-interface IRETHToken{
+interface IRETHToken {
     function getExchangeRate() external view returns (uint256);
 }

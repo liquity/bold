@@ -7,15 +7,15 @@ import "../Dependencies/IStaderOracle.sol";
 
 contract ETHXPriceFeed is CompositePriceFeed {
     constructor(
-        address _ethUsdOracleAddress, 
-        address _lstEthOracleAddress, 
+        address _ethUsdOracleAddress,
+        address _lstEthOracleAddress,
         address _rateProviderAddress,
         uint256 _ethUsdStalenessThreshold,
         uint256 _lstEthStalenessThreshold
-    ) 
+    )
         CompositePriceFeed(
-            _ethUsdOracleAddress, 
-            _lstEthOracleAddress, 
+            _ethUsdOracleAddress,
+            _lstEthOracleAddress,
             _rateProviderAddress,
             _ethUsdStalenessThreshold,
             _lstEthStalenessThreshold
@@ -25,11 +25,12 @@ contract ETHXPriceFeed is CompositePriceFeed {
     function _getCanonicalRate() internal view override returns (uint256) {
         // StaderOracle returns ETH balance and ETHX supply each with 18 digit decimal precision
 
-        ( , // uint256 reportingBlockNumber
-        uint256 ethBalance, 
-        uint256 ethXSupply
+        (
+            , // uint256 reportingBlockNumber
+            uint256 ethBalance,
+            uint256 ethXSupply
         ) = IStaderOracle(rateProviderAddress).exchangeRate();
 
-        return  ethBalance * 1e18 / ethXSupply;
+        return ethBalance * 1e18 / ethXSupply;
     }
 }

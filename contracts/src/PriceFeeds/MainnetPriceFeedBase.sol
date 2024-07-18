@@ -8,8 +8,7 @@ import "../BorrowerOperations.sol";
 // import "forge-std/console2.sol";
 
 abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
-    
-    // Dummy flag raised when the collateral branch gets shut down. 
+    // Dummy flag raised when the collateral branch gets shut down.
     // Should be removed after actual shutdown logic is implemented.
     bool priceFeedDisabled;
 
@@ -27,7 +26,7 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
         int256 answer;
         uint256 timestamp;
         bool success;
-    } 
+    }
 
     IBorrowerOperations borrowerOperations;
 
@@ -35,20 +34,18 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
         borrowerOperations = IBorrowerOperations(_borrowOperationsAddress);
 
         _renounceOwnership();
-    } 
+    }
 
     function fetchPrice() public returns (uint256) {
-        if (priceFeedDisabled) {return lastGoodPrice;}
-        
-        return _fetchPrice(); 
+        if (priceFeedDisabled) return lastGoodPrice;
+
+        return _fetchPrice();
     }
 
     // An individual Pricefeed instance implements _fetchPrice according to the data sources it uses.
-    function _fetchPrice() virtual internal returns (uint256) {}
+    function _fetchPrice() internal virtual returns (uint256) {}
 
-    function _getOracleAnswer(Oracle memory _oracle) 
-        internal 
-        returns (uint256, bool) {
+    function _getOracleAnswer(Oracle memory _oracle) internal returns (uint256, bool) {
         ChainlinkResponse memory chainlinkResponse = _getCurrentChainlinkResponse(_oracle.aggregator);
 
         uint256 scaledPrice;
@@ -72,10 +69,10 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
         return lastGoodPrice;
     }
 
-    function _getCurrentChainlinkResponse(AggregatorV3Interface _aggregator) 
-        internal 
-        view 
-        returns (ChainlinkResponse memory chainlinkResponse) 
+    function _getCurrentChainlinkResponse(AggregatorV3Interface _aggregator)
+        internal
+        view
+        returns (ChainlinkResponse memory chainlinkResponse)
     {
         // Secondly, try to get latest price data:
         try _aggregator.latestRoundData() returns (
@@ -98,13 +95,13 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
     // - Call to Chainlink aggregator reverts
     // - price is too stale, i.e. older than the oracle's staleness threshold
     // - Price answer is 0 or negative
-    function _isValidChainlinkPrice(ChainlinkResponse memory chainlinkResponse, uint256 _stalenessThreshold) 
-    internal view returns (bool) 
+    function _isValidChainlinkPrice(ChainlinkResponse memory chainlinkResponse, uint256 _stalenessThreshold)
+        internal
+        view
+        returns (bool)
     {
-        return
-            chainlinkResponse.success && 
-            block.timestamp - chainlinkResponse.timestamp < _stalenessThreshold &&
-            chainlinkResponse.answer > 0;
+        return chainlinkResponse.success && block.timestamp - chainlinkResponse.timestamp < _stalenessThreshold
+            && chainlinkResponse.answer > 0;
     }
 
     // Trust assumption: Chainlink won't change the decimal precision on any feed used in v2 after deployment

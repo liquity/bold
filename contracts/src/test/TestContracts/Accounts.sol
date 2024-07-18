@@ -22,6 +22,7 @@ contract Accounts {
         return accountsPks.length;
     }
 }
+
 contract TestAccounts is Test {
     Accounts accounts;
 

@@ -15,14 +15,12 @@ contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {
     address public rateProviderAddress;
 
     constructor(
-        address _ethUsdOracleAddress, 
-        address _lstEthOracleAddress, 
+        address _ethUsdOracleAddress,
+        address _lstEthOracleAddress,
         address _rateProviderAddress,
         uint256 _ethUsdStalenessThreshold,
         uint256 _lstEthStalenessThreshold
-    ) 
-        MainnetPriceFeedBase()
-    {
+    ) MainnetPriceFeedBase() {
         // Store ETH-USD oracle
         ethUsdOracle.aggregator = AggregatorV3Interface(_ethUsdOracleAddress);
         ethUsdOracle.stalenessThreshold = _ethUsdStalenessThreshold;
@@ -49,16 +47,16 @@ contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {
 
         // If one of Chainlink's responses was invalid in this transaction, disable this PriceFeed and
         // return the last good LST-USD price calculated
-        if (ethUsdOracleDown) {return _disableFeedAndShutDown(address(ethUsdOracle.aggregator));}
-        if (lstEthOracleDown) {return _disableFeedAndShutDown(address(lstEthOracle.aggregator));}
+        if (ethUsdOracleDown) return _disableFeedAndShutDown(address(ethUsdOracle.aggregator));
+        if (lstEthOracleDown) return _disableFeedAndShutDown(address(lstEthOracle.aggregator));
 
         // Calculate the market LST-USD price: USD_per_LST = USD_per_ETH * ETH_per_LST
         uint256 lstUsdMarketPrice = ethUsdPrice * lstEthPrice / 1e18;
 
-        // Get the ETH_per_LST canonical rate directly from the LST contract 
+        // Get the ETH_per_LST canonical rate directly from the LST contract
         // TODO: Should we also shutdown if the call to the canonical rate reverts, or returns 0?
         uint256 lstEthRate = _getCanonicalRate();
-        
+
         // Calculate the canonical LST-USD price: USD_per_LST = USD_per_ETH * ETH_per_LST
         uint256 lstUsdCanonicalPrice = ethUsdPrice * lstEthRate / 1e18;
 
@@ -66,11 +64,10 @@ contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {
         uint256 lstUsdPrice = LiquityMath._min(lstUsdMarketPrice, lstUsdCanonicalPrice);
 
         lastGoodPrice = lstUsdPrice;
-    
+
         return lstUsdPrice;
     }
 
     // Returns the ETH_per_LST as from the LST smart contract. Implementation depends on the specific LST.
-    function _getCanonicalRate() virtual internal view returns (uint256) {}
-
+    function _getCanonicalRate() internal view virtual returns (uint256) {}
 }

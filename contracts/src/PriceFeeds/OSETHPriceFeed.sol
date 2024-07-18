@@ -7,15 +7,15 @@ import "../Dependencies/IOsTokenVaultController.sol";
 
 contract OSETHPriceFeed is CompositePriceFeed {
     constructor(
-        address _ethUsdOracleAddress, 
-        address _lstEthOracleAddress, 
+        address _ethUsdOracleAddress,
+        address _lstEthOracleAddress,
         address _rateProviderAddress,
         uint256 _ethUsdStalenessThreshold,
         uint256 _lstEthStalenessThreshold
-    ) 
+    )
         CompositePriceFeed(
-            _ethUsdOracleAddress, 
-            _lstEthOracleAddress, 
+            _ethUsdOracleAddress,
+            _lstEthOracleAddress,
             _rateProviderAddress,
             _ethUsdStalenessThreshold,
             _lstEthStalenessThreshold

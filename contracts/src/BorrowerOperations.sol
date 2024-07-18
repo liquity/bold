@@ -570,7 +570,7 @@ contract BorrowerOperations is LiquityBase, Ownable, IBorrowerOperations {
     // Not technically a "Borrower op", but seems best placed here given current shutdown logic.
     function shutdownFromOracleFailure(address _failedOracleAddr) external {
         _requireCallerIsPriceFeed();
-        
+
         // No-op rather than revert here, so that the outer function call which fetches the price does not revert
         if (hasBeenShutDown) return;
 
