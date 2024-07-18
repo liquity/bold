@@ -261,7 +261,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     }
 
     function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
-        require(_amount > 0, "TroveManager: Amount must be greater than zero");
+        require(_amount > 0, "CollateralRegistry: Amount must be greater than zero");
     }
 
     function _requireBoldBalanceCoversRedemption(IBoldToken _boldToken, address _redeemer, uint256 _amount)
@@ -272,7 +272,8 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         // Confirm redeemer's balance is less than total Bold supply
         assert(boldBalance <= _boldToken.totalSupply());
         require(
-            boldBalance >= _amount, "TroveManager: Requested redemption amount must be <= user's Bold token balance"
+            boldBalance >= _amount,
+            "CollateralRegistry: Requested redemption amount must be <= user's Bold token balance"
         );
     }
 
