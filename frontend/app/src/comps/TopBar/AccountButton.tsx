@@ -18,7 +18,7 @@ export function AccountButton() {
   const account = useAccount();
   return (
     <ConnectButton.Custom>
-      {({ chain, openChainModal }) => {
+      {({ chain, openChainModal, openConnectModal }) => {
         const button = match({ account, chain })
           .returnType<ButtonData>()
           .with(
@@ -41,9 +41,9 @@ export function AccountButton() {
           )
           .otherwise(
             // disconnected / not ready
-            ({ account }) => ({
+            () => ({
               label: content.accountButton.connectAccount,
-              onClick: account.connect,
+              onClick: openConnectModal,
             }),
           );
 
