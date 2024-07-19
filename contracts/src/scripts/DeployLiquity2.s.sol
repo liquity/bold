@@ -52,7 +52,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         }
     }
 
-    function tapFaucet(uint256[] memory accounts, LiquityContracts memory contracts) internal {
+    function tapFaucet(uint256[] memory accounts, LiquityContractsDev memory contracts) internal {
         for (uint256 i = 0; i < accounts.length; i++) {
             vm.startBroadcast(accounts[i]);
             ERC20Faucet(address(contracts.collToken)).tap();
@@ -60,7 +60,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         }
     }
 
-    function openDemoTroves(DemoTroveParams[] memory troves, LiquityContracts memory contracts) internal {
+    function openDemoTroves(DemoTroveParams[] memory troves, LiquityContractsDev memory contracts) internal {
         for (uint256 i = 0; i < troves.length; i++) {
             DemoTroveParams memory trove = troves[i];
 
