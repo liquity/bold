@@ -327,8 +327,6 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
     * - Decreases deposit by withdrawn amount and takes new snapshots of accumulators P and S
     */
     function withdrawFromSP(uint256 _amount, bool _doClaim) external override {
-        // TODO: if (_amount !=0) {_requireNoUnderCollateralizedTroves();}
-
         uint256 initialDeposit = deposits[msg.sender].initialValue;
         _requireUserHasDeposit(initialDeposit);
 
@@ -813,15 +811,6 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
     function _requireCallerIsTroveManager() internal view {
         require(msg.sender == address(troveManager), "StabilityPool: Caller is not TroveManager");
     }
-
-    /* TODO
-    function _requireNoUnderCollateralizedTroves() internal {
-        uint price = priceFeed.fetchPrice();
-        uint256 lowestTroveId = sortedTroves.getLast();
-        uint ICR = troveManager.getCurrentICR(lowestTrove, price);
-        require(ICR >= MCR, "StabilityPool: Cannot withdraw while there are troves with ICR < MCR");
-    }
-    */
 
     function _requireUserHasDeposit(uint256 _initialDeposit) internal pure {
         require(_initialDeposit > 0, "StabilityPool: User must have a non-zero deposit");

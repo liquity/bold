@@ -5,10 +5,6 @@ pragma solidity 0.8.18;
 import "./ITroveManager.sol";
 import {BatchId, BATCH_ID_ZERO} from "../Types/BatchId.sol";
 
-// TODO
-//type Id is uint256;
-//type Value is uint256;
-
 interface ISortedTroves {
     // -- Mutating functions (permissioned) --
 

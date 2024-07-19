@@ -372,7 +372,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         ContractsCacheTMAP memory contractsCache = ContractsCacheTMAP(troveManager, activePool);
 
         _requireValidAnnualInterestRate(_newAnnualInterestRate);
-        // TODO: Delegation functionality
         _requireSenderIsOwner(contractsCache.troveManager, _troveId);
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
 
@@ -387,8 +386,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
 
         // Apply upfront fee on premature adjustments
         if (block.timestamp < trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN) {
-            // TODO: should we fetch unconditionally? Would make the TX a bit more expensive for well-behaved users, but
-            // it would be more consistent with other functions (fetching the price is the first thing we usually do).
             uint256 price = priceFeed.fetchPrice();
 
             uint256 avgInterestRate = contractsCache.activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);

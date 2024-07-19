@@ -60,7 +60,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint64 lastInterestRateAdjTime;
         uint256 annualInterestRate;
     }
-    // TODO: optimize this struct packing for gas reduction, which may break v1 tests that assume a certain order of properties
 
     mapping(uint256 => Trove) public Troves;
 
@@ -359,8 +358,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             (collToSendToSP, collSurplus) =
                 _getCollPenaltyAndSurplus(collSPPortion, debtToOffset, LIQUIDATION_PENALTY_SP, _price);
         }
-        // TODO: this fails if debt in gwei is less than price (rounding coll to zero)
-        //assert(debtToOffset == 0 || collToSendToSP > 0);
 
         // Redistribution
         debtToRedistribute = _entireTroveDebt - debtToOffset;
@@ -557,8 +554,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         if (newDebt < MIN_DEBT) {
             Troves[_troveId].status = Status.unredeemable;
             sortedTroves.remove(_troveId);
-            // TODO: should we also remove from the Troves array? Seems unneccessary as it's only used for off-chain hints.
-            // We save borrowers gas by not removing
         }
     }
 
@@ -580,9 +575,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         Troves[_troveId].coll = newColl;
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
 
-        // TODO: Gas optimize? We update totalStakes N times for a sequence of N Troves(!).
         uint256 newStake = _updateStakeAndTotalStakes(_troveId, newColl);
-        // TODO: Gas optimize? We move pending rewards N times for a sequence of N Troves(!).
         _movePendingTroveRewardsToActivePool(_defaultPool, _trove.redistBoldDebtGain, _trove.redistCollGain);
         _updateTroveRewardSnapshots(_troveId);
 
@@ -762,8 +755,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     function shutdown() external {
         _requireCallerIsBorrowerOperations();
-        // TODO: potentially refactor so that we only store one value. Though, current approach is gas efficient
-        // and avoids cross-contract calls.
         shutdownTime = block.timestamp;
         activePool.setShutdownFlag();
     }
@@ -989,7 +980,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         delete rewardSnapshots[_troveId];
 
         // burn ERC721
-        // TODO: Should we do it?
         _burn(_troveId);
     }
 
