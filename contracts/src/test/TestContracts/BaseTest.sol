@@ -4,12 +4,12 @@ pragma solidity 0.8.18;
 import "./Accounts.sol";
 import "../../Interfaces/IActivePool.sol";
 import "../../Interfaces/IBoldToken.sol";
-import "../../Interfaces/IBorrowerOperations.sol";
 import "../../Interfaces/ICollSurplusPool.sol";
 import "../../Interfaces/IDefaultPool.sol";
 import "../../Interfaces/IPriceFeed.sol";
 import "../../Interfaces/ISortedTroves.sol";
 import "../../Interfaces/IStabilityPool.sol";
+import "./BorrowerOperationsTester.sol";
 import "./TroveManagerTester.sol";
 import "../../Interfaces/ICollateralRegistry.sol";
 import "./PriceFeedTestnet.sol";
@@ -27,7 +27,7 @@ contract BaseTest is TestAccounts {
 
     // Core contracts
     IActivePool activePool;
-    IBorrowerOperations borrowerOperations;
+    IBorrowerOperationsTester borrowerOperations;
     ICollSurplusPool collSurplusPool;
     IDefaultPool defaultPool;
     ISortedTroves sortedTroves;

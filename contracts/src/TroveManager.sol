@@ -1104,10 +1104,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         return Troves[_troveId].lastDebtUpdateTime;
     }
 
-    function troveIsStale(uint256 _troveId) external view returns (bool) {
-        return block.timestamp - Troves[_troveId].lastDebtUpdateTime > STALE_TROVE_DURATION;
-    }
-
     function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool) {
         uint256 totalDebt = getEntireSystemDebt();
         uint256 spSize = stabilityPool.getTotalBoldDeposits();
