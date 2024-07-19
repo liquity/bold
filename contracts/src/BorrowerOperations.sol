@@ -31,6 +31,9 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
     // Wrapped ETH for liquidation reserve (gas compensation)
     IWETH public immutable WETH;
 
+    // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
+    uint256 public immutable CCR;
+
     // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
     // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
     uint256 public immutable SCR;
@@ -91,6 +94,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
 
         WETH = _weth;
 
+        CCR = _troveManager.CCR();
         SCR = _troveManager.SCR();
         MCR = _troveManager.MCR();
     }
@@ -427,7 +431,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         LocalVariables_adjustTrove memory vars;
 
         vars.price = priceFeed.fetchPrice();
-        vars.isBelowCriticalThreshold = _checkBelowCriticalThreshold(vars.price);
+        vars.isBelowCriticalThreshold = _checkBelowCriticalThreshold(vars.price, CCR);
 
         // --- Checks ---
 
@@ -672,7 +676,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
     }
 
     function _requireNotBelowCriticalThreshold(uint256 _price) internal view {
-        require(!_checkBelowCriticalThreshold(_price), "BorrowerOps: Operation not permitted below CT");
+        require(!_checkBelowCriticalThreshold(_price, CCR), "BorrowerOps: Operation not permitted below CT");
     }
 
     function _requireNoBorrowing(uint256 _debtIncrease) internal pure {
@@ -719,7 +723,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         );
     }
 
-    function _requireNewTCRisAboveCCR(uint256 _newTCR) internal pure {
+    function _requireNewTCRisAboveCCR(uint256 _newTCR) internal view {
         require(_newTCR >= CCR, "BorrowerOps: An operation that would result in TCR < CCR is not permitted");
     }
 

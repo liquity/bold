@@ -17,7 +17,6 @@ import {
     DECIMAL_PRECISION,
     _1pct,
     _100pct,
-    CCR,
     ETH_GAS_COMPENSATION,
     COLL_GAS_COMPENSATION_DIVISOR
 } from "../../Dependencies/Constants.sol";
@@ -27,7 +26,7 @@ using {mulDivCeil} for uint256;
 // Test parameters
 uint256 constant OPEN_TROVE_BORROWED_MIN = 2_000 ether;
 uint256 constant OPEN_TROVE_BORROWED_MAX = 100_000 ether;
-uint256 constant OPEN_TROVE_ICR = CCR;
+uint256 constant OPEN_TROVE_ICR = 1.5 ether; // CCR
 uint256 constant LIQUIDATION_ICR = MCR - _1pct;
 
 // Universal constants

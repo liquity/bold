@@ -52,10 +52,10 @@ contract LiquityBase is ILiquityBase {
         return TCR;
     }
 
-    function _checkBelowCriticalThreshold(uint256 _price) internal view returns (bool) {
+    function _checkBelowCriticalThreshold(uint256 _price, uint256 _CCR) internal view returns (bool) {
         uint256 TCR = _getTCR(_price);
 
-        return TCR < CCR;
+        return TCR < _CCR;
     }
 
     function _calcInterest(uint256 _weightedDebt, uint256 _period) internal pure returns (uint256) {

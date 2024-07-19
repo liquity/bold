@@ -20,6 +20,7 @@ interface ITroveManager is IERC721, ILiquityBase {
         unredeemable
     }
 
+    function CCR() external view returns (uint256);
     function MCR() external view returns (uint256);
     function SCR() external view returns (uint256);
     function LIQUIDATION_PENALTY_SP() external view returns (uint256);

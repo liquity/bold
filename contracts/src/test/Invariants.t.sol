@@ -68,10 +68,10 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
 
         // TODO: randomize params? How to do it with Foundry invariant testing?
         TroveManagerParams[] memory paramsList = new TroveManagerParams[](4);
-        paramsList[0] = TroveManagerParams(1.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        paramsList[1] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        paramsList[2] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        paramsList[3] = TroveManagerParams(1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        paramsList[0] = TroveManagerParams(1.5 ether, 1.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        paramsList[1] = TroveManagerParams(1.6 ether, 1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        paramsList[2] = TroveManagerParams(1.6 ether, 1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        paramsList[3] = TroveManagerParams(1.6 ether, 1.25 ether, 1.01 ether, 0.05 ether, 0.1 ether);
 
         Contracts memory contracts;
         (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth)

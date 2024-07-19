@@ -21,6 +21,7 @@ import {mulDivCeil} from "../Utils/Math.sol";
 import "forge-std/console2.sol";
 
 contract BaseTest is TestAccounts {
+    uint256 CCR;
     uint256 MCR;
     uint256 LIQUIDATION_PENALTY_SP;
     uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;

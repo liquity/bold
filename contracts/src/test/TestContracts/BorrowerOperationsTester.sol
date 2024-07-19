@@ -12,6 +12,10 @@ contract BorrowerOperationsTester is IBorrowerOperationsTester, BorrowerOperatio
         BorrowerOperations(_collToken, _troveManager, _weth)
     {}
 
+    function get_CCR() external view returns (uint256) {
+        return CCR;
+    }
+
     function applyTroveInterestPermissionless(uint256 _troveId) external {
         applyTroveInterestPermissionless(_troveId, 0, 0);
     }
