@@ -20,9 +20,6 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
     string internal constant _NAME = "Bold Stablecoin";
     string internal constant _SYMBOL = "Bold";
 
-    // TODO: is this needed?
-    uint256 public deploymentStartTime;
-
     // --- Addresses ---
 
     // TODO: optimize to make them immutable
@@ -39,9 +36,7 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
     event BorrowerOperationsAddressAdded(address _newBorrowerOperationsAddress);
     event ActivePoolAddressAdded(address _newActivePoolAddress);
 
-    constructor() ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {
-        deploymentStartTime = block.timestamp;
-    }
+    constructor() ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {}
 
     function setBranchAddresses(
         address _troveManagerAddress,

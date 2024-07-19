@@ -16,8 +16,6 @@ interface IBoldToken is IERC20Metadata, IERC20Permit, IERC5267 {
 
     function setCollateralRegistry(address _collateralRegistryAddress) external;
 
-    function deploymentStartTime() external view returns (uint256);
-
     function mint(address _account, uint256 _amount) external;
 
     function burn(address _account, uint256 _amount) external;
