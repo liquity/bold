@@ -74,4 +74,8 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         uint256 troveOwnersArrayLength = TroveIds.length;
         _removeTroveId(_troveId, troveOwnersArrayLength);
     }
+
+    function troveIsStale(uint256 _troveId) external view returns (bool) {
+        return block.timestamp - Troves[_troveId].lastDebtUpdateTime > STALE_TROVE_DURATION;
+    }
 }

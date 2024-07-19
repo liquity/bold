@@ -535,12 +535,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         return trove.entireColl;
     }
 
-    function applyTroveInterestPermissionless(uint256 _troveId) external {
+    function applyTroveInterestPermissionless(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint) public {
         _requireIsNotShutDown();
 
         ContractsCacheTMAP memory contractsCache = ContractsCacheTMAP(troveManager, activePool);
 
-        _requireTroveIsStale(contractsCache.troveManager, _troveId);
         _requireTroveIsOpen(contractsCache.troveManager, _troveId);
 
         LatestTroveData memory trove = contractsCache.troveManager.getLatestTroveData(_troveId);
@@ -549,6 +548,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         troveChange.appliedRedistCollGain = trove.redistCollGain;
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
         troveChange.newWeightedRecordedDebt = trove.entireDebt * trove.annualInterestRate;
+
+        // If the trove was unredeemable, and now it’s not anymore, put it back in the list
+        if (contractsCache.troveManager.checkTroveIsUnredeemable(_troveId) && trove.entireDebt > MIN_DEBT) {
+            contractsCache.troveManager.setTroveStatusToActive(_troveId);
+            sortedTroves.insert(_troveId, trove.annualInterestRate, _upperHint, _lowerHint);
+        }
 
         contractsCache.activePool.mintAggInterestAndAccountForTroveChange(troveChange);
         contractsCache.troveManager.onApplyTroveInterest(_troveId, trove.entireColl, trove.entireDebt, troveChange);
@@ -742,10 +747,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
 
     function _requireValidAnnualInterestRate(uint256 _annualInterestRate) internal pure {
         require(_annualInterestRate <= MAX_ANNUAL_INTEREST_RATE, "Interest rate must not be greater than max");
-    }
-
-    function _requireTroveIsStale(ITroveManager _troveManager, uint256 _troveId) internal view {
-        require(_troveManager.troveIsStale(_troveId), "BO: Trove must be stale");
     }
 
     function _requireCallerIsPriceFeed() internal view {

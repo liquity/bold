@@ -708,7 +708,7 @@ contract Redemptions is DevTestSetup {
         vm.stopPrank();
     }
 
-    function testZombieTroveAccruedInterestCanBePermissionlesslyApplied() public {
+    function testZombieTroveAccruedInterestCanBePermissionlesslyAppliedButStaysZombie() public {
         (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
@@ -720,6 +720,11 @@ contract Redemptions is DevTestSetup {
 
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
         assertGt(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
+        // Troves are zombie
+        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.A));
+        assertFalse(sortedTroves.contains(troveIDs.A));
+        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.B));
+        assertFalse(sortedTroves.contains(troveIDs.B));
 
         // E applies interest on A and B's Troves
         applyTroveInterestPermissionless(E, troveIDs.A);
@@ -727,6 +732,41 @@ contract Redemptions is DevTestSetup {
 
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
+
+        // Troves are still zombie
+        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.A));
+        assertFalse(sortedTroves.contains(troveIDs.A));
+        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.B));
+        assertFalse(sortedTroves.contains(troveIDs.B));
+    }
+
+    function testZombieTroveAccruedInterestCanBePermissionlesslyAppliedAndResuscitated() public {
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        _redeemAndCreateZombieTrovesAAndB(troveIDs);
+
+        // fast-forward time a lot
+        vm.warp(block.timestamp + 3650 days);
+
+        assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
+        assertGt(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
+        // Troves are zombie
+        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.A));
+        assertFalse(sortedTroves.contains(troveIDs.A));
+        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.B));
+        assertFalse(sortedTroves.contains(troveIDs.B));
+
+        // E applies interest on A and B's Troves
+        applyTroveInterestPermissionless(E, troveIDs.A);
+        applyTroveInterestPermissionless(E, troveIDs.B);
+
+        assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
+        assertEq(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
+        // Troves B is not zombie anymore (A still is)
+        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.A));
+        assertFalse(sortedTroves.contains(troveIDs.A));
+        assertFalse(troveManager.checkTroveIsUnredeemable(troveIDs.B));
+        assertTrue(sortedTroves.contains(troveIDs.B));
     }
 
     function testZombieTroveCanBeLiquidated() public {

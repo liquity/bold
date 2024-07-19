@@ -11,4 +11,6 @@ interface ITroveManagerTester is ITroveManager {
     function getEffectiveRedemptionFeeInColl(uint256 _redeemAmount, uint256 _price) external view returns (uint256);
 
     function callInternalRemoveTroveId(uint256 _troveId) external;
+
+    function troveIsStale(uint256 _troveId) external view returns (bool);
 }

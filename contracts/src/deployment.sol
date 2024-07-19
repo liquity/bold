@@ -12,6 +12,7 @@ import "./HintHelpers.sol";
 import "./MultiTroveGetter.sol";
 import "./SortedTroves.sol";
 import "./StabilityPool.sol";
+import "./test/TestContracts/BorrowerOperationsTester.sol";
 import "./test/TestContracts/TroveManagerTester.sol";
 import "./CollateralRegistry.sol";
 import "./MockInterestRouter.sol";
@@ -29,7 +30,7 @@ import "./PriceFeeds/ETHXPriceFeed.sol";
 
 struct LiquityContractsDev {
     IActivePool activePool;
-    IBorrowerOperations borrowerOperations;
+    IBorrowerOperationsTester borrowerOperations; // Tester
     ICollSurplusPool collSurplusPool;
     IDefaultPool defaultPool;
     ISortedTroves sortedTroves;
@@ -314,11 +315,10 @@ function _deployAndConnectCollateralContractsDev(
     IBoldToken _boldToken,
     IWETH _WETH,
     TroveManagerParams memory troveManagerParams
-) returns (LiquityContractsDev memory contractsDev) {
+) returns (LiquityContractsDev memory contracts) {
     // TODO: optimize deployment order & constructor args & connector functions
 
-    LiquityContracts memory contracts;
-    contractsDev.collToken = _collToken;
+    contracts.collToken = _collToken;
 
     // Deploy all contracts, using testers for TM and PriceFeed
     contracts.activePool = new ActivePool(address(_collToken));
@@ -329,7 +329,7 @@ function _deployAndConnectCollateralContractsDev(
         troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION,
         _WETH
     );
-    contracts.borrowerOperations = new BorrowerOperations(_collToken, contracts.troveManager, _WETH);
+    contracts.borrowerOperations = new BorrowerOperationsTester(_collToken, contracts.troveManager, _WETH);
     contracts.collSurplusPool = new CollSurplusPool(address(_collToken));
     contracts.defaultPool = new DefaultPool(address(_collToken));
     contracts.gasPool = new GasPool(_WETH, contracts.borrowerOperations, contracts.troveManager);
@@ -346,20 +346,21 @@ function _deployAndConnectCollateralContractsDev(
     );
 
     // Pass the bare contract interfaces to the connector func
-    connectContracts(_boldToken, contracts);
+    connectContracts(_boldToken, _devToMainnet(contracts));
+}
 
-    // Hacky: copy the contracts to a new ContractsDev struct which has the right types for the tester contracts TM and PriceFeed.
-    // This should very probably be refactored.
-    contractsDev.troveManager = ITroveManagerTester(address(contracts.troveManager));
-    contractsDev.priceFeed = IPriceFeedTestnet(address(contracts.priceFeed));
-    contractsDev.activePool = contracts.activePool;
-    contractsDev.borrowerOperations = contracts.borrowerOperations;
-    contractsDev.collSurplusPool = contracts.collSurplusPool;
-    contractsDev.defaultPool = contracts.defaultPool;
-    contractsDev.gasPool = contracts.gasPool;
-    contractsDev.sortedTroves = contracts.sortedTroves;
-    contractsDev.stabilityPool = contracts.stabilityPool;
-    contractsDev.interestRouter = contracts.interestRouter;
+function _devToMainnet(LiquityContractsDev memory contractsDev) pure returns (LiquityContracts memory contracts) {
+    contracts.activePool = contractsDev.activePool;
+    contracts.borrowerOperations = IBorrowerOperations(contractsDev.borrowerOperations);
+    contracts.collSurplusPool = contractsDev.collSurplusPool;
+    contracts.defaultPool = contractsDev.defaultPool;
+    contracts.sortedTroves = contractsDev.sortedTroves;
+    contracts.stabilityPool = contractsDev.stabilityPool;
+    contracts.troveManager = ITroveManager(contractsDev.troveManager);
+    contracts.priceFeed = IPriceFeed(contractsDev.priceFeed);
+    contracts.gasPool = contractsDev.gasPool;
+    contracts.interestRouter = contractsDev.interestRouter;
+    contracts.collToken = contractsDev.collToken;
 }
 
 function _deployAndConnectCollateralContractsMainnet(
