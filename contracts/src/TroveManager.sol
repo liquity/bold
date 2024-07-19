@@ -35,6 +35,9 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     // --- Data structures ---
 
+    // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
+    uint256 public immutable CCR;
+
     // Minimum collateral ratio for individual troves
     uint256 public immutable MCR;
     // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
@@ -175,18 +178,21 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
     constructor(
+        uint256 _ccr,
         uint256 _mcr,
         uint256 _scr,
         uint256 _liquidationPenaltySP,
         uint256 _liquidationPenaltyRedistribution,
         IWETH _weth
     ) ERC721(NAME, SYMBOL) {
+        require(_ccr > 1e18 && _ccr < 2e18, "Invalid CCR");
         require(_mcr > 1e18 && _mcr < 2e18, "Invalid MCR");
         require(_scr > 1e18 && _scr < 2e18, "Invalid SCR");
         require(_liquidationPenaltySP >= 5e16, "SP penalty too low");
         require(_liquidationPenaltySP <= _liquidationPenaltyRedistribution, "SP penalty cannot be > redist");
         require(_liquidationPenaltyRedistribution <= 10e16, "Redistribution penalty too high");
 
+        CCR = _ccr;
         MCR = _mcr;
         SCR = _scr;
         LIQUIDATION_PENALTY_SP = _liquidationPenaltySP;
@@ -1024,7 +1030,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     }
 
     function checkBelowCriticalThreshold(uint256 _price) external view override returns (bool) {
-        return _checkBelowCriticalThreshold(_price);
+        return _checkBelowCriticalThreshold(_price, CCR);
     }
 
     function checkTroveIsOpen(uint256 _troveId) public view returns (bool) {

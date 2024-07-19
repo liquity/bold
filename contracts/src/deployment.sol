@@ -57,6 +57,7 @@ struct LiquityContracts {
 }
 
 struct TroveManagerParams {
+    uint256 CCR;
     uint256 MCR;
     uint256 SCR;
     uint256 LIQUIDATION_PENALTY_SP;
@@ -109,7 +110,7 @@ function _deployAndConnectContracts()
         IWETH WETH // for gas compensation
     )
 {
-    return _deployAndConnectContracts(TroveManagerParams(110e16, 110e16, 5e16, 10e16));
+    return _deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16));
 }
 
 function _deployAndConnectContracts(TroveManagerParams memory troveManagerParams)
@@ -314,7 +315,7 @@ function _deployAndConnectCollateralContractsDev(
     IERC20 _collToken,
     IBoldToken _boldToken,
     IWETH _WETH,
-    TroveManagerParams memory troveManagerParams
+    TroveManagerParams memory _troveManagerParams
 ) returns (LiquityContractsDev memory contracts) {
     // TODO: optimize deployment order & constructor args & connector functions
 
@@ -323,10 +324,11 @@ function _deployAndConnectCollateralContractsDev(
     // Deploy all contracts, using testers for TM and PriceFeed
     contracts.activePool = new ActivePool(address(_collToken));
     contracts.troveManager = new TroveManagerTester( // Tester
-        troveManagerParams.MCR,
-        troveManagerParams.SCR,
-        troveManagerParams.LIQUIDATION_PENALTY_SP,
-        troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION,
+        _troveManagerParams.CCR,
+        _troveManagerParams.MCR,
+        _troveManagerParams.SCR,
+        _troveManagerParams.LIQUIDATION_PENALTY_SP,
+        _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION,
         _WETH
     );
     contracts.borrowerOperations = new BorrowerOperationsTester(_collToken, contracts.troveManager, _WETH);
@@ -372,6 +374,7 @@ function _deployAndConnectCollateralContractsMainnet(
 ) returns (LiquityContracts memory contracts) {
     contracts.activePool = new ActivePool(address(_collateralToken));
     contracts.troveManager = new TroveManager(
+        _troveManagerParams.CCR,
         _troveManagerParams.MCR,
         _troveManagerParams.SCR,
         _troveManagerParams.LIQUIDATION_PENALTY_SP,

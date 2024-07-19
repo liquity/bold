@@ -23,7 +23,6 @@ import {ITroveManagerTester} from "./Interfaces/ITroveManagerTester.sol";
 import {
     _100pct,
     _1pct,
-    CCR,
     COLL_GAS_COMPENSATION_CAP,
     COLL_GAS_COMPENSATION_DIVISOR,
     DECIMAL_PRECISION,
@@ -51,10 +50,10 @@ uint256 constant INTEREST_RATE_MIN = 0; // TODO
 uint256 constant INTEREST_RATE_MAX = MAX_ANNUAL_INTEREST_RATE * 11 / 10; // Sometimes try rates exceeding the max
 
 uint256 constant ICR_MIN = 0.9 ether;
-uint256 constant ICR_MAX = 2 * CCR;
+uint256 constant ICR_MAX = 2 * 1.5 ether; // 2 * CCR
 
 uint256 constant TCR_MIN = 0.9 ether;
-uint256 constant TCR_MAX = 2 * CCR;
+uint256 constant TCR_MAX = 2 * 1.5 ether; // 2 * CCR
 
 enum AdjustedTroveProperties {
     onlyColl,
@@ -184,6 +183,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     FunctionCaller immutable _functionCaller;
 
     // Constants (per branch)
+    mapping(uint256 => uint256) CCR;
     mapping(uint256 => uint256) MCR;
     mapping(uint256 => uint256) SCR;
     mapping(uint256 => uint256) LIQ_PENALTY_SP;
@@ -240,6 +240,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         for (uint256 i = 0; i < branches.length; ++i) {
             LiquityContractsDev memory c = branches[i];
+            CCR[i] = c.troveManager.CCR();
             MCR[i] = c.troveManager.MCR();
             SCR[i] = c.troveManager.SCR();
             LIQ_PENALTY_SP[i] = c.troveManager.LIQUIDATION_PENALTY_SP();
@@ -365,7 +366,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             assertLeDecimal(interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as interest rate > max");
             assertGeDecimal(v.debt, MIN_DEBT, 18, "Should have failed as debt < min");
             assertGeDecimal(icr_, MCR[i], 18, "Should have failed as ICR < MCR");
-            assertGeDecimal(newTCR, CCR, 18, "Should have failed as new TCR < CCR");
+            assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
 
             // Effects (Trove)
             assertEqDecimal(v.c.troveManager.getTroveEntireColl(v.troveId), v.coll, 18, "Wrong coll");
@@ -404,11 +405,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertLtDecimal(icr_, MCR[i], 18, "Shouldn't have failed as ICR >= MCR");
             } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
                 uint256 newTCR = _TCR(i, int256(v.coll), int256(borrowed), v.upfrontFee);
-                assertLtDecimal(newTCR, CCR, 18, "Shouldn't have failed as new TCR >= CCR");
+                assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
             } else if (reason.equals("BorrowerOps: Operation not permitted below CT")) {
                 uint256 tcr = _TCR(i);
-                assertLtDecimal(tcr, CCR, 18, "Shouldn't have failed as TCR >= CCR");
+                assertLtDecimal(tcr, CCR[i], 18, "Shouldn't have failed as TCR >= CCR");
                 info("TCR: ", tcr.decimal());
             } else {
                 revert(reason);
@@ -496,8 +497,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             assertGeDecimal(newDebt, MIN_DEBT, 28, "Should have failed as new debt < MIN_DEBT");
             assertGeDecimal(newICR, MCR[i], 18, "Should have failed as new ICR < MCR");
 
-            if (v.oldTCR >= CCR) {
-                assertGeDecimal(newTCR, CCR, 18, "Should have failed as new TCR < CCR");
+            if (v.oldTCR >= CCR[i]) {
+                assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
             } else {
                 assertLeDecimal(v.debtDelta, 0, 18, "Borrowing should have failed as TCR < CCR");
                 assertGeDecimal(-v.debtDelta, -v.$collDelta, 18, "Repayment < withdrawal when TCR < CCR");
@@ -549,14 +550,14 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 info("New ICR would have been: ", newICR.decimal());
             } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
                 uint256 newTCR = _TCR(i, v.collDelta, v.debtDelta, v.upfrontFee);
-                assertGeDecimal(v.oldTCR, CCR, 18, "TCR was already < CCR");
-                assertLtDecimal(newTCR, CCR, 18, "Shouldn't have failed as new TCR >= CCR");
+                assertGeDecimal(v.oldTCR, CCR[i], 18, "TCR was already < CCR");
+                assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
             } else if (reason.equals("BorrowerOps: Borrowing not permitted below CT")) {
-                assertLtDecimal(v.oldTCR, CCR, 18, "Shouldn't have failed as TCR >= CCR");
+                assertLtDecimal(v.oldTCR, CCR[i], 18, "Shouldn't have failed as TCR >= CCR");
                 assertGtDecimal(v.debtDelta, 0, 18, "Shouldn't have failed as there was no borrowing");
             } else if (reason.equals("BorrowerOps: below CT, repayment must be >= coll withdrawal")) {
-                assertLtDecimal(v.oldTCR, CCR, 18, "Shouldn't have failed as TCR >= CCR");
+                assertLtDecimal(v.oldTCR, CCR[i], 18, "Shouldn't have failed as TCR >= CCR");
                 assertLtDecimal(-v.debtDelta, -v.$collDelta, 18, "Shouldn't have failed as repayment >= withdrawal");
             } else {
                 revert(reason);
@@ -614,7 +615,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             if (v.premature) {
                 assertGeDecimal(newICR, MCR[i], 18, "Should have failed as new ICR < MCR");
-                assertGeDecimal(newTCR, CCR, 18, "Should have failed as new TCR < CCR");
+                assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
             }
 
             // Effects (Trove)
@@ -658,7 +659,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
                 uint256 newTCR = _TCR(i, 0, 0, v.upfrontFee);
                 assertTrue(v.premature, "Shouldn't have failed as adjustment was not premature");
-                assertLtDecimal(newTCR, CCR, 18, "Shouldn't have failed as new TCR >= CCR");
+                assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
             } else {
                 revert(reason);
@@ -689,7 +690,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Preconditions
             assertTrue(wasOpen, "Should have failed as Trove wasn't open");
             assertGt(numTroves[i], 1, "Should have failed to close last Trove in the system");
-            if (!isShutdown[i]) assertGeDecimal(newTCR, CCR, 18, "Should have failed as new TCR < CCR");
+            if (!isShutdown[i]) assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
 
             // Effects (Trove)
             assertEqDecimal(c.troveManager.getTroveEntireColl(troveId), 0, 18, "Coll should have been zeroed");
@@ -727,7 +728,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             } else if (reason.equals("BorrowerOps: An operation that would result in TCR < CCR is not permitted")) {
                 uint256 newTCR = _TCR(i, -int256(t.entireColl), -int256(t.entireDebt), 0);
                 assertFalse(isShutdown[i], "Shouldn't have failed as branch had been shut down");
-                assertLtDecimal(newTCR, CCR, 18, "Shouldn't have failed as new TCR >= CCR");
+                assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
             } else {
                 revert(reason);

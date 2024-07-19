@@ -68,6 +68,7 @@ contract DevTestSetup is BaseTest {
             giveAndApproveColl(accountsList[i], initialCollAmount);
         }
 
+        CCR = troveManager.CCR();
         MCR = troveManager.MCR();
         LIQUIDATION_PENALTY_SP = troveManager.LIQUIDATION_PENALTY_SP();
         LIQUIDATION_PENALTY_REDISTRIBUTION = troveManager.LIQUIDATION_PENALTY_REDISTRIBUTION();

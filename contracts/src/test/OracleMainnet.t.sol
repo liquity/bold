@@ -61,7 +61,7 @@ contract OraclesMainnet is TestAccounts {
         OracleParams memory oracleParams;
 
         uint256 numCollaterals = 5;
-        TroveManagerParams memory tmParams = TroveManagerParams(110e16, 110e16, 5e16, 10e16);
+        TroveManagerParams memory tmParams = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
         TroveManagerParams[] memory tmParamsArray = new TroveManagerParams[](numCollaterals);
         for (uint256 i = 0; i < tmParamsArray.length; i++) {
             tmParamsArray[i] = tmParams;

@@ -23,15 +23,15 @@ contract ShutdownTest is DevTestSetup {
             accountsList[6]
         );
 
-        TroveManagerParams[] memory troveManagerParams = new TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParams[0] = TroveManagerParams(110e16, 110e16, 5e16, 10e16);
-        troveManagerParams[1] = TroveManagerParams(120e16, 120e16, 5e16, 10e16);
-        troveManagerParams[2] = TroveManagerParams(120e16, 120e16, 5e16, 10e16);
-        troveManagerParams[3] = TroveManagerParams(125e16, 125e16, 5e16, 10e16);
+        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](NUM_COLLATERALS);
+        troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
+        troveManagerParamsArray[1] = TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
+        troveManagerParamsArray[2] = TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
+        troveManagerParamsArray[3] = TroveManagerParams(160e16, 125e16, 125e16, 5e16, 10e16);
 
         LiquityContractsDev[] memory _contractsArray;
         (_contractsArray, collateralRegistry, boldToken,,, WETH) =
-            _deployAndConnectContractsMultiColl(troveManagerParams);
+            _deployAndConnectContractsMultiColl(troveManagerParamsArray);
         // Unimplemented feature (...):Copying of type struct LiquityContracts memory[] memory to storage not yet supported.
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
             contractsArray.push(_contractsArray[c]);
