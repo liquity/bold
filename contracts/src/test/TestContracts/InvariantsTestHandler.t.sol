@@ -6,22 +6,19 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {REDEMPTION_FEE_FLOOR} from "../../Dependencies/Constants.sol";
-import {LiquityContractsDev} from "../../deployment.sol";
+import {LatestTroveData} from "../../Types/LatestTroveData.sol";
 import {IBorrowerOperations} from "../../Interfaces/IBorrowerOperations.sol";
 import {ISortedTroves} from "../../Interfaces/ISortedTroves.sol";
 import {ITroveManager} from "../../Interfaces/ITroveManager.sol";
-import {LatestTroveData} from "../../Types/LatestTroveData.sol";
-import {TroveChange} from "../../Types/TroveChange.sol";
-import {BorrowerOperations} from "../../BorrowerOperations.sol";
 import {AddRemoveManagers} from "../../Dependencies/AddRemoveManagers.sol";
+import {BorrowerOperations} from "../../BorrowerOperations.sol";
 import {TroveManager} from "../../TroveManager.sol";
+import {LiquityContractsDev} from "../../deployment.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
-import {mulDivCeil, pow} from "../Utils/Math.sol";
-import {IPriceFeedTestnet} from "./Interfaces/IPriceFeedTestnet.sol";
+import {pow} from "../Utils/Math.sol";
+import {ITroveManagerTester} from "./Interfaces/ITroveManagerTester.sol";
 import {BaseHandler} from "./BaseHandler.sol";
 import {BaseMultiCollateralTest} from "./BaseMultiCollateralTest.sol";
-import {ITroveManagerTester} from "./Interfaces/ITroveManagerTester.sol";
 
 import {
     _100pct,
@@ -39,6 +36,7 @@ import {
     ONE_MINUTE,
     ONE_YEAR,
     REDEMPTION_BETA,
+    REDEMPTION_FEE_FLOOR,
     REDEMPTION_MINUTE_DECAY_FACTOR,
     SP_YIELD_SPLIT,
     UPFRONT_INTEREST_PERIOD,
