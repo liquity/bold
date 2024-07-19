@@ -161,7 +161,7 @@ contract ZapperGasCompTest is DevTestSetup {
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
-            annualInterestRate: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
             maxUpfrontFee: 1000e18
         });
         vm.startPrank(A);
@@ -186,7 +186,9 @@ contract ZapperGasCompTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(troveManager.getTroveEntireColl(troveId), collAmount, "Trove coll mismatch");
-        assertEq(troveManager.getTroveEntireDebt(troveId), boldAmount1 - boldAmount2, "Trove  debt mismatch");
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId), boldAmount1 - boldAmount2, 2e18, "Trove  debt mismatch"
+        );
         assertEq(boldToken.balanceOf(A), boldBalanceBeforeA - boldAmount2, "A BOLD bal mismatch");
         assertEq(collToken.balanceOf(A), collBalanceBeforeA, "A Coll bal mismatch");
         assertEq(boldToken.balanceOf(B), boldBalanceBeforeB, "B BOLD bal mismatch");
@@ -205,7 +207,7 @@ contract ZapperGasCompTest is DevTestSetup {
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
-            annualInterestRate: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
             maxUpfrontFee: 1000e18
         });
         vm.startPrank(A);
@@ -228,7 +230,9 @@ contract ZapperGasCompTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(troveManager.getTroveEntireColl(troveId), collAmount, "Trove coll mismatch");
-        assertEq(troveManager.getTroveEntireDebt(troveId), boldAmount1 + boldAmount2, "Trove  debt mismatch");
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId), boldAmount1 + boldAmount2, 2e18, "Trove  debt mismatch"
+        );
         assertEq(boldToken.balanceOf(A), boldBalanceBeforeA + boldAmount2, "A BOLD bal mismatch");
         assertEq(collToken.balanceOf(A), collBalanceBeforeA, "A Coll bal mismatch");
         assertEq(boldToken.balanceOf(B), boldBalanceBeforeB, "B BOLD bal mismatch");
@@ -249,7 +253,7 @@ contract ZapperGasCompTest is DevTestSetup {
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
-            annualInterestRate: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
             maxUpfrontFee: 1000e18
         });
         vm.startPrank(A);
@@ -272,7 +276,9 @@ contract ZapperGasCompTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(troveManager.getTroveEntireColl(troveId), collAmount1 - collAmount2, "Trove coll mismatch");
-        assertEq(troveManager.getTroveEntireDebt(troveId), boldAmount1 + boldAmount2, "Trove  debt mismatch");
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId), boldAmount1 + boldAmount2, 2e18, "Trove  debt mismatch"
+        );
         assertEq(boldToken.balanceOf(A), boldBalanceBeforeA + boldAmount2, "A BOLD bal mismatch");
         assertEq(collToken.balanceOf(A), collBalanceBeforeA + collAmount2, "A Coll bal mismatch");
         assertEq(boldToken.balanceOf(B), boldBalanceBeforeB, "B BOLD bal mismatch");
@@ -293,7 +299,7 @@ contract ZapperGasCompTest is DevTestSetup {
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
-            annualInterestRate: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
             maxUpfrontFee: 1000e18
         });
         vm.startPrank(A);
@@ -323,7 +329,7 @@ contract ZapperGasCompTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(troveManager.getTroveEntireColl(troveId), troveCollBefore - collAmount2, "Trove coll mismatch");
-        assertEq(troveManager.getTroveEntireDebt(troveId), 2 * boldAmount2, "Trove  debt mismatch");
+        assertApproxEqAbs(troveManager.getTroveEntireDebt(troveId), 2 * boldAmount2, 2e18, "Trove  debt mismatch");
         assertEq(boldToken.balanceOf(A), boldBalanceBeforeA + boldAmount2, "A BOLD bal mismatch");
         assertEq(collToken.balanceOf(A), collBalanceBeforeA + collAmount2, "A Coll bal mismatch");
         assertEq(boldToken.balanceOf(B), 0, "B BOLD bal mismatch");
@@ -344,15 +350,14 @@ contract ZapperGasCompTest is DevTestSetup {
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
-            annualInterestRate: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
             maxUpfrontFee: 1000e18
         });
         vm.startPrank(A);
         uint256 troveId = gasCompZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
-        // open a 2nd trove so we can close the 1st one
-        //openTroveNoHints100pct(B, 100 ether, 100_000e18, 0);
+        // open a 2nd trove so we can close the 1st one, and send Bold to account for interest and fee
         vm.startPrank(B);
         deal(address(WETH), B, ETH_GAS_COMPENSATION);
         WETH.approve(address(borrowerOperations), ETH_GAS_COMPENSATION);
@@ -365,13 +370,14 @@ contract ZapperGasCompTest is DevTestSetup {
             10000e18, //boldAmount,
             0, // _upperHint
             0, // _lowerHint
-            0, // annualInterestRate,
+            MIN_ANNUAL_INTEREST_RATE, // annualInterestRate,
             10000e18 // upfrontFee
         );
+        boldToken.transfer(A, troveManager.getTroveEntireDebt(troveId) - boldAmount);
         vm.stopPrank();
 
         vm.startPrank(A);
-        boldToken.approve(address(gasCompZapper), boldAmount);
+        boldToken.approve(address(gasCompZapper), type(uint256).max);
         gasCompZapper.closeTroveToRawETH(troveId);
         vm.stopPrank();
 

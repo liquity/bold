@@ -18,7 +18,8 @@ import {
     _1pct,
     _100pct,
     ETH_GAS_COMPENSATION,
-    COLL_GAS_COMPENSATION_DIVISOR
+    COLL_GAS_COMPENSATION_DIVISOR,
+    MIN_ANNUAL_INTEREST_RATE
 } from "../../Dependencies/Constants.sol";
 
 using {mulDivCeil} for uint256;
@@ -96,7 +97,9 @@ contract SPInvariantsTestHandler is BaseHandler {
         vm.prank(msg.sender);
         collateralToken.approve(address(borrowerOperations), coll + ETH_GAS_COMPENSATION);
         vm.prank(msg.sender);
-        uint256 troveId = borrowerOperations.openTrove(msg.sender, i + 1, coll, borrowed, 0, 0, 0, type(uint256).max);
+        uint256 troveId = borrowerOperations.openTrove(
+            msg.sender, i + 1, coll, borrowed, 0, 0, MIN_ANNUAL_INTEREST_RATE, type(uint256).max
+        );
         (uint256 actualDebt,,,,) = troveManager.getEntireDebtAndColl(troveId);
         assertEqDecimal(debt, actualDebt, 18, "Wrong debt");
 

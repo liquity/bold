@@ -29,6 +29,7 @@ import {
     ETH_GAS_COMPENSATION,
     INITIAL_BASE_RATE,
     INTEREST_RATE_ADJ_COOLDOWN,
+    MIN_ANNUAL_INTEREST_RATE,
     MAX_ANNUAL_INTEREST_RATE,
     MIN_DEBT,
     ONE_MINUTE,
@@ -46,7 +47,7 @@ uint256 constant TIME_DELTA_MAX = ONE_YEAR;
 uint256 constant BORROWED_MIN = 0 ether; // Sometimes try borrowing too little
 uint256 constant BORROWED_MAX = 100_000 ether;
 
-uint256 constant INTEREST_RATE_MIN = 0; // TODO
+uint256 constant INTEREST_RATE_MIN = MIN_ANNUAL_INTEREST_RATE * 9 / 10; // Sometimes try rates lower than the min
 uint256 constant INTEREST_RATE_MAX = MAX_ANNUAL_INTEREST_RATE * 11 / 10; // Sometimes try rates exceeding the max
 
 uint256 constant ICR_MIN = 0.9 ether;

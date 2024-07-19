@@ -8,7 +8,7 @@ contract BasicOps is DevTestSetup {
 
         vm.startPrank(G);
         vm.expectRevert("ERC20: insufficient allowance");
-        borrowerOperations.openTrove(G, 0, 2e18, 2000e18, 0, 0, 0, 0);
+        borrowerOperations.openTrove(G, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
     }
 
@@ -18,7 +18,7 @@ contract BasicOps is DevTestSetup {
         vm.startPrank(G);
         collToken.approve(address(borrowerOperations), 2e18);
         vm.expectRevert("ERC20: transfer amount exceeds balance");
-        borrowerOperations.openTrove(G, 0, 2e18, 2000e18, 0, 0, 0, 0);
+        borrowerOperations.openTrove(G, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
     }
 
@@ -28,7 +28,7 @@ contract BasicOps is DevTestSetup {
         assertEq(trovesCount, 0);
 
         vm.startPrank(A);
-        borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, 0, 0);
+        borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
 
         trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
@@ -37,11 +37,13 @@ contract BasicOps is DevTestSetup {
     function testCloseTrove() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, 0, 0);
+        borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
+        // Transfer some Bold to B so that B can close Trove accounting for interest and upfront fee
+        boldToken.transfer(B, 100e18);
         vm.stopPrank();
 
         vm.startPrank(B);
-        uint256 B_Id = borrowerOperations.openTrove(B, 0, 2e18, 2000e18, 0, 0, 0, 0);
+        uint256 B_Id = borrowerOperations.openTrove(B, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
 
         uint256 trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 2);
@@ -58,7 +60,7 @@ contract BasicOps is DevTestSetup {
     function testAdjustTrove() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 A_Id = borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, 0, 0);
+        uint256 A_Id = borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
 
         // Check Trove coll and debt
         uint256 debt_1 = troveManager.getTroveDebt(A_Id);
@@ -80,11 +82,11 @@ contract BasicOps is DevTestSetup {
         priceFeed.setPrice(2000e18);
 
         vm.startPrank(A);
-        borrowerOperations.openTrove(A, 0, 5e18, 5_000e18, 0, 0, 0, 0);
+        borrowerOperations.openTrove(A, 0, 5e18, 5_000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
 
         vm.startPrank(B);
-        uint256 B_Id = borrowerOperations.openTrove(B, 0, 5e18, 4_000e18, 0, 0, 0, 0);
+        uint256 B_Id = borrowerOperations.openTrove(B, 0, 5e18, 4_000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         uint256 debt_1 = troveManager.getTroveDebt(B_Id);
         assertGt(debt_1, 0);
         uint256 coll_1 = troveManager.getTroveColl(B_Id);
@@ -110,11 +112,11 @@ contract BasicOps is DevTestSetup {
     function testLiquidation() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 A_Id = borrowerOperations.openTrove(A, 0, 2e18, 2200e18, 0, 0, 0, 0);
+        uint256 A_Id = borrowerOperations.openTrove(A, 0, 2e18, 2200e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
 
         vm.startPrank(B);
-        borrowerOperations.openTrove(B, 0, 10e18, 2000e18, 0, 0, 0, 0);
+        borrowerOperations.openTrove(B, 0, 10e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
 
         // Price drops
         priceFeed.setPrice(1200e18);
@@ -137,7 +139,7 @@ contract BasicOps is DevTestSetup {
     function testSPDeposit() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, 0, 0);
+        borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
 
         // A makes an SP deposit
         makeSPDepositAndClaim(A, 100e18);
@@ -148,15 +150,16 @@ contract BasicOps is DevTestSetup {
         // A tops up their SP deposit
         makeSPDepositAndClaim(A, 100e18);
 
-        // Check A's balance decreased and SP deposit increased
-        assertEq(boldToken.balanceOf(A), 1800e18);
-        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 200e18);
+        // Check A's balance decreased and SP deposit increased (A gained some interest)
+        assertGt(boldToken.balanceOf(A), 1800e18, "Wrong bold balance");
+        assertLt(boldToken.balanceOf(A), 1801e18, "Wrong bold balance");
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 200e18, "Wrong SP deposit");
     }
 
     function testSPWithdrawal() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, 0, 0);
+        borrowerOperations.openTrove(A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
 
         // A makes an SP deposit
         makeSPDepositAndClaim(A, 100e18);
@@ -171,8 +174,9 @@ contract BasicOps is DevTestSetup {
         // A withdraws their full SP deposit
         makeSPWithdrawalAndClaim(A, 100e18);
 
-        // Check A's balance increased and SP deposit decreased to 0
-        assertEq(boldToken.balanceOf(A), 2000e18);
-        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 0);
+        // Check A's balance increased and SP deposit decreased to 0 (A gained some interest)
+        assertGt(boldToken.balanceOf(A), 2000e18, "Wrong bold balance");
+        assertLt(boldToken.balanceOf(A), 2001e18, "Wrong bold balance");
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 0, "Wrong SP deposit");
     }
 }
