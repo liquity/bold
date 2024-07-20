@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.18;
+pragma solidity ^0.8.0;
 
 interface IWSTETH {
     function wrap(uint256 _stETHAmount) external returns (uint256);
