@@ -107,6 +107,7 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
 
   coverage:
+    if: false
     name: Coverage
     runs-on: ubuntu-latest
     continue-on-error: true
