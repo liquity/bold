@@ -131,10 +131,25 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
             ITroveManager troveManager = getTroveManager(index);
             (uint256 unbackedPortion, uint256 price, bool redeemable) =
                 troveManager.getUnbackedPortionPriceAndRedeemability();
+            prices[index] = price;
             if (redeemable) {
                 totals.unbacked += unbackedPortion;
                 unbackedPortions[index] = unbackedPortion;
-                prices[index] = price;
+            }
+        }
+
+        // There’s an unlikely scenario where all the normally redeemable branches (i.e. having TCR > SCR) have 0 unbacked
+        // In that case, we redeem proportinally to branch size
+        if (totals.unbacked == 0) {
+            unbackedPortions = new uint256[](totals.numCollaterals);
+            for (uint256 index = 0; index < totals.numCollaterals; index++) {
+                ITroveManager troveManager = getTroveManager(index);
+                bool redeemable = troveManager.shutdownTime() == 0;
+                if (redeemable) {
+                    uint256 unbackedPortion = troveManager.getEntireSystemDebt();
+                    totals.unbacked += unbackedPortion;
+                    unbackedPortions[index] = unbackedPortion;
+                }
             }
         }
 
