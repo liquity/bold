@@ -485,4 +485,113 @@ contract MulticollateralTest is DevTestSetup {
             20
         );
     }
+
+    function testMultiCollateralRedemptionWithZeroUnbacked() public {
+        TestValues memory testValues1;
+        TestValues memory testValues2;
+        TestValues memory testValues3;
+        TestValues memory testValues4;
+        uint256 redeemAmount = 1600e18;
+
+        // First collateral unbacked Bold: 10k (SP empty) - will be shutdown
+        testValues1.troveId = openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 10e18, 10000e18, 5e16);
+
+        // Second collateral unbacked Bold: 0
+        testValues2.troveId = openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 100e18, 10000e18, 5e16);
+        makeMulticollateralSPDepositAndClaim(1, A, 10100e18); // we put some more for interest
+
+        // Third collateral unbacked Bold: 0
+        testValues3.troveId = openMulticollateralTroveNoHints100pctWithIndex(2, A, 0, 10e18, 4000e18, 5e16);
+        makeMulticollateralSPDepositAndClaim(2, A, 4100e18); // we put some more for interest
+
+        // Fourth collateral unbacked Bold: 0
+        testValues4.troveId = openMulticollateralTroveNoHints100pctWithIndex(3, A, 0, 10e18, 2000e18, 5e16);
+        makeMulticollateralSPDepositAndClaim(3, A, 2100e18); // we put some more for interest
+
+        // Check A’s final bal
+        // 10k of first branch - 3 * 100 in the other SPs
+        assertEq(boldToken.balanceOf(A), 9700e18, "Wrong Bold balance before redemption");
+
+        // initial balances
+        testValues1.collInitialBalance = contractsArray[0].collToken.balanceOf(A);
+        testValues2.collInitialBalance = contractsArray[1].collToken.balanceOf(A);
+        testValues3.collInitialBalance = contractsArray[2].collToken.balanceOf(A);
+        testValues4.collInitialBalance = contractsArray[3].collToken.balanceOf(A);
+
+        // Shut first branch down
+        contractsArray[0].priceFeed.setPrice(1000e18);
+        contractsArray[0].borrowerOperations.shutdown();
+
+        // First branch is shutdown, the other 3 are fully backed
+        assertGt(contractsArray[0].troveManager.shutdownTime(), 0, "First branch should be shut down");
+        (uint256 unbackedPortion1,,) = contractsArray[1].troveManager.getUnbackedPortionPriceAndRedeemability();
+        assertEq(unbackedPortion1, 0, "Second branch should be fully backed");
+        (uint256 unbackedPortion2,,) = contractsArray[2].troveManager.getUnbackedPortionPriceAndRedeemability();
+        assertEq(unbackedPortion2, 0, "Third branch should be fully backed");
+        (uint256 unbackedPortion3,,) = contractsArray[3].troveManager.getUnbackedPortionPriceAndRedeemability();
+        assertEq(unbackedPortion3, 0, "Fourth branch should be fully backed");
+
+        testValues1.price = contractsArray[0].priceFeed.getPrice();
+        testValues2.price = contractsArray[1].priceFeed.getPrice();
+        testValues3.price = contractsArray[2].priceFeed.getPrice();
+        testValues4.price = contractsArray[3].priceFeed.getPrice();
+
+        // Effectively (second loop in CollateralRegistry.redeemCollateral)
+        testValues1.unbackedPortion = 0;
+        testValues2.unbackedPortion = contractsArray[1].troveManager.getTroveEntireDebt(testValues2.troveId);
+        testValues3.unbackedPortion = contractsArray[2].troveManager.getTroveEntireDebt(testValues3.troveId);
+        testValues4.unbackedPortion = contractsArray[3].troveManager.getTroveEntireDebt(testValues4.troveId);
+        uint256 totalUnbacked = testValues1.unbackedPortion + testValues2.unbackedPortion + testValues3.unbackedPortion
+            + testValues4.unbackedPortion;
+
+        testValues1.redeemAmount = redeemAmount * testValues1.unbackedPortion / totalUnbacked;
+        testValues2.redeemAmount = redeemAmount * testValues2.unbackedPortion / totalUnbacked;
+        testValues3.redeemAmount = redeemAmount * testValues3.unbackedPortion / totalUnbacked;
+        testValues4.redeemAmount = redeemAmount * testValues4.unbackedPortion / totalUnbacked;
+
+        // fees
+        uint256 fee = collateralRegistry.getEffectiveRedemptionFeeInBold(redeemAmount);
+        testValues1.fee = fee * testValues1.redeemAmount / redeemAmount * DECIMAL_PRECISION / testValues1.price;
+        testValues2.fee = fee * testValues2.redeemAmount / redeemAmount * DECIMAL_PRECISION / testValues2.price;
+        testValues3.fee = fee * testValues3.redeemAmount / redeemAmount * DECIMAL_PRECISION / testValues3.price;
+        testValues4.fee = fee * testValues4.redeemAmount / redeemAmount * DECIMAL_PRECISION / testValues4.price;
+
+        // A redeems 1.6k
+        redeem(A, redeemAmount);
+
+        // Check bold balance
+        assertApproxEqAbs(boldToken.balanceOf(A), 8100e18, 10, "Wrong Bold balance after redemption");
+
+        // Check collateral balances
+        // final balances
+        testValues1.collFinalBalance = contractsArray[0].collToken.balanceOf(A);
+        testValues2.collFinalBalance = contractsArray[1].collToken.balanceOf(A);
+        testValues3.collFinalBalance = contractsArray[2].collToken.balanceOf(A);
+        testValues4.collFinalBalance = contractsArray[3].collToken.balanceOf(A);
+
+        assertApproxEqAbs(
+            testValues1.collFinalBalance - testValues1.collInitialBalance,
+            testValues1.redeemAmount * DECIMAL_PRECISION / testValues1.price - testValues1.fee,
+            1e14,
+            "Wrong Collateral 1 balance"
+        );
+        assertApproxEqAbs(
+            testValues2.collFinalBalance - testValues2.collInitialBalance,
+            testValues2.redeemAmount * DECIMAL_PRECISION / testValues2.price - testValues2.fee,
+            1e14,
+            "Wrong Collateral 2 balance"
+        );
+        assertApproxEqAbs(
+            testValues3.collFinalBalance - testValues3.collInitialBalance,
+            testValues3.redeemAmount * DECIMAL_PRECISION / testValues3.price - testValues3.fee,
+            1e13,
+            "Wrong Collateral 3 balance"
+        );
+        assertApproxEqAbs(
+            testValues4.collFinalBalance - testValues4.collInitialBalance,
+            testValues4.redeemAmount * DECIMAL_PRECISION / testValues4.price - testValues4.fee,
+            1e11,
+            "Wrong Collateral 4 balance"
+        );
+    }
 }
