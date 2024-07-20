@@ -679,6 +679,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         try v.c.borrowerOperations.adjustTroveInterestRate(
             v.troveId, newInterestRate, v.upperHint, v.lowerHint, v.upfrontFee
         ) {
+            uint256 newDebt = v.t.entireDebt + v.upfrontFee;
             uint256 newICR = _ICR(i, 0, 0, v.upfrontFee, v.t);
             uint256 newTCR = _TCR(i, 0, 0, v.upfrontFee);
 
@@ -695,12 +696,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // Effects (Trove)
             assertEqDecimal(v.c.troveManager.getTroveEntireColl(v.troveId), v.t.entireColl, 18, "Wrong coll");
-            assertEqDecimal(
-                v.c.troveManager.getTroveEntireDebt(v.troveId), v.t.entireDebt + v.upfrontFee, 18, "Wrong debt"
-            );
-            assertEqDecimal(
-                v.c.troveManager.getTroveAnnualInterestRate(v.troveId), newInterestRate, 18, "Wrong interest rate"
-            );
+            assertEqDecimal(v.c.troveManager.getTroveEntireDebt(v.troveId), newDebt, 18, "Wrong debt");
+            assertEqDecimal(v.c.troveManager.getTroveAnnualInterestRate(v.troveId), newInterestRate, 18, "Wrong rate");
             if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
 
             // Effects (system)
