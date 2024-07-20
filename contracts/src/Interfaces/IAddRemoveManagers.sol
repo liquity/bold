@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.18;
+pragma solidity ^0.8.0;
 
 interface IAddRemoveManagers {
     function setAddManager(uint256 _troveId, address _manager) external;
