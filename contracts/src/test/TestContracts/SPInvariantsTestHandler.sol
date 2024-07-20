@@ -7,6 +7,7 @@ import {IBoldToken} from "../../Interfaces/IBoldToken.sol";
 import {IStabilityPool} from "../../Interfaces/IStabilityPool.sol";
 import {ITroveManager} from "../../Interfaces/ITroveManager.sol";
 import {ICollSurplusPool} from "../../Interfaces/ICollSurplusPool.sol";
+import {HintHelpers} from "../../HintHelpers.sol";
 import {IPriceFeedTestnet} from "./Interfaces/IPriceFeedTestnet.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
@@ -53,6 +54,7 @@ contract SPInvariantsTestHandler is BaseHandler {
     IStabilityPool immutable stabilityPool;
     ITroveManager immutable troveManager;
     ICollSurplusPool immutable collSurplusPool;
+    HintHelpers immutable hintHelpers;
 
     uint256 immutable initialPrice;
 
@@ -64,7 +66,7 @@ contract SPInvariantsTestHandler is BaseHandler {
     // Fixtures
     uint256[] fixtureDeposited;
 
-    constructor(Contracts memory contracts) {
+    constructor(Contracts memory contracts, HintHelpers hintHelpers_) {
         boldToken = contracts.boldToken;
         borrowerOperations = contracts.borrowerOperations;
         collateralToken = contracts.collateralToken;
@@ -72,6 +74,7 @@ contract SPInvariantsTestHandler is BaseHandler {
         stabilityPool = contracts.stabilityPool;
         troveManager = contracts.troveManager;
         collSurplusPool = contracts.collSurplusPool;
+        hintHelpers = hintHelpers_;
 
         initialPrice = priceFeed.getPrice();
     }
@@ -86,7 +89,7 @@ contract SPInvariantsTestHandler is BaseHandler {
 
         borrowed = _bound(borrowed, OPEN_TROVE_BORROWED_MIN, OPEN_TROVE_BORROWED_MAX);
         uint256 price = priceFeed.getPrice();
-        debt = borrowed;
+        debt = borrowed + hintHelpers.predictOpenTroveUpfrontFee(0, borrowed, MIN_ANNUAL_INTEREST_RATE);
         uint256 coll = debt.mulDivCeil(OPEN_TROVE_ICR, price);
         assertEqDecimal(coll * price / debt, OPEN_TROVE_ICR, 18, "Wrong ICR");
 
@@ -119,6 +122,7 @@ contract SPInvariantsTestHandler is BaseHandler {
 
         uint256 collBefore = collateralToken.balanceOf(msg.sender);
         uint256 collGain = stabilityPool.getDepositorCollGain(msg.sender);
+        uint256 boldGain = stabilityPool.getDepositorYieldGainWithPending(msg.sender);
 
         // Poor man's fixturing, because Foundry's fixtures don't seem to work under invariant testing
         if (useFixture && fixtureDeposited.length > 0) {
@@ -140,6 +144,12 @@ contract SPInvariantsTestHandler is BaseHandler {
 
         uint256 collAfter = collateralToken.balanceOf(msg.sender);
         assertEqDecimal(collAfter, collBefore + collGain, 18, "Wrong Coll gain");
+
+        // Sweep BOLD gain
+        vm.prank(msg.sender);
+        boldToken.transfer(address(this), boldGain);
+        assertEqDecimal(boldToken.balanceOf(msg.sender), 0, 18, "Incomplete BOLD sweep");
+        myBold += boldGain;
 
         myBold -= deposited;
         spBold += deposited;

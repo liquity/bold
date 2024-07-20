@@ -364,7 +364,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Preconditions
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertFalse(v.wasOpen, "Should have failed as Trove was open");
-            assertLeDecimal(interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as interest rate > max");
+            assertGeDecimal(interestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate < min");
+            assertLeDecimal(interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate > max");
             assertGeDecimal(v.debt, MIN_DEBT, 18, "Should have failed as debt < min");
             assertGeDecimal(icr_, MCR[i], 18, "Should have failed as ICR < MCR");
             assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
@@ -395,10 +396,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
             } else if (reason.equals("BorrowerOps: Trove is open")) {
                 assertTrue(v.wasOpen, "Shouldn't have failed as Trove wasn't open");
+            } else if (reason.equals("Interest rate must not be lower than min")) {
+                assertLtDecimal(interestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate >= min");
             } else if (reason.equals("Interest rate must not be greater than max")) {
-                assertGtDecimal(
-                    interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as interest rate <= max"
-                );
+                assertGtDecimal(interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate <= max");
             } else if (reason.equals("BorrowerOps: Trove's debt must be greater than minimum")) {
                 assertLtDecimal(v.debt, MIN_DEBT, 18, "Shouldn't have failed as debt >= min");
             } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
@@ -612,7 +613,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Preconditions
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertTrue(v.wasActive, "Should have failed as Trove was not active");
-            assertLeDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as interest rate > max");
+            assertGeDecimal(newInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate < min");
+            assertLeDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate > max");
 
             if (v.premature) {
                 assertGeDecimal(newICR, MCR[i], 18, "Should have failed as new ICR < MCR");
@@ -648,10 +650,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertFalse(_isOpen(i, v.troveId), "Open Trove should have an NFT");
             } else if (reason.equals("BorrowerOps: Trove does not have active status")) {
                 assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
+            } else if (reason.equals("Interest rate must not be lower than min")) {
+                assertLtDecimal(newInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate >= min");
             } else if (reason.equals("Interest rate must not be greater than max")) {
-                assertGtDecimal(
-                    newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as interest rate <= max"
-                );
+                assertGtDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate <= max");
             } else if (reason.equals("BorrowerOps: An operation that would result in ICR < MCR is not permitted")) {
                 uint256 newICR = _ICR(i, 0, 0, v.upfrontFee, v.t);
                 assertTrue(v.premature, "Shouldn't have failed as adjustment was not premature");
