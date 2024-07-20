@@ -551,7 +551,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         troveChange.newWeightedRecordedDebt = trove.entireDebt * trove.annualInterestRate;
 
         // If the trove was unredeemable, and now it’s not anymore, put it back in the list
-        if (contractsCache.troveManager.checkTroveIsUnredeemable(_troveId) && trove.entireDebt > MIN_DEBT) {
+        if (contractsCache.troveManager.checkTroveIsUnredeemable(_troveId) && trove.entireDebt >= MIN_DEBT) {
             contractsCache.troveManager.setTroveStatusToActive(_troveId);
             sortedTroves.insert(_troveId, trove.annualInterestRate, _upperHint, _lowerHint);
         }
