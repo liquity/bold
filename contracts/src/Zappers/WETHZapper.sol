@@ -7,11 +7,13 @@ import "../Dependencies/AddRemoveManagers.sol";
 import "../Dependencies/Constants.sol";
 
 contract WETHZapper is AddRemoveManagers {
+    ITroveManager public immutable troveManager;
     IBorrowerOperations public immutable borrowerOperations; // First branch (i.e., using WETH as collateral)
     IWETH public immutable WETH;
     IBoldToken public immutable boldToken;
 
     constructor(ITroveManager _troveManager) AddRemoveManagers(_troveManager) {
+        troveManager = _troveManager;
         IBorrowerOperations _borrowerOperations = IBorrowerOperations(_troveManager.borrowerOperationsAddress());
         borrowerOperations = _borrowerOperations;
         IWETH _WETH = _borrowerOperations.WETH();

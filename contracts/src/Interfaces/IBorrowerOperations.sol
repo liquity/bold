@@ -4,12 +4,15 @@ pragma solidity 0.8.18;
 
 import "./ILiquityBase.sol";
 import "./IAddRemoveManagers.sol";
+import "./IBoldToken.sol";
 import "./IPriceFeed.sol";
 import "./ISortedTroves.sol";
+import "./ITroveManager.sol";
 import "./IWETH.sol";
 
 // Common interface for the Borrower Operations.
 interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
+    function troveManager() external view returns (ITroveManager);
     function sortedTroves() external view returns (ISortedTroves);
     function collToken() external view returns (IERC20);
     function boldToken() external view returns (IBoldToken);

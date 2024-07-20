@@ -22,6 +22,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
 
     // --- Connected contract declarations ---
 
+    ITroveManager public immutable troveManager;
     IERC20 public immutable collToken;
     address gasPoolAddress;
     ICollSurplusPool collSurplusPool;
@@ -90,6 +91,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
     event ShutDownFromOracleFailure(address _oracleAddress);
 
     constructor(IERC20 _collToken, ITroveManager _troveManager, IWETH _weth) AddRemoveManagers(_troveManager) {
+        troveManager = _troveManager;
         collToken = _collToken;
 
         WETH = _weth;

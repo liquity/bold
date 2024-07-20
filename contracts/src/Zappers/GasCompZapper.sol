@@ -10,12 +10,14 @@ import "../Dependencies/Constants.sol";
 contract GasCompZapper is AddRemoveManagers {
     using SafeERC20 for IERC20;
 
+    ITroveManager public immutable troveManager;
     IBorrowerOperations public immutable borrowerOperations; // LST branch (i.e., not WETH as collateral)
     IWETH public immutable WETH;
     IERC20 public immutable collToken;
     IBoldToken public immutable boldToken;
 
     constructor(ITroveManager _troveManager) AddRemoveManagers(_troveManager) {
+        troveManager = _troveManager;
         IBorrowerOperations _borrowerOperations = IBorrowerOperations(_troveManager.borrowerOperationsAddress());
         borrowerOperations = _borrowerOperations;
         IWETH _WETH = _borrowerOperations.WETH();

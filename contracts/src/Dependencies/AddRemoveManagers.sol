@@ -6,7 +6,7 @@ import "../Interfaces/IAddRemoveManagers.sol";
 import "../Interfaces/ITroveManager.sol";
 
 contract AddRemoveManagers is IAddRemoveManagers {
-    ITroveManager public immutable troveManager;
+    ITroveManager private immutable troveManager;
 
     /*
      * Mapping from TroveId to granted address for operations that "give" money to the trove (add collateral, pay debt).
