@@ -6,12 +6,6 @@ contract InterestRateBasic is DevTestSetup {
     function testOpenTroveSetsInterestRate() public {
         priceFeed.setPrice(2000e18);
 
-        uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2000e18, 0);
-        assertEq(troveManager.getTroveAnnualInterestRate(ATroveId), 0);
-
-        uint256 BTroveId = openTroveNoHints100pct(B, 2 ether, 2000e18, 1);
-        assertEq(troveManager.getTroveAnnualInterestRate(BTroveId), 1);
-
         uint256 CTroveId = openTroveNoHints100pct(C, 2 ether, 2000e18, 37e16);
         assertEq(troveManager.getTroveAnnualInterestRate(CTroveId), 37e16);
 
@@ -24,11 +18,11 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveManager.getTroveLastDebtUpdateTime(addressToTroveId(A)), 0);
         assertEq(troveManager.getTroveLastDebtUpdateTime(addressToTroveId(B)), 0);
 
-        uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2000e18, 0);
+        uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2000e18, MIN_ANNUAL_INTEREST_RATE);
         assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
         vm.warp(block.timestamp + 1000);
-        uint256 BTroveId = openTroveNoHints100pct(B, 2 ether, 2000e18, 1);
+        uint256 BTroveId = openTroveNoHints100pct(B, 2 ether, 2000e18, MIN_ANNUAL_INTEREST_RATE);
         assertEq(troveManager.getTroveLastDebtUpdateTime(BTroveId), block.timestamp);
     }
 
@@ -36,7 +30,7 @@ contract InterestRateBasic is DevTestSetup {
         priceFeed.setPrice(2000e18);
 
         // Users A, B, C, D, E will open Troves with interest rates ascending in the alphabetical order of their names
-        uint256 interestRate_A = 0;
+        uint256 interestRate_A = MIN_ANNUAL_INTEREST_RATE;
         uint256 interestRate_B = 1e17;
         uint256 interestRate_C = 2e17;
         uint256 interestRate_D = 3e17;
@@ -126,8 +120,8 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveManager.getTroveAnnualInterestRate(BTroveId), 5e17);
         assertEq(troveManager.getTroveAnnualInterestRate(CTroveId), 5e17);
 
-        changeInterestRateNoHints(A, ATroveId, 0);
-        assertEq(troveManager.getTroveAnnualInterestRate(ATroveId), 0);
+        changeInterestRateNoHints(A, ATroveId, MIN_ANNUAL_INTEREST_RATE);
+        assertEq(troveManager.getTroveAnnualInterestRate(ATroveId), MIN_ANNUAL_INTEREST_RATE);
 
         changeInterestRateNoHints(B, BTroveId, 6e17);
         assertEq(troveManager.getTroveAnnualInterestRate(BTroveId), 6e17);
@@ -224,7 +218,7 @@ contract InterestRateBasic is DevTestSetup {
         uint256 DTroveId = openTroveNoHints100pct(D, 2 ether, 2000e18, 4e17);
         uint256 ETroveId = openTroveNoHints100pct(E, 2 ether, 2000e18, 5e17);
 
-        // Check initial sorted list order - expect [A:10%, B:02%, C:30%, D:40%, E:50%]
+        // Check initial sorted list order - expect [A:10%, B:20%, C:30%, D:40%, E:50%]
         // A
         assertEq(sortedTroves.getNext(ATroveId), 0); // tail
         assertEq(sortedTroves.getPrev(ATroveId), BTroveId);
@@ -241,17 +235,17 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(sortedTroves.getNext(ETroveId), DTroveId);
         assertEq(sortedTroves.getPrev(ETroveId), 0); // head
 
-        // C sets rate to 0%, moves to tail - expect [C:0%, A:10%, B:20%, D:40%, E:50%]
-        changeInterestRateNoHints(C, CTroveId, 0);
+        // C sets rate to 0.5%, moves to tail - expect [C:0.5%, A:10%, B:20%, D:40%, E:50%]
+        changeInterestRateNoHints(C, CTroveId, MIN_ANNUAL_INTEREST_RATE);
         assertEq(sortedTroves.getNext(CTroveId), 0);
         assertEq(sortedTroves.getPrev(CTroveId), ATroveId);
 
-        // D sets rate to 7%, moves to head - expect [C:0%, A:10%, B:20%, E:50%, D:70%]
+        // D sets rate to 7%, moves to head - expect [C:0.5%, A:10%, B:20%, E:50%, D:70%]
         changeInterestRateNoHints(D, DTroveId, 7e17);
         assertEq(sortedTroves.getNext(DTroveId), ETroveId);
         assertEq(sortedTroves.getPrev(DTroveId), 0);
 
-        // A sets rate to 6%, moves up 2 positions - expect [C:0%, B:20%, E:50%, A:60%, D:70%]
+        // A sets rate to 6%, moves up 2 positions - expect [C:0.5%, B:20%, E:50%, A:60%, D:70%]
         changeInterestRateNoHints(A, ATroveId, 6e17);
         assertEq(sortedTroves.getNext(ATroveId), ETroveId);
         assertEq(sortedTroves.getPrev(ATroveId), DTroveId);

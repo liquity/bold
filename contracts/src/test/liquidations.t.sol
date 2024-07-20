@@ -3,28 +3,39 @@ pragma solidity ^0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract LiquidationsTest is DevTestSetup {
+    struct InitialValues {
+        uint256 spBoldBalance;
+        uint256 spCollBalance;
+        uint256 ACollBalance;
+        uint256 BDebt;
+        uint256 BColl;
+        uint256 AInterest;
+        uint256 BInterest;
+    }
+
     function testLiquidationOffsetWithSurplus() public {
         uint256 liquidationAmount = 2000e18;
         uint256 collAmount = 2e18;
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
+        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
 
         vm.startPrank(B);
-        borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount, 0, 0, 0, 0);
+        borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount + 100e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
         // B deposits to SP
-        makeSPDepositAndClaim(B, liquidationAmount);
+        makeSPDepositAndClaim(B, liquidationAmount + 100e18);
 
         // Price drops
         priceFeed.setPrice(1100e18 - 1);
         uint256 price = priceFeed.fetchPrice();
 
-        uint256 initialSPBoldBalance = stabilityPool.getTotalBoldDeposits();
-        uint256 initialSPCollBalance = stabilityPool.getCollBalance();
-        uint256 AInitialCollBalance = collToken.balanceOf(A);
+        InitialValues memory initialValues;
+        initialValues.spBoldBalance = stabilityPool.getTotalBoldDeposits();
+        initialValues.spCollBalance = stabilityPool.getCollBalance();
+        initialValues.ACollBalance = collToken.balanceOf(A);
 
         // Check not RM
         assertEq(troveManager.checkBelowCriticalThreshold(price), false, "System should not be below CT");
@@ -36,6 +47,7 @@ contract LiquidationsTest is DevTestSetup {
         uint256 trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 2);
 
+        initialValues.AInterest = troveManager.getTroveEntireDebt(ATroveId) - liquidationAmount;
         troveManager.liquidate(ATroveId);
 
         // Check Troves count reduced by 1
@@ -44,29 +56,37 @@ contract LiquidationsTest is DevTestSetup {
 
         // Check SP Bold has decreased
         uint256 finalSPBoldBalance = stabilityPool.getTotalBoldDeposits();
-        assertEq(initialSPBoldBalance - finalSPBoldBalance, liquidationAmount, "SP Bold balance mismatch");
+        assertEq(
+            initialValues.spBoldBalance - finalSPBoldBalance,
+            liquidationAmount + initialValues.AInterest,
+            "SP Bold balance mismatch"
+        );
         // Check SP Coll has  increased
         uint256 finalSPCollBalance = stabilityPool.getCollBalance();
         // liquidationAmount to Coll + 5%
         assertApproxEqAbs(
-            finalSPCollBalance - initialSPCollBalance,
-            liquidationAmount * DECIMAL_PRECISION / price * 105 / 100,
+            finalSPCollBalance - initialValues.spCollBalance,
+            (liquidationAmount + initialValues.AInterest) * DECIMAL_PRECISION / price * 105 / 100,
             10,
             "SP Coll balance mismatch"
         );
 
         // Check A retains ~4.5% of the collateral (after claiming from CollSurplus)
         // collAmount - 0.5% - (liquidationAmount to Coll + 5%)
-        uint256 collSurplusAmount = collAmount * 995 / 1000 - liquidationAmount * DECIMAL_PRECISION / price * 105 / 100;
-        assertEq(
+        uint256 collSurplusAmount = collAmount * 995 / 1000
+            - (liquidationAmount + initialValues.AInterest) * DECIMAL_PRECISION / price * 105 / 100;
+        assertApproxEqAbs(
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusAmount,
+            1,
             "CollSurplusPoll should have received collateral"
         );
         vm.startPrank(A);
         borrowerOperations.claimCollateral();
         vm.stopPrank();
-        assertEq(collToken.balanceOf(A) - AInitialCollBalance, collSurplusAmount, "A collateral balance mismatch");
+        assertApproxEqAbs(
+            collToken.balanceOf(A) - initialValues.ACollBalance, collSurplusAmount, 1, "A collateral balance mismatch"
+        );
     }
 
     function testLiquidationOffsetNoSurplus() public {
@@ -75,14 +95,14 @@ contract LiquidationsTest is DevTestSetup {
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
+        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
 
         vm.startPrank(B);
-        borrowerOperations.openTrove(B, 0, 3 * collAmount, liquidationAmount, 0, 0, 0, 0);
+        borrowerOperations.openTrove(B, 0, 3 * collAmount, liquidationAmount + 100e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
         // B deposits to SP
-        makeSPDepositAndClaim(B, liquidationAmount);
+        makeSPDepositAndClaim(B, liquidationAmount + 100e18);
 
         // Price drops
         priceFeed.setPrice(1030e18);
@@ -101,6 +121,7 @@ contract LiquidationsTest is DevTestSetup {
         uint256 trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 2);
 
+        uint256 AInterest = troveManager.getTroveEntireDebt(ATroveId) - liquidationAmount;
         troveManager.liquidate(ATroveId);
 
         // Check Troves count reduced by 1
@@ -109,7 +130,7 @@ contract LiquidationsTest is DevTestSetup {
 
         // Check SP Bold has decreased
         uint256 finalSPBoldBalance = stabilityPool.getTotalBoldDeposits();
-        assertEq(initialSPBoldBalance - finalSPBoldBalance, liquidationAmount, "SP Bold balance mismatch");
+        assertEq(initialSPBoldBalance - finalSPBoldBalance, liquidationAmount + AInterest, "SP Bold balance mismatch");
         // Check SP Coll has increased by coll minus coll gas comp
         uint256 finalSPCollBalance = stabilityPool.getCollBalance();
         // liquidationAmount to Coll + 5%
@@ -132,11 +153,11 @@ contract LiquidationsTest is DevTestSetup {
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
+        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
 
         vm.startPrank(B);
-        uint256 BTroveId = borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount, 0, 0, 0, 0);
+        uint256 BTroveId = borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
 
         // Price drops
         priceFeed.setPrice(1100e18 - 1);
@@ -158,6 +179,7 @@ contract LiquidationsTest is DevTestSetup {
         uint256 trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 2);
 
+        uint256 AInterest = troveManager.getTroveEntireDebt(ATroveId) - liquidationAmount;
         troveManager.liquidate(ATroveId);
 
         // Check Troves count reduced by 1
@@ -169,7 +191,12 @@ contract LiquidationsTest is DevTestSetup {
         assertEq(stabilityPool.getCollBalance(), 0, "SP should not have Coll rewards");
 
         // Check B has received debt
-        assertEq(troveManager.getTroveEntireDebt(BTroveId) - BInitialDebt, liquidationAmount, "B debt mismatch");
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(BTroveId) - BInitialDebt,
+            liquidationAmount + AInterest,
+            3,
+            "B debt mismatch"
+        );
         // Check B has received all coll minus coll gas comp
         assertApproxEqAbs(
             troveManager.getTroveEntireColl(BTroveId) - BInitialColl,
@@ -181,14 +208,6 @@ contract LiquidationsTest is DevTestSetup {
         assertEq(collToken.balanceOf(address(collSurplusPool)), 0, "CollSurplusPoll should be empty");
     }
 
-    struct InitialValues {
-        uint256 spBoldBalance;
-        uint256 spCollBalance;
-        uint256 ACollBalance;
-        uint256 BDebt;
-        uint256 BColl;
-    }
-
     // Offset and Redistribution
     function testLiquidationMix() public {
         uint256 liquidationAmount = 2000e18;
@@ -196,11 +215,11 @@ contract LiquidationsTest is DevTestSetup {
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, 0, 0);
+        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
 
         vm.startPrank(B);
-        uint256 BTroveId = borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount, 0, 0, 0, 0);
+        uint256 BTroveId = borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
         // B deposits to SP
         makeSPDepositAndClaim(B, liquidationAmount / 2);
@@ -226,6 +245,7 @@ contract LiquidationsTest is DevTestSetup {
         uint256 trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 2);
 
+        initialValues.AInterest = troveManager.getTroveEntireDebt(ATroveId) - liquidationAmount;
         troveManager.liquidate(ATroveId);
 
         // Check Troves count reduced by 1
@@ -246,14 +266,17 @@ contract LiquidationsTest is DevTestSetup {
         );
 
         // Check B has received debt
-        assertEq(
-            troveManager.getTroveEntireDebt(BTroveId) - initialValues.BDebt, liquidationAmount / 2, "B debt mismatch"
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(BTroveId) - initialValues.BDebt,
+            liquidationAmount / 2 + initialValues.AInterest,
+            3,
+            "B debt mismatch"
         );
         // Check B has received coll
         assertApproxEqAbs(
             troveManager.getTroveEntireColl(BTroveId) - initialValues.BColl,
             //collAmount * 995 / 1000 - liquidationAmount / 2 * DECIMAL_PRECISION / price * 105 / 100,
-            liquidationAmount / 2 * DECIMAL_PRECISION / price * 110 / 100,
+            (liquidationAmount / 2 + initialValues.AInterest) * DECIMAL_PRECISION / price * 110 / 100,
             10,
             "B trove coll mismatch"
         );
@@ -262,7 +285,7 @@ contract LiquidationsTest is DevTestSetup {
         // collAmount - 0.5% - (liquidationAmount to Coll + 5%)
         uint256 collSurplusAmount = collAmount * 995 / 1000
             - liquidationAmount / 2 * DECIMAL_PRECISION / price * 105 / 100
-            - liquidationAmount / 2 * DECIMAL_PRECISION / price * 110 / 100;
+            - (liquidationAmount / 2 + initialValues.AInterest) * DECIMAL_PRECISION / price * 110 / 100;
         assertApproxEqAbs(
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusAmount,

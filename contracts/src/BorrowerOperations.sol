@@ -749,6 +749,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
     }
 
     function _requireValidAnnualInterestRate(uint256 _annualInterestRate) internal pure {
+        require(_annualInterestRate >= MIN_ANNUAL_INTEREST_RATE, "Interest rate must not be lower than min");
         require(_annualInterestRate <= MAX_ANNUAL_INTEREST_RATE, "Interest rate must not be greater than max");
     }
 

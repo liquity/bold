@@ -10,7 +10,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(activePool.lastAggUpdateTime(), 0);
         assertEq(activePool.calcPendingAggInterest(), 0);
 
-        openTroveNoHints100pct(A, 2 ether, 2000e18, 0);
+        openTroveNoHints100pct(A, 2 ether, 2000e18, MIN_ANNUAL_INTEREST_RATE);
         assertEq(activePool.lastAggUpdateTime(), block.timestamp);
         assertEq(activePool.calcPendingAggInterest(), 0);
 
@@ -30,27 +30,6 @@ contract InterestRateAggregate is DevTestSetup {
         vm.warp(block.timestamp + 1000);
         assertEq(activePool.aggRecordedDebt(), 0);
         assertEq(activePool.aggWeightedDebtSum(), 0);
-        assertEq(activePool.calcPendingAggInterest(), 0);
-    }
-
-    // calcPendingAggInterest returns 0 when all troves have 0 interest rate
-    function testCalcPendingAggInterestReturns0WhenAllTrovesHave0InterestRate() public {
-        priceFeed.setPrice(2000e18);
-        openTroveNoHints100pct(A, 2 ether, 2000e18, 0);
-        openTroveNoHints100pct(B, 2 ether, 2000e18, 0);
-
-        assertEq(activePool.calcPendingAggInterest(), 0);
-
-        vm.warp(block.timestamp + 1000);
-
-        assertEq(activePool.calcPendingAggInterest(), 0);
-
-        openTroveNoHints100pct(C, 2 ether, 2000e18, 0);
-
-        assertEq(activePool.calcPendingAggInterest(), 0);
-
-        vm.warp(block.timestamp + 1000);
-
         assertEq(activePool.calcPendingAggInterest(), 0);
     }
 
@@ -110,18 +89,6 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 BTroveId = openTroveNoHints100pct(B, 2 ether, 2000e18, 75e16);
         assertEq(troveManager.calcTroveAccruedInterest(BTroveId), 0);
-    }
-
-    function testCalcTroveAccruedInterestReturns0For0InterestRate() public {
-        priceFeed.setPrice(2000e18);
-
-        uint256 ATroveId = openTroveNoHints100pct(A, 2 ether, 2000e18, 0);
-
-        assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
-
-        vm.warp(block.timestamp + 1 days);
-
-        assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
 
     // TODO: create additional corresponding fuzz test
