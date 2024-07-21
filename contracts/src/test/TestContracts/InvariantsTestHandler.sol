@@ -1520,8 +1520,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         // Fallback: in proportion to branch debt
         if (totalProportions == 0) {
             for (uint256 j = 0; j < branches.length; ++j) {
-                // XXX: we ignore TCR the second time around
-                if (isShutdown[j] /* || _TCR(j) < SCR[j] */ ) continue;
+                if (isShutdown[j] || _TCR(j) < SCR[j]) continue;
                 totalProportions += proportions[j] = _getTotalDebt(j);
             }
         }
