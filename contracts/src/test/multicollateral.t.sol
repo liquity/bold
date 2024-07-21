@@ -637,7 +637,11 @@ contract MulticollateralTest is DevTestSetup {
 
         // First branch is shutdown, the other 3 are fully backed
         assertEq(contractsArray[0].troveManager.shutdownTime(), 0, "First branch should not be shut down");
-        assertLt(contractsArray[0].troveManager.getTCR(testValues1.price), contractsArray[0].troveManager.SCR(), "First branch should be below SCR");
+        assertLt(
+            contractsArray[0].troveManager.getTCR(testValues1.price),
+            contractsArray[0].troveManager.SCR(),
+            "First branch should be below SCR"
+        );
         (uint256 unbackedPortion1,,) = contractsArray[1].troveManager.getUnbackedPortionPriceAndRedeemability();
         assertEq(unbackedPortion1, 0, "Second branch should be fully backed");
         (uint256 unbackedPortion2,,) = contractsArray[2].troveManager.getUnbackedPortionPriceAndRedeemability();

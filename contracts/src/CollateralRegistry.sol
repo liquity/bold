@@ -144,8 +144,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
             unbackedPortions = new uint256[](totals.numCollaterals);
             for (uint256 index = 0; index < totals.numCollaterals; index++) {
                 ITroveManager troveManager = getTroveManager(index);
-                (,, bool redeemable) =
-                    troveManager.getUnbackedPortionPriceAndRedeemability();
+                (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
                 if (redeemable) {
                     uint256 unbackedPortion = troveManager.getEntireSystemDebt();
                     totals.unbacked += unbackedPortion;
