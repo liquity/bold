@@ -1508,18 +1508,28 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 feePct,
         RedemptionTotals[] memory t
     ) internal returns (uint256 totalRedeemed) {
-        uint256 totalUnbacked = 0;
-        uint256[] memory unbacked = new uint256[](branches.length);
+        uint256 totalProportions = 0;
+        uint256[] memory proportions = new uint256[](branches.length);
 
+        // Try in proportion to unbacked
         for (uint256 j = 0; j < branches.length; ++j) {
             if (isShutdown[j] || _TCR(j) < SCR[j]) continue;
-            totalUnbacked += unbacked[j] = _getUnbacked(j);
+            totalProportions += proportions[j] = _getUnbacked(j);
         }
 
-        if (totalUnbacked == 0) return 0;
+        // Fallback: in proportion to branch debt
+        if (totalProportions == 0) {
+            for (uint256 j = 0; j < branches.length; ++j) {
+                // XXX: we ignore TCR the second time around
+                if (isShutdown[j] /* || _TCR(j) < SCR[j] */ ) continue;
+                totalProportions += proportions[j] = _getTotalDebt(j);
+            }
+        }
+
+        if (totalProportions == 0) return 0;
 
         for (uint256 j = 0; j < branches.length; ++j) {
-            t[j].attemptedAmount = amount * unbacked[j] / totalUnbacked;
+            t[j].attemptedAmount = amount * proportions[j] / totalProportions;
             if (t[j].attemptedAmount == 0) continue;
 
             LiquityContractsDev memory c = branches[j];
