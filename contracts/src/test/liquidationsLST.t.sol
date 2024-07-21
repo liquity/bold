@@ -60,11 +60,14 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
+        uint256 ATroveId =
+            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
 
         vm.startPrank(B);
-        uint256 BTroveId = borrowerOperations.openTrove(B, 0, 2 * collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
+        uint256 BTroveId = borrowerOperations.openTrove(
+            B, 0, 2 * collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18
+        );
 
         // Price drops
         priceFeed.setPrice(1200e18 - 1);
@@ -152,11 +155,14 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         priceFeed.setPrice(initialPrice);
         vm.startPrank(A);
-        uint256 ATroveId = borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
+        uint256 ATroveId =
+            borrowerOperations.openTrove(A, 0, collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
         vm.stopPrank();
 
         vm.startPrank(B);
-        uint256 BTroveId = borrowerOperations.openTrove(B, 0, 3 * collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18);
+        uint256 BTroveId = borrowerOperations.openTrove(
+            B, 0, 3 * collAmount, liquidationAmount, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18
+        );
         vm.stopPrank();
         // B deposits to SP
         if (_spAmount > 0) {
