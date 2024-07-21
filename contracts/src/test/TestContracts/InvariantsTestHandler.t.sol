@@ -1082,7 +1082,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         try c.troveManager.batchLiquidateTroves(_troveIdsFrom(l.batch)) {
             info("SP BOLD: ", c.stabilityPool.getTotalBoldDeposits().decimal());
-            info("P: ", c.stabilityPool.P().decimal());
+            info("P: ", (c.stabilityPool.P() / 1e18).decimal());
             _log();
 
             // Preconditions
@@ -2399,7 +2399,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 mintedYield = pendingInterest + upfrontFee;
         uint256 mintedSPBoldYield = mintedYield * SP_YIELD_SPLIT / DECIMAL_PRECISION;
 
-        if (spBoldDeposits[i] == 0) {
+        if (spBoldDeposits[i] < DECIMAL_PRECISION) {
             spUnclaimableBoldYield[i] += mintedSPBoldYield;
         } else {
             spBoldYield[i] += mintedSPBoldYield;

@@ -52,9 +52,9 @@ contract SPInvariantsTest is BaseInvariantTest {
             sumYieldGains += stabilityPool.getDepositorYieldGain(actors[i].account);
         }
 
-        assertApproxEqAbsDecimal(stabilityPoolColl, claimableColl, 0.00001 ether, 18, "SP Coll !~ claimable Coll");
-        assertApproxEqAbsDecimal(stabilityPoolBold, claimableBold, 0.001 ether, 18, "SP BOLD !~ claimable BOLD");
-        assertApproxEqAbsDecimal(yieldGainsOwed, sumYieldGains, 0.001 ether, 18, "SP yieldGainsOwed !~= sum(yieldGain)");
+        assertApproxEqAbsDecimal(stabilityPoolColl, claimableColl, 1e-16 ether, 18, "SP Coll !~ claimable Coll");
+        assertApproxEqAbsDecimal(stabilityPoolBold, claimableBold, 1e-16 ether, 18, "SP BOLD !~ claimable BOLD");
+        assertApproxEqAbsDecimal(yieldGainsOwed, sumYieldGains, 1e-16 ether, 18, "SP yieldGainsOwed !~= sum(yieldGain)");
     }
 
     function test_Issue_NoLossOfFundsAfterAnyTwoLiquidationsFollowingTinyP() external {
