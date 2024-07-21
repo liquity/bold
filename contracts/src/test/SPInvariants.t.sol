@@ -39,16 +39,21 @@ contract SPInvariantsTest is BaseInvariantTest {
     function invariant_allFundsClaimable() external view {
         uint256 stabilityPoolColl = stabilityPool.getCollBalance();
         uint256 stabilityPoolBold = stabilityPool.getTotalBoldDeposits();
+        uint256 yieldGainsOwed = stabilityPool.getYieldGainsOwed();
+
         uint256 claimableColl = 0;
         uint256 claimableBold = 0;
+        uint256 sumYieldGains = 0;
 
         for (uint256 i = 0; i < actors.length; ++i) {
             claimableColl += stabilityPool.getDepositorCollGain(actors[i].account);
             claimableBold += stabilityPool.getCompoundedBoldDeposit(actors[i].account);
+            sumYieldGains += stabilityPool.getDepositorYieldGain(actors[i].account);
         }
 
         assertApproxEqAbsDecimal(stabilityPoolColl, claimableColl, 0.00001 ether, 18, "SP Coll !~ claimable Coll");
         assertApproxEqAbsDecimal(stabilityPoolBold, claimableBold, 0.001 ether, 18, "SP BOLD !~ claimable BOLD");
+        assertApproxEqAbsDecimal(yieldGainsOwed, sumYieldGains, 50 ether, 18, "SP yieldGainsOwed !~= sum(yieldGain)");
     }
 
     function test_Issue_NoLossOfFundsAfterAnyTwoLiquidationsFollowingTinyP() external {
