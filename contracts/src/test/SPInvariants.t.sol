@@ -63,21 +63,21 @@ contract SPInvariantsTest is BaseInvariantTest {
         vm.prank(barb); // can't use startPrank because of the handler's internal pranking
         uint256 debt = handler.openTrove(2_000 ether);
         vm.prank(barb);
-        handler.provideToSp(debt + debt / 1 ether + 1, true);
+        handler.provideToSp(debt + debt / 1 ether + 1, false);
         vm.prank(barb);
         handler.liquidateMe();
 
         vm.prank(barb);
         debt = handler.openTrove(2_000 ether);
         vm.prank(barb);
-        handler.provideToSp(debt, true);
+        handler.provideToSp(debt, false);
         vm.prank(barb);
         handler.liquidateMe();
 
         this.invariant_allFundsClaimable();
 
         vm.prank(adam);
-        handler.provideToSp(80_000 ether, true);
+        handler.provideToSp(80_000 ether, false);
 
         this.invariant_allFundsClaimable();
 
