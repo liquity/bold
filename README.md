@@ -619,6 +619,25 @@ The same product `P` is used, and a sum `B` is used to track BOLD yield gains. E
 
 ### TODO -  mention P Issue fix
 
+## Liquidation and the Stability Pool
+
+When a Trove’s collateral ratio falls below the minimum collateral ratio (MCR) for its branch, it becomes immediately liquidatable.  Anyone may call `batchLiquidateTroves` with a custom list of Trove IDs to attempt to liquidate.
+
+In a liquidation, most of the Trove’s collateral is seized and the Trove is closed.
+
+
+Liquity utilizes a two-step liquidation mechanism in the following order of priority:
+
+1. Offset under-collateralized Troves’ debt against the branch’s SP containing BOLD tokens, and award the seized collateral to the SP depositors
+2. When the SP is empty, Redistribute under-collateralized Troves debt and seized collateral to other Troves in the same branch
+
+Liquity primarily uses the BOLD tokens in its Stability Pool to absorb the under-collateralized debt, i.e. to repay the liquidated borrower's liability.
+
+Any user may deposit BOLD tokens to any Stability Pool. This allows them to earn the collateral from Troves liquidated on the branch. When a liquidation occurs, the liquidated debt is cancelled with the same amount of BOLD in the Pool (which is burned as a result), and the seized collateral is proportionally distributed to depositors.
+
+Stability Pool depositors can expect to earn net gains from liquidations, as in most cases, the value of the seized collateral will be greater than the value of the cancelled debt (since a liquidated Trove will likely have an ICR just slightly below the MCR). MCRs are constants and may differ between branches, but all take a value above 100%.
+
+If the liquidated debt is higher than the amount of BOLD in the Stability Pool, the system applies both steps 1) and then 2): that is, it cancels as much debt as possible with the BOLD in the Stability Pool, and then redistributes the remaining liquidated collateral and debt across all active Troves in the branch.
 
 
 ## Liquidation logic
@@ -637,7 +656,7 @@ Separate liquidation penalty percentages are used for offsets and redistribution
 
 Exact values of these constants are TBD  for each branch, however the following inequalities will hold for every branch:
 
-`LIQUIDATION_PENALTY_SP` <= LIQUIDATION_PENALTY_REDISTRIBUTION <= 10% <= MCR`  
+`LIQUIDATION_PENALTY_SP <= LIQUIDATION_PENALTY_REDISTRIBUTION <= 10% <= MCR`  
 
 After liquidation, a liquidated borrower may have a collateral surplus to claim back (this is unlike Liquity v1 where the entire Trove collateral was always seized in Normal Mode).
 
