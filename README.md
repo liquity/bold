@@ -755,43 +755,6 @@ A Trove owner may set an individual delegate at any point after opening.The indi
 A Trove can not be in a managed batch if it has an individual interest delegate. 
 
 The Trove owner may also revoke individual delegate’s permission to change the given Trove’s interest rate at any point.
-##  Delegation 
-
-
-The system incorporates 3 types of delegation by which borrowers can outsource management of their Trove to third parties: 
-
-- Add / Remove managers who can adjust an individual Trove’s collateral and debt
-- Individual interest delegates who can adjust an individual Trove’s interest rate
-- Batch interest delegates who can adjust the interest rate for a batch of several Troves
-
-### Add and Remove managers
-
-Add managers and Remove managers may be set by the Trove owner when the Trove is opened, or at any time later.
-
-#### Add Managers
-
-- An Add Manager may add collateral or repay debt to a Trove
-- When set to `address(0)`, any address is allowed to perform these operations on the Trove
-- Otherwise, only the designated `AddManager` in this mapping Trove is allowed to add collateral / repay debt
-- A Trove owner may set the AddManager equal to their own address in order to disallow anyone from adding collateral / repaying debt.
-
-#### Remove Managers
-
-Remove Managers may withdraw collateral or draw new BOLD debt.
-
-- Only the designated Remove manager, if any, and the Trove owner, are allowed 
-- A receiver address may be chosen which can be different from the Remove Manager and Trove owner. The receiver receives the collateral and BOLD drawn by the Remove Manager.
-- By default, a Trove has no Remove Manager - it must be explicitly set by the Trove owner upon opening or at a later point.
- - The receiver address can never be zero.
-
-### Individual interest delegates
-
-A Trove owner may set an individual delegate at any point after opening.The individual delegate has permission to update the Trove’s interest rate in a range set by the owner, i.e. `[ _minInterestRate,  _minInterestRate]`.  
-
-A Trove can not be in a managed batch if it has an individual interest delegate. 
-
-The Trove owner may also revoke individual delegate’s permission to change the given Trove’s interest rate at any point.
-
 
 ### Batch interest managers
 
@@ -819,13 +782,11 @@ The system tracks a batch’s `recordedDebt` and `annualInterestRate`. Accrued i
 
 Similarly, redistributions are paid proportionally to the total collateral of the batch.
 
-
 ### Batch management fee
 
 The management fee is an annual percentage, and is calculated in the same way as annual interest. 
 
 ### Batch `recordedDebt` updates
-
 
 A batch’s `recordedDebt` is updated when:
 - a Trove in a batch has it’s debt updated by the borrower
@@ -888,7 +849,17 @@ The following operations are still allowed after shut down:
 - Depositing to and withdrawing from the SP
 - Urgent redemptions (see below)
 
- ### TODO - Urgent redemptions 
+ ### Urgent redemptions 
+
+During shutdown the redemption logic is modified to incentivize swift reduction of the branch’s debt, and even do so when BOLD is trading at peg ($1 USD). Redemptions in shutdown are known as “urgent” redemptions.
+
+Urgent redemptions:
+
+- Are performed directly via the shut down branch’s `TroveManager`, and they only affect that branch. They are not routed across branches.
+- Charge no redemption fee
+- Pay a slight collateral bonus of 1% to the redeemer. That is, in exchange for every 1 BOLD redeemed, the redeemer receives $1.01 worth of the LST collateral.
+- Do not redeem Troves in order of interest rate. Instead, the redeemer passes a list of Troves to redeem from.
+- Do not create unredeemable Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future urgent redemptions with tiny Troves.
 
 ## TODO - Oracles
 ### Oracle architecture and rationale
