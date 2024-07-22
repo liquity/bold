@@ -134,27 +134,15 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     }
 
     struct LiquidationValues {
-        LatestTroveData trove;
         uint256 collGasCompensation;
         uint256 debtToOffset;
         uint256 collToSendToSP;
         uint256 debtToRedistribute;
         uint256 collToRedistribute;
         uint256 collSurplus;
-        uint256 oldWeightedRecordedDebt;
+        uint256 ETHGasCompensation;
+        uint256 oldWeightedRecordedDebt; // TODO: remove
         uint256 newWeightedRecordedDebt;
-        LatestBatchData batch;
-    }
-
-    struct LiquidationTotals {
-        TroveChange troveChange;
-        uint256 totalCollGasCompensation;
-        uint256 totalETHGasCompensation;
-        uint256 totalDebtToOffset;
-        uint256 totalCollToSendToSP;
-        uint256 totalDebtToRedistribute;
-        uint256 totalCollToRedistribute;
-        uint256 totalCollSurplus;
     }
 
     struct ContractsCache {
@@ -294,21 +282,23 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 _troveId,
         uint256 _boldInStabPool,
         uint256 _price,
+        LatestTroveData memory trove,
         LiquidationValues memory singleLiquidation
     ) internal {
         address owner = troveNFT.ownerOf(_troveId);
 
-        _getLatestTroveData(_troveId, singleLiquidation.trove);
+        _getLatestTroveData(_troveId, trove);
         address batchAddress = _getBatchManager(_troveId);
         bool isTroveInBatch = batchAddress != address(0);
-        if (isTroveInBatch) _getLatestBatchData(batchAddress, singleLiquidation.batch);
+        LatestBatchData memory batch;
+        if (isTroveInBatch) _getLatestBatchData(batchAddress, batch);
 
         _movePendingTroveRewardsToActivePool(
-            _defaultPool, singleLiquidation.trove.redistBoldDebtGain, singleLiquidation.trove.redistCollGain
+            _defaultPool, trove.redistBoldDebtGain, trove.redistCollGain
         );
 
-        singleLiquidation.collGasCompensation = _getCollGasCompensation(singleLiquidation.trove.entireColl);
-        uint256 collToLiquidate = singleLiquidation.trove.entireColl - singleLiquidation.collGasCompensation;
+        singleLiquidation.collGasCompensation = _getCollGasCompensation(trove.entireColl);
+        uint256 collToLiquidate = trove.entireColl - singleLiquidation.collGasCompensation;
 
         (
             singleLiquidation.debtToOffset,
@@ -317,41 +307,39 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             singleLiquidation.collToRedistribute,
             singleLiquidation.collSurplus
         ) = _getOffsetAndRedistributionVals(
-            singleLiquidation.trove.entireDebt, collToLiquidate, _boldInStabPool, _price
+            trove.entireDebt, collToLiquidate, _boldInStabPool, _price
         );
 
         TroveChange memory troveChange;
-        troveChange.collDecrease = singleLiquidation.trove.entireColl;
-        troveChange.debtDecrease = singleLiquidation.trove.entireDebt;
-        troveChange.appliedRedistCollGain = singleLiquidation.trove.redistCollGain;
-        troveChange.appliedRedistBoldDebtGain = singleLiquidation.trove.redistBoldDebtGain;
+        troveChange.collDecrease = trove.entireColl;
+        troveChange.debtDecrease = trove.entireDebt;
+        troveChange.appliedRedistCollGain = trove.redistCollGain;
+        troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
         _closeTrove(
             _troveId,
             troveChange,
             batchAddress,
-            singleLiquidation.batch.entireCollWithoutRedistribution,
-            singleLiquidation.batch.entireDebtWithoutRedistribution,
+            batch.entireCollWithoutRedistribution,
+            batch.entireDebtWithoutRedistribution,
             Status.closedByLiquidation
         );
 
         if (isTroveInBatch) {
-            singleLiquidation.oldWeightedRecordedDebt = singleLiquidation.batch.weightedRecordedDebt
-                + (singleLiquidation.trove.entireDebt - singleLiquidation.trove.redistBoldDebtGain)
-                    * singleLiquidation.batch.annualInterestRate;
+            singleLiquidation.oldWeightedRecordedDebt = batch.weightedRecordedDebt
+                + (trove.entireDebt - trove.redistBoldDebtGain)
+                    * batch.annualInterestRate;
             singleLiquidation.newWeightedRecordedDebt =
-                singleLiquidation.batch.entireDebtWithoutRedistribution * singleLiquidation.batch.annualInterestRate;
+                batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
             // Mint batch management fee
-            troveChange.batchAccruedManagementFee = singleLiquidation.batch.accruedManagementFee;
-            troveChange.oldWeightedRecordedBatchManagementFee = singleLiquidation
-                .batch
-                .weightedRecordedBatchManagementFee
-                + (singleLiquidation.trove.entireDebt - singleLiquidation.trove.redistBoldDebtGain)
-                    * singleLiquidation.batch.annualManagementFee;
+            troveChange.batchAccruedManagementFee = batch.accruedManagementFee;
+            troveChange.oldWeightedRecordedBatchManagementFee = batch .weightedRecordedBatchManagementFee
+                + (trove.entireDebt - trove.redistBoldDebtGain)
+                    * batch.annualManagementFee;
             troveChange.newWeightedRecordedBatchManagementFee =
-                singleLiquidation.batch.entireDebtWithoutRedistribution * singleLiquidation.batch.annualManagementFee;
+                batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
             activePool.mintBatchManagementFeeAndAccountForChange(troveChange, batchAddress);
         } else {
-            singleLiquidation.oldWeightedRecordedDebt = singleLiquidation.trove.weightedRecordedDebt;
+            singleLiquidation.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
         }
 
         // Differencen between liquidation penalty and liquidation threshold
@@ -373,11 +361,11 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _troveId,
             Operation.liquidate,
             0, // _annualInterestRate
-            singleLiquidation.trove.redistBoldDebtGain,
+            trove.redistBoldDebtGain,
             0, // _debtIncreaseFromUpfrontFee
-            -int256(singleLiquidation.trove.entireDebt),
-            singleLiquidation.trove.redistCollGain,
-            -int256(singleLiquidation.trove.entireColl)
+            -int256(trove.entireDebt),
+            trove.redistCollGain,
+            -int256(trove.entireColl)
         );
     }
 
@@ -467,43 +455,44 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         IDefaultPool defaultPoolCached = defaultPool;
         IStabilityPool stabilityPoolCached = stabilityPool;
 
-        LiquidationTotals memory totals;
+        TroveChange memory troveChange;
+        LiquidationValues memory totals;
 
         uint256 price = priceFeed.fetchPrice();
         uint256 boldInStabPool = stabilityPoolCached.getTotalBoldDeposits();
 
         // Perform the appropriate liquidation sequence - tally values and obtain their totals.
-        _batchLiquidateTroves(defaultPoolCached, price, boldInStabPool, _troveArray, totals);
+        _batchLiquidateTroves(defaultPoolCached, price, boldInStabPool, _troveArray, totals, troveChange);
 
-        if (totals.troveChange.debtDecrease == 0) {
+        if (troveChange.debtDecrease == 0) {
             revert NothingToLiquidate();
         }
 
-        activePool.mintAggInterestAndAccountForTroveChange(totals.troveChange, address(0));
+        activePool.mintAggInterestAndAccountForTroveChange(troveChange, address(0));
 
         // Move liquidated Coll and Bold to the appropriate pools
-        if (totals.totalDebtToOffset > 0 || totals.totalCollToSendToSP > 0) {
-            stabilityPoolCached.offset(totals.totalDebtToOffset, totals.totalCollToSendToSP);
+        if (totals.debtToOffset > 0 || totals.collToSendToSP > 0) {
+            stabilityPoolCached.offset(totals.debtToOffset, totals.collToSendToSP);
         }
         // we check amount is not zero inside
         _redistributeDebtAndColl(
-            activePoolCached, defaultPoolCached, totals.totalDebtToRedistribute, totals.totalCollToRedistribute
+            activePoolCached, defaultPoolCached, totals.debtToRedistribute, totals.collToRedistribute
         );
-        if (totals.totalCollSurplus > 0) {
-            activePoolCached.sendColl(address(collSurplusPool), totals.totalCollSurplus);
+        if (totals.collSurplus > 0) {
+            activePoolCached.sendColl(address(collSurplusPool), totals.collSurplus);
         }
 
         // Update system snapshots
-        _updateSystemSnapshots_excludeCollRemainder(activePoolCached, totals.totalCollGasCompensation);
+        _updateSystemSnapshots_excludeCollRemainder(activePoolCached, totals.collGasCompensation);
 
         emit Liquidation(
-            totals.totalDebtToOffset,
-            totals.totalDebtToRedistribute,
-            totals.totalETHGasCompensation,
-            totals.totalCollGasCompensation,
-            totals.totalCollToSendToSP,
-            totals.totalCollToRedistribute,
-            totals.totalCollSurplus,
+            totals.debtToOffset,
+            totals.debtToRedistribute,
+            totals.ETHGasCompensation,
+            totals.collGasCompensation,
+            totals.collToSendToSP,
+            totals.collToRedistribute,
+            totals.collSurplus,
             L_coll,
             L_boldDebt,
             price
@@ -511,7 +500,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         // Send gas compensation to caller
         _sendGasCompensation(
-            activePoolCached, msg.sender, totals.totalETHGasCompensation, totals.totalCollGasCompensation
+            activePoolCached, msg.sender, totals.ETHGasCompensation, totals.collGasCompensation
         );
     }
 
@@ -524,7 +513,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 _price,
         uint256 _boldInStabPool,
         uint256[] memory _troveArray,
-        LiquidationTotals memory totals
+        LiquidationValues memory totals,
+        TroveChange memory troveChange
     ) internal {
         LocalVariables_LiquidationSequence memory vars;
 
@@ -540,12 +530,13 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
             if (vars.ICR < MCR) {
                 LiquidationValues memory singleLiquidation;
+                LatestTroveData memory trove;
 
-                _liquidate(_defaultPool, vars.troveId, vars.remainingBoldInStabPool, _price, singleLiquidation);
+                _liquidate(_defaultPool, vars.troveId, vars.remainingBoldInStabPool, _price, trove, singleLiquidation);
                 vars.remainingBoldInStabPool -= singleLiquidation.debtToOffset;
 
                 // Add liquidation values to their respective running totals
-                _addLiquidationValuesToTotals(totals, singleLiquidation);
+                _addLiquidationValuesToTotals(trove, singleLiquidation, singleLiquidation.oldWeightedRecordedDebt, singleLiquidation.newWeightedRecordedDebt, totals, troveChange);
             }
         }
     }
@@ -553,23 +544,29 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // --- Liquidation helper functions ---
 
     // Adds all values from `singleLiquidation` to their respective totals in `totals` in-place
-    function _addLiquidationValuesToTotals(LiquidationTotals memory totals, LiquidationValues memory singleLiquidation)
+    function _addLiquidationValuesToTotals(
+        LatestTroveData memory _trove,
+        LiquidationValues memory _singleLiquidation,
+        uint256 _oldWeightedRecordedDebt,
+        uint256 _newWeightedRecordedDebt,
+        LiquidationValues memory totals,
+        TroveChange memory troveChange)
         internal
         pure
     {
         // Tally all the values with their respective running totals
-        totals.totalCollGasCompensation += singleLiquidation.collGasCompensation;
-        totals.totalETHGasCompensation += ETH_GAS_COMPENSATION;
-        totals.troveChange.debtDecrease += singleLiquidation.trove.entireDebt;
-        totals.troveChange.collDecrease += singleLiquidation.trove.entireColl;
-        totals.troveChange.appliedRedistBoldDebtGain += singleLiquidation.trove.redistBoldDebtGain;
-        totals.troveChange.oldWeightedRecordedDebt += singleLiquidation.oldWeightedRecordedDebt;
-        totals.troveChange.newWeightedRecordedDebt += singleLiquidation.newWeightedRecordedDebt;
-        totals.totalDebtToOffset += singleLiquidation.debtToOffset;
-        totals.totalCollToSendToSP += singleLiquidation.collToSendToSP;
-        totals.totalDebtToRedistribute += singleLiquidation.debtToRedistribute;
-        totals.totalCollToRedistribute += singleLiquidation.collToRedistribute;
-        totals.totalCollSurplus += singleLiquidation.collSurplus;
+        totals.collGasCompensation += _singleLiquidation.collGasCompensation;
+        totals.ETHGasCompensation += ETH_GAS_COMPENSATION;
+        troveChange.debtDecrease += _trove.entireDebt;
+        troveChange.collDecrease += _trove.entireColl;
+        troveChange.appliedRedistBoldDebtGain += _trove.redistBoldDebtGain;
+        troveChange.oldWeightedRecordedDebt += _oldWeightedRecordedDebt;
+        troveChange.newWeightedRecordedDebt += _newWeightedRecordedDebt;
+        totals.debtToOffset += _singleLiquidation.debtToOffset;
+        totals.collToSendToSP += _singleLiquidation.collToSendToSP;
+        totals.debtToRedistribute += _singleLiquidation.debtToRedistribute;
+        totals.collToRedistribute += _singleLiquidation.collToRedistribute;
+        totals.collSurplus += _singleLiquidation.collSurplus;
     }
 
     function _sendGasCompensation(IActivePool _activePool, address _liquidator, uint256 _eth, uint256 _coll) internal {
