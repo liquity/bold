@@ -755,23 +755,147 @@ A Trove owner may set an individual delegate at any point after opening.The indi
 A Trove can not be in a managed batch if it has an individual interest delegate. 
 
 The Trove owner may also revoke individual delegate’s permission to change the given Trove’s interest rate at any point.
+##  Delegation 
 
 
-## TODO - Batch delegation
+The system incorporates 3 types of delegation by which borrowers can outsource management of their Trove to third parties: 
+
+- Add / Remove managers who can adjust an individual Trove’s collateral and debt
+- Individual interest delegates who can adjust an individual Trove’s interest rate
+- Batch interest delegates who can adjust the interest rate for a batch of several Troves
+
+### Add and Remove managers
+
+Add managers and Remove managers may be set by the Trove owner when the Trove is opened, or at any time later.
+
+#### Add Managers
+
+- An Add Manager may add collateral or repay debt to a Trove
+- When set to `address(0)`, any address is allowed to perform these operations on the Trove
+- Otherwise, only the designated `AddManager` in this mapping Trove is allowed to add collateral / repay debt
+- A Trove owner may set the AddManager equal to their own address in order to disallow anyone from adding collateral / repaying debt.
+
+#### Remove Managers
+
+Remove Managers may withdraw collateral or draw new BOLD debt.
+
+- Only the designated Remove manager, if any, and the Trove owner, are allowed 
+- A receiver address may be chosen which can be different from the Remove Manager and Trove owner. The receiver receives the collateral and BOLD drawn by the Remove Manager.
+- By default, a Trove has no Remove Manager - it must be explicitly set by the Trove owner upon opening or at a later point.
+ - The receiver address can never be zero.
+
+### Individual interest delegates
+
+A Trove owner may set an individual delegate at any point after opening.The individual delegate has permission to update the Trove’s interest rate in a range set by the owner, i.e. `[ _minInterestRate,  _minInterestRate]`.  
+
+A Trove can not be in a managed batch if it has an individual interest delegate. 
+
+The Trove owner may also revoke individual delegate’s permission to change the given Trove’s interest rate at any point.
+
+
+### Batch interest managers
+
+A Trove owner may set a batch manager at any point after opening. They must choose a registered batch manager.
+
+A batch manager controls the interest rate of Troves under their management, in a predefined range chosen when they register. This range may not be changed after registering, enabling borrowers to know in advance the min and max interest rates the manager could set.
+
+All Troves in a given batch have the same interest rate, and all batch interest rate adjustments update the interest rate for all Troves in the batch.
+
+Batch-management is gas-efficient and O(1) complexity - that is, altering the interest rate for a batch is constant gas cost regardless of the number of Troves. 
+
+### Batch management implementation
+
+In the `SortedTroves` list, batches of Troves are modeled as slices of the linked list. They utilise the new `Batch` data structure and `slice` functionality. A `Batch` contains head and tail properties, i.e. the ends of the list slice.
+
+When a batch manager updates their batch’s interest rate, the entire `Batch` is reinserted to its new position based on the interest rate ordering of the SortedTroves list. 
+
+ ### Internal representation as shared Trove
+
+A batch accrues three kinds of time-based debt increases: normal interest, management fees and possibly redistribution gains over time. 
+
+To handle all these in a gas-efficient way, the batch is internally modelled as a single “shared” Trove. 
+
+The system tracks a batch’s `recordedDebt` and `annualInterestRate`. Accrued interest is calculated in the same way as for individual Troves, and the batch’s weighted debt is incorporated in the aggregate sum as usual.
+
+Similarly, redistributions are paid proportionally to the total collateral of the batch.
+
+
+### Batch management fee
+
+The management fee is an annual percentage, and is calculated in the same way as annual interest. 
+
+### Batch `recordedDebt` updates
+
+
+A batch’s `recordedDebt` is updated when:
+- a Trove in a batch has it’s debt updated by the borrower
+- The batch manager changes the batch’s interest rate
+
+The accrued interest and accrued management fees are calculated and added to the debt
+
+### Batch premature adjustment fees
+
+Batch managers incur premature fees in the same manner as individual Troves - i.e. if they adjust before the cooldown period has past since their last adjustment [LINK - premature adjustment fee].
+
+When a borrower adds their Trove to a batch, there is a trust assumption: they expect the batch manager to manage interest rates well and not incur excessive adjustment fees.  
+
+It is expected that competent batch managers will build good reputations and attract borrowers.
+Malicious or poor managers will likely end up with empty batches in the long-term.
+
+
+## Collateral branch shutdown
+
+Under extreme conditions such as collateral price collapse or oracle failure, a collateral branch may be shut down in order to preserve wider system health and the stability of the BOLD token.
+
+A collateral branch is shut down when:
+
+1. Its TCR falls below the Shutdown Collateral Ratio (SCR)
+2. One of the branch’s external price oracles fails during a `fetchPrice` call. That is: either the call to the oracle reverts, or returns 0, or returns a price that is too stale.
+
+When `TCR < SCR` (1), anyone may trigger branch shutdown by calling `BorrowerOperations.shutdown`.
+
+Oracle failure (2) may occur during any operation which requires collateral pricing and calls `fetchPrice`, i.e. borrower operations, redemptions or liquidations, as well as a pure fetchPrice call (since this function is permissionless). Any of these operations may trigger branch shutdown when an oracle has failed.
+
+### Interest rates and shutdown
+
+Upon shutdown:
+- All pending aggregate interest gets applied and minted
+
+And thereafter:
+- No further aggregate interest is minted or accrued
+- Individual Troves accrue no further interest. Trove accrued interest is calculated only up to the shutdown timestamp
+
+Once a branch has been shut down it can not be revived.
+
+###  Shutdown logic
+
+The following operations are disallowed at shutdown:
+
+- Opening a new Trove
+- Adjusting a Trove’s debt or collateral
+- Adjusting a Trove’s interest rate
+- Applying a Trove’s interest
+- Adjusting a batch’s interest rate
+- Applying a batch’s interest and management fee
+- Normal redemptions
+
+The following operations are still allowed after shut down:
+
+- Closing a Trove
+- Liquidating Troves
+- Depositing to and withdrawing from the SP
+- Urgent redemptions (see below)
+
+ ### TODO - Urgent redemptions 
 
 ## TODO - Oracles
 ### Oracle architecture and rationale
 ### Oracle logic
 ### Mitigations
 
-## TODO - Collateral branch shutdown
-### Urgent redemptions
-
 ## TODO - Known issues and mitigations
 ### Oracle frontrunning
 ### LST and oracle risks 
-
-
 
 ## Requirements
 
