@@ -660,7 +660,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
 
             vars.newDebt += _troveChange.upfrontFee;
             if (isTroveInBatch) {
-                batch.entireDebtWithoutRedistribution += _troveChange.upfrontFee;
                 batchFutureDebt += _troveChange.upfrontFee;
                 // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee
                 _troveChange.newWeightedRecordedDebt = batchFutureDebt * batch.annualInterestRate;
@@ -768,42 +767,48 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         ITroveManager troveManagerCached = troveManager;
 
         _requireTroveIsOpen(troveManagerCached, _troveId);
-        _requireIsNotInBatch(_troveId);
 
         LatestTroveData memory trove = troveManagerCached.getLatestTroveData(_troveId);
-        TroveChange memory troveChange;
-        troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
-        troveChange.appliedRedistCollGain = trove.redistCollGain;
-        troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
-        troveChange.newWeightedRecordedDebt = trove.entireDebt * trove.annualInterestRate;
+        TroveChange memory change;
+        change.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
+        change.appliedRedistCollGain = trove.redistCollGain;
+
+        address batchManager = interestBatchManagerOf[_troveId];
+        LatestBatchData memory batch;
+
+        if (batchManager == address(0)) {
+            change.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
+            change.newWeightedRecordedDebt = trove.entireDebt * trove.annualInterestRate;
+
+        } else {
+            batch = troveManagerCached.getLatestBatchData(batchManager);
+            change.batchAccruedManagementFee = batch.accruedManagementFee;
+            change.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
+            change.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
+            change.oldWeightedRecordedBatchManagementFee = batch.weightedRecordedBatchManagementFee;
+            change.newWeightedRecordedBatchManagementFee =
+                batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
+        }
+
+        troveManagerCached.onApplyTroveInterest(
+            _troveId,
+            trove.entireColl,
+            trove.entireDebt,
+            batchManager,
+            batch.entireCollWithoutRedistribution,
+            batch.entireDebtWithoutRedistribution,
+            change
+        );
+        trove = troveManagerCached.getLatestTroveData(_troveId);
+        activePool.mintAggInterestAndAccountForTroveChange(change, batchManager);
+        trove = troveManagerCached.getLatestTroveData(_troveId);
 
         // If the trove was unredeemable, and now it’s not anymore, put it back in the list
         if (troveManagerCached.checkTroveIsUnredeemable(_troveId) && trove.entireDebt >= MIN_DEBT) {
             troveManagerCached.setTroveStatusToActive(_troveId);
             sortedTroves.insert(_troveId, trove.annualInterestRate, _upperHint, _lowerHint);
         }
-
-        troveManagerCached.onApplyTroveInterest(_troveId, trove.entireColl, trove.entireDebt, troveChange);
-        activePool.mintAggInterestAndAccountForTroveChange(troveChange, address(0));
-    }
-
-    function applyBatchInterestAndFeePermissionless(address _batchManager) external {
-        ITroveManager troveManagerCached = troveManager;
-        LatestBatchData memory batch = troveManagerCached.getLatestBatchData(_batchManager);
-
-        TroveChange memory batchChange;
-        batchChange.batchAccruedManagementFee = batch.accruedManagementFee;
-        batchChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
-        batchChange.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
-        batchChange.oldWeightedRecordedBatchManagementFee = batch.weightedRecordedBatchManagementFee;
-        batchChange.newWeightedRecordedBatchManagementFee =
-            batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
-
-        troveManagerCached.onApplyBatchInterestAndFee(
-            _batchManager, batch.entireCollWithoutRedistribution, batch.entireDebtWithoutRedistribution
-        );
-
-        activePool.mintAggInterestAndAccountForTroveChange(batchChange, _batchManager);
+        trove = troveManagerCached.getLatestTroveData(_troveId);
     }
 
     function getInterestIndividualDelegateOf(uint256 _troveId)
