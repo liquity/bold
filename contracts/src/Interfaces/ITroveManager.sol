@@ -125,8 +125,11 @@ interface ITroveManager is ILiquityBase {
 
     function onApplyTroveInterest(
         uint256 _troveId,
-        uint256 _newColl,
-        uint256 _newDebt,
+        uint256 _newTroveColl,
+        uint256 _newTroveDebt,
+        address _batchAddress,
+        uint256 _newBatchColl,
+        uint256 _newBatchDebt,
         TroveChange calldata _troveChange
     ) external;
 
@@ -177,7 +180,6 @@ interface ITroveManager is ILiquityBase {
         uint256 _newBatchDebt, // entire, with interest and batch fee
         uint256 _newAnnualInterestRate
     ) external;
-    function onApplyBatchInterestAndFee(address _batchAddress, uint256 _newColl, uint256 _newDebt) external;
 
     // -- end of permissioned functions --
 }

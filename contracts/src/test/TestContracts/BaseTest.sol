@@ -357,12 +357,6 @@ contract BaseTest is TestAccounts {
         vm.stopPrank();
     }
 
-    function applyBatchInterestAndFeePermissionless(address _from, address _batchAddress) public {
-        vm.startPrank(_from);
-        borrowerOperations.applyBatchInterestAndFeePermissionless(_batchAddress);
-        vm.stopPrank();
-    }
-
     function transferBold(address _from, address _to, uint256 _amount) public {
         vm.startPrank(_from);
         boldToken.transfer(_to, _amount);

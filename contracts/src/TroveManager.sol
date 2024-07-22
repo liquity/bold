@@ -1589,11 +1589,11 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     function onAdjustTroveInsideBatch(
         uint256 _troveId,
-        uint256 _newTroveColl, // entire, with reditribution and trove change
+        uint256 _newTroveColl, // entire, with redistribution and trove change
         TroveChange memory _troveChange,
         address _batchAddress,
         uint256 _newBatchColl, // without trove change
-        uint256 _newBatchDebt // entire (with interest, batch fee and redistribution), but without trove change
+        uint256 _newBatchDebt // entire (with interest, batch fee), but without trove change nor upfront fee nor redistribution
     ) external {
         _requireCallerIsBorrowerOperations();
 
@@ -1636,15 +1636,36 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     function onApplyTroveInterest(
         uint256 _troveId,
-        uint256 _newColl,
-        uint256 _newDebt,
+        uint256 _newTroveColl,
+        uint256 _newTroveDebt,
+        address _batchAddress,
+        uint256 _newBatchColl,
+        uint256 _newBatchDebt,
         TroveChange calldata _troveChange
     ) external {
         _requireCallerIsBorrowerOperations();
 
-        Troves[_troveId].coll = _newColl;
-        Troves[_troveId].debt = _newDebt;
+        Troves[_troveId].coll = _newTroveColl;
+        Troves[_troveId].debt = _newTroveDebt;
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
+
+        if (_batchAddress != address(0)) {
+            batches[_batchAddress].coll = _newBatchColl + _troveChange.appliedRedistCollGain;
+            batches[_batchAddress].debt = _newBatchDebt + _troveChange.appliedRedistBoldDebtGain;
+            batches[_batchAddress].lastDebtUpdateTime = uint64(block.timestamp);
+
+            _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt);
+
+            emit BatchUpdated(
+                _batchAddress,
+                BatchOperation.applyBatchInterestAndFee,
+                _newBatchDebt,
+                _newBatchColl,
+                batches[_batchAddress].annualInterestRate,
+                batches[_batchAddress].annualManagementFee,
+                batches[_batchAddress].totalDebtShares
+            );
+        }
 
         _movePendingTroveRewardsToActivePool(
             defaultPool, _troveChange.appliedRedistBoldDebtGain, _troveChange.appliedRedistCollGain
@@ -1654,8 +1675,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         emit TroveUpdated(
             _troveId,
-            _newDebt,
-            _newColl,
+            _newTroveDebt,
+            _newTroveColl,
             Troves[_troveId].stake,
             Troves[_troveId].annualInterestRate,
             L_coll,
@@ -1671,24 +1692,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             int256(_troveChange.debtIncrease) - int256(_troveChange.debtDecrease),
             _troveChange.appliedRedistCollGain,
             int256(_troveChange.collIncrease) - int256(_troveChange.collDecrease)
-        );
-    }
-
-    function onApplyBatchInterestAndFee(address _batchAddress, uint256 _newColl, uint256 _newDebt) external {
-        _requireCallerIsBorrowerOperations();
-
-        batches[_batchAddress].coll = _newColl;
-        batches[_batchAddress].debt = _newDebt;
-        batches[_batchAddress].lastDebtUpdateTime = uint64(block.timestamp);
-
-        emit BatchUpdated(
-            _batchAddress,
-            BatchOperation.applyBatchInterestAndFee,
-            _newDebt,
-            _newColl,
-            batches[_batchAddress].annualInterestRate,
-            batches[_batchAddress].annualManagementFee,
-            batches[_batchAddress].totalDebtShares
         );
     }
 
@@ -1853,7 +1856,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         address _batchAddress,
         TroveChange memory _troveChange,
         uint256 _batchColl, // without trove change
-        uint256 _batchDebt // entire (with interest, batch fee and redistribution), but without trove change
+        uint256 _batchDebt // entire (with interest, batch fee), but without trove change, nor upfront fee nor redist
     ) internal {
         // Debt
         uint256 currentBatchDebtShares = batches[_batchAddress].totalDebtShares;
