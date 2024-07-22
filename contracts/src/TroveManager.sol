@@ -1782,8 +1782,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         Troves[_troveId].coll = _newTroveColl;
         Troves[_troveId].stake = _computeNewStake(_newTroveColl);
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
+        Troves[_troveId].annualInterestRate = _newAnnualInterestRate;
         if (batches[_batchAddress].annualInterestRate != _newAnnualInterestRate) {
-            Troves[_troveId].annualInterestRate = _newAnnualInterestRate;
             Troves[_troveId].lastInterestRateAdjTime = uint64(block.timestamp);
         }
 

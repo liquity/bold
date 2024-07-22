@@ -62,16 +62,44 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(batch.annualManagementFee, 25e14, "Wrong fee");
     }
 
-    function testRemovesBatchManagerProperly() public {
+    function testRemovesBatchManagerProperlyWithDifferentNewInterestRate() public {
         uint256 troveId = openTroveAndJoinBatchManager();
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
+        LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
+        uint256 annualInterestRate = trove.annualInterestRate;
+
+        uint256 newAnnualInterestRate = 4e16;
+        assertEq(tmBatchManagerAddress, B, "Wrong batch manager in TM");
+        assertNotEq(newAnnualInterestRate, annualInterestRate, "New interest rate should be different");
 
         vm.startPrank(A);
-        borrowerOperations.removeFromBatch(troveId, 4e16, 0, 0, 1e24);
+        borrowerOperations.removeFromBatch(troveId, newAnnualInterestRate, 0, 0, 1e24);
         vm.stopPrank();
 
         assertEq(borrowerOperations.interestBatchManagerOf(troveId), address(0), "Wrong batch manager in BO");
-        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
+        (,,,,,,, annualInterestRate, tmBatchManagerAddress,) = troveManager.Troves(troveId);
         assertEq(tmBatchManagerAddress, address(0), "Wrong batch manager in TM");
+        assertEq(annualInterestRate, newAnnualInterestRate, "Wrong interest rate");
+    }
+
+    function testRemovesBatchManagerProperlyWithSameNewInterestRate() public {
+        uint256 troveId = openTroveAndJoinBatchManager();
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
+        LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
+        uint256 annualInterestRate = trove.annualInterestRate;
+
+        uint256 newAnnualInterestRate = 5e16;
+        assertEq(tmBatchManagerAddress, B, "Wrong batch manager in TM");
+        assertEq(newAnnualInterestRate, annualInterestRate, "New interest rate should be the same");
+
+        vm.startPrank(A);
+        borrowerOperations.removeFromBatch(troveId, newAnnualInterestRate, 0, 0, 1e24);
+        vm.stopPrank();
+
+        assertEq(borrowerOperations.interestBatchManagerOf(troveId), address(0), "Wrong batch manager in BO");
+        (,,,,,,, annualInterestRate, tmBatchManagerAddress,) = troveManager.Troves(troveId);
+        assertEq(tmBatchManagerAddress, address(0), "It should not have batch manager in TM");
+        assertEq(annualInterestRate, newAnnualInterestRate, "Wrong interest rate");
     }
 
     function testOnlyBorrowerCanSetBatchManager() public {
