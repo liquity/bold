@@ -416,7 +416,7 @@ Pending aggregate interest is “applied” upon most system actions. That is:
 
 - The  `aggRecordedDebt` is updated - the pending aggregate interest is calculated and added to `aggRecordedDebt`, and the `lastDebtUpdateTime` is updated to now.
 
-- The pending aggregate interest is minted by the ActivePool as fresh BOLD. This is considered system “yield”.  Part of it is iimmediately sent to the branch’s SP and split proportionally between depositors, and the remainder is sent to a router to be used as LP incentives on DEXes (determined by governance).
+- The pending aggregate interest is minted by the ActivePool as fresh BOLD. This is considered system “yield”.  A fixed part (75%) of it is immediately sent to the branch’s SP and split proportionally between depositors, and the remainder is sent to a router to be used as LP incentives on DEXes (determined by governance).
 
 This is the only way BOLD is ever minted as interest. Applying individual interest to a Trove updates its recorded debt, but does not actually mint new BOLD tokens.
 
@@ -424,14 +424,14 @@ This is the only way BOLD is ever minted as interest. Applying individual intere
 
 A borrower may adjust their Trove’s interest rate at any time.
 
-Since redemptions are performed in order of Troves’ user-set interest rates, a “premature adjustment fee” mechanism exists to prevent redemption evasion. Without it, low-interest rate borrowers could evade redemptions by sandwiching a redemption transaction with both an upward and downward interest rate adjustment.
+Since redemptions are performed in order of Troves’ user-set interest rates, a “premature adjustment fee” mechanism exists to prevent redemption evasion. Without it, low-interest rate borrowers could evade redemptions by sandwiching a redemption transaction with both an upward and downward interest rate adjustment, which in turn would unduly direct the redemption against higher-interest borrowers.
 
 The premature adjustment fee works as so:
 
 - When a Trove is opened, its `lastInterestRateAdjTime` property is set equal to the current time
 - When a borrower adjusts their interest rate via `adjustTroveInterestRate` the system checks that the cooldown period has passed since their last interest rate adjustment 
 
-- If the adjustment is sooner, it incurs an upfront fee which is added to their debt.
+- If the adjustment is sooner it incurs an upfront fee (equal to 7 days of average interest of the respective branch) which is added to their debt.
 
 ## BOLD Redemptions
 
@@ -441,7 +441,7 @@ Any BOLD holder (whether or not they have an active Trove) may redeem their BOLD
 1. When BOLD is trading at <$1 on the external market, arbitrageurs may redeem `$x` worth of BOLD for `>$x` worth of collaterals, and instantly sell those collaterals to make a profit. This reduces the circulating supply of BOLD which in turn should help restore the $1 BOLD peg.
 
 
-2. Redemptions improve the relative health of the least healthy collateral branches (those with greater unbacked debt).
+2. Redemptions improve the relative health of the least healthy collateral branches (those with greater "outside" debt, i.e. debt not covered by their SP).
 
 
 ## Redemption routing
@@ -450,13 +450,13 @@ Any BOLD holder (whether or not they have an active Trove) may redeem their BOLD
 
 Redemptions are performed via the `CollateralRegistry.redeemCollateral` endpoint. A given redemption may be routed across several collateral branches.
 
-A given BOLD redemption is split across branches according in proportion to the **unbacked debt** of that branch, i.e. (pseudocode):
+A given BOLD redemption is split across branches according in proportion to the **outside debt** of that branch, i.e. (pseudocode):
 
-`redeem_amount_i = unbacked_debt_i / total_unbacked_debt`
+`redeem_amount_i = redeem_amount * outside_debt_i / total_outside_debt`
 
-Where `unbacked_debt_i` for branch i is given by `total_bold_debt_i  - bold_in_SP_i`.
+Where `outside_debt_i` for branch i is given by `bold_debt_i  - bold_in_SP_i`.
 
-That is, a redemption reduces the unbacked debt on each branch by the same percentage.
+That is, a redemption reduces the outside debt on each branch by the same percentage.
 
 _Example: 2000 BOLD is redeemed across 4 branches_
 
@@ -464,6 +464,7 @@ _Example: 2000 BOLD is redeemed across 4 branches_
 
 <img width="704" alt="image" src="https://github.com/user-attachments/assets/21afcc49-ed50-4f3e-8b36-1949cd7a3809">
 
+As can be seen in the above table and proven in generality (TBD), the outside debt is reduced by the same proportion in all branches, making redemptions path-independent.
 
 
 [TODO - GRAPH BRANCH REDEMPTION]
@@ -480,9 +481,11 @@ A redemption sequence of n steps will fully redeem all debt from the first n-1 T
 
 Redemptions are skipped for Troves with ICR  < 100%. This is to ensure that redemptions improve the ICR of the Trove.
 
+Unredeemable troves are also skipped (see unredeemable Troves section [LINK]).
+
 ### Redemption fees
 
-The redemption fee mechanics are broadly the same as in Liquity v1. The redemption fee is taken as a cut of the total ETH drawn from the system in a redemption. It is based on the current redemption rate.
+The redemption fee mechanics are broadly the same as in Liquity v1,  but with adapted parametrization (TBD). The redemption fee is taken as a cut of the total ETH drawn from the system in a redemption. It is based on the current redemption rate.
 
 The fee percentage is calculated in the `CollateralRegistry`, and then applied to each branch.
 
@@ -514,15 +517,9 @@ The current fee schedule:
 
 Upon each redemption of x BOLD:
 
-`baseRate` is decayed based on time passed since the last fee event
-`baseRate` is incremented by an amount proportional to the fraction of the total BOLD supply to be redeemed, i.e. `x/total_bold_supply`
+- `baseRate` is decayed based on time passed since the last fee event and incremented by an amount proportional to the fraction of the total BOLD supply to be redeemed, i.e. `x/total_bold_supply`
 
-The redemption fee percentage is given by `min{REDEMPTION_FEE_FLOOR + baseRate , 1}`.
-
-### Redemption fee decay
-
-
-When the `baseRate` is elevated above the fee floor - e.g. after a redemption happens - it exponentially decays back down to the fee floor.
+The redemption fee percentage is given by `min(REDEMPTION_FEE_FLOOR + baseRate , 1)`.
 
 ### Redemption fee during bootstrapping period
 
@@ -543,7 +540,7 @@ Hence redemptions in v2 always leave Troves open. This ensures that normal redem
 
 Therefore, when a Trove is redeemed to below MIN_DEBT, it is tagged as unredeemable and removed from the sorted list.  
 
-When a borrower touches their unredeemable Trove, they must either bring it back to `debt > MIN_DEBT`, or close it. Adjustments that leave it with insufficient debt are not possible.
+When a borrower touches their unredeemable Trove, they must either bring it back to `debt > MIN_DEBT` (in which case the Trove becomes redeemable again), or close it. Adjustments that leave it with insufficient debt are not possible.
 
 Pending debt gains from redistributions and accrued interest can bring the Trove's debt above `MIN_DEBT`, but these pending gains don't make the Trove redeemable again. Only the borrower can do that when they adjust it and leave their recorded `debt > MIN_DEBT`.
 
@@ -563,10 +560,10 @@ Unredeemable Troves:
 - Do receive redistribution gains
 - Do accrue interest
 - Can have their accrued interest permissionlessly applied
-- Can not have their interest rate changed by their owner
-- Can not be adjusted such that they're left with debt <`MIN_DEBT` by owner
+- Can not have their interest rate changed by their owner/manager
+- Can not be adjusted such that they're left with debt <`MIN_DEBT` by owner/manager
 - Can be closed by their owner
-- Can be brought above MIN_DEBT by owner (which re-adds them to the Sorted Troves list, and changes their status back to 'Active')
+- Can be brought above `MIN_DEBT` by owner (which re-adds them to the Sorted Troves list, and changes their status back to 'Active')
 
 _(*as long as TCR > 100%. If TCR < 100%, then normal redemptions would lower the TCR, but the shutdown threshold is set above 100%, and therefore the branch would be shut down first. See the shutdown section [LINK].)_
 
@@ -576,7 +573,7 @@ _(*as long as TCR > 100%. If TCR < 100%, then normal redemptions would lower the
 BOLD depositors in the Stability Pool on a given branch earn:
 
 - BOLD yield paid from interest minted on Troves on that branch
-- Collateral gains from liquidated Troves on that branch
+- Collateral penalty gains from liquidated Troves on that branch
 
 
 Depositors deposit BOLD to the SP via `provideToSP` and withdraw it with `withdrawFromSP`. 
@@ -590,7 +587,7 @@ Otherwise, their collateral gain is stashed in a tracked balance and their BOLD 
 ### How deposits and ETH gains are calculated
 
 
-The SP use a scalable method of tracking deposits, collateral and yield gains which has O(1) complexity - i.e. constant gas cost regardless of the number of depositors. 
+The SP uses a scalable method of tracking deposits, collateral and yield gains which has O(1) complexity - i.e. constant gas cost regardless of the number of depositors. 
 
 It is the same Product-Sum algorithm from Liquity v1.
 
@@ -599,7 +596,9 @@ It is the same Product-Sum algorithm from Liquity v1.
 
 When a liquidation occurs, rather than updating each depositor’s deposit and collateral and yield gain, we simply update two global tracker variables: a product `P`, a sum `S` corresponding to the collateral gain.
 
-A mathematical manipulation allows us to factor out the initial deposit, and accurately track all depositors’ compounded deposits and accumulated collateral gains over time, as liquidations occur, using just these two variables. When depositors join the Stability Pool, they get a snapshot of `P` and `S`.
+A mathematical manipulation allows us to factor out the initial deposit, and accurately track all depositors’ compounded deposits and accumulated collateral gains over time, as liquidations occur, using just these two variables. When depositors join the Stability Pool, they get a snapshot of `P` and `S`.  
+
+The approach is similar in spirit to the Scalable Reward Distribution on the Ethereum Network by Bogdan Batog et al (i.e. the standard UniPool algorithm), however, the arithmetic is more involved as it handles a compounding, decreasing stake along with a corresponding collateral gain.
 
 The formula for a depositor’s accumulated collateral gain is derived here:
 
@@ -610,8 +609,6 @@ The formula for a depositor’s accumulated collateral gain is derived here:
 Each liquidation updates `P` and `S`. After a series of liquidations, a compounded deposit and corresponding ETH gain can be calculated using the initial deposit, the depositor’s snapshots, and the current values of `P` and `S`.
 
 Any time a depositor updates their deposit (withdrawal, top-up) their collateral gain is paid out, and they receive new snapshots of `P` and `S`.
-
-This is similar in spirit to the Scalable Reward Distribution on the Ethereum Network by Bogdan Batog et al (i.e. the standard UniPool algorithm), however, the arithmetic is more involved as it handles a compounding, decreasing stake along with a corresponding collateral gain.
 
 ### BOLD Yield Gains
 
