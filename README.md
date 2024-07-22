@@ -2,11 +2,11 @@
 
 ## Significant changes in Liquity v2
 
-- **Multi-collateral system.** The system now consists of a CollateralRegistry and multiple collateral branches. Each collateral branch contains its own TroveManager and StabilityPool. Troves in a given branch only accept the single collateral (never mixed collateral). Liquidations of Troves in a given branch via SP offset are offset purely against the SP for that branch, and liquidation gains for SP depositors are always paid in a single collateral. Similarly, liquidations via redistribution split the collateral and debt across purely active Troves in that branch.
+- **Multi-collateral system.** The system now consists of a CollateralRegistry and multiple collateral branches. Each collateral branch is parameterized separately with its own Minimum Collateral Ratio (MCR), Critical Collateral Ratio (CCR) and Shutdown Collateral Ratio (SCR). Each collateral branch contains its own TroveManager and StabilityPool. Troves in a given branch only accept a single collateral (never mixed collateral). Liquidations of Troves in a given branch via SP offset are offset purely against the SP for that branch, and liquidation gains for SP depositors are always paid in a single collateral. Similarly, liquidations via redistribution split the collateral and debt across purely active Troves in that branch.
  
-- **Collateral choices.** The system will contain collateral branches for WETH and several LSTs: rETH, wstETH and one (or both) of osETH and ETHx. It does not accept native ETH as collateral.
+- **Collateral choices.** The system will contain collateral branches for WETH and several LSTs: rETH, wstETH and either one (or both) of osETH and ETHx (TBD). It does not accept native ETH as collateral.
 
-- **User-set interest rates.** When a borrower opens a Trove, they choose their own annual interest rate. They may change their annual interest rate at any point. Simple (non-compounding) interest accrues on their debt continuously. Aggregate accrued Trove debt is periodically minted as BOLD. 
+- **User-set interest rates.** When a borrower opens a Trove, they choose their own annual interest rate. They may change their annual interest rate at any point. Simple (non-compounding) interest accrues on their debt continuously, and gets compounded discretely every time the Trove is touched. Aggregate accrued Trove debt is periodically minted as BOLD. 
 
 - **Yield from interest paid to SP and LPs.** BOLD yields from Trove interest are periodically paid out in a split to the Stability Pool (SP), and to a router which in turn routes its yield share to DEX LP incentives.  Yield paid to the SP from Trove interest on a given branch is always paid to the SP on that same branch.
 
@@ -16,18 +16,19 @@
 
 - **Unredeemable Troves.** Redemptions now do not close Troves - they leave them open. Redemptions may now leave some Troves with a zero or very small BOLD debt < MIN_DEBT. These Troves are tagged as `unredeemable` in order to eliminate a redemption griefing attack vector. They become redeemable again when the borrower brings them back above the `MIN_DEBT`.
 
-
 - **Troves represented by NFTs.** Troves are freely transferable and a given Ethereum address may own multiple Troves (by holding the corresponding NFTs).
 
-- **Individual delegation.** A Trove owner may appoint an individual manager to set their interest rate.
+- **Individual delegation.** A Trove owner may appoint an individual manager to set their interest rate and/or control debt and collateral adjustments.
 
-- **Batch delegation.** A Trove owner may appoint a batch manager to manage their interest rate. A batch manager can adjust the interest rate of their batch within some predefined range (chosen by the batch manager at registration). A batch interest rate adjustment updates the interest rate for all Troves in the batch.
+- **Batch delegation.** A Trove owner may appoint a batch manager to manage their interest rate. A batch manager can adjust the interest rate of their batch within some predefined range (chosen by the batch manager at registration). A batch interest rate adjustment updates the interest rate for all Troves in the batch in a gas-efficient manner.
 
 - **Collateral branch shutdown.** Under extreme negative conditions - i.e. sufficiently major collapse of the collateral market price, or an oracle failure - a collateral branch will be shut down. This entails freezing all borrower operations (except for closing of Troves), freezing interest accrual, and enabling “urgent” redemptions which have 0 redemption fee and even pay a slight collateral bonus to the redeemer. The intent is to clear as much debt from the branch as quickly as possible.
 
 - **Removal of Recovery Mode**. The old Recovery Mode logic has been removed. Troves can only be liquidated when their collateral ratio (ICR) is below the minimum (MCR). However, some borrowing restrictions still apply below the critical collateral threshold (CCR) for a given branch.
 
-- **Gas compensation**. Liquidations now pay gas compensation to the liquidator entirely in collateral. 
+-**Liquidation penalties**. Liquidated borrowers now no longer always lose their entire collateral in a liquidation. Depending on the collateral branch and liquidation type, they may be able to reclaim a small remainder.
+
+- **Gas compensation**. Liquidations now pay gas compensation to the liquidator in a mix of collateral and WETH. The liquidation reserve is denominated in WETH irrespective of the collateral plus a variable compensation in the collateral, which is capped to avoid excessive compensations. 
 
 - **More flexibility for SP reward claiming**.. SP depositors can now claim or stash their LST gains from liquidations, and either claim their BOLD yield gains or add them to their deposit.
 
@@ -40,15 +41,17 @@
 
 - **Ordered Troves**. Each branch maintains a sorted list of Troves (though now ordered by annual interest rate)
 
-- **Liquidation mechanisms**. Liquidated Troves are still offset against the BOLD in the SP and redistribution to active Troves in the branch if/when the SP deposits are insufficient.
+- **Liquidation mechanisms**. Liquidated Troves are still offset against the BOLD in the SP and redistribution to active Troves in the branch if/when the SP deposits are insufficient (though the liquidation penalty applied to the borrower is reduced).
+
+-**Similar smart contract architecture**. At branch level the system architecture closely resembles that of v1 - the `TroveManager`, `BorrowerOperations` and `StabilityPool` contracts contain most system logic and direct the flows of BOLD and collateral.
 
 - **Similar smart contract architecture** (at branch level).
 
 - **Stability Pool algorithm**. Same arithmetic and logic is used for tracking deposits, collateral gains and BOLD yield gains over time as liquidations deplete the pool.
 
-- **Individual overcollateralization**. Each Trove is individually overcollateralized and liquidated below the MCR
+- **Individual overcollateralization**. Each Trove is individually overcollateralized and liquidated below the branch-specific MCR.
 
-- **Aggregate (branch level ) overcollateralization.** Each branch is overcollateralized , measured by the TCR.
+- **Aggregate (branch level ) overcollateralization.** Each branch is overcollateralized , measured by the respective TCR.
 
 
 ## Liquity v2 Overview
@@ -63,6 +66,8 @@ The stablecoin tokens are economically geared towards maintaining value of 1 BOL
 
 
 2. The stablecoins are fully redeemable - users can always swap x BOLD for $x worth of a mix of WETH and LSTs (minus fees), directly with the system.
+   
+3. The system incorporates an adaptive interest rate mechanism, managing the attractiveness and thus the demand for holding and borrowing the stablecoin in a market-driven way.  
 
 
 Upon  opening a Trove by depositing a viable collateral ERC20, users may issue ("borrow") BOLD tokens such that the collateralization ratio of their Trove remains above the minimum collateral ratio (MCR) for their collateral branch. For example, for an MCR of 110%, a user with $10000 worth of WETH in a Trove can issue up to 9090.90 BOLD against it.
@@ -314,12 +319,12 @@ Standard ERC20 and EIP2612 (`permit()` ) functionality.
 
 When a Trove is opened, borrowers commit an amount of their chosen LST token as collateral, select their BOLD debt, and select an interest rate in range `[INTEREST_RATE_MIN, INTEREST_RATE_MAX]`.
 
-Interest in Liquity v2 is **simple** interest and non-compounding - that is, for a given Trove debt, interest accrues linearly over time and proportional to its recorded debt.
+Interest in Liquity v2 is **simple** interest and non-compounding - that is, for a given Trove debt, interest accrues linearly over time and proportional to its recorded debt as long as the Trove isn’t altered.
 
 
 Troves have a `recordedDebt` property which stores the Trove’s entire debt at the time it was last updated.
 
-A Trove’s acrrued interest is calculated dynamically  as `d * period`
+A Trove’s accrued interest is calculated dynamically  as `d * period`
 
 Where:
 
@@ -337,8 +342,8 @@ Upon certain actions that touch the Trove, its accrued interest is calculated an
 
 The following actions apply a Trove’s interest:
 
-- Borrower changes The Trove’s collateral or debt with `adjustTrove`
-- Borrower adjusts the Trove’s interest rate with `adjustTroveInterestRate`
+- Borrower or manager changes The Trove’s collateral or debt with `adjustTrove`
+- Borrower or manager adjusts the Trove’s interest rate with `adjustTroveInterestRate`
 - Trove gets liquidated
 - Trove gets redeemed
 - Trove’s accrued interest is permissionlessly applied by anyone with `applyTroveInterestPermissionless`
@@ -358,7 +363,7 @@ To calculate total accrued interest, the Active Pool maintains two global tracke
 Along with a timekeeping variable  `lastDebtUpdateTime`
 
 
-`weightedRecordedDebtSum` the sum of Troves’ debt weighted by their annual interest rate.
+`weightedRecordedDebtSum` tracks the sum of Troves’ debts weighted by their respective annual interest rates.
 
 The aggregate pending interest at any given moment is given by 
 
@@ -379,9 +384,9 @@ In practice, the implementation in code follows these steps but the exact sequen
 
 Importantly, the `aggRecordedDebt` does *not* always equal the sum of individual recorded Trove debts.
 
-This is because the `aggRecordedDebt` is updated very regularly, whereas a given Trove’s recorded debt may not be.  When the `aggRecordedDebt` has been updated more recently than a given Trove, then it already includes that Trove’s accrued interest - because 
+This is because the `aggRecordedDebt` is updated very regularly, whereas a given Trove’s recorded debt may not be.  When the `aggRecordedDebt` has been updated more recently than a given Trove, then it already includes that Trove’s accrued interest - because when it is updated, _all_ Trove's accrued pending interest is added to it.
 
-It’s best to think of the aggRecordedDebt and aggregate interest calculation running in parallel to the individual recorded debts and interest.
+It’s best to think of the `aggRecordedDebt` and aggregate interest calculation running in parallel to the individual recorded debts and interest.
 
 This example illustrates how it works.
 
@@ -394,7 +399,7 @@ This example illustrates how it works.
 
 For a given branch, the system maintains the following invariant:
 
-**Aggregate total debt of a always equals the sum of individual entire Trove debts**.
+**Aggregate total debt of a branch always equals the sum of individual entire Trove debts**.
 
 That is:
 
