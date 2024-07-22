@@ -613,6 +613,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Preconditions
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertTrue(v.wasActive, "Should have failed as Trove was not active");
+            assertNotEqDecimal(newInterestRate, v.t.annualInterestRate, 18, "Should have failed as rate == old");
             assertGeDecimal(newInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate < min");
             assertLeDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate > max");
 
@@ -650,6 +651,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertFalse(_isOpen(i, v.troveId), "Open Trove should have an NFT");
             } else if (reason.equals("BorrowerOps: Trove does not have active status")) {
                 assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
+            } else if (reason.equals("New interest rate must be different")) {
+                assertEqDecimal(newInterestRate, v.t.annualInterestRate, 18, "Shouldn't have failed as rate != old");
             } else if (reason.equals("Interest rate must not be lower than min")) {
                 assertLtDecimal(newInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate >= min");
             } else if (reason.equals("Interest rate must not be greater than max")) {

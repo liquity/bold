@@ -378,6 +378,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         _requireTroveIsActive(contractsCache.troveManager, _troveId);
 
         LatestTroveData memory trove = contractsCache.troveManager.getLatestTroveData(_troveId);
+        _requireAnnualInterestRateIsNew(trove.annualInterestRate, _newAnnualInterestRate);
+
         uint256 newDebt = trove.entireDebt;
 
         TroveChange memory troveChange;
@@ -751,6 +753,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
     function _requireValidAnnualInterestRate(uint256 _annualInterestRate) internal pure {
         require(_annualInterestRate >= MIN_ANNUAL_INTEREST_RATE, "Interest rate must not be lower than min");
         require(_annualInterestRate <= MAX_ANNUAL_INTEREST_RATE, "Interest rate must not be greater than max");
+    }
+
+    function _requireAnnualInterestRateIsNew(uint256 _oldAnnualInterestRate, uint256 _newAnnualInterestRate) internal pure {
+        require(_oldAnnualInterestRate != _newAnnualInterestRate, "New interest rate must be different");
     }
 
     function _requireCallerIsPriceFeed() internal view {
