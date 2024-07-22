@@ -152,18 +152,21 @@ interface ITroveManager is ILiquityBase {
         uint256 _newDebt,
         uint256 _newAnnualInterestRate
     ) external;
-    function onSetInterestBatchManager(
-        uint256 _troveId,
-        uint256 _troveColl, // entire, with redistribution
-        uint256 _troveDebt, // entire, with interest, batch fee and redistribution
-        TroveChange memory _troveChange,
-        address _oldBatchAddress,
-        address _newBatchAddress,
-        uint256 _oldBatchColl, // updated collateral for previous batch manager
-        uint256 _oldBatchDebt, // updated debt for previous batch manager
-        uint256 _newBatchColl, // updated collateral for new batch manager
-        uint256 _newBatchDebt // updated debt for new batch manager
-    ) external;
+
+    struct OnSetInterestBatchManagerParams {
+        uint256 troveId;
+        uint256 troveColl; // entire, with redistribution
+        uint256 troveDebt; // entire, with interest, batch fee and redistribution
+        TroveChange troveChange;
+        address oldBatchAddress;
+        address newBatchAddress;
+        uint256 oldBatchColl; // updated collateral for previous batch manager
+        uint256 oldBatchDebt; // updated debt for previous batch manager
+        uint256 newBatchColl; // updated collateral for new batch manager
+        uint256 newBatchDebt; // updated debt for new batch manager
+    }
+
+    function onSetInterestBatchManager(OnSetInterestBatchManagerParams calldata _params) external;
     function onRemoveFromBatch(
         uint256 _troveId,
         uint256 _newTroveColl, // entire, with redistribution

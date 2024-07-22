@@ -1040,16 +1040,18 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         vars.activePool.mintAggInterestAndAccountForTroveChange(newBatchTroveChange, _newBatchManager);
 
         vars.troveManager.onSetInterestBatchManager(
-            _troveId,
-            vars.trove.entireColl,
-            vars.trove.entireDebt,
-            newBatchTroveChange,
-            vars.oldBatchManager,
-            _newBatchManager,
-            vars.oldBatch.entireCollWithoutRedistribution,
-            vars.oldBatch.entireDebtWithoutRedistribution,
-            vars.newBatch.entireCollWithoutRedistribution,
-            vars.newBatch.entireDebtWithoutRedistribution
+            ITroveManager.OnSetInterestBatchManagerParams({
+                troveId: _troveId,
+                troveColl: vars.trove.entireColl,
+                troveDebt: vars.trove.entireDebt,
+                troveChange: newBatchTroveChange,
+                oldBatchAddress: vars.oldBatchManager,
+                newBatchAddress: _newBatchManager,
+                oldBatchColl: vars.oldBatch.entireCollWithoutRedistribution,
+                oldBatchDebt: vars.oldBatch.entireDebtWithoutRedistribution,
+                newBatchColl: vars.newBatch.entireCollWithoutRedistribution,
+                newBatchDebt: vars.newBatch.entireDebtWithoutRedistribution
+            })
         );
 
         if (isTroveInBatch) {
