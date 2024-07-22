@@ -798,10 +798,9 @@ The accrued interest and accrued management fees are calculated and added to the
 
 Batch managers incur premature fees in the same manner as individual Troves - i.e. if they adjust before the cooldown period has past since their last adjustment [LINK - premature adjustment fee].
 
-When a borrower adds their Trove to a batch, there is a trust assumption: they expect the batch manager to manage interest rates well and not incur excessive adjustment fees.  
+When a borrower adds their Trove to a batch, there is a trust assumption: they expect the batch manager to manage interest rates well and not incur excessive adjustment fees.  However, the manager can commit in advance to a maximum update frequency when they register by passing a `_minInterestRateChangePeriod`.
 
-It is expected that competent batch managers will build good reputations and attract borrowers.
-Malicious or poor managers will likely end up with empty batches in the long-term.
+Generally is expected that competent batch managers will build good reputations and attract borrowers. Malicious or poor managers will likely end up with empty batches in the long-term.
 
 
 ## Collateral branch shutdown
