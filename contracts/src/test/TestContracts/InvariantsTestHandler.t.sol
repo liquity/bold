@@ -686,6 +686,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Preconditions
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertTrue(v.wasActive, "Should have failed as Trove was not active");
+            assertNotEqDecimal(newInterestRate, v.t.annualInterestRate, 18, "Should have failed as rate == old");
             assertGeDecimal(newInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate < min");
             assertLeDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate > max");
 
@@ -729,6 +730,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
             } else if (selector == BorrowerOperations.TroveNotActive.selector) {
                 assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
+            } else if (selector == BorrowerOperations.InterestRateNotNew.selector) {
+                assertEqDecimal(newInterestRate, v.t.annualInterestRate, 18, "Shouldn't have failed as rate != old");
             } else if (selector == BorrowerOperations.InterestRateTooLow.selector) {
                 assertLtDecimal(newInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate >= min");
             } else if (selector == BorrowerOperations.InterestRateTooHigh.selector) {
@@ -1971,6 +1974,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             if (selector == BorrowerOperations.NotEnoughBoldBalance.selector) {
                 return (selector, "BorrowerOperations.NotEnoughBoldBalance()");
+            }
+
+            if (selector == BorrowerOperations.InterestRateNotNew.selector) {
+                return (selector, "BorrowerOperations.InterestRateNotNew");
             }
 
             if (selector == BorrowerOperations.InterestRateTooLow.selector) {
