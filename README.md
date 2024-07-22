@@ -860,10 +860,12 @@ Oracle failure (2) may occur during any operation which requires collateral pric
 
 Upon shutdown:
 - All pending aggregate interest gets applied and minted
+- All pending aggregate batch management fees get applied and minted
 
 And thereafter:
 - No further aggregate interest is minted or accrued
 - Individual Troves accrue no further interest. Trove accrued interest is calculated only up to the shutdown timestamp
+- Batches accrue no further interest nor management fees. Accrued interest and fees are only calculated up to the shutdown timestamp
 
 Once a branch has been shut down it can not be revived.
 
