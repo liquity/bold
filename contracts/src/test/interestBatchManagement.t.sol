@@ -536,7 +536,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertGt(upfrontFee, 0, "Upfront fee should be > 0");
 
         // Switch from B to C
-        setInterestBatchManager(A, troveId, C, MIN_ANNUAL_INTEREST_RATE);
+        setInterestBatchManager(A, troveId, C);
 
         assertApproxEqAbs(
             troveManager.getTroveEntireDebt(troveId),
@@ -563,7 +563,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 upfrontFee = predictAdjustInterestRateUpfrontFee(troveId, 5e16);
         assertGt(upfrontFee, 0, "Upfront fee should be > 0");
         // Switch from B to C
-        setInterestBatchManager(A, troveId, C, MIN_ANNUAL_INTEREST_RATE);
+        setInterestBatchManager(A, troveId, C);
         assertApproxEqAbs(
             troveManager.getTroveEntireDebt(troveId),
             ADebtBefore + upfrontFee,
