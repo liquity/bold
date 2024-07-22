@@ -142,6 +142,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
     error NotEnoughBoldBalance();
     error InterestRateTooLow();
     error InterestRateTooHigh();
+    error InterestRateNotNew();
     error InvalidInterestBatchManager();
     error BatchManagerExists();
     error BatchManagerNotNew();
@@ -547,6 +548,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         _requireTroveIsActive(troveManagerCached, _troveId);
 
         LatestTroveData memory trove = troveManagerCached.getLatestTroveData(_troveId);
+        _requireAnnualInterestRateIsNew(trove.annualInterestRate, _newAnnualInterestRate);
 
         uint256 newDebt = trove.entireDebt;
 
@@ -1424,6 +1426,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         }
         if (_annualInterestRate > MAX_ANNUAL_INTEREST_RATE) {
             revert InterestRateTooHigh();
+        }
+    }
+
+    function _requireAnnualInterestRateIsNew(uint256 _oldAnnualInterestRate, uint256 _newAnnualInterestRate) internal pure {
+        if (_oldAnnualInterestRate == _newAnnualInterestRate) {
+            revert InterestRateNotNew();
         }
     }
 
