@@ -248,8 +248,7 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
     function _mintAggInterest(uint256 _upfrontFee) internal returns (uint256 mintedAmount) {
         mintedAmount = calcPendingAggInterest() + _upfrontFee;
 
-        // Mint part of the BOLD interest to the SP.
-        // TODO: implement interest minting to LPs
+        // Mint part of the BOLD interest to the SP and part to the router for LPs.
         if (mintedAmount > 0) {
             uint256 spYield = SP_YIELD_SPLIT * mintedAmount / DECIMAL_PRECISION;
             uint256 remainderToLPs = mintedAmount - spYield;
