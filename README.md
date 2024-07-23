@@ -876,7 +876,7 @@ An attack sequence may look like this:
 
 This is “hard” frontrunning: the attacker directly frontrun the oracle price update. “Soft” frontrunning is also possible when the attacker sees the market price increase before even seeing the oracle price update transaction in the mempool.
 
-The value extracted is untoward, i.e. above and beyond the arbitrage profit expected from BOLD peg restoration. In fact, oracle frontrunning can be performed when BOLD is trading at $1) 
+The value extracted is excessive, i.e. above and beyond the arbitrage profit expected from BOLD peg restoration. In fact, oracle frontrunning can be performed when BOLD is trading >= $1.
 
 In Liquity v1, this issue was largely mitigated by the 0.5% minimum redemption fee which matched Chainlink’s ETH-USD oracle update threshold of 0.5%.
 
@@ -884,7 +884,7 @@ In v2, some oracles used for LSTs have larger update thresholds - e.g. Chainlink
 
 However, we don’t expect oracle frontrunning to be a significant issue since these LST-ETH feeds are historically not volatile and rarely deviate by significant amounts: they usually update based on the heartbeat (mininum update frequency) rather than the threshold.
 
- Still several solutions were considered. None are perfect:
+ Still several solutions were considered. None are ideal:
 
 | Solution                                                                                  | Challenge                                                                                                                                                   |
 |-------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
