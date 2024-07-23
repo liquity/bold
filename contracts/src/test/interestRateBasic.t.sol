@@ -614,7 +614,7 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
     }
 
-    // --- applyTroveInterestPermissionless ---
+    // --- applyPendingDebt ---
 
     function testApplyTroveInterestPermissionlessSetsTroveLastDebtUpdateTimeToNow() public {
         priceFeed.setPrice(2000e18);
@@ -631,7 +631,7 @@ contract InterestRateBasic is DevTestSetup {
         assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
     }
@@ -651,7 +651,7 @@ contract InterestRateBasic is DevTestSetup {
         assertGt(troveManager.calcTroveAccruedInterest(ATroveId), 0);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
@@ -672,7 +672,7 @@ contract InterestRateBasic is DevTestSetup {
         assertGt(entireTroveDebt_1, 0);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_2, entireTroveDebt_1);
@@ -694,7 +694,7 @@ contract InterestRateBasic is DevTestSetup {
         uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
 
@@ -732,7 +732,7 @@ contract InterestRateBasic is DevTestSetup {
         uint256 accruedInterest = troveData.accruedInterest;
         // B applies A's pending interest
         vm.startPrank(B);
-        borrowerOperations.applyTroveInterestPermissionless(ATroveId);
+        borrowerOperations.applyPendingDebt(ATroveId);
         vm.stopPrank();
 
         troveData = troveManager.getLatestTroveData(ATroveId);

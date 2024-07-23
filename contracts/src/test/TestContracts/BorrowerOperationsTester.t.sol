@@ -26,8 +26,8 @@ contract BorrowerOperationsTester is BorrowerOperations, IBorrowerOperationsTest
         return boldToken;
     }
 
-    function applyTroveInterestPermissionless(uint256 _troveId) external {
-        applyTroveInterestPermissionless(_troveId, 0, 0);
+    function applyPendingDebt(uint256 _troveId) external {
+        applyPendingDebt(_troveId, 0, 0);
     }
 
     function getNewTCRFromTroveChange(

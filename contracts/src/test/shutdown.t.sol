@@ -267,7 +267,7 @@ contract ShutdownTest is DevTestSetup {
 
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);
-        borrowerOperations.applyTroveInterestPermissionless(troveId);
+        borrowerOperations.applyPendingDebt(troveId);
         vm.stopPrank();
     }
 

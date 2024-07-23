@@ -436,7 +436,7 @@ contract InterestBatchManagementTest is DevTestSetup {
     }
 
     // --- applyBatchInterestAndFeePermissionless ---
-    // (Now this is included in applyTroveInterestPermissionless)
+    // (Now this is included in applyPendingDebt)
 
     function testApplyTroveInterestPermissionlessUpdatesRedistributionIfInBatch() public {
         priceFeed.setPrice(2000e18);
@@ -470,7 +470,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 accruedBatchManagementFee = troveData.accruedBatchManagementFee;
         // B applies A's pending interest
         vm.startPrank(B);
-        borrowerOperations.applyTroveInterestPermissionless(ATroveId);
+        borrowerOperations.applyPendingDebt(ATroveId);
         vm.stopPrank();
 
         troveData = troveManager.getLatestTroveData(ATroveId);
@@ -491,7 +491,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
         // C applies batch B's pending interest
-        applyTroveInterestPermissionless(C, ATroveId);
+        applyPendingDebt(C, ATroveId);
 
         assertEq(troveManager.getBatchLastDebtUpdateTime(B), block.timestamp);
         assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
@@ -511,7 +511,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertGt(troveManager.calcTroveAccruedInterest(ATroveId), 0, "Trove should have accrued interest");
 
         // C applies batch B's pending interest
-        applyTroveInterestPermissionless(C, ATroveId);
+        applyPendingDebt(C, ATroveId);
 
         assertEq(troveManager.calcBatchAccruedInterest(B), 0, "Batch should not have accrued interest");
         assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0, "Trove should not have accrued interest");
@@ -534,7 +534,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertGt(entireTroveDebt_1, 0);
 
         // C applies batch B's pending interest
-        applyTroveInterestPermissionless(C, ATroveId);
+        applyPendingDebt(C, ATroveId);
 
         batch = troveManager.getLatestBatchData(B);
         uint256 entireBatchDebt_2 = batch.entireDebtWithoutRedistribution;
@@ -562,7 +562,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 accruedTroveFee = troveManager.calcTroveAccruedBatchManagementFee(ATroveId);
 
         // C applies batch B's pending interest
-        applyTroveInterestPermissionless(C, ATroveId);
+        applyPendingDebt(C, ATroveId);
 
         batch = troveManager.getLatestBatchData(B);
         uint256 recordedBatchDebt_2 = batch.recordedDebt;

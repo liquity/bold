@@ -88,7 +88,7 @@ interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
         uint256 _maxUpfrontFee
     ) external;
 
-    function applyTroveInterestPermissionless(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint) external;
+    function applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint) external;
 
     function claimCollateral() external;
 
