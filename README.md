@@ -938,12 +938,12 @@ https://docs.google.com/spreadsheets/d/1MPVI6edLLbGnqsEo-abijaaLnXle-cJA_vE4CN16
 No fix is deemed necessary, since:
 
 - Redemption arbitrage is competitive and profit margins are thin. Chunking redemptions incurs higher gas costs and eats into arb profits.
- Redemptions in Liquity v1 (with the same fee formula) have broadly functioned well, and proven effective in restoring the LUSD peg.
-- The redemption fee gain and the redemption half-life are “best-guess” parameters anyway - there’s little reason to believe that even the intended fee scheme is absolutely optimal
+- Redemptions in Liquity v1 (with the same fee formula) have broadly functioned well, and proven effective in restoring the LUSD peg.
+- The redemption fee spike gain and decay half-life are “best-guess” parameters anyway - there’s little reason to believe that even the intended fee scheme is absolutely optimal.
 
 ### Oracle failure and urgent redemptions with the frozen last good price
 
-When an oracle failure triggers a branch shutdown, the respective PriceFeed’s `fetchPrice` function returns the recorded `lastGoodPrice` price thereafter. Thus LST on that branch is then always using `lastGoodPrice`.
+When an oracle failure triggers a branch shutdown, the respective PriceFeed’s `fetchPrice` function returns the recorded `lastGoodPrice` price thereafter. Thus LST on that branch is then always priced using `lastGoodPrice`.
 
 During shutdown, the only operation that uses the LST price is urgent redemptions.   
 
