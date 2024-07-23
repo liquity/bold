@@ -106,7 +106,7 @@
 
 - **Redemption fee mechanics at branch level**. The `baseRate` with fee spike based on redemption volume, and time-based decay.
 
-- **Ordered Troves**. Each branch maintains a sorted list of Troves (though now ordered by annual interest rate)
+- **Ordered Troves**. Each branch maintains a sorted list of Troves (though now ordered by annual interest rate).
 
 - **Liquidation mechanisms**. Liquidated Troves are still offset against the BOLD in the SP and redistribution to active Troves in the branch if/when the SP deposits are insufficient (though the liquidation penalty applied to the borrower is reduced).
 
@@ -116,7 +116,7 @@
 
 - **Individual overcollateralization**. Each Trove is individually overcollateralized and liquidated below the branch-specific MCR.
 
-- **Aggregate (branch level ) overcollateralization.** Each branch is overcollateralized , measured by the respective TCR.
+- **Aggregate (branch level) overcollateralization.** Each branch is overcollateralized, measured by the respective TCR.
 
 
 ## Liquity v2 Overview
@@ -127,7 +127,7 @@ Liquity v2 is a collateralized debt platform. Users can lock up WETH and/or sele
 The stablecoin tokens are economically geared towards maintaining value of 1 BOLD = $1 USD, due to the following properties:
 
 
-1. The system is designed to always be over-collateralized - the dollar value of the locked collateral exceeds the dollar value of the issued stablecoins
+1. The system is designed to always be over-collateralized - the dollar value of the locked collateral exceeds the dollar value of the issued stablecoins.
 
 
 2. The stablecoins are fully redeemable - users can always swap x BOLD for $x worth of a mix of WETH and LSTs (minus fees), directly with the system.
@@ -141,7 +141,7 @@ Upon  opening a Trove by depositing a viable collateral ERC20, users may issue (
 The BOLD tokens are freely exchangeable - any Ethereum address can send or receive BOLD tokens, whether it has an open Trove or not. The BOLD tokens are burned upon repayment of a Trove's debt.
 
 
-The Liquity v2 system prices collateral via Chainlink oracles.When a Trove falls below the MCR, it is considered under-collateralized, and is vulnerable to liquidation.
+The Liquity v2 system prices collateral via Chainlink oracles. When a Trove falls below the MCR, it is considered under-collateralized, and is vulnerable to liquidation.
 
 
 ## Multicollateral Architecture Overview
