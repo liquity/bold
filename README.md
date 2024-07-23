@@ -963,6 +963,20 @@ No fix is implemented for this, for the following reasons:
 - Clearing as much debt from a shut down branch as possible is considered desirable, but the system is designed to be able to absorb some bad debt due to overall overcollateralization
 - Oracle failure, if it occurs, will much more likely be due to a disabled Chainlink feed rather than hack or technical failure. A disabled LST oracle implies an LST with low liquidity/volume, which in turn probably implies that the LST constitutes a small fraction of total Liquity v2 collateral. In this case, the bad debt should likely be small relative to total system debt, and the overall overcollateralization should maintain the BOLD peg.
 
+### Redistribution gains not applied on batch Troves (fix TODO)
+
+There is currently no way to permissionlessly apply pending redistribution gains to Troves in batches. This can lead to an “unfair advantage” for such Troves, since if they are left untouched for a long period, they accrue less interest than Troves with the same entire debt but lower redistribution gains.
+
+This is fixed in the following PR:
+https://github.com/liquity/bold/pull/265/files
+
+### Batch management ops don’t check for a shutdown branch, and shutdown doesn’t freeze management fees (fix TODO)
+
+Currently, batch management operations such as `setBatchManagerAnnualInterestRate` and `applyBatchInterestAndFeePermissionless` don’t check for branch shutdown. These operations should not be possible on a shutdown branch.
+
+Additionally, upon shutdown all batch management fees should be frozen, in the same way individual interest on Troves is frozen upon shutdown.
+
+This fix is TODO.
 ## TODO - Oracles
 ### Oracle architecture and rationale
 ### Oracle logic
