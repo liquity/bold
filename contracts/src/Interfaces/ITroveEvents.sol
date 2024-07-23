@@ -8,7 +8,7 @@ interface ITroveEvents {
         closeTrove,
         adjustTrove,
         adjustTroveInterestRate,
-        applyTroveInterestPermissionless,
+        applyPendingDebt,
         liquidate,
         redeemCollateral,
         // batch management

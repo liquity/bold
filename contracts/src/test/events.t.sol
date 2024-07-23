@@ -248,7 +248,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         );
 
         vm.prank(A);
-        borrowerOperations.applyTroveInterestPermissionless(troveId);
+        borrowerOperations.applyPendingDebt(troveId);
     }
 
     function test_ApplyTroveInterestPermissionlessEmitsTroveOperation() external {
@@ -260,7 +260,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         vm.expectEmit();
         emit TroveOperation(
             troveId,
-            Operation.applyTroveInterestPermissionless,
+            Operation.applyPendingDebt,
             interestRate,
             0, // _debtIncreaseFromRedist
             0, // _debtIncreaseFromUpfrontFee
@@ -270,7 +270,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         );
 
         vm.prank(A);
-        borrowerOperations.applyTroveInterestPermissionless(troveId);
+        borrowerOperations.applyPendingDebt(troveId);
     }
 
     function test_CloseTroveEmitsTroveUpdated() external {

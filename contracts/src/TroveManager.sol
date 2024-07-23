@@ -1685,7 +1685,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         emit TroveOperation(
             _troveId,
-            Operation.applyTroveInterestPermissionless,
+            Operation.applyPendingDebt,
             Troves[_troveId].annualInterestRate,
             _troveChange.appliedRedistBoldDebtGain,
             _troveChange.upfrontFee,

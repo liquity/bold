@@ -9,7 +9,7 @@ interface IBorrowerOperationsTester is IBorrowerOperations {
     function getSortedTroves() external view returns (ISortedTroves);
     function getBoldToken() external view returns (IBoldToken);
 
-    function applyTroveInterestPermissionless(uint256 _troveId) external;
+    function applyPendingDebt(uint256 _troveId) external;
     function getNewTCRFromTroveChange(
         uint256 _collChange,
         bool isCollIncrease,

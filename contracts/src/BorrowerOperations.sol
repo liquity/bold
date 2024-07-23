@@ -761,7 +761,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         return trove.entireColl;
     }
 
-    function applyTroveInterestPermissionless(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint) public {
+    function applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint) public {
         _requireIsNotShutDown();
 
         ITroveManager troveManagerCached = troveManager;

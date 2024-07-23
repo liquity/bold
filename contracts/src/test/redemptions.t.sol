@@ -727,8 +727,8 @@ contract Redemptions is DevTestSetup {
         assertFalse(sortedTroves.contains(troveIDs.B));
 
         // E applies interest on A and B's Troves
-        applyTroveInterestPermissionless(E, troveIDs.A);
-        applyTroveInterestPermissionless(E, troveIDs.B);
+        applyPendingDebt(E, troveIDs.A);
+        applyPendingDebt(E, troveIDs.B);
 
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
@@ -757,8 +757,8 @@ contract Redemptions is DevTestSetup {
         assertFalse(sortedTroves.contains(troveIDs.B));
 
         // E applies interest on A and B's Troves
-        applyTroveInterestPermissionless(E, troveIDs.A);
-        applyTroveInterestPermissionless(E, troveIDs.B);
+        applyPendingDebt(E, troveIDs.A);
+        applyPendingDebt(E, troveIDs.B);
 
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);

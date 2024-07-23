@@ -351,9 +351,9 @@ contract BaseTest is TestAccounts {
         vm.stopPrank();
     }
 
-    function applyTroveInterestPermissionless(address _from, uint256 _troveId) public {
+    function applyPendingDebt(address _from, uint256 _troveId) public {
         vm.startPrank(_from);
-        borrowerOperations.applyTroveInterestPermissionless(_troveId);
+        borrowerOperations.applyPendingDebt(_troveId);
         vm.stopPrank();
     }
 
