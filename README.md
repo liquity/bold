@@ -869,14 +869,14 @@ Push oracles are used for all collateral pricing. Since these oracles push price
 An attack sequence may look like this:
 
 - Observe collateral price increase oracle update in the mempool
-- Frontrun with redemption transaction for `$x`, and receive `$x - fee` worth of collateral
+- Frontrun with redemption transaction for `$x` worth of BOLD and receive `$x - fee` worth of collateral
 - Oracle price increase update transaction is validated
 - Sell redeemed collateral for `$y` such that `$y > $x`, due to the price increase
 - Extracts `$(y-x)` from the system.
 
 This is “hard” frontrunning: the attacker directly frontrun the oracle price update. “Soft” frontrunning is also possible when the attacker sees the market price increase before even seeing the oracle price update transaction in the mempool.
 
-The value extracted is excessive, i.e. above and beyond the arbitrage profit expected from BOLD peg restoration. In fact, oracle frontrunning can be performed when BOLD is trading >= $1.
+The value extracted is excessive, i.e. above and beyond the arbitrage profit expected from BOLD peg restoration. In fact, oracle frontrunning can even be performed when BOLD is trading >= $1.
 
 In Liquity v1, this issue was largely mitigated by the 0.5% minimum redemption fee which matched Chainlink’s ETH-USD oracle update threshold of 0.5%.
 
@@ -907,12 +907,12 @@ The redemption routing logic reduces the “outside” debt of each branch by th
 
 It is clearly possible for a redeemer to temporarily manipulate the outside debt of one or more branches by depositing to the SP.
 
-Thus, an attacker could direct redemptions to their chosen branch(es) by depositing to SPs in branches they don’t wish to redeem from.  For example:
+Thus, an attacker could direct redemptions to their chosen branch(es) by depositing to SPs in branches they don’t wish to redeem from. 
 
-This sequence - deposit to SPs on unwanted branches, then redeem from chosen branch(es) -  could be done in one transaction and a flash loan could be used to obtain the BOLD funds for deposits.
+This sequence - deposit to SPs on unwanted branches, then redeem from chosen branch(es) -  can be performed in one transaction and a flash loan could be used to obtain the BOLD funds for deposits.
 
 By doing this redeemer extracts no extra value from the system, though it may increase their profit if they are able to choose LSTs to redeem which have lower slippage on external markets.
-The manipulation does not change the fee the attacker pays (which is based on the total BOLD supply).
+The manipulation does not change the fee the attacker pays (which is based purely on the `baseRate`, the redeemed BOLD and the total BOLD supply).
 
 #### Solution
 
@@ -924,9 +924,9 @@ Currently no fix is in place, because:
 
 ### Path-dependent redemptions: lower fee when chunking
 
-The redemption fee formula is not path-dependent: that is, given some given prior system state, the fee incurred from redeeming one big chunk of BOLD in a single transaction is greater than the total fee incurred by redeeming the same BOLD amount in many smaller chunks over many transactions (assuming no other system state change in between chunks).
+The redemption fee formula is path-dependent: that is, given some given prior system state, the fee incurred from redeeming one big chunk of BOLD in a single transaction is greater than the total fee incurred by redeeming the same BOLD amount in many smaller chunks with many transactions (assuming no other system state change in between chunks).
 
-As such, redeemers may be incentivised to split their redemption into many transactions in order to pay a lower total redemption fee.
+As such, redeemers may be incentivized to split their redemption into many transactions in order to pay a lower total redemption fee.
 
 See this example from this sheet [LINK]:
 https://docs.google.com/spreadsheets/d/1MPVI6edLLbGnqsEo-abijaaLnXle-cJA_vE4CN16kOE/edit?usp=sharing
@@ -937,17 +937,17 @@ https://docs.google.com/spreadsheets/d/1MPVI6edLLbGnqsEo-abijaaLnXle-cJA_vE4CN16
 
 No fix is deemed necessary, since:
 
-- Redemption arbitrage is competitive and profit margins are thin. Chunking redemptions incurs higher gas costs and eats into arb profits.
+- Redemption arbitrage is competitive and profit margins are thin. Chunking redemptions incurs a higher total gas cost and eats into arb profits.
 - Redemptions in Liquity v1 (with the same fee formula) have broadly functioned well, and proven effective in restoring the LUSD peg.
 - The redemption fee spike gain and decay half-life are “best-guess” parameters anyway - there’s little reason to believe that even the intended fee scheme is absolutely optimal.
 
 ### Oracle failure and urgent redemptions with the frozen last good price
 
-When an oracle failure triggers a branch shutdown, the respective PriceFeed’s `fetchPrice` function returns the recorded `lastGoodPrice` price thereafter. Thus LST on that branch is then always priced using `lastGoodPrice`.
+When an oracle failure triggers a branch shutdown, the respective PriceFeed’s `fetchPrice` function returns the recorded `lastGoodPrice` price thereafter. Thus the LST on that branch after shutdown is always priced using `lastGoodPrice`.
 
 During shutdown, the only operation that uses the LST price is urgent redemptions.   
 
-When `lastGoodPrice` is used, the real market price may be higher or lower. This leads the following distortions:
+When `lastGoodPrice` is used to price the LST, the _real_ market price may be higher or lower. This leads the following distortions:
 
 | Scenario                     | Consequence                                                                                                                                       |
 |------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -961,7 +961,7 @@ No fix is implemented for this, for the following reasons:
 
 - In both cases, the final result is that some uncleared BOLD debt remains on the shut down branch, and the system carries this unbacked debt burden going forward.  This is an inherent risk of a multicollateral system anyway, which relies on the economic health of the LST assets it integrates.
 - Clearing as much debt from a shut down branch as possible is considered desirable, but the system is designed to be able to absorb some bad debt due to overall overcollateralization
-- Oracle failure, if it occurs, will much more likely be due to a disabled Chainlink feed rather than hack or technical failure. A disabled LST oracle implies an LST with low liquidity/volume, which in turn probably implies the LST constitutes a small fraction of total Liquity v2 collateral. In this case, the bad debt should likely be small relative to total system debt, and the overall overcollateralization should maintain the BOLD peg.
+- Oracle failure, if it occurs, will much more likely be due to a disabled Chainlink feed rather than hack or technical failure. A disabled LST oracle implies an LST with low liquidity/volume, which in turn probably implies that the LST constitutes a small fraction of total Liquity v2 collateral. In this case, the bad debt should likely be small relative to total system debt, and the overall overcollateralization should maintain the BOLD peg.
 
 ## TODO - Oracles
 ### Oracle architecture and rationale
