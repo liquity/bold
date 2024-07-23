@@ -1,6 +1,6 @@
 # Liquity v2
 
-# Table of Contents
+## Table of Contents
 
 - [Liquity v2](#liquity-v2)
   - [Significant changes in Liquity v2](#significant-changes-in-liquity-v2)
@@ -1030,9 +1030,40 @@ No fix is implemented for this, for the following reasons:
 - Clearing as much debt from a shut down branch as possible is considered desirable, but the system is designed to be able to absorb some bad debt due to overall overcollateralization
 - Oracle failure, if it occurs, will much more likely be due to a disabled Chainlink feed rather than hack or technical failure. A disabled LST oracle implies an LST with low liquidity/volume, which in turn probably implies that the LST constitutes a small fraction of total Liquity v2 collateral. In this case, the bad debt should likely be small relative to total system debt, and the overall overcollateralization should maintain the BOLD peg.
 
+### Stale oracle price before shutdown triggered
+
+Liquity v2 checks all returned market oracle answers for staleness, and if they exceed a pre-set staleness threshold, it shuts down their associated branch.
+
+However, in case of a stale oracle (i.e. an oracle that has not updated for longer than it’s stated heartbeat), then in the period between the last oracle update and the branch shutdown, the Liquity v2 system will use the latest oracle price which may be out of date.
+
+The system could experience distortions in this period due to pricing collateral too low or too high relative to the real market price. Unwanted arbitrages and operations may be possible, such as:
+
+- Redeeming too profitably or unprofitably
+- Borrowing (and selling) BOLD with too little collateral provided
+- Liquidation of healthy Troves
+
+#### Solution
+
+Oracle staleness threshold parameters are TBD and should be carefully chosen in order to minimize the potential price deltas and distortions. The ETH-USD (and STETH-USD) feeds should have a lower staleness threshold than the LST-ETH feeds, since the USD feeds are typically much more volatile, and their prices could deviate by a larger percentage in a given time period than the LST-ETH feeds.
+
+All staleness thresholds must be also greater than the push oracle’s update heartbeat.
+
+Provisionally, the preset staleness thresholds in Liquity v2 as follows, though are subject to change before deployment:
+
+| Oracle                                                  | Oracle heartbeat | Provisional staleness threshold (s.t. change) |
+|---------------------------------------------------------|------------------|----------------------------------------------|
+| Chainlink ETH-USD                                       | 1 hour           | 24 hours                                     |
+| Chainlink stETH-USD                                     | 1 hour           | 24 hours                                     |
+| Chainlink rETH-ETH                                      | 24 hours         | 48 hours                                     |
+| Chainlink ETHX-ETH                                      | 24 hours         | 48 hours                                     |
+| Redstone osETH-ETH (note: use Chainlink feed when released) | 24 hours         | 48 hours                                     |
+
+
 ### Redistribution gains not applied on batch Troves (fix TODO)
 
 There is currently no way to permissionlessly apply pending redistribution gains to Troves in batches. This can lead to an “unfair advantage” for such Troves, since if they are left untouched for a long period, they accrue less interest than Troves with the same entire debt but lower redistribution gains.
+
+#### Solution 
 
 This is fixed in the following PR:
 https://github.com/liquity/bold/pull/265/files
@@ -1043,7 +1074,28 @@ Currently, batch management operations such as `setBatchManagerAnnualInterestRat
 
 Additionally, upon shutdown all batch management fees should be frozen, in the same way individual interest on Troves is frozen upon shutdown.
 
+#### Solution
 This fix is TODO.
+
+
+### Discrepancy between aggregate and sum of individual debts
+
+As mentioned in the interest rate implementation section [LINK], the core debt invariant is given by:
+
+**Aggregate total debt of a always equals the sum of individual entire Trove debts**.
+
+That is:
+
+`ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest() = SUM_i=1_n(TroveManager.getEntireTroveDebt())`
+
+For all `n` Troves in the branch.
+
+However, this sometimes breaks in invariant testing due to rounding error - the aggregate is sometimes slightly less than the sum over Troves. This can lead to Troves being  unclosable (normally or by liquidation) if the only other Troves in the branch are 0-debt Troves.
+
+#### Solution
+
+Though rounding error is inevitable, we should ensure that the error always “favors the system” - that is, the aggregate is always greater than the sum over Troves, and every Trove can be closed (until there is only 1 left in the system, as intended).
+
 ## TODO - Oracles
 ### Oracle architecture and rationale
 ### Oracle logic
