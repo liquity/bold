@@ -860,14 +860,113 @@ Urgent redemptions:
 - Do not redeem Troves in order of interest rate. Instead, the redeemer passes a list of Troves to redeem from.
 - Do not create unredeemable Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future urgent redemptions with tiny Troves.
 
+## Known issues and mitigations
+
+### Oracle price frontrunning
+
+Push oracles are used for all collateral pricing. Since these oracles push price update transactions on-chain, it is possible to frontrun them with redemption transactions.
+
+An attack sequence may look like this:
+
+- Observe collateral price increase oracle update in the mempool
+- Frontrun with redemption transaction for `$x`, and receive `$x - fee` worth of collateral
+- Oracle price increase update transaction is validated
+- Sell redeemed collateral for `$y` such that `$y > $x`, due to the price increase
+- Extracts `$(y-x)` from the system.
+
+This is “hard” frontrunning: the attacker directly frontrun the oracle price update. “Soft” frontrunning is also possible when the attacker sees the market price increase before even seeing the oracle price update transaction in the mempool.
+
+The value extracted is untoward, i.e. above and beyond the arbitrage profit expected from BOLD peg restoration. In fact, oracle frontrunning can be performed when BOLD is trading at $1) 
+
+In Liquity v1, this issue was largely mitigated by the 0.5% minimum redemption fee which matched Chainlink’s ETH-USD oracle update threshold of 0.5%.
+
+In v2, some oracles used for LSTs have larger update thresholds - e.g. Chainlink’s RETH-ETH, at 2%.
+
+However, we don’t expect oracle frontrunning to be a significant issue since these LST-ETH feeds are historically not volatile and rarely deviate by significant amounts: they usually update based on the heartbeat (mininum update frequency) rather than the threshold.
+
+ Still several solutions were considered. None are perfect:
+
+| Solution                                                                                  | Challenge                                                                                                                                                   |
+|-------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Low latency pull-based oracle                                                             | Mainnet block-time introduces a lower bound for price staleness. According to Chainlink, during high vol periods, these oracles may not be fast enough on mainnet |
+| Custom 2-step redemptions: commit-confirm pattern, redeemer confirms                      | Price uncertainty for legitimate redemption arbers. Could discourage legitimate redemptions                                                                 |
+| 2-step redemptions with pull-based oracle. Commit-confirm pattern, keeper confirms        | Price uncertainty for legitimate redemption arbers. Could discourage legitimate redemptions                                                                 |
+| Canonical rate oracle (ETH-USD_market x LST_ETH_canonical) for redemptions                | Likely fixes the issue - though in case of canonical rate manipulation, redemptions would be unprofitable (upward manipulation) or pay too much collateral (downward manipulation) |
+| Canonical rate oracle (ETH-USD_market x LST_ETH_canonical) for redemptions, with upward and downward protection (e.g. Aave) | Likely fixes the issue - but cap parameters may be hard to tune, and could not be changed                                                                  |
+| Adapt redemption fee parameters (fee spike gain, fee decay half-life)                     | Hard to tune parameters                                                                                                                                     |
+
+#### Solution 
+
+Solution 6 was provisionally chosen, as it involves minimal technical complexity. Parameters for redemptions are TBD.
+
+### Bypassing redemption routing logic via temporary SP deposits
+
+The redemption routing logic reduces the “outside” debt of each branch by the same percentage, where outside debt for branch `i` is given by:
+
+`outside_debt_i = bold_debt_i  - bold_in_SP_i`.
+
+It is clearly possible for a redeemer to temporarily manipulate the outside debt of one or more branches by depositing to the SP.
+
+Thus, an attacker could direct redemptions to their chosen branch(es) by depositing to SPs in branches they don’t wish to redeem from.  For example:
+
+This sequence - deposit to SPs on unwanted branches, then redeem from chosen branch(es) -  could be done in one transaction and a flash loan could be used to obtain the BOLD funds for deposits.
+
+By doing this redeemer extracts no extra value from the system, though it may increase their profit if they are able to choose LSTs to redeem which have lower slippage on external markets.
+The manipulation does not change the fee the attacker pays (which is based on the total BOLD supply).
+
+#### Solution
+
+Currently no fix is in place, because:
+
+- The redemption arbitrage is highly competitive, and flash loan fees reduce profits (though, the manipulation could still result in a greater profit as mentioned above)
+- There is no direct value extraction from the system
+- Redemption routing is not critical to system health. It is intended as a soft measure to nudge the system back to a healthier state, but in the end the system is heavily reliant on the health of all collateral markets/assets.
+
+### Path-dependent redemptions: lower fee when chunking
+
+The redemption fee formula is not path-dependent: that is, given some given prior system state, the fee incurred from redeeming one big chunk of BOLD in a single transaction is greater than the total fee incurred by redeeming the same BOLD amount in many smaller chunks over many transactions (assuming no other system state change in between chunks).
+
+As such, redeemers may be incentivised to split their redemption into many transactions in order to pay a lower total redemption fee.
+
+See this example from this sheet [LINK]:
+https://docs.google.com/spreadsheets/d/1MPVI6edLLbGnqsEo-abijaaLnXle-cJA_vE4CN16kOE/edit?usp=sharing
+
+
+
+#### Solution
+
+No fix is deemed necessary, since:
+
+- Redemption arbitrage is competitive and profit margins are thin. Chunking redemptions incurs higher gas costs and eats into arb profits.
+ Redemptions in Liquity v1 (with the same fee formula) have broadly functioned well, and proven effective in restoring the LUSD peg.
+- The redemption fee gain and the redemption half-life are “best-guess” parameters anyway - there’s little reason to believe that even the intended fee scheme is absolutely optimal
+
+### Oracle failure and urgent redemptions with the frozen last good price
+
+When an oracle failure triggers a branch shutdown, the respective PriceFeed’s `fetchPrice` function returns the recorded `lastGoodPrice` price thereafter. Thus LST on that branch is then always using `lastGoodPrice`.
+
+During shutdown, the only operation that uses the LST price is urgent redemptions.   
+
+When `lastGoodPrice` is used, the real market price may be higher or lower. This leads the following distortions:
+
+| Scenario                     | Consequence                                                                                                                                       |
+|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| lastGoodPrice > market price | Urgent redemptions return too little LST collateral, and may be unprofitable even when BOLD trades at $1 or below                                   |
+| lastGoodPrice < market price | Urgent redemptions return too much LST collateral. They may be too profitable, and not clear enough debt for the collateral redeemed                |
+
+
+#### Solution
+
+No fix is implemented for this, for the following reasons:
+
+- In both cases, the final result is that some uncleared BOLD debt remains on the shut down branch, and the system carries this unbacked debt burden going forward.  This is an inherent risk of a multicollateral system anyway, which relies on the economic health of the LST assets it integrates.
+- Clearing as much debt from a shut down branch as possible is considered desirable, but the system is designed to be able to absorb some bad debt due to overall overcollateralization
+- Oracle failure, if it occurs, will much more likely be due to a disabled Chainlink feed rather than hack or technical failure. A disabled LST oracle implies an LST with low liquidity/volume, which in turn probably implies the LST constitutes a small fraction of total Liquity v2 collateral. In this case, the bad debt should likely be small relative to total system debt, and the overall overcollateralization should maintain the BOLD peg.
+
 ## TODO - Oracles
 ### Oracle architecture and rationale
 ### Oracle logic
 ### Mitigations
-
-## TODO - Known issues and mitigations
-### Oracle frontrunning
-### LST and oracle risks 
 
 ## Requirements
 
