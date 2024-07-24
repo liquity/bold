@@ -1094,6 +1094,22 @@ However, this sometimes breaks in invariant testing due to rounding error - the 
 
 Though rounding error is inevitable, we should ensure that the error always “favors the system” - that is, the aggregate is always greater than the sum over Troves, and every Trove can be closed (until there is only 1 left in the system, as intended).
 
+### Discrepancy between `yieldGainsOwed` and sum of individual yield gains in StabilityPool
+
+StabilityPool increases `yieldGainsOwed` by the amount of BOLD yield it receives from interest minting, and decreases it by the claimed amount any time a depositor makes a claim. As such, `yieldGainsOwed` should always equal the sum of unclaimed yield present in deposits:
+
+`StabilityPool.getYieldGainsOwed() = SUM(StabilityPool.getDepositorYieldGain())`
+
+Currently, the discrepancy between these 2 can be rather large, especially if yield is received immediately after a liquidation that results in very little remaining deposited BOLD in StabilityPool. What's worse, the discrepancy can sometimes be negative, meaning if every depositor were to try and claim their gains, at some point we would try to reduce `yieldGainsOwed` below zero, resulting in arithmetic underflow.
+
+#### Solution
+
+Some imprecision in the StabilityPool arithmetic is inevitable, but we should avoid arithmetic underflow in `yieldGainsOwed` by ensuring the error stays positive. The root cause of the underflow is not yet clear, however it seems to be connected to our error feedback mechanism.
+
+[PR 261](https://github.com/liquity/bold/pull/261) contains a proof-of-concept patch that eliminates error correction while also simplifying the code in an effort make it easier to reason about. This fixes all currently known instances of arithmetic underflow.
+
+**TODO**: we should analyze the issue more and understand the root cause better.
+
 ## TODO - Oracles
 ### Oracle architecture and rationale
 ### Oracle logic
