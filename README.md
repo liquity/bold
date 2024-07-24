@@ -925,6 +925,89 @@ Urgent redemptions:
 - Do not redeem Troves in order of interest rate. Instead, the redeemer passes a list of Troves to redeem from.
 - Do not create unredeemable Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future urgent redemptions with tiny Troves.
 
+## Collateral choices in Liquity v2
+
+Provisionally, v2 has been developed with the following collateral assets in mind:
+
+
+- WETH
+- WSTETH
+- RETH
+- OSETH (TBD)
+- ETHX (TBD)
+
+The final choice of LSTs is TBD, and may include one of (or both) OSETH and ETHX.
+
+## Oracles in Liquity v2
+
+Liquity v2 requires accurate pricing in USD for the above collateral assets. 
+
+All oracles are integrated via Chainlink’s `AggregatorV3Interface`, and all oracle price requests are made using its `latestRoundData` function.
+
+### Choice of oracles and price calculations
+
+Chainlink push feeds were chosen due to Chainlink’s reliability and track record. The system provisionally uses Redstone’s push feed for OSETH, though the Chainlink feed will be used when it is made public (and if we decide to include OSETH as collateral).
+
+The pricing method for each LST depends on availability of oracles. Where possible, direct LST-USD market oracles have been used. 
+
+Otherwise, composite market oracles have been created which utilise the ETH-USD market feed and an LST-ETH market feed. In the case of the WSTETH oracle, the STETH price and the WSTETH-STETH exchange rate is used.
+
+LST-ETH canonical exchange rates are also used as sanity check for the more vulnerable LSTs (i.e. lower liquidity/volume).
+
+Here are the oracles and price calculations for each PriceFeed:
+
+| Liquity v2 PriceFeed | Oracles used                                  | Price calculation                                              |
+|----------------------|-----------------------------------------------|----------------------------------------------------------------|
+| WETH-USD             | ETH-USD                                       | ETH-USD                                                        |
+| WSTETH-USD           | STETH-USD, WSTETH-ETH_canonical               | STETH-ETH * STETH-WSTETH_canonical                             |
+| RETH-USD             | ETH-USD, RETH-ETH, RETH-ETH_canonical         | min(ETH-USD * RETH-ETH, ETH-USD * RETH_ETH_canonical)          |
+| ETHX-USD             | ETH-USD, ETHX-ETH, ETHX-ETH_canonical         | min(ETH-USD * ETHX-ETH, ETH-USD * ETHX-ETH_canonical)          |
+| OSETH-USD            | ETH-USD, OSETH-ETH, OSETH-ETH_canonical       | min(ETH-USD * OSETH-ETH, ETH-USD * OSETH_ETH_canonical)        |
+
+### TODO - [INHERITANCE DIAGRAM]
+
+
+### PriceFeed Deployment 
+
+Upon deployment, the `stalenessThreshold` property of each oracle is set. This is in all cases greater than the oracle’s intrinsic update heartbeat.
+
+### Fetching the price 
+
+When a system branch operation needs to know the current price of collateral, it calls `fetchPrice` on the relevant PriceFeed. 
+
+
+- If the PriceFeed has already been disabled, return the `lastGoodPrice`. Otherwise:
+- Fetch all necessary oracle answers with `aggregator.latestRoundData`
+- Verify each oracle answer. If any oracle used is deemed to have failed, disable the PriceFeed and shut the branch down
+- Calculate the final LST-USD price (according to table above)
+- Store the final LST-USD price and return it 
+
+The conditions for shutdown at the verification step are:
+
+- Call to oracle reverts
+- Oracle returns a price of 0
+- Oracle returns a price older than its `stalenessThreshold`
+
+This is intended to catch some obvious oracle failure modes, as well as the scenario whereby the oracle provider disables their feed. Chainlink have stated that they may disable LST feeds if volume becomes too small, and that in this case, the call to the oracle will revert.
+
+### Using `lastGoodPrice` if an oracle has been disabled
+
+If an oracle has failed, then the best the branch can do is use the last good price seen by the system. Using an out-of-date price obviously has undesirable consequences, but it’s the best that can be done in this extreme scenario. The impacts are addressed in this issue [LINK to known issues section]
+
+### Protection against upward market price manipulation
+
+The smaller LSTs (RETH, OSETH, ETHX) have lower liquidity and thus it is cheaper for a malicious actor to manipulate their market price.
+
+The impacts of downward market manipulation are bounded - it could result in excessive liquidations and branch shutdown, but should not affect other branches nor BOLD stability.
+
+However, upward market manipulation could be catastrophic as it would allow excessive BOLD minting from Troves, which could cause a depeg.
+
+The system mitigates this by taking the minimum of the LST-USD prices derived from market and canonical rates on the RETH, ETHX and OSETH PriceFeeds. As such, to manipulate the system price upward, an attacker would need to manipulate both the market oracle _and_ the canonical rate which would be much more difficult.
+
+
+However this is not the only LST/oracle risk scenario. There are several to consider - see the LST and oracle risks section [LINK]
+
+
 ## Known issues and mitigations
 
 ### Oracle price frontrunning
