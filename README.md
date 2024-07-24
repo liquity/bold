@@ -1088,11 +1088,11 @@ That is:
 
 For all `n` Troves in the branch.
 
-However, this sometimes breaks in invariant testing due to rounding error - the aggregate is sometimes slightly less than the sum over Troves. This can lead to Troves being  unclosable (normally or by liquidation) if the only other Troves in the branch are 0-debt Troves.
+However, this invariant doesn't hold perfectly - the aggregate is sometimes slightly less than the sum over Troves. 
 
 #### Solution
 
-Though rounding error is inevitable, we should ensure that the error always “favors the system” - that is, the aggregate is always greater than the sum over Troves, and every Trove can be closed (until there is only 1 left in the system, as intended).
+Though rounding error is inevitable, we have ensured that the error always “favors the system” - that is, the aggregate is always greater than the sum over Troves, and every Trove can be closed (until there is only 1 left in the system, as intended).
 
 ### Discrepancy between `yieldGainsOwed` and sum of individual yield gains in StabilityPool
 
