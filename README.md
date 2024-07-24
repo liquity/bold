@@ -533,8 +533,6 @@ That is, a redemption reduces the outside debt on each branch by the same percen
 
 _Example: 2000 BOLD is redeemed across 4 branches_
 
-[TABLE - BRANCH REDEMPTION]
-
 <img width="704" alt="image" src="https://github.com/user-attachments/assets/21afcc49-ed50-4f3e-8b36-1949cd7a3809">
 
 As can be seen in the above table and proven in generality (TBD), the outside debt is reduced by the same proportion in all branches, making redemptions path-independent.
