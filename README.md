@@ -1193,10 +1193,40 @@ Some imprecision in the StabilityPool arithmetic is inevitable, but we should av
 
 **TODO**: we should analyze the issue more and understand the root cause better.
 
-## TODO - Oracles
-### Oracle architecture and rationale
-### Oracle logic
-### Mitigations
+### LST oracle risks 
+
+Liquity v1 primarily used the Chainlink ETH-USD oracle to price collateral. ETH clearly has very deep liquidity and diverse price sources, which makes this oracle robust.
+
+However, Liquity v2 must also price a variety of LSTs, which comes with challenges:
+
+- LSTs may have thin liquidity and/or low trading volume
+- A given LST may trade only on 1-2 venues, i.e. a single DEX pool
+- LST smart contract risk: withdrawal bugs, manipulation of canonical exchange rates, etc
+
+Thin liquidity and lack of price source diversity lead to an increased risk of market price manipulation. An attacker could (for example) relatively cheaply tilt the primary DEX pool on which the LST trades, and thus pump or crash the LST price reported by the oracle. 
+
+Liquity v2 would be fully exposed to this risk if it purely relied on LST-USD market price oracles for the riskier LSTs.
+
+An alternative to market price oracles is to calculate a composite LST-USD price using an ETH-USD market oracle and the LST canonical exchange rate from the LST smart contract.
+
+This mitigates against market manipulation since the only market oracle used is the more robust ETH-USD, but then exposes the system to canonical exchange rate manipulation.
+
+Canonical exchange rates are updated in different ways depending on the given LST, and most are controlled by an oracle-like scheme, though some LSTs are moving to trustless zk-proof based updates. Therefore, using canonical rates introduces exchange rate manipulation risk, the magnitude of which is hard to assess for smaller LSTs (does the team abandon the project? do promises to move to zk-proofs materialize? What are the attack costs for the oracle-like canonical rate update?).
+
+Various risk scenarios have been analysed in this sheet for different oracle setups: (see sheet 1, and overview in sheet 2):
+https://docs.google.com/spreadsheets/d/1Of5eIKBMVAevVfw5AtbdFpRlMLn8q9vt0vqmtrDhySc/edit?usp=sharing
+
+#### Solution
+
+To mitigate the worst outcome of upward price manipulation, Liquity v2 uses solution 2) - i.e. takes the lower of LST-USD prices derived from an LST market price and the LST canonical rate.
+
+Downward price manipulation is not protected against, however the impact should be contained to the branch (liquidations and shutdown). Also, downard manipulation likely implies a low liquidty LST, which in turn likely implies the LST is a small fraction of total collateral in Liquity v2. Thus the impact on the system and any bad debt created should be small.
+
+On the other hand, upward price manipulation would result in excessive BOLD minting, which is detrimental to the entire system health and BOLD peg.
+
+Taking the minimum of both market and canonical prices means that to make Liquity v2 consume an artificially high LST price, an attacker needs to manipulate both the market oracle _and_ the LST canonical rate at the same time, which seems much more difficult to do.
+
+The best solution on paper seems to be 3) i.e. taking the minimum with an additional growth rate cap on the exchange rate, following Aave’s approach. [LINK - Aave growth rate cap]. However, deriving parameters for growth rate caps for each LST is tricky, and may not be suitable for an immutable system. 
 
 ## Requirements
 
