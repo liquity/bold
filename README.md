@@ -214,7 +214,7 @@ The three main branch-level contracts - `BorrowerOperations`, `TroveManager` and
 
 ### Mainnet PriceFeed contracts
 
-Different PriceFeed contracts are needed for pricing collaterals on different branches, since the price calculation methods differ across LSTs (see the Oracle section) [LINK]. However, much of the functionality is common to a couple of parent contracts.
+Different PriceFeed contracts are needed for pricing collaterals on different branches, since the price calculation methods differ across LSTs see the [Oracle section](#oracles-in-liquity-v2). However, much of the functionality is common to a couple of parent contracts.
 
 - `MainnetPriceFeedBase` - Base contract that contains functionality for fetching prices from external Chainlink (and possibly Redstone) push oracles, verifying the responses, and triggering collateral branch shutdown in case of an oracle failure.
 
@@ -237,7 +237,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
 ### CollateralRegistry
 
 
-- `redeemCollateral(uint256 _boldAmount, uint256 _maxIterations, uint256 _maxFeePercentage)`: redeems `_boldAmount` of BOLD tokens from the system in exchange for a mix of collaterals. Splits the BOLD redemption according to the redemption routing logic [LINK], redeems from a number of Troves in each collateral branch, burns `_boldAmount` from the caller’s BOLD balance, and transfers each redeemed collateral amount to the redeemer. Executes successfully if the caller has sufficient BOLD to redeem. The number of Troves redeemed from per branch is capped by `_maxIterationsPerCollateral`. The borrower has to provide a `_maxFeePercentage` that he/she is willing to accept which mitigates fee slippage, i.e. when another redemption transaction is processed first and drives up the redemption fee.  Troves left with `debt < MIN_DEBT` are flagged as `unredeemable`.
+- `redeemCollateral(uint256 _boldAmount, uint256 _maxIterations, uint256 _maxFeePercentage)`: redeems `_boldAmount` of BOLD tokens from the system in exchange for a mix of collaterals. Splits the BOLD redemption according to the [redemption routing logic](#redemption-routing), redeems from a number of Troves in each collateral branch, burns `_boldAmount` from the caller’s BOLD balance, and transfers each redeemed collateral amount to the redeemer. Executes successfully if the caller has sufficient BOLD to redeem. The number of Troves redeemed from per branch is capped by `_maxIterationsPerCollateral`. The borrower has to provide a `_maxFeePercentage` that he/she is willing to accept which mitigates fee slippage, i.e. when another redemption transaction is processed first and drives up the redemption fee.  Troves left with `debt < MIN_DEBT` are flagged as `unredeemable`.
 
 ### BorrowerOperations
 
@@ -266,9 +266,9 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
 
 - `addColl(uint256 _troveId, uint256 _collAmount)`: Transfers the `_collAmount` from the user to the system, and adds the received collateral to the caller's active Trove.
 
-- `withdrawColl(uint256 _troveId, uint256 _amount)`: withdraws _amount of collateral from the caller’s Trove. Executes only if the user has an active Trove, must result in the user’s Trove `ICR >= MCR` and must obey the adjustment CCR constraints [LINK].
+- `withdrawColl(uint256 _troveId, uint256 _amount)`: withdraws _amount of collateral from the caller’s Trove. Executes only if the user has an active Trove, must result in the user’s Trove `ICR >= MCR` and must obey the adjustment [CCR constraints](#critical-collateral-ratio-ccr-restrictions).
 
- - `withdrawBold(uint256 _troveId, uint256 _amount, uint256 _maxUpfrontFee)`: adds _amount of BOLD to the user’s Trove’s debt, mints BOLD stablecoins to the user. Must result in `ICR >= MCR` and must obey the adjustment CCR constraints [LINK]. An `upfrontFee` is charged, based on the system’s _average_ interest rate, the BOLD debt drawn and the `UPFRONT_INTEREST_PERIOD`. The fee is added to the Trove’s debt. The borrower chooses a `_maxUpfrontFee` that he/she is willing to accept in case of a fee slippage, i.e. when the system’s average interest rate increases and in turn increases the fee they’d pay.	
+ - `withdrawBold(uint256 _troveId, uint256 _amount, uint256 _maxUpfrontFee)`: adds _amount of BOLD to the user’s Trove’s debt, mints BOLD stablecoins to the user. Must result in `ICR >= MCR` and must obey the adjustment [CCR constraints](#critical-collateral-ratio-ccr-restrictions). An `upfrontFee` is charged, based on the system’s _average_ interest rate, the BOLD debt drawn and the `UPFRONT_INTEREST_PERIOD`. The fee is added to the Trove’s debt. The borrower chooses a `_maxUpfrontFee` that he/she is willing to accept in case of a fee slippage, i.e. when the system’s average interest rate increases and in turn increases the fee they’d pay.	
 
  - `repayBold(uint256 _troveId, uint256 _amount)`: repay `_amount` of BOLD to the caller’s Trove, canceling that amount of debt. Transfers the BOLD from the caller to the system.
 
@@ -281,7 +281,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
         uint256 _debtChange,
         bool isDebtIncrease,
         uint256 _maxUpfrontFee
-    )`:  enables a borrower to simultaneously change both their collateral and debt, subject to the resulting `ICR >= MCR` and the adjustment CCR constraints [LINK]. If the adjustment incorporates a `debtIncrease`, then an `upfrontFee` is charged as per `withdrawBold`.
+    )`:  enables a borrower to simultaneously change both their collateral and debt, subject to the resulting `ICR >= MCR` and the adjustment [CCR constraints](#critical-collateral-ratio-ccr-restrictions). If the adjustment incorporates a `debtIncrease`, then an `upfrontFee` is charged as per `withdrawBold`.
 
 
 - `adjustUnredeemableTrove(
@@ -293,7 +293,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
         uint256 _upperHint,
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
-    )` - enables a borrower with a unredeemable Trove to adjust it. Any adjustment must result in the Trove’s `debt > MIN_DEBT` and `ICR > MCR`, along with the usual borrowing CCR constraints [LINK]. The adjustment reinserts it to its previous batch, if it had one.
+    )` - enables a borrower with a unredeemable Trove to adjust it. Any adjustment must result in the Trove’s `debt > MIN_DEBT` and `ICR > MCR`, along with the usual borrowing [CCR constraints](#critical-collateral-ratio-ccr-restrictions). The adjustment reinserts it to its previous batch, if it had one.
 
 - `claimCollateral()`: Claims the caller’s accumulated collateral surplus gains from their liquidated Troves which were left with a collateral surplus after collateral seizure at liquidation.  Sends the accumulated collateral surplus to the caller and zeros their recorded balance.
 
@@ -305,7 +305,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
         uint256 _upperHint,
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
-    )`: Change’s the caller’s annual interest rate on their Trove. The update is considered “premature” if they’ve recently changed their interest rate (i.e. within `INTEREST_RATE_ADJ_COOLDOWN` seconds), and if so, they incur an upfront fee (see the interest rate adjustment section [LINK]).  The fee is also based on the system average interest rate, so the user may provide a `_maxUpfrontFee` if they make a premature adjustment.
+    )`: Change’s the caller’s annual interest rate on their Trove. The update is considered “premature” if they’ve recently changed their interest rate (i.e. within `INTEREST_RATE_ADJ_COOLDOWN` seconds), and if so, they incur an upfront fee - see the [interest rate adjustment section](#interest-rate-adjustments-redemption-evasion-mitigation).  The fee is also based on the system average interest rate, so the user may provide a `_maxUpfrontFee` if they make a premature adjustment.
 
 - `applyTroveInterestPermissionless(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint)`: Applies the Trove’s accrued interest, i.e. adds the accrued interest to its recorded debt and updates its `lastDebtUpdateTime` to now. The purpose is to make sure all Troves can have their interest applied with sufficient regularity even if their owner doesn’t touch them. Also makes unredeemable Troves that have reached `debt > MIN_DEBT` (e.g. from interest or redistribution gains) become redeemable again, by reinserting them to the SortedList and previous batch (if they were in one).
 
@@ -560,7 +560,7 @@ A redemption sequence of n steps will fully redeem all debt from the first n-1 T
 
 Redemptions are skipped for Troves with ICR  < 100%. This is to ensure that redemptions improve the ICR of the Trove.
 
-Unredeemable troves are also skipped (see unredeemable Troves section [LINK]).
+Unredeemable troves are also skipped - see [unredeemable Troves section](#unredeemable-troves).
 
 ### Redemption fees
 
@@ -644,7 +644,7 @@ Unredeemable Troves:
 - Can be closed by their owner
 - Can be brought above `MIN_DEBT` by owner (which re-adds them to the Sorted Troves list, and changes their status back to 'Active')
 
-_(*as long as TCR > 100%. If TCR < 100%, then normal redemptions would lower the TCR, but the shutdown threshold is set above 100%, and therefore the branch would be shut down first. See the shutdown section [LINK].)_
+_(*as long as TCR > 100%. If TCR < 100%, then normal redemptions would lower the TCR, but the shutdown threshold is set above 100%, and therefore the branch would be shut down first. See the [shutdown section](#shutdown-logic) )_
 
 
 ## Stability Pool implementation
@@ -921,7 +921,7 @@ The accrued interest and accrued management fees are calculated and added to the
 
 ### Batch premature adjustment fees
 
-Batch managers incur premature fees in the same manner as individual Troves - i.e. if they adjust before the cooldown period has past since their last adjustment [LINK - premature adjustment fee].
+Batch managers incur premature fees in the same manner as individual Troves - i.e. if they adjust before the cooldown period has past since their last adjustment (see [premature adjustment section](#interest-rate-adjustments-redemption-evasion-mitigation).
 
 When a borrower adds their Trove to a batch, there is a trust assumption: they expect the batch manager to manage interest rates well and not incur excessive adjustment fees.  However, the manager can commit in advance to a maximum update frequency when they register by passing a `_minInterestRateChangePeriod`.
 
@@ -1052,7 +1052,7 @@ This is intended to catch some obvious oracle failure modes, as well as the scen
 
 ### Using `lastGoodPrice` if an oracle has been disabled
 
-If an oracle has failed, then the best the branch can do is use the last good price seen by the system. Using an out-of-date price obviously has undesirable consequences, but it’s the best that can be done in this extreme scenario. The impacts are addressed in this issue [LINK to known issues section]
+If an oracle has failed, then the best the branch can do is use the last good price seen by the system. Using an out-of-date price obviously has undesirable consequences, but it’s the best that can be done in this extreme scenario. The impacts are addressed in the [known issues section](#known-issues-and-mitigations).
 
 ### Protection against upward market price manipulation
 
@@ -1065,7 +1065,7 @@ However, upward market manipulation could be catastrophic as it would allow exce
 The system mitigates this by taking the minimum of the LST-USD prices derived from market and canonical rates on the RETH, ETHX and OSETH PriceFeeds. As such, to manipulate the system price upward, an attacker would need to manipulate both the market oracle _and_ the canonical rate which would be much more difficult.
 
 
-However this is not the only LST/oracle risk scenario. There are several to consider - see the LST and oracle risks section [LINK]
+However this is not the only LST/oracle risk scenario. There are several to consider - see the [LST oracle risks section](#lst-oracle-risks).
 
 
 ## Known issues and mitigations
@@ -1136,7 +1136,7 @@ The redemption fee formula is path-dependent: that is, given some given prior sy
 
 As such, redeemers may be incentivized to split their redemption into many transactions in order to pay a lower total redemption fee.
 
-See this example from this sheet [LINK]:
+See this example from this sheet:
 https://docs.google.com/spreadsheets/d/1MPVI6edLLbGnqsEo-abijaaLnXle-cJA_vE4CN16kOE/edit?usp=sharing
 
 
@@ -1221,7 +1221,7 @@ This fix is TODO.
 
 ### Discrepancy between aggregate and sum of individual debts
 
-As mentioned in the interest rate implementation section [LINK], the core debt invariant is given by:
+As mentioned in the interest rate [implementation section](#core-debt-invariant), the core debt invariant is given by:
 
 **Aggregate total debt of a always equals the sum of individual entire Trove debts**.
 
@@ -1286,7 +1286,7 @@ On the other hand, upward price manipulation would result in excessive BOLD mint
 
 Taking the minimum of both market and canonical prices means that to make Liquity v2 consume an artificially high LST price, an attacker needs to manipulate both the market oracle _and_ the LST canonical rate at the same time, which seems much more difficult to do.
 
-The best solution on paper seems to be 3) i.e. taking the minimum with an additional growth rate cap on the exchange rate, following Aave’s approach. [LINK - Aave growth rate cap]. However, deriving parameters for growth rate caps for each LST is tricky, and may not be suitable for an immutable system. 
+The best solution on paper seems to be 3) i.e. taking the minimum with an additional growth rate cap on the exchange rate, following [Aave’s approach](https://github.com/bgd-labs/aave-capo). However, deriving parameters for growth rate caps for each LST is tricky, and may not be suitable for an immutable system. 
 
 ## Requirements
 
