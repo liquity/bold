@@ -452,10 +452,7 @@ The aggregate pending interest at any given moment is given by
 
 At most system operations, the `aggRecordedDebt` is updated - the pending aggregate interest is calculated and added to it, and the `lastDebtUpdateTime` is updated to now - thus resetting the aggregate pending interest.
 
-
-[TODO - LINK ALGORITHM PAPER]
-
-[TODO - IMPLEMENTATION PSEUDOCODE FROM GH ISSUE]
+The theoretical approach is laid out in [this paper](https://docs.google.com/document/d/1KOP09exxLcrNKHoJ9zgxvNFS_W9AIy5jt85OqmeAwN4/edit?usp=sharing)
 
 In practice, the implementation in code follows these steps but the exact sequence of operations is sometimes different due to other considerations (e.g. gas efficiency).
 
