@@ -780,7 +780,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         if (batchManager == address(0)) {
             change.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
             change.newWeightedRecordedDebt = trove.entireDebt * trove.annualInterestRate;
-
         } else {
             batch = troveManagerCached.getLatestBatchData(batchManager);
             change.batchAccruedManagementFee = batch.accruedManagementFee;
@@ -994,9 +993,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         newBatchTroveChange.batchAccruedManagementFee = vars.newBatch.accruedManagementFee;
         newBatchTroveChange.oldWeightedRecordedDebt =
             vars.newBatch.weightedRecordedDebt + vars.trove.weightedRecordedDebt;
-        newBatchTroveChange.newWeightedRecordedDebt = (
-            vars.newBatch.entireDebtWithoutRedistribution + vars.trove.entireDebt
-        ) * vars.newBatch.annualInterestRate;
+        newBatchTroveChange.newWeightedRecordedDebt =
+            (vars.newBatch.entireDebtWithoutRedistribution + vars.trove.entireDebt) * vars.newBatch.annualInterestRate;
 
         // TODO: We may check the old rate to see if it’s different than the new one, but then we should check the
         // last interest adjustment times to avoid gaming. So we decided to keep it simple and account it always
@@ -1008,9 +1006,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         }
 
         // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee
-        newBatchTroveChange.newWeightedRecordedDebt = (
-            vars.newBatch.entireDebtWithoutRedistribution + vars.trove.entireDebt
-        ) * vars.newBatch.annualInterestRate;
+        newBatchTroveChange.newWeightedRecordedDebt =
+            (vars.newBatch.entireDebtWithoutRedistribution + vars.trove.entireDebt) * vars.newBatch.annualInterestRate;
 
         // Add batch fees
         newBatchTroveChange.oldWeightedRecordedBatchManagementFee = vars.newBatch.weightedRecordedBatchManagementFee;
@@ -1443,7 +1440,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         }
     }
 
-    function _requireAnnualInterestRateIsNew(uint256 _oldAnnualInterestRate, uint256 _newAnnualInterestRate) internal pure {
+    function _requireAnnualInterestRateIsNew(uint256 _oldAnnualInterestRate, uint256 _newAnnualInterestRate)
+        internal
+        pure
+    {
         if (_oldAnnualInterestRate == _newAnnualInterestRate) {
             revert InterestRateNotNew();
         }
