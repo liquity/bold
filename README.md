@@ -522,7 +522,8 @@ Any BOLD holder (whether or not they have an active Trove) may redeem their BOLD
 
 ## Redemption routing
 
-[TODO - ROUTING DIAGRAM]
+<img width="742" alt="image" src="https://github.com/user-attachments/assets/6df3b8bf-ccd8-4aa0-9796-900ea808a352">
+
 
 Redemptions are performed via the `CollateralRegistry.redeemCollateral` endpoint. A given redemption may be routed across several collateral branches.
 
