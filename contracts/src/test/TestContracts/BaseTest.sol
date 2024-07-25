@@ -4,12 +4,12 @@ pragma solidity 0.8.18;
 import "./Accounts.sol";
 import "../../Interfaces/IActivePool.sol";
 import "../../Interfaces/IBoldToken.sol";
-import "../../Interfaces/IBorrowerOperations.sol";
 import "../../Interfaces/ICollSurplusPool.sol";
 import "../../Interfaces/IDefaultPool.sol";
 import "../../Interfaces/IPriceFeed.sol";
 import "../../Interfaces/ISortedTroves.sol";
 import "../../Interfaces/IStabilityPool.sol";
+import "./BorrowerOperationsTester.sol";
 import "./TroveManagerTester.sol";
 import "../../Interfaces/ICollateralRegistry.sol";
 import "./PriceFeedTestnet.sol";
@@ -18,33 +18,22 @@ import "../../GasPool.sol";
 import "../../HintHelpers.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
 
-import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
-contract BaseTest is Test {
-    Accounts accounts;
-
-    address[] accountsList;
-    address public A;
-    address public B;
-    address public C;
-    address public D;
-    address public E;
-    address public F;
-    address public G;
-
+contract BaseTest is TestAccounts {
+    uint256 CCR;
     uint256 MCR;
     uint256 LIQUIDATION_PENALTY_SP;
     uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
 
     // Core contracts
     IActivePool activePool;
-    IBorrowerOperations borrowerOperations;
+    IBorrowerOperationsTester borrowerOperations;
     ICollSurplusPool collSurplusPool;
     IDefaultPool defaultPool;
     ISortedTroves sortedTroves;
     IStabilityPool stabilityPool;
-    TroveManagerTester troveManager;
+    ITroveManagerTester troveManager;
     IBoldToken boldToken;
     ICollateralRegistry collateralRegistry;
     IPriceFeedTestnet priceFeed;
@@ -52,7 +41,7 @@ contract BaseTest is Test {
     IInterestRouter mockInterestRouter;
     IERC20 collToken;
     HintHelpers hintHelpers;
-    IERC20 WETH; // used for gas compensation
+    IWETH WETH; // used for gas compensation
 
     // Structs for use in test where we need to bi-pass "stack-too-deep" errors
     struct ABCDEF {
@@ -142,13 +131,8 @@ contract BaseTest is Test {
         }
     }
 
-    function createAccounts() public {
-        address[10] memory tempAccounts;
-        for (uint256 i = 0; i < accounts.getAccountsCount(); i++) {
-            tempAccounts[i] = vm.addr(uint256(accounts.accountsPks(i)));
-        }
-
-        accountsList = tempAccounts;
+    function getRedeemableDebt(uint256 troveId) internal view returns (uint256) {
+        return troveManager.getTroveEntireDebt(troveId);
     }
 
     function addressToTroveId(address _owner, uint256 _ownerIndex) public pure returns (uint256) {

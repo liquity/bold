@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.18;
 
@@ -131,10 +131,25 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
             ITroveManager troveManager = getTroveManager(index);
             (uint256 unbackedPortion, uint256 price, bool redeemable) =
                 troveManager.getUnbackedPortionPriceAndRedeemability();
+            prices[index] = price;
             if (redeemable) {
                 totals.unbacked += unbackedPortion;
                 unbackedPortions[index] = unbackedPortion;
-                prices[index] = price;
+            }
+        }
+
+        // There’s an unlikely scenario where all the normally redeemable branches (i.e. having TCR > SCR) have 0 unbacked
+        // In that case, we redeem proportinally to branch size
+        if (totals.unbacked == 0) {
+            unbackedPortions = new uint256[](totals.numCollaterals);
+            for (uint256 index = 0; index < totals.numCollaterals; index++) {
+                ITroveManager troveManager = getTroveManager(index);
+                (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
+                if (redeemable) {
+                    uint256 unbackedPortion = troveManager.getEntireSystemDebt();
+                    totals.unbacked += unbackedPortion;
+                    unbackedPortions[index] = unbackedPortion;
+                }
             }
         }
 
@@ -312,39 +327,4 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
             boldBalance >= _amount, "TroveManager: Requested redemption amount must be <= user's Bold token balance"
         );
     }
-
-    /*
-      TODO: do we need this?
-    function getTokenIndex(IERC20 _token) external view returns (uint256) {
-        if (token == token0) { return 0; }
-        else if (_token == token1) { return 1; }
-        else if (_token == token2) { return 2; }
-        else if (_token == token3) { return 3; }
-        else if (_token == token4) { return 4; }
-        else if (_token == token5) { return 5; }
-        else if (_token == token6) { return 6; }
-        else if (_token == token7) { return 7; }
-        else if (_token == token8) { return 8; }
-        else if (_token == token9) { return 9; }
-        else {
-            revert("Invalid token");
-        }
-    }
-
-    function getTroveManagerIndex(ITroveManager _troveManager) external view returns (uint256) {
-        if (troveManager == troveManager0) { return 0; }
-        else if (_troveManager == troveManager1) { return 1; }
-        else if (_troveManager == troveManager2) { return 2; }
-        else if (_troveManager == troveManager3) { return 3; }
-        else if (_troveManager == troveManager4) { return 4; }
-        else if (_troveManager == troveManager5) { return 5; }
-        else if (_troveManager == troveManager6) { return 6; }
-        else if (_troveManager == troveManager7) { return 7; }
-        else if (_troveManager == troveManager8) { return 8; }
-        else if (_troveManager == troveManager9) { return 9; }
-        else {
-            revert("Invalid troveManager");
-        }
-    }
-    */
 }

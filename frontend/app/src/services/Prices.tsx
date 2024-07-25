@@ -23,14 +23,13 @@ type PriceToken = "ETH" | "LQTY" | "BOLD" | "RETH" | "STETH";
 type Prices = Record<PriceToken, Dnum | null>;
 
 const initialPrices: Prices = {
-  BOLD: null,
+  BOLD: dn.from(1, 18),
   ETH: null,
   LQTY: null,
   RETH: null,
   STETH: null,
 };
 
-// TODO: implement a price watcher
 let useWatchPrices = function useWatchPrices(): Prices {
   const TroveManager = useCollateralContract("ETH", "TroveManager");
   const PriceFeed = useCollateralContract("ETH", "PriceFeed");

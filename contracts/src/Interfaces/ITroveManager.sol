@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.18;
+pragma solidity ^0.8.0;
 
 import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 
@@ -20,6 +20,7 @@ interface ITroveManager is IERC721, ILiquityBase {
         unredeemable
     }
 
+    function CCR() external view returns (uint256);
     function MCR() external view returns (uint256);
     function SCR() external view returns (uint256);
     function LIQUIDATION_PENALTY_SP() external view returns (uint256);
@@ -156,8 +157,6 @@ interface ITroveManager is IERC721, ILiquityBase {
     function onCloseTrove(uint256 _troveId, TroveChange calldata _troveChange) external;
 
     // -- end of permissioned functions --
-
-    function troveIsStale(uint256 _troveId) external view returns (bool);
 
     function getTCR(uint256 _price) external view returns (uint256);
 

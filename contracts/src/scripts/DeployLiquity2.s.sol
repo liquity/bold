@@ -6,9 +6,10 @@ import {StdCheats} from "forge-std/StdCheats.sol";
 import "../deployment.sol";
 import {Accounts} from "../test/TestContracts/Accounts.sol";
 import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
+import {ETH_GAS_COMPENSATION} from "../Dependencies/Constants.sol";
 
 contract DeployLiquity2Script is Script, StdCheats {
-    struct TroveParams {
+    struct DemoTroveParams {
         uint256 coll;
         uint256 collIndex;
         uint256 debt;
@@ -83,20 +84,22 @@ contract DeployLiquity2Script is Script, StdCheats {
             DemoTroveParams memory trove = troves[i];
             LiquityContractsDev memory contracts = contractsArray[trove.collIndex];
 
-            ERC20Faucet(address(collToken)).tap();
+            vm.startBroadcast(trove.owner);
 
-            // Approve infinite collToken to BorrowerOperations
-            collToken.approve(address(borrowerOperations), type(uint256).max);
+            // Approve collToken to BorrowerOperations
+            IERC20(contracts.collToken).approve(
+                address(contracts.borrowerOperations), trove.coll + ETH_GAS_COMPENSATION
+            );
 
-            borrowerOperations.openTrove(
-                vm.addr(troves[i].owner), // _owner
-                troves[i].ownerIndex, //     _ownerIndex
-                troves[i].coll, //           _collAmount
-                troves[i].debt, //           _boldAmount
-                0, //                        _upperHint
-                0, //                        _lowerHint
-                0.05e18, //                  _annualInterestRate
-                type(uint256).max //         _maxUpfrontFee
+            IBorrowerOperations(contracts.borrowerOperations).openTrove(
+                vm.addr(trove.owner), // _owner
+                trove.ownerIndex, //     _ownerIndex
+                trove.coll, //           _collAmount
+                trove.debt, //           _boldAmount
+                0, //                    _upperHint
+                0, //                    _lowerHint
+                0.05e18, //              _annualInterestRate
+                type(uint256).max //     _maxUpfrontFee
             );
 
             vm.stopBroadcast();

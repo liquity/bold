@@ -4,18 +4,20 @@ pragma solidity 0.8.18;
 
 import "../../Interfaces/ICollateralRegistry.sol";
 import "../../TroveManager.sol";
+import "./Interfaces/ITroveManagerTester.sol";
 
 /* Tester contract inherits from TroveManager, and provides external functions
 for testing the parent's internal functions. */
 
-contract TroveManagerTester is TroveManager {
+contract TroveManagerTester is ITroveManagerTester, TroveManager {
     constructor(
+        uint256 _ccr,
         uint256 _mcr,
         uint256 _scr,
         uint256 _liquidationPenaltySP,
         uint256 _liquidationPenaltyRedistribution,
-        IERC20 _weth
-    ) TroveManager(_mcr, _scr, _liquidationPenaltySP, _liquidationPenaltyRedistribution, _weth) {}
+        IWETH _weth
+    ) TroveManager(_ccr, _mcr, _scr, _liquidationPenaltySP, _liquidationPenaltyRedistribution, _weth) {}
 
     function computeICR(uint256 _coll, uint256 _debt, uint256 _price) external pure returns (uint256) {
         return LiquityMath._computeCR(_coll, _debt, _price);
@@ -72,5 +74,9 @@ contract TroveManagerTester is TroveManager {
     function callInternalRemoveTroveId(uint256 _troveId) external {
         uint256 troveOwnersArrayLength = TroveIds.length;
         _removeTroveId(_troveId, troveOwnersArrayLength);
+    }
+
+    function troveIsStale(uint256 _troveId) external view returns (bool) {
+        return block.timestamp - Troves[_troveId].lastDebtUpdateTime > STALE_TROVE_DURATION;
     }
 }

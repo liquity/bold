@@ -47,7 +47,7 @@ contract DevTestSetup is BaseTest {
             accountsList[6]
         );
 
-        LiquityContracts memory contracts;
+        LiquityContractsDev memory contracts;
         (contracts, collateralRegistry, boldToken, hintHelpers,, WETH) = _deployAndConnectContracts();
         collToken = contracts.collToken;
         activePool = contracts.activePool;
@@ -68,6 +68,7 @@ contract DevTestSetup is BaseTest {
             giveAndApproveColl(accountsList[i], initialCollAmount);
         }
 
+        CCR = troveManager.CCR();
         MCR = troveManager.MCR();
         LIQUIDATION_PENALTY_SP = troveManager.LIQUIDATION_PENALTY_SP();
         LIQUIDATION_PENALTY_REDISTRIBUTION = troveManager.LIQUIDATION_PENALTY_REDISTRIBUTION();

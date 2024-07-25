@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.18;
 
@@ -10,6 +10,7 @@ import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Interfaces/ITroveEvents.sol";
+import "./Interfaces/IWETH.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 
@@ -30,9 +31,12 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     ISortedTroves public sortedTroves;
     address public collateralRegistryAddress;
     // Wrapped ETH for liquidation reserve (gas compensation)
-    IERC20 public immutable WETH;
+    IWETH public immutable WETH;
 
     // --- Data structures ---
+
+    // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
+    uint256 public immutable CCR;
 
     // Minimum collateral ratio for individual troves
     uint256 public immutable MCR;
@@ -56,7 +60,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uint64 lastInterestRateAdjTime;
         uint256 annualInterestRate;
     }
-    // TODO: optimize this struct packing for gas reduction, which may break v1 tests that assume a certain order of properties
 
     mapping(uint256 => Trove) public Troves;
 
@@ -174,18 +177,21 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
     constructor(
+        uint256 _ccr,
         uint256 _mcr,
         uint256 _scr,
         uint256 _liquidationPenaltySP,
         uint256 _liquidationPenaltyRedistribution,
-        IERC20 _weth
+        IWETH _weth
     ) ERC721(NAME, SYMBOL) {
+        require(_ccr > 1e18 && _ccr < 2e18, "Invalid CCR");
         require(_mcr > 1e18 && _mcr < 2e18, "Invalid MCR");
         require(_scr > 1e18 && _scr < 2e18, "Invalid SCR");
         require(_liquidationPenaltySP >= 5e16, "SP penalty too low");
         require(_liquidationPenaltySP <= _liquidationPenaltyRedistribution, "SP penalty cannot be > redist");
         require(_liquidationPenaltyRedistribution <= 10e16, "Redistribution penalty too high");
 
+        CCR = _ccr;
         MCR = _mcr;
         SCR = _scr;
         LIQUIDATION_PENALTY_SP = _liquidationPenaltySP;
@@ -352,8 +358,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             (collToSendToSP, collSurplus) =
                 _getCollPenaltyAndSurplus(collSPPortion, debtToOffset, LIQUIDATION_PENALTY_SP, _price);
         }
-        // TODO: this fails if debt in gwei is less than price (rounding coll to zero)
-        //assert(debtToOffset == 0 || collToSendToSP > 0);
 
         // Redistribution
         debtToRedistribute = _entireTroveDebt - debtToOffset;
@@ -550,8 +554,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         if (newDebt < MIN_DEBT) {
             Troves[_troveId].status = Status.unredeemable;
             sortedTroves.remove(_troveId);
-            // TODO: should we also remove from the Troves array? Seems unneccessary as it's only used for off-chain hints.
-            // We save borrowers gas by not removing
         }
     }
 
@@ -573,9 +575,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         Troves[_troveId].coll = newColl;
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
 
-        // TODO: Gas optimize? We update totalStakes N times for a sequence of N Troves(!).
         uint256 newStake = _updateStakeAndTotalStakes(_troveId, newColl);
-        // TODO: Gas optimize? We move pending rewards N times for a sequence of N Troves(!).
         _movePendingTroveRewardsToActivePool(_defaultPool, _trove.redistBoldDebtGain, _trove.redistCollGain);
         _updateTroveRewardSnapshots(_troveId);
 
@@ -694,7 +694,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         LatestTroveData memory trove;
         _getLatestTroveData(_troveId, trove);
 
-        // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove minus the liquidation reserve
+        // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove
         singleRedemption.boldLot = LiquityMath._min(_maxBoldamount, trove.entireDebt);
 
         // Get the amount of ETH equal in USD value to the BOLD lot redeemed
@@ -755,8 +755,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     function shutdown() external {
         _requireCallerIsBorrowerOperations();
-        // TODO: potentially refactor so that we only store one value. Though, current approach is gas efficient
-        // and avoids cross-contract calls.
         shutdownTime = block.timestamp;
         activePool.setShutdownFlag();
     }
@@ -982,7 +980,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         delete rewardSnapshots[_troveId];
 
         // burn ERC721
-        // TODO: Should we do it?
         _burn(_troveId);
     }
 
@@ -1023,7 +1020,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     }
 
     function checkBelowCriticalThreshold(uint256 _price) external view override returns (bool) {
-        return _checkBelowCriticalThreshold(_price);
+        return _checkBelowCriticalThreshold(_price, CCR);
     }
 
     function checkTroveIsOpen(uint256 _troveId) public view returns (bool) {
@@ -1101,10 +1098,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     function getTroveLastDebtUpdateTime(uint256 _troveId) external view returns (uint256) {
         return Troves[_troveId].lastDebtUpdateTime;
-    }
-
-    function troveIsStale(uint256 _troveId) external view returns (bool) {
-        return block.timestamp - Troves[_troveId].lastDebtUpdateTime > STALE_TROVE_DURATION;
     }
 
     function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool) {

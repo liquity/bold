@@ -103,6 +103,13 @@ contract BorrowerOperationsTest is DevTestSetup {
         borrowerOperations.withdrawBold(troveId, withdrawal, upfrontFee - 1);
     }
 
+    function testAdjustInterestRateFailsIfNotNew() public {
+        uint256 troveId = openTroveNoHints100pct(A, 100 ether, 10_000 ether, 0.05 ether);
+        vm.prank(A);
+        vm.expectRevert("New interest rate must be different");
+        borrowerOperations.adjustTroveInterestRate(troveId, 0.05 ether, 0, 0, 1000e18);
+    }
+
     function testAdjustInterestRateChargesUpfrontFeeWhenPremature() public {
         uint256 troveId = openTroveNoHints100pct(A, 100 ether, 10_000 ether, 0.05 ether);
 

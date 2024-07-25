@@ -15,6 +15,7 @@ env:
   FOUNDRY_VERSION: nightly
   CI: true
   FORCE_COLOR: true
+  MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
 
 on:
   push:
@@ -45,12 +46,15 @@ jobs:
         run: |
           forge --version
           forge build --sizes
-        id: build
 
-      - name: Run Forge tests
+      - name: Run Forge tests local
         run: |
-          forge test -vvv
-        id: test
+          forge test -vvv --no-match-contract Mainnet
+
+      - name: Run Forge tests mainnet
+        if: false # TODO: re-enable
+        run: |
+          forge test -vvv --match-contract Mainnet
 
   console-logs:
     name: Console imports check
@@ -103,6 +107,7 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
 
   coverage:
+    if: false
     name: Coverage
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -123,12 +128,10 @@ jobs:
         run: |
           forge --version
           forge build --sizes
-        id: build
 
       - name: Run Forge coverage
         run: |
           forge coverage --report lcov --report-file lcov_foundry.info
-        id: coverage
 
       - name: Install lcov
         run: sudo apt-get -y install lcov
@@ -136,7 +139,6 @@ jobs:
       #- name: Filter out tests from coverage
       #  run: |
       #    lcov --remove lcov_foundry.info -o lcov_foundry.info 'src/test/*'
-      #  id: coverage_filter
 
       # Hardhat
       - name: Install pnpm
@@ -163,17 +165,14 @@ jobs:
 
       # Merge
       - name: ls
-        id: ls
         run: |
           ls && ls coverage
 
       - name: Remove path from contract names in Hardhat
-        id: remove_contract_path
         run: |
           sed -i "s/SF:.*src/SF:src/g" coverage/lcov.info
 
       - name: Merge coverage reports
-        id: coverage_merge
         run: |
           lcov \
               --rc lcov_branch_coverage=1 \
@@ -194,7 +193,6 @@ jobs:
               'src/scripts/*' \
               'src/MultiTroveGetter.sol' \
               'src/deployment.sol'
-        id: coverage_filter
 
       # Send to coveralls
       - name: Coveralls

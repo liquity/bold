@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.18;
+pragma solidity ^0.8.0;
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
@@ -15,8 +15,6 @@ interface IBoldToken is IERC20Metadata, IERC20Permit, IERC5267 {
     ) external;
 
     function setCollateralRegistry(address _collateralRegistryAddress) external;
-
-    function deploymentStartTime() external view returns (uint256);
 
     function mint(address _account, uint256 _amount) external;
 
