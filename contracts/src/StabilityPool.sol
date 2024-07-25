@@ -4,15 +4,15 @@ pragma solidity 0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/IStabilityPool.sol";
+import "./Interfaces/IAddressesRegistry.sol";
+import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/IStabilityPoolEvents.sol";
 import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
-import "./Dependencies/Ownable.sol";
 
 // import "forge-std/console2.sol";
 
@@ -130,7 +130,7 @@ import "./Dependencies/Ownable.sol";
  *
  *
  */
-contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEvents {
+contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     using SafeERC20 for IERC20;
 
     string public constant NAME = "StabilityPool";
@@ -214,38 +214,24 @@ contract StabilityPool is LiquityBase, Ownable, IStabilityPool, IStabilityPoolEv
     event SortedTrovesAddressChanged(address _newSortedTrovesAddress);
     event PriceFeedAddressChanged(address _newPriceFeedAddress);
 
-    constructor(address _collAddress) {
-        collToken = IERC20(_collAddress);
-    }
+    constructor(IAddressesRegistry _addressesRegistry) {
+        collToken = _addressesRegistry.collToken();
+        borrowerOperations = _addressesRegistry.borrowerOperations();
+        troveManager = _addressesRegistry.troveManager();
+        activePool = _addressesRegistry.activePool();
+        boldToken = _addressesRegistry.boldToken();
+        sortedTroves = _addressesRegistry.sortedTroves();
+        priceFeed = _addressesRegistry.priceFeed();
 
-    // --- Contract setters ---
-
-    function setAddresses(
-        address _borrowerOperationsAddress,
-        address _troveManagerAddress,
-        address _activePoolAddress,
-        address _boldTokenAddress,
-        address _sortedTrovesAddress,
-        address _priceFeedAddress
-    ) external override onlyOwner {
-        borrowerOperations = IBorrowerOperations(_borrowerOperationsAddress);
-        troveManager = ITroveManager(_troveManagerAddress);
-        activePool = IActivePool(_activePoolAddress);
-        boldToken = IBoldToken(_boldTokenAddress);
-        sortedTroves = ISortedTroves(_sortedTrovesAddress);
-        priceFeed = IPriceFeed(_priceFeedAddress);
-
-        emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
-        emit TroveManagerAddressChanged(_troveManagerAddress);
-        emit ActivePoolAddressChanged(_activePoolAddress);
-        emit BoldTokenAddressChanged(_boldTokenAddress);
-        emit SortedTrovesAddressChanged(_sortedTrovesAddress);
-        emit PriceFeedAddressChanged(_priceFeedAddress);
+        emit BorrowerOperationsAddressChanged(address(borrowerOperations));
+        emit TroveManagerAddressChanged(address(troveManager));
+        emit ActivePoolAddressChanged(address(activePool));
+        emit BoldTokenAddressChanged(address(boldToken));
+        emit SortedTrovesAddressChanged(address(sortedTroves));
+        emit PriceFeedAddressChanged(address(priceFeed));
 
         // Allow funds movements between Liquity contracts
-        collToken.approve(_borrowerOperationsAddress, type(uint256).max);
-
-        _renounceOwnership();
+        collToken.approve(address(borrowerOperations), type(uint256).max);
     }
 
     // --- Getters for public variables. Required by IPool interface ---

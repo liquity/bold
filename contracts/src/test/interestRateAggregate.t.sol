@@ -1,5 +1,6 @@
 pragma solidity 0.8.18;
 
+import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import "./TestContracts/DevTestSetup.sol";
 
 contract InterestRateAggregate is DevTestSetup {

@@ -2,6 +2,7 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "../Interfaces/IAddressesRegistry.sol";
 import "../Interfaces/IBorrowerOperations.sol";
 import "../Interfaces/IWETH.sol";
 import "../Dependencies/AddRemoveManagers.sol";
@@ -18,20 +19,13 @@ contract GasCompZapper is AddRemoveManagers {
     IERC20 public immutable collToken;
     IBoldToken public immutable boldToken;
 
-    constructor(
-        IBorrowerOperations _borrowerOperations,
-        ITroveManager _troveManager,
-        ITroveNFT _troveNFT,
-        IERC20 _collToken,
-        IBoldToken _boldToken,
-        IWETH _WETH
-    ) AddRemoveManagers(_troveNFT) {
-        borrowerOperations = _borrowerOperations;
-        troveManager = _troveManager;
-        require(address(_WETH) != address(_collToken), "GCZ: Wrong coll branch");
-        collToken = _collToken;
-        boldToken = _boldToken;
-        WETH = _WETH;
+    constructor(IAddressesRegistry _addressesRegistry) AddRemoveManagers(_addressesRegistry) {
+        borrowerOperations = _addressesRegistry.borrowerOperations();
+        troveManager = _addressesRegistry.troveManager();
+        collToken = _addressesRegistry.collToken();
+        boldToken = _addressesRegistry.boldToken();
+        WETH = _addressesRegistry.WETH();
+        require(address(WETH) != address(collToken), "GCZ: Wrong coll branch");
     }
 
     struct OpenTroveParams {

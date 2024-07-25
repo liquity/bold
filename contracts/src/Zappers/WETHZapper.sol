@@ -1,5 +1,6 @@
 pragma solidity ^0.8.18;
 
+import "../Interfaces/IAddressesRegistry.sol";
 import "../Interfaces/IBorrowerOperations.sol";
 import "../Interfaces/ITroveManager.sol";
 import "../Interfaces/ITroveNFT.sol";
@@ -13,18 +14,12 @@ contract WETHZapper is AddRemoveManagers {
     IWETH public immutable WETH;
     IBoldToken public immutable boldToken;
 
-    constructor(
-        IBorrowerOperations _borrowerOperations,
-        ITroveManager _troveManager,
-        ITroveNFT _troveNFT,
-        IBoldToken _boldToken,
-        IWETH _WETH
-    ) AddRemoveManagers(_troveNFT) {
-        borrowerOperations = _borrowerOperations;
-        troveManager = _troveManager;
-        //require(address(_WETH) == address(_borrowerOperations.collToken()), "WZ: Wrong coll branch");
-        boldToken = _boldToken;
-        WETH = _WETH;
+    constructor(IAddressesRegistry _addressesRegistry) AddRemoveManagers(_addressesRegistry) {
+        borrowerOperations = _addressesRegistry.borrowerOperations();
+        troveManager = _addressesRegistry.troveManager();
+        boldToken = _addressesRegistry.boldToken();
+        WETH = _addressesRegistry.WETH();
+        require(address(WETH) == address(_addressesRegistry.collToken()), "WZ: Wrong coll branch");
     }
 
     struct OpenTroveParams {

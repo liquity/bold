@@ -5,19 +5,19 @@ pragma solidity 0.8.18;
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./Interfaces/IBorrowerOperations.sol";
+import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/AddRemoveManagers.sol";
-import "./Dependencies/Ownable.sol";
 import "./Types/LatestTroveData.sol";
 import "./Types/LatestBatchData.sol";
 
 // import "forge-std/console2.sol";
 
-contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowerOperations {
+contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperations {
     using SafeERC20 for IERC20;
 
     // --- Connected contract declarations ---
@@ -115,9 +115,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
         uint256 newBatchDebt;
     }
 
-    error InvalidCCR();
-    error InvalidMCR();
-    error InvalidSCR();
     error IsShutDown();
     error NotShutDown();
     error TCRNotBelowSCR();
@@ -163,63 +160,38 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
     event ShutDown(uint256 _tcr);
     event ShutDownFromOracleFailure(address _oracleAddress);
 
-    struct ConstructorVars {
-        uint256 ccr;
-        uint256 mcr;
-        uint256 scr;
-        IERC20 collToken;
-        ITroveNFT troveNFT;
-        IActivePool activePool;
-        IDefaultPool defaultPool;
-        address gasPoolAddress;
-        ICollSurplusPool collSurplusPool;
-        IPriceFeed priceFeed;
-        ISortedTroves sortedTroves;
-        IBoldToken boldToken;
-        IWETH weth;
-    }
-
-    constructor(ConstructorVars memory _vars) AddRemoveManagers(_vars.troveNFT) {
+    constructor(IAddressesRegistry _addressesRegistry) AddRemoveManagers(_addressesRegistry) {
         // This makes impossible to open a trove with zero withdrawn Bold
         assert(MIN_DEBT > 0);
-        if (_vars.ccr <= 1e18 || _vars.ccr >= 2e18) revert InvalidCCR();
-        if (_vars.mcr <= 1e18 || _vars.mcr >= 2e18) revert InvalidMCR();
-        if (_vars.scr <= 1e18 || _vars.scr >= 2e18) revert InvalidSCR();
 
-        collToken = _vars.collToken;
+        collToken = _addressesRegistry.collToken();
 
-        WETH = _vars.weth;
+        WETH = _addressesRegistry.WETH();
 
-        CCR = _vars.ccr;
-        SCR = _vars.scr;
-        MCR = _vars.mcr;
+        CCR = _addressesRegistry.CCR();
+        SCR = _addressesRegistry.SCR();
+        MCR = _addressesRegistry.MCR();
 
-        activePool = _vars.activePool;
-        defaultPool = _vars.defaultPool;
-        gasPoolAddress = _vars.gasPoolAddress;
-        collSurplusPool = _vars.collSurplusPool;
-        priceFeed = _vars.priceFeed;
-        sortedTroves = _vars.sortedTroves;
-        boldToken = _vars.boldToken;
+        troveManager = _addressesRegistry.troveManager();
+        activePool = _addressesRegistry.activePool();
+        defaultPool = _addressesRegistry.defaultPool();
+        gasPoolAddress = _addressesRegistry.gasPoolAddress();
+        collSurplusPool = _addressesRegistry.collSurplusPool();
+        priceFeed = _addressesRegistry.priceFeed();
+        sortedTroves = _addressesRegistry.sortedTroves();
+        boldToken = _addressesRegistry.boldToken();
 
-        emit ActivePoolAddressChanged(address(_vars.activePool));
-        emit DefaultPoolAddressChanged(address(_vars.defaultPool));
-        emit GasPoolAddressChanged(_vars.gasPoolAddress);
-        emit CollSurplusPoolAddressChanged(address(_vars.collSurplusPool));
-        emit PriceFeedAddressChanged(address(_vars.priceFeed));
-        emit SortedTrovesAddressChanged(address(_vars.sortedTroves));
-        emit BoldTokenAddressChanged(address(_vars.boldToken));
+        emit TroveManagerAddressChanged(address(troveManager));
+        emit ActivePoolAddressChanged(address(activePool));
+        emit DefaultPoolAddressChanged(address(defaultPool));
+        emit GasPoolAddressChanged(gasPoolAddress);
+        emit CollSurplusPoolAddressChanged(address(collSurplusPool));
+        emit PriceFeedAddressChanged(address(priceFeed));
+        emit SortedTrovesAddressChanged(address(sortedTroves));
+        emit BoldTokenAddressChanged(address(boldToken));
 
         // Allow funds movements between Liquity contracts
-        _vars.collToken.approve(address(_vars.activePool), type(uint256).max);
-    }
-
-    // --- Dependency setters ---
-
-    function setAddresses(ITroveManager _troveManager) external override onlyOwner {
-        troveManager = _troveManager;
-        emit TroveManagerAddressChanged(address(_troveManager));
-        _renounceOwnership();
+        collToken.approve(address(activePool), type(uint256).max);
     }
 
     // --- Borrower Trove Operations ---

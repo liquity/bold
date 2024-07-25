@@ -2,6 +2,7 @@
 pragma solidity 0.8.18;
 
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import "../Interfaces/IStabilityPoolEvents.sol";
 import "./TestContracts/DevTestSetup.sol";
 import "../Dependencies/Constants.sol";
 

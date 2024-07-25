@@ -7,9 +7,9 @@ import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 import "./Dependencies/Constants.sol";
 import "./Interfaces/IActivePool.sol";
+import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/IInterestRouter.sol";
-import "./Dependencies/Ownable.sol";
 import "./Interfaces/IDefaultPool.sol";
 
 // import "forge-std/console2.sol";
@@ -21,7 +21,7 @@ import "./Interfaces/IDefaultPool.sol";
  * Stability Pool, the Default Pool, or both, depending on the liquidation conditions.
  *
  */
-contract ActivePool is Ownable, IActivePool {
+contract ActivePool is IActivePool {
     using SafeERC20 for IERC20;
 
     string public constant NAME = "ActivePool";
@@ -64,44 +64,32 @@ contract ActivePool is Ownable, IActivePool {
 
     // --- Events ---
 
+    event CollTokenAddressChanged(address _newCollTokenAddress);
+    event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
+    event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event DefaultPoolAddressChanged(address _newDefaultPoolAddress);
     event StabilityPoolAddressChanged(address _newStabilityPoolAddress);
     event EtherSent(address _to, uint256 _amount);
-    event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
-    event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event ActivePoolBoldDebtUpdated(uint256 _recordedDebtSum);
     event ActivePoolCollBalanceUpdated(uint256 _collBalance);
 
-    constructor(address _collAddress) {
-        collToken = IERC20(_collAddress);
-    }
+    constructor(IAddressesRegistry _addressesRegistry) {
+        collToken = _addressesRegistry.collToken();
+        borrowerOperationsAddress = address(_addressesRegistry.borrowerOperations());
+        troveManagerAddress = address(_addressesRegistry.troveManager());
+        stabilityPool = IBoldRewardsReceiver(_addressesRegistry.stabilityPool());
+        defaultPoolAddress = address(_addressesRegistry.defaultPool());
+        interestRouter = _addressesRegistry.interestRouter();
+        boldToken = _addressesRegistry.boldToken();
 
-    // --- Contract setters ---
-
-    function setAddresses(
-        address _borrowerOperationsAddress,
-        address _troveManagerAddress,
-        address _stabilityPoolAddress,
-        address _defaultPoolAddress,
-        address _boldTokenAddress,
-        address _interestRouterAddress
-    ) external onlyOwner {
-        borrowerOperationsAddress = _borrowerOperationsAddress;
-        troveManagerAddress = _troveManagerAddress;
-        defaultPoolAddress = _defaultPoolAddress;
-        boldToken = IBoldToken(_boldTokenAddress);
-        interestRouter = IInterestRouter(_interestRouterAddress);
-        stabilityPool = IBoldRewardsReceiver(_stabilityPoolAddress);
-
-        emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
-        emit TroveManagerAddressChanged(_troveManagerAddress);
-        emit StabilityPoolAddressChanged(_stabilityPoolAddress);
-        emit DefaultPoolAddressChanged(_defaultPoolAddress);
+        emit CollTokenAddressChanged(address(collToken));
+        emit BorrowerOperationsAddressChanged(borrowerOperationsAddress);
+        emit TroveManagerAddressChanged(troveManagerAddress);
+        emit StabilityPoolAddressChanged(address(stabilityPool));
+        emit DefaultPoolAddressChanged(defaultPoolAddress);
 
         // Allow funds movements between Liquity contracts
-        collToken.approve(_defaultPoolAddress, type(uint256).max);
-
-        _renounceOwnership();
+        collToken.approve(defaultPoolAddress, type(uint256).max);
     }
 
     // --- Getters for public variables. Required by IPool interface ---
