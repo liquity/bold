@@ -7,9 +7,6 @@ import {BatchId, BATCH_ID_ZERO} from "../Types/BatchId.sol";
 
 interface ISortedTroves {
     // -- Mutating functions (permissioned) --
-
-    function setAddresses(address _troveManagerAddress, address _borrowerOperationsAddress) external;
-
     function insert(uint256 _id, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external;
     function insertIntoBatch(
         uint256 _troveId,

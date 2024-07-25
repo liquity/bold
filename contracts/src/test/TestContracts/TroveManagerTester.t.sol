@@ -2,6 +2,7 @@
 
 pragma solidity 0.8.18;
 
+import "../../Interfaces/IAddressesRegistry.sol";
 import "../../Interfaces/ICollateralRegistry.sol";
 import "../../TroveManager.sol";
 import "./Interfaces/ITroveManagerTester.sol";
@@ -10,7 +11,7 @@ import "./Interfaces/ITroveManagerTester.sol";
 for testing the parent's internal functions. */
 
 contract TroveManagerTester is ITroveManagerTester, TroveManager {
-    constructor(ConstructorVars memory _vars) TroveManager(_vars) {}
+    constructor(IAddressesRegistry _addressesRegistry) TroveManager(_addressesRegistry) {}
 
     // Single liquidation function. Closes the trove if its ICR is lower than the minimum collateral ratio.
     function liquidate(uint256 _troveId) external override {

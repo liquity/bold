@@ -13,14 +13,6 @@ interface IActivePool {
     function interestRouter() external view returns (IInterestRouter);
     // We avoid IStabilityPool here in order to prevent creating a dependency cycle that would break flattening
     function stabilityPool() external view returns (IBoldRewardsReceiver);
-    function setAddresses(
-        address _borrowerOperationsAddress,
-        address _troveManagerAddress,
-        address _stabilityPoolAddress,
-        address _defaultPoolAddress,
-        address _boldTokenAddress,
-        address _interestRouterAddress
-    ) external;
 
     function getCollBalance() external view returns (uint256);
     function getBoldDebt() external view returns (uint256);

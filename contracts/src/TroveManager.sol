@@ -3,6 +3,7 @@
 pragma solidity 0.8.18;
 
 import "./Interfaces/ITroveManager.sol";
+import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IStabilityPool.sol";
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/IBoldToken.sol";
@@ -177,58 +178,37 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
-    struct ConstructorVars {
-        uint256 liquidationPenaltySP;
-        uint256 liquidationPenaltyRedistribution;
-        ITroveNFT troveNFT;
-        IBorrowerOperations borrowerOperations;
-        IActivePool activePool;
-        IDefaultPool defaultPool;
-        IStabilityPool stabilityPool;
-        address gasPoolAddress;
-        ICollSurplusPool collSurplusPool;
-        IPriceFeed priceFeed;
-        ISortedTroves sortedTroves;
-        IBoldToken boldToken;
-        IWETH weth;
-        ICollateralRegistry collateralRegistry;
-    }
+    constructor(IAddressesRegistry _addressesRegistry) {
+        CCR = _addressesRegistry.CCR();
+        MCR = _addressesRegistry.MCR();
+        SCR = _addressesRegistry.SCR();
+        LIQUIDATION_PENALTY_SP = _addressesRegistry.LIQUIDATION_PENALTY_SP();
+        LIQUIDATION_PENALTY_REDISTRIBUTION = _addressesRegistry.LIQUIDATION_PENALTY_REDISTRIBUTION();
 
-    constructor(ConstructorVars memory _vars) {
-        require(_vars.liquidationPenaltySP >= 5e16, "SP penalty too low");
-        require(_vars.liquidationPenaltySP <= _vars.liquidationPenaltyRedistribution, "SP penalty cannot be > redist");
-        require(_vars.liquidationPenaltyRedistribution <= 10e16, "Redistribution penalty too high");
+        troveNFT = _addressesRegistry.troveNFT();
+        borrowerOperations = _addressesRegistry.borrowerOperations();
+        activePool = _addressesRegistry.activePool();
+        defaultPool = _addressesRegistry.defaultPool();
+        stabilityPool = _addressesRegistry.stabilityPool();
+        gasPoolAddress = _addressesRegistry.gasPoolAddress();
+        collSurplusPool = _addressesRegistry.collSurplusPool();
+        priceFeed = _addressesRegistry.priceFeed();
+        boldToken = _addressesRegistry.boldToken();
+        sortedTroves = _addressesRegistry.sortedTroves();
+        WETH = _addressesRegistry.WETH();
+        collateralRegistry = _addressesRegistry.collateralRegistry();
 
-        CCR = _vars.borrowerOperations.CCR();
-        MCR = _vars.borrowerOperations.MCR();
-        SCR = _vars.borrowerOperations.SCR();
-        LIQUIDATION_PENALTY_SP = _vars.liquidationPenaltySP;
-        LIQUIDATION_PENALTY_REDISTRIBUTION = _vars.liquidationPenaltyRedistribution;
-
-        troveNFT = _vars.troveNFT;
-        borrowerOperations = _vars.borrowerOperations;
-        activePool = _vars.activePool;
-        defaultPool = _vars.defaultPool;
-        stabilityPool = _vars.stabilityPool;
-        gasPoolAddress = _vars.gasPoolAddress;
-        collSurplusPool = _vars.collSurplusPool;
-        priceFeed = _vars.priceFeed;
-        boldToken = _vars.boldToken;
-        sortedTroves = _vars.sortedTroves;
-        WETH = _vars.weth;
-        collateralRegistry = _vars.collateralRegistry;
-
-        emit TroveNFTAddressChanged(address(_vars.troveNFT));
-        emit BorrowerOperationsAddressChanged(address(_vars.borrowerOperations));
-        emit ActivePoolAddressChanged(address(_vars.activePool));
-        emit DefaultPoolAddressChanged(address(_vars.defaultPool));
-        emit StabilityPoolAddressChanged(address(_vars.stabilityPool));
-        emit GasPoolAddressChanged(_vars.gasPoolAddress);
-        emit CollSurplusPoolAddressChanged(address(_vars.collSurplusPool));
-        emit PriceFeedAddressChanged(address(_vars.priceFeed));
-        emit BoldTokenAddressChanged(address(_vars.boldToken));
-        emit SortedTrovesAddressChanged(address(_vars.sortedTroves));
-        emit CollateralRegistryAddressChanged(address(_vars.collateralRegistry));
+        emit TroveNFTAddressChanged(address(troveNFT));
+        emit BorrowerOperationsAddressChanged(address(borrowerOperations));
+        emit ActivePoolAddressChanged(address(activePool));
+        emit DefaultPoolAddressChanged(address(defaultPool));
+        emit StabilityPoolAddressChanged(address(stabilityPool));
+        emit GasPoolAddressChanged(gasPoolAddress);
+        emit CollSurplusPoolAddressChanged(address(collSurplusPool));
+        emit PriceFeedAddressChanged(address(priceFeed));
+        emit BoldTokenAddressChanged(address(boldToken));
+        emit SortedTrovesAddressChanged(address(sortedTroves));
+        emit CollateralRegistryAddressChanged(address(collateralRegistry));
     }
 
     // --- Getters ---
@@ -262,9 +242,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         LatestBatchData memory batch;
         if (isTroveInBatch) _getLatestBatchData(batchAddress, batch);
 
-        _movePendingTroveRewardsToActivePool(
-            _defaultPool, trove.redistBoldDebtGain, trove.redistCollGain
-        );
+        _movePendingTroveRewardsToActivePool(_defaultPool, trove.redistBoldDebtGain, trove.redistCollGain);
 
         singleLiquidation.collGasCompensation = _getCollGasCompensation(trove.entireColl);
         uint256 collToLiquidate = trove.entireColl - singleLiquidation.collGasCompensation;
@@ -275,9 +253,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             singleLiquidation.debtToRedistribute,
             singleLiquidation.collToRedistribute,
             singleLiquidation.collSurplus
-        ) = _getOffsetAndRedistributionVals(
-            trove.entireDebt, collToLiquidate, _boldInStabPool, _price
-        );
+        ) = _getOffsetAndRedistributionVals(trove.entireDebt, collToLiquidate, _boldInStabPool, _price);
 
         TroveChange memory troveChange;
         troveChange.collDecrease = trove.entireColl;
@@ -294,16 +270,13 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         );
 
         if (isTroveInBatch) {
-            singleLiquidation.oldWeightedRecordedDebt = batch.weightedRecordedDebt
-                + (trove.entireDebt - trove.redistBoldDebtGain)
-                    * batch.annualInterestRate;
-            singleLiquidation.newWeightedRecordedDebt =
-                batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
+            singleLiquidation.oldWeightedRecordedDebt =
+                batch.weightedRecordedDebt + (trove.entireDebt - trove.redistBoldDebtGain) * batch.annualInterestRate;
+            singleLiquidation.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
             // Mint batch management fee
             troveChange.batchAccruedManagementFee = batch.accruedManagementFee;
-            troveChange.oldWeightedRecordedBatchManagementFee = batch .weightedRecordedBatchManagementFee
-                + (trove.entireDebt - trove.redistBoldDebtGain)
-                    * batch.annualManagementFee;
+            troveChange.oldWeightedRecordedBatchManagementFee = batch.weightedRecordedBatchManagementFee
+                + (trove.entireDebt - trove.redistBoldDebtGain) * batch.annualManagementFee;
             troveChange.newWeightedRecordedBatchManagementFee =
                 batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
             activePool.mintBatchManagementFeeAndAccountForChange(troveChange, batchAddress);
@@ -478,9 +451,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         );
 
         // Send gas compensation to caller
-        _sendGasCompensation(
-            activePoolCached, msg.sender, totals.ETHGasCompensation, totals.collGasCompensation
-        );
+        _sendGasCompensation(activePoolCached, msg.sender, totals.ETHGasCompensation, totals.collGasCompensation);
     }
 
     function _isLiquidatableStatus(Status _status) internal pure returns (bool) {
@@ -525,10 +496,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         LatestTroveData memory _trove,
         LiquidationValues memory _singleLiquidation,
         LiquidationValues memory totals,
-        TroveChange memory troveChange)
-        internal
-        pure
-    {
+        TroveChange memory troveChange
+    ) internal pure {
         // Tally all the values with their respective running totals
         totals.collGasCompensation += _singleLiquidation.collGasCompensation;
         totals.ETHGasCompensation += ETH_GAS_COMPENSATION;
@@ -773,7 +742,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 batchTroveChange.newWeightedRecordedBatchManagementFee =
                     batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
 
-                activePoolCached.mintAggInterestAndAccountForTroveChange(batchTroveChange, singleRedemption.batchAddress);
+                activePoolCached.mintAggInterestAndAccountForTroveChange(
+                    batchTroveChange, singleRedemption.batchAddress
+                );
 
                 emit BatchUpdated(
                     singleRedemption.batchAddress,
@@ -1111,7 +1082,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         TroveIds.pop();
     }
 
-    function getTroveStatus(uint256 _troveId) external override view returns (Status) {
+    function getTroveStatus(uint256 _troveId) external view override returns (Status) {
         return Troves[_troveId].status;
     }
 

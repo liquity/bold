@@ -6,7 +6,7 @@ import {IBoldToken} from "../../Interfaces/IBoldToken.sol";
 import {ICollateralRegistry} from "../../Interfaces/ICollateralRegistry.sol";
 import {IWETH} from "../../Interfaces/IWETH.sol";
 import {HintHelpers} from "../../HintHelpers.sol";
-import {LiquityContractsDev} from "../../deployment.sol";
+import {TestDeployer} from "./Deployment.t.sol";
 
 contract BaseMultiCollateralTest {
     struct Contracts {
@@ -14,14 +14,14 @@ contract BaseMultiCollateralTest {
         ICollateralRegistry collateralRegistry;
         IBoldToken boldToken;
         HintHelpers hintHelpers;
-        LiquityContractsDev[] branches;
+        TestDeployer.LiquityContractsDev[] branches;
     }
 
     IERC20 weth;
     ICollateralRegistry collateralRegistry;
     IBoldToken boldToken;
     HintHelpers hintHelpers;
-    LiquityContractsDev[] branches;
+    TestDeployer.LiquityContractsDev[] branches;
 
     function setupContracts(Contracts memory contracts) internal {
         weth = contracts.weth;

@@ -261,7 +261,9 @@ contract BatchManagementFeeTest is DevTestSetup {
         setInterestBatchManager(C, troveId, B);
 
         assertApproxEqAbs(
-            troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedManagementFee + upfrontFee, 1
+            troveManager.getTroveDebt(troveId),
+            troveInitialDebt + troveAccruedInterest + troveAccruedManagementFee + upfrontFee,
+            1
         );
     }
 
@@ -287,7 +289,7 @@ contract BatchManagementFeeTest is DevTestSetup {
         assertApproxEqAbs(
             activePool.aggRecordedDebt(),
             activePoolInitialDebt + batchBAccruedInterest + batchBAccruedManagementFee + batchDAccruedInterest
-            + batchDAccruedManagementFee + upfrontFee,
+                + batchDAccruedManagementFee + upfrontFee,
             10
         );
     }

@@ -4,7 +4,7 @@ import "./TestContracts/DevTestSetup.sol";
 
 contract MulticollateralTest is DevTestSetup {
     uint256 NUM_COLLATERALS = 4;
-    LiquityContractsDev[] public contractsArray;
+    TestDeployer.LiquityContractsDev[] public contractsArray;
 
     function openMulticollateralTroveNoHints100pctWithIndex(
         uint256 _collIndex,
@@ -63,15 +63,17 @@ contract MulticollateralTest is DevTestSetup {
             accountsList[6]
         );
 
-        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
-        troveManagerParamsArray[1] = TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
-        troveManagerParamsArray[2] = TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
-        troveManagerParamsArray[3] = TroveManagerParams(160e16, 125e16, 125e16, 5e16, 10e16);
+        TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
+            new TestDeployer.TroveManagerParams[](NUM_COLLATERALS);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
+        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
+        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
+        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 125e16, 5e16, 10e16);
 
-        LiquityContractsDev[] memory _contractsArray;
+        TestDeployer deployer = new TestDeployer();
+        TestDeployer.LiquityContractsDev[] memory _contractsArray;
         (_contractsArray, collateralRegistry, boldToken,,, WETH) =
-            _deployAndConnectContractsMultiColl(troveManagerParamsArray);
+            deployer.deployAndConnectContractsMultiColl(troveManagerParamsArray);
         // Unimplemented feature (...):Copying of type struct LiquityContracts memory[] memory to storage not yet supported.
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
             contractsArray.push(_contractsArray[c]);

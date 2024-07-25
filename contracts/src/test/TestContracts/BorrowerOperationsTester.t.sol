@@ -2,13 +2,14 @@
 
 pragma solidity 0.8.18;
 
+import "../../Interfaces/IAddressesRegistry.sol";
 import "../../BorrowerOperations.sol";
 import "./Interfaces/IBorrowerOperationsTester.sol";
 
 /* Tester contract inherits from BorrowerOperations, and provides external functions
 for testing the parent's internal functions. */
 contract BorrowerOperationsTester is BorrowerOperations, IBorrowerOperationsTester {
-    constructor(ConstructorVars memory _vars) BorrowerOperations(_vars) {}
+    constructor(IAddressesRegistry _addressesRegistry) BorrowerOperations(_addressesRegistry) {}
 
     function get_CCR() external view returns (uint256) {
         return CCR;

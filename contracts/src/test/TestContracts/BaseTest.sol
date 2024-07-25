@@ -28,6 +28,7 @@ contract BaseTest is TestAccounts {
     uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
 
     // Core contracts
+    IAddressesRegistry addressesRegistry;
     IActivePool activePool;
     IBorrowerOperationsTester borrowerOperations;
     ICollSurplusPool collSurplusPool;
@@ -89,10 +90,11 @@ contract BaseTest is TestAccounts {
         return hintHelpers.predictAdjustTroveUpfrontFee(0, troveId, debtIncrease);
     }
 
-    function predictJoinBatchInterestRateUpfrontFee(
-        uint256 _troveId,
-        address _batchAddress
-    ) internal view returns (uint256) {
+    function predictJoinBatchInterestRateUpfrontFee(uint256 _troveId, address _batchAddress)
+        internal
+        view
+        returns (uint256)
+    {
         return hintHelpers.predictJoinBatchInterestRateUpfrontFee(0, _troveId, _batchAddress);
     }
 
@@ -502,6 +504,7 @@ contract BaseTest is TestAccounts {
     function switchBatchManager(address _troveOwner, uint256 _troveId, address _newBatchManager) internal {
         switchBatchManager(_troveOwner, _troveId, 0, 0, _newBatchManager, 0, 0, type(uint256).max);
     }
+
     function switchBatchManager(
         address _troveOwner,
         uint256 _troveId,
@@ -514,13 +517,7 @@ contract BaseTest is TestAccounts {
     ) internal {
         vm.startPrank(_troveOwner);
         borrowerOperations.switchBatchManager(
-            _troveId,
-            _removeUpperHint,
-            _removeLowerHint,
-            _newBatchManager,
-            _addUpperHint,
-            _addLowerHint,
-            _maxUpfrontFee
+            _troveId, _removeUpperHint, _removeLowerHint, _newBatchManager, _addUpperHint, _addLowerHint, _maxUpfrontFee
         );
         vm.stopPrank();
     }

@@ -3,10 +3,12 @@ pragma solidity 0.8.18;
 
 import {Script} from "forge-std/Script.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
-import "../deployment.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {TestDeployer} from "../test/TestContracts/Deployment.t.sol";
 import {Accounts} from "../test/TestContracts/Accounts.sol";
 import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
 import {ETH_GAS_COMPENSATION} from "../Dependencies/Constants.sol";
+import {IBorrowerOperations} from "../Interfaces/IBorrowerOperations.sol";
 
 contract DeployLiquity2Script is Script, StdCheats {
     struct DemoTroveParams {
@@ -25,7 +27,8 @@ contract DeployLiquity2Script is Script, StdCheats {
             vm.startBroadcast(vm.envUint("DEPLOYER"));
         }
 
-        (LiquityContractsDev memory contracts,,,,,) = _deployAndConnectContracts();
+        TestDeployer deployer = new TestDeployer();
+        (TestDeployer.LiquityContractsDev memory contracts,,,,,) = deployer.deployAndConnectContracts();
         vm.stopBroadcast();
 
         if (vm.envOr("OPEN_DEMO_TROVES", false)) {
@@ -52,7 +55,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         }
     }
 
-    function tapFaucet(uint256[] memory accounts, LiquityContractsDev memory contracts) internal {
+    function tapFaucet(uint256[] memory accounts, TestDeployer.LiquityContractsDev memory contracts) internal {
         for (uint256 i = 0; i < accounts.length; i++) {
             vm.startBroadcast(accounts[i]);
             ERC20Faucet(address(contracts.collToken)).tap();
@@ -60,7 +63,9 @@ contract DeployLiquity2Script is Script, StdCheats {
         }
     }
 
-    function openDemoTroves(DemoTroveParams[] memory troves, LiquityContractsDev memory contracts) internal {
+    function openDemoTroves(DemoTroveParams[] memory troves, TestDeployer.LiquityContractsDev memory contracts)
+        internal
+    {
         for (uint256 i = 0; i < troves.length; i++) {
             DemoTroveParams memory trove = troves[i];
 

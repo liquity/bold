@@ -5,10 +5,11 @@ pragma solidity 0.8.18;
 import "./Interfaces/ICollateralRegistry.sol";
 import "./Dependencies/LiquityMath.sol";
 import "./Dependencies/Constants.sol";
+import "./Interfaces/IHintHelpers.sol";
 
 // import "forge-std/console2.sol";
 
-contract HintHelpers {
+contract HintHelpers is IHintHelpers {
     string public constant NAME = "HintHelpers";
 
     ICollateralRegistry public immutable collateralRegistry;
@@ -113,11 +114,11 @@ contract HintHelpers {
         return _predictAdjustInterestRateUpfrontFee(activePool, trove, _newInterestRate);
     }
 
-    function _predictAdjustInterestRateUpfrontFee(IActivePool _activePool, LatestTroveData memory _trove, uint256 _newInterestRate)
-        internal
-        view
-        returns (uint256)
-    {
+    function _predictAdjustInterestRateUpfrontFee(
+        IActivePool _activePool,
+        LatestTroveData memory _trove,
+        uint256 _newInterestRate
+    ) internal view returns (uint256) {
         TroveChange memory troveChange;
         troveChange.appliedRedistBoldDebtGain = _trove.redistBoldDebtGain;
         troveChange.newWeightedRecordedDebt = _trove.entireDebt * _newInterestRate;
@@ -169,11 +170,11 @@ contract HintHelpers {
         return _calcUpfrontFee(batch.entireDebtWithoutRedistribution, avgInterestRate);
     }
 
-    function predictJoinBatchInterestRateUpfrontFee(
-        uint256 _collIndex,
-        uint256 _troveId,
-        address _batchAddress
-    ) external view returns (uint256) {
+    function predictJoinBatchInterestRateUpfrontFee(uint256 _collIndex, uint256 _troveId, address _batchAddress)
+        external
+        view
+        returns (uint256)
+    {
         ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
         IActivePool activePool = troveManager.activePool();
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
@@ -185,11 +186,9 @@ contract HintHelpers {
 
         TroveChange memory newBatchTroveChange;
         newBatchTroveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
-        newBatchTroveChange.oldWeightedRecordedDebt =
-            batch.weightedRecordedDebt + trove.weightedRecordedDebt;
-        newBatchTroveChange.newWeightedRecordedDebt = (
-            batch.entireDebtWithoutRedistribution + trove.entireDebt
-        ) * batch.annualInterestRate;
+        newBatchTroveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt + trove.weightedRecordedDebt;
+        newBatchTroveChange.newWeightedRecordedDebt =
+            (batch.entireDebtWithoutRedistribution + trove.entireDebt) * batch.annualInterestRate;
 
         uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(newBatchTroveChange);
         return _calcUpfrontFee(trove.entireDebt, avgInterestRate);
