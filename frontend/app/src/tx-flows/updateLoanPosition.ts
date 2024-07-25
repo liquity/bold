@@ -9,6 +9,7 @@ const FlowIdSchema = v.literal("updateLoanPosition");
 
 const RequestSchema = v.object({
   flowId: FlowIdSchema,
+  collIndex: v.number(),
   owner: vAddress(),
   ownerIndex: v.number(),
   collChange: vDnum(),
@@ -26,10 +27,12 @@ export const updateLoanPosition: FlowDeclaration<Request> = {
     return v.parse(RequestSchema, request);
   },
   writeContractParams: async ({ contracts, request, stepId }) => {
+    const { BorrowerOperations } = contracts.collaterals[request.collIndex];
+
     if (stepId === "adjustTrove") {
       const troveId = getTroveId(request.owner, request.ownerIndex);
       return {
-        ...contracts.BorrowerOperations,
+        ...BorrowerOperations,
         functionName: "adjustTrove" as const,
         args: [
           troveId,

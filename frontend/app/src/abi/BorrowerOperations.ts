@@ -7,8 +7,15 @@ export const BorrowerOperations = [
       "name": "_troveManager",
       "type": "address",
       "internalType": "contract ITroveManager",
-    }, { "name": "_weth", "type": "address", "internalType": "contract IERC20" }],
+    }, { "name": "_weth", "type": "address", "internalType": "contract IWETH" }],
     "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
+    "name": "CCR",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
   },
   {
     "type": "function",
@@ -35,7 +42,7 @@ export const BorrowerOperations = [
     "type": "function",
     "name": "WETH",
     "inputs": [],
-    "outputs": [{ "name": "", "type": "address", "internalType": "contract IERC20" }],
+    "outputs": [{ "name": "", "type": "address", "internalType": "contract IWETH" }],
     "stateMutability": "view",
   },
   {
@@ -109,7 +116,11 @@ export const BorrowerOperations = [
   {
     "type": "function",
     "name": "applyTroveInterestPermissionless",
-    "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }],
+    "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }, {
+      "name": "_lowerHint",
+      "type": "uint256",
+      "internalType": "uint256",
+    }, { "name": "_upperHint", "type": "uint256", "internalType": "uint256" }],
     "outputs": [],
     "stateMutability": "nonpayable",
   },
@@ -125,7 +136,7 @@ export const BorrowerOperations = [
     "type": "function",
     "name": "closeTrove",
     "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }],
-    "outputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "nonpayable",
   },
   {
@@ -188,6 +199,25 @@ export const BorrowerOperations = [
   },
   {
     "type": "function",
+    "name": "openTrove",
+    "inputs": [
+      { "name": "_owner", "type": "address", "internalType": "address" },
+      { "name": "_ownerIndex", "type": "uint256", "internalType": "uint256" },
+      { "name": "_collAmount", "type": "uint256", "internalType": "uint256" },
+      { "name": "_boldAmount", "type": "uint256", "internalType": "uint256" },
+      { "name": "_upperHint", "type": "uint256", "internalType": "uint256" },
+      { "name": "_lowerHint", "type": "uint256", "internalType": "uint256" },
+      { "name": "_annualInterestRate", "type": "uint256", "internalType": "uint256" },
+      { "name": "_maxUpfrontFee", "type": "uint256", "internalType": "uint256" },
+      { "name": "_addManager", "type": "address", "internalType": "address" },
+      { "name": "_removeManager", "type": "address", "internalType": "address" },
+      { "name": "_receiver", "type": "address", "internalType": "address" },
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
     "name": "owner",
     "inputs": [],
     "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
@@ -202,8 +232,12 @@ export const BorrowerOperations = [
   },
   {
     "type": "function",
-    "name": "removeManagerOf",
-    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "name": "removeManagerReceiverOf",
+    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }, {
+      "name": "",
+      "type": "address",
+      "internalType": "address",
+    }],
     "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
     "stateMutability": "view",
   },
@@ -255,7 +289,25 @@ export const BorrowerOperations = [
     "outputs": [],
     "stateMutability": "nonpayable",
   },
+  {
+    "type": "function",
+    "name": "setRemoveManager",
+    "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }, {
+      "name": "_manager",
+      "type": "address",
+      "internalType": "address",
+    }, { "name": "_receiver", "type": "address", "internalType": "address" }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+  },
   { "type": "function", "name": "shutdown", "inputs": [], "outputs": [], "stateMutability": "nonpayable" },
+  {
+    "type": "function",
+    "name": "shutdownFromOracleFailure",
+    "inputs": [{ "name": "_failedOracleAddr", "type": "address", "internalType": "address" }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+  },
   {
     "type": "function",
     "name": "sortedTroves",
@@ -343,6 +395,12 @@ export const BorrowerOperations = [
     "type": "event",
     "name": "ShutDown",
     "inputs": [{ "name": "_tcr", "type": "uint256", "indexed": false, "internalType": "uint256" }],
+    "anonymous": false,
+  },
+  {
+    "type": "event",
+    "name": "ShutDownFromOracleFailure",
+    "inputs": [{ "name": "_oracleAddress", "type": "address", "indexed": false, "internalType": "address" }],
     "anonymous": false,
   },
   {

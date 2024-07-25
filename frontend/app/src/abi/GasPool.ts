@@ -2,7 +2,7 @@
 // please do not edit it manually
 export const GasPool = [{
   "type": "constructor",
-  "inputs": [{ "name": "_weth", "type": "address", "internalType": "contract IERC20" }, {
+  "inputs": [{ "name": "_weth", "type": "address", "internalType": "contract IWETH" }, {
     "name": "_borrowerOperations",
     "type": "address",
     "internalType": "contract IBorrowerOperations",

@@ -76,13 +76,6 @@ export const BoldToken = [
   },
   {
     "type": "function",
-    "name": "deploymentStartTime",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
-    "stateMutability": "view",
-  },
-  {
-    "type": "function",
     "name": "eip712Domain",
     "inputs": [],
     "outputs": [
