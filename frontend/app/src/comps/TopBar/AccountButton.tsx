@@ -1,4 +1,5 @@
 import content from "@/src/content";
+import { useDemoMode } from "@/src/demo-mode";
 import { shortenAddress } from "@/src/eth-utils";
 import { useAccount } from "@/src/eth/Ethereum";
 import { css } from "@/styled-system/css";
@@ -16,7 +17,9 @@ type ButtonData = {
 
 export function AccountButton() {
   const account = useAccount();
-  return (
+  const demoMode = useDemoMode();
+
+  return demoMode.enabled ? <ButtonDemoMode /> : (
     <ConnectButton.Custom>
       {({ chain, openChainModal, openConnectModal }) => {
         const button = match({ account, chain })
@@ -52,6 +55,32 @@ export function AccountButton() {
           : <Button mode="primary" {...button} />;
       }}
     </ConnectButton.Custom>
+  );
+}
+
+function ButtonDemoMode() {
+  const { account, updateAccountConnected } = useDemoMode();
+  return (
+    account.isConnected
+      ? (
+        <ButtonConnected
+          button={{
+            label: "demo.eth",
+            onClick: () => {
+              updateAccountConnected(false);
+            },
+          }}
+        />
+      )
+      : (
+        <Button
+          mode="primary"
+          label="Connect"
+          onClick={() => {
+            updateAccountConnected(true);
+          }}
+        />
+      )
   );
 }
 

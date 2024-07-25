@@ -26,18 +26,22 @@ export function InfoTooltip({
       )}
     >
       <div
-        style={{
+        className={css({
           display: "flex",
           flexDirection: "column",
           gap: 8,
-        }}
+        })}
       >
         {heading && <h1>{heading}</h1>}
         <div
-          style={{
+          className={css({
             fontSize: 14,
             color: "#878AA4",
-          }}
+            "& a": {
+              color: "token(colors.accent)",
+              textDecoration: "underline",
+            },
+          })}
         >
           {children}
         </div>
