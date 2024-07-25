@@ -28,7 +28,7 @@ export function Menu({
         })}
       >
         {menuItems.map(([label, href, Icon]) => {
-          const selected = pathname.startsWith(href);
+          const selected = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
             <li key={label + href}>
               <Link

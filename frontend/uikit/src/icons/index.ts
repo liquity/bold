@@ -9,6 +9,7 @@ export { IconChevronDown } from "./IconChevronDown";
 export { IconChevronSmallUp } from "./IconChevronSmallUp";
 export { IconChevronUp } from "./IconChevronUp";
 export { IconCross } from "./IconCross";
+export { IconDashboard } from "./IconDashboard";
 export { IconEarn } from "./IconEarn";
 export { IconExternal } from "./IconExternal";
 export { IconGas } from "./IconGas";

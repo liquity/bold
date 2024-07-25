@@ -58,6 +58,8 @@ export function BorrowScreen() {
   const debt = useInputFieldValue((value) => `${dn.format(value)} BOLD`);
   const interestRate = useInputFieldValue((value) => `${dn.format(value)}%`);
 
+  const [showForecast, setShowForecast] = useState(false);
+
   if (!ethPriceUsd || !boldPriceUsd) {
     return null;
   }
@@ -93,8 +95,6 @@ export function BorrowScreen() {
     && dn.gt(debt.parsed, 0)
     && interestRate.parsed
     && dn.gt(interestRate.parsed, 0);
-
-  const [showForecast, setShowForecast] = useState(false);
 
   return (
     <Screen
