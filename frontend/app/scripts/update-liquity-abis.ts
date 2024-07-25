@@ -1,5 +1,5 @@
 import { $ } from "dax-sh";
-import * as fs from "fs/promises";
+import * as fs from "node:fs/promises";
 import * as path from "path";
 import * as v from "valibot";
 
@@ -12,20 +12,24 @@ const contractsDir = `${rootDir}/contracts`;
 const artifactsTmpDir = `${appDir}/liquity-artifacts`;
 const appAbisDir = `${appDir}/src/abi`;
 
+// The first name is the contract ABI used in the app,
+// the rest are possible names of the contract in the artifacts.
 const ABIS = [
-  "ActivePool",
-  "BoldToken",
-  "BorrowerOperations",
-  "CollSurplusPool",
-  "DefaultPool",
-  "ERC20Faucet",
-  "GasPool",
-  "HintHelpers",
-  "MultiTroveGetter",
-  "PriceFeed",
-  "SortedTroves",
-  "StabilityPool",
-  "TroveManager",
+  // Protocol
+  ["CollateralRegistry"],
+  ["HintHelpers"],
+  ["MultiTroveGetter"],
+
+  // Collaterals
+  ["ActivePool"],
+  ["BorrowerOperations"],
+  ["CollSurplusPool"],
+  ["DefaultPool"],
+  ["GasPool"],
+  ["PriceFeed", "PriceFeedTestNet", "PriceFeedMock"],
+  ["SortedTroves"],
+  ["StabilityPool"],
+  ["TroveManager"],
 ];
 
 const ArtifactSchema = v.object({
@@ -51,12 +55,29 @@ async function main() {
   await $`forge build --root ${contractsDir} --out ${artifactsTmpDir}`;
 
   console.log("👉 Building promises…");
-  await Promise.all(ABIS.map(async (abiName) => (
-    writeAbiFromArtifact(
-      `${artifactsTmpDir}/${abiName}.sol/${abiName}.json`,
-      abiName,
-    )
-  )));
+  await Promise.all(ABIS.map(async (possibleNames) => {
+    const abiName = possibleNames[0];
+
+    let foundAbiName: string | null = null;
+    for (const possibleName of possibleNames) {
+      try {
+        await fs.access(`${artifactsTmpDir}/${possibleName}.sol/${possibleName}.json`);
+        foundAbiName = possibleName;
+        break;
+      } catch (_) {}
+    }
+
+    if (!foundAbiName) {
+      throw new Error(`Could not find ABI for ${possibleNames.join(", ")}`);
+    }
+
+    return (
+      writeAbiFromArtifact(
+        `${artifactsTmpDir}/${foundAbiName}.sol/${foundAbiName}.json`,
+        abiName,
+      )
+    );
+  }));
 
   console.log("👉 Removing temporary artifacts…");
   await $`rm -rf ${artifactsTmpDir}`;

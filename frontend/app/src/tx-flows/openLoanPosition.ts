@@ -10,6 +10,7 @@ const FlowIdSchema = v.literal("openLoanPosition");
 
 const RequestSchema = v.object({
   flowId: FlowIdSchema,
+  collIndex: v.number(),
   owner: vAddress(),
   ownerIndex: v.number(),
   collAmount: vDnum(),
@@ -29,12 +30,14 @@ export const openLoanPosition: FlowDeclaration<Request> = {
     request,
     wagmiConfig,
   }): Promise<["approve", "openTrove"] | ["openTrove"]> {
+    const { BorrowerOperations, Token } = contracts.collaterals[request.collIndex];
+
     const allowance = await readContract(wagmiConfig, {
-      ...contracts.CollToken,
+      ...Token,
       functionName: "allowance",
       args: [
         account.address ?? ADDRESS_ZERO,
-        contracts.BorrowerOperations.address,
+        BorrowerOperations.address,
       ],
     });
 
@@ -49,19 +52,21 @@ export const openLoanPosition: FlowDeclaration<Request> = {
     return v.parse(RequestSchema, request);
   },
   writeContractParams: async ({ contracts, request, stepId }) => {
+    const { BorrowerOperations, Token } = contracts.collaterals[request.collIndex];
+
     if (stepId === "approve") {
       return {
-        ...contracts.CollToken,
+        ...Token,
         functionName: "approve" as const,
         args: [
-          contracts.BorrowerOperations.address,
+          BorrowerOperations.address,
           request.collAmount[0],
         ],
       };
     }
     if (stepId === "openTrove") {
       return {
-        ...contracts.BorrowerOperations,
+        ...BorrowerOperations,
         functionName: "openTrove" as const,
         args: [
           request.owner ?? ADDRESS_ZERO,

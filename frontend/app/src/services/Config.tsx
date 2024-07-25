@@ -1,5 +1,6 @@
 "use client";
 
+import { CollateralIdSchema } from "@/src/constants";
 import type { ReactNode } from "react";
 
 import {
@@ -11,20 +12,13 @@ import {
   CHAIN_ID,
   CHAIN_NAME,
   CHAIN_RPC_URL,
-  CONTRACT_ACTIVE_POOL,
+  COLLATERAL_CONTRACTS,
   CONTRACT_BOLD_TOKEN,
-  CONTRACT_BORROWER_OPERATIONS,
-  CONTRACT_COLL_SURPLUS_POOL,
-  CONTRACT_COLL_TOKEN,
-  CONTRACT_DEFAULT_POOL,
+  CONTRACT_COLLATERAL_REGISTRY,
   CONTRACT_FUNCTION_CALLER,
-  CONTRACT_GAS_POOL,
   CONTRACT_HINT_HELPERS,
-  CONTRACT_INTEREST_ROUTER,
-  CONTRACT_PRICE_FEED,
-  CONTRACT_SORTED_TROVES,
-  CONTRACT_STABILITY_POOL,
-  CONTRACT_TROVE_MANAGER,
+  CONTRACT_MULTI_TROVE_GETTER,
+  CONTRACT_WETH,
 } from "@/src/env";
 import { vAddress } from "@/src/valibot-utils";
 import { createContext, useCallback, useContext, useState } from "react";
@@ -55,20 +49,27 @@ export const ConfigSchema = v.object({
     block: v.optional(v.number()),
   })),
   chainRpcUrl: v.string(),
-  contractActivePool: vAddress(),
-  contractBoldToken: vAddress(),
-  contractBorrowerOperations: vAddress(),
-  contractCollSurplusPool: vAddress(),
-  contractCollToken: vAddress(),
-  contractDefaultPool: vAddress(),
-  contractFunctionCaller: vAddress(),
-  contractGasPool: vAddress(),
-  contractHintHelpers: vAddress(),
-  contractInterestRouter: vAddress(),
-  contractPriceFeed: vAddress(),
-  contractSortedTroves: vAddress(),
-  contractStabilityPool: vAddress(),
-  contractTroveManager: vAddress(),
+  contracts: v.object({
+    boldToken: vAddress(),
+    collateralRegistry: vAddress(),
+    functionCaller: vAddress(),
+    hintHelpers: vAddress(),
+    multiTroveGetter: vAddress(),
+    weth: vAddress(),
+    collaterals: v.record(
+      CollateralIdSchema,
+      v.object({
+        activePool: vAddress(),
+        borrowerOperations: vAddress(),
+        defaultPool: vAddress(),
+        priceFeed: vAddress(),
+        sortedTroves: vAddress(),
+        stabilityPool: vAddress(),
+        token: vAddress(),
+        troveManager: vAddress(),
+      }),
+    ),
+  }),
 });
 
 export type Config = v.InferOutput<typeof ConfigSchema>;
@@ -82,20 +83,32 @@ const defaultConfig: Config = {
   chainContractEnsResolver: CHAIN_CONTRACT_ENS_RESOLVER,
   chainContractMulticall: CHAIN_CONTRACT_MULTICALL,
   chainRpcUrl: CHAIN_RPC_URL,
-  contractActivePool: CONTRACT_ACTIVE_POOL,
-  contractBoldToken: CONTRACT_BOLD_TOKEN,
-  contractBorrowerOperations: CONTRACT_BORROWER_OPERATIONS,
-  contractCollSurplusPool: CONTRACT_COLL_SURPLUS_POOL,
-  contractCollToken: CONTRACT_COLL_TOKEN,
-  contractDefaultPool: CONTRACT_DEFAULT_POOL,
-  contractFunctionCaller: CONTRACT_FUNCTION_CALLER,
-  contractGasPool: CONTRACT_GAS_POOL,
-  contractHintHelpers: CONTRACT_HINT_HELPERS,
-  contractInterestRouter: CONTRACT_INTEREST_ROUTER,
-  contractPriceFeed: CONTRACT_PRICE_FEED,
-  contractSortedTroves: CONTRACT_SORTED_TROVES,
-  contractStabilityPool: CONTRACT_STABILITY_POOL,
-  contractTroveManager: CONTRACT_TROVE_MANAGER,
+  contracts: {
+    boldToken: CONTRACT_BOLD_TOKEN,
+    collateralRegistry: CONTRACT_COLLATERAL_REGISTRY,
+    functionCaller: CONTRACT_FUNCTION_CALLER,
+    hintHelpers: CONTRACT_HINT_HELPERS,
+    multiTroveGetter: CONTRACT_MULTI_TROVE_GETTER,
+    weth: CONTRACT_WETH,
+
+    collaterals: Object.fromEntries(
+      Object.entries(COLLATERAL_CONTRACTS).map(([name, collateral]) => [
+        name,
+        collateral
+          ? {
+            activePool: collateral.ACTIVE_POOL,
+            borrowerOperations: collateral.BORROWER_OPERATIONS,
+            defaultPool: collateral.DEFAULT_POOL,
+            priceFeed: collateral.PRICE_FEED,
+            sortedTroves: collateral.SORTED_TROVES,
+            stabilityPool: collateral.STABILITY_POOL,
+            token: collateral.TOKEN,
+            troveManager: collateral.TROVE_MANAGER,
+          }
+          : null,
+      ]),
+    ),
+  },
 };
 
 export const ConfigContext = createContext<{

@@ -39,6 +39,14 @@ e.g. --chain-id can be set via CHAIN_ID instead. Parameters take precedence over
 
 const ANVIL_FIRST_ACCOUNT = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
+const PROTOCOL_CONTRACTS_VALID_NAMES = [
+  "WETHTester",
+  "BoldToken",
+  "CollateralRegistry",
+  "HintHelpers",
+  "MultiTroveGetter",
+];
+
 export async function main() {
   const { networkPreset, options } = await parseArgs();
 
@@ -159,6 +167,30 @@ Deploying Liquity contracts with the following settings:
     `broadcast/DeployLiquity2.s.sol/${options.chainId}/run-latest.json`,
   );
 
+  const deployedContractsRecord = Object.fromEntries(deployedContracts);
+
+  const ccall = async (contract: string, method: string, ...args: string[]) => {
+    const result = await $`cast call ${contract} ${method} ${args.join(" ")} --rpc-url '${options.rpcUrl}'`;
+    return result.stdout.trim();
+  };
+
+  const totalCollaterals = Number(
+    await ccall(
+      deployedContractsRecord.CollateralRegistry,
+      "totalCollaterals()",
+    ),
+  );
+
+  const collateralContracts = await Promise.all(
+    Array.from({ length: totalCollaterals }, (_, index) => (
+      getCollateralContracts(
+        index,
+        deployedContractsRecord.CollateralRegistry,
+        options.rpcUrl,
+      )
+    )),
+  );
+
   // XXX hotfix: we were leaking Github secrets in "deployer"
   // TODO: check if "deployer" is a private key, and calculate its address and use it instead?
   const { deployer, ...safeOptions } = options;
@@ -166,7 +198,9 @@ Deploying Liquity contracts with the following settings:
   // write env file
   await fs.writeJson("deployment-context-latest.json", {
     options: safeOptions,
-    deployedContracts: Object.fromEntries(deployedContracts),
+    deployedContracts,
+    collateralContracts,
+    protocolContracts: Object.fromEntries(filterProtocolContracts(deployedContracts)),
   });
 
   // format deployed contracts
@@ -220,6 +254,10 @@ async function getDeployedContracts(jsonPath: string) {
   throw new Error("Invalid deployment log: " + JSON.stringify(latestRun));
 }
 
+function filterProtocolContracts(contracts: Awaited<ReturnType<typeof getDeployedContracts>>) {
+  return contracts.filter(([name]) => PROTOCOL_CONTRACTS_VALID_NAMES.includes(name));
+}
+
 function argInt(name: string) {
   return typeof argv[name] === "number" ? Math.round(argv[name]) : undefined;
 }
@@ -265,4 +303,47 @@ async function parseArgs() {
   options.verifierUrl ??= process.env.VERIFIER_URL;
 
   return { options, networkPreset };
+}
+
+async function castCall(rpcUrl: string, contract: string, method: string, ...args: string[]) {
+  const result = await $`cast call ${contract} ${method} ${args.join(" ")} --rpc-url '${rpcUrl}'`;
+  return result.stdout.trim();
+}
+
+async function getCollateralContracts(
+  collateralIndex: number,
+  collateralRegistry: string,
+  rpcUrl: string,
+) {
+  const [token, troveManager] = await Promise.all([
+    castCall(rpcUrl, collateralRegistry, "getToken(uint256)(address)", String(collateralIndex)),
+    castCall(rpcUrl, collateralRegistry, "getTroveManager(uint256)(address)", String(collateralIndex)),
+  ]);
+
+  const [
+    activePool,
+    borrowerOperations,
+    defaultPool,
+    priceFeed,
+    sortedTroves,
+    stabilityPool,
+  ] = await Promise.all([
+    castCall(rpcUrl, troveManager, "activePool()(address)"),
+    castCall(rpcUrl, troveManager, "borrowerOperationsAddress()(address)"),
+    castCall(rpcUrl, troveManager, "defaultPool()(address)"),
+    castCall(rpcUrl, troveManager, "priceFeed()(address)"),
+    castCall(rpcUrl, troveManager, "sortedTroves()(address)"),
+    castCall(rpcUrl, troveManager, "stabilityPool()(address)"),
+  ]);
+
+  return {
+    activePool,
+    borrowerOperations,
+    defaultPool,
+    priceFeed,
+    sortedTroves,
+    stabilityPool,
+    token,
+    troveManager,
+  };
 }

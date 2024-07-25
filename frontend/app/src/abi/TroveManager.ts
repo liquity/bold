@@ -4,13 +4,21 @@ export const TroveManager = [
   {
     "type": "constructor",
     "inputs": [
+      { "name": "_ccr", "type": "uint256", "internalType": "uint256" },
       { "name": "_mcr", "type": "uint256", "internalType": "uint256" },
       { "name": "_scr", "type": "uint256", "internalType": "uint256" },
       { "name": "_liquidationPenaltySP", "type": "uint256", "internalType": "uint256" },
       { "name": "_liquidationPenaltyRedistribution", "type": "uint256", "internalType": "uint256" },
-      { "name": "_weth", "type": "address", "internalType": "contract IERC20" },
+      { "name": "_weth", "type": "address", "internalType": "contract IWETH" },
     ],
     "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
+    "name": "CCR",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
   },
   {
     "type": "function",
@@ -95,7 +103,7 @@ export const TroveManager = [
     "type": "function",
     "name": "WETH",
     "inputs": [],
-    "outputs": [{ "name": "", "type": "address", "internalType": "contract IERC20" }],
+    "outputs": [{ "name": "", "type": "address", "internalType": "contract IWETH" }],
     "stateMutability": "view",
   },
   {
@@ -724,13 +732,6 @@ export const TroveManager = [
     }, { "name": "tokenId", "type": "uint256", "internalType": "uint256" }],
     "outputs": [],
     "stateMutability": "nonpayable",
-  },
-  {
-    "type": "function",
-    "name": "troveIsStale",
-    "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }],
-    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
-    "stateMutability": "view",
   },
   {
     "type": "function",
