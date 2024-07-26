@@ -1219,7 +1219,7 @@ This fix is TODO.
 
 As mentioned in the interest rate [implementation section](#core-debt-invariant), the core debt invariant is given by:
 
-**Aggregate total debt of a always equals the sum of individual entire Trove debts**.
+**Aggregate total debt always equals the sum of individual entire Trove debts**.
 
 That is:
 
