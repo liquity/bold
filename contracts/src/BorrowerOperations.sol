@@ -1321,7 +1321,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, Ownable, IBorrowe
     }
 
     function _requireTroveIsUnredeemable(ITroveManager _troveManager, uint256 _troveId) internal view {
-        ITroveManager.Status status = _troveManager.getTroveStatus(_troveId);
         if (!_checkTroveIsUnredeemable(_troveManager, _troveId)) {
             revert TroveNotUnredeemable();
         }
