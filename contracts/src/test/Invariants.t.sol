@@ -8,37 +8,13 @@ import {BatchId} from "../Types/BatchId.sol";
 import {ISortedTroves} from "../Interfaces/ISortedTroves.sol";
 import {IStabilityPool} from "../Interfaces/IStabilityPool.sol";
 import {ITroveManager} from "../Interfaces/ITroveManager.sol";
-import {TestDeployer} from "./TestContracts/Deployment.t.sol";
+import {BatchIdSet} from "./Utils/BatchIdSet.sol";
 import {StringFormatting} from "./Utils/StringFormatting.sol";
 import {ITroveManagerTester} from "./TestContracts/Interfaces/ITroveManagerTester.sol";
 import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
 import {BaseMultiCollateralTest} from "./TestContracts/BaseMultiCollateralTest.sol";
+import {TestDeployer} from "./TestContracts/Deployment.t.sol";
 import {AdjustedTroveProperties, InvariantsTestHandler} from "./TestContracts/InvariantsTestHandler.t.sol";
-
-struct BatchIdSet {
-    mapping(BatchId => bool) _has;
-    BatchId[] _batchIds;
-}
-
-library BatchIdSetMethods {
-    function add(BatchIdSet storage set, BatchId batchId) internal {
-        if (!set._has[batchId]) {
-            set._has[batchId] = true;
-            set._batchIds.push(batchId);
-        }
-    }
-
-    function clear(BatchIdSet storage set) internal {
-        for (uint256 i = 0; i < set._batchIds.length; ++i) {
-            delete set._has[set._batchIds[i]];
-        }
-        delete set._batchIds;
-    }
-
-    function has(BatchIdSet storage set, BatchId batchId) internal view returns (bool) {
-        return set._has[batchId];
-    }
-}
 
 library SortedTrovesHelpers {
     function getBatchOf(ISortedTroves sortedTroves, uint256 troveId) internal view returns (BatchId batchId) {
@@ -57,7 +33,6 @@ library SortedTrovesHelpers {
 contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
     using Strings for uint256;
     using StringFormatting for uint256;
-    using BatchIdSetMethods for BatchIdSet;
     using SortedTrovesHelpers for ISortedTroves;
 
     InvariantsTestHandler handler;

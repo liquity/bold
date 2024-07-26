@@ -14,12 +14,13 @@ import {AddressesRegistry} from "../../AddressesRegistry.sol";
 import {AddRemoveManagers} from "../../Dependencies/AddRemoveManagers.sol";
 import {BorrowerOperations} from "../../BorrowerOperations.sol";
 import {TroveManager} from "../../TroveManager.sol";
-import {TestDeployer} from "./Deployment.t.sol";
-import {StringFormatting} from "../Utils/StringFormatting.sol";
+import {EnumerableSet} from "../Utils/EnumerableSet.sol";
 import {pow} from "../Utils/Math.sol";
+import {StringFormatting} from "../Utils/StringFormatting.sol";
 import {ITroveManagerTester} from "./Interfaces/ITroveManagerTester.sol";
 import {BaseHandler} from "./BaseHandler.sol";
 import {BaseMultiCollateralTest} from "./BaseMultiCollateralTest.sol";
+import {TestDeployer} from "./Deployment.t.sol";
 
 import {
     _100pct,
@@ -50,14 +51,14 @@ uint256 constant TIME_DELTA_MAX = ONE_YEAR;
 uint256 constant BORROWED_MIN = 0 ether; // Sometimes try borrowing too little
 uint256 constant BORROWED_MAX = 100_000 ether;
 
-uint256 constant INTEREST_RATE_MIN = MIN_ANNUAL_INTEREST_RATE * 9 / 10; // Sometimes try rates lower than the min
-uint256 constant INTEREST_RATE_MAX = MAX_ANNUAL_INTEREST_RATE * 11 / 10; // Sometimes try rates exceeding the max
+uint256 constant INTEREST_RATE_MIN = MIN_ANNUAL_INTEREST_RATE - 1; // Sometimes try rates lower than the min
+uint256 constant INTEREST_RATE_MAX = MAX_ANNUAL_INTEREST_RATE + 1; // Sometimes try rates exceeding the max
 
-uint256 constant ICR_MIN = 0.9 ether;
-uint256 constant ICR_MAX = 2 * 1.5 ether; // 2 * CCR
+uint256 constant ICR_MIN = 1.1 ether - 1;
+uint256 constant ICR_MAX = 3 ether;
 
 uint256 constant TCR_MIN = 0.9 ether;
-uint256 constant TCR_MAX = 2 * 1.5 ether; // 2 * CCR
+uint256 constant TCR_MAX = 3 ether;
 
 enum AdjustedTroveProperties {
     onlyColl,
@@ -188,6 +189,14 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         int256 interestAccrualDelta;
     }
 
+    struct Batch {
+        bool isRegistered;
+        uint256 interestRateMin;
+        uint256 interestRateMax;
+        uint256 interestRate;
+        EnumerableSet troves;
+    }
+
     uint256 constant OWNER_INDEX = 0;
 
     // Aliases
@@ -237,6 +246,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     // Used to keep track of interest accrual (per branch)
     mapping(uint256 => uint256) _interestAccrual;
     mapping(uint256 => uint256) _pendingInterest;
+
+    // Branch => batch manager =>
+    mapping(uint256 => mapping(address => Batch)) _batches;
 
     // Batch liquidation transient state
     mapping(uint256 => bool) _liquidationHasSeen; // TroveID =>
@@ -472,7 +484,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         i = _bound(i, 0, branches.length - 1);
         v.prop = AdjustedTroveProperties(_bound(prop, 0, uint8(AdjustedTroveProperties._COUNT) - 1));
-        useUnredeemableSeed %= 10;
+        useUnredeemableSeed %= 100;
         v.upperHint = _pickHint(i, upperHintSeed);
         v.lowerHint = _pickHint(i, lowerHintSeed);
 
@@ -485,7 +497,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.wasUnredeemable = v.status == UNREDEEMABLE;
 
         if (v.wasActive || v.wasUnredeemable) {
-            // Choose the wrong type of adjustment 10% of the time
+            // Choose the wrong type of adjustment 1% of the time
             if (v.wasUnredeemable) {
                 v.useUnredeemable = useUnredeemableSeed != 0;
             } else {
@@ -493,11 +505,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             }
         } else {
             // Choose with equal probability between normal vs. unredeemable adjustment
-            v.useUnredeemable = useUnredeemableSeed < 5;
+            v.useUnredeemable = useUnredeemableSeed < 50;
         }
 
-        collChange = v.prop != AdjustedTroveProperties.onlyDebt ? _bound(collChange, 0, v.t.entireColl * 11 / 10) : 0;
-        debtChange = v.prop != AdjustedTroveProperties.onlyColl ? _bound(debtChange, 0, v.t.entireDebt * 11 / 10) : 0;
+        collChange = v.prop != AdjustedTroveProperties.onlyDebt ? _bound(collChange, 0, v.t.entireColl + 1) : 0;
+        debtChange = v.prop != AdjustedTroveProperties.onlyColl ? _bound(debtChange, 0, v.t.entireDebt + 1) : 0;
         if (!isDebtInc) debtChange = Math.min(debtChange, _handlerBold);
 
         v.collDelta = isCollInc ? int256(collChange) : -int256(collChange);
@@ -554,10 +566,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             if (v.useUnredeemable) assertTrue(v.wasUnredeemable, "Should have failed as Trove was not unredeemable");
             if (!v.useUnredeemable) assertTrue(v.wasActive, "Should have failed as Trove was not active");
 
-            assertLeDecimal(-v.collDelta, int256(v.t.entireColl), 18, "Should have failed as coll decrease > coll");
+            assertLeDecimal(-v.collDelta, int256(v.t.entireColl), 18, "Should have failed as withdrawal > coll");
             v.newColl = v.t.entireColl.add(v.collDelta);
 
-            assertLeDecimal(-v.debtDelta, int256(v.t.entireDebt), 18, "Should have failed as debt decrease > debt");
+            assertLeDecimal(-v.debtDelta, int256(v.t.entireDebt), 18, "Should have failed as repayment > debt");
             v.newDebt = (v.t.entireDebt + v.upfrontFee).add(v.debtDelta);
 
             assertGeDecimal(v.newDebt, MIN_DEBT, 28, "Should have failed as new debt < MIN_DEBT");
@@ -1310,46 +1322,75 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
     }
 
-    // XXX unfinished
-    // function registerBatchManager(
-    //     uint256 i,
-    //     uint128 minInterestRate,
-    //     uint128 maxInterestRate,
-    //     uint128 currentInterestRate,
-    //     uint128 annualManagementFee,
-    //     uint128 minInterestRateChangePeriod
-    // ) external {
-    //     i = _bound(i, 0, branches.length - 1);
-    //     minInterestRate = uint128(_bound(minInterestRate, INTEREST_RATE_MIN, INTEREST_RATE_MAX));
-    //     maxInterestRate = uint128(_bound(maxInterestRate, minInterestRate * 9 / 10, INTEREST_RATE_MAX));
-    //     currentInterestRate = uint128(_bound(currentInterestRate, minInterestRate * 9 / 10, maxInterestRate * 11 / 10));
+    function registerBatchManager(
+        uint256 i,
+        uint128 minInterestRate,
+        uint128 maxInterestRate,
+        uint128 currentInterestRate,
+        uint128 annualManagementFee,
+        uint128 minInterestRateChangePeriod
+    ) external {
+        i = _bound(i, 0, branches.length - 1);
+        minInterestRate = uint128(_bound(minInterestRate, INTEREST_RATE_MIN, INTEREST_RATE_MAX));
+        maxInterestRate = uint128(_bound(maxInterestRate, minInterestRate - 1, INTEREST_RATE_MAX));
+        currentInterestRate = uint128(_bound(currentInterestRate, minInterestRate - 1, maxInterestRate + 1));
 
-    //     TestDeployer.LiquityContractsDev memory c = branches[i];
-    //     bool existed = c.borrowerOperations.getInterestBatchManager(msg.sender).maxInterestRate > 0;
+        TestDeployer.LiquityContractsDev memory c = branches[i];
+        Batch storage batch = _batches[i][msg.sender];
 
-    //     vm.prank(msg.sender);
-    //     try c.borrowerOperations.registerBatchManager(
-    //         minInterestRate, maxInterestRate, currentInterestRate, annualManagementFee, minInterestRateChangePeriod
-    //     ) {
-    //         // Preconditions
-    //         assertFalse(existed, "Should have failed as batch manager already existed");
+        string memory errorString;
+        vm.prank(msg.sender);
 
-    //         // Effects
-    //         IBorrowerOperations.InterestBatchManager memory params =
-    //             c.borrowerOperations.getInterestBatchManager(msg.sender);
+        try c.borrowerOperations.registerBatchManager(
+            minInterestRate, maxInterestRate, currentInterestRate, annualManagementFee, minInterestRateChangePeriod
+        ) {
+            // Preconditions
+            assertFalse(batch.isRegistered, "Should have failed as batch manager had already registered");
+            assertGeDecimal(minInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Wrong: min declared < min allowed");
+            assertGeDecimal(currentInterestRate, minInterestRate, 18, "Wrong: curr rate < min declared");
+            assertGeDecimal(maxInterestRate, currentInterestRate, 18, "Wrong: curr rate > max declared");
+            assertGeDecimal(MAX_ANNUAL_INTEREST_RATE, maxInterestRate, 18, "Wrong: max declared > max allowed");
+            assertNotEqDecimal(minInterestRate, maxInterestRate, 18, "Should have failed as min == max");
 
-    //     } catch Error(string memory reason) {
-    //         // Justify failures
-    //         if (reason.equals("BO: Batch Manager already exists")) {
-    //             assertTrue(existed, "Shouldn't have failed as batch manager did not exist");
-    //         } else {
-    //             revert(reason);
-    //         }
+            // Effects
+            batch.isRegistered = true;
+            batch.interestRateMin = minInterestRate;
+            batch.interestRateMax = maxInterestRate;
+            batch.interestRate = currentInterestRate;
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, errorString) = _decodeCustomError(revertData);
 
-    //         info("Expected revert: ", reason);
-    //         _log();
-    //     }
-    // }
+            // Justify failures
+            if (selector == BorrowerOperations.BatchManagerExists.selector) {
+                assertTrue(batch.isRegistered, "Shouldn't have failed as batch manager hadn't registered yet");
+            } else if (selector == BorrowerOperations.InterestRateTooLow.selector) {
+                assertTrue(
+                    minInterestRate < MIN_ANNUAL_INTEREST_RATE || maxInterestRate < MIN_ANNUAL_INTEREST_RATE,
+                    "Shouldn't have failed as min and max declared >= min allowed"
+                );
+            } else if (selector == BorrowerOperations.InterestRateTooHigh.selector) {
+                assertTrue(
+                    minInterestRate > MAX_ANNUAL_INTEREST_RATE || maxInterestRate > MAX_ANNUAL_INTEREST_RATE,
+                    "Shouldn't have failed as min and max declared >= min allowed"
+                );
+            } else if (selector == BorrowerOperations.InterestNotInRange.selector) {
+                assertTrue(
+                    currentInterestRate < minInterestRate || currentInterestRate > maxInterestRate,
+                    "Shouldn't have failed as interest rate was in range"
+                );
+            } else if (selector == BorrowerOperations.MinGeMax.selector) {
+                assertGeDecimal(minInterestRate, maxInterestRate, 18, "Shouldn't have failed as min < max");
+            } else {
+                revert(string.concat("Unexpected error: ", errorString));
+            }
+        }
+
+        if (bytes(errorString).length > 0) {
+            info("Expected error: ", errorString);
+            _log();
+        }
+    }
 
     ///////////////////////////////
     // Internal helper functions //
@@ -2009,6 +2050,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             if (selector == BorrowerOperations.CallerNotPriceFeed.selector) {
                 return (selector, "BorrowerOperations.CallerNotPriceFeed()");
+            }
+
+            if (selector == BorrowerOperations.MinGeMax.selector) {
+                return (selector, "BorrowerOperations.MinGeMax()");
             }
 
             if (selector == TroveManager.EmptyData.selector) {
