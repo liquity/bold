@@ -7,7 +7,7 @@ name: Testnet Deployment
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - ".github/workflows/testnet-deployment.yml"
       - "contracts/**"
@@ -74,7 +74,7 @@ jobs:
     name: Deploy app
     runs-on: ubuntu-latest
     needs: deploy-contracts
-    if: ${{ github.event_name != 'pull_request' }}
+    if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
     env:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
