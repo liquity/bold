@@ -1284,6 +1284,56 @@ Taking the minimum of both market and canonical prices means that to make Liquit
 
 The best solution on paper seems to be 3) i.e. taking the minimum with an additional growth rate cap on the exchange rate, following [Aave’s approach](https://github.com/bgd-labs/aave-capo). However, deriving parameters for growth rate caps for each LST is tricky, and may not be suitable for an immutable system. 
 
+### No lower bound on `_minInterestRateChangePeriod` in `registerBatchManager`
+
+`registerBatchManager` requires the manager to set  a `_minInterestRateChangePeriod`.  This period dictates how often they can change the interest rates on their batch, and serves as a signal to borrowers.
+
+However, it’s possible for the batch manager to pass a `_minInterestRateChangePeriod` of `0`.  This means a manager could do repeated premature rate adjustments inside 1 transaction, incurring enough fees to push the ICR of 1 or more Troves under their management below the MCR, or even below 100%.
+
+**Solution**
+
+Set a non-zero lower bound for `_minInterestRateChangePeriod` that ensures no Troves in the batch can be dragged below 100% ICR by multiple premature adjustment fees in 1 transaction.
+
+
+### No limit on a batch manager’s `_annualManagementFee` 
+
+`registerBatchManager` allows any `_annualManagementFee` to be chosen, which for extremely high values, would mint an unconstrained amount of BOLD in a very short time, for even a very small batch.
+
+**Solution:**
+
+The `_annualManagementFee` should be constrained within a sensible range, e.g. [0, 100%].
+
+
+### Branch shutdown and bad debt
+
+In the case of a collateral price collapse or oracle failure, a branch will shut down and urgent redemptions will be enabled. The collapsed branch may be left with 0 collateral (or collateral with 0 value), and some remaining bad debt.
+
+This could in the worst case lead to bank runs: a portion of the system debt can not be cleared, and hence a portion of the BOLD supply can never be redeemed.
+
+Even though the entire system may be overcollateralized in aggregate, this unredeemable portion of BOLD is problematic: no user wants to be left holding unredeemable BOLD and so they may dump BOLD en masse (repay, redeem, sell).
+
+This would likely cause the entire system to evaporate, and may also break the BOLD peg. Even without a peg break, a bank run is still entirely possible and very undesirable.
+
+**Solutions**
+
+Various solutions have been fielded. Generally, any solution which appears to credibly and eventually clear the bad debt should have a calming effect on any bank run dynamic: when bad debt exists yet users believe the BOLD peg will be maintained in the long-term, they are less likely to panic and repay/redeem/dump BOLD.
+
+1. **Redemption fees pay down bad debt**. When bad debt exists, direct normal redemption fees to clearing the bad debt. It works like this: when `x` BOLD is redeemed, `x-fee` debt on healthy branches is cleared 1:1 for collateral, and `fee` is canceled with debt on the shut down branch. This would slowly pay down the debt over time. It also makes bank runs via redemption nicely self-limiting: large redemption volume -> fee spike -> pays down the bad debt more quickly. 
+
+2. **Haircut for SP depositors**. If there is bad debt in the system, BOLD from all SPs could be burned pro-rata to cancel it.  This socializes the loss across SP depositors.
+
+3. **Redistribution to active Troves on healthy branches**. Socializes the loss across Troves. Could be used as a fallback for 2.
+
+4. **New multi-collateral Stability Pool.** This pool would absorb some fraction of liquidations from all branches, including shut down branches. 
+
+5. **Governance can direct BOLD interest to pay down bad debt**. BOLD interest could be voted to be redirected to paying down the bad debt over time. 
+
+And some additional solutions that may help reduce the chance of bad debt occurring in the first place:
+
+6. **Restrict SP withdrawals when TCR < 100%**. This ensure that SP depositors can’t flee when their branch is insolvent, and would be forced to eat the loss. This could lead to less bad debt than otherwise. On the other hand, when TCR > 100%, the expectation of this restriction kicking in could force pre-empting SP fleeing, which may limit liquidations and make bad debt _more_ likely.  An alternative would be to restrict SP withdrawals only when the LST-ETH price falls significantly below 1, indicating an adverse LST depeg event.
+
+7. **Pro-rata redemptions at TCR < 100% (branch specific, not routed)**. Urgent redemptions are helpful for shrinking the debt of a shut down branch when it is at `TCR > 100%`. However, at `TCR < 100%`, urgent redemptions do not help clear the bad debt. They simply remove all collateral and push it into its final state faster (and in fact, make it slightly worse since they pay a slight collateral bonus).  At `TCR < 100%`, we could offer special pro-rata redemptions only on the shut down branch - e.g. at `TCR = 80%`, users may redeem 1 BOLD for $0.80 worth of collateral. This would (in principle) allow someone to completely clear the bad debt via redemption. At first glance it seems unprofitable, but if the redeemer has reason to believe the collateral is underpriced and the price may rebound at some point in future, they may believe it to be profitable to redeem pro-rata.
+8. 
 ## Requirements
 
 - [Node.js](https://nodejs.org/)
