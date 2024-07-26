@@ -78,6 +78,9 @@
   - [Discrepancy between aggregate and sum of individual debts](#discrepancy-between-aggregate-and-sum-of-individual-debts)
   - [Discrepancy between yieldGainsOwed and sum of individual yield gains in StabilityPool](#discrepancy-between-yieldgainsowed-and-sum-of-individual-yield-gains-in-stabilitypool)
   - [LST oracle risks](#lst-oracle-risks)
+  - [No lower bound on `_minInterestRateChangePeriod` in `registerBatchManager`](#no-lower-bound-on-_mininterestratechangeperiod-in-registerbatchmanager)
+  - [No limit on the `_annualManagementFee`](#no-limit-on-the-_annualmanagementfee)
+  - [Branch shutdown and bad debt](#branch-shutdown-and-bad-debt)
 - [Requirements](#requirements)
 - [Setup](#setup)
 - [How to develop](#how-to-develop)
@@ -1295,7 +1298,7 @@ However, it’s possible for the batch manager to pass a `_minInterestRateChange
 Set a non-zero lower bound for `_minInterestRateChangePeriod` that ensures no Troves in the batch can be dragged below 100% ICR by multiple premature adjustment fees in 1 transaction.
 
 
-### No limit on a batch manager’s `_annualManagementFee` 
+### No limit on the `_annualManagementFee` 
 
 `registerBatchManager` allows any `_annualManagementFee` to be chosen, which for extremely high values, would mint an unconstrained amount of BOLD in a very short time, for even a very small batch.
 
