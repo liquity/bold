@@ -7,7 +7,7 @@ import "../Interfaces/IWETH.sol";
 import "../Dependencies/AddRemoveManagers.sol";
 import "../Dependencies/Constants.sol";
 
-import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
 contract GasCompZapper is AddRemoveManagers {
     using SafeERC20 for IERC20;
@@ -95,7 +95,6 @@ contract GasCompZapper is AddRemoveManagers {
 
     function addColl(uint256 _troveId, uint256 _amount) external {
         address owner = troveNFT.ownerOf(_troveId);
-        console2.log(owner, "owner");
         _requireSenderIsOwnerOrAddManager(_troveId, owner);
 
         IBorrowerOperations borrowerOperationsCached = borrowerOperations;
