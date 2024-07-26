@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { argv, echo, fs } from "zx";
+import { echo, fs, minimist } from "zx";
 
 const HELP = `
 Converts the deployment artifacts created by ./deploy into environment variables
@@ -21,6 +21,16 @@ Options:
                                            overwriting it (requires OUTPUT_ENV).
 `;
 
+const argv = minimist(process.argv.slice(2), {
+  alias: {
+    h: "help",
+  },
+  boolean: [
+    "help",
+    "append",
+  ],
+});
+
 const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 const ZDeploymentContext = z.object({
   deployedContracts: z.record(ZAddress),
@@ -32,8 +42,8 @@ const NULL_ADDRESS = `0x${"0".repeat(40)}`;
 
 export async function main() {
   const options = {
-    help: "help" in argv || "h" in argv,
-    append: "append" in argv,
+    help: argv["help"],
+    append: argv["append"],
     inputJsonPath: argv._[0],
     outputEnvPath: argv._[1],
   };

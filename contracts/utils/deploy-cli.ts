@@ -1,4 +1,4 @@
-import { $, argv, echo, fs } from "zx";
+import { $, echo, fs, minimist } from "zx";
 
 const HELP = `
 deploy - deploy the Liquity contracts.
@@ -38,6 +38,26 @@ e.g. --chain-id can be set via CHAIN_ID instead. Parameters take precedence over
 `;
 
 const ANVIL_FIRST_ACCOUNT = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
+const argv = minimist(process.argv.slice(2), {
+  alias: {
+    h: "help",
+  },
+  boolean: [
+    "help",
+    "open-demo-troves",
+    "verify",
+  ],
+  string: [
+    "chain-id",
+    "deployer",
+    "etherscan-api-key",
+    "ledger-path",
+    "rpc-url",
+    "verifier",
+    "verifier-url",
+  ],
+});
 
 export async function main() {
   const { networkPreset, options } = await parseArgs();
@@ -220,37 +240,28 @@ async function getDeployedContracts(jsonPath: string) {
   throw new Error("Invalid deployment log: " + JSON.stringify(latestRun));
 }
 
-function argInt(name: string) {
-  return typeof argv[name] === "number" ? Math.round(argv[name]) : undefined;
-}
-
-function argBoolean(name: string) {
-  // allow "false"
-  return argv[name] === "false" ? false : Boolean(argv[name]);
+function safeParseInt(value: string) {
+  const parsed = parseInt(value, 10);
+  return isNaN(parsed) ? undefined : parsed;
 }
 
 async function parseArgs() {
   const options = {
-    chainId: argInt("chain-id"),
+    chainId: safeParseInt(argv["chain-id"]),
     deployer: argv["deployer"],
     etherscanApiKey: argv["etherscan-api-key"],
-    help: "help" in argv || "h" in argv,
+    help: argv["help"],
     ledgerPath: argv["ledger-path"],
-    openDemoTroves: argBoolean("open-demo-troves"),
+    openDemoTroves: argv["open-demo-troves"],
     rpcUrl: argv["rpc-url"],
-    verify: argBoolean("verify"),
+    verify: argv["verify"],
     verifier: argv["verifier"],
     verifierUrl: argv["verifier-url"],
   };
 
   const [networkPreset] = argv._;
 
-  if (options.chainId === undefined) {
-    const chainIdEnv = parseInt(process.env.CHAIN_ID ?? "", 10);
-    if (chainIdEnv && isNaN(chainIdEnv)) {
-      options.chainId = chainIdEnv;
-    }
-  }
+  options.chainId ??= safeParseInt(process.env.CHAIN_ID ?? "");
   options.deployer ??= process.env.DEPLOYER;
   options.etherscanApiKey ??= process.env.ETHERSCAN_API_KEY;
   options.ledgerPath ??= process.env.LEDGER_PATH;
