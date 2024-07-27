@@ -45,7 +45,7 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
-          forge build --sizes
+          forge build --sizes --skip test --skip scripts
 
       - name: Run Forge tests local
         run: |
