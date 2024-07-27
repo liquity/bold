@@ -52,7 +52,6 @@ jobs:
           forge test -vvv --no-match-contract Mainnet
 
       - name: Run Forge tests mainnet
-        if: false # TODO: re-enable
         run: |
           forge test -vvv --match-contract Mainnet
 
