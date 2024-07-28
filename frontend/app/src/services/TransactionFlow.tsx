@@ -10,7 +10,6 @@
 // - Flow declaration: Contains the logic for a specific flow.
 // - Flow state: The state of a transaction flow, as stored in local storage (steps + request).
 
-import type { Config } from "@/src/services/Config";
 import type { Request as OpenLoanPositionRequest } from "@/src/tx-flows/openLoanPosition.ts";
 import type { Request as RepayAndCloseLoanPositionRequest } from "@/src/tx-flows/repayAndCloseLoanPosition.ts";
 import type { Request as UpdateLoanPositionRequest } from "@/src/tx-flows/updateLoanPosition.ts";
@@ -20,7 +19,6 @@ import type { ReactNode } from "react";
 import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import { useContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { useConfig } from "@/src/services/Config";
 import { useAccount, useWagmiConfig } from "@/src/services/Ethereum";
 import { openLoanPosition } from "@/src/tx-flows/openLoanPosition.ts";
 import { repayAndCloseLoanPosition } from "@/src/tx-flows/repayAndCloseLoanPosition.ts";
@@ -95,7 +93,6 @@ const FlowStateSchema = v.object({
 
 type GetStepsFn<FR extends FlowRequest> = (args: {
   account: ReturnType<typeof useAccount>;
-  config: Config;
   contracts: ReturnType<typeof useContracts>;
   request: FR;
   wagmiConfig: ReturnType<typeof useWagmiConfig>;
@@ -138,7 +135,6 @@ type ComponentState = {
 };
 
 export function TransactionFlow({ children }: { children: ReactNode }) {
-  const { config } = useConfig();
   const wagmiConfig = useWagmiConfig();
   const account = useAccount();
   const contracts = useContracts();
@@ -195,7 +191,6 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
 
       return getFlowDeclaration(flow.request.flowId).getSteps({
         account,
-        config,
         contracts,
         request: flow.request,
         wagmiConfig,

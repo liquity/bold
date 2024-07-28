@@ -1,5 +1,6 @@
 "use client";
 
+import { CollateralSymbol } from "@/src/types";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
@@ -18,45 +19,41 @@ import * as dn from "dnum";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "ETH" | "LQTY" | "BOLD" | "RETH" | "STETH";
+type PriceToken = "LQTY" | "BOLD" | CollateralSymbol;
 
 type Prices = Record<PriceToken, Dnum | null>;
 
 const initialPrices: Prices = {
   BOLD: dn.from(1, 18),
-  ETH: null,
   LQTY: null,
+
+  // collaterals
+  ETH: null,
   RETH: null,
   STETH: null,
 };
 
-let useWatchPrices = function useWatchPrices(): Prices {
-  const TroveManager = useCollateralContract("ETH", "TroveManager");
-  const PriceFeed = useCollateralContract("ETH", "PriceFeed");
-
-  const priceFeedAddress = useReadContract(
-    TroveManager
-      ? {
-        ...TroveManager,
-        functionName: "priceFeed",
-      }
-      : {},
-  );
-
-  const ethPrice = useReadContract(
+function useWatchCollateralPrice(collateral: CollateralSymbol) {
+  const PriceFeed = useCollateralContract(collateral, "PriceFeed");
+  const price = useReadContract(
     PriceFeed
-      ? {
-        abi: PriceFeed.abi,
-        address: priceFeedAddress.data,
-        functionName: "lastGoodPrice",
-      }
+      ? { ...PriceFeed, functionName: "lastGoodPrice" }
       : {},
   );
+  return PriceFeed && price.data ? price : { data: null, loading: false };
+}
+
+let useWatchPrices = function useWatchPrices(): Prices {
+  const ethPrice = useWatchCollateralPrice("ETH");
+  const rethPrice = useWatchCollateralPrice("RETH");
+  const stethPrice = useWatchCollateralPrice("STETH");
 
   return {
-    // TODO: fetch prices for LQTY, BOLD, RETH, STETH
+    // TODO: fetch prices for LQTY & BOLD
     ...initialPrices,
     ETH: ethPrice.data ? [ethPrice.data, 18] : null,
+    RETH: rethPrice.data ? [rethPrice.data, 18] : null,
+    STETH: stethPrice.data ? [stethPrice.data, 18] : null,
   };
 };
 

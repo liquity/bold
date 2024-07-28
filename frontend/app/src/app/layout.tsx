@@ -9,7 +9,6 @@ import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import { ConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
 import { APP_TITLE } from "@/src/constants";
 import { DemoMode } from "@/src/demo-mode";
-import { Config } from "@/src/services/Config";
 import { Ethereum } from "@/src/services/Ethereum";
 import { Prices } from "@/src/services/Prices";
 import { TransactionFlow } from "@/src/services/TransactionFlow";
@@ -30,23 +29,21 @@ export default function Layout({
     <html lang="en">
       <body className={GeistSans.className}>
         <UiKit>
-          <Config>
-            <DemoMode>
-              <Ethereum>
-                <Prices>
-                  <TransactionFlow>
-                    <ConfigModal>
-                      <AboutModal>
-                        <AppLayout>
-                          {children}
-                        </AppLayout>
-                      </AboutModal>
-                    </ConfigModal>
-                  </TransactionFlow>
-                </Prices>
-              </Ethereum>
-            </DemoMode>
-          </Config>
+          <DemoMode>
+            <Ethereum>
+              <Prices>
+                <TransactionFlow>
+                  <ConfigModal>
+                    <AboutModal>
+                      <AppLayout>
+                        {children}
+                      </AppLayout>
+                    </AboutModal>
+                  </ConfigModal>
+                </TransactionFlow>
+              </Prices>
+            </Ethereum>
+          </DemoMode>
         </UiKit>
       </body>
     </html>

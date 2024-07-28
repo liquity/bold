@@ -1,4 +1,3 @@
-import type { Config } from "@/src/services/Config";
 import type { CollateralSymbol } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 
@@ -12,7 +11,14 @@ import { PriceFeed } from "@/src/abi/PriceFeed";
 import { SortedTroves } from "@/src/abi/SortedTroves";
 import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
-import { useConfig } from "@/src/services/Config";
+import {
+  COLLATERAL_CONTRACTS,
+  CONTRACT_BOLD_TOKEN,
+  CONTRACT_COLLATERAL_REGISTRY,
+  CONTRACT_HINT_HELPERS,
+  CONTRACT_MULTI_TROVE_GETTER,
+  CONTRACT_WETH,
+} from "@/src/env";
 import { useMemo } from "react";
 import { erc20Abi } from "viem";
 
@@ -55,48 +61,46 @@ type Contract<T extends ContractName> = {
 type CollateralContracts<T extends CollateralContractName> = Record<T, Contract<T>>;
 
 type Contracts = {
-  [K in ProtocolContractName | "collaterals"]: K extends "collaterals"
-    ? Record<keyof Config["contracts"]["collaterals"], CollateralContracts<CollateralContractName> | null>
+  [K in ProtocolContractName | "collaterals"]: K extends "collaterals" ? Record<
+      keyof typeof COLLATERAL_CONTRACTS,
+      CollateralContracts<CollateralContractName> | null
+    >
     : K extends ContractName ? Contract<K>
     : never;
 };
 
 function collateralAddressesToContracts(
-  collateral: Config["contracts"]["collaterals"][
-    keyof Config["contracts"]["collaterals"]
-  ],
+  collateral: typeof COLLATERAL_CONTRACTS[keyof typeof COLLATERAL_CONTRACTS],
 ): CollateralContracts<CollateralContractName> | null {
   return collateral
     ? {
-      ActivePool: { abi: abis.ActivePool, address: collateral.activePool },
-      BorrowerOperations: { abi: abis.BorrowerOperations, address: collateral.borrowerOperations },
-      DefaultPool: { abi: abis.DefaultPool, address: collateral.defaultPool },
-      PriceFeed: { abi: abis.PriceFeed, address: collateral.priceFeed },
-      SortedTroves: { abi: abis.SortedTroves, address: collateral.sortedTroves },
-      StabilityPool: { abi: abis.StabilityPool, address: collateral.stabilityPool },
-      Token: { abi: abis.Token, address: collateral.token },
-      TroveManager: { abi: abis.TroveManager, address: collateral.troveManager },
+      ActivePool: { abi: abis.ActivePool, address: collateral.ACTIVE_POOL },
+      BorrowerOperations: { abi: abis.BorrowerOperations, address: collateral.BORROWER_OPERATIONS },
+      DefaultPool: { abi: abis.DefaultPool, address: collateral.DEFAULT_POOL },
+      PriceFeed: { abi: abis.PriceFeed, address: collateral.PRICE_FEED },
+      SortedTroves: { abi: abis.SortedTroves, address: collateral.SORTED_TROVES },
+      StabilityPool: { abi: abis.StabilityPool, address: collateral.STABILITY_POOL },
+      Token: { abi: abis.Token, address: collateral.TOKEN },
+      TroveManager: { abi: abis.TroveManager, address: collateral.TROVE_MANAGER },
     }
     : null;
 }
 
 export function useContracts(): Contracts {
-  const { config } = useConfig();
   return useMemo(() => {
-    const { contracts: c } = config;
     return ({
-      BoldToken: { abi: abis.BoldToken, address: c.boldToken },
-      CollateralRegistry: { abi: abis.CollateralRegistry, address: c.collateralRegistry },
-      HintHelpers: { abi: abis.HintHelpers, address: c.hintHelpers },
-      MultiTroveGetter: { abi: abis.MultiTroveGetter, address: c.multiTroveGetter },
-      WETH: { abi: abis.WETH, address: c.weth },
+      BoldToken: { abi: abis.BoldToken, address: CONTRACT_BOLD_TOKEN },
+      CollateralRegistry: { abi: abis.CollateralRegistry, address: CONTRACT_COLLATERAL_REGISTRY },
+      HintHelpers: { abi: abis.HintHelpers, address: CONTRACT_HINT_HELPERS },
+      MultiTroveGetter: { abi: abis.MultiTroveGetter, address: CONTRACT_MULTI_TROVE_GETTER },
+      WETH: { abi: abis.WETH, address: CONTRACT_WETH },
       collaterals: {
-        ETH: collateralAddressesToContracts(c.collaterals.ETH),
-        RETH: collateralAddressesToContracts(c.collaterals.RETH),
-        STETH: collateralAddressesToContracts(c.collaterals.STETH),
+        ETH: collateralAddressesToContracts(COLLATERAL_CONTRACTS.ETH),
+        RETH: collateralAddressesToContracts(COLLATERAL_CONTRACTS.RETH),
+        STETH: collateralAddressesToContracts(COLLATERAL_CONTRACTS.STETH),
       },
     } as const);
-  }, [abis, config]);
+  }, [abis]);
 }
 
 export function useProtocolContract(name: ProtocolContractName): Contract<ProtocolContractName> {
@@ -112,4 +116,8 @@ export function useCollateralContract(
 
 export function useActiveCollaterals(): CollateralSymbol[] {
   return Object.keys(useContracts().collaterals) as CollateralSymbol[];
+}
+
+export function collIndexToSymbol(collIndex: number): CollateralSymbol {
+  const activeCollaterals = useActiveCollaterals();
 }
