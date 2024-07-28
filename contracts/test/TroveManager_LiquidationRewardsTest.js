@@ -1,9 +1,11 @@
-const { TestHelper: th } = require("../utils/testHelpers.js");
+const { time } = require('@nomicfoundation/hardhat-network-helpers');
+const { TestHelper: th, TimeValues: timeValues } = require("../utils/testHelpers.js");
 const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 
 const TroveManagerTester = artifacts.require("TroveManagerTester");
 
 const { dec, getDifference, toBN } = th;
+let MIN_ANNUAL_INTEREST_RATE;
 
 contract("TroveManager - Redistribution reward calculations", async (accounts) => {
   const fundedAccounts = accounts.slice(0, 20);
@@ -65,6 +67,8 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     stabilityPool = contracts.stabilityPool;
     defaultPool = contracts.defaultPool;
     borrowerOperations = contracts.borrowerOperations;
+
+    MIN_ANNUAL_INTEREST_RATE = await contracts.constants._MIN_ANNUAL_INTEREST_RATE();
   });
 
   it("redistribution: A, B Open. B Liquidated. C, D Open. D Liquidated. Distributes correct rewards", async () => {
@@ -762,6 +766,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       extraBoldAmount: dec(110, 18),
       extraParams: { from: carol },
     });
+    const startTime1 = await time.latest();
 
     // Price drops to 100 $/E
     await priceFeed.setPrice(dec(100, 18));
@@ -781,6 +786,9 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       value: addedColl,
     });
 
+    // Let’s avoid upfront fee:
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK);
+
     // Alice withdraws Bold
     await borrowerOperations.withdrawBold(
       aliceTroveId,
@@ -788,6 +796,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       th.MAX_UINT256,
       { from: alice },
     );
+    const startTime2 = await time.latest();
 
     // Price drops to 100 $/E
     await priceFeed.setPrice(dec(100, 18));
@@ -802,9 +811,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       .add(await troveManager.getPendingCollReward(bobTroveId))
       .toString();
 
-    const bob_BoldDebt = (await troveManager.Troves(bobTroveId))[0]
-      .add(await troveManager.getPendingBoldDebtReward(bobTroveId))
-      .toString();
+    const bob_BoldDebt = await troveManager.getTroveEntireDebt(bobTroveId);
 
     const expected_B_coll = B_coll.add(addedColl)
       .add(th.applyLiquidationFee(A_coll))
@@ -815,12 +822,16 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
         ),
       );
     assert.isAtMost(th.getDifference(bob_Coll, expected_B_coll), 1000);
+    const timePassed1 = await time.latest() - startTime1;
+    const timePassed2 = await time.latest() - startTime2;
+
     assert.isAtMost(
       th.getDifference(
         bob_BoldDebt,
-        A_totalDebt.mul(toBN(2)).add(B_totalDebt).add(C_totalDebt),
+        th.applyInterest(A_totalDebt.add(B_totalDebt).add(C_totalDebt), MIN_ANNUAL_INTEREST_RATE, timePassed1)
+            .add(th.applyInterest(A_totalDebt, MIN_ANNUAL_INTEREST_RATE, timePassed2)),
       ),
-      1000,
+      6e16,
     );
   });
 
@@ -840,6 +851,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       extraBoldAmount: dec(110, 18),
       extraParams: { from: carol },
     });
+    const startTime1 = await time.latest();
 
     // Price drops to 100 $/E
     await priceFeed.setPrice(dec(100, 18));
@@ -865,6 +877,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       extraBoldAmount: dec(110, 18),
       extraParams: { from: dennis },
     });
+    const startTime2 = await time.latest();
 
     // Price drops to 100 $/E
     await priceFeed.setPrice(dec(100, 18));
@@ -920,7 +933,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       B_coll.mul(C_totalDebt).div(A_coll.add(B_coll)),
     ).add(B_collAfterL1.mul(D_totalDebt).div(totalCollAfterL1));
     assert.isAtMost(th.getDifference(bob_Coll, expected_B_coll), 1000);
-    assert.isAtMost(th.getDifference(bob_BoldDebt, expected_B_debt), 10000);
+    assert.isAtMost(th.getDifference(bob_BoldDebt, expected_B_debt), 3e12);
 
     const A_collAfterL1 = A_coll.add(
       A_coll.mul(th.applyLiquidationFee(C_coll)).div(A_coll.add(B_coll)),
@@ -932,7 +945,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       A_coll.mul(C_totalDebt).div(A_coll.add(B_coll)),
     ).add(A_collAfterL1.mul(D_totalDebt).div(totalCollAfterL1));
     assert.isAtMost(th.getDifference(alice_Coll, expected_A_coll), 1000);
-    assert.isAtMost(th.getDifference(alice_BoldDebt, expected_A_debt), 10000);
+    assert.isAtMost(th.getDifference(alice_BoldDebt, expected_A_debt), 1e12);
 
     assert.equal((await boldToken.balanceOf(owner)).toString(), "0");
   });
@@ -1297,6 +1310,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       extraBoldAmount: dec(110, 18),
       extraParams: { from: carol },
     });
+    const startTime1 = await time.latest();
 
     // Price drops to 100 $/E
     await priceFeed.setPrice(dec(100, 18));
@@ -1315,6 +1329,9 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       from: bob,
     });
 
+    // Let’s avoid upfront fee:
+    await time.increase(timeValues.SECONDS_IN_ONE_WEEK);
+
     // Alice withdraws Bold
     await borrowerOperations.withdrawBold(
       aliceTroveId,
@@ -1322,6 +1339,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       th.MAX_UINT256,
       { from: alice },
     );
+    const startTime2 = await time.latest();
 
     // Price drops to 100 $/E
     await priceFeed.setPrice(dec(100, 18));
@@ -1337,9 +1355,8 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       .add(await troveManager.getPendingCollReward(bobTroveId))
       .toString();
 
-    const bob_BoldDebt = (await troveManager.Troves(bobTroveId))[0]
-      .add(await troveManager.getPendingBoldDebtReward(bobTroveId))
-      .toString();
+      console.log('await time.latest(): ', await time.latest())
+    const bob_BoldDebt = await troveManager.getTroveEntireDebt(bobTroveId);
 
     const expected_B_coll = B_coll.sub(withdrawnColl)
       .add(th.applyLiquidationFee(A_coll))
@@ -1350,12 +1367,15 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
         ),
       );
     assert.isAtMost(th.getDifference(bob_Coll, expected_B_coll), 1000);
+    const timePassed1 = await time.latest() - startTime1;
+    const timePassed2 = await time.latest() - startTime2;
     assert.isAtMost(
       th.getDifference(
         bob_BoldDebt,
-        A_totalDebt.mul(toBN(2)).add(B_totalDebt).add(C_totalDebt),
+        th.applyInterest(A_totalDebt.add(B_totalDebt).add(C_totalDebt), MIN_ANNUAL_INTEREST_RATE, timePassed1)
+          .add(th.applyInterest(A_totalDebt, MIN_ANNUAL_INTEREST_RATE, timePassed2)),
       ),
-      1000,
+      6e16,
     );
 
     assert.equal((await boldToken.balanceOf(owner)).toString(), "0");
@@ -1373,7 +1393,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       extraParams: { from: bob },
     });
     const { troveId: carolTroveId, collateral: C_coll, totalDebt: C_totalDebt } = await openTrove({
-      ICR: toBN(dec(110, 16)),
+      ICR: toBN(dec(1101, 15)),
       extraBoldAmount: dec(110, 18),
       extraParams: { from: carol },
     });
@@ -1399,7 +1419,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
 
     // D opens trove
     const { troveId: dennisTroveId, collateral: D_coll, totalDebt: D_totalDebt } = await openTrove({
-      ICR: toBN(dec(110, 16)),
+      ICR: toBN(dec(1101, 15)),
       extraBoldAmount: dec(110, 18),
       extraParams: { from: dennis },
     });
@@ -1442,7 +1462,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       B_coll.mul(C_totalDebt).div(A_coll.add(B_coll)),
     ).add(B_collAfterL1.mul(D_totalDebt).div(totalCollAfterL1));
     assert.isAtMost(th.getDifference(bob_Coll, expected_B_coll), 1000);
-    assert.isAtMost(th.getDifference(bob_BoldDebt, expected_B_debt), 10000);
+      assert.isAtMost(th.getDifference(bob_BoldDebt, expected_B_debt), 3e12);
 
     const A_collAfterL1 = A_coll.add(
       A_coll.mul(th.applyLiquidationFee(C_coll)).div(A_coll.add(B_coll)),
@@ -1454,7 +1474,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       A_coll.mul(C_totalDebt).div(A_coll.add(B_coll)),
     ).add(A_collAfterL1.mul(D_totalDebt).div(totalCollAfterL1));
     assert.isAtMost(th.getDifference(alice_Coll, expected_A_coll), 1000);
-    assert.isAtMost(th.getDifference(alice_BoldDebt, expected_A_debt), 10000);
+    assert.isAtMost(th.getDifference(alice_BoldDebt, expected_A_debt), 1e12);
 
     const entireSystemColl = (await activePool.getCollBalance()).add(
       await defaultPool.getCollBalance(),
@@ -1473,6 +1493,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
     th.assertIsApproximatelyEqual(
       entireSystemDebt,
       A_totalDebt.add(B_totalDebt).add(C_totalDebt).add(D_totalDebt),
+      1e13
     );
 
     th.assertIsApproximatelyEqual(

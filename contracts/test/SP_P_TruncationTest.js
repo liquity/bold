@@ -7,6 +7,7 @@ const TroveManagerTester = artifacts.require("TroveManagerTester");
 const BoldToken = artifacts.require("BoldToken");
 
 const GAS_PRICE = 10000000;
+let MIN_ANNUAL_INTEREST_RATE;
 
 contract("StabilityPool Scale Factor issue tests", async (accounts) => {
   const fundedAccounts = accounts.slice(0, 11);
@@ -49,12 +50,14 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
     sortedTroves = contracts.sortedTroves;
     troveManager = contracts.troveManager;
     borrowerOperations = contracts.borrowerOperations;
+
+    MIN_ANNUAL_INTEREST_RATE = await contracts.constants._MIN_ANNUAL_INTEREST_RATE();
   });
 
   describe("Scale Factor issue tests", async () => {
     it("1. Liquidation succeeds after 2 high-fraction liquidations", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
+      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, MIN_ANNUAL_INTEREST_RATE, {
         from: whale,
         value: dec(100000, "ether"),
       });
@@ -62,17 +65,17 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (const account of [A, B, C]) {
-        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
+        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, MIN_ANNUAL_INTEREST_RATE, {
           from: account,
           value: dec(15, "ether"),
         });
 
         // th.logBN("Trove debt", await th.getTroveEntireDebtByAddress(contracts, account));
 
-        assert.isTrue(
-          (await th.getTroveEntireDebtByAddress(contracts, account)).eq(
-            th.toBN(dec(2000, 18)),
-          ),
+        assert.isAtMost(th.getDifference(
+          await th.getTroveEntireDebtByAddress(contracts, account),
+          th.toBN(dec(2000, 18))),
+          1000
         );
       }
 
@@ -135,7 +138,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("2. New deposits can be made after 2 high fraction liquidations", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
+      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, MIN_ANNUAL_INTEREST_RATE, {
         from: whale,
         value: dec(100000, "ether"),
       });
@@ -143,7 +146,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (const account of [A, B, C]) {
-        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
+        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, MIN_ANNUAL_INTEREST_RATE, {
           from: account,
           value: dec(15, "ether"),
         });
@@ -224,7 +227,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("3. Liquidation succeeds when P == 1e9 liquidation has newProductFactor == 1e9", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
+      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, MIN_ANNUAL_INTEREST_RATE, {
         from: whale,
         value: dec(100000, "ether"),
       });
@@ -232,7 +235,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (const account of [A, B, C]) {
-        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
+        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, MIN_ANNUAL_INTEREST_RATE, {
           from: account,
           value: dec(15, "ether"),
         });
@@ -327,7 +330,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("4. Liquidation succeeds when P == 1e9 and liquidation has newProductFactor > 1e9", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
+      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, MIN_ANNUAL_INTEREST_RATE, {
         from: whale,
         value: dec(100000, "ether"),
       });
@@ -335,7 +338,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (const account of [A, B, C]) {
-        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
+        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, MIN_ANNUAL_INTEREST_RATE, {
           from: account,
           value: dec(15, "ether"),
         });
@@ -432,7 +435,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("5. Depositor have correct depleted stake after deposit at P == 1e9 and scale changing liq (with newProductFactor == 1e9)", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
+      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, MIN_ANNUAL_INTEREST_RATE, {
         from: whale,
         value: dec(100000, "ether"),
       });
@@ -440,7 +443,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (const account of [A, B, C]) {
-        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
+        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, MIN_ANNUAL_INTEREST_RATE, {
           from: account,
           value: dec(15, "ether"),
         });
@@ -544,7 +547,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
     it("6. Depositor have correct depleted stake after deposit at P == 1e9 and scale changing liq (with newProductFactor > 1e9)", async () => {
       // Whale opens Trove with 100k ETH and sends 50k Bold to A
-      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, 0, {
+      await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(100000, 18)), whale, whale, MIN_ANNUAL_INTEREST_RATE, {
         from: whale,
         value: dec(100000, "ether"),
       });
@@ -552,7 +555,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
 
       // Open 3 Troves with 2000 Bold debt
       for (const account of [A, B, C]) {
-        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, 0, {
+        await th.openTroveWrapper(contracts, await getBoldAmountForDesiredDebt(2000), account, account, MIN_ANNUAL_INTEREST_RATE, {
           from: account,
           value: dec(15, "ether"),
         });
@@ -660,7 +663,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
         await getOpenTroveBoldAmount(dec(100000, 18)),
         whale,
         whale,
-        0,
+        MIN_ANNUAL_INTEREST_RATE,
         { from: whale, value: dec(100000, "ether") }
       );
       assert.isTrue((await th.getTroveEntireDebtByAddress(contracts, whale)).eq(th.toBN(dec(100000, 18))));
@@ -673,7 +676,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
           await getOpenTroveBoldAmount(dec(2000, 18)),
           account,
           account,
-          0,
+          MIN_ANNUAL_INTEREST_RATE,
           { from: account, value: dec(15, "ether") }
         );
       }

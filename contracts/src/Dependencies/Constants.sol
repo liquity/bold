@@ -54,4 +54,5 @@ uint256 constant SP_YIELD_SPLIT = 72 * _1pct; // 72%
 contract Constants {
     uint256 public constant _ETH_GAS_COMPENSATION = ETH_GAS_COMPENSATION;
     uint256 public constant _MIN_DEBT = MIN_DEBT;
+    uint256 public constant _MIN_ANNUAL_INTEREST_RATE = MIN_ANNUAL_INTEREST_RATE;
 }

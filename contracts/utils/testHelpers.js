@@ -195,6 +195,14 @@ class TestHelper {
     }
     return ethAmount.mul(this.toBN(this.dec(995, 15))).div(MoneyValues._1e18BN);
   }
+
+  static applyInterest(boldAmount, interestRate, timePassed) {
+    return this.toBN(boldAmount).mul(
+      MoneyValues._1e18BN.add(
+        this.toBN(interestRate).mul(this.toBN(timePassed)).div(this.toBN(TimeValues.SECONDS_IN_ONE_YEAR)))
+    ).div(MoneyValues._1e18BN);
+  }
+
   // --- Logging functions ---
 
   static logGasMetrics(gasResults, message) {
@@ -830,6 +838,7 @@ class TestHelper {
     }
     if (!upperHint) upperHint = this.ZERO_ADDRESS;
     if (!lowerHint) lowerHint = this.ZERO_ADDRESS;
+    if (!extraParams.annualInterestRate) extraParams.annualInterestRate = await contracts.constants._MIN_ANNUAL_INTEREST_RATE();
 
     const MIN_DEBT = await this.getNetBorrowingAmount(
       contracts,
@@ -1643,13 +1652,6 @@ class TestHelper {
   }
 
   // --- Time functions ---
-
-  static async getLatestBlockTimestamp(web3Instance) {
-    const blockNumber = await web3Instance.eth.getBlockNumber();
-    const block = await web3Instance.eth.getBlock(blockNumber);
-
-    return block.timestamp;
-  }
 
   static async getTimestampFromTx(tx, web3Instance) {
     return this.getTimestampFromTxReceipt(tx.receipt, web3Instance);

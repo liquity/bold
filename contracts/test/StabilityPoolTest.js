@@ -15,6 +15,7 @@ const ZERO = toBN("0");
 const ZERO_ADDRESS = th.ZERO_ADDRESS;
 
 const GAS_PRICE = 10000000;
+let MIN_ANNUAL_INTEREST_RATE;
 
 const getFrontEndTag = async (stabilityPool, depositor) => {
   return (await stabilityPool.deposits(depositor))[1];
@@ -81,6 +82,8 @@ contract("StabilityPool", async (accounts) => {
       stabilityPool = contracts.stabilityPool;
       defaultPool = contracts.defaultPool;
       borrowerOperations = contracts.borrowerOperations;
+
+      MIN_ANNUAL_INTEREST_RATE = await contracts.constants._MIN_ANNUAL_INTEREST_RATE();
     });
 
     // --- provideToSP() ---
@@ -1668,7 +1671,7 @@ contract("StabilityPool", async (accounts) => {
         await getOpenTroveBoldAmount(dec(10000, 18)),
         defaulter_1,
         defaulter_1,
-        0,
+        MIN_ANNUAL_INTEREST_RATE,
         { from: defaulter_1, value: dec(100, "ether") },
       );
 
@@ -2459,7 +2462,7 @@ contract("StabilityPool", async (accounts) => {
         await getOpenTroveBoldAmount(dec(10000, 18)),
         defaulter_1,
         defaulter_1,
-        0,
+        MIN_ANNUAL_INTEREST_RATE,
         { from: defaulter_1, value: dec(100, "ether") },
       );
 

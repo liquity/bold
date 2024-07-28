@@ -96,7 +96,7 @@ contract("SortedTroves", async (accounts) => {
 
     it("contains(): returns true for addresses that have opened troves", async () => {
       const { troveId: aliceTroveId } = await openTrove({
-        ICR: toBN(dec(150, 16)),
+        ICR: toBN(dec(1501, 15)),
         extraParams: { from: alice },
       });
       const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: bob } });
@@ -118,7 +118,7 @@ contract("SortedTroves", async (accounts) => {
 
     it("contains(): returns false for addresses that have not opened troves", async () => {
       await openTrove({
-        ICR: toBN(dec(150, 16)),
+        ICR: toBN(dec(1501, 15)),
         extraParams: { from: alice },
       });
       await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: bob } });
@@ -238,7 +238,7 @@ contract("SortedTroves", async (accounts) => {
     // true when list size is 1 and the trove the only one in system
     it("contains(): true when list size is 1 and the trove the only one in system", async () => {
       const { troveId: aliceTroveId } = await openTrove({
-        ICR: toBN(dec(150, 16)),
+        ICR: toBN(dec(151, 16)),
         extraParams: { from: alice },
       });
 
@@ -248,7 +248,7 @@ contract("SortedTroves", async (accounts) => {
     // false when list size is 1 and trove is not in the system
     it("contains(): false when list size is 1 and trove is not in the system", async () => {
       await openTrove({
-        ICR: toBN(dec(150, 16)),
+        ICR: toBN(dec(151, 16)),
         extraParams: { from: alice },
       });
 

@@ -58,6 +58,22 @@ contract("Gas compensation tests", async (accounts) => {
     mocks: { TroveManager: TroveManagerTester },
   });
 
+  before(async () => {
+    const WETH = await ERC20.new("WETH", "WETH");
+    troveManagerTester = await TroveManagerTester.new(
+      toBN(dec(150, 16)),
+      toBN(dec(110, 16)),
+      toBN(dec(110, 16)),
+      toBN(dec(10, 16)),
+      toBN(dec(10, 16)),
+      WETH.address
+    );
+    borrowerOperationsTester = await BorrowerOperationsTester.new(WETH.address, troveManagerTester.address, WETH.address);
+
+    TroveManagerTester.setAsDeployed(troveManagerTester);
+    BorrowerOperationsTester.setAsDeployed(borrowerOperationsTester);
+  });
+
   beforeEach(async () => {
     const result = await deployFixture();
     contracts = result.contracts;
@@ -230,17 +246,17 @@ contract("Gas compensation tests", async (accounts) => {
       ICR: toBN("1818181818181818181"),
       extraParams: { from: alice },
     });
-    const alice_ICR = (
-      await troveManager.getCurrentICR(aliceTroveId, price)
-    ).toString();
+    const alice_ICR = await troveManager.getCurrentICR(aliceTroveId, price);
     // Expect aliceICR = (1 * 200) / (110) = 181.81%
-    assert.isAtMost(th.getDifference(alice_ICR, "1818181818181818181"), 1000);
+    assert.isAtMost(th.getDifference(alice_ICR.toString(), "1818181818181818181"), 1e15);
+    assert.isTrue(alice_ICR.lt(th.toBN("1818181818181818181")))
 
     // B opens with 0.5 ETH, 50 Bold
     const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: bob } });
-    const bob_ICR = (await troveManager.getCurrentICR(bobTroveId, price)).toString();
+    const bob_ICR = await troveManager.getCurrentICR(bobTroveId, price);
     // Expect Bob's ICR = (0.5 * 200) / 50 = 200%
-    assert.isAtMost(th.getDifference(bob_ICR, dec(2, 18)), 1000);
+    assert.isAtMost(th.getDifference(bob_ICR.toString(), dec(2, 18)), 1e15);
+    assert.isTrue(alice_ICR.lt(th.toBN(dec(2, 18))));
 
     // F opens with 1 ETH, 100 Bold
     const { troveId: flynTroveId } = await openTrove({
@@ -248,45 +264,44 @@ contract("Gas compensation tests", async (accounts) => {
       extraBoldAmount: dec(100, 18),
       extraParams: { from: flyn },
     });
-    const flyn_ICR = (await troveManager.getCurrentICR(flynTroveId, price)).toString();
+    const flyn_ICR = await troveManager.getCurrentICR(flynTroveId, price);
     // Expect Flyn's ICR = (1 * 200) / 100 = 200%
-    assert.isAtMost(th.getDifference(flyn_ICR, dec(2, 18)), 1000);
+    assert.isAtMost(th.getDifference(flyn_ICR.toString(), dec(2, 18)), 1e15);
+    assert.isTrue(flyn_ICR.lt(th.toBN(dec(2, 18))));
 
     // C opens with 2.5 ETH, 160 Bold
     const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(3125, 15)), extraParams: { from: carol } });
-    const carol_ICR = (
-      await troveManager.getCurrentICR(carolTroveId, price)
-    ).toString();
+    const carol_ICR = await troveManager.getCurrentICR(carolTroveId, price);
     // Expect Carol's ICR = (2.5 * 200) / (160) = 312.50%
-    assert.isAtMost(th.getDifference(carol_ICR, "3125000000000000000"), 1000);
+    assert.isAtMost(th.getDifference(carol_ICR.toString(), "3125000000000000000"), 1e15);
+    assert.isTrue(carol_ICR.lt(th.toBN("3125000000000000000")));
 
     // D opens with 1 ETH, 0 Bold
     const { troveId: dennisTroveId } = await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: dennis } });
-    const dennis_ICR = (
-      await troveManager.getCurrentICR(dennisTroveId, price)
-    ).toString();
+    const dennis_ICR = await troveManager.getCurrentICR(dennisTroveId, price);
     // Expect Dennis's ICR = (1 * 200) / (50) = 400.00%
-    assert.isAtMost(th.getDifference(dennis_ICR, dec(4, 18)), 1000);
+    assert.isAtMost(th.getDifference(dennis_ICR.toString(), dec(4, 18)), 1e15);
+    assert.isTrue(dennis_ICR.lt(th.toBN(dec(4, 18))));
 
     // E opens with 4405.45 ETH, 32598.35 Bold
     const { troveId: erinTroveId } = await openTrove({
       ICR: toBN("27028668628933700000"),
       extraParams: { from: erin },
     });
-    const erin_ICR = (await troveManager.getCurrentICR(erinTroveId, price)).toString();
+    const erin_ICR = await troveManager.getCurrentICR(erinTroveId, price);
     // Expect Erin's ICR = (4405.45 * 200) / (32598.35) = 2702.87%
-    assert.isAtMost(th.getDifference(erin_ICR, "27028668628933700000"), 100000);
+    assert.isAtMost(th.getDifference(erin_ICR.toString(), "27028668628933700000"), 3e15);
+    assert.isTrue(erin_ICR.lt(th.toBN("27028668628933700000")));
 
     // H opens with 1 ETH, 180 Bold
     const { troveId: harrietTroveId } = await openTrove({
       ICR: toBN("1111111111111111111"),
       extraParams: { from: harriet },
     });
-    const harriet_ICR = (
-      await troveManager.getCurrentICR(harrietTroveId, price)
-    ).toString();
+    const harriet_ICR = await troveManager.getCurrentICR(harrietTroveId, price);
     // Expect Harriet's ICR = (1 * 200) / (180) = 111.11%
-    assert.isAtMost(th.getDifference(harriet_ICR, "1111111111111111111"), 1000);
+    assert.isAtMost(th.getDifference(harriet_ICR.toString(), "1111111111111111111"), 1e15);
+    assert.isTrue(harriet_ICR.lt(th.toBN("1111111111111111111")));
   });
 
   // Test compensation amounts and liquidation amounts
@@ -444,14 +459,17 @@ contract("Gas compensation tests", async (accounts) => {
 
     // Check ETH in SP has not changed due to the lquidation of C
     const ETHinSP_C = await stabilityPool.getCollBalance();
-    assert.equal(
-      ETHinSP_C.toString(),
-      aliceColl
-        .sub(_0pt5percent_aliceColl)
-        .add(bobColl)
-        .sub(_0pt5percent_bobColl)
-        .add(carolColl)
-        .sub(_0pt5percent_carolColl),
+    assert.isAtMost(
+        th.getDifference(
+          ETHinSP_C,
+          aliceColl
+            .sub(_0pt5percent_aliceColl)
+            .add(bobColl)
+            .sub(_0pt5percent_bobColl)
+            .add(carolColl)
+            .sub(_0pt5percent_carolColl)
+        ),
+      1e12
     ); // (1+2+3 ETH) * 0.995
   });
 
@@ -803,7 +821,7 @@ contract("Gas compensation tests", async (accounts) => {
 
     assert.isAtMost(
       th.getDifference(expectedLiquidatedDebt_A, loggedDebt_A),
-      1000,
+      1e13,
     );
     assert.isAtMost(
       th.getDifference(expectedLiquidatedColl_A, loggedColl_A),
@@ -838,7 +856,7 @@ contract("Gas compensation tests", async (accounts) => {
 
     assert.isAtMost(
       th.getDifference(expectedLiquidatedDebt_B, loggedDebt_B),
-      1000,
+      1e13,
     );
     assert.isAtMost(
       th.getDifference(expectedLiquidatedColl_B, loggedColl_B),
@@ -925,7 +943,7 @@ contract("Gas compensation tests", async (accounts) => {
 
     assert.isAtMost(
       th.getDifference(expectedLiquidatedDebt_A, loggedDebt_A),
-      1000,
+      1e13,
     );
     assert.isAtMost(
       th.getDifference(expectedLiquidatedColl_A, loggedColl_A),
@@ -969,7 +987,7 @@ contract("Gas compensation tests", async (accounts) => {
 
     assert.isAtMost(
       th.getDifference(expectedLiquidatedDebt_B, loggedDebt_B),
-      1000,
+      2e13,
     );
     assert.isAtMost(
       th.getDifference(expectedLiquidatedColl_B, loggedColl_B),
@@ -1044,7 +1062,7 @@ contract("Gas compensation tests", async (accounts) => {
 
     assert.isAtMost(
       th.getDifference(expectedLiquidatedDebt_A, loggedDebt_A),
-      1000,
+      1e13,
     );
     assert.isAtMost(
       th.getDifference(expectedLiquidatedColl_A, loggedColl_A),
@@ -1084,7 +1102,7 @@ contract("Gas compensation tests", async (accounts) => {
 
     assert.isAtMost(
       th.getDifference(expectedLiquidatedDebt_B, loggedDebt_B),
-      1000,
+      2e13,
     );
     assert.isAtMost(
       th.getDifference(expectedLiquidatedColl_B, loggedColl_B),
