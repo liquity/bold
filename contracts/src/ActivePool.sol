@@ -10,7 +10,6 @@ import "./Interfaces/IActivePool.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/IInterestRouter.sol";
 import "./Dependencies/Ownable.sol";
-import "./Dependencies/CheckContract.sol";
 import "./Interfaces/IDefaultPool.sol";
 
 // import "forge-std/console2.sol";
@@ -22,7 +21,7 @@ import "./Interfaces/IDefaultPool.sol";
  * Stability Pool, the Default Pool, or both, depending on the liquidation conditions.
  *
  */
-contract ActivePool is Ownable, CheckContract, IActivePool {
+contract ActivePool is Ownable, IActivePool {
     using SafeERC20 for IERC20;
 
     string public constant NAME = "ActivePool";
@@ -78,13 +77,6 @@ contract ActivePool is Ownable, CheckContract, IActivePool {
         address _boldTokenAddress,
         address _interestRouterAddress
     ) external onlyOwner {
-        checkContract(_borrowerOperationsAddress);
-        checkContract(_troveManagerAddress);
-        checkContract(_stabilityPoolAddress);
-        checkContract(_defaultPoolAddress);
-        checkContract(_boldTokenAddress);
-        checkContract(_interestRouterAddress);
-
         borrowerOperationsAddress = _borrowerOperationsAddress;
         troveManagerAddress = _troveManagerAddress;
         defaultPoolAddress = _defaultPoolAddress;
