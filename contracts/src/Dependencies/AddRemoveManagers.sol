@@ -3,10 +3,11 @@
 pragma solidity ^0.8.18;
 
 import "../Interfaces/IAddRemoveManagers.sol";
+import "../Interfaces/IAddressesRegistry.sol";
 import "../Interfaces/ITroveNFT.sol";
 
 contract AddRemoveManagers is IAddRemoveManagers {
-    ITroveNFT public immutable troveNFT;
+    ITroveNFT internal immutable troveNFT;
 
     /*
      * Mapping from TroveId to granted address for operations that "give" money to the trove (add collateral, pay debt).
@@ -35,9 +36,9 @@ contract AddRemoveManagers is IAddRemoveManagers {
 
     event TroveNFTAddressChanged(address _newTroveNFTAddress);
 
-    constructor(ITroveNFT _troveNFT) {
-        troveNFT = _troveNFT;
-        emit TroveNFTAddressChanged(address(_troveNFT));
+    constructor(IAddressesRegistry _addressesRegistry) {
+        troveNFT = _addressesRegistry.troveNFT();
+        emit TroveNFTAddressChanged(address(troveNFT));
     }
 
     function setAddManager(uint256 _troveId, address _manager) external {

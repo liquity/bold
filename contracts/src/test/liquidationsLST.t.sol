@@ -20,9 +20,10 @@ contract LiquidationsLSTTest is DevTestSetup {
             accountsList[6]
         );
 
-        LiquityContractsDev memory contracts;
+        TestDeployer deployer = new TestDeployer();
+        TestDeployer.LiquityContractsDev memory contracts;
         (contracts, collateralRegistry, boldToken,,,) =
-            _deployAndConnectContracts(TroveManagerParams(160e16, 120e16, 1.1 ether, 5e16, 10e16));
+            deployer.deployAndConnectContracts(TestDeployer.TroveManagerParams(160e16, 120e16, 1.2 ether, 5e16, 10e16));
         collToken = contracts.collToken;
         activePool = contracts.activePool;
         borrowerOperations = contracts.borrowerOperations;

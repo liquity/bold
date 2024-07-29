@@ -10,10 +10,11 @@ import {LatestTroveData} from "../../Types/LatestTroveData.sol";
 import {IBorrowerOperations} from "../../Interfaces/IBorrowerOperations.sol";
 import {ISortedTroves} from "../../Interfaces/ISortedTroves.sol";
 import {ITroveManager} from "../../Interfaces/ITroveManager.sol";
+import {AddressesRegistry} from "../../AddressesRegistry.sol";
 import {AddRemoveManagers} from "../../Dependencies/AddRemoveManagers.sol";
 import {BorrowerOperations} from "../../BorrowerOperations.sol";
 import {TroveManager} from "../../TroveManager.sol";
-import {LiquityContractsDev} from "../../deployment.sol";
+import {TestDeployer} from "./Deployment.t.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
 import {pow} from "../Utils/Math.sol";
 import {ITroveManagerTester} from "./Interfaces/ITroveManagerTester.sol";
@@ -115,7 +116,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     struct OpenTroveContext {
         uint256 upperHint;
         uint256 lowerHint;
-        LiquityContractsDev c;
+        TestDeployer.LiquityContractsDev c;
         uint256 upfrontFee;
         uint256 debt;
         uint256 coll;
@@ -128,7 +129,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         AdjustedTroveProperties prop;
         uint256 upperHint;
         uint256 lowerHint;
-        LiquityContractsDev c;
+        TestDeployer.LiquityContractsDev c;
         uint256 oldTCR;
         uint256 troveId;
         LatestTroveData t;
@@ -151,7 +152,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     struct AdjustTroveInterestRateContext {
         uint256 upperHint;
         uint256 lowerHint;
-        LiquityContractsDev c;
+        TestDeployer.LiquityContractsDev c;
         uint256 troveId;
         LatestTroveData t;
         bool wasActive;
@@ -255,7 +256,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         setupContracts(contracts);
 
         for (uint256 i = 0; i < branches.length; ++i) {
-            LiquityContractsDev memory c = branches[i];
+            TestDeployer.LiquityContractsDev memory c = branches[i];
             CCR[i] = c.troveManager.get_CCR();
             MCR[i] = c.troveManager.get_MCR();
             SCR[i] = c.troveManager.get_SCR();
@@ -309,7 +310,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         i = _bound(i, 0, branches.length - 1);
         tcr = _bound(tcr, TCR_MIN, TCR_MAX);
 
-        LiquityContractsDev memory c = branches[i];
+        TestDeployer.LiquityContractsDev memory c = branches[i];
         uint256 totalColl = _getTotalColl(i);
         vm.assume(totalColl > 0);
 
@@ -760,7 +761,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     function closeTrove(uint256 i) external {
         i = _bound(i, 0, branches.length - 1);
 
-        LiquityContractsDev memory c = branches[i];
+        TestDeployer.LiquityContractsDev memory c = branches[i];
         uint256 troveId = _troveIdOf(msg.sender);
         LatestTroveData memory t = c.troveManager.getLatestTroveData(troveId);
         bool wasOpen = _isOpen(i, troveId);
@@ -851,7 +852,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     function batchLiquidateTroves(uint256 i) external {
         i = _bound(i, 0, branches.length - 1);
 
-        LiquityContractsDev memory c = branches[i];
+        TestDeployer.LiquityContractsDev memory c = branches[i];
         LiquidationTotals memory t;
         _planLiquidation(i, t);
 
@@ -979,7 +980,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             for (uint256 j = 0; j < branches.length; ++j) {
                 if (t[j].attemptedAmount == 0) continue; // no effects on unredeemed branches
 
-                LiquityContractsDev memory c = branches[j];
+                TestDeployer.LiquityContractsDev memory c = branches[j];
                 RedeemedTrove[] storage troves = _redemptionPlan[j];
 
                 // Effects (Troves)
@@ -1049,7 +1050,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     function shutdown(uint256 i) external {
         i = _bound(i, 0, branches.length - 1);
-        LiquityContractsDev memory c = branches[i];
+        TestDeployer.LiquityContractsDev memory c = branches[i];
 
         logCall("shutdown", i.toString());
 
@@ -1093,7 +1094,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         i = _bound(i, 0, branches.length - 1);
         amount = _bound(amount, 0, _handlerBold);
 
-        LiquityContractsDev memory c = branches[i];
+        TestDeployer.LiquityContractsDev memory c = branches[i];
         RedemptionTotals memory t;
         _planUrgentRedemption(i, amount, t);
         assertLeDecimal(t.debtRedeemed, amount, 18, "Total redeemed exceeds input amount");
@@ -1163,7 +1164,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         i = _bound(i, 0, branches.length - 1);
         amount = _bound(amount, 0, _handlerBold);
 
-        LiquityContractsDev memory c = branches[i];
+        TestDeployer.LiquityContractsDev memory c = branches[i];
         uint256 initialBoldDeposit = c.stabilityPool.deposits(msg.sender);
         uint256 boldDeposit = c.stabilityPool.getCompoundedBoldDeposit(msg.sender);
         uint256 boldYield = c.stabilityPool.getDepositorYieldGainWithPending(msg.sender);
@@ -1237,7 +1238,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     function withdrawFromSP(uint256 i, uint256 amount, bool claim) external {
         i = _bound(i, 0, branches.length - 1);
 
-        LiquityContractsDev memory c = branches[i];
+        TestDeployer.LiquityContractsDev memory c = branches[i];
         uint256 initialBoldDeposit = c.stabilityPool.deposits(msg.sender);
         uint256 boldDeposit = c.stabilityPool.getCompoundedBoldDeposit(msg.sender);
         uint256 boldYield = c.stabilityPool.getDepositorYieldGainWithPending(msg.sender);
@@ -1321,7 +1322,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     //     maxInterestRate = uint128(_bound(maxInterestRate, minInterestRate * 9 / 10, INTEREST_RATE_MAX));
     //     currentInterestRate = uint128(_bound(currentInterestRate, minInterestRate * 9 / 10, maxInterestRate * 11 / 10));
 
-    //     LiquityContractsDev memory c = branches[i];
+    //     TestDeployer.LiquityContractsDev memory c = branches[i];
     //     bool existed = c.borrowerOperations.getInterestBatchManager(msg.sender).maxInterestRate > 0;
 
     //     vm.prank(msg.sender);
@@ -1665,7 +1666,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             t[j].attemptedAmount = amount * proportions[j] / totalProportions;
             if (t[j].attemptedAmount == 0) continue;
 
-            LiquityContractsDev memory c = branches[j];
+            TestDeployer.LiquityContractsDev memory c = branches[j];
             uint256 remainingAmount = t[j].attemptedAmount;
             uint256 troveId = 0; // "root node" ID
 
@@ -1880,11 +1881,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 return (selector, "AddRemoveManagers.NotOwnerNorRemoveManager()");
             }
 
-            if (selector == BorrowerOperations.InvalidMCR.selector) {
+            if (selector == AddressesRegistry.InvalidMCR.selector) {
                 return (selector, "BorrowerOperations.InvalidMCR()");
             }
 
-            if (selector == BorrowerOperations.InvalidSCR.selector) {
+            if (selector == AddressesRegistry.InvalidSCR.selector) {
                 return (selector, "BorrowerOperations.InvalidSCR()");
             }
 

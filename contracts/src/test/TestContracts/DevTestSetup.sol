@@ -2,7 +2,7 @@
 pragma solidity 0.8.18;
 
 import "./BaseTest.sol";
-import "../../deployment.sol";
+import {TestDeployer} from "./Deployment.t.sol";
 
 contract DevTestSetup is BaseTest {
     function giveAndApproveColl(address _account, uint256 _amount) public {
@@ -47,8 +47,10 @@ contract DevTestSetup is BaseTest {
             accountsList[6]
         );
 
-        LiquityContractsDev memory contracts;
-        (contracts, collateralRegistry, boldToken, hintHelpers,, WETH) = _deployAndConnectContracts();
+        TestDeployer deployer = new TestDeployer();
+        TestDeployer.LiquityContractsDev memory contracts;
+        (contracts, collateralRegistry, boldToken, hintHelpers,, WETH) = deployer.deployAndConnectContracts();
+        addressesRegistry = contracts.addressesRegistry;
         collToken = contracts.collToken;
         activePool = contracts.activePool;
         borrowerOperations = contracts.borrowerOperations;

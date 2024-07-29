@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 interface IDefaultPool {
-    function setAddresses(address _troveManagerAddress, address _activePoolAddress) external;
     function troveManagerAddress() external view returns (address);
     function activePoolAddress() external view returns (address);
     // --- Functions ---

@@ -5,9 +5,9 @@ pragma solidity 0.8.18;
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./Interfaces/ICollSurplusPool.sol";
-import "./Dependencies/Ownable.sol";
+import "./Interfaces/IAddressesRegistry.sol";
 
-contract CollSurplusPool is Ownable, ICollSurplusPool {
+contract CollSurplusPool is ICollSurplusPool {
     using SafeERC20 for IERC20;
 
     string public constant NAME = "CollSurplusPool";
@@ -31,26 +31,15 @@ contract CollSurplusPool is Ownable, ICollSurplusPool {
     event CollBalanceUpdated(address indexed _account, uint256 _newBalance);
     event CollSent(address _to, uint256 _amount);
 
-    constructor(address _collAddress) {
-        collToken = IERC20(_collAddress);
-    }
+    constructor(IAddressesRegistry _addressesRegistry) {
+        collToken = _addressesRegistry.collToken();
+        borrowerOperationsAddress = address(_addressesRegistry.borrowerOperations());
+        troveManagerAddress = address(_addressesRegistry.troveManager());
+        activePoolAddress = address(_addressesRegistry.activePool());
 
-    // --- Contract setters ---
-
-    function setAddresses(address _borrowerOperationsAddress, address _troveManagerAddress, address _activePoolAddress)
-        external
-        override
-        onlyOwner
-    {
-        borrowerOperationsAddress = _borrowerOperationsAddress;
-        troveManagerAddress = _troveManagerAddress;
-        activePoolAddress = _activePoolAddress;
-
-        emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
-        emit TroveManagerAddressChanged(_troveManagerAddress);
-        emit ActivePoolAddressChanged(_activePoolAddress);
-
-        _renounceOwnership();
+        emit BorrowerOperationsAddressChanged(borrowerOperationsAddress);
+        emit TroveManagerAddressChanged(troveManagerAddress);
+        emit ActivePoolAddressChanged(activePoolAddress);
     }
 
     /* Returns the collBalance state variable

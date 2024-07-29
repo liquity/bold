@@ -409,7 +409,10 @@ contract InterestBatchManagementTest is DevTestSetup {
         );
 
         assertApproxEqAbs(
-            troveManager.getTroveDebt(troveIDs.E), troveEntireDebtBefore.E + upfrontFee, 1, "Interest was not applied to trove E"
+            troveManager.getTroveDebt(troveIDs.E),
+            troveEntireDebtBefore.E + upfrontFee,
+            1,
+            "Interest was not applied to trove E"
         );
         assertEq(
             troveManager.getTroveDebt(troveIDs.E),
@@ -419,7 +422,9 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         batchB = troveManager.getLatestBatchData(B);
         assertEq(
-            batchB.recordedDebt, batchEntireDebtBefore.B - troveEntireDebtBefore.E, "Interest was not applied to batch B"
+            batchB.recordedDebt,
+            batchEntireDebtBefore.B - troveEntireDebtBefore.E,
+            "Interest was not applied to batch B"
         );
         assertEq(
             batchB.recordedDebt,
@@ -429,7 +434,9 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         batchC = troveManager.getLatestBatchData(C);
         assertEq(
-            batchC.recordedDebt, batchEntireDebtBefore.C + troveEntireDebtBefore.E + upfrontFee, "Interest was not applied to batch C"
+            batchC.recordedDebt,
+            batchEntireDebtBefore.C + troveEntireDebtBefore.E + upfrontFee,
+            "Interest was not applied to batch C"
         );
         assertEq(
             batchC.recordedDebt,

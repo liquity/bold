@@ -15,12 +15,13 @@ contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {
     address public rateProviderAddress;
 
     constructor(
+        address _owner,
         address _ethUsdOracleAddress,
         address _lstEthOracleAddress,
         address _rateProviderAddress,
         uint256 _ethUsdStalenessThreshold,
         uint256 _lstEthStalenessThreshold
-    ) MainnetPriceFeedBase() {
+    ) MainnetPriceFeedBase(_owner) {
         // Store ETH-USD oracle
         ethUsdOracle.aggregator = AggregatorV3Interface(_ethUsdOracleAddress);
         ethUsdOracle.stalenessThreshold = _ethUsdStalenessThreshold;
