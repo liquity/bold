@@ -6,7 +6,6 @@ import "./Interfaces/ISortedTroves.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBorrowerOperations.sol";
 import "./Dependencies/Ownable.sol";
-import "./Dependencies/CheckContract.sol";
 
 // ID of head & tail of the list. Callers should stop iterating with `getNext()` / `getPrev()`
 // when encountering this node ID.
@@ -36,7 +35,7 @@ uint256 constant ROOT_NODE_ID = 0;
 *
 * - Public functions with parameters have been made internal to save gas, and given an external wrapper function for external access
 */
-contract SortedTroves is Ownable, CheckContract, ISortedTroves {
+contract SortedTroves is Ownable, ISortedTroves {
     string public constant NAME = "SortedTroves";
 
     // Constants used for documentation purposes
@@ -92,9 +91,6 @@ contract SortedTroves is Ownable, CheckContract, ISortedTroves {
         override
         onlyOwner
     {
-        checkContract(_troveManagerAddress);
-        checkContract(_borrowerOperationsAddress);
-
         troveManager = ITroveManager(_troveManagerAddress);
         borrowerOperationsAddress = _borrowerOperationsAddress;
 
