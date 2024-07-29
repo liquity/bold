@@ -29,12 +29,6 @@ import {WETHTester} from "../test/TestContracts/WETHTester.sol";
 
 contract DeployLiquity2Script is Script, StdCheats {
     bytes32 constant SALT = keccak256("LiquityV2");
-    // for CREATE2, see: https://github.com/Arachnid/deterministic-deployment-proxy
-    address constant ONE_TIME_SIGNER_ADDRESS = 0x3fAB184622Dc19b6109349B94811493BF2a45362;
-    uint256 constant GAS_COST = 0x2386f26fc10000;
-    bytes constant CREATE2_TRANSACTION =
-        hex"f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
-    address constant CREATE2_ADDRESS = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     address deployer;
 
@@ -93,8 +87,6 @@ contract DeployLiquity2Script is Script, StdCheats {
     }
 
     function run() external {
-        deployCreate2();
-
         if (vm.envBytes("DEPLOYER").length == 20) {
             // address
             deployer = vm.envAddress("DEPLOYER");
@@ -142,28 +134,6 @@ contract DeployLiquity2Script is Script, StdCheats {
             tapFaucet(demoAccounts, contracts);
             openDemoTroves(demoTroves, contracts);
         }
-    }
-
-    function deployCreate2() internal {
-        // Check if already exists
-        if (CREATE2_ADDRESS.code.length > 0) return;
-
-        if (ONE_TIME_SIGNER_ADDRESS.balance < 10000000 gwei) {
-            //console2.log("sending fund to create2 fatory deployer...");
-            if (vm.envBytes("DEPLOYER").length == 20) {
-                // address
-                vm.startBroadcast(vm.envAddress("DEPLOYER"));
-            } else {
-                // private key
-                vm.startBroadcast(vm.envUint("DEPLOYER"));
-            }
-            payable(ONE_TIME_SIGNER_ADDRESS).transfer(10000000 gwei);
-            vm.stopBroadcast();
-            //console2.log(address(0x3fAB184622Dc19b6109349B94811493BF2a45362).balance);
-        }
-
-        vm.broadcastRawTransaction(CREATE2_TRANSACTION);
-        assert(CREATE2_ADDRESS.code.length > 0);
     }
 
     function tapFaucet(uint256[] memory accounts, LiquityContractsTestnet memory contracts) internal {
