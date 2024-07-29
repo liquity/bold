@@ -88,7 +88,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 troveId = gasCompZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
-        assertEq(troveManager.ownerOf(troveId), A, "Wrong owner");
+        assertEq(troveNFT.ownerOf(troveId), A, "Wrong owner");
         assertGt(troveId, 0, "Trove id should be set");
         assertEq(troveManager.getTroveEntireColl(troveId), collAmount, "Coll mismatch");
         assertGt(troveManager.getTroveEntireDebt(troveId), boldAmount, "Debt mismatch");

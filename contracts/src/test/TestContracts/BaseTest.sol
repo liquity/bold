@@ -58,6 +58,16 @@ contract BaseTest is TestAccounts {
 
     // --- functions ---
 
+    function getTroveEntireColl(uint256 _troveId) internal view returns (uint256) {
+        LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
+        return trove.entireColl;
+    }
+
+    function getTroveEntireDebt(uint256 _troveId) internal view returns (uint256) {
+        LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
+        return trove.entireDebt;
+    }
+
     function calcInterest(uint256 weightedRecordedDebt, uint256 period) internal pure returns (uint256) {
         return weightedRecordedDebt * period / 365 days / DECIMAL_PRECISION;
     }
