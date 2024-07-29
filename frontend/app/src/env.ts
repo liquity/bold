@@ -175,8 +175,6 @@ const parsedEnv = v.parse(EnvSchema, {
   WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 });
 
-console.log(parsedEnv);
-
 export const {
   APP_VERSION,
   CHAIN_BLOCK_EXPLORER,

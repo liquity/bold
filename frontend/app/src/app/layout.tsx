@@ -6,7 +6,6 @@ import type { ReactNode } from "react";
 
 import { AboutModal } from "@/src/comps/AboutModal/AboutModal";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
-import { ConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
 import { APP_TITLE } from "@/src/constants";
 import { DemoMode } from "@/src/demo-mode";
 import { Ethereum } from "@/src/services/Ethereum";
@@ -33,13 +32,11 @@ export default function Layout({
             <Ethereum>
               <Prices>
                 <TransactionFlow>
-                  <ConfigModal>
-                    <AboutModal>
-                      <AppLayout>
-                        {children}
-                      </AppLayout>
-                    </AboutModal>
-                  </ConfigModal>
+                  <AboutModal>
+                    <AppLayout>
+                      {children}
+                    </AppLayout>
+                  </AboutModal>
                 </TransactionFlow>
               </Prices>
             </Ethereum>

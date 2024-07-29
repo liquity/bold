@@ -60,11 +60,10 @@ type Contract<T extends ContractName> = {
 
 type CollateralContracts<T extends CollateralContractName> = Record<T, Contract<T>>;
 
+type Collaterals = Array<[keyof typeof COLLATERAL_CONTRACTS, CollateralContracts<CollateralContractName>]>;
+
 type Contracts = {
-  [K in ProtocolContractName | "collaterals"]: K extends "collaterals" ? Record<
-      keyof typeof COLLATERAL_CONTRACTS,
-      CollateralContracts<CollateralContractName> | null
-    >
+  [K in (ProtocolContractName | "collaterals")]: K extends "collaterals" ? Collaterals
     : K extends ContractName ? Contract<K>
     : never;
 };
@@ -86,21 +85,22 @@ function collateralAddressesToContracts(
     : null;
 }
 
+// Note: even though the contracts related data is coming from the environment,
+// hooks are being used so that we could later change these at runtime.
 export function useContracts(): Contracts {
   return useMemo(() => {
-    return ({
+    return {
       BoldToken: { abi: abis.BoldToken, address: CONTRACT_BOLD_TOKEN },
       CollateralRegistry: { abi: abis.CollateralRegistry, address: CONTRACT_COLLATERAL_REGISTRY },
       HintHelpers: { abi: abis.HintHelpers, address: CONTRACT_HINT_HELPERS },
       MultiTroveGetter: { abi: abis.MultiTroveGetter, address: CONTRACT_MULTI_TROVE_GETTER },
       WETH: { abi: abis.WETH, address: CONTRACT_WETH },
-      collaterals: {
-        ETH: collateralAddressesToContracts(COLLATERAL_CONTRACTS.ETH),
-        RETH: collateralAddressesToContracts(COLLATERAL_CONTRACTS.RETH),
-        STETH: collateralAddressesToContracts(COLLATERAL_CONTRACTS.STETH),
-      },
-    } as const);
-  }, [abis]);
+      collaterals: Object.entries(COLLATERAL_CONTRACTS).map(([symbol, collateral]) => [
+        symbol,
+        collateralAddressesToContracts(collateral),
+      ]) as Collaterals,
+    };
+  }, []);
 }
 
 export function useProtocolContract(name: ProtocolContractName): Contract<ProtocolContractName> {
@@ -111,13 +111,25 @@ export function useCollateralContract(
   symbol: CollateralSymbol,
   name: CollateralContractName,
 ): Contract<CollateralContractName> | null {
-  return useContracts().collaterals[symbol]?.[name] ?? null;
+  const { collaterals } = useContracts();
+  return getCollateralContracts(symbol, collaterals)?.[name] ?? null;
 }
 
-export function useActiveCollaterals(): CollateralSymbol[] {
+export function useAvailableCollaterals(): CollateralSymbol[] {
   return Object.keys(useContracts().collaterals) as CollateralSymbol[];
 }
 
-export function collIndexToSymbol(collIndex: number): CollateralSymbol {
-  const activeCollaterals = useActiveCollaterals();
+export function findCollateralIndex(symbol: CollateralSymbol, collaterals: Collaterals): number {
+  return collaterals.findIndex(([s]) => s === symbol);
+}
+
+export function getCollateralContracts(
+  symbolOrIndex: CollateralSymbol | number,
+  collaterals: Collaterals,
+): CollateralContracts<CollateralContractName> | null {
+  return collaterals[
+    typeof symbolOrIndex === "string"
+      ? findCollateralIndex(symbolOrIndex, collaterals)
+      : symbolOrIndex
+  ][1] ?? null;
 }
