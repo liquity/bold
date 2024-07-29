@@ -952,6 +952,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.activePool = activePool;
         vars.sortedTroves = sortedTroves;
 
+        _requireTroveIsActive(vars.troveManager, _troveId);
+
         interestBatchManagerOf[_troveId] = _newBatchManager;
         // Can’t have both individual delegation and batch manager
         if (interestIndividualDelegateOf[_troveId].account != address(0)) delete interestIndividualDelegateOf[_troveId];
