@@ -121,7 +121,7 @@ function deployedContractsToAppEnvVariables(deployedContext: DeploymentContext) 
 
   // protocol contracts
   for (const [contractName, address] of Object.entries(deployedContext.protocolContracts)) {
-    const envVarName = contractNameToAppEnvVariable(contractName);
+    const envVarName = contractNameToAppEnvVariable(contractName, "CONTRACT");
     if (envVarName) {
       appEnvVariables[envVarName] = address;
     }
@@ -132,7 +132,7 @@ function deployedContractsToAppEnvVariables(deployedContext: DeploymentContext) 
   // collateral contracts
   for (const [index, contract] of Object.entries(deployedContext.collateralContracts)) {
     for (const [contractName, address] of Object.entries(contract)) {
-      const envVarName = contractNameToAppEnvVariable(contractName, `_COLL_${index}`);
+      const envVarName = contractNameToAppEnvVariable(contractName, `COLL_${index}_CONTRACT`);
       if (envVarName) {
         appEnvVariables[envVarName] = address;
       }
@@ -142,8 +142,8 @@ function deployedContractsToAppEnvVariables(deployedContext: DeploymentContext) 
   return appEnvVariables;
 }
 
-function contractNameToAppEnvVariable(contractName: string, prefix = "") {
-  prefix = `NEXT_PUBLIC_CONTRACT${prefix}`;
+function contractNameToAppEnvVariable(contractName: string, prefix: string = "") {
+  prefix = `NEXT_PUBLIC_${prefix}`;
   switch (contractName) {
     // protocol contracts
     case "BoldToken":
