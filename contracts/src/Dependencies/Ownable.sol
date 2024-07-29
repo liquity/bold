@@ -20,11 +20,11 @@ contract Ownable {
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     /**
-     * @dev Initializes the contract setting the deployer as the initial owner.
+     * @dev Initializes the contract setting `initialOwner` as the initial owner.
      */
-    constructor() {
-        _owner = msg.sender;
-        emit OwnershipTransferred(address(0), msg.sender);
+    constructor(address initialOwner) {
+        _owner = initialOwner;
+        emit OwnershipTransferred(address(0), initialOwner);
     }
 
     /**

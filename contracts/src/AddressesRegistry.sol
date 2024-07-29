@@ -62,12 +62,13 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     event WETHAddressChanged(address _wethAddress);
 
     constructor(
+        address _owner,
         uint256 _ccr,
         uint256 _scr,
         uint256 _mcr,
         uint256 _liquidationPenaltySP,
         uint256 _liquidationPenaltyRedistribution
-    ) {
+    ) Ownable(_owner) {
         if (_ccr <= 1e18 || _ccr >= 2e18) revert InvalidCCR();
         if (_mcr <= 1e18 || _mcr >= 2e18) revert InvalidMCR();
         if (_scr <= 1e18 || _scr >= 2e18) revert InvalidSCR();

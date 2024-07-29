@@ -32,18 +32,21 @@ contract DeployLiquity2Script is Script, StdCheats {
     // for CREATE2, see: https://github.com/Arachnid/deterministic-deployment-proxy
     address constant ONE_TIME_SIGNER_ADDRESS = 0x3fAB184622Dc19b6109349B94811493BF2a45362;
     uint256 constant GAS_COST = 0x2386f26fc10000;
-    bytes constant CREATE2_TRANSACTION = hex"f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
+    bytes constant CREATE2_TRANSACTION =
+        hex"f8a58085174876e800830186a08080b853604580600e600039806000f350fe7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffe03601600081602082378035828234f58015156039578182fd5b8082525050506014600cf31ba02222222222222222222222222222222222222222222222222222222222222222a02222222222222222222222222222222222222222222222222222222222222222";
     address constant CREATE2_ADDRESS = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
-    struct LiquityContractsDev {
+    address deployer;
+
+    struct LiquityContractsTestnet {
         IAddressesRegistry addressesRegistry;
         IActivePool activePool;
-        IBorrowerOperationsTester borrowerOperations; // Tester
+        IBorrowerOperations borrowerOperations;
         ICollSurplusPool collSurplusPool;
         IDefaultPool defaultPool;
         ISortedTroves sortedTroves;
         IStabilityPool stabilityPool;
-        ITroveManagerTester troveManager; // Tester
+        ITroveManager troveManager;
         ITroveNFT troveNFT;
         IPriceFeedTestnet priceFeed; // Tester
         GasPool gasPool;
@@ -51,36 +54,36 @@ contract DeployLiquity2Script is Script, StdCheats {
         IERC20 collToken;
     }
 
-        struct LiquityContractAddresses {
-            address activePool;
-            address borrowerOperations;
-            address collSurplusPool;
-            address defaultPool;
-            address sortedTroves;
-            address stabilityPool;
-            address troveManager;
-            address troveNFT;
-            address priceFeed;
-            address gasPool;
-            address interestRouter;
-        }
+    struct LiquityContractAddresses {
+        address activePool;
+        address borrowerOperations;
+        address collSurplusPool;
+        address defaultPool;
+        address sortedTroves;
+        address stabilityPool;
+        address troveManager;
+        address troveNFT;
+        address priceFeed;
+        address gasPool;
+        address interestRouter;
+    }
 
-        struct TroveManagerParams {
-            uint256 CCR;
-            uint256 MCR;
-            uint256 SCR;
-            uint256 LIQUIDATION_PENALTY_SP;
-            uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
-        }
+    struct TroveManagerParams {
+        uint256 CCR;
+        uint256 MCR;
+        uint256 SCR;
+        uint256 LIQUIDATION_PENALTY_SP;
+        uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
+    }
 
-        struct DeploymentVarsDev {
-            uint256 numCollaterals;
-            IERC20[] collaterals;
-            LiquityContractsDev contracts;
-            bytes bytecode;
-            address boldTokenAddress;
-            uint256 i;
-        }
+    struct DeploymentVarsTestnet {
+        uint256 numCollaterals;
+        IERC20[] collaterals;
+        LiquityContractsTestnet contracts;
+        bytes bytecode;
+        address boldTokenAddress;
+        uint256 i;
+    }
 
     struct DemoTroveParams {
         uint256 coll;
@@ -94,10 +97,13 @@ contract DeployLiquity2Script is Script, StdCheats {
 
         if (vm.envBytes("DEPLOYER").length == 20) {
             // address
-            vm.startBroadcast(vm.envAddress("DEPLOYER"));
+            deployer = vm.envAddress("DEPLOYER");
+            vm.startBroadcast(deployer);
         } else {
             // private key
-            vm.startBroadcast(vm.envUint("DEPLOYER"));
+            uint256 privateKey = vm.envUint("DEPLOYER");
+            deployer = vm.addr(privateKey);
+            vm.startBroadcast(privateKey);
         }
 
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](1);
@@ -109,8 +115,9 @@ contract DeployLiquity2Script is Script, StdCheats {
             100 ether, //     _tapAmount
             1 days //         _tapPeriod
         );
-        (LiquityContractsDev[] memory contractsArray,,,,) = _deployAndConnectContracts(troveManagerParamsArray, WETH);
-        LiquityContractsDev memory contracts = contractsArray[0];
+        (LiquityContractsTestnet[] memory contractsArray,,,,) =
+            _deployAndConnectContracts(troveManagerParamsArray, WETH);
+        LiquityContractsTestnet memory contracts = contractsArray[0];
         vm.stopBroadcast();
 
         if (vm.envOr("OPEN_DEMO_TROVES", false)) {
@@ -159,7 +166,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         assert(CREATE2_ADDRESS.code.length > 0);
     }
 
-    function tapFaucet(uint256[] memory accounts, LiquityContractsDev memory contracts) internal {
+    function tapFaucet(uint256[] memory accounts, LiquityContractsTestnet memory contracts) internal {
         for (uint256 i = 0; i < accounts.length; i++) {
             vm.startBroadcast(accounts[i]);
             ERC20Faucet(address(contracts.collToken)).tap();
@@ -167,9 +174,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         }
     }
 
-    function openDemoTroves(DemoTroveParams[] memory troves, LiquityContractsDev memory contracts)
-        internal
-    {
+    function openDemoTroves(DemoTroveParams[] memory troves, LiquityContractsTestnet memory contracts) internal {
         for (uint256 i = 0; i < troves.length; i++) {
             DemoTroveParams memory trove = troves[i];
 
@@ -203,32 +208,25 @@ contract DeployLiquity2Script is Script, StdCheats {
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry));
     }
 
-    function getAddress(address _deployer, bytes memory _bytecode, bytes32 _salt) public pure returns (address) {
-        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), _deployer, _salt, keccak256(_bytecode)));
-
-        // NOTE: cast last 20 bytes of hash to address
-        return address(uint160(uint256(hash)));
-    }
-
     function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerParamsArray, IWETH _WETH)
         internal
         returns (
-            LiquityContractsDev[] memory contractsArray,
+            LiquityContractsTestnet[] memory contractsArray,
             ICollateralRegistry collateralRegistry,
             IBoldToken boldToken,
             HintHelpers hintHelpers,
             MultiTroveGetter multiTroveGetter
         )
     {
-        DeploymentVarsDev memory vars;
+        DeploymentVarsTestnet memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
         // Deploy Bold
-        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode);
-        vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        boldToken = new BoldToken{salt: SALT}();
+        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(deployer));
+        vars.boldTokenAddress = vm.computeCreate2Address(SALT, keccak256(vars.bytecode));
+        boldToken = new BoldToken{salt: SALT}(deployer);
         assert(address(boldToken) == vars.boldTokenAddress);
 
-        contractsArray = new LiquityContractsDev[](vars.numCollaterals);
+        contractsArray = new LiquityContractsTestnet[](vars.numCollaterals);
         vars.collaterals = new IERC20[](vars.numCollaterals);
 
         // Deploy the first branch with WETH collateral
@@ -247,14 +245,14 @@ contract DeployLiquity2Script is Script, StdCheats {
         hintHelpers = new HintHelpers(collateralRegistry);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
-        vars.contracts = _deployAndConnectCollateralContractsDev(
+        vars.contracts = _deployAndConnectCollateralContractsTestnet(
             0, _WETH, boldToken, collateralRegistry, _WETH, hintHelpers, multiTroveGetter, troveManagerParamsArray[0]
         );
         contractsArray[0] = vars.contracts;
 
         // Deploy the remaining branches with LST collateral
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
-            vars.contracts = _deployAndConnectCollateralContractsDev(
+            vars.contracts = _deployAndConnectCollateralContractsTestnet(
                 vars.i,
                 vars.collaterals[vars.i],
                 boldToken,
@@ -270,7 +268,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         boldToken.setCollateralRegistry(address(collateralRegistry));
     }
 
-    function _deployAndConnectCollateralContractsDev(
+    function _deployAndConnectCollateralContractsTestnet(
         uint256 _branch,
         IERC20 _collToken,
         IBoldToken _boldToken,
@@ -279,12 +277,13 @@ contract DeployLiquity2Script is Script, StdCheats {
         IHintHelpers _hintHelpers,
         IMultiTroveGetter _multiTroveGetter,
         TroveManagerParams memory _troveManagerParams
-    ) internal returns (LiquityContractsDev memory contracts) {
+    ) internal returns (LiquityContractsTestnet memory contracts) {
         LiquityContractAddresses memory addresses;
         contracts.collToken = _collToken;
 
         // Deploy all contracts, using testers for TM and PriceFeed
         contracts.addressesRegistry = new AddressesRegistry(
+            deployer,
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
             _troveManagerParams.SCR,
@@ -293,36 +292,32 @@ contract DeployLiquity2Script is Script, StdCheats {
         );
         contracts.priceFeed = new PriceFeedTestnet();
         contracts.interestRouter = new MockInterestRouter();
-        addresses.borrowerOperations = getAddress(
-            address(this),
-            getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry)),
-            SALT
+        addresses.borrowerOperations = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry)))
         );
-        addresses.troveManager = getAddress(
-            address(this),
-            getBytecode(type(TroveManagerTester).creationCode, address(contracts.addressesRegistry)),
-            SALT
+        addresses.troveManager = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(TroveManager).creationCode, address(contracts.addressesRegistry)))
         );
-        addresses.troveNFT = getAddress(
-            address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)), SALT
+        addresses.troveNFT = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)))
         );
-        addresses.stabilityPool = getAddress(
-            address(this), getBytecode(type(StabilityPool).creationCode, address(contracts.addressesRegistry)), SALT
+        addresses.stabilityPool = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(StabilityPool).creationCode, address(contracts.addressesRegistry)))
         );
-        addresses.activePool = getAddress(
-            address(this), getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry)), SALT
+        addresses.activePool = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry)))
         );
-        addresses.defaultPool = getAddress(
-            address(this), getBytecode(type(DefaultPool).creationCode, address(contracts.addressesRegistry)), SALT
+        addresses.defaultPool = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(DefaultPool).creationCode, address(contracts.addressesRegistry)))
         );
-        addresses.gasPool = getAddress(
-            address(this), getBytecode(type(GasPool).creationCode, address(contracts.addressesRegistry)), SALT
+        addresses.gasPool = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(GasPool).creationCode, address(contracts.addressesRegistry)))
         );
-        addresses.collSurplusPool = getAddress(
-            address(this), getBytecode(type(CollSurplusPool).creationCode, address(contracts.addressesRegistry)), SALT
+        addresses.collSurplusPool = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(CollSurplusPool).creationCode, address(contracts.addressesRegistry)))
         );
-        addresses.sortedTroves = getAddress(
-            address(this), getBytecode(type(SortedTroves).creationCode, address(contracts.addressesRegistry)), SALT
+        addresses.sortedTroves = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(SortedTroves).creationCode, address(contracts.addressesRegistry)))
         );
 
         IAddressesRegistry.AddressVars memory addressVars = IAddressesRegistry.AddressVars({
@@ -346,8 +341,8 @@ contract DeployLiquity2Script is Script, StdCheats {
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 
-        contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry);
+        contracts.borrowerOperations = new BorrowerOperations{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);

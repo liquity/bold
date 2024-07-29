@@ -36,7 +36,7 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
     event BorrowerOperationsAddressAdded(address _newBorrowerOperationsAddress);
     event ActivePoolAddressAdded(address _newActivePoolAddress);
 
-    constructor() ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {}
+    constructor(address _owner) Ownable(_owner) ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {}
 
     function setBranchAddresses(
         address _troveManagerAddress,

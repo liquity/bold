@@ -230,9 +230,9 @@ contract TestDeployer {
         DeploymentVarsDev memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
         // Deploy Bold
-        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode);
+        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this)));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        boldToken = new BoldToken{salt: SALT}();
+        boldToken = new BoldToken{salt: SALT}(address(this));
         assert(address(boldToken) == vars.boldTokenAddress);
 
         contractsArray = new LiquityContractsDev[](vars.numCollaterals);
@@ -289,11 +289,13 @@ contract TestDeployer {
         vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
         vars.collaterals = new IERC20[](vars.numCollaterals);
 
-        vars.priceFeeds[0] =
-            new WETHPriceFeed(_params.externalAddresses.ETHOracle, _params.oracleParams.ethUsdStalenessThreshold);
+        vars.priceFeeds[0] = new WETHPriceFeed(
+            address(this), _params.externalAddresses.ETHOracle, _params.oracleParams.ethUsdStalenessThreshold
+        );
 
         // RETH
         vars.priceFeeds[1] = new RETHPriceFeed(
+            address(this),
             _params.externalAddresses.ETHOracle,
             _params.externalAddresses.RETHOracle,
             _params.externalAddresses.RETHToken,
@@ -302,12 +304,14 @@ contract TestDeployer {
         );
 
         vars.priceFeeds[2] = new WSTETHPriceFeed(
+            address(this),
             _params.externalAddresses.STETHOracle,
             _params.oracleParams.stEthUsdStalenessThreshold,
             _params.externalAddresses.WSTETHToken
         );
 
         vars.priceFeeds[3] = new ETHXPriceFeed(
+            address(this),
             _params.externalAddresses.ETHOracle,
             _params.externalAddresses.ETHXOracle,
             _params.externalAddresses.StaderOracle,
@@ -316,6 +320,7 @@ contract TestDeployer {
         );
 
         vars.priceFeeds[4] = new OSETHPriceFeed(
+            address(this),
             _params.externalAddresses.ETHOracle,
             _params.externalAddresses.OSETHOracle,
             _params.externalAddresses.OsTokenVaultController,
@@ -326,7 +331,7 @@ contract TestDeployer {
         // Deploy Bold
         vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode());
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        result.boldToken = new BoldToken{salt: SALT}();
+        result.boldToken = new BoldToken{salt: SALT}(address(this));
         assert(address(result.boldToken) == vars.boldTokenAddress);
 
         // TODO: replace mock collaterals with connections to the real tokens for later mainnet testing
@@ -407,6 +412,7 @@ contract TestDeployer {
 
         // Deploy all contracts, using testers for TM and PriceFeed
         contracts.addressesRegistry = new AddressesRegistry(
+            address(this),
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
             _troveManagerParams.SCR,
@@ -515,6 +521,7 @@ contract TestDeployer {
         contracts.priceFeed = _priceFeed;
 
         contracts.addressesRegistry = new AddressesRegistry(
+            address(this),
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
             _troveManagerParams.SCR,

@@ -8,9 +8,12 @@ contract WSTETHPriceFeed is MainnetPriceFeedBase, IWSTETHPriceFeed {
     Oracle public stEthUsdOracle;
     IWSTETH public wstETH;
 
-    constructor(address _stEthUsdOracleAddress, uint256 _stEthUsdStalenessThreshold, address _wstETHAddress)
-        MainnetPriceFeedBase()
-    {
+    constructor(
+        address _owner,
+        address _stEthUsdOracleAddress,
+        uint256 _stEthUsdStalenessThreshold,
+        address _wstETHAddress
+    ) MainnetPriceFeedBase(_owner) {
         stEthUsdOracle.aggregator = AggregatorV3Interface(_stEthUsdOracleAddress);
         stEthUsdOracle.stalenessThreshold = _stEthUsdStalenessThreshold;
         stEthUsdOracle.decimals = stEthUsdOracle.aggregator.decimals();
