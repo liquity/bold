@@ -28,7 +28,7 @@ import { vAddress } from "@/src/valibot-utils";
 import { useQuery } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import * as v from "valibot";
-import { useWriteContract } from "wagmi";
+import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 
 const TRANSACTION_FLOW_KEY = `${LOCAL_STORAGE_PREFIX}transaction_flow`;
 
@@ -255,6 +255,9 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
   }, [currentStepIndex, flow]);
 
   const contractWrite = useWriteContract();
+  const txReceipt = useWaitForTransactionReceipt({
+    hash: contractWrite.data,
+  });
 
   const signAndSend = useCallback(async () => {
     const currentStepId = flow?.steps?.[currentStepIndex]?.id;
@@ -270,7 +273,7 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
     });
 
     if (params) {
-      contractWrite.writeContract(params);
+      contractWrite.writeContractAsync(params);
     }
   }, [
     account,
@@ -337,6 +340,47 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
     contractWrite.reset,
     contractWrite.status,
   ]);
+
+  useEffect(() => {
+    if (txReceipt.status === "success") {
+      setState((state) => {
+        if (!state.flow || !state.flow.steps) {
+          return state;
+        }
+
+        const steps = [...state.flow.steps];
+        const step = steps[currentStepIndex];
+        steps[currentStepIndex] = {
+          ...step,
+          txHash: txReceipt.data.transactionHash,
+        };
+
+        return {
+          ...state,
+          flow: { ...state.flow, steps },
+        };
+      });
+    }
+    if (txReceipt.status === "error") {
+      setState((state) => {
+        if (!state.flow || !state.flow.steps) {
+          return state;
+        }
+
+        const steps = [...state.flow.steps];
+        const step = steps[currentStepIndex];
+        steps[currentStepIndex] = {
+          ...step,
+          error: `${txReceipt.error.name}: ${txReceipt.error.message}`,
+        };
+
+        return {
+          ...state,
+          flow: { ...state.flow, steps },
+        };
+      });
+    }
+  }, [txReceipt]);
 
   return (
     <TransactionFlowContext.Provider

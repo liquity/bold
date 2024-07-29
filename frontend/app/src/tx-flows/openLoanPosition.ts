@@ -1,5 +1,6 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
+import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { getCollateralContracts } from "@/src/contracts";
 import { ADDRESS_ZERO } from "@/src/eth-utils";
 import { vAddress, vDnum } from "@/src/valibot-utils";
@@ -30,7 +31,7 @@ export const openLoanPosition: FlowDeclaration<Request> = {
     contracts,
     request,
     wagmiConfig,
-  }): Promise<["approve", "openTrove"] | ["openTrove"]> {
+  }) {
     const collSymbol = contracts.collaterals[request.collIndex][0];
     const { BorrowerOperations, Token } = getCollateralContracts(collSymbol, contracts.collaterals) ?? {};
 
@@ -48,8 +49,8 @@ export const openLoanPosition: FlowDeclaration<Request> = {
     });
 
     const isApproved = !dn.gt(
-      request.collAmount,
-      dn.from(allowance ?? 0n, 18),
+      dn.add(request.collAmount, ETH_GAS_COMPENSATION),
+      [allowance ?? 0n, 18],
     );
 
     return isApproved ? ["openTrove"] : ["approve", "openTrove"];
@@ -66,12 +67,13 @@ export const openLoanPosition: FlowDeclaration<Request> = {
     }
 
     if (stepId === "approve") {
+      const amount = dn.add(request.collAmount, ETH_GAS_COMPENSATION);
       return {
         ...Token,
         functionName: "approve" as const,
         args: [
           BorrowerOperations.address,
-          request.collAmount[0],
+          amount[0],
         ],
       };
     }

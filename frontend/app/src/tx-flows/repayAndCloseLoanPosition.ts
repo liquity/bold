@@ -17,7 +17,7 @@ const RequestSchema = v.object({
 export type Request = v.InferOutput<typeof RequestSchema>;
 
 export const repayAndCloseLoanPosition: FlowDeclaration<Request> = {
-  getSteps: async function getSteps(): Promise<["closeTrove"]> {
+  getSteps: async function getSteps() {
     return ["closeTrove"];
   },
   parseRequest: (request): Request => {
