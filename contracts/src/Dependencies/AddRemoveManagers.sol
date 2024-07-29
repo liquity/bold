@@ -7,7 +7,7 @@ import "../Interfaces/IAddressesRegistry.sol";
 import "../Interfaces/ITroveNFT.sol";
 
 contract AddRemoveManagers is IAddRemoveManagers {
-    ITroveNFT public immutable troveNFT;
+    ITroveNFT internal immutable troveNFT;
 
     /*
      * Mapping from TroveId to granted address for operations that "give" money to the trove (add collateral, pay debt).
