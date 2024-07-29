@@ -213,7 +213,7 @@ async function getDeployedContracts(jsonPath: string) {
 
   if (isDeploymentLog(latestRun)) {
     return latestRun.transactions
-      .filter((tx) => tx.transactionType === "CREATE")
+      .filter((tx) => tx.transactionType === "CREATE" || tx.transactionType === "CREATE2")
       .map((tx) => [tx.contractName, tx.contractAddress]);
   }
 
