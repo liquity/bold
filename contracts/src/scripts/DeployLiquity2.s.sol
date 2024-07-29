@@ -28,7 +28,7 @@ import "../test/TestContracts/PriceFeedTestnet.sol";
 import {WETHTester} from "../test/TestContracts/WETHTester.sol";
 
 contract DeployLiquity2Script is Script, StdCheats {
-    bytes32 constant SALT = keccak256("LiquityV2");
+    bytes32 SALT;
 
     address deployer;
 
@@ -87,6 +87,8 @@ contract DeployLiquity2Script is Script, StdCheats {
     }
 
     function run() external {
+        SALT = keccak256(abi.encodePacked(block.timestamp));
+
         if (vm.envBytes("DEPLOYER").length == 20) {
             // address
             deployer = vm.envAddress("DEPLOYER");
