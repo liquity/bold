@@ -11,7 +11,6 @@ import content from "@/src/content";
 import { ACCOUNT_BALANCES } from "@/src/demo-mode";
 import { useAccount } from "@/src/eth/Ethereum";
 import { useInputFieldValue } from "@/src/form-utils";
-import { lerp, norm } from "@/src/math-utils";
 import { usePrice } from "@/src/prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -23,6 +22,8 @@ import {
   IconChevronSmallUp,
   InfoTooltip,
   InputField,
+  lerp,
+  norm,
   PillButton,
   Slider,
   TextButton,
@@ -295,7 +296,7 @@ export function LeverageScreen() {
                   }}
                 >
                   <Slider
-                    gradientMode={[
+                    gradient={[
                       norm(
                         mediumRiskLeverageFactor,
                         LEVERAGE_FACTOR_MIN,

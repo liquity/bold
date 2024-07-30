@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { a, useSpring } from "@react-spring/web";
+import { useState } from "react";
 import { forwardRef, useId, useRef } from "react";
 import { css, cx } from "../../styled-system/css";
 import { IconCross } from "../icons";
@@ -23,6 +24,7 @@ type InputFieldProps = {
     | { end: ReactNode; start?: ReactNode }
     | { end?: ReactNode; start: ReactNode };
   value?: string;
+  valueUnfocused?: ReactNode;
 };
 
 const diffSpringConfig = {
@@ -42,7 +44,10 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
   placeholder,
   secondary,
   value,
+  valueUnfocused,
 }, ref) {
+  const [focused, setFocused] = useState(false);
+
   const label_ = label
       && typeof label === "object"
       && ("start" in label || "end" in label)
@@ -107,6 +112,8 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
     });
     differenceLeftBeforeHiding.current = diffLeft;
   });
+
+  const showValueUnfocused = valueUnfocused && !focused;
 
   return (
     <div
@@ -188,14 +195,20 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
       <input
         ref={ref}
         id={id}
-        type="text"
-        placeholder={placeholder}
-        value={value}
-        onBlur={onBlur}
+        onBlur={() => {
+          setFocused(false);
+          onBlur?.();
+        }}
         onChange={(event) => {
           onChange?.(event.target.value);
         }}
-        onFocus={onFocus}
+        onFocus={() => {
+          setFocused(true);
+          onFocus?.();
+        }}
+        placeholder={showValueUnfocused ? "" : placeholder}
+        type="text"
+        value={showValueUnfocused ? "" : value}
         className={cx(
           "peer",
           css({
@@ -217,6 +230,24 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
           }),
         )}
       />
+      {showValueUnfocused && (
+        <div
+          className={css({
+            position: "absolute",
+            inset: "0 0 auto 16px",
+            display: "flex",
+            alignItems: "center",
+            height: 136 - 2, // account for the 1px border
+            fontSize: 28,
+            fontWeight: 500,
+            letterSpacing: -1,
+            color: "content",
+            pointerEvents: "none",
+          })}
+        >
+          {valueUnfocused}
+        </div>
+      )}
       <div
         className={css({
           display: "none",
