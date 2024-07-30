@@ -6,6 +6,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {LatestBatchData} from "../../Types/LatestBatchData.sol";
 import {LatestTroveData} from "../../Types/LatestTroveData.sol";
 import {IBorrowerOperations} from "../../Interfaces/IBorrowerOperations.sol";
 import {ISortedTroves} from "../../Interfaces/ISortedTroves.sol";
@@ -14,9 +15,10 @@ import {AddressesRegistry} from "../../AddressesRegistry.sol";
 import {AddRemoveManagers} from "../../Dependencies/AddRemoveManagers.sol";
 import {BorrowerOperations} from "../../BorrowerOperations.sol";
 import {TroveManager} from "../../TroveManager.sol";
-import {EnumerableSet} from "../Utils/EnumerableSet.sol";
+import {EnumerableAddressSet, EnumerableSet} from "../Utils/EnumerableSet.sol";
 import {pow} from "../Utils/Math.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
+import {Trove} from "../Utils/Trove.sol";
 import {ITroveManagerTester} from "./Interfaces/ITroveManagerTester.sol";
 import {BaseHandler} from "./BaseHandler.sol";
 import {BaseMultiCollateralTest} from "./BaseMultiCollateralTest.sol";
@@ -71,24 +73,7 @@ function add(uint256 x, int256 delta) pure returns (uint256) {
     return uint256(int256(x) + delta);
 }
 
-function update(mapping(uint256 => uint256) storage m, uint256 i, int256 delta) {
-    if (delta > 0) {
-        m[i] += uint256(delta);
-    } else {
-        m[i] -= uint256(-delta);
-    }
-}
-
 library ToStringFunctions {
-    function toString(ITroveManager.Status status) internal pure returns (string memory) {
-        if (status == ITroveManager.Status.nonExistent) return "ITroveManager.Status.nonExistent";
-        if (status == ITroveManager.Status.active) return "ITroveManager.Status.active";
-        if (status == ITroveManager.Status.closedByOwner) return "ITroveManager.Status.closedByOwner";
-        if (status == ITroveManager.Status.closedByLiquidation) return "ITroveManager.Status.closedByLiquidation";
-        if (status == ITroveManager.Status.unredeemable) return "ITroveManager.Status.unredeemable";
-        revert("Invalid status");
-    }
-
     function toString(AdjustedTroveProperties prop) internal pure returns (string memory) {
         if (prop == AdjustedTroveProperties.onlyColl) return "uint8(AdjustedTroveProperties.onlyColl)";
         if (prop == AdjustedTroveProperties.onlyDebt) return "uint8(AdjustedTroveProperties.onlyDebt)";
@@ -112,12 +97,12 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     using StringFormatting for *;
     using ToStringFunctions for *;
     using {add, pow} for uint256;
-    using {update} for mapping(uint256 => uint256);
 
     struct OpenTroveContext {
         uint256 upperHint;
         uint256 lowerHint;
         TestDeployer.LiquityContractsDev c;
+        uint256 pendingInterest;
         uint256 upfrontFee;
         uint256 debt;
         uint256 coll;
@@ -131,10 +116,13 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 upperHint;
         uint256 lowerHint;
         TestDeployer.LiquityContractsDev c;
+        uint256 pendingInterest;
         uint256 oldTCR;
         uint256 troveId;
         LatestTroveData t;
-        ITroveManager.Status status;
+        address batchManager;
+        uint256 batchManagementFee;
+        Trove trove;
         bool wasActive;
         bool wasUnredeemable;
         bool useUnredeemable;
@@ -145,7 +133,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         string functionName;
         uint256 newICR;
         uint256 newTCR;
-        uint256 newColl;
         uint256 newDebt;
         string errorString;
     }
@@ -154,46 +141,101 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 upperHint;
         uint256 lowerHint;
         TestDeployer.LiquityContractsDev c;
+        uint256 pendingInterest;
         uint256 troveId;
+        address batchManager;
         LatestTroveData t;
+        Trove trove;
         bool wasActive;
         bool premature;
         uint256 upfrontFee;
         string errorString;
     }
 
+    struct CloseTroveContext {
+        TestDeployer.LiquityContractsDev c;
+        uint256 pendingInterest;
+        uint256 troveId;
+        LatestTroveData t;
+        address batchManager;
+        uint256 batchManagementFee;
+        bool wasOpen;
+        uint256 dealt;
+        string errorString;
+    }
+
+    struct WithdrawFromSPContext {
+        TestDeployer.LiquityContractsDev c;
+        uint256 pendingInterest;
+        uint256 initialBoldDeposit;
+        uint256 boldDeposit;
+        uint256 boldYield;
+        uint256 ethGain;
+        uint256 ethStash;
+        uint256 ethClaimed;
+        uint256 boldClaimed;
+        uint256 withdrawn;
+        string errorString;
+    }
+
+    struct SetInterestBatchManagerContext {
+        address newBatchManager;
+        uint256 upperHint;
+        uint256 lowerHint;
+        TestDeployer.LiquityContractsDev c;
+        uint256 pendingInterest;
+        uint256 troveId;
+        LatestTroveData t;
+        Trove trove;
+        bool wasOpen;
+        bool wasActive;
+        bool premature;
+        uint256 upfrontFee;
+    }
+
     struct LiquidationTotals {
-        uint256 appliedCollRedist;
-        uint256 appliedDebtRedist;
         uint256 collGasComp;
         uint256 spCollGain;
         uint256 spOffset;
         uint256 collRedist;
         uint256 debtRedist;
         uint256 collSurplus;
-        uint256 interestAccrualDecrease;
     }
 
-    struct RedeemedTrove {
-        uint256 id;
-        uint256 newColl;
-        uint256 newDebt;
+    struct LiquidationTransientState {
+        address[] batch;
+        EnumerableAddressSet liquidated;
+        EnumerableAddressSet batchManagers; // batch managers touched by liquidation
+        LiquidationTotals t;
     }
 
-    struct RedemptionTotals {
+    struct Redeemed {
+        uint256 troveId;
+        uint256 coll;
+        uint256 debt;
+    }
+
+    struct RedemptionTransientState {
         uint256 attemptedAmount;
-        uint256 appliedCollRedist;
-        uint256 appliedDebtRedist;
-        uint256 collRedeemed;
-        uint256 debtRedeemed;
-        int256 interestAccrualDelta;
+        uint256 totalCollRedeemed;
+        Redeemed[] redeemed;
+        EnumerableAddressSet batchManagers; // batch managers touched by redemption
+    }
+
+    struct UrgentRedemptionTransientState {
+        address[] batch;
+        EnumerableSet redeemedIds;
+        uint256 totalDebtRedeemed;
+        uint256 totalCollRedeemed;
+        Redeemed[] redeemed;
     }
 
     struct Batch {
-        bool isRegistered;
         uint256 interestRateMin;
         uint256 interestRateMax;
         uint256 interestRate;
+        uint256 managementRate;
+        uint256 pendingManagementFee;
         EnumerableSet troves;
     }
 
@@ -215,14 +257,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     mapping(uint256 => uint256) LIQ_PENALTY_SP;
     mapping(uint256 => uint256) LIQ_PENALTY_REDIST;
 
-    // Ghost variables (per branch)
-    // TODO: also ghost Troves?
-    mapping(uint256 => uint256) public numTroves;
-    mapping(uint256 => uint256) public numZombies;
-    mapping(uint256 => uint256) public activeDebt;
-    mapping(uint256 => uint256) public activeColl;
-    mapping(uint256 => uint256) public defaultDebt;
-    mapping(uint256 => uint256) public defaultColl;
+    // Public ghost variables (per branch, exposed to InvariantsTest)
     mapping(uint256 => uint256) public collSurplus;
     mapping(uint256 => uint256) public spBoldDeposits;
     mapping(uint256 => uint256) public spBoldYield;
@@ -243,25 +278,27 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     uint256 _baseRate = INITIAL_BASE_RATE;
     uint256 _timeSinceLastRedemption = 0;
 
-    // Used to keep track of interest accrual (per branch)
-    mapping(uint256 => uint256) _interestAccrual;
-    mapping(uint256 => uint256) _pendingInterest;
+    // Used to keep track of mintable interest
+    mapping(uint256 => uint256) _pendingInterest; // branch =>
 
-    // Branch => batch manager =>
-    mapping(uint256 => mapping(address => Batch)) _batches;
+    // Troves ghost state
+    mapping(uint256 => EnumerableSet) _troveIds; // branch =>
+    mapping(uint256 => EnumerableSet) _zombieTroveIds; // branch =>
+    mapping(uint256 => mapping(uint256 => Trove)) _troves; // branch => TroveID =>
+
+    // Batch management ghost state
+    mapping(uint256 => EnumerableAddressSet) _batchManagers; // branch =>
+    mapping(uint256 => mapping(address => Batch)) _batches; // branch => batch manager =>
+    mapping(uint256 => mapping(uint256 => address)) _batchManagerOf; // branch => TroveId =>
 
     // Batch liquidation transient state
-    mapping(uint256 => bool) _liquidationHasSeen; // TroveID =>
-    address[] _liquidationBatch;
-    address[] _liquidationPlan;
+    LiquidationTransientState _liquidation;
 
-    // Redemption transient state (redeemed Troves per branch)
-    mapping(uint256 => RedeemedTrove[]) _redemptionPlan;
+    // Redemption transient state
+    mapping(uint256 => RedemptionTransientState) _redemption; // branch =>
 
     // Urgent redemption transient state
-    mapping(uint256 => bool) _urgentRedemptionHasSeen; // TroveID =>
-    address[] _urgentRedemptionBatch;
-    RedeemedTrove[] _urgentRedemptionPlan;
+    UrgentRedemptionTransientState _urgentRedemption;
 
     constructor(Contracts memory contracts) {
         _functionCaller = new FunctionCaller();
@@ -282,23 +319,44 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     // Public view functions used in invariants //
     //////////////////////////////////////////////
 
-    function getRedemptionRate() public view returns (uint256) {
+    function numTroves(uint256 i) public view returns (uint256) {
+        return _troveIds[i].size();
+    }
+
+    function numZombies(uint256 i) external view returns (uint256) {
+        return _zombieTroveIds[i].size();
+    }
+
+    function getTrove(uint256 i, uint256 j)
+        external
+        view
+        returns (uint256 troveId, uint256 coll, uint256 debt, ITroveManager.Status status, address batchManager)
+    {
+        troveId = _troveIds[i].get(j);
+
+        Trove memory trove = _troves[i][troveId];
+        trove.applyPending();
+
+        coll = trove.coll;
+        debt = trove.debt;
+        status = _isUnredeemable(i, troveId) ? UNREDEEMABLE : ACTIVE;
+        batchManager = _batchManagerOf[i][troveId];
+    }
+
+    function getRedemptionRate() external view returns (uint256) {
         return _getRedemptionRate(_getBaseRate());
     }
 
-    function getBoldSupply() public view returns (uint256 boldSupply) {
-        for (uint256 i = 0; i < branches.length; ++i) {
-            boldSupply += activeDebt[i];
-            boldSupply += defaultDebt[i];
-        }
-    }
-
     function getGasPool(uint256 i) external view returns (uint256) {
-        return numTroves[i] * ETH_GAS_COMPENSATION;
+        return numTroves(i) * ETH_GAS_COMPENSATION;
     }
 
-    function getPendingInterest(uint256 i) public view returns (uint256) {
+    function getPendingInterest(uint256 i) external view returns (uint256) {
         return Math.ceilDiv(_pendingInterest[i], ONE_YEAR * DECIMAL_PRECISION);
+    }
+
+    function getPendingBatchManagementFee(uint256 i, address batchManager) external view returns (uint256) {
+        return _batches[i][batchManager].pendingManagementFee / (ONE_YEAR * DECIMAL_PRECISION);
     }
 
     /////////////////////////////////////////
@@ -313,8 +371,26 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         _timeSinceLastRedemption += timeDelta;
 
-        for (uint256 i = 0; i < branches.length; ++i) {
-            if (!isShutdown[i]) _pendingInterest[i] += _interestAccrual[i] * timeDelta;
+        for (uint256 j = 0; j < branches.length; ++j) {
+            for (uint256 i = 0; i < _troveIds[j].size(); ++i) {
+                if (isShutdown[j]) continue; // shutdown branches stop accruing interest & batch management fees
+
+                uint256 troveId = _troveIds[j].get(i);
+                Trove storage trove = _troves[j][troveId];
+                address batchManager = _batchManagerOf[j][troveId];
+
+                uint256 interest = trove.accrueInterest(timeDelta);
+                uint256 batchManagementFee = trove.accrueBatchManagementFee(timeDelta);
+
+                if (batchManagementFee > 0) {
+                    assertNotEq(
+                        batchManager, address(0), "Trove accruing batch management fee should have batch manager"
+                    );
+                }
+
+                _pendingInterest[j] += interest;
+                _batches[j][batchManager].pendingManagementFee += batchManagementFee;
+            }
         }
     }
 
@@ -322,18 +398,17 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         i = _bound(i, 0, branches.length - 1);
         tcr = _bound(tcr, TCR_MIN, TCR_MAX);
 
-        TestDeployer.LiquityContractsDev memory c = branches[i];
-        uint256 totalColl = _getTotalColl(i);
-        vm.assume(totalColl > 0);
+        uint256 totalColl = branches[i].troveManager.getEntireSystemColl();
+        uint256 totalDebt = branches[i].troveManager.getEntireSystemDebt();
 
-        uint256 totalDebt = _getTotalDebt(i);
+        vm.assume(totalColl > 0);
         uint256 price = totalDebt * tcr / totalColl;
-        vm.assume(price > 0); // This can happen if the branch only has empty zombies
+        vm.assume(price > 0); // This can happen if the branch has total debt very close to 0
 
         info("price: ", price.decimal());
         logCall("setPrice", i.toString(), tcr.decimal());
 
-        c.priceFeed.setPrice(price);
+        branches[i].priceFeed.setPrice(price);
         _price[i] = price;
     }
 
@@ -355,6 +430,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.lowerHint = _pickHint(i, lowerHintSeed);
 
         v.c = branches[i];
+        v.pendingInterest = v.c.activePool.calcPendingAggInterest();
         v.upfrontFee = hintHelpers.predictOpenTroveUpfrontFee(i, borrowed, interestRate);
         v.debt = borrowed + v.upfrontFee;
         v.coll = v.debt * icr / _price[i];
@@ -383,7 +459,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         _dealWETHAndApprove(msg.sender, ETH_GAS_COMPENSATION, address(v.c.borrowerOperations));
 
         vm.prank(msg.sender);
-        try v.c.borrowerOperations.openTrove(
+        try branches[i].borrowerOperations.openTrove(
             msg.sender,
             OWNER_INDEX,
             v.coll,
@@ -397,7 +473,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             address(0)
         ) {
             uint256 icr_ = _CR(i, v.coll, v.debt); // can be slightly different from `icr` due to int division
-            uint256 newTCR = _TCR(i, int256(v.coll), int256(borrowed), v.upfrontFee);
+            uint256 newTCR = _TCR(i);
 
             // Preconditions
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
@@ -409,22 +485,13 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
 
             // Effects (Trove)
-            assertEqDecimal(v.c.troveManager.getTroveEntireColl(v.troveId), v.coll, 18, "Wrong coll");
-            assertEqDecimal(v.c.troveManager.getTroveEntireDebt(v.troveId), v.debt, 18, "Wrong debt");
-            assertEqDecimal(
-                v.c.troveManager.getTroveAnnualInterestRate(v.troveId), interestRate, 18, "Wrong interest rate"
-            );
-            assertEq(v.c.troveManager.getTroveStatus(v.troveId).toString(), ACTIVE.toString(), "Wrong status");
-            assertTrue(v.c.sortedTroves.contains(v.troveId), "Trove should have been inserted into SortedTroves");
+            _troves[i][v.troveId].coll = v.coll;
+            _troves[i][v.troveId].debt = v.debt;
+            _troves[i][v.troveId].interestRate = interestRate;
+            _troveIds[i].add(v.troveId);
 
             // Effects (system)
-            _mintYield(i, v.upfrontFee);
-
-            activeColl[i] += v.coll;
-            activeDebt[i] += borrowed;
-
-            _interestAccrual[i] += v.debt * interestRate;
-            numTroves[i] += 1;
+            _mintYield(i, v.pendingInterest, v.upfrontFee);
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, v.errorString) = _decodeCustomError(revertData);
@@ -489,12 +556,15 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.lowerHint = _pickHint(i, lowerHintSeed);
 
         v.c = branches[i];
+        v.pendingInterest = v.c.activePool.calcPendingAggInterest();
         v.oldTCR = _TCR(i);
         v.troveId = _troveIdOf(msg.sender);
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
-        v.status = v.c.troveManager.getTroveStatus(v.troveId);
-        v.wasActive = v.status == ACTIVE;
-        v.wasUnredeemable = v.status == UNREDEEMABLE;
+        v.batchManager = _batchManagerOf[i][v.troveId];
+        v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
+        v.trove = _troves[i][v.troveId];
+        v.wasActive = _isActive(i, v.troveId);
+        v.wasUnredeemable = _isUnredeemable(i, v.troveId);
 
         if (v.wasActive || v.wasUnredeemable) {
             // Choose the wrong type of adjustment 1% of the time
@@ -511,19 +581,13 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         collChange = v.prop != AdjustedTroveProperties.onlyDebt ? _bound(collChange, 0, v.t.entireColl + 1) : 0;
         debtChange = v.prop != AdjustedTroveProperties.onlyColl ? _bound(debtChange, 0, v.t.entireDebt + 1) : 0;
         if (!isDebtInc) debtChange = Math.min(debtChange, _handlerBold);
-
         v.collDelta = isCollInc ? int256(collChange) : -int256(collChange);
         v.debtDelta = isDebtInc ? int256(debtChange) : -int256(debtChange);
         v.$collDelta = v.collDelta * int256(_price[i]) / int256(DECIMAL_PRECISION);
         v.upfrontFee = hintHelpers.predictAdjustTroveUpfrontFee(i, v.troveId, isDebtInc ? debtChange : 0);
+        if (v.upfrontFee > 0) assertGtDecimal(v.debtDelta, 0, 18, "Only debt increase should incur upfront fee");
         v.functionName = _getAdjustmentFunctionName(v.prop, isCollInc, isDebtInc, v.useUnredeemable);
 
-        info("status: ", v.status.toString());
-        info("coll: ", v.t.entireColl.decimal());
-        info("debt: ", v.t.entireDebt.decimal());
-        info("coll redist: ", v.t.redistCollGain.decimal());
-        info("debt redist: ", v.t.redistBoldDebtGain.decimal());
-        info("accrued interest: ", v.t.accruedInterest.decimal());
         info("upper hint: ", _hintToString(i, v.upperHint));
         info("lower hint: ", _hintToString(i, v.lowerHint));
         info("upfront fee: ", v.upfrontFee.decimal());
@@ -557,22 +621,18 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                     v.prop, v.troveId, collChange, isCollInc, debtChange, isDebtInc, v.upfrontFee
                 )
         ) {
-            v.newICR = _ICR(i, v.collDelta, v.debtDelta, v.upfrontFee, v.t);
-            v.newTCR = _TCR(i, v.collDelta, v.debtDelta, v.upfrontFee);
+            v.newICR = _ICR(i, v.troveId);
+            v.newTCR = _TCR(i);
 
             // Preconditions
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertTrue(collChange > 0 || debtChange > 0, "Should have failed as there was no change");
-            if (v.useUnredeemable) assertTrue(v.wasUnredeemable, "Should have failed as Trove was not unredeemable");
-            if (!v.useUnredeemable) assertTrue(v.wasActive, "Should have failed as Trove was not active");
-
+            if (v.useUnredeemable) assertTrue(v.wasUnredeemable, "Should have failed as Trove wasn't unredeemable");
+            if (!v.useUnredeemable) assertTrue(v.wasActive, "Should have failed as Trove wasn't active");
             assertLeDecimal(-v.collDelta, int256(v.t.entireColl), 18, "Should have failed as withdrawal > coll");
-            v.newColl = v.t.entireColl.add(v.collDelta);
-
             assertLeDecimal(-v.debtDelta, int256(v.t.entireDebt), 18, "Should have failed as repayment > debt");
-            v.newDebt = (v.t.entireDebt + v.upfrontFee).add(v.debtDelta);
-
-            assertGeDecimal(v.newDebt, MIN_DEBT, 28, "Should have failed as new debt < MIN_DEBT");
+            v.newDebt = v.t.entireDebt.add(v.debtDelta) + v.upfrontFee;
+            assertGeDecimal(v.newDebt, MIN_DEBT, 18, "Should have failed as new debt < MIN_DEBT");
             assertGeDecimal(v.newICR, MCR[i], 18, "Should have failed as new ICR < MCR");
 
             if (v.oldTCR >= CCR[i]) {
@@ -583,26 +643,15 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             }
 
             // Effects (Trove)
-            assertEqDecimal(v.c.troveManager.getTroveEntireColl(v.troveId), v.newColl, 18, "Wrong coll");
-            assertEqDecimal(v.c.troveManager.getTroveEntireDebt(v.troveId), v.newDebt, 18, "Wrong debt");
-            if (v.upfrontFee > 0) assertGtDecimal(v.debtDelta, 0, 18, "Only debt increase should incur upfront fee");
+            v.trove.applyPending();
+            v.trove.coll = v.trove.coll.add(v.collDelta);
+            v.trove.debt = v.trove.debt.add(v.debtDelta) + v.upfrontFee;
+            _troves[i][v.troveId] = v.trove;
+            _zombieTroveIds[i].remove(v.troveId);
 
             // Effects (system)
-            _mintYield(i, v.upfrontFee);
-
-            activeColl[i] += v.t.redistCollGain;
-            defaultColl[i] -= v.t.redistCollGain;
-
-            activeDebt[i] += v.t.redistBoldDebtGain;
-            defaultDebt[i] -= v.t.redistBoldDebtGain;
-
-            activeColl.update(i, v.collDelta);
-            activeDebt.update(i, v.debtDelta);
-
-            _interestAccrual[i] += v.newDebt * v.t.annualInterestRate;
-            _interestAccrual[i] -= v.t.recordedDebt * v.t.annualInterestRate;
-
-            if (v.wasUnredeemable) numZombies[i] -= 1;
+            _mintYield(i, v.pendingInterest, v.upfrontFee);
+            if (v.batchManager != address(0)) _mintBatchManagementFee(i, v.batchManager);
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, v.errorString) = _decodeCustomError(revertData);
@@ -658,6 +707,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Cleanup (success)
             if (!isCollInc) _sweepColl(i, msg.sender, collChange);
             if (isDebtInc) _sweepBold(msg.sender, debtChange);
+            if (v.batchManager != address(0)) _sweepBold(v.batchManager, v.batchManagementFee);
         }
     }
 
@@ -672,11 +722,15 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.lowerHint = _pickHint(i, lowerHintSeed);
 
         v.c = branches[i];
+        v.pendingInterest = v.c.activePool.calcPendingAggInterest();
         v.troveId = _troveIdOf(msg.sender);
+        v.batchManager = _batchManagerOf[i][v.troveId];
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
+        v.trove = _troves[i][v.troveId];
         v.wasActive = v.c.troveManager.getTroveStatus(v.troveId) == ACTIVE;
         v.premature = block.timestamp < v.t.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN;
         v.upfrontFee = hintHelpers.predictAdjustInterestRateUpfrontFee(i, v.troveId, newInterestRate);
+        if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
 
         info("upper hint: ", _hintToString(i, v.upperHint));
         info("lower hint: ", _hintToString(i, v.lowerHint));
@@ -694,13 +748,13 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         try v.c.borrowerOperations.adjustTroveInterestRate(
             v.troveId, newInterestRate, v.upperHint, v.lowerHint, v.upfrontFee
         ) {
-            uint256 newDebt = v.t.entireDebt + v.upfrontFee;
-            uint256 newICR = _ICR(i, 0, 0, v.upfrontFee, v.t);
-            uint256 newTCR = _TCR(i, 0, 0, v.upfrontFee);
+            uint256 newICR = _ICR(i, v.troveId);
+            uint256 newTCR = _TCR(i);
 
             // Preconditions
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
-            assertTrue(v.wasActive, "Should have failed as Trove was not active");
+            assertTrue(v.wasActive, "Should have failed as Trove wasn't active");
+            assertEq(v.batchManager, address(0), "Should have failed as Trove was in a batch");
             assertNotEqDecimal(newInterestRate, v.t.annualInterestRate, 18, "Should have failed as rate == old");
             assertGeDecimal(newInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate < min");
             assertLeDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate > max");
@@ -711,22 +765,13 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             }
 
             // Effects (Trove)
-            assertEqDecimal(v.c.troveManager.getTroveEntireColl(v.troveId), v.t.entireColl, 18, "Wrong coll");
-            assertEqDecimal(v.c.troveManager.getTroveEntireDebt(v.troveId), newDebt, 18, "Wrong debt");
-            assertEqDecimal(v.c.troveManager.getTroveAnnualInterestRate(v.troveId), newInterestRate, 18, "Wrong rate");
-            if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
+            v.trove.applyPending();
+            v.trove.debt += v.upfrontFee;
+            v.trove.interestRate = newInterestRate;
+            _troves[i][v.troveId] = v.trove;
 
             // Effects (system)
-            _mintYield(i, v.upfrontFee);
-
-            activeColl[i] += v.t.redistCollGain;
-            defaultColl[i] -= v.t.redistCollGain;
-
-            activeDebt[i] += v.t.redistBoldDebtGain;
-            defaultDebt[i] -= v.t.redistBoldDebtGain;
-
-            _interestAccrual[i] += (v.t.entireDebt + v.upfrontFee) * newInterestRate;
-            _interestAccrual[i] -= v.t.recordedDebt * v.t.annualInterestRate;
+            _mintYield(i, v.pendingInterest, v.upfrontFee);
         } catch Error(string memory reason) {
             v.errorString = reason;
 
@@ -745,6 +790,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
             } else if (selector == BorrowerOperations.TroveNotActive.selector) {
                 assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
+            } else if (selector == BorrowerOperations.TroveInBatch.selector) {
+                assertNotEq(v.batchManager, address(0), "Shouldn't have failed as Trove wasn't in a batch");
             } else if (selector == BorrowerOperations.InterestRateNotNew.selector) {
                 assertEqDecimal(newInterestRate, v.t.annualInterestRate, 18, "Shouldn't have failed as rate != old");
             } else if (selector == BorrowerOperations.InterestRateTooLow.selector) {
@@ -773,88 +820,80 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     }
 
     function closeTrove(uint256 i) external {
+        CloseTroveContext memory v;
+
         i = _bound(i, 0, branches.length - 1);
 
-        TestDeployer.LiquityContractsDev memory c = branches[i];
-        uint256 troveId = _troveIdOf(msg.sender);
-        LatestTroveData memory t = c.troveManager.getLatestTroveData(troveId);
-        bool wasOpen = _isOpen(i, troveId);
+        v.c = branches[i];
+        v.pendingInterest = v.c.activePool.calcPendingAggInterest();
+        v.troveId = _troveIdOf(msg.sender);
+        v.t = v.c.troveManager.getLatestTroveData(v.troveId);
+        v.batchManager = _batchManagerOf[i][v.troveId];
+        v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
+        v.wasOpen = _isOpen(i, v.troveId);
 
         logCall("closeTrove", i.toString());
 
-        uint256 dealt = Math.min(t.entireDebt, _handlerBold);
-        _dealBold(msg.sender, dealt);
+        v.dealt = Math.min(v.t.entireDebt, _handlerBold);
+        _dealBold(msg.sender, v.dealt);
 
-        string memory errorString;
         vm.prank(msg.sender);
-
-        try c.borrowerOperations.closeTrove(troveId) {
-            uint256 newTCR = _TCR(i, -int256(t.entireColl), -int256(t.entireDebt), 0);
+        try v.c.borrowerOperations.closeTrove(v.troveId) {
+            uint256 newTCR = _TCR(i);
 
             // Preconditions
-            assertTrue(wasOpen, "Should have failed as Trove wasn't open");
-            assertGt(numTroves[i], 1, "Should have failed to close last Trove in the system");
+            assertTrue(v.wasOpen, "Should have failed as Trove wasn't open");
+            assertGt(numTroves(i), 1, "Should have failed to close last Trove in the system");
             if (!isShutdown[i]) assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
 
             // Effects (Trove)
-            assertEqDecimal(c.troveManager.getTroveEntireColl(troveId), 0, 18, "Coll should have been zeroed");
-            assertEqDecimal(c.troveManager.getTroveEntireDebt(troveId), 0, 18, "Debt should have been zeroed");
-            assertEq(c.troveManager.getTroveStatus(troveId).toString(), CLOSED_BY_OWNER.toString(), "Wrong status");
-            assertFalse(c.sortedTroves.contains(troveId), "Trove should have been removed from SortedTroves");
+            delete _troves[i][v.troveId];
+            delete _batchManagerOf[i][v.troveId];
+            _troveIds[i].remove(v.troveId);
+            _zombieTroveIds[i].remove(v.troveId);
 
             // Effects (system)
-            _mintYield(i, 0);
-
-            activeColl[i] += t.redistCollGain;
-            defaultColl[i] -= t.redistCollGain;
-
-            activeDebt[i] += t.redistBoldDebtGain;
-            defaultDebt[i] -= t.redistBoldDebtGain;
-
-            activeColl[i] -= t.entireColl;
-            activeDebt[i] -= t.entireDebt;
-
-            _interestAccrual[i] -= t.recordedDebt * t.annualInterestRate;
-            numTroves[i] -= 1;
-            if (t.recordedDebt < MIN_DEBT) numZombies[i] -= 1;
+            _mintYield(i, v.pendingInterest, 0);
+            if (v.batchManager != address(0)) _mintBatchManagementFee(i, v.batchManager);
         } catch Error(string memory reason) {
-            errorString = reason;
+            v.errorString = reason;
 
             // Justify failures
             if (reason.equals("ERC721: invalid token ID")) {
-                assertFalse(wasOpen, "Open Trove should have an NFT");
+                assertFalse(v.wasOpen, "Open Trove should have an NFT");
             } else {
                 revert(reason);
             }
         } catch (bytes memory revertData) {
             bytes4 selector;
-            (selector, errorString) = _decodeCustomError(revertData);
+            (selector, v.errorString) = _decodeCustomError(revertData);
 
             // Justify failures
             if (selector == BorrowerOperations.NotEnoughBoldBalance.selector) {
-                assertLtDecimal(dealt, t.entireDebt, 18, "Shouldn't have failed as caller had enough Bold");
+                assertLtDecimal(v.dealt, v.t.entireDebt, 18, "Shouldn't have failed as caller had enough Bold");
             } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
-                uint256 newTCR = _TCR(i, -int256(t.entireColl), -int256(t.entireDebt), 0);
+                uint256 newTCR = _TCR(i, -int256(v.t.entireColl), -int256(v.t.entireDebt), 0);
                 assertFalse(isShutdown[i], "Shouldn't have failed as branch had been shut down");
                 assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
             } else if (selector == TroveManager.OnlyOneTroveLeft.selector) {
-                assertEq(numTroves[i], 1, "Shouldn't have failed as there was at least one Trove left in the system");
+                assertEq(numTroves(i), 1, "Shouldn't have failed as there was at least one Trove left in the system");
             } else {
-                revert(string.concat("Unexpected error: ", errorString));
+                revert(string.concat("Unexpected error: ", v.errorString));
             }
         }
 
-        if (bytes(errorString).length > 0) {
-            info("Expected error: ", errorString);
+        if (bytes(v.errorString).length > 0) {
+            info("Expected error: ", v.errorString);
             _log();
 
             // Cleanup (failure)
-            _sweepBold(msg.sender, dealt);
+            _sweepBold(msg.sender, v.dealt);
         } else {
             // Cleanup (success)
-            _sweepColl(i, msg.sender, t.entireColl);
+            _sweepColl(i, msg.sender, v.t.entireColl);
             _sweepWETH(msg.sender, ETH_GAS_COMPENSATION);
+            if (v.batchManager != address(0)) _sweepBold(v.batchManager, v.batchManagementFee);
         }
     }
 
@@ -867,73 +906,83 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         i = _bound(i, 0, branches.length - 1);
 
         TestDeployer.LiquityContractsDev memory c = branches[i];
-        LiquidationTotals memory t;
-        _planLiquidation(i, t);
+        uint256 pendingInterest = c.activePool.calcPendingAggInterest();
+        LiquidationTransientState storage l = _planLiquidation(i);
 
-        info("batch: [", _labelsFrom(_liquidationBatch).join(", "), "]");
-        info("liquidatable: [", _labelsFrom(_liquidationPlan).join(", "), "]");
+        uint256[] memory batchManagementFee = new uint256[](l.batchManagers.size());
+        for (uint256 j = 0; j < l.batchManagers.size(); ++j) {
+            batchManagementFee[j] = c.troveManager.getLatestBatchData(l.batchManagers.get(j)).accruedManagementFee;
+        }
+
+        info("batch: [", _labelsFrom(l.batch).join(", "), "]");
+        info("liquidated: [", _labelsFrom(l.liquidated).join(", "), "]");
+        info("SP offset: ", l.t.spOffset.decimal());
+        info("debt redist: ", l.t.debtRedist.decimal());
         logCall("batchLiquidateTroves", i.toString());
 
         string memory errorString;
         vm.prank(msg.sender);
 
-        try c.troveManager.batchLiquidateTroves(_troveIdsFrom(_liquidationBatch)) {
+        try c.troveManager.batchLiquidateTroves(_troveIdsFrom(l.batch)) {
             info("SP BOLD: ", c.stabilityPool.getTotalBoldDeposits().decimal());
             info("P: ", c.stabilityPool.P().decimal());
             _log();
 
             // Preconditions
-            assertGt(_liquidationBatch.length, 0, "Should have failed as batch was empty");
-            assertGt(_liquidationPlan.length, 0, "Should have failed as there was nothing to liquidate");
-            assertGt(numTroves[i] - _liquidationPlan.length, 0, "Should have failed to liquidate last Trove");
+            assertGt(l.batch.length, 0, "Should have failed as batch was empty");
+            assertGt(l.liquidated.size(), 0, "Should have failed as there was nothing to liquidate");
+            assertGt(numTroves(i) - l.liquidated.size(), 0, "Should have failed to liquidate last Trove");
 
             // Effects (Troves)
-            for (uint256 j = 0; j < _liquidationPlan.length; ++j) {
-                uint256 troveId = _troveIdOf(_liquidationPlan[j]);
-                assertEqDecimal(c.troveManager.getTroveEntireColl(troveId), 0, 18, "Coll should have been zeroed");
-                assertEqDecimal(c.troveManager.getTroveEntireDebt(troveId), 0, 18, "Debt should have been zeroed");
-                assertEq(c.troveManager.getTroveStatus(troveId).toString(), CLOSED_BY_LIQ.toString(), "Wrong status");
-                assertFalse(c.sortedTroves.contains(troveId), "Trove should have been removed from SortedTroves");
+            for (uint256 j = 0; j < l.liquidated.size(); ++j) {
+                uint256 troveId = _troveIdOf(l.liquidated.get(j));
+                delete _troves[i][troveId];
+                delete _batchManagerOf[i][troveId];
+                _troveIds[i].remove(troveId);
+                _zombieTroveIds[i].remove(troveId);
+            }
+
+            if (l.t.debtRedist > 0) {
+                uint256[] memory stakes = new uint256[](_troveIds[i].size());
+                uint256 totalStakes = 0;
+
+                for (uint256 j = 0; j < _troveIds[i].size(); ++j) {
+                    Trove memory trove = _troves[i][_troveIds[i].get(j)];
+                    trove.applyPending();
+                    totalStakes += stakes[j] = trove.coll;
+                }
+
+                assertGtDecimal(totalStakes, 0, 18, "No stakes");
+
+                for (uint256 j = 0; j < _troveIds[i].size(); ++j) {
+                    uint256 stake = stakes[j];
+                    uint256 troveId = _troveIds[i].get(j);
+                    Trove memory trove = _troves[i][troveId];
+                    trove.redist(l.t.collRedist * stake / totalStakes, l.t.debtRedist * stake / totalStakes);
+                    _troves[i][troveId] = trove;
+                }
             }
 
             // Effects (system)
-            _mintYield(i, 0);
+            _mintYield(i, pendingInterest, 0);
+            spColl[i] += l.t.spCollGain;
+            spBoldDeposits[i] -= l.t.spOffset;
+            collSurplus[i] += l.t.collSurplus;
 
-            activeColl[i] += t.appliedCollRedist;
-            defaultColl[i] -= t.appliedCollRedist;
-
-            activeDebt[i] += t.appliedDebtRedist;
-            defaultDebt[i] -= t.appliedDebtRedist;
-
-            spColl[i] += t.spCollGain;
-            activeColl[i] -= t.spCollGain;
-
-            spBoldDeposits[i] -= t.spOffset;
-            activeDebt[i] -= t.spOffset;
-
-            defaultColl[i] += t.collRedist;
-            activeColl[i] -= t.collRedist;
-
-            defaultDebt[i] += t.debtRedist;
-            activeDebt[i] -= t.debtRedist;
-
-            collSurplus[i] += t.collSurplus;
-            activeColl[i] -= t.collSurplus;
-
-            activeColl[i] -= t.collGasComp;
-            _interestAccrual[i] -= t.interestAccrualDecrease;
-            numTroves[i] -= _liquidationPlan.length;
+            for (uint256 j = 0; j < l.batchManagers.size(); ++j) {
+                _mintBatchManagementFee(i, l.batchManagers.get(j));
+            }
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, errorString) = _decodeCustomError(revertData);
 
             // Justify failures
             if (selector == TroveManager.EmptyData.selector) {
-                assertEq(_liquidationBatch.length, 0, "Shouldn't have failed as batch was not empty");
+                assertEq(l.batch.length, 0, "Shouldn't have failed as batch was not empty");
             } else if (selector == TroveManager.NothingToLiquidate.selector) {
-                assertEq(_liquidationPlan.length, 0, "Shouldn't have failed as there were liquidatable Troves");
+                assertEq(l.liquidated.size(), 0, "Shouldn't have failed as there were liquidatable Troves");
             } else if (selector == TroveManager.OnlyOneTroveLeft.selector) {
-                assertEq(numTroves[i] - _liquidationPlan.length, 0, "Shouldn't have failed as there were Troves left");
+                assertEq(numTroves(i) - l.liquidated.size(), 0, "Shouldn't have failed as there were Troves left");
             } else {
                 revert(string.concat("Unexpected error: ", errorString));
             }
@@ -944,8 +993,12 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _log();
         } else {
             // Cleanup (success)
-            _sweepColl(i, msg.sender, t.collGasComp);
-            _sweepWETH(msg.sender, _liquidationPlan.length * ETH_GAS_COMPENSATION);
+            _sweepColl(i, msg.sender, l.t.collGasComp);
+            _sweepWETH(msg.sender, l.liquidated.size() * ETH_GAS_COMPENSATION);
+
+            for (uint256 j = 0; j < l.batchManagers.size(); ++j) {
+                _sweepBold(l.batchManagers.get(j), batchManagementFee[j]);
+            }
         }
 
         _resetLiquidation();
@@ -955,24 +1008,39 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 maxNumTroves = 0;
 
         for (uint256 i = 0; i < branches.length; ++i) {
-            maxNumTroves = Math.max(numTroves[i], maxNumTroves);
+            maxNumTroves = Math.max(numTroves(i), maxNumTroves);
         }
 
         amount = _bound(amount, 0, _handlerBold);
         maxIterationsPerCollateral = _bound(maxIterationsPerCollateral, 0, maxNumTroves * 11 / 10);
 
         uint256 oldBaseRate = _getBaseRate();
-        uint256 redemptionRate = _getRedemptionRate(oldBaseRate + _getBaseRateIncrease(amount));
+        uint256 boldSupply = boldToken.totalSupply();
+        uint256 redemptionRate = _getRedemptionRate(oldBaseRate + _getBaseRateIncrease(boldSupply, amount));
 
-        RedemptionTotals[] memory t = new RedemptionTotals[](branches.length);
-        uint256 redeemedBold = _planRedemption(amount, maxIterationsPerCollateral, redemptionRate, t);
-        assertLeDecimal(redeemedBold, amount, 18, "Total redeemed exceeds input amount");
+        uint256[] memory pendingInterest = new uint256[](branches.length);
+        for (uint256 i = 0; i < branches.length; ++i) {
+            pendingInterest[i] = branches[i].activePool.calcPendingAggInterest();
+        }
+
+        (uint256 totalDebtRedeemed, mapping(uint256 => RedemptionTransientState) storage r) =
+            _planRedemption(amount, maxIterationsPerCollateral, redemptionRate);
+        assertLeDecimal(totalDebtRedeemed, amount, 18, "Total redeemed exceeds input amount");
+
+        uint256[][] memory batchManagementFee = new uint256[][](branches.length);
+        for (uint256 j = 0; j < branches.length; ++j) {
+            batchManagementFee[j] = new uint256[](r[j].batchManagers.size());
+            for (uint256 i = 0; i < r[j].batchManagers.size(); ++i) {
+                batchManagementFee[j][i] =
+                    branches[j].troveManager.getLatestBatchData(r[j].batchManagers.get(i)).accruedManagementFee;
+            }
+        }
 
         info("redemption rate: ", redemptionRate.decimal());
-        info("redeemed BOLD: ", redeemedBold.decimal());
+        info("redeemed BOLD: ", totalDebtRedeemed.decimal());
         info("redeemed Troves: [");
         for (uint256 i = 0; i < branches.length; ++i) {
-            info("  [", isShutdown[i] ? "/* shutdown */" : _labelsFrom(_redemptionPlan, i).join(", "), "],");
+            info("  [", isShutdown[i] ? "/* shutdown */" : _labelsFrom(i, r[i].redeemed).join(", "), "],");
         }
         info("]");
         logCall("redeemCollateral", amount.decimal(), maxIterationsPerCollateral.toString());
@@ -988,49 +1056,31 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             assertGtDecimal(amount, 0, 18, "Should have failed as amount was zero");
 
             // Effects (global)
-            _baseRate = Math.min(oldBaseRate + _getBaseRateIncrease(redeemedBold), _100pct);
+            _baseRate = Math.min(oldBaseRate + _getBaseRateIncrease(boldSupply, totalDebtRedeemed), _100pct);
             if (_timeSinceLastRedemption >= ONE_MINUTE) _timeSinceLastRedemption = 0;
 
             for (uint256 j = 0; j < branches.length; ++j) {
-                if (t[j].attemptedAmount == 0) continue; // no effects on unredeemed branches
-
-                TestDeployer.LiquityContractsDev memory c = branches[j];
-                RedeemedTrove[] storage troves = _redemptionPlan[j];
+                if (r[j].attemptedAmount == 0) continue; // no effects on unredeemed branches
 
                 // Effects (Troves)
-                for (uint256 i = 0; i < troves.length; ++i) {
-                    RedeemedTrove memory trove = troves[i];
+                for (uint256 i = 0; i < r[j].redeemed.length; ++i) {
+                    Redeemed storage redeemed = r[j].redeemed[i];
+                    Trove memory trove = _troves[j][redeemed.troveId];
+                    trove.applyPending();
+                    trove.coll -= redeemed.coll;
+                    trove.debt -= redeemed.debt;
+                    _troves[j][redeemed.troveId] = trove;
 
-                    assertEqDecimal(c.troveManager.getTroveEntireColl(trove.id), trove.newColl, 18, "Wrong coll");
-                    assertEqDecimal(c.troveManager.getTroveEntireDebt(trove.id), trove.newDebt, 18, "Wrong debt");
-
-                    if (trove.newDebt < MIN_DEBT) {
-                        assertEq(
-                            c.troveManager.getTroveStatus(trove.id).toString(), UNREDEEMABLE.toString(), "Wrong status"
-                        );
-                        assertFalse(
-                            c.sortedTroves.contains(trove.id), "Trove should have been removed from SortedTroves"
-                        );
+                    if (branches[j].troveManager.getTroveEntireDebt(redeemed.troveId) < MIN_DEBT) {
+                        _zombieTroveIds[j].add(redeemed.troveId);
                     }
                 }
 
                 // Effects (system)
-                _mintYield(j, 0);
+                _mintYield(j, pendingInterest[j], 0);
 
-                activeColl[j] += t[j].appliedCollRedist;
-                defaultColl[j] -= t[j].appliedCollRedist;
-
-                activeDebt[j] += t[j].appliedDebtRedist;
-                defaultDebt[j] -= t[j].appliedDebtRedist;
-
-                activeColl[j] -= t[j].collRedeemed;
-                activeDebt[j] -= t[j].debtRedeemed;
-
-                _interestAccrual.update(j, t[j].interestAccrualDelta);
-
-                if (troves.length > 0) {
-                    numZombies[j] += troves.length - 1; // all except last are guaranteed zombies
-                    if (troves[troves.length - 1].newDebt < MIN_DEBT) numZombies[j] += 1;
+                for (uint256 i = 0; i < r[j].batchManagers.size(); ++i) {
+                    _mintBatchManagementFee(j, r[j].batchManagers.get(i));
                 }
             }
         } catch Error(string memory reason) {
@@ -1052,10 +1102,14 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _sweepBold(msg.sender, amount);
         } else {
             // Cleanup (success)
-            _sweepBold(msg.sender, amount - redeemedBold);
+            _sweepBold(msg.sender, amount - totalDebtRedeemed);
 
-            for (uint256 i = 0; i < branches.length; ++i) {
-                _sweepColl(i, msg.sender, t[i].collRedeemed);
+            for (uint256 j = 0; j < branches.length; ++j) {
+                _sweepColl(j, msg.sender, r[j].totalCollRedeemed);
+
+                for (uint256 i = 0; i < r[j].batchManagers.size(); ++i) {
+                    _sweepBold(r[j].batchManagers.get(i), batchManagementFee[j][i]);
+                }
             }
         }
 
@@ -1065,6 +1119,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     function shutdown(uint256 i) external {
         i = _bound(i, 0, branches.length - 1);
         TestDeployer.LiquityContractsDev memory c = branches[i];
+        uint256 pendingInterest = c.activePool.calcPendingAggInterest();
+        uint256 tcr = _TCR(i);
 
         logCall("shutdown", i.toString());
 
@@ -1073,19 +1129,19 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         try c.borrowerOperations.shutdown() {
             // Preconditions
-            assertLtDecimal(_TCR(i), SCR[i], 18, "Should have failed as TCR >= SCR");
+            assertLtDecimal(tcr, SCR[i], 18, "Should have failed as TCR >= SCR");
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
 
             // Effects
             isShutdown[i] = true;
-            _mintYield(i, 0);
+            _mintYield(i, pendingInterest, 0);
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, errorString) = _decodeCustomError(revertData);
 
             // Justify failures
             if (selector == BorrowerOperations.TCRNotBelowSCR.selector) {
-                assertGeDecimal(_TCR(i), SCR[i], 18, "Shouldn't have failed as TCR < SCR");
+                assertGeDecimal(tcr, SCR[i], 18, "Shouldn't have failed as TCR < SCR");
             } else if (selector == BorrowerOperations.IsShutDown.selector) {
                 assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
             } else {
@@ -1109,12 +1165,12 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         amount = _bound(amount, 0, _handlerBold);
 
         TestDeployer.LiquityContractsDev memory c = branches[i];
-        RedemptionTotals memory t;
-        _planUrgentRedemption(i, amount, t);
-        assertLeDecimal(t.debtRedeemed, amount, 18, "Total redeemed exceeds input amount");
+        uint256 pendingInterest = c.activePool.calcPendingAggInterest();
+        UrgentRedemptionTransientState storage r = _planUrgentRedemption(i, amount);
+        assertLeDecimal(r.totalDebtRedeemed, amount, 18, "Total redeemed exceeds input amount");
 
-        info("redeemed BOLD: ", t.debtRedeemed.decimal());
-        info("batch: [", _labelsFrom(_urgentRedemptionBatch).join(", "), "]");
+        info("redeemed BOLD: ", r.totalDebtRedeemed.decimal());
+        info("batch: [", _labelsFrom(r.batch).join(", "), "]");
         logCall("urgentRedemption", i.toString(), amount.decimal());
 
         // TODO: randomly deal less than amount?
@@ -1123,30 +1179,22 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         string memory errorString;
         vm.prank(msg.sender);
 
-        try c.troveManager.urgentRedemption(amount, _troveIdsFrom(_urgentRedemptionBatch), t.collRedeemed) {
+        try c.troveManager.urgentRedemption(amount, _troveIdsFrom(r.batch), r.totalCollRedeemed) {
             // Preconditions
             assertTrue(isShutdown[i], "Should have failed as branch hadn't been shut down");
 
             // Effects (Troves)
-            for (uint256 j = 0; j < _urgentRedemptionPlan.length; ++j) {
-                RedeemedTrove memory trove = _urgentRedemptionPlan[j];
-                assertEqDecimal(c.troveManager.getTroveEntireColl(trove.id), trove.newColl, 18, "Wrong coll");
-                assertEqDecimal(c.troveManager.getTroveEntireDebt(trove.id), trove.newDebt, 18, "Wrong debt");
+            for (uint256 j = 0; j < r.redeemed.length; ++j) {
+                Redeemed storage redeemed = r.redeemed[j];
+                Trove memory trove = _troves[i][redeemed.troveId];
+                trove.applyPending();
+                trove.coll -= redeemed.coll;
+                trove.debt -= redeemed.debt;
+                _troves[i][redeemed.troveId] = trove;
             }
 
             // Effects (system)
-            _mintYield(i, 0);
-
-            activeColl[i] += t.appliedCollRedist;
-            defaultColl[i] -= t.appliedCollRedist;
-
-            activeDebt[i] += t.appliedDebtRedist;
-            defaultDebt[i] -= t.appliedDebtRedist;
-
-            activeColl[i] -= t.collRedeemed;
-            activeDebt[i] -= t.debtRedeemed;
-
-            _interestAccrual.update(i, t.interestAccrualDelta);
+            _mintYield(i, pendingInterest, 0);
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, errorString) = _decodeCustomError(revertData);
@@ -1167,8 +1215,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _sweepBold(msg.sender, amount);
         } else {
             // Cleanup (success)
-            _sweepBold(msg.sender, amount - t.debtRedeemed);
-            _sweepColl(i, msg.sender, t.collRedeemed);
+            _sweepBold(msg.sender, amount - r.totalDebtRedeemed);
+            _sweepColl(i, msg.sender, r.totalCollRedeemed);
         }
 
         _resetUrgentRedemption();
@@ -1179,6 +1227,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         amount = _bound(amount, 0, _handlerBold);
 
         TestDeployer.LiquityContractsDev memory c = branches[i];
+        uint256 pendingInterest = c.activePool.calcPendingAggInterest();
         uint256 initialBoldDeposit = c.stabilityPool.deposits(msg.sender);
         uint256 boldDeposit = c.stabilityPool.getCompoundedBoldDeposit(msg.sender);
         uint256 boldYield = c.stabilityPool.getDepositorYieldGainWithPending(msg.sender);
@@ -1218,7 +1267,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             assertEqDecimal(c.stabilityPool.stashedColl(msg.sender), ethStash, 18, "Wrong stashed coll");
 
             // Effects (system)
-            _mintYield(i, 0);
+            _mintYield(i, pendingInterest, 0);
 
             spColl[i] -= ethClaimed;
             spBoldDeposits[i] += amount;
@@ -1250,77 +1299,85 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     }
 
     function withdrawFromSP(uint256 i, uint256 amount, bool claim) external {
+        WithdrawFromSPContext memory v;
+
         i = _bound(i, 0, branches.length - 1);
 
-        TestDeployer.LiquityContractsDev memory c = branches[i];
-        uint256 initialBoldDeposit = c.stabilityPool.deposits(msg.sender);
-        uint256 boldDeposit = c.stabilityPool.getCompoundedBoldDeposit(msg.sender);
-        uint256 boldYield = c.stabilityPool.getDepositorYieldGainWithPending(msg.sender);
-        uint256 ethGain = c.stabilityPool.getDepositorCollGain(msg.sender);
-        uint256 ethStash = c.stabilityPool.stashedColl(msg.sender);
-        uint256 ethClaimed = claim ? ethStash + ethGain : 0;
-        uint256 boldClaimed = claim ? boldYield : 0;
+        v.c = branches[i];
+        v.pendingInterest = v.c.activePool.calcPendingAggInterest();
+        v.initialBoldDeposit = v.c.stabilityPool.deposits(msg.sender);
+        v.boldDeposit = v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender);
+        v.boldYield = v.c.stabilityPool.getDepositorYieldGainWithPending(msg.sender);
+        v.ethGain = v.c.stabilityPool.getDepositorCollGain(msg.sender);
+        v.ethStash = v.c.stabilityPool.stashedColl(msg.sender);
+        v.ethClaimed = claim ? v.ethStash + v.ethGain : 0;
+        v.boldClaimed = claim ? v.boldYield : 0;
 
-        amount = _bound(amount, 0, boldDeposit * 11 / 10); // sometimes try withdrawing too much
-        uint256 withdrawn = Math.min(amount, boldDeposit);
+        amount = _bound(amount, 0, v.boldDeposit * 11 / 10); // sometimes try withdrawing too much
+        v.withdrawn = Math.min(amount, v.boldDeposit);
 
-        info("initial deposit: ", initialBoldDeposit.decimal());
-        info("compounded deposit: ", boldDeposit.decimal());
-        info("yield gain: ", boldYield.decimal());
-        info("coll gain: ", ethGain.decimal());
-        info("stashed coll: ", ethStash.decimal());
+        info("initial deposit: ", v.initialBoldDeposit.decimal());
+        info("compounded deposit: ", v.boldDeposit.decimal());
+        info("yield gain: ", v.boldYield.decimal());
+        info("coll gain: ", v.ethGain.decimal());
+        info("stashed coll: ", v.ethStash.decimal());
         logCall("withdrawFromSP", i.toString(), amount.decimal(), claim.toString());
 
-        string memory errorString;
         vm.prank(msg.sender);
-
-        try c.stabilityPool.withdrawFromSP(amount, claim) {
+        try v.c.stabilityPool.withdrawFromSP(amount, claim) {
             // Preconditions
-            assertGtDecimal(initialBoldDeposit, 0, 18, "Should have failed as user had zero deposit");
+            assertGtDecimal(v.initialBoldDeposit, 0, 18, "Should have failed as user had zero deposit");
 
             // Effects (deposit)
-            ethStash += ethGain;
-            ethStash -= ethClaimed;
+            v.ethStash += v.ethGain;
+            v.ethStash -= v.ethClaimed;
 
-            boldDeposit += boldYield;
-            boldDeposit -= boldClaimed;
-            boldDeposit -= withdrawn;
+            v.boldDeposit += v.boldYield;
+            v.boldDeposit -= v.boldClaimed;
+            v.boldDeposit -= v.withdrawn;
 
-            assertEqDecimal(c.stabilityPool.getCompoundedBoldDeposit(msg.sender), boldDeposit, 18, "Wrong deposit");
-            assertEqDecimal(c.stabilityPool.getDepositorYieldGain(msg.sender), 0, 18, "Wrong yield gain");
-            assertEqDecimal(c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
-            assertEqDecimal(c.stabilityPool.stashedColl(msg.sender), ethStash, 18, "Wrong stashed coll");
+            assertEqDecimal(v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 18, "Wrong deposit");
+            assertEqDecimal(v.c.stabilityPool.getDepositorYieldGain(msg.sender), 0, 18, "Wrong yield gain");
+            assertEqDecimal(v.c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
+            assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");
 
             // Effects (system)
-            _mintYield(i, 0);
+            _mintYield(i, v.pendingInterest, 0);
 
-            spColl[i] -= ethClaimed;
-            spBoldDeposits[i] += boldYield;
-            spBoldDeposits[i] -= boldClaimed;
-            spBoldDeposits[i] -= withdrawn;
-            spBoldYield[i] -= boldYield;
+            spColl[i] -= v.ethClaimed;
+            spBoldDeposits[i] += v.boldYield;
+            spBoldDeposits[i] -= v.boldClaimed;
+            spBoldDeposits[i] -= v.withdrawn;
+            spBoldYield[i] -= v.boldYield;
         } catch Error(string memory reason) {
-            errorString = reason;
+            v.errorString = reason;
 
             // Justify failures
             if (reason.equals("StabilityPool: User must have a non-zero deposit")) {
                 assertEqDecimal(
-                    c.stabilityPool.deposits(msg.sender), 0, 18, "Shouldn't have failed as user had a non-zero deposit"
+                    v.c.stabilityPool.deposits(msg.sender),
+                    0,
+                    18,
+                    "Shouldn't have failed as user had a non-zero deposit"
                 );
             } else {
                 revert(reason);
             }
         }
 
-        if (bytes(errorString).length > 0) {
-            info("Expected error: ", errorString);
+        if (bytes(v.errorString).length > 0) {
+            info("Expected error: ", v.errorString);
             _log();
         } else {
             // Cleanup (success)
-            _sweepBold(msg.sender, boldClaimed + withdrawn);
-            _sweepColl(i, msg.sender, ethClaimed);
+            _sweepBold(msg.sender, v.boldClaimed + v.withdrawn);
+            _sweepColl(i, msg.sender, v.ethClaimed);
         }
     }
+
+    //////////////////////
+    // Batch management //
+    //////////////////////
 
     function registerBatchManager(
         uint256 i,
@@ -1338,6 +1395,16 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         TestDeployer.LiquityContractsDev memory c = branches[i];
         Batch storage batch = _batches[i][msg.sender];
 
+        logCall(
+            "registerBatchManager",
+            i.toString(),
+            minInterestRate.decimal(),
+            maxInterestRate.decimal(),
+            currentInterestRate.decimal(),
+            annualManagementFee.decimal(),
+            minInterestRateChangePeriod.toString()
+        );
+
         string memory errorString;
         vm.prank(msg.sender);
 
@@ -1345,7 +1412,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             minInterestRate, maxInterestRate, currentInterestRate, annualManagementFee, minInterestRateChangePeriod
         ) {
             // Preconditions
-            assertFalse(batch.isRegistered, "Should have failed as batch manager had already registered");
+            assertFalse(_batchManagers[i].has(msg.sender), "Should have failed as batch manager had already registered");
             assertGeDecimal(minInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Wrong: min declared < min allowed");
             assertGeDecimal(currentInterestRate, minInterestRate, 18, "Wrong: curr rate < min declared");
             assertGeDecimal(maxInterestRate, currentInterestRate, 18, "Wrong: curr rate > max declared");
@@ -1353,17 +1420,20 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             assertNotEqDecimal(minInterestRate, maxInterestRate, 18, "Should have failed as min == max");
 
             // Effects
-            batch.isRegistered = true;
+            _batchManagers[i].add(msg.sender);
             batch.interestRateMin = minInterestRate;
             batch.interestRateMax = maxInterestRate;
             batch.interestRate = currentInterestRate;
+            batch.managementRate = annualManagementFee;
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, errorString) = _decodeCustomError(revertData);
 
             // Justify failures
             if (selector == BorrowerOperations.BatchManagerExists.selector) {
-                assertTrue(batch.isRegistered, "Shouldn't have failed as batch manager hadn't registered yet");
+                assertTrue(
+                    _batchManagers[i].has(msg.sender), "Shouldn't have failed as batch manager hadn't registered yet"
+                );
             } else if (selector == BorrowerOperations.InterestRateTooLow.selector) {
                 assertTrue(
                     minInterestRate < MIN_ANNUAL_INTEREST_RATE || maxInterestRate < MIN_ANNUAL_INTEREST_RATE,
@@ -1392,6 +1462,87 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
     }
 
+    function setInterestBatchManager(uint256 i, uint32 newBatchManagerSeed, uint32 upperHintSeed, uint32 lowerHintSeed)
+        external
+    {
+        SetInterestBatchManagerContext memory v;
+
+        i = _bound(i, 0, branches.length - 1);
+        v.newBatchManager = _pickBatchManager(i, newBatchManagerSeed);
+        v.upperHint = _pickHint(i, upperHintSeed);
+        v.lowerHint = _pickHint(i, lowerHintSeed);
+
+        Batch storage batch = _batches[i][v.newBatchManager];
+        v.c = branches[i];
+        v.pendingInterest = v.c.activePool.calcPendingAggInterest();
+        v.troveId = _troveIdOf(msg.sender);
+        v.t = v.c.troveManager.getLatestTroveData(v.troveId);
+        v.trove = _troves[i][v.troveId];
+        v.wasOpen = _isOpen(i, v.troveId);
+        v.wasActive = v.c.troveManager.getTroveStatus(v.troveId) == ACTIVE;
+        v.premature = block.timestamp < v.t.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN;
+        v.upfrontFee = hintHelpers.predictAdjustInterestRateUpfrontFee(i, v.troveId, batch.interestRate);
+        if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
+
+        info("batch manager: ", vm.getLabel(v.newBatchManager));
+        info("upper hint: ", _hintToString(i, v.upperHint));
+        info("lower hint: ", _hintToString(i, v.lowerHint));
+        info("upfront fee: ", v.upfrontFee.decimal());
+
+        logCall(
+            "setInterestBatchManager",
+            i.toString(),
+            newBatchManagerSeed.toString(),
+            upperHintSeed.toString(),
+            lowerHintSeed.toString()
+        );
+
+        string memory errorString;
+        vm.prank(msg.sender);
+
+        try v.c.borrowerOperations.setInterestBatchManager(
+            v.troveId, v.newBatchManager, v.upperHint, v.lowerHint, v.upfrontFee
+        ) {
+            // Preconditions
+            assertTrue(v.wasActive, "Should have failed as Trove wasn't active");
+
+            // Effects (Trove)
+            v.trove.applyPending();
+            v.trove.debt += v.upfrontFee;
+            v.trove.interestRate = batch.interestRate;
+            v.trove.batchManagementRate = batch.managementRate;
+            _troves[i][v.troveId] = v.trove;
+            _batchManagerOf[i][v.troveId] = v.newBatchManager;
+            batch.troves.add(v.troveId);
+
+            // Effects (system)
+            _mintYield(i, v.pendingInterest, v.upfrontFee);
+            _mintBatchManagementFee(i, v.newBatchManager);
+        } catch Error(string memory reason) {
+            errorString = reason;
+
+            // Justify failures
+            if (reason.equals("ERC721: invalid token ID")) {
+                assertFalse(v.wasOpen, "Open Trove should have an NFT");
+            } else {
+                revert(reason);
+            }
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, errorString) = _decodeCustomError(revertData);
+
+            // Justify failures
+            if (false) {
+                revert(string.concat("Unexpected error: ", errorString));
+            }
+        }
+
+        if (bytes(errorString).length > 0) {
+            info("Expected error: ", errorString);
+            _log();
+        }
+    }
+
     ///////////////////////////////
     // Internal helper functions //
     ///////////////////////////////
@@ -1402,8 +1553,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         return _baseRate * decaySinceLastRedemption / DECIMAL_PRECISION;
     }
 
-    function _getBaseRateIncrease(uint256 redeemed) internal view returns (uint256) {
-        uint256 boldSupply = getBoldSupply();
+    function _getBaseRateIncrease(uint256 boldSupply, uint256 redeemed) internal pure returns (uint256) {
         return boldSupply > 0 ? redeemed * DECIMAL_PRECISION / boldSupply / REDEMPTION_BETA : 0;
     }
 
@@ -1411,12 +1561,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         return Math.min(REDEMPTION_FEE_FLOOR + baseRate, _100pct);
     }
 
-    function _getTotalColl(uint256 i) internal view returns (uint256) {
-        return activeColl[i] + defaultColl[i];
-    }
-
     function _getTotalDebt(uint256 i) internal view returns (uint256) {
-        return activeDebt[i] + defaultDebt[i] + getPendingInterest(i);
+        return branches[i].troveManager.getEntireSystemDebt();
     }
 
     function _getUnbacked(uint256 i) internal view returns (uint256) {
@@ -1430,8 +1576,20 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         return debt > 0 ? coll * _price[i] / debt : type(uint256).max;
     }
 
+    function _ICR(uint256 i, uint256 troveId) internal view returns (uint256) {
+        return _ICR(i, 0, 0, 0, troveId);
+    }
+
     function _ICR(uint256 i, LatestTroveData memory trove) internal view returns (uint256) {
         return _ICR(i, 0, 0, 0, trove);
+    }
+
+    function _ICR(uint256 i, int256 collDelta, int256 debtDelta, uint256 upfrontFee, uint256 troveId)
+        internal
+        view
+        returns (uint256)
+    {
+        return _ICR(i, collDelta, debtDelta, upfrontFee, branches[i].troveManager.getLatestTroveData(troveId));
     }
 
     function _ICR(uint256 i, int256 collDelta, int256 debtDelta, uint256 upfrontFee, LatestTroveData memory trove)
@@ -1440,7 +1598,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         returns (uint256)
     {
         uint256 coll = trove.entireColl.add(collDelta);
-        uint256 debt = (trove.entireDebt + upfrontFee).add(debtDelta);
+        uint256 debt = trove.entireDebt.add(debtDelta) + upfrontFee;
 
         return _CR(i, coll, debt);
     }
@@ -1450,10 +1608,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     }
 
     function _TCR(uint256 i, int256 collDelta, int256 debtDelta, uint256 upfrontFee) internal view returns (uint256) {
-        uint256 totalColl = _getTotalColl(i).add(collDelta);
-        uint256 totalDebt = (_getTotalDebt(i) + upfrontFee).add(debtDelta);
+        uint256 coll = branches[i].troveManager.getEntireSystemColl().add(collDelta);
+        uint256 debt = branches[i].troveManager.getEntireSystemDebt().add(debtDelta) + upfrontFee;
 
-        return _CR(i, totalColl, totalDebt);
+        return _CR(i, coll, debt);
     }
 
     // We open at most one Trove per actor per branch, for reasons of simplicity,
@@ -1478,39 +1636,57 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
     }
 
-    function _labelsFrom(mapping(uint256 => RedeemedTrove[]) storage redemptionPlan, uint256 i)
-        internal
-        view
-        returns (string[] memory ret)
-    {
-        RedeemedTrove[] storage redeemed = redemptionPlan[i];
+    function _labelsFrom(EnumerableAddressSet storage owners) internal view returns (string[] memory ret) {
+        ret = new string[](owners.size());
+
+        for (uint256 i = 0; i < owners.size(); ++i) {
+            ret[i] = vm.getLabel(owners.get(i));
+        }
+    }
+
+    function _labelsFrom(uint256 i, Redeemed[] storage redeemed) internal view returns (string[] memory ret) {
         ret = new string[](redeemed.length);
 
         for (uint256 j = 0; j < redeemed.length; ++j) {
-            ret[j] = vm.getLabel(branches[i].troveManager.ownerOf(redeemed[j].id));
+            ret[j] = vm.getLabel(branches[i].troveManager.ownerOf(redeemed[j].troveId));
         }
     }
 
     function _isOpen(uint256 i, uint256 troveId) internal view returns (bool) {
-        ITroveManager.Status status = branches[i].troveManager.getTroveStatus(troveId);
-        return status == ACTIVE || status == UNREDEEMABLE;
+        return _troveIds[i].has(troveId);
+    }
+
+    function _isUnredeemable(uint256 i, uint256 troveId) internal view returns (bool) {
+        return _zombieTroveIds[i].has(troveId);
+    }
+
+    function _isActive(uint256 i, uint256 troveId) internal view returns (bool) {
+        return _isOpen(i, troveId) && !_isUnredeemable(i, troveId);
     }
 
     function _pickHint(uint256 i, uint256 seed) internal view returns (uint256) {
-        ITroveManager troveManager = branches[i].troveManager;
-
         // We're going to pull:
         // - 50% of the time a valid ID, including 0 (end of list)
         // - 50% of the time a random (nonexistent) ID
-        uint256 rem = seed % (2 * (numTroves[i] + 1));
+        uint256 rem = seed % (2 * (_troveIds[i].size() + 1));
 
         if (rem == 0) {
             return 0;
-        } else if (rem <= numTroves[i]) {
-            return troveManager.getTroveFromTroveIdsArray(numTroves[i] - 1);
+        } else if (rem <= _troveIds[i].size()) {
+            return _troveIds[i].get(rem - 1);
         } else {
             // pick a pseudo-random number
             return uint256(keccak256(abi.encodePacked(seed)));
+        }
+    }
+
+    function _pickBatchManager(uint256 i, uint256 seed) internal view returns (address) {
+        uint256 rem = seed % (_batchManagers[i].size() + 1);
+
+        if (rem < _batchManagers[i].size()) {
+            return _batchManagers[i].get(rem);
+        } else {
+            return address(uint160(uint256(keccak256(abi.encodePacked(seed)))));
         }
     }
 
@@ -1541,19 +1717,21 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     //     info("]");
     // }
 
-    function _mintYield(uint256 i, uint256 upfrontFee) internal {
-        uint256 mintedInterest = getPendingInterest(i);
-        _pendingInterest[i] = 0;
-
-        uint256 mintedYield = mintedInterest + upfrontFee;
-        activeDebt[i] += mintedYield;
-
+    function _mintYield(uint256 i, uint256 pendingInterest, uint256 upfrontFee) internal {
+        uint256 mintedYield = pendingInterest + upfrontFee;
         uint256 mintedSPBoldYield = mintedYield * SP_YIELD_SPLIT / DECIMAL_PRECISION;
+
         if (spBoldDeposits[i] == 0) {
             spUnclaimableBoldYield[i] += mintedSPBoldYield;
         } else {
             spBoldYield[i] += mintedSPBoldYield;
         }
+
+        _pendingInterest[i] = 0;
+    }
+
+    function _mintBatchManagementFee(uint256 i, address batchManager) internal {
+        _batches[i][batchManager].pendingManagementFee = 0;
     }
 
     function _dealWETHAndApprove(address to, uint256 amount, address spender) internal {
@@ -1614,14 +1792,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     }
 
     function _addToLiquidationBatch(address owner) internal {
-        _liquidationBatch.push(owner);
+        _liquidation.batch.push(owner);
     }
 
-    function _aggregateLiquidation(uint256 i, LatestTroveData memory trove, LiquidationTotals memory t) internal view {
-        // Pending redist
-        t.appliedDebtRedist += trove.redistBoldDebtGain;
-        t.appliedCollRedist += trove.redistCollGain;
-
+    function _aggregateLiquidation(uint256 i, LatestTroveData memory trove, LiquidationTotals storage t) internal {
         // Coll gas comp
         uint256 collRemaining = trove.entireColl;
         uint256 collGasComp = Math.min(collRemaining / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
@@ -1649,45 +1823,41 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         // Surplus
         t.collSurplus += collRemaining;
-
-        // Interest accrual
-        t.interestAccrualDecrease += trove.recordedDebt * trove.annualInterestRate;
     }
 
-    function _planLiquidation(uint256 i, LiquidationTotals memory t) internal {
+    function _planLiquidation(uint256 i) internal returns (LiquidationTransientState storage l) {
         ITroveManager troveManager = branches[i].troveManager;
+        l = _liquidation;
 
-        for (uint256 j = 0; j < _liquidationBatch.length; ++j) {
-            uint256 troveId = _troveIdOf(_liquidationBatch[j]);
+        for (uint256 j = 0; j < l.batch.length; ++j) {
+            if (l.liquidated.has(l.batch[j])) continue; // skip duplicate entry
 
-            if (_liquidationHasSeen[troveId]) continue; // skip duplicate entry
-            _liquidationHasSeen[troveId] = true;
+            uint256 troveId = _troveIdOf(l.batch[j]);
+            address batchManager = _batchManagerOf[i][troveId];
 
             LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
-            if (trove.entireDebt == 0 || _ICR(i, trove) >= MCR[i]) continue;
+            if (_ICR(i, trove) >= MCR[i]) continue;
 
-            _liquidationPlan.push(_liquidationBatch[j]);
-            _aggregateLiquidation(i, trove, t);
+            l.liquidated.add(l.batch[j]);
+            if (batchManager != address(0)) l.batchManagers.add(batchManager);
+
+            _aggregateLiquidation(i, trove, l.t);
         }
     }
 
     function _resetLiquidation() internal {
-        for (uint256 i = 0; i < _liquidationBatch.length; ++i) {
-            delete _liquidationHasSeen[_troveIdOf(_liquidationBatch[i])];
-        }
-
-        delete _liquidationBatch;
-        delete _liquidationPlan;
+        _liquidation.liquidated.reset();
+        _liquidation.batchManagers.reset();
+        delete _liquidation;
     }
 
-    function _planRedemption(
-        uint256 amount,
-        uint256 maxIterationsPerCollateral,
-        uint256 feePct,
-        RedemptionTotals[] memory t
-    ) internal returns (uint256 totalRedeemed) {
+    function _planRedemption(uint256 amount, uint256 maxIterationsPerCollateral, uint256 feePct)
+        internal
+        returns (uint256 totalDebtRedeemed, mapping(uint256 => RedemptionTransientState) storage r)
+    {
         uint256 totalProportions = 0;
         uint256[] memory proportions = new uint256[](branches.length);
+        r = _redemption;
 
         // Try in proportion to unbacked
         for (uint256 j = 0; j < branches.length; ++j) {
@@ -1703,14 +1873,14 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             }
         }
 
-        if (totalProportions == 0) return 0;
+        if (totalProportions == 0) return (0, r);
 
         for (uint256 j = 0; j < branches.length; ++j) {
-            t[j].attemptedAmount = amount * proportions[j] / totalProportions;
-            if (t[j].attemptedAmount == 0) continue;
+            r[j].attemptedAmount = amount * proportions[j] / totalProportions;
+            if (r[j].attemptedAmount == 0) continue;
 
             TestDeployer.LiquityContractsDev memory c = branches[j];
-            uint256 remainingAmount = t[j].attemptedAmount;
+            uint256 remainingAmount = r[j].attemptedAmount;
             uint256 troveId = 0; // "root node" ID
 
             for (uint256 i = 0; i < maxIterationsPerCollateral || maxIterationsPerCollateral == 0; ++i) {
@@ -1727,25 +1897,13 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 uint256 fee = collRedeemedPlusFee * feePct / _100pct;
                 uint256 collRedeemed = collRedeemedPlusFee - fee;
 
-                RedeemedTrove storage redeemedTrove = _redemptionPlan[j].push() = RedeemedTrove({
-                    id: troveId,
-                    newColl: trove.entireColl - collRedeemed,
-                    newDebt: trove.entireDebt - debtRedeemed
-                });
+                r[j].redeemed.push(Redeemed({troveId: troveId, coll: collRedeemed, debt: debtRedeemed}));
 
-                // Pending redist
-                t[j].appliedDebtRedist += trove.redistBoldDebtGain;
-                t[j].appliedCollRedist += trove.redistCollGain;
+                address batchManager = _batchManagerOf[j][troveId];
+                if (batchManager != address(0)) r[j].batchManagers.add(batchManager);
 
-                // Total redeemed
-                t[j].collRedeemed += collRedeemed;
-                t[j].debtRedeemed += debtRedeemed;
-
-                // Interest accrual
-                t[j].interestAccrualDelta += int256(redeemedTrove.newDebt * trove.annualInterestRate);
-                t[j].interestAccrualDelta -= int256(trove.recordedDebt * trove.annualInterestRate);
-
-                totalRedeemed += debtRedeemed;
+                r[j].totalCollRedeemed += collRedeemed;
+                totalDebtRedeemed += debtRedeemed;
                 remainingAmount -= debtRedeemed;
             }
         }
@@ -1753,20 +1911,26 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     function _resetRedemption() internal {
         for (uint256 i = 0; i < branches.length; ++i) {
-            delete _redemptionPlan[i];
+            _redemption[i].batchManagers.reset();
+            delete _redemption[i];
         }
     }
 
     function _addToUrgentRedemptionBatch(address owner) internal {
-        _urgentRedemptionBatch.push(owner);
+        _urgentRedemption.batch.push(owner);
     }
 
-    function _planUrgentRedemption(uint256 i, uint256 amount, RedemptionTotals memory t) internal {
-        for (uint256 j = 0; j < _urgentRedemptionBatch.length; ++j) {
-            uint256 troveId = _troveIdOf(_urgentRedemptionBatch[j]);
+    function _planUrgentRedemption(uint256 i, uint256 amount)
+        internal
+        returns (UrgentRedemptionTransientState storage r)
+    {
+        r = _urgentRedemption;
 
-            if (_urgentRedemptionHasSeen[troveId]) continue; // skip duplicate entry
-            _urgentRedemptionHasSeen[troveId] = true;
+        for (uint256 j = 0; j < r.batch.length; ++j) {
+            uint256 troveId = _troveIdOf(r.batch[j]);
+
+            if (r.redeemedIds.has(troveId)) continue; // skip duplicate entry
+            r.redeemedIds.add(troveId);
 
             LatestTroveData memory trove = branches[i].troveManager.getLatestTroveData(troveId);
             uint256 debtRedeemed = Math.min(amount, trove.entireDebt);
@@ -1777,35 +1941,18 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 debtRedeemed = trove.entireColl * _price[i] / (DECIMAL_PRECISION + URGENT_REDEMPTION_BONUS);
             }
 
-            RedeemedTrove storage redeemedTrove = _urgentRedemptionPlan.push() = RedeemedTrove({
-                id: troveId,
-                newColl: trove.entireColl - collRedeemed,
-                newDebt: trove.entireDebt - debtRedeemed
-            });
+            r.redeemed.push(Redeemed({troveId: troveId, coll: collRedeemed, debt: debtRedeemed}));
 
-            // Pending redist
-            t.appliedDebtRedist += trove.redistBoldDebtGain;
-            t.appliedCollRedist += trove.redistCollGain;
-
-            // Total redeemed
-            t.collRedeemed += collRedeemed;
-            t.debtRedeemed += debtRedeemed;
-
-            // Interest accrual (although accrual has stopped, it doesn't hurt to keep track of this)
-            t.interestAccrualDelta += int256(redeemedTrove.newDebt * trove.annualInterestRate);
-            t.interestAccrualDelta -= int256(trove.recordedDebt * trove.annualInterestRate);
+            r.totalCollRedeemed += collRedeemed;
+            r.totalDebtRedeemed += debtRedeemed;
 
             amount -= debtRedeemed;
         }
     }
 
     function _resetUrgentRedemption() internal {
-        for (uint256 i = 0; i < _urgentRedemptionBatch.length; ++i) {
-            delete _urgentRedemptionHasSeen[_troveIdOf(_urgentRedemptionBatch[i])];
-        }
-
-        delete _urgentRedemptionBatch;
-        delete _urgentRedemptionPlan;
+        _urgentRedemption.redeemedIds.reset();
+        delete _urgentRedemption;
     }
 
     function _getAdjustmentFunctionName(

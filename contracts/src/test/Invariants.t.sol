@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import {console2 as console} from "forge-std/console2.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {BatchId} from "../Types/BatchId.sol";
+import {LatestBatchData} from "../Types/LatestBatchData.sol";
+import {LatestTroveData} from "../Types/LatestTroveData.sol";
 import {ISortedTroves} from "../Interfaces/ISortedTroves.sol";
 import {IStabilityPool} from "../Interfaces/IStabilityPool.sol";
 import {ITroveManager} from "../Interfaces/ITroveManager.sol";
 import {BatchIdSet} from "./Utils/BatchIdSet.sol";
+import {Logging} from "./Utils/Logging.sol";
 import {StringFormatting} from "./Utils/StringFormatting.sol";
 import {ITroveManagerTester} from "./TestContracts/Interfaces/ITroveManagerTester.sol";
 import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
@@ -30,10 +32,27 @@ library SortedTrovesHelpers {
     }
 }
 
-contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
+library ToStringFunctions {
+    function toString(ITroveManager.Status status) internal pure returns (string memory) {
+        if (status == ITroveManager.Status.nonExistent) return "ITroveManager.Status.nonExistent";
+        if (status == ITroveManager.Status.active) return "ITroveManager.Status.active";
+        if (status == ITroveManager.Status.closedByOwner) return "ITroveManager.Status.closedByOwner";
+        if (status == ITroveManager.Status.closedByLiquidation) return "ITroveManager.Status.closedByLiquidation";
+        if (status == ITroveManager.Status.unredeemable) return "ITroveManager.Status.unredeemable";
+        revert("Invalid status");
+    }
+}
+
+function getBatchManager(ITroveManager troveManager, uint256 troveId) view returns (address batchManager) {
+    (,,,,,,,, batchManager,) = troveManager.Troves(troveId);
+}
+
+contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
     using Strings for uint256;
     using StringFormatting for uint256;
     using SortedTrovesHelpers for ISortedTroves;
+    using ToStringFunctions for *;
+    using {getBatchManager} for ITroveManagerTester;
 
     InvariantsTestHandler handler;
     BatchIdSet seenBatches;
@@ -78,63 +97,112 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
         }
     }
 
-    function invariant_SystemVariablesMatchGhostVariables() external view {
+    function invariant_SystemStateMatchesGhostState() external view {
         for (uint256 i = 0; i < branches.length; ++i) {
             TestDeployer.LiquityContractsDev memory c = branches[i];
 
             assertEq(c.troveManager.getTroveIdsCount(), handler.numTroves(i), "Wrong number of Troves");
             assertEq(c.sortedTroves.getSize(), handler.numTroves(i) - handler.numZombies(i), "Wrong SortedTroves size");
-            assertEqDecimal(c.activePool.getCollBalance(), handler.activeColl(i), 18, "Wrong ActivePool coll");
-            assertEqDecimal(
-                c.activePool.getBoldDebt(),
-                handler.activeDebt(i) + handler.getPendingInterest(i),
-                18,
-                "Wrong ActivePool debt"
+            assertApproxEqAbsDecimal(
+                c.activePool.calcPendingAggInterest(), handler.getPendingInterest(i), 1e-10 ether, 18, "Wrong interest"
             );
-            assertEqDecimal(c.defaultPool.getCollBalance(), handler.defaultColl(i), 18, "Wrong DefaultPool coll");
-            assertEqDecimal(c.defaultPool.getBoldDebt(), handler.defaultDebt(i), 18, "Wrong DefaultPool debt");
-            assertEqDecimal(weth.balanceOf(address(c.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool balance");
+            assertEqDecimal(weth.balanceOf(address(c.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool");
+            assertEqDecimal(c.collSurplusPool.getCollBalance(), handler.collSurplus(i), 18, "Wrong CollSurplusPool");
             assertEqDecimal(
-                c.collSurplusPool.getCollBalance(), handler.collSurplus(i), 18, "Wrong CollSurplusPool balance"
+                c.stabilityPool.getTotalBoldDeposits(), handler.spBoldDeposits(i), 18, "Wrong StabilityPool deposits"
             );
             assertEqDecimal(
-                c.stabilityPool.getTotalBoldDeposits(),
-                handler.spBoldDeposits(i),
-                18,
-                "Wrong StabilityPool total BOLD deposits"
+                c.stabilityPool.getYieldGainsOwed(), handler.spBoldYield(i), 18, "Wrong StabilityPool yield"
             );
-            assertEqDecimal(
-                c.stabilityPool.getYieldGainsOwed(), handler.spBoldYield(i), 18, "Wrong StabilityPool yield gains owed"
-            );
-            assertEqDecimal(c.stabilityPool.getCollBalance(), handler.spColl(i), 18, "Wrong StabilityPool Coll balance");
+            assertEqDecimal(c.stabilityPool.getCollBalance(), handler.spColl(i), 18, "Wrong StabilityPool coll");
+
+            for (uint256 j = 0; j < handler.numTroves(i); ++j) {
+                (uint256 troveId, uint256 coll, uint256 debt, ITroveManager.Status status, address batchManager) =
+                    handler.getTrove(i, j);
+
+                LatestTroveData memory t = c.troveManager.getLatestTroveData(troveId);
+                assertApproxEqAbsDecimal(t.entireColl, coll, 1e-10 ether, 18, "Wrong Trove coll");
+                assertApproxEqAbsDecimal(t.entireDebt, debt, 1e-10 ether, 18, "Wrong Trove debt");
+                assertEq(c.troveManager.getTroveStatus(troveId).toString(), status.toString(), "Wrong Trove status");
+                assertEq(c.troveManager.getBatchManager(troveId), batchManager, "Wrong batch manager (TM)");
+                assertEq(c.borrowerOperations.interestBatchManagerOf(troveId), batchManager, "Wrong batch manager (BO)");
+            }
+
+            for (uint256 j = 0; j < actors.length; ++j) {
+                LatestBatchData memory b = c.troveManager.getLatestBatchData(actors[j].account);
+
+                assertEqDecimal(
+                    b.accruedManagementFee,
+                    handler.getPendingBatchManagementFee(i, actors[j].account),
+                    18,
+                    "Wrong batch management fee"
+                );
+            }
         }
 
-        assertEqDecimal(boldToken.totalSupply(), handler.getBoldSupply(), 18, "Wrong BOLD supply");
         assertEqDecimal(
             collateralRegistry.getRedemptionRateWithDecay(), handler.getRedemptionRate(), 18, "Wrong redemption rate"
         );
     }
 
+    function invariant_OnlyActiveTrovesInSortedTroves() external view {
+        for (uint256 j = 0; j < branches.length; ++j) {
+            TestDeployer.LiquityContractsDev memory c = branches[j];
+            uint256 numTroves = c.troveManager.getTroveIdsCount();
+
+            for (uint256 i = 0; i < numTroves; ++i) {
+                uint256 troveId = c.troveManager.getTroveFromTroveIdsArray(i);
+                ITroveManager.Status status = c.troveManager.getTroveStatus(troveId);
+
+                assertTrue(
+                    status == ITroveManager.Status.active || status == ITroveManager.Status.unredeemable,
+                    "Unexpected status"
+                );
+
+                if (status == ITroveManager.Status.active) {
+                    assertTrue(c.sortedTroves.contains(troveId), "SortedTroves should contain active Troves");
+                } else {
+                    assertFalse(c.sortedTroves.contains(troveId), "SortedTroves shouldn't contain unredeemable Troves");
+                }
+            }
+        }
+    }
+
     function invariant_AllBoldBackedByTroveDebt() external view {
         uint256 totalBold = boldToken.totalSupply();
         uint256 totalPendingInterest = 0;
+        uint256 totalPendingBatchManagementFees = 0;
         uint256 totalDebt = 0;
 
         for (uint256 j = 0; j < branches.length; ++j) {
             TestDeployer.LiquityContractsDev memory c = branches[j];
             uint256 numTroves = c.troveManager.getTroveIdsCount();
+            // info("Troves (branch #", j.toString(), "): [");
 
             totalPendingInterest += c.activePool.calcPendingAggInterest();
+            totalPendingBatchManagementFees += c.activePool.aggBatchManagementFees();
+            totalPendingBatchManagementFees += c.activePool.calcPendingAggBatchManagementFee();
 
             for (uint256 i = 0; i < numTroves; ++i) {
-                totalDebt += c.troveManager.getTroveEntireDebt(c.troveManager.getTroveFromTroveIdsArray(i));
+                uint256 troveId = c.troveManager.getTroveFromTroveIdsArray(i);
+                uint256 debt = c.troveManager.getTroveEntireDebt(troveId);
+                // info("  Trove({owner: ", vm.getLabel(c.troveNFT.ownerOf(troveId)), ", debt: ", debt.decimal(), "}),");
+
+                totalDebt += debt;
             }
+
+            // info("]");
+            // _log();
         }
 
         // TODO: precisely track upper bound of error by counting int divisions in interest accrual.
         // (Redistributions have a feedback loop that prevents errors from accumulating there).
         assertApproxEqAbsDecimal(
-            totalBold + totalPendingInterest, totalDebt, 1e-10 ether, 18, "Total Bold !~= total debt"
+            totalBold + totalPendingInterest + totalPendingBatchManagementFees,
+            totalDebt,
+            1e-10 ether,
+            18,
+            "Total Bold !~= total debt"
         );
     }
 
@@ -149,13 +217,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
                 trovesColl += troveManager.getTroveEntireColl(troveManager.getTroveFromTroveIdsArray(i));
             }
 
-            assertApproxEqAbsDecimal(
-                systemColl,
-                trovesColl,
-                1e-10 ether,
-                18,
-                string.concat("Branch #", j.toString(), ": System coll !~= Troves coll")
-            );
+            assertApproxEqAbsDecimal(systemColl, trovesColl, 1e-10 ether, 18, "System coll !~= Troves coll");
         }
     }
 
@@ -176,15 +238,11 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
                 sumBoldDeposit,
                 1e-3 ether,
                 18,
-                string.concat("Branch #", j.toString(), ": totalBoldDeposits !~= sum(boldDeposit)")
+                "totalBoldDeposits !~= sum(boldDeposit)"
             );
 
             assertApproxEqAbsDecimal(
-                stabilityPool.getYieldGainsOwed(),
-                sumYieldGain,
-                1e-3 ether,
-                18,
-                string.concat("Branch #", j.toString(), ": yieldGainsOwed !~= sum(yieldGain)")
+                stabilityPool.getYieldGainsOwed(), sumYieldGain, 1e-3 ether, 18, "yieldGainsOwed !~= sum(yieldGain)"
             );
 
             // This only holds as long as no one sends BOLD directly to the SP's address other than ActivePool
@@ -193,7 +251,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
                 sumBoldDeposit + sumYieldGain + handler.spUnclaimableBoldYield(j),
                 1e-3 ether,
                 18,
-                string.concat("Branch #", j.toString(), ": SP BOLD balance !~= claimable + unclaimable BOLD")
+                "SP BOLD balance !~= claimable + unclaimable BOLD"
             );
         }
     }
@@ -209,13 +267,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
                 claimableEth += stabilityPool.stashedColl(actors[i].account);
             }
 
-            assertApproxEqAbsDecimal(
-                stabilityPoolEth,
-                claimableEth,
-                1e-5 ether,
-                18,
-                string.concat("Branch #", j.toString(), ": SP Coll !~= claimable Coll")
-            );
+            assertApproxEqAbsDecimal(stabilityPoolEth, claimableEth, 1e-5 ether, 18, "SP Coll !~= claimable Coll");
         }
     }
 
@@ -230,17 +282,8 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
             uint256 curr = sortedTroves.getFirst();
 
             if (curr == 0) {
-                assertEq(
-                    size,
-                    0,
-                    string.concat("Branch #", j.toString(), ": SortedTroves forward node count doesn't match size")
-                );
-
-                assertEq(
-                    sortedTroves.getLast(),
-                    0,
-                    string.concat("Branch #", j.toString(), ": SortedTroves reverse node count doesn't match size")
-                );
+                assertEq(size, 0, "SortedTroves forward node count doesn't match size");
+                assertEq(sortedTroves.getLast(), 0, "SortedTroves reverse node count doesn't match size");
 
                 // empty list is ordered by definition
                 continue;
@@ -252,45 +295,26 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
 
             while (curr != 0) {
                 uint256 currAnnualInterestRate = troveManager.getTroveAnnualInterestRate(curr);
-
-                assertLeDecimal(
-                    currAnnualInterestRate,
-                    prevAnnualInterestRate,
-                    18,
-                    string.concat("Branch #", j.toString(), ": SortedTroves ordering is broken")
-                );
+                assertLeDecimal(currAnnualInterestRate, prevAnnualInterestRate, 18, "SortedTroves ordering is broken");
 
                 troveIds[i++] = curr;
                 prevAnnualInterestRate = currAnnualInterestRate;
                 curr = sortedTroves.getNext(curr);
             }
 
-            assertEq(
-                i, size, string.concat("Branch #", j.toString(), ": SortedTroves forward node count doesn't match size")
-            );
+            assertEq(i, size, "SortedTroves forward node count doesn't match size");
 
             // Verify reverse ordering
             curr = sortedTroves.getLast();
 
             while (i > 0) {
-                assertNotEq(
-                    curr,
-                    0,
-                    string.concat("Branch #", j.toString(), ": SortedTroves reverse node count doesn't match size")
-                );
-
-                assertEq(
-                    curr,
-                    troveIds[--i],
-                    string.concat("Branch #", j.toString(), ": SortedTroves reverse ordering is broken")
-                );
+                assertNotEq(curr, 0, "SortedTroves reverse node count doesn't match size");
+                assertEq(curr, troveIds[--i], "SortedTroves reverse ordering is broken");
 
                 curr = sortedTroves.getPrev(curr);
             }
 
-            assertEq(
-                curr, 0, string.concat("Branch #", j.toString(), ": SortedTroves reverse node count doesn't match size")
-            );
+            assertEq(curr, 0, "SortedTroves reverse node count doesn't match size");
         }
     }
 
@@ -306,11 +330,7 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
             BatchId prevBatch = sortedTroves.getBatchOf(prev);
 
             if (prevBatch.isNotZero()) {
-                assertEq(
-                    prev,
-                    sortedTroves.getBatchHead(prevBatch),
-                    string.concat("Branch #", j.toString(), ": Wrong batch head")
-                );
+                assertEq(prev, sortedTroves.getBatchHead(prevBatch), "Wrong batch head");
             }
 
             uint256 curr = sortedTroves.getNext(prev);
@@ -319,25 +339,14 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
             while (curr != 0) {
                 if (currBatch.notEquals(prevBatch)) {
                     if (prevBatch.isNotZero()) {
-                        assertFalse(
-                            seenBatches.has(prevBatch), string.concat("Branch #", j.toString(), ": Batch already seen")
-                        );
+                        assertFalse(seenBatches.has(prevBatch), "Batch already seen");
+                        assertEq(prev, sortedTroves.getBatchTail(prevBatch), "Wrong batch tail");
 
                         seenBatches.add(prevBatch);
-
-                        assertEq(
-                            prev,
-                            sortedTroves.getBatchTail(prevBatch),
-                            string.concat("Branch #", j.toString(), ": Wrong batch tail")
-                        );
                     }
 
                     if (currBatch.isNotZero()) {
-                        assertEq(
-                            curr,
-                            sortedTroves.getBatchHead(currBatch),
-                            string.concat("Branch #", j.toString(), ": Wrong batch head")
-                        );
+                        assertEq(curr, sortedTroves.getBatchHead(currBatch), "Wrong batch head");
                     }
                 }
 
@@ -349,12 +358,8 @@ contract InvariantsTest is BaseInvariantTest, BaseMultiCollateralTest {
             }
 
             if (prevBatch.isNotZero()) {
-                assertFalse(seenBatches.has(prevBatch), string.concat("Branch #", j.toString(), ": Batch already seen"));
-                assertEq(
-                    prev,
-                    sortedTroves.getBatchTail(prevBatch),
-                    string.concat("Branch #", j.toString(), ": Wrong batch tail")
-                );
+                assertFalse(seenBatches.has(prevBatch), "Batch already seen");
+                assertEq(prev, sortedTroves.getBatchTail(prevBatch), "Wrong batch tail");
             }
 
             seenBatches.clear();

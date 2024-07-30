@@ -19,8 +19,10 @@ interface IActivePool {
     function lastAggUpdateTime() external view returns (uint256);
     function aggRecordedDebt() external view returns (uint256);
     function aggWeightedDebtSum() external view returns (uint256);
+    function aggBatchManagementFees() external view returns (uint256);
     function calcPendingAggInterest() external view returns (uint256);
     function calcPendingSPYield() external view returns (uint256);
+    function calcPendingAggBatchManagementFee() external view returns (uint256);
     function getNewApproxAvgInterestRateFromTroveChange(TroveChange calldata _troveChange)
         external
         view
