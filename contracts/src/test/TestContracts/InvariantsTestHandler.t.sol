@@ -589,6 +589,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             _interestAccrual[i] += v.newDebt * v.t.annualInterestRate;
             _interestAccrual[i] -= v.t.recordedDebt * v.t.annualInterestRate;
+
+            if (v.wasUnredeemable) numZombies[i] -= 1;
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, v.errorString) = _decodeCustomError(revertData);
