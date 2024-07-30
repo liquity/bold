@@ -28,14 +28,13 @@ function parseInputFloat(value: string) {
 export function InputFieldFixture({
   fixture,
 }: {
-  fixture: "deposit" | "borrow" | "interest" | "strategy" | "slider";
+  fixture: "deposit" | "borrow" | "strategy" | "slider";
 }) {
   const [label] = useFixtureInput(
     "label",
     match(fixture)
       .with("deposit", () => "You deposit")
       .with("borrow", () => "You borrow")
-      .with("interest", () => "Interest rate")
       .with("strategy", () => undefined)
       .with("slider", () => "ETH Liquidation price")
       .exhaustive(),
@@ -43,11 +42,8 @@ export function InputFieldFixture({
 
   const [value, setValue] = useFixtureInput("value", "");
   const [focused, setFocused] = useState(false);
-
   const parsedValue = parseInputFloat(value);
-
   const [token, setToken] = useState(0);
-
   const [leverage, setLeverage] = useState(0); // from 0 (1x) to 5.3 (6.3x)
 
   const labelEnd = match(fixture)
@@ -83,7 +79,6 @@ export function InputFieldFixture({
       />
     ))
     .with("borrow", () => <Token name="BOLD" />)
-    .with("interest", () => <Action label="% per year" />)
     .with("slider", () => (
       <div
         style={{
@@ -94,7 +89,7 @@ export function InputFieldFixture({
         }}
       >
         <Slider
-          gradientMode={true}
+          gradient={[1 / 3, 2 / 3]}
           onChange={(value) => {
             setLeverage(Math.round(value * 5.3 * 10) / 10);
           }}
@@ -107,7 +102,6 @@ export function InputFieldFixture({
   const secondaryStart = match(fixture)
     .with("deposit", () => `${parsedValue ? dn.format(dn.mul(parsedValue, ETH_PRICE_USD), 2) : "−"}  USD`)
     .with("borrow", () => `${parsedValue ? dn.format(parsedValue, 2) : "−"}  USD`)
-    .with("interest", () => `0 BOLD / year`)
     .with("slider", () => "Total debt 0 BOLD")
     .otherwise(() => undefined);
 
@@ -135,30 +129,6 @@ export function InputFieldFixture({
         <TextButton
           label="24,405.69 BOLD"
           onClick={() => setValue("24405.69")}
-        />
-      </div>
-    ))
-    .with("interest", () => (
-      <div
-        style={{
-          display: "flex",
-          gap: 6,
-        }}
-      >
-        <PillButton
-          label="6.5%"
-          onClick={() => setValue("6.5")}
-          warnLevel="low"
-        />
-        <PillButton
-          label="5.0%"
-          onClick={() => setValue("5.0")}
-          warnLevel="medium"
-        />
-        <PillButton
-          label="3.5%"
-          onClick={() => setValue("3.5")}
-          warnLevel="high"
         />
       </div>
     ))
@@ -195,9 +165,6 @@ export function InputFieldFixture({
     .with("borrow", () => (
       (focused || !parsedValue) ? value : `${dn.format(parsedValue)} BOLD`
     ))
-    .with("interest", () => (
-      (focused || !parsedValue) ? value : `${dn.format(parsedValue)}%`
-    ))
     .with("slider", () => (
       (focused || !parsedValue) ? value : `$${dn.format(parsedValue)}`
     ))
@@ -206,7 +173,6 @@ export function InputFieldFixture({
   const placeholder = match(fixture)
     .with("deposit", () => "0.00")
     .with("borrow", () => "0.00")
-    .with("interest", () => "0.00")
     .with("slider", () => "$0.00")
     .otherwise(() => undefined);
 

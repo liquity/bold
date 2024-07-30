@@ -1,32 +1,40 @@
-import type { CSSProperties } from "react";
+import type { SpringValue } from "@react-spring/web";
+import type { ComponentProps, CSSProperties } from "react";
 import type { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from "react";
 import type { Direction } from "../types";
 
-import { a, useSpring } from "@react-spring/web";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { a, useSpring, useSprings } from "@react-spring/web";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { css } from "../../styled-system/css";
 
+const PADDING = 4;
 const BAR_HEIGHT = 4;
 const HANDLE_OUTLINE = 2;
-const HANDLE_SIZE = 26 + HANDLE_OUTLINE * 2;
-const PADDING = 5;
+const HANDLE_SIZE = 26; // with the outline
 const MIN_WIDTH = HANDLE_SIZE * 10;
-const HEIGHT = Math.max(HANDLE_SIZE, BAR_HEIGHT) + PADDING * 2;
+const CHART_MAX_HEIGHT = 17;
+const HEIGHT = Math.max(HANDLE_SIZE, BAR_HEIGHT, CHART_MAX_HEIGHT * 2) + PADDING * 2;
 const GRADIENT_TRANSITION_BLUR = 10;
 
 export function Slider({
   disabled,
-  gradientMode,
-  keyboardStep = (value, dir) => Math.round((value + 0.1 * dir) * 10) / 10,
+  gradient,
+  chart,
+  keyboardStep,
   onChange,
   value,
 }: {
   disabled?: boolean;
-  gradientMode?: boolean | [number, number];
+  gradient?: [number, number];
+  chart?: number[];
   keyboardStep?: (value: number, direction: Direction) => number;
   onChange: (value: number) => void;
   value: number;
 }) {
+  keyboardStep ??= chart
+    ? (value, dir) => (value * chart.length + dir) * 1 / chart.length
+    : (value, dir) => Math.round((value + 0.1 * dir) * 10) / 10;
+
   value = Math.max(0, Math.min(1, value));
 
   const [pressed, setPressed] = useState(false);
@@ -175,35 +183,52 @@ export function Slider({
           cursor: disabled ? "default" : "pointer",
         }}
       >
-        <div
-          className={css({
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: "50%",
-            transform: "translateY(-50%)",
-          })}
-          style={{
-            height: BAR_HEIGHT,
-          }}
-        >
-          <div
-            className={css({
-              position: "absolute",
-              inset: 0,
-              overflow: "hidden",
-            })}
-            style={{
-              borderRadius: BAR_HEIGHT / 2,
-            }}
-          >
+        {chart
+          ? (
             <div
               className={css({
                 position: "absolute",
-                inset: 0,
-                "--bgNormal": "token(colors.controlSurfaceAlt)",
-                "--bgDisabled": "token(colors.disabledBorder)",
-                "--gradient": `linear-gradient(
+                inset: "0 0 50%",
+              })}
+            >
+              <ChartSvg
+                chart={chart}
+                activeBarTransform={moveSpring.activeBarTransform}
+                gradient={gradient}
+                value={value}
+              />
+            </div>
+          )
+          : (
+            <div
+              className={css({
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: "50%",
+                transform: "translateY(-50%)",
+              })}
+              style={{
+                height: BAR_HEIGHT,
+              }}
+            >
+              <div
+                className={css({
+                  position: "absolute",
+                  inset: 0,
+                  overflow: "hidden",
+                })}
+                style={{
+                  borderRadius: BAR_HEIGHT / 2,
+                }}
+              >
+                <div
+                  className={css({
+                    position: "absolute",
+                    inset: 0,
+                    "--bgNormal": "token(colors.controlSurfaceAlt)",
+                    "--bgDisabled": "token(colors.disabledBorder)",
+                    "--gradient": `linear-gradient(
                   90deg,
                   token(colors.positive) 0%,
                   token(colors.positive) calc(var(--gradientStep2) - var(--gradientTransitionBlur) / 2),
@@ -212,38 +237,39 @@ export function Slider({
                   token(colors.negative) calc(var(--gradientStep3) + var(--gradientTransitionBlur) / 2),
                   token(colors.negative) 100%
                 )`,
-              })}
-              style={{
-                background: `var(${
-                  disabled
-                    ? "--bgDisabled"
-                    : gradientMode !== undefined
-                    ? "--gradient"
-                    : "--bgNormal"
-                })`,
-                "--gradientTransitionBlur": `${GRADIENT_TRANSITION_BLUR}%`,
-                ...(Array.isArray(gradientMode) && {
-                  "--gradientStep2": `${(gradientMode[0] ?? 0.5) * 100}%`,
-                  "--gradientStep3": `${(gradientMode[1] ?? 0.5) * 100}%`,
-                }),
-              } as CSSProperties}
-            />
-            <a.div
-              className={css({
-                position: "absolute",
-                inset: 0,
-                transformOrigin: "0 0",
-                "--bgNormal": "token(colors.accent)",
-                "--bgPressed": "token(colors.accentActive)",
-              })}
-              style={{
-                display: gradientMode || disabled ? "none" : "block",
-                transform: moveSpring.activeBarTransform,
-                background: `var(${disabled ? "--bgPressed" : "--bgNormal"})`,
-              }}
-            />
-          </div>
-        </div>
+                  })}
+                  style={{
+                    background: `var(${
+                      disabled
+                        ? "--bgDisabled"
+                        : gradient !== undefined
+                        ? "--gradient"
+                        : "--bgNormal"
+                    })`,
+                    "--gradientTransitionBlur": `${GRADIENT_TRANSITION_BLUR}%`,
+                    ...(Array.isArray(gradient) && {
+                      "--gradientStep2": `${(gradient[0] ?? 0.5) * 100}%`,
+                      "--gradientStep3": `${(gradient[1] ?? 0.5) * 100}%`,
+                    }),
+                  } as CSSProperties}
+                />
+                <a.div
+                  className={css({
+                    position: "absolute",
+                    inset: 0,
+                    transformOrigin: "0 0",
+                    "--bgNormal": "token(colors.accent)",
+                    "--bgPressed": "token(colors.accentActive)",
+                  })}
+                  style={{
+                    display: gradient || disabled ? "none" : "block",
+                    transform: moveSpring.activeBarTransform,
+                    background: `var(${disabled ? "--bgPressed" : "--bgNormal"})`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
 
         <div
           className={css({
@@ -271,8 +297,9 @@ export function Slider({
               className={css({
                 position: "absolute",
                 top: "50%",
+                left: 0,
                 transform: "translateY(-50%)",
-                borderWidth: 2,
+                borderWidth: HANDLE_OUTLINE,
                 borderStyle: "solid",
                 borderRadius: "50%",
                 pointerEvents: "auto",
@@ -282,9 +309,8 @@ export function Slider({
                 "--backgroundColorDisabled": "token(colors.disabledSurface)",
               })}
               style={{
-                left: HANDLE_OUTLINE,
-                width: HANDLE_SIZE - HANDLE_OUTLINE * 2,
-                height: HANDLE_SIZE - HANDLE_OUTLINE * 2,
+                width: HANDLE_SIZE,
+                height: HANDLE_SIZE,
                 translate: pressed ? "0 1px" : "0 0",
                 background: `var(${disabled ? "--backgroundColorDisabled" : "--backgroundColor"})`,
                 borderColor: `var(${disabled ? "--borderColorDisabled" : "--borderColor"})`,
@@ -294,6 +320,224 @@ export function Slider({
         </div>
       </div>
     </div>
+  );
+}
+
+function Chart({
+  chart,
+  activeBarTransform,
+  value,
+}: {
+  chart: NonNullable<ComponentProps<typeof Slider>["chart"]>;
+  activeBarTransform: SpringValue<string>;
+  value: number;
+}) {
+  const chartSprings = useSprings(
+    chart.length,
+    chart.map((_, index) => {
+      const show = index / chart.length <= value;
+      return {
+        config: { mass: 2, tension: 1000, friction: 100 },
+        to: {
+          transform: show ? `scaleY(1)` : `scaleY(0)`,
+        },
+        immediate: !show,
+      };
+    }),
+  );
+  return (
+    <div
+      className={css({
+        position: "absolute",
+        inset: 0,
+      })}
+    >
+      <a.div
+        className={css({
+          position: "absolute",
+          inset: "50% 0 auto",
+          translateY: "-50%",
+          overflow: "hidden",
+          height: 1,
+          backgroundColor: "token(colors.controlBorderStrong)",
+          transformOrigin: "0 0",
+        })}
+        style={{
+          transform: activeBarTransform,
+        }}
+      />
+      <div
+        className={css({
+          position: "absolute",
+          inset: 0,
+        })}
+      >
+        {chartSprings.map((styles, index) => {
+          const barValue = chart[index];
+          const barWidth = 1 / chart.length;
+          return (
+            <div
+              key={index}
+              className={css({
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: "50%",
+                height: CHART_MAX_HEIGHT,
+                backgroundColor: "#DDE0E8",
+                transformOrigin: "0 100%",
+              })}
+              style={{
+                transform: `
+                  translateX(${index * barWidth * 100}%)
+                  scale(${barWidth}, ${barValue})
+                `,
+              }}
+            >
+              <a.div
+                className={css({
+                  position: "absolute",
+                  inset: 0,
+                  backgroundColor: "#F2C720",
+                  transformOrigin: "0 100%",
+                })}
+                style={{
+                  transform: styles.transform,
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ChartSvg({
+  activeBarTransform,
+  chart,
+  gradient,
+  value,
+}: {
+  activeBarTransform: SpringValue<string>;
+  chart: NonNullable<ComponentProps<typeof Slider>["chart"]>;
+  gradient?: [number, number];
+  value: number;
+}) {
+  const chartSprings = useSprings(
+    chart.length,
+    chart.map((_, index) => {
+      const show = index / chart.length <= value;
+      return {
+        config: { mass: 2, tension: 1000, friction: 100 },
+        to: { transform: show ? `scaleY(1)` : `scaleY(0)` },
+        immediate: !show,
+      };
+    }),
+  );
+
+  const gradientStops = useMemo(() => {
+    if (!gradient) return null;
+
+    const [step2, step3] = gradient;
+    const blur = GRADIENT_TRANSITION_BLUR / 100 / 2;
+    return [
+      { offset: "0%", color: "var(--colors-negative)" },
+      { offset: `${(step2 - blur) * 100}%`, color: "var(--colors-negative)" },
+      { offset: `${(step2 + blur) * 100}%`, color: "var(--colors-warning)" },
+      { offset: `${(step3 - blur) * 100}%`, color: "var(--colors-warning)" },
+      { offset: `${(step3 + blur) * 100}%`, color: "var(--colors-positive)" },
+      { offset: "100%", color: "var(--colors-positive)" },
+    ];
+  }, [gradient]);
+
+  return (
+    <svg
+      className={css({
+        position: "absolute",
+        inset: "auto 0 0",
+        width: "100%",
+        height: CHART_MAX_HEIGHT,
+      })}
+      viewBox={`0 0 100 ${CHART_MAX_HEIGHT}`}
+      preserveAspectRatio="none"
+      shapeRendering="optimizeSpeed"
+    >
+      <defs>
+        {gradientStops && (
+          <linearGradient id="barGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            {gradientStops.map((stop, index) => (
+              <stop
+                key={index}
+                offset={stop.offset}
+                stopColor={stop.color}
+              />
+            ))}
+          </linearGradient>
+        )}
+        <mask id="barMask">
+          {chartSprings.map((styles, index) => {
+            const barValue = chart[index];
+            const barWidth = 100 / chart.length;
+            const x = index * barWidth;
+            const y = CHART_MAX_HEIGHT * (1 - barValue);
+            const height = barValue * CHART_MAX_HEIGHT;
+            return (
+              <a.rect
+                key={index}
+                x={x}
+                y={y}
+                width={barWidth}
+                height={height}
+                fill="white"
+                style={{
+                  transformOrigin: `${x}px ${CHART_MAX_HEIGHT}px`,
+                  transform: styles.transform,
+                }}
+              />
+            );
+          })}
+        </mask>
+      </defs>
+
+      {chart.map((barValue, index) => {
+        const barWidth = 100 / chart.length;
+        const x = index * barWidth;
+        const y = CHART_MAX_HEIGHT * (1 - barValue);
+        const height = barValue * CHART_MAX_HEIGHT;
+        return (
+          <a.rect
+            key={index}
+            x={x}
+            y={y}
+            width={barWidth}
+            height={height}
+            fill="#DDE0E8"
+          />
+        );
+      })}
+
+      <rect
+        x="0"
+        y="0"
+        width="100"
+        height={CHART_MAX_HEIGHT * 2}
+        fill={gradientStops ? "url(#barGradient)" : "var(--colors-warning)"}
+        mask="url(#barMask)"
+      />
+
+      <a.rect
+        x="0"
+        y={CHART_MAX_HEIGHT - 1}
+        width="100"
+        height="1"
+        fill="currentColor"
+        style={{
+          transform: activeBarTransform,
+          transformOrigin: "0 0",
+        }}
+      />
+    </svg>
   );
 }
 

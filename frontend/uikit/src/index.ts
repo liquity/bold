@@ -4,6 +4,7 @@ export type * from "./tokens";
 export type * from "./types";
 
 export * from "./icons";
+export * from "./math-utils";
 export * from "./react-utils";
 export * from "./tokens";
 
