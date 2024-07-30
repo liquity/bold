@@ -942,17 +942,15 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) public override {
-        _requireCallerIsBorrower(_troveId);
-        _requireValidInterestBatchManager(_newBatchManager);
-        _requireIsNotInBatch(_troveId);
-
         LocalVariables_setInterestBatchManager memory vars;
-
         vars.troveManager = troveManager;
         vars.activePool = activePool;
         vars.sortedTroves = sortedTroves;
 
         _requireTroveIsActive(vars.troveManager, _troveId);
+        _requireCallerIsBorrower(_troveId);
+        _requireValidInterestBatchManager(_newBatchManager);
+        _requireIsNotInBatch(_troveId);
 
         interestBatchManagerOf[_troveId] = _newBatchManager;
         // Can’t have both individual delegation and batch manager

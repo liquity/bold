@@ -62,6 +62,72 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(batch.annualManagementFee, 25e14, "Wrong fee");
     }
 
+    function testCannotSetBatchManagerIfTroveDoesNotExist() public {
+        registerBatchManager(B);
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
+        borrowerOperations.setInterestBatchManager(addressToTroveId(A), B, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
+    function testCannotSetBatchManagerIfTroveIsClosed() public {
+        registerBatchManager(B);
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        // Open another trove so that we can close the first one
+        openTroveNoHints100pct(B, 100e18, 5000e18, 5e16);
+
+        // Close trove
+        deal(address(boldToken), A, 6000e18); // Needs more Bold for interest and upfront fee
+        closeTrove(A, troveId);
+
+        // Try to set interest batch manager
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
+        borrowerOperations.setInterestBatchManager(troveId, B, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
+    function testCannotSetBatchManagerIfTroveIsLiquidated() public {
+        priceFeed.setPrice(2000e18);
+        registerBatchManager(B);
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 5e18, 5000e18, 5e16);
+        // Open another trove so that we can liquidate the first one
+        openTroveNoHints100pct(B, 100e18, 5000e18, 5e16);
+
+        // Price goes down
+        priceFeed.setPrice(1050e18);
+
+        // Close trove
+        liquidate(A, troveId);
+
+        // Try to set interest batch manager
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
+        borrowerOperations.setInterestBatchManager(troveId, B, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
+    function testCannotSetBatchManagerIfTroveIsUnredeemable() public {
+        registerBatchManager(B);
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+
+        // Redeem from trove
+        redeem(A, 4000e18);
+
+        // Try to set interest batch manager
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
+        borrowerOperations.setInterestBatchManager(troveId, B, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
     function testRemovesBatchManagerProperlyWithDifferentNewInterestRate() public {
         uint256 troveId = openTroveAndJoinBatchManager();
         (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
