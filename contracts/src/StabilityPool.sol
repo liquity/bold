@@ -14,8 +14,6 @@ import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 
-// import "forge-std/console2.sol";
-
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
  *
