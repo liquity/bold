@@ -54,4 +54,6 @@ interface ITroveEvents {
     );
 
     event RedemptionFeePaidToTrove(uint256 indexed _troveId, uint256 _ETHFee);
+
+    event UriRendererAddressUpdated(address _UriRenderer);
 }

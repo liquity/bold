@@ -168,4 +168,8 @@ interface ITroveManager is IERC721, ILiquityBase {
 
     function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool);
     function checkTroveIsUnredeemable(uint256 _troveId) external view returns (bool);
+
+    // --- Trove URI getters and setters, called by owner ---
+
+    function updateExternalRenderer(address _rendererAddress) external;
 }

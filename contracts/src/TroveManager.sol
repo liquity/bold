@@ -1290,5 +1290,6 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
 
     function updateExternalRenderer(address _rendererAddress) external onlyOwner{
         externalRenderAddress = _rendererAddress;
+        emit UriRendererAddressUpdated(externalRenderAddress);
     }
 }
