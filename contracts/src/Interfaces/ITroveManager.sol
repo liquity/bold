@@ -172,4 +172,5 @@ interface ITroveManager is IERC721, ILiquityBase {
     // --- Trove URI getters and setters, called by owner ---
 
     function updateExternalRenderer(address _rendererAddress) external;
+    function updateUriRole(address user, bool hasAccess) external;
 }

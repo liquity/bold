@@ -35,6 +35,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     IWETH public immutable WETH;
     //External rendering for NFT data
     address public externalRenderAddress;
+    mapping(address => bool) public uriUpdaterRole;
 
     // --- Data structures ---
 
@@ -201,6 +202,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         LIQUIDATION_PENALTY_REDISTRIBUTION = _liquidationPenaltyRedistribution;
 
         WETH = _weth;
+
+       uriUpdaterRole[msg.sender] = true;
     }
 
     // --- Dependency setter ---
@@ -1288,8 +1291,15 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
         uri = UriRenderer(externalRenderAddress).render(_troveId);
     }
 
-    function updateExternalRenderer(address _rendererAddress) external onlyOwner{
+    function updateExternalRenderer(address _rendererAddress) external{
+        require(uriUpdaterRole[msg.sender], "Updating the URI is a limited action.")
         externalRenderAddress = _rendererAddress;
         emit UriRendererAddressUpdated(externalRenderAddress);
+    }
+
+    //Can be used to revoke permisisons for self at any time.
+    function updateUriRole(address user, bool hasAccess) external {
+        require(uriUpdaterRole[msg.sender], "Only those with the updater role can change permissions.");
+        uriUpdaterRole[user] = hasAccess;
     }
 }
