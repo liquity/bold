@@ -11,6 +11,7 @@ import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Interfaces/ITroveEvents.sol";
 import "./Interfaces/IWETH.sol";
+import "./Interfaces/UriRenderer.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/Ownable.sol";
 
@@ -32,6 +33,8 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     address public collateralRegistryAddress;
     // Wrapped ETH for liquidation reserve (gas compensation)
     IWETH public immutable WETH;
+    //External rendering for NFT data
+    address public externalRenderAddress;
 
     // --- Data structures ---
 
@@ -1273,5 +1276,19 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
             _troveChange.appliedRedistCollGain,
             int256(_troveChange.collIncrease) - int256(_troveChange.collDecrease)
         );
+    }
+
+    // --- Trove URI getters and setters, called by owner ---
+    
+    /**
+    * @dev generate URI with updated trove information
+    */
+    /// @inheritdoc ERC721
+    function tokenURI(uint256 _troveId) public view override returns (string memory uri) {
+        uri = UriRenderer(externalRenderAddress).render(_troveId);
+    }
+
+    function updateExternalRenderer(address _rendererAddress) external onlyOwner{
+        externalRenderAddress = _rendererAddress;
     }
 }
