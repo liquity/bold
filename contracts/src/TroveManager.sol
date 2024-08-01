@@ -1292,7 +1292,7 @@ contract TroveManager is ERC721, LiquityBase, Ownable, ITroveManager, ITroveEven
     }
 
     function updateExternalRenderer(address _rendererAddress) external{
-        require(uriUpdaterRole[msg.sender], "Updating the URI is a limited action.")
+        require(uriUpdaterRole[msg.sender], "Updating the URI is a limited action.");
         externalRenderAddress = _rendererAddress;
         emit UriRendererAddressUpdated(externalRenderAddress);
     }
