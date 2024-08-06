@@ -18,6 +18,7 @@ type InputFieldProps = {
   onChange?: (value: string) => void;
   onDifferenceClick?: () => void;
   onFocus?: () => void;
+  paddingBottom?: number;
   placeholder?: string;
   secondary?:
     | ReactNode
@@ -33,6 +34,10 @@ const diffSpringConfig = {
   friction: 120,
 };
 
+const INPUT_HEIGHT = 120;
+const CONTEXTUAL_HEIGHT = 40;
+const CONTEXTUAL_TOP = (INPUT_HEIGHT - CONTEXTUAL_HEIGHT) / 2;
+
 const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputField({
   contextual,
   difference,
@@ -41,6 +46,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
   onChange,
   onDifferenceClick,
   onFocus,
+  paddingBottom = 12,
   placeholder,
   secondary,
   value,
@@ -122,7 +128,6 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
         display: "flex",
         flexDirection: "column",
         width: "100%",
-        paddingBottom: 16,
         background: "fieldSurface",
         border: "1px solid token(colors.fieldBorder)",
         borderRadius: 8,
@@ -213,7 +218,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
           "peer",
           css({
             display: "block",
-            height: 136 - 2, // account for the 1px border
+            height: INPUT_HEIGHT - 2, // account for the 1px border
             padding: "0 16px",
             fontSize: 28,
             fontWeight: 500,
@@ -237,7 +242,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
             inset: "0 0 auto 16px",
             display: "flex",
             alignItems: "center",
-            height: 136 - 2, // account for the 1px border
+            height: INPUT_HEIGHT - 2, // account for the 1px border
             fontSize: 28,
             fontWeight: 500,
             letterSpacing: -1,
@@ -253,7 +258,7 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
           display: "none",
           position: "absolute",
           inset: -1,
-          border: "2px solid token(colors.focused)",
+          border: "2px solid token(colors.fieldBorderFocused)",
           borderRadius: 8,
           pointerEvents: "none",
           _peerFocusVisible: {
@@ -265,29 +270,47 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
         <div
           className={css({
             position: "absolute",
-            inset: "48px 16px auto auto",
+            inset: `${CONTEXTUAL_TOP}px 16px auto auto`,
           })}
         >
           {contextual}
         </div>
       )}
-      <div
-        className={css({
-          position: "absolute",
-          inset: "auto 16px 16px",
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 16,
-          fontSize: 16,
-          color: "contentAlt",
-          pointerEvents: "none",
-          "& > div": {
-            pointerEvents: "auto",
-          },
-        })}
-      >
-        {secondary_.start
-          ? (
+      {(secondary_.start || secondary_.end) && (
+        <div
+          className={css({
+            display: "flex",
+            justifyContent: "space-between",
+            marginTop: -20,
+            gap: 16,
+            fontSize: 16,
+            color: "contentAlt",
+            pointerEvents: "none",
+            "& > div": {
+              pointerEvents: "auto",
+            },
+          })}
+          style={{
+            padding: `0 16px ${paddingBottom}px`,
+          }}
+        >
+          {secondary_.start
+            ? (
+              <div
+                className={css({
+                  flexGrow: 0,
+                  flexShrink: 1,
+                  display: "flex",
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
+                  maxWidth: "50%",
+                })}
+              >
+                {secondary_.start}
+              </div>
+            )
+            : <div />}
+          {secondary_.end && (
             <div
               className={css({
                 flexGrow: 0,
@@ -295,27 +318,13 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
                 display: "flex",
                 whiteSpace: "nowrap",
                 textOverflow: "ellipsis",
-                maxWidth: "50%",
               })}
             >
-              {secondary_.start}
+              {secondary_.end}
             </div>
-          )
-          : <div />}
-        {secondary_.end && (
-          <div
-            className={css({
-              flexGrow: 0,
-              flexShrink: 1,
-              display: "flex",
-              whiteSpace: "nowrap",
-              textOverflow: "ellipsis",
-            })}
-          >
-            {secondary_.end}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 });

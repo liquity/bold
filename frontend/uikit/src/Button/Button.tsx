@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { match, P } from "ts-pattern";
 import { css } from "../../styled-system/css";
@@ -6,7 +6,7 @@ import { useTheme } from "../Theme/Theme";
 
 export type ButtonProps = {
   size?: "mini" | "small" | "medium" | "large";
-  label: string;
+  label: ReactNode;
   maxWidth?: number;
   wide?: boolean;
   mode?: "primary" | "secondary" | "tertiary" | "positive" | "negative";

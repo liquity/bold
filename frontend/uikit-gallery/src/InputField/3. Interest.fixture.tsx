@@ -39,6 +39,9 @@ const INTEREST_CHART = RATE_BUCKETS.map(([_, size]) => (
 function getDebtBeforeIndex(index: number) {
   let debt = dn.from(0, 18);
   for (let i = 0; i < index; i++) {
+    if (!RATE_BUCKETS[i]) {
+      break;
+    }
     debt = dn.add(debt, RATE_BUCKETS[i][1]);
     if (i === index - 1) {
       break;
@@ -92,7 +95,7 @@ export default function InputFieldFixture() {
         }
         label={{ start: "Interest rate" }}
         onChange={setValue}
-        value={parsedValue ? dn.format(parsedValue, { digits: 1 }) : ""}
+        value={value}
         valueUnfocused={parsedValue
           ? (
             <span

@@ -65,7 +65,7 @@ export function ProductCard({
           flexDirection: "column",
           padding: 16,
           background: "background",
-          border: "1px solid token(colors.fieldBorder)",
+          border: "1px solid token(colors.border)",
           borderRadius: 8,
           _groupHover: {
             position: "relative",
@@ -133,7 +133,7 @@ export function ProductCard({
             marginTop: -1,
             padding: "20px 0 8px",
             color: "contentAlt",
-            borderTop: "1px solid token(colors.fieldBorder)",
+            borderTop: "1px solid token(colors.border)",
           })}
         >
           {children}

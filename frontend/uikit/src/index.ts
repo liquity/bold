@@ -1,3 +1,5 @@
+"use client";
+
 export type { DropdownItem } from "./Dropdown/Dropdown";
 export type { ThemeColorName, ThemeDescriptor } from "./Theme/Theme";
 export type * from "./tokens";
@@ -26,6 +28,7 @@ export { Slider } from "./Slider/Slider";
 export { StatusDot } from "./StatusDot/StatusDot";
 export { StrongCard } from "./StrongCard/StrongCard";
 export { Tabs } from "./Tabs/Tabs";
+export { AnchorTextButton } from "./TextButton/AnchorTextButton";
 export { TextButton } from "./TextButton/TextButton";
 export { colors, lightTheme, Theme, themeColor, useTheme } from "./Theme/Theme";
 export { TokenIcon, TokenIconGroup } from "./TokenIcon/TokenIcon";

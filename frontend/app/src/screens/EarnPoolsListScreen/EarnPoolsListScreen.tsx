@@ -62,6 +62,7 @@ export function EarnPoolsListScreen() {
           borderCollapse: "separate",
           borderSpacing: 0,
           width: 720,
+          background: "surface",
           border: "1px solid token(colors.border)",
           borderRadius: 8,
           "& th": {

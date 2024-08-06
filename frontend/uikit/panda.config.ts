@@ -21,6 +21,7 @@ const semanticColors = Object.fromEntries(
 );
 
 export const liquityUiKitPreset = definePreset({
+  name: "liquity-ui-kit",
   theme: {
     tokens: {
       colors: tokenColors,
