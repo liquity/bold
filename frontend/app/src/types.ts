@@ -32,6 +32,15 @@ export type PositionLoan = {
   troveId: TroveId;
 };
 
+export type PositionLeverage = {
+  type: "leverage";
+  borrowed: Dnum;
+  collateral: CollateralSymbol;
+  deposit: Dnum;
+  interestRate: Dnum;
+  troveId: TroveId;
+};
+
 export type PositionEarn = {
   type: "earn";
   apr: Dnum;
@@ -43,4 +52,13 @@ export type PositionEarn = {
   };
 };
 
-export type Position = PositionLoan | PositionEarn;
+export type PositionStake = {
+  type: "stake";
+  deposit: Dnum;
+  rewards: {
+    lusd: Dnum;
+    eth: Dnum;
+  };
+};
+
+export type Position = PositionLoan | PositionLeverage | PositionEarn | PositionStake;

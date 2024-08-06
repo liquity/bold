@@ -1,6 +1,8 @@
+"use client";
+
 import type { RiskLevel } from "@/src/types";
 
-import { norm } from "@/src/math-utils";
+import { norm } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 export const APP_TITLE = "Liquity v2";
@@ -9,6 +11,12 @@ export const LOCAL_STORAGE_PREFIX = "liquity2:";
 export const LEVERAGE_FACTOR_MIN = 1.1;
 export const MAX_LTV_ALLOWED = 0.916; // ratio of the max LTV
 export const ETH_MAX_RESERVE = dn.from(0.1, 18);
+
+export const LQTY_SUPPLY = dn.from(100_000_000, 18);
+
+export const INTEREST_RATE_MIN = 1;
+export const INTEREST_RATE_MAX = 8;
+export const INTEREST_RATE_INCREMENT = 0.1;
 
 // LTV factor suggestions, as ratios of the leverage factor range
 export const LEVERAGE_FACTOR_SUGGESTIONS = [

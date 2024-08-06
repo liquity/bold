@@ -268,8 +268,8 @@ export function StakeScreen() {
                   flexDirection: "column",
                   gap: 12,
                   padding: "0 16px",
-                  background: "background",
-                  border: "1px solid token(colors.fieldBorder)",
+                  background: "surface",
+                  border: "1px solid token(colors.border)",
                   borderRadius: 8,
                 })}
               >
@@ -317,7 +317,7 @@ export function StakeScreen() {
                     marginTop: -1,
                     padding: "20px 0",
                     color: "contentAlt",
-                    borderTop: "1px solid token(colors.fieldBorder)",
+                    borderTop: "1px solid token(colors.border)",
                   })}
                 >
                   {content.earnScreen.rewardsPanel.details(

@@ -65,10 +65,10 @@
     "@types/react-dom": "^18.2.22",
     "@vitejs/plugin-react-swc": "^3.7.0",
     "dprint": "^0.47.2",
-    "globals": "^15.8.0",
+    "globals": "^15.9.0",
     "oxlint": "^0.6.0",
-    "tsx": "^4.16.2",
-    "typescript": "^5.5.3",
+    "tsx": "^4.16.5",
+    "typescript": "^5.5.4",
     "vite": "^5.3.5",
     "vite-plugin-dts": "^3.9.1",
     "zx": "^8.1.4"

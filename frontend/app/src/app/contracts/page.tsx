@@ -23,7 +23,7 @@ import { useAccount } from "wagmi";
 import { ContractBorrowerOperations } from "./ContractBorrowerOperations";
 import { ContractStabilityPool } from "./ContractStabilityPool";
 
-export default function Contracts() {
+export default function ContractsPage() {
   return (
     <div
       className={css({

@@ -10,7 +10,7 @@ export function TokenIcon({
   size = "medium",
   symbol,
 }: {
-  size?: "medium" | "large" | "small" | number;
+  size?: "medium" | "large" | "small" | "mini" | number;
   symbol: Token["symbol"];
 }) {
   const sizeFromGroup = useContext(TokenIconGroupSize);
@@ -19,6 +19,7 @@ export function TokenIcon({
     .with("large", () => 40)
     .with("medium", () => 24)
     .with("small", () => 20)
+    .with("mini", () => 16)
     .otherwise(() => size);
 
   const token = TOKENS_BY_SYMBOL[symbol];

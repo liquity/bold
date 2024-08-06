@@ -2,6 +2,7 @@ import type { Position } from "@/src/types";
 import type { CollateralToken } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 
+import { INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import * as dn from "dnum";
 
 export const PRICE_UPDATE_INTERVAL = 15_000;
@@ -39,10 +40,10 @@ export const ACCOUNT_POSITIONS: Position[] = [
     troveId: 1n,
   },
   {
-    type: "loan",
-    borrowed: dn.from(1000, 18),
+    type: "leverage",
+    borrowed: dn.from(43_055.88, 18),
     collateral: "ETH",
-    deposit: dn.from(1, 18),
+    deposit: dn.from(19.20, 18), // 8 ETH at 2.4x leverage
     interestRate: dn.from(0.045, 18),
     troveId: 2n,
   },
@@ -56,20 +57,31 @@ export const ACCOUNT_POSITIONS: Position[] = [
       eth: dn.from(0.943, 18),
     },
   },
+  {
+    type: "stake",
+    deposit: dn.from(3414, 18),
+    rewards: {
+      lusd: dn.from(789.438, 18),
+      eth: dn.from(0.943, 18),
+    },
+  },
 ];
 
 export const BORROW_STATS = {
   ETH: {
     borrowRate: dn.from(0.05, 18),
     tvl: dn.from(75_827_387.87, 18),
+    maxLtv: dn.div(dn.from(1, 18), 1.1),
   },
   RETH: {
     borrowRate: dn.from(0.04, 18),
     tvl: dn.from(55_782_193.37, 18),
+    maxLtv: dn.div(dn.from(1, 18), 1.2),
   },
   STETH: {
     borrowRate: dn.from(0.055, 18),
     tvl: dn.from(45_037_108.91, 18),
+    maxLtv: dn.div(dn.from(1, 18), 1.2),
   },
 } as const;
 
@@ -90,3 +102,29 @@ export const EARN_POOLS: Record<
     boldQty: [25_700_000n, 0],
   },
 };
+
+const BUCKET_SIZE_MAX = 20_000_000;
+const RATE_STEPS = Math.round((INTEREST_RATE_MAX - INTEREST_RATE_MIN) / INTEREST_RATE_INCREMENT) + 1;
+export const INTEREST_RATE_BUCKETS = Array.from({ length: RATE_STEPS }, (_, i) => {
+  const rate = Math.round((INTEREST_RATE_MIN + i * INTEREST_RATE_INCREMENT) * 10) / 10;
+  const baseFactor = 1 - Math.pow((i / (RATE_STEPS - 1) - 0.5) * 2, 2);
+  return [rate, dn.from(Math.pow(baseFactor * Math.random(), 2) * BUCKET_SIZE_MAX, 18)];
+}) as Array<[number, dn.Dnum]>;
+
+export const INTEREST_CHART = INTEREST_RATE_BUCKETS.map(([_, size]) => (
+  Math.max(0.1, dn.toNumber(size) / Math.max(...INTEREST_RATE_BUCKETS.map(([_, size]) => dn.toNumber(size))))
+));
+
+export function getDebtBeforeRateBucketIndex(index: number) {
+  let debt = dn.from(0, 18);
+  for (let i = 0; i < index; i++) {
+    if (!INTEREST_RATE_BUCKETS[i]) {
+      break;
+    }
+    debt = dn.add(debt, INTEREST_RATE_BUCKETS[i][1]);
+    if (i === index - 1) {
+      break;
+    }
+  }
+  return debt;
+}

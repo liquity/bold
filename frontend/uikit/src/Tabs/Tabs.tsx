@@ -141,7 +141,7 @@ export function Tabs({
             inset: "0 auto 0 0",
             width: 0,
             background: "controlSurface",
-            border: "1px solid token(colors.fieldBorder)",
+            border: "1px solid token(colors.border)",
             transformOrigin: "0 0",
             borderRadius: 8,
           })}
