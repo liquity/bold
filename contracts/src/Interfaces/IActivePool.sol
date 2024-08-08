@@ -35,7 +35,8 @@ interface IActivePool {
         external;
 
     function setShutdownFlag() external;
-    function hasBeenShutDown() external returns (bool);
+    function hasBeenShutDown() external view returns (bool);
+    function shutdownTime() external view returns (uint256);
 
     function sendColl(address _account, uint256 _amount) external;
     function sendCollToDefaultPool(uint256 _amount) external;

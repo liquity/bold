@@ -51,7 +51,8 @@ contract ActivePool is IActivePool {
     // Last time at which the aggregate recorded debt and weighted sum were updated
     uint256 public lastAggUpdateTime;
 
-    bool public hasBeenShutDown;
+    // Timestamp at which branch was shut down. 0 if not shut down.
+    uint256 public shutdownTime;
 
     // Aggregate batch fees tracker
     uint256 public aggBatchManagementFees;
@@ -104,7 +105,7 @@ contract ActivePool is IActivePool {
     }
 
     function calcPendingAggInterest() public view returns (uint256) {
-        if (hasBeenShutDown) return 0;
+        if (shutdownTime != 0) return 0;
 
         // We use the ceiling of the division here to ensure positive error, while we use regular floor division
         // when calculating the interest accrued by individual Troves.
@@ -119,8 +120,10 @@ contract ActivePool is IActivePool {
     }
 
     function calcPendingAggBatchManagementFee() public view returns (uint256) {
-        return aggWeightedBatchManagementFeeSum * (block.timestamp - lastAggBatchManagementFeesUpdateTime) / ONE_YEAR
-            / DECIMAL_PRECISION;
+        uint256 periodEnd = shutdownTime != 0 ? shutdownTime : block.timestamp;
+        uint256 periodStart = Math.min(lastAggBatchManagementFeesUpdateTime, periodEnd);
+
+        return aggWeightedBatchManagementFeeSum * (periodEnd - periodStart) / ONE_YEAR / DECIMAL_PRECISION;
     }
 
     function getNewApproxAvgInterestRateFromTroveChange(TroveChange calldata _troveChange)
@@ -133,7 +136,7 @@ contract ActivePool is IActivePool {
         //   fee depends on avg. interest rate -> avg. interest rate is weighted by debt -> debt includes fee -> ...
         assert(_troveChange.upfrontFee == 0);
 
-        if (hasBeenShutDown) return 0;
+        if (shutdownTime != 0) return 0;
 
         uint256 newAggRecordedDebt = aggRecordedDebt;
         newAggRecordedDebt += calcPendingAggInterest();
@@ -302,7 +305,11 @@ contract ActivePool is IActivePool {
 
     function setShutdownFlag() external {
         _requireCallerIsTroveManager();
-        hasBeenShutDown = true;
+        shutdownTime = block.timestamp;
+    }
+
+    function hasBeenShutDown() external view returns (bool) {
+        return shutdownTime != 0;
     }
 
     // --- 'require' functions ---
