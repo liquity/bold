@@ -1342,11 +1342,23 @@ And some additional solutions that may help reduce the chance of bad debt occurr
 
 7. **Pro-rata redemptions at TCR < 100% (branch specific, not routed)**. Urgent redemptions are helpful for shrinking the debt of a shut down branch when it is at `TCR > 100%`. However, at `TCR < 100%`, urgent redemptions do not help clear the bad debt. They simply remove all collateral and push it into its final state faster (and in fact, make it slightly worse since they pay a slight collateral bonus).  At `TCR < 100%`, we could offer special pro-rata redemptions only on the shut down branch - e.g. at `TCR = 80%`, users may redeem 1 BOLD for $0.80 worth of collateral. This would (in principle) allow someone to completely clear the bad debt via redemption. At first glance it seems unprofitable, but if the redeemer has reason to believe the collateral is underpriced and the price may rebound at some point in future, they may believe it to be profitable to redeem pro-rata.
 8. 
+
+### Oracle `try-catch` doesn't catch all failure modes
+
+Currently when a PriceFeed does a `try-catch` and attempts to call the external oracle, it only catches reverts without reason strings. [It does not catch reverts with reason strings, nor Panics due to illegal operations](https://www.rareskills.io/post/try-catch-solidity). As such, the oracle could revert (e.g. by a botched upgrade causing a div-by-zero Panic), which would not be caught by the PriceFeed. This would mean the entire transaction would revert. This could block many core operations of Liquity v2.
+
+**Solution**
+
+- Expand the PriceFeed `try-catch` to cover Panics and reverts with reason strings
+- Double-check with Chainlink team exactly _how_ an aggregator would revert if/when it were disabled, and make sure our PriceFeed catches it
+
 ## Requirements
 
 - [Node.js](https://nodejs.org/)
 - [pnpm](https://pnpm.io/)
 - [Foundry](https://book.getfoundry.sh/getting-started/installation)
+
+
 
 ## Setup
 
