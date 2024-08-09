@@ -260,25 +260,25 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     bool immutable _assumeNoExpectedFailures; // vm.assume() away calls that fail extectedly
 
     // Constants (per branch)
-    mapping(uint256 => uint256) CCR;
-    mapping(uint256 => uint256) MCR;
-    mapping(uint256 => uint256) SCR;
-    mapping(uint256 => uint256) LIQ_PENALTY_SP;
-    mapping(uint256 => uint256) LIQ_PENALTY_REDIST;
+    mapping(uint256 branchIdx => uint256) CCR;
+    mapping(uint256 branchIdx => uint256) MCR;
+    mapping(uint256 branchIdx => uint256) SCR;
+    mapping(uint256 branchIdx => uint256) LIQ_PENALTY_SP;
+    mapping(uint256 branchIdx => uint256) LIQ_PENALTY_REDIST;
 
     // Public ghost variables (per branch, exposed to InvariantsTest)
-    mapping(uint256 => uint256) public collSurplus;
-    mapping(uint256 => uint256) public spBoldDeposits;
-    mapping(uint256 => uint256) public spBoldYield;
-    mapping(uint256 => uint256) public spColl;
-    mapping(uint256 => bool) public isShutdown;
+    mapping(uint256 branchIdx => uint256) public collSurplus;
+    mapping(uint256 branchIdx => uint256) public spBoldDeposits;
+    mapping(uint256 branchIdx => uint256) public spBoldYield;
+    mapping(uint256 branchIdx => uint256) public spColl;
+    mapping(uint256 branchIdx => bool) public isShutdown;
 
     // Price per branch
-    mapping(uint256 => uint256) _price;
+    mapping(uint256 branchIdx => uint256) _price;
 
     // Bold yield sent to the SP at a time when there are no deposits is lost forever
     // We keep track of the lost amount so we can use it in invariants
-    mapping(uint256 => uint256) public spUnclaimableBoldYield; // branch index =>
+    mapping(uint256 branchIdx => uint256) public spUnclaimableBoldYield;
 
     // All free-floating BOLD is kept in the handler, to be dealt out to actors as needed
     uint256 _handlerBold;
@@ -288,23 +288,23 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     uint256 _timeSinceLastRedemption = 0;
 
     // Used to keep track of mintable interest
-    mapping(uint256 => uint256) _pendingInterest; // branch =>
+    mapping(uint256 branchIdx => uint256) _pendingInterest;
 
     // Troves ghost state
-    mapping(uint256 => EnumerableSet) _troveIds; // branch =>
-    mapping(uint256 => EnumerableSet) _zombieTroveIds; // branch =>
-    mapping(uint256 => mapping(uint256 => Trove)) _troves; // branch => TroveID =>
+    mapping(uint256 branchIdx => EnumerableSet) _troveIds;
+    mapping(uint256 branchIdx => EnumerableSet) _zombieTroveIds;
+    mapping(uint256 branchIdx => mapping(uint256 troveId => Trove)) _troves;
 
     // Batch management ghost state
-    mapping(uint256 => EnumerableAddressSet) _batchManagers; // branch =>
-    mapping(uint256 => mapping(address => Batch)) _batches; // branch => batch manager =>
-    mapping(uint256 => mapping(uint256 => address)) _batchManagerOf; // branch => TroveId =>
+    mapping(uint256 branchIdx => EnumerableAddressSet) _batchManagers;
+    mapping(uint256 branchIdx => mapping(address batchManager => Batch)) _batches;
+    mapping(uint256 branchIdx => mapping(uint256 troveId => address)) _batchManagerOf;
 
     // Batch liquidation transient state
     LiquidationTransientState _liquidation;
 
     // Redemption transient state
-    mapping(uint256 => RedemptionTransientState) _redemption; // branch =>
+    mapping(uint256 branchIdx => RedemptionTransientState) _redemption;
 
     // Urgent redemption transient state
     UrgentRedemptionTransientState _urgentRedemption;
@@ -1043,7 +1043,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             pendingInterest[i] = branches[i].activePool.calcPendingAggInterest();
         }
 
-        (uint256 totalDebtRedeemed, mapping(uint256 => RedemptionTransientState) storage r) =
+        (uint256 totalDebtRedeemed, mapping(uint256 branchIdx => RedemptionTransientState) storage r) =
             _planRedemption(amount, maxIterationsPerCollateral, redemptionRate);
         assertLeDecimal(totalDebtRedeemed, amount, 18, "Total redeemed exceeds input amount");
 
@@ -1906,7 +1906,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     function _planRedemption(uint256 amount, uint256 maxIterationsPerCollateral, uint256 feePct)
         internal
-        returns (uint256 totalDebtRedeemed, mapping(uint256 => RedemptionTransientState) storage r)
+        returns (uint256 totalDebtRedeemed, mapping(uint256 branchIdx => RedemptionTransientState) storage r)
     {
         uint256 totalProportions = 0;
         uint256[] memory proportions = new uint256[](branches.length);

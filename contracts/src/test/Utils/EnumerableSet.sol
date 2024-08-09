@@ -5,7 +5,7 @@ using EnumerableSetMethods for EnumerableSet global;
 using EnumerableAddressSetMethods for EnumerableAddressSet global;
 
 struct EnumerableSet {
-    mapping(uint256 => uint256) _indexOf;
+    mapping(uint256 element => uint256) _indexOf;
     uint256[] _elements;
 }
 
