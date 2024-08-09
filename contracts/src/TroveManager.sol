@@ -1628,8 +1628,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         Troves[_params.troveId].interestBatchManager = _params.newBatchAddress;
         Troves[_params.troveId].lastInterestRateAdjTime = uint64(block.timestamp);
 
-        _troveChange.collIncrease = _params.troveColl;
-        _troveChange.debtIncrease = _params.troveDebt - _troveChange.upfrontFee - _troveChange.appliedRedistBoldDebtGain;
+        _troveChange.collIncrease = _params.troveColl - _troveChange.appliedRedistCollGain;
+        _troveChange.debtIncrease = _params.troveDebt - _troveChange.appliedRedistBoldDebtGain - _troveChange.upfrontFee;
         _updateBatchShares(
             _params.troveId, _params.newBatchAddress, _troveChange, _params.newBatchColl, _params.newBatchDebt
         );
