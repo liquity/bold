@@ -22,6 +22,10 @@ uint256 constant MIN_DEBT = 2000e18;
 uint256 constant MIN_ANNUAL_INTEREST_RATE = _1pct / 2; // 0.5%
 uint256 constant MAX_ANNUAL_INTEREST_RATE = _100pct;
 
+// Batch management params
+uint256 constant MAX_ANNUAL_BATCH_MANAGEMENT_FEE = _100pct;
+uint256 constant MIN_INTEREST_RATE_CHANGE_PERIOD = 1 seconds; // prevents more than one adjustment per block
+
 uint256 constant REDEMPTION_FEE_FLOOR = _1pct / 2; // 0.5%
 
 // Half-life of 12h. 12h = 720 min

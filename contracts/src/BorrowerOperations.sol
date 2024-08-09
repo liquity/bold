@@ -147,6 +147,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error NewFeeNotLower();
     error CallerNotPriceFeed();
     error MinGeMax();
+    error AnnualManagementFeeTooHigh();
+    error MinInterestRateChangePeriodTooLow();
 
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event ActivePoolAddressChanged(address _activePoolAddress);
@@ -835,6 +837,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireInterestRateInRange(_currentInterestRate, _minInterestRate, _maxInterestRate);
         // Not needed, implicitly checked in the condition above:
         //_requireValidAnnualInterestRate(_currentInterestRate);
+        if (_annualManagementFee > MAX_ANNUAL_BATCH_MANAGEMENT_FEE) revert AnnualManagementFeeTooHigh();
+        if (_minInterestRateChangePeriod < MIN_INTEREST_RATE_CHANGE_PERIOD) revert MinInterestRateChangePeriodTooLow();
 
         interestBatchManagers[msg.sender] =
             InterestBatchManager(_minInterestRate, _maxInterestRate, _minInterestRateChangePeriod);
