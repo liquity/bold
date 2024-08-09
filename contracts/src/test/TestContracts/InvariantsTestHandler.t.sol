@@ -257,6 +257,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     ITroveManager.Status constant UNREDEEMABLE = ITroveManager.Status.unredeemable;
 
     FunctionCaller immutable _functionCaller;
+    bool immutable _assumeNoExpectedFailures; // vm.assume() away calls that fail extectedly
 
     // Constants (per branch)
     mapping(uint256 => uint256) CCR;
@@ -308,8 +309,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     // Urgent redemption transient state
     UrgentRedemptionTransientState _urgentRedemption;
 
-    constructor(Contracts memory contracts) {
+    constructor(Contracts memory contracts, bool assumeNoExpectedFailures) {
         _functionCaller = new FunctionCaller();
+        _assumeNoExpectedFailures = assumeNoExpectedFailures;
         setupContracts(contracts);
 
         for (uint256 i = 0; i < branches.length; ++i) {
@@ -532,6 +534,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         if (bytes(v.errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
             info("Expected error: ", v.errorString);
             _log();
 
@@ -705,6 +709,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         if (bytes(v.errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
             info("Expected error: ", v.errorString);
             _log();
 
@@ -822,6 +828,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         if (bytes(v.errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
             info("Expected error: ", v.errorString);
             _log();
         }
@@ -892,6 +900,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         if (bytes(v.errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
             info("Expected error: ", v.errorString);
             _log();
 
@@ -997,6 +1007,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         if (bytes(errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
             info("Expected error: ", errorString);
             _log();
         } else {
@@ -1103,6 +1115,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         if (bytes(errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
             info("Expected error: ", errorString);
             _log();
 
@@ -1158,6 +1172,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         if (bytes(errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
             info("Expected error: ", errorString);
             _log();
         }
@@ -1216,6 +1232,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         if (bytes(errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
             info("Expected error: ", errorString);
             _log();
 
@@ -1294,6 +1312,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         if (bytes(errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
             info("Expected error: ", errorString);
             _log();
 
@@ -1374,6 +1394,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         if (bytes(v.errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
             info("Expected error: ", v.errorString);
             _log();
         } else {
@@ -1484,6 +1506,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         if (bytes(errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
             info("Expected error: ", errorString);
             _log();
         }
@@ -1565,6 +1589,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
 
         if (bytes(errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
             info("Expected error: ", errorString);
             _log();
         }
