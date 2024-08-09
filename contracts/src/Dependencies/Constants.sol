@@ -23,8 +23,8 @@ uint256 constant MIN_ANNUAL_INTEREST_RATE = _1pct / 2; // 0.5%
 uint256 constant MAX_ANNUAL_INTEREST_RATE = _100pct;
 
 // Batch management params
-uint256 constant MAX_ANNUAL_BATCH_MANAGEMENT_FEE = _100pct;
-uint256 constant MIN_INTEREST_RATE_CHANGE_PERIOD = 1 seconds; // prevents more than one adjustment per block
+uint128 constant MAX_ANNUAL_BATCH_MANAGEMENT_FEE = uint128(_100pct);
+uint128 constant MIN_INTEREST_RATE_CHANGE_PERIOD = 1 seconds; // prevents more than one adjustment per block
 
 uint256 constant REDEMPTION_FEE_FLOOR = _1pct / 2; // 0.5%
 

@@ -34,7 +34,7 @@ contract InterestBatchManagementTest is DevTestSetup {
             borrowerOperations.getInterestBatchManager(batchManagerAddress);
         assertEq(batchManager.minInterestRate, 1e16, "Wrong min interest");
         assertEq(batchManager.maxInterestRate, 20e16, "Wrong max interest");
-        assertEq(batchManager.minInterestRateChangePeriod, 0, "Wrong min change period");
+        assertEq(batchManager.minInterestRateChangePeriod, MIN_INTEREST_RATE_CHANGE_PERIOD, "Wrong min change period");
         LatestBatchData memory batch = troveManager.getLatestBatchData(batchManagerAddress);
         assertEq(batch.annualManagementFee, 25e14, "Wrong fee");
     }
@@ -57,7 +57,7 @@ contract InterestBatchManagementTest is DevTestSetup {
             borrowerOperations.getInterestBatchManager(batchManagerAddress);
         assertEq(batchManager.minInterestRate, 1e16, "Wrong min interest");
         assertEq(batchManager.maxInterestRate, 20e16, "Wrong max interest");
-        assertEq(batchManager.minInterestRateChangePeriod, 0, "Wrong min change period");
+        assertEq(batchManager.minInterestRateChangePeriod, MIN_INTEREST_RATE_CHANGE_PERIOD, "Wrong min change period");
         LatestBatchData memory batch = troveManager.getLatestBatchData(batchManagerAddress);
         assertEq(batch.annualManagementFee, 25e14, "Wrong fee");
     }
@@ -196,7 +196,7 @@ contract InterestBatchManagementTest is DevTestSetup {
 
     function testSetBatchManagerRemovesIndividualDelegate() public {
         vm.startPrank(B);
-        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, 0);
+        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
         vm.stopPrank();
 
         // Open trove
@@ -354,6 +354,8 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 troveId = openTroveAndJoinBatchManager();
 
         // TODO: Generate redistributions and check below
+
+        vm.warp(block.timestamp + MIN_INTEREST_RATE_CHANGE_PERIOD);
 
         vm.startPrank(B);
         borrowerOperations.setBatchManagerAnnualInterestRate(6e16, 0, 0, 100000e18);
@@ -650,7 +652,7 @@ contract InterestBatchManagementTest is DevTestSetup {
 
     function testSwitchBatchBatchManagerChargesUpfrontFeeIfJoinedOldLessThanCooldownAgo() public {
         // C registers as batch manager
-        registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, 0);
+        registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
         // A opens trove and joins batch manager B (which has the same interest)
         uint256 troveId = openTroveAndJoinBatchManager(A, 100 ether, 2000e18, B, 5e16);
 
@@ -673,7 +675,7 @@ contract InterestBatchManagementTest is DevTestSetup {
 
     function testSwitchBatchBatchManagerChargesUpfrontFeeIfOldBatchChangedFeeLessThanCooldownAgo() public {
         // C registers as batch manager
-        registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, 0);
+        registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
         // A opens trove and joins batch manager B
         uint256 troveId = openTroveAndJoinBatchManager(A, 100 ether, 2000e18, B, 4e16);
 
@@ -698,13 +700,13 @@ contract InterestBatchManagementTest is DevTestSetup {
     }
 
     function testSwitchBatchBatchManagerDoesNotChargeTroveUpfrontFeeIfBatchChangesRateWithoutUpfrontFee() public {
-        registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, 0);
+        registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
 
         // Cool down period not gone by yet
         vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN - 60);
 
         // C registers as batch manager
-        registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, 0);
+        registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
 
         // A opens trove and joins batch manager B (which has the same interest)
         uint256 troveId = openTroveAndJoinBatchManager(A, 100 ether, 2000e18, B, 5e16);

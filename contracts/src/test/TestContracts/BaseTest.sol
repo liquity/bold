@@ -403,7 +403,9 @@ contract BaseTest is TestAccounts {
     }
 
     function registerBatchManager(address _account) internal {
-        registerBatchManager(_account, uint128(1e16), uint128(20e16), uint128(5e16), uint128(25e14), uint128(0));
+        registerBatchManager(
+            _account, uint128(1e16), uint128(20e16), uint128(5e16), uint128(25e14), MIN_INTEREST_RATE_CHANGE_PERIOD
+        );
     }
 
     function registerBatchManager(
@@ -439,7 +441,7 @@ contract BaseTest is TestAccounts {
                 uint128(LiquityMath._max(20e16, _annualInterestRate)),
                 uint128(_annualInterestRate),
                 uint128(25e14),
-                uint128(0)
+                MIN_INTEREST_RATE_CHANGE_PERIOD
             );
         }
 
@@ -483,7 +485,7 @@ contract BaseTest is TestAccounts {
                 uint128(20e16),
                 uint128(_annualInterestRate),
                 uint128(25e14),
-                uint128(0)
+                MIN_INTEREST_RATE_CHANGE_PERIOD
             );
         }
         setInterestBatchManager(_troveOwner, _troveId, _newBatchManager);

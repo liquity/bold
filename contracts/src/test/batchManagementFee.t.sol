@@ -377,7 +377,7 @@ contract BatchManagementFeeTest is DevTestSetup {
         vm.warp(block.timestamp + 10 days);
 
         // Second trove changes batch (with a different fee)
-        registerBatchManager(D, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 4e16, 50e14, 0);
+        registerBatchManager(D, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 4e16, 50e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
         // Switch trove batch
         switchBatchManager(C, CTroveId, D);
 

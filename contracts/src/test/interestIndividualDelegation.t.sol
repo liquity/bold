@@ -102,7 +102,7 @@ contract InterestIndividualDelegationTest is DevTestSetup {
 
     function testSetDelegateRemovesBatchManager() public {
         vm.startPrank(B);
-        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, 0);
+        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
         vm.stopPrank();
 
         // Open trove
