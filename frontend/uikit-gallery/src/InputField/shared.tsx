@@ -86,6 +86,7 @@ export function InputFieldFixture({
           alignItems: "center",
           justifyContent: "center",
           width: 300,
+          marginRight: -16,
         }}
       >
         <Slider
