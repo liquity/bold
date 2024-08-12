@@ -212,7 +212,13 @@ export function Dropdown({
               {buttonItem.icon}
             </div>
           )}
-          <div>
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            })}
+          >
             {buttonItem.label}
           </div>
           <div>
@@ -332,18 +338,22 @@ export function Dropdown({
                             })}
                           >
                             <div
-                              style={{
+                              className={css({
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 12,
-                              }}
+                              })}
                             >
-                              {item.icon && (
-                                <div>
-                                  {item.icon}
-                                </div>
-                              )}
-                              <div>{item.label}</div>
+                              {item.icon && <div>{item.icon}</div>}
+                              <div
+                                className={css({
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                })}
+                              >
+                                {item.label}
+                              </div>
                             </div>
                             {item.value && <div>{item.value}</div>}
                           </div>

@@ -17,5 +17,6 @@ export { IconGas } from "./IconGas";
 export { IconInfo } from "./IconInfo";
 export { IconLeverage } from "./IconLeverage";
 export { IconPlus } from "./IconPlus";
+export { IconSettings } from "./IconSettings";
 export { IconStake } from "./IconStake";
 export { IconSuggestion } from "./IconSuggestion";
