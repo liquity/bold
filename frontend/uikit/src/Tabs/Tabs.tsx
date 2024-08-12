@@ -24,10 +24,12 @@ export type TabItem = {
 // [2] https://www.w3.org/WAI/ARIA/apg/patterns/tabs/examples/tabs-automatic/
 
 export function Tabs({
+  compact,
   items,
   onSelect,
   selected,
 }: {
+  compact?: boolean;
   items: TabItem[];
   onSelect: (index: number) => void;
   selected: number;
@@ -80,6 +82,43 @@ export function Tabs({
     size, // update on container size change too
   ]);
 
+  const styles = compact
+    ? {
+      container: {
+        height: 32,
+        "--background": token("colors.controlSurface"),
+        "--border": `1px solid ${token("colors.border")}`,
+        borderRadius: 16,
+      },
+      activeTab: {
+        border: 0,
+        "--background": token("colors.accent"),
+        borderRadius: 12,
+      },
+      activeTabContent: {
+        // color: token("colors.accentContent"),
+        color: token(`colors.${selected ? "selected" : "interactive"}`),
+      },
+      tabsGap: 0,
+    }
+    : {
+      container: {
+        height: 44,
+        "--background": token("colors.fieldSurface"),
+        "--border": "0",
+        borderRadius: 8,
+      },
+      activeTab: {
+        border: "1px solid token(colors.border)",
+        "--background": token("colors.controlSurface"),
+        borderRadius: 8,
+      },
+      activeTabContent: {
+        color: token(`colors.${selected ? "selected" : "interactive"}`),
+      },
+      tabsGap: 8,
+    };
+
   return (
     <div
       ref={container}
@@ -88,11 +127,11 @@ export function Tabs({
         overflow: "hidden",
         display: "flex",
         width: "100%",
-        height: 44,
         padding: 4,
-        background: "fieldSurface",
-        borderRadius: 12,
+        background: "var(--background)",
+        border: "var(--border)",
       })}
+      style={styles.container}
     >
       <div
         className={css({
@@ -113,17 +152,18 @@ export function Tabs({
             zIndex: 2,
             display: "grid",
             gridTemplateRows: "1fr",
-            gap: 8,
             width: "100%",
             height: "100%",
           })}
           style={{
             gridTemplateColumns: `repeat(${items.length}, 1fr)`,
+            gap: styles.tabsGap,
           }}
         >
           {items.map((item, index) => (
             <Tab
               key={index}
+              compact={compact}
               onSelect={() => onSelect(index)}
               selected={index === selected}
               tabItem={item}
@@ -131,20 +171,21 @@ export function Tabs({
           ))}
         </div>
         <a.div
-          style={{
-            transform: barSpring.transform,
-            width: barSpring.width,
-          }}
           className={css({
             position: "absolute",
             zIndex: 1,
             inset: "0 auto 0 0",
             width: 0,
-            background: "controlSurface",
+            background: "var(--background)",
             border: "1px solid token(colors.border)",
             transformOrigin: "0 0",
             borderRadius: 8,
           })}
+          style={{
+            transform: barSpring.transform,
+            width: barSpring.width,
+            ...styles.activeTab,
+          }}
         />
       </div>
     </div>
@@ -152,14 +193,27 @@ export function Tabs({
 }
 
 function Tab({
+  compact,
   onSelect,
   selected,
   tabItem: { label, tabId, panelId },
 }: {
+  compact?: boolean;
   onSelect: () => void;
   selected: boolean;
   tabItem: TabItem;
 }) {
+  const styles = compact
+    ? {
+      activeTabContent: {
+        color: selected ? token("colors.accentContent") : token("colors.interactive"),
+      },
+    }
+    : {
+      activeTabContent: {
+        color: selected ? token("colors.selected") : token("colors.interactive"),
+      },
+    };
   return (
     <button
       aria-controls={panelId}
@@ -174,24 +228,21 @@ function Tab({
         alignItems: "center",
         justifyContent: "center",
         height: "100%",
-        padding: "0 16px",
         fontSize: 16,
         color: "interactive",
         cursor: "pointer",
         whiteSpace: "nowrap",
         textOverflow: "ellipsis",
         overflow: "hidden",
-        _active: {
-          translate: "0 1px",
-        },
         _focusVisible: {
           outline: "2px solid token(colors.focused)",
-          outlineOffset: -2,
           borderRadius: 8,
         },
       })}
       style={{
-        color: token(`colors.${selected ? "selected" : "interactive"}`),
+        color: styles.activeTabContent.color,
+        padding: compact ? "0 12px" : "0 16px",
+        outlineOffset: compact ? 1 : -2,
       }}
     >
       {label}
