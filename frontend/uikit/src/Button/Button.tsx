@@ -80,7 +80,8 @@ export function useButtonStyles(
     .with("primary", () => ({
       "--color": color("accentContent"),
       "--background": color("accent"),
-      "--backgroundHover": color("accentHint"),
+      // "--backgroundHover": color("accentHint"),
+      "--backgroundHover": color("accent"),
       "--backgroundPressed": color("accentActive"),
     }))
     .with(P.union("secondary", "tertiary"), (mode) => ({

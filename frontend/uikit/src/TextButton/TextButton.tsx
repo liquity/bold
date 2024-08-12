@@ -36,6 +36,7 @@ export function useTextButtonStyles() {
     alignItems: "center",
     gap: 6,
     fontSize: 16,
+    fontWeight: 500,
     color: "accent",
     borderRadius: 4,
     cursor: "pointer",

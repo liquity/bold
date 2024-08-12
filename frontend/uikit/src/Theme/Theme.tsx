@@ -73,6 +73,10 @@ export const colors = {
   // brown
   "brown:50": "#F8F6F4",
 
+  // desert
+  "desert:50": "#FAF9F7",
+  "desert:100": "#EFECE5",
+
   // White
   "white": "#FFFFFF",
 
@@ -113,6 +117,8 @@ export const lightTheme = {
     controlSurface: "white",
     controlSurfaceAlt: "gray:200",
     hint: "brown:50",
+    infoSurface: "desert:50",
+    infoSurfaceBorder: "desert:100",
     dimmed: "gray:400",
     fieldBorder: "gray:100",
     fieldBorderFocused: "gray:300",
@@ -123,6 +129,7 @@ export const lightTheme = {
     strongSurface: "blue:950",
     strongSurfaceContent: "white",
     strongSurfaceContentAlt: "gray:500",
+    strongSurfaceContentAlt2: "gray:100",
     interactive: "blue:950",
     negative: "red:500",
     negativeActive: "red:600",
