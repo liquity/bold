@@ -1,13 +1,13 @@
-import type { TroveId } from "@/src/types";
+import type { PositionLoan, TroveId } from "@/src/types";
+import type { ReactNode } from "react";
 
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
 import { getLiquidationRisk, getRedemptionRisk } from "@/src/liquity-math";
 import { usePrice } from "@/src/prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
-import { capitalizeFirstLetter } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, InfoTooltip, StatusDot, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import { Button, HFlex, IconBorrow, StatusDot, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 export function Position({
@@ -15,21 +15,23 @@ export function Position({
 }: {
   troveId: TroveId;
 }) {
-  const ethPriceUsd = usePrice("ETH");
-
   const position = DEMO_MODE && ACCOUNT_POSITIONS.find((position) => (
     position.type === "loan" && position.troveId === troveId
-  ));
+  )) as PositionLoan | undefined;
 
-  if (!position || position.type !== "loan" || !ethPriceUsd) {
+  const token = position && TOKENS_BY_SYMBOL[position.collateral];
+
+  const collPriceUsd = usePrice(token ? token.symbol : null);
+
+  if (!position || !collPriceUsd || !token) {
     return null;
   }
 
-  const { collateralRatio } = TOKENS_BY_SYMBOL[position.collateral];
-  const maxLtv = dn.div(dn.from(1, 18), collateralRatio);
+  const { deposit, borrowed, interestRate } = position;
+  const ltv = dn.div(borrowed, dn.mul(deposit, collPriceUsd));
+  const redemptionRisk = getRedemptionRisk(interestRate);
 
-  const ltv = dn.div(position.borrowed, dn.mul(position.deposit, ethPriceUsd));
-  const redemptionRisk = getRedemptionRisk(position.interestRate);
+  const maxLtv = dn.from(1 / token.collateralRatio, 18);
   const liquidationRisk = getLiquidationRisk(ltv, maxLtv);
 
   return (
@@ -50,10 +52,26 @@ export function Position({
           color: "strongSurfaceContentAlt",
         })}
       >
-        <span>Total loan</span>
-        <InfoTooltip heading="Total loan">
-          The total amount of BOLD borrowed in this position.
-        </InfoTooltip>
+        <div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            color: "strongSurfaceContent",
+            fontSize: 12,
+            textTransform: "uppercase",
+          })}
+        >
+          <div
+            className={css({
+              display: "flex",
+              color: "strongSurfaceContentAlt",
+            })}
+          >
+            <IconBorrow size={16} />
+          </div>
+          BOLD loan
+        </div>
       </h1>
       <div
         className={css({
@@ -80,48 +98,85 @@ export function Position({
           <TokenIcon symbol="BOLD" size={32} />
         </div>
         <div>
-          <Button label="Show details" />
+          <Button label="Show details" mode="primary" size="small" />
         </div>
       </div>
+
       <div
         className={css({
           display: "grid",
-          paddingTop: 28,
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "repeat(3, 1fr)",
           gap: 12,
+          paddingTop: 32,
         })}
       >
-        <HFlex gap={8} justifyContent="flex-start">
-          <div
-            className={css({
-              color: "strongSurfaceContentAlt",
-            })}
-          >
-            LTV
-          </div>
-          <div>{dn.format(dn.mul(ltv, 100), 2)}%</div>
-        </HFlex>
-        <HFlex justifyContent="flex-end">
-          {liquidationRisk && <div>{capitalizeFirstLetter(liquidationRisk)} liquidation risk</div>}
-          <StatusDot mode={riskLevelToStatusMode(liquidationRisk)} />
-        </HFlex>
-        <HFlex gap={8} justifyContent="flex-start">
-          <div
-            className={css({
-              color: "strongSurfaceContentAlt",
-            })}
-          >
-            Interest rate
-          </div>
-          <div>
-            {dn.format(dn.mul(position.interestRate, 100), 2)}%
-          </div>
-        </HFlex>
-        <HFlex justifyContent="flex-end">
-          {redemptionRisk && <div>{capitalizeFirstLetter(redemptionRisk)} redemption risk</div>}
-          <StatusDot mode={riskLevelToStatusMode(redemptionRisk)} />
-        </HFlex>
+        <GridItem label="Collateral">
+          {dn.format(position.deposit, 2)} {TOKENS_BY_SYMBOL[position.collateral].name}
+        </GridItem>
+        <GridItem label="Liq. price">
+          $2,208.5
+        </GridItem>
+        <GridItem label="Interest rate">
+          {dn.format(dn.mul(position.interestRate, 100), 2)}%
+        </GridItem>
+        <GridItem label="LTV">
+          {dn.format(dn.mul(ltv, 100), 2)}%
+        </GridItem>
+        <GridItem label="Liquidation risk">
+          <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+            <StatusDot
+              mode={riskLevelToStatusMode(liquidationRisk)}
+              size={8}
+            />
+            {liquidationRisk === "low" ? "Low" : liquidationRisk === "medium" ? "Medium" : "High"}
+          </HFlex>
+        </GridItem>
+        {redemptionRisk && (
+          <GridItem label="Redemption risk">
+            <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+              <StatusDot
+                mode={riskLevelToStatusMode(redemptionRisk)}
+                size={8}
+              />
+              {redemptionRisk === "low" ? "Low" : redemptionRisk === "medium" ? "Medium" : "High"}
+            </HFlex>
+          </GridItem>
+        )}
       </div>
     </section>
+  );
+}
+
+function GridItem({
+  children,
+  label,
+}: {
+  children: ReactNode;
+  label: string;
+}) {
+  return (
+    <div
+      className={css({
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+        fontSize: 14,
+      })}
+    >
+      <div
+        className={css({
+          color: "strongSurfaceContentAlt",
+        })}
+      >
+        {label}
+      </div>
+      <div
+        className={css({
+          color: "strongSurfaceContent",
+        })}
+      >
+        {children}
+      </div>
+    </div>
   );
 }

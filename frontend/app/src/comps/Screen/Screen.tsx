@@ -23,7 +23,7 @@ export function Screen({
         flexDirection: "column",
         alignItems: "center",
         width: "100%",
-        padding: 24,
+        padding: "24px 24px 64px",
         gap: 56,
       })}
     >
