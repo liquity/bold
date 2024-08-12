@@ -229,14 +229,22 @@ export function Slider({
                     "--bgNormal": "token(colors.controlSurfaceAlt)",
                     "--bgDisabled": "token(colors.disabledBorder)",
                     "--gradient": `linear-gradient(
-                  90deg,
-                  token(colors.positive) 0%,
-                  token(colors.positive) calc(var(--gradientStep2) - var(--gradientTransitionBlur) / 2),
-                  token(colors.warning) calc(var(--gradientStep2) + var(--gradientTransitionBlur) / 2),
-                  token(colors.warning) calc(var(--gradientStep3) - var(--gradientTransitionBlur) / 2),
-                  token(colors.negative) calc(var(--gradientStep3) + var(--gradientTransitionBlur) / 2),
-                  token(colors.negative) 100%
-                )`,
+                      in lab 90deg,
+                      token(colors.riskGradient1) 0%,
+                      token(colors.riskGradient2) calc(
+                        var(--gradientStep2) - var(--gradientTransitionBlur) / 2
+                      ),
+                      token(colors.riskGradient3) calc(
+                        var(--gradientStep2) + var(--gradientTransitionBlur) / 2
+                      ),
+                      token(colors.riskGradient4) calc(
+                        var(--gradientStep3) - var(--gradientTransitionBlur) / 2
+                      ),
+                      token(colors.riskGradient5) calc(
+                        var(--gradientStep3) + var(--gradientTransitionBlur) / 2
+                      ),
+                      token(colors.riskGradient5) 100%
+                    )`,
                   })}
                   style={{
                     background: `var(${
@@ -352,12 +360,12 @@ function ChartSvg({
     const [step2, step3] = gradient;
     const blur = GRADIENT_TRANSITION_BLUR / 100 / 2;
     return [
-      { offset: "0%", color: "var(--colors-negative)" },
-      { offset: `${(step2 - blur) * 100}%`, color: "var(--colors-negative)" },
-      { offset: `${(step2 + blur) * 100}%`, color: "var(--colors-warning)" },
-      { offset: `${(step3 - blur) * 100}%`, color: "var(--colors-warning)" },
-      { offset: `${(step3 + blur) * 100}%`, color: "var(--colors-positive)" },
-      { offset: "100%", color: "var(--colors-positive)" },
+      { offset: "0%", color: "var(--colors-risk-gradient1)" },
+      { offset: `${(step2 - blur) * 100}%`, color: "var(--colors-risk-gradient2)" },
+      { offset: `${(step2 + blur) * 100}%`, color: "var(--colors-risk-gradient3)" },
+      { offset: `${(step3 - blur) * 100}%`, color: "var(--colors-risk-gradient4)" },
+      { offset: `${(step3 + blur) * 100}%`, color: "var(--colors-risk-gradient5)" },
+      { offset: "100%", color: "var(--colors-risk-gradient5)" },
     ];
   }, [gradient]);
 

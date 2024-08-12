@@ -157,11 +157,17 @@ export const lightTheme = {
     brandGreenContent: "green:950",
     brandGreenContentAlt: "green:800",
 
+    riskGradient1: "green:400",
+    riskGradient2: "#B8E549",
+    riskGradient3: "yellow:400",
+    riskGradient4: "#FFA12B",
+    riskGradient5: "red:500",
+
     // not used yet
     brandCyan: "brand:cyan",
     brandCoral: "brand:coral",
     brandBrown: "brand:brown",
-  } satisfies Record<string, keyof typeof colors>,
+  } satisfies Record<string, (keyof typeof colors) | `#${string}`>,
 } as const;
 
 export type ThemeDescriptor = {
@@ -171,7 +177,17 @@ export type ThemeDescriptor = {
 export type ThemeColorName = keyof ThemeDescriptor["colors"];
 
 export function themeColor(theme: ThemeDescriptor, name: ThemeColorName) {
-  return colors[theme.colors[name]];
+  const themeColor = theme.colors[name];
+
+  if (themeColor.startsWith("#")) {
+    return themeColor;
+  }
+
+  if (themeColor in colors) {
+    return colors[themeColor as keyof typeof colors];
+  }
+
+  throw new Error(`Color ${themeColor} not found in theme`);
 }
 
 const ThemeContext = createContext({
