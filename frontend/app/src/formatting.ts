@@ -19,3 +19,12 @@ export function formatRedemptionRisk(redemptionRisk: RiskLevel | null) {
     .with("high", () => "High redemption risk")
     .exhaustive();
 }
+
+export function formatRisk(risk: RiskLevel | null) {
+  return match(risk)
+    .with(P.nullish, () => null)
+    .with("low", () => "Low")
+    .with("medium", () => "Medium")
+    .with("high", () => "High")
+    .exhaustive();
+}

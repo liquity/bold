@@ -13,74 +13,90 @@ import { css } from "@/styled-system/css";
 import {
   HFlex,
   IconBorrow,
+  IconEarn,
   IconEdit,
+  IconLeverage,
   IconStake,
   StatusDot,
   StrongCard,
   TokenIcon,
   TOKENS_BY_SYMBOL,
 } from "@liquity2/uikit";
+import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import Link from "next/link";
 import { match } from "ts-pattern";
 
 export function Positions() {
   const account = useAccount();
-  return account.isConnected
-    ? (
-      <div>
-        <h1
-          className={css({
-            paddingBottom: 32,
-            fontSize: 32,
-            color: "content",
-          })}
-        >
-          {content.home.myPositionsTitle}
-        </h1>
-        <div
-          className={css({
-            display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 24,
-          })}
-        >
-          {ACCOUNT_POSITIONS.map((position, index) => (
-            match(position)
-              .with({ type: "loan" }, ({ type, ...props }) => <PositionLoan key={index} {...props} />)
-              .with({ type: "earn" }, ({ type, ...props }) => <PositionEarn key={index} {...props} />)
-              .with({ type: "leverage" }, ({ type, ...props }) => <PositionLeverage key={index} {...props} />)
-              .with({ type: "stake" }, ({ type, ...props }) => <PositionStake key={index} {...props} />)
-              .otherwise(() => null)
-          ))}
-        </div>
+
+  const positionCards = ACCOUNT_POSITIONS.map((position, index) => (
+    match(position)
+      .with({ type: "loan" }, ({ type, ...props }) => [index, <PositionLoan {...props} />])
+      .with({ type: "earn" }, ({ type, ...props }) => [index, <PositionEarn {...props} />])
+      .with({ type: "leverage" }, ({ type, ...props }) => [index, <PositionLeverage {...props} />])
+      .with({ type: "stake" }, ({ type, ...props }) => [index, <PositionStake {...props} />])
+      .exhaustive()
+  ));
+
+  const mode = account.isConnected && positionCards.length > 0 ? "positions" : "actions";
+
+  const actionCards = [
+    <ActionCard type="borrow" />,
+    <ActionCard type="leverage" />,
+    <ActionCard type="earn" />,
+    <ActionCard type="stake" />,
+  ].map((card, index) => [index, card]);
+
+  const positionTransitions = useTransition(mode === "positions" ? positionCards : actionCards, {
+    keys: ([index]) => `${index}${mode}`,
+    from: { opacity: 0, transform: "scale3d(0.95, 0.95, 1)" },
+    enter: { opacity: 1, transform: "scale3d(1, 1, 1)" },
+    leave: { display: "none", immediate: true },
+    trail: 10,
+    config: {
+      mass: 1,
+      tension: 2800,
+      friction: 80,
+    },
+  });
+
+  return (
+    <div>
+      <h1
+        className={css({
+          fontSize: 32,
+          color: "content",
+        })}
+        style={{
+          paddingBottom: mode === "positions" ? 32 : 48,
+        }}
+      >
+        {mode === "positions" ? content.home.myPositionsTitle : content.home.openPositionTitle}
+      </h1>
+      <div
+        className={css({
+          display: "grid",
+          gap: 24,
+        })}
+        style={{
+          gridTemplateColumns: `repeat(${mode === "positions" ? 3 : 4}, 1fr)`,
+        }}
+      >
+        {positionTransitions((style, [_, card]) => (
+          <a.div
+            className={css({
+              display: "grid",
+              height: "100%",
+            })}
+            style={style}
+          >
+            {card}
+          </a.div>
+        ))}
       </div>
-    )
-    : (
-      <div>
-        <h1
-          className={css({
-            paddingBottom: 48,
-            fontSize: 32,
-            color: "content",
-          })}
-        >
-          {content.home.openPositionTitle}
-        </h1>
-        <div
-          className={css({
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 24,
-          })}
-        >
-          <ActionCard type="borrow" />
-          <ActionCard type="leverage" />
-          <ActionCard type="earn" />
-          <ActionCard type="stake" />
-        </div>
-      </div>
-    );
+    </div>
+  );
 }
 
 function PositionLoan({
@@ -133,7 +149,7 @@ function PositionLoan({
             <div
               className={css({
                 display: "flex",
-                color: "strongSurfaceContentAlt",
+                color: "strongSurfaceContentAlt2",
               })}
             >
               <IconBorrow size={16} />
@@ -298,6 +314,7 @@ function PositionLeverage({
 
   const price = usePrice(token.symbol);
   const totalValue = price && dn.mul(deposit, price);
+
   return (
     <Link
       href={`/loan?id=${troveId}`}
@@ -317,22 +334,22 @@ function PositionLeverage({
             <div
               className={css({
                 display: "flex",
-                color: "strongSurfaceContentAlt",
+                color: "strongSurfaceContentAlt2",
               })}
             >
-              <IconBorrow size={16} />
+              <IconLeverage size={16} />
             </div>
-            Leverage position
+            Leverage loan
           </div>,
         ]}
         contextual={<EditSquare />}
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-              {totalValue ? dn.format(totalValue, 2) : "−"}
+              {deposit ? dn.format(deposit, 2) : "−"}
               <TokenIcon
                 size={24}
-                symbol="BOLD"
+                symbol={token.symbol}
               />
             </HFlex>
           ),
@@ -485,10 +502,10 @@ function PositionEarn({
             <div
               className={css({
                 display: "flex",
-                color: "strongSurfaceContentAlt",
+                color: "strongSurfaceContentAlt2",
               })}
             >
-              <IconBorrow size={16} />
+              <IconEarn size={16} />
             </div>
             Earn position
           </div>,
@@ -603,7 +620,7 @@ function PositionStake({
             <div
               className={css({
                 display: "flex",
-                color: "strongSurfaceContentAlt",
+                color: "strongSurfaceContentAlt2",
               })}
             >
               <IconStake size={16} />

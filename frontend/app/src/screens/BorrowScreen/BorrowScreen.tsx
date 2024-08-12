@@ -27,7 +27,6 @@ import {
   Slider,
   TextButton,
   TokenIcon,
-  VFlex,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
@@ -199,7 +198,6 @@ export function BorrowScreen() {
               }
               label={content.borrowScreen.borrowField.label}
               placeholder="0.00"
-              paddingBottom={16}
               secondary={{
                 start: `$${
                   debt.parsed
@@ -258,118 +256,116 @@ export function BorrowScreen() {
           ]}
         />
 
-        <VFlex gap={0}>
-          <Field
-            // “Interest rate”
-            field={
-              <InputField
-                contextual={
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: 300,
+        <Field
+          // “Interest rate”
+          field={
+            <InputField
+              contextual={
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 300,
+                  }}
+                >
+                  <Slider
+                    gradient={[1 / 3, 2 / 3]}
+                    chart={INTEREST_CHART}
+                    onChange={(value) => {
+                      interestRate.setValue(
+                        String(Math.round(lerp(INTEREST_RATE_MIN, INTEREST_RATE_MAX, value) * 10) / 10),
+                      );
                     }}
-                  >
-                    <Slider
-                      gradient={[1 / 3, 2 / 3]}
-                      chart={INTEREST_CHART}
-                      onChange={(value) => {
-                        interestRate.setValue(
-                          String(Math.round(lerp(INTEREST_RATE_MIN, INTEREST_RATE_MAX, value) * 10) / 10),
-                        );
-                      }}
-                      value={norm(
-                        interestRate.parsed ? dn.toNumber(interestRate.parsed) : 0,
-                        INTEREST_RATE_MIN,
-                        INTEREST_RATE_MAX,
-                      )}
-                    />
-                  </div>
-                }
-                label={content.borrowScreen.interestRateField.label}
-                placeholder="0.00"
-                secondary={{
-                  start: (
-                    <HFlex gap={4}>
-                      <div>
-                        {boldInterestPerYear
-                          ? dn.format(boldInterestPerYear, { digits: 2, trailingZeros: false })
-                          : "−"} BOLD / year
-                      </div>
-                      <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
-                    </HFlex>
-                  ),
-                  end: (
-                    <span>
-                      <span>{"Before you "}</span>
-                      <span
-                        className={css({
-                          color: "content",
-                        })}
-                      >
-                        <span
-                          style={{
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {boldRedeemableInFront}
-                        </span>
-                        <span>{" BOLD to redeem"}</span>
-                      </span>
-                    </span>
-                  ),
-                }}
-                {...interestRate.inputFieldProps}
-                valueUnfocused={(!interestRate.isEmpty && interestRate.parsed)
-                  ? (
+                    value={norm(
+                      interestRate.parsed ? dn.toNumber(interestRate.parsed) : 0,
+                      INTEREST_RATE_MIN,
+                      INTEREST_RATE_MAX,
+                    )}
+                  />
+                </div>
+              }
+              label={content.borrowScreen.interestRateField.label}
+              placeholder="0.00"
+              secondary={{
+                start: (
+                  <HFlex gap={4}>
+                    <div>
+                      {boldInterestPerYear
+                        ? dn.format(boldInterestPerYear, { digits: 2, trailingZeros: false })
+                        : "−"} BOLD / year
+                    </div>
+                    <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
+                  </HFlex>
+                ),
+                end: (
+                  <span>
+                    <span>{"Before you "}</span>
                     <span
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                      }}
+                      className={css({
+                        color: "content",
+                      })}
                     >
                       <span
                         style={{
                           fontVariantNumeric: "tabular-nums",
                         }}
                       >
-                        {dn.format(interestRate.parsed, { digits: 1, trailingZeros: true })}
+                        {boldRedeemableInFront}
                       </span>
-                      <span
-                        style={{
-                          color: "#878AA4",
-                          fontSize: 24,
-                        }}
-                      >
-                        % per year
-                      </span>
+                      <span>{" BOLD to redeem"}</span>
                     </span>
-                  )
-                  : null}
-              />
-            }
-            footer={[
-              [
-                // eslint-disable-next-line react/jsx-key
-                <Field.FooterInfoRedemptionRisk riskLevel={loanDetails.redemptionRisk} />,
-                <span
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    color: "contentAlt",
-                  })}
-                >
-                  <IconSuggestion size={16} />
-                  <span>You can adjust interest rate later</span>
-                </span>,
-              ],
-            ]}
-          />
-        </VFlex>
+                  </span>
+                ),
+              }}
+              {...interestRate.inputFieldProps}
+              valueUnfocused={(!interestRate.isEmpty && interestRate.parsed)
+                ? (
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {dn.format(interestRate.parsed, { digits: 1, trailingZeros: true })}
+                    </span>
+                    <span
+                      style={{
+                        color: "#878AA4",
+                        fontSize: 24,
+                      }}
+                    >
+                      % per year
+                    </span>
+                  </span>
+                )
+                : null}
+            />
+          }
+          footer={[
+            [
+              // eslint-disable-next-line react/jsx-key
+              <Field.FooterInfoRedemptionRisk riskLevel={loanDetails.redemptionRisk} />,
+              <span
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  color: "contentAlt",
+                })}
+              >
+                <IconSuggestion size={16} />
+                <span>You can adjust interest rate later</span>
+              </span>,
+            ],
+          ]}
+        />
 
         <RedemptionInfo />
 
