@@ -1003,15 +1003,20 @@ Liquity v2 requires accurate pricing in USD for the above collateral assets.
 
 All oracles are integrated via Chainlink’s `AggregatorV3Interface`, and all oracle price requests are made using its `latestRoundData` function.
 
+#### Terminology
+
+- _**Oracle**_ refers to the external system which Liquity v2 fetches the price from- e.g. "the Chainlink ETH-USD **oracle**".
+- _**PriceFeed**_ refers to the internal Liquity v2 system contract which contains price calculations and logic for a given branch - e.g. "the WETH **PriceFeed**, which fetches prica data from the ETH-USD **oracle**"
+
 ### Choice of oracles and price calculations
 
-Chainlink push feeds were chosen due to Chainlink’s reliability and track record. The system provisionally uses Redstone’s push feed for OSETH, though the Chainlink feed will be used when it is made public (and if we decide to include OSETH as collateral).
+Chainlink push oracles were chosen due to Chainlink’s reliability and track record. The system provisionally uses Redstone’s push oracle for OSETH, though the Chainlink oracle will be used when it is made public (and if we decide to include OSETH as collateral).
 
 The pricing method for each LST depends on availability of oracles. Where possible, direct LST-USD market oracles have been used. 
 
 Otherwise, composite market oracles have been created which utilise the ETH-USD market feed and an LST-ETH market feed. In the case of the WSTETH oracle, the STETH price and the WSTETH-STETH exchange rate is used.
 
-LST-ETH canonical exchange rates are also used as sanity check for the more vulnerable LSTs (i.e. lower liquidity/volume).
+LST-ETH canonical exchange rates are also used as sanity checks for the more vulnerable LSTs (i.e. lower liquidity/volume).
 
 Here are the oracles and price calculations for each PriceFeed:
 
@@ -1337,11 +1342,14 @@ And some additional solutions that may help reduce the chance of bad debt occurr
 
 7. **Pro-rata redemptions at TCR < 100% (branch specific, not routed)**. Urgent redemptions are helpful for shrinking the debt of a shut down branch when it is at `TCR > 100%`. However, at `TCR < 100%`, urgent redemptions do not help clear the bad debt. They simply remove all collateral and push it into its final state faster (and in fact, make it slightly worse since they pay a slight collateral bonus).  At `TCR < 100%`, we could offer special pro-rata redemptions only on the shut down branch - e.g. at `TCR = 80%`, users may redeem 1 BOLD for $0.80 worth of collateral. This would (in principle) allow someone to completely clear the bad debt via redemption. At first glance it seems unprofitable, but if the redeemer has reason to believe the collateral is underpriced and the price may rebound at some point in future, they may believe it to be profitable to redeem pro-rata.
 8. 
+
 ## Requirements
 
 - [Node.js](https://nodejs.org/)
 - [pnpm](https://pnpm.io/)
 - [Foundry](https://book.getfoundry.sh/getting-started/installation)
+
+
 
 ## Setup
 

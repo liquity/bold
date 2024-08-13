@@ -95,6 +95,7 @@ export function Prices({ children }: { children: ReactNode }) {
   );
 }
 
-export function usePrice(token: PriceToken) {
-  return useContext(PriceContext)[token];
+export function usePrice(token: PriceToken | null) {
+  const context = useContext(PriceContext);
+  return token ? context[token] : null;
 }

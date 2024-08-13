@@ -19,6 +19,7 @@ export function AppLayout({
         width: LAYOUT_WIDTH,
         minHeight: "100vh",
         margin: "0 auto",
+        background: "background",
       })}
     >
       <div
