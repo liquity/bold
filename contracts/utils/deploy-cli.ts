@@ -17,6 +17,7 @@ Arguments:
 
 Options:
   --chain-id <CHAIN_ID>                    Chain ID to deploy to.
+  --debug                                  Show debug output.
   --deployer <DEPLOYER>                    Address or private key to deploy with.
                                            Requires a Ledger if an address is used.
   --ledger-path <LEDGER_PATH>              HD path to use with the Ledger (only used
@@ -44,6 +45,7 @@ const argv = minimist(process.argv.slice(2), {
     h: "help",
   },
   boolean: [
+    "debug",
     "help",
     "open-demo-troves",
     "verify",
@@ -173,7 +175,10 @@ Deploying Liquity contracts with the following settings:
   }
 
   // deploy
-  await $`forge ${forgeArgs}`;
+  const deploymentOutput = await $`forge ${forgeArgs}`;
+  if (options.debug) {
+    console.log(deploymentOutput.text());
+  }
 
   const deployedContracts = await getDeployedContracts(
     `broadcast/DeployLiquity2.s.sol/${options.chainId}/run-latest.json`,
@@ -248,6 +253,7 @@ function safeParseInt(value: string) {
 async function parseArgs() {
   const options = {
     chainId: safeParseInt(argv["chain-id"]),
+    debug: argv["debug"],
     deployer: argv["deployer"],
     etherscanApiKey: argv["etherscan-api-key"],
     help: argv["help"],
@@ -262,6 +268,9 @@ async function parseArgs() {
   const [networkPreset] = argv._;
 
   options.chainId ??= safeParseInt(process.env.CHAIN_ID ?? "");
+  options.debug ??= Boolean(
+    process.env.DEBUG && process.env.DEBUG !== "false",
+  );
   options.deployer ??= process.env.DEPLOYER;
   options.etherscanApiKey ??= process.env.ETHERSCAN_API_KEY;
   options.ledgerPath ??= process.env.LEDGER_PATH;
