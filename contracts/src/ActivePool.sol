@@ -123,7 +123,7 @@ contract ActivePool is IActivePool {
         uint256 periodEnd = shutdownTime != 0 ? shutdownTime : block.timestamp;
         uint256 periodStart = Math.min(lastAggBatchManagementFeesUpdateTime, periodEnd);
 
-        return aggWeightedBatchManagementFeeSum * (periodEnd - periodStart) / ONE_YEAR / DECIMAL_PRECISION;
+        return Math.ceilDiv(aggWeightedBatchManagementFeeSum * (periodEnd - periodStart), ONE_YEAR * DECIMAL_PRECISION);
     }
 
     function getNewApproxAvgInterestRateFromTroveChange(TroveChange calldata _troveChange)
