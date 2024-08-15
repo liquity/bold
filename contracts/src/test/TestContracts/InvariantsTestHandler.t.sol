@@ -172,6 +172,20 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         string errorString;
     }
 
+    struct ApplyMyPendingDebtContext {
+        uint256 upperHint;
+        uint256 lowerHint;
+        TestDeployer.LiquityContractsDev c;
+        uint256 pendingInterest;
+        uint256 troveId;
+        address batchManager;
+        uint256 batchManagementFee;
+        LatestTroveData t;
+        Trove trove;
+        bool wasOpen;
+        string errorString;
+    }
+
     struct WithdrawFromSPContext {
         TestDeployer.LiquityContractsDev c;
         uint256 pendingInterest;
@@ -1247,6 +1261,64 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     //     _resetUrgentRedemption();
     // }
+
+    function applyMyPendingDebt(uint256 i, uint32 upperHintSeed, uint32 lowerHintSeed) external {
+        ApplyMyPendingDebtContext memory v;
+
+        i = _bound(i, 0, branches.length - 1);
+        v.upperHint = _pickHint(i, upperHintSeed);
+        v.lowerHint = _pickHint(i, lowerHintSeed);
+
+        v.c = branches[i];
+        v.pendingInterest = v.c.activePool.calcPendingAggInterest();
+        v.troveId = _troveIdOf(msg.sender);
+        v.batchManager = _batchManagerOf[i][v.troveId];
+        v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
+        v.t = v.c.troveManager.getLatestTroveData(v.troveId);
+        v.trove = _troves[i][v.troveId];
+        v.wasOpen = _isOpen(i, v.troveId);
+
+        info("upper hint: ", _hintToString(i, v.upperHint));
+        info("lower hint: ", _hintToString(i, v.lowerHint));
+        logCall("applyMyPendingDebt", i.toString(), upperHintSeed.toString(), lowerHintSeed.toString());
+
+        try v.c.borrowerOperations.applyPendingDebt(v.troveId, v.lowerHint, v.upperHint) {
+            // Preconditions
+            assertTrue(v.wasOpen, "Should have failed as Trove wasn't open");
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
+
+            // Effects (Trove)
+            v.trove.applyPending();
+            _troves[i][v.troveId] = v.trove;
+            if (v.t.entireDebt >= MIN_DEBT) _zombieTroveIds[i].remove(v.troveId);
+
+            // Effects (system)
+            _mintYield(i, v.pendingInterest, 0);
+            if (v.batchManager != address(0)) _mintBatchManagementFee(i, v.batchManager);
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, v.errorString) = _decodeCustomError(revertData);
+
+            // Justify failures
+            if (selector == BorrowerOperations.TroveNotOpen.selector) {
+                assertFalse(v.wasOpen, "Shouldn't have failed as Trove was open");
+            } else if (selector == BorrowerOperations.IsShutDown.selector) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else {
+                revert(string.concat("Unexpected error: ", v.errorString));
+            }
+        }
+
+        if (bytes(v.errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
+            info("Expected error: ", v.errorString);
+            _log();
+        } else {
+            // Cleanup (success)
+            if (v.batchManager != address(0)) _sweepBold(v.batchManager, v.batchManagementFee);
+        }
+    }
 
     function provideToSP(uint256 i, uint256 amount, bool claim) external {
         i = _bound(i, 0, branches.length - 1);
