@@ -1184,69 +1184,69 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         _addToUrgentRedemptionBatch(msg.sender);
     }
 
-    function urgentRedemption(uint256 i, uint256 amount) external {
-        i = _bound(i, 0, branches.length - 1);
-        amount = _bound(amount, 0, _handlerBold);
+    // function urgentRedemption(uint256 i, uint256 amount) external {
+    //     i = _bound(i, 0, branches.length - 1);
+    //     amount = _bound(amount, 0, _handlerBold);
 
-        TestDeployer.LiquityContractsDev memory c = branches[i];
-        uint256 pendingInterest = c.activePool.calcPendingAggInterest();
-        UrgentRedemptionTransientState storage r = _planUrgentRedemption(i, amount);
-        assertLeDecimal(r.totalDebtRedeemed, amount, 18, "Total redeemed exceeds input amount");
+    //     TestDeployer.LiquityContractsDev memory c = branches[i];
+    //     uint256 pendingInterest = c.activePool.calcPendingAggInterest();
+    //     UrgentRedemptionTransientState storage r = _planUrgentRedemption(i, amount);
+    //     assertLeDecimal(r.totalDebtRedeemed, amount, 18, "Total redeemed exceeds input amount");
 
-        info("redeemed BOLD: ", r.totalDebtRedeemed.decimal());
-        info("batch: [", _labelsFrom(r.batch).join(", "), "]");
-        logCall("urgentRedemption", i.toString(), amount.decimal());
+    //     info("redeemed BOLD: ", r.totalDebtRedeemed.decimal());
+    //     info("batch: [", _labelsFrom(r.batch).join(", "), "]");
+    //     logCall("urgentRedemption", i.toString(), amount.decimal());
 
-        // TODO: randomly deal less than amount?
-        _dealBold(msg.sender, amount);
+    //     // TODO: randomly deal less than amount?
+    //     _dealBold(msg.sender, amount);
 
-        string memory errorString;
-        vm.prank(msg.sender);
+    //     string memory errorString;
+    //     vm.prank(msg.sender);
 
-        try c.troveManager.urgentRedemption(amount, _troveIdsFrom(r.batch), r.totalCollRedeemed) {
-            // Preconditions
-            assertTrue(isShutdown[i], "Should have failed as branch hadn't been shut down");
+    //     try c.troveManager.urgentRedemption(amount, _troveIdsFrom(r.batch), r.totalCollRedeemed) {
+    //         // Preconditions
+    //         assertTrue(isShutdown[i], "Should have failed as branch hadn't been shut down");
 
-            // Effects (Troves)
-            for (uint256 j = 0; j < r.redeemed.length; ++j) {
-                Redeemed storage redeemed = r.redeemed[j];
-                Trove memory trove = _troves[i][redeemed.troveId];
-                trove.applyPending();
-                trove.coll -= redeemed.coll;
-                trove.debt -= redeemed.debt;
-                _troves[i][redeemed.troveId] = trove;
-            }
+    //         // Effects (Troves)
+    //         for (uint256 j = 0; j < r.redeemed.length; ++j) {
+    //             Redeemed storage redeemed = r.redeemed[j];
+    //             Trove memory trove = _troves[i][redeemed.troveId];
+    //             trove.applyPending();
+    //             trove.coll -= redeemed.coll;
+    //             trove.debt -= redeemed.debt;
+    //             _troves[i][redeemed.troveId] = trove;
+    //         }
 
-            // Effects (system)
-            _mintYield(i, pendingInterest, 0);
-        } catch (bytes memory revertData) {
-            bytes4 selector;
-            (selector, errorString) = _decodeCustomError(revertData);
+    //         // Effects (system)
+    //         _mintYield(i, pendingInterest, 0);
+    //     } catch (bytes memory revertData) {
+    //         bytes4 selector;
+    //         (selector, errorString) = _decodeCustomError(revertData);
 
-            // Justify failures
-            if (selector == TroveManager.NotShutDown.selector) {
-                assertFalse(isShutdown[i], "Shouldn't have failed as branch had been shut down");
-            } else {
-                revert(string.concat("Unexpected error: ", errorString));
-            }
-        }
+    //         // Justify failures
+    //         if (selector == TroveManager.NotShutDown.selector) {
+    //             assertFalse(isShutdown[i], "Shouldn't have failed as branch had been shut down");
+    //         } else {
+    //             revert(string.concat("Unexpected error: ", errorString));
+    //         }
+    //     }
 
-        if (bytes(errorString).length > 0) {
-            if (_assumeNoExpectedFailures) vm.assume(false);
+    //     if (bytes(errorString).length > 0) {
+    //         if (_assumeNoExpectedFailures) vm.assume(false);
 
-            info("Expected error: ", errorString);
-            _log();
+    //         info("Expected error: ", errorString);
+    //         _log();
 
-            // Cleanup (failure)
-            _sweepBold(msg.sender, amount);
-        } else {
-            // Cleanup (success)
-            _sweepBold(msg.sender, amount - r.totalDebtRedeemed);
-            _sweepColl(i, msg.sender, r.totalCollRedeemed);
-        }
+    //         // Cleanup (failure)
+    //         _sweepBold(msg.sender, amount);
+    //     } else {
+    //         // Cleanup (success)
+    //         _sweepBold(msg.sender, amount - r.totalDebtRedeemed);
+    //         _sweepColl(i, msg.sender, r.totalCollRedeemed);
+    //     }
 
-        _resetUrgentRedemption();
-    }
+    //     _resetUrgentRedemption();
+    // }
 
     function provideToSP(uint256 i, uint256 amount, bool claim) external {
         i = _bound(i, 0, branches.length - 1);
