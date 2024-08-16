@@ -19,7 +19,7 @@ import "./Dependencies/LiquityBase.sol";
 contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // --- Connected contract declarations ---
 
-    ITroveNFT internal troveNFT;
+    ITroveNFT public troveNFT;
     IBorrowerOperations public borrowerOperations;
     IStabilityPool public stabilityPool;
     address internal gasPoolAddress;

@@ -3,6 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "./ILiquityBase.sol";
+import "./ITroveNFT.sol";
 import "./IStabilityPool.sol";
 import "./IBoldToken.sol";
 import "./ISortedTroves.sol";
@@ -21,6 +22,7 @@ interface ITroveManager is ILiquityBase {
 
     function shutdownTime() external view returns (uint256);
 
+    function troveNFT() external view returns (ITroveNFT);
     function stabilityPool() external view returns (IStabilityPool);
     //function boldToken() external view returns (IBoldToken);
     function sortedTroves() external view returns (ISortedTroves);
