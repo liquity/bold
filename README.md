@@ -68,19 +68,16 @@
   - [Using lastGoodPrice if an oracle has been disabled](#using-lastgoodprice-if-an-oracle-has-been-disabled)
   - [Protection against upward market price manipulation](#protection-against-upward-market-price-manipulation)
 - [Known issues and mitigations](#known-issues-and-mitigations)
-  - [Oracle price frontrunning](#oracle-price-frontrunning)
-  - [Bypassing redemption routing logic via temporary SP deposits](#bypassing-redemption-routing-logic-via-temporary-sp-deposits)
-  - [Path-dependent redemptions: lower fee when chunking](#path-dependent-redemptions-lower-fee-when-chunking)
-  - [Oracle failure and urgent redemptions with the frozen last good price](#oracle-failure-and-urgent-redemptions-with-the-frozen-last-good-price)
-  - [Stale oracle price before shutdown triggered](#stale-oracle-price-before-shutdown-triggered)
-  - [Redistribution gains not applied on batch Troves (fix TODO)](#redistribution-gains-not-applied-on-batch-troves-fix-todo)
-  - [Batch management ops don’t check for a shutdown branch, and shutdown doesn’t freeze management fees (fix TODO)](#batch-management-ops-dont-check-for-a-shutdown-branch-and-shutdown-doesnt-freeze-management-fees-fix-todo)
-  - [Discrepancy between aggregate and sum of individual debts](#discrepancy-between-aggregate-and-sum-of-individual-debts)
-  - [Discrepancy between yieldGainsOwed and sum of individual yield gains in StabilityPool](#discrepancy-between-yieldgainsowed-and-sum-of-individual-yield-gains-in-stabilitypool)
-  - [LST oracle risks](#lst-oracle-risks)
-  - [No lower bound on `_minInterestRateChangePeriod` in `registerBatchManager`](#no-lower-bound-on-_mininterestratechangeperiod-in-registerbatchmanager)
-  - [No limit on the `_annualManagementFee`](#no-limit-on-the-_annualmanagementfee)
-  - [Branch shutdown and bad debt](#branch-shutdown-and-bad-debt)
+  - [1 - Oracle price frontrunning](#1---oracle-price-frontrunning)
+  - [2 - Bypassing redemption routing logic via temporary SP deposits](#2---bypassing-redemption-routing-logic-via-temporary-sp-deposits)
+  - [3 - Path-dependent redemptions: lower fee when chunking](#3---path-dependent-redemptions-lower-fee-when-chunking)
+  - [4 - Oracle failure and urgent redemptions with the frozen last good price](#4---oracle-failure-and-urgent-redemptions-with-the-frozen-last-good-price)
+  - [5 - Stale oracle price before shutdown triggered](#5---stale-oracle-price-before-shutdown-triggered)
+  - [6 - Batch management ops don’t check for a shutdown branch, and shutdown doesn’t freeze management fees](#6---batch-management-ops-dont-check-for-a-shutdown-branch-and-shutdown-doesnt-freeze-management-fees)
+  - [7 - Discrepancy between aggregate and sum of individual debts](#7---discrepancy-between-aggregate-and-sum-of-individual-debts)
+  - [8 - Discrepancy between `yieldGainsOwed` and sum of individual yield gains in StabilityPool](#8---discrepancy-between-yieldgainsowed-and-sum-of-individual-yield-gains-in-stabilitypool)
+  - [9 - LST oracle risks](#9---lst-oracle-risks)
+  - [10 - Branch shutdown and bad debt](#10---branch-shutdown-and-bad-debt)
 - [Requirements](#requirements)
 - [Setup](#setup)
 - [How to develop](#how-to-develop)
@@ -1074,7 +1071,7 @@ However this is not the only LST/oracle risk scenario. There are several to cons
 
 ## Known issues and mitigations
 
-### Oracle price frontrunning
+### 1 - Oracle price frontrunning
 
 Push oracles are used for all collateral pricing. Since these oracles push price update transactions on-chain, it is possible to frontrun them with redemption transactions.
 
@@ -1111,7 +1108,7 @@ However, we don’t expect oracle frontrunning to be a significant issue since t
 
 Solution 6 was provisionally chosen, as it involves minimal technical complexity. Parameters for redemptions are TBD.
 
-### Bypassing redemption routing logic via temporary SP deposits
+### 2 - Bypassing redemption routing logic via temporary SP deposits
 
 The redemption routing logic reduces the “outside” debt of each branch by the same percentage, where outside debt for branch `i` is given by:
 
@@ -1134,7 +1131,7 @@ Currently no fix is in place, because:
 - There is no direct value extraction from the system
 - Redemption routing is not critical to system health. It is intended as a soft measure to nudge the system back to a healthier state, but in the end the system is heavily reliant on the health of all collateral markets/assets.
 
-### Path-dependent redemptions: lower fee when chunking
+### 3 - Path-dependent redemptions: lower fee when chunking
 
 The redemption fee formula is path-dependent: that is, given some given prior system state, the fee incurred from redeeming one big chunk of BOLD in a single transaction is greater than the total fee incurred by redeeming the same BOLD amount in many smaller chunks with many transactions (assuming no other system state change in between chunks).
 
@@ -1153,7 +1150,7 @@ No fix is deemed necessary, since:
 - Redemptions in Liquity v1 (with the same fee formula) have broadly functioned well, and proven effective in restoring the LUSD peg.
 - The redemption fee spike gain and decay half-life are “best-guess” parameters anyway - there’s little reason to believe that even the intended fee scheme is absolutely optimal.
 
-### Oracle failure and urgent redemptions with the frozen last good price
+### 4 - Oracle failure and urgent redemptions with the frozen last good price
 
 When an oracle failure triggers a branch shutdown, the respective PriceFeed’s `fetchPrice` function returns the recorded `lastGoodPrice` price thereafter. Thus the LST on that branch after shutdown is always priced using `lastGoodPrice`.
 
@@ -1175,7 +1172,7 @@ No fix is implemented for this, for the following reasons:
 - Clearing as much debt from a shut down branch as possible is considered desirable, but the system is designed to be able to absorb some bad debt due to overall overcollateralization
 - Oracle failure, if it occurs, will much more likely be due to a disabled Chainlink feed rather than hack or technical failure. A disabled LST oracle implies an LST with low liquidity/volume, which in turn probably implies that the LST constitutes a small fraction of total Liquity v2 collateral. In this case, the bad debt should likely be small relative to total system debt, and the overall overcollateralization should maintain the BOLD peg.
 
-### Stale oracle price before shutdown triggered
+### 5 - Stale oracle price before shutdown triggered
 
 Liquity v2 checks all returned market oracle answers for staleness, and if they exceed a pre-set staleness threshold, it shuts down their associated branch.
 
@@ -1204,16 +1201,7 @@ Provisionally, the preset staleness thresholds in Liquity v2 as follows, though 
 | Redstone osETH-ETH (note: use Chainlink feed when released) | 24 hours         | 48 hours                                     |
 
 
-### Redistribution gains not applied on batch Troves (fix TODO)
-
-There is currently no way to permissionlessly apply pending redistribution gains to Troves in batches. This can lead to an “unfair advantage” for such Troves, since if they are left untouched for a long period, they accrue less interest than Troves with the same entire debt but lower redistribution gains.
-
-#### Solution 
-
-This is fixed in the following PR:
-https://github.com/liquity/bold/pull/265/files
-
-### Batch management ops don’t check for a shutdown branch, and shutdown doesn’t freeze management fees (fix TODO)
+### 6 - Batch management ops don’t check for a shutdown branch, and shutdown doesn’t freeze management fees
 
 Currently, batch management operations such as `setBatchManagerAnnualInterestRate` and `applyBatchInterestAndFeePermissionless` don’t check for branch shutdown. These operations should not be possible on a shutdown branch.
 
@@ -1223,7 +1211,7 @@ Additionally, upon shutdown all batch management fees should be frozen, in the s
 This fix is TODO.
 
 
-### Discrepancy between aggregate and sum of individual debts
+### 7 - Discrepancy between aggregate and sum of individual debts
 
 As mentioned in the interest rate [implementation section](#core-debt-invariant), the core debt invariant is given by:
 
@@ -1241,7 +1229,7 @@ However, this invariant doesn't hold perfectly - the aggregate is sometimes slig
 
 Though rounding error is inevitable, we have ensured that the error always “favors the system” - that is, the aggregate is always greater than the sum over Troves, and every Trove can be closed (until there is only 1 left in the system, as intended).
 
-### Discrepancy between `yieldGainsOwed` and sum of individual yield gains in StabilityPool
+### 8 - Discrepancy between `yieldGainsOwed` and sum of individual yield gains in StabilityPool
 
 StabilityPool increases `yieldGainsOwed` by the amount of BOLD yield it receives from interest minting, and decreases it by the claimed amount any time a depositor makes a claim. As such, `yieldGainsOwed` should always equal the sum of unclaimed yield present in deposits:
 
@@ -1257,7 +1245,7 @@ Some imprecision in the StabilityPool arithmetic is inevitable, but we should av
 
 **TODO**: we should analyze the issue more and understand the root cause better.
 
-### LST oracle risks 
+### 9 - LST oracle risks 
 
 Liquity v1 primarily used the Chainlink ETH-USD oracle to price collateral. ETH clearly has very deep liquidity and diverse price sources, which makes this oracle robust.
 
@@ -1292,27 +1280,7 @@ Taking the minimum of both market and canonical prices means that to make Liquit
 
 The best solution on paper seems to be 3) i.e. taking the minimum with an additional growth rate cap on the exchange rate, following [Aave’s approach](https://github.com/bgd-labs/aave-capo). However, deriving parameters for growth rate caps for each LST is tricky, and may not be suitable for an immutable system. 
 
-### No lower bound on `_minInterestRateChangePeriod` in `registerBatchManager`
-
-`registerBatchManager` requires the manager to set  a `_minInterestRateChangePeriod`.  This period dictates how often they can change the interest rates on their batch, and serves as a signal to borrowers.
-
-However, it’s possible for the batch manager to pass a `_minInterestRateChangePeriod` of `0`.  This means a manager could do repeated premature rate adjustments inside 1 transaction, incurring enough fees to push the ICR of 1 or more Troves under their management below the MCR, or even below 100%.
-
-**Solution**
-
-Set a non-zero lower bound for `_minInterestRateChangePeriod` that ensures no Troves in the batch can be dragged below 100% ICR by multiple premature adjustment fees in 1 transaction.
-
-
-### No limit on the `_annualManagementFee` 
-
-`registerBatchManager` allows any `_annualManagementFee` to be chosen, which for extremely high values, would mint an unconstrained amount of BOLD in a very short time, for even a very small batch.
-
-**Solution:**
-
-The `_annualManagementFee` should be constrained within a sensible range, e.g. [0, 100%].
-
-
-### Branch shutdown and bad debt
+### 10 - Branch shutdown and bad debt
 
 In the case of a collateral price collapse or oracle failure, a branch will shut down and urgent redemptions will be enabled. The collapsed branch may be left with 0 collateral (or collateral with 0 value), and some remaining bad debt.
 
