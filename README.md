@@ -1205,8 +1205,6 @@ Provisionally, the preset staleness thresholds in Liquity v2 as follows, though 
 
 Currently, batch management operations such as `setBatchManagerAnnualInterestRate` and `applyBatchInterestAndFeePermissionless` don’t check for branch shutdown. These operations should not be possible on a shutdown branch.
 
-Additionally, upon shutdown all batch management fees should be frozen, in the same way individual interest on Troves is frozen upon shutdown.
-
 #### Solution
 This fix is TODO.
 
