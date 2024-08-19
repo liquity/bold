@@ -1494,10 +1494,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
 
         if (_batchAddress != address(0)) {
-            batches[_batchAddress].coll = _newBatchColl + _troveChange.appliedRedistCollGain;
-            batches[_batchAddress].debt = _newBatchDebt + _troveChange.appliedRedistBoldDebtGain;
-            batches[_batchAddress].lastDebtUpdateTime = uint64(block.timestamp);
-
             _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt);
 
             emit BatchUpdated(
