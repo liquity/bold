@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "./IBoldToken.sol";
 import "./ITroveManager.sol";
 
 interface ICollateralRegistry {
@@ -14,6 +15,7 @@ interface ICollateralRegistry {
     function totalCollaterals() external view returns (uint256);
     function getToken(uint256 _index) external view returns (IERC20);
     function troveManagers(uint256 _index) external view returns (ITroveManager);
+    function boldToken() external view returns (IBoldToken);
 
     function getRedemptionRate() external view returns (uint256);
     function getRedemptionRateWithDecay() external view returns (uint256);
