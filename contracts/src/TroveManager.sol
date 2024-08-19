@@ -1490,8 +1490,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         _requireCallerIsBorrowerOperations();
 
         Troves[_troveId].coll = _newTroveColl;
-        Troves[_troveId].debt = _newTroveDebt;
-        Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
 
         if (_batchAddress != address(0)) {
             _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt);
@@ -1505,6 +1503,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 batches[_batchAddress].annualManagementFee,
                 batches[_batchAddress].totalDebtShares
             );
+        } else {
+            Troves[_troveId].debt = _newTroveDebt;
+            Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
         }
 
         _movePendingTroveRewardsToActivePool(
