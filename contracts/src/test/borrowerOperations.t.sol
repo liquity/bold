@@ -21,12 +21,13 @@ contract BorrowerOperationsTest is DevTestSetup {
         vm.stopPrank();
     }
 
-    function testRepayingTooMuchDebtReverts() public {
+    function testRepayingTooMuchDebtCapsAtMinDebt() public {
         uint256 troveId = openTroveNoHints100pct(A, 100 ether, 2_000 ether, 0.01 ether);
-        deal(address(boldToken), A, 1_000 ether);
+        deal(address(boldToken), A, 3_000 ether);
         vm.prank(A);
-        vm.expectRevert(BorrowerOperations.RepaymentTooHigh.selector);
         borrowerOperations.repayBold(troveId, 3_000 ether);
+
+        assertEq(troveManager.getTroveEntireDebt(troveId), MIN_DEBT, "Trove debt should be MIN_DEBT");
     }
 
     function testWithdrawingTooMuchCollateralReverts() public {

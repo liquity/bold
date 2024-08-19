@@ -135,7 +135,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error RepaymentNotMatchingCollWithdrawal();
     error TCRBelowCCR();
     error DebtBelowMin();
-    error RepaymentTooHigh();
     error CollWithdrawalTooHigh();
     error NotEnoughBoldBalance();
     error InterestRateTooLow();
@@ -590,7 +589,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         // When the adjustment is a debt repayment, check it's a valid amount and that the caller has enough Bold
         if (_troveChange.debtDecrease > 0) {
-            _requireValidBoldRepayment(vars.trove.entireDebt, _troveChange.debtDecrease);
+            uint256 maxRepayment = vars.trove.entireDebt - MIN_DEBT;
+            if (_troveChange.debtDecrease > maxRepayment) {
+                _troveChange.debtDecrease = maxRepayment;
+            }
             _requireSufficientBoldBalance(vars.boldToken, msg.sender, _troveChange.debtDecrease);
         }
 
@@ -645,7 +647,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             }
         }
 
-        // Make sure the Trove doesn't become unredeemable
+        // Make sure the Trove doesn't end up unredeemable
+        // Now the max repayment is capped to stay above MIN_DEBT, so this only applies to adjustUnredeemableTrove
         _requireAtLeastMinDebt(vars.newDebt);
 
         vars.newICR = LiquityMath._computeCR(vars.newColl, vars.newDebt, vars.price);
@@ -1382,12 +1385,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function _requireAtLeastMinDebt(uint256 _debt) internal pure {
         if (_debt < MIN_DEBT) {
             revert DebtBelowMin();
-        }
-    }
-
-    function _requireValidBoldRepayment(uint256 _currentDebt, uint256 _debtRepayment) internal pure {
-        if (_debtRepayment > _currentDebt) {
-            revert RepaymentTooHigh();
         }
     }
 
