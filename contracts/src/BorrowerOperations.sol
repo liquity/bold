@@ -490,18 +490,13 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         troveManagerCached.setTroveStatusToActive(_troveId);
 
-        // If it was in a batch, we need to put it back, otherwise we insert it normally
-        address batchManager = interestBatchManagerOf[_troveId];
-        if (batchManager == address(0)) {
-            sortedTroves.insert(
-                _troveId, troveManagerCached.getTroveAnnualInterestRate(_troveId), _upperHint, _lowerHint
-            );
-        } else {
-            LatestBatchData memory batch = troveManagerCached.getLatestBatchData(batchManager);
-            sortedTroves.insertIntoBatch(
-                _troveId, BatchId.wrap(batchManager), batch.annualInterestRate, _upperHint, _lowerHint
-            );
-        }
+        _reInsertIntoSortedTroves(
+            troveManagerCached,
+            _troveId,
+            troveManagerCached.getTroveAnnualInterestRate(_troveId),
+            _upperHint,
+            _lowerHint
+        );
     }
 
     function adjustTroveInterestRate(
@@ -773,16 +768,14 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             batch.entireDebtWithoutRedistribution,
             change
         );
-        trove = troveManagerCached.getLatestTroveData(_troveId);
         activePool.mintAggInterestAndAccountForTroveChange(change, batchManager);
-        trove = troveManagerCached.getLatestTroveData(_troveId);
 
+        trove = troveManagerCached.getLatestTroveData(_troveId);
         // If the trove was unredeemable, and now it’s not anymore, put it back in the list
         if (_checkTroveIsUnredeemable(troveManagerCached, _troveId) && trove.entireDebt >= MIN_DEBT) {
             troveManagerCached.setTroveStatusToActive(_troveId);
-            sortedTroves.insert(_troveId, trove.annualInterestRate, _upperHint, _lowerHint);
+            _reInsertIntoSortedTroves(troveManagerCached, _troveId, trove.annualInterestRate, _upperHint, _lowerHint);
         }
-        trove = troveManagerCached.getLatestTroveData(_troveId);
     }
 
     function getInterestIndividualDelegateOf(uint256 _troveId)
@@ -1164,6 +1157,25 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     // --- Helper functions ---
+
+    function _reInsertIntoSortedTroves(
+        ITroveManager _troveManager,
+        uint256 _troveId,
+        uint256 _annualInterestRate,
+        uint256 _upperHint,
+        uint256 _lowerHint
+    ) internal {
+        // If it was in a batch, we need to put it back, otherwise we insert it normally
+        address batchManager = interestBatchManagerOf[_troveId];
+        if (batchManager == address(0)) {
+            sortedTroves.insert(_troveId, _annualInterestRate, _upperHint, _lowerHint);
+        } else {
+            LatestBatchData memory batch = _troveManager.getLatestBatchData(batchManager);
+            sortedTroves.insertIntoBatch(
+                _troveId, BatchId.wrap(batchManager), batch.annualInterestRate, _upperHint, _lowerHint
+            );
+        }
+    }
 
     // This function mints the BOLD corresponding to the borrower's chosen debt increase
     // (it does not mint the accrued interest).
