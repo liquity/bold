@@ -73,7 +73,7 @@
   - [3 - Path-dependent redemptions: lower fee when chunking](#3---path-dependent-redemptions-lower-fee-when-chunking)
   - [4 - Oracle failure and urgent redemptions with the frozen last good price](#4---oracle-failure-and-urgent-redemptions-with-the-frozen-last-good-price)
   - [5 - Stale oracle price before shutdown triggered](#5---stale-oracle-price-before-shutdown-triggered)
-  - [6 - Batch management ops don’t check for a shutdown branch, and shutdown doesn’t freeze management fees](#6---batch-management-ops-dont-check-for-a-shutdown-branch-and-shutdown-doesnt-freeze-management-fees)
+  - [6 - Batch management ops don’t check for a shutdown branch](#6---batch-management-ops-dont-check-for-a-shutdown-branch)
   - [7 - Discrepancy between aggregate and sum of individual debts](#7---discrepancy-between-aggregate-and-sum-of-individual-debts)
   - [8 - Discrepancy between `yieldGainsOwed` and sum of individual yield gains in StabilityPool](#8---discrepancy-between-yieldgainsowed-and-sum-of-individual-yield-gains-in-stabilitypool)
   - [9 - LST oracle risks](#9---lst-oracle-risks)
@@ -1201,7 +1201,7 @@ Provisionally, the preset staleness thresholds in Liquity v2 as follows, though 
 | Redstone osETH-ETH (note: use Chainlink feed when released) | 24 hours         | 48 hours                                     |
 
 
-### 6 - Batch management ops don’t check for a shutdown branch, and shutdown doesn’t freeze management fees
+### 6 - Batch management ops don’t check for a shutdown branch
 
 Currently, batch management operations such as `setBatchManagerAnnualInterestRate` and `applyBatchInterestAndFeePermissionless` don’t check for branch shutdown. These operations should not be possible on a shutdown branch.
 
