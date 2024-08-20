@@ -650,6 +650,39 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest + accruedTroveFee);
     }
 
+    function testApplyBatchInterestPermissionlessReinsertsIntoSortedTrovesIfInBatch() public {
+        priceFeed.setPrice(2000e18);
+        uint256 troveDebtRequest = 2000e18;
+        uint256 interestRate = 25e16;
+
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 3 ether, troveDebtRequest, B, interestRate);
+        assertEq(sortedTroves.contains(ATroveId), true, "SortedTroves should have trove A ");
+        assertEq(sortedTroves.isBatchedNode(ATroveId), true, "A should be batched in SortedTroves");
+
+        // redeem from A
+        redeem(A, 500e18);
+
+        // Check A is zombie
+        assertEq(uint8(troveManager.getTroveStatus(ATroveId)), uint8(ITroveManager.Status.unredeemable));
+
+        // Fast-forward time
+        vm.warp(block.timestamp + 3650 days);
+
+        // C applies batch B's pending interest
+        applyPendingDebt(C, ATroveId);
+
+        // Check properly activaded and re-inserted
+        assertEq(
+            uint8(troveManager.getTroveStatus(ATroveId)), uint8(ITroveManager.Status.active), "A should not be zombie"
+        );
+        assertEq(sortedTroves.contains(ATroveId), true, "SortedTroves should have trove A ");
+        assertEq(sortedTroves.isBatchedNode(ATroveId), true, "A should be batched in SortedTroves");
+        address batchManagerAddress = borrowerOperations.interestBatchManagerOf(ATroveId);
+        assertEq(batchManagerAddress, B, "Wrong batch manager in BO");
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(ATroveId);
+        assertEq(tmBatchManagerAddress, B, "Wrong batch manager in TM");
+    }
+
     function testSwitchBatchBatchManagerChargesUpfrontFeeIfJoinedOldLessThanCooldownAgo() public {
         // C registers as batch manager
         registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
