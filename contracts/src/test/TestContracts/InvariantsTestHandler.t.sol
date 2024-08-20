@@ -208,6 +208,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 pendingInterest;
         uint256 troveId;
         LatestTroveData t;
+        uint256 batchManagementFee;
         Trove trove;
         bool wasOpen;
         bool wasActive;
@@ -1614,6 +1615,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.pendingInterest = v.c.activePool.calcPendingAggInterest();
         v.troveId = _troveIdOf(msg.sender);
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
+        v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.newBatchManager).accruedManagementFee;
         v.trove = _troves[i][v.troveId];
         v.wasOpen = _isOpen(i, v.troveId);
         v.wasActive = v.c.troveManager.getTroveStatus(v.troveId) == ACTIVE;
@@ -1679,6 +1681,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             info("Expected error: ", errorString);
             _log();
+        } else {
+            // Cleanup (success)
+            _sweepBold(v.newBatchManager, v.batchManagementFee);
         }
     }
 
