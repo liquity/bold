@@ -571,7 +571,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         // --- Checks ---
 
-        _requireNonZeroAdjustment(_troveChange);
         _requireTroveIsOpen(_troveManager, _troveId);
 
         address owner = troveNFT.ownerOf(_troveId);
@@ -595,6 +594,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             }
             _requireSufficientBoldBalance(vars.boldToken, msg.sender, _troveChange.debtDecrease);
         }
+
+        _requireNonZeroAdjustment(_troveChange);
 
         // When the adjustment is a collateral withdrawal, check that it's no more than the Trove's entire collateral
         if (_troveChange.collDecrease > 0) {

@@ -37,6 +37,13 @@ contract BorrowerOperationsTest is DevTestSetup {
         borrowerOperations.withdrawColl(troveId, 200 ether);
     }
 
+    function testZeroAdjustmentReverts() public {
+        uint256 troveId = openTroveNoHints100pct(A, 100 ether, 2_000 ether, 0.01 ether);
+        vm.prank(A);
+        vm.expectRevert(BorrowerOperations.ZeroAdjustment.selector);
+        borrowerOperations.adjustTrove(troveId, 0, false, 0, false, 1_000 ether);
+    }
+
     function testOpenTroveChargesUpfrontFee() public {
         uint256 borrow = 10_000 ether;
         uint256 interestRate = 0.05 ether;
