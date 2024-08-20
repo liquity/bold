@@ -334,4 +334,32 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
     function getBatchLastDebtUpdateTime(address _batchAddress) external view returns (uint256) {
         return batches[_batchAddress].lastDebtUpdateTime;
     }
+
+    function getBatch(address _batchAddress)
+        external
+        view
+        returns (
+            uint256 debt,
+            uint256 coll,
+            uint64 arrayIndex,
+            uint64 lastDebtUpdateTime,
+            uint64 lastInterestRateAdjTime,
+            uint256 annualInterestRate,
+            uint256 annualManagementFee,
+            uint256 totalDebtShares
+        )
+    {
+        Batch memory batch = batches[_batchAddress];
+
+        return (
+            batch.debt,
+            batch.coll,
+            batch.arrayIndex,
+            batch.lastDebtUpdateTime,
+            batch.lastInterestRateAdjTime,
+            batch.annualInterestRate,
+            batch.annualManagementFee,
+            batch.totalDebtShares
+        );
+    }
 }

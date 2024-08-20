@@ -84,4 +84,17 @@ interface ITroveManagerTester is ITroveManager {
 
     function getBatchAnnualInterestRate(address _batchAddress) external view returns (uint256);
     function getBatchLastDebtUpdateTime(address _batchAddress) external view returns (uint256);
+    function getBatch(address _batchAddress)
+        external
+        view
+        returns (
+            uint256 debt,
+            uint256 coll,
+            uint64 arrayIndex,
+            uint64 lastDebtUpdateTime,
+            uint64 lastInterestRateAdjTime,
+            uint256 annualInterestRate,
+            uint256 annualManagementFee,
+            uint256 totalDebtShares
+        );
 }
