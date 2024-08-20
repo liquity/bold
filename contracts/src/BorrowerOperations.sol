@@ -490,12 +490,19 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         troveManagerCached.setTroveStatusToActive(_troveId);
 
+        address batchManager = interestBatchManagerOf[_troveId];
+        uint256 batchAnnualInteresRate;
+        if (batchManager != address(0)) {
+            LatestBatchData memory batch = troveManagerCached.getLatestBatchData(batchManager);
+            batchAnnualInteresRate = batch.annualInterestRate;
+        }
         _reInsertIntoSortedTroves(
-            troveManagerCached,
             _troveId,
             troveManagerCached.getTroveAnnualInterestRate(_troveId),
             _upperHint,
-            _lowerHint
+            _lowerHint,
+            batchManager,
+            batchAnnualInteresRate
         );
     }
 
@@ -774,7 +781,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         // If the trove was unredeemable, and now it’s not anymore, put it back in the list
         if (_checkTroveIsUnredeemable(troveManagerCached, _troveId) && trove.entireDebt >= MIN_DEBT) {
             troveManagerCached.setTroveStatusToActive(_troveId);
-            _reInsertIntoSortedTroves(troveManagerCached, _troveId, trove.annualInterestRate, _upperHint, _lowerHint);
+            _reInsertIntoSortedTroves(_troveId, trove.annualInterestRate, _upperHint, _lowerHint, batchManager, batch.annualInterestRate);
         }
     }
 
@@ -1159,20 +1166,19 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     // --- Helper functions ---
 
     function _reInsertIntoSortedTroves(
-        ITroveManager _troveManager,
         uint256 _troveId,
-        uint256 _annualInterestRate,
+        uint256 _troveAnnualInterestRate,
         uint256 _upperHint,
-        uint256 _lowerHint
+        uint256 _lowerHint,
+        address _batchManager,
+        uint256 _batchAnnualInterestRate
     ) internal {
         // If it was in a batch, we need to put it back, otherwise we insert it normally
-        address batchManager = interestBatchManagerOf[_troveId];
-        if (batchManager == address(0)) {
-            sortedTroves.insert(_troveId, _annualInterestRate, _upperHint, _lowerHint);
+        if (_batchManager == address(0)) {
+            sortedTroves.insert(_troveId, _troveAnnualInterestRate, _upperHint, _lowerHint);
         } else {
-            LatestBatchData memory batch = _troveManager.getLatestBatchData(batchManager);
             sortedTroves.insertIntoBatch(
-                _troveId, BatchId.wrap(batchManager), batch.annualInterestRate, _upperHint, _lowerHint
+                _troveId, BatchId.wrap(_batchManager), _batchAnnualInterestRate, _upperHint, _lowerHint
             );
         }
     }
