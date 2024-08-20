@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { UpdatePrices } from "@/src/comps/Debug/UpdatePrices";
 import { TopBar } from "@/src/comps/TopBar/TopBar";
 import { css } from "@/styled-system/css";
 
@@ -45,6 +46,7 @@ export function AppLayout({
       >
         {children}
       </div>
+      <UpdatePrices />
     </div>
   );
 }
