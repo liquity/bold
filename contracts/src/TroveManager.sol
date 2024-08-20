@@ -573,6 +573,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
             activePool.mintBatchManagementFeeAndAccountForChange(troveChange, _singleRedemption.batchAddress);
 
+            Troves[_singleRedemption.troveId].coll = newColl;
             // interest and fee were updated in the outer function
             _updateBatchShares(
                 _singleRedemption.troveId,
@@ -1208,6 +1209,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 newStake = _computeNewStake(_troveChange.collIncrease);
 
         // Trove memory newTrove;
+        Troves[_troveId].coll = _troveChange.collIncrease;
         Troves[_troveId].stake = newStake;
         Troves[_troveId].status = Status.active;
         Troves[_troveId].arrayIndex = uint64(TroveIds.length);
@@ -1442,6 +1444,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         _requireCallerIsBorrowerOperations();
 
         // Trove
+        Troves[_troveId].coll = _newTroveColl;
         _updateTroveRewardSnapshots(_troveId);
         uint256 newStake = _updateStakeAndTotalStakes(_troveId, _newTroveColl);
 
@@ -1489,15 +1492,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     ) external {
         _requireCallerIsBorrowerOperations();
 
-        Troves[_troveId].coll = _newTroveColl;
-        Troves[_troveId].debt = _newTroveDebt;
-        Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
-
         if (_batchAddress != address(0)) {
-            batches[_batchAddress].coll = _newBatchColl + _troveChange.appliedRedistCollGain;
-            batches[_batchAddress].debt = _newBatchDebt + _troveChange.appliedRedistBoldDebtGain;
-            batches[_batchAddress].lastDebtUpdateTime = uint64(block.timestamp);
-
             _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt);
 
             emit BatchUpdated(
@@ -1509,6 +1504,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 batches[_batchAddress].annualManagementFee,
                 batches[_batchAddress].totalDebtShares
             );
+        } else {
+            Troves[_troveId].coll = _newTroveColl;
+            Troves[_troveId].debt = _newTroveDebt;
+            Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
         }
 
         _movePendingTroveRewardsToActivePool(
@@ -1621,9 +1620,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         // Clean Trove state
         Troves[_params.troveId].debt = 0;
-        Troves[_params.troveId].coll = 0;
         Troves[_params.troveId].annualInterestRate = 0;
         Troves[_params.troveId].lastDebtUpdateTime = 0;
+        Troves[_params.troveId].coll = _params.troveColl;
 
         Troves[_params.troveId].interestBatchManager = _params.newBatchAddress;
         Troves[_params.troveId].lastInterestRateAdjTime = uint64(block.timestamp);
@@ -1731,11 +1730,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         } else {
             if (collIncrease > 0) {
                 // Add coll
-                Troves[_troveId].coll += collIncrease;
                 batches[_batchAddress].coll = _batchColl + collIncrease;
             } else if (collDecrease > 0) {
                 // Subtract coll
-                Troves[_troveId].coll -= collDecrease;
                 batches[_batchAddress].coll = _batchColl - collDecrease;
             }
         }
