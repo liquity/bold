@@ -35,9 +35,9 @@ contract("TroveManager", async (accounts) => {
   const getOpenTroveBoldAmount = async (totalDebt) => th.getOpenTroveBoldAmount(contracts, totalDebt);
 
   const getSnapshotsRatio = async () => {
-    const ratio = (await troveManager.totalStakesSnapshot())
+    const ratio = (await troveManager.getTotalStakesSnapshot())
       .mul(toBN(dec(1, 18)))
-      .div(await troveManager.totalCollateralSnapshot());
+      .div(await troveManager.getTotalCollateralSnapshot());
 
     return ratio;
   };
@@ -142,10 +142,10 @@ contract("TroveManager", async (accounts) => {
     await troveManager.liquidate(ATroveId);
 
     // console.log(
-    //   `totalStakesSnapshot after L1: ${await troveManager.totalStakesSnapshot()}`
+    //   `totalStakesSnapshot after L1: ${await troveManager.getTotalStakesSnapshot()}`
     // );
     // console.log(
-    //   `totalCollateralSnapshot after L1: ${await troveManager.totalCollateralSnapshot()}`
+    //   `totalCollateralSnapshot after L1: ${await troveManager.getTotalCollateralSnapshot()}`
     // );
     // console.log(`Snapshots ratio after L1: ${await getSnapshotsRatio()}`);
     // console.log(

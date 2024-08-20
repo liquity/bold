@@ -1,25 +1,25 @@
 pragma solidity ^0.8.18;
 
+import "../Interfaces/IAddressesRegistry.sol";
 import "../Interfaces/IBorrowerOperations.sol";
 import "../Interfaces/ITroveManager.sol";
+import "../Interfaces/ITroveNFT.sol";
 import "../Interfaces/IWETH.sol";
 import "../Dependencies/AddRemoveManagers.sol";
 import "../Dependencies/Constants.sol";
 
 contract WETHZapper is AddRemoveManagers {
-    ITroveManager public immutable troveManager;
     IBorrowerOperations public immutable borrowerOperations; // First branch (i.e., using WETH as collateral)
+    ITroveManager public immutable troveManager;
     IWETH public immutable WETH;
     IBoldToken public immutable boldToken;
 
-    constructor(ITroveManager _troveManager) AddRemoveManagers(_troveManager) {
-        troveManager = _troveManager;
-        IBorrowerOperations _borrowerOperations = IBorrowerOperations(_troveManager.borrowerOperationsAddress());
-        borrowerOperations = _borrowerOperations;
-        IWETH _WETH = _borrowerOperations.WETH();
-        require(address(_WETH) == address(_borrowerOperations.collToken()), "WZ: Wrong coll branch");
-        WETH = _WETH;
-        boldToken = _borrowerOperations.boldToken();
+    constructor(IAddressesRegistry _addressesRegistry) AddRemoveManagers(_addressesRegistry) {
+        borrowerOperations = _addressesRegistry.borrowerOperations();
+        troveManager = _addressesRegistry.troveManager();
+        boldToken = _addressesRegistry.boldToken();
+        WETH = _addressesRegistry.WETH();
+        require(address(WETH) == address(_addressesRegistry.collToken()), "WZ: Wrong coll branch");
     }
 
     struct OpenTroveParams {
@@ -75,7 +75,7 @@ contract WETHZapper is AddRemoveManagers {
     // TODO: open trove and join batch
 
     function addCollWithRawETH(uint256 _troveId) external payable {
-        address owner = troveManager.ownerOf(_troveId);
+        address owner = troveNFT.ownerOf(_troveId);
         _requireSenderIsOwnerOrAddManager(_troveId, owner);
         // Convert ETH to WETH
         WETH.deposit{value: msg.value}();
@@ -88,7 +88,7 @@ contract WETHZapper is AddRemoveManagers {
     }
 
     function withdrawCollToRawETH(uint256 _troveId, uint256 _amount) external {
-        address owner = troveManager.ownerOf(_troveId);
+        address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManager(_troveId, owner));
 
         borrowerOperations.withdrawColl(_troveId, _amount);
@@ -100,7 +100,7 @@ contract WETHZapper is AddRemoveManagers {
     }
 
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external {
-        address owner = troveManager.ownerOf(_troveId);
+        address owner = troveNFT.ownerOf(_troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManager(_troveId, owner);
 
         borrowerOperations.withdrawBold(_troveId, _boldAmount, _maxUpfrontFee);
@@ -110,7 +110,7 @@ contract WETHZapper is AddRemoveManagers {
     }
 
     function repayBold(uint256 _troveId, uint256 _boldAmount) external {
-        address owner = troveManager.ownerOf(_troveId);
+        address owner = troveNFT.ownerOf(_troveId);
         _requireSenderIsOwnerOrAddManager(_troveId, owner);
 
         // Pull Bold
@@ -165,7 +165,7 @@ contract WETHZapper is AddRemoveManagers {
         }
         require(!_isDebtIncrease || _boldChange > 0, "WZ: Increase bold amount should not be zero");
 
-        address owner = troveManager.ownerOf(_troveId);
+        address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(owner);
 
         if (!_isCollIncrease || _isDebtIncrease) {
@@ -210,11 +210,12 @@ contract WETHZapper is AddRemoveManagers {
     }
 
     function closeTroveToRawETH(uint256 _troveId) external {
-        address owner = troveManager.ownerOf(_troveId);
+        address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManager(_troveId, owner));
 
         // pull Bold for repayment
-        boldToken.transferFrom(msg.sender, address(this), troveManager.getTroveEntireDebt(_troveId));
+        LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
+        boldToken.transferFrom(msg.sender, address(this), trove.entireDebt);
 
         uint256 collLeft = borrowerOperations.closeTrove(_troveId);
 

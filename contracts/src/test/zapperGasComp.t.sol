@@ -26,23 +26,26 @@ contract ZapperGasCompTest is DevTestSetup {
 
         WETH = new WETH9();
 
-        TroveManagerParams[] memory troveManagerParams = new TroveManagerParams[](2);
-        troveManagerParams[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
-        troveManagerParams[1] = TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
+        TestDeployer.TroveManagerParams[] memory troveManagerParams = new TestDeployer.TroveManagerParams[](2);
+        troveManagerParams[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
+        troveManagerParams[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
 
-        LiquityContractsDev[] memory contractsArray;
-        (contractsArray, collateralRegistry, boldToken,,) = _deployAndConnectContracts(troveManagerParams, WETH);
+        TestDeployer deployer = new TestDeployer();
+        TestDeployer.LiquityContractsDev[] memory contractsArray;
+        (contractsArray, collateralRegistry, boldToken,,) = deployer.deployAndConnectContracts(troveManagerParams, WETH);
 
         // Set price feeds
         contractsArray[1].priceFeed.setPrice(2000e18);
 
         // Set first branch as default
+        addressesRegistry = contractsArray[1].addressesRegistry;
         borrowerOperations = contractsArray[1].borrowerOperations;
         troveManager = contractsArray[1].troveManager;
+        troveNFT = contractsArray[1].troveNFT;
         collToken = contractsArray[1].collToken;
 
-        // Deploy zapper (TODO: should we move it to deployment.sol?)
-        gasCompZapper = new GasCompZapper(troveManager);
+        // Deploy zapper (TODO: should we move it to deployment contract?)
+        gasCompZapper = new GasCompZapper(addressesRegistry);
 
         // Give some Collateral to test accounts
         uint256 initialCollateralAmount = 10_000e18;
@@ -371,7 +374,10 @@ contract ZapperGasCompTest is DevTestSetup {
             0, // _upperHint
             0, // _lowerHint
             MIN_ANNUAL_INTEREST_RATE, // annualInterestRate,
-            10000e18 // upfrontFee
+            10000e18, // upfrontFee
+            address(0),
+            address(0),
+            address(0)
         );
         boldToken.transfer(A, troveManager.getTroveEntireDebt(troveId) - boldAmount);
         vm.stopPrank();

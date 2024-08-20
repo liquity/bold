@@ -3,21 +3,10 @@
 pragma solidity 0.8.18;
 
 import "./Interfaces/ICollateralRegistry.sol";
+import "./Interfaces/IMultiTroveGetter.sol";
 
 /*  Helper contract for grabbing Trove data for the front end. Not part of the core Liquity system. */
-contract MultiTroveGetter {
-    struct CombinedTroveData {
-        uint256 id;
-        uint256 debt;
-        uint256 coll;
-        uint256 stake;
-        uint256 annualInterestRate;
-        uint256 lastDebtUpdateTime;
-        uint256 lastInterestRateAdjTime;
-        uint256 snapshotETH;
-        uint256 snapshotBoldDebt;
-    }
-
+contract MultiTroveGetter is IMultiTroveGetter {
     ICollateralRegistry public immutable collateralRegistry;
 
     constructor(ICollateralRegistry _collateralRegistry) {
@@ -29,7 +18,7 @@ contract MultiTroveGetter {
         view
         returns (CombinedTroveData[] memory _troves)
     {
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.troveManagers(_collIndex);
         require(address(troveManager) != address(0), "Invalid collateral index");
 
         ISortedTroves sortedTroves = troveManager.sortedTroves();
@@ -76,7 +65,9 @@ contract MultiTroveGetter {
             , // arrayIndex
             _out.annualInterestRate,
             _out.lastDebtUpdateTime,
-            _out.lastInterestRateAdjTime
+            _out.lastInterestRateAdjTime,
+            _out.interestBatchManager,
+            //_out.batchDebtShares,
         ) = _troveManager.Troves(_id);
 
         (_out.snapshotETH, _out.snapshotBoldDebt) = _troveManager.rewardSnapshots(_id);

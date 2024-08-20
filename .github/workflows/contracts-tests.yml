@@ -45,14 +45,13 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
-          forge build --sizes
+          forge build --sizes --skip test --skip scripts
 
       - name: Run Forge tests local
         run: |
           forge test -vvv --no-match-contract Mainnet
 
       - name: Run Forge tests mainnet
-        if: false # TODO: re-enable
         run: |
           forge test -vvv --match-contract Mainnet
 
@@ -69,9 +68,10 @@ jobs:
       - name: Check console imports
         working-directory: contracts
         run: >-
-          ! grep -R console src | grep import | grep -v "://" | grep -v TestContracts | grep -v ExternalContracts  | grep -v "\.t\.sol"
+          ! grep -R console src | grep import | grep -v "://" | grep -v TestContracts | grep -v "/test/" | grep -v ExternalContracts  | grep -v "\.t\.sol" | grep -v "\.s\.sol"
 
   test-hardhat:
+    if: false
     name: Hardhat tests
     runs-on: ubuntu-latest
 
@@ -127,7 +127,7 @@ jobs:
       - name: Run Forge build
         run: |
           forge --version
-          forge build --sizes
+          forge build
 
       - name: Run Forge coverage
         run: |

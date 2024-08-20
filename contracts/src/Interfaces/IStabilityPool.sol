@@ -34,19 +34,6 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     function boldToken() external view returns (IBoldToken);
     function troveManager() external view returns (ITroveManager);
 
-    /*
-     * Called only once on init, to set addresses of other Liquity contracts
-     * Callable only by owner, renounces ownership at the end
-     */
-    function setAddresses(
-        address _borrowerOperationsAddress,
-        address _troveManagerAddress,
-        address _activePoolAddress,
-        address _boldTokenAddress,
-        address _sortedTrovesAddress,
-        address _priceFeedAddress
-    ) external;
-
     /*  provideToSP():
     * - Calculates depositor's Coll gain
     * - Calculates the compounded deposit

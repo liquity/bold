@@ -3,6 +3,7 @@ pragma solidity 0.8.18;
 
 import "forge-std/Test.sol";
 import "../SortedTroves.sol";
+import "../AddressesRegistry.sol";
 import "../Types/TroveId.sol";
 
 uint256 constant FUZZ_INPUT_LENGTH = 9;
@@ -467,11 +468,26 @@ contract SortedTrovesTest is Test {
     ////////////////
 
     function setUp() public {
-        SortedTroves sortedTroves = new SortedTroves();
-        tm = new MockTroveManager(sortedTroves);
+        bytes32 SALT = keccak256("LiquityV2");
+        AddressesRegistry addressesRegistry = new AddressesRegistry(address(this), 150e16, 110e16, 110e16, 5e16, 10e16);
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                bytes1(0xff),
+                address(this),
+                SALT,
+                keccak256(abi.encodePacked(type(SortedTroves).creationCode, abi.encode(address(addressesRegistry))))
+            )
+        );
+
+        address sortedTrovesAddress = address(uint160(uint256(hash)));
+        tm = new MockTroveManager(SortedTroves(sortedTrovesAddress));
         // We're cheating here and using MockTroveManager as BorrowerOperations too,
         // to grant us access to those functions that only BO can call
-        sortedTroves.setAddresses(address(tm), address(tm));
+        IAddressesRegistry.AddressVars memory addressVars;
+        addressVars.borrowerOperations = IBorrowerOperations(address(tm));
+        addressVars.troveManager = ITroveManager(address(tm));
+        addressesRegistry.setAddresses(addressVars);
+        new SortedTroves{salt: SALT}(addressesRegistry);
     }
 
     function test_SortsIndividualTrovesByAnnualInterestRate(

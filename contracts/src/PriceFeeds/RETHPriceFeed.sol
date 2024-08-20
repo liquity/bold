@@ -7,6 +7,7 @@ import "../Dependencies/IRETHToken.sol";
 
 contract RETHPriceFeed is CompositePriceFeed {
     constructor(
+        address _owner,
         address _ethUsdOracleAddress,
         address _lstEthOracleAddress,
         address _rateProviderAddress,
@@ -14,6 +15,7 @@ contract RETHPriceFeed is CompositePriceFeed {
         uint256 _lstEthStalenessThreshold
     )
         CompositePriceFeed(
+            _owner,
             _ethUsdOracleAddress,
             _lstEthOracleAddress,
             _rateProviderAddress,

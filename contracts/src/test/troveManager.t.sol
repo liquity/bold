@@ -9,7 +9,7 @@ contract TroveManagerTest is DevTestSetup {
         priceFeed.setPrice(1_000e18);
 
         vm.startPrank(A);
-        vm.expectRevert("TroveManager: Only one trove in the system");
+        vm.expectRevert(TroveManager.OnlyOneTroveLeft.selector);
         troveManager.liquidate(ATroveId);
         vm.stopPrank();
     }

@@ -9,7 +9,7 @@ import "../Interfaces/IDefaultPool.sol";
 import "../Interfaces/IPriceFeed.sol";
 import "../Interfaces/ILiquityBase.sol";
 
-//import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
 /*
 * Base contract for TroveManager, BorrowerOperations and StabilityPool. Contains global system constants and
@@ -18,16 +18,11 @@ import "../Interfaces/ILiquityBase.sol";
 contract LiquityBase is ILiquityBase {
     IActivePool public activePool;
 
-    IDefaultPool public defaultPool;
+    IDefaultPool internal defaultPool;
 
-    IPriceFeed public override priceFeed;
+    IPriceFeed internal priceFeed;
 
     // --- Gas compensation functions ---
-
-    // Return the amount of Coll to be drawn from a trove's collateral and sent as gas compensation.
-    function _getCollGasCompensation(uint256 _entireColl) internal pure returns (uint256) {
-        return LiquityMath._min(_entireColl / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
-    }
 
     function getEntireSystemColl() public view returns (uint256 entireSystemColl) {
         uint256 activeColl = activePool.getCollBalance();
@@ -60,9 +55,5 @@ contract LiquityBase is ILiquityBase {
 
     function _calcInterest(uint256 _weightedDebt, uint256 _period) internal pure returns (uint256) {
         return _weightedDebt * _period / ONE_YEAR / DECIMAL_PRECISION;
-    }
-
-    function _calcUpfrontFee(uint256 _debt, uint256 _avgInterestRate) internal pure returns (uint256) {
-        return _calcInterest(_debt * _avgInterestRate, UPFRONT_INTEREST_PERIOD);
     }
 }

@@ -8,7 +8,9 @@ import "../Interfaces/IWETHPriceFeed.sol";
 contract WETHPriceFeed is MainnetPriceFeedBase, IWETHPriceFeed {
     Oracle public ethUsdOracle;
 
-    constructor(address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold) MainnetPriceFeedBase() {
+    constructor(address _owner, address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold)
+        MainnetPriceFeedBase(_owner)
+    {
         ethUsdOracle.aggregator = AggregatorV3Interface(_ethUsdOracleAddress);
         ethUsdOracle.stalenessThreshold = _ethUsdStalenessThreshold;
         ethUsdOracle.decimals = ethUsdOracle.aggregator.decimals();
