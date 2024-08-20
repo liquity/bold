@@ -39,27 +39,26 @@ function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[
 }
 
 export function BorrowScreen() {
-  // const demoMode = useDemoMode();
   const account = useAccount();
 
   const router = useRouter();
-  const ethPriceUsd = usePrice("ETH");
-  const boldPriceUsd = usePrice("BOLD");
 
   // useParams() can return an array, but not with the current
   // routing setup so we can safely assume it’s a string
-  const collateral = String(useParams().collateral ?? "eth").toUpperCase();
-  if (!isCollateralSymbol(collateral)) {
-    throw new Error(`Invalid collateral symbol: ${collateral}`);
+  const collSymbol = String(useParams().collateral ?? "eth").toUpperCase();
+  if (!isCollateralSymbol(collSymbol)) {
+    throw new Error(`Invalid collateral symbol: ${collSymbol}`);
   }
-  const collateralIndex = collateralSymbols.indexOf(collateral);
-  const { collateralRatio } = COLLATERALS[collateralIndex];
+  const collateralIndex = collateralSymbols.indexOf(collSymbol);
+  const collateral = COLLATERALS[collateralIndex];
 
-  const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral}`);
+  const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral.name}`);
   const debt = useInputFieldValue((value) => `${dn.format(value)} BOLD`);
   const interestRate = useInputFieldValue((value) => `${dn.format(value)}%`);
 
-  if (!ethPriceUsd || !boldPriceUsd) {
+  const collPrice = usePrice(collateral.symbol);
+
+  if (!collPrice) {
     return null;
   }
 
@@ -67,8 +66,8 @@ export function BorrowScreen() {
     deposit.isEmpty ? null : deposit.parsed,
     debt.isEmpty ? null : debt.parsed,
     interestRate.parsed && dn.div(interestRate.parsed, 100),
-    dn.div(dn.from(1, 18), collateralRatio),
-    ethPriceUsd,
+    collateral.collateralRatio,
+    collPrice,
   );
 
   const debtSuggestions = loanDetails.maxDebt
@@ -158,15 +157,15 @@ export function BorrowScreen() {
               secondary={{
                 start: `$${
                   deposit.parsed
-                    ? dn.format(dn.mul(ethPriceUsd, deposit.parsed), { digits: 2, trailingZeros: true })
+                    ? dn.format(dn.mul(collPrice, deposit.parsed), { digits: 2, trailingZeros: true })
                     : "0.00"
                 }`,
                 end: account.isConnected && (
                   <TextButton
-                    label={`Max ${dn.format(ACCOUNT_BALANCES[collateral])} ${collateral}`}
+                    label={`Max ${dn.format(ACCOUNT_BALANCES[collateral.symbol])} ${collateral.name}`}
                     onClick={() => {
                       deposit.setValue(
-                        dn.format(ACCOUNT_BALANCES[collateral]).replace(",", ""),
+                        dn.format(ACCOUNT_BALANCES[collateral.symbol]).replace(",", ""),
                       );
                     }}
                   />
@@ -178,7 +177,10 @@ export function BorrowScreen() {
           footer={[
             [
               // eslint-disable-next-line react/jsx-key
-              <Field.FooterInfoEthPrice ethPriceUsd={ethPriceUsd} />,
+              <Field.FooterInfoCollPrice
+                collPriceUsd={collPrice}
+                collName={collateral.name}
+              />,
 
               // eslint-disable-next-line react/jsx-key
               <Field.FooterInfoMaxLtv maxLtv={loanDetails.maxLtv} />,
@@ -201,12 +203,10 @@ export function BorrowScreen() {
               secondary={{
                 start: `$${
                   debt.parsed
-                    ? dn.gt(dn.mul(boldPriceUsd, debt.parsed), 1_000_000_000_000)
-                      ? "−"
-                      : dn.format(
-                        dn.mul(boldPriceUsd, debt.parsed),
-                        { digits: 2, trailingZeros: true, compact: dn.gt(debt.parsed, 1_000_000_000) },
-                      )
+                    ? dn.format(dn.mul(collPrice, debt.parsed), {
+                      digits: 2,
+                      trailingZeros: true,
+                    })
                     : "0.00"
                 }`,
                 end: debtSuggestions && (
@@ -242,7 +242,7 @@ export function BorrowScreen() {
               />,
               // eslint-disable-next-line react/jsx-key
               <Field.FooterInfoLiquidationPrice
-                liquidationPrice={loanDetails.liquidationPriceUsd}
+                liquidationPrice={loanDetails.liquidationPrice}
               />,
             ],
             [

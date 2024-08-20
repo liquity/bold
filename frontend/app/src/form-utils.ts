@@ -112,6 +112,12 @@ export function useForm<Form extends Record<string, FormValue<unknown>>>(
   } as const;
 }
 
+type InputFieldUpdateData = {
+  focused: boolean;
+  parsed: Dnum | null;
+  value: string;
+};
+
 export function useInputFieldValue(
   format: (value: Dnum) => string,
   {
@@ -120,18 +126,8 @@ export function useInputFieldValue(
     onFocusChange,
   }: {
     defaultValue?: string;
-    onChange?: ({
-      parsed,
-      value,
-    }: {
-      parsed: Dnum | null;
-      value: string;
-    }) => void;
-    onFocusChange?: (data: {
-      focus: boolean;
-      parsed: Dnum | null;
-      value: string;
-    }) => void;
+    onChange?: (data: InputFieldUpdateData) => void;
+    onFocusChange?: (data: InputFieldUpdateData) => void;
   } = {},
 ) {
   const [{ value, focused, parsed }, set] = useState<{
@@ -150,7 +146,7 @@ export function useInputFieldValue(
     const setValue = (value: string) => {
       const parsed = parseInputFloat(value);
       set((s) => ({ ...s, parsed, value }));
-      onChange?.({ parsed, value });
+      onChange?.({ focused, parsed, value });
     };
 
     const setFocused = (focused: boolean) => {
@@ -165,11 +161,11 @@ export function useInputFieldValue(
         ref,
         onBlur: () => {
           setFocused(false);
-          onFocusChange?.({ focus: false, parsed, value });
+          onFocusChange?.({ focused: false, parsed, value });
         },
         onFocus: () => {
           setFocused(true);
-          onFocusChange?.({ focus: true, parsed, value });
+          onFocusChange?.({ focused: true, parsed, value });
         },
         onChange: setValue,
         value: focused || !parsed || !value.trim() ? value : format(parsed),

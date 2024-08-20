@@ -33,7 +33,7 @@ export const ACCOUNT_BALANCES = {
 
 export const ACCOUNT_POSITIONS: Position[] = [
   {
-    type: "loan",
+    type: "borrow",
     borrowed: dn.from(12_789, 18),
     collateral: "RETH",
     deposit: dn.from(5.5, 18),
