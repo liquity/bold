@@ -85,7 +85,7 @@ contract InterestRateBasic is DevTestSetup {
 
         // B (who is not delegate) tries to adjust it
         vm.startPrank(B);
-        vm.expectRevert("BorrowerOps: sender is not Trove owner");
+        vm.expectRevert(BorrowerOperations.NotOwnerNorInterestManager.selector);
         borrowerOperations.adjustTroveInterestRate(A_Id, 40e16, 0, 0, 0);
         vm.stopPrank();
     }
@@ -197,17 +197,21 @@ contract InterestRateBasic is DevTestSetup {
 
         // Recorded debt only increases by accrued interest
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
-        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
+        assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest, "Rec debt + interest mismatch");
 
         // Wait less than the cooldown, so the adjustment will cost
         vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN / 2);
 
         accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
-        uint256 upfrontFee = changeInterestRateNoHints(A, ATroveId, 75e16);
+        uint256 upfrontFee = changeInterestRateNoHints(A, ATroveId, 80e16);
 
         // Recorded debt increases by accrued interest + upfront fee
         uint256 recordedTroveDebt_3 = troveManager.getTroveDebt(ATroveId);
-        assertEq(recordedTroveDebt_3, recordedTroveDebt_2 + accruedTroveInterest + upfrontFee);
+        assertEq(
+            recordedTroveDebt_3,
+            recordedTroveDebt_2 + accruedTroveInterest + upfrontFee,
+            "Rec debt + interest + upfront fee mismatch"
+        );
     }
 
     function testAdjustTroveInterestRateInsertsToCorrectPositionInSortedList() public {
@@ -610,7 +614,7 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
     }
 
-    // --- applyTroveInterestPermissionless ---
+    // --- applyPendingDebt ---
 
     function testApplyTroveInterestPermissionlessSetsTroveLastDebtUpdateTimeToNow() public {
         priceFeed.setPrice(2000e18);
@@ -627,7 +631,7 @@ contract InterestRateBasic is DevTestSetup {
         assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         assertEq(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
     }
@@ -647,7 +651,7 @@ contract InterestRateBasic is DevTestSetup {
         assertGt(troveManager.calcTroveAccruedInterest(ATroveId), 0);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         assertEq(troveManager.calcTroveAccruedInterest(ATroveId), 0);
     }
@@ -668,7 +672,7 @@ contract InterestRateBasic is DevTestSetup {
         assertGt(entireTroveDebt_1, 0);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         uint256 entireTroveDebt_2 = troveManager.getTroveEntireDebt(ATroveId);
         assertEq(entireTroveDebt_2, entireTroveDebt_1);
@@ -690,11 +694,49 @@ contract InterestRateBasic is DevTestSetup {
         uint256 accruedTroveInterest = troveManager.calcTroveAccruedInterest(ATroveId);
 
         // B applies A's pending interest
-        applyTroveInterestPermissionless(B, ATroveId);
+        applyPendingDebt(B, ATroveId);
 
         uint256 recordedTroveDebt_2 = troveManager.getTroveDebt(ATroveId);
 
         assertEq(recordedTroveDebt_2, recordedTroveDebt_1 + accruedTroveInterest);
+    }
+
+    function testApplyTroveInterestPermissionlessUpdatesRedistribution() public {
+        priceFeed.setPrice(2000e18);
+        uint256 troveDebtRequest = 2000e18;
+        uint256 interestRate = 25e16;
+
+        uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, interestRate);
+
+        // Open a trove to be liquidated and redistributed
+        uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, interestRate);
+        // Price goes down
+        priceFeed.setPrice(1000e18);
+        // C is liquidated
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(ATroveId);
+        uint256 initialEntireDebt = troveData.entireDebt;
+        LatestTroveData memory troveDataC = troveManager.getLatestTroveData(CTroveId);
+        uint256 entireDebtC = troveDataC.entireDebt;
+        liquidate(A, CTroveId);
+
+        // Check A has redistribution gains
+        troveData = troveManager.getLatestTroveData(ATroveId);
+        assertGt(troveData.redistBoldDebtGain, 0, "A should have redist gains");
+
+        // Fast-forward time
+        vm.warp(block.timestamp + 91 days);
+
+        assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
+
+        troveData = troveManager.getLatestTroveData(ATroveId);
+        uint256 accruedInterest = troveData.accruedInterest;
+        // B applies A's pending interest
+        vm.startPrank(B);
+        borrowerOperations.applyPendingDebt(ATroveId);
+        vm.stopPrank();
+
+        troveData = troveManager.getLatestTroveData(ATroveId);
+        assertEq(troveData.entireDebt, initialEntireDebt + accruedInterest + entireDebtC);
     }
 
     // --- redemptions ---

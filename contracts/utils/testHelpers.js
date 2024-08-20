@@ -821,9 +821,15 @@ class TestHelper {
     else if (typeof extraBoldAmount == "string") {
       extraBoldAmount = this.toBN(extraBoldAmount);
     }
+    if (!extraParams.annualInterestRate) {
+      if (extraParams.batchManager) {
+        extraParams.annualInterestRate = await contracts.troveManager.getBatchAnnualInterestRate(extraParams.batchManager);
+      } else {
+        extraParams.annualInterestRate = 0;
+      }
+    }
     if (!upperHint) upperHint = this.ZERO_ADDRESS;
     if (!lowerHint) lowerHint = this.ZERO_ADDRESS;
-    if (!extraParams.annualInterestRate) extraParams.annualInterestRate = 0;
 
     const MIN_DEBT = await this.getNetBorrowingAmount(
       contracts,
@@ -833,37 +839,53 @@ class TestHelper {
     // Only needed for non-zero borrow fee: .add(this.toBN(1)); // add 1 to avoid rounding issues
 
     const boldAmount = MIN_DEBT.add(extraBoldAmount);
+    const predictedUpfrontFee = await contracts.troveManager.predictOpenTroveUpfrontFee(boldAmount, extraParams.annualInterestRate);
+    const predictedBoldAmount = boldAmount.add(predictedUpfrontFee);
 
     if (!ICR && !extraParams.value) ICR = this.toBN(this.dec(15, 17)); // 150%
     else if (typeof ICR == "string") ICR = this.toBN(ICR);
 
-    const totalDebt = await this.getOpenTroveTotalDebt(contracts, boldAmount);
+    const predictedTotalDebt = await this.getOpenTroveTotalDebt(contracts, predictedBoldAmount);
 
     if (ICR) {
       const price = await contracts.priceFeedTestnet.getPrice();
-      extraParams.value = ICR.mul(totalDebt).div(price);
+      extraParams.value = ICR.mul(predictedTotalDebt).div(price);
     }
 
     // approve ERC20 ETH
     const ETH_GAS_COMPENSATION = await contracts.constants._ETH_GAS_COMPENSATION();
     await contracts.WETH.approve(contracts.borrowerOperations.address, this.toBN(extraParams.value).add(ETH_GAS_COMPENSATION), { from: extraParams.from });
 
-    const tx = await contracts.borrowerOperations.openTrove(
-      extraParams.from,
-      troveIndex,
-      extraParams.value,
-      boldAmount,
-      // extraParams.value, // TODO: this is the stETH value - ensure its still working
-      upperHint,
-      lowerHint,
-      extraParams.annualInterestRate,
-      TestHelper.MAX_UINT256, // _maxUpfrontFee
-      { from: extraParams.from },
-    );
+    let tx;
+    if (extraParams.batchManager) {
+      tx = await contracts.borrowerOperations.openTroveAndJoinInterestBatchManager(
+        extraParams.from,
+        troveIndex,
+        extraParams.value,
+        boldAmount,
+        upperHint,
+        lowerHint,
+        extraParams.batchManager,
+        TestHelper.MAX_UINT256, // _maxUpfrontFee
+        { from: extraParams.from },
+      );
+    } else {
+      tx = await contracts.borrowerOperations.openTrove(
+        extraParams.from,
+        troveIndex,
+        extraParams.value,
+        boldAmount,
+        upperHint,
+        lowerHint,
+        extraParams.annualInterestRate,
+        TestHelper.MAX_UINT256, // _maxUpfrontFee
+        { from: extraParams.from },
+      );
+    }
 
     const troveId = this.getTroveIdFromTx(tx, contracts);
 
-    const realTotalDebt = await contracts.troveManager.getTroveDebt(troveId);
+    const realTotalDebt = await contracts.troveManager.getTroveEntireDebt(troveId);
     const netDebt = await this.getActualDebtFromComposite(realTotalDebt, contracts);
 
     return {
@@ -889,17 +911,37 @@ class TestHelper {
     const ETH_GAS_COMPENSATION = await contracts.constants._ETH_GAS_COMPENSATION();
     await contracts.WETH.approve(contracts.borrowerOperations.address, this.toBN(extraParams.value).add(ETH_GAS_COMPENSATION), { from: extraParams.from });
 
-    const tx = await contracts.borrowerOperations.openTrove(
-      extraParams.from,
-      0,
-      extraParams.value,
-      boldAmount,
-      upperHint,
-      lowerHint,
-      annualInterestRate,
-      TestHelper.MAX_UINT256, // _maxUpfrontFee
-      { from: extraParams.from },
-    );
+    let tx;
+    if (extraParams.batchManager) {
+      /*
+      if (annualInterestRate != 0) {
+        await contracts.borrowerOperations.setBatchManagerAnnualInterestRate(extraParams.annualInterestRate, 0, 0, TestHelper.MAX_UINT256, { from: extraParams.batchManager });
+      }
+      */
+      tx = await contracts.borrowerOperations.openTroveAndJoinInterestBatchManager(
+        extraParams.from,
+        0,
+        extraParams.value,
+        boldAmount,
+        upperHint,
+        lowerHint,
+        extraParams.batchManager,
+        TestHelper.MAX_UINT256, // _maxUpfrontFee
+        { from: extraParams.from },
+      );
+    } else {
+      tx = await contracts.borrowerOperations.openTrove(
+        extraParams.from,
+        0,
+        extraParams.value,
+        boldAmount,
+        upperHint,
+        lowerHint,
+        annualInterestRate,
+        TestHelper.MAX_UINT256, // _maxUpfrontFee
+        { from: extraParams.from },
+      );
+    }
 
     const troveId = this.getTroveIdFromTx(tx, contracts);
 
@@ -909,7 +951,7 @@ class TestHelper {
   static getTroveIdFromTx(tx, contracts) {
     for (let i = 0; i < tx.receipt.rawLogs.length; i++) {
       if (
-        tx.receipt.rawLogs[i].address === contracts.troveManager.address
+        tx.receipt.rawLogs[i].address === contracts.troveNFT.address
         && tx.receipt.rawLogs[i].topics[0] === web3.utils.keccak256("Transfer(address,address,uint256)")
         && tx.receipt.rawLogs[i].topics[1] === this.ZERO_UINT256 // mint
       ) {
@@ -944,6 +986,9 @@ class TestHelper {
         "ICR is already greater than or equal to target",
       );
       increasedTotalDebt = targetDebt.sub(entireDebt);
+      const annualInterestRate = await contracts.troveManager.getTroveAnnualInterestRate(troveId);
+      const predictedUpfrontFee = await contracts.troveManager.predictOpenTroveUpfrontFee(increasedTotalDebt, annualInterestRate);
+      increasedTotalDebt = increasedTotalDebt.sub(predictedUpfrontFee);
       boldAmount = await this.getNetBorrowingAmount(
         contracts,
         increasedTotalDebt,
@@ -1380,7 +1425,7 @@ class TestHelper {
     contracts,
     BoldAmount,
     maxFee = this._100pct,
-    gasPrice = 0,
+    gasPrice = 10,
   ) {
     const price = await contracts.priceFeedTestnet.getPrice();
     const tx = await this.performRedemptionTx(
@@ -1406,7 +1451,7 @@ class TestHelper {
   ) {
     // console.log("GAS PRICE:  " + gasPrice)
     if (gasPrice == undefined) {
-      gasPrice = 0;
+      gasPrice = 10;
     }
     const price = await contracts.priceFeedTestnet.getPrice();
     const tx = await this.performRedemptionTx(

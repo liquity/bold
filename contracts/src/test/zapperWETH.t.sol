@@ -26,11 +26,12 @@ contract ZapperWETHTest is DevTestSetup {
 
         WETH = new WETH9();
 
-        TroveManagerParams[] memory troveManagerParams = new TroveManagerParams[](1);
-        troveManagerParams[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
+        TestDeployer.TroveManagerParams[] memory troveManagerParams = new TestDeployer.TroveManagerParams[](1);
+        troveManagerParams[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
 
-        LiquityContractsDev[] memory contractsArray;
-        (contractsArray, collateralRegistry, boldToken,,) = _deployAndConnectContracts(troveManagerParams, WETH);
+        TestDeployer deployer = new TestDeployer();
+        TestDeployer.LiquityContractsDev[] memory contractsArray;
+        (contractsArray, collateralRegistry, boldToken,,) = deployer.deployAndConnectContracts(troveManagerParams, WETH);
 
         // Set price feeds
         contractsArray[0].priceFeed.setPrice(2000e18);
@@ -45,11 +46,13 @@ contract ZapperWETHTest is DevTestSetup {
         }
 
         // Set first branch as default
+        addressesRegistry = contractsArray[0].addressesRegistry;
         borrowerOperations = contractsArray[0].borrowerOperations;
         troveManager = contractsArray[0].troveManager;
+        troveNFT = contractsArray[0].troveNFT;
 
-        // Deploy zapper (TODO: should we move it to deployment.sol?)
-        wethZapper = new WETHZapper(troveManager);
+        // Deploy zapper (TODO: should we move it to deployment contract?)
+        wethZapper = new WETHZapper(addressesRegistry);
     }
 
     function testCanOpenTrove() external {
@@ -349,7 +352,10 @@ contract ZapperWETHTest is DevTestSetup {
             0, // _upperHint
             0, // _lowerHint
             MIN_ANNUAL_INTEREST_RATE, // annualInterestRate,
-            10000e18 // upfrontFee
+            10000e18, // upfrontFee
+            address(0),
+            address(0),
+            address(0)
         );
         boldToken.transfer(A, troveManager.getTroveEntireDebt(troveId) - boldAmount);
         vm.stopPrank();

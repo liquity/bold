@@ -1,4 +1,5 @@
 const deploymentHelper = require("../utils/deploymentHelpers.js");
+const TroveManagerTester = artifacts.require("./TroveManagerTester.sol");
 
 contract("Deployment script - Sets correct contract addresses dependencies after deployment", async (accounts) => {
   const [owner] = accounts;
@@ -15,7 +16,9 @@ contract("Deployment script - Sets correct contract addresses dependencies after
   let borrowerOperations;
 
   before(async () => {
-    const coreContracts = await deploymentHelper.deployLiquityCore();
+    const coreContracts = await deploymentHelper.deployLiquityCore(mocks = {
+      TroveManager: TroveManagerTester
+    });
 
     priceFeed = coreContracts.priceFeedTestnet;
     boldToken = coreContracts.boldToken;
@@ -41,7 +44,7 @@ contract("Deployment script - Sets correct contract addresses dependencies after
   it("Sets the correct BoldToken address in TroveManager", async () => {
     const boldTokenAddress = boldToken.address;
 
-    const recordedClvTokenAddress = await troveManager.boldToken();
+    const recordedClvTokenAddress = await troveManager.getBoldToken();
 
     assert.equal(boldTokenAddress, recordedClvTokenAddress);
   });
@@ -57,7 +60,7 @@ contract("Deployment script - Sets correct contract addresses dependencies after
   it("Sets the correct BorrowerOperations address in TroveManager", async () => {
     const borrowerOperationsAddress = borrowerOperations.address;
 
-    const recordedBorrowerOperationsAddress = await troveManager.borrowerOperationsAddress();
+    const recordedBorrowerOperationsAddress = await troveManager.getBorrowerOperations();
 
     assert.equal(borrowerOperationsAddress, recordedBorrowerOperationsAddress);
   });

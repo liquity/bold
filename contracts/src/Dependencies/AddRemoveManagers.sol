@@ -3,10 +3,11 @@
 pragma solidity ^0.8.18;
 
 import "../Interfaces/IAddRemoveManagers.sol";
-import "../Interfaces/ITroveManager.sol";
+import "../Interfaces/IAddressesRegistry.sol";
+import "../Interfaces/ITroveNFT.sol";
 
 contract AddRemoveManagers is IAddRemoveManagers {
-    ITroveManager private immutable troveManager;
+    ITroveNFT internal immutable troveNFT;
 
     /*
      * Mapping from TroveId to granted address for operations that "give" money to the trove (add collateral, pay debt).
@@ -27,15 +28,21 @@ contract AddRemoveManagers is IAddRemoveManagers {
      */
     mapping(uint256 => mapping(address => address)) public removeManagerReceiverOf;
 
-    event TroveManagerAddressChanged(address _newTroveManagerAddress);
+    error EmptyManager();
+    error EmptyReceiver();
+    error NotBorrower();
+    error NotOwnerNorAddManager();
+    error NotOwnerNorRemoveManager();
 
-    constructor(ITroveManager _troveManager) {
-        troveManager = _troveManager;
-        emit TroveManagerAddressChanged(address(_troveManager));
+    event TroveNFTAddressChanged(address _newTroveNFTAddress);
+
+    constructor(IAddressesRegistry _addressesRegistry) {
+        troveNFT = _addressesRegistry.troveNFT();
+        emit TroveNFTAddressChanged(address(troveNFT));
     }
 
     function setAddManager(uint256 _troveId, address _manager) external {
-        _requireSenderIsOwner(troveManager, _troveId);
+        _requireCallerIsBorrower(_troveId);
         _setAddManager(_troveId, _manager);
     }
 
@@ -44,11 +51,11 @@ contract AddRemoveManagers is IAddRemoveManagers {
     }
 
     function setRemoveManager(uint256 _troveId, address _manager) external {
-        setRemoveManager(_troveId, _manager, troveManager.ownerOf(_troveId));
+        setRemoveManager(_troveId, _manager, troveNFT.ownerOf(_troveId));
     }
 
     function setRemoveManager(uint256 _troveId, address _manager, address _receiver) public {
-        _requireSenderIsOwner(troveManager, _troveId);
+        _requireCallerIsBorrower(_troveId);
         _requireNonZeroManager(_manager);
         _setRemoveManager(_troveId, _manager, _receiver);
     }
@@ -59,29 +66,36 @@ contract AddRemoveManagers is IAddRemoveManagers {
     }
 
     function _requireNonZeroManager(address _manager) internal pure {
-        require(_manager != address(0), "BorrowerOps: manager cannot be zero");
+        if (_manager == address(0)) {
+            revert EmptyManager();
+        }
     }
 
     function _requireNonZeroReceiver(address _receiver) internal pure {
-        require(_receiver != address(0), "BorrowerOps: receiver cannot be zero");
+        if (_receiver == address(0)) {
+            revert EmptyReceiver();
+        }
     }
 
-    function _requireSenderIsOwner(ITroveManager _troveManager, uint256 _troveId) internal view {
-        require(_troveManager.ownerOf(_troveId) == msg.sender, "BorrowerOps: sender is not Trove owner");
+    function _requireCallerIsBorrower(uint256 _troveId) internal view {
+        if (msg.sender != troveNFT.ownerOf(_troveId)) {
+            revert NotBorrower();
+        }
     }
 
     function _requireSenderIsOwnerOrAddManager(uint256 _troveId, address _owner) internal view {
         address addManager = addManagerOf[_troveId];
-        require(
-            msg.sender == _owner || addManager == address(0) || msg.sender == addManager,
-            "BorrowerOps: sender is neither Trove owner nor add-manager"
-        );
+        if (msg.sender != _owner && addManager != address(0) && msg.sender != addManager) {
+            revert NotOwnerNorAddManager();
+        }
     }
 
     function _requireSenderIsOwnerOrRemoveManager(uint256 _troveId, address _owner) internal view returns (address) {
         address receiver = removeManagerReceiverOf[_troveId][msg.sender];
         if (receiver == address(0)) {
-            require(msg.sender == _owner, "BorrowerOps: sender is neither Trove owner nor remove-manager");
+            if (msg.sender != _owner) {
+                revert NotOwnerNorRemoveManager();
+            }
             return _owner;
         }
         return receiver;

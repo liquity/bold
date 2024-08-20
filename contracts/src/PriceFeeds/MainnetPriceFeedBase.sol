@@ -30,6 +30,8 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
 
     IBorrowerOperations borrowerOperations;
 
+    constructor(address _owner) Ownable(_owner) {}
+
     function setAddresses(address _borrowOperationsAddress) external onlyOwner {
         borrowerOperations = IBorrowerOperations(_borrowOperationsAddress);
 

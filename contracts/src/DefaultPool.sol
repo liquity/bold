@@ -4,9 +4,11 @@ pragma solidity 0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./Interfaces/IActivePool.sol";
-import "./Dependencies/Ownable.sol";
 import "./Interfaces/IDefaultPool.sol";
+import "./Interfaces/IAddressesRegistry.sol";
+import "./Interfaces/IActivePool.sol";
+
+// import "forge-std/console2.sol";
 
 /*
  * The Default Pool holds the Coll and Bold debt (but not Bold tokens) from liquidations that have been redistributed
@@ -15,7 +17,7 @@ import "./Interfaces/IDefaultPool.sol";
  * When a trove makes an operation that applies its pending Coll and Bold debt, its pending Coll and Bold debt is moved
  * from the Default Pool to the Active Pool.
  */
-contract DefaultPool is Ownable, IDefaultPool {
+contract DefaultPool is IDefaultPool {
     using SafeERC20 for IERC20;
 
     string public constant NAME = "DefaultPool";
@@ -26,29 +28,24 @@ contract DefaultPool is Ownable, IDefaultPool {
     uint256 internal collBalance; // deposited Coll tracker
     uint256 internal BoldDebt; // debt
 
+    event CollTokenAddressChanged(address _newCollTokenAddress);
     event ActivePoolAddressChanged(address _newActivePoolAddress);
-    event EtherSent(address _to, uint256 _amount);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
+    event EtherSent(address _to, uint256 _amount);
     event DefaultPoolBoldDebtUpdated(uint256 _boldDebt);
     event DefaultPoolCollBalanceUpdated(uint256 _collBalance);
 
-    constructor(address _collAddress) {
-        collToken = IERC20(_collAddress);
-    }
+    constructor(IAddressesRegistry _addressesRegistry) {
+        collToken = _addressesRegistry.collToken();
+        troveManagerAddress = address(_addressesRegistry.troveManager());
+        activePoolAddress = address(_addressesRegistry.activePool());
 
-    // --- Dependency setters ---
-
-    function setAddresses(address _troveManagerAddress, address _activePoolAddress) external onlyOwner {
-        troveManagerAddress = _troveManagerAddress;
-        activePoolAddress = _activePoolAddress;
-
-        emit TroveManagerAddressChanged(_troveManagerAddress);
-        emit ActivePoolAddressChanged(_activePoolAddress);
+        emit CollTokenAddressChanged(address(collToken));
+        emit TroveManagerAddressChanged(troveManagerAddress);
+        emit ActivePoolAddressChanged(activePoolAddress);
 
         // Allow funds movements between Liquity contracts
-        collToken.approve(_activePoolAddress, type(uint256).max);
-
-        _renounceOwnership();
+        collToken.approve(activePoolAddress, type(uint256).max);
     }
 
     // --- Getters for public variables. Required by IPool interface ---

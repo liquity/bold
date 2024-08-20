@@ -9,8 +9,8 @@ import "../../Interfaces/IDefaultPool.sol";
 import "../../Interfaces/IPriceFeed.sol";
 import "../../Interfaces/ISortedTroves.sol";
 import "../../Interfaces/IStabilityPool.sol";
-import "./BorrowerOperationsTester.sol";
-import "./TroveManagerTester.sol";
+import "./BorrowerOperationsTester.t.sol";
+import "./TroveManagerTester.t.sol";
 import "../../Interfaces/ICollateralRegistry.sol";
 import "./PriceFeedTestnet.sol";
 import "../../Interfaces/IInterestRouter.sol";
@@ -23,10 +23,12 @@ import "forge-std/console2.sol";
 contract BaseTest is TestAccounts {
     uint256 CCR;
     uint256 MCR;
+    uint256 SCR;
     uint256 LIQUIDATION_PENALTY_SP;
     uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
 
     // Core contracts
+    IAddressesRegistry addressesRegistry;
     IActivePool activePool;
     IBorrowerOperationsTester borrowerOperations;
     ICollSurplusPool collSurplusPool;
@@ -34,6 +36,7 @@ contract BaseTest is TestAccounts {
     ISortedTroves sortedTroves;
     IStabilityPool stabilityPool;
     ITroveManagerTester troveManager;
+    ITroveNFT troveNFT;
     IBoldToken boldToken;
     ICollateralRegistry collateralRegistry;
     IPriceFeedTestnet priceFeed;
@@ -75,8 +78,24 @@ contract BaseTest is TestAccounts {
         return hintHelpers.predictAdjustInterestRateUpfrontFee(0, troveId, newInterestRate);
     }
 
+    function forcePredictAdjustInterestRateUpfrontFee(uint256 troveId, uint256 newInterestRate)
+        internal
+        view
+        returns (uint256)
+    {
+        return hintHelpers.forcePredictAdjustInterestRateUpfrontFee(0, troveId, newInterestRate);
+    }
+
     function predictAdjustTroveUpfrontFee(uint256 troveId, uint256 debtIncrease) internal view returns (uint256) {
         return hintHelpers.predictAdjustTroveUpfrontFee(0, troveId, debtIncrease);
+    }
+
+    function predictJoinBatchInterestRateUpfrontFee(uint256 _troveId, address _batchAddress)
+        internal
+        view
+        returns (uint256)
+    {
+        return hintHelpers.predictJoinBatchInterestRateUpfrontFee(0, _troveId, _batchAddress);
     }
 
     // Quick and dirty binary search instead of Newton's, because it's easier
@@ -179,7 +198,10 @@ contract BaseTest is TestAccounts {
             0, // _upperHint
             0, // _lowerHint
             _annualInterestRate,
-            upfrontFee
+            upfrontFee,
+            address(0),
+            address(0),
+            address(0)
         );
 
         vm.stopPrank();
@@ -195,7 +217,9 @@ contract BaseTest is TestAccounts {
         (uint256 borrow, uint256 upfrontFee) = findAmountToBorrowWithOpenTrove(_debt, _interestRate);
 
         vm.prank(_account);
-        troveId = borrowerOperations.openTrove(_account, _index, _coll, borrow, 0, 0, _interestRate, upfrontFee);
+        troveId = borrowerOperations.openTrove(
+            _account, _index, _coll, borrow, 0, 0, _interestRate, upfrontFee, address(0), address(0), address(0)
+        );
     }
 
     function openTroveWithExactICRAndDebt(
@@ -210,7 +234,9 @@ contract BaseTest is TestAccounts {
         coll = mulDivCeil(_debt, _ICR, price);
 
         vm.prank(_account);
-        troveId = borrowerOperations.openTrove(_account, _index, coll, borrow, 0, 0, _interestRate, upfrontFee);
+        troveId = borrowerOperations.openTrove(
+            _account, _index, coll, borrow, 0, 0, _interestRate, upfrontFee, address(0), address(0), address(0)
+        );
     }
 
     function adjustTrove100pct(
@@ -342,9 +368,9 @@ contract BaseTest is TestAccounts {
         vm.stopPrank();
     }
 
-    function applyTroveInterestPermissionless(address _from, uint256 _troveId) public {
+    function applyPendingDebt(address _from, uint256 _troveId) public {
         vm.startPrank(_from);
-        borrowerOperations.applyTroveInterestPermissionless(_troveId);
+        borrowerOperations.applyPendingDebt(_troveId);
         vm.stopPrank();
     }
 
@@ -374,6 +400,128 @@ contract BaseTest is TestAccounts {
 
     function getShareofSPReward(address _depositor, uint256 _reward) public view returns (uint256) {
         return _reward * stabilityPool.getCompoundedBoldDeposit(_depositor) / stabilityPool.getTotalBoldDeposits();
+    }
+
+    function registerBatchManager(address _account) internal {
+        registerBatchManager(
+            _account, uint128(1e16), uint128(20e16), uint128(5e16), uint128(25e14), MIN_INTEREST_RATE_CHANGE_PERIOD
+        );
+    }
+
+    function registerBatchManager(
+        address _account,
+        uint128 _minInterestRate,
+        uint128 _maxInterestRate,
+        uint128 _currentInterestRate,
+        uint128 _fee,
+        uint128 _minInterestRateChangePeriod
+    ) internal {
+        vm.startPrank(_account);
+        borrowerOperations.registerBatchManager(
+            _minInterestRate, _maxInterestRate, _currentInterestRate, _fee, _minInterestRateChangePeriod
+        );
+        vm.stopPrank();
+    }
+
+    function openTroveAndJoinBatchManager() internal returns (uint256) {
+        return openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+    }
+
+    function openTroveAndJoinBatchManager(
+        address _troveOwner,
+        uint256 _coll,
+        uint256 _debt,
+        address _batchAddress,
+        uint256 _annualInterestRate
+    ) internal returns (uint256) {
+        if (!borrowerOperations.checkBatchManagerExists(_batchAddress)) {
+            registerBatchManager(
+                _batchAddress,
+                uint128(LiquityMath._min(1e16, _annualInterestRate)),
+                uint128(LiquityMath._max(20e16, _annualInterestRate)),
+                uint128(_annualInterestRate),
+                uint128(25e14),
+                MIN_INTEREST_RATE_CHANGE_PERIOD
+            );
+        }
+
+        IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams memory params = IBorrowerOperations
+            .OpenTroveAndJoinInterestBatchManagerParams({
+            owner: _troveOwner,
+            ownerIndex: 0,
+            collAmount: _coll,
+            boldAmount: _debt,
+            upperHint: 0,
+            lowerHint: 0,
+            interestBatchManager: _batchAddress,
+            maxUpfrontFee: 1e24,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(_troveOwner);
+        uint256 troveId = borrowerOperations.openTroveAndJoinInterestBatchManager(params);
+        vm.stopPrank();
+
+        return troveId;
+    }
+
+    function setBatchInterestRate(address _batchAddress, uint256 _newAnnualInterestRate) internal {
+        vm.startPrank(_batchAddress);
+        borrowerOperations.setBatchManagerAnnualInterestRate(uint128(_newAnnualInterestRate), 0, 0, type(uint256).max);
+        vm.stopPrank();
+    }
+
+    function setInterestBatchManager(
+        address _troveOwner,
+        uint256 _troveId,
+        address _newBatchManager,
+        uint256 _annualInterestRate
+    ) internal {
+        if (!borrowerOperations.checkBatchManagerExists(_newBatchManager)) {
+            registerBatchManager(
+                _newBatchManager,
+                uint128(1e16),
+                uint128(20e16),
+                uint128(_annualInterestRate),
+                uint128(25e14),
+                MIN_INTEREST_RATE_CHANGE_PERIOD
+            );
+        }
+        setInterestBatchManager(_troveOwner, _troveId, _newBatchManager);
+    }
+
+    function setInterestBatchManager(address _troveOwner, uint256 _troveId, address _newBatchManager) internal {
+        vm.startPrank(_troveOwner);
+        borrowerOperations.setInterestBatchManager(_troveId, _newBatchManager, 0, 0, type(uint256).max);
+        vm.stopPrank();
+    }
+
+    function removeFromBatch(address _troveOwner, uint256 _troveId, uint256 _newAnnualInterestRate) internal {
+        vm.startPrank(_troveOwner);
+        borrowerOperations.removeFromBatch(_troveId, _newAnnualInterestRate, 0, 0, type(uint256).max);
+        vm.stopPrank();
+    }
+
+    function switchBatchManager(address _troveOwner, uint256 _troveId, address _newBatchManager) internal {
+        switchBatchManager(_troveOwner, _troveId, 0, 0, _newBatchManager, 0, 0, type(uint256).max);
+    }
+
+    function switchBatchManager(
+        address _troveOwner,
+        uint256 _troveId,
+        uint256 _removeUpperHint,
+        uint256 _removeLowerHint,
+        address _newBatchManager,
+        uint256 _addUpperHint,
+        uint256 _addLowerHint,
+        uint256 _maxUpfrontFee
+    ) internal {
+        vm.startPrank(_troveOwner);
+        borrowerOperations.switchBatchManager(
+            _troveId, _removeUpperHint, _removeLowerHint, _newBatchManager, _addUpperHint, _addLowerHint, _maxUpfrontFee
+        );
+        vm.stopPrank();
     }
 
     function logContractAddresses() public view {

@@ -3,9 +3,9 @@
 pragma solidity 0.8.18;
 
 import "./Interfaces/ISortedTroves.sol";
+import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBorrowerOperations.sol";
-import "./Dependencies/Ownable.sol";
 
 // ID of head & tail of the list. Callers should stop iterating with `getNext()` / `getPrev()`
 // when encountering this node ID.
@@ -35,7 +35,7 @@ uint256 constant ROOT_NODE_ID = 0;
 *
 * - Public functions with parameters have been made internal to save gas, and given an external wrapper function for external access
 */
-contract SortedTroves is Ownable, ISortedTroves {
+contract SortedTroves is ISortedTroves {
     string public constant NAME = "SortedTroves";
 
     // Constants used for documentation purposes
@@ -78,26 +78,16 @@ contract SortedTroves is Ownable, ISortedTroves {
     // Lookup batches by the address of their manager
     mapping(BatchId => Batch) public batches;
 
-    constructor() {
+    constructor(IAddressesRegistry _addressesRegistry) {
         // Technically, this is not needed as long as ROOT_NODE_ID is 0, but it doesn't hurt
         nodes[ROOT_NODE_ID].nextId = ROOT_NODE_ID;
         nodes[ROOT_NODE_ID].prevId = ROOT_NODE_ID;
-    }
 
-    // --- Dependency setters ---
+        troveManager = ITroveManager(_addressesRegistry.troveManager());
+        borrowerOperationsAddress = address(_addressesRegistry.borrowerOperations());
 
-    function setAddresses(address _troveManagerAddress, address _borrowerOperationsAddress)
-        external
-        override
-        onlyOwner
-    {
-        troveManager = ITroveManager(_troveManagerAddress);
-        borrowerOperationsAddress = _borrowerOperationsAddress;
-
-        emit TroveManagerAddressChanged(_troveManagerAddress);
-        emit BorrowerOperationsAddressChanged(_borrowerOperationsAddress);
-
-        _renounceOwnership();
+        emit TroveManagerAddressChanged(address(troveManager));
+        emit BorrowerOperationsAddressChanged(borrowerOperationsAddress);
     }
 
     // Insert an entire list slice (such as a batch of Troves sharing the same interest rate)
@@ -160,7 +150,7 @@ contract SortedTroves is Ownable, ISortedTroves {
      * @param _id Trove's id
      */
     function remove(uint256 _id) external override {
-        _requireCallerIsTroveManager();
+        _requireCallerIsBOorTM();
         require(contains(_id), "SortedTroves: List does not contain the id");
         require(!isBatchedNode(_id), "SortedTroves: Must use removeFromBatch() to remove batched node");
 
@@ -250,7 +240,7 @@ contract SortedTroves is Ownable, ISortedTroves {
      * @param _id Trove's id
      */
     function removeFromBatch(uint256 _id) external override {
-        _requireCallerIsTroveManager();
+        _requireCallerIsBOorTM();
         BatchId batchId = nodes[_id].batchId;
         // batchId.isNotZero() implies that the list contains the node
         require(batchId.isNotZero(), "SortedTroves: Must use remove() to remove non-batched node");
@@ -549,8 +539,11 @@ contract SortedTroves is Ownable, ISortedTroves {
 
     // --- 'require' functions ---
 
-    function _requireCallerIsTroveManager() internal view {
-        require(msg.sender == address(troveManager), "SortedTroves: Caller is not the TroveManager");
+    function _requireCallerIsBOorTM() internal view {
+        require(
+            msg.sender == borrowerOperationsAddress || msg.sender == address(troveManager),
+            "SortedTroves: Caller is not BorrowerOperations nor TroveManager"
+        );
     }
 
     function _requireCallerIsBorrowerOperations() internal view {

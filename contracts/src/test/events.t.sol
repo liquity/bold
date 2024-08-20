@@ -2,6 +2,7 @@
 pragma solidity 0.8.18;
 
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import "../Interfaces/IStabilityPoolEvents.sol";
 import "./TestContracts/DevTestSetup.sol";
 import "../Dependencies/Constants.sol";
 
@@ -92,7 +93,9 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         );
 
         vm.prank(owner);
-        borrowerOperations.openTrove(owner, ownerIndex, coll, borrow, 0, 0, interestRate, upfrontFee);
+        borrowerOperations.openTrove(
+            owner, ownerIndex, coll, borrow, 0, 0, interestRate, upfrontFee, address(0), address(0), address(0)
+        );
     }
 
     function test_OpenTroveEmitsTroveOperation() external {
@@ -118,7 +121,9 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         );
 
         vm.prank(owner);
-        borrowerOperations.openTrove(owner, ownerIndex, coll, borrow, 0, 0, interestRate, upfrontFee);
+        borrowerOperations.openTrove(
+            owner, ownerIndex, coll, borrow, 0, 0, interestRate, upfrontFee, address(0), address(0), address(0)
+        );
     }
 
     function test_AdjustTroveEmitsTroveUpdated() external {
@@ -244,7 +249,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         );
 
         vm.prank(A);
-        borrowerOperations.applyTroveInterestPermissionless(troveId);
+        borrowerOperations.applyPendingDebt(troveId);
     }
 
     function test_ApplyTroveInterestPermissionlessEmitsTroveOperation() external {
@@ -256,7 +261,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         vm.expectEmit();
         emit TroveOperation(
             troveId,
-            Operation.applyTroveInterestPermissionless,
+            Operation.applyPendingDebt,
             interestRate,
             0, // _debtIncreaseFromRedist
             0, // _debtIncreaseFromUpfrontFee
@@ -266,7 +271,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         );
 
         vm.prank(A);
-        borrowerOperations.applyTroveInterestPermissionless(troveId);
+        borrowerOperations.applyPendingDebt(troveId);
     }
 
     function test_CloseTroveEmitsTroveUpdated() external {
