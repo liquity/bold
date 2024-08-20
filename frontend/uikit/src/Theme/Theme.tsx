@@ -73,6 +73,10 @@ export const colors = {
   // brown
   "brown:50": "#F8F6F4",
 
+  // desert
+  "desert:50": "#FAF9F7",
+  "desert:100": "#EFECE5",
+
   // White
   "white": "#FFFFFF",
 
@@ -113,8 +117,11 @@ export const lightTheme = {
     controlSurface: "white",
     controlSurfaceAlt: "gray:200",
     hint: "brown:50",
+    infoSurface: "desert:50",
+    infoSurfaceBorder: "desert:100",
     dimmed: "gray:400",
-    fieldBorder: "gray:200",
+    fieldBorder: "gray:100",
+    fieldBorderFocused: "gray:300",
     fieldSurface: "gray:50",
     focused: "blue:500",
     focusedSurface: "blue:50",
@@ -122,6 +129,7 @@ export const lightTheme = {
     strongSurface: "blue:950",
     strongSurfaceContent: "white",
     strongSurfaceContentAlt: "gray:500",
+    strongSurfaceContentAlt2: "gray:100",
     interactive: "blue:950",
     negative: "red:500",
     negativeActive: "red:600",
@@ -137,6 +145,7 @@ export const lightTheme = {
     secondaryContent: "blue:500",
     secondaryHint: "blue:100",
     selected: "blue:500",
+    surface: "white",
     tableBorder: "gray:100",
     warning: "yellow:400",
     disabledBorder: "gray:200",
@@ -155,11 +164,17 @@ export const lightTheme = {
     brandGreenContent: "green:950",
     brandGreenContentAlt: "green:800",
 
+    riskGradient1: "green:400",
+    riskGradient2: "#B8E549",
+    riskGradient3: "yellow:400",
+    riskGradient4: "#FFA12B",
+    riskGradient5: "red:500",
+
     // not used yet
     brandCyan: "brand:cyan",
     brandCoral: "brand:coral",
     brandBrown: "brand:brown",
-  } satisfies Record<string, keyof typeof colors>,
+  } satisfies Record<string, (keyof typeof colors) | `#${string}`>,
 } as const;
 
 export type ThemeDescriptor = {
@@ -169,7 +184,17 @@ export type ThemeDescriptor = {
 export type ThemeColorName = keyof ThemeDescriptor["colors"];
 
 export function themeColor(theme: ThemeDescriptor, name: ThemeColorName) {
-  return colors[theme.colors[name]];
+  const themeColor = theme.colors[name];
+
+  if (themeColor.startsWith("#")) {
+    return themeColor;
+  }
+
+  if (themeColor in colors) {
+    return colors[themeColor as keyof typeof colors];
+  }
+
+  throw new Error(`Color ${themeColor} not found in theme`);
 }
 
 const ThemeContext = createContext({

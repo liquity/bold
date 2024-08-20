@@ -7,7 +7,7 @@ import { css } from "@/styled-system/css";
 import { Button, HFlex, IconGas, StatusDot, TextButton, VFlex } from "@liquity2/uikit";
 import { useRouter } from "next/navigation";
 
-export default function Page() {
+export default function TransactonBorrowPage() {
   const router = useRouter();
   return (
     <Screen title="You are opening a loan">

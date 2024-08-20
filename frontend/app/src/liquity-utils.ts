@@ -11,7 +11,6 @@ import {
 } from "@/src/contracts";
 import { ADDRESS_ZERO } from "@/src/eth-utils";
 import { useWatchQueries } from "@/src/wagmi-utils";
-import { useState } from "react";
 import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, maxUint256, parseAbiParameters } from "viem";
 import { useAccount, useBalance, useReadContract, useReadContracts, useWriteContract } from "wagmi";

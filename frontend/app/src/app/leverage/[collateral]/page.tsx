@@ -1,12 +1,12 @@
 export function generateStaticParams() {
   return [
-    "eth",
-    "reth",
-    "steth",
-  ].map((s) => ({ collateral: s }));
+    { collateral: "eth" },
+    { collateral: "reth" },
+    { collateral: "steth" },
+  ];
 }
 
-export default function Page() {
+export default function LeverageCollateralPage() {
   // see layout in parent folder
   return null;
 }

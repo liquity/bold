@@ -15,15 +15,16 @@ type ElementOrString = ReactElement | string;
 export const StrongCard = forwardRef<
   HTMLAnchorElement,
   {
+    contextual?: ReactNode;
     heading: ElementOrString | ElementOrString[];
-    rows: [
-      [Cell | null, Cell | null],
-      [Cell | null, Cell | null],
-    ];
+    main?: Cell;
+    secondary: ReactNode;
   } & HTMLAttributes<HTMLAnchorElement>
 >(function StrongCard({
+  contextual,
   heading,
-  rows,
+  main,
+  secondary,
   ...anchorProps
 }, ref) {
   const [heading1, heading2] = Array.isArray(heading) ? heading : [heading];
@@ -63,7 +64,7 @@ export const StrongCard = forwardRef<
         css({
           display: "flex",
           flexDirection: "column",
-          padding: 16,
+          padding: "16px 16px 12px",
           background: "strongSurface",
           borderRadius: 8,
           outline: "none",
@@ -107,92 +108,55 @@ export const StrongCard = forwardRef<
               {heading2}
             </div>
           )}
-          <div
-            className={css({
-              transition: "transform 100ms",
-              _groupHover: {
-                transform: `
-                  translate3d(0, 0, 0)
-                  scale3d(1.2, 1.2, 1)
-                `,
-              },
-              _groupFocus: {
-                transform: `
-                  translate3d(4px, 0, 0)
-                `,
-              },
-            })}
-          >
-            <IconArrowRight size={20} />
-          </div>
+          {contextual || (
+            <div
+              className={css({
+                transition: "transform 100ms",
+                _groupHover: {
+                  transform: `
+                    translate3d(0, 0, 0)
+                    scale3d(1.2, 1.2, 1)
+                  `,
+                },
+                _groupFocus: {
+                  transform: `
+                    translate3d(4px, 0, 0)
+                  `,
+                },
+              })}
+            >
+              <IconArrowRight size={20} />
+            </div>
+          )}
         </header>
-        <div
-          className={css({
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-          })}
-        >
-          {rows.map((row, i) => (
-            <Row
-              key={i}
-              cells={row}
-            />
-          ))}
-        </div>
-      </section>
-    </a.a>
-  );
-});
-
-function Row({
-  cells,
-}: {
-  cells: [Cell | null, Cell | null];
-}) {
-  return (
-    <div
-      className={css({
-        display: "flex",
-        justifyContent: "space-between",
-        color: "strongSurfaceContent",
-      })}
-    >
-      {cells.map((cell, i) => (
-        cell && (
+        {main && (
           <div
-            key={i}
             className={css({
               display: "flex",
               flexDirection: "column",
-              alignItems: i === 0 ? "flex-start" : "flex-end",
+              marginTop: -24,
             })}
           >
             <div
               className={css({
-                display: "flex",
-                alignItems: "center",
-                height: 30,
-                fontSize: i === 0 ? 20 : 14,
                 color: "strongSurfaceContent",
+                fontSize: 28,
               })}
             >
-              {cell.value}
+              {main.value}
             </div>
             <div
               className={css({
-                display: "flex",
-                alignItems: "center",
-                height: 18,
                 fontSize: 14,
                 color: "strongSurfaceContentAlt",
               })}
             >
-              {cell.label}
+              {main.label}
             </div>
           </div>
-        )
-      ))}
-    </div>
+        )}
+        {secondary}
+      </section>
+    </a.a>
   );
-}
+});

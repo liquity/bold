@@ -30,7 +30,7 @@ export function Field({
       className={css({
         display: "flex",
         flexDirection: "column",
-        gap: 16,
+        gap: 8,
       })}
     >
       {label
@@ -100,7 +100,7 @@ function FooterInfo({
   title,
 }: {
   label?: ReactNode;
-  value: ReactNode;
+  value?: ReactNode;
   title?: string;
 }) {
   return (
@@ -110,6 +110,7 @@ function FooterInfo({
         display: "flex",
         gap: 8,
         whiteSpace: "nowrap",
+        fontSize: 14,
       }}
     >
       {label && (
@@ -121,14 +122,16 @@ function FooterInfo({
           {label}
         </div>
       )}
-      <div
-        className={css({
-          display: "flex",
-          alignItems: "center",
-        })}
-      >
-        {value}
-      </div>
+      {value && (
+        <div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+          })}
+        >
+          {value}
+        </div>
+      )}
     </div>
   );
 }

@@ -59,10 +59,11 @@ $ cast <subcommand>
 
 ## Slither
 
-Create a local Python env:
+Create a local Python env and activate it:
 
 ```shell
 python3 -m venv .venv
+source .venv/bin/activate
 ```
 
 Install slither:

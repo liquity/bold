@@ -7,6 +7,7 @@ export default {
 
   // Menu bar
   menu: {
+    dashboard: "Dashboard",
     borrow: "Borrow",
     leverage: "Leverage",
     earn: "Earn",
@@ -25,7 +26,17 @@ export default {
     ],
     loanRedemptionRisk: [
       "Redemption risk",
-      "If BOLD trades below $1, your collateral may be redeemed. Redemptions start from the lowest interest rate loans. Raise the interest rate on your loan to reduce the risk.",
+      <>
+        If BOLD trades below $1, your collateral may be{" "}
+        <a
+          href="https://docs.liquity.org/faq/lusd-redemptions"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          redeemed
+        </a>. Redemptions start from the lowest interest rate loans. Raise the interest rate on your loan to reduce the
+        risk.
+      </>,
     ],
     loanLtv: [
       "Loan-to-value ratio",

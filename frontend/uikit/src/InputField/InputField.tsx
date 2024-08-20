@@ -1,18 +1,27 @@
 import type { ReactNode } from "react";
 
 import { a, useSpring } from "@react-spring/web";
+import { useState } from "react";
 import { forwardRef, useId, useRef } from "react";
 import { css, cx } from "../../styled-system/css";
 import { IconCross } from "../icons";
 import { useElementSize } from "../react-utils";
 
-type InputFieldProps = {
+const diffSpringConfig = {
+  mass: 1,
+  tension: 3000,
+  friction: 120,
+};
+
+const InputField = forwardRef<HTMLInputElement, {
   contextual?: ReactNode;
   difference?: ReactNode;
   label?:
     | ReactNode
     | { end: ReactNode; start?: ReactNode }
     | { end?: ReactNode; start: ReactNode };
+  labelHeight?: number;
+  labelSpacing?: number;
   onBlur?: () => void;
   onChange?: (value: string) => void;
   onDifferenceClick?: () => void;
@@ -22,27 +31,29 @@ type InputFieldProps = {
     | ReactNode
     | { end: ReactNode; start?: ReactNode }
     | { end?: ReactNode; start: ReactNode };
+  secondaryHeight?: number;
+  secondarySpacing?: number;
   value?: string;
-};
-
-const diffSpringConfig = {
-  mass: 1,
-  tension: 3000,
-  friction: 120,
-};
-
-const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputField({
+  valueUnfocused?: ReactNode;
+}>(function InputField({
   contextual,
   difference,
   label,
+  labelHeight = 12,
+  labelSpacing = 12,
   onBlur,
   onChange,
   onDifferenceClick,
   onFocus,
   placeholder,
   secondary,
+  secondaryHeight = 12,
+  secondarySpacing = 20,
   value,
+  valueUnfocused,
 }, ref) {
+  const [focused, setFocused] = useState(false);
+
   const label_ = label
       && typeof label === "object"
       && ("start" in label || "end" in label)
@@ -108,6 +119,8 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
     differenceLeftBeforeHiding.current = diffLeft;
   });
 
+  const showValueUnfocused = valueUnfocused && !focused;
+
   return (
     <div
       className={css({
@@ -115,23 +128,25 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
         display: "flex",
         flexDirection: "column",
         width: "100%",
-        paddingBottom: 16,
         background: "fieldSurface",
         border: "1px solid token(colors.fieldBorder)",
         borderRadius: 8,
+        padding: 16,
       })}
     >
       <div
         className={css({
-          position: "absolute",
-          inset: "0 0 auto 0",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "12px 16px 0",
           fontSize: 16,
+          fontWeight: 500,
           color: "contentAlt",
         })}
+        style={{
+          height: labelHeight + labelSpacing,
+          paddingBottom: labelSpacing,
+        }}
       >
         {label_.start ? <label htmlFor={id}>{label_.start}</label> : <div />}
         {label_.end && <div>{label_.end}</div>}
@@ -185,78 +200,121 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
           <IconCross size={12} />
         </a.button>
       )}
-      <input
-        ref={ref}
-        id={id}
-        type="text"
-        placeholder={placeholder}
-        value={value}
-        onBlur={onBlur}
-        onChange={(event) => {
-          onChange?.(event.target.value);
-        }}
-        onFocus={onFocus}
-        className={cx(
-          "peer",
-          css({
-            display: "block",
-            height: 136 - 2, // account for the 1px border
-            padding: "0 16px",
-            fontSize: 28,
-            fontWeight: 500,
-            letterSpacing: -1,
-            color: "content",
-            background: "transparent",
-            border: 0,
-            _placeholder: {
-              color: "dimmed",
-            },
-            _focusVisible: {
-              outline: 0,
-            },
-          }),
-        )}
-      />
       <div
         className={css({
-          display: "none",
-          position: "absolute",
-          inset: -1,
-          border: "2px solid token(colors.focused)",
-          borderRadius: 8,
-          pointerEvents: "none",
-          _peerFocusVisible: {
-            display: "block",
-          },
-        })}
-      />
-      {contextual && (
-        <div
-          className={css({
-            position: "absolute",
-            inset: "48px 16px auto auto",
-          })}
-        >
-          {contextual}
-        </div>
-      )}
-      <div
-        className={css({
-          position: "absolute",
-          inset: "auto 16px 16px",
+          position: "relative",
+          zIndex: 1,
           display: "flex",
-          justifyContent: "space-between",
-          gap: 16,
-          fontSize: 16,
-          color: "contentAlt",
-          pointerEvents: "none",
-          "& > div": {
-            pointerEvents: "auto",
-          },
+          height: 40,
         })}
       >
-        {secondary_.start
-          ? (
+        <input
+          ref={ref}
+          id={id}
+          onBlur={() => {
+            setFocused(false);
+            onBlur?.();
+          }}
+          onChange={(event) => {
+            onChange?.(event.target.value);
+          }}
+          onFocus={() => {
+            setFocused(true);
+            onFocus?.();
+          }}
+          placeholder={showValueUnfocused ? "" : placeholder}
+          type="text"
+          value={showValueUnfocused ? "" : value}
+          className={cx(
+            "peer",
+            css({
+              display: "block",
+              padding: 0,
+              width: "100%",
+              height: "100%",
+              fontSize: 28,
+              fontWeight: 500,
+              letterSpacing: -1,
+              color: "content",
+              background: "transparent",
+              border: 0,
+              _placeholder: {
+                color: "dimmed",
+              },
+              _focusVisible: {
+                outline: 0,
+              },
+            }),
+          )}
+        />
+        {showValueUnfocused && (
+          <div
+            className={css({
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              height: "100%",
+              fontSize: 28,
+              fontWeight: 500,
+              letterSpacing: -1,
+              color: "content",
+              pointerEvents: "none",
+            })}
+          >
+            {valueUnfocused}
+          </div>
+        )}
+        {contextual && (
+          <div
+            className={css({
+              position: "absolute",
+              zIndex: 2,
+              inset: `50% 0 auto auto`,
+              transform: "translateY(-50%)",
+            })}
+          >
+            {contextual}
+          </div>
+        )}
+      </div>
+      {(secondary_.start || secondary_.end) && (
+        <div
+          className={css({
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 16,
+            fontSize: 16,
+            fontWeight: 500,
+            color: "contentAlt",
+            pointerEvents: "none",
+            "& > div": {
+              pointerEvents: "auto",
+            },
+          })}
+          style={{
+            height: secondaryHeight + secondarySpacing,
+            paddingTop: secondarySpacing,
+          }}
+        >
+          {secondary_.start
+            ? (
+              <div
+                className={css({
+                  flexGrow: 0,
+                  flexShrink: 1,
+                  display: "flex",
+                  whiteSpace: "nowrap",
+                  textOverflow: "ellipsis",
+                  maxWidth: "50%",
+                })}
+              >
+                {secondary_.start}
+              </div>
+            )
+            : <div />}
+          {secondary_.end && (
             <div
               className={css({
                 flexGrow: 0,
@@ -264,27 +322,26 @@ const InputField = forwardRef<HTMLInputElement, InputFieldProps>(function InputF
                 display: "flex",
                 whiteSpace: "nowrap",
                 textOverflow: "ellipsis",
-                maxWidth: "50%",
               })}
             >
-              {secondary_.start}
+              {secondary_.end}
             </div>
-          )
-          : <div />}
-        {secondary_.end && (
-          <div
-            className={css({
-              flexGrow: 0,
-              flexShrink: 1,
-              display: "flex",
-              whiteSpace: "nowrap",
-              textOverflow: "ellipsis",
-            })}
-          >
-            {secondary_.end}
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
+      <div
+        className={css({
+          display: "none",
+          position: "absolute",
+          inset: -1,
+          border: "2px solid token(colors.fieldBorderFocused)",
+          borderRadius: 8,
+          pointerEvents: "none",
+        })}
+        style={{
+          display: focused ? "block" : "none",
+        }}
+      />
     </div>
   );
 });

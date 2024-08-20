@@ -37,10 +37,10 @@
     "hardhat-gas-reporter": "^1.0.8",
     "solidity-coverage": "^0.8.8",
     "ts-node": ">=8.0.0",
-    "tsx": "^4.7.1",
+    "tsx": "^4.16.5",
     "typechain": "^8.1.0",
-    "typescript": "^5.4.5",
-    "zod": "^3.23.0",
-    "zx": "^7.2.3"
+    "typescript": "^5.5.4",
+    "zod": "^3.23.8",
+    "zx": "^8.1.4"
   }
 }
