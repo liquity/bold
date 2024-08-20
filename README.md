@@ -1320,6 +1320,9 @@ This was chosen over other approaches because:
 - It provides a credible way of eventually "filling the hole" created by bad debt (unlike other approaches such as the SP haircut, which depends on SP funds)
 - No additional core system code nor additional governance features are required. Governance can simply propose to redirect BOLD interest to a burn address.
 
+**Extension: governance can liquidate and swap collateral gains**
+
+If there is remaining collateral in the shutdown branch (albeit perhaps at zero USD value) and there are liquidateable Troves, Governance could alternatively vote to direct fees to a permissionless contract that deposits the BOLD to the SP of the shutdown branch and liquidates the Troves against those funds. The resulting collateral gains could, if they have non-zero value, be swapped on a DEX, e.g. for BOLD which could be then directed to LP incentives. All deposits and swaps could be handled permissionlessly by this governance-deployed contract.
 
 ## Requirements
 
