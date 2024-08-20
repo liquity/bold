@@ -1149,8 +1149,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _sweepBold(msg.sender, amount);
         } else {
             // Cleanup (success)
-            _sweepBold(msg.sender, amount - totalDebtRedeemed);
-
             for (uint256 j = 0; j < branches.length; ++j) {
                 _sweepColl(j, msg.sender, r[j].totalCollRedeemed);
 
@@ -1158,6 +1156,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                     _sweepBold(r[j].batchManagers.get(i), batchManagementFee[j][i]);
                 }
             }
+
+            // There can be a slight discrepancy when hitting batched Troves
+            uint256 remainingAmount = boldToken.balanceOf(msg.sender);
+            assertApproxEqAbsDecimal(remainingAmount, amount - totalDebtRedeemed, 1, 18, "Wrong remaining BOLD");
+            _sweepBold(msg.sender, remainingAmount);
         }
 
         _resetRedemption();
