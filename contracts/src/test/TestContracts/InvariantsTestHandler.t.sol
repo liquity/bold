@@ -367,6 +367,14 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         batchManager = _batchManagerOf[i][troveId];
     }
 
+    function getBatchSize(uint256 i, address batchManager) external view returns (uint256) {
+        return _batches[i][batchManager].troves.size();
+    }
+
+    function getTroveIdFromBatch(uint256 i, address batchManager, uint256 j) external view returns (uint256) {
+        return _batches[i][batchManager].troves.get(j);
+    }
+
     function getRedemptionRate() external view returns (uint256) {
         return _getRedemptionRate(_getBaseRate());
     }
@@ -881,6 +889,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             delete _batchManagerOf[i][v.troveId];
             _troveIds[i].remove(v.troveId);
             _zombieTroveIds[i].remove(v.troveId);
+            if (v.batchManager != address(0)) _batches[i][v.batchManager].troves.remove(v.troveId);
 
             // Effects (system)
             _mintYield(i, v.pendingInterest, 0);
@@ -968,10 +977,12 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Effects (Troves)
             for (uint256 j = 0; j < l.liquidated.size(); ++j) {
                 uint256 troveId = _troveIdOf(l.liquidated.get(j));
+                address batchManager = _batchManagerOf[i][troveId];
                 delete _troves[i][troveId];
                 delete _batchManagerOf[i][troveId];
                 _troveIds[i].remove(troveId);
                 _zombieTroveIds[i].remove(troveId);
+                if (batchManager != address(0)) _batches[i][batchManager].troves.remove(troveId);
             }
 
             if (l.t.debtRedist > 0) {
