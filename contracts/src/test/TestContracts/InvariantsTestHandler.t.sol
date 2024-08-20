@@ -705,8 +705,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertFalse(v.wasUnredeemable, "Shouldn't have failed as Trove was unredeemable");
             } else if (selector == BorrowerOperations.CollWithdrawalTooHigh.selector) {
                 assertGtDecimal(-v.collDelta, int256(v.t.entireColl), 18, "Shouldn't have failed as withdrawal <= coll");
-            } else if (selector == BorrowerOperations.RepaymentTooHigh.selector) {
-                assertGtDecimal(-v.debtDelta, int256(v.t.entireDebt), 18, "Shouldn't have failed as repayment <= debt");
             } else if (selector == BorrowerOperations.DebtBelowMin.selector) {
                 v.newDebt = (v.t.entireDebt + v.upfrontFee).add(v.debtDelta);
                 assertLtDecimal(v.newDebt, MIN_DEBT, 18, "Shouldn't have failed as new debt >= MIN_DEBT");
@@ -2327,10 +2325,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             if (selector == BorrowerOperations.DebtBelowMin.selector) {
                 return (selector, "BorrowerOperations.DebtBelowMin()");
-            }
-
-            if (selector == BorrowerOperations.RepaymentTooHigh.selector) {
-                return (selector, "BorrowerOperations.RepaymentTooHigh()");
             }
 
             if (selector == BorrowerOperations.CollWithdrawalTooHigh.selector) {
