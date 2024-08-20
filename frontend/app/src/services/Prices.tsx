@@ -2,7 +2,7 @@
 
 import { CollateralSymbol } from "@/src/types";
 import type { Dnum } from "dnum";
-import type { ReactNode } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 
 import { useCollateralContract } from "@/src/contracts";
 import {
@@ -10,6 +10,7 @@ import {
   ETH_PRICE as DEMO_ETH_PRICE,
   LQTY_PRICE as DEMO_LQTY_PRICE,
   PRICE_UPDATE_INTERVAL as DEMO_PRICE_UPDATE_INTERVAL,
+  PRICE_UPDATE_MANUAL as DEMO_PRICE_UPDATE_MANUAL,
   PRICE_UPDATE_VARIATION as DEMO_PRICE_UPDATE_VARIATION,
   RETH_PRICE as DEMO_RETH_PRICE,
   STETH_PRICE as DEMO_STETH_PRICE,
@@ -43,29 +44,34 @@ function useWatchCollateralPrice(collateral: CollateralSymbol) {
   return PriceFeed && price.data ? price : { data: null, loading: false };
 }
 
-let useWatchPrices = function useWatchPrices(): Prices {
+let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void): void {
   const ethPrice = useWatchCollateralPrice("ETH");
   const rethPrice = useWatchCollateralPrice("RETH");
   const stethPrice = useWatchCollateralPrice("STETH");
 
-  return {
-    // TODO: fetch prices for LQTY & BOLD
-    ...initialPrices,
-    ETH: ethPrice.data ? [ethPrice.data, 18] : null,
-    RETH: rethPrice.data ? [rethPrice.data, 18] : null,
-    STETH: stethPrice.data ? [stethPrice.data, 18] : null,
-  };
+  useEffect(() => {
+    callback({
+      // TODO: fetch prices for LQTY & BOLD
+      ...initialPrices,
+      ETH: ethPrice.data ? [ethPrice.data, 18] : null,
+      RETH: rethPrice.data ? [rethPrice.data, 18] : null,
+      STETH: stethPrice.data ? [stethPrice.data, 18] : null,
+    });
+  }, [
+    callback,
+    ethPrice,
+    rethPrice,
+    stethPrice,
+  ]);
 };
 
 if (DEMO_MODE) {
   // in demo mode, simulate a variation of the prices
-  useWatchPrices = () => {
-    const [prices, setPrices] = useState<Prices>(initialPrices);
-
+  useWatchPrices = (callback) => {
     useEffect(() => {
       const update = () => {
         const variation = () => dn.from((Math.random() - 0.5) * DEMO_PRICE_UPDATE_VARIATION, 18);
-        setPrices({
+        callback({
           BOLD: dn.add(DEMO_BOLD_PRICE, dn.mul(DEMO_BOLD_PRICE, variation())),
           ETH: dn.add(DEMO_ETH_PRICE, dn.mul(DEMO_ETH_PRICE, variation())),
           LQTY: dn.add(DEMO_LQTY_PRICE, dn.mul(DEMO_LQTY_PRICE, variation())),
@@ -74,28 +80,45 @@ if (DEMO_MODE) {
         });
       };
 
-      const timer = setInterval(update, DEMO_PRICE_UPDATE_INTERVAL);
+      const timer = DEMO_PRICE_UPDATE_MANUAL
+        ? undefined
+        : setInterval(update, DEMO_PRICE_UPDATE_INTERVAL);
+
       update();
 
       return () => clearInterval(timer);
     }, []);
-
-    return prices;
   };
 }
 
-const PriceContext = createContext<Prices>(initialPrices);
+const PriceContext = createContext<{
+  prices: Prices;
+  setPrices: Dispatch<SetStateAction<Prices>>;
+}>({
+  prices: initialPrices,
+  setPrices: () => {},
+});
 
 export function Prices({ children }: { children: ReactNode }) {
-  const prices = useWatchPrices();
+  const [prices, setPrices] = useState<Prices>(initialPrices);
+
+  useWatchPrices(setPrices);
+
   return (
-    <PriceContext.Provider value={prices}>
+    <PriceContext.Provider value={{ prices, setPrices }}>
       {children}
     </PriceContext.Provider>
   );
 }
 
 export function usePrice(token: PriceToken | null) {
-  const context = useContext(PriceContext);
-  return token ? context[token] : null;
+  const { prices } = useContext(PriceContext);
+  return token ? prices[token] : null;
+}
+
+export function useUpdatePrice() {
+  const { setPrices } = useContext(PriceContext);
+  return (token: PriceToken, price: Dnum | null) => {
+    setPrices((prices) => ({ ...prices, [token]: price }));
+  };
 }
