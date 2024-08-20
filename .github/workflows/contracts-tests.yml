@@ -68,7 +68,7 @@ jobs:
       - name: Check console imports
         working-directory: contracts
         run: >-
-          ! grep -R console src | grep import | grep -v "://" | grep -v TestContracts | grep -v ExternalContracts  | grep -v "\.t\.sol"
+          ! grep -R console src | grep import | grep -v "://" | grep -v TestContracts | grep -v "/test/" | grep -v ExternalContracts  | grep -v "\.t\.sol" | grep -v "\.s\.sol"
 
   test-hardhat:
     if: false
