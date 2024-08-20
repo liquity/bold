@@ -1161,16 +1161,15 @@ When `lastGoodPrice` is used to price the LST, the _real_ market price may be hi
 | Scenario                     | Consequence                                                                                                                                       |
 |------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
 | lastGoodPrice > market price | Urgent redemptions return too little LST collateral, and may be unprofitable even when BOLD trades at $1 or below                                   |
-| lastGoodPrice < market price | Urgent redemptions return too much LST collateral. They may be too profitable, and not clear enough debt for the collateral redeemed                |
-
+| lastGoodPrice < market price | Urgent redemptions return too much LST collateral. They may be too profitable, compared to the market price.              |
 
 #### Solution
 
 No fix is implemented for this, for the following reasons:
 
-- In both cases, the final result is that some uncleared BOLD debt remains on the shut down branch, and the system carries this unbacked debt burden going forward.  This is an inherent risk of a multicollateral system anyway, which relies on the economic health of the LST assets it integrates.
-- Clearing as much debt from a shut down branch as possible is considered desirable, but the system is designed to be able to absorb some bad debt due to overall overcollateralization
-- Oracle failure, if it occurs, will much more likely be due to a disabled Chainlink feed rather than hack or technical failure. A disabled LST oracle implies an LST with low liquidity/volume, which in turn probably implies that the LST constitutes a small fraction of total Liquity v2 collateral. In this case, the bad debt should likely be small relative to total system debt, and the overall overcollateralization should maintain the BOLD peg.
+- In the second case, although urgent redemptions return too much value to the redeemer, they can still clear all debt from the branch.
+- In the first case, the final result is that some uncleared BOLD debt remains on the shut down branch, and the system carries this unbacked debt burden going forward.  This is an inherent risk of a multicollateral system anyway, which relies on the economic health of the LST assets it integrates. A solution to clear bad debt is TODO, to be chosen and implemented - see [Branch shutdown and bad debt](https://github.com/liquity/bold?tab=readme-ov-file#10---branch-shutdown-and-bad-debt) section.
+- Also an Oracle failure, if it occurs, will much more likely be due to a disabled Chainlink feed rather than hack or technical failure. A disabled LST oracle implies an LST with low liquidity/volume, which in turn probably implies that the LST constitutes a small fraction of total Liquity v2 collateral. 
 
 ### 5 - Stale oracle price before shutdown triggered
 
