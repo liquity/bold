@@ -784,7 +784,9 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         // If the trove was unredeemable, and now it’s not anymore, put it back in the list
         if (_checkTroveIsUnredeemable(troveManagerCached, _troveId) && trove.entireDebt >= MIN_DEBT) {
             troveManagerCached.setTroveStatusToActive(_troveId);
-            _reInsertIntoSortedTroves(_troveId, trove.annualInterestRate, _upperHint, _lowerHint, batchManager, batch.annualInterestRate);
+            _reInsertIntoSortedTroves(
+                _troveId, trove.annualInterestRate, _upperHint, _lowerHint, batchManager, batch.annualInterestRate
+            );
         }
     }
 
