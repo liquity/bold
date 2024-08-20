@@ -114,8 +114,8 @@ contract DeployLiquity2Script is Script, StdCheats {
             troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
             troveManagerParamsArray[1] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
 
-            (LiquityContractsTestnet[] memory contractsArray,,,,,) =
-                _deployAndConnectContractsMultiColl(troveManagerParamsArray);
+            (LiquityContractsTestnet[] memory contractsArray,,,,) =
+                _deployAndConnectContracts(troveManagerParamsArray, WETH);
 
             vm.stopBroadcast();
 
