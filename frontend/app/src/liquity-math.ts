@@ -43,70 +43,72 @@ export function getLtvFromLeverageFactor(leverageFactor: number) {
   );
 }
 
-export function getLeverageFactorFromLtv(ltv: Dnum) {
-  return Math.round(1 / (1 - dn.toNumber(ltv)) * 10) / 10;
+export function getLeverageFactorFromLtv(ltv: null): null;
+export function getLeverageFactorFromLtv(ltv: Dnum): number;
+export function getLeverageFactorFromLtv(ltv: null | Dnum): null | number;
+export function getLeverageFactorFromLtv(ltv: null | Dnum): null | number {
+  return (ltv === null ? null : Math.round(1 / (1 - dn.toNumber(ltv)) * 10) / 10);
 }
 
-// e.g. $4000 / ETH and 1.5x leverage = $3248.63 liq. price
 export function getLeveragedLiquidationPrice(
-  ethPrice: Dnum,
+  collPrice: Dnum,
   leverage: number,
-  collateralRatio: number,
+  collRatio: number,
 ) {
   return dn.div(
-    dn.sub(dn.mul(leverage, ethPrice), ethPrice),
-    dn.sub(leverage, dn.div(dn.from(1, 18), collateralRatio)),
+    dn.mul(dn.mul(collPrice, leverage - 1), collRatio),
+    leverage,
   );
 }
 
-// e.g. $4000 / ETH and $3248.63 liq. price = 1.5x leverage
 export function getLeverageFactorFromLiquidationPrice(
-  ethPrice: Dnum,
+  collPrice: Dnum,
   liquidationPrice: Dnum,
-  collateralRatio: number,
-) {
-  const divider = dn.sub(liquidationPrice, ethPrice);
-  return dn.eq(divider, 0) ? 0 : Math.round(
-    dn.toNumber(
-      dn.div(
-        dn.sub(
-          dn.mul(liquidationPrice, dn.div(dn.from(1, 18), collateralRatio)),
-          ethPrice,
-        ),
-        divider,
-      ),
-    ) * 10,
-  ) / 10;
+  collRatio: number,
+): number {
+  const collPriceRatio = dn.mul(collPrice, collRatio);
+  const denominator = dn.sub(collPriceRatio, liquidationPrice);
+
+  if (dn.eq(denominator, 0)) {
+    return 1; // no leverage
+  }
+
+  const factor = dn.div(collPriceRatio, denominator);
+  return Math.round(dn.toNumber(factor) * 10) / 10;
 }
 
-export function getLiquidationPriceUsd(
-  deposit: Dnum | null,
-  debt: Dnum | null,
-  maxLtv: Dnum,
-  ethPriceUsd: Dnum,
-): Dnum | null {
-  if (!deposit || !dn.gt(deposit, 0) || !debt || !dn.gt(debt, 0) || !dn.gt(maxLtv, 0)) {
-    return null;
-  }
-  return dnumMin(dn.div(dn.mul(debt, maxLtv), deposit), ethPriceUsd);
+export function getLiquidationPrice({
+  deposit,
+  debt,
+  maxLtv,
+  collPrice,
+}: {
+  deposit: Dnum | null;
+  debt: Dnum | null;
+  maxLtv: Dnum;
+  collPrice: Dnum;
+}): Dnum | null {
+  return (!deposit || !dn.gt(deposit, 0) || !debt || !dn.gt(debt, 0) || !dn.gt(maxLtv, 0))
+    ? null
+    : dnumMin(dn.div(dn.mul(debt, maxLtv), deposit), collPrice);
 }
 
 export function getLtv(
   debt: Dnum,
   depositUsd: Dnum,
-): Dnum {
-  return dn.gt(depositUsd, 0)
-    ? dn.div(debt, depositUsd)
-    : dn.from(0, 18);
+): Dnum | null {
+  return dn.gt(depositUsd, 0) ? dn.div(debt, depositUsd) : null;
 }
 
 export type LoanDetails = {
+  collPrice: Dnum | null;
   debt: Dnum | null;
   deposit: Dnum | null;
+  depositPreLeverage: Dnum | null;
   depositUsd: Dnum | null;
-  ethPriceUsd: Dnum;
   interestRate: Dnum | null;
-  liquidationPriceUsd: Dnum | null;
+  leverageFactor: number | null;
+  liquidationPrice: Dnum | null;
   liquidationRisk: RiskLevel | null;
   ltv: Dnum | null;
   maxDebt: Dnum | null;
@@ -120,11 +122,12 @@ export function getLoanDetails(
   deposit: Dnum | null,
   debt: Dnum | null,
   interestRate: Dnum | null,
-  maxLtv: Dnum,
-  ethPriceUsd: Dnum,
+  collRatio: number,
+  collPrice: Dnum | null,
 ): LoanDetails {
+  const maxLtv = dn.div(dn.from(1, 18), collRatio);
   const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED);
-  const depositUsd = deposit && dn.mul(deposit, ethPriceUsd);
+  const depositUsd = (deposit && collPrice) ? dn.mul(deposit, collPrice) : null;
 
   const ltv = debt && depositUsd && getLtv(debt, depositUsd);
   const maxDebt = depositUsd && dn.mul(depositUsd, maxLtv);
@@ -133,19 +136,32 @@ export function getLoanDetails(
     ? dn.mul(depositUsd, maxLtvAllowed)
     : null;
 
-  const liquidationPriceUsd = getLiquidationPriceUsd(deposit, debt, maxLtv, ethPriceUsd);
-  const liquidationRisk = ltv && deposit && dn.gt(deposit, 0) && debt && dn.gt(debt, 0)
-    ? getLiquidationRisk(ltv, maxLtv)
-    : null;
+  const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
   const redemptionRisk = getRedemptionRisk(interestRate);
+
+  const leverageFactor = (ltv && dn.lt(ltv, 1))
+    ? getLeverageFactorFromLtv(ltv)
+    : null;
+
+  const depositPreLeverage = (leverageFactor === null || deposit === null)
+    ? null
+    : dn.div(deposit, leverageFactor);
+
+  const liquidationPrice = (collPrice === null || leverageFactor === null) ? null : getLeveragedLiquidationPrice(
+    collPrice,
+    leverageFactor,
+    collRatio,
+  );
 
   return {
     debt,
     deposit,
+    depositPreLeverage,
     depositUsd,
-    ethPriceUsd,
+    collPrice,
     interestRate,
-    liquidationPriceUsd,
+    leverageFactor,
+    liquidationPrice,
     liquidationRisk,
     ltv,
     maxDebt,

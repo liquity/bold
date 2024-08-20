@@ -26,16 +26,7 @@ export type MenuSection = {
 };
 
 export type PositionLoan = {
-  type: "loan";
-  borrowed: Dnum;
-  collateral: CollateralSymbol;
-  deposit: Dnum;
-  interestRate: Dnum;
-  troveId: TroveId;
-};
-
-export type PositionLeverage = {
-  type: "leverage";
+  type: "borrow" | "leverage";
   borrowed: Dnum;
   collateral: CollateralSymbol;
   deposit: Dnum;
@@ -63,4 +54,4 @@ export type PositionStake = {
   };
 };
 
-export type Position = PositionLoan | PositionLeverage | PositionEarn | PositionStake;
+export type Position = PositionLoan | PositionEarn | PositionStake;

@@ -1,6 +1,6 @@
 import content from "@/src/content";
 import { BORROW_STATS } from "@/src/demo-mode";
-import { usePrice } from "@/src/prices";
+import { usePrice } from "@/src/services/Prices";
 import { css } from "@/styled-system/css";
 import { HFlex, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
