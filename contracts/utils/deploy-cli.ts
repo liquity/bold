@@ -115,8 +115,6 @@ export async function main() {
     "--rpc-url",
     options.rpcUrl,
     "--broadcast",
-    "--priority-gas-price",
-    "1",
   ];
 
   // verify
