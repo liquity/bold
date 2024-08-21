@@ -590,7 +590,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         // When the adjustment is a debt repayment, check it's a valid amount and that the caller has enough Bold
         if (_troveChange.debtDecrease > 0) {
-            uint256 maxRepayment = vars.trove.entireDebt - MIN_DEBT;
+            uint256 maxRepayment = vars.trove.entireDebt > MIN_DEBT ? vars.trove.entireDebt - MIN_DEBT : 0;
             if (_troveChange.debtDecrease > maxRepayment) {
                 _troveChange.debtDecrease = maxRepayment;
             }
