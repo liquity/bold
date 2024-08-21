@@ -313,7 +313,6 @@ function PositionLeverage({
   const liquidationRisk = getLiquidationRisk(ltv, maxLtv);
 
   const price = usePrice(token.symbol);
-  const totalValue = price && dn.mul(deposit, price);
 
   return (
     <Link
