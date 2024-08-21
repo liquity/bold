@@ -906,7 +906,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         batchChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
         batchChange.newWeightedRecordedDebt = newDebt * _newAnnualInterestRate;
         batchChange.oldWeightedRecordedBatchManagementFee = batch.weightedRecordedBatchManagementFee;
-        batchChange.newWeightedRecordedBatchManagementFee = newDebt * _newAnnualInterestRate;
+        batchChange.newWeightedRecordedBatchManagementFee = newDebt * batch.annualManagementFee;
 
         // Apply upfront fee on premature adjustments
         if (

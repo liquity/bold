@@ -128,6 +128,37 @@ contract BatchManagementFeeTest is DevTestSetup {
         assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedManagementFee);
     }
 
+      function testChangeBatchInterestRateUpdatesWeightedManagementFeeCorrectly() public {
+        // Open 2 troves in the same batch manager
+        openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+        openTroveAndJoinBatchManager(C, 200e18, 5000e18, B, 5e16);
+
+        vm.warp(block.timestamp + 10 days);
+
+        // Get weighted batch management fee before
+        LatestBatchData memory batchData = troveManager.getLatestBatchData(B);
+
+        // Check old weighted batch mgmt. fee > 0
+        assertGt(batchData.weightedRecordedBatchManagementFee, 0);
+       
+        uint256 newInterestRate = 10e16;
+        // Calculated new expected weighted batch management fee, i.e.
+        // new_batch_debt * annual_mgmt_fee 
+        // i.e.
+        // (old_batch_debt + accrued_batch_interest + accrued_batch_mgmt_fee) * annual_mgmt_fee 
+        uint256 expectedNewWeightedRecordedBatchMgmtFee = batchData.entireDebtWithoutRedistribution * batchData.annualManagementFee;
+        // New expected weighted fee should be higher than old, since batch debt has increased (interest + accrued mgmt fee) and mgmt fee is unchanged
+        assertGt(expectedNewWeightedRecordedBatchMgmtFee, batchData.weightedRecordedBatchManagementFee);
+
+        // // Change batch interest rate
+        setBatchInterestRate(B, newInterestRate);
+
+        // check new weighted batch management fee is as expected
+        LatestBatchData memory batchDataAfter = troveManager.getLatestBatchData(B);
+       
+        assertEq(batchDataAfter.weightedRecordedBatchManagementFee, expectedNewWeightedRecordedBatchMgmtFee);
+    }
+
     function testChangeBatchInterestRateIncreasesTroveDebtByFee() public {
         // Open 2 troves in the same batch manager
         uint256 troveId = openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
