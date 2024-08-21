@@ -45,7 +45,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     constructor(IBoldToken _boldToken, IERC20[] memory _tokens) {
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
-        require(numTokens < 10, "Collateral list too long");
+        require(numTokens <= 10, "Collateral list too long");
         totalCollaterals = numTokens;
 
         boldToken = _boldToken;
