@@ -91,6 +91,8 @@ contract TestDeployer {
     struct DeploymentVarsDev {
         uint256 numCollaterals;
         IERC20[] collaterals;
+        IAddressesRegistry[] addressesRegistries;
+        ITroveManager[] troveManagers;
         LiquityContractsDev contracts;
         bytes bytecode;
         address boldTokenAddress;
@@ -115,6 +117,8 @@ contract TestDeployer {
     struct DeploymentVarsMainnet {
         uint256 numCollaterals;
         IERC20[] collaterals;
+        IAddressesRegistry[] addressesRegistries;
+        ITroveManager[] troveManagers;
         IPriceFeed[] priceFeeds;
         bytes bytecode;
         address boldTokenAddress;
@@ -237,9 +241,14 @@ contract TestDeployer {
 
         contractsArray = new LiquityContractsDev[](vars.numCollaterals);
         vars.collaterals = new IERC20[](vars.numCollaterals);
+        vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
+        vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
         // Deploy the first branch with WETH collateral
         vars.collaterals[0] = _WETH;
+        (IAddressesRegistry addressesRegistry, address troveManagerAddress) = _deployAddressesRegistryDev(troveManagerParamsArray[0]);
+        vars.addressesRegistries[0] = addressesRegistry;
+        vars.troveManagers[0] = ITroveManager(troveManagerAddress);
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
             IERC20 collToken = new ERC20Faucet(
                 string.concat("Staked ETH", string(abi.encode(vars.i))), // _name
@@ -248,28 +257,32 @@ contract TestDeployer {
                 1 days //         _tapPeriod
             );
             vars.collaterals[vars.i] = collToken;
+            // Addresses registry and TM address
+            (IAddressesRegistry addressesRegistry, address troveManagerAddress) = _deployAddressesRegistryDev(troveManagerParamsArray[vars.i]);
+            vars.addressesRegistries[vars.i] = addressesRegistry;
+            vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals);
+        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers);
         hintHelpers = new HintHelpers(collateralRegistry);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
         vars.contracts = _deployAndConnectCollateralContractsDev(
-            0, _WETH, boldToken, collateralRegistry, _WETH, hintHelpers, multiTroveGetter, troveManagerParamsArray[0]
+            _WETH, boldToken, collateralRegistry, _WETH, vars.addressesRegistries[0], address(vars.troveManagers[0]), hintHelpers, multiTroveGetter
         );
         contractsArray[0] = vars.contracts;
 
         // Deploy the remaining branches with LST collateral
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
             vars.contracts = _deployAndConnectCollateralContractsDev(
-                vars.i,
                 vars.collaterals[vars.i],
                 boldToken,
                 collateralRegistry,
                 _WETH,
+                vars.addressesRegistries[vars.i],
+                address(vars.troveManagers[vars.i]),
                 hintHelpers,
-                multiTroveGetter,
-                troveManagerParamsArray[vars.i]
+                multiTroveGetter
             );
             contractsArray[vars.i] = vars.contracts;
         }
@@ -288,6 +301,9 @@ contract TestDeployer {
         result.contractsArray = new LiquityContracts[](vars.numCollaterals);
         vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
         vars.collaterals = new IERC20[](vars.numCollaterals);
+        vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
+        vars.troveManagers = new ITroveManager[](vars.numCollaterals);
+        address troveManagerAddress;
 
         vars.priceFeeds[0] = new WETHPriceFeed(
             address(this), _params.externalAddresses.ETHOracle, _params.oracleParams.ethUsdStalenessThreshold
@@ -340,6 +356,8 @@ contract TestDeployer {
             1 days //         _tapPeriod
         );
         vars.collaterals[0] = result.mockCollaterals.WETH;
+        (vars.addressesRegistries[0], troveManagerAddress) = _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[0]);
+        vars.troveManagers[0] = ITroveManager(troveManagerAddress);
 
         result.mockCollaterals.RETH = new ERC20Faucet(
             "Mock rETH", // _name
@@ -348,6 +366,8 @@ contract TestDeployer {
             1 days //         _tapPeriod
         );
         vars.collaterals[1] = result.mockCollaterals.RETH;
+        (vars.addressesRegistries[1], troveManagerAddress) = _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[1]);
+        vars.troveManagers[1] = ITroveManager(troveManagerAddress);
 
         result.mockCollaterals.WSTETH = new ERC20Faucet(
             "Mock wstETH", // _name
@@ -356,6 +376,8 @@ contract TestDeployer {
             1 days //         _tapPeriod
         );
         vars.collaterals[2] = result.mockCollaterals.WSTETH;
+        (vars.addressesRegistries[2], troveManagerAddress) = _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[2]);
+        vars.troveManagers[2] = ITroveManager(troveManagerAddress);
 
         result.mockCollaterals.ETHX = new ERC20Faucet(
             "Mock ETHX", // _name
@@ -364,6 +386,8 @@ contract TestDeployer {
             1 days //         _tapPeriod
         );
         vars.collaterals[3] = result.mockCollaterals.ETHX;
+        (vars.addressesRegistries[3], troveManagerAddress) = _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[3]);
+        vars.troveManagers[3] = ITroveManager(troveManagerAddress);
 
         result.mockCollaterals.OSETH = new ERC20Faucet(
             "Mock OSETH", // _name
@@ -372,9 +396,11 @@ contract TestDeployer {
             1 days //         _tapPeriod
         );
         vars.collaterals[4] = result.mockCollaterals.OSETH;
+        (vars.addressesRegistries[4], troveManagerAddress) = _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[4]);
+        vars.troveManagers[4] = ITroveManager(troveManagerAddress);
 
         // Deploy registry and register the TMs
-        result.collateralRegistry = new CollateralRegistry(result.boldToken, vars.collaterals);
+        result.collateralRegistry = new CollateralRegistry(result.boldToken, vars.collaterals, vars.troveManagers);
 
         result.hintHelpers = new HintHelpers(result.collateralRegistry);
         result.multiTroveGetter = new MultiTroveGetter(result.collateralRegistry);
@@ -382,55 +408,63 @@ contract TestDeployer {
         // Deploy each set of core contracts
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
             result.contractsArray[vars.i] = _deployAndConnectCollateralContractsMainnet(
-                vars.i,
                 vars.collaterals[vars.i],
                 vars.priceFeeds[vars.i],
                 result.boldToken,
                 result.collateralRegistry,
                 result.mockCollaterals.WETH,
+                vars.addressesRegistries[vars.i],
+                address(vars.troveManagers[vars.i]),
                 result.hintHelpers,
-                result.multiTroveGetter,
-                _params.troveManagerParamsArray[vars.i]
+                result.multiTroveGetter
             );
         }
 
         result.boldToken.setCollateralRegistry(address(result.collateralRegistry));
     }
 
+    function _deployAddressesRegistryDev(TroveManagerParams memory _troveManagerParams) internal returns (IAddressesRegistry, address) {
+        IAddressesRegistry addressesRegistry = new AddressesRegistry(
+            address(this),
+            _troveManagerParams.CCR,
+            _troveManagerParams.MCR,
+            _troveManagerParams.SCR,
+            _troveManagerParams.LIQUIDATION_PENALTY_SP,
+            _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
+        );
+        address troveManagerAddress = getAddress(
+            address(this),
+            getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry)),
+            SALT
+        );
+
+        return (addressesRegistry, troveManagerAddress);
+    }
+
     function _deployAndConnectCollateralContractsDev(
-        uint256 _branch,
         IERC20 _collToken,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
         IWETH _weth,
+        IAddressesRegistry _addressesRegistry,
+        address _troveManagerAddress,
         IHintHelpers _hintHelpers,
-        IMultiTroveGetter _multiTroveGetter,
-        TroveManagerParams memory _troveManagerParams
+        IMultiTroveGetter _multiTroveGetter
     ) internal returns (LiquityContractsDev memory contracts) {
         LiquityContractAddresses memory addresses;
         contracts.collToken = _collToken;
 
         // Deploy all contracts, using testers for TM and PriceFeed
-        contracts.addressesRegistry = new AddressesRegistry(
-            address(this),
-            _troveManagerParams.CCR,
-            _troveManagerParams.MCR,
-            _troveManagerParams.SCR,
-            _troveManagerParams.LIQUIDATION_PENALTY_SP,
-            _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
-        );
+        contracts.addressesRegistry = _addressesRegistry;
         contracts.priceFeed = new PriceFeedTestnet();
         contracts.interestRouter = new MockInterestRouter();
+
         addresses.borrowerOperations = getAddress(
             address(this),
             getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry)),
             SALT
         );
-        addresses.troveManager = getAddress(
-            address(this),
-            getBytecode(type(TroveManagerTester).creationCode, address(contracts.addressesRegistry)),
-            SALT
-        );
+        addresses.troveManager = _troveManagerAddress;
         addresses.troveNFT = getAddress(
             address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)), SALT
         );
@@ -501,44 +535,49 @@ contract TestDeployer {
             address(contracts.borrowerOperations),
             address(contracts.activePool)
         );
+    }
 
-        _collateralRegistry.setTroveManager(_branch, contracts.troveManager);
+    function _deployAddressesRegistryMainnet(TroveManagerParams memory _troveManagerParams) internal returns (IAddressesRegistry, address) {
+        IAddressesRegistry addressesRegistry = new AddressesRegistry(
+            address(this),
+            _troveManagerParams.CCR,
+            _troveManagerParams.MCR,
+            _troveManagerParams.SCR,
+            _troveManagerParams.LIQUIDATION_PENALTY_SP,
+            _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
+        );
+        address troveManagerAddress = getAddress(
+            address(this),
+            getBytecode(type(TroveManager).creationCode, address(addressesRegistry)),
+            SALT
+        );
+
+        return (addressesRegistry, troveManagerAddress);
     }
 
     function _deployAndConnectCollateralContractsMainnet(
-        uint256 _branch,
         IERC20 _collToken,
         IPriceFeed _priceFeed,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
         IWETH _weth,
+        IAddressesRegistry _addressesRegistry,
+        address _troveManagerAddress,
         IHintHelpers _hintHelpers,
-        IMultiTroveGetter _multiTroveGetter,
-        TroveManagerParams memory _troveManagerParams
+        IMultiTroveGetter _multiTroveGetter
     ) internal returns (LiquityContracts memory contracts) {
         LiquityContractAddresses memory addresses;
         contracts.collToken = _collToken;
         contracts.priceFeed = _priceFeed;
 
-        contracts.addressesRegistry = new AddressesRegistry(
-            address(this),
-            _troveManagerParams.CCR,
-            _troveManagerParams.MCR,
-            _troveManagerParams.SCR,
-            _troveManagerParams.LIQUIDATION_PENALTY_SP,
-            _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
-        );
+        contracts.addressesRegistry = _addressesRegistry;
 
         addresses.borrowerOperations = getAddress(
             address(this),
             getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry)),
             SALT
         );
-        addresses.troveManager = getAddress(
-            address(this),
-            getBytecode(type(TroveManagerTester).creationCode, address(contracts.addressesRegistry)),
-            SALT
-        );
+        addresses.troveManager = _troveManagerAddress;
         addresses.troveNFT = getAddress(
             address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)), SALT
         );
@@ -609,7 +648,5 @@ contract TestDeployer {
             address(contracts.borrowerOperations),
             address(contracts.activePool)
         );
-
-        _collateralRegistry.setTroveManager(_branch, contracts.troveManager);
     }
 }

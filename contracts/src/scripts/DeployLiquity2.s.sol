@@ -73,6 +73,8 @@ contract DeployLiquity2Script is Script, StdCheats {
     struct DeploymentVarsTestnet {
         uint256 numCollaterals;
         IERC20[] collaterals;
+        IAddressesRegistry[] addressesRegistries;
+        ITroveManager[] troveManagers;
         LiquityContractsTestnet contracts;
         bytes bytecode;
         address boldTokenAddress;
@@ -211,28 +213,34 @@ contract DeployLiquity2Script is Script, StdCheats {
                 1 days //         _tapPeriod
             );
             vars.collaterals[vars.i] = collToken;
+            // Addresses registry and TM address
+            (IAddressesRegistry addressesRegistry, address troveManagerAddress) = _deployAddressesRegistry(
+                troveManagerParamsArray[vars.i]
+            );
+            vars.addressesRegistries[vars.i] = addressesRegistry;
+            vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals);
+        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers);
         hintHelpers = new HintHelpers(collateralRegistry);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
         vars.contracts = _deployAndConnectCollateralContractsTestnet(
-            0, _WETH, boldToken, collateralRegistry, _WETH, hintHelpers, multiTroveGetter, troveManagerParamsArray[0]
+            _WETH, boldToken, collateralRegistry, _WETH, vars.addressesRegistries[0], address(vars.troveManagers[0]), hintHelpers, multiTroveGetter
         );
         contractsArray[0] = vars.contracts;
 
         // Deploy the remaining branches with LST collateral
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
             vars.contracts = _deployAndConnectCollateralContractsTestnet(
-                vars.i,
                 vars.collaterals[vars.i],
                 boldToken,
                 collateralRegistry,
                 _WETH,
+                vars.addressesRegistries[vars.i],
+                address(vars.troveManagers[vars.i]),
                 hintHelpers,
-                multiTroveGetter,
-                troveManagerParamsArray[vars.i]
+                multiTroveGetter
             );
             contractsArray[vars.i] = vars.contracts;
         }
@@ -240,21 +248,8 @@ contract DeployLiquity2Script is Script, StdCheats {
         boldToken.setCollateralRegistry(address(collateralRegistry));
     }
 
-    function _deployAndConnectCollateralContractsTestnet(
-        uint256 _branch,
-        IERC20 _collToken,
-        IBoldToken _boldToken,
-        ICollateralRegistry _collateralRegistry,
-        IWETH _weth,
-        IHintHelpers _hintHelpers,
-        IMultiTroveGetter _multiTroveGetter,
-        TroveManagerParams memory _troveManagerParams
-    ) internal returns (LiquityContractsTestnet memory contracts) {
-        LiquityContractAddresses memory addresses;
-        contracts.collToken = _collToken;
-
-        // Deploy all contracts, using testers for TM and PriceFeed
-        contracts.addressesRegistry = new AddressesRegistry(
+    function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams) internal returns (IAddressesRegistry, address) {
+        IAddressesRegistry addressesRegistry = new AddressesRegistry(
             deployer,
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
@@ -262,14 +257,35 @@ contract DeployLiquity2Script is Script, StdCheats {
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
+        address troveManagerAddress = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(TroveManager).creationCode, address(addressesRegistry)))
+        );
+
+        return (addressesRegistry, troveManagerAddress);
+    }
+
+    function _deployAndConnectCollateralContractsTestnet(
+        IERC20 _collToken,
+        IBoldToken _boldToken,
+        ICollateralRegistry _collateralRegistry,
+        IWETH _weth,
+        IAddressesRegistry _addressesRegistry,
+        address _troveManagerAddress,
+        IHintHelpers _hintHelpers,
+        IMultiTroveGetter _multiTroveGetter
+    ) internal returns (LiquityContractsTestnet memory contracts) {
+        LiquityContractAddresses memory addresses;
+        contracts.collToken = _collToken;
+
+        // Deploy all contracts, using testers for TM and PriceFeed
+        contracts.addressesRegistry = _addressesRegistry;
+
         contracts.priceFeed = new PriceFeedTestnet();
         contracts.interestRouter = new MockInterestRouter();
         addresses.borrowerOperations = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry)))
         );
-        addresses.troveManager = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(TroveManager).creationCode, address(contracts.addressesRegistry)))
-        );
+        addresses.troveManager = _troveManagerAddress;
         addresses.troveNFT = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)))
         );
@@ -340,7 +356,5 @@ contract DeployLiquity2Script is Script, StdCheats {
             address(contracts.borrowerOperations),
             address(contracts.activePool)
         );
-
-        _collateralRegistry.setTroveManager(_branch, contracts.troveManager);
     }
 }

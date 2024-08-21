@@ -5,8 +5,6 @@ import "./IBoldToken.sol";
 import "./ITroveManager.sol";
 
 interface ICollateralRegistry {
-    function setTroveManager(uint256 _branch, ITroveManager _troveManager) external;
-
     function baseRate() external view returns (uint256);
     function lastFeeOperationTime() external view returns (uint256);
 
@@ -14,7 +12,7 @@ interface ICollateralRegistry {
     // getters
     function totalCollaterals() external view returns (uint256);
     function getToken(uint256 _index) external view returns (IERC20);
-    function troveManagers(uint256 _index) external view returns (ITroveManager);
+    function getTroveManager(uint256 _index) external view returns (ITroveManager);
     function boldToken() external view returns (IBoldToken);
 
     function getRedemptionRate() external view returns (uint256);

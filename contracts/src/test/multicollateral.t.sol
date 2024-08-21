@@ -113,11 +113,11 @@ contract MulticollateralTest is DevTestSetup {
         assertEq(collateralRegistry.totalCollaterals(), NUM_COLLATERALS, "Wrong number of branches");
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
             assertNotEq(address(collateralRegistry.getToken(c)), ZERO_ADDRESS, "Missing collateral token");
-            assertNotEq(address(collateralRegistry.troveManagers(c)), ZERO_ADDRESS, "Missing TroveManager");
+            assertNotEq(address(collateralRegistry.getTroveManager(c)), ZERO_ADDRESS, "Missing TroveManager");
         }
         for (uint256 c = NUM_COLLATERALS; c < 10; c++) {
             assertEq(address(collateralRegistry.getToken(c)), ZERO_ADDRESS, "Extra collateral token");
-            assertEq(address(collateralRegistry.troveManagers(c)), ZERO_ADDRESS, "Extra TroveManager");
+            assertEq(address(collateralRegistry.getTroveManager(c)), ZERO_ADDRESS, "Extra TroveManager");
         }
     }
 
