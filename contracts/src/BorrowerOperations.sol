@@ -809,6 +809,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) external {
+        _requireIsNotShutDown();
         _requireCallerIsBorrower(_troveId);
         interestIndividualDelegateOf[_troveId] =
             InterestIndividualDelegate(_delegate, _minInterestRate, _maxInterestRate);
@@ -834,6 +835,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint128 _annualManagementFee,
         uint128 _minInterestRateChangePeriod
     ) external {
+        _requireIsNotShutDown();
         _requireNonExistentInterestBatchManager(msg.sender);
         _requireValidAnnualInterestRate(_minInterestRate);
         _requireValidAnnualInterestRate(_maxInterestRate);
@@ -852,6 +854,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     function lowerBatchManagementFee(uint256 _newAnnualManagementFee) external {
+        _requireIsNotShutDown();
         _requireValidInterestBatchManager(msg.sender);
 
         ITroveManager troveManagerCached = troveManager;
@@ -887,6 +890,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) external {
+        _requireIsNotShutDown();
         _requireValidInterestBatchManager(msg.sender);
         _requireInterestRateInBatchManagerRange(msg.sender, _newAnnualInterestRate);
         // Not needed, implicitly checked in the condition above:
@@ -951,6 +955,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) public override {
+        _requireIsNotShutDown();
         LocalVariables_setInterestBatchManager memory vars;
         vars.troveManager = troveManager;
         vars.activePool = activePool;
@@ -1021,6 +1026,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) public override {
+        _requireIsNotShutDown();
         _requireCallerIsBorrower(_troveId);
 
         LocalVariables_removeFromBatch memory vars;
