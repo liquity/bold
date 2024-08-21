@@ -345,7 +345,7 @@ contract TestDeployer {
         );
 
         // Deploy Bold
-        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode());
+        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this)));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
         result.boldToken = new BoldToken{salt: SALT}(address(this));
         assert(address(result.boldToken) == vars.boldTokenAddress);
@@ -569,6 +569,7 @@ contract TestDeployer {
         LiquityContractAddresses memory addresses;
         contracts.collToken = _collToken;
         contracts.priceFeed = _priceFeed;
+        contracts.interestRouter = new MockInterestRouter();
 
         contracts.addressesRegistry = _addressesRegistry;
 
@@ -622,7 +623,7 @@ contract TestDeployer {
         contracts.addressesRegistry.setAddresses(addressVars);
 
         contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
