@@ -252,6 +252,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.batch = vars.troveManager.getLatestBatchData(_params.interestBatchManager);
 
         // We set old weighted values here, as it’s only necessary for batches, so we don’t need to pass them to _openTrove func
+        vars.change.batchAccruedManagementFee = vars.batch.accruedManagementFee;
         vars.change.oldWeightedRecordedDebt = vars.batch.weightedRecordedDebt;
         vars.change.oldWeightedRecordedBatchManagementFee = vars.batch.weightedRecordedBatchManagementFee;
         vars.troveId = _openTrove(
@@ -301,12 +302,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 _annualInterestRate,
         address _interestBatchManager,
         uint256 _batchEntireDebt,
-        uint256 _batchManagementFee,
+        uint256 _batchManagementAnnualFee,
         uint256 _maxUpfrontFee,
         address _addManager,
         address _removeManager,
         address _receiver,
-        TroveChange memory _troveChange
+        TroveChange memory _change
     ) internal returns (uint256) {
         LocalVariables_openTrove memory vars;
 
@@ -324,34 +325,34 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
         _requireTroveIsNotOpen(vars.troveManager, vars.troveId);
 
-        _troveChange.collIncrease = _collAmount;
-        _troveChange.debtIncrease = _boldAmount;
+        _change.collIncrease = _collAmount;
+        _change.debtIncrease = _boldAmount;
 
         // For simplicity, we ignore the fee when calculating the approx. interest rate
-        _troveChange.newWeightedRecordedDebt = _troveChange.debtIncrease * _annualInterestRate;
+        _change.newWeightedRecordedDebt = (_batchEntireDebt + _change.debtIncrease) * _annualInterestRate;
 
-        vars.avgInterestRate = vars.activePool.getNewApproxAvgInterestRateFromTroveChange(_troveChange);
-        _troveChange.upfrontFee = _calcUpfrontFee(_troveChange.debtIncrease, vars.avgInterestRate);
-        _requireUserAcceptsUpfrontFee(_troveChange.upfrontFee, _maxUpfrontFee);
+        vars.avgInterestRate = vars.activePool.getNewApproxAvgInterestRateFromTroveChange(_change);
+        _change.upfrontFee = _calcUpfrontFee(_change.debtIncrease, vars.avgInterestRate);
+        _requireUserAcceptsUpfrontFee(_change.upfrontFee, _maxUpfrontFee);
 
-        vars.entireDebt = _troveChange.debtIncrease + _troveChange.upfrontFee;
+        vars.entireDebt = _change.debtIncrease + _change.upfrontFee;
         _requireAtLeastMinDebt(vars.entireDebt);
 
         // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee, and the batch fee if needed
         if (_interestBatchManager == address(0)) {
-            _troveChange.newWeightedRecordedDebt = vars.entireDebt * _annualInterestRate;
+            _change.newWeightedRecordedDebt = vars.entireDebt * _annualInterestRate;
         } else {
             // old values have been set outside, before calling this function
-            _troveChange.newWeightedRecordedDebt = (_batchEntireDebt + vars.entireDebt) * _annualInterestRate;
-            _troveChange.newWeightedRecordedBatchManagementFee =
-                (_batchEntireDebt + vars.entireDebt) * _batchManagementFee;
+            _change.newWeightedRecordedDebt = (_batchEntireDebt + vars.entireDebt) * _annualInterestRate;
+            _change.newWeightedRecordedBatchManagementFee =
+                (_batchEntireDebt + vars.entireDebt) * _batchManagementAnnualFee;
         }
 
         // ICR is based on the composite debt, i.e. the requested Bold amount + Bold gas comp + upfront fee.
         vars.ICR = LiquityMath._computeCR(_collAmount, vars.entireDebt, vars.price);
         _requireICRisAboveMCR(vars.ICR);
 
-        vars.newTCR = _getNewTCRFromTroveChange(_troveChange, vars.price);
+        vars.newTCR = _getNewTCRFromTroveChange(_change, vars.price);
         _requireNewTCRisAboveCCR(vars.newTCR);
 
         // --- Effects & interactions ---
@@ -364,7 +365,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             _setRemoveManager(vars.troveId, _removeManager, _receiver);
         }
 
-        vars.activePool.mintAggInterestAndAccountForTroveChange(_troveChange, _interestBatchManager);
+        vars.activePool.mintAggInterestAndAccountForTroveChange(_change, _interestBatchManager);
 
         // Pull coll tokens from sender and move them to the Active Pool
         _pullCollAndSendToActivePool(vars.activePool, _collAmount);
