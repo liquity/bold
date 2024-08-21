@@ -20,6 +20,7 @@ interface IActivePool {
     function aggRecordedDebt() external view returns (uint256);
     function aggWeightedDebtSum() external view returns (uint256);
     function aggBatchManagementFees() external view returns (uint256);
+    function aggWeightedBatchManagementFeeSum() external view returns (uint256);
     function calcPendingAggInterest() external view returns (uint256);
     function calcPendingSPYield() external view returns (uint256);
     function calcPendingAggBatchManagementFee() external view returns (uint256);

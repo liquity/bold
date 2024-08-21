@@ -914,15 +914,15 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
                 && block.timestamp < batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
         ) {
             uint256 price = priceFeed.fetchPrice();
-
             uint256 avgInterestRate = activePoolCached.getNewApproxAvgInterestRateFromTroveChange(batchChange);
             batchChange.upfrontFee = _calcUpfrontFee(newDebt, avgInterestRate);
             _requireUserAcceptsUpfrontFee(batchChange.upfrontFee, _maxUpfrontFee);
 
             newDebt += batchChange.upfrontFee;
 
-            // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee
+            // Recalculate the batch's weighted terms, now taking into account the upfront fee
             batchChange.newWeightedRecordedDebt = newDebt * _newAnnualInterestRate;
+            batchChange.newWeightedRecordedBatchManagementFee = newDebt * batch.annualManagementFee;
 
             // Disallow a premature adjustment if it would result in TCR < CCR
             // (which includes the case when TCR is already below CCR before the adjustment).
