@@ -183,9 +183,16 @@ Deploying Liquity contracts with the following settings:
   }
 
   // deploy
+  if (options.debug) {
+    console.log(
+      `Command: DEPLOYER=${options.deployer}${options.openDemoTroves ? " OPEN_DEMO_TROVES=true" : ""} forge ${
+        forgeArgs.join(" ")
+      }`,
+    );
+  }
   const deploymentOutput = await $`forge ${forgeArgs}`;
   if (options.debug) {
-    console.log(deploymentOutput.text());
+    console.log(deploymentOutput.stderr);
   }
 
   const deployedContracts = await getDeployedContracts(
