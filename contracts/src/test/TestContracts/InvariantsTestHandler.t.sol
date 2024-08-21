@@ -134,6 +134,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         bool wasActive;
         bool wasUnredeemable;
         bool useUnredeemable;
+        uint256 maxDebtDec;
         int256 collDelta;
         int256 debtDelta;
         int256 $collDelta;
@@ -616,8 +617,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         collChange = v.prop != AdjustedTroveProperties.onlyDebt ? _bound(collChange, 0, v.t.entireColl + 1) : 0;
         debtChange = v.prop != AdjustedTroveProperties.onlyColl ? _bound(debtChange, 0, v.t.entireDebt + 1) : 0;
         if (!isDebtInc) debtChange = Math.min(debtChange, _handlerBold);
+        v.maxDebtDec = v.t.entireDebt > MIN_DEBT ? v.t.entireDebt - MIN_DEBT : 0;
         v.collDelta = isCollInc ? int256(collChange) : -int256(collChange);
-        v.debtDelta = isDebtInc ? int256(debtChange) : -int256(debtChange);
+        v.debtDelta = isDebtInc ? int256(debtChange) : -int256(Math.min(debtChange, v.maxDebtDec));
         v.$collDelta = v.collDelta * int256(_price[i]) / int256(DECIMAL_PRECISION);
         v.upfrontFee = hintHelpers.predictAdjustTroveUpfrontFee(i, v.troveId, isDebtInc ? debtChange : 0);
         if (v.upfrontFee > 0) assertGtDecimal(v.debtDelta, 0, 18, "Only debt increase should incur upfront fee");
@@ -661,7 +663,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // Preconditions
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
-            assertTrue(collChange > 0 || debtChange > 0, "Should have failed as there was no change");
+            assertTrue(v.collDelta != 0 || v.debtDelta != 0, "Should have failed as there was no change");
             if (v.useUnredeemable) assertTrue(v.wasUnredeemable, "Should have failed as Trove wasn't unredeemable");
             if (!v.useUnredeemable) assertTrue(v.wasActive, "Should have failed as Trove wasn't active");
             assertLeDecimal(-v.collDelta, int256(v.t.entireColl), 18, "Should have failed as withdrawal > coll");
@@ -695,8 +697,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             if (selector == BorrowerOperations.IsShutDown.selector) {
                 assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
             } else if (selector == BorrowerOperations.ZeroAdjustment.selector) {
-                assertEqDecimal(collChange, 0, 18, "Shouldn't have failed as there was a coll change");
-                assertEqDecimal(debtChange, 0, 18, "Shouldn't have failed as there was a debt change");
+                assertEqDecimal(v.collDelta, 0, 18, "Shouldn't have failed as there was a coll change");
+                assertEqDecimal(v.debtDelta, 0, 18, "Shouldn't have failed as there was a debt change");
             } else if (selector == BorrowerOperations.TroveNotActive.selector) {
                 assertFalse(v.useUnredeemable, string.concat("Shouldn't have been thrown by ", v.functionName));
                 assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
@@ -742,6 +744,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Cleanup (success)
             if (!isCollInc) _sweepColl(i, msg.sender, collChange);
             if (isDebtInc) _sweepBold(msg.sender, debtChange);
+            // Take back remaining BOLD after repayment truncation
+            if (!isDebtInc) _sweepBold(msg.sender, debtChange - uint256(-v.debtDelta));
             if (v.batchManager != address(0)) _sweepBold(v.batchManager, v.batchManagementFee);
         }
     }
