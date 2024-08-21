@@ -406,6 +406,20 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         return _batches[i][batchManager].pendingManagementFee / (ONE_YEAR * DECIMAL_PRECISION);
     }
 
+    function getInterestAccrual(uint256 i) external view returns (uint256 interestAccrual) {
+        for (uint256 j = 0; j < _troveIds[i].size(); ++j) {
+            Trove storage trove = _troves[i][_troveIds[i].get(j)];
+            interestAccrual += trove.debt * trove.interestRate;
+        }
+    }
+
+    function getBatchManagementFeeAccrual(uint256 i) external view returns (uint256 batchManagementFeeAccrual) {
+        for (uint256 j = 0; j < _troveIds[i].size(); ++j) {
+            Trove storage trove = _troves[i][_troveIds[i].get(j)];
+            batchManagementFeeAccrual += trove.debt * trove.batchManagementRate;
+        }
+    }
+
     /////////////////////////////////////////
     // External functions called by fuzzer //
     /////////////////////////////////////////
