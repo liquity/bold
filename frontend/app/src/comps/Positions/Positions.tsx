@@ -312,8 +312,6 @@ function PositionLeverage({
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
   const liquidationRisk = getLiquidationRisk(ltv, maxLtv);
 
-  const price = usePrice(token.symbol);
-
   return (
     <Link
       href={`/loan?id=${troveId}`}
