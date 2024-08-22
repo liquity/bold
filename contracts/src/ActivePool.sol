@@ -142,6 +142,7 @@ contract ActivePool is IActivePool {
         newAggRecordedDebt += calcPendingAggInterest();
         newAggRecordedDebt += _troveChange.appliedRedistBoldDebtGain;
         newAggRecordedDebt += _troveChange.debtIncrease;
+        newAggRecordedDebt += _troveChange.batchAccruedManagementFee;
         newAggRecordedDebt -= _troveChange.debtDecrease;
 
         uint256 newAggWeightedDebtSum = aggWeightedDebtSum;
