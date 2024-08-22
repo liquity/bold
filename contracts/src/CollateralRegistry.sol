@@ -29,8 +29,16 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     IERC20Metadata internal immutable token8;
     IERC20Metadata internal immutable token9;
 
-    // TODO: make this immutable again
-    ITroveManager[10] public troveManagers;
+    ITroveManager internal immutable troveManager0;
+    ITroveManager internal immutable troveManager1;
+    ITroveManager internal immutable troveManager2;
+    ITroveManager internal immutable troveManager3;
+    ITroveManager internal immutable troveManager4;
+    ITroveManager internal immutable troveManager5;
+    ITroveManager internal immutable troveManager6;
+    ITroveManager internal immutable troveManager7;
+    ITroveManager internal immutable troveManager8;
+    ITroveManager internal immutable troveManager9;
 
     IBoldToken public immutable boldToken;
 
@@ -42,10 +50,14 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
 
+<<<<<<< HEAD
     constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens) {
+=======
+    constructor(IBoldToken _boldToken, IERC20[] memory _tokens, ITroveManager[] memory _troveManagers) {
+>>>>>>> c3bc3a0f122c0e858ca9751c0b3f01f8b2bf735f
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
-        require(numTokens < 10, "Collateral list too long");
+        require(numTokens <= 10, "Collateral list too long");
         totalCollaterals = numTokens;
 
         boldToken = _boldToken;
@@ -61,14 +73,20 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         token8 = numTokens > 8 ? _tokens[8] : IERC20Metadata(address(0));
         token9 = numTokens > 9 ? _tokens[9] : IERC20Metadata(address(0));
 
+        troveManager0 = _troveManagers[0];
+        troveManager1 = numTokens > 1 ? _troveManagers[1] : ITroveManager(address(0));
+        troveManager2 = numTokens > 2 ? _troveManagers[2] : ITroveManager(address(0));
+        troveManager3 = numTokens > 3 ? _troveManagers[3] : ITroveManager(address(0));
+        troveManager4 = numTokens > 4 ? _troveManagers[4] : ITroveManager(address(0));
+        troveManager5 = numTokens > 5 ? _troveManagers[5] : ITroveManager(address(0));
+        troveManager6 = numTokens > 6 ? _troveManagers[6] : ITroveManager(address(0));
+        troveManager7 = numTokens > 7 ? _troveManagers[7] : ITroveManager(address(0));
+        troveManager8 = numTokens > 8 ? _troveManagers[8] : ITroveManager(address(0));
+        troveManager9 = numTokens > 9 ? _troveManagers[9] : ITroveManager(address(0));
+
         // Initialize the baseRate state variable
         baseRate = INITIAL_BASE_RATE;
         emit BaseRateUpdated(INITIAL_BASE_RATE);
-    }
-
-    function setTroveManager(uint256 _branch, ITroveManager _troveManager) external {
-        require(_branch < totalCollaterals, "Branch too high");
-        troveManagers[_branch] = _troveManager;
     }
 
     struct RedemptionTotals {
@@ -105,7 +123,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
 
         // Gather and accumulate unbacked portions
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
-            ITroveManager troveManager = troveManagers[index];
+            ITroveManager troveManager = getTroveManager(index);
             (uint256 unbackedPortion, uint256 price, bool redeemable) =
                 troveManager.getUnbackedPortionPriceAndRedeemability();
             prices[index] = price;
@@ -120,7 +138,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         if (totals.unbacked == 0) {
             unbackedPortions = new uint256[](totals.numCollaterals);
             for (uint256 index = 0; index < totals.numCollaterals; index++) {
-                ITroveManager troveManager = troveManagers[index];
+                ITroveManager troveManager = getTroveManager(index);
                 (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
                 if (redeemable) {
                     uint256 unbackedPortion = troveManager.getEntireSystemDebt();
@@ -136,7 +154,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
             if (unbackedPortions[index] > 0) {
                 uint256 redeemAmount = _boldAmount * unbackedPortions[index] / totals.unbacked;
                 if (redeemAmount > 0) {
-                    ITroveManager troveManager = troveManagers[index];
+                    ITroveManager troveManager = getTroveManager(index);
                     uint256 redeemedAmount = troveManager.redeemCollateral(
                         msg.sender, redeemAmount, prices[index], redemptionRate, _maxIterationsPerCollateral
                     );
@@ -263,6 +281,20 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         else if (_index == 7) return token7;
         else if (_index == 8) return token8;
         else if (_index == 9) return token9;
+        else revert("Invalid index");
+    }
+
+    function getTroveManager(uint256 _index) public view returns (ITroveManager) {
+        if (_index == 0) return troveManager0;
+        else if (_index == 1) return troveManager1;
+        else if (_index == 2) return troveManager2;
+        else if (_index == 3) return troveManager3;
+        else if (_index == 4) return troveManager4;
+        else if (_index == 5) return troveManager5;
+        else if (_index == 6) return troveManager6;
+        else if (_index == 7) return troveManager7;
+        else if (_index == 8) return troveManager8;
+        else if (_index == 9) return troveManager9;
         else revert("Invalid index");
     }
 

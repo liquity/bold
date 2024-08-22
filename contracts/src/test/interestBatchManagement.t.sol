@@ -773,4 +773,50 @@ contract InterestBatchManagementTest is DevTestSetup {
         (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
         assertEq(tmBatchManagerAddress, B, "A should be in batch (TM)");
     }
+
+    function testOpenTroveAndJoinBatchManagerChargesProperUpfrontFeeSimple() public {
+        uint256 initialDebt = 2000e18;
+        uint256 interestRate = 5e16;
+        // A opens trove and joins batch manager B
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100 ether, initialDebt, B, interestRate);
+        uint256 ATroveEntireDebt = troveManager.getTroveEntireDebt(ATroveId);
+        uint256 expectedUpfrontFeeA = initialDebt * interestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
+        assertEq(ATroveEntireDebt - initialDebt, expectedUpfrontFeeA, "Wrong upfront fee for A");
+
+        vm.warp(block.timestamp + 10 days);
+
+        // C opens trove and joins batch manager B
+        uint256 CTroveId = openTroveAndJoinBatchManager(C, 100 ether, 2000e18, B, interestRate);
+        uint256 CTroveEntireDebt = troveManager.getTroveEntireDebt(CTroveId);
+        uint256 expectedUpfrontFeeC = initialDebt * interestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
+        assertApproxEqAbs(CTroveEntireDebt - initialDebt, expectedUpfrontFeeC, 100, "Wrong upfront fee for C");
+    }
+
+    function testOpenTroveAndJoinBatchManagerChargesProperUpfrontFeeWithDifferentInterestRates() public {
+        // D opens a regular trove
+        uint256 DTroveId = openTroveNoHints100pct(D, 100 ether, 4000e18, 10e16);
+        uint256 DInitialDebt = troveManager.getTroveEntireDebt(DTroveId);
+        uint256 DWeightedDebt = DInitialDebt * 10e16;
+
+        uint256 initialDebt = 2000e18;
+        uint256 interestRate = 5e16;
+        // A opens trove and joins batch manager B (with different interest rate than D)
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100 ether, initialDebt, B, interestRate);
+        uint256 ATroveEntireDebt = troveManager.getTroveEntireDebt(ATroveId);
+        uint256 avgInterestRate = (DWeightedDebt + initialDebt * interestRate) / (DInitialDebt + initialDebt);
+        uint256 expectedUpfrontFeeA = initialDebt * avgInterestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
+        assertEq(ATroveEntireDebt - initialDebt, expectedUpfrontFeeA, "Wrong upfront fee for A");
+
+        vm.warp(block.timestamp + 10 days);
+
+        // C opens trove and joins batch manager B
+        uint256 CTroveId = openTroveAndJoinBatchManager(C, 100 ether, 2000e18, B, interestRate);
+        uint256 CTroveEntireDebt = troveManager.getTroveEntireDebt(CTroveId);
+        ATroveEntireDebt = troveManager.getTroveEntireDebt(ATroveId);
+        uint256 DTroveEntireDebt = troveManager.getTroveEntireDebt(DTroveId);
+        //avgInterestRate = (DWeightedDebt + (ATroveEntireDebt + initialDebt) * interestRate) / (DInitialDebt + ATroveEntireDebt + initialDebt);
+        avgInterestRate = (DWeightedDebt + (ATroveEntireDebt + initialDebt) * interestRate) / (DTroveEntireDebt + ATroveEntireDebt + initialDebt);
+        uint256 expectedUpfrontFeeC = initialDebt * avgInterestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
+        assertApproxEqAbs(CTroveEntireDebt - initialDebt, expectedUpfrontFeeC, 1, "Wrong upfront fee for C");
+    }
 }
