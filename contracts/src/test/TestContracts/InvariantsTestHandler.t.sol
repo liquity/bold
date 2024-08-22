@@ -1584,6 +1584,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             uint128(minInterestRateChangePeriod)
         ) {
             // Preconditions
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertFalse(_batchManagers[i].has(msg.sender), "Should have failed as batch manager had already registered");
             assertGeDecimal(minInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Wrong: min declared < min allowed");
             assertGeDecimal(currentInterestRate, minInterestRate, 18, "Wrong: curr rate < min declared");
@@ -1605,7 +1606,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             (selector, errorString) = _decodeCustomError(revertData);
 
             // Justify failures
-            if (selector == BorrowerOperations.BatchManagerExists.selector) {
+            if (selector == BorrowerOperations.IsShutDown.selector) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else if (selector == BorrowerOperations.BatchManagerExists.selector) {
                 assertTrue(
                     _batchManagers[i].has(msg.sender), "Shouldn't have failed as batch manager hadn't registered yet"
                 );
@@ -1695,6 +1698,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             uint256 newTCR = _TCR(i);
 
             // Preconditions
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertTrue(v.wasActive, "Should have failed as Trove wasn't active");
             assertEq(_batchManagerOf[i][v.troveId], address(0), "Should have failed as Trove was in a batch");
             assertTrue(_batchManagers[i].has(v.newBatchManager), "Should have failed as batch manager wasn't valid");
@@ -1733,7 +1737,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             (selector, errorString) = _decodeCustomError(revertData);
 
             // Justify failures
-            if (selector == BorrowerOperations.TroveNotActive.selector) {
+            if (selector == BorrowerOperations.IsShutDown.selector) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else if (selector == BorrowerOperations.TroveNotActive.selector) {
                 assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
             } else if (selector == BorrowerOperations.TroveInBatch.selector) {
                 assertNotEq(
