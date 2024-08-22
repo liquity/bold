@@ -163,6 +163,7 @@ contract HintHelpers is IHintHelpers {
         }
 
         TroveChange memory troveChange;
+        troveChange.batchAccruedManagementFee = batch.accruedManagementFee;
         troveChange.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * _newInterestRate;
         troveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
 
@@ -186,6 +187,7 @@ contract HintHelpers is IHintHelpers {
 
         TroveChange memory newBatchTroveChange;
         newBatchTroveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
+        newBatchTroveChange.batchAccruedManagementFee = batch.accruedManagementFee;
         newBatchTroveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt + trove.weightedRecordedDebt;
         newBatchTroveChange.newWeightedRecordedDebt =
             (batch.entireDebtWithoutRedistribution + trove.entireDebt) * batch.annualInterestRate;

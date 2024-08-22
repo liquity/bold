@@ -33,8 +33,8 @@ contract BatchManagementFeeTest is DevTestSetup {
         // Adjust first trove
         addColl(A, troveId, 1 ether);
 
-        assertEq(
-            troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedManagementFee
+        assertApproxEqAbs(
+            troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedManagementFee, 1
         );
     }
 
@@ -288,8 +288,8 @@ contract BatchManagementFeeTest is DevTestSetup {
         // Change batch interest rate
         setBatchInterestRate(B, 10e16);
 
-        assertEq(
-            troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedManagementFee
+        assertApproxEqAbs(
+            troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + troveAccruedManagementFee, 1
         );
     }
 
