@@ -3,7 +3,7 @@ pragma solidity 0.8.18;
 
 import {Script} from "forge-std/Script.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Accounts} from "../test/TestContracts/Accounts.sol";
 import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
 import {ETH_GAS_COMPENSATION} from "../Dependencies/Constants.sol";
@@ -72,13 +72,9 @@ contract DeployLiquity2Script is Script, StdCheats {
 
     struct DeploymentVarsTestnet {
         uint256 numCollaterals;
-<<<<<<< HEAD
         IERC20Metadata[] collaterals;
-=======
-        IERC20[] collaterals;
         IAddressesRegistry[] addressesRegistries;
         ITroveManager[] troveManagers;
->>>>>>> c3bc3a0f122c0e858ca9751c0b3f01f8b2bf735f
         LiquityContractsTestnet contracts;
         bytes bytecode;
         address boldTokenAddress;
@@ -205,24 +201,16 @@ contract DeployLiquity2Script is Script, StdCheats {
         assert(address(boldToken) == vars.boldTokenAddress);
 
         contractsArray = new LiquityContractsTestnet[](vars.numCollaterals);
-<<<<<<< HEAD
         vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
-=======
-        vars.collaterals = new IERC20[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
->>>>>>> c3bc3a0f122c0e858ca9751c0b3f01f8b2bf735f
 
         // Use WETH as collateral for the first branch
         vars.collaterals[0] = _WETH;
 
         // Deploy plain ERC20Faucets for the rest of the branches
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
-<<<<<<< HEAD
-            IERC20Metadata collToken = new ERC20Faucet(
-=======
             vars.collaterals[vars.i] = new ERC20Faucet(
->>>>>>> c3bc3a0f122c0e858ca9751c0b3f01f8b2bf735f
                 string.concat("Staked ETH", string(abi.encode(vars.i))), // _name
                 string.concat("stETH", string(abi.encode(vars.i))), // _symbol
                 100 ether, //     _tapAmount
@@ -280,12 +268,7 @@ contract DeployLiquity2Script is Script, StdCheats {
     }
 
     function _deployAndConnectCollateralContractsTestnet(
-<<<<<<< HEAD
-        uint256 _branch,
         IERC20Metadata _collToken,
-=======
-        IERC20 _collToken,
->>>>>>> c3bc3a0f122c0e858ca9751c0b3f01f8b2bf735f
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
         IWETH _weth,

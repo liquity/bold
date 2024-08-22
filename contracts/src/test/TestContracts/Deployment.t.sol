@@ -90,13 +90,9 @@ contract TestDeployer {
 
     struct DeploymentVarsDev {
         uint256 numCollaterals;
-<<<<<<< HEAD
         IERC20Metadata[] collaterals;
-=======
-        IERC20[] collaterals;
         IAddressesRegistry[] addressesRegistries;
         ITroveManager[] troveManagers;
->>>>>>> c3bc3a0f122c0e858ca9751c0b3f01f8b2bf735f
         LiquityContractsDev contracts;
         bytes bytecode;
         address boldTokenAddress;
@@ -120,13 +116,9 @@ contract TestDeployer {
 
     struct DeploymentVarsMainnet {
         uint256 numCollaterals;
-<<<<<<< HEAD
         IERC20Metadata[] collaterals;
-=======
-        IERC20[] collaterals;
         IAddressesRegistry[] addressesRegistries;
         ITroveManager[] troveManagers;
->>>>>>> c3bc3a0f122c0e858ca9751c0b3f01f8b2bf735f
         IPriceFeed[] priceFeeds;
         bytes bytecode;
         address boldTokenAddress;
@@ -248,13 +240,9 @@ contract TestDeployer {
         assert(address(boldToken) == vars.boldTokenAddress);
 
         contractsArray = new LiquityContractsDev[](vars.numCollaterals);
-<<<<<<< HEAD
         vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
-=======
-        vars.collaterals = new IERC20[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
->>>>>>> c3bc3a0f122c0e858ca9751c0b3f01f8b2bf735f
 
         // Deploy the first branch with WETH collateral
         vars.collaterals[0] = _WETH;
@@ -321,14 +309,10 @@ contract TestDeployer {
         vars.numCollaterals = 5;
         result.contractsArray = new LiquityContracts[](vars.numCollaterals);
         vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
-<<<<<<< HEAD
         vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
-=======
-        vars.collaterals = new IERC20[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
         address troveManagerAddress;
->>>>>>> c3bc3a0f122c0e858ca9751c0b3f01f8b2bf735f
 
         vars.priceFeeds[0] = new WETHPriceFeed(
             address(this), _params.externalAddresses.ETHOracle, _params.oracleParams.ethUsdStalenessThreshold
@@ -473,12 +457,7 @@ contract TestDeployer {
     }
 
     function _deployAndConnectCollateralContractsDev(
-<<<<<<< HEAD
-        uint256 _branch,
         IERC20Metadata _collToken,
-=======
-        IERC20 _collToken,
->>>>>>> c3bc3a0f122c0e858ca9751c0b3f01f8b2bf735f
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
         IWETH _weth,
@@ -592,12 +571,7 @@ contract TestDeployer {
     }
 
     function _deployAndConnectCollateralContractsMainnet(
-<<<<<<< HEAD
-        uint256 _branch,
         IERC20Metadata _collToken,
-=======
-        IERC20 _collToken,
->>>>>>> c3bc3a0f122c0e858ca9751c0b3f01f8b2bf735f
         IPriceFeed _priceFeed,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,

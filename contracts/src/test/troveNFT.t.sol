@@ -1,8 +1,11 @@
 pragma solidity 0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
+import "./TestContracts/MetadataDeployment.sol";
 
-contract TroveManagerTest is DevTestSetup {
+
+contract troveNFTTest is DevTestSetup, MetadataDeployment {
+    
     function testTroveNFTMetadata() public {
         priceFeed.setPrice(2000e18);
 

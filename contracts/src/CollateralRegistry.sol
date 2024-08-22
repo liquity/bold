@@ -50,11 +50,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
 
-<<<<<<< HEAD
-    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens) {
-=======
-    constructor(IBoldToken _boldToken, IERC20[] memory _tokens, ITroveManager[] memory _troveManagers) {
->>>>>>> c3bc3a0f122c0e858ca9751c0b3f01f8b2bf735f
+    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers) {
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens <= 10, "Collateral list too long");
