@@ -85,7 +85,7 @@ contract OpenTroves is Script {
             BranchContracts memory c;
             c.collateral = ERC20Faucet(address(collateralRegistry.getToken(branch)));
             vm.label(address(c.collateral), "ERC20Faucet");
-            c.troveManager = collateralRegistry.troveManagers(branch);
+            c.troveManager = collateralRegistry.getTroveManager(branch);
             vm.label(address(c.troveManager), "TroveManager");
             c.sortedTroves = c.troveManager.sortedTroves();
             vm.label(address(c.sortedTroves), "SortedTroves");
