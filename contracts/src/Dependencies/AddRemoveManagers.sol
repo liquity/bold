@@ -88,7 +88,11 @@ contract AddRemoveManagers is IAddRemoveManagers {
         }
     }
 
-    function _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(uint256 _troveId, address _owner) internal view returns (address) {
+    function _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(uint256 _troveId, address _owner)
+        internal
+        view
+        returns (address)
+    {
         address manager = removeManagerReceiverOf[_troveId].manager;
         address receiver = removeManagerReceiverOf[_troveId].receiver;
         if (msg.sender != _owner && msg.sender != manager) {

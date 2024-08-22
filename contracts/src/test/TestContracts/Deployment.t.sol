@@ -246,7 +246,8 @@ contract TestDeployer {
 
         // Deploy the first branch with WETH collateral
         vars.collaterals[0] = _WETH;
-        (IAddressesRegistry addressesRegistry, address troveManagerAddress) = _deployAddressesRegistryDev(troveManagerParamsArray[0]);
+        (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
+            _deployAddressesRegistryDev(troveManagerParamsArray[0]);
         vars.addressesRegistries[0] = addressesRegistry;
         vars.troveManagers[0] = ITroveManager(troveManagerAddress);
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
@@ -258,7 +259,8 @@ contract TestDeployer {
             );
             vars.collaterals[vars.i] = collToken;
             // Addresses registry and TM address
-            (IAddressesRegistry addressesRegistry, address troveManagerAddress) = _deployAddressesRegistryDev(troveManagerParamsArray[vars.i]);
+            (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
+                _deployAddressesRegistryDev(troveManagerParamsArray[vars.i]);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
@@ -268,7 +270,14 @@ contract TestDeployer {
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
         vars.contracts = _deployAndConnectCollateralContractsDev(
-            _WETH, boldToken, collateralRegistry, _WETH, vars.addressesRegistries[0], address(vars.troveManagers[0]), hintHelpers, multiTroveGetter
+            _WETH,
+            boldToken,
+            collateralRegistry,
+            _WETH,
+            vars.addressesRegistries[0],
+            address(vars.troveManagers[0]),
+            hintHelpers,
+            multiTroveGetter
         );
         contractsArray[0] = vars.contracts;
 
@@ -356,7 +365,8 @@ contract TestDeployer {
             1 days //         _tapPeriod
         );
         vars.collaterals[0] = result.mockCollaterals.WETH;
-        (vars.addressesRegistries[0], troveManagerAddress) = _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[0]);
+        (vars.addressesRegistries[0], troveManagerAddress) =
+            _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[0]);
         vars.troveManagers[0] = ITroveManager(troveManagerAddress);
 
         result.mockCollaterals.RETH = new ERC20Faucet(
@@ -366,7 +376,8 @@ contract TestDeployer {
             1 days //         _tapPeriod
         );
         vars.collaterals[1] = result.mockCollaterals.RETH;
-        (vars.addressesRegistries[1], troveManagerAddress) = _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[1]);
+        (vars.addressesRegistries[1], troveManagerAddress) =
+            _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[1]);
         vars.troveManagers[1] = ITroveManager(troveManagerAddress);
 
         result.mockCollaterals.WSTETH = new ERC20Faucet(
@@ -376,7 +387,8 @@ contract TestDeployer {
             1 days //         _tapPeriod
         );
         vars.collaterals[2] = result.mockCollaterals.WSTETH;
-        (vars.addressesRegistries[2], troveManagerAddress) = _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[2]);
+        (vars.addressesRegistries[2], troveManagerAddress) =
+            _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[2]);
         vars.troveManagers[2] = ITroveManager(troveManagerAddress);
 
         result.mockCollaterals.ETHX = new ERC20Faucet(
@@ -386,7 +398,8 @@ contract TestDeployer {
             1 days //         _tapPeriod
         );
         vars.collaterals[3] = result.mockCollaterals.ETHX;
-        (vars.addressesRegistries[3], troveManagerAddress) = _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[3]);
+        (vars.addressesRegistries[3], troveManagerAddress) =
+            _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[3]);
         vars.troveManagers[3] = ITroveManager(troveManagerAddress);
 
         result.mockCollaterals.OSETH = new ERC20Faucet(
@@ -396,7 +409,8 @@ contract TestDeployer {
             1 days //         _tapPeriod
         );
         vars.collaterals[4] = result.mockCollaterals.OSETH;
-        (vars.addressesRegistries[4], troveManagerAddress) = _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[4]);
+        (vars.addressesRegistries[4], troveManagerAddress) =
+            _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[4]);
         vars.troveManagers[4] = ITroveManager(troveManagerAddress);
 
         // Deploy registry and register the TMs
@@ -423,7 +437,10 @@ contract TestDeployer {
         result.boldToken.setCollateralRegistry(address(result.collateralRegistry));
     }
 
-    function _deployAddressesRegistryDev(TroveManagerParams memory _troveManagerParams) internal returns (IAddressesRegistry, address) {
+    function _deployAddressesRegistryDev(TroveManagerParams memory _troveManagerParams)
+        internal
+        returns (IAddressesRegistry, address)
+    {
         IAddressesRegistry addressesRegistry = new AddressesRegistry(
             address(this),
             _troveManagerParams.CCR,
@@ -433,9 +450,7 @@ contract TestDeployer {
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
         address troveManagerAddress = getAddress(
-            address(this),
-            getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry)),
-            SALT
+            address(this), getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry)), SALT
         );
 
         return (addressesRegistry, troveManagerAddress);
@@ -537,7 +552,10 @@ contract TestDeployer {
         );
     }
 
-    function _deployAddressesRegistryMainnet(TroveManagerParams memory _troveManagerParams) internal returns (IAddressesRegistry, address) {
+    function _deployAddressesRegistryMainnet(TroveManagerParams memory _troveManagerParams)
+        internal
+        returns (IAddressesRegistry, address)
+    {
         IAddressesRegistry addressesRegistry = new AddressesRegistry(
             address(this),
             _troveManagerParams.CCR,
@@ -546,11 +564,8 @@ contract TestDeployer {
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
-        address troveManagerAddress = getAddress(
-            address(this),
-            getBytecode(type(TroveManager).creationCode, address(addressesRegistry)),
-            SALT
-        );
+        address troveManagerAddress =
+            getAddress(address(this), getBytecode(type(TroveManager).creationCode, address(addressesRegistry)), SALT);
 
         return (addressesRegistry, troveManagerAddress);
     }
