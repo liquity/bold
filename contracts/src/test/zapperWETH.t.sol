@@ -165,7 +165,7 @@ contract ZapperWETHTest is DevTestSetup {
 
         // Add a remove manager for the zapper, and send bold
         vm.startPrank(A);
-        wethZapper.setRemoveManager(troveId, B, A);
+        wethZapper.setRemoveManagerWithReceiver(troveId, B, A);
         boldToken.transfer(B, boldAmount2);
         vm.stopPrank();
 
@@ -210,7 +210,7 @@ contract ZapperWETHTest is DevTestSetup {
 
         // Add a remove manager for the zapper
         vm.startPrank(A);
-        wethZapper.setRemoveManager(troveId, B, A);
+        wethZapper.setRemoveManagerWithReceiver(troveId, B, A);
         vm.stopPrank();
 
         // Withdraw bold
@@ -255,7 +255,7 @@ contract ZapperWETHTest is DevTestSetup {
 
         // Add a remove manager for the zapper
         vm.startPrank(A);
-        wethZapper.setRemoveManager(troveId, B, A);
+        wethZapper.setRemoveManagerWithReceiver(troveId, B, A);
         vm.stopPrank();
 
         // Adjust (withdraw coll and Bold)
@@ -295,7 +295,7 @@ contract ZapperWETHTest is DevTestSetup {
 
         // Add a remove manager for the zapper
         vm.startPrank(A);
-        wethZapper.setRemoveManager(troveId, B, A);
+        wethZapper.setRemoveManagerWithReceiver(troveId, B, A);
         vm.stopPrank();
 
         // Redeem to make trove unredeemable

@@ -357,12 +357,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         // --- Effects & interactions ---
 
         // Set add/remove managers
-        if (_addManager != address(0)) {
-            _setAddManager(vars.troveId, _addManager);
-        }
-        if (_removeManager != address(0)) {
-            _setRemoveManager(vars.troveId, _removeManager, _receiver);
-        }
+        // TODO: We can restore the condition for non-zero managers if we end up ipmlementing at least one of:
+        // - wipe them out on closing troves
+        // - do not reuse troveIds
+        // for now it is safer to make sure they are set
+        _setAddManager(vars.troveId, _addManager);
+        _setRemoveManagerAndReceiver(vars.troveId, _removeManager, _receiver);
 
         vars.activePool.mintAggInterestAndAccountForTroveChange(_troveChange, _interestBatchManager);
 
@@ -579,7 +579,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         address receiver = owner; // If it’s a withdrawal, and manager has receive privilege, manager would be the receiver
 
         if (_troveChange.collDecrease > 0 || _troveChange.debtIncrease > 0) {
-            receiver = _requireSenderIsOwnerOrRemoveManager(_troveId, owner);
+            receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
         }
 
         if (_troveChange.collIncrease > 0 || _troveChange.debtDecrease > 0) {
@@ -686,7 +686,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         // --- Checks ---
 
         address owner = troveNFT.ownerOf(_troveId);
-        address receiver = _requireSenderIsOwnerOrRemoveManager(_troveId, owner);
+        address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
         _requireTroveIsOpen(troveManagerCached, _troveId);
 
         LatestTroveData memory trove = troveManagerCached.getLatestTroveData(_troveId);
