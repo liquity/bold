@@ -47,7 +47,7 @@ contract TestDeployer {
         IPriceFeedTestnet priceFeed; // Tester
         GasPool gasPool;
         IInterestRouter interestRouter;
-        IERC20 collToken;
+        IERC20Metadata collToken;
     }
 
     struct LiquityContracts {
@@ -63,7 +63,7 @@ contract TestDeployer {
         IPriceFeed priceFeed;
         GasPool gasPool;
         IInterestRouter interestRouter;
-        IERC20 collToken;
+        IERC20Metadata collToken;
     }
 
     struct LiquityContractAddresses {
@@ -90,7 +90,7 @@ contract TestDeployer {
 
     struct DeploymentVarsDev {
         uint256 numCollaterals;
-        IERC20[] collaterals;
+        IERC20Metadata[] collaterals;
         LiquityContractsDev contracts;
         bytes bytecode;
         address boldTokenAddress;
@@ -114,7 +114,7 @@ contract TestDeployer {
 
     struct DeploymentVarsMainnet {
         uint256 numCollaterals;
-        IERC20[] collaterals;
+        IERC20Metadata[] collaterals;
         IPriceFeed[] priceFeeds;
         bytes bytecode;
         address boldTokenAddress;
@@ -144,10 +144,10 @@ contract TestDeployer {
     // TODO: replace this with the real LST contracts
     struct MockCollaterals {
         IWETH WETH;
-        IERC20 RETH;
-        IERC20 WSTETH;
-        IERC20 ETHX;
-        IERC20 OSETH;
+        IERC20Metadata RETH;
+        IERC20Metadata WSTETH;
+        IERC20Metadata ETHX;
+        IERC20Metadata OSETH;
     }
 
     // See: https://solidity-by-example.org/app/create2/
@@ -236,12 +236,12 @@ contract TestDeployer {
         assert(address(boldToken) == vars.boldTokenAddress);
 
         contractsArray = new LiquityContractsDev[](vars.numCollaterals);
-        vars.collaterals = new IERC20[](vars.numCollaterals);
+        vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
 
         // Deploy the first branch with WETH collateral
         vars.collaterals[0] = _WETH;
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
-            IERC20 collToken = new ERC20Faucet(
+            IERC20Metadata collToken = new ERC20Faucet(
                 string.concat("Staked ETH", string(abi.encode(vars.i))), // _name
                 string.concat("stETH", string(abi.encode(vars.i))), // _symbol
                 100 ether, //     _tapAmount
@@ -287,7 +287,7 @@ contract TestDeployer {
         vars.numCollaterals = 5;
         result.contractsArray = new LiquityContracts[](vars.numCollaterals);
         vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
-        vars.collaterals = new IERC20[](vars.numCollaterals);
+        vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
 
         vars.priceFeeds[0] = new WETHPriceFeed(
             address(this), _params.externalAddresses.ETHOracle, _params.oracleParams.ethUsdStalenessThreshold
@@ -399,7 +399,7 @@ contract TestDeployer {
 
     function _deployAndConnectCollateralContractsDev(
         uint256 _branch,
-        IERC20 _collToken,
+        IERC20Metadata _collToken,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
         IWETH _weth,
@@ -507,7 +507,7 @@ contract TestDeployer {
 
     function _deployAndConnectCollateralContractsMainnet(
         uint256 _branch,
-        IERC20 _collToken,
+        IERC20Metadata _collToken,
         IPriceFeed _priceFeed,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,

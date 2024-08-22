@@ -4,7 +4,7 @@ import "./Dependencies/Ownable.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 
 contract AddressesRegistry is Ownable, IAddressesRegistry {
-    IERC20 public collToken;
+    IERC20Metadata public collToken;
     IBorrowerOperations public borrowerOperations;
     ITroveManager public troveManager;
     ITroveNFT public troveNFT;

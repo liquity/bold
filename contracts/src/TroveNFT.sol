@@ -3,6 +3,7 @@
 pragma solidity 0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 import "./Interfaces/ITroveNFT.sol";
 import "./Interfaces/IAddressesRegistry.sol";
@@ -10,13 +11,16 @@ import "./Interfaces/IAddressesRegistry.sol";
 // import "forge-std/console2.sol";
 
 contract TroveNFT is ERC721, ITroveNFT {
-    string internal constant NAME = "TroveNFT"; // TODO
-    string internal constant SYMBOL = "Lv2T"; // TODO
 
     ITroveManager public troveManager;
+    IERC20 internal immutable collToken;
 
-    constructor(IAddressesRegistry _addressesRegistry) ERC721(NAME, SYMBOL) {
+    constructor(IAddressesRegistry _addressesRegistry) ERC721(
+        string.concat("Liquity v2 Trove - ", _addressesRegistry.collToken().name()), 
+        string.concat("Lv2T_", _addressesRegistry.collToken().symbol())
+    ) {
         troveManager = _addressesRegistry.troveManager();
+        collToken = _addressesRegistry.collToken();
     }
 
     function mint(address _owner, uint256 _troveId) external override {

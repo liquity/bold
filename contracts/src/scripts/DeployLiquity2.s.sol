@@ -45,7 +45,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         IPriceFeedTestnet priceFeed; // Tester
         GasPool gasPool;
         IInterestRouter interestRouter;
-        IERC20 collToken;
+        IERC20Metadata collToken;
     }
 
     struct LiquityContractAddresses {
@@ -72,7 +72,7 @@ contract DeployLiquity2Script is Script, StdCheats {
 
     struct DeploymentVarsTestnet {
         uint256 numCollaterals;
-        IERC20[] collaterals;
+        IERC20Metadata[] collaterals;
         LiquityContractsTestnet contracts;
         bytes bytecode;
         address boldTokenAddress;
@@ -153,7 +153,7 @@ contract DeployLiquity2Script is Script, StdCheats {
             vm.startBroadcast(trove.owner);
 
             // Approve collToken to BorrowerOperations
-            IERC20(contracts.collToken).approve(
+            IERC20Metadata(contracts.collToken).approve(
                 address(contracts.borrowerOperations), trove.coll + ETH_GAS_COMPENSATION
             );
 
@@ -199,12 +199,12 @@ contract DeployLiquity2Script is Script, StdCheats {
         assert(address(boldToken) == vars.boldTokenAddress);
 
         contractsArray = new LiquityContractsTestnet[](vars.numCollaterals);
-        vars.collaterals = new IERC20[](vars.numCollaterals);
+        vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
 
         // Deploy the first branch with WETH collateral
         vars.collaterals[0] = _WETH;
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
-            IERC20 collToken = new ERC20Faucet(
+            IERC20Metadata collToken = new ERC20Faucet(
                 string.concat("Staked ETH", string(abi.encode(vars.i))), // _name
                 string.concat("stETH", string(abi.encode(vars.i))), // _symbol
                 100 ether, //     _tapAmount
@@ -242,7 +242,7 @@ contract DeployLiquity2Script is Script, StdCheats {
 
     function _deployAndConnectCollateralContractsTestnet(
         uint256 _branch,
-        IERC20 _collToken,
+        IERC20Metadata _collToken,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
         IWETH _weth,

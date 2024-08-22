@@ -17,7 +17,7 @@ import "./IPriceFeed.sol";
 
 interface IAddressesRegistry {
     struct AddressVars {
-        IERC20 collToken;
+        IERC20Metadata collToken;
         IBorrowerOperations borrowerOperations;
         ITroveManager troveManager;
         ITroveNFT troveNFT;
@@ -42,7 +42,7 @@ interface IAddressesRegistry {
     function LIQUIDATION_PENALTY_SP() external returns (uint256);
     function LIQUIDATION_PENALTY_REDISTRIBUTION() external returns (uint256);
 
-    function collToken() external view returns (IERC20);
+    function collToken() external view returns (IERC20Metadata);
     function borrowerOperations() external view returns (IBorrowerOperations);
     function troveManager() external view returns (ITroveManager);
     function troveNFT() external view returns (ITroveNFT);
