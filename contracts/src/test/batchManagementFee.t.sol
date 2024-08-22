@@ -128,6 +128,147 @@ contract BatchManagementFeeTest is DevTestSetup {
         assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedManagementFee);
     }
 
+    function testChangeBatchInterestRateUpdatesBatchWeightedMgmtFeeCorrectly() public {
+        // Open 2 troves in the same batch manager
+        openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+        openTroveAndJoinBatchManager(C, 200e18, 5000e18, B, 5e16);
+
+        vm.warp(block.timestamp + 10 days);
+
+        // Get weighted batch management fee before
+        LatestBatchData memory batchData = troveManager.getLatestBatchData(B);
+        assertGt(batchData.weightedRecordedBatchManagementFee, 0);
+       
+        // Calculated new expected weighted batch management fee, i.e.
+        // new_batch_debt * annual_mgmt_fee 
+        // i.e.
+        // (old_batch_debt + accrued_batch_interest + accrued_batch_mgmt_fee) * annual_mgmt_fee 
+        uint256 expectedNewWeightedRecordedBatchMgmtFee = batchData.entireDebtWithoutRedistribution * batchData.annualManagementFee;
+        // New expected weighted fee should be higher than old, since batch debt has increased (interest + accrued mgmt fee) and mgmt fee is unchanged
+        assertGt(expectedNewWeightedRecordedBatchMgmtFee, batchData.weightedRecordedBatchManagementFee);
+
+        // Change batch interest rate
+        uint256 newInterestRate = 10e16;
+        setBatchInterestRate(B, newInterestRate);
+
+        // check new weighted batch management fee is as expected
+        LatestBatchData memory batchDataAfter = troveManager.getLatestBatchData(B);
+       
+        assertEq(batchDataAfter.weightedRecordedBatchManagementFee, expectedNewWeightedRecordedBatchMgmtFee);
+    }
+
+    function testChangeBatchInterestRateUpdatesAggBatchWeightedMgmtFeeCorrectly() public {
+        // Open 2 troves in the same batch manager
+        openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+        openTroveAndJoinBatchManager(C, 200e18, 5000e18, B, 5e16);
+
+        vm.warp(block.timestamp + 10 days);
+
+        // Get agg weighted batch mgmt fee before
+        uint256 aggWeightedMgmtFeeBefore = activePool.aggWeightedBatchManagementFeeSum();
+        assertGt(aggWeightedMgmtFeeBefore, 0);
+
+        // Get weighted batch management fee before
+        LatestBatchData memory batchData = troveManager.getLatestBatchData(B);
+        assertGt(batchData.weightedRecordedBatchManagementFee, 0);
+
+        // Change batch interest rate
+        uint256 newInterestRate = 10e16;
+        setBatchInterestRate(B, newInterestRate);
+
+        // Get weighted batch management fee after
+        LatestBatchData memory batchDataAfter = troveManager.getLatestBatchData(B);
+        // Expect it's increased, due to recorded batch debt increasing and no change in mgmt fee
+        assertGt(batchDataAfter.weightedRecordedBatchManagementFee, batchData.weightedRecordedBatchManagementFee);
+
+        // Get agg weighted batch mgmt fee after
+        uint256 aggWeightedMgmtFeeAfter = activePool.aggWeightedBatchManagementFeeSum();
+        assertGt(aggWeightedMgmtFeeAfter, aggWeightedMgmtFeeBefore);
+
+        uint256 delta = aggWeightedMgmtFeeAfter - aggWeightedMgmtFeeBefore;
+
+        // Check agg weighted batch mgmt fee increased by the change in the individual weighted batch mgmt fee
+        assertEq(delta, batchDataAfter.weightedRecordedBatchManagementFee - batchData.weightedRecordedBatchManagementFee);
+    }
+
+    function testPrematureChangeBatchInterestRateUpdatesBatchWeightedMgmtFeeCorrectly() public { 
+        // Open 2 troves in the same batch manager
+        openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+        openTroveAndJoinBatchManager(C, 200e18, 5000e18, B, 5e16);
+
+        vm.warp(block.timestamp + 10 days);
+
+        // Change batch interest rate
+        setBatchInterestRate(B, 10e16);
+
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN - 37);
+        
+        // Get weighted batch management fee before
+        LatestBatchData memory batchData = troveManager.getLatestBatchData(B);
+        assertGt(batchData.weightedRecordedBatchManagementFee, 0);
+
+        uint256 newInterestRate = 11e16;
+        uint256 expectedUpfrontFee = hintHelpers.predictAdjustBatchInterestRateUpfrontFee(0, B, newInterestRate);
+        assertGt(expectedUpfrontFee, 0);
+
+        // Calculated new expected weighted batch management fee, i.e.
+        // new_batch_debt * annual_mgmt_fee 
+        // i.e.
+        // (old_batch_debt + accrued_batch_interest + accrued_batch_mgmt_fee + upfront_fee) * annual_mgmt_fee 
+        uint256 expectedNewWeightedRecordedBatchMgmtFee =
+        (batchData.entireDebtWithoutRedistribution + expectedUpfrontFee) * batchData.annualManagementFee;
+        // New expected weighted fee should be higher than old, since batch debt has increased (interest + accrued mgmt fee) and mgmt fee is unchanged
+        assertGt(expectedNewWeightedRecordedBatchMgmtFee, batchData.weightedRecordedBatchManagementFee);
+
+        // Change batch interest rate again, expect upfront fee to be charged
+        setBatchInterestRate(B, 11e16);
+        
+        // Get weighted batch management fee after
+        LatestBatchData memory batchDataAfter = troveManager.getLatestBatchData(B);
+        // Expect it's increased, due to recorded batch debt increasing and no change in mgmt fee
+        assertGt(batchDataAfter.weightedRecordedBatchManagementFee, batchData.weightedRecordedBatchManagementFee);
+
+        assertEq(batchDataAfter.weightedRecordedBatchManagementFee, expectedNewWeightedRecordedBatchMgmtFee);
+    }
+
+    function testPrematureChangeBatchInterestRateUpdatesAggBatchWeightedMgmtFeeCorrectly() public { 
+        // Open 2 troves in the same batch manager
+        openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+        openTroveAndJoinBatchManager(C, 200e18, 5000e18, B, 5e16);
+
+        vm.warp(block.timestamp + 10 days);
+
+        // Change batch interest rate
+        setBatchInterestRate(B, 10e16);
+
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN - 37);
+
+        // Get agg weighted batch mgmt fee before
+        uint256 aggWeightedMgmtFeeBefore = activePool.aggWeightedBatchManagementFeeSum();
+        assertGt(aggWeightedMgmtFeeBefore, 0);
+        
+        // Get weighted batch management fee before
+        LatestBatchData memory batchData = troveManager.getLatestBatchData(B);
+        assertGt(batchData.weightedRecordedBatchManagementFee, 0);
+
+        // Change batch interest rate again, expect upfront fee to be charged
+        setBatchInterestRate(B, 11e16);
+        
+        // Get weighted batch management fee after
+        LatestBatchData memory batchDataAfter = troveManager.getLatestBatchData(B);
+        // Expect it's increased, due to recorded batch debt increasing and no change in mgmt fee
+        assertGt(batchDataAfter.weightedRecordedBatchManagementFee, batchData.weightedRecordedBatchManagementFee);
+
+        // Get agg weighted batch mgmt fee after
+        uint256 aggWeightedMgmtFeeAfter = activePool.aggWeightedBatchManagementFeeSum();
+        assertGt(aggWeightedMgmtFeeAfter, aggWeightedMgmtFeeBefore);
+
+        uint256 delta = aggWeightedMgmtFeeAfter - aggWeightedMgmtFeeBefore;
+
+        // Check agg weighted batch mgmt fee increased by the change in the individual weighted batch mgmt fee
+        assertEq(delta, batchDataAfter.weightedRecordedBatchManagementFee - batchData.weightedRecordedBatchManagementFee);
+    }
+
     function testChangeBatchInterestRateIncreasesTroveDebtByFee() public {
         // Open 2 troves in the same batch manager
         uint256 troveId = openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
