@@ -202,21 +202,26 @@ contract DeployLiquity2Script is Script, StdCheats {
 
         contractsArray = new LiquityContractsTestnet[](vars.numCollaterals);
         vars.collaterals = new IERC20[](vars.numCollaterals);
+        vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
+        vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
-        // Deploy the first branch with WETH collateral
+        // Use WETH as collateral for the first branch
         vars.collaterals[0] = _WETH;
+
+        // Deploy plain ERC20Faucets for the rest of the branches
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
-            IERC20 collToken = new ERC20Faucet(
+            vars.collaterals[vars.i] = new ERC20Faucet(
                 string.concat("Staked ETH", string(abi.encode(vars.i))), // _name
                 string.concat("stETH", string(abi.encode(vars.i))), // _symbol
                 100 ether, //     _tapAmount
                 1 days //         _tapPeriod
             );
-            vars.collaterals[vars.i] = collToken;
-            // Addresses registry and TM address
-            (IAddressesRegistry addressesRegistry, address troveManagerAddress) = _deployAddressesRegistry(
-                troveManagerParamsArray[vars.i]
-            );
+        }
+
+        // Deploy AddressesRegistries and get TroveManager addresses
+        for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
+            (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
+                _deployAddressesRegistry(troveManagerParamsArray[vars.i]);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
@@ -225,13 +230,8 @@ contract DeployLiquity2Script is Script, StdCheats {
         hintHelpers = new HintHelpers(collateralRegistry);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
-        vars.contracts = _deployAndConnectCollateralContractsTestnet(
-            _WETH, boldToken, collateralRegistry, _WETH, vars.addressesRegistries[0], address(vars.troveManagers[0]), hintHelpers, multiTroveGetter
-        );
-        contractsArray[0] = vars.contracts;
-
-        // Deploy the remaining branches with LST collateral
-        for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
+        // Deploy per-branch contracts for each branch
+        for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
             vars.contracts = _deployAndConnectCollateralContractsTestnet(
                 vars.collaterals[vars.i],
                 boldToken,
@@ -248,7 +248,10 @@ contract DeployLiquity2Script is Script, StdCheats {
         boldToken.setCollateralRegistry(address(collateralRegistry));
     }
 
-    function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams) internal returns (IAddressesRegistry, address) {
+    function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams)
+        internal
+        returns (IAddressesRegistry, address)
+    {
         IAddressesRegistry addressesRegistry = new AddressesRegistry(
             deployer,
             _troveManagerParams.CCR,
