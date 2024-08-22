@@ -8,6 +8,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "./Interfaces/ITroveNFT.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 
+
 // import "forge-std/console2.sol";
 
 contract TroveNFT is ERC721, ITroveNFT {
