@@ -835,6 +835,17 @@ contract Redemptions is DevTestSetup {
         //console2.log(BEntireDebtBefore, "BEntireDebtBefore");
         //console2.log(BEntireDebtAfter, "BEntireDebtAfter");
         assertEq(BEntireDebtAfter, BEntireDebtBefore, "B debt mismatch");
+
+        // Pass some time and check pending debt
+        vm.warp(block.timestamp + 365 days);
+        uint256 ARecordedDebt = troveManager.getTroveDebt(ATroveId);
+        uint256 BRecordedDebt = troveManager.getTroveDebt(BTroveId);
+        assertApproxEqAbs(
+            activePool.calcPendingAggInterest(),
+            (ARecordedDebt + BRecordedDebt) * MIN_ANNUAL_INTEREST_RATE / DECIMAL_PRECISION,
+            1,
+            "Pending debt mismatch"
+        );
     }
 
     // TODO: tests borrower for combined adjustments - debt changes and coll add/withdrawals.
