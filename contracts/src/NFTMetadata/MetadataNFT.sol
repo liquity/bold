@@ -33,7 +33,7 @@ contract MetadataNFT {
         return string.concat(
             baseSVG._formattedIdEl(id),
             baseSVG._formattedAddressEl(address(msg.sender)), //dummy
-            baseSVG._collLogo("reth", assetReader) //dummy
+            baseSVG._collLogo("rETH", assetReader) //dummy
         );
     }
 

@@ -4,10 +4,8 @@ pragma solidity 0.8.18;
 import "forge-std/Test.sol";
 import "src/NFTMetadata/utils/Utils.sol";
 import "src/NFTMetadata/utils/FixedAssets.sol";
-import "src/NFTMetadata/MetadataNFT.sol";
 
 contract MetadataDeployment is Test {
-    FixedAssetReader public assetReader;
 
     struct File {
         bytes data;
@@ -19,13 +17,20 @@ contract MetadataDeployment is Test {
 
     address public pointer;
 
-    function deployMetadata() public {
+    FixedAssetReader public initializedFixedAssetReader;
+
+    function deployMetadata() public returns (address) {
         _loadFiles();
         _storeFile();
+        _deployFixedAssetReader();
+
+        return address(initializedFixedAssetReader);
     }
 
-    function _loadFiles() internal {
+    function _loadFiles() internal { 
         string memory root = string.concat(vm.projectRoot(), "/utils/assets/");
+
+        emit log_string(root);
 
         uint256 offset = 0;
 
@@ -73,14 +78,45 @@ contract MetadataDeployment is Test {
 
     function _storeFile() internal {
         bytes memory data = bytes.concat(
-            files[bytes4(keccak256("bold"))].data,
-            files[bytes4(keccak256("eth"))].data,
-            files[bytes4(keccak256("wsteth"))].data,
-            files[bytes4(keccak256("reth"))].data,
+            files[bytes4(keccak256("BOLD"))].data,
+            files[bytes4(keccak256("WETH"))].data,
+            files[bytes4(keccak256("wstETH"))].data,
+            files[bytes4(keccak256("rETH"))].data,
             files[bytes4(keccak256("geist"))].data
         );
 
+        emit log_named_uint("data length", data.length);
+
         pointer = SSTORE2.write(data);
+
+    }
+
+    function _deployFixedAssetReader() internal {
+        bytes4[] memory sigs = new bytes4[](5);
+        sigs[0] = bytes4(keccak256("BOLD"));
+        sigs[1] = bytes4(keccak256("WETH"));
+        sigs[2] = bytes4(keccak256("wstETH"));
+        sigs[3] = bytes4(keccak256("rETH"));
+        sigs[4] = bytes4(keccak256("geist"));
+
+        FixedAssetReader.Asset[] memory FixedAssets = new FixedAssetReader.Asset[](5);
+        FixedAssets[0] = FixedAssetReader.Asset(
+            uint128(files[bytes4(keccak256("BOLD"))].start), uint128(files[bytes4(keccak256("BOLD"))].end)
+        );
+        FixedAssets[1] = FixedAssetReader.Asset(
+            uint128(files[bytes4(keccak256("WETH"))].start), uint128(files[bytes4(keccak256("WETH"))].end)
+        );
+        FixedAssets[2] = FixedAssetReader.Asset(
+            uint128(files[bytes4(keccak256("wstETH"))].start), uint128(files[bytes4(keccak256("wstETH"))].end)
+        );
+        FixedAssets[3] = FixedAssetReader.Asset(
+            uint128(files[bytes4(keccak256("rETH"))].start), uint128(files[bytes4(keccak256("rETH"))].end)
+        );
+        FixedAssets[4] = FixedAssetReader.Asset(
+            uint128(files[bytes4(keccak256("geist"))].start), uint128(files[bytes4(keccak256("geist"))].end)
+        );
+
+        initializedFixedAssetReader = new FixedAssetReader(pointer, sigs, FixedAssets);
     }
 
 }

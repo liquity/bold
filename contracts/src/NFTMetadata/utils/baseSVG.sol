@@ -69,7 +69,7 @@ library baseSVG {
                 svg.prop("height", "20"),
                 svg.prop(
                     "href",
-                    string.concat("data:image/svg+xml;base64,", _assetReader.readAsset(bytes4(keccak256("bold"))))
+                    string.concat("data:image/svg+xml;base64,", _assetReader.readAsset(bytes4(keccak256("BOLD"))))
                 )
             )
         );
