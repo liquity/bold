@@ -73,7 +73,7 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
         = deployer.deployAndConnectContractsMultiColl(paramsList);
         setupContracts(contracts);
 
-        handler = new InvariantsTestHandler(contracts, true);
+        handler = new InvariantsTestHandler({contracts: contracts, assumeNoExpectedFailures: true});
         vm.label(address(handler), "handler");
         targetContract(address(handler));
     }

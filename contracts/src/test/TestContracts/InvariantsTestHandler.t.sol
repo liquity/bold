@@ -1669,7 +1669,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.wasOpen = _isOpen(i, v.troveId);
         v.wasActive = _isActive(i, v.troveId);
         v.premature = _timeSinceLastTroveInterestRateAdjustment[i][v.troveId] < INTEREST_RATE_ADJ_COOLDOWN;
-        v.upfrontFee = hintHelpers.predictAdjustInterestRateUpfrontFee(i, v.troveId, batch.interestRate);
+        v.upfrontFee = hintHelpers.predictJoinBatchInterestRateUpfrontFee(i, v.troveId, v.newBatchManager);
         if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
 
         info("batch manager: ", vm.getLabel(v.newBatchManager));
