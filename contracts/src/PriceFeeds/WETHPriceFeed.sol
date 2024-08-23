@@ -26,14 +26,14 @@ contract WETHPriceFeed is MainnetPriceFeedBase, IWETHPriceFeed {
         assert(priceFeedDisabled == false);
     }
 
-    function _fetchPrice() internal override returns (uint256) {
+    function _fetchPrice() internal override returns (uint256, bool) {
         (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
 
         // If the Chainlink response was invalid in this transaction, return the last good ETH-USD price calculated
-        if (ethUsdOracleDown) return _disableFeedAndShutDown(address(ethUsdOracle.aggregator));
+        if (ethUsdOracleDown) {return (_disableFeedAndShutDown(address(ethUsdOracle.aggregator)), true);}
 
         lastGoodPrice = ethUsdPrice;
 
-        return ethUsdPrice;
+        return (ethUsdPrice, false);
     }
 }
