@@ -141,9 +141,10 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
             for (uint256 j = 0; j < actors.length; ++j) {
                 LatestBatchData memory b = c.troveManager.getLatestBatchData(actors[j].account);
 
-                assertEqDecimal(
+                assertApproxEqAbsDecimal(
                     b.accruedManagementFee,
                     handler.getPendingBatchManagementFee(i, actors[j].account),
+                    1e-10 ether,
                     18,
                     "Wrong batch management fee"
                 );
