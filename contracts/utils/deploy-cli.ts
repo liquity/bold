@@ -40,14 +40,6 @@ e.g. --chain-id can be set via CHAIN_ID instead. Parameters take precedence over
 
 const ANVIL_FIRST_ACCOUNT = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
-const PROTOCOL_CONTRACTS_VALID_NAMES = [
-  "WETHTester",
-  "BoldToken",
-  "CollateralRegistry",
-  "HintHelpers",
-  "MultiTroveGetter",
-];
-
 const argv = minimist(process.argv.slice(2), {
   alias: {
     h: "help",
@@ -183,44 +175,13 @@ Deploying Liquity contracts with the following settings:
   }
 
   // deploy
-  if (options.debug) {
-    console.log(
-      `Command: DEPLOYER=${options.deployer}${options.openDemoTroves ? " OPEN_DEMO_TROVES=true" : ""} forge ${
-        forgeArgs.join(" ")
-      }`,
-    );
-  }
   const deploymentOutput = await $`forge ${forgeArgs}`;
   if (options.debug) {
-    console.log(deploymentOutput.stderr);
+    console.log(deploymentOutput.text());
   }
 
   const deployedContracts = await getDeployedContracts(
     `broadcast/DeployLiquity2.s.sol/${options.chainId}/run-latest.json`,
-  );
-
-  const deployedContractsRecord = Object.fromEntries(deployedContracts);
-
-  const ccall = async (contract: string, method: string, ...args: string[]) => {
-    const result = await $`cast call ${contract} ${method} ${args.join(" ")} --rpc-url '${options.rpcUrl}'`;
-    return result.stdout.trim();
-  };
-
-  const totalCollaterals = Number(
-    await ccall(
-      deployedContractsRecord.CollateralRegistry,
-      "totalCollaterals()",
-    ),
-  );
-
-  const collateralContracts = await Promise.all(
-    Array.from({ length: totalCollaterals }, (_, index) => (
-      getCollateralContracts(
-        index,
-        deployedContractsRecord.CollateralRegistry,
-        options.rpcUrl,
-      )
-    )),
   );
 
   // XXX hotfix: we were leaking Github secrets in "deployer"
@@ -230,9 +191,7 @@ Deploying Liquity contracts with the following settings:
   // write env file
   await fs.writeJson("deployment-context-latest.json", {
     options: safeOptions,
-    deployedContracts,
-    collateralContracts,
-    protocolContracts: Object.fromEntries(filterProtocolContracts(deployedContracts)),
+    deployedContracts: Object.fromEntries(deployedContracts),
   });
 
   // format deployed contracts
@@ -286,10 +245,6 @@ async function getDeployedContracts(jsonPath: string) {
   throw new Error("Invalid deployment log: " + JSON.stringify(latestRun));
 }
 
-function filterProtocolContracts(contracts: Awaited<ReturnType<typeof getDeployedContracts>>) {
-  return contracts.filter(([name]) => PROTOCOL_CONTRACTS_VALID_NAMES.includes(name));
-}
-
 function safeParseInt(value: string) {
   const parsed = parseInt(value, 10);
   return isNaN(parsed) ? undefined : parsed;
@@ -330,47 +285,4 @@ async function parseArgs() {
   options.verifierUrl ??= process.env.VERIFIER_URL;
 
   return { options, networkPreset };
-}
-
-async function castCall(rpcUrl: string, contract: string, method: string, ...args: string[]) {
-  const result = await $`cast call ${contract} ${method} ${args.join(" ")} --rpc-url '${rpcUrl}'`;
-  return result.stdout.trim();
-}
-
-async function getCollateralContracts(
-  collateralIndex: number,
-  collateralRegistry: string,
-  rpcUrl: string,
-) {
-  const [token, troveManager] = await Promise.all([
-    castCall(rpcUrl, collateralRegistry, "getToken(uint256)(address)", String(collateralIndex)),
-    castCall(rpcUrl, collateralRegistry, "getTroveManager(uint256)(address)", String(collateralIndex)),
-  ]);
-
-  const [
-    activePool,
-    borrowerOperations,
-    defaultPool,
-    priceFeed,
-    sortedTroves,
-    stabilityPool,
-  ] = await Promise.all([
-    castCall(rpcUrl, troveManager, "activePool()(address)"),
-    castCall(rpcUrl, troveManager, "borrowerOperationsAddress()(address)"),
-    castCall(rpcUrl, troveManager, "defaultPool()(address)"),
-    castCall(rpcUrl, troveManager, "priceFeed()(address)"),
-    castCall(rpcUrl, troveManager, "sortedTroves()(address)"),
-    castCall(rpcUrl, troveManager, "stabilityPool()(address)"),
-  ]);
-
-  return {
-    activePool,
-    borrowerOperations,
-    defaultPool,
-    priceFeed,
-    sortedTroves,
-    stabilityPool,
-    token,
-    troveManager,
-  };
 }

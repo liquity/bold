@@ -33,33 +33,14 @@ const argv = minimist(process.argv.slice(2), {
 
 const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 const ZDeploymentContext = z.object({
-  deployedContracts: z.array(z.tuple([z.string(), ZAddress])),
-  collateralContracts: z.array(
-    z.object({
-      activePool: ZAddress,
-      borrowerOperations: ZAddress,
-      defaultPool: ZAddress,
-      priceFeed: ZAddress,
-      sortedTroves: ZAddress,
-      stabilityPool: ZAddress,
-      token: ZAddress,
-      troveManager: ZAddress,
-    }),
-  ),
-  protocolContracts: z.object({
-    BoldToken: ZAddress,
-    CollateralRegistry: ZAddress,
-    HintHelpers: ZAddress,
-    MultiTroveGetter: ZAddress,
-    WETHTester: ZAddress,
-  }),
+  deployedContracts: z.record(ZAddress),
 });
 
 type DeploymentContext = z.infer<typeof ZDeploymentContext>;
 
 const NULL_ADDRESS = `0x${"0".repeat(40)}`;
 
-export function main() {
+export async function main() {
   const options = {
     help: argv["help"],
     append: argv["append"],
@@ -77,12 +58,12 @@ export function main() {
     process.exit(1);
   }
 
-  const deploymentContext = parseDeploymentContext(
-    fs.readFileSync(options.inputJsonPath, "utf-8"),
+  const { deployedContracts } = parseDeploymentContext(
+    await fs.readFile(options.inputJsonPath, "utf-8"),
   );
 
   const outputEnv = objectToEnvironmentVariables(
-    deployedContractsToAppEnvVariables(deploymentContext),
+    deployedContractsToAppEnvVariables(deployedContracts),
   );
 
   if (!options.outputEnvPath) {
@@ -90,11 +71,11 @@ export function main() {
     process.exit(0);
   }
 
-  fs.ensureFileSync(options.outputEnvPath);
+  await fs.ensureFile(options.outputEnvPath);
   if (options.append) {
-    fs.appendFileSync(options.outputEnvPath, `\n${outputEnv}\n`);
+    await fs.appendFile(options.outputEnvPath, `\n${outputEnv}\n`);
   } else {
-    fs.writeFileSync(options.outputEnvPath, `${outputEnv}\n`);
+    await fs.writeFile(options.outputEnvPath, `${outputEnv}\n`);
   }
 
   console.log(`\nEnvironment variables written to ${options.outputEnvPath}.\n`);
@@ -104,77 +85,52 @@ function objectToEnvironmentVariables(object: Record<string, unknown>) {
   return Object.entries(object)
     .map(([key, value]) => `${key}=${value}`)
     .sort()
-    .sort((a, b) => {
-      if (a.includes("_COLL_") && !b.includes("_COLL_")) {
-        return -1;
-      }
-      if (!a.includes("_COLL_") && b.includes("_COLL_")) {
-        return 1;
-      }
-      return 0;
-    })
     .join("\n");
 }
 
-function deployedContractsToAppEnvVariables(deployedContext: DeploymentContext) {
+function deployedContractsToAppEnvVariables(deployedContracts: DeploymentContext["deployedContracts"]) {
   const appEnvVariables: Record<string, string> = {};
 
-  // protocol contracts
-  for (const [contractName, address] of Object.entries(deployedContext.protocolContracts)) {
-    const envVarName = contractNameToAppEnvVariable(contractName, "CONTRACT");
+  for (const [contractName, address] of Object.entries(deployedContracts)) {
+    const envVarName = contractNameToAppEnvVariable(contractName);
     if (envVarName) {
       appEnvVariables[envVarName] = address;
     }
   }
+
   appEnvVariables.NEXT_PUBLIC_CONTRACT_FUNCTION_CALLER = NULL_ADDRESS;
   appEnvVariables.NEXT_PUBLIC_CONTRACT_HINT_HELPERS = NULL_ADDRESS;
-
-  // collateral contracts
-  for (const [index, contract] of Object.entries(deployedContext.collateralContracts)) {
-    for (const [contractName, address] of Object.entries(contract)) {
-      const envVarName = contractNameToAppEnvVariable(contractName, `COLL_${index}_CONTRACT`);
-      if (envVarName) {
-        appEnvVariables[envVarName] = address;
-      }
-    }
-  }
 
   return appEnvVariables;
 }
 
-function contractNameToAppEnvVariable(contractName: string, prefix: string = "") {
-  prefix = `NEXT_PUBLIC_${prefix}`;
+function contractNameToAppEnvVariable(contractName: string) {
   switch (contractName) {
-    // protocol contracts
+    case "ActivePool":
+      return "NEXT_PUBLIC_CONTRACT_ACTIVE_POOL";
     case "BoldToken":
-      return `${prefix}_BOLD_TOKEN`;
-    case "CollateralRegistry":
-      return `${prefix}_COLLATERAL_REGISTRY`;
-    case "HintHelpers":
-      return `${prefix}_HINT_HELPERS`;
-    case "MultiTroveGetter":
-      return `${prefix}_MULTI_TROVE_GETTER`;
-    case "WETH":
-    case "WETHTester":
-      return `${prefix}_WETH`;
-
-    // collateral contracts
-    case "activePool":
-      return `${prefix}_ACTIVE_POOL`;
-    case "borrowerOperations":
-      return `${prefix}_BORROWER_OPERATIONS`;
-    case "defaultPool":
-      return `${prefix}_DEFAULT_POOL`;
-    case "priceFeed":
-      return `${prefix}_PRICE_FEED`;
-    case "sortedTroves":
-      return `${prefix}_SORTED_TROVES`;
-    case "stabilityPool":
-      return `${prefix}_STABILITY_POOL`;
-    case "token":
-      return `${prefix}_TOKEN`;
-    case "troveManager":
-      return `${prefix}_TROVE_MANAGER`;
+      return "NEXT_PUBLIC_CONTRACT_BOLD_TOKEN";
+    case "BorrowerOperations":
+      return "NEXT_PUBLIC_CONTRACT_BORROWER_OPERATIONS";
+    case "CollSurplusPool":
+      return "NEXT_PUBLIC_CONTRACT_COLL_SURPLUS_POOL";
+    case "DefaultPool":
+      return "NEXT_PUBLIC_CONTRACT_DEFAULT_POOL";
+    case "ERC20Faucet":
+      return "NEXT_PUBLIC_CONTRACT_COLL_TOKEN";
+    case "GasPool":
+      return "NEXT_PUBLIC_CONTRACT_GAS_POOL";
+    case "MockInterestRouter":
+      return "NEXT_PUBLIC_CONTRACT_INTEREST_ROUTER";
+    case "PriceFeedTestnet":
+      return "NEXT_PUBLIC_CONTRACT_PRICE_FEED";
+    case "SortedTroves":
+      return "NEXT_PUBLIC_CONTRACT_SORTED_TROVES";
+    case "StabilityPool":
+      return "NEXT_PUBLIC_CONTRACT_STABILITY_POOL";
+    case "TroveManager":
+    case "TroveManagerTester":
+      return "NEXT_PUBLIC_CONTRACT_TROVE_MANAGER";
   }
   return null;
 }
