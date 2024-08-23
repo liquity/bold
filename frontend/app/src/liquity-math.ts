@@ -41,11 +41,11 @@ export function getLeverageFactorFromLiquidationPrice(
   liquidationPrice: Dnum,
   collPrice: Dnum,
   minCollRatio: number,
-): number {
+): null | number {
   const collPriceRatio = dn.mul(collPrice, minCollRatio);
 
   if (!dn.lt(liquidationPrice, collPriceRatio)) {
-    return Number.POSITIVE_INFINITY;
+    return null;
   }
 
   return Math.round(
@@ -142,7 +142,7 @@ export function getLoanDetails(
     ? getLeverageFactorFromLtv(ltv)
     : null;
 
-  const depositPreLeverage = leverageFactor === null || deposit === null
+  const depositPreLeverage = deposit === null || leverageFactor === null
     ? null
     : dn.div(deposit, leverageFactor);
 

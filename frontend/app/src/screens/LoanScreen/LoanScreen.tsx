@@ -487,7 +487,7 @@ function UpdateLeveragePositionPanel({ loan }: { loan: PositionLoan }) {
     collPrice: collPrice ?? dn.from(0, 18),
     collToken: collateral,
     depositPreLeverage: newDepositPreLeverage,
-    updatePriority: "leverageFactor",
+    updatePriority: "liquidationPrice",
   });
 
   const initialLeverageFactorSet = useRef(false);
@@ -499,13 +499,13 @@ function UpdateLeveragePositionPanel({ loan }: { loan: PositionLoan }) {
   }, [leverageField.updateLeverageFactor, loanDetails.leverageFactor]);
 
   const newLoanDetails = getLoanDetails(
-    newDepositPreLeverage && dn.mul(
-      newDepositPreLeverage,
+    dn.mul(
+      newDepositPreLeverage ?? dn.from(0, 18),
       leverageField.leverageFactor,
     ),
     newDepositPreLeverage && collPrice && dn.mul(
       dn.sub(leverageField.leverageFactor, dn.from(1, 18)),
-      dn.mul(newDepositPreLeverage, collPrice),
+      dn.mul(newDepositPreLeverage ?? dn.from(0, 18), collPrice),
     ),
     loanDetails.interestRate,
     collateral.collateralRatio,

@@ -236,7 +236,10 @@ export function useLeverageField({
     {
       onChange: ({ parsed: liquidationPrice, focused }) => {
         if (liquidationPrice && dn.gt(liquidationPrice, 0) && liquidationPriceField.isFocused && focused) {
-          setLeverageFactor(getLeverageFactorFromLiquidationPriceClamped(liquidationPrice));
+          const lf = getLeverageFactorFromLiquidationPriceClamped(liquidationPrice);
+          if (lf !== null) {
+            setLeverageFactor(lf);
+          }
         }
       },
       onFocusChange: ({ focused, parsed: price }) => {
@@ -246,7 +249,10 @@ export function useLeverageField({
         // Make sure the the input value corresponds to the leverage
         // factor matching to the desired liquidation price.
         if (!focused && price) {
-          updateLeverageFactor(getLeverageFactorFromLiquidationPriceClamped(price));
+          const lf = getLeverageFactorFromLiquidationPriceClamped(price);
+          if (lf !== null) {
+            setLeverageFactor(lf);
+          }
         }
       },
     },
@@ -281,7 +287,7 @@ export function useLeverageField({
     if (updatePriority === "leverageFactor") {
       timer = setTimeout(() => {
         if (liquidationPriceField.parsed && !isFocused.current) {
-          updateLeverageFactor(getLeverageFactorFromLiquidationPriceClamped(liquidationPriceField.parsed));
+          // updateLeverageFactor(getLeverageFactorFromLiquidationPriceClamped(liquidationPriceField.parsed));
         }
       }, 100);
     }
