@@ -1817,6 +1817,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             uint256 newTCR = _TCR(i);
 
             // Preconditions
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertTrue(_batchManagers[i].has(msg.sender), "Should have failed as batch manager wasn't valid");
             assertGeDecimal(
                 newAnnualInterestRate, batch.interestRateMin, 18, "Should have failed as interest rate wasn't in range"
@@ -1861,7 +1862,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             (selector, v.errorString) = _decodeCustomError(revertData);
 
             // Justify failures
-            if (selector == BorrowerOperations.InvalidInterestBatchManager.selector) {
+            if (selector == BorrowerOperations.IsShutDown.selector) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else if (selector == BorrowerOperations.InvalidInterestBatchManager.selector) {
                 assertFalse(_batchManagers[i].has(msg.sender), "Shouldn't have failed as batch manager was valid");
             } else if (selector == BorrowerOperations.InterestNotInRange.selector) {
                 assertFalse(
