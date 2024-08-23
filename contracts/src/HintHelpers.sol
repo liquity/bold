@@ -138,12 +138,23 @@ contract HintHelpers is IHintHelpers {
         ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
         IActivePool activePool = troveManager.activePool();
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
+        (,,,,,,,, address batchManager,) = troveManager.Troves(_troveId);
 
         TroveChange memory troveChange;
         troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
         troveChange.debtIncrease = _debtIncrease;
-        troveChange.newWeightedRecordedDebt = (trove.entireDebt + _debtIncrease) * trove.annualInterestRate;
-        troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
+
+        if (batchManager == address(0)) {
+            troveChange.newWeightedRecordedDebt = (trove.entireDebt + _debtIncrease) * trove.annualInterestRate;
+            troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
+        } else {
+            LatestBatchData memory batch = troveManager.getLatestBatchData(batchManager);
+            troveChange.batchAccruedManagementFee = batch.accruedManagementFee;
+            troveChange.newWeightedRecordedDebt = (
+                batch.entireDebtWithoutRedistribution + trove.redistBoldDebtGain + _debtIncrease
+            ) * batch.annualInterestRate;
+            troveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
+        }
 
         uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
         return _calcUpfrontFee(_debtIncrease, avgInterestRate);
