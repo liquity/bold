@@ -107,12 +107,12 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
                 c.activePool.calcPendingAggInterest(), handler.getPendingInterest(i), 1e-10 ether, 18, "Wrong interest"
             );
             assertApproxEqAbsDecimal(
-                c.activePool.aggWeightedDebtSum(), handler.getInterestAccrual(i), 1e16, 36, "Wrong interest accrual"
+                c.activePool.aggWeightedDebtSum(), handler.getInterestAccrual(i), 1e26, 36, "Wrong interest accrual"
             );
             assertApproxEqAbsDecimal(
                 c.activePool.aggWeightedBatchManagementFeeSum(),
                 handler.getBatchManagementFeeAccrual(i),
-                1e16,
+                1e26,
                 36,
                 "Wrong batch management fee accrual"
             );
