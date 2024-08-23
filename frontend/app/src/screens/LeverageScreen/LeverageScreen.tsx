@@ -1,25 +1,17 @@
 "use client";
 
-import type { Dnum } from "dnum";
-
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
-import {
-  INTEREST_RATE_INCREMENT,
-  INTEREST_RATE_MAX,
-  INTEREST_RATE_MIN,
-  LEVERAGE_FACTOR_MIN,
-  LEVERAGE_FACTOR_SUGGESTIONS,
-  LTV_RISK,
-  MAX_LTV_ALLOWED,
-} from "@/src/constants";
+import { INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import content from "@/src/content";
 import { ACCOUNT_BALANCES, getDebtBeforeRateBucketIndex, INTEREST_CHART } from "@/src/demo-mode";
-import { useAccount } from "@/src/eth/Ethereum";
 import { useInputFieldValue } from "@/src/form-utils";
-import { usePrice } from "@/src/prices";
+import { getRedemptionRisk } from "@/src/liquity-math";
+import { useAccount } from "@/src/services/Ethereum";
+import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
@@ -32,7 +24,6 @@ import {
   InputField,
   lerp,
   norm,
-  PillButton,
   Slider,
   TextButton,
   TokenIcon,
@@ -40,17 +31,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { match } from "ts-pattern";
-// import { useAction } from "@/src/actions";
-import {
-  getLeveragedLiquidationPrice,
-  getLeverageFactorFromLiquidationPrice,
-  getLeverageFactorFromLtv,
-  getLiquidationRiskFromLeverageFactor,
-  getLtvFromLeverageFactor,
-  getRedemptionRisk,
-} from "@/src/liquity-math";
+import { useEffect } from "react";
 
 const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
 
@@ -62,140 +43,47 @@ function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[
 export function LeverageScreen() {
   const account = useAccount();
   const router = useRouter();
-  const ethPriceUsd = usePrice("ETH") ?? dn.from(0, 18);
-  const boldPriceUsd = usePrice("BOLD") ?? dn.from(0, 18);
-
-  // const { action, setAction } = useAction();
 
   // useParams() can return an array, but not with the current
   // routing setup so we can safely assume it’s a string
-  const collateral = String(useParams().collateral ?? "eth").toUpperCase();
-  if (!isCollateralSymbol(collateral)) {
-    throw new Error(`Invalid collateral symbol: ${collateral}`);
+  const collSymbol = String(useParams().collateral ?? "eth").toUpperCase();
+  if (!isCollateralSymbol(collSymbol)) {
+    throw new Error(`Invalid collateral symbol: ${collSymbol}`);
   }
-  const collateralIndex = collateralSymbols.indexOf(collateral);
+  const collateralIndex = collateralSymbols.indexOf(collSymbol);
+  const collateral = COLLATERALS[collateralIndex];
 
-  const { collateralRatio } = COLLATERALS[collateralIndex];
+  const boldPriceUsd = usePrice("BOLD") ?? dn.from(0, 18);
+  const collPrice = usePrice(collateral.symbol) ?? dn.from(0, 18);
 
-  const maxLtv = dn.from(1 / collateralRatio, 18);
-  const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED);
-  const maxLeverageFactor = getLeverageFactorFromLtv(maxLtv);
-  const maxLeverageFactorAllowed = getLeverageFactorFromLtv(maxLtvAllowed);
-  const mediumRiskLeverageFactor = getLeverageFactorFromLtv(dn.mul(maxLtv, LTV_RISK.medium));
-  const highRiskLeverageFactor = getLeverageFactorFromLtv(dn.mul(maxLtv, LTV_RISK.high));
-
-  const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral}`);
+  const depositPreLeverage = useInputFieldValue((value) => `${dn.format(value)} ${collateral.name}`);
   const interestRate = useInputFieldValue((value) => `${dn.format(value)}%`);
 
-  const ethPriceBold = dn.mul(ethPriceUsd, boldPriceUsd);
+  const ethPriceBold = dn.mul(collPrice, boldPriceUsd);
 
-  const getLeverageFactorFromLiquidationPriceClamped = (liquidationPrice: Dnum) => {
-    const liquidationPriceMin = getLeveragedLiquidationPrice(
-      ethPriceBold,
-      LEVERAGE_FACTOR_MIN,
-      collateralRatio,
-    );
-    const liquidationPriceMax = getLeveragedLiquidationPrice(
-      ethPriceBold,
-      maxLeverageFactor,
-      collateralRatio,
-    );
-    const leverageFactor = getLeverageFactorFromLiquidationPrice(
-      ethPriceBold,
-      liquidationPrice,
-      collateralRatio,
-    );
-    return match([liquidationPrice, leverageFactor])
-      .when(([l, f]) => f === 0 || dn.lt(l, liquidationPriceMin), () => LEVERAGE_FACTOR_MIN)
-      .when(([l]) => dn.gt(l, liquidationPriceMax), () => maxLeverageFactor)
-      .otherwise(() => leverageFactor);
-  };
+  const depositUsd = depositPreLeverage.parsed && dn.mul(depositPreLeverage.parsed, collPrice);
+  const depositBold = depositPreLeverage.parsed && dn.mul(depositPreLeverage.parsed, ethPriceBold);
 
-  const leverageFactorSuggestions = useMemo(() => {
-    return LEVERAGE_FACTOR_SUGGESTIONS.map((factor) => (
-      Math.round(lerp(LEVERAGE_FACTOR_MIN, maxLeverageFactor, factor) * 10) / 10
-    ));
-  }, [maxLeverageFactor]);
-
-  const [liqPriceFocused, setLiqPriceFocused] = useState(false);
-  const [leverageFactor, setLeverageFactor] = useState(LEVERAGE_FACTOR_SUGGESTIONS[0]);
-
-  const depositUsd = deposit.parsed && dn.mul(deposit.parsed, ethPriceUsd);
-  const depositBold = deposit.parsed && dn.mul(deposit.parsed, ethPriceBold);
-  const leveragedDeposit = deposit.parsed ? dn.mul(deposit.parsed, leverageFactor) : null;
-  const totalDebtBold = depositBold && dn.mul(dn.sub(leverageFactor, dn.from(1, 18)), depositBold);
-
-  const ltv = getLtvFromLeverageFactor(leverageFactor);
-
-  const ethLiqPrice = useInputFieldValue((value) => `$ ${dn.format(value)}`, {
-    defaultValue: dn.toString(
-      getLeveragedLiquidationPrice(
-        ethPriceBold,
-        leverageFactorSuggestions[0],
-        collateralRatio,
-      ),
-      2,
-    ),
-    onChange: ({ parsed: price }) => {
-      if (price && dn.gt(price, 0)) {
-        setLeverageFactor(getLeverageFactorFromLiquidationPriceClamped(price));
-      }
-    },
-    onFocusChange: ({ focus }) => {
-      setLiqPriceFocused(focus);
-
-      // recalculate exact liquidation price based on the selected leverage factor
-      if (!focus) {
-        ethLiqPrice.setValue(dn.toString(
-          getLeveragedLiquidationPrice(
-            ethPriceBold,
-            leverageFactor,
-            collateralRatio,
-          ),
-          2,
-        ));
-      }
-    },
+  const leverageField = useLeverageField({
+    updatePriority: "liquidationPrice",
+    depositPreLeverage: depositPreLeverage.parsed,
+    collPrice,
+    collToken: COLLATERALS[collateralIndex],
   });
 
-  // update liquidation price when ETH price changes
-  const lastEthPriceBold = useRef(ethPriceBold);
-  useEffect(() => {
-    if (!liqPriceFocused && !dn.eq(ethPriceBold, lastEthPriceBold.current)) {
-      ethLiqPrice.setValue(
-        dn.toString(getLeveragedLiquidationPrice(ethPriceBold, leverageFactor, collateralRatio), 2),
-      );
-      lastEthPriceBold.current = ethPriceBold;
-    }
-  }, [
-    collateralRatio,
-    ethLiqPrice,
-    ethPriceBold,
-    leverageFactor,
-    liqPriceFocused,
-  ]);
+  const totalDebtBold = depositBold && dn.mul(
+    dn.sub(leverageField.leverageFactor, dn.from(1, 18)),
+    depositBold,
+  );
 
-  const liquidationRisk = leverageFactor
-    ? getLiquidationRiskFromLeverageFactor(
-      leverageFactor,
-      mediumRiskLeverageFactor,
-      highRiskLeverageFactor,
-    )
-    : null;
-
-  const redemptionRisk = getRedemptionRisk(interestRate.parsed && dn.div(interestRate.parsed, 100));
-
-  const updateLeverageFactor = useCallback((factor: number) => {
-    setLeverageFactor(factor);
-    ethLiqPrice.setValue(
-      dn.toString(getLeveragedLiquidationPrice(ethPriceBold, factor, collateralRatio), 2),
-    );
-  }, [collateralRatio, ethLiqPrice, ethPriceBold]);
+  const redemptionRisk = getRedemptionRisk(
+    interestRate.parsed && dn.div(interestRate.parsed, 100),
+  );
 
   // reset leverage when collateral changes
   useEffect(() => {
-    updateLeverageFactor(leverageFactorSuggestions[0]);
-  }, [collateral, leverageFactorSuggestions]);
+    leverageField.updateLeverageFactor(leverageField.leverageFactorSuggestions[0]);
+  }, [collateral.symbol, leverageField.leverageFactorSuggestions]);
 
   const boldInterestPerYear = interestRate.parsed
     && totalDebtBold
@@ -212,8 +100,8 @@ export function LeverageScreen() {
   );
 
   const allowSubmit = account.isConnected
-    && deposit.parsed
-    && dn.gt(deposit.parsed, 0)
+    && depositPreLeverage.parsed
+    && dn.gt(depositPreLeverage.parsed, 0)
     && interestRate.parsed
     && dn.gt(interestRate.parsed, 0);
 
@@ -257,8 +145,8 @@ export function LeverageScreen() {
                   menuWidth={300}
                   onSelect={(index) => {
                     setTimeout(() => {
-                      deposit.setValue("");
-                      deposit.focus();
+                      depositPreLeverage.setValue("");
+                      depositPreLeverage.focus();
                     }, 0);
                     router.push(
                       `/leverage/${COLLATERALS[index].symbol.toLowerCase()}`,
@@ -279,167 +167,31 @@ export function LeverageScreen() {
                 }`,
                 end: account.isConnected && (
                   <TextButton
-                    label={`Max ${dn.format(ACCOUNT_BALANCES[collateral])} ${collateral}`}
+                    label={`Max ${dn.format(ACCOUNT_BALANCES[collateral.symbol])} ${collateral.name}`}
                     onClick={() => {
-                      deposit.setValue(dn.toString(ACCOUNT_BALANCES[collateral]));
+                      depositPreLeverage.setValue(dn.toString(ACCOUNT_BALANCES[collateral.symbol]));
                     }}
                   />
                 ),
               }}
-              {...deposit.inputFieldProps}
+              {...depositPreLeverage.inputFieldProps}
             />
           }
           footer={[[
             // eslint-disable-next-line react/jsx-key
-            <Field.FooterInfoEthPrice ethPriceUsd={ethPriceUsd} />,
+            <Field.FooterInfoCollPrice
+              collName={collateral.name}
+              collPriceUsd={collPrice}
+            />,
 
             // eslint-disable-next-line react/jsx-key
-            <Field.FooterInfoMaxLtv maxLtv={dn.div(dn.from(1, 18), collateralRatio)} />,
+            <Field.FooterInfoMaxLtv
+              maxLtv={dn.div(dn.from(1, 18), collateral.collateralRatio)}
+            />,
           ]]}
         />
 
-        <Field
-          // ETH Liquidation price
-          field={
-            <InputField
-              contextual={
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 300,
-                  }}
-                >
-                  <Slider
-                    gradient={[
-                      norm(
-                        mediumRiskLeverageFactor,
-                        LEVERAGE_FACTOR_MIN,
-                        maxLeverageFactorAllowed,
-                      ),
-                      norm(
-                        highRiskLeverageFactor,
-                        LEVERAGE_FACTOR_MIN,
-                        maxLeverageFactorAllowed,
-                      ),
-                    ]}
-                    onChange={(value) => {
-                      updateLeverageFactor(
-                        Math.round(
-                          lerp(LEVERAGE_FACTOR_MIN, maxLeverageFactorAllowed, value) * 10,
-                        ) / 10,
-                      );
-                    }}
-                    value={norm(
-                      leverageFactor,
-                      LEVERAGE_FACTOR_MIN,
-                      maxLeverageFactorAllowed,
-                    )}
-                  />
-                </div>
-              }
-              label={{
-                end: (
-                  <span>
-                    Leverage{" "}
-                    <span
-                      title={dn.format([BigInt(Math.round(leverageFactor * 10)), 1])}
-                      style={{
-                        color: liquidationRisk === "high"
-                          ? "#F36740"
-                          : "#2F3037",
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {dn.format([BigInt(Math.round(leverageFactor * 10)), 1], {
-                        digits: 1,
-                        trailingZeros: true,
-                      })}x
-                    </span>
-                  </span>
-                ),
-                start: content.leverageScreen.liquidationPriceField.label,
-              }}
-              placeholder="0.00"
-              secondary={{
-                start: (
-                  <div>
-                    Total debt {totalDebtBold && dn.gt(totalDebtBold, 0)
-                      ? (
-                        <>
-                          <span
-                            className={css({
-                              fontVariantNumeric: "tabular-nums",
-                            })}
-                          >
-                            {dn.format(totalDebtBold, { digits: 2, trailingZeros: true })}
-                          </span>
-                          {" BOLD"}
-                        </>
-                      )
-                      : "−"}
-                  </div>
-                ),
-                end: (
-                  <HFlex gap={6}>
-                    {leverageFactorSuggestions.map((factor) => (
-                      <PillButton
-                        key={factor}
-                        label={`${factor.toFixed(1)}x`}
-                        onClick={() => updateLeverageFactor(factor)}
-                        warnLevel={getLiquidationRiskFromLeverageFactor(
-                          factor,
-                          mediumRiskLeverageFactor,
-                          highRiskLeverageFactor,
-                        )}
-                      />
-                    ))}
-                    <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.leverageLevel)} />
-                  </HFlex>
-                ),
-              }}
-              {...ethLiqPrice.inputFieldProps}
-            />
-          }
-          footer={[[
-            // eslint-disable-next-line react/jsx-key
-            <>
-              <Field.FooterInfoLiquidationRisk
-                riskLevel={liquidationRisk}
-              />
-              <Field.FooterInfoLoanToValue
-                ltvRatio={ltv}
-                maxLtvRatio={maxLtv}
-              />
-            </>,
-            // eslint-disable-next-line react/jsx-key
-            <HFlex>
-              <span
-                className={css({
-                  color: "contentAlt",
-                })}
-              >
-                Exposure
-              </span>
-              <span
-                className={css({
-                  fontVariantNumeric: "tabular-nums",
-                })}
-              >
-                {leveragedDeposit && dn.gt(leveragedDeposit, 0)
-                  ? `${
-                    dn.format(leveragedDeposit, {
-                      digits: 2,
-                      trailingZeros: true,
-                    })
-                  } ETH`
-                  : "−"}
-              </span>
-              <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.exposure)} />
-            </HFlex>,
-          ]]}
-        />
+        <LeverageField {...leverageField} />
 
         <VFlex gap={0}>
           <Field

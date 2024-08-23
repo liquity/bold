@@ -7,7 +7,7 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS, EARN_POOLS, useDemoMode } from "@/src/demo-mode";
 import { formatAmountCompact } from "@/src/dnum-utils";
-import { useAccount } from "@/src/eth/Ethereum";
+import { useAccount } from "@/src/services/Ethereum";
 import { css, cx } from "@/styled-system/css";
 import { IconArrowRight, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import * as dn from "dnum";

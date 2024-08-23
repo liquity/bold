@@ -6,9 +6,18 @@ import type { Address } from "@liquity2/uikit";
 import type { ComponentProps, ReactNode } from "react";
 import type { Chain } from "wagmi/chains";
 
-import { useConfig } from "@/src/comps/Config/Config";
 import { useDemoMode } from "@/src/demo-mode";
-import { WALLET_CONNECT_PROJECT_ID } from "@/src/env";
+import {
+  CHAIN_BLOCK_EXPLORER,
+  CHAIN_CONTRACT_ENS_REGISTRY,
+  CHAIN_CONTRACT_ENS_RESOLVER,
+  CHAIN_CONTRACT_MULTICALL,
+  CHAIN_CURRENCY,
+  CHAIN_ID,
+  CHAIN_NAME,
+  CHAIN_RPC_URL,
+  WALLET_CONNECT_PROJECT_ID,
+} from "@/src/env";
 import { noop } from "@/src/utils";
 import { useTheme } from "@liquity2/uikit";
 import {
@@ -70,28 +79,37 @@ function useRainbowKitProps(): Omit<ComponentProps<typeof RainbowKitProvider>, "
 }
 
 export function useWagmiConfig() {
-  const { config } = useConfig();
   return useMemo(() => {
     const chain = createChain({
-      id: config.chainId,
-      name: config.chainName,
-      currency: config.chainCurrency,
-      rpcUrl: config.chainRpcUrl,
-      blockExplorer: config.chainBlockExplorer,
-      contractEnsRegistry: config.chainContractEnsRegistry,
-      contractEnsResolver: config.chainContractEnsResolver,
-      contractMulticall: config.chainContractMulticall,
+      id: CHAIN_ID,
+      name: CHAIN_NAME,
+      currency: CHAIN_CURRENCY,
+      rpcUrl: CHAIN_RPC_URL,
+      blockExplorer: CHAIN_BLOCK_EXPLORER,
+      contractEnsRegistry: CHAIN_CONTRACT_ENS_REGISTRY,
+      contractEnsResolver: CHAIN_CONTRACT_ENS_RESOLVER,
+      contractMulticall: CHAIN_CONTRACT_MULTICALL,
     });
     return getDefaultConfig({
       appName: "Liquity v2",
       projectId: WALLET_CONNECT_PROJECT_ID,
       chains: [chain],
       transports: {
-        [chain.id]: http(config.chainRpcUrl),
+        [chain.id]: http(CHAIN_RPC_URL),
       },
       ssr: true,
     });
-  }, [config]);
+  }, [
+    CHAIN_BLOCK_EXPLORER,
+    CHAIN_CONTRACT_ENS_REGISTRY,
+    CHAIN_CONTRACT_ENS_RESOLVER,
+    CHAIN_CONTRACT_MULTICALL,
+    CHAIN_CURRENCY,
+    CHAIN_ID,
+    CHAIN_NAME,
+    CHAIN_RPC_URL,
+    WALLET_CONNECT_PROJECT_ID,
+  ]);
 }
 
 function createChain({

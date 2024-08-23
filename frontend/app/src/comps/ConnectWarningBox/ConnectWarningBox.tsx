@@ -1,4 +1,4 @@
-import { useAccount } from "@/src/eth/Ethereum";
+import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
 import { TextButton } from "@liquity2/uikit";
 

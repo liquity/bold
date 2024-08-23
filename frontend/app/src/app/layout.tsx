@@ -6,12 +6,11 @@ import type { ReactNode } from "react";
 
 import { AboutModal } from "@/src/comps/AboutModal/AboutModal";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
-import { Config } from "@/src/comps/Config/Config";
-import { ConfigModal } from "@/src/comps/ConfigModal/ConfigModal";
 import { APP_TITLE } from "@/src/constants";
 import { DemoMode } from "@/src/demo-mode";
-import { Ethereum } from "@/src/eth/Ethereum";
-import { Prices } from "@/src/prices";
+import { Ethereum } from "@/src/services/Ethereum";
+import { Prices } from "@/src/services/Prices";
+import { TransactionFlow } from "@/src/services/TransactionFlow";
 import { UiKit } from "@liquity2/uikit";
 import { GeistSans } from "geist/font/sans";
 
@@ -29,21 +28,19 @@ export default function Layout({
     <html lang="en">
       <body className={GeistSans.className}>
         <UiKit>
-          <Config>
-            <DemoMode>
-              <Ethereum>
-                <Prices>
-                  <ConfigModal>
-                    <AboutModal>
-                      <AppLayout>
-                        {children}
-                      </AppLayout>
-                    </AboutModal>
-                  </ConfigModal>
-                </Prices>
-              </Ethereum>
-            </DemoMode>
-          </Config>
+          <DemoMode>
+            <Ethereum>
+              <Prices>
+                <TransactionFlow>
+                  <AboutModal>
+                    <AppLayout>
+                      {children}
+                    </AppLayout>
+                  </AboutModal>
+                </TransactionFlow>
+              </Prices>
+            </Ethereum>
+          </DemoMode>
         </UiKit>
       </body>
     </html>

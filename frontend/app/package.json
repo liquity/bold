@@ -11,6 +11,7 @@
     "lint": "pnpm oxlint ./src --import-plugin --nextjs-plugin --react-perf-plugin --jsx-a11y-plugin --allow pedantic",
     "panda-codegen": "panda codegen --silent",
     "test": "vitest",
+    "coverage": "vitest run --coverage ./src",
     "update-liquity-abis": "node --loader ts-node/esm ./scripts/update-liquity-abis.ts"
   },
   "dependencies": {
@@ -38,11 +39,14 @@
     "@types/node": "^22.0.2",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.2.25",
+    "@vitejs/plugin-react": "^4.3.1",
+    "@vitest/coverage-v8": "^2.0.5",
     "dax-sh": "^0.41.0",
     "jsdom": "^24.1.1",
     "oxlint": "^0.6.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4",
+    "vite-tsconfig-paths": "^5.0.1",
     "vitest": "^2.0.5"
   }
 }

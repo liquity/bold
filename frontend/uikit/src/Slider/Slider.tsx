@@ -17,11 +17,13 @@ const HEIGHT = Math.max(HANDLE_SIZE, BAR_HEIGHT, CHART_MAX_HEIGHT * 2) + PADDING
 const GRADIENT_TRANSITION_BLUR = 10;
 
 export function Slider({
+  chart,
   disabled,
   gradient,
-  chart,
   keyboardStep,
   onChange,
+  onDragEnd,
+  onDragStart,
   value,
 }: {
   disabled?: boolean;
@@ -29,6 +31,8 @@ export function Slider({
   chart?: number[];
   keyboardStep?: (value: number, direction: Direction) => number;
   onChange: (value: number) => void;
+  onDragEnd?: () => void;
+  onDragStart?: () => void;
   value: number;
 }) {
   keyboardStep ??= chart
@@ -94,10 +98,13 @@ export function Slider({
     if (!doc || !pressed) return;
 
     const dragMove = (event: MouseEvent | TouchEvent) => {
+      event.preventDefault();
+      onDragStart?.();
       updateValueFromClientX(clientXFromEvent(event));
     };
 
     const dragStop = () => {
+      onDragEnd?.();
       setPressed(false);
     };
 

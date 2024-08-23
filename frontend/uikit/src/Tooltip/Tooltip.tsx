@@ -121,6 +121,7 @@ export function Tooltip({
               onMouseLeave={() => hide(hideDelay)}
               className={css({
                 position: "absolute",
+                zIndex: 1,
                 top: 0,
                 left: 0,
                 width: "100%",
