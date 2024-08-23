@@ -615,8 +615,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         if (isTroveInBatch) {
             batch = _troveManager.getLatestBatchData(batchManager);
 
-            batchFutureDebt =
-                batch.entireDebtWithoutRedistribution + _troveChange.debtIncrease - _troveChange.debtDecrease;
+            batchFutureDebt = batch.entireDebtWithoutRedistribution + vars.trove.redistBoldDebtGain
+                + _troveChange.debtIncrease - _troveChange.debtDecrease;
 
             // TODO: comment
             _troveChange.appliedRedistBoldDebtGain = vars.trove.redistBoldDebtGain;
