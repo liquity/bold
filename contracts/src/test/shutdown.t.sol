@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
@@ -284,7 +286,7 @@ contract ShutdownTest is DevTestSetup {
     }
 
     function testCannotRegisterBatchManagerAfterShutdown() public {
-        uint256 troveId = prepareAndShutdownFirstBranch();
+        prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);
@@ -297,7 +299,7 @@ contract ShutdownTest is DevTestSetup {
         borrowerOperations.registerBatchManager(5e15, 1e18, 10e16, 25e14, 30 days);
         vm.stopPrank();
 
-        uint256 troveId = prepareAndShutdownFirstBranch();
+        prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);
@@ -310,7 +312,7 @@ contract ShutdownTest is DevTestSetup {
         borrowerOperations.registerBatchManager(5e15, 1e18, 10e16, 25e14, 30 days);
         vm.stopPrank();
 
-        uint256 troveId = prepareAndShutdownFirstBranch();
+        prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);

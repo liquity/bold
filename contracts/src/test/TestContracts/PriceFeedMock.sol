@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.18;
 
 import "./Interfaces/IPriceFeedMock.sol";
@@ -21,7 +23,7 @@ contract PriceFeedMock is IPriceFeedMock {
         return PRICE;
     }
 
-    function getEthUsdStalenessThreshold() external view returns (uint256) {
+    function getEthUsdStalenessThreshold() external pure returns (uint256) {
         return 0;
     }
 
