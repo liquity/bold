@@ -4,6 +4,7 @@ import "./TestContracts/DevTestSetup.sol";
 import "./TestContracts/MetadataDeployment.sol";
 
 import "src/NFTMetadata/MetadataNFT.sol";
+import "src/TroveNFT.sol";
 
 contract troveNFTTest is DevTestSetup, MetadataDeployment {
     
@@ -33,8 +34,10 @@ contract troveNFTTest is DevTestSetup, MetadataDeployment {
         uint id = _openTrove();
 
         MetadataNFT metadata = new MetadataNFT(initializedFixedAssetReader);
+        TroveNFT troveNFT = TroveNFT(address(troveManager.troveNFT()));
+        troveNFT.tempSetMetadataNFT(address(metadata));
 
-        string memory uri = metadata.uri(id);
+        string memory uri = troveNFT.tokenURI(id);
 
         emit log_string(uri);
 
