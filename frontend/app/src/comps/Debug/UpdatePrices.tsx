@@ -70,6 +70,7 @@ export function UpdatePrices() {
                 type="range"
                 min={range[0] * 100}
                 max={range[1] * 100}
+                step={100}
                 value={price ? dn.toNumber(price) * 100 : 0}
                 onChange={(e) => updatePrice(token, dn.div(dn.from(e.target.value, 18), 100))}
                 className={css({
