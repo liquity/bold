@@ -262,6 +262,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 totalDebtRedeemed;
         uint256 totalCollRedeemed;
         Redeemed[] redeemed;
+        EnumerableAddressSet batchManagers; // batch managers touched by urgent redemption
     }
 
     struct Batch {
@@ -1259,69 +1260,83 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         _addToUrgentRedemptionBatch(msg.sender);
     }
 
-    // function urgentRedemption(uint256 i, uint256 amount) external {
-    //     i = _bound(i, 0, branches.length - 1);
-    //     amount = _bound(amount, 0, _handlerBold);
+    function urgentRedemption(uint256 i, uint256 amount) external {
+        i = _bound(i, 0, branches.length - 1);
+        amount = _bound(amount, 0, _handlerBold);
 
-    //     TestDeployer.LiquityContractsDev memory c = branches[i];
-    //     uint256 pendingInterest = c.activePool.calcPendingAggInterest();
-    //     UrgentRedemptionTransientState storage r = _planUrgentRedemption(i, amount);
-    //     assertLeDecimal(r.totalDebtRedeemed, amount, 18, "Total redeemed exceeds input amount");
+        TestDeployer.LiquityContractsDev memory c = branches[i];
+        uint256 pendingInterest = c.activePool.calcPendingAggInterest();
+        UrgentRedemptionTransientState storage r = _planUrgentRedemption(i, amount);
+        assertLeDecimal(r.totalDebtRedeemed, amount, 18, "Total redeemed exceeds input amount");
 
-    //     info("redeemed BOLD: ", r.totalDebtRedeemed.decimal());
-    //     info("batch: [", _labelsFrom(r.batch).join(", "), "]");
-    //     logCall("urgentRedemption", i.toString(), amount.decimal());
+        uint256[] memory batchManagementFee = new uint256[](r.batchManagers.size());
+        for (uint256 j = 0; j < r.batchManagers.size(); ++j) {
+            batchManagementFee[j] = c.troveManager.getLatestBatchData(r.batchManagers.get(j)).accruedManagementFee;
+        }
 
-    //     // TODO: randomly deal less than amount?
-    //     _dealBold(msg.sender, amount);
+        info("redeemed BOLD: ", r.totalDebtRedeemed.decimal());
+        info("batch: [", _labelsFrom(r.batch).join(", "), "]");
+        logCall("urgentRedemption", i.toString(), amount.decimal());
 
-    //     string memory errorString;
-    //     vm.prank(msg.sender);
+        // TODO: randomly deal less than amount?
+        _dealBold(msg.sender, amount);
 
-    //     try c.troveManager.urgentRedemption(amount, _troveIdsFrom(r.batch), r.totalCollRedeemed) {
-    //         // Preconditions
-    //         assertTrue(isShutdown[i], "Should have failed as branch hadn't been shut down");
+        string memory errorString;
+        vm.prank(msg.sender);
 
-    //         // Effects (Troves)
-    //         for (uint256 j = 0; j < r.redeemed.length; ++j) {
-    //             Redeemed storage redeemed = r.redeemed[j];
-    //             Trove memory trove = _troves[i][redeemed.troveId];
-    //             trove.applyPending();
-    //             trove.coll -= redeemed.coll;
-    //             trove.debt -= redeemed.debt;
-    //             _troves[i][redeemed.troveId] = trove;
-    //         }
+        try c.troveManager.urgentRedemption(amount, _troveIdsFrom(r.batch), r.totalCollRedeemed) {
+            // Preconditions
+            assertTrue(isShutdown[i], "Should have failed as branch hadn't been shut down");
 
-    //         // Effects (system)
-    //         _mintYield(i, pendingInterest, 0);
-    //     } catch (bytes memory revertData) {
-    //         bytes4 selector;
-    //         (selector, errorString) = _decodeCustomError(revertData);
+            // Effects (Troves)
+            for (uint256 j = 0; j < r.redeemed.length; ++j) {
+                Redeemed storage redeemed = r.redeemed[j];
+                Trove memory trove = _troves[i][redeemed.troveId];
+                trove.applyPending();
+                trove.coll -= redeemed.coll;
+                trove.debt -= redeemed.debt;
+                _troves[i][redeemed.troveId] = trove;
+            }
 
-    //         // Justify failures
-    //         if (selector == TroveManager.NotShutDown.selector) {
-    //             assertFalse(isShutdown[i], "Shouldn't have failed as branch had been shut down");
-    //         } else {
-    //             revert(string.concat("Unexpected error: ", errorString));
-    //         }
-    //     }
+            // Effects (batches)
+            for (uint256 j = 0; j < r.batchManagers.size(); ++j) {
+                _touchBatch(i, r.batchManagers.get(j));
+            }
 
-    //     if (bytes(errorString).length > 0) {
-    //         if (_assumeNoExpectedFailures) vm.assume(false);
+            // Effects (system)
+            _mintYield(i, pendingInterest, 0);
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, errorString) = _decodeCustomError(revertData);
 
-    //         info("Expected error: ", errorString);
-    //         _log();
+            // Justify failures
+            if (selector == TroveManager.NotShutDown.selector) {
+                assertFalse(isShutdown[i], "Shouldn't have failed as branch had been shut down");
+            } else {
+                revert(string.concat("Unexpected error: ", errorString));
+            }
+        }
 
-    //         // Cleanup (failure)
-    //         _sweepBold(msg.sender, amount);
-    //     } else {
-    //         // Cleanup (success)
-    //         _sweepBold(msg.sender, amount - r.totalDebtRedeemed);
-    //         _sweepColl(i, msg.sender, r.totalCollRedeemed);
-    //     }
+        if (bytes(errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
 
-    //     _resetUrgentRedemption();
-    // }
+            info("Expected error: ", errorString);
+            _log();
+
+            // Cleanup (failure)
+            _sweepBold(msg.sender, amount);
+        } else {
+            // Cleanup (success)
+            _sweepBold(msg.sender, amount - r.totalDebtRedeemed);
+            _sweepColl(i, msg.sender, r.totalCollRedeemed);
+
+            for (uint256 j = 0; j < r.batchManagers.size(); ++j) {
+                _sweepBold(r.batchManagers.get(j), batchManagementFee[j]);
+            }
+        }
+
+        _resetUrgentRedemption();
+    }
 
     function applyMyPendingDebt(uint256 i, uint32 upperHintSeed, uint32 lowerHintSeed) external {
         ApplyMyPendingDebtContext memory v;
@@ -2314,6 +2329,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             r.redeemed.push(Redeemed({troveId: troveId, coll: collRedeemed, debt: debtRedeemed}));
 
+            address batchManager = _batchManagerOf[i][troveId];
+            if (batchManager != address(0)) r.batchManagers.add(batchManager);
+
             r.totalCollRedeemed += collRedeemed;
             r.totalDebtRedeemed += debtRedeemed;
 
@@ -2323,6 +2341,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     function _resetUrgentRedemption() internal {
         _urgentRedemption.redeemedIds.reset();
+        _urgentRedemption.batchManagers.reset();
         delete _urgentRedemption;
     }
 
