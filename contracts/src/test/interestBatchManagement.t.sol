@@ -277,13 +277,30 @@ contract InterestBatchManagementTest is DevTestSetup {
     }
 
     function testLowerBatchManagementFeeDoesNotApplyRedistributionGains() public {
-        uint256 troveId = openTroveAndJoinBatchManager();
+        uint256 ATroveId = openTroveAndJoinBatchManager();
 
         // TODO: Generate redistributions and check below
+        // Open a trove to be liquidated and redistributed
+        priceFeed.setPrice(2000e18);
+        uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, 5e16);
+        // Price goes down
+        priceFeed.setPrice(1000e18);
+        // C is liquidated
+        liquidate(A, CTroveId);
+
+        // Check A has redistribution gains
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(ATroveId);
+        assertGt(troveData.redistBoldDebtGain, 0, "A should have redist gains");
+
+        uint256 troveRecordedDebtBefore = troveData.recordedDebt;
 
         vm.startPrank(B);
         borrowerOperations.lowerBatchManagementFee(10e14);
         vm.stopPrank();
+
+        troveData = troveManager.getLatestTroveData(ATroveId);
+        assertGt(troveData.redistBoldDebtGain, 0, "A should have redist gains");
+        assertEq(troveData.recordedDebt, troveRecordedDebtBefore, "Recorded debt should stay the same");
     }
 
     function testChangeBatchInterestRate() public {
@@ -353,15 +370,38 @@ contract InterestBatchManagementTest is DevTestSetup {
     }
 
     function testChangeBatchInterestRateDoesNotApplyRedistributionGains() public {
-        uint256 troveId = openTroveAndJoinBatchManager();
+        uint256 ATroveId = openTroveAndJoinBatchManager();
 
         // TODO: Generate redistributions and check below
+        // Open a trove to be liquidated and redistributed
+        priceFeed.setPrice(2000e18);
+        uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, 5e16);
+        // Price goes down
+        priceFeed.setPrice(1000e18);
+        // C is liquidated
+        liquidate(A, CTroveId);
 
-        vm.warp(block.timestamp + MIN_INTEREST_RATE_CHANGE_PERIOD);
+        // Check A has redistribution gains
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(ATroveId);
+        assertGt(troveData.redistBoldDebtGain, 0, "A should have redist gains");
 
+        troveData = troveManager.getLatestTroveData(ATroveId);
+
+        uint256 troveRecordedDebtBefore = troveData.recordedDebt;
+
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1 days);
+        troveData = troveManager.getLatestTroveData(ATroveId);
+
+        uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(ATroveId);
+        uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
         vm.startPrank(B);
         borrowerOperations.setBatchManagerAnnualInterestRate(6e16, 0, 0, 100000e18);
         vm.stopPrank();
+        troveData = troveManager.getLatestTroveData(ATroveId);
+
+        troveData = troveManager.getLatestTroveData(ATroveId);
+        assertGt(troveData.redistBoldDebtGain, 0, "A should have redist gains");
+        assertEq(troveData.recordedDebt, troveRecordedDebtBefore + troveAccruedInterest + batchAccruedManagementFee, "Recorded debt mismatch");
     }
 
     function testSwitchFromOldToNewBatchManager() public {
