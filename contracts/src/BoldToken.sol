@@ -82,7 +82,7 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
     }
 
     function returnFromPool(address _poolAddress, address _receiver, uint256 _amount) external override {
-        _requireCallerIsTroveMorSP();
+        _requireCallerIsStabilityPool();
         _transfer(_poolAddress, _receiver, _amount);
     }
 
@@ -128,12 +128,5 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
 
     function _requireCallerIsStabilityPool() internal view {
         require(stabilityPoolAddresses[msg.sender], "Bold: Caller is not the StabilityPool");
-    }
-
-    function _requireCallerIsTroveMorSP() internal view {
-        require(
-            troveManagerAddresses[msg.sender] || stabilityPoolAddresses[msg.sender],
-            "Bold: Caller is neither TroveManager nor StabilityPool"
-        );
     }
 }
