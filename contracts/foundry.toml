@@ -3,6 +3,7 @@ src = "src"
 out = "out"
 libs = ["lib"]
 evm_version = 'shanghai'
+ignored_error_codes = []
 
 [invariant]
 call_override = false
