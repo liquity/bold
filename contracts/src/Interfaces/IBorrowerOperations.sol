@@ -88,6 +88,8 @@ interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
 
     function applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint) external;
 
+    function onLiquidateTrove(uint256 _troveId) external;
+
     function claimCollateral() external;
 
     function hasBeenShutDown() external view returns (bool);

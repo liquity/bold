@@ -289,6 +289,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             collSurplusPool.accountSurplus(owner, singleLiquidation.collSurplus);
         }
 
+        // Wipe out state in BO
+        borrowerOperations.onLiquidateTrove(_troveId);
+
         emit TroveUpdated(
             _troveId,
             0, // _debt

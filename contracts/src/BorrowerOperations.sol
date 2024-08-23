@@ -144,6 +144,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error BatchManagerExists();
     error BatchManagerNotNew();
     error NewFeeNotLower();
+    error CallerNotTroveManager();
     error CallerNotPriceFeed();
     error MinGeMax();
     error AnnualManagementFeeTooHigh();
@@ -740,6 +741,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         // Send the collateral back to the user
         activePoolCached.sendColl(receiver, trove.entireColl);
 
+        _wipeTroveMappings(_troveId);
+
         return trove.entireColl;
     }
 
@@ -1134,6 +1137,21 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         return _calcInterest(_debt * _avgInterestRate, UPFRONT_INTEREST_PERIOD);
     }
 
+    // Call from TM to clean state here
+    function onLiquidateTrove(uint256 _troveId) external {
+        _requireCallerIsTroveManager();
+
+        _wipeTroveMappings(_troveId);
+    }
+
+    function _wipeTroveMappings(uint256 _troveId) internal {
+
+        delete interestIndividualDelegateOf[_troveId];
+        delete interestBatchManagerOf[_troveId];
+        delete addManagerOf[_troveId];
+        delete removeManagerReceiverOf[_troveId];
+    }
+
     /**
      * Claim remaining collateral from a liquidation with ICR exceeding the liquidation penalty
      */
@@ -1466,6 +1484,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     {
         if (_oldBatchManagerAddress == _newBatchManagerAddress) {
             revert BatchManagerNotNew();
+        }
+    }
+
+    function _requireCallerIsTroveManager() internal view {
+        if (msg.sender != address(troveManager)) {
+            revert CallerNotTroveManager();
         }
     }
 
