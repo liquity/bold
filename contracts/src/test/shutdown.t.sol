@@ -71,6 +71,7 @@ contract ShutdownTest is DevTestSetup {
         // Set first branch as default
         borrowerOperations = contractsArray[0].borrowerOperations;
         troveManager = contractsArray[0].troveManager;
+        priceFeed = contractsArray[0].priceFeed;
         MCR = troveManager.get_MCR();
         SCR = troveManager.get_SCR();
     }
@@ -273,31 +274,86 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
     }
 
-    function testCannotLiquidateAfterShutdown() public {
-        //uint256 troveId = prepareAndShutdownFirstBranch();
-
-        // TODO
-        /*
-        vm.startPrank(A);
-        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
-        troveManager.liquitate(troveId);
-        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
-        troveManager.batchLiquitate(uintToArray(troveId));
-        vm.stopPrank();
-        */
-    }
-
-    // TODO: interest delegation actions
-    /*
-    function testCannotAfterShutdown() public {
+    function testCannotSetIndividualDelegateAfterShutdown() public {
         uint256 troveId = prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);
-        borrowerOperations.();
+        borrowerOperations.setInterestIndividualDelegate(troveId, B, 5e15, 1e18, 0, 0, 0, 0);
         vm.stopPrank();
     }
-    */
+
+    function testCannotRegisterBatchManagerAfterShutdown() public {
+        uint256 troveId = prepareAndShutdownFirstBranch();
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
+        borrowerOperations.registerBatchManager(5e15, 1e18, 10e16, 25e14, 30 days);
+        vm.stopPrank();
+    }
+
+    function testCannotLowerBatchManagementFeeAfterShutdown() public {
+        vm.startPrank(A);
+        borrowerOperations.registerBatchManager(5e15, 1e18, 10e16, 25e14, 30 days);
+        vm.stopPrank();
+
+        uint256 troveId = prepareAndShutdownFirstBranch();
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
+        borrowerOperations.lowerBatchManagementFee(20e14);
+        vm.stopPrank();
+    }
+
+    function testCannotSetBatchManagerAnnualInterestRateAfterShutdown() public {
+        vm.startPrank(A);
+        borrowerOperations.registerBatchManager(5e15, 1e18, 10e16, 25e14, 30 days);
+        vm.stopPrank();
+
+        uint256 troveId = prepareAndShutdownFirstBranch();
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
+        borrowerOperations.setBatchManagerAnnualInterestRate(9e16, 0, 0, 1000e18);
+        vm.stopPrank();
+    }
+
+    function testCannotSetInterestBatchManagerAfterShutdown() public {
+        uint256 troveId = prepareAndShutdownFirstBranch();
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
+        borrowerOperations.setInterestBatchManager(troveId, B, 0, 0, 1000e18);
+        vm.stopPrank();
+    }
+
+    function testCannotRemoveFromBatchAfterShutdown() public {
+        uint256 troveId = prepareAndShutdownFirstBranch();
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
+        borrowerOperations.removeFromBatch(troveId, 5e16, 0, 0, 1000e18);
+        vm.stopPrank();
+    }
+
+    function testCannotSwitchBatchManagerAfterShutdown() public {
+        // Register batch managers B, C
+        registerBatchManager(B, 5e15, 1e18, 10e16, 25e14, 30 days);
+        registerBatchManager(C, 5e15, 1e18, 10e16, 25e14, 30 days);
+        // A opens trove
+        uint256 troveId = openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 10000e18, 5e16);
+        // A joins B batch
+        setInterestBatchManager(A, troveId, B, 5e15);
+
+        // Price halves and first branch is shut down
+        contractsArray[0].priceFeed.setPrice(1000e18);
+        contractsArray[0].borrowerOperations.shutdown();
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
+        borrowerOperations.switchBatchManager(troveId, 0, 0, C, 0, 0, 1000e18);
+        vm.stopPrank();
+    }
 
     function testCannotUrgentRedeemWithoutShutdown() public {
         prepareAndShutdownFirstBranch();
@@ -913,4 +969,38 @@ contract ShutdownTest is DevTestSetup {
     }
 
     // TODO: tests for Zombie Troves in shutdown (though, uses the exact same logic as normal redemptions)
+
+    function test_Issue_UrgentRedemptionDoesNotUpdateBatchedTroveDebt() external {
+        uint256 troveId = openTroveAndJoinBatchManager({
+            _troveOwner: A,
+            _coll: 16_000 ether * 1 ether / priceFeed.getPrice(),
+            _debt: 10_000 ether,
+            _batchAddress: B,
+            _annualInterestRate: 0.01 ether
+        });
+
+        vm.warp(block.timestamp + 30 days);
+
+        priceFeed.setPrice(priceFeed.getPrice() / 2);
+        assertLtDecimal(troveManager.getTCR(priceFeed.getPrice()), _100pct, 18, "TCR should be < 100%");
+
+        borrowerOperations.shutdown();
+
+        uint256[] memory redeemed = new uint256[](1);
+        redeemed[0] = troveId;
+
+        uint256 troveDebtBefore = troveManager.getTroveEntireDebt(troveId);
+        // emit log_named_decimal_uint("trove debt", troveDebtBefore, 18);
+        // trove debt: 10012.193751172827922686
+
+        vm.prank(A);
+        uint256 redeemAmount = 1 ether;
+        troveManager.urgentRedemption(redeemAmount, redeemed, 0);
+
+        uint256 troveDebtAfter = troveManager.getTroveEntireDebt(troveId);
+        // emit log_named_decimal_uint("trove debt", troveDebtAfter, 18);
+        // trove debt: 10012.193751172827922686
+
+        assertEq(troveDebtAfter, troveDebtBefore - redeemAmount);
+    }
 }

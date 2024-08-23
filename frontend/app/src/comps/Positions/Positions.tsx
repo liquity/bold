@@ -312,6 +312,7 @@ function PositionLeverage({
   const redemptionRisk = getRedemptionRisk(interestRate);
 
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
+
   const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
 
   return (

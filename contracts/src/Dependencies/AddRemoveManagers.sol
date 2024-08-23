@@ -9,6 +9,11 @@ import "../Interfaces/ITroveNFT.sol";
 contract AddRemoveManagers is IAddRemoveManagers {
     ITroveNFT internal immutable troveNFT;
 
+    struct RemoveManagerReceiver {
+        address manager;
+        address receiver;
+    }
+
     /*
      * Mapping from TroveId to granted address for operations that "give" money to the trove (add collateral, pay debt).
      * Useful for instance for cold/hot wallet setups.
@@ -20,16 +25,15 @@ contract AddRemoveManagers is IAddRemoveManagers {
 
     /*
      * Mapping from TroveId to granted addresses for operations that "withdraw" money from the trove (withdraw collateral, borrow),
-     * and for each of those addresses another mapping to the receiver of those withdrawn funds.
+     * and for each of those addresses another address for the receiver of those withdrawn funds.
      * Useful for instance for cold/hot wallet setups or for automations.
-     * Only the address in this mapping, if any, and the trove owner, be allowed.
+     * Only the address in this mapping, if any, and the trove owner, will be allowed.
      * Therefore, by default this permission is restricted to no one.
-     * The receiver can never be zero.
+     * If the receiver is zero, the owner is assumed as the receiver.
      */
-    mapping(uint256 => mapping(address => address)) public removeManagerReceiverOf;
+    mapping(uint256 => RemoveManagerReceiver) public removeManagerReceiverOf;
 
     error EmptyManager();
-    error EmptyReceiver();
     error NotBorrower();
     error NotOwnerNorAddManager();
     error NotOwnerNorRemoveManager();
@@ -51,29 +55,23 @@ contract AddRemoveManagers is IAddRemoveManagers {
     }
 
     function setRemoveManager(uint256 _troveId, address _manager) external {
-        setRemoveManager(_troveId, _manager, troveNFT.ownerOf(_troveId));
+        setRemoveManagerWithReceiver(_troveId, _manager, troveNFT.ownerOf(_troveId));
     }
 
-    function setRemoveManager(uint256 _troveId, address _manager, address _receiver) public {
+    function setRemoveManagerWithReceiver(uint256 _troveId, address _manager, address _receiver) public {
         _requireCallerIsBorrower(_troveId);
-        _requireNonZeroManager(_manager);
-        _setRemoveManager(_troveId, _manager, _receiver);
+        _setRemoveManagerAndReceiver(_troveId, _manager, _receiver);
     }
 
-    function _setRemoveManager(uint256 _troveId, address _manager, address _receiver) internal {
-        _requireNonZeroReceiver(_receiver);
-        removeManagerReceiverOf[_troveId][_manager] = _receiver;
+    function _setRemoveManagerAndReceiver(uint256 _troveId, address _manager, address _receiver) internal {
+        _requireNonZeroManagerUnlessWiping(_manager, _receiver);
+        removeManagerReceiverOf[_troveId].manager = _manager;
+        removeManagerReceiverOf[_troveId].receiver = _receiver;
     }
 
-    function _requireNonZeroManager(address _manager) internal pure {
-        if (_manager == address(0)) {
+    function _requireNonZeroManagerUnlessWiping(address _manager, address _receiver) internal pure {
+        if (_manager == address(0) && _receiver != address(0)) {
             revert EmptyManager();
-        }
-    }
-
-    function _requireNonZeroReceiver(address _receiver) internal pure {
-        if (_receiver == address(0)) {
-            revert EmptyReceiver();
         }
     }
 
@@ -90,12 +88,17 @@ contract AddRemoveManagers is IAddRemoveManagers {
         }
     }
 
-    function _requireSenderIsOwnerOrRemoveManager(uint256 _troveId, address _owner) internal view returns (address) {
-        address receiver = removeManagerReceiverOf[_troveId][msg.sender];
+    function _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(uint256 _troveId, address _owner)
+        internal
+        view
+        returns (address)
+    {
+        address manager = removeManagerReceiverOf[_troveId].manager;
+        address receiver = removeManagerReceiverOf[_troveId].receiver;
+        if (msg.sender != _owner && msg.sender != manager) {
+            revert NotOwnerNorRemoveManager();
+        }
         if (receiver == address(0)) {
-            if (msg.sender != _owner) {
-                revert NotOwnerNorRemoveManager();
-            }
             return _owner;
         }
         return receiver;

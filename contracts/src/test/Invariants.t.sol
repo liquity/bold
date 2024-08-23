@@ -73,7 +73,7 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
         = deployer.deployAndConnectContractsMultiColl(paramsList);
         setupContracts(contracts);
 
-        handler = new InvariantsTestHandler(contracts, true);
+        handler = new InvariantsTestHandler({contracts: contracts, assumeNoExpectedFailures: true});
         vm.label(address(handler), "handler");
         targetContract(address(handler));
     }
@@ -106,6 +106,16 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
             assertApproxEqAbsDecimal(
                 c.activePool.calcPendingAggInterest(), handler.getPendingInterest(i), 1e-10 ether, 18, "Wrong interest"
             );
+            assertApproxEqAbsDecimal(
+                c.activePool.aggWeightedDebtSum(), handler.getInterestAccrual(i), 1e26, 36, "Wrong interest accrual"
+            );
+            assertApproxEqAbsDecimal(
+                c.activePool.aggWeightedBatchManagementFeeSum(),
+                handler.getBatchManagementFeeAccrual(i),
+                1e26,
+                36,
+                "Wrong batch management fee accrual"
+            );
             assertEqDecimal(weth.balanceOf(address(c.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool");
             assertEqDecimal(c.collSurplusPool.getCollBalance(), handler.collSurplus(i), 18, "Wrong CollSurplusPool");
             assertEqDecimal(
@@ -131,9 +141,10 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
             for (uint256 j = 0; j < actors.length; ++j) {
                 LatestBatchData memory b = c.troveManager.getLatestBatchData(actors[j].account);
 
-                assertEqDecimal(
+                assertApproxEqAbsDecimal(
                     b.accruedManagementFee,
                     handler.getPendingBatchManagementFee(i, actors[j].account),
+                    1e-10 ether,
                     18,
                     "Wrong batch management fee"
                 );

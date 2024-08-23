@@ -64,8 +64,8 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     constructor(
         address _owner,
         uint256 _ccr,
-        uint256 _scr,
         uint256 _mcr,
+        uint256 _scr,
         uint256 _liquidationPenaltySP,
         uint256 _liquidationPenaltyRedistribution
     ) Ownable(_owner) {

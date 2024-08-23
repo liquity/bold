@@ -796,6 +796,58 @@ contract Redemptions is DevTestSetup {
         assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.closedByLiquidation));
     }
 
+    // -- Redemption after redistribution
+
+    function testRedemptionAfterRedistributionInBatch() public {
+        priceFeed.setPrice(2000e18);
+
+        // A and B open batched troves, C opens regular trove
+        uint256 BTroveId = openTroveAndJoinBatchManager(B, 100 ether, 10e21, B, MIN_ANNUAL_INTEREST_RATE);
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100 ether, 10e21, B, MIN_ANNUAL_INTEREST_RATE);
+        uint256 CTroveId = openTroveNoHints100pct(C, 100 ether, 100e21, MIN_ANNUAL_INTEREST_RATE);
+
+        priceFeed.setPrice(1099e18);
+
+        // Liquidate C
+        uint256 CEntireDebt = troveManager.getTroveEntireDebt(CTroveId);
+        //console2.log(CEntireDebt, "CEntireDebt");
+        //console2.log(troveManager.getTroveEntireDebt(ATroveId), "AEntireDebt before redistribution");
+        liquidate(B, CTroveId);
+
+        // redeem against A, in a way that (A entire debt - redistributed debt) < redeem amount < A entire debt
+        uint256 AEntireDebtBefore = troveManager.getTroveEntireDebt(ATroveId);
+        uint256 BEntireDebtBefore = troveManager.getTroveEntireDebt(BTroveId);
+        uint256 redeemAmount = AEntireDebtBefore - CEntireDebt / 3;
+        assertLt(AEntireDebtBefore - CEntireDebt / 2, redeemAmount, "Redeem amount too low");
+        assertLt(redeemAmount, AEntireDebtBefore, "Redeem amount too high");
+        //console2.log(AEntireDebtBefore, "AEntireDebt");
+        //console2.log(AEntireDebtBefore - CEntireDebt / 2, "AEntireDebt - redistributed debt");
+        //console2.log(redeemAmount, "redeemAmount");
+        redeem(C, redeemAmount);
+
+        // Check A debt
+        uint256 AEntireDebtAfter = troveManager.getTroveEntireDebt(ATroveId);
+        uint256 BEntireDebtAfter = troveManager.getTroveEntireDebt(BTroveId);
+        //console2.log(AEntireDebtAfter, "AEntireDebtAfter");
+        //console2.log(AEntireDebtBefore - redeemAmount, "AEntireDebtBefore - redeemAmount");
+        assertEq(AEntireDebtAfter, AEntireDebtBefore - redeemAmount, "A debt mismatch");
+        // B is not touched by redemption
+        //console2.log(BEntireDebtBefore, "BEntireDebtBefore");
+        //console2.log(BEntireDebtAfter, "BEntireDebtAfter");
+        assertEq(BEntireDebtAfter, BEntireDebtBefore, "B debt mismatch");
+
+        // Pass some time and check pending debt
+        vm.warp(block.timestamp + 365 days);
+        uint256 ARecordedDebt = troveManager.getTroveDebt(ATroveId);
+        uint256 BRecordedDebt = troveManager.getTroveDebt(BTroveId);
+        assertApproxEqAbs(
+            activePool.calcPendingAggInterest(),
+            (ARecordedDebt + BRecordedDebt) * MIN_ANNUAL_INTEREST_RATE / DECIMAL_PRECISION,
+            1,
+            "Pending debt mismatch"
+        );
+    }
+
     // TODO: tests borrower for combined adjustments - debt changes and coll add/withdrawals.
     // Borrower should only be able to close OR leave Trove at >= min net debt.
 }

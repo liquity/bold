@@ -89,7 +89,7 @@ contract WETHZapper is AddRemoveManagers {
 
     function withdrawCollToRawETH(uint256 _troveId, uint256 _amount) external {
         address owner = troveNFT.ownerOf(_troveId);
-        address payable receiver = payable(_requireSenderIsOwnerOrRemoveManager(_troveId, owner));
+        address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
 
         borrowerOperations.withdrawColl(_troveId, _amount);
 
@@ -101,7 +101,7 @@ contract WETHZapper is AddRemoveManagers {
 
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external {
         address owner = troveNFT.ownerOf(_troveId);
-        address receiver = _requireSenderIsOwnerOrRemoveManager(_troveId, owner);
+        address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
 
         borrowerOperations.withdrawBold(_troveId, _boldAmount, _maxUpfrontFee);
 
@@ -169,7 +169,7 @@ contract WETHZapper is AddRemoveManagers {
         address payable receiver = payable(owner);
 
         if (!_isCollIncrease || _isDebtIncrease) {
-            receiver = payable(_requireSenderIsOwnerOrRemoveManager(_troveId, owner));
+            receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
         }
 
         if (_isCollIncrease || (!_isDebtIncrease && _boldChange > 0)) {
@@ -211,7 +211,7 @@ contract WETHZapper is AddRemoveManagers {
 
     function closeTroveToRawETH(uint256 _troveId) external {
         address owner = troveNFT.ownerOf(_troveId);
-        address payable receiver = payable(_requireSenderIsOwnerOrRemoveManager(_troveId, owner));
+        address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
 
         // pull Bold for repayment
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
