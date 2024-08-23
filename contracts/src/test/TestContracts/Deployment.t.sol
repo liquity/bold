@@ -259,8 +259,7 @@ contract TestDeployer {
             );
             vars.collaterals[vars.i] = collToken;
             // Addresses registry and TM address
-            (addressesRegistry, troveManagerAddress) =
-                _deployAddressesRegistryDev(troveManagerParamsArray[vars.i]);
+            (addressesRegistry, troveManagerAddress) = _deployAddressesRegistryDev(troveManagerParamsArray[vars.i]);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }

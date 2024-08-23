@@ -550,9 +550,11 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         if (_isTroveInBatch) {
             _getLatestBatchData(_singleRedemption.batchAddress, _singleRedemption.batch);
             // We know boldLot <= trove entire debt, so this subtraction is safe
-            uint256 newAmountForWeightedDebt = _singleRedemption.batch.entireDebtWithoutRedistribution + _singleRedemption.trove.redistBoldDebtGain - _singleRedemption.boldLot;
+            uint256 newAmountForWeightedDebt = _singleRedemption.batch.entireDebtWithoutRedistribution
+                + _singleRedemption.trove.redistBoldDebtGain - _singleRedemption.boldLot;
             _singleRedemption.oldWeightedRecordedDebt = _singleRedemption.batch.weightedRecordedDebt;
-            _singleRedemption.newWeightedRecordedDebt = newAmountForWeightedDebt * _singleRedemption.batch.annualInterestRate;
+            _singleRedemption.newWeightedRecordedDebt =
+                newAmountForWeightedDebt * _singleRedemption.batch.annualInterestRate;
 
             TroveChange memory troveChange;
             troveChange.debtDecrease = _singleRedemption.boldLot;
@@ -560,8 +562,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             troveChange.appliedRedistBoldDebtGain = _singleRedemption.trove.redistBoldDebtGain;
             troveChange.appliedRedistCollGain = _singleRedemption.trove.redistCollGain;
             // batchAccruedManagementFee is handled in the outer function
-            troveChange.oldWeightedRecordedBatchManagementFee = _singleRedemption.batch.weightedRecordedBatchManagementFee;
-            troveChange.newWeightedRecordedBatchManagementFee = newAmountForWeightedDebt * _singleRedemption.batch.annualManagementFee;
+            troveChange.oldWeightedRecordedBatchManagementFee =
+                _singleRedemption.batch.weightedRecordedBatchManagementFee;
+            troveChange.newWeightedRecordedBatchManagementFee =
+                newAmountForWeightedDebt * _singleRedemption.batch.annualManagementFee;
 
             activePool.mintBatchManagementFeeAndAccountForChange(troveChange, _singleRedemption.batchAddress);
 
@@ -668,16 +672,13 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // As we are updating the batch, we update the ActivePool weighted sum too
         TroveChange memory batchTroveChange;
         batchTroveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
-        batchTroveChange.newWeightedRecordedDebt =
-            batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
+        batchTroveChange.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
         batchTroveChange.batchAccruedManagementFee = batch.accruedManagementFee;
         batchTroveChange.oldWeightedRecordedBatchManagementFee = batch.weightedRecordedBatchManagementFee;
         batchTroveChange.newWeightedRecordedBatchManagementFee =
             batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
 
-        _activePool.mintAggInterestAndAccountForTroveChange(
-            batchTroveChange, _batchAddress
-        );
+        _activePool.mintAggInterestAndAccountForTroveChange(batchTroveChange, _batchAddress);
 
         emit BatchUpdated(
             _batchAddress,

@@ -977,7 +977,7 @@ contract ShutdownTest is DevTestSetup {
             _debt: 10_000 ether,
             _batchAddress: B,
             _annualInterestRate: 0.01 ether
-            });
+        });
 
         vm.warp(block.timestamp + 30 days);
 
