@@ -903,7 +903,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         LatestBatchData memory batch = troveManagerCached.getLatestBatchData(msg.sender);
         _requireInterestRateChangePeriodPassed(msg.sender, uint256(batch.lastInterestRateAdjTime));
 
-        bool batchWasEmpty = batch.entireDebtWithoutRedistribution == 0 && batch.entireCollWithoutRedistribution == 0;
         uint256 newDebt = batch.entireDebtWithoutRedistribution;
 
         TroveChange memory batchChange;
@@ -944,7 +943,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         );
 
         // Check batch is not empty, and then reinsert in sorted list
-        if (!batchWasEmpty) {
+        if (!sortedTroves.isEmptyBatch(BatchId.wrap(msg.sender))) {
             sortedTroves.reInsertBatch(BatchId.wrap(msg.sender), _newAnnualInterestRate, _upperHint, _lowerHint);
         }
     }

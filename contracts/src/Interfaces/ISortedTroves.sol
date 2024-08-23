@@ -26,6 +26,7 @@ interface ISortedTroves {
 
     function contains(uint256 _id) external view returns (bool);
     function isBatchedNode(uint256 _id) external view returns (bool);
+    function isEmptyBatch(BatchId _id) external view returns (bool);
 
     function isEmpty() external view returns (bool);
     function getSize() external view returns (uint256);
