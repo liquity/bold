@@ -6,10 +6,10 @@ import { LEVERAGE_FACTOR_MIN, LEVERAGE_FACTOR_SUGGESTIONS, LTV_RISK, MAX_LTV_ALL
 import content from "@/src/content";
 import { useInputFieldValue } from "@/src/form-utils";
 import {
-  getLeveragedLiquidationPrice,
   getLeverageFactorFromLiquidationPrice,
   getLeverageFactorFromLtv,
-  getLiquidationRiskFromLeverageFactor,
+  getLiquidationPriceFromLeverage,
+  getLiquidationRisk,
   getLtvFromLeverageFactor,
 } from "@/src/liquity-math";
 import { infoTooltipProps } from "@/src/uikit-utils";
@@ -112,11 +112,7 @@ export function LeverageField({
                     key={factor}
                     label={`${factor.toFixed(1)}x`}
                     onClick={() => updateLeverageFactor(factor)}
-                    warnLevel={getLiquidationRiskFromLeverageFactor(
-                      factor,
-                      mediumRiskLeverageFactor,
-                      highRiskLeverageFactor,
-                    )}
+                    warnLevel={getLiquidationRisk(getLtvFromLeverageFactor(factor), maxLtv)}
                   />
                 ))}
                 <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.leverageLevel)} />
@@ -175,6 +171,8 @@ export function useLeverageField({
   onFocusChange?: (focused: boolean) => void;
   updatePriority: "liquidationPrice" | "leverageFactor";
 }) {
+  const isFocused = useRef(false);
+
   const { collateralRatio } = collToken;
 
   const maxLtv = dn.from(1 / collateralRatio, 18);
@@ -192,26 +190,27 @@ export function useLeverageField({
   );
 
   const ltv = getLtvFromLeverageFactor(leverageFactor);
+  const liquidationRisk = getLiquidationRisk(ltv, maxLtv);
 
   const mediumRiskLeverageFactor = getLeverageFactorFromLtv(dn.mul(maxLtv, LTV_RISK.medium));
   const highRiskLeverageFactor = getLeverageFactorFromLtv(dn.mul(maxLtv, LTV_RISK.high));
 
-  const liquidationRisk = getLiquidationRiskFromLeverageFactor(
-    leverageFactor,
-    mediumRiskLeverageFactor,
-    highRiskLeverageFactor,
-  );
-
   // liquidation prices based on the min and max leverage factors
   const liquidationPriceBoundaries = [
-    getLeveragedLiquidationPrice(collPrice, LEVERAGE_FACTOR_MIN, collateralRatio),
-    getLeveragedLiquidationPrice(collPrice, maxLeverageFactor, collateralRatio),
+    getLiquidationPriceFromLeverage(LEVERAGE_FACTOR_MIN, collPrice, collateralRatio),
+    getLiquidationPriceFromLeverage(maxLeverageFactor, collPrice, collateralRatio),
   ];
+
+  const deposit = depositPreLeverage && leverageFactor > 1
+    ? dn.mul(depositPreLeverage, leverageFactor)
+    : null;
+
+  const debt = depositPreLeverage && calculateDebt(depositPreLeverage, leverageFactor, collPrice);
 
   const getLeverageFactorFromLiquidationPriceClamped = (liquidationPrice: Dnum) => {
     const leverageFactor = getLeverageFactorFromLiquidationPrice(
-      collPrice,
       liquidationPrice,
+      collPrice,
       collateralRatio,
     );
 
@@ -241,6 +240,7 @@ export function useLeverageField({
         }
       },
       onFocusChange: ({ focused, parsed: price }) => {
+        isFocused.current = focused;
         onFocusChange?.(focused);
 
         // Make sure the the input value corresponds to the leverage
@@ -254,10 +254,12 @@ export function useLeverageField({
 
   const updateLeverageFactor = useCallback((leverageFactor: number) => {
     setLeverageFactor(leverageFactor);
-    liquidationPriceField.setValue(dn.toString(
-      getLeveragedLiquidationPrice(collPrice, leverageFactor, collateralRatio),
-      2,
-    ));
+    if (deposit && debt) {
+      liquidationPriceField.setValue(dn.toString(
+        getLiquidationPriceFromLeverage(leverageFactor, collPrice, collateralRatio),
+        2,
+      ));
+    }
   }, [
     collPrice,
     collateralRatio,
@@ -267,25 +269,34 @@ export function useLeverageField({
   // update the leverage factor when the collateral price changes
   const previousCollPrice = useRef(collPrice);
   useEffect(() => {
-    if (updatePriority === "liquidationPrice" && !dn.eq(previousCollPrice.current, collPrice)) {
+    if (updatePriority === "liquidationPrice" && !dn.eq(previousCollPrice.current, collPrice) && deposit && debt) {
       liquidationPriceField.setValue(dn.toString(
-        getLeveragedLiquidationPrice(collPrice, leverageFactor, collateralRatio),
+        getLiquidationPriceFromLeverage(leverageFactor, collPrice, collateralRatio),
         2,
       ));
       previousCollPrice.current = collPrice;
     }
 
-    // if (updatePriority === "leverageFactor" && liquidationPriceField.parsed) {
-    //   updateLeverageFactor(getLeverageFactorFromLiquidationPriceClamped(liquidationPriceField.parsed));
-    // }
+    let timer: ReturnType<typeof setTimeout>;
+    if (updatePriority === "leverageFactor") {
+      timer = setTimeout(() => {
+        if (liquidationPriceField.parsed && !isFocused.current) {
+          updateLeverageFactor(getLeverageFactorFromLiquidationPriceClamped(liquidationPriceField.parsed));
+        }
+      }, 100);
+    }
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [
     collPrice,
-    updatePriority,
     collateralRatio,
     getLeverageFactorFromLiquidationPriceClamped,
     leverageFactor,
     liquidationPriceField,
     updateLeverageFactor,
+    updatePriority,
   ]);
 
   const sliderProps = {
@@ -312,12 +323,6 @@ export function useLeverageField({
     const initialDepositValue = dn.mul(deposit, collateralPrice);
     return dn.sub(totalPositionValue, initialDepositValue);
   }
-
-  const deposit = depositPreLeverage && leverageFactor > 1
-    ? dn.mul(depositPreLeverage, leverageFactor)
-    : null;
-
-  const debt = depositPreLeverage && calculateDebt(depositPreLeverage, leverageFactor, collPrice);
 
   return {
     debt,

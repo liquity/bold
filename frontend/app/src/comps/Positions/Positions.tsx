@@ -5,6 +5,7 @@ import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import { LQTY_SUPPLY } from "@/src/constants";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
+import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
@@ -120,7 +121,7 @@ function PositionBorrow({
     return null;
   }
 
-  const ltv = getLtv(borrowed, dn.mul(deposit, collateralPriceUsd));
+  const ltv = getLtv(deposit, borrowed, collateralPriceUsd);
   const redemptionRisk = getRedemptionRisk(interestRate);
 
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
@@ -222,8 +223,7 @@ function PositionBorrow({
                       color: "strongSurfaceContent",
                     })}
                   >
-                    {liquidationRisk === "low" ? "Low" : liquidationRisk === "medium" ? "Medium" : "High"}{" "}
-                    liquidation risk
+                    {formatLiquidationRisk(liquidationRisk)}
                   </div>
                   <StatusDot
                     mode={riskLevelToStatusMode(liquidationRisk)}
@@ -308,7 +308,7 @@ function PositionLeverage({
     return null;
   }
 
-  const ltv = getLtv(borrowed, dn.mul(deposit, collateralPriceUsd));
+  const ltv = getLtv(deposit, borrowed, collateralPriceUsd);
   const redemptionRisk = getRedemptionRisk(interestRate);
 
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
@@ -455,7 +455,7 @@ function PositionLeverage({
                       color: "strongSurfaceContent",
                     })}
                   >
-                    {redemptionRisk === "low" ? "Low" : redemptionRisk === "medium" ? "Medium" : "High"} redemption risk
+                    {formatRedemptionRisk(redemptionRisk)}
                   </div>
                   <StatusDot
                     mode={riskLevelToStatusMode(redemptionRisk)}

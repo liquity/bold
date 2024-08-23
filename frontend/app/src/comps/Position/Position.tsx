@@ -3,13 +3,8 @@ import type { ReactNode } from "react";
 
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
-import {
-  // getLeverageFactorFromLtv,
-  // getLiquidationRisk,
-  getLoanDetails,
-  // getLtv,
-  // getRedemptionRisk,
-} from "@/src/liquity-math";
+import { formatRisk } from "@/src/formatting";
+import { getLoanDetails } from "@/src/liquity-math";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -33,11 +28,11 @@ export function Position({
       : undefined
   ) as PositionLoan | undefined;
 
-  const token = position && TOKENS_BY_SYMBOL[position.collateral];
+  const collateral = position && TOKENS_BY_SYMBOL[position.collateral];
 
-  const collPriceUsd = usePrice(token ? token.symbol : null);
+  const collPriceUsd = usePrice(collateral ? collateral.symbol : null);
 
-  if (!position || !collPriceUsd || !token) {
+  if (!position || !collPriceUsd || !collateral) {
     return null;
   }
 
@@ -47,7 +42,7 @@ export function Position({
     deposit,
     borrowed,
     interestRate,
-    token.collateralRatio,
+    collateral.collateralRatio,
     collPriceUsd,
   );
 
@@ -55,11 +50,10 @@ export function Position({
     ltv,
     leverageFactor,
     redemptionRisk,
-    depositPreLeverage,
     liquidationRisk,
   } = loanDetails;
 
-  const leveragePercentage = leverageFactor === null ? null : dn.mul(dn.sub(leverageFactor, dn.from(1, 18)), 100);
+  const maxLtv = dn.div(dn.from(1, 18), collateral.collateralRatio);
 
   return (
     <section
@@ -110,7 +104,6 @@ export function Position({
         })}
       >
         <div
-          title={`${dn.format(position.borrowed)} BOLD`}
           className={css({
             display: "flex",
             alignItems: "center",
@@ -121,28 +114,63 @@ export function Position({
         >
           {leverageMode
             ? (
-              <>
+              <div
+                title={`${dn.format(position.deposit)} ${position.collateral}`}
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                })}
+              >
                 <div>{dn.format(position.deposit, { digits: 2 })}</div>
                 <TokenIcon symbol={position.collateral} size={32} />
-                {leveragePercentage && (
+                <div
+                  className={css({
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 4,
+                  })}
+                >
                   <div
+                    title={`Leverage factor: ${leverageFactor}x`}
                     className={css({
                       fontSize: 16,
-                      color: "positiveAlt",
                     })}
                   >
-                    +{dn.format(leveragePercentage)}%
+                    <div
+                      style={{
+                        color: ltv && dn.lt(ltv, maxLtv) ? "inherit" : "var(--colors-negative)",
+                      }}
+                    >
+                      {leverageFactor ?? "∞"}x
+                    </div>
                   </div>
-                )}
-              </>
+                  {
+                    /*<div
+                    className={css({
+                      fontSize: 16,
+                    })}
+                  >
+                    ${dn.format(dn.mul(position.deposit, collPriceUsd), { digits: 2 })}
+                  </div>*/
+                  }
+                </div>
+              </div>
             )
             : (
-              <>
+              <div
+                title={`${dn.format(position.borrowed)} BOLD`}
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                })}
+              >
                 <div>
                   {dn.format(position.borrowed, { digits: 2 })}
                 </div>
                 <TokenIcon symbol="BOLD" size={32} />
-              </>
+              </div>
             )}
         </div>
         <div>
@@ -167,8 +195,8 @@ export function Position({
       >
         {leverageMode
           ? (
-            <GridItem label="Deposit">
-              {depositPreLeverage && dn.format(depositPreLeverage, 2)} {TOKENS_BY_SYMBOL[position.collateral].name}
+            <GridItem label="Debt">
+              {dn.format(position.borrowed, 2)} BOLD
             </GridItem>
           )
           : (
@@ -177,13 +205,47 @@ export function Position({
             </GridItem>
           )}
         <GridItem label="Liq. price">
-          {loanDetails.liquidationPrice && `$${dn.format(loanDetails.liquidationPrice, 2)}`}
+          {(ltv && dn.gt(ltv, maxLtv))
+            ? (
+              <div
+                className={css({
+                  color: "negative",
+                })}
+              >
+                Reached
+              </div>
+            )
+            : (loanDetails.liquidationPrice && `$${
+              dn.format(loanDetails.liquidationPrice, {
+                digits: 2,
+                trailingZeros: true,
+              })
+            }`)}
         </GridItem>
         <GridItem label="Interest rate">
           {dn.format(dn.mul(position.interestRate, 100), 2)}%
         </GridItem>
         <GridItem label="LTV">
-          {ltv && dn.format(dn.mul(ltv, 100), 2)}%
+          <div
+            className={css({
+              "--status-positive": "token(colors.positiveAlt)",
+              "--status-warning": "token(colors.warning)",
+              "--status-negative": "token(colors.negative)",
+            })}
+            style={{
+              color: liquidationRisk === "low"
+                ? "var(--status-positive)"
+                : liquidationRisk === "medium"
+                ? "var(--status-warning)"
+                : "var(--status-negative)",
+            }}
+          >
+            {ltv && (
+              dn.gt(ltv, maxLtv)
+                ? `>${dn.format(dn.mul(maxLtv, 100), 2)}`
+                : dn.format(dn.mul(ltv, 100), 2)
+            )}%
+          </div>
         </GridItem>
         <GridItem label="Liquidation risk">
           <HFlex gap={8} alignItems="center" justifyContent="flex-start">
@@ -191,7 +253,7 @@ export function Position({
               mode={riskLevelToStatusMode(liquidationRisk)}
               size={8}
             />
-            {liquidationRisk === "low" ? "Low" : liquidationRisk === "medium" ? "Medium" : "High"}
+            {formatRisk(liquidationRisk)}
           </HFlex>
         </GridItem>
         {redemptionRisk && (
@@ -201,7 +263,7 @@ export function Position({
                 mode={riskLevelToStatusMode(redemptionRisk)}
                 size={8}
               />
-              {redemptionRisk === "low" ? "Low" : redemptionRisk === "medium" ? "Medium" : "High"}
+              {formatRisk(redemptionRisk)}
             </HFlex>
           </GridItem>
         )}

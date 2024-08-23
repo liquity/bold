@@ -31,7 +31,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 
 const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
 
