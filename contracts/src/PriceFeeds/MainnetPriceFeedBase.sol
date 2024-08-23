@@ -47,7 +47,7 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
     // An individual Pricefeed instance implements _fetchPrice according to the data sources it uses.
     function _fetchPrice() internal virtual returns (uint256) {}
 
-    function _getOracleAnswer(Oracle memory _oracle) internal returns (uint256, bool) {
+    function _getOracleAnswer(Oracle memory _oracle) internal view returns (uint256, bool) {
         ChainlinkResponse memory chainlinkResponse = _getCurrentChainlinkResponse(_oracle.aggregator);
 
         uint256 scaledPrice;

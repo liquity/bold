@@ -3,7 +3,7 @@ pragma solidity 0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 
 contract Deployment is DevTestSetup {
-    function testContractsDeployed() public {
+    function testContractsDeployed() public view {
         assertNotEq(address(activePool), address(0));
         assertNotEq(address(boldToken), address(0));
         assertNotEq(address(borrowerOperations), address(0));
@@ -20,33 +20,33 @@ contract Deployment is DevTestSetup {
 
     // TODO: re-enable
     /*
-    function testTroveManagerHasCorrectPriceFeedAddress() public {
+    function testTroveManagerHasCorrectPriceFeedAddress() public view {
         address priceFeedAddress = address(priceFeed);
         address recordedPriceFeedAddress = address(troveManager.priceFeed());
         assertEq(priceFeedAddress, recordedPriceFeedAddress);
     }
 
-    function testTroveManagerHasCorrectBoldTokenAddress() public {
+    function testTroveManagerHasCorrectBoldTokenAddress() public view {
         address boldTokenAddress = address(boldToken);
         address recordedBoldTokenAddress = address(troveManager.boldToken());
         assertEq(boldTokenAddress, recordedBoldTokenAddress);
     }
     */
 
-    function testTroveManagerHasCorrectSortedTrovesAddress() public {
+    function testTroveManagerHasCorrectSortedTrovesAddress() public view {
         address sortedTrovesAddress = address(sortedTroves);
         address recordedSortedTrovesAddress = address(troveManager.sortedTroves());
         assertEq(sortedTrovesAddress, recordedSortedTrovesAddress);
     }
 
-    function testTroveManagerHasCorrectBorrowerOpsAddress() public {
+    function testTroveManagerHasCorrectBorrowerOpsAddress() public view {
         address borrowerOperationsAddress = address(borrowerOperations);
         address recordedBorrowerOperationsAddress = address(troveManager.borrowerOperations());
         assertEq(borrowerOperationsAddress, recordedBorrowerOperationsAddress);
     }
 
     // ActivePool in TroveM
-    function testTroveManagerHasCorrectActivePoolAddress() public {
+    function testTroveManagerHasCorrectActivePoolAddress() public view {
         address activePoolAddress = address(activePool);
         address recordedActivePoolAddress = address(troveManager.activePool());
         assertEq(activePoolAddress, recordedActivePoolAddress);
@@ -62,7 +62,7 @@ contract Deployment is DevTestSetup {
     */
 
     // StabilityPool in TroveM
-    function testTroveManagerHasCorrectSPAddress() public {
+    function testTroveManagerHasCorrectSPAddress() public view {
         address stabilityPoolAddress = address(stabilityPool);
         address recordedStabilityPoolAddress = address(troveManager.stabilityPool());
         assertEq(stabilityPoolAddress, recordedStabilityPoolAddress);
@@ -70,31 +70,31 @@ contract Deployment is DevTestSetup {
 
     // Active Pool
 
-    function testActivePoolHasCorrectInterestRouterAddress() public {
+    function testActivePoolHasCorrectInterestRouterAddress() public view {
         address interestRouter = address(mockInterestRouter);
         address recordedInterestRouterAddress = address(activePool.interestRouter());
         assertEq(interestRouter, recordedInterestRouterAddress);
     }
 
-    function testActivePoolHasCorrectStabilityPoolAddress() public {
+    function testActivePoolHasCorrectStabilityPoolAddress() public view {
         address stabilityPoolAddress = address(stabilityPool);
         address recordedStabilityPoolAddress = address(activePool.stabilityPool());
         assertEq(stabilityPoolAddress, recordedStabilityPoolAddress);
     }
 
-    function testActivePoolHasCorrectDefaultPoolAddress() public {
+    function testActivePoolHasCorrectDefaultPoolAddress() public view {
         address defaultPoolAddress = address(defaultPool);
         address recordedDefaultPoolAddress = activePool.defaultPoolAddress();
         assertEq(defaultPoolAddress, recordedDefaultPoolAddress);
     }
 
-    function testActivePoolHasCorrectBorrowerOpsAddress() public {
+    function testActivePoolHasCorrectBorrowerOpsAddress() public view {
         address borrowerOperationsAddress = address(borrowerOperations);
         address recordedBorrowerOperationsAddress = activePool.borrowerOperationsAddress();
         assertEq(borrowerOperationsAddress, recordedBorrowerOperationsAddress);
     }
 
-    function testActivePoolHasCorrectTroveManagerAddress() public {
+    function testActivePoolHasCorrectTroveManagerAddress() public view {
         address troveManagerAddress = address(troveManager);
         address recordedTroveManagerAddress = activePool.troveManagerAddress();
         assertEq(troveManagerAddress, recordedTroveManagerAddress);
@@ -102,25 +102,25 @@ contract Deployment is DevTestSetup {
 
     // Stability Pool
 
-    function testStabilityPoolHasCorrectActivePoolAddress() public {
+    function testStabilityPoolHasCorrectActivePoolAddress() public view {
         address activePoolAddress = address(activePool);
         address recordedActivePoolAddress = address(stabilityPool.activePool());
         assertEq(activePoolAddress, recordedActivePoolAddress);
     }
 
-    function testStabilityPoolHasCorrectCorrectBorrowerOpsAddress() public {
+    function testStabilityPoolHasCorrectCorrectBorrowerOpsAddress() public view {
         address borrowerOperationsAddress = address(borrowerOperations);
         address recordedBorrowerOperationsAddress = address(stabilityPool.borrowerOperations());
         assertEq(borrowerOperationsAddress, recordedBorrowerOperationsAddress);
     }
 
-    function testStabilityPoolHasCorrectCorrectBoldTokenAddress() public {
+    function testStabilityPoolHasCorrectCorrectBoldTokenAddress() public view {
         address boldTokenAddress = address(boldToken);
         address recordedBoldTokenAddress = address(stabilityPool.boldToken());
         assertEq(boldTokenAddress, recordedBoldTokenAddress);
     }
 
-    function testStabilityPoolHasCorrectTroveManagerAddress() public {
+    function testStabilityPoolHasCorrectTroveManagerAddress() public view {
         address troveManagerAddress = address(troveManager);
         address recordedTroveManagerAddress = address(stabilityPool.troveManager());
         assertEq(troveManagerAddress, recordedTroveManagerAddress);
@@ -128,13 +128,13 @@ contract Deployment is DevTestSetup {
 
     // Default Pool
 
-    function testDefaultPoolHasCorrectTroveManagerAddress() public {
+    function testDefaultPoolHasCorrectTroveManagerAddress() public view {
         address troveManagerAddress = address(troveManager);
         address recordedTroveManagerAddress = defaultPool.troveManagerAddress();
         assertEq(troveManagerAddress, recordedTroveManagerAddress);
     }
 
-    function testDefaultPoolHasCorrectActivePoolAddress() public {
+    function testDefaultPoolHasCorrectActivePoolAddress() public view {
         address activePoolAddress = address(activePool);
         address recordedActivePoolAddress = defaultPool.activePoolAddress();
         assertEq(activePoolAddress, recordedActivePoolAddress);
@@ -142,13 +142,13 @@ contract Deployment is DevTestSetup {
 
     // Sorted Troves
 
-    function testSortedTrovesHasCorrectBorrowerOperationsAddress() public {
+    function testSortedTrovesHasCorrectBorrowerOperationsAddress() public view {
         address borrowerOperationsAddress = address(borrowerOperations);
         address recordedBorrowerOperationsAddress = sortedTroves.borrowerOperationsAddress();
         assertEq(borrowerOperationsAddress, recordedBorrowerOperationsAddress);
     }
 
-    function testSortedTrovesHasCorrectTroveManagerAddress() public {
+    function testSortedTrovesHasCorrectTroveManagerAddress() public view {
         address troveManagerAddress = address(troveManager);
         address recordedTroveManagerAddress = address(sortedTroves.troveManager());
         assertEq(troveManagerAddress, recordedTroveManagerAddress);
@@ -178,7 +178,7 @@ contract Deployment is DevTestSetup {
     }
     */
 
-    function testBorrowerOperationsHasCorrectActivePoolAddress() public {
+    function testBorrowerOperationsHasCorrectActivePoolAddress() public view {
         address activePoolAddress = address(activePool);
         address recordedActivePoolAddress = address(borrowerOperations.activePool());
         assertEq(activePoolAddress, recordedActivePoolAddress);

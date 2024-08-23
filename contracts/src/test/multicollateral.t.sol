@@ -108,7 +108,7 @@ contract MulticollateralTest is DevTestSetup {
         }
     }
 
-    function testMultiCollateralDeployment() public {
+    function testMultiCollateralDeployment() public view {
         // check deployment
         assertEq(collateralRegistry.totalCollaterals(), NUM_COLLATERALS, "Wrong number of branches");
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {

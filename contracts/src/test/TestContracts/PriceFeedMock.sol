@@ -21,7 +21,7 @@ contract PriceFeedMock is IPriceFeedMock {
         return PRICE;
     }
 
-    function getEthUsdStalenessThreshold() external view returns (uint256) {
+    function getEthUsdStalenessThreshold() external pure returns (uint256) {
         return 0;
     }
 
