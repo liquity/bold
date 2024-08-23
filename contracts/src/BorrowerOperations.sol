@@ -765,10 +765,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             batch = troveManagerCached.getLatestBatchData(batchManager);
             change.batchAccruedManagementFee = batch.accruedManagementFee;
             change.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
-            change.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
+            change.newWeightedRecordedDebt =
+                (batch.entireDebtWithoutRedistribution + trove.redistBoldDebtGain) * batch.annualInterestRate;
             change.oldWeightedRecordedBatchManagementFee = batch.weightedRecordedBatchManagementFee;
             change.newWeightedRecordedBatchManagementFee =
-                batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
+                (batch.entireDebtWithoutRedistribution + trove.redistBoldDebtGain) * batch.annualManagementFee;
         }
 
         troveManagerCached.onApplyTroveInterest(
