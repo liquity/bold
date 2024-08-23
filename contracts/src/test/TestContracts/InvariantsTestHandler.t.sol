@@ -1160,8 +1160,15 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                     Trove memory trove = _troves[j][redeemed.troveId];
                     trove.applyPending();
                     trove.coll -= redeemed.coll;
-                    trove.debt -= redeemed.debt;
                     _troves[j][redeemed.troveId] = trove;
+
+                    if (redeemed.debt > trove.debt) {
+                        // There can be a slight discrepancy when hitting batched Troves
+                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1, 18, "Underflow");
+                        trove.debt = 0;
+                    } else {
+                        trove.debt -= redeemed.debt;
+                    }
 
                     if (branches[j].troveManager.getTroveEntireDebt(redeemed.troveId) < MIN_DEBT) {
                         _zombieTroveIds[j].add(redeemed.troveId);
