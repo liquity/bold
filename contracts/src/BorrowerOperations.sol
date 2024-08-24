@@ -932,8 +932,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             batch.annualInterestRate != _newAnnualInterestRate
                 && block.timestamp < batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
         ) {
-            (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
-            _requireOraclesLive(newOracleFailureDetected);
+            uint256 price = priceFeed.fetchPrice();
             uint256 avgInterestRate = activePoolCached.getNewApproxAvgInterestRateFromTroveChange(batchChange);
             batchChange.upfrontFee = _calcUpfrontFee(newDebt, avgInterestRate);
             _requireUserAcceptsUpfrontFee(batchChange.upfrontFee, _maxUpfrontFee);
@@ -1178,8 +1177,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         uint256 totalColl = getEntireSystemColl();
         uint256 totalDebt = getEntireSystemDebt();
-        (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
-        _requireOraclesLive(newOracleFailureDetected);
+        uint256 price = priceFeed.fetchPrice();
 
         uint256 TCR = LiquityMath._computeCR(totalColl, totalDebt, price);
         if (TCR >= SCR) revert TCRNotBelowSCR();
@@ -1194,6 +1192,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireCallerIsPriceFeed();
 
         // No-op rather than revert here, so that the outer function call which fetches the price does not revert
+        // if the system is already shut down.
         if (hasBeenShutDown) return;
 
         _applyShutdown();
