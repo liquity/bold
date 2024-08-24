@@ -945,16 +945,14 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         activePoolCached.mintAggInterestAndAccountForTroveChange(batchChange, msg.sender);
 
-        // TODO emit BatchUpdated(msg.sender, batch.entireCollWithoutRedistribution, newDebt, Operation.adjustBatchInterestRate);
-
-        troveManagerCached.onSetBatchManagerAnnualInterestRate(
-            msg.sender, batch.entireCollWithoutRedistribution, newDebt, _newAnnualInterestRate
-        );
-
         // Check batch is not empty, and then reinsert in sorted list
         if (!sortedTroves.isEmptyBatch(BatchId.wrap(msg.sender))) {
             sortedTroves.reInsertBatch(BatchId.wrap(msg.sender), _newAnnualInterestRate, _upperHint, _lowerHint);
         }
+
+        troveManagerCached.onSetBatchManagerAnnualInterestRate(
+            msg.sender, batch.entireCollWithoutRedistribution, newDebt, _newAnnualInterestRate
+        );
     }
 
     function setInterestBatchManager(
