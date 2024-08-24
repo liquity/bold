@@ -182,6 +182,26 @@ contract HintHelpers is IHintHelpers {
         return _calcUpfrontFee(batch.entireDebtWithoutRedistribution, avgInterestRate);
     }
 
+    function predictOpenTroveAndJoinBatchUpfrontFee(uint256 _collIndex, uint256 _borrowedAmount, address _batchAddress)
+        external
+        view
+        returns (uint256)
+    {
+        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        IActivePool activePool = troveManager.activePool();
+        LatestBatchData memory batch = troveManager.getLatestBatchData(_batchAddress);
+
+        TroveChange memory openTrove;
+        openTrove.debtIncrease = _borrowedAmount;
+        openTrove.batchAccruedManagementFee = batch.accruedManagementFee;
+        openTrove.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
+        openTrove.newWeightedRecordedDebt =
+            (batch.entireDebtWithoutRedistribution + _borrowedAmount) * batch.annualInterestRate;
+
+        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(openTrove);
+        return _calcUpfrontFee(_borrowedAmount, avgInterestRate);
+    }
+
     function predictJoinBatchInterestRateUpfrontFee(uint256 _collIndex, uint256 _troveId, address _batchAddress)
         external
         view
