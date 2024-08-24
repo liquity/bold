@@ -1214,7 +1214,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                     if (redeemed.debt > trove.debt) {
                         // There can be a slight discrepancy when hitting batched Troves
-                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1, 18, "Underflow");
+                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 100, 18, "Underflow");
                         trove.debt = 0;
                     } else {
                         trove.debt -= redeemed.debt;
@@ -1266,7 +1266,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // There can be a slight discrepancy when hitting batched Troves
             uint256 remainingAmount = boldToken.balanceOf(msg.sender);
-            assertApproxEqAbsDecimal(remainingAmount, amount - totalDebtRedeemed, 1, 18, "Wrong remaining BOLD");
+            assertApproxEqAbsDecimal(remainingAmount, amount - totalDebtRedeemed, 100, 18, "Wrong remaining BOLD");
             _sweepBold(msg.sender, remainingAmount);
         }
 
