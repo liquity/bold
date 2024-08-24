@@ -7,7 +7,7 @@ import "../Dependencies/AggregatorV3Interface.sol";
 import "../Interfaces/IPriceFeed.sol";
 import "../BorrowerOperations.sol";
 
-import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
 abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
     // Dummy flag raised when the collateral branch gets shut down.
@@ -60,26 +60,19 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
 
         uint256 scaledPrice;
         bool oracleIsDown;
-        console2.log("_getOracleAnswer");
         // Check oracle is serving an up-to-date and sensible price. If not, shut down this collateral branch.
         if (!_isValidChainlinkPrice(chainlinkResponse, _oracle.stalenessThreshold)) {
             oracleIsDown = true;
-             console2.log("not valid price");
         } else {
             scaledPrice = _scaleChainlinkPriceTo18decimals(chainlinkResponse.answer, _oracle.decimals);
-            console2.log("valid price");
         }
 
         return (scaledPrice, oracleIsDown);
     }
 
     function _disableFeedAndShutDown(address _failedOracleAddr) internal returns (uint256) {
-        console2.log("disable feed and shut down top");
-        console2.log(address(borrowerOperations), "borrowerOperations addr in WETH pricefeed");
         // Shut down the branch
         borrowerOperations.shutdownFromOracleFailure(_failedOracleAddr);
-
-        console2.log("disable feed and shut down");
 
         priceFeedDisabled = true;
         return lastGoodPrice;
@@ -99,7 +92,6 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
             chainlinkResponse.answer = answer;
             chainlinkResponse.timestamp = updatedAt;
             chainlinkResponse.success = true;
-            console2.log("call succeeds");
 
             return chainlinkResponse;
         } catch {
