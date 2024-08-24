@@ -211,7 +211,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         address _removeManager,
         address _receiver
     ) external override returns (uint256) {
-        _requireIsNotShutDown();
         _requireValidAnnualInterestRate(_annualInterestRate);
 
         OpenTroveVars memory vars;
@@ -310,6 +309,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         address _receiver,
         TroveChange memory _change
     ) internal returns (uint256) {
+        _requireIsNotShutDown();
+
         LocalVariables_openTrove memory vars;
 
         // TODO: stack too deep not allowing to reuse troveManager from outer functions
