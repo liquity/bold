@@ -32,6 +32,9 @@ contract WETHZapper is AddRemoveManagers {
         uint256 lowerHint;
         uint256 annualInterestRate;
         uint256 maxUpfrontFee;
+        address addManager;
+        address removeManager;
+        address receiver;
     }
 
     struct OpenTroveVars {
@@ -70,6 +73,10 @@ contract WETHZapper is AddRemoveManagers {
         );
 
         boldToken.transfer(msg.sender, _params.boldAmount);
+
+        // Set add/remove managers
+        _setAddManager(vars.troveId, _params.addManager);
+        _setRemoveManagerAndReceiver(vars.troveId, _params.removeManager, _params.receiver);
 
         return vars.troveId;
     }
