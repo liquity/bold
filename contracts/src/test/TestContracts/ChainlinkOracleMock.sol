@@ -2,6 +2,7 @@ pragma solidity 0.8.18;
 
 import "../../Dependencies/AggregatorV3Interface.sol";
 
+// Mock Chainlink oracle that returns a stale price answer
 contract ChainlinkOracleMock is AggregatorV3Interface {
     function decimals() external view returns (uint8) {
         return 8;
