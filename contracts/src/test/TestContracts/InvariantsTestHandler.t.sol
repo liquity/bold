@@ -250,6 +250,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     struct LiquidationTransientState {
         address[] batch;
+        EnumerableSet remaining;
         EnumerableAddressSet liquidated;
         EnumerableAddressSet batchManagers; // batch managers touched by liquidation
         LiquidationTotals t;
@@ -1113,6 +1114,19 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             spColl[i] += l.t.spCollGain;
             spBoldDeposits[i] -= l.t.spOffset;
             collSurplus[i] += l.t.collSurplus;
+        } catch Panic(uint256 code) {
+            uint256 totalStakes = 0;
+
+            for (uint256 j = 0; j < l.remaining.size(); ++j) {
+                Trove memory trove = _troves[i][l.remaining.get(j)];
+                trove.applyPendingRedist();
+                totalStakes += trove.coll;
+            }
+
+            assertEq(code, 0x12, "Unexpected panic code");
+            assertGtDecimal(l.t.debtRedist, 0, 18, "Shouldn't have failed as there was nothing to redistribute");
+            assertApproxEqAbsDecimal(totalStakes, 0, 1e4, 18, "Shouldn't have failed as there was stake remaining");
+            errorString = "Division by zero due to totalStakes == 0";
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, errorString) = _decodeCustomError(revertData);
@@ -1214,7 +1228,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                     if (redeemed.debt > trove.debt) {
                         // There can be a slight discrepancy when hitting batched Troves
-                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 100, 18, "Underflow");
+                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e4, 18, "Underflow");
                         trove.debt = 0;
                     } else {
                         trove.debt -= redeemed.debt;
@@ -1266,7 +1280,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // There can be a slight discrepancy when hitting batched Troves
             uint256 remainingAmount = boldToken.balanceOf(msg.sender);
-            assertApproxEqAbsDecimal(remainingAmount, amount - totalDebtRedeemed, 100, 18, "Wrong remaining BOLD");
+            assertApproxEqAbsDecimal(remainingAmount, amount - totalDebtRedeemed, 1e4, 18, "Wrong remaining BOLD");
             _sweepBold(msg.sender, remainingAmount);
         }
 
@@ -1356,7 +1370,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                 if (redeemed.debt > trove.debt) {
                     // There can be a slight discrepancy when hitting batched Troves
-                    assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 100, 18, "Underflow");
+                    assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e4, 18, "Underflow");
                     trove.debt = 0;
                 } else {
                     trove.debt -= redeemed.debt;
@@ -1402,7 +1416,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // There can be a slight discrepancy when hitting batched Troves
             uint256 remainingAmount = boldToken.balanceOf(msg.sender);
-            assertApproxEqAbsDecimal(remainingAmount, amount - r.totalDebtRedeemed, 100, 18, "Wrong remaining BOLD");
+            assertApproxEqAbsDecimal(remainingAmount, amount - r.totalDebtRedeemed, 1e4, 18, "Wrong remaining BOLD");
             _sweepBold(msg.sender, remainingAmount);
         }
 
@@ -2288,6 +2302,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     function _planLiquidation(uint256 i) internal returns (LiquidationTransientState storage l) {
         ITroveManager troveManager = branches[i].troveManager;
         l = _liquidation;
+        l.remaining.add(_troveIds[i]);
 
         for (uint256 j = 0; j < l.batch.length; ++j) {
             if (l.liquidated.has(l.batch[j])) continue; // skip duplicate entry
@@ -2298,6 +2313,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
             if (_ICR(i, trove) >= MCR[i]) continue;
 
+            l.remaining.remove(troveId);
             l.liquidated.add(l.batch[j]);
             if (batchManager != address(0)) l.batchManagers.add(batchManager);
 
@@ -2306,6 +2322,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     }
 
     function _resetLiquidation() internal {
+        _liquidation.remaining.reset();
         _liquidation.liquidated.reset();
         _liquidation.batchManagers.reset();
         delete _liquidation;

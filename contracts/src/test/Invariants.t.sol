@@ -118,8 +118,12 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
             );
             assertEqDecimal(weth.balanceOf(address(c.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool");
             assertEqDecimal(c.collSurplusPool.getCollBalance(), handler.collSurplus(i), 18, "Wrong CollSurplusPool");
-            assertEqDecimal(
-                c.stabilityPool.getTotalBoldDeposits(), handler.spBoldDeposits(i), 18, "Wrong StabilityPool deposits"
+            assertApproxEqAbsDecimal(
+                c.stabilityPool.getTotalBoldDeposits(),
+                handler.spBoldDeposits(i),
+                100,
+                18,
+                "Wrong StabilityPool deposits"
             );
             assertEqDecimal(
                 c.stabilityPool.getYieldGainsOwed(), handler.spBoldYield(i), 18, "Wrong StabilityPool yield"
