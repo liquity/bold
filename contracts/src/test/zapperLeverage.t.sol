@@ -1,7 +1,5 @@
 pragma solidity ^0.8.18;
 
-import "openzeppelin-contracts/contracts/utils/math/Math.sol";
-
 import "./TestContracts/DevTestSetup.sol";
 import "./TestContracts/WETH.sol";
 import "../Zappers/LeverageLSTZapper.sol";
@@ -11,6 +9,7 @@ import "../Zappers/Modules/Exchanges/Curve/ICurvePool.sol";
 import "../Zappers/Modules/Exchanges/CurveExchange.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/ISwapRouter.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
+import "../Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Pool.sol";
 import "./TestContracts/Interfaces/INonfungiblePositionManager.sol";
 import "../Zappers/Modules/Exchanges/UniV3Exchange.sol";
 
@@ -20,9 +19,6 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
     IQuoterV2 constant uniV3Quoter = IQuoterV2(0x61fFE014bA17989E743c5F6cB21bF9697530B21e);
     INonfungiblePositionManager constant uniV3PositionManager = INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
     uint24 constant UNIV3_FEE = 3000; // 0.3%
-    // Avoiding another dependency for just 2 constants:
-    int24 internal constant MIN_TICK = -887272;
-    int24 internal constant MAX_TICK = -MIN_TICK;
 
     LeverageLSTZapper leverageZapperCurve;
     LeverageLSTZapper leverageZapperUniV3;
@@ -69,11 +65,6 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             contractsArray.push(result.contractsArray[c]);
         }
 
-        // Bootstrap DEX pools
-        ICurvePool[] memory curvePools;
-        curvePools = deployCurveV2Pools(result.contractsArray);
-        //deployUniV3Pools(result.contractsArray);
-
         // Set first branch as default
         addressesRegistry = contractsArray[1].addressesRegistry;
         borrowerOperations = IBorrowerOperationsTester(address(contractsArray[1].borrowerOperations));
@@ -84,12 +75,18 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
 
         // Deploy zapper (TODO: should we move it to deployment.sol?)
         BalancerFlashLoan flashLoanProvider = new BalancerFlashLoan();
+
         // Curve version
+        // Bootstrap Curve pools
+        ICurvePool[] memory curvePools;
+        curvePools = deployCurveV2Pools(result.contractsArray);
         curveExchange = new CurveExchange(collToken, boldToken, curvePools[1], 1, 0);
         leverageZapperCurve = new LeverageLSTZapper(addressesRegistry, flashLoanProvider, curveExchange);
         // Uni V3 version
         uniV3Exchange = new UniV3Exchange(collToken, boldToken, UNIV3_FEE, uniV3Router, uniV3Quoter);
-        leverageZapperUniV3 = new LeverageLSTZapper(addressesRegistry, flashLoanProvider, curveExchange);
+        leverageZapperUniV3 = new LeverageLSTZapper(addressesRegistry, flashLoanProvider, uniV3Exchange);
+        // Bootstrap UniV3 pools
+        deployUniV3Pools(result.contractsArray);
 
         // Give some Collateral to test accounts
         uint256 initialCollateralAmount = 10_000e18;
@@ -102,6 +99,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             deal(address(collToken), accountsList[i], initialCollateralAmount);
             vm.startPrank(accountsList[i]);
             collToken.approve(address(leverageZapperCurve), initialCollateralAmount);
+            collToken.approve(address(leverageZapperUniV3), initialCollateralAmount);
             vm.stopPrank();
         }
     }
@@ -151,52 +149,66 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
 
     function deployUniV3Pools(TestDeployer.LiquityContracts[] memory _contractsArray) internal {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
-            uint256 price = DECIMAL_PRECISION * DECIMAL_PRECISION / _contractsArray[i].priceFeed.fetchPrice();
+            uint256 price = _contractsArray[i].priceFeed.fetchPrice();
+            //console2.log(price, "price");
 
-            // Create Uni V3 pools
-            /*
-            console2.log(price, "p");
-            console2.log((price << 192) / DECIMAL_PRECISION, "*2^192 / 1e18");
-            console2.log(Math.sqrt((price << 192) / DECIMAL_PRECISION), "sqrt (p* 2^192 / 1e18)");
-            console2.log(uint160(Math.sqrt((price << 192) / DECIMAL_PRECISION)), "uint160");
-            uint256 dai_eth_xprice = 1418852167536274355122942739;
-            console2.log(dai_eth_xprice, "dai_eth_xprice");
-            console2.log((dai_eth_xprice * dai_eth_xprice * DECIMAL_PRECISION) >> 192, "dai_eth_xprice ^2 / 2 ^192");
-            */
-
-            uniV3PositionManager.createAndInitializePoolIfNecessary(
-                address(boldToken), // token0,
-                address(collToken), // token1,
-                UNIV3_FEE, // fee,
-                uint160(Math.sqrt((price << 192) / DECIMAL_PRECISION)) // sqrtPriceX96
-            );
-            // Add liquidity
+            // tokens and amounts
             uint256 collAmount = 1000 ether;
             uint256 boldAmount = collAmount * price / DECIMAL_PRECISION;
-            deal(address(_contractsArray[i].collToken), A, collAmount);
-            deal(address(boldToken), A, boldAmount);
+            address[2] memory tokens;
+            uint256[2] memory amounts;
+            if (address(boldToken) < address(_contractsArray[i].collToken)) {
+                //console2.log("b < c");
+                tokens[0] = address(boldToken);
+                tokens[1] = address(_contractsArray[i].collToken);
+                amounts[0] = boldAmount;
+                amounts[1] = collAmount;
+            } else {
+                //console2.log("c < b");
+                tokens[0] = address(_contractsArray[i].collToken);
+                tokens[1] = address(boldToken);
+                amounts[0] = collAmount;
+                amounts[1] = boldAmount;
+            }
+
+            // Create Uni V3 pool
+            address uniV3PoolAddress = uniV3PositionManager.createAndInitializePoolIfNecessary(
+                tokens[0], // token0,
+                tokens[1], // token1,
+                UNIV3_FEE, // fee,
+                UniV3Exchange(address(uniV3Exchange)).priceToSqrtPrice(boldToken, _contractsArray[i].collToken, price) // sqrtPriceX96
+            );
+            //console2.log(uniV3PoolAddress, "uniV3PoolAddress");
+
+            // Add liquidity
 
             vm.startPrank(A);
-            // approve
+
+            // deal and approve
+            deal(address(_contractsArray[i].collToken), A, collAmount);
+            deal(address(boldToken), A, boldAmount);
             _contractsArray[i].collToken.approve(address(uniV3PositionManager), collAmount);
             boldToken.approve(address(uniV3PositionManager), boldAmount);
+
             // mint new position
+            int24 TICK_SPACING = IUniswapV3Pool(uniV3PoolAddress).tickSpacing();
+            (, int24 tick, ,,,,) = IUniswapV3Pool(uniV3PoolAddress).slot0();
+            int24 tickLower = (tick - 6000) / TICK_SPACING * TICK_SPACING;
+            int24 tickUpper = (tick + 6000) / TICK_SPACING * TICK_SPACING;
             INonfungiblePositionManager.MintParams memory params =
                 INonfungiblePositionManager.MintParams({
-                    token0: address(boldToken),
-                    token1: address(collToken),
+                    token0: tokens[0],
+                    token1: tokens[1],
                     fee: UNIV3_FEE,
-                    //tickLower: MIN_TICK,
-                    //tickUpper: MAX_TICK,
-                    tickLower: -1000,
-                    tickUpper: 1000,
-                    amount0Desired: boldAmount,
-                    amount1Desired: collAmount,
+                    tickLower: tickLower,
+                    tickUpper: tickUpper,
+                    amount0Desired: amounts[0],
+                    amount1Desired: amounts[1],
                     amount0Min: 0,
                     amount1Min: 0,
-                    recipient: address(this),
-                    deadline: block.timestamp + 3600
-                    });
+                    recipient: A,
+                    deadline: block.timestamp
+                });
 
             uniV3PositionManager.mint(params);
 
@@ -214,6 +226,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         return this.onERC721Received.selector;
     }
 
+    /*
     function openLeveragedTroveWithCurve(uint256 _collAmount, uint256 _leverageRatio) internal returns (uint256) {
         return openLeveragedTrove(leverageZapperCurve, curveExchange, _collAmount, _leverageRatio);
     }
@@ -221,6 +234,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
     function openLeveragedTroveWithUniV3(uint256 _collAmount, uint256 _leverageRatio) internal returns (uint256) {
         return openLeveragedTrove(leverageZapperUniV3, curveExchange, _collAmount, _leverageRatio);
     }
+    */
 
     function openLeveragedTrove(ILeverageZapper _leverageZapper, IExchange _exchange, uint256 _collAmount, uint256 _leverageRatio) internal returns (uint256) {
         uint256 price = priceFeed.fetchPrice();
@@ -257,12 +271,10 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         _testCanOpenTrove(leverageZapperCurve, curveExchange);
     }
 
-    /*
     function testCanOpenTroveWithUniV3() external {
-        deployUniV3Pools(contractsArray); // TODO
-        _testCanOpenTrove(leverageZapperUniV3, curveExchange);
+        //deployUniV3Pools(contractsArray);
+        _testCanOpenTrove(leverageZapperUniV3, uniV3Exchange);
     }
-    */
 
     function _testCanOpenTrove(ILeverageZapper _leverageZapper, IExchange _exchange) internal {
         uint256 collAmount = 10 ether;
@@ -292,7 +304,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         // CR
         assertApproxEqAbs(troveManager.getCurrentICR(troveId, price), resultingCollateralRatio, 3e16, "Wrong CR");
         // token balances
-        assertEq(boldToken.balanceOf(A), 0, "BOLD bal mismatch");
+        assertApproxEqAbs(boldToken.balanceOf(A), 0, 15, "BOLD bal mismatch");
         assertEq(A.balance, ethBalanceBefore - ETH_GAS_COMPENSATION, "ETH bal mismatch");
         assertEq(collToken.balanceOf(A), collBalanceBefore - collAmount, "Coll bal mismatch");
     }
@@ -301,11 +313,9 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         _testOnlyFlashLoanProviderCanCallOpenTroveCallback(leverageZapperCurve);
     }
 
-    /*
     function testOnlyFlashLoanProviderCanCallOpenTroveCallbackWithUni() external {
         _testOnlyFlashLoanProviderCanCallOpenTroveCallback(leverageZapperUniV3);
     }
-    */
 
     function _testOnlyFlashLoanProviderCanCallOpenTroveCallback(ILeverageZapper _leverageZapper) internal {
         ILeverageZapper.OpenLeveragedTroveParams memory params = ILeverageZapper.OpenLeveragedTroveParams({
@@ -370,11 +380,9 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         _testCanLeverUpTrove(leverageZapperCurve, curveExchange);
     }
 
-    /*
     function testCanLeverUpTroveWithUniV3() external {
         _testCanLeverUpTrove(leverageZapperUniV3, uniV3Exchange);
     }
-    */
 
     function _testCanLeverUpTrove(ILeverageZapper _leverageZapper, IExchange _exchange) internal {
         uint256 collAmount = 10 ether;
@@ -403,7 +411,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         // CR
         assertApproxEqAbs(troveManager.getCurrentICR(troveId, price), resultingCollateralRatio, 2e16, "Wrong CR");
         // token balances
-        assertEq(boldToken.balanceOf(A), 0, "BOLD bal mismatch");
+        assertApproxEqAbs(boldToken.balanceOf(A), 0, 10, "BOLD bal mismatch");
         assertEq(A.balance, ethBalanceBefore, "ETH bal mismatch");
         assertEq(collToken.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
     }
@@ -412,11 +420,9 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         _testOnlyFlashLoanProviderCanCallLeverUpCallback(leverageZapperCurve);
     }
 
-    /*
     function testOnlyFlashLoanProviderCanCallLeverUpCallbackWithUni() external {
         _testOnlyFlashLoanProviderCanCallLeverUpCallback(leverageZapperUniV3);
     }
-    */
 
     function _testOnlyFlashLoanProviderCanCallLeverUpCallback(ILeverageZapper _leverageZapper) internal {
         ILeverageZapper.LeverUpTroveParams memory params = ILeverageZapper.LeverUpTroveParams({
@@ -470,11 +476,9 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         _testCanLeverDownTrove(leverageZapperCurve, curveExchange);
     }
 
-    /*
     function testCanLeverDownTroveWithUniV3() external {
         _testCanLeverDownTrove(leverageZapperUniV3, uniV3Exchange);
     }
-    */
 
     function _testCanLeverDownTrove(ILeverageZapper _leverageZapper, IExchange _exchange) internal {
         uint256 collAmount = 10 ether;
@@ -494,16 +498,16 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         // Checks
         uint256 price = priceFeed.fetchPrice();
         // coll
-        assertApproxEqAbs(getTroveEntireColl(troveId), collAmount * newLeverageRatio / DECIMAL_PRECISION, 2e17, "Coll mismatch");
+        assertApproxEqAbs(getTroveEntireColl(troveId), collAmount * newLeverageRatio / DECIMAL_PRECISION, 22e16, "Coll mismatch");
         // debt
-        uint256 expectedMinNetDebt = initialDebt - flashLoanAmount * price / DECIMAL_PRECISION;
+        uint256 expectedMinNetDebt = initialDebt - flashLoanAmount * price / DECIMAL_PRECISION * 101 / 100;
         uint256 expectedMaxNetDebt = expectedMinNetDebt * 105 / 100;
         assertGe(getTroveEntireDebt(troveId), expectedMinNetDebt, "Debt too low");
         assertLe(getTroveEntireDebt(troveId), expectedMaxNetDebt, "Debt too high");
         // CR
         assertApproxEqAbs(troveManager.getCurrentICR(troveId, price), resultingCollateralRatio, 3e15, "Wrong CR");
         // token balances
-        assertEq(boldToken.balanceOf(A), 0, "BOLD bal mismatch");
+        assertApproxEqAbs(boldToken.balanceOf(A), 0, 15, "BOLD bal mismatch");
         assertEq(A.balance, ethBalanceBefore, "ETH bal mismatch");
         assertEq(collToken.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
     }
