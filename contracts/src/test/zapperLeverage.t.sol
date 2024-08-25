@@ -5,35 +5,39 @@ pragma solidity ^0.8.18;
 import "./TestContracts/DevTestSetup.sol";
 import "./TestContracts/WETH.sol";
 import "../Zappers/LeverageLSTZapper.sol";
-import "../Zappers/Modules/FlashLoans/BalancerFlashLoan.sol";
-import "../Zappers/Modules/Exchanges/Curve/ICurveFactory.sol";
 import "../Zappers/Modules/Exchanges/Curve/ICurvePool.sol";
 import "../Zappers/Modules/Exchanges/CurveExchange.sol";
-import "../Zappers/Modules/Exchanges/UniswapV3/ISwapRouter.sol";
-import "../Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Pool.sol";
-import "./TestContracts/Interfaces/INonfungiblePositionManager.sol";
 import "../Zappers/Modules/Exchanges/UniV3Exchange.sol";
+import "../Zappers/Modules/Exchanges/UniswapV3/INonfungiblePositionManager.sol";
+import "../Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Factory.sol";
 import "./Utils/UniPriceConverter.sol";
 
 contract ZapperLeverageLSTMainnet is DevTestSetup {
     using StringFormatting for uint256;
 
-    ICurveFactory constant curveFactory = ICurveFactory(0x98EE851a00abeE0d95D08cF4CA2BdCE32aeaAF7F);
-    ISwapRouter constant uniV3Router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
-    IQuoterV2 constant uniV3Quoter = IQuoterV2(0x61fFE014bA17989E743c5F6cB21bF9697530B21e);
     INonfungiblePositionManager constant uniV3PositionManager =
         INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
+    IUniswapV3Factory constant uniswapV3Factory = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
     uint24 constant UNIV3_FEE = 3000; // 0.3%
 
     uint256 constant NUM_COLLATERALS = 5;
 
-    LeverageLSTZapper[NUM_COLLATERALS] leverageZapperCurveArray;
-    LeverageLSTZapper[NUM_COLLATERALS] leverageZapperUniV3Array;
-    IExchange[NUM_COLLATERALS] curveExchangeArray;
-    IExchange[NUM_COLLATERALS] uniV3ExchangeArray;
+    LeverageLSTZapper[] leverageZapperCurveArray;
+    LeverageLSTZapper[] leverageZapperUniV3Array;
 
     TestDeployer.LiquityContracts[] contractsArray;
+
+    struct LeverVars {
+        uint256 price;
+        uint256 currentCR;
+        uint256 currentLR;
+        uint256 currentCollAmount;
+        uint256 flashLoanAmount;
+        uint256 expectedBoldAmount;
+        uint256 maxNetDebtIncrease;
+        uint256 effectiveBoldAmount;
+    }
 
     struct TestVars {
         uint256 collAmount;
@@ -84,29 +88,15 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         // Record contracts
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
             contractsArray.push(result.contractsArray[c]);
+            leverageZapperCurveArray.push(result.zappersArray[c].leverageZapperCurve);
+            leverageZapperUniV3Array.push(result.zappersArray[c].leverageZapperUniV3);
         }
 
-        // Deploy zapper (TODO: should we move it to deployment.sol?)
-        BalancerFlashLoan flashLoanProvider = new BalancerFlashLoan();
-
-        // Curve version
         // Bootstrap Curve pools
-        ICurvePool[] memory curvePools;
-        curvePools = deployCurveV2Pools(result.contractsArray);
-        for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
-            curveExchangeArray[c] = new CurveExchange(contractsArray[c].collToken, boldToken, curvePools[c], 1, 0);
-            leverageZapperCurveArray[c] =
-                new LeverageLSTZapper(contractsArray[c].addressesRegistry, flashLoanProvider, curveExchangeArray[c]);
-        }
-        // Uni V3 version
-        for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
-            uniV3ExchangeArray[c] =
-                new UniV3Exchange(contractsArray[c].collToken, boldToken, UNIV3_FEE, uniV3Router, uniV3Quoter);
-            leverageZapperUniV3Array[c] =
-                new LeverageLSTZapper(contractsArray[c].addressesRegistry, flashLoanProvider, uniV3ExchangeArray[c]);
-        }
+        fundCurveV2Pools(result.contractsArray, result.zappersArray);
+
         // Bootstrap UniV3 pools
-        deployUniV3Pools(result.contractsArray);
+        fundUniV3Pools(result.contractsArray);
 
         // Give some Collateral to test accounts
         uint256 initialCollateralAmount = 10_000e18;
@@ -126,34 +116,13 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         }
     }
 
-    function deployCurveV2Pools(TestDeployer.LiquityContracts[] memory _contractsArray)
-        internal
-        returns (ICurvePool[] memory curvePools)
-    {
-        curvePools = new ICurvePool[](NUM_COLLATERALS);
-
+    function fundCurveV2Pools(
+        TestDeployer.LiquityContracts[] memory _contractsArray,
+        TestDeployer.Zappers[] memory _zappersArray
+    ) internal {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             uint256 price = _contractsArray[i].priceFeed.fetchPrice();
-
-            // deploy Curve Twocrypto NG pool
-            address[2] memory coins;
-            coins[0] = address(boldToken);
-            coins[1] = address(_contractsArray[i].collToken);
-            curvePools[i] = curveFactory.deploy_pool(
-                "LST-Bold pool",
-                "LBLD",
-                coins,
-                0, // implementation id
-                400000, // A
-                145000000000000, // gamma
-                26000000, // mid_fee
-                45000000, // out_fee
-                230000000000000, // fee_gamma
-                2000000000000, // allowed_extra_profit
-                146000000000000, // adjustment_step
-                600, // ma_exp_time
-                price // initial_price
-            );
+            ICurvePool curvePool = CurveExchange(address(_zappersArray[i].leverageZapperCurve.exchange())).curvePool();
 
             // Add liquidity
             uint256 collAmount = 1000 ether;
@@ -162,17 +131,17 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             deal(address(boldToken), A, boldAmount);
             vm.startPrank(A);
             // approve
-            _contractsArray[i].collToken.approve(address(curvePools[i]), collAmount);
-            boldToken.approve(address(curvePools[i]), boldAmount);
+            _contractsArray[i].collToken.approve(address(curvePool), collAmount);
+            boldToken.approve(address(curvePool), boldAmount);
             uint256[2] memory amounts;
             amounts[0] = boldAmount;
             amounts[1] = collAmount;
-            curvePools[i].add_liquidity(amounts, 0);
+            curvePool.add_liquidity(amounts, 0);
             vm.stopPrank();
         }
     }
 
-    function deployUniV3Pools(TestDeployer.LiquityContracts[] memory _contractsArray) internal {
+    function fundUniV3Pools(TestDeployer.LiquityContracts[] memory _contractsArray) internal {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             uint256 price = _contractsArray[i].priceFeed.fetchPrice();
             //console2.log(price, "price");
@@ -196,17 +165,6 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
                 amounts[1] = boldAmount;
             }
 
-            // Create Uni V3 pool
-            address uniV3PoolAddress = uniV3PositionManager.createAndInitializePoolIfNecessary(
-                tokens[0], // token0,
-                tokens[1], // token1,
-                UNIV3_FEE, // fee,
-                UniV3Exchange(address(uniV3ExchangeArray[i])).priceToSqrtPrice(
-                    boldToken, _contractsArray[i].collToken, price
-                ) // sqrtPriceX96
-            );
-            //console2.log(uniV3PoolAddress, "uniV3PoolAddress");
-
             // Add liquidity
 
             vm.startPrank(A);
@@ -218,6 +176,9 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             boldToken.approve(address(uniV3PositionManager), boldAmount);
 
             // mint new position
+            address uniV3PoolAddress =
+                uniswapV3Factory.getPool(address(boldToken), address(_contractsArray[i].collToken), UNIV3_FEE);
+            //console2.log(uniV3PoolAddress, "uniV3PoolAddress");
             int24 TICK_SPACING = IUniswapV3Pool(uniV3PoolAddress).tickSpacing();
             (, int24 tick,,,,,) = IUniswapV3Pool(uniV3PoolAddress).slot0();
             int24 tickLower = (tick - 6000) / TICK_SPACING * TICK_SPACING;
@@ -249,28 +210,28 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
 
     /*
     function openLeveragedTroveWithCurve(uint256 _collAmount, uint256 _leverageRatio) internal returns (uint256) {
-        return openLeveragedTrove(leverageZapperCurve, curveExchange, _collAmount, _leverageRatio);
+        return openLeveragedTrove(leverageZapperCurve, _collAmount, _leverageRatio);
     }
 
     function openLeveragedTroveWithUniV3(uint256 _collAmount, uint256 _leverageRatio) internal returns (uint256) {
-        return openLeveragedTrove(leverageZapperUniV3, curveExchange, _collAmount, _leverageRatio);
+        return openLeveragedTrove(leverageZapperUniV3, _collAmount, _leverageRatio);
     }
     */
 
     function openLeveragedTrove(
         ILeverageZapper _leverageZapper,
-        IExchange _exchange,
         uint256 _collAmount,
         uint256 _leverageRatio,
         IPriceFeed _priceFeed
     ) internal returns (uint256) {
         uint256 price = _priceFeed.fetchPrice();
+        IExchange exchange = _leverageZapper.exchange();
 
         // This should be done in the frontend
         uint256 flashLoanAmount = _collAmount * (_leverageRatio - DECIMAL_PRECISION) / DECIMAL_PRECISION;
         uint256 expectedBoldAmount = flashLoanAmount * price / DECIMAL_PRECISION;
         uint256 maxNetDebt = expectedBoldAmount * 105 / 100; // slippage
-        uint256 effectiveBoldAmount = _exchange.getBoldAmountToSwap(expectedBoldAmount, maxNetDebt, flashLoanAmount);
+        uint256 effectiveBoldAmount = exchange.getBoldAmountToSwap(expectedBoldAmount, maxNetDebt, flashLoanAmount);
 
         ILeverageZapper.OpenLeveragedTroveParams memory params = ILeverageZapper.OpenLeveragedTroveParams({
             owner: A,
@@ -296,18 +257,18 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
 
     function testCanOpenTroveWithCurve() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
-            _testCanOpenTrove(leverageZapperCurveArray[i], curveExchangeArray[i], i);
+            _testCanOpenTrove(leverageZapperCurveArray[i], i);
         }
     }
 
     function testCanOpenTroveWithUniV3() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             if (i == 2) continue; // TODO!!
-            _testCanOpenTrove(leverageZapperUniV3Array[i], uniV3ExchangeArray[i], i);
+            _testCanOpenTrove(leverageZapperUniV3Array[i], i);
         }
     }
 
-    function _testCanOpenTrove(ILeverageZapper _leverageZapper, IExchange _exchange, uint256 _branch) internal {
+    function _testCanOpenTrove(ILeverageZapper _leverageZapper, uint256 _branch) internal {
         uint256 collAmount = 10 ether;
         uint256 leverageRatio = 2e18;
         uint256 resultingCollateralRatio = _leverageZapper.leverageRatioToCollateralRatio(leverageRatio);
@@ -316,7 +277,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         uint256 collBalanceBefore = contractsArray[_branch].collToken.balanceOf(A);
 
         uint256 troveId =
-            openLeveragedTrove(_leverageZapper, _exchange, collAmount, leverageRatio, contractsArray[_branch].priceFeed);
+            openLeveragedTrove(_leverageZapper, collAmount, leverageRatio, contractsArray[_branch].priceFeed);
 
         // Checks
         uint256 price = contractsArray[_branch].priceFeed.fetchPrice();
@@ -386,69 +347,70 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
     // Lever up
     /*
     function leverUpTroveWithCurve(uint256 _troveId, uint256 _leverageRatio) internal returns (uint256) {
-        return leverUpTrove(leverageZapperCurve, curveExchange, _troveId, _leverageRatio);
+        return leverUpTrove(leverageZapperCurve, _troveId, _leverageRatio);
     }
 
     function leverUpTroveWithUniV3(uint256 _troveId, uint256 _leverageRatio) internal returns (uint256) {
-        return leverUpTrove(leverageZapperUniV3, uniV3Exchange, _troveId, _leverageRatio);
+        return leverUpTrove(leverageZapperUniV3, _troveId, _leverageRatio);
     }
     */
 
     function leverUpTrove(
         ILeverageZapper _leverageZapper,
-        IExchange _exchange,
         uint256 _troveId,
         uint256 _leverageRatio,
         ITroveManager _troveManager,
         IPriceFeed _priceFeed
     ) internal returns (uint256) {
-        uint256 price = _priceFeed.fetchPrice();
+        LeverVars memory vars;
+        vars.price = _priceFeed.fetchPrice();
+        IExchange exchange = _leverageZapper.exchange();
 
         // This should be done in the frontend
-        uint256 currentCR = _troveManager.getCurrentICR(_troveId, price);
-        uint256 currentLR = _leverageZapper.leverageRatioToCollateralRatio(currentCR);
-        assertGt(_leverageRatio, currentLR, "Leverage ratio should increase");
-        uint256 currentCollAmount = getTroveEntireColl(_troveManager, _troveId);
-        uint256 flashLoanAmount = currentCollAmount * _leverageRatio / currentLR - currentCollAmount;
-        uint256 expectedBoldAmount = flashLoanAmount * price / DECIMAL_PRECISION;
-        uint256 maxNetDebtIncrease = expectedBoldAmount * 105 / 100; // slippage
+        vars.currentCR = _troveManager.getCurrentICR(_troveId, vars.price);
+        vars.currentLR = _leverageZapper.leverageRatioToCollateralRatio(vars.currentCR);
+        assertGt(_leverageRatio, vars.currentLR, "Leverage ratio should increase");
+        vars.currentCollAmount = getTroveEntireColl(_troveManager, _troveId);
+        vars.flashLoanAmount = vars.currentCollAmount * _leverageRatio / vars.currentLR - vars.currentCollAmount;
+        vars.expectedBoldAmount = vars.flashLoanAmount * vars.price / DECIMAL_PRECISION;
+        vars.maxNetDebtIncrease = vars.expectedBoldAmount * 105 / 100; // slippage
         // The actual bold we need, capped by the slippage above, to get flash loan amount
-        uint256 effectiveBoldAmount =
-            _exchange.getBoldAmountToSwap(expectedBoldAmount, maxNetDebtIncrease, flashLoanAmount);
+        vars.effectiveBoldAmount =
+            exchange.getBoldAmountToSwap(vars.expectedBoldAmount, vars.maxNetDebtIncrease, vars.flashLoanAmount);
 
         ILeverageZapper.LeverUpTroveParams memory params = ILeverageZapper.LeverUpTroveParams({
             troveId: _troveId,
-            flashLoanAmount: flashLoanAmount,
-            boldAmount: effectiveBoldAmount,
+            flashLoanAmount: vars.flashLoanAmount,
+            boldAmount: vars.effectiveBoldAmount,
             maxUpfrontFee: 1000e18
         });
         vm.startPrank(A);
         _leverageZapper.leverUpTrove(params);
         vm.stopPrank();
 
-        return flashLoanAmount;
+        return vars.flashLoanAmount;
     }
 
     function testCanLeverUpTroveWithCurve() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
-            _testCanLeverUpTrove(leverageZapperCurveArray[i], curveExchangeArray[i], i);
+            _testCanLeverUpTrove(leverageZapperCurveArray[i], i);
         }
     }
 
     function testCanLeverUpTroveWithUniV3() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             if (i == 2) continue; // TODO!!
-            _testCanLeverUpTrove(leverageZapperUniV3Array[i], uniV3ExchangeArray[i], i);
+            _testCanLeverUpTrove(leverageZapperUniV3Array[i], i);
         }
     }
 
-    function _testCanLeverUpTrove(ILeverageZapper _leverageZapper, IExchange _exchange, uint256 _branch) internal {
+    function _testCanLeverUpTrove(ILeverageZapper _leverageZapper, uint256 _branch) internal {
         TestVars memory vars;
         vars.collAmount = 10 ether;
         vars.initialLeverageRatio = 2e18;
 
         vars.troveId = openLeveragedTrove(
-            _leverageZapper, _exchange, vars.collAmount, vars.initialLeverageRatio, contractsArray[_branch].priceFeed
+            _leverageZapper, vars.collAmount, vars.initialLeverageRatio, contractsArray[_branch].priceFeed
         );
         vars.initialDebt = getTroveEntireDebt(contractsArray[_branch].troveManager, vars.troveId);
 
@@ -460,7 +422,6 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
 
         vars.flashLoanAmount = leverUpTrove(
             _leverageZapper,
-            _exchange,
             vars.troveId,
             vars.newLeverageRatio,
             contractsArray[_branch].troveManager,
@@ -563,24 +524,23 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
 
     function testCanLeverDownTroveWithCurve() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
-            _testCanLeverDownTrove(leverageZapperCurveArray[i], curveExchangeArray[i], i);
+            _testCanLeverDownTrove(leverageZapperCurveArray[i], i);
         }
     }
 
     function testCanLeverDownTroveWithUniV3() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             if (i == 2) continue; // TODO!!
-            _testCanLeverDownTrove(leverageZapperUniV3Array[i], uniV3ExchangeArray[i], i);
+            _testCanLeverDownTrove(leverageZapperUniV3Array[i], i);
         }
     }
 
-    function _testCanLeverDownTrove(ILeverageZapper _leverageZapper, IExchange _exchange, uint256 _branch) internal {
+    function _testCanLeverDownTrove(ILeverageZapper _leverageZapper, uint256 _branch) internal {
         uint256 collAmount = 10 ether;
         uint256 initialLeverageRatio = 2e18;
 
-        uint256 troveId = openLeveragedTrove(
-            _leverageZapper, _exchange, collAmount, initialLeverageRatio, contractsArray[_branch].priceFeed
-        );
+        uint256 troveId =
+            openLeveragedTrove(_leverageZapper, collAmount, initialLeverageRatio, contractsArray[_branch].priceFeed);
         uint256 initialDebt = getTroveEntireDebt(contractsArray[_branch].troveManager, troveId);
 
         uint256 newLeverageRatio = 1.5e18;

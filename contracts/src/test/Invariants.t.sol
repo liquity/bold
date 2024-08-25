@@ -69,7 +69,7 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
 
         TestDeployer deployer = new TestDeployer();
         Contracts memory contracts;
-        (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth)
+        (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth,)
         = deployer.deployAndConnectContractsMultiColl(paramsList);
         setupContracts(contracts);
 
