@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+pragma solidity >=0.5.0;
+
 // Sources flattened with hardhat v2.2.0 https://hardhat.org
 
 // File contracts/interfaces/pool/IUniswapV3PoolImmutables.sol
-
-pragma solidity >=0.5.0;
 
 /// @title Pool state that never changes
 /// @notice These parameters are fixed for a pool forever, i.e., the methods will always return the same values
