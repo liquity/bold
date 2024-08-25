@@ -114,7 +114,7 @@ export default {
       label: "You borrow",
     },
     liquidationPriceField: {
-      label: "ETH Liquidation price",
+      label: "ETH liquidation price",
     },
     interestRateField: {
       label: "Interest rate",
@@ -141,7 +141,7 @@ export default {
       label: "You deposit",
     },
     liquidationPriceField: {
-      label: "ETH Liquidation price",
+      label: "ETH liquidation price",
     },
     interestRateField: {
       label: "Interest rate",

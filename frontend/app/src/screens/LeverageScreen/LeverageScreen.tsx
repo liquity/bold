@@ -65,7 +65,6 @@ export function LeverageScreen() {
   const depositBold = depositPreLeverage.parsed && dn.mul(depositPreLeverage.parsed, ethPriceBold);
 
   const leverageField = useLeverageField({
-    updatePriority: "liquidationPrice",
     depositPreLeverage: depositPreLeverage.parsed,
     collPrice,
     collToken: COLLATERALS[collateralIndex],
@@ -178,20 +177,49 @@ export function LeverageScreen() {
             />
           }
           footer={[[
-            // eslint-disable-next-line react/jsx-key
             <Field.FooterInfoCollPrice
               collName={collateral.name}
               collPriceUsd={collPrice}
             />,
-
-            // eslint-disable-next-line react/jsx-key
             <Field.FooterInfoMaxLtv
               maxLtv={dn.div(dn.from(1, 18), collateral.collateralRatio)}
             />,
           ]]}
         />
 
-        <LeverageField {...leverageField} />
+        <Field
+          field={<LeverageField {...leverageField} />}
+          footer={[[
+            <>
+              <Field.FooterInfoLiquidationRisk
+                riskLevel={leverageField.liquidationRisk}
+              />
+              <Field.FooterInfoLoanToValue
+                ltvRatio={leverageField.ltv}
+                maxLtvRatio={leverageField.maxLtv}
+              />
+            </>,
+            <HFlex>
+              <span
+                className={css({
+                  color: "contentAlt",
+                })}
+              >
+                Exposure
+              </span>
+              <span
+                className={css({
+                  fontVariantNumeric: "tabular-nums",
+                })}
+              >
+                {(leverageField.deposit && dn.gt(leverageField.deposit, 0))
+                  ? `${dn.format(leverageField.deposit, { digits: 2, trailingZeros: true })} ETH`
+                  : "−"}
+              </span>
+              <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.exposure)} />
+            </HFlex>,
+          ]]}
+        />
 
         <VFlex gap={0}>
           <Field
@@ -288,7 +316,6 @@ export function LeverageScreen() {
             }
             footer={[
               [
-                // eslint-disable-next-line react/jsx-key
                 <Field.FooterInfoRedemptionRisk riskLevel={redemptionRisk} />,
                 <span
                   className={css({

@@ -14,7 +14,7 @@ const HANDLE_SIZE = 26; // with the outline
 const MIN_WIDTH = HANDLE_SIZE * 10;
 const CHART_MAX_HEIGHT = 17;
 const HEIGHT = Math.max(HANDLE_SIZE, BAR_HEIGHT, CHART_MAX_HEIGHT * 2) + PADDING * 2;
-const GRADIENT_TRANSITION_BLUR = 10;
+const GRADIENT_TRANSITION_BLUR = 4;
 
 export function Slider({
   chart,

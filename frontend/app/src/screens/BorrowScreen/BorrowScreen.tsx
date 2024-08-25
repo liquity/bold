@@ -323,13 +323,10 @@ export function BorrowScreen() {
           }
           footer={[
             [
-              // eslint-disable-next-line react/jsx-key
               <Field.FooterInfoCollPrice
                 collPriceUsd={collPrice}
                 collName={collateral.name}
               />,
-
-              // eslint-disable-next-line react/jsx-key
               <Field.FooterInfoMaxLtv maxLtv={loanDetails.maxLtv} />,
             ],
           ]}
@@ -383,18 +380,15 @@ export function BorrowScreen() {
           }
           footer={[
             [
-              // eslint-disable-next-line react/jsx-key
               <Field.FooterInfoLiquidationRisk
                 riskLevel={loanDetails.liquidationRisk}
               />,
-              // eslint-disable-next-line react/jsx-key
               <Field.FooterInfoLiquidationPrice
                 liquidationPrice={loanDetails.liquidationPrice}
               />,
             ],
             [
               null,
-              // eslint-disable-next-line react/jsx-key
               <Field.FooterInfoLoanToValue
                 ltvRatio={loanDetails.ltv}
                 maxLtvRatio={loanDetails.maxLtv}
@@ -497,7 +491,6 @@ export function BorrowScreen() {
           }
           footer={[
             [
-              // eslint-disable-next-line react/jsx-key
               <Field.FooterInfoRedemptionRisk riskLevel={loanDetails.redemptionRisk} />,
               <span
                 className={css({

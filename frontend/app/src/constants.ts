@@ -11,8 +11,8 @@ export const LOCAL_STORAGE_PREFIX = "liquity2:";
 
 export const LEVERAGE_FACTOR_MIN = 1.1;
 export const MAX_LTV_ALLOWED = 0.916; // ratio of the max LTV allowed by the app
-export const ETH_MAX_RESERVE = dn.from(0.1, 18);
-export const ETH_GAS_COMPENSATION = dn.from(0.0375, 18);
+export const ETH_MAX_RESERVE = dn.from(0.1, 18); // leave 0.1 ETH when users click on "max" to deposit from their account
+export const ETH_GAS_COMPENSATION = dn.from(0.0375, 18); // see contracts/src/Dependencies/Constants.sol
 
 export const CollateralIdSchema = v.union([
   v.literal("ETH"),

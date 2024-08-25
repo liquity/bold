@@ -132,6 +132,7 @@ export const lightTheme = {
     strongSurfaceContentAlt2: "gray:100",
     interactive: "blue:950",
     negative: "red:500",
+    negativeStrong: "red:600",
     negativeActive: "red:600",
     negativeContent: "white",
     negativeHint: "red:400",

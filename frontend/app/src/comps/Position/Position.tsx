@@ -4,9 +4,11 @@ import type { ReactNode } from "react";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
 import { formatRisk } from "@/src/formatting";
+import { fmtnum } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
+import { roundToDecimal } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import { Button, HFlex, IconBorrow, IconLeverage, StatusDot, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -115,14 +117,14 @@ export function Position({
           {leverageMode
             ? (
               <div
-                title={`${dn.format(position.deposit)} ${position.collateral}`}
+                title={`${fmtnum(position.deposit, "full")} ${position.collateral}`}
                 className={css({
                   display: "flex",
                   alignItems: "center",
                   gap: 12,
                 })}
               >
-                <div>{dn.format(position.deposit, { digits: 2 })}</div>
+                <div>{fmtnum(position.deposit)}</div>
                 <TokenIcon symbol={position.collateral} size={32} />
                 <div
                   className={css({
@@ -132,7 +134,11 @@ export function Position({
                   })}
                 >
                   <div
-                    title={`Leverage factor: ${leverageFactor}x`}
+                    title={`Leverage factor: ${
+                      loanDetails.isLiquidatable || leverageFactor === null
+                        ? "∞"
+                        : `${roundToDecimal(leverageFactor, 3)}x`
+                    }`}
                     className={css({
                       fontSize: 16,
                     })}
@@ -142,7 +148,9 @@ export function Position({
                         color: ltv && dn.lt(ltv, maxLtv) ? "inherit" : "var(--colors-negative)",
                       }}
                     >
-                      {leverageFactor ?? "∞"}x
+                      {loanDetails.isLiquidatable || leverageFactor === null
+                        ? "∞"
+                        : `${roundToDecimal(leverageFactor, 1)}x`}
                     </div>
                   </div>
                   {
@@ -151,7 +159,7 @@ export function Position({
                       fontSize: 16,
                     })}
                   >
-                    ${dn.format(dn.mul(position.deposit, collPriceUsd), { digits: 2 })}
+                    ${fmtnum(dn.mul(position.deposit, collPriceUsd), { digits: 2 })}
                   </div>*/
                   }
                 </div>
@@ -159,16 +167,14 @@ export function Position({
             )
             : (
               <div
-                title={`${dn.format(position.borrowed)} BOLD`}
+                title={`${fmtnum(position.borrowed)} BOLD`}
                 className={css({
                   display: "flex",
                   alignItems: "center",
                   gap: 12,
                 })}
               >
-                <div>
-                  {dn.format(position.borrowed, { digits: 2 })}
-                </div>
+                {fmtnum(position.borrowed)}
                 <TokenIcon symbol="BOLD" size={32} />
               </div>
             )}
@@ -196,34 +202,30 @@ export function Position({
         {leverageMode
           ? (
             <GridItem label="Debt">
-              {dn.format(position.borrowed, 2)} BOLD
+              {fmtnum(position.borrowed)} BOLD
             </GridItem>
           )
           : (
             <GridItem label="Collateral">
-              {position.deposit && dn.format(position.deposit, 2)} {TOKENS_BY_SYMBOL[position.collateral].name}
+              <div title={`${fmtnum(position.deposit, "full")} ${TOKENS_BY_SYMBOL[position.collateral].name}`}>
+                {fmtnum(position.deposit)} {TOKENS_BY_SYMBOL[position.collateral].name}
+              </div>
             </GridItem>
           )}
         <GridItem label="Liq. price">
-          {(ltv && dn.gt(ltv, maxLtv))
-            ? (
-              <div
-                className={css({
-                  color: "negative",
-                })}
-              >
-                Reached
-              </div>
-            )
-            : (loanDetails.liquidationPrice && `$${
-              dn.format(loanDetails.liquidationPrice, {
-                digits: 2,
-                trailingZeros: true,
-              })
-            }`)}
+          <div
+            className={css({
+              "--color-negative": "token(colors.negative)",
+            })}
+            style={{
+              color: ltv && dn.gt(ltv, maxLtv) ? "var(--color-negative)" : "inherit",
+            }}
+          >
+            ${fmtnum(loanDetails.liquidationPrice)}
+          </div>
         </GridItem>
         <GridItem label="Interest rate">
-          {dn.format(dn.mul(position.interestRate, 100), 2)}%
+          {fmtnum(dn.mul(position.interestRate, 100))}%
         </GridItem>
         <GridItem label="LTV">
           <div
@@ -240,11 +242,7 @@ export function Position({
                 : "var(--status-negative)",
             }}
           >
-            {ltv && (
-              dn.gt(ltv, maxLtv)
-                ? `>${dn.format(dn.mul(maxLtv, 100), 2)}`
-                : dn.format(dn.mul(ltv, 100), 2)
-            )}%
+            {ltv && fmtnum(dn.mul(ltv, 100))}%
           </div>
         </GridItem>
         <GridItem label="Liquidation risk">
