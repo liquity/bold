@@ -211,7 +211,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         address _removeManager,
         address _receiver
     ) external override returns (uint256) {
-        _requireIsNotShutDown();
         _requireValidAnnualInterestRate(_annualInterestRate);
 
         OpenTroveVars memory vars;
@@ -310,6 +309,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         address _receiver,
         TroveChange memory _change
     ) internal returns (uint256) {
+        _requireIsNotShutDown();
+
         LocalVariables_openTrove memory vars;
 
         // TODO: stack too deep not allowing to reuse troveManager from outer functions
@@ -701,17 +702,21 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         troveChange.appliedRedistCollGain = trove.redistCollGain;
         troveChange.collDecrease = trove.entireColl;
         troveChange.debtDecrease = trove.entireDebt;
-        troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
 
         address batchManager = interestBatchManagerOf[_troveId];
         LatestBatchData memory batch;
         if (batchManager != address(0)) {
             batch = troveManagerCached.getLatestBatchData(batchManager);
+            uint256 batchFutureDebt =
+                batch.entireDebtWithoutRedistribution - (trove.entireDebt - trove.redistBoldDebtGain);
             troveChange.batchAccruedManagementFee = batch.accruedManagementFee;
-            troveChange.oldWeightedRecordedBatchManagementFee = batch.weightedRecordedBatchManagementFee
-                + (trove.entireDebt - trove.redistBoldDebtGain) * batch.annualManagementFee;
-            troveChange.newWeightedRecordedBatchManagementFee =
-                batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
+            troveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
+            troveChange.newWeightedRecordedDebt = batchFutureDebt * batch.annualInterestRate;
+            troveChange.oldWeightedRecordedBatchManagementFee = batch.weightedRecordedBatchManagementFee;
+            troveChange.newWeightedRecordedBatchManagementFee = batchFutureDebt * batch.annualManagementFee;
+        } else {
+            troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
+            // troveChange.newWeightedRecordedDebt = 0;
         }
 
         uint256 newTCR = _getNewTCRFromTroveChange(troveChange, priceFeed.fetchPrice());
@@ -940,16 +945,14 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         activePoolCached.mintAggInterestAndAccountForTroveChange(batchChange, msg.sender);
 
-        // TODO emit BatchUpdated(msg.sender, batch.entireCollWithoutRedistribution, newDebt, Operation.adjustBatchInterestRate);
-
-        troveManagerCached.onSetBatchManagerAnnualInterestRate(
-            msg.sender, batch.entireCollWithoutRedistribution, newDebt, _newAnnualInterestRate
-        );
-
         // Check batch is not empty, and then reinsert in sorted list
         if (!sortedTroves.isEmptyBatch(BatchId.wrap(msg.sender))) {
             sortedTroves.reInsertBatch(BatchId.wrap(msg.sender), _newAnnualInterestRate, _upperHint, _lowerHint);
         }
+
+        troveManagerCached.onSetBatchManagerAnnualInterestRate(
+            msg.sender, batch.entireCollWithoutRedistribution, newDebt, _newAnnualInterestRate
+        );
     }
 
     function setInterestBatchManager(
@@ -1145,7 +1148,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     function _wipeTroveMappings(uint256 _troveId) internal {
-
         delete interestIndividualDelegateOf[_troveId];
         delete interestBatchManagerOf[_troveId];
         delete addManagerOf[_troveId];

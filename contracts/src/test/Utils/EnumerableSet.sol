@@ -40,6 +40,12 @@ library EnumerableSetMethods {
         }
     }
 
+    function add(EnumerableSet storage set, EnumerableSet storage otherSet) internal {
+        for (uint256 i = 1; i < otherSet._elements.length; ++i) {
+            set.add(otherSet._elements[i]);
+        }
+    }
+
     function remove(EnumerableSet storage set, uint256 element) internal {
         if (!set.has(element)) return;
 
@@ -56,6 +62,12 @@ library EnumerableSetMethods {
     function remove(EnumerableSet storage set, uint256[] memory elements) internal {
         for (uint256 i = 0; i < elements.length; ++i) {
             set.remove(elements[i]);
+        }
+    }
+
+    function remove(EnumerableSet storage set, EnumerableSet storage otherSet) internal {
+        for (uint256 i = 1; i < otherSet._elements.length; ++i) {
+            set.remove(otherSet._elements[i]);
         }
     }
 
@@ -90,6 +102,10 @@ library EnumerableAddressSetMethods {
         }
     }
 
+    function add(EnumerableAddressSet storage set, EnumerableAddressSet storage otherSet) internal {
+        set._base.add(otherSet._base);
+    }
+
     function remove(EnumerableAddressSet storage set, address element) internal {
         set._base.remove(uint256(uint160(element)));
     }
@@ -98,6 +114,10 @@ library EnumerableAddressSetMethods {
         for (uint256 i = 0; i < elements.length; ++i) {
             set.remove(elements[i]);
         }
+    }
+
+    function remove(EnumerableAddressSet storage set, EnumerableAddressSet storage otherSet) internal {
+        set._base.remove(otherSet._base);
     }
 
     function reset(EnumerableAddressSet storage set) internal {

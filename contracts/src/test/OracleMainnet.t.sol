@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.18;
 
 import "./TestContracts/Accounts.sol";
@@ -166,7 +168,7 @@ contract OraclesMainnet is TestAccounts {
 
     // --- lastGoodPrice set on deployment ---
 
-    function testSetLastGoodPriceOnDeploymentWETH() public {
+    function testSetLastGoodPriceOnDeploymentWETH() public view {
         uint256 lastGoodPriceWeth = wethPriceFeed.lastGoodPrice();
         assertGt(lastGoodPriceWeth, 0);
 
@@ -175,7 +177,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(lastGoodPriceWeth, latestAnswerEthUsd);
     }
 
-    function testSetLastGoodPriceOnDeploymentRETH() public {
+    function testSetLastGoodPriceOnDeploymentRETH() public view {
         uint256 lastGoodPriceReth = rethPriceFeed.lastGoodPrice();
         assertGt(lastGoodPriceReth, 0);
 
@@ -194,7 +196,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(lastGoodPriceReth, expectedPrice);
     }
 
-    function testSetLastGoodPriceOnDeploymentETHX() public {
+    function testSetLastGoodPriceOnDeploymentETHX() public view {
         uint256 lastGoodPriceEthX = ethXPriceFeed.lastGoodPrice();
         assertGt(lastGoodPriceEthX, 0);
 
@@ -214,7 +216,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(lastGoodPriceEthX, expectedPrice);
     }
 
-    function testSetLastGoodPriceOnDeploymentOSETH() public {
+    function testSetLastGoodPriceOnDeploymentOSETH() public view {
         uint256 lastGoodPriceOsUsd = osEthPriceFeed.lastGoodPrice();
         assertGt(lastGoodPriceOsUsd, 0);
 
@@ -233,7 +235,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(lastGoodPriceOsUsd, expectedPrice);
     }
 
-    function testSetLastGoodPriceOnDeploymentWSTETH() public {
+    function testSetLastGoodPriceOnDeploymentWSTETH() public view {
         uint256 lastGoodPriceWsteth = wstethPriceFeed.lastGoodPrice();
         assertGt(lastGoodPriceWsteth, 0);
 
