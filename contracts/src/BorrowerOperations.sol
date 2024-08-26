@@ -1047,7 +1047,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         // Remove trove from Batch in SortedTroves
         vars.sortedTroves.removeFromBatch(_troveId);
-        vars.sortedTroves.insert(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint);
+        // Reinsert as single trove, only if it’s not zombie
+        if (!_checkTroveIsUnredeemable(vars.troveManager, _troveId)) {
+            vars.sortedTroves.insert(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint);
+        }
 
         vars.trove = vars.troveManager.getLatestTroveData(_troveId);
         vars.batch = vars.troveManager.getLatestBatchData(vars.batchManager);
