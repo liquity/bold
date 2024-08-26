@@ -23,8 +23,8 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
 
     uint256 constant NUM_COLLATERALS = 5;
 
-    LeverageLSTZapper[] leverageZapperCurveArray;
-    LeverageLSTZapper[] leverageZapperUniV3Array;
+    ILeverageZapper[] leverageZapperCurveArray;
+    ILeverageZapper[] leverageZapperUniV3Array;
 
     TestDeployer.LiquityContracts[] contractsArray;
 
@@ -208,21 +208,12 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         return this.onERC721Received.selector;
     }
 
-    /*
-    function openLeveragedTroveWithCurve(uint256 _collAmount, uint256 _leverageRatio) internal returns (uint256) {
-        return openLeveragedTrove(leverageZapperCurve, _collAmount, _leverageRatio);
-    }
-
-    function openLeveragedTroveWithUniV3(uint256 _collAmount, uint256 _leverageRatio) internal returns (uint256) {
-        return openLeveragedTrove(leverageZapperUniV3, _collAmount, _leverageRatio);
-    }
-    */
-
     function openLeveragedTrove(
         ILeverageZapper _leverageZapper,
         uint256 _collAmount,
         uint256 _leverageRatio,
-        IPriceFeed _priceFeed
+        IPriceFeed _priceFeed,
+        bool _lst
     ) internal returns (uint256) {
         uint256 price = _priceFeed.fetchPrice();
         IExchange exchange = _leverageZapper.exchange();
@@ -248,7 +239,8 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             receiver: address(0)
         });
         vm.startPrank(A);
-        _leverageZapper.openLeveragedTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
+        uint256 value = _lst ? ETH_GAS_COMPENSATION : _collAmount + ETH_GAS_COMPENSATION;
+        _leverageZapper.openLeveragedTroveWithRawETH{value: value}(params);
         uint256 troveId = addressToTroveId(A);
         vm.stopPrank();
 
@@ -276,8 +268,9 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         uint256 ethBalanceBefore = A.balance;
         uint256 collBalanceBefore = contractsArray[_branch].collToken.balanceOf(A);
 
+        bool lst = _branch > 0;
         uint256 troveId =
-            openLeveragedTrove(_leverageZapper, collAmount, leverageRatio, contractsArray[_branch].priceFeed);
+            openLeveragedTrove(_leverageZapper, collAmount, leverageRatio, contractsArray[_branch].priceFeed, lst);
 
         // Checks
         uint256 price = contractsArray[_branch].priceFeed.fetchPrice();
@@ -307,8 +300,13 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         );
         // token balances
         assertApproxEqAbs(boldToken.balanceOf(A), 0, 15, "BOLD bal mismatch");
-        assertEq(A.balance, ethBalanceBefore - ETH_GAS_COMPENSATION, "ETH bal mismatch");
-        assertEq(contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore - collAmount, "Coll bal mismatch");
+        if (lst) {
+            assertEq(A.balance, ethBalanceBefore - ETH_GAS_COMPENSATION, "ETH bal mismatch");
+            assertEq(contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore - collAmount, "Coll bal mismatch");
+        } else {
+            assertEq(A.balance, ethBalanceBefore - ETH_GAS_COMPENSATION - collAmount, "ETH bal mismatch");
+            assertEq(contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
+        }
     }
 
     function testOnlyFlashLoanProviderCanCallOpenTroveCallbackWithCurve() external {
@@ -410,7 +408,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         vars.initialLeverageRatio = 2e18;
 
         vars.troveId = openLeveragedTrove(
-            _leverageZapper, vars.collAmount, vars.initialLeverageRatio, contractsArray[_branch].priceFeed
+            _leverageZapper, vars.collAmount, vars.initialLeverageRatio, contractsArray[_branch].priceFeed, _branch > 0
         );
         vars.initialDebt = getTroveEntireDebt(contractsArray[_branch].troveManager, vars.troveId);
 
@@ -540,7 +538,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         uint256 initialLeverageRatio = 2e18;
 
         uint256 troveId =
-            openLeveragedTrove(_leverageZapper, collAmount, initialLeverageRatio, contractsArray[_branch].priceFeed);
+            openLeveragedTrove(_leverageZapper, collAmount, initialLeverageRatio, contractsArray[_branch].priceFeed, _branch > 0);
         uint256 initialDebt = getTroveEntireDebt(contractsArray[_branch].troveManager, troveId);
 
         uint256 newLeverageRatio = 1.5e18;

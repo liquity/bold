@@ -52,8 +52,8 @@ contract BaseTest is TestAccounts, Logging {
     IWETH WETH; // used for gas compensation
     WETHZapper wethZapper;
     GasCompZapper gasCompZapper;
-    LeverageLSTZapper leverageZapperCurve;
-    LeverageLSTZapper leverageZapperUniV3;
+    ILeverageZapper leverageZapperCurve;
+    ILeverageZapper leverageZapperUniV3;
 
     // Structs for use in test where we need to bi-pass "stack-too-deep" errors
     struct ABCDEF {
