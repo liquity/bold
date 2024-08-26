@@ -1512,7 +1512,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
     }
 
-    function _requireOraclesLive(bool _newOracleFailureDetected) internal view {
+    function _requireOraclesLive(bool _newOracleFailureDetected) internal pure {
         if (_newOracleFailureDetected) {
             revert NewOracleFailureDetected();
         }

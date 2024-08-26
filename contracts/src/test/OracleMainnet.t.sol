@@ -113,12 +113,12 @@ contract OraclesMainnet is TestAccounts {
         osEthPriceFeed = ICompositePriceFeed(address(contractsArray[4].priceFeed));
 
         // log some current blockchain state
-        console2.log(block.timestamp, "block.timestamp");
-        console2.log(block.number, "block.number");
-        console2.log(ethOracle.decimals(), "ETHUSD decimals");
-        console2.log(rethOracle.decimals(), "RETHETH decimals");
-        console2.log(ethXOracle.decimals(), "ETHXETH decimals");
-        console2.log(stethOracle.decimals(), "STETHETH decimals");
+        // console2.log(block.timestamp, "block.timestamp");
+        // console2.log(block.number, "block.number");
+        // console2.log(ethOracle.decimals(), "ETHUSD decimals");
+        // console2.log(rethOracle.decimals(), "RETHETH decimals");
+        // console2.log(ethXOracle.decimals(), "ETHXETH decimals");
+        // console2.log(stethOracle.decimals(), "STETHETH decimals");
     }
 
     function _getLatestAnswerFromOracle(AggregatorV3Interface _oracle) internal view returns (uint256) {
