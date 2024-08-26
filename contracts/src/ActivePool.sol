@@ -222,6 +222,11 @@ contract ActivePool is IActivePool {
     {
         _requireCallerIsBOorTroveM();
 
+        // Batch management fees
+        if (_batchAddress != address(0)) {
+            _mintBatchManagementFeeAndAccountForChange(boldToken, _troveChange, _batchAddress);
+        }
+
         // Do the arithmetic in 2 steps here to avoid overflow from the decrease
         uint256 newAggRecordedDebt = aggRecordedDebt; // 1 SLOAD
         newAggRecordedDebt += _mintAggInterest(boldToken, _troveChange.upfrontFee); // adds minted agg. interest + upfront fee
@@ -238,11 +243,6 @@ contract ActivePool is IActivePool {
         newAggWeightedDebtSum += _troveChange.newWeightedRecordedDebt;
         newAggWeightedDebtSum -= _troveChange.oldWeightedRecordedDebt;
         aggWeightedDebtSum = newAggWeightedDebtSum; // 1 SSTORE
-
-        // Batch management fees
-        if (_batchAddress != address(0)) {
-            _mintBatchManagementFeeAndAccountForChange(boldToken, _troveChange, _batchAddress);
-        }
     }
 
     function mintAggInterest() external override {
