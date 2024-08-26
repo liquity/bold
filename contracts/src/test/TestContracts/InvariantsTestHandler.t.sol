@@ -1271,7 +1271,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         } else {
             // Cleanup (success)
             for (uint256 j = 0; j < branches.length; ++j) {
-                _sweepColl(j, msg.sender, r[j].totalCollRedeemed);
+                // There can be a slight discrepancy when hitting batched Troves
+                uint256 collReceived = branches[j].collToken.balanceOf(msg.sender);
+                assertApproxEqAbsDecimal(collReceived, r[j].totalCollRedeemed, 1e4, 18, "Wrong coll amount received");
+                _sweepColl(j, msg.sender, collReceived);
 
                 for (uint256 i = 0; i < r[j].batchManagers.size(); ++i) {
                     _sweepBold(r[j].batchManagers.get(i), batchManagementFee[j][i]);
@@ -1408,7 +1411,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _sweepBold(msg.sender, amount);
         } else {
             // Cleanup (success)
-            _sweepColl(i, msg.sender, r.totalCollRedeemed);
+            // There can be a slight discrepancy when hitting batched Troves
+            uint256 collReceived = branches[i].collToken.balanceOf(msg.sender);
+            assertApproxEqAbsDecimal(collReceived, r.totalCollRedeemed, 1e4, 18, "Wrong coll amount received");
+            _sweepColl(i, msg.sender, collReceived);
 
             for (uint256 j = 0; j < r.batchManagers.size(); ++j) {
                 _sweepBold(r.batchManagers.get(j), batchManagementFee[j]);
