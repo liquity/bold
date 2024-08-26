@@ -4,9 +4,9 @@ pragma solidity 0.8.18;
 
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
-import {Logging} from "../../../../test/Utils/Logging.sol";
-import {StringFormatting} from "../../../../test/Utils/StringFormatting.sol";
-import {DECIMAL_PRECISION} from "../../../../Dependencies/Constants.sol";
+import {Logging} from "./Logging.sol";
+import {StringFormatting} from "./StringFormatting.sol";
+import {DECIMAL_PRECISION} from "../../Dependencies/Constants.sol";
 
 import "forge-std/console2.sol";
 

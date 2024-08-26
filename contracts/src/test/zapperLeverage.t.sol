@@ -12,9 +12,9 @@ import "../Zappers/Modules/Exchanges/CurveExchange.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/ISwapRouter.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Pool.sol";
-import "../Zappers/Modules/Exchanges/UniswapV3/UniPriceConverter.sol";
 import "./TestContracts/Interfaces/INonfungiblePositionManager.sol";
 import "../Zappers/Modules/Exchanges/UniV3Exchange.sol";
+import "./Utils/UniPriceConverter.sol";
 
 contract ZapperLeverageLSTMainnet is DevTestSetup {
     using StringFormatting for uint256;
