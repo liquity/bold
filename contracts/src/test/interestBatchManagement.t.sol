@@ -202,6 +202,19 @@ contract InterestBatchManagementTest is DevTestSetup {
         vm.stopPrank();
     }
 
+    function testRemoveBatchManagerFailsIfTroveNotInBatch() public {
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
+
+        uint256 newAnnualInterestRate = 4e16;
+        assertEq(tmBatchManagerAddress, address(0), "Wrong batch manager in TM");
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.TroveNotInBatch.selector);
+        borrowerOperations.removeFromBatch(troveId, newAnnualInterestRate, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
     function testOnlyBorrowerCanSetBatchManager() public {
         registerBatchManager(A);
         registerBatchManager(B);
