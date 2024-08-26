@@ -17,10 +17,12 @@ import "../../Interfaces/IInterestRouter.sol";
 import "../../GasPool.sol";
 import "../../HintHelpers.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
+import {Logging} from "../Utils/Logging.sol";
+import {StringFormatting} from "../Utils/StringFormatting.sol";
 
 import "forge-std/console2.sol";
 
-contract BaseTest is TestAccounts {
+contract BaseTest is TestAccounts, Logging {
     uint256 CCR;
     uint256 MCR;
     uint256 SCR;
@@ -65,6 +67,16 @@ contract BaseTest is TestAccounts {
 
     function getTroveEntireDebt(uint256 _troveId) internal view returns (uint256) {
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
+        return trove.entireDebt;
+    }
+
+    function getTroveEntireColl(ITroveManager _troveManager, uint256 _troveId) internal view returns (uint256) {
+        LatestTroveData memory trove = _troveManager.getLatestTroveData(_troveId);
+        return trove.entireColl;
+    }
+
+    function getTroveEntireDebt(ITroveManager _troveManager, uint256 _troveId) internal view returns (uint256) {
+        LatestTroveData memory trove = _troveManager.getLatestTroveData(_troveId);
         return trove.entireDebt;
     }
 

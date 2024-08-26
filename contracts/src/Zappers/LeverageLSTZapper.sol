@@ -19,13 +19,6 @@ import "./Interfaces/ILeverageZapper.sol";
 contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper {
     using SafeERC20 for IERC20;
 
-    /*
-    ITroveManager public immutable troveManager;
-    IBorrowerOperations public immutable borrowerOperations; // LST branch (i.e., not WETH as collateral)
-    IWETH public immutable WETH;
-    IERC20 public immutable collToken;
-    IBoldToken public immutable boldToken;
-    */
     IPriceFeed public immutable priceFeed;
     IFlashLoanProvider public immutable flashLoanProvider;
     IExchange public immutable exchange;
@@ -36,8 +29,6 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         IERC20 _collToken = collToken;
         IWETH _WETH = WETH;
 
-        require(address(_WETH) != address(_collToken), "LZ: Wrong coll branch");
-
         priceFeed = _addressesRegistry.priceFeed();
 
         flashLoanProvider = _flashLoanProvider;
@@ -46,8 +37,10 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         // Approve Coll and Bold to exchange module
         _collToken.approve(address(_exchange), type(uint256).max);
         boldToken.approve(address(_exchange), type(uint256).max);
-        // Approve WETH to BorrowerOperations
-        _WETH.approve(address(_borrowerOperations), type(uint256).max);
+        if (address(_WETH) != address(_collToken)) {
+            // Approve WETH to BorrowerOperations
+            _WETH.approve(address(_borrowerOperations), type(uint256).max);
+        }
         // Approve coll to BorrowerOperations
         _collToken.approve(address(_borrowerOperations), type(uint256).max);
     }
