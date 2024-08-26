@@ -1011,7 +1011,7 @@ Chainlink push oracles were chosen due to Chainlink’s reliability and track re
 
 The pricing method for each LST depends on availability of oracles. Where possible, direct LST-USD market oracles have been used. 
 
-Otherwise, composite market oracles have been created which utilise the ETH-USD market feed and an LST-ETH market feed. In the case of the WSTETH oracle, the STETH price and the WSTETH-STETH exchange rate is used.
+Otherwise, composite market oracles have been created which utilise the ETH-USD market feed and an LST-ETH market feed. In the case of the WSTETH oracle, the STETH-USD price and the WSTETH-STETH exchange rate is used.
 
 LST-ETH canonical exchange rates are also used as sanity checks for the more vulnerable LSTs (i.e. lower liquidity/volume).
 
@@ -1020,10 +1020,10 @@ Here are the oracles and price calculations for each PriceFeed:
 | Liquity v2 PriceFeed | Oracles used                                  | Price calculation                                              |
 |----------------------|-----------------------------------------------|----------------------------------------------------------------|
 | WETH-USD             | ETH-USD                                       | ETH-USD                                                        |
-| WSTETH-USD           | STETH-USD, WSTETH-ETH_canonical               | STETH-ETH * STETH-WSTETH_canonical                             |
-| RETH-USD             | ETH-USD, RETH-ETH, RETH-ETH_canonical         | min(ETH-USD * RETH-ETH, ETH-USD * RETH_ETH_canonical)          |
+| WSTETH-USD           | STETH-USD, WSTETH-STETH_canonical               | STETH-USD * WSTETH-STETH_canonical                             |
+| RETH-USD             | ETH-USD, RETH-ETH, RETH-ETH_canonical         | min(ETH-USD * RETH-ETH, ETH-USD * RETH-ETH_canonical)          |
 | ETHX-USD             | ETH-USD, ETHX-ETH, ETHX-ETH_canonical         | min(ETH-USD * ETHX-ETH, ETH-USD * ETHX-ETH_canonical)          |
-| OSETH-USD            | ETH-USD, OSETH-ETH, OSETH-ETH_canonical       | min(ETH-USD * OSETH-ETH, ETH-USD * OSETH_ETH_canonical)        |
+| OSETH-USD            | ETH-USD, OSETH-ETH, OSETH-ETH_canonical       | min(ETH-USD * OSETH-ETH, ETH-USD * OSETH-ETH_canonical)        |
 
 ### TODO - [INHERITANCE DIAGRAM]
 
