@@ -31,11 +31,7 @@ contract UniPriceConverter is Logging {
         return (sqrtPriceX96, inversePrice, sqrtInversePriceX96);
     }
 
-    function sqrtPriceToPrice(uint160 _sqrtPriceX96)
-        external
-        pure
-        returns (uint256 price)
-    {
+    function sqrtPriceToPrice(uint160 _sqrtPriceX96) external pure returns (uint256 price) {
         price = uint256(_sqrtPriceX96) * uint256(_sqrtPriceX96) * DECIMAL_PRECISION / (1 << 192);
 
         info("Uni sqrt Price:     ", uint256(_sqrtPriceX96).decimal());

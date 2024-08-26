@@ -58,13 +58,15 @@ contract OraclesMainnet is TestAccounts {
         uint256 numCollaterals = 5;
         TestDeployer.TroveManagerParams memory tmParams =
             TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
-        TestDeployer.TroveManagerParams[] memory troveManagerParamsArray = new TestDeployer.TroveManagerParams[](numCollaterals);
+        TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
+            new TestDeployer.TroveManagerParams[](numCollaterals);
         for (uint256 i = 0; i < troveManagerParamsArray.length; i++) {
             troveManagerParamsArray[i] = tmParams;
         }
 
         TestDeployer deployer = new TestDeployer();
-        TestDeployer.DeploymentResultMainnet memory result = deployer.deployAndConnectContractsMainnet(troveManagerParamsArray);
+        TestDeployer.DeploymentResultMainnet memory result =
+            deployer.deployAndConnectContractsMainnet(troveManagerParamsArray);
         collateralRegistry = result.collateralRegistry;
         boldToken = result.boldToken;
 

@@ -46,7 +46,10 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
     // See: https://docs.uniswap.org/contracts/v3/reference/periphery/interfaces/IQuoterV2
     // These functions are not marked view because they rely on calling non-view functions and reverting to compute the result.
     // They are also not gas efficient and should not be called on-chain.
-    function getBoldAmountToSwap(uint256 /*_boldAmount*/, uint256 _maxBoldAmount, uint256 _minCollAmount) external /* view */ returns (uint256) {
+    function getBoldAmountToSwap(uint256, /*_boldAmount*/ uint256 _maxBoldAmount, uint256 _minCollAmount)
+        external /* view */
+        returns (uint256)
+    {
         // See: https://github.com/Uniswap/v3-core/blob/d8b1c635c275d2a9450bd6a78f3fa2484fef73eb/contracts/UniswapV3Pool.sol#L608
         //uint160 sqrtPriceLimitX96 = _zeroForOne(boldToken, collToken) ? MIN_SQRT_RATIO + 1: MAX_SQRT_RATIO - 1;
         uint256 maxPrice = _maxBoldAmount * DECIMAL_PRECISION / _minCollAmount;

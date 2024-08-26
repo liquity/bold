@@ -34,7 +34,11 @@ contract CurveExchange is IExchange {
     }
 
     // Helper to get the actual bold we need, capped by a max value, to get flash loan amount
-    function getBoldAmountToSwap(uint256 _boldAmount, uint256 _maxBoldAmount, uint256 _minCollAmount) external view returns (uint256) {
+    function getBoldAmountToSwap(uint256 _boldAmount, uint256 _maxBoldAmount, uint256 _minCollAmount)
+        external
+        view
+        returns (uint256)
+    {
         uint256 step = (_maxBoldAmount - _boldAmount) / 5; // In max 5 iterations we should reach the target, unless price is lower
         uint256 dy;
         // TODO: Optimizations: binary search, change the step depending on last dy, ...

@@ -23,7 +23,9 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
     IFlashLoanProvider public immutable flashLoanProvider;
     IExchange public immutable exchange;
 
-    constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange) GasCompZapper(_addressesRegistry) {
+    constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
+        GasCompZapper(_addressesRegistry)
+    {
         // Cache contracts
         IBorrowerOperations _borrowerOperations = borrowerOperations;
         IERC20 _collToken = collToken;
@@ -73,9 +75,10 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
     }
 
     // Callback from the flash loan provider
-    function receiveFlashLoanOnOpenLeveragedTrove(OpenLeveragedTroveParams calldata _params, uint256 _effectiveFlashLoanAmount)
-        external
-    {
+    function receiveFlashLoanOnOpenLeveragedTrove(
+        OpenLeveragedTroveParams calldata _params,
+        uint256 _effectiveFlashLoanAmount
+    ) external {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 
         OpenLeveragedTroveVars memory vars;
@@ -128,7 +131,9 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
     }
 
     // Callback from the flash loan provider
-    function receiveFlashLoanOnLeverUpTrove(LeverUpTroveParams calldata _params, uint256 _effectiveFlashLoanAmount) external {
+    function receiveFlashLoanOnLeverUpTrove(LeverUpTroveParams calldata _params, uint256 _effectiveFlashLoanAmount)
+        external
+    {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 
         // Adjust trove
@@ -167,14 +172,17 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
     }
 
     // Callback from the flash loan provider
-    function receiveFlashLoanOnLeverDownTrove(LeverDownTroveParams calldata _params, uint256 _effectiveFlashLoanAmount) external {
+    function receiveFlashLoanOnLeverDownTrove(LeverDownTroveParams calldata _params, uint256 _effectiveFlashLoanAmount)
+        external
+    {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 
         // Swap Coll from flash loan to Bold, so we can repay and downsize trove
         // We swap the flash loan minus the flash loan fee
         // The frontend should calculate in advance the `_params.minBoldAmount` to achieve the desired leverage ratio
         // (with some slippage tolerance)
-        uint256 receivedBoldAmount = exchange.swapToBold(_effectiveFlashLoanAmount, _params.minBoldAmount, address(this));
+        uint256 receivedBoldAmount =
+            exchange.swapToBold(_effectiveFlashLoanAmount, _params.minBoldAmount, address(this));
 
         // Adjust trove
         borrowerOperations.adjustTrove(

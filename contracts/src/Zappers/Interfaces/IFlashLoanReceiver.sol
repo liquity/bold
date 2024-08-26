@@ -9,6 +9,12 @@ interface IFlashLoanReceiver {
         ILeverageZapper.OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
     ) external;
-    function receiveFlashLoanOnLeverUpTrove(ILeverageZapper.LeverUpTroveParams calldata _params, uint256 _effectiveFlashLoanAmount) external;
-    function receiveFlashLoanOnLeverDownTrove(ILeverageZapper.LeverDownTroveParams calldata _params, uint256 _effectiveFlashLoanAmount) external;
+    function receiveFlashLoanOnLeverUpTrove(
+        ILeverageZapper.LeverUpTroveParams calldata _params,
+        uint256 _effectiveFlashLoanAmount
+    ) external;
+    function receiveFlashLoanOnLeverDownTrove(
+        ILeverageZapper.LeverDownTroveParams calldata _params,
+        uint256 _effectiveFlashLoanAmount
+    ) external;
 }

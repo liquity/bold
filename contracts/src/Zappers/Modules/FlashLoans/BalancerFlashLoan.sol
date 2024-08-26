@@ -47,7 +47,6 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
             revert("LZ: Wrong Operation");
         }
 
-
         vault.flashLoan(this, tokens, amounts, userData);
     }
 
@@ -63,7 +62,8 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
         IFlashLoanReceiver receiver = IFlashLoanReceiver(abi.decode(userData[0:32], (address)));
         Operation operation = abi.decode(userData[32:64], (Operation));
 
-        if (operation == Operation.OpenTrove) {  // Open
+        if (operation == Operation.OpenTrove) {
+            // Open
             // decode params
             ILeverageZapper.OpenLeveragedTroveParams memory openTroveParams =
                 abi.decode(userData[64:], (ILeverageZapper.OpenLeveragedTroveParams));
@@ -73,7 +73,8 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
             tokens[0].safeTransfer(address(receiver), effectiveFlashLoanAmount);
             // Zapper callback
             receiver.receiveFlashLoanOnOpenLeveragedTrove(openTroveParams, effectiveFlashLoanAmount);
-        } else if (operation == Operation.LeverUpTrove) { // Lever up
+        } else if (operation == Operation.LeverUpTrove) {
+            // Lever up
             // decode params
             ILeverageZapper.LeverUpTroveParams memory leverUpTroveParams =
                 abi.decode(userData[64:], (ILeverageZapper.LeverUpTroveParams));
@@ -83,7 +84,8 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
             tokens[0].safeTransfer(address(receiver), effectiveFlashLoanAmount);
             // Zapper callback
             receiver.receiveFlashLoanOnLeverUpTrove(leverUpTroveParams, effectiveFlashLoanAmount);
-        } else if (operation == Operation.LeverDownTrove) { // Lever down
+        } else if (operation == Operation.LeverDownTrove) {
+            // Lever down
             // decode params
             ILeverageZapper.LeverDownTroveParams memory leverDownTroveParams =
                 abi.decode(userData[64:], (ILeverageZapper.LeverDownTroveParams));
