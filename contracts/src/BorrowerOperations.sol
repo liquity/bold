@@ -1035,6 +1035,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     ) public override {
         _requireIsNotShutDown();
         _requireCallerIsBorrower(_troveId);
+        _requireValidAnnualInterestRate(_newAnnualInterestRate);
 
         LocalVariables_removeFromBatch memory vars;
         vars.troveManager = troveManager;
