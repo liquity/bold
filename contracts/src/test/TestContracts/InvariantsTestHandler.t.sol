@@ -1396,6 +1396,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Justify failures
             if (selector == TroveManager.NotShutDown.selector) {
                 assertFalse(isShutdown[i], "Shouldn't have failed as branch had been shut down");
+            } else if (selector == TroveManager.MinCollNotReached.selector) {
+                // There can be a slight discrepancy when hitting batched Troves
+                uint256 collReceived = uint256(bytes32(revertData.slice(4)));
+                assertLtDecimal(collReceived, r.totalCollRedeemed, 18, "Shouldn't have failed as min coll was reached");
+                assertApproxEqAbsDecimal(collReceived, r.totalCollRedeemed, 1e4, 18, "Wrong coll amount received");
             } else {
                 revert(string.concat("Unexpected error: ", errorString));
             }
@@ -1411,6 +1416,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             _sweepBold(msg.sender, amount);
         } else {
             // Cleanup (success)
+
             // There can be a slight discrepancy when hitting batched Troves
             uint256 collReceived = branches[i].collToken.balanceOf(msg.sender);
             assertApproxEqAbsDecimal(collReceived, r.totalCollRedeemed, 1e4, 18, "Wrong coll amount received");
@@ -2765,7 +2771,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             }
 
             if (selector == TroveManager.MinCollNotReached.selector) {
-                return (selector, string.concat("TroveManager.MinCollNotReached(", uint256(param).toString(), ")"));
+                return (selector, string.concat("TroveManager.MinCollNotReached(", uint256(param).decimal(), ")"));
             }
         }
 
