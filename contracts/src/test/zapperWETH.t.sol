@@ -7,8 +7,6 @@ import "./TestContracts/WETH.sol";
 import "../Zappers/WETHZapper.sol";
 
 contract ZapperWETHTest is DevTestSetup {
-    WETHZapper wethZapper;
-
     function setUp() public override {
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
@@ -33,7 +31,9 @@ contract ZapperWETHTest is DevTestSetup {
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory contractsArray;
-        (contractsArray, collateralRegistry, boldToken,,) = deployer.deployAndConnectContracts(troveManagerParams, WETH);
+        TestDeployer.Zappers[] memory zappersArray;
+        (contractsArray, collateralRegistry, boldToken,,, zappersArray) =
+            deployer.deployAndConnectContracts(troveManagerParams, WETH);
 
         // Set price feeds
         contractsArray[0].priceFeed.setPrice(2000e18);
@@ -52,9 +52,7 @@ contract ZapperWETHTest is DevTestSetup {
         borrowerOperations = contractsArray[0].borrowerOperations;
         troveManager = contractsArray[0].troveManager;
         troveNFT = contractsArray[0].troveNFT;
-
-        // Deploy zapper (TODO: should we move it to deployment contract?)
-        wethZapper = new WETHZapper(addressesRegistry);
+        wethZapper = zappersArray[0].wethZapper;
     }
 
     function testCanOpenTrove() external {

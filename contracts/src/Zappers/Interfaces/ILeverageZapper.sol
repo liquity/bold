@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.0;
 
+import "./IExchange.sol";
+
 interface ILeverageZapper {
     struct OpenLeveragedTroveParams {
         address owner;
@@ -30,6 +32,8 @@ interface ILeverageZapper {
         uint256 flashLoanAmount;
         uint256 minBoldAmount;
     }
+
+    function exchange() external returns (IExchange);
 
     function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable;
 

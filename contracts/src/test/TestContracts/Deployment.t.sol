@@ -19,6 +19,19 @@ import "../../TroveNFT.sol";
 import "../../CollateralRegistry.sol";
 import "../../MockInterestRouter.sol";
 import "./PriceFeedTestnet.sol";
+import "../../Zappers/WETHZapper.sol";
+import "../../Zappers/GasCompZapper.sol";
+import "../../Zappers/LeverageLSTZapper.sol";
+import "../../Zappers/Modules/FlashLoans/BalancerFlashLoan.sol";
+import "../../Zappers/Interfaces/IFlashLoanProvider.sol";
+import "../../Zappers/Interfaces/IExchange.sol";
+import "../../Zappers/Modules/Exchanges/Curve/ICurveFactory.sol";
+import "../../Zappers/Modules/Exchanges/Curve/ICurvePool.sol";
+import "../../Zappers/Modules/Exchanges/CurveExchange.sol";
+import "../../Zappers/Modules/Exchanges/UniswapV3/ISwapRouter.sol";
+import "../../Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
+import "../../Zappers/Modules/Exchanges/UniV3Exchange.sol";
+import "../../Zappers/Modules/Exchanges/UniswapV3/INonfungiblePositionManager.sol";
 import {WETHTester} from "./WETHTester.sol";
 import {ERC20Faucet} from "./ERC20Faucet.sol";
 
@@ -35,6 +48,13 @@ uint256 constant _48_HOURS = 172800;
 
 // TODO: Split dev and mainnet
 contract TestDeployer {
+    ICurveFactory constant curveFactory = ICurveFactory(0x98EE851a00abeE0d95D08cF4CA2BdCE32aeaAF7F);
+    ISwapRouter constant uniV3Router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    IQuoterV2 constant uniV3Quoter = IQuoterV2(0x61fFE014bA17989E743c5F6cB21bF9697530B21e);
+    INonfungiblePositionManager constant uniV3PositionManager =
+        INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
+    uint24 constant UNIV3_FEE = 3000; // 0.3%
+
     bytes32 constant SALT = keccak256("LiquityV2");
 
     struct LiquityContractsDev {
@@ -69,6 +89,13 @@ contract TestDeployer {
         IERC20 collToken;
     }
 
+    struct Zappers {
+        WETHZapper wethZapper;
+        GasCompZapper gasCompZapper;
+        LeverageLSTZapper leverageZapperCurve;
+        LeverageLSTZapper leverageZapperUniV3;
+    }
+
     struct LiquityContractAddresses {
         address activePool;
         address borrowerOperations;
@@ -96,7 +123,6 @@ contract TestDeployer {
         IERC20[] collaterals;
         IAddressesRegistry[] addressesRegistries;
         ITroveManager[] troveManagers;
-        LiquityContractsDev contracts;
         bytes bytecode;
         address boldTokenAddress;
         uint256 i;
@@ -109,6 +135,7 @@ contract TestDeployer {
         IBoldToken boldToken;
         HintHelpers hintHelpers;
         MultiTroveGetter multiTroveGetter;
+        Zappers[] zappersArray;
     }
 
     struct DeploymentVarsMainnet {
@@ -163,7 +190,8 @@ contract TestDeployer {
             IBoldToken boldToken,
             HintHelpers hintHelpers,
             MultiTroveGetter multiTroveGetter,
-            IWETH WETH // for gas compensation
+            IWETH WETH, // for gas compensation
+            Zappers memory zappers
         )
     {
         return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16));
@@ -177,17 +205,20 @@ contract TestDeployer {
             IBoldToken boldToken,
             HintHelpers hintHelpers,
             MultiTroveGetter multiTroveGetter,
-            IWETH WETH // for gas compensation
+            IWETH WETH, // for gas compensation
+            Zappers memory zappers
         )
     {
         LiquityContractsDev[] memory contractsArray;
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](1);
+        Zappers[] memory zappersArray;
 
         troveManagerParamsArray[0] = troveManagerParams;
 
-        (contractsArray, collateralRegistry, boldToken, hintHelpers, multiTroveGetter, WETH) =
+        (contractsArray, collateralRegistry, boldToken, hintHelpers, multiTroveGetter, WETH, zappersArray) =
             deployAndConnectContractsMultiColl(troveManagerParamsArray);
         contracts = contractsArray[0];
+        zappers = zappersArray[0];
     }
 
     function deployAndConnectContractsMultiColl(TroveManagerParams[] memory troveManagerParamsArray)
@@ -198,7 +229,8 @@ contract TestDeployer {
             IBoldToken boldToken,
             HintHelpers hintHelpers,
             MultiTroveGetter multiTroveGetter,
-            IWETH WETH // for gas compensation
+            IWETH WETH, // for gas compensation
+            Zappers[] memory zappersArray
         )
     {
         // used for gas compensation and as collateral of the first branch
@@ -206,7 +238,7 @@ contract TestDeployer {
             100 ether, //     _tapAmount
             1 days //         _tapPeriod
         );
-        (contractsArray, collateralRegistry, boldToken, hintHelpers, multiTroveGetter) =
+        (contractsArray, collateralRegistry, boldToken, hintHelpers, multiTroveGetter, zappersArray) =
             deployAndConnectContracts(troveManagerParamsArray, WETH);
     }
 
@@ -217,7 +249,8 @@ contract TestDeployer {
             ICollateralRegistry collateralRegistry,
             IBoldToken boldToken,
             HintHelpers hintHelpers,
-            MultiTroveGetter multiTroveGetter
+            MultiTroveGetter multiTroveGetter,
+            Zappers[] memory zappersArray
         )
     {
         DeploymentVarsDev memory vars;
@@ -229,6 +262,7 @@ contract TestDeployer {
         assert(address(boldToken) == vars.boldTokenAddress);
 
         contractsArray = new LiquityContractsDev[](vars.numCollaterals);
+        zappersArray = new Zappers[](vars.numCollaterals);
         vars.collaterals = new IERC20[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
@@ -257,7 +291,7 @@ contract TestDeployer {
         hintHelpers = new HintHelpers(collateralRegistry);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
-        vars.contracts = _deployAndConnectCollateralContractsDev(
+        (contractsArray[0], zappersArray[0]) = _deployAndConnectCollateralContractsDev(
             _WETH,
             boldToken,
             collateralRegistry,
@@ -267,11 +301,10 @@ contract TestDeployer {
             hintHelpers,
             multiTroveGetter
         );
-        contractsArray[0] = vars.contracts;
 
         // Deploy the remaining branches with LST collateral
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
-            vars.contracts = _deployAndConnectCollateralContractsDev(
+            (contractsArray[vars.i], zappersArray[vars.i]) = _deployAndConnectCollateralContractsDev(
                 vars.collaterals[vars.i],
                 boldToken,
                 collateralRegistry,
@@ -281,7 +314,6 @@ contract TestDeployer {
                 hintHelpers,
                 multiTroveGetter
             );
-            contractsArray[vars.i] = vars.contracts;
         }
 
         boldToken.setCollateralRegistry(address(collateralRegistry));
@@ -315,7 +347,7 @@ contract TestDeployer {
         address _troveManagerAddress,
         IHintHelpers _hintHelpers,
         IMultiTroveGetter _multiTroveGetter
-    ) internal returns (LiquityContractsDev memory contracts) {
+    ) internal returns (LiquityContractsDev memory contracts, Zappers memory zappers) {
         LiquityContractAddresses memory addresses;
         contracts.collToken = _collToken;
 
@@ -400,6 +432,10 @@ contract TestDeployer {
             address(contracts.borrowerOperations),
             address(contracts.activePool)
         );
+
+        // deploy zappers
+        (zappers.gasCompZapper, zappers.wethZapper, zappers.leverageZapperCurve, zappers.leverageZapperUniV3) =
+        _deployZappers(contracts.addressesRegistry, contracts.collToken, _boldToken, _weth, contracts.priceFeed, false);
     }
 
     // Creates individual PriceFeed contracts based on oracle addresses.
@@ -432,6 +468,7 @@ contract TestDeployer {
 
         vars.numCollaterals = 5;
         result.contractsArray = new LiquityContracts[](vars.numCollaterals);
+        result.zappersArray = new Zappers[](vars.numCollaterals);
         vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
         vars.collaterals = new IERC20[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
@@ -527,7 +564,7 @@ contract TestDeployer {
 
         // Deploy each set of core contracts
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
-            result.contractsArray[vars.i] = _deployAndConnectCollateralContractsMainnet(
+            (result.contractsArray[vars.i], result.zappersArray[vars.i]) = _deployAndConnectCollateralContractsMainnet(
                 vars.collaterals[vars.i],
                 vars.priceFeeds[vars.i],
                 result.boldToken,
@@ -571,7 +608,7 @@ contract TestDeployer {
         address _troveManagerAddress,
         IHintHelpers _hintHelpers,
         IMultiTroveGetter _multiTroveGetter
-    ) internal returns (LiquityContracts memory contracts) {
+    ) internal returns (LiquityContracts memory contracts, Zappers memory zappers) {
         LiquityContractAddresses memory addresses;
         contracts.collToken = _collToken;
         contracts.priceFeed = _priceFeed;
@@ -655,5 +692,130 @@ contract TestDeployer {
             address(contracts.borrowerOperations),
             address(contracts.activePool)
         );
+
+        // deploy zappers
+        (zappers.gasCompZapper, zappers.wethZapper, zappers.leverageZapperCurve, zappers.leverageZapperUniV3) =
+        _deployZappers(contracts.addressesRegistry, contracts.collToken, _boldToken, _weth, contracts.priceFeed, true);
+    }
+
+    function _deployZappers(
+        IAddressesRegistry _addressesRegistry,
+        IERC20 _collToken,
+        IBoldToken _boldToken,
+        IWETH _weth,
+        IPriceFeed _priceFeed,
+        bool mainnet
+    )
+        internal
+        returns (
+            GasCompZapper gasCompZapper,
+            WETHZapper wethZapper,
+            LeverageLSTZapper leverageZapperCurve,
+            LeverageLSTZapper leverageZapperUniV3
+        )
+    {
+        if (_collToken == _weth) {
+            wethZapper = new WETHZapper(_addressesRegistry);
+        } else {
+            gasCompZapper = new GasCompZapper(_addressesRegistry);
+        }
+
+        if (mainnet) {
+            (leverageZapperCurve, leverageZapperUniV3) =
+                _deployLeverageZappers(_addressesRegistry, _collToken, _boldToken, _priceFeed);
+        }
+
+        return (gasCompZapper, wethZapper, leverageZapperCurve, leverageZapperUniV3);
+    }
+
+    function _deployLeverageZappers(
+        IAddressesRegistry _addressesRegistry,
+        IERC20 _collToken,
+        IBoldToken _boldToken,
+        IPriceFeed _priceFeed
+    ) internal returns (LeverageLSTZapper, LeverageLSTZapper) {
+        IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
+
+        LeverageLSTZapper leverageZapperCurve =
+            _deployCurveLeverageZapper(_addressesRegistry, _collToken, _boldToken, _priceFeed, flashLoanProvider);
+        LeverageLSTZapper leverageZapperUniV3 =
+            _deployUniV3LeverageZapper(_addressesRegistry, _collToken, _boldToken, _priceFeed, flashLoanProvider);
+
+        return (leverageZapperCurve, leverageZapperUniV3);
+    }
+
+    function _deployCurveLeverageZapper(
+        IAddressesRegistry _addressesRegistry,
+        IERC20 _collToken,
+        IBoldToken _boldToken,
+        IPriceFeed _priceFeed,
+        IFlashLoanProvider _flashLoanProvider
+    ) internal returns (LeverageLSTZapper) {
+        uint256 price = _priceFeed.fetchPrice();
+
+        // deploy Curve Twocrypto NG pool
+        address[2] memory coins;
+        coins[0] = address(_boldToken);
+        coins[1] = address(_collToken);
+        ICurvePool curvePool = curveFactory.deploy_pool(
+            "LST-Bold pool",
+            "LBLD",
+            coins,
+            0, // implementation id
+            400000, // A
+            145000000000000, // gamma
+            26000000, // mid_fee
+            45000000, // out_fee
+            230000000000000, // fee_gamma
+            2000000000000, // allowed_extra_profit
+            146000000000000, // adjustment_step
+            600, // ma_exp_time
+            price // initial_price
+        );
+
+        IExchange curveExchange = new CurveExchange(_collToken, _boldToken, curvePool, 1, 0);
+        LeverageLSTZapper leverageZapperCurve =
+            new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
+
+        return leverageZapperCurve;
+    }
+
+    struct UniV3Vars {
+        IExchange uniV3Exchange;
+        uint256 price;
+        address[2] tokens;
+    }
+
+    function _deployUniV3LeverageZapper(
+        IAddressesRegistry _addressesRegistry,
+        IERC20 _collToken,
+        IBoldToken _boldToken,
+        IPriceFeed _priceFeed,
+        IFlashLoanProvider _flashLoanProvider
+    ) internal returns (LeverageLSTZapper) {
+        UniV3Vars memory vars;
+        vars.uniV3Exchange = new UniV3Exchange(_collToken, _boldToken, UNIV3_FEE, uniV3Router, uniV3Quoter);
+        LeverageLSTZapper leverageZapperUniV3 =
+            new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
+
+        // Create Uni V3 pool
+        vars.price = _priceFeed.fetchPrice();
+        if (address(_boldToken) < address(_collToken)) {
+            //console2.log("b < c");
+            vars.tokens[0] = address(_boldToken);
+            vars.tokens[1] = address(_collToken);
+        } else {
+            //console2.log("c < b");
+            vars.tokens[0] = address(_collToken);
+            vars.tokens[1] = address(_boldToken);
+        }
+        uniV3PositionManager.createAndInitializePoolIfNecessary(
+            vars.tokens[0], // token0,
+            vars.tokens[1], // token1,
+            UNIV3_FEE, // fee,
+            UniV3Exchange(address(vars.uniV3Exchange)).priceToSqrtPrice(_boldToken, _collToken, vars.price) // sqrtPriceX96
+        );
+
+        return leverageZapperUniV3;
     }
 }

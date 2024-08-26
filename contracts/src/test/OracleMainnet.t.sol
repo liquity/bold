@@ -94,16 +94,13 @@ contract OraclesMainnet is TestAccounts {
                 deal(address(contractsArray[j].collToken), accountsList[i], initialColl);
                 vm.startPrank(accountsList[i]);
                 // Approve all Borrower Ops to use the user's WETH funds
-                contractsArray[j].collToken.approve(address(contractsArray[j].borrowerOperations), initialColl);
+                contractsArray[0].collToken.approve(address(contractsArray[j].borrowerOperations), type(uint256).max);
+                // Approve Borrower Ops in LST branches to use the user's respective LST funds
+                contractsArray[j].collToken.approve(address(contractsArray[j].borrowerOperations), type(uint256).max);
                 vm.stopPrank();
             }
 
-            // Approve Borrower Ops in LST branches to use the user's respective LST funds
             vm.startPrank(accountsList[i]);
-            for (uint256 j = 0; j < numCollaterals; j++) {
-                contractsArray[1].collToken.approve(address(contractsArray[1].borrowerOperations), initialColl);
-            }
-            vm.stopPrank();
         }
 
         wethPriceFeed = IWETHPriceFeed(address(contractsArray[0].priceFeed));
