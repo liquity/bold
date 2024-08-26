@@ -2,11 +2,9 @@
 
 pragma solidity ^0.8.18;
 
-import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-
 import "../Interfaces/IBorrowerOperations.sol";
 import "../Interfaces/IWETH.sol";
-import "./GasCompZapper.sol";
+import "./WETHZapper.sol";
 import "../Dependencies/AddRemoveManagers.sol";
 import "../Dependencies/Constants.sol";
 import "./Interfaces/IFlashLoanProvider.sol";
@@ -16,19 +14,16 @@ import "./Interfaces/ILeverageZapper.sol";
 
 // import "forge-std/console2.sol";
 
-contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper {
-    using SafeERC20 for IERC20;
-
+contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
     IPriceFeed public immutable priceFeed;
     IFlashLoanProvider public immutable flashLoanProvider;
     IExchange public immutable exchange;
 
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
-        GasCompZapper(_addressesRegistry)
+        WETHZapper(_addressesRegistry)
     {
         // Cache contracts
         IBorrowerOperations _borrowerOperations = borrowerOperations;
-        IERC20 _collToken = collToken;
         IWETH _WETH = WETH;
 
         priceFeed = _addressesRegistry.priceFeed();
@@ -37,34 +32,30 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         exchange = _exchange;
 
         // Approve Coll and Bold to exchange module
-        _collToken.approve(address(_exchange), type(uint256).max);
+        _WETH.approve(address(_exchange), type(uint256).max);
         boldToken.approve(address(_exchange), type(uint256).max);
-        // Approve WETH to BorrowerOperations
-        _WETH.approve(address(_borrowerOperations), type(uint256).max);
         // Approve coll to BorrowerOperations
-        _collToken.approve(address(_borrowerOperations), type(uint256).max);
+        _WETH.approve(address(_borrowerOperations), type(uint256).max);
     }
 
     struct OpenLeveragedTroveVars {
         uint256 troveId;
         IBorrowerOperations borrowerOperations;
-        IERC20 collToken;
+        IWETH WETH;
         uint256 boldAmount;
     }
 
     function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable {
-        require(msg.value == ETH_GAS_COMPENSATION, "LZ: Wrong ETH");
+        require(msg.value == ETH_GAS_COMPENSATION + _params.collAmount, "LZ: Wrong amount of ETH");
+
+        IWETH WETHCached = WETH;
 
         // Convert ETH to WETH
         WETH.deposit{value: msg.value}();
 
-        IERC20 collTokenCached = collToken;
-        // Pull own coll
-        collTokenCached.safeTransferFrom(msg.sender, address(this), _params.collAmount);
-
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            collTokenCached,
+            WETHCached,
             _params.flashLoanAmount,
             IFlashLoanReceiver(address(this)),
             IFlashLoanProvider.Operation.OpenTrove,
@@ -81,7 +72,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
 
         OpenLeveragedTroveVars memory vars;
         vars.borrowerOperations = borrowerOperations;
-        vars.collToken = collToken;
+        vars.WETH = WETH;
 
         uint256 totalCollAmount = _params.collAmount + _effectiveFlashLoanAmount;
         // We compute boldAmount off-chain for efficiency
@@ -111,7 +102,8 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount, address(this));
 
         // Send coll back to return flash loan
-        collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
+        vars.WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
+        // WETH reverts on failure: https://etherscan.io/token/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2#code
     }
 
     function leverUpTrove(LeverUpTroveParams calldata _params) external {
@@ -120,7 +112,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            collToken,
+            WETH,
             _params.flashLoanAmount,
             IFlashLoanReceiver(address(this)),
             IFlashLoanProvider.Operation.LeverUpTrove,
@@ -152,7 +144,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount, address(this));
 
         // Send coll back to return flash loan
-        collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
+        WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
     }
 
     function leverDownTrove(LeverDownTroveParams calldata _params) external {
@@ -161,7 +153,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            collToken,
+            WETH,
             _params.flashLoanAmount,
             IFlashLoanReceiver(address(this)),
             IFlashLoanProvider.Operation.LeverDownTrove,
@@ -193,7 +185,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         );
 
         // Send coll back to return flash loan
-        collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
+        WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
     }
 
     // As formulas are symmetrical, it can be used in both ways

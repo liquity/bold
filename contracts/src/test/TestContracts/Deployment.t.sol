@@ -22,6 +22,7 @@ import "./PriceFeedTestnet.sol";
 import "../../Zappers/WETHZapper.sol";
 import "../../Zappers/GasCompZapper.sol";
 import "../../Zappers/LeverageLSTZapper.sol";
+import "../../Zappers/LeverageWETHZapper.sol";
 import "../../Zappers/Modules/FlashLoans/BalancerFlashLoan.sol";
 import "../../Zappers/Interfaces/IFlashLoanProvider.sol";
 import "../../Zappers/Interfaces/IExchange.sol";
@@ -92,8 +93,8 @@ contract TestDeployer {
     struct Zappers {
         WETHZapper wethZapper;
         GasCompZapper gasCompZapper;
-        LeverageLSTZapper leverageZapperCurve;
-        LeverageLSTZapper leverageZapperUniV3;
+        ILeverageZapper leverageZapperCurve;
+        ILeverageZapper leverageZapperUniV3;
     }
 
     struct LiquityContractAddresses {
@@ -710,19 +711,20 @@ contract TestDeployer {
         returns (
             GasCompZapper gasCompZapper,
             WETHZapper wethZapper,
-            LeverageLSTZapper leverageZapperCurve,
-            LeverageLSTZapper leverageZapperUniV3
+            ILeverageZapper leverageZapperCurve,
+            ILeverageZapper leverageZapperUniV3
         )
     {
-        if (_collToken == _weth) {
-            wethZapper = new WETHZapper(_addressesRegistry);
-        } else {
+        bool lst = _collToken != _weth;
+        if (lst) {
             gasCompZapper = new GasCompZapper(_addressesRegistry);
+        } else {
+            wethZapper = new WETHZapper(_addressesRegistry);
         }
 
         if (mainnet) {
             (leverageZapperCurve, leverageZapperUniV3) =
-                _deployLeverageZappers(_addressesRegistry, _collToken, _boldToken, _priceFeed);
+                _deployLeverageZappers(_addressesRegistry, _collToken, _boldToken, _priceFeed, lst);
         }
 
         return (gasCompZapper, wethZapper, leverageZapperCurve, leverageZapperUniV3);
@@ -732,14 +734,15 @@ contract TestDeployer {
         IAddressesRegistry _addressesRegistry,
         IERC20 _collToken,
         IBoldToken _boldToken,
-        IPriceFeed _priceFeed
-    ) internal returns (LeverageLSTZapper, LeverageLSTZapper) {
+        IPriceFeed _priceFeed,
+        bool _lst
+    ) internal returns (ILeverageZapper, ILeverageZapper) {
         IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
 
-        LeverageLSTZapper leverageZapperCurve =
-            _deployCurveLeverageZapper(_addressesRegistry, _collToken, _boldToken, _priceFeed, flashLoanProvider);
-        LeverageLSTZapper leverageZapperUniV3 =
-            _deployUniV3LeverageZapper(_addressesRegistry, _collToken, _boldToken, _priceFeed, flashLoanProvider);
+        ILeverageZapper leverageZapperCurve =
+            _deployCurveLeverageZapper(_addressesRegistry, _collToken, _boldToken, _priceFeed, flashLoanProvider, _lst);
+        ILeverageZapper leverageZapperUniV3 =
+            _deployUniV3LeverageZapper(_addressesRegistry, _collToken, _boldToken, _priceFeed, flashLoanProvider, _lst);
 
         return (leverageZapperCurve, leverageZapperUniV3);
     }
@@ -749,8 +752,9 @@ contract TestDeployer {
         IERC20 _collToken,
         IBoldToken _boldToken,
         IPriceFeed _priceFeed,
-        IFlashLoanProvider _flashLoanProvider
-    ) internal returns (LeverageLSTZapper) {
+        IFlashLoanProvider _flashLoanProvider,
+        bool _lst
+    ) internal returns (ILeverageZapper) {
         uint256 price = _priceFeed.fetchPrice();
 
         // deploy Curve Twocrypto NG pool
@@ -774,8 +778,14 @@ contract TestDeployer {
         );
 
         IExchange curveExchange = new CurveExchange(_collToken, _boldToken, curvePool, 1, 0);
-        LeverageLSTZapper leverageZapperCurve =
-            new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
+        ILeverageZapper leverageZapperCurve;
+        if (_lst) {
+            leverageZapperCurve =
+                new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
+        } else {
+            leverageZapperCurve =
+                new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
+        }
 
         return leverageZapperCurve;
     }
@@ -791,12 +801,19 @@ contract TestDeployer {
         IERC20 _collToken,
         IBoldToken _boldToken,
         IPriceFeed _priceFeed,
-        IFlashLoanProvider _flashLoanProvider
-    ) internal returns (LeverageLSTZapper) {
+        IFlashLoanProvider _flashLoanProvider,
+        bool _lst
+    ) internal returns (ILeverageZapper) {
         UniV3Vars memory vars;
         vars.uniV3Exchange = new UniV3Exchange(_collToken, _boldToken, UNIV3_FEE, uniV3Router, uniV3Quoter);
-        LeverageLSTZapper leverageZapperUniV3 =
-            new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
+        ILeverageZapper leverageZapperUniV3;
+        if (_lst) {
+            leverageZapperUniV3 =
+                new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
+        } else {
+            leverageZapperUniV3 =
+                new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
+        }
 
         // Create Uni V3 pool
         vars.price = _priceFeed.fetchPrice();

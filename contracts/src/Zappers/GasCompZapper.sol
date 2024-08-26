@@ -27,7 +27,7 @@ contract GasCompZapper is AddRemoveManagers {
         collToken = _addressesRegistry.collToken();
         boldToken = _addressesRegistry.boldToken();
         WETH = _addressesRegistry.WETH();
-        //require(address(WETH) != address(collToken), "GCZ: Wrong coll branch");
+        require(address(WETH) != address(collToken), "GCZ: Wrong coll branch");
     }
 
     struct OpenTroveParams {
