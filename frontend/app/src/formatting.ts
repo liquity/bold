@@ -1,6 +1,36 @@
-import type { RiskLevel } from "@/src/types";
+import type { Dnum, RiskLevel } from "@/src/types";
 
+import * as dn from "dnum";
 import { match, P } from "ts-pattern";
+
+// Dnum formatting options
+const dnFormatOptions = {
+  "1z": { digits: 1, trailingZeros: true },
+  "2z": { digits: 2, trailingZeros: true },
+  "full": undefined, // dnum defaults
+} as const;
+
+function isDnFormatName(value: unknown): value is keyof typeof dnFormatOptions {
+  return typeof value === "string" && value in dnFormatOptions;
+}
+
+export function fmtnum(
+  value: Dnum | number | null,
+  optionsOrFormatName:
+    | keyof typeof dnFormatOptions
+    | Parameters<typeof dn.format>[1] = "2z",
+) {
+  if (value === null) {
+    return "";
+  }
+  if (typeof value === "number") {
+    value = dn.from(value);
+  }
+  if (isDnFormatName(optionsOrFormatName)) {
+    optionsOrFormatName = dnFormatOptions[optionsOrFormatName];
+  }
+  return dn.format(value, optionsOrFormatName);
+}
 
 export function formatLiquidationRisk(liquidationRisk: RiskLevel | null) {
   return match(liquidationRisk)

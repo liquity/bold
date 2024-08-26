@@ -8,10 +8,21 @@ import {
   getLiquidationPrice,
   getLiquidationPriceFromLeverage,
   getLiquidationRisk,
+  getLoanDetails,
   getLtv,
   getLtvFromLeverageFactor,
   getRedemptionRisk,
 } from "./liquity-math";
+import { roundToDecimal } from "./utils";
+
+// equality check for dnums
+expect.addEqualityTesters([
+  (a: unknown, b: unknown): boolean | undefined => {
+    const isANumberIsh = typeof a === "number" || typeof a === "bigint" || dn.isDnum(a);
+    const isBNumberIsh = typeof b === "number" || typeof b === "bigint" || dn.isDnum(b);
+    return isANumberIsh && isBNumberIsh ? dn.eq(a, b) : undefined;
+  },
+]);
 
 const d = (value: number | bigint): Dnum => (
   typeof value === "bigint"
@@ -79,8 +90,8 @@ const leverageToLtvPairs = [
 ] as const;
 
 test("getLtvFromLeverageFactor() works", () => {
-  expect(() => getLtvFromLeverageFactor(0)).toThrowError();
-  expect(() => getLtvFromLeverageFactor(-1)).toThrowError();
+  expect(getLtvFromLeverageFactor(0)).toBeNull();
+  expect(getLtvFromLeverageFactor(-1)).toBeNull();
 
   for (const [leverageFactor, expected] of leverageToLtvPairs) {
     expect(getLtvFromLeverageFactor(leverageFactor)).toEqual(expected);
@@ -89,7 +100,7 @@ test("getLtvFromLeverageFactor() works", () => {
 
 test("getLeverageFactorFromLtv() works", () => {
   for (const [leverageFactor, ltv] of leverageToLtvPairs) {
-    expect(getLeverageFactorFromLtv(ltv)).toEqual(leverageFactor);
+    expect(roundToDecimal(getLeverageFactorFromLtv(ltv), 1)).toEqual(leverageFactor);
   }
 });
 
@@ -153,15 +164,70 @@ test("getLeverageFactorFromLiquidationPrice() works", () => {
 test("getLiquidationPrice() works", () => {
   expect(
     getLiquidationPrice(d(8), d(8000), 1.2),
-  ).toEqual(d(1200));
+  ).toEqual(1200);
   expect(
     getLiquidationPrice(d(8), d(8000), 1.1),
-  ).toEqual(d(1100));
+  ).toEqual(1100);
 });
 
 test("getLtv() works", () => {
   expect(getLtv(d(-8), d(1000), d(2000))).toBe(null);
-  expect(getLtv(d(8), d(1000), d(2000))).toEqual(d(0.0625));
-  expect(getLtv(d(8), d(16000), d(2000))).toEqual(d(1));
-  expect(getLtv(d(8), d(32000), d(2000))).toEqual(d(2));
+  expect(getLtv(d(8), d(1000), d(2000))).toEqual(0.0625);
+  expect(getLtv(d(8), d(16000), d(2000))).toEqual(1);
+  expect(getLtv(d(8), d(32000), d(2000))).toEqual(2);
+});
+
+test("getLoanDetails() correctly calculates isUnderwater and isLiquidatable in leveraged positions", () => {
+  const loan = (deposit: number, borrowed: number, collPrice: number) => (
+    getLoanDetails(
+      d(deposit),
+      d(borrowed),
+      d(0.05),
+      1.1, // 110% collateral = 90.9090…% max. LTV
+      d(collPrice),
+    )
+  );
+
+  // healthy position (50% LTV)
+  const healthyLoan = loan(10, 10000, 2000);
+  expect(healthyLoan.ltv).toEqual(0.5);
+  expect(healthyLoan.leverageFactor).toBe(2);
+  expect(healthyLoan.isUnderwater).toBe(false);
+  expect(healthyLoan.isLiquidatable).toBe(false);
+
+  // almost liquidatable (90% LTV)
+  const almostLiquidatableLoan = loan(10, 18000, 2000);
+  expect(almostLiquidatableLoan.ltv).toEqual(0.9);
+  expect(almostLiquidatableLoan.leverageFactor).toBeCloseTo(10);
+  expect(almostLiquidatableLoan.depositPreLeverage).toEqual(d(999999999999999800n)); // ~1 ETH
+  expect(almostLiquidatableLoan.isUnderwater).toBe(false);
+  expect(almostLiquidatableLoan.isLiquidatable).toBe(false);
+  expect(almostLiquidatableLoan.ltv && dn.lt(almostLiquidatableLoan.ltv, almostLiquidatableLoan.maxLtv)).toBe(true);
+
+  // liquidatable (91% LTV)
+  const liquidatableLoan = loan(10, 18200, 2000);
+  expect(liquidatableLoan.ltv).toEqual(0.91);
+  expect(liquidatableLoan.leverageFactor).toBeCloseTo(11.11);
+  expect(liquidatableLoan.depositPreLeverage).toEqual(d(899999999999999766n)); // ~0.9 ETH
+  expect(liquidatableLoan.isUnderwater).toBe(false);
+  expect(liquidatableLoan.isLiquidatable).toBe(true);
+  expect(liquidatableLoan.ltv && dn.gt(liquidatableLoan.ltv, liquidatableLoan.maxLtv)).toBe(true);
+
+  // exactly at 100% LTV
+  const oneHundredPercentLtvLoan = loan(10, 20000, 2000);
+  expect(oneHundredPercentLtvLoan.ltv).toEqual(1);
+  expect(oneHundredPercentLtvLoan.leverageFactor).toBe(Number.POSITIVE_INFINITY);
+  expect(oneHundredPercentLtvLoan.depositPreLeverage).toEqual(null);
+  expect(oneHundredPercentLtvLoan.isUnderwater).toBe(true);
+  expect(oneHundredPercentLtvLoan.isLiquidatable).toBe(true);
+
+  // underwater (125% LTV)
+  const underwaterLoan = loan(10, 25000, 2000);
+  expect(underwaterLoan.ltv).toEqual(1.25);
+  expect(underwaterLoan.leverageFactor).toBe(-4); // negative leverage
+  expect(underwaterLoan.depositPreLeverage).toEqual(-2.5); // -2.5 ETH missing to recover
+  expect(underwaterLoan.depositToZero).toEqual(2.5); // 2.5 ETH to zero out the position
+  expect(underwaterLoan.deposit).toEqual(10);
+  expect(underwaterLoan.isUnderwater).toBe(true);
+  expect(underwaterLoan.isLiquidatable).toBe(true);
 });

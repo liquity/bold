@@ -23,9 +23,10 @@ export function getLiquidationRisk(ltv: Dnum, maxLtv: Dnum): RiskLevel {
     .otherwise(() => "low");
 }
 
-export function getLtvFromLeverageFactor(leverageFactor: number): Dnum {
+export function getLtvFromLeverageFactor(leverageFactor: number): Dnum | null {
+  // invalid leverage factor
   if (leverageFactor <= 0) {
-    throw new Error("Invalid leverage factor");
+    return null;
   }
   return dn.div(
     dn.sub(leverageFactor, dn.from(1, 18)),
@@ -34,7 +35,8 @@ export function getLtvFromLeverageFactor(leverageFactor: number): Dnum {
 }
 
 export function getLeverageFactorFromLtv(ltv: Dnum): number {
-  return Math.round(1 / (1 - dn.toNumber(ltv)) * 10) / 10;
+  // returns negative values for underwater positions (LTV > 100%)
+  return 1 / (1 - dn.toNumber(ltv));
 }
 
 export function getLeverageFactorFromLiquidationPrice(
@@ -77,12 +79,13 @@ export function getLiquidationPrice(
   deposit: Dnum,
   borrowed: Dnum,
   minCollRatio: number,
-): Dnum {
+): Dnum | null {
+  // deposit and borrow amounts must be positive
   if (!dn.gt(deposit, 0) || !dn.gt(borrowed, 0)) {
-    throw new Error("Deposit and borrow amounts must be positive");
+    return null;
   }
   if (minCollRatio <= 1) {
-    throw new Error("Minimum collateral ratio must be greater than 1");
+    return null;
   }
   return dn.div(
     dn.mul(borrowed, minCollRatio),
@@ -104,8 +107,11 @@ export type LoanDetails = {
   debt: Dnum | null;
   deposit: Dnum | null;
   depositPreLeverage: Dnum | null;
+  depositToZero: Dnum | null;
   depositUsd: Dnum | null;
   interestRate: Dnum | null;
+  isLiquidatable: boolean;
+  isUnderwater: boolean;
   leverageFactor: number | null;
   liquidationPrice: Dnum | null;
   liquidationRisk: RiskLevel | null;
@@ -115,6 +121,7 @@ export type LoanDetails = {
   maxLtv: Dnum;
   maxLtvAllowed: Dnum;
   redemptionRisk: RiskLevel | null;
+  requiredCollateralToRecover: Dnum | null;
 };
 
 export function getLoanDetails(
@@ -128,37 +135,62 @@ export function getLoanDetails(
   const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED);
   const depositUsd = deposit && collPrice ? dn.mul(deposit, collPrice) : null;
 
-  const ltv = debt && deposit && collPrice && getLtv(deposit, debt, collPrice);
+  let ltv: Dnum | null = null;
+  let isUnderwater = false;
+  let isLiquidatable = false;
+  let requiredCollateralToRecover: Dnum | null = null;
+
+  if (debt && depositUsd && dn.gt(depositUsd, 0) && dn.gt(debt, 0)) {
+    ltv = dn.div(debt, depositUsd);
+    isUnderwater = !dn.lt(ltv, dn.from(1, 18));
+    isLiquidatable = dn.gt(ltv, maxLtv);
+
+    if (isUnderwater && collPrice && deposit) {
+      const requiredDepositUsd = dn.mul(debt, minCollRatio);
+      requiredCollateralToRecover = dn.sub(
+        dn.div(requiredDepositUsd, collPrice),
+        deposit,
+      );
+    }
+  }
+
   const maxDebt = depositUsd && dn.mul(depositUsd, maxLtv);
 
   const maxDebtAllowed = depositUsd && dn.gt(depositUsd, 0)
     ? dn.mul(depositUsd, maxLtvAllowed)
     : null;
 
-  const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
+  const liquidationRisk = ltv
+    ? getLiquidationRisk(ltv, maxLtv)
+    : null;
   const redemptionRisk = getRedemptionRisk(interestRate);
 
-  const leverageFactor = ltv && dn.lt(ltv, 1)
+  const leverageFactor = ltv
     ? getLeverageFactorFromLtv(ltv)
     : null;
 
-  const depositPreLeverage = deposit === null || leverageFactor === null
-    ? null
-    : dn.div(deposit, leverageFactor);
+  const depositPreLeverage = deposit && leverageFactor && Number.isFinite(leverageFactor)
+    ? dn.div(deposit, leverageFactor)
+    : null;
 
-  const liquidationPrice = deposit && debt && getLiquidationPrice(
-    deposit,
-    debt,
-    minCollRatio,
-  );
+  const depositToZero = debt && deposit && collPrice && dn.gt(collPrice, 0)
+    ? dn.div(dn.sub(debt, dn.mul(deposit, collPrice)), collPrice)
+    : null;
+
+  const liquidationPrice = deposit && debt && dn.gt(deposit, 0)
+    ? getLiquidationPrice(deposit, debt, minCollRatio)
+    : null;
 
   return {
+    collPrice,
     debt,
     deposit,
     depositPreLeverage,
+    depositToZero,
     depositUsd,
-    collPrice,
     interestRate,
+    isLiquidatable,
+    isUnderwater,
     leverageFactor,
     liquidationPrice,
     liquidationRisk,
@@ -168,5 +200,6 @@ export function getLoanDetails(
     maxLtv,
     maxLtvAllowed,
     redemptionRisk,
+    requiredCollateralToRecover,
   };
 }

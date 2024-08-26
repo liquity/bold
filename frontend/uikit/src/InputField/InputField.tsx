@@ -16,6 +16,7 @@ const diffSpringConfig = {
 const InputField = forwardRef<HTMLInputElement, {
   contextual?: ReactNode;
   difference?: ReactNode;
+  disabled?: boolean;
   label?:
     | ReactNode
     | { end: ReactNode; start?: ReactNode }
@@ -38,6 +39,7 @@ const InputField = forwardRef<HTMLInputElement, {
 }>(function InputField({
   contextual,
   difference,
+  disabled = false,
   label,
   labelHeight = 12,
   labelSpacing = 12,
@@ -211,6 +213,7 @@ const InputField = forwardRef<HTMLInputElement, {
         <input
           ref={ref}
           id={id}
+          disabled={disabled}
           onBlur={() => {
             setFocused(false);
             onBlur?.();

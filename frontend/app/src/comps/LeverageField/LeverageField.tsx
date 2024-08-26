@@ -1,10 +1,10 @@
 import type { CollateralToken } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 
-import { Field } from "@/src/comps/Field/Field";
 import { LEVERAGE_FACTOR_MIN, LEVERAGE_FACTOR_SUGGESTIONS, LTV_RISK, MAX_LTV_ALLOWED } from "@/src/constants";
 import content from "@/src/content";
 import { useInputFieldValue } from "@/src/form-utils";
+import { fmtnum } from "@/src/formatting";
 import {
   getLeverageFactorFromLiquidationPrice,
   getLeverageFactorFromLtv,
@@ -13,147 +13,112 @@ import {
   getLtvFromLeverageFactor,
 } from "@/src/liquity-math";
 import { infoTooltipProps } from "@/src/uikit-utils";
+import { roundToDecimal } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import { HFlex, InfoTooltip, InputField, lerp, norm, PillButton, Slider } from "@liquity2/uikit";
+import { HFlex, InfoTooltip, InputField, lerp, norm, Slider } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export function LeverageField({
+  collPrice,
+  collToken,
   debt,
-  deposit,
+  disabled,
   highRiskLeverageFactor,
   leverageFactor,
-  leverageFactorSuggestions,
   liquidationPriceField,
   liquidationRisk,
-  ltv,
   maxLeverageFactorAllowed,
-  maxLtv,
   mediumRiskLeverageFactor,
   sliderProps,
-  updateLeverageFactor,
-}: ReturnType<typeof useLeverageField>) {
+}: ReturnType<typeof useLeverageField> & {
+  disabled?: boolean;
+}) {
   return (
-    <Field
-      field={
-        <InputField
-          contextual={
-            <div
+    <InputField
+      secondarySpacing={16}
+      disabled={disabled}
+      contextual={
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 300,
+            marginRight: -20,
+          }}
+        >
+          <Slider
+            disabled={disabled}
+            gradient={[
+              norm(
+                mediumRiskLeverageFactor,
+                LEVERAGE_FACTOR_MIN,
+                maxLeverageFactorAllowed,
+              ),
+              norm(
+                highRiskLeverageFactor,
+                LEVERAGE_FACTOR_MIN,
+                maxLeverageFactorAllowed,
+              ),
+            ]}
+            {...sliderProps}
+          />
+        </div>
+      }
+      label={{
+        end: (
+          <div>
+            Total debt {debt
+              ? (
+                <>
+                  <span
+                    className={css({
+                      fontVariantNumeric: "tabular-nums",
+                    })}
+                  >
+                    {dn.format(debt, { digits: 2, trailingZeros: true })}
+                  </span>
+                  {" BOLD"}
+                </>
+              )
+              : "−"}
+          </div>
+        ),
+        start: content.leverageScreen.liquidationPriceField.label,
+      }}
+      placeholder="0.00"
+      secondary={{
+        start: (
+          <span>
+            {collToken.name} price{" "}
+            <span
+              className={css({
+                color: "content",
+              })}
+            >
+              ${fmtnum(collPrice, "2z")}
+            </span>
+          </span>
+        ),
+        end: (
+          <HFlex gap={8}>
+            Leverage{" "}
+            <span
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 300,
+                color: liquidationRisk === "high"
+                  ? "#F36740"
+                  : "#2F3037",
+                fontVariantNumeric: "tabular-nums",
               }}
             >
-              <Slider
-                gradient={[
-                  norm(
-                    mediumRiskLeverageFactor,
-                    LEVERAGE_FACTOR_MIN,
-                    maxLeverageFactorAllowed,
-                  ),
-                  norm(
-                    highRiskLeverageFactor,
-                    LEVERAGE_FACTOR_MIN,
-                    maxLeverageFactorAllowed,
-                  ),
-                ]}
-                {...sliderProps}
-              />
-            </div>
-          }
-          label={{
-            end: (
-              <span>
-                Leverage{" "}
-                <span
-                  title={dn.format([BigInt(Math.round(leverageFactor * 10)), 1])}
-                  style={{
-                    color: liquidationRisk === "high"
-                      ? "#F36740"
-                      : "#2F3037",
-                    fontVariantNumeric: "tabular-nums",
-                  }}
-                >
-                  {dn.format([BigInt(Math.round(leverageFactor * 10)), 1], {
-                    digits: 1,
-                    trailingZeros: true,
-                  })}x
-                </span>
-              </span>
-            ),
-            start: content.leverageScreen.liquidationPriceField.label,
-          }}
-          placeholder="0.00"
-          secondary={{
-            start: (
-              <div>
-                Total debt {debt
-                  ? (
-                    <>
-                      <span
-                        className={css({
-                          fontVariantNumeric: "tabular-nums",
-                        })}
-                      >
-                        {dn.format(debt, { digits: 2, trailingZeros: true })}
-                      </span>
-                      {" BOLD"}
-                    </>
-                  )
-                  : "−"}
-              </div>
-            ),
-            end: (
-              <HFlex gap={6}>
-                {leverageFactorSuggestions.map((factor) => (
-                  <PillButton
-                    key={factor}
-                    label={`${factor.toFixed(1)}x`}
-                    onClick={() => updateLeverageFactor(factor)}
-                    warnLevel={getLiquidationRisk(getLtvFromLeverageFactor(factor), maxLtv)}
-                  />
-                ))}
-                <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.leverageLevel)} />
-              </HFlex>
-            ),
-          }}
-          {...liquidationPriceField.inputFieldProps}
-        />
-      }
-      footer={[[
-        // eslint-disable-next-line react/jsx-key
-        <>
-          <Field.FooterInfoLiquidationRisk
-            riskLevel={liquidationRisk}
-          />
-          <Field.FooterInfoLoanToValue
-            ltvRatio={ltv}
-            maxLtvRatio={maxLtv}
-          />
-        </>,
-        // eslint-disable-next-line react/jsx-key
-        <HFlex>
-          <span
-            className={css({
-              color: "contentAlt",
-            })}
-          >
-            Exposure
-          </span>
-          <span
-            className={css({
-              fontVariantNumeric: "tabular-nums",
-            })}
-          >
-            {(deposit && dn.gt(deposit, 0))
-              ? `${dn.format(deposit, { digits: 2, trailingZeros: true })} ETH`
-              : "−"}
-          </span>
-          <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.exposure)} />
-        </HFlex>,
-      ]]}
+              {fmtnum(leverageFactor, "1z")}x
+            </span>
+            <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.leverageLevel)} />
+          </HFlex>
+        ),
+      }}
+      {...liquidationPriceField.inputFieldProps}
     />
   );
 }
@@ -162,14 +127,14 @@ export function useLeverageField({
   collPrice,
   collToken,
   depositPreLeverage,
+  maxLtvAllowedRatio = MAX_LTV_ALLOWED,
   onFocusChange,
-  updatePriority,
 }: {
   collPrice: Dnum;
   collToken: CollateralToken;
   depositPreLeverage: Dnum | null;
+  maxLtvAllowedRatio?: number;
   onFocusChange?: (focused: boolean) => void;
-  updatePriority: "liquidationPrice" | "leverageFactor";
 }) {
   const isFocused = useRef(false);
 
@@ -178,7 +143,7 @@ export function useLeverageField({
   const maxLtv = dn.from(1 / collateralRatio, 18);
   const maxLeverageFactor = getLeverageFactorFromLtv(maxLtv);
 
-  const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED);
+  const maxLtvAllowed = dn.mul(maxLtv, maxLtvAllowedRatio);
   const maxLeverageFactorAllowed = getLeverageFactorFromLtv(maxLtvAllowed);
 
   const [leverageFactor, setLeverageFactor] = useState(
@@ -190,7 +155,7 @@ export function useLeverageField({
   );
 
   const ltv = getLtvFromLeverageFactor(leverageFactor);
-  const liquidationRisk = getLiquidationRisk(ltv, maxLtv);
+  const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
 
   const mediumRiskLeverageFactor = getLeverageFactorFromLtv(dn.mul(maxLtv, LTV_RISK.medium));
   const highRiskLeverageFactor = getLeverageFactorFromLtv(dn.mul(maxLtv, LTV_RISK.high));
@@ -275,26 +240,13 @@ export function useLeverageField({
   // update the leverage factor when the collateral price changes
   const previousCollPrice = useRef(collPrice);
   useEffect(() => {
-    if (updatePriority === "liquidationPrice" && !dn.eq(previousCollPrice.current, collPrice) && deposit && debt) {
+    if (!dn.eq(previousCollPrice.current, collPrice) && deposit && debt) {
       liquidationPriceField.setValue(dn.toString(
         getLiquidationPriceFromLeverage(leverageFactor, collPrice, collateralRatio),
         2,
       ));
       previousCollPrice.current = collPrice;
     }
-
-    let timer: ReturnType<typeof setTimeout>;
-    if (updatePriority === "leverageFactor") {
-      timer = setTimeout(() => {
-        if (liquidationPriceField.parsed && !isFocused.current) {
-          // updateLeverageFactor(getLeverageFactorFromLiquidationPriceClamped(liquidationPriceField.parsed));
-        }
-      }, 100);
-    }
-
-    return () => {
-      clearTimeout(timer);
-    };
   }, [
     collPrice,
     collateralRatio,
@@ -302,15 +254,15 @@ export function useLeverageField({
     leverageFactor,
     liquidationPriceField,
     updateLeverageFactor,
-    updatePriority,
   ]);
 
   const sliderProps = {
     onChange: (value: number) => {
       updateLeverageFactor(
-        Math.round(
-          lerp(LEVERAGE_FACTOR_MIN, maxLeverageFactorAllowed, value) * 10,
-        ) / 10,
+        roundToDecimal(
+          lerp(LEVERAGE_FACTOR_MIN, maxLeverageFactorAllowed, value),
+          1,
+        ),
       );
     },
     value: norm(
@@ -331,6 +283,8 @@ export function useLeverageField({
   }
 
   return {
+    collPrice,
+    collToken,
     debt,
     deposit,
     highRiskLeverageFactor,
