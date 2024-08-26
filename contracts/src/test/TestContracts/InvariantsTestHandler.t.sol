@@ -226,6 +226,23 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         bool wasActive;
         bool premature;
         uint256 upfrontFee;
+        string errorString;
+    }
+
+    struct RemoveFromBatchContext {
+        uint256 upperHint;
+        uint256 lowerHint;
+        TestDeployer.LiquityContractsDev c;
+        uint256 pendingInterest;
+        uint256 troveId;
+        LatestTroveData t;
+        address batchManager;
+        uint256 batchManagementFee;
+        bool wasOpen;
+        bool wasActive;
+        bool premature;
+        uint256 upfrontFee;
+        string errorString;
     }
 
     struct SetBatchManagerAnnualInterestRateContext {
@@ -1814,9 +1831,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             lowerHintSeed.toString()
         );
 
-        string memory errorString;
         vm.prank(msg.sender);
-
         try v.c.borrowerOperations.setInterestBatchManager(
             v.troveId, v.newBatchManager, v.upperHint, v.lowerHint, v.upfrontFee
         ) {
@@ -1850,7 +1865,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Effects (system)
             _mintYield(i, v.pendingInterest, v.upfrontFee);
         } catch Error(string memory reason) {
-            errorString = reason;
+            v.errorString = reason;
 
             // Justify failures
             if (reason.equals("ERC721: invalid token ID")) {
@@ -1860,7 +1875,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             }
         } catch (bytes memory revertData) {
             bytes4 selector;
-            (selector, errorString) = _decodeCustomError(revertData);
+            (selector, v.errorString) = _decodeCustomError(revertData);
 
             // Justify failures
             if (selector == BorrowerOperations.IsShutDown.selector) {
@@ -1886,18 +1901,136 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
             } else {
-                revert(string.concat("Unexpected error: ", errorString));
+                revert(string.concat("Unexpected error: ", v.errorString));
             }
         }
 
-        if (bytes(errorString).length > 0) {
+        if (bytes(v.errorString).length > 0) {
             if (_assumeNoExpectedFailures) vm.assume(false);
 
-            info("Expected error: ", errorString);
+            info("Expected error: ", v.errorString);
             _log();
         } else {
             // Cleanup (success)
             _sweepBold(v.newBatchManager, v.batchManagementFee);
+        }
+    }
+
+    function removeFromBatch(uint256 i, uint256 newInterestRate, uint32 upperHintSeed, uint32 lowerHintSeed) external {
+        RemoveFromBatchContext memory v;
+
+        i = _bound(i, 0, branches.length - 1);
+        newInterestRate = _bound(newInterestRate, INTEREST_RATE_MIN, INTEREST_RATE_MAX);
+        v.upperHint = _pickHint(i, upperHintSeed);
+        v.lowerHint = _pickHint(i, lowerHintSeed);
+
+        v.c = branches[i];
+        v.pendingInterest = v.c.activePool.calcPendingAggInterest();
+        v.troveId = _troveIdOf(msg.sender);
+        v.t = v.c.troveManager.getLatestTroveData(v.troveId);
+        v.batchManager = _batchManagerOf[i][v.troveId];
+        v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
+        v.wasOpen = _isOpen(i, v.troveId);
+        v.wasActive = _isActive(i, v.troveId);
+        v.premature = _timeSinceLastBatchInterestRateAdjustment[i][v.batchManager] < INTEREST_RATE_ADJ_COOLDOWN;
+        v.upfrontFee = v.batchManager != address(0)
+            ? hintHelpers.predictRemoveFromBatchUpfrontFee(i, v.troveId, newInterestRate)
+            : 0;
+        if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
+
+        Trove memory trove = _troves[i][v.troveId];
+        Batch storage batch = _batches[i][v.batchManager];
+
+        info("upper hint: ", _hintToString(i, v.upperHint));
+        info("lower hint: ", _hintToString(i, v.lowerHint));
+        info("upfront fee: ", v.upfrontFee.decimal());
+
+        logCall(
+            "removeFromBatch",
+            i.toString(),
+            newInterestRate.decimal(),
+            upperHintSeed.toString(),
+            lowerHintSeed.toString()
+        );
+
+        vm.prank(msg.sender);
+        try v.c.borrowerOperations.removeFromBatch(v.troveId, newInterestRate, v.upperHint, v.lowerHint, v.upfrontFee) {
+            uint256 newICR = _ICR(i, v.troveId);
+            uint256 newTCR = _TCR(i);
+
+            // Preconditions
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
+            assertTrue(v.wasActive, "Should have failed as Trove wasn't active");
+            assertNotEq(v.batchManager, address(0), "Should have failed as Trove wasn't in a batch");
+            assertGeDecimal(newInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate < min");
+            assertLeDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate > max");
+
+            if (v.premature) {
+                assertGeDecimal(newICR, MCR[i], 18, "Should have failed as new ICR < MCR");
+                assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
+            }
+
+            // Effects (Trove)
+            trove.applyPending();
+            trove.debt += v.upfrontFee;
+            trove.interestRate = newInterestRate;
+            trove.batchManagementRate = 0;
+            _troves[i][v.troveId] = trove;
+            delete _batchManagerOf[i][v.troveId];
+
+            // Effects (batch)
+            _touchBatch(i, v.batchManager);
+            batch.troves.remove(v.troveId);
+
+            // Effects (system)
+            _mintYield(i, v.pendingInterest, v.upfrontFee);
+        } catch Error(string memory reason) {
+            v.errorString = reason;
+
+            // Justify failures
+            if (reason.equals("ERC721: invalid token ID")) {
+                assertFalse(v.wasOpen, "Open Trove should have an NFT");
+            } else {
+                revert(reason);
+            }
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, v.errorString) = _decodeCustomError(revertData);
+
+            // Justify failures
+            if (selector == BorrowerOperations.IsShutDown.selector) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else if (selector == BorrowerOperations.TroveNotActive.selector) {
+                assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
+            } else if (selector == BorrowerOperations.TroveNotInBatch.selector) {
+                assertEq(v.batchManager, address(0), "Shouldn't have failed as Trove was in a batch");
+            } else if (selector == BorrowerOperations.InterestRateTooLow.selector) {
+                assertLtDecimal(newInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate >= min");
+            } else if (selector == BorrowerOperations.InterestRateTooHigh.selector) {
+                assertGtDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate <= max");
+            } else if (selector == BorrowerOperations.ICRBelowMCR.selector) {
+                uint256 newICR = _ICR(i, 0, 0, v.upfrontFee, v.t);
+                assertTrue(v.premature, "Shouldn't have failed as adjustment was not premature");
+                assertLtDecimal(newICR, MCR[i], 18, "Shouldn't have failed as new ICR >= MCR");
+                info("New ICR would have been: ", newICR.decimal());
+            } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
+                uint256 newTCR = _TCR(i, 0, 0, v.upfrontFee);
+                assertTrue(v.premature, "Shouldn't have failed as adjustment was not premature");
+                assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
+                info("New TCR would have been: ", newTCR.decimal());
+            } else {
+                revert(string.concat("Unexpected error: ", v.errorString));
+            }
+        }
+
+        if (bytes(v.errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
+            info("Expected error: ", v.errorString);
+            _log();
+        } else {
+            // Cleanup (success)
+            _sweepBold(v.batchManager, v.batchManagementFee);
         }
     }
 

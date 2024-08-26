@@ -226,4 +226,34 @@ contract HintHelpers is IHintHelpers {
         uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(newBatchTroveChange);
         return _calcUpfrontFee(trove.entireDebt, avgInterestRate);
     }
+
+    function predictRemoveFromBatchUpfrontFee(uint256 _collIndex, uint256 _troveId, uint256 _newInterestRate)
+        external
+        view
+        returns (uint256)
+    {
+        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        IActivePool activePool = troveManager.activePool();
+        LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
+        (,,,,,,,, address batchManager,) = troveManager.Troves(_troveId);
+        LatestBatchData memory batch = troveManager.getLatestBatchData(batchManager);
+
+        if (
+            _newInterestRate == batch.annualInterestRate
+                || block.timestamp >= batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
+        ) {
+            return 0;
+        }
+
+        TroveChange memory troveChange;
+        troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
+        troveChange.batchAccruedManagementFee = batch.accruedManagementFee;
+        troveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt;
+        troveChange.newWeightedRecordedDebt = (
+            batch.entireDebtWithoutRedistribution - (trove.entireDebt - trove.redistBoldDebtGain)
+        ) * batch.annualInterestRate + trove.entireDebt * _newInterestRate;
+
+        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(troveChange);
+        return _calcUpfrontFee(trove.entireDebt, avgInterestRate);
+    }
 }
