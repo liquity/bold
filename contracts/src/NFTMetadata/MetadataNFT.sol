@@ -30,12 +30,17 @@ contract MetadataNFT is IMetadataNFT {
 
     FixedAssetReader public immutable assetReader;
 
+    string public constant name = "Liquity V2 Trove";
+    string public constant description = "Liquity V2 Trove position";
+
     constructor(FixedAssetReader _assetReader) {
         assetReader = _assetReader;
     }
 
     function uri(TroveData memory _troveData) public view returns (string memory) {
-        return string.concat("data:image/svg+xml;base64,", json.encode(bytes(renderSVGImage(_troveData))));
+
+        return json.formattedMetadata(name, description, renderSVGImage(_troveData));
+
     }
 
     function renderSVGImage(TroveData memory _troveData) internal view returns (string memory) {
