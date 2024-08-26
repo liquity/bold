@@ -1224,11 +1224,18 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                     Redeemed storage redeemed = r[j].redeemed[i];
                     Trove memory trove = _troves[j][redeemed.troveId];
                     trove.applyPending();
-                    trove.coll -= redeemed.coll;
+
+                    if (redeemed.coll > trove.coll) {
+                        // There can be a slight discrepancy when hitting batched Troves
+                        assertApproxEqAbsDecimal(redeemed.coll, trove.coll, 1e4, 18, "Coll underflow");
+                        trove.coll = 0;
+                    } else {
+                        trove.coll -= redeemed.coll;
+                    }
 
                     if (redeemed.debt > trove.debt) {
                         // There can be a slight discrepancy when hitting batched Troves
-                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e4, 18, "Underflow");
+                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e4, 18, "Debt underflow");
                         trove.debt = 0;
                     } else {
                         trove.debt -= redeemed.debt;
@@ -1369,11 +1376,18 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 Redeemed storage redeemed = r.redeemed[j];
                 Trove memory trove = _troves[i][redeemed.troveId];
                 trove.applyPending();
-                trove.coll -= redeemed.coll;
+
+                if (redeemed.coll > trove.coll) {
+                    // There can be a slight discrepancy when hitting batched Troves
+                    assertApproxEqAbsDecimal(redeemed.coll, trove.coll, 1e4, 18, "Coll underflow");
+                    trove.coll = 0;
+                } else {
+                    trove.coll -= redeemed.coll;
+                }
 
                 if (redeemed.debt > trove.debt) {
                     // There can be a slight discrepancy when hitting batched Troves
-                    assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e4, 18, "Underflow");
+                    assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e4, 18, "Debt underflow");
                     trove.debt = 0;
                 } else {
                     trove.debt -= redeemed.debt;
