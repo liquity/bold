@@ -30,6 +30,9 @@ import "../../PriceFeeds/ETHXPriceFeed.sol";
 
 import "forge-std/console2.sol";
 
+uint256 constant _24_HOURS = 86400;
+uint256 constant _48_HOURS = 172800;
+
 // TODO: Split dev and mainnet
 contract TestDeployer {
     bytes32 constant SALT = keccak256("LiquityV2");
@@ -99,15 +102,9 @@ contract TestDeployer {
         uint256 i;
     }
 
-    struct DeploymentParamsMainnet {
-        ExternalAddresses externalAddresses;
-        TroveManagerParams[] troveManagerParamsArray;
-        OracleParams oracleParams;
-    }
-
     struct DeploymentResultMainnet {
         LiquityContracts[] contractsArray;
-        MockCollaterals mockCollaterals;
+        ExternalAddresses externalAddresses;
         ICollateralRegistry collateralRegistry;
         IBoldToken boldToken;
         HintHelpers hintHelpers;
@@ -115,6 +112,7 @@ contract TestDeployer {
     }
 
     struct DeploymentVarsMainnet {
+        OracleParams oracleParams;
         uint256 numCollaterals;
         IERC20[] collaterals;
         IAddressesRegistry[] addressesRegistries;
@@ -143,15 +141,6 @@ contract TestDeployer {
         uint256 rEthEthStalenessThreshold;
         uint256 ethXEthStalenessThreshold;
         uint256 osEthEthStalenessThreshold;
-    }
-
-    // TODO: replace this with the real LST contracts
-    struct MockCollaterals {
-        IWETH WETH;
-        IERC20 RETH;
-        IERC20 WSTETH;
-        IERC20 ETHX;
-        IERC20 OSETH;
     }
 
     // See: https://solidity-by-example.org/app/create2/
@@ -297,144 +286,6 @@ contract TestDeployer {
 
         boldToken.setCollateralRegistry(address(collateralRegistry));
     }
-    // Creates individual PriceFeed contracts based on oracle addresses.
-    // Still uses mock collaterals rather than real mainnet WETH and LST addresses.
-
-    function deployAndConnectContractsMainnet(DeploymentParamsMainnet memory _params)
-        public
-        returns (DeploymentResultMainnet memory result)
-    {
-        DeploymentVarsMainnet memory vars;
-        vars.numCollaterals = 5;
-        result.contractsArray = new LiquityContracts[](vars.numCollaterals);
-        vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
-        vars.collaterals = new IERC20[](vars.numCollaterals);
-        vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
-        vars.troveManagers = new ITroveManager[](vars.numCollaterals);
-        address troveManagerAddress;
-
-        vars.priceFeeds[0] = new WETHPriceFeed(
-            address(this), _params.externalAddresses.ETHOracle, _params.oracleParams.ethUsdStalenessThreshold
-        );
-
-        // RETH
-        vars.priceFeeds[1] = new RETHPriceFeed(
-            address(this),
-            _params.externalAddresses.ETHOracle,
-            _params.externalAddresses.RETHOracle,
-            _params.externalAddresses.RETHToken,
-            _params.oracleParams.ethUsdStalenessThreshold,
-            _params.oracleParams.rEthEthStalenessThreshold
-        );
-
-        vars.priceFeeds[2] = new WSTETHPriceFeed(
-            address(this),
-            _params.externalAddresses.STETHOracle,
-            _params.oracleParams.stEthUsdStalenessThreshold,
-            _params.externalAddresses.WSTETHToken
-        );
-
-        vars.priceFeeds[3] = new ETHXPriceFeed(
-            address(this),
-            _params.externalAddresses.ETHOracle,
-            _params.externalAddresses.ETHXOracle,
-            _params.externalAddresses.StaderOracle,
-            _params.oracleParams.ethUsdStalenessThreshold,
-            _params.oracleParams.ethXEthStalenessThreshold
-        );
-
-        vars.priceFeeds[4] = new OSETHPriceFeed(
-            address(this),
-            _params.externalAddresses.ETHOracle,
-            _params.externalAddresses.OSETHOracle,
-            _params.externalAddresses.OsTokenVaultController,
-            _params.oracleParams.ethUsdStalenessThreshold,
-            _params.oracleParams.osEthEthStalenessThreshold
-        );
-
-        // Deploy Bold
-        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this)));
-        vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        result.boldToken = new BoldToken{salt: SALT}(address(this));
-        assert(address(result.boldToken) == vars.boldTokenAddress);
-
-        // TODO: replace mock collaterals with connections to the real tokens for later mainnet testing
-        result.mockCollaterals.WETH = new WETHTester(
-            100 ether, //     _tapAmount
-            1 days //         _tapPeriod
-        );
-        vars.collaterals[0] = result.mockCollaterals.WETH;
-        (vars.addressesRegistries[0], troveManagerAddress) =
-            _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[0]);
-        vars.troveManagers[0] = ITroveManager(troveManagerAddress);
-
-        result.mockCollaterals.RETH = new ERC20Faucet(
-            "Mock rETH", // _name
-            "mockRETH", // _symbol
-            100 ether, //     _tapAmount
-            1 days //         _tapPeriod
-        );
-        vars.collaterals[1] = result.mockCollaterals.RETH;
-        (vars.addressesRegistries[1], troveManagerAddress) =
-            _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[1]);
-        vars.troveManagers[1] = ITroveManager(troveManagerAddress);
-
-        result.mockCollaterals.WSTETH = new ERC20Faucet(
-            "Mock wstETH", // _name
-            "mockWSTETH", // _symbol
-            100 ether, //     _tapAmount
-            1 days //         _tapPeriod
-        );
-        vars.collaterals[2] = result.mockCollaterals.WSTETH;
-        (vars.addressesRegistries[2], troveManagerAddress) =
-            _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[2]);
-        vars.troveManagers[2] = ITroveManager(troveManagerAddress);
-
-        result.mockCollaterals.ETHX = new ERC20Faucet(
-            "Mock ETHX", // _name
-            "mockETHX", // _symbol
-            100 ether, //     _tapAmount
-            1 days //         _tapPeriod
-        );
-        vars.collaterals[3] = result.mockCollaterals.ETHX;
-        (vars.addressesRegistries[3], troveManagerAddress) =
-            _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[3]);
-        vars.troveManagers[3] = ITroveManager(troveManagerAddress);
-
-        result.mockCollaterals.OSETH = new ERC20Faucet(
-            "Mock OSETH", // _name
-            "mockOSETH", // _symbol
-            100 ether, //     _tapAmount
-            1 days //         _tapPeriod
-        );
-        vars.collaterals[4] = result.mockCollaterals.OSETH;
-        (vars.addressesRegistries[4], troveManagerAddress) =
-            _deployAddressesRegistryMainnet(_params.troveManagerParamsArray[4]);
-        vars.troveManagers[4] = ITroveManager(troveManagerAddress);
-
-        // Deploy registry and register the TMs
-        result.collateralRegistry = new CollateralRegistry(result.boldToken, vars.collaterals, vars.troveManagers);
-
-        result.hintHelpers = new HintHelpers(result.collateralRegistry);
-        result.multiTroveGetter = new MultiTroveGetter(result.collateralRegistry);
-
-        // Deploy each set of core contracts
-        for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
-            result.contractsArray[vars.i] = _deployAndConnectCollateralContractsMainnet(
-                vars.collaterals[vars.i],
-                vars.priceFeeds[vars.i],
-                result.boldToken,
-                result.collateralRegistry,
-                result.mockCollaterals.WETH,
-                vars.addressesRegistries[vars.i],
-                address(vars.troveManagers[vars.i]),
-                result.hintHelpers,
-                result.multiTroveGetter
-            );
-        }
-
-        result.boldToken.setCollateralRegistry(address(result.collateralRegistry));
-    }
 
     function _deployAddressesRegistryDev(TroveManagerParams memory _troveManagerParams)
         internal
@@ -549,6 +400,147 @@ contract TestDeployer {
             address(contracts.borrowerOperations),
             address(contracts.activePool)
         );
+    }
+
+    // Creates individual PriceFeed contracts based on oracle addresses.
+    // Still uses mock collaterals rather than real mainnet WETH and LST addresses.
+
+    function deployAndConnectContractsMainnet(TroveManagerParams[] memory _troveManagerParamsArray)
+        public
+        returns (DeploymentResultMainnet memory result)
+    {
+        DeploymentVarsMainnet memory vars;
+
+        result.externalAddresses.ETHOracle = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+        result.externalAddresses.RETHOracle = 0x536218f9E9Eb48863970252233c8F271f554C2d0;
+        result.externalAddresses.STETHOracle = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8;
+        result.externalAddresses.ETHXOracle = 0xC5f8c4aB091Be1A899214c0C3636ca33DcA0C547;
+        result.externalAddresses.WSTETHToken = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+        // Redstone Oracle with CL interface
+        // TODO: obtain the Chainlink market price feed and use that, when it's ready
+        result.externalAddresses.OSETHOracle = 0x66ac817f997Efd114EDFcccdce99F3268557B32C;
+
+        result.externalAddresses.RETHToken = 0xae78736Cd615f374D3085123A210448E74Fc6393;
+        result.externalAddresses.StaderOracle = 0xF64bAe65f6f2a5277571143A24FaaFDFC0C2a737;
+        result.externalAddresses.OsTokenVaultController = 0x2A261e60FB14586B474C208b1B7AC6D0f5000306;
+
+        vars.oracleParams.ethUsdStalenessThreshold = _24_HOURS;
+        vars.oracleParams.stEthUsdStalenessThreshold = _24_HOURS;
+        vars.oracleParams.rEthEthStalenessThreshold = _48_HOURS;
+        vars.oracleParams.ethXEthStalenessThreshold = _48_HOURS;
+        vars.oracleParams.osEthEthStalenessThreshold = _48_HOURS;
+
+        vars.numCollaterals = 5;
+        result.contractsArray = new LiquityContracts[](vars.numCollaterals);
+        vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
+        vars.collaterals = new IERC20[](vars.numCollaterals);
+        vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
+        vars.troveManagers = new ITroveManager[](vars.numCollaterals);
+        address troveManagerAddress;
+
+        // Price feeds
+        // ETH
+        vars.priceFeeds[0] = new WETHPriceFeed(
+            address(this), result.externalAddresses.ETHOracle, vars.oracleParams.ethUsdStalenessThreshold
+        );
+
+        // RETH
+        vars.priceFeeds[1] = new RETHPriceFeed(
+            address(this),
+            result.externalAddresses.ETHOracle,
+            result.externalAddresses.RETHOracle,
+            result.externalAddresses.RETHToken,
+            vars.oracleParams.ethUsdStalenessThreshold,
+            vars.oracleParams.rEthEthStalenessThreshold
+        );
+
+        // wstETH
+        vars.priceFeeds[2] = new WSTETHPriceFeed(
+            address(this),
+            result.externalAddresses.STETHOracle,
+            vars.oracleParams.stEthUsdStalenessThreshold,
+            result.externalAddresses.WSTETHToken
+        );
+
+        // ETHx
+        vars.priceFeeds[3] = new ETHXPriceFeed(
+            address(this),
+            result.externalAddresses.ETHOracle,
+            result.externalAddresses.ETHXOracle,
+            result.externalAddresses.StaderOracle,
+            vars.oracleParams.ethUsdStalenessThreshold,
+            vars.oracleParams.ethXEthStalenessThreshold
+        );
+
+        // osETH
+        vars.priceFeeds[4] = new OSETHPriceFeed(
+            address(this),
+            result.externalAddresses.ETHOracle,
+            result.externalAddresses.OSETHOracle,
+            result.externalAddresses.OsTokenVaultController,
+            vars.oracleParams.ethUsdStalenessThreshold,
+            vars.oracleParams.osEthEthStalenessThreshold
+        );
+
+        // Deploy Bold
+        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this)));
+        vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
+        result.boldToken = new BoldToken{salt: SALT}(address(this));
+        assert(address(result.boldToken) == vars.boldTokenAddress);
+
+        // WETH
+        IWETH WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+        vars.collaterals[0] = WETH;
+        (vars.addressesRegistries[0], troveManagerAddress) =
+            _deployAddressesRegistryMainnet(_troveManagerParamsArray[0]);
+        vars.troveManagers[0] = ITroveManager(troveManagerAddress);
+
+        // RETH
+        vars.collaterals[1] = IERC20(0xae78736Cd615f374D3085123A210448E74Fc6393);
+        (vars.addressesRegistries[1], troveManagerAddress) =
+            _deployAddressesRegistryMainnet(_troveManagerParamsArray[1]);
+        vars.troveManagers[1] = ITroveManager(troveManagerAddress);
+
+        // WSTETH
+        vars.collaterals[2] = IERC20(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
+        (vars.addressesRegistries[2], troveManagerAddress) =
+            _deployAddressesRegistryMainnet(_troveManagerParamsArray[2]);
+        vars.troveManagers[2] = ITroveManager(troveManagerAddress);
+
+        // ETHX
+        vars.collaterals[3] = IERC20(0xA35b1B31Ce002FBF2058D22F30f95D405200A15b);
+        (vars.addressesRegistries[3], troveManagerAddress) =
+            _deployAddressesRegistryMainnet(_troveManagerParamsArray[3]);
+        vars.troveManagers[3] = ITroveManager(troveManagerAddress);
+
+        // OSETH
+        vars.collaterals[4] = IERC20(0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38);
+        (vars.addressesRegistries[4], troveManagerAddress) =
+            _deployAddressesRegistryMainnet(_troveManagerParamsArray[4]);
+        vars.troveManagers[4] = ITroveManager(troveManagerAddress);
+
+        // Deploy registry and register the TMs
+        result.collateralRegistry = new CollateralRegistry(result.boldToken, vars.collaterals, vars.troveManagers);
+
+        result.hintHelpers = new HintHelpers(result.collateralRegistry);
+        result.multiTroveGetter = new MultiTroveGetter(result.collateralRegistry);
+
+        // Deploy each set of core contracts
+        for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
+            result.contractsArray[vars.i] = _deployAndConnectCollateralContractsMainnet(
+                vars.collaterals[vars.i],
+                vars.priceFeeds[vars.i],
+                result.boldToken,
+                result.collateralRegistry,
+                WETH,
+                vars.addressesRegistries[vars.i],
+                address(vars.troveManagers[vars.i]),
+                result.hintHelpers,
+                result.multiTroveGetter
+            );
+        }
+
+        result.boldToken.setCollateralRegistry(address(result.collateralRegistry));
     }
 
     function _deployAddressesRegistryMainnet(TroveManagerParams memory _troveManagerParams)
