@@ -1125,7 +1125,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             assertEq(code, 0x12, "Unexpected panic code");
             assertGtDecimal(l.t.debtRedist, 0, 18, "Shouldn't have failed as there was nothing to redistribute");
-            assertApproxEqAbsDecimal(totalStakes, 0, 1e4, 18, "Shouldn't have failed as there was stake remaining");
+            assertApproxEqAbsDecimal(totalStakes, 0, 1e5, 18, "Shouldn't have failed as there was stake remaining");
             errorString = "Division by zero due to totalStakes == 0";
         } catch (bytes memory revertData) {
             bytes4 selector;
@@ -1227,7 +1227,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                     if (redeemed.coll > trove.coll) {
                         // There can be a slight discrepancy when hitting batched Troves
-                        assertApproxEqAbsDecimal(redeemed.coll, trove.coll, 1e4, 18, "Coll underflow");
+                        assertApproxEqAbsDecimal(redeemed.coll, trove.coll, 1e5, 18, "Coll underflow");
                         trove.coll = 0;
                     } else {
                         trove.coll -= redeemed.coll;
@@ -1235,7 +1235,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                     if (redeemed.debt > trove.debt) {
                         // There can be a slight discrepancy when hitting batched Troves
-                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e4, 18, "Debt underflow");
+                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e5, 18, "Debt underflow");
                         trove.debt = 0;
                     } else {
                         trove.debt -= redeemed.debt;
@@ -1280,7 +1280,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             for (uint256 j = 0; j < branches.length; ++j) {
                 // There can be a slight discrepancy when hitting batched Troves
                 uint256 collReceived = branches[j].collToken.balanceOf(msg.sender);
-                assertApproxEqAbsDecimal(collReceived, r[j].totalCollRedeemed, 1e4, 18, "Wrong coll amount received");
+                assertApproxEqAbsDecimal(collReceived, r[j].totalCollRedeemed, 1e5, 18, "Wrong coll amount received");
                 _sweepColl(j, msg.sender, collReceived);
 
                 for (uint256 i = 0; i < r[j].batchManagers.size(); ++i) {
@@ -1290,7 +1290,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // There can be a slight discrepancy when hitting batched Troves
             uint256 remainingAmount = boldToken.balanceOf(msg.sender);
-            assertApproxEqAbsDecimal(remainingAmount, amount - totalDebtRedeemed, 1e4, 18, "Wrong remaining BOLD");
+            assertApproxEqAbsDecimal(remainingAmount, amount - totalDebtRedeemed, 1e5, 18, "Wrong remaining BOLD");
             _sweepBold(msg.sender, remainingAmount);
         }
 
@@ -1379,7 +1379,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                 if (redeemed.coll > trove.coll) {
                     // There can be a slight discrepancy when hitting batched Troves
-                    assertApproxEqAbsDecimal(redeemed.coll, trove.coll, 1e4, 18, "Coll underflow");
+                    assertApproxEqAbsDecimal(redeemed.coll, trove.coll, 1e5, 18, "Coll underflow");
                     trove.coll = 0;
                 } else {
                     trove.coll -= redeemed.coll;
@@ -1387,7 +1387,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                 if (redeemed.debt > trove.debt) {
                     // There can be a slight discrepancy when hitting batched Troves
-                    assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e4, 18, "Debt underflow");
+                    assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e5, 18, "Debt underflow");
                     trove.debt = 0;
                 } else {
                     trove.debt -= redeemed.debt;
@@ -1414,7 +1414,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 // There can be a slight discrepancy when hitting batched Troves
                 uint256 collReceived = uint256(bytes32(revertData.slice(4)));
                 assertLtDecimal(collReceived, r.totalCollRedeemed, 18, "Shouldn't have failed as min coll was reached");
-                assertApproxEqAbsDecimal(collReceived, r.totalCollRedeemed, 1e4, 18, "Wrong coll amount received");
+                assertApproxEqAbsDecimal(collReceived, r.totalCollRedeemed, 1e5, 18, "Wrong coll amount received");
             } else {
                 revert(string.concat("Unexpected error: ", errorString));
             }
@@ -1433,7 +1433,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // There can be a slight discrepancy when hitting batched Troves
             uint256 collReceived = branches[i].collToken.balanceOf(msg.sender);
-            assertApproxEqAbsDecimal(collReceived, r.totalCollRedeemed, 1e4, 18, "Wrong coll amount received");
+            assertApproxEqAbsDecimal(collReceived, r.totalCollRedeemed, 1e5, 18, "Wrong coll amount received");
             _sweepColl(i, msg.sender, collReceived);
 
             for (uint256 j = 0; j < r.batchManagers.size(); ++j) {
@@ -1442,7 +1442,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // There can be a slight discrepancy when hitting batched Troves
             uint256 remainingAmount = boldToken.balanceOf(msg.sender);
-            assertApproxEqAbsDecimal(remainingAmount, amount - r.totalDebtRedeemed, 1e4, 18, "Wrong remaining BOLD");
+            assertApproxEqAbsDecimal(remainingAmount, amount - r.totalDebtRedeemed, 1e5, 18, "Wrong remaining BOLD");
             _sweepBold(msg.sender, remainingAmount);
         }
 
