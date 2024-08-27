@@ -41,8 +41,8 @@ interface ITroveEvents {
         uint256 _coll,
         uint256 _stake,
         uint256 _annualInterestRate,
-        uint256 _snapshotOfTotalDebtRedist,
-        uint256 _snapshotOfTotalCollRedist
+        uint256 _snapshotOfTotalCollRedist,
+        uint256 _snapshotOfTotalDebtRedist
     );
 
     // Details of an operation that modifies a Trove
@@ -88,7 +88,7 @@ interface ITroveEvents {
         uint256 _batchDebtShares,
         uint256 _coll,
         uint256 _stake,
-        uint256 _snapshotOfTotalDebtRedist,
-        uint256 _snapshotOfTotalCollRedist
+        uint256 _snapshotOfTotalCollRedist,
+        uint256 _snapshotOfTotalDebtRedist
     );
 }
