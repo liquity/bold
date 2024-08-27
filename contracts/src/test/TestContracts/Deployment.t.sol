@@ -780,11 +780,9 @@ contract TestDeployer {
         IExchange curveExchange = new CurveExchange(_collToken, _boldToken, curvePool, 1, 0);
         ILeverageZapper leverageZapperCurve;
         if (_lst) {
-            leverageZapperCurve =
-                new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
+            leverageZapperCurve = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
         } else {
-            leverageZapperCurve =
-                new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
+            leverageZapperCurve = new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
         }
 
         return leverageZapperCurve;
@@ -808,11 +806,9 @@ contract TestDeployer {
         vars.uniV3Exchange = new UniV3Exchange(_collToken, _boldToken, UNIV3_FEE, uniV3Router, uniV3Quoter);
         ILeverageZapper leverageZapperUniV3;
         if (_lst) {
-            leverageZapperUniV3 =
-                new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
+            leverageZapperUniV3 = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
         } else {
-            leverageZapperUniV3 =
-                new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
+            leverageZapperUniV3 = new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
         }
 
         // Create Uni V3 pool

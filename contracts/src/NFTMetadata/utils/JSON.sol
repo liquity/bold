@@ -3,7 +3,6 @@ pragma solidity ^0.8.12;
 
 // JSON utilities for base64 encoded ERC721 JSON metadata scheme
 library json {
-    
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /// @dev JSON requires that double quotes be escaped or JSONs will not build correctly
     /// string.concat also requires an escape, use \\" or the constant DOUBLE_QUOTES to represent " in JSON
@@ -11,75 +10,42 @@ library json {
 
     string constant DOUBLE_QUOTES = '\\"';
 
-    function formattedMetadata(
-        string memory name,
-        string memory description,
-        string memory svgImg
-    )   internal
+    function formattedMetadata(string memory name, string memory description, string memory svgImg)
+        internal
         pure
         returns (string memory)
     {
         return string.concat(
-            'data:application/json;base64,',
+            "data:application/json;base64,",
             encode(
                 bytes(
-                    string.concat(
-                    '{',
-                    _prop('name', name),
-                    _prop('description', description),
-                    _xmlImage(svgImg),
-                    '}'
-                    )
+                    string.concat("{", _prop("name", name), _prop("description", description), _xmlImage(svgImg), "}")
                 )
             )
         );
     }
-    
-    function _xmlImage(string memory _svgImg)
-        internal
-        pure
-        returns (string memory) 
-    {
-        return _prop(
-                        'image',
-                        string.concat(
-                            'data:image/svg+xml;base64,',
-                            encode(bytes(_svgImg))
-                        ),
-                        true
-        );
+
+    function _xmlImage(string memory _svgImg) internal pure returns (string memory) {
+        return _prop("image", string.concat("data:image/svg+xml;base64,", encode(bytes(_svgImg))), true);
     }
 
-    function _prop(string memory _key, string memory _val)
-        internal
-        pure
-        returns (string memory)
-    {
+    function _prop(string memory _key, string memory _val) internal pure returns (string memory) {
         return string.concat('"', _key, '": ', '"', _val, '", ');
     }
 
-    function _prop(string memory _key, string memory _val, bool last)
-        internal
-        pure
-        returns (string memory)
-    {
-        if(last) {
+    function _prop(string memory _key, string memory _val, bool last) internal pure returns (string memory) {
+        if (last) {
             return string.concat('"', _key, '": ', '"', _val, '"');
         } else {
             return string.concat('"', _key, '": ', '"', _val, '", ');
         }
-        
     }
 
-    function _object(string memory _key, string memory _val)
-        internal
-        pure
-        returns (string memory)
-    {
-        return string.concat('"', _key, '": ', '{', _val, '}');
+    function _object(string memory _key, string memory _val) internal pure returns (string memory) {
+        return string.concat('"', _key, '": ', "{", _val, "}");
     }
-     
-     /**
+
+    /**
      * taken from Openzeppelin
      * @dev Base64 Encoding/Decoding Table
      */
@@ -117,9 +83,7 @@ library json {
             for {
                 let dataPtr := data
                 let endPtr := add(data, mload(data))
-            } lt(dataPtr, endPtr) {
-
-            } {
+            } lt(dataPtr, endPtr) {} {
                 // Advance 3 bytes
                 dataPtr := add(dataPtr, 3)
                 let input := mload(dataPtr)
@@ -152,12 +116,9 @@ library json {
                 mstore8(sub(resultPtr, 1), 0x3d)
                 mstore8(sub(resultPtr, 2), 0x3d)
             }
-            case 2 {
-                mstore8(sub(resultPtr, 1), 0x3d)
-            }
+            case 2 { mstore8(sub(resultPtr, 1), 0x3d) }
         }
 
         return result;
     }
-
 }

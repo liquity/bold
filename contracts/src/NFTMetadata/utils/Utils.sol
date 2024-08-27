@@ -32,15 +32,15 @@ library numUtils {
     function toLocaleString(uint256 _value, uint8 _divisor, uint8 _precision) internal pure returns (string memory) {
         uint256 whole = _value / 10 ** _divisor;
         uint256 fraction = (_value % 10 ** _divisor) / 10 ** (_divisor - _precision);
-    
+
         string memory wholeStr = toLocale(LibString.toString(whole));
-    
+
         if (fraction == 0) {
             return wholeStr;
         }
-    
+
         string memory fractionStr = LibString.slice(LibString.toString(fraction), 0, _precision);
-    
+
         return string.concat(wholeStr, ".", fractionStr);
     }
 }

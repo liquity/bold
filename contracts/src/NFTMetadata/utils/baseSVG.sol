@@ -196,17 +196,13 @@ library baseSVG {
     function _statusEl(string memory _status) internal pure returns (string memory) {
         return svg.text(
             string.concat(
-                GEIST,
-                svg.prop("x", "40"),
-                svg.prop("y", "33"),
-                svg.prop("font-size", "14"),
-                svg.prop("fill", "white")
+                GEIST, svg.prop("x", "40"), svg.prop("y", "33"), svg.prop("font-size", "14"), svg.prop("fill", "white")
             ),
             _status
         );
     }
 
-    function _dynamicTextEls(uint256 /*_debt*/, uint256 _coll, uint256 _annualInterestRate)
+    function _dynamicTextEls(uint256, /*_debt*/ uint256 _coll, uint256 _annualInterestRate)
         internal
         pure
         returns (string memory)

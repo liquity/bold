@@ -14,16 +14,17 @@ import {ITroveManager} from "./Interfaces/ITroveManager.sol";
 // import "forge-std/console2.sol";
 
 contract TroveNFT is ERC721, ITroveNFT {
-
     ITroveManager public troveManager;
     IERC20Metadata internal immutable collToken;
 
     IMetadataNFT public metadataNFT;
 
-    constructor(IAddressesRegistry _addressesRegistry) ERC721(
-        string.concat("Liquity v2 Trove - ", _addressesRegistry.collToken().name()), 
-        string.concat("Lv2T_", _addressesRegistry.collToken().symbol())
-    ) {
+    constructor(IAddressesRegistry _addressesRegistry)
+        ERC721(
+            string.concat("Liquity v2 Trove - ", _addressesRegistry.collToken().name()),
+            string.concat("Lv2T_", _addressesRegistry.collToken().symbol())
+        )
+    {
         troveManager = _addressesRegistry.troveManager();
         collToken = _addressesRegistry.collToken();
     }
@@ -34,10 +35,9 @@ contract TroveNFT is ERC721, ITroveNFT {
         metadataNFT = IMetadataNFT(_metadataNFT);
     }
 
-    function tokenURI(uint256 _tokenId) public view override (ERC721, IERC721Metadata) returns (string memory) {
-
-        (uint256 debt, uint256 coll, , ITroveManager.Status _status, , , , uint256 annualInterestRate, , ) = troveManager.Troves(_tokenId);
-
+    function tokenURI(uint256 _tokenId) public view override(ERC721, IERC721Metadata) returns (string memory) {
+        (uint256 debt, uint256 coll,, ITroveManager.Status _status,,,, uint256 annualInterestRate,,) =
+            troveManager.Troves(_tokenId);
 
         IMetadataNFT.TroveData memory troveData = IMetadataNFT.TroveData({
             _tokenId: _tokenId,

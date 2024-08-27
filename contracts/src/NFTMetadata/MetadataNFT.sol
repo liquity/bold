@@ -11,7 +11,6 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.s
 import {ITroveManager} from "src/Interfaces/ITroveManager.sol";
 
 interface IMetadataNFT {
-
     struct TroveData {
         uint256 _tokenId;
         address _owner;
@@ -23,11 +22,9 @@ interface IMetadataNFT {
     }
 
     function uri(TroveData memory _troveData) external view returns (string memory);
-
 }
 
 contract MetadataNFT is IMetadataNFT {
-
     FixedAssetReader public immutable assetReader;
 
     string public constant name = "Liquity V2 Trove";
@@ -38,9 +35,7 @@ contract MetadataNFT is IMetadataNFT {
     }
 
     function uri(TroveData memory _troveData) public view returns (string memory) {
-
         return json.formattedMetadata(name, description, renderSVGImage(_troveData));
-
     }
 
     function renderSVGImage(TroveData memory _troveData) internal view returns (string memory) {
@@ -70,7 +65,4 @@ contract MetadataNFT is IMetadataNFT {
         if (status == ITroveManager.Status.unredeemable) return "Unredeemable";
         return "";
     }
-
-    
-
 }

@@ -7,7 +7,6 @@ import "src/NFTMetadata/MetadataNFT.sol";
 import "src/TroveNFT.sol";
 
 contract troveNFTTest is DevTestSetup, MetadataDeployment {
-    
     function _openTrove() internal returns (uint256) {
         priceFeed.setPrice(2000e18);
 
@@ -29,9 +28,8 @@ contract troveNFTTest is DevTestSetup, MetadataDeployment {
     }
 
     function testTroveURI() public {
-        
         deployMetadata();
-        uint id = _openTrove();
+        uint256 id = _openTrove();
 
         MetadataNFT metadata = new MetadataNFT(initializedFixedAssetReader);
         TroveNFT troveNFT = TroveNFT(address(troveManager.troveNFT()));
@@ -40,6 +38,5 @@ contract troveNFTTest is DevTestSetup, MetadataDeployment {
         string memory uri = troveNFT.tokenURI(id);
 
         emit log_string(uri);
-
     }
 }

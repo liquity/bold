@@ -6,7 +6,6 @@ import "src/NFTMetadata/utils/Utils.sol";
 import "src/NFTMetadata/utils/FixedAssets.sol";
 
 contract MetadataDeployment is Test {
-
     struct File {
         bytes data;
         uint256 start;
@@ -27,7 +26,7 @@ contract MetadataDeployment is Test {
         return address(initializedFixedAssetReader);
     }
 
-    function _loadFiles() internal { 
+    function _loadFiles() internal {
         string memory root = string.concat(vm.projectRoot(), "/utils/assets/");
 
         emit log_string(root);
@@ -88,7 +87,6 @@ contract MetadataDeployment is Test {
         emit log_named_uint("data length", data.length);
 
         pointer = SSTORE2.write(data);
-
     }
 
     function _deployFixedAssetReader() internal {
@@ -118,5 +116,4 @@ contract MetadataDeployment is Test {
 
         initializedFixedAssetReader = new FixedAssetReader(pointer, sigs, FixedAssets);
     }
-
 }
