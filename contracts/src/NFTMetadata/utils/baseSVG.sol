@@ -206,7 +206,7 @@ library baseSVG {
         );
     }
 
-    function _dynamicTextEls(uint256 _debt, uint256 _coll, uint256 _annualInterestRate)
+    function _dynamicTextEls(uint256 /*_debt*/, uint256 _coll, uint256 _annualInterestRate)
         internal
         pure
         returns (string memory)

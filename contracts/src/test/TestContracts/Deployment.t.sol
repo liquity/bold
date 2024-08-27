@@ -471,7 +471,7 @@ contract TestDeployer {
         result.contractsArray = new LiquityContracts[](vars.numCollaterals);
         result.zappersArray = new Zappers[](vars.numCollaterals);
         vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
-        vars.collaterals = new IERC20[](vars.numCollaterals);
+        vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
         address troveManagerAddress;
@@ -534,25 +534,25 @@ contract TestDeployer {
         vars.troveManagers[0] = ITroveManager(troveManagerAddress);
 
         // RETH
-        vars.collaterals[1] = IERC20(0xae78736Cd615f374D3085123A210448E74Fc6393);
+        vars.collaterals[1] = IERC20Metadata(0xae78736Cd615f374D3085123A210448E74Fc6393);
         (vars.addressesRegistries[1], troveManagerAddress) =
             _deployAddressesRegistryMainnet(_troveManagerParamsArray[1]);
         vars.troveManagers[1] = ITroveManager(troveManagerAddress);
 
         // WSTETH
-        vars.collaterals[2] = IERC20(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
+        vars.collaterals[2] = IERC20Metadata(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
         (vars.addressesRegistries[2], troveManagerAddress) =
             _deployAddressesRegistryMainnet(_troveManagerParamsArray[2]);
         vars.troveManagers[2] = ITroveManager(troveManagerAddress);
 
         // ETHX
-        vars.collaterals[3] = IERC20(0xA35b1B31Ce002FBF2058D22F30f95D405200A15b);
+        vars.collaterals[3] = IERC20Metadata(0xA35b1B31Ce002FBF2058D22F30f95D405200A15b);
         (vars.addressesRegistries[3], troveManagerAddress) =
             _deployAddressesRegistryMainnet(_troveManagerParamsArray[3]);
         vars.troveManagers[3] = ITroveManager(troveManagerAddress);
 
         // OSETH
-        vars.collaterals[4] = IERC20(0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38);
+        vars.collaterals[4] = IERC20Metadata(0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38);
         (vars.addressesRegistries[4], troveManagerAddress) =
             _deployAddressesRegistryMainnet(_troveManagerParamsArray[4]);
         vars.troveManagers[4] = ITroveManager(troveManagerAddress);
