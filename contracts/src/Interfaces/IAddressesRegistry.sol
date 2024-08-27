@@ -13,6 +13,7 @@ import "./ISortedTroves.sol";
 import "./IStabilityPool.sol";
 import "./ITroveManager.sol";
 import "./ITroveNFT.sol";
+import {IMetadataNFT} from "../NFTMetadata/MetadataNFT.sol";
 import "./ICollateralRegistry.sol";
 import "./IInterestRouter.sol";
 import "./IPriceFeed.sol";
@@ -23,6 +24,7 @@ interface IAddressesRegistry {
         IBorrowerOperations borrowerOperations;
         ITroveManager troveManager;
         ITroveNFT troveNFT;
+        IMetadataNFT metadataNFT;
         IStabilityPool stabilityPool;
         IPriceFeed priceFeed;
         IActivePool activePool;
@@ -48,6 +50,7 @@ interface IAddressesRegistry {
     function borrowerOperations() external view returns (IBorrowerOperations);
     function troveManager() external view returns (ITroveManager);
     function troveNFT() external view returns (ITroveNFT);
+    function metadataNFT() external view returns (IMetadataNFT);
     function stabilityPool() external view returns (IStabilityPool);
     function priceFeed() external view returns (IPriceFeed);
     function activePool() external view returns (IActivePool);

@@ -16,9 +16,11 @@ import "../../StabilityPool.sol";
 import "./BorrowerOperationsTester.t.sol";
 import "./TroveManagerTester.t.sol";
 import "../../TroveNFT.sol";
+import "../../NFTMetadata/MetadataNFT.sol";
 import "../../CollateralRegistry.sol";
 import "../../MockInterestRouter.sol";
 import "./PriceFeedTestnet.sol";
+import "./MetadataDeployment.sol";
 import "../../Zappers/WETHZapper.sol";
 import "../../Zappers/GasCompZapper.sol";
 import "../../Zappers/LeverageLSTZapper.sol";
@@ -48,7 +50,7 @@ uint256 constant _24_HOURS = 86400;
 uint256 constant _48_HOURS = 172800;
 
 // TODO: Split dev and mainnet
-contract TestDeployer {
+contract TestDeployer is MetadataDeployment {
     ICurveFactory constant curveFactory = ICurveFactory(0x98EE851a00abeE0d95D08cF4CA2BdCE32aeaAF7F);
     ISwapRouter constant uniV3Router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     IQuoterV2 constant uniV3Quoter = IQuoterV2(0x61fFE014bA17989E743c5F6cB21bF9697530B21e);
@@ -106,6 +108,7 @@ contract TestDeployer {
         address stabilityPool;
         address troveManager;
         address troveNFT;
+        address metadataNFT;
         address priceFeed;
         address gasPool;
         address interestRouter;
@@ -357,6 +360,14 @@ contract TestDeployer {
         contracts.priceFeed = new PriceFeedTestnet();
         contracts.interestRouter = new MockInterestRouter();
 
+        // Deploy Metadata
+        MetadataNFT metadataNFT = deployMetadata(SALT);
+        addresses.metadataNFT = getAddress(
+            address(this), getBytecode(type(MetadataNFT).creationCode, address(initializedFixedAssetReader)), SALT
+        );
+        assert(address(metadataNFT) == addresses.metadataNFT);
+
+        // Pre-calc addresses
         addresses.borrowerOperations = getAddress(
             address(this),
             getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry)),
@@ -385,11 +396,13 @@ contract TestDeployer {
             address(this), getBytecode(type(SortedTroves).creationCode, address(contracts.addressesRegistry)), SALT
         );
 
+        // Deploy contracts
         IAddressesRegistry.AddressVars memory addressVars = IAddressesRegistry.AddressVars({
             collToken: _collToken,
             borrowerOperations: IBorrowerOperations(addresses.borrowerOperations),
             troveManager: ITroveManager(addresses.troveManager),
             troveNFT: ITroveNFT(addresses.troveNFT),
+            metadataNFT: IMetadataNFT(addresses.metadataNFT),
             stabilityPool: IStabilityPool(addresses.stabilityPool),
             priceFeed: contracts.priceFeed,
             activePool: IActivePool(addresses.activePool),
@@ -617,6 +630,14 @@ contract TestDeployer {
 
         contracts.addressesRegistry = _addressesRegistry;
 
+        // Deploy Metadata
+        MetadataNFT metadataNFT = deployMetadata(SALT);
+        addresses.metadataNFT = getAddress(
+            address(this), getBytecode(type(MetadataNFT).creationCode, address(initializedFixedAssetReader)), SALT
+        );
+        assert(address(metadataNFT) == addresses.metadataNFT);
+
+        // Pre-calc addresses
         addresses.borrowerOperations = getAddress(
             address(this),
             getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry)),
@@ -645,11 +666,13 @@ contract TestDeployer {
             address(this), getBytecode(type(SortedTroves).creationCode, address(contracts.addressesRegistry)), SALT
         );
 
+        // Deploy contracts
         IAddressesRegistry.AddressVars memory addressVars = IAddressesRegistry.AddressVars({
             collToken: _collToken,
             borrowerOperations: IBorrowerOperations(addresses.borrowerOperations),
             troveManager: ITroveManager(addresses.troveManager),
             troveNFT: ITroveNFT(addresses.troveNFT),
+            metadataNFT: IMetadataNFT(addresses.metadataNFT),
             stabilityPool: IStabilityPool(addresses.stabilityPool),
             priceFeed: contracts.priceFeed,
             activePool: IActivePool(addresses.activePool),

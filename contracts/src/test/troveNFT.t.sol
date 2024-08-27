@@ -1,12 +1,11 @@
 pragma solidity 0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
-import "./TestContracts/MetadataDeployment.sol";
 
 import "src/NFTMetadata/MetadataNFT.sol";
 import "src/TroveNFT.sol";
 
-contract troveNFTTest is DevTestSetup, MetadataDeployment {
+contract troveNFTTest is DevTestSetup {
     function _openTrove() internal returns (uint256) {
         priceFeed.setPrice(2000e18);
 
@@ -21,21 +20,16 @@ contract troveNFTTest is DevTestSetup, MetadataDeployment {
     function testTroveNFTMetadata() public {
         _openTrove();
 
-        IERC721Metadata troveNFT = troveManager.troveNFT();
-
         assertEq(troveNFT.name(), "Liquity v2 Trove - Wrapped Ether Tester", "Invalid Trove Name");
         assertEq(troveNFT.symbol(), "Lv2T_WETH", "Invalid Trove Symbol");
     }
 
     function testTroveURI() public {
-        deployMetadata();
-        uint256 id = _openTrove();
+        uint256 troveId = _openTrove();
 
-        MetadataNFT metadata = new MetadataNFT(initializedFixedAssetReader);
         TroveNFT troveNFT = TroveNFT(address(troveManager.troveNFT()));
-        troveNFT.tempSetMetadataNFT(address(metadata));
 
-        string memory uri = troveNFT.tokenURI(id);
+        string memory uri = troveNFT.tokenURI(troveId);
 
         emit log_string(uri);
     }

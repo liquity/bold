@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.18;
 
-import "forge-std/Test.sol";
+import "forge-std/Script.sol";
+//import "forge-std/StdAssertions.sol";
+import "src/NFTMetadata/MetadataNFT.sol";
 import "src/NFTMetadata/utils/Utils.sol";
 import "src/NFTMetadata/utils/FixedAssets.sol";
 
-contract MetadataDeployment is Test {
+contract MetadataDeployment is Script/* , StdAssertions */ {
     struct File {
         bytes data;
         uint256 start;
@@ -18,18 +20,20 @@ contract MetadataDeployment is Test {
 
     FixedAssetReader public initializedFixedAssetReader;
 
-    function deployMetadata() public returns (address) {
+    function deployMetadata(bytes32 _salt) public returns (MetadataNFT) {
         _loadFiles();
         _storeFile();
-        _deployFixedAssetReader();
+        _deployFixedAssetReader(_salt);
 
-        return address(initializedFixedAssetReader);
+        MetadataNFT metadataNFT = new MetadataNFT{salt: _salt}(initializedFixedAssetReader);
+
+        return metadataNFT;
     }
 
     function _loadFiles() internal {
         string memory root = string.concat(vm.projectRoot(), "/utils/assets/");
 
-        emit log_string(root);
+        //emit log_string(root);
 
         uint256 offset = 0;
 
@@ -84,12 +88,12 @@ contract MetadataDeployment is Test {
             files[bytes4(keccak256("geist"))].data
         );
 
-        emit log_named_uint("data length", data.length);
+        //emit log_named_uint("data length", data.length);
 
         pointer = SSTORE2.write(data);
     }
 
-    function _deployFixedAssetReader() internal {
+    function _deployFixedAssetReader(bytes32 _salt) internal {
         bytes4[] memory sigs = new bytes4[](5);
         sigs[0] = bytes4(keccak256("BOLD"));
         sigs[1] = bytes4(keccak256("WETH"));
@@ -114,6 +118,6 @@ contract MetadataDeployment is Test {
             uint128(files[bytes4(keccak256("geist"))].start), uint128(files[bytes4(keccak256("geist"))].end)
         );
 
-        initializedFixedAssetReader = new FixedAssetReader(pointer, sigs, FixedAssets);
+        initializedFixedAssetReader = new FixedAssetReader{salt: _salt}(pointer, sigs, FixedAssets);
     }
 }

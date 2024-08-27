@@ -25,9 +25,10 @@ import "../TroveNFT.sol";
 import "../CollateralRegistry.sol";
 import "../MockInterestRouter.sol";
 import "../test/TestContracts/PriceFeedTestnet.sol";
+import "../test/TestContracts/MetadataDeployment.sol";
 import {WETHTester} from "../test/TestContracts/WETHTester.sol";
 
-contract DeployLiquity2Script is Script, StdCheats {
+contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
     bytes32 SALT;
 
     address deployer;
@@ -57,6 +58,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         address stabilityPool;
         address troveManager;
         address troveNFT;
+        address metadataNFT;
         address priceFeed;
         address gasPool;
         address interestRouter;
@@ -283,6 +285,13 @@ contract DeployLiquity2Script is Script, StdCheats {
         // Deploy all contracts, using testers for TM and PriceFeed
         contracts.addressesRegistry = _addressesRegistry;
 
+        // Deploy Metadata
+        MetadataNFT metadataNFT = deployMetadata(SALT);
+        addresses.metadataNFT = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(MetadataNFT).creationCode, address(initializedFixedAssetReader)))
+        );
+        assert(address(metadataNFT) == addresses.metadataNFT);
+
         contracts.priceFeed = new PriceFeedTestnet();
         contracts.interestRouter = new MockInterestRouter();
         addresses.borrowerOperations = vm.computeCreate2Address(
@@ -316,6 +325,7 @@ contract DeployLiquity2Script is Script, StdCheats {
             borrowerOperations: IBorrowerOperations(addresses.borrowerOperations),
             troveManager: ITroveManager(addresses.troveManager),
             troveNFT: ITroveNFT(addresses.troveNFT),
+            metadataNFT: IMetadataNFT(addresses.metadataNFT),
             stabilityPool: IStabilityPool(addresses.stabilityPool),
             priceFeed: contracts.priceFeed,
             activePool: IActivePool(addresses.activePool),

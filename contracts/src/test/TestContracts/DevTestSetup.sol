@@ -62,6 +62,8 @@ contract DevTestSetup is BaseTest {
         sortedTroves = contracts.sortedTroves;
         stabilityPool = contracts.stabilityPool;
         troveManager = contracts.troveManager;
+        troveNFT = contracts.troveNFT;
+        metadataNFT = addressesRegistry.metadataNFT();
         mockInterestRouter = contracts.interestRouter;
         wethZapper = zappers.wethZapper;
         gasCompZapper = zappers.gasCompZapper;

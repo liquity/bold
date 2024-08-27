@@ -18,7 +18,7 @@ interface IMetadataNFT {
         uint256 _collAmount;
         uint256 _debtAmount;
         uint256 _interestRate;
-        ITroveManager.Status status;
+        ITroveManager.Status _status;
     }
 
     function uri(TroveData memory _troveData) external view returns (string memory);
@@ -53,7 +53,7 @@ contract MetadataNFT is IMetadataNFT {
             baseSVG._formattedIdEl(id),
             baseSVG._formattedAddressEl(_troveData._owner),
             baseSVG._collLogo(IERC20Metadata(_troveData._collToken).symbol(), assetReader),
-            baseSVG._statusEl(_status2Str(_troveData.status)),
+            baseSVG._statusEl(_status2Str(_troveData._status)),
             baseSVG._dynamicTextEls(_troveData._debtAmount, _troveData._collAmount, _troveData._interestRate)
         );
     }
