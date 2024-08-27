@@ -162,6 +162,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     error TroveNotOpen(uint256 _troveId);
     error OnlyOneTroveLeft();
     error NotShutDown();
+    error NotEnoughBoldBalance();
     error MinCollNotReached(uint256 _coll);
 
     // --- Events ---
@@ -821,6 +822,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     function urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral) external {
         _requireIsShutDown();
+        _requireBoldBalanceCoversRedemption(boldToken, msg.sender, _boldAmount);
 
         IActivePool activePoolCached = activePool;
         TroveChange memory totalsTroveChange;
@@ -851,6 +853,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             totalsTroveChange.oldWeightedRecordedDebt += singleRedemption.oldWeightedRecordedDebt;
 
             remainingBold -= singleRedemption.boldLot;
+            if (remainingBold == 0) break;
         }
 
         if (totalsTroveChange.collDecrease < _minCollateral) {
@@ -1135,6 +1138,16 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     function _requireIsShutDown() internal view {
         if (shutdownTime == 0) {
             revert NotShutDown();
+        }
+    }
+
+    function _requireBoldBalanceCoversRedemption(IBoldToken _boldToken, address _redeemer, uint256 _amount)
+        internal
+        view
+    {
+        uint256 boldBalance = _boldToken.balanceOf(_redeemer);
+        if (boldBalance < _amount) {
+            revert NotEnoughBoldBalance();
         }
     }
 
