@@ -423,7 +423,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             revert NothingToLiquidate();
         }
 
-        activePool.mintAggInterestAndAccountForTroveChange(troveChange, address(0));
+        activePoolCached.mintAggInterestAndAccountForTroveChange(troveChange, address(0));
 
         // Move liquidated Coll and Bold to the appropriate pools
         if (totals.debtToOffset > 0 || totals.collToSendToSP > 0) {
