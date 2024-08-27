@@ -292,36 +292,36 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // Wipe out state in BO
         borrowerOperations.onLiquidateTrove(_troveId);
 
-        emit TroveUpdated(
-            _troveId,
-            0, // _debt
-            0, // _coll
-            0, // _stake
-            0, // _annualInterestRate
-            0, // _snapshotOfTotalDebtRedist
-            0 // _snapshotOfTotalCollRedist
-        );
+        emit TroveUpdated({
+            _troveId: _troveId,
+            _debt: 0,
+            _coll: 0,
+            _stake: 0,
+            _annualInterestRate: 0,
+            _snapshotOfTotalCollRedist: 0,
+            _snapshotOfTotalDebtRedist: 0
+        });
 
-        emit TroveOperation(
-            _troveId,
-            Operation.liquidate,
-            0, // _annualInterestRate
-            trove.redistBoldDebtGain,
-            0, // _debtIncreaseFromUpfrontFee
-            -int256(trove.entireDebt),
-            trove.redistCollGain,
-            -int256(trove.entireColl)
-        );
+        emit TroveOperation({
+            _troveId: _troveId,
+            _operation: Operation.liquidate,
+            _annualInterestRate: 0,
+            _debtIncreaseFromRedist: trove.redistBoldDebtGain,
+            _debtIncreaseFromUpfrontFee: 0,
+            _debtChangeFromOperation: -int256(trove.entireDebt),
+            _collIncreaseFromRedist: trove.redistCollGain,
+            _collChangeFromOperation: -int256(trove.entireColl)
+        });
 
-        emit BatchUpdated(
-            batchAddress,
-            BatchOperation.exitBatch,
-            batches[batchAddress].debt,
-            batches[batchAddress].coll,
-            batch.annualInterestRate,
-            batch.annualManagementFee,
-            batches[batchAddress].totalDebtShares
-        );
+        emit BatchUpdated({
+            _interestBatchManager: batchAddress,
+            _operation: BatchOperation.exitBatch,
+            _debt: batches[batchAddress].debt,
+            _coll: batches[batchAddress].coll,
+            _annualInterestRate: batch.annualInterestRate,
+            _annualManagementFee: batch.annualManagementFee,
+            _totalDebtShares: batches[batchAddress].totalDebtShares
+        });
     }
 
     // Return the amount of Coll to be drawn from a trove's collateral and sent as gas compensation.
@@ -596,37 +596,37 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         _updateTroveRewardSnapshots(_singleRedemption.troveId);
 
         if (_isTroveInBatch) {
-            emit BatchedTroveUpdated(
-                _singleRedemption.troveId,
-                _singleRedemption.batchAddress,
-                Troves[_singleRedemption.troveId].batchDebtShares,
-                newColl,
-                _singleRedemption.newStake,
-                L_coll,
-                L_boldDebt
-            );
+            emit BatchedTroveUpdated({
+                _troveId: _singleRedemption.troveId,
+                _interestBatchManager: _singleRedemption.batchAddress,
+                _batchDebtShares: Troves[_singleRedemption.troveId].batchDebtShares,
+                _coll: newColl,
+                _stake: _singleRedemption.newStake,
+                _snapshotOfTotalCollRedist: L_coll,
+                _snapshotOfTotalDebtRedist: L_boldDebt
+            });
         } else {
-            emit TroveUpdated(
-                _singleRedemption.troveId,
-                newDebt,
-                newColl,
-                _singleRedemption.newStake,
-                _singleRedemption.trove.annualInterestRate,
-                L_coll,
-                L_boldDebt
-            );
+            emit TroveUpdated({
+                _troveId: _singleRedemption.troveId,
+                _debt: newDebt,
+                _coll: newColl,
+                _stake: _singleRedemption.newStake,
+                _annualInterestRate: _singleRedemption.trove.annualInterestRate,
+                _snapshotOfTotalCollRedist: L_coll,
+                _snapshotOfTotalDebtRedist: L_boldDebt
+            });
         }
 
-        emit TroveOperation(
-            _singleRedemption.troveId,
-            Operation.redeemCollateral,
-            _singleRedemption.trove.annualInterestRate,
-            _singleRedemption.trove.redistBoldDebtGain,
-            0, // _debtIncreaseFromUpfrontFee
-            -int256(_singleRedemption.boldLot),
-            _singleRedemption.trove.redistCollGain,
-            -int256(_singleRedemption.collLot)
-        );
+        emit TroveOperation({
+            _troveId: _singleRedemption.troveId,
+            _operation: Operation.redeemCollateral,
+            _annualInterestRate: _singleRedemption.trove.annualInterestRate,
+            _debtIncreaseFromRedist: _singleRedemption.trove.redistBoldDebtGain,
+            _debtIncreaseFromUpfrontFee: 0,
+            _debtChangeFromOperation: -int256(_singleRedemption.boldLot),
+            _collIncreaseFromRedist: _singleRedemption.trove.redistCollGain,
+            _collChangeFromOperation: -int256(_singleRedemption.collLot)
+        });
 
         emit RedemptionFeePaidToTrove(_singleRedemption.troveId, _singleRedemption.collFee);
 
@@ -683,15 +683,15 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         _activePool.mintAggInterestAndAccountForTroveChange(batchTroveChange, _batchAddress);
 
-        emit BatchUpdated(
-            _batchAddress,
-            BatchOperation.troveChange,
-            batch.entireDebtWithoutRedistribution,
-            batch.entireCollWithoutRedistribution,
-            batch.annualInterestRate,
-            batch.annualManagementFee,
-            batches[_batchAddress].totalDebtShares
-        );
+        emit BatchUpdated({
+            _interestBatchManager: _batchAddress,
+            _operation: BatchOperation.troveChange,
+            _debt: batch.entireDebtWithoutRedistribution,
+            _coll: batch.entireCollWithoutRedistribution,
+            _annualInterestRate: batch.annualInterestRate,
+            _annualManagementFee: batch.annualManagementFee,
+            _totalDebtShares: batches[_batchAddress].totalDebtShares
+        });
     }
 
     /* Send _boldamount Bold to the system and redeem the corresponding amount of collateral from as many Troves as are needed to fill the redemption
@@ -1182,26 +1182,26 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         _updateTroveRewardSnapshots(_troveId);
 
-        emit TroveUpdated(
-            _troveId,
-            _troveChange.debtIncrease + _troveChange.upfrontFee,
-            _troveChange.collIncrease,
-            newStake,
-            _annualInterestRate,
-            L_coll,
-            L_boldDebt
-        );
+        emit TroveUpdated({
+            _troveId: _troveId,
+            _debt: _troveChange.debtIncrease + _troveChange.upfrontFee,
+            _coll: _troveChange.collIncrease,
+            _stake: newStake,
+            _annualInterestRate: _annualInterestRate,
+            _snapshotOfTotalCollRedist: L_coll,
+            _snapshotOfTotalDebtRedist: L_boldDebt
+        });
 
-        emit TroveOperation(
-            _troveId,
-            Operation.openTrove,
-            _annualInterestRate,
-            0, // _debtIncreaseFromRedist
-            _troveChange.upfrontFee,
-            int256(_troveChange.debtIncrease),
-            0, // _collIncreaseFromRedist
-            int256(_troveChange.collIncrease)
-        );
+        emit TroveOperation({
+            _troveId: _troveId,
+            _operation: Operation.openTrove,
+            _annualInterestRate: _annualInterestRate,
+            _debtIncreaseFromRedist: 0,
+            _debtIncreaseFromUpfrontFee: _troveChange.upfrontFee,
+            _debtChangeFromOperation: int256(_troveChange.debtIncrease),
+            _collIncreaseFromRedist: 0,
+            _collChangeFromOperation: int256(_troveChange.collIncrease)
+        });
     }
 
     function onOpenTroveAndJoinBatch(
@@ -1237,36 +1237,36 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // mint ERC721
         troveNFT.mint(_owner, _troveId);
 
-        emit BatchedTroveUpdated(
-            _troveId,
-            _batchAddress,
-            Troves[_troveId].batchDebtShares,
-            _troveChange.collIncrease,
-            newStake,
-            L_coll,
-            L_boldDebt
-        );
+        emit BatchedTroveUpdated({
+            _troveId: _troveId,
+            _interestBatchManager: _batchAddress,
+            _batchDebtShares: Troves[_troveId].batchDebtShares,
+            _coll: _troveChange.collIncrease,
+            _stake: newStake,
+            _snapshotOfTotalCollRedist: L_coll,
+            _snapshotOfTotalDebtRedist: L_boldDebt
+        });
 
-        emit TroveOperation(
-            _troveId,
-            Operation.openTroveAndJoinBatch,
-            batches[_batchAddress].annualInterestRate,
-            0, // _debtIncreaseFromRedist
-            _troveChange.upfrontFee,
-            int256(_troveChange.debtIncrease),
-            0, // _collIncreaseFromRedist
-            int256(_troveChange.collIncrease)
-        );
+        emit TroveOperation({
+            _troveId: _troveId,
+            _operation: Operation.openTroveAndJoinBatch,
+            _annualInterestRate: batches[_batchAddress].annualInterestRate,
+            _debtIncreaseFromRedist: 0,
+            _debtIncreaseFromUpfrontFee: _troveChange.upfrontFee,
+            _debtChangeFromOperation: int256(_troveChange.debtIncrease),
+            _collIncreaseFromRedist: 0,
+            _collChangeFromOperation: int256(_troveChange.collIncrease)
+        });
 
-        emit BatchUpdated(
-            _batchAddress,
-            BatchOperation.joinBatch,
-            batches[_batchAddress].debt,
-            batches[_batchAddress].coll,
-            batches[_batchAddress].annualInterestRate,
-            batches[_batchAddress].annualManagementFee,
-            batches[_batchAddress].totalDebtShares
-        );
+        emit BatchUpdated({
+            _interestBatchManager: _batchAddress,
+            _operation: BatchOperation.joinBatch,
+            _debt: batches[_batchAddress].debt,
+            _coll: batches[_batchAddress].coll,
+            _annualInterestRate: batches[_batchAddress].annualInterestRate,
+            _annualManagementFee: batches[_batchAddress].annualManagementFee,
+            _totalDebtShares: batches[_batchAddress].totalDebtShares
+        });
     }
 
     function setTroveStatusToActive(uint256 _troveId) external {
@@ -1295,20 +1295,26 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         _updateTroveRewardSnapshots(_troveId);
 
-        emit TroveUpdated(
-            _troveId, _newDebt, _newColl, Troves[_troveId].stake, _newAnnualInterestRate, L_coll, L_boldDebt
-        );
+        emit TroveUpdated({
+            _troveId: _troveId,
+            _debt: _newDebt,
+            _coll: _newColl,
+            _stake: Troves[_troveId].stake,
+            _annualInterestRate: _newAnnualInterestRate,
+            _snapshotOfTotalCollRedist: L_coll,
+            _snapshotOfTotalDebtRedist: L_boldDebt
+        });
 
-        emit TroveOperation(
-            _troveId,
-            Operation.adjustTroveInterestRate,
-            _newAnnualInterestRate,
-            _troveChange.appliedRedistBoldDebtGain,
-            _troveChange.upfrontFee,
-            0, // debt increase / decrease
-            _troveChange.appliedRedistCollGain,
-            0 // coll increase / decrease
-        );
+        emit TroveOperation({
+            _troveId: _troveId,
+            _operation: Operation.adjustTroveInterestRate,
+            _annualInterestRate: _newAnnualInterestRate,
+            _debtIncreaseFromRedist: _troveChange.appliedRedistBoldDebtGain,
+            _debtIncreaseFromUpfrontFee: _troveChange.upfrontFee,
+            _debtChangeFromOperation: 0,
+            _collIncreaseFromRedist: _troveChange.appliedRedistCollGain,
+            _collChangeFromOperation: 0
+        });
     }
 
     function onAdjustTrove(uint256 _troveId, uint256 _newColl, uint256 _newDebt, TroveChange calldata _troveChange)
@@ -1327,20 +1333,26 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 newStake = _updateStakeAndTotalStakes(_troveId, _newColl);
         _updateTroveRewardSnapshots(_troveId);
 
-        emit TroveUpdated(
-            _troveId, _newDebt, _newColl, newStake, Troves[_troveId].annualInterestRate, L_coll, L_boldDebt
-        );
+        emit TroveUpdated({
+            _troveId: _troveId,
+            _debt: _newDebt,
+            _coll: _newColl,
+            _stake: newStake,
+            _annualInterestRate: Troves[_troveId].annualInterestRate,
+            _snapshotOfTotalCollRedist: L_coll,
+            _snapshotOfTotalDebtRedist: L_boldDebt
+        });
 
-        emit TroveOperation(
-            _troveId,
-            Operation.adjustTrove,
-            Troves[_troveId].annualInterestRate,
-            _troveChange.appliedRedistBoldDebtGain,
-            _troveChange.upfrontFee,
-            int256(_troveChange.debtIncrease) - int256(_troveChange.debtDecrease),
-            _troveChange.appliedRedistCollGain,
-            int256(_troveChange.collIncrease) - int256(_troveChange.collDecrease)
-        );
+        emit TroveOperation({
+            _troveId: _troveId,
+            _operation: Operation.adjustTrove,
+            _annualInterestRate: Troves[_troveId].annualInterestRate,
+            _debtIncreaseFromRedist: _troveChange.appliedRedistBoldDebtGain,
+            _debtIncreaseFromUpfrontFee: _troveChange.upfrontFee,
+            _debtChangeFromOperation: int256(_troveChange.debtIncrease) - int256(_troveChange.debtDecrease),
+            _collIncreaseFromRedist: _troveChange.appliedRedistCollGain,
+            _collChangeFromOperation: int256(_troveChange.collIncrease) - int256(_troveChange.collDecrease)
+        });
     }
 
     function onCloseTrove(
@@ -1356,37 +1368,37 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             defaultPool, _troveChange.appliedRedistBoldDebtGain, _troveChange.appliedRedistCollGain
         );
 
-        emit TroveUpdated(
-            _troveId,
-            0, // _debt
-            0, // _coll
-            0, // _stake
-            0, // _annualInterestRate
-            0, // _snapshotOfTotalDebtRedist
-            0 // _snapshotOfTotalCollRedist
-        );
+        emit TroveUpdated({
+            _troveId: _troveId,
+            _debt: 0,
+            _coll: 0,
+            _stake: 0,
+            _annualInterestRate: 0,
+            _snapshotOfTotalCollRedist: 0,
+            _snapshotOfTotalDebtRedist: 0
+        });
 
-        emit TroveOperation(
-            _troveId,
-            Operation.closeTrove,
-            0, // _annualInterestRate
-            _troveChange.appliedRedistBoldDebtGain,
-            _troveChange.upfrontFee,
-            int256(_troveChange.debtIncrease) - int256(_troveChange.debtDecrease),
-            _troveChange.appliedRedistCollGain,
-            int256(_troveChange.collIncrease) - int256(_troveChange.collDecrease)
-        );
+        emit TroveOperation({
+            _troveId: _troveId,
+            _operation: Operation.closeTrove,
+            _annualInterestRate: 0,
+            _debtIncreaseFromRedist: _troveChange.appliedRedistBoldDebtGain,
+            _debtIncreaseFromUpfrontFee: _troveChange.upfrontFee,
+            _debtChangeFromOperation: int256(_troveChange.debtIncrease) - int256(_troveChange.debtDecrease),
+            _collIncreaseFromRedist: _troveChange.appliedRedistCollGain,
+            _collChangeFromOperation: int256(_troveChange.collIncrease) - int256(_troveChange.collDecrease)
+        });
 
         if (_batchAddress != address(0)) {
-            emit BatchUpdated(
-                _batchAddress,
-                BatchOperation.exitBatch,
-                batches[_batchAddress].debt,
-                batches[_batchAddress].coll,
-                batches[_batchAddress].annualInterestRate,
-                batches[_batchAddress].annualManagementFee,
-                batches[_batchAddress].totalDebtShares
-            );
+            emit BatchUpdated({
+                _interestBatchManager: _batchAddress,
+                _operation: BatchOperation.exitBatch,
+                _debt: batches[_batchAddress].debt,
+                _coll: batches[_batchAddress].coll,
+                _annualInterestRate: batches[_batchAddress].annualInterestRate,
+                _annualManagementFee: batches[_batchAddress].annualManagementFee,
+                _totalDebtShares: batches[_batchAddress].totalDebtShares
+            });
         }
     }
 
@@ -1464,30 +1476,36 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             defaultPool, _troveChange.appliedRedistBoldDebtGain, _troveChange.appliedRedistCollGain
         );
 
-        emit BatchedTroveUpdated(
-            _troveId, _batchAddress, Troves[_troveId].batchDebtShares, _newTroveColl, newStake, L_coll, L_boldDebt
-        );
+        emit BatchedTroveUpdated({
+            _troveId: _troveId,
+            _interestBatchManager: _batchAddress,
+            _batchDebtShares: Troves[_troveId].batchDebtShares,
+            _coll: _newTroveColl,
+            _stake: newStake,
+            _snapshotOfTotalCollRedist: L_coll,
+            _snapshotOfTotalDebtRedist: L_boldDebt
+        });
 
-        emit TroveOperation(
-            _troveId,
-            Operation.adjustTrove,
-            batches[_batchAddress].annualInterestRate,
-            _troveChange.appliedRedistBoldDebtGain,
-            _troveChange.upfrontFee,
-            int256(_troveChange.debtIncrease) - int256(_troveChange.debtDecrease),
-            _troveChange.appliedRedistCollGain,
-            int256(_troveChange.collIncrease) - int256(_troveChange.collDecrease)
-        );
+        emit TroveOperation({
+            _troveId: _troveId,
+            _operation: Operation.adjustTrove,
+            _annualInterestRate: batches[_batchAddress].annualInterestRate,
+            _debtIncreaseFromRedist: _troveChange.appliedRedistBoldDebtGain,
+            _debtIncreaseFromUpfrontFee: _troveChange.upfrontFee,
+            _debtChangeFromOperation: int256(_troveChange.debtIncrease) - int256(_troveChange.debtDecrease),
+            _collIncreaseFromRedist: _troveChange.appliedRedistCollGain,
+            _collChangeFromOperation: int256(_troveChange.collIncrease) - int256(_troveChange.collDecrease)
+        });
 
-        emit BatchUpdated(
-            _batchAddress,
-            BatchOperation.troveChange,
-            batches[_batchAddress].debt,
-            batches[_batchAddress].coll,
-            batches[_batchAddress].annualInterestRate,
-            batches[_batchAddress].annualManagementFee,
-            batches[_batchAddress].totalDebtShares
-        );
+        emit BatchUpdated({
+            _interestBatchManager: _batchAddress,
+            _operation: BatchOperation.troveChange,
+            _debt: batches[_batchAddress].debt,
+            _coll: batches[_batchAddress].coll,
+            _annualInterestRate: batches[_batchAddress].annualInterestRate,
+            _annualManagementFee: batches[_batchAddress].annualManagementFee,
+            _totalDebtShares: batches[_batchAddress].totalDebtShares
+        });
     }
 
     function onApplyTroveInterest(
@@ -1506,15 +1524,15 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         if (_batchAddress != address(0)) {
             _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt);
 
-            emit BatchUpdated(
-                _batchAddress,
-                BatchOperation.applyBatchInterestAndFee,
-                _newBatchDebt,
-                _newBatchColl,
-                batches[_batchAddress].annualInterestRate,
-                batches[_batchAddress].annualManagementFee,
-                batches[_batchAddress].totalDebtShares
-            );
+            emit BatchUpdated({
+                _interestBatchManager: _batchAddress,
+                _operation: BatchOperation.applyBatchInterestAndFee,
+                _debt: _newBatchDebt,
+                _coll: _newBatchColl,
+                _annualInterestRate: batches[_batchAddress].annualInterestRate,
+                _annualManagementFee: batches[_batchAddress].annualManagementFee,
+                _totalDebtShares: batches[_batchAddress].totalDebtShares
+            });
         } else {
             Troves[_troveId].debt = _newTroveDebt;
             Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
@@ -1526,26 +1544,26 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         _updateTroveRewardSnapshots(_troveId);
 
-        emit TroveUpdated(
-            _troveId,
-            _newTroveDebt,
-            _newTroveColl,
-            Troves[_troveId].stake,
-            Troves[_troveId].annualInterestRate,
-            L_coll,
-            L_boldDebt
-        );
+        emit TroveUpdated({
+            _troveId: _troveId,
+            _debt: _newTroveDebt,
+            _coll: _newTroveColl,
+            _stake: Troves[_troveId].stake,
+            _annualInterestRate: Troves[_troveId].annualInterestRate,
+            _snapshotOfTotalCollRedist: L_coll,
+            _snapshotOfTotalDebtRedist: L_boldDebt
+        });
 
-        emit TroveOperation(
-            _troveId,
-            Operation.applyPendingDebt,
-            Troves[_troveId].annualInterestRate,
-            _troveChange.appliedRedistBoldDebtGain,
-            _troveChange.upfrontFee,
-            int256(_troveChange.debtIncrease) - int256(_troveChange.debtDecrease),
-            _troveChange.appliedRedistCollGain,
-            int256(_troveChange.collIncrease) - int256(_troveChange.collDecrease)
-        );
+        emit TroveOperation({
+            _troveId: _troveId,
+            _operation: Operation.applyPendingDebt,
+            _annualInterestRate: Troves[_troveId].annualInterestRate,
+            _debtIncreaseFromRedist: _troveChange.appliedRedistBoldDebtGain,
+            _debtIncreaseFromUpfrontFee: _troveChange.upfrontFee,
+            _debtChangeFromOperation: int256(_troveChange.debtIncrease) - int256(_troveChange.debtDecrease),
+            _collIncreaseFromRedist: _troveChange.appliedRedistCollGain,
+            _collChangeFromOperation: int256(_troveChange.collIncrease) - int256(_troveChange.collDecrease)
+        });
     }
 
     function onRegisterBatchManager(address _account, uint256 _annualInterestRate, uint256 _annualManagementFee)
@@ -1560,15 +1578,15 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         batchIds.push(_account);
 
-        emit BatchUpdated(
-            _account,
-            BatchOperation.registerBatchManager,
-            0, // _debt
-            0, // _coll
-            _annualInterestRate,
-            _annualManagementFee,
-            0 // _totalDebtShares
-        );
+        emit BatchUpdated({
+            _interestBatchManager: _account,
+            _operation: BatchOperation.registerBatchManager,
+            _debt: 0,
+            _coll: 0,
+            _annualInterestRate: _annualInterestRate,
+            _annualManagementFee: _annualManagementFee,
+            _totalDebtShares: 0
+        });
     }
 
     function onLowerBatchManagerAnnualFee(
@@ -1584,15 +1602,15 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         batches[_batchAddress].annualManagementFee = _newAnnualManagementFee;
         batches[_batchAddress].lastDebtUpdateTime = uint64(block.timestamp);
 
-        emit BatchUpdated(
-            _batchAddress,
-            BatchOperation.lowerBatchManagerAnnualFee,
-            _newDebt,
-            _newColl,
-            batches[_batchAddress].annualInterestRate,
-            _newAnnualManagementFee,
-            batches[_batchAddress].totalDebtShares
-        );
+        emit BatchUpdated({
+            _interestBatchManager: _batchAddress,
+            _operation: BatchOperation.lowerBatchManagerAnnualFee,
+            _debt: _newDebt,
+            _coll: _newColl,
+            _annualInterestRate: batches[_batchAddress].annualInterestRate,
+            _annualManagementFee: _newAnnualManagementFee,
+            _totalDebtShares: batches[_batchAddress].totalDebtShares
+        });
     }
 
     function onSetBatchManagerAnnualInterestRate(
@@ -1609,15 +1627,15 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         batches[_batchAddress].lastDebtUpdateTime = uint64(block.timestamp);
         batches[_batchAddress].lastInterestRateAdjTime = uint64(block.timestamp);
 
-        emit BatchUpdated(
-            _batchAddress,
-            BatchOperation.setBatchManagerAnnualInterestRate,
-            _newDebt,
-            _newColl,
-            _newAnnualInterestRate,
-            batches[_batchAddress].annualManagementFee,
-            batches[_batchAddress].totalDebtShares
-        );
+        emit BatchUpdated({
+            _interestBatchManager: _batchAddress,
+            _operation: BatchOperation.setBatchManagerAnnualInterestRate,
+            _debt: _newDebt,
+            _coll: _newColl,
+            _annualInterestRate: _newAnnualInterestRate,
+            _annualManagementFee: batches[_batchAddress].annualManagementFee,
+            _totalDebtShares: batches[_batchAddress].totalDebtShares
+        });
     }
 
     function onSetInterestBatchManager(OnSetInterestBatchManagerParams calldata _params) external {
@@ -1647,36 +1665,36 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             defaultPool, _troveChange.appliedRedistBoldDebtGain, _troveChange.appliedRedistCollGain
         );
 
-        emit BatchedTroveUpdated(
-            _params.troveId,
-            _params.newBatchAddress,
-            Troves[_params.troveId].batchDebtShares,
-            _params.troveColl,
-            Troves[_params.troveId].stake,
-            L_coll,
-            L_boldDebt
-        );
+        emit BatchedTroveUpdated({
+            _troveId: _params.troveId,
+            _interestBatchManager: _params.newBatchAddress,
+            _batchDebtShares: Troves[_params.troveId].batchDebtShares,
+            _coll: _params.troveColl,
+            _stake: Troves[_params.troveId].stake,
+            _snapshotOfTotalCollRedist: L_coll,
+            _snapshotOfTotalDebtRedist: L_boldDebt
+        });
 
-        emit TroveOperation(
-            _params.troveId,
-            Operation.setInterestBatchManager,
-            batches[_params.newBatchAddress].annualInterestRate,
-            _troveChange.appliedRedistBoldDebtGain,
-            _troveChange.upfrontFee,
-            0, // _debtChangeFromOperation
-            _troveChange.appliedRedistCollGain,
-            0 // _collChangeFromOperation
-        );
+        emit TroveOperation({
+            _troveId: _params.troveId,
+            _operation: Operation.setInterestBatchManager,
+            _annualInterestRate: batches[_params.newBatchAddress].annualInterestRate,
+            _debtIncreaseFromRedist: _troveChange.appliedRedistBoldDebtGain,
+            _debtIncreaseFromUpfrontFee: _troveChange.upfrontFee,
+            _debtChangeFromOperation: 0,
+            _collIncreaseFromRedist: _troveChange.appliedRedistCollGain,
+            _collChangeFromOperation: 0
+        });
 
-        emit BatchUpdated(
-            _params.newBatchAddress,
-            BatchOperation.joinBatch,
-            batches[_params.newBatchAddress].debt,
-            batches[_params.newBatchAddress].coll,
-            batches[_params.newBatchAddress].annualInterestRate,
-            batches[_params.newBatchAddress].annualManagementFee,
-            batches[_params.newBatchAddress].totalDebtShares
-        );
+        emit BatchUpdated({
+            _interestBatchManager: _params.newBatchAddress,
+            _operation: BatchOperation.joinBatch,
+            _debt: batches[_params.newBatchAddress].debt,
+            _coll: batches[_params.newBatchAddress].coll,
+            _annualInterestRate: batches[_params.newBatchAddress].annualInterestRate,
+            _annualManagementFee: batches[_params.newBatchAddress].annualManagementFee,
+            _totalDebtShares: batches[_params.newBatchAddress].totalDebtShares
+        });
     }
 
     function _updateBatchShares(
@@ -1779,30 +1797,36 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             defaultPool, _troveChange.appliedRedistBoldDebtGain, _troveChange.appliedRedistCollGain
         );
 
-        emit TroveUpdated(
-            _troveId, _newTroveDebt, _newTroveColl, Troves[_troveId].stake, _newAnnualInterestRate, L_coll, L_boldDebt
-        );
+        emit TroveUpdated({
+            _troveId: _troveId,
+            _debt: _newTroveDebt,
+            _coll: _newTroveColl,
+            _stake: Troves[_troveId].stake,
+            _annualInterestRate: _newAnnualInterestRate,
+            _snapshotOfTotalCollRedist: L_coll,
+            _snapshotOfTotalDebtRedist: L_boldDebt
+        });
 
-        emit TroveOperation(
-            _troveId,
-            Operation.removeFromBatch,
-            _newAnnualInterestRate,
-            _troveChange.appliedRedistBoldDebtGain,
-            _troveChange.upfrontFee,
-            0, // _debtChangeFromOperation
-            _troveChange.appliedRedistCollGain,
-            0 // _collChangeFromOperation
-        );
+        emit TroveOperation({
+            _troveId: _troveId,
+            _operation: Operation.removeFromBatch,
+            _annualInterestRate: _newAnnualInterestRate,
+            _debtIncreaseFromRedist: _troveChange.appliedRedistBoldDebtGain,
+            _debtIncreaseFromUpfrontFee: _troveChange.upfrontFee,
+            _debtChangeFromOperation: 0,
+            _collIncreaseFromRedist: _troveChange.appliedRedistCollGain,
+            _collChangeFromOperation: 0
+        });
 
-        emit BatchUpdated(
-            _batchAddress,
-            BatchOperation.exitBatch,
-            batches[_batchAddress].debt,
-            batches[_batchAddress].coll,
-            batches[_batchAddress].annualInterestRate,
-            batches[_batchAddress].annualManagementFee,
-            batches[_batchAddress].totalDebtShares
-        );
+        emit BatchUpdated({
+            _interestBatchManager: _batchAddress,
+            _operation: BatchOperation.exitBatch,
+            _debt: batches[_batchAddress].debt,
+            _coll: batches[_batchAddress].coll,
+            _annualInterestRate: batches[_batchAddress].annualInterestRate,
+            _annualManagementFee: batches[_batchAddress].annualManagementFee,
+            _totalDebtShares: batches[_batchAddress].totalDebtShares
+        });
     }
 
     function _removeTroveSharesFromBatch(
