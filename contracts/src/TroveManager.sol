@@ -982,10 +982,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 period = _getInterestPeriod(batch.lastDebtUpdateTime);
         latestBatchData.accruedInterest = _calcInterest(latestBatchData.weightedRecordedDebt, period);
         latestBatchData.annualManagementFee = batch.annualManagementFee;
-        latestBatchData.accruedManagementFee =
-            _calcInterest(latestBatchData.recordedDebt * latestBatchData.annualManagementFee, period);
         latestBatchData.weightedRecordedBatchManagementFee =
             latestBatchData.recordedDebt * latestBatchData.annualManagementFee;
+        latestBatchData.accruedManagementFee =
+            _calcInterest(latestBatchData.weightedRecordedBatchManagementFee, period);
 
         latestBatchData.entireDebtWithoutRedistribution =
             latestBatchData.recordedDebt + latestBatchData.accruedInterest + latestBatchData.accruedManagementFee;
