@@ -932,7 +932,9 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             batch.annualInterestRate != _newAnnualInterestRate
                 && block.timestamp < batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
         ) {
-            (uint256 price, ) = priceFeed.fetchPrice();
+            (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
+            _requireOraclesLive(newOracleFailureDetected);
+
             uint256 avgInterestRate = activePoolCached.getNewApproxAvgInterestRateFromTroveChange(batchChange);
             batchChange.upfrontFee = _calcUpfrontFee(newDebt, avgInterestRate);
             _requireUserAcceptsUpfrontFee(batchChange.upfrontFee, _maxUpfrontFee);
@@ -1126,7 +1128,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         TroveChange memory _troveChange,
         uint256 _maxUpfrontFee
     ) internal returns (uint256) {
-        (uint256 price, ) = priceFeed.fetchPrice();
+        (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
+        _requireOraclesLive(newOracleFailureDetected);
 
         uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(_troveChange);
         _troveChange.upfrontFee = _calcUpfrontFee(_troveEntireDebt, avgInterestRate);
