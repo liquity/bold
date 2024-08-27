@@ -79,6 +79,8 @@ contract OraclesMainnet is TestAccounts {
         ethXOracle = AggregatorV3Interface(result.externalAddresses.ETHXOracle);
         osEthOracle = AggregatorV3Interface(result.externalAddresses.OSETHOracle);
 
+        mockOracle = new ChainlinkOracleMock();
+
         rETHToken = IRETHToken(result.externalAddresses.RETHToken);
         staderOracle = IStaderOracle(result.externalAddresses.StaderOracle);
         osTokenVaultController = IOsTokenVaultController(result.externalAddresses.OsTokenVaultController);
@@ -123,6 +125,7 @@ contract OraclesMainnet is TestAccounts {
 
     function _getLatestAnswerFromOracle(AggregatorV3Interface _oracle) internal view returns (uint256) {
         (, int256 answer,,,) = _oracle.latestRoundData();
+
         uint256 decimals = _oracle.decimals();
         assertLe(decimals, 18);
         // Convert to uint and scale up to 18 decimals
