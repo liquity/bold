@@ -238,7 +238,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         LatestTroveData t;
         address batchManager;
         uint256 batchManagementFee;
-        bool wasOpen;
         bool wasActive;
         bool premature;
         uint256 upfrontFee;
@@ -1930,7 +1929,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
         v.batchManager = _batchManagerOf[i][v.troveId];
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
-        v.wasOpen = _isOpen(i, v.troveId);
         v.wasActive = _isActive(i, v.troveId);
         v.premature = _timeSinceLastBatchInterestRateAdjustment[i][v.batchManager] < INTEREST_RATE_ADJ_COOLDOWN;
         v.upfrontFee = v.batchManager != address(0)
@@ -1984,15 +1982,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // Effects (system)
             _mintYield(i, v.pendingInterest, v.upfrontFee);
-        } catch Error(string memory reason) {
-            v.errorString = reason;
-
-            // Justify failures
-            if (reason.equals("ERC721: invalid token ID")) {
-                assertFalse(v.wasOpen, "Open Trove should have an NFT");
-            } else {
-                revert(reason);
-            }
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, v.errorString) = _decodeCustomError(revertData);
@@ -2779,6 +2768,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             if (selector == BorrowerOperations.TroveInBatch.selector) {
                 return (selector, "BorrowerOperations.TroveInBatch()");
+            }
+
+            if (selector == BorrowerOperations.TroveNotInBatch.selector) {
+                return (selector, "BorrowerOperations.TroveNotInBatch()");
             }
 
             if (selector == BorrowerOperations.InterestNotInRange.selector) {

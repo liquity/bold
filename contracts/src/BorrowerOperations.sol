@@ -1034,17 +1034,21 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 _maxUpfrontFee
     ) public override {
         _requireIsNotShutDown();
-        _requireCallerIsBorrower(_troveId);
 
         LocalVariables_removeFromBatch memory vars;
         vars.troveManager = troveManager;
         vars.sortedTroves = sortedTroves;
 
-        vars.batchManager = interestBatchManagerOf[_troveId];
+        _requireTroveIsActive(vars.troveManager, _troveId);
+        _requireCallerIsBorrower(_troveId);
+        _requireValidAnnualInterestRate(_newAnnualInterestRate);
+
+        vars.batchManager = _requireIsInBatch(_troveId);
         delete interestBatchManagerOf[_troveId];
 
         // Remove trove from Batch in SortedTroves
         vars.sortedTroves.removeFromBatch(_troveId);
+        // Reinsert as single trove
         vars.sortedTroves.insert(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint);
 
         vars.trove = vars.troveManager.getLatestTroveData(_troveId);
