@@ -1,13 +1,14 @@
-import type { PositionEarn, PositionLeverage, PositionLoan, PositionStake } from "@/src/types";
+import type { PositionEarn, PositionLoan, PositionStake } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import { LQTY_SUPPLY } from "@/src/constants";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
-import { useAccount } from "@/src/eth/Ethereum";
-import { getLiquidationRisk, getRedemptionRisk } from "@/src/liquity-math";
-import { usePrice } from "@/src/prices";
+import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
+import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
+import { useAccount } from "@/src/services/Ethereum";
+import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
@@ -32,7 +33,7 @@ export function Positions() {
 
   const positionCards = ACCOUNT_POSITIONS.map((position, index) => (
     match(position)
-      .with({ type: "loan" }, ({ type, ...props }) => [index, <PositionLoan {...props} />])
+      .with({ type: "borrow" }, ({ type, ...props }) => [index, <PositionBorrow {...props} />])
       .with({ type: "earn" }, ({ type, ...props }) => [index, <PositionEarn {...props} />])
       .with({ type: "leverage" }, ({ type, ...props }) => [index, <PositionLeverage {...props} />])
       .with({ type: "stake" }, ({ type, ...props }) => [index, <PositionStake {...props} />])
@@ -99,7 +100,7 @@ export function Positions() {
   );
 }
 
-function PositionLoan({
+function PositionBorrow({
   borrowed,
   collateral,
   deposit,
@@ -120,11 +121,11 @@ function PositionLoan({
     return null;
   }
 
-  const ltv = dn.div(borrowed, dn.mul(deposit, collateralPriceUsd));
+  const ltv = getLtv(deposit, borrowed, collateralPriceUsd);
   const redemptionRisk = getRedemptionRisk(interestRate);
 
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
-  const liquidationRisk = getLiquidationRisk(ltv, maxLtv);
+  const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
 
   return (
     <Link
@@ -188,22 +189,24 @@ function PositionLoan({
                   >
                     LTV
                   </div>
-                  <div
-                    className={css({
-                      "--status-positive": "token(colors.positiveAlt)",
-                      "--status-warning": "token(colors.warning)",
-                      "--status-negative": "token(colors.negative)",
-                    })}
-                    style={{
-                      color: liquidationRisk === "low"
-                        ? "var(--status-positive)"
-                        : liquidationRisk === "medium"
-                        ? "var(--status-warning)"
-                        : "var(--status-negative)",
-                    }}
-                  >
-                    {dn.format(dn.mul(ltv, 100), 2)}%
-                  </div>
+                  {ltv && (
+                    <div
+                      className={css({
+                        "--status-positive": "token(colors.positiveAlt)",
+                        "--status-warning": "token(colors.warning)",
+                        "--status-negative": "token(colors.negative)",
+                      })}
+                      style={{
+                        color: liquidationRisk === "low"
+                          ? "var(--status-positive)"
+                          : liquidationRisk === "medium"
+                          ? "var(--status-warning)"
+                          : "var(--status-negative)",
+                      }}
+                    >
+                      {dn.format(dn.mul(ltv, 100), 2)}%
+                    </div>
+                  )}
                 </div>
               }
               end={
@@ -220,8 +223,7 @@ function PositionLoan({
                       color: "strongSurfaceContent",
                     })}
                   >
-                    {liquidationRisk === "low" ? "Low" : liquidationRisk === "medium" ? "Medium" : "High"}{" "}
-                    liquidation risk
+                    {formatLiquidationRisk(liquidationRisk)}
                   </div>
                   <StatusDot
                     mode={riskLevelToStatusMode(liquidationRisk)}
@@ -292,7 +294,7 @@ function PositionLeverage({
   interestRate,
   troveId,
 }: Pick<
-  PositionLeverage,
+  PositionLoan,
   | "borrowed"
   | "collateral"
   | "deposit"
@@ -306,11 +308,12 @@ function PositionLeverage({
     return null;
   }
 
-  const ltv = dn.div(borrowed, dn.mul(deposit, collateralPriceUsd));
+  const ltv = getLtv(deposit, borrowed, collateralPriceUsd);
   const redemptionRisk = getRedemptionRisk(interestRate);
 
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
-  const liquidationRisk = getLiquidationRisk(ltv, maxLtv);
+
+  const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
 
   return (
     <Link
@@ -370,22 +373,24 @@ function PositionLeverage({
                   >
                     LTV
                   </div>
-                  <div
-                    className={css({
-                      "--status-positive": "token(colors.positiveAlt)",
-                      "--status-warning": "token(colors.warning)",
-                      "--status-negative": "token(colors.negative)",
-                    })}
-                    style={{
-                      color: liquidationRisk === "low"
-                        ? "var(--status-positive)"
-                        : liquidationRisk === "medium"
-                        ? "var(--status-warning)"
-                        : "var(--status-negative)",
-                    }}
-                  >
-                    {dn.format(dn.mul(ltv, 100), 2)}%
-                  </div>
+                  {ltv && (
+                    <div
+                      className={css({
+                        "--status-positive": "token(colors.positiveAlt)",
+                        "--status-warning": "token(colors.warning)",
+                        "--status-negative": "token(colors.negative)",
+                      })}
+                      style={{
+                        color: liquidationRisk === "low"
+                          ? "var(--status-positive)"
+                          : liquidationRisk === "medium"
+                          ? "var(--status-warning)"
+                          : "var(--status-negative)",
+                      }}
+                    >
+                      {dn.format(dn.mul(ltv, 100), 2)}%
+                    </div>
+                  )}
                 </div>
               }
               end={
@@ -451,7 +456,7 @@ function PositionLeverage({
                       color: "strongSurfaceContent",
                     })}
                   >
-                    {redemptionRisk === "low" ? "Low" : redemptionRisk === "medium" ? "Medium" : "High"} redemption risk
+                    {formatRedemptionRisk(redemptionRisk)}
                   </div>
                   <StatusDot
                     mode={riskLevelToStatusMode(redemptionRisk)}

@@ -2,7 +2,6 @@ import type { RiskLevel } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { LTV_RISK, MAX_LTV_ALLOWED, REDEMPTION_RISK } from "@/src/constants";
-import { dnumMin } from "@/src/dnum-utils";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 
@@ -10,7 +9,7 @@ export function getRedemptionRisk(interest: Dnum | null): null | RiskLevel {
   return match(interest)
     .returnType<RiskLevel | null>()
     .with(P.nullish, () => null)
-    .when((r) => dn.eq(r, 0), () => null)
+    .when((r) => dn.lt(r, 0) || dn.eq(r, 0), () => "high")
     .when((r) => dn.gt(r, REDEMPTION_RISK.low), () => "low")
     .when((r) => dn.gt(r, REDEMPTION_RISK.medium), () => "medium")
     .otherwise(() => "high");
@@ -24,89 +23,97 @@ export function getLiquidationRisk(ltv: Dnum, maxLtv: Dnum): RiskLevel {
     .otherwise(() => "low");
 }
 
-export function getLiquidationRiskFromLeverageFactor(
-  leverageFactor: number,
-  mediumRiskLeverageFactor: number,
-  highRiskLeverageFactor: number,
-) {
-  return match(leverageFactor)
-    .returnType<RiskLevel>()
-    .when((lf) => lf >= highRiskLeverageFactor, () => "high")
-    .when((ltv) => ltv >= mediumRiskLeverageFactor, () => "medium")
-    .otherwise(() => "low");
-}
-
-export function getLtvFromLeverageFactor(leverageFactor: number) {
-  return leverageFactor === 0 ? dn.from(0, 18) : dn.div(
+export function getLtvFromLeverageFactor(leverageFactor: number): Dnum | null {
+  // invalid leverage factor
+  if (leverageFactor <= 0) {
+    return null;
+  }
+  return dn.div(
     dn.sub(leverageFactor, dn.from(1, 18)),
     leverageFactor,
   );
 }
 
-export function getLeverageFactorFromLtv(ltv: Dnum) {
-  return Math.round(1 / (1 - dn.toNumber(ltv)) * 10) / 10;
+export function getLeverageFactorFromLtv(ltv: Dnum): number {
+  // returns negative values for underwater positions (LTV > 100%)
+  return 1 / (1 - dn.toNumber(ltv));
 }
 
-// e.g. $4000 / ETH and 1.5x leverage = $3248.63 liq. price
-export function getLeveragedLiquidationPrice(
-  ethPrice: Dnum,
-  leverage: number,
-  collateralRatio: number,
-) {
-  return dn.div(
-    dn.sub(dn.mul(leverage, ethPrice), ethPrice),
-    dn.sub(leverage, dn.div(dn.from(1, 18), collateralRatio)),
-  );
-}
-
-// e.g. $4000 / ETH and $3248.63 liq. price = 1.5x leverage
 export function getLeverageFactorFromLiquidationPrice(
-  ethPrice: Dnum,
   liquidationPrice: Dnum,
-  collateralRatio: number,
-) {
-  const divider = dn.sub(liquidationPrice, ethPrice);
-  return dn.eq(divider, 0) ? 0 : Math.round(
-    dn.toNumber(
-      dn.div(
-        dn.sub(
-          dn.mul(liquidationPrice, dn.div(dn.from(1, 18), collateralRatio)),
-          ethPrice,
-        ),
-        divider,
-      ),
-    ) * 10,
+  collPrice: Dnum,
+  minCollRatio: number,
+): null | number {
+  const collPriceRatio = dn.mul(collPrice, minCollRatio);
+
+  if (!dn.lt(liquidationPrice, collPriceRatio)) {
+    return null;
+  }
+
+  return Math.round(
+    dn.toNumber(dn.div(
+      collPriceRatio,
+      dn.sub(collPriceRatio, liquidationPrice),
+    )) * 10,
   ) / 10;
 }
 
-export function getLiquidationPriceUsd(
-  deposit: Dnum | null,
-  debt: Dnum | null,
-  maxLtv: Dnum,
-  ethPriceUsd: Dnum,
+export function getLiquidationPriceFromLeverage(
+  leverage: number,
+  collPrice: Dnum,
+  minCollRatio: number,
+): Dnum {
+  return dn.div(
+    dn.mul(
+      dn.mul(
+        dn.sub(leverage, 1, 18),
+        minCollRatio,
+      ),
+      collPrice,
+    ),
+    leverage,
+  );
+}
+
+export function getLiquidationPrice(
+  deposit: Dnum,
+  borrowed: Dnum,
+  minCollRatio: number,
 ): Dnum | null {
-  if (!deposit || !dn.gt(deposit, 0) || !debt || !dn.gt(debt, 0) || !dn.gt(maxLtv, 0)) {
+  // deposit and borrow amounts must be positive
+  if (!dn.gt(deposit, 0) || !dn.gt(borrowed, 0)) {
     return null;
   }
-  return dnumMin(dn.div(dn.mul(debt, maxLtv), deposit), ethPriceUsd);
+  if (minCollRatio <= 1) {
+    return null;
+  }
+  return dn.div(
+    dn.mul(borrowed, minCollRatio),
+    deposit,
+  );
 }
 
 export function getLtv(
+  deposit: Dnum,
   debt: Dnum,
-  depositUsd: Dnum,
-): Dnum {
-  return dn.gt(depositUsd, 0)
-    ? dn.div(debt, depositUsd)
-    : dn.from(0, 18);
+  collPrice: Dnum,
+): Dnum | null {
+  const depositUsd = dn.mul(deposit, collPrice);
+  return dn.gt(depositUsd, 0) ? dn.div(debt, depositUsd) : null;
 }
 
 export type LoanDetails = {
+  collPrice: Dnum | null;
   debt: Dnum | null;
   deposit: Dnum | null;
+  depositPreLeverage: Dnum | null;
+  depositToZero: Dnum | null;
   depositUsd: Dnum | null;
-  ethPriceUsd: Dnum;
   interestRate: Dnum | null;
-  liquidationPriceUsd: Dnum | null;
+  isLiquidatable: boolean;
+  isUnderwater: boolean;
+  leverageFactor: number | null;
+  liquidationPrice: Dnum | null;
   liquidationRisk: RiskLevel | null;
   ltv: Dnum | null;
   maxDebt: Dnum | null;
@@ -114,38 +121,78 @@ export type LoanDetails = {
   maxLtv: Dnum;
   maxLtvAllowed: Dnum;
   redemptionRisk: RiskLevel | null;
+  requiredCollateralToRecover: Dnum | null;
 };
 
 export function getLoanDetails(
   deposit: Dnum | null,
   debt: Dnum | null,
   interestRate: Dnum | null,
-  maxLtv: Dnum,
-  ethPriceUsd: Dnum,
+  minCollRatio: number,
+  collPrice: Dnum | null,
 ): LoanDetails {
+  const maxLtv = dn.div(dn.from(1, 18), minCollRatio);
   const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED);
-  const depositUsd = deposit && dn.mul(deposit, ethPriceUsd);
+  const depositUsd = deposit && collPrice ? dn.mul(deposit, collPrice) : null;
 
-  const ltv = debt && depositUsd && getLtv(debt, depositUsd);
+  let ltv: Dnum | null = null;
+  let isUnderwater = false;
+  let isLiquidatable = false;
+  let requiredCollateralToRecover: Dnum | null = null;
+
+  if (debt && depositUsd && dn.gt(depositUsd, 0) && dn.gt(debt, 0)) {
+    ltv = dn.div(debt, depositUsd);
+    isUnderwater = !dn.lt(ltv, dn.from(1, 18));
+    isLiquidatable = dn.gt(ltv, maxLtv);
+
+    if (isUnderwater && collPrice && deposit) {
+      const requiredDepositUsd = dn.mul(debt, minCollRatio);
+      requiredCollateralToRecover = dn.sub(
+        dn.div(requiredDepositUsd, collPrice),
+        deposit,
+      );
+    }
+  }
+
   const maxDebt = depositUsd && dn.mul(depositUsd, maxLtv);
 
   const maxDebtAllowed = depositUsd && dn.gt(depositUsd, 0)
     ? dn.mul(depositUsd, maxLtvAllowed)
     : null;
 
-  const liquidationPriceUsd = getLiquidationPriceUsd(deposit, debt, maxLtv, ethPriceUsd);
-  const liquidationRisk = ltv && deposit && dn.gt(deposit, 0) && debt && dn.gt(debt, 0)
+  const liquidationRisk = ltv
     ? getLiquidationRisk(ltv, maxLtv)
     : null;
   const redemptionRisk = getRedemptionRisk(interestRate);
 
+  const leverageFactor = ltv
+    ? getLeverageFactorFromLtv(ltv)
+    : null;
+
+  const depositPreLeverage = deposit && leverageFactor && Number.isFinite(leverageFactor)
+    ? dn.div(deposit, leverageFactor)
+    : null;
+
+  const depositToZero = debt && deposit && collPrice && dn.gt(collPrice, 0)
+    ? dn.div(dn.sub(debt, dn.mul(deposit, collPrice)), collPrice)
+    : null;
+
+  const liquidationPrice = deposit && debt && dn.gt(deposit, 0)
+    ? getLiquidationPrice(deposit, debt, minCollRatio)
+    : null;
+
   return {
+    collPrice,
     debt,
     deposit,
+    depositPreLeverage,
+    depositToZero,
     depositUsd,
-    ethPriceUsd,
     interestRate,
-    liquidationPriceUsd,
+    isLiquidatable,
+    isUnderwater,
+    leverageFactor,
+    liquidationPrice,
     liquidationRisk,
     ltv,
     maxDebt,
@@ -153,5 +200,6 @@ export function getLoanDetails(
     maxLtv,
     maxLtvAllowed,
     redemptionRisk,
+    requiredCollateralToRecover,
   };
 }

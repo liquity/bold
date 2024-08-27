@@ -49,7 +49,8 @@ contract DevTestSetup is BaseTest {
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev memory contracts;
-        (contracts, collateralRegistry, boldToken, hintHelpers,, WETH) = deployer.deployAndConnectContracts();
+        TestDeployer.Zappers memory zappers;
+        (contracts, collateralRegistry, boldToken, hintHelpers,, WETH, zappers) = deployer.deployAndConnectContracts();
         addressesRegistry = contracts.addressesRegistry;
         collToken = contracts.collToken;
         activePool = contracts.activePool;
@@ -62,6 +63,10 @@ contract DevTestSetup is BaseTest {
         stabilityPool = contracts.stabilityPool;
         troveManager = contracts.troveManager;
         mockInterestRouter = contracts.interestRouter;
+        wethZapper = zappers.wethZapper;
+        gasCompZapper = zappers.gasCompZapper;
+        leverageZapperCurve = zappers.leverageZapperCurve;
+        leverageZapperUniV3 = zappers.leverageZapperUniV3;
 
         // Give some Coll to test accounts, and approve it to BorrowerOperations
         uint256 initialCollAmount = 1000_000e18;
@@ -257,7 +262,7 @@ contract DevTestSetup is BaseTest {
         assertEq(uint8(troveManager.getTroveStatus(_troveIDs.B)), uint8(ITroveManager.Status.active));
     }
 
-    function _getSPYield(uint256 _aggInterest) internal returns (uint256) {
+    function _getSPYield(uint256 _aggInterest) internal pure returns (uint256) {
         uint256 spYield = SP_YIELD_SPLIT * _aggInterest / 1e18;
         assertGt(spYield, 0);
         assertLe(spYield, _aggInterest);

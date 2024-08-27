@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
@@ -32,7 +34,7 @@ contract ShutdownTest is DevTestSetup {
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory _contractsArray;
-        (_contractsArray, collateralRegistry, boldToken,,, WETH) =
+        (_contractsArray, collateralRegistry, boldToken,,, WETH,) =
             deployer.deployAndConnectContractsMultiColl(troveManagerParamsArray);
         // Unimplemented feature (...):Copying of type struct LiquityContracts memory[] memory to storage not yet supported.
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
@@ -71,6 +73,7 @@ contract ShutdownTest is DevTestSetup {
         // Set first branch as default
         borrowerOperations = contractsArray[0].borrowerOperations;
         troveManager = contractsArray[0].troveManager;
+        priceFeed = contractsArray[0].priceFeed;
         MCR = troveManager.get_MCR();
         SCR = troveManager.get_SCR();
     }
@@ -283,7 +286,7 @@ contract ShutdownTest is DevTestSetup {
     }
 
     function testCannotRegisterBatchManagerAfterShutdown() public {
-        uint256 troveId = prepareAndShutdownFirstBranch();
+        prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);
@@ -296,7 +299,7 @@ contract ShutdownTest is DevTestSetup {
         borrowerOperations.registerBatchManager(5e15, 1e18, 10e16, 25e14, 30 days);
         vm.stopPrank();
 
-        uint256 troveId = prepareAndShutdownFirstBranch();
+        prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);
@@ -309,7 +312,7 @@ contract ShutdownTest is DevTestSetup {
         borrowerOperations.registerBatchManager(5e15, 1e18, 10e16, 25e14, 30 days);
         vm.stopPrank();
 
-        uint256 troveId = prepareAndShutdownFirstBranch();
+        prepareAndShutdownFirstBranch();
 
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);
@@ -968,4 +971,38 @@ contract ShutdownTest is DevTestSetup {
     }
 
     // TODO: tests for Zombie Troves in shutdown (though, uses the exact same logic as normal redemptions)
+
+    function test_Issue_UrgentRedemptionDoesNotUpdateBatchedTroveDebt() external {
+        uint256 troveId = openTroveAndJoinBatchManager({
+            _troveOwner: A,
+            _coll: 16_000 ether * 1 ether / priceFeed.getPrice(),
+            _debt: 10_000 ether,
+            _batchAddress: B,
+            _annualInterestRate: 0.01 ether
+        });
+
+        vm.warp(block.timestamp + 30 days);
+
+        priceFeed.setPrice(priceFeed.getPrice() / 2);
+        assertLtDecimal(troveManager.getTCR(priceFeed.getPrice()), _100pct, 18, "TCR should be < 100%");
+
+        borrowerOperations.shutdown();
+
+        uint256[] memory redeemed = new uint256[](1);
+        redeemed[0] = troveId;
+
+        uint256 troveDebtBefore = troveManager.getTroveEntireDebt(troveId);
+        // emit log_named_decimal_uint("trove debt", troveDebtBefore, 18);
+        // trove debt: 10012.193751172827922686
+
+        vm.prank(A);
+        uint256 redeemAmount = 1 ether;
+        troveManager.urgentRedemption(redeemAmount, redeemed, 0);
+
+        uint256 troveDebtAfter = troveManager.getTroveEntireDebt(troveId);
+        // emit log_named_decimal_uint("trove debt", troveDebtAfter, 18);
+        // trove debt: 10012.193751172827922686
+
+        assertEq(troveDebtAfter, troveDebtBefore - redeemAmount);
+    }
 }

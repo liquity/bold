@@ -7,11 +7,12 @@ import * as dn from "dnum";
 
 export const PRICE_UPDATE_INTERVAL = 15_000;
 export const PRICE_UPDATE_VARIATION = 0.003;
+export const PRICE_UPDATE_MANUAL = true;
 
-export const LQTY_PRICE = dn.from(1.54832, 18);
-export const ETH_PRICE = dn.from(3_839.293872, 18);
-export const RETH_PRICE = dn.from(4_228.72294, 18);
-export const STETH_PRICE = dn.from(4_441.931, 18);
+export const LQTY_PRICE = dn.from(0.64832, 18);
+export const ETH_PRICE = dn.from(2_580.293872, 18);
+export const RETH_PRICE = dn.from(2_884.72294, 18);
+export const STETH_PRICE = dn.from(2_579.931, 18);
 export const BOLD_PRICE = dn.from(1.0031, 18);
 
 export const STAKED_LQTY_TOTAL = [43_920_716_739_092_664_364_409_174n, 18] as const;
@@ -32,7 +33,7 @@ export const ACCOUNT_BALANCES = {
 
 export const ACCOUNT_POSITIONS: Position[] = [
   {
-    type: "loan",
+    type: "borrow",
     borrowed: dn.from(12_789, 18),
     collateral: "RETH",
     deposit: dn.from(5.5, 18),
@@ -41,9 +42,9 @@ export const ACCOUNT_POSITIONS: Position[] = [
   },
   {
     type: "leverage",
-    borrowed: dn.from(43_055.88, 18),
+    borrowed: dn.from(28_934.23, 18),
     collateral: "ETH",
-    deposit: dn.from(19.20, 18), // 8 ETH at 2.4x leverage
+    deposit: dn.from(19.20, 18), // 8 ETH @ 2.4 leverage
     interestRate: dn.from(0.045, 18),
     troveId: 2n,
   },

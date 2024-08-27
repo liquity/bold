@@ -10,8 +10,8 @@ import tokenSteth from "./token-icons/wsteth.svg";
 export type CollateralSymbol = "ETH" | "RETH" | "STETH";
 
 export type CollateralToken = Token & {
-  symbol: CollateralSymbol;
   collateralRatio: number;
+  symbol: CollateralSymbol;
 };
 
 export const LUSD: Token = {

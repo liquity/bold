@@ -8,9 +8,9 @@ const INFO_ITEMS: Array<[
   ComponentType<SVGProps<SVGSVGElement>>,
   string,
 ]> = [
-  [BoldIcon, "If BOLD trades below $1, your collateral may be redeemed"],
-  [RedemptionIcon, "Redemptions start from the lowest interest rate loans"],
-  [InterestIcon, "Raise the interest rate on your loan to reduce the risk"],
+  [BoldIcon, "BOLD is always redeemable for $1 worth of protocol collateral, minus a fee."],
+  [RedemptionIcon, "Redemptions are processed against the lowest interest rate positions first."],
+  [InterestIcon, "Reduce your chance of redemption by raising your position’s interest rate."],
 ];
 
 export function RedemptionInfo() {
@@ -77,7 +77,7 @@ export function RedemptionInfo() {
             color: "contentAlt",
           })}
         >
-          Your collateral and debt are reduced by the same value. No haircut.
+          Your collateral and debt are reduced by the same amount, without penalty.
         </p>
       </header>
 

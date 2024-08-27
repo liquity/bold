@@ -294,6 +294,10 @@ contract SortedTroves is ISortedTroves {
         return nodes[_id].batchId.isNotZero();
     }
 
+    function isEmptyBatch(BatchId _id) external view override returns (bool) {
+        return batches[_id].head == UNINITIALIZED_ID;
+    }
+
     /*
      * @dev Checks if the list is empty
      */

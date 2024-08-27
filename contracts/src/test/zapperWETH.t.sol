@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
@@ -5,8 +7,6 @@ import "./TestContracts/WETH.sol";
 import "../Zappers/WETHZapper.sol";
 
 contract ZapperWETHTest is DevTestSetup {
-    WETHZapper wethZapper;
-
     function setUp() public override {
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
@@ -31,7 +31,9 @@ contract ZapperWETHTest is DevTestSetup {
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory contractsArray;
-        (contractsArray, collateralRegistry, boldToken,,) = deployer.deployAndConnectContracts(troveManagerParams, WETH);
+        TestDeployer.Zappers[] memory zappersArray;
+        (contractsArray, collateralRegistry, boldToken,,, zappersArray) =
+            deployer.deployAndConnectContracts(troveManagerParams, WETH);
 
         // Set price feeds
         contractsArray[0].priceFeed.setPrice(2000e18);
@@ -50,9 +52,7 @@ contract ZapperWETHTest is DevTestSetup {
         borrowerOperations = contractsArray[0].borrowerOperations;
         troveManager = contractsArray[0].troveManager;
         troveNFT = contractsArray[0].troveNFT;
-
-        // Deploy zapper (TODO: should we move it to deployment contract?)
-        wethZapper = new WETHZapper(addressesRegistry);
+        wethZapper = zappersArray[0].wethZapper;
     }
 
     function testCanOpenTrove() external {
@@ -68,13 +68,16 @@ contract ZapperWETHTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: 5e16,
-            maxUpfrontFee: 1000e18
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
         });
         vm.startPrank(A);
         uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
-        assertEq(troveManager.ownerOf(troveId), A, "Wrong owner");
+        assertEq(troveNFT.ownerOf(troveId), A, "Wrong owner");
         assertGt(troveId, 0, "Trove id should be set");
         assertEq(troveManager.getTroveEntireColl(troveId), ethAmount, "Coll mismatch");
         assertGt(troveManager.getTroveEntireDebt(troveId), boldAmount, "Debt mismatch");
@@ -94,7 +97,10 @@ contract ZapperWETHTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: 5e16,
-            maxUpfrontFee: 1000e18
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
         });
         vm.startPrank(A);
         uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount1 + ETH_GAS_COMPENSATION}(params);
@@ -123,7 +129,10 @@ contract ZapperWETHTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: 5e16,
-            maxUpfrontFee: 1000e18
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
         });
         vm.startPrank(A);
         uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount1 + ETH_GAS_COMPENSATION}(params);
@@ -152,7 +161,10 @@ contract ZapperWETHTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-            maxUpfrontFee: 1000e18
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
         });
         vm.startPrank(A);
         uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
@@ -197,7 +209,10 @@ contract ZapperWETHTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-            maxUpfrontFee: 1000e18
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
         });
         vm.startPrank(A);
         uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
@@ -242,7 +257,10 @@ contract ZapperWETHTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-            maxUpfrontFee: 1000e18
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
         });
         vm.startPrank(A);
         uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount1 + ETH_GAS_COMPENSATION}(params);
@@ -287,7 +305,10 @@ contract ZapperWETHTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-            maxUpfrontFee: 1000e18
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
         });
         vm.startPrank(A);
         uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount1 + ETH_GAS_COMPENSATION}(params);
@@ -334,7 +355,10 @@ contract ZapperWETHTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-            maxUpfrontFee: 1000e18
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
         });
         vm.startPrank(A);
         uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);

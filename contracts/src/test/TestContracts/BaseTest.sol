@@ -16,11 +16,16 @@ import "./PriceFeedTestnet.sol";
 import "../../Interfaces/IInterestRouter.sol";
 import "../../GasPool.sol";
 import "../../HintHelpers.sol";
+import "../../Zappers/WETHZapper.sol";
+import "../../Zappers/GasCompZapper.sol";
+import "../../Zappers/LeverageLSTZapper.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
+import {Logging} from "../Utils/Logging.sol";
+import {StringFormatting} from "../Utils/StringFormatting.sol";
 
 import "forge-std/console2.sol";
 
-contract BaseTest is TestAccounts {
+contract BaseTest is TestAccounts, Logging {
     uint256 CCR;
     uint256 MCR;
     uint256 SCR;
@@ -45,6 +50,10 @@ contract BaseTest is TestAccounts {
     IERC20 collToken;
     HintHelpers hintHelpers;
     IWETH WETH; // used for gas compensation
+    WETHZapper wethZapper;
+    GasCompZapper gasCompZapper;
+    ILeverageZapper leverageZapperCurve;
+    ILeverageZapper leverageZapperUniV3;
 
     // Structs for use in test where we need to bi-pass "stack-too-deep" errors
     struct ABCDEF {
@@ -57,6 +66,26 @@ contract BaseTest is TestAccounts {
     }
 
     // --- functions ---
+
+    function getTroveEntireColl(uint256 _troveId) internal view returns (uint256) {
+        LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
+        return trove.entireColl;
+    }
+
+    function getTroveEntireDebt(uint256 _troveId) internal view returns (uint256) {
+        LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
+        return trove.entireDebt;
+    }
+
+    function getTroveEntireColl(ITroveManager _troveManager, uint256 _troveId) internal view returns (uint256) {
+        LatestTroveData memory trove = _troveManager.getLatestTroveData(_troveId);
+        return trove.entireColl;
+    }
+
+    function getTroveEntireDebt(ITroveManager _troveManager, uint256 _troveId) internal view returns (uint256) {
+        LatestTroveData memory trove = _troveManager.getLatestTroveData(_troveId);
+        return trove.entireDebt;
+    }
 
     function calcInterest(uint256 weightedRecordedDebt, uint256 period) internal pure returns (uint256) {
         return weightedRecordedDebt * period / 365 days / DECIMAL_PRECISION;
@@ -302,7 +331,7 @@ contract BaseTest is TestAccounts {
         vm.stopPrank();
     }
 
-    function checkBelowCriticalThreshold(bool _true) public {
+    function checkBelowCriticalThreshold(bool _true) public view {
         uint256 price = priceFeed.getPrice();
         bool belowCriticalThreshold = troveManager.checkBelowCriticalThreshold(price);
         assertEq(belowCriticalThreshold, _true);
@@ -540,11 +569,11 @@ contract BaseTest is TestAccounts {
         return x > y ? x - y : y - x;
     }
 
-    function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin) public {
+    function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin) public pure {
         assertApproxEqAbs(_x, _y, _margin, "");
     }
 
-    function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin, string memory _reason) public {
+    function assertApproximatelyEqual(uint256 _x, uint256 _y, uint256 _margin, string memory _reason) public pure {
         assertApproxEqAbs(_x, _y, _margin, _reason);
     }
 

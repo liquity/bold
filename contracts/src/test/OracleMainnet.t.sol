@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity 0.8.18;
 
 import "./TestContracts/Accounts.sol";
@@ -16,9 +18,6 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 contract OraclesMainnet is TestAccounts {
-    uint256 public constant _24_HOURS = 86400;
-    uint256 public constant _48_HOURS = 172800;
-
     AggregatorV3Interface ethOracle;
     AggregatorV3Interface stethOracle;
     AggregatorV3Interface rethOracle;
@@ -38,17 +37,8 @@ contract OraclesMainnet is TestAccounts {
     IStaderOracle staderOracle;
 
     TestDeployer.LiquityContracts[] contractsArray;
-    TestDeployer.MockCollaterals mockCollaterals;
     ICollateralRegistry collateralRegistry;
     IBoldToken boldToken;
-
-    /*
-    struct DeploymentParamsMainnet {
-        ExternalAddresses externalAddresses;
-        TestDeployer.TroveManagerParams[] troveManagerParamsArray;
-        OracleParams oracleParams;
-    }
-    */
 
     struct StoredOracle {
         AggregatorV3Interface aggregator;
@@ -65,51 +55,32 @@ contract OraclesMainnet is TestAccounts {
         (A, B, C, D, E, F) =
             (accountsList[0], accountsList[1], accountsList[2], accountsList[3], accountsList[4], accountsList[5]);
 
-        TestDeployer.DeploymentParamsMainnet memory deploymentParams;
-
         uint256 numCollaterals = 5;
         TestDeployer.TroveManagerParams memory tmParams =
             TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
-        deploymentParams.troveManagerParamsArray = new TestDeployer.TroveManagerParams[](numCollaterals);
-        for (uint256 i = 0; i < deploymentParams.troveManagerParamsArray.length; i++) {
-            deploymentParams.troveManagerParamsArray[i] = tmParams;
+        TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
+            new TestDeployer.TroveManagerParams[](numCollaterals);
+        for (uint256 i = 0; i < troveManagerParamsArray.length; i++) {
+            troveManagerParamsArray[i] = tmParams;
         }
 
-        deploymentParams.externalAddresses.ETHOracle = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        deploymentParams.externalAddresses.RETHOracle = 0x536218f9E9Eb48863970252233c8F271f554C2d0;
-        deploymentParams.externalAddresses.STETHOracle = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8;
-        deploymentParams.externalAddresses.ETHXOracle = 0xC5f8c4aB091Be1A899214c0C3636ca33DcA0C547;
-        deploymentParams.externalAddresses.WSTETHToken = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-        // Redstone Oracle with CL interface
-        // TODO: obtain the Chainlink market price feed and use that, when it's ready
-        deploymentParams.externalAddresses.OSETHOracle = 0x66ac817f997Efd114EDFcccdce99F3268557B32C;
-
-        deploymentParams.externalAddresses.RETHToken = 0xae78736Cd615f374D3085123A210448E74Fc6393;
-        deploymentParams.externalAddresses.StaderOracle = 0xF64bAe65f6f2a5277571143A24FaaFDFC0C2a737;
-        deploymentParams.externalAddresses.OsTokenVaultController = 0x2A261e60FB14586B474C208b1B7AC6D0f5000306;
-
-        ethOracle = AggregatorV3Interface(deploymentParams.externalAddresses.ETHOracle);
-        rethOracle = AggregatorV3Interface(deploymentParams.externalAddresses.RETHOracle);
-        stethOracle = AggregatorV3Interface(deploymentParams.externalAddresses.STETHOracle);
-        ethXOracle = AggregatorV3Interface(deploymentParams.externalAddresses.ETHXOracle);
-        osEthOracle = AggregatorV3Interface(deploymentParams.externalAddresses.OSETHOracle);
-
-        rETHToken = IRETHToken(deploymentParams.externalAddresses.RETHToken);
-        staderOracle = IStaderOracle(deploymentParams.externalAddresses.StaderOracle);
-        osTokenVaultController = IOsTokenVaultController(deploymentParams.externalAddresses.OsTokenVaultController);
-
-        wstETH = IWSTETH(deploymentParams.externalAddresses.WSTETHToken);
-
-        deploymentParams.oracleParams.ethUsdStalenessThreshold = _24_HOURS;
-        deploymentParams.oracleParams.stEthUsdStalenessThreshold = _24_HOURS;
-        deploymentParams.oracleParams.rEthEthStalenessThreshold = _48_HOURS;
-        deploymentParams.oracleParams.ethXEthStalenessThreshold = _48_HOURS;
-        deploymentParams.oracleParams.osEthEthStalenessThreshold = _48_HOURS;
-
         TestDeployer deployer = new TestDeployer();
-        TestDeployer.DeploymentResultMainnet memory result = deployer.deployAndConnectContractsMainnet(deploymentParams);
+        TestDeployer.DeploymentResultMainnet memory result =
+            deployer.deployAndConnectContractsMainnet(troveManagerParamsArray);
         collateralRegistry = result.collateralRegistry;
         boldToken = result.boldToken;
+
+        ethOracle = AggregatorV3Interface(result.externalAddresses.ETHOracle);
+        rethOracle = AggregatorV3Interface(result.externalAddresses.RETHOracle);
+        stethOracle = AggregatorV3Interface(result.externalAddresses.STETHOracle);
+        ethXOracle = AggregatorV3Interface(result.externalAddresses.ETHXOracle);
+        osEthOracle = AggregatorV3Interface(result.externalAddresses.OSETHOracle);
+
+        rETHToken = IRETHToken(result.externalAddresses.RETHToken);
+        staderOracle = IStaderOracle(result.externalAddresses.StaderOracle);
+        osTokenVaultController = IOsTokenVaultController(result.externalAddresses.OsTokenVaultController);
+
+        wstETH = IWSTETH(result.externalAddresses.WSTETHToken);
 
         // Record contracts
         for (uint256 c = 0; c < numCollaterals; c++) {
@@ -119,26 +90,17 @@ contract OraclesMainnet is TestAccounts {
         // Give all users all collaterals
         uint256 initialColl = 1000_000e18;
         for (uint256 i = 0; i < 6; i++) {
-            deal(address(result.mockCollaterals.WETH), accountsList[i], initialColl);
-            deal(address(result.mockCollaterals.RETH), accountsList[i], initialColl);
-            deal(address(result.mockCollaterals.WSTETH), accountsList[i], initialColl);
-            deal(address(result.mockCollaterals.ETHX), accountsList[i], initialColl);
-            deal(address(result.mockCollaterals.OSETH), accountsList[i], initialColl);
+            for (uint256 j = 0; j < numCollaterals; j++) {
+                deal(address(contractsArray[j].collToken), accountsList[i], initialColl);
+                vm.startPrank(accountsList[i]);
+                // Approve all Borrower Ops to use the user's WETH funds
+                contractsArray[0].collToken.approve(address(contractsArray[j].borrowerOperations), type(uint256).max);
+                // Approve Borrower Ops in LST branches to use the user's respective LST funds
+                contractsArray[j].collToken.approve(address(contractsArray[j].borrowerOperations), type(uint256).max);
+                vm.stopPrank();
+            }
 
             vm.startPrank(accountsList[i]);
-            // Approve all Borrower Ops to use the user's WETH funds
-            result.mockCollaterals.WETH.approve(address(contractsArray[0].borrowerOperations), initialColl);
-            result.mockCollaterals.WETH.approve(address(contractsArray[1].borrowerOperations), initialColl);
-            result.mockCollaterals.WETH.approve(address(contractsArray[2].borrowerOperations), initialColl);
-            result.mockCollaterals.WETH.approve(address(contractsArray[3].borrowerOperations), initialColl);
-            result.mockCollaterals.WETH.approve(address(contractsArray[4].borrowerOperations), initialColl);
-
-            // Approve Borrower Ops in LST branches to use the user's respective LST funds
-            result.mockCollaterals.RETH.approve(address(contractsArray[1].borrowerOperations), initialColl);
-            result.mockCollaterals.WSTETH.approve(address(contractsArray[2].borrowerOperations), initialColl);
-            result.mockCollaterals.ETHX.approve(address(contractsArray[3].borrowerOperations), initialColl);
-            result.mockCollaterals.OSETH.approve(address(contractsArray[4].borrowerOperations), initialColl);
-            vm.stopPrank();
         }
 
         wethPriceFeed = IWETHPriceFeed(address(contractsArray[0].priceFeed));
@@ -166,7 +128,7 @@ contract OraclesMainnet is TestAccounts {
 
     // --- lastGoodPrice set on deployment ---
 
-    function testSetLastGoodPriceOnDeploymentWETH() public {
+    function testSetLastGoodPriceOnDeploymentWETH() public view {
         uint256 lastGoodPriceWeth = wethPriceFeed.lastGoodPrice();
         assertGt(lastGoodPriceWeth, 0);
 
@@ -175,7 +137,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(lastGoodPriceWeth, latestAnswerEthUsd);
     }
 
-    function testSetLastGoodPriceOnDeploymentRETH() public {
+    function testSetLastGoodPriceOnDeploymentRETH() public view {
         uint256 lastGoodPriceReth = rethPriceFeed.lastGoodPrice();
         assertGt(lastGoodPriceReth, 0);
 
@@ -194,7 +156,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(lastGoodPriceReth, expectedPrice);
     }
 
-    function testSetLastGoodPriceOnDeploymentETHX() public {
+    function testSetLastGoodPriceOnDeploymentETHX() public view {
         uint256 lastGoodPriceEthX = ethXPriceFeed.lastGoodPrice();
         assertGt(lastGoodPriceEthX, 0);
 
@@ -214,7 +176,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(lastGoodPriceEthX, expectedPrice);
     }
 
-    function testSetLastGoodPriceOnDeploymentOSETH() public {
+    function testSetLastGoodPriceOnDeploymentOSETH() public view {
         uint256 lastGoodPriceOsUsd = osEthPriceFeed.lastGoodPrice();
         assertGt(lastGoodPriceOsUsd, 0);
 
@@ -233,7 +195,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(lastGoodPriceOsUsd, expectedPrice);
     }
 
-    function testSetLastGoodPriceOnDeploymentWSTETH() public {
+    function testSetLastGoodPriceOnDeploymentWSTETH() public view {
         uint256 lastGoodPriceWsteth = wstethPriceFeed.lastGoodPrice();
         assertGt(lastGoodPriceWsteth, 0);
 

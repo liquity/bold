@@ -2,18 +2,16 @@ import type { TroveId } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 
-import {
-  BoldTokenContract,
-  BorrowerOperationsContract,
-  CollTokenContract,
-  StabilityPoolContract,
-  TroveManagerContract,
-} from "@/src/contracts";
+import { useCollateralContract, useProtocolContract } from "@/src/contracts";
 import { ADDRESS_ZERO } from "@/src/eth-utils";
 import { useWatchQueries } from "@/src/wagmi-utils";
+import { useEffect, useState } from "react";
 import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, maxUint256, parseAbiParameters } from "viem";
 import { useAccount, useBalance, useReadContract, useReadContracts, useWriteContract } from "wagmi";
+
+// TODO: make the collateral index dynamic
+const collSymbol = "ETH" as const;
 
 // As defined in ITroveManager.sol
 export type TroveStatus =
@@ -59,35 +57,39 @@ export function troveStatusToLabel(status: TroveStatus) {
 }
 
 export function useTroveDetails(troveId: TroveId = 0n) {
+  const TroveManagerContract = useCollateralContract(collSymbol, "TroveManager");
+
   const read = useReadContracts({
     allowFailure: false,
-    contracts: [
-      {
-        ...TroveManagerContract,
-        functionName: "getTroveStatus",
-        args: [troveId],
-      },
-      {
-        ...TroveManagerContract,
-        functionName: "getTroveStake",
-        args: [troveId],
-      },
-      {
-        ...TroveManagerContract,
-        functionName: "getTroveDebt",
-        args: [troveId],
-      },
-      {
-        ...TroveManagerContract,
-        functionName: "getTroveColl",
-        args: [troveId],
-      },
-      {
-        ...TroveManagerContract,
-        functionName: "getTroveAnnualInterestRate",
-        args: [troveId],
-      },
-    ],
+    contracts: TroveManagerContract
+      ? [
+        {
+          ...TroveManagerContract,
+          functionName: "getTroveStatus",
+          args: [troveId],
+        },
+        {
+          ...TroveManagerContract,
+          functionName: "getTroveStake",
+          args: [troveId],
+        },
+        {
+          ...TroveManagerContract,
+          functionName: "getTroveDebt",
+          args: [troveId],
+        },
+        {
+          ...TroveManagerContract,
+          functionName: "getTroveColl",
+          args: [troveId],
+        },
+        {
+          ...TroveManagerContract,
+          functionName: "getTroveAnnualInterestRate",
+          args: [troveId],
+        },
+      ]
+      : [],
   });
 
   useWatchQueries([read]);
@@ -109,6 +111,91 @@ export function useTroveDetails(troveId: TroveId = 0n) {
   return { ...read, data };
 }
 
+export function useFindAvailableTroveIndex(owner?: Address | null):
+  | {
+    data: number;
+    error: undefined;
+    status: "success";
+  }
+  | {
+    data: undefined;
+    error: undefined;
+    status: "loading";
+  }
+  | {
+    data: undefined;
+    error: Error;
+    status: "error";
+  }
+  | {
+    data: undefined;
+    error: undefined;
+    status: "idle";
+  }
+{
+  const [troveIndex, setTroveIndex] = useState(0);
+
+  // reset trove search when owner changes
+  useEffect(() => {
+    if (owner) {
+      setTroveIndex(0);
+    }
+  }, [owner]);
+
+  const TroveManagerContract = useCollateralContract(collSymbol, "TroveManager");
+
+  const read = useReadContract(
+    owner
+      ? {
+        ...TroveManagerContract,
+        functionName: "checkTroveIsOpen",
+        args: [getTroveId(owner, BigInt(troveIndex))],
+      }
+      : {},
+  );
+
+  useWatchQueries([read]);
+
+  if (owner === null || owner === undefined) {
+    return {
+      data: undefined,
+      error: undefined,
+      status: "idle",
+    };
+  }
+
+  if (read.data === true) {
+    setTroveIndex(troveIndex + 1);
+    return {
+      data: undefined,
+      error: undefined,
+      status: "loading",
+    };
+  }
+
+  if (read.data === false) {
+    return {
+      data: troveIndex,
+      error: undefined,
+      status: "success",
+    };
+  }
+
+  if (read.status === "error") {
+    return {
+      data: undefined,
+      error: read.error,
+      status: "error",
+    };
+  }
+
+  return {
+    data: undefined,
+    error: undefined,
+    status: "loading",
+  };
+}
+
 export function useOpenTrove(owner: Address, {
   ownerIndex,
   maxFeePercentage,
@@ -127,50 +214,64 @@ export function useOpenTrove(owner: Address, {
   ethAmount: bigint; // amount * 10^18
 }) {
   const { writeContract } = useWriteContract();
-  return () => (
-    writeContract({
-      ...BorrowerOperationsContract,
-      functionName: "openTrove",
-      args: [
-        owner,
-        ownerIndex,
-        maxFeePercentage,
-        ethAmount,
-        boldAmount,
-        upperHint,
-        lowerHint,
-        interestRate,
-      ],
-    })
-  );
+
+  const BorrowerOperationsContract = useCollateralContract(collSymbol, "BorrowerOperations");
+
+  return () => {
+    if (BorrowerOperationsContract) {
+      writeContract({
+        ...BorrowerOperationsContract,
+        functionName: "openTrove",
+        args: [
+          owner,
+          ownerIndex,
+          maxFeePercentage,
+          ethAmount,
+          boldAmount,
+          upperHint,
+          lowerHint,
+          interestRate,
+        ],
+      });
+    }
+  };
 }
 
 export function useCloseTrove(troveId: TroveId) {
   const { writeContract } = useWriteContract();
-  return () => (
-    writeContract({
-      ...BorrowerOperationsContract,
-      functionName: "closeTrove",
-      args: [troveId],
-    })
-  );
+
+  const BorrowerOperationsContract = useCollateralContract(collSymbol, "BorrowerOperations");
+
+  return () => {
+    if (BorrowerOperationsContract) {
+      writeContract({
+        ...BorrowerOperationsContract,
+        functionName: "closeTrove",
+        args: [troveId],
+      });
+    }
+  };
 }
 
 export function useTroveRewards(troveId: TroveId) {
+  const TroveManagerContract = useCollateralContract(collSymbol, "TroveManager");
+
   const read = useReadContracts({
     allowFailure: false,
-    contracts: [
-      {
-        ...TroveManagerContract,
-        functionName: "getPendingCollReward",
-        args: [troveId],
-      },
-      {
-        ...TroveManagerContract,
-        functionName: "getPendingBoldDebtReward",
-        args: [troveId],
-      },
-    ],
+    contracts: TroveManagerContract
+      ? [
+        {
+          ...TroveManagerContract,
+          functionName: "getPendingCollReward",
+          args: [troveId],
+        },
+        {
+          ...TroveManagerContract,
+          functionName: "getPendingBoldDebtReward",
+          args: [troveId],
+        },
+      ]
+      : [],
   });
   useWatchQueries([read]);
 
@@ -193,6 +294,8 @@ export function useTroveRewards(troveId: TroveId) {
 }
 
 export function useStabilityPoolStats() {
+  const StabilityPoolContract = useCollateralContract(collSymbol, "StabilityPool");
+
   const read = useReadContracts({
     allowFailure: false,
     contracts: [
@@ -230,24 +333,16 @@ export function getTroveId(owner: Address, ownerIndex: bigint | number) {
   )));
 }
 
-export function useTapCollTokenFaucet() {
-  const { writeContract } = useWriteContract();
-  return () => (
-    writeContract({
-      ...CollTokenContract,
-      functionName: "tap",
-      args: [],
-    })
-  );
-}
-
 export function useCollTokenAllowance() {
   const account = useAccount();
+
+  const BorrowerOperationsContract = useCollateralContract(collSymbol, "BorrowerOperations");
+  const CollTokenContract = useProtocolContract("BoldToken");
 
   const allowance = useReadContract({
     ...CollTokenContract,
     functionName: "allowance",
-    args: [account.address ?? ADDRESS_ZERO, BorrowerOperationsContract.address],
+    args: [account.address ?? ADDRESS_ZERO, BorrowerOperationsContract?.address ?? ADDRESS_ZERO],
   });
   useWatchQueries([allowance]);
 
@@ -256,7 +351,7 @@ export function useCollTokenAllowance() {
     collTokenWrite.writeContract({
       ...CollTokenContract,
       functionName: "approve",
-      args: [BorrowerOperationsContract.address, amount],
+      args: [BorrowerOperationsContract?.address ?? ADDRESS_ZERO, amount],
     })
   );
 
@@ -274,6 +369,9 @@ export function useAccountBalances(address: Address | undefined, updateInterval?
       select: ({ value }) => [value ?? 0n, 18] as const,
     },
   });
+
+  const BoldTokenContract = useProtocolContract("BoldToken");
+  const CollTokenContract = useCollateralContract(collSymbol, "Token");
 
   const readTokenBalances = useReadContracts({
     contracts: [

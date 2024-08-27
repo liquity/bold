@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.18;
 
 import "../Dependencies/AddRemoveManagers.sol";
@@ -168,6 +170,51 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(annualInterestRate, newAnnualInterestRate, "Wrong interest rate");
     }
 
+    function testRemoveBatchManagerFailsIfNewRateIsTooLow() public {
+        uint256 troveId = openTroveAndJoinBatchManager();
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
+        LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
+        uint256 annualInterestRate = trove.annualInterestRate;
+
+        uint256 newAnnualInterestRate = 4e15;
+        assertEq(tmBatchManagerAddress, B, "Wrong batch manager in TM");
+        assertNotEq(newAnnualInterestRate, annualInterestRate, "New interest rate should be different");
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.InterestRateTooLow.selector);
+        borrowerOperations.removeFromBatch(troveId, newAnnualInterestRate, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
+    function testRemoveBatchManagerFailsIfNewRateIsTooHigh() public {
+        uint256 troveId = openTroveAndJoinBatchManager();
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
+        LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
+        uint256 annualInterestRate = trove.annualInterestRate;
+
+        uint256 newAnnualInterestRate = 101e16;
+        assertEq(tmBatchManagerAddress, B, "Wrong batch manager in TM");
+        assertNotEq(newAnnualInterestRate, annualInterestRate, "New interest rate should be different");
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.InterestRateTooHigh.selector);
+        borrowerOperations.removeFromBatch(troveId, newAnnualInterestRate, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
+    function testRemoveBatchManagerFailsIfTroveNotInBatch() public {
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
+
+        uint256 newAnnualInterestRate = 4e16;
+        assertEq(tmBatchManagerAddress, address(0), "Wrong batch manager in TM");
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.TroveNotInBatch.selector);
+        borrowerOperations.removeFromBatch(troveId, newAnnualInterestRate, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
     function testOnlyBorrowerCanSetBatchManager() public {
         registerBatchManager(A);
         registerBatchManager(B);
@@ -275,13 +322,30 @@ contract InterestBatchManagementTest is DevTestSetup {
     }
 
     function testLowerBatchManagementFeeDoesNotApplyRedistributionGains() public {
-        uint256 troveId = openTroveAndJoinBatchManager();
+        uint256 ATroveId = openTroveAndJoinBatchManager();
 
         // TODO: Generate redistributions and check below
+        // Open a trove to be liquidated and redistributed
+        priceFeed.setPrice(2000e18);
+        uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, 5e16);
+        // Price goes down
+        priceFeed.setPrice(1000e18);
+        // C is liquidated
+        liquidate(A, CTroveId);
+
+        // Check A has redistribution gains
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(ATroveId);
+        assertGt(troveData.redistBoldDebtGain, 0, "A should have redist gains");
+
+        uint256 troveRecordedDebtBefore = troveData.recordedDebt;
 
         vm.startPrank(B);
         borrowerOperations.lowerBatchManagementFee(10e14);
         vm.stopPrank();
+
+        troveData = troveManager.getLatestTroveData(ATroveId);
+        assertGt(troveData.redistBoldDebtGain, 0, "A should have redist gains");
+        assertEq(troveData.recordedDebt, troveRecordedDebtBefore, "Recorded debt should stay the same");
     }
 
     function testChangeBatchInterestRate() public {
@@ -351,15 +415,42 @@ contract InterestBatchManagementTest is DevTestSetup {
     }
 
     function testChangeBatchInterestRateDoesNotApplyRedistributionGains() public {
-        uint256 troveId = openTroveAndJoinBatchManager();
+        uint256 ATroveId = openTroveAndJoinBatchManager();
 
         // TODO: Generate redistributions and check below
+        // Open a trove to be liquidated and redistributed
+        priceFeed.setPrice(2000e18);
+        uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, 5e16);
+        // Price goes down
+        priceFeed.setPrice(1000e18);
+        // C is liquidated
+        liquidate(A, CTroveId);
 
-        vm.warp(block.timestamp + MIN_INTEREST_RATE_CHANGE_PERIOD);
+        // Check A has redistribution gains
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(ATroveId);
+        assertGt(troveData.redistBoldDebtGain, 0, "A should have redist gains");
 
+        troveData = troveManager.getLatestTroveData(ATroveId);
+
+        uint256 troveRecordedDebtBefore = troveData.recordedDebt;
+
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1 days);
+        troveData = troveManager.getLatestTroveData(ATroveId);
+
+        uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(ATroveId);
+        uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
         vm.startPrank(B);
         borrowerOperations.setBatchManagerAnnualInterestRate(6e16, 0, 0, 100000e18);
         vm.stopPrank();
+        troveData = troveManager.getLatestTroveData(ATroveId);
+
+        troveData = troveManager.getLatestTroveData(ATroveId);
+        assertGt(troveData.redistBoldDebtGain, 0, "A should have redist gains");
+        assertEq(
+            troveData.recordedDebt,
+            troveRecordedDebtBefore + troveAccruedInterest + batchAccruedManagementFee,
+            "Recorded debt mismatch"
+        );
     }
 
     function testSwitchFromOldToNewBatchManager() public {
@@ -780,7 +871,8 @@ contract InterestBatchManagementTest is DevTestSetup {
         // A opens trove and joins batch manager B
         uint256 ATroveId = openTroveAndJoinBatchManager(A, 100 ether, initialDebt, B, interestRate);
         uint256 ATroveEntireDebt = troveManager.getTroveEntireDebt(ATroveId);
-        uint256 expectedUpfrontFeeA = initialDebt * interestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
+        uint256 expectedUpfrontFeeA =
+            initialDebt * interestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
         assertEq(ATroveEntireDebt - initialDebt, expectedUpfrontFeeA, "Wrong upfront fee for A");
 
         vm.warp(block.timestamp + 10 days);
@@ -788,7 +880,8 @@ contract InterestBatchManagementTest is DevTestSetup {
         // C opens trove and joins batch manager B
         uint256 CTroveId = openTroveAndJoinBatchManager(C, 100 ether, 2000e18, B, interestRate);
         uint256 CTroveEntireDebt = troveManager.getTroveEntireDebt(CTroveId);
-        uint256 expectedUpfrontFeeC = initialDebt * interestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
+        uint256 expectedUpfrontFeeC =
+            initialDebt * interestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
         assertApproxEqAbs(CTroveEntireDebt - initialDebt, expectedUpfrontFeeC, 100, "Wrong upfront fee for C");
     }
 
@@ -804,7 +897,8 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 ATroveId = openTroveAndJoinBatchManager(A, 100 ether, initialDebt, B, interestRate);
         uint256 ATroveEntireDebt = troveManager.getTroveEntireDebt(ATroveId);
         uint256 avgInterestRate = (DWeightedDebt + initialDebt * interestRate) / (DInitialDebt + initialDebt);
-        uint256 expectedUpfrontFeeA = initialDebt * avgInterestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
+        uint256 expectedUpfrontFeeA =
+            initialDebt * avgInterestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
         assertEq(ATroveEntireDebt - initialDebt, expectedUpfrontFeeA, "Wrong upfront fee for A");
 
         vm.warp(block.timestamp + 10 days);
@@ -815,8 +909,10 @@ contract InterestBatchManagementTest is DevTestSetup {
         ATroveEntireDebt = troveManager.getTroveEntireDebt(ATroveId);
         uint256 DTroveEntireDebt = troveManager.getTroveEntireDebt(DTroveId);
         //avgInterestRate = (DWeightedDebt + (ATroveEntireDebt + initialDebt) * interestRate) / (DInitialDebt + ATroveEntireDebt + initialDebt);
-        avgInterestRate = (DWeightedDebt + (ATroveEntireDebt + initialDebt) * interestRate) / (DTroveEntireDebt + ATroveEntireDebt + initialDebt);
-        uint256 expectedUpfrontFeeC = initialDebt * avgInterestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
+        avgInterestRate = (DWeightedDebt + (ATroveEntireDebt + initialDebt) * interestRate)
+            / (DTroveEntireDebt + ATroveEntireDebt + initialDebt);
+        uint256 expectedUpfrontFeeC =
+            initialDebt * avgInterestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
         assertApproxEqAbs(CTroveEntireDebt - initialDebt, expectedUpfrontFeeC, 1, "Wrong upfront fee for C");
     }
 }

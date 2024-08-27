@@ -290,14 +290,16 @@ export function FooterInfoRiskLabel({
     : label;
 }
 
-export function FooterInfoEthPrice({
-  ethPriceUsd,
+export function FooterInfoCollPrice({
+  collName,
+  collPriceUsd,
 }: {
-  ethPriceUsd: Dnum;
+  collName: string;
+  collPriceUsd: Dnum;
 }) {
   return (
     <Field.FooterInfo
-      label="ETH Price"
+      label={`${collName} Price`}
       value={
         <HFlex gap={4}>
           <span
@@ -305,7 +307,7 @@ export function FooterInfoEthPrice({
               fontVariantNumeric: "tabular-nums",
             })}
           >
-            ${dn.format(ethPriceUsd, { digits: 2, trailingZeros: true })}
+            ${dn.format(collPriceUsd, { digits: 2, trailingZeros: true })}
           </span>
           <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.ethPrice)} />
         </HFlex>
@@ -341,5 +343,5 @@ Field.FooterInfoLoanToValue = FooterInfoLoanToValue;
 Field.FooterInfoRedemptionRisk = FooterInfoRedemptionRisk;
 Field.FooterInfoRiskLabel = FooterInfoRiskLabel;
 Field.FooterInfoWarnLevel = FooterInfoWarnLevel;
-Field.FooterInfoEthPrice = FooterInfoEthPrice;
+Field.FooterInfoCollPrice = FooterInfoCollPrice;
 Field.FooterInfoMaxLtv = FooterInfoMaxLtv;
