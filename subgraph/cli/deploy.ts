@@ -57,7 +57,6 @@ export async function main() {
 
   // network preset: local
   if (networkPreset === "local") {
-    // pnpm graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 liquity/bold -l v1
     options.graphNode ??= "http://localhost:8020/";
     options.ipfsNode ??= "http://localhost:5001/";
   }
