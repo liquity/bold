@@ -1,0 +1,48 @@
+type Collateral @entity {
+  id: ID!
+  token: Token!
+  minCollRatio: BigInt!
+  troves: [Trove!]! @derivedFrom(field: "collateral")
+  addresses: CollateralAddresses! @derivedFrom(field: "collateral")
+}
+
+type Token @entity (immutable: true) {
+  id: ID!
+  collateral: Collateral!
+  name: String!
+  symbol: String!
+  decimals: Int!
+}
+
+type CollateralAddresses @entity (immutable: true) {
+  id: ID!
+  collateral: Collateral!
+  activePool: Bytes!
+  borrowerOperations: Bytes!
+  defaultPool: Bytes!
+  priceFeed: Bytes!
+  sortedTroves: Bytes!
+  stabilityPool: Bytes!
+  token: Bytes!
+  troveManager: Bytes!
+}
+
+type Trove @entity {
+  id: ID!
+  troveId: BigInt!
+  borrower: Bytes!
+  debt: BigInt!
+  coll: BigInt!
+  stake: BigInt!
+  annualInterestRate: BigInt!
+  createdAt: BigInt!
+  closedAt: BigInt
+  collateral: Collateral!
+}
+
+type InterestRateBracket @entity {
+  id: ID!
+  rate: BigInt!
+  totalDebt: BigInt!
+  totalTroves: Int!
+}
