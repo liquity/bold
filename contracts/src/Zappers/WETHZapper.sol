@@ -187,7 +187,9 @@ contract WETHZapper is AddRemoveManagers {
 
         // ETH -> WETH
         if (_isCollIncrease) {
-            WETH.deposit{value: _collChange}();
+            IWETH WETHCached = WETH;
+            WETHCached.deposit{value: _collChange}();
+            WETHCached.approve(address(borrowerOperations), _collChange);
         }
 
         // TODO: version with Permit

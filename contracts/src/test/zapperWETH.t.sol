@@ -291,6 +291,56 @@ contract ZapperWETHTest is DevTestSetup {
         assertEq(B.balance, ethBalanceBeforeB, "B ETH bal mismatch");
     }
 
+    function testCanAdjustTroveAddCollAndBold() external {
+        uint256 ethAmount1 = 10 ether;
+        uint256 ethAmount2 = 1 ether;
+        uint256 boldAmount1 = 10000e18;
+        uint256 boldAmount2 = 1000e18;
+
+        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            boldAmount: boldAmount1,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount1 + ETH_GAS_COMPENSATION}(params);
+        // A sends Bold to B
+        boldToken.transfer(B, boldAmount2);
+        vm.stopPrank();
+
+        uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
+        uint256 ethBalanceBeforeA = A.balance;
+        uint256 boldBalanceBeforeB = boldToken.balanceOf(B);
+        uint256 ethBalanceBeforeB = B.balance;
+
+        // Add an add manager for the zapper
+        vm.startPrank(A);
+        wethZapper.setAddManager(troveId, B);
+        vm.stopPrank();
+
+        // Adjust (add coll and Bold)
+        vm.startPrank(B);
+        boldToken.approve(address(wethZapper), boldAmount2);
+        wethZapper.adjustTroveWithRawETH{value: ethAmount2}(troveId, ethAmount2, true, boldAmount2, false, boldAmount2);
+        vm.stopPrank();
+
+        assertEq(troveManager.getTroveEntireColl(troveId), ethAmount1 + ethAmount2, "Trove coll mismatch");
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId), boldAmount1 - boldAmount2, 2e18, "Trove  debt mismatch"
+        );
+        assertEq(boldToken.balanceOf(A), boldBalanceBeforeA, "A BOLD bal mismatch");
+        assertEq(A.balance, ethBalanceBeforeA, "A ETH bal mismatch");
+        assertEq(boldToken.balanceOf(B), boldBalanceBeforeB - boldAmount2, "B BOLD bal mismatch");
+        assertEq(B.balance, ethBalanceBeforeB - ethAmount2, "B ETH bal mismatch");
+    }
+
     // TODO: more adjustment combinations
     function testCanAdjustUnredeemableTroveWithdrawCollAndBold() external {
         uint256 ethAmount1 = 10 ether;
