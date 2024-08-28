@@ -159,7 +159,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     error NothingToLiquidate();
     error CallerNotBorrowerOperations();
     error CallerNotCollateralRegistry();
-    error TroveNotOpen(uint256 _troveId);
     error OnlyOneTroveLeft();
     error NotShutDown();
     error NotEnoughBoldBalance();
