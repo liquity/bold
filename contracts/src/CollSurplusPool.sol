@@ -13,9 +13,9 @@ contract CollSurplusPool is ICollSurplusPool {
     string public constant NAME = "CollSurplusPool";
 
     IERC20 public immutable collToken;
-    address public borrowerOperationsAddress;
-    address public troveManagerAddress;
-    address public activePoolAddress;
+    address public immutable borrowerOperationsAddress;
+    address public immutable troveManagerAddress;
+    address public immutable activePoolAddress;
 
     // deposited ether tracker
     uint256 internal collBalance;

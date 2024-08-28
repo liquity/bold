@@ -169,17 +169,14 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     event TroveNFTAddressChanged(address _newTroveNFTAddress);
     event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
-    event PriceFeedAddressChanged(address _newPriceFeedAddress);
     event BoldTokenAddressChanged(address _newBoldTokenAddress);
-    event ActivePoolAddressChanged(address _activePoolAddress);
-    event DefaultPoolAddressChanged(address _defaultPoolAddress);
     event StabilityPoolAddressChanged(address _stabilityPoolAddress);
     event GasPoolAddressChanged(address _gasPoolAddress);
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
-    constructor(IAddressesRegistry _addressesRegistry) {
+    constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) {
         CCR = _addressesRegistry.CCR();
         MCR = _addressesRegistry.MCR();
         SCR = _addressesRegistry.SCR();
@@ -188,12 +185,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         troveNFT = _addressesRegistry.troveNFT();
         borrowerOperations = _addressesRegistry.borrowerOperations();
-        activePool = _addressesRegistry.activePool();
-        defaultPool = _addressesRegistry.defaultPool();
         stabilityPool = _addressesRegistry.stabilityPool();
         gasPoolAddress = _addressesRegistry.gasPoolAddress();
         collSurplusPool = _addressesRegistry.collSurplusPool();
-        priceFeed = _addressesRegistry.priceFeed();
         boldToken = _addressesRegistry.boldToken();
         sortedTroves = _addressesRegistry.sortedTroves();
         WETH = _addressesRegistry.WETH();
@@ -201,12 +195,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         emit TroveNFTAddressChanged(address(troveNFT));
         emit BorrowerOperationsAddressChanged(address(borrowerOperations));
-        emit ActivePoolAddressChanged(address(activePool));
-        emit DefaultPoolAddressChanged(address(defaultPool));
         emit StabilityPoolAddressChanged(address(stabilityPool));
         emit GasPoolAddressChanged(gasPoolAddress);
         emit CollSurplusPoolAddressChanged(address(collSurplusPool));
-        emit PriceFeedAddressChanged(address(priceFeed));
         emit BoldTokenAddressChanged(address(boldToken));
         emit SortedTrovesAddressChanged(address(sortedTroves));
         emit CollateralRegistryAddressChanged(address(collateralRegistry));

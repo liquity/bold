@@ -13,7 +13,7 @@ contract TroveNFT is ERC721, ITroveNFT {
     string internal constant NAME = "TroveNFT"; // TODO
     string internal constant SYMBOL = "Lv2T"; // TODO
 
-    ITroveManager public troveManager;
+    ITroveManager public immutable troveManager;
 
     constructor(IAddressesRegistry _addressesRegistry) ERC721(NAME, SYMBOL) {
         troveManager = _addressesRegistry.troveManager();

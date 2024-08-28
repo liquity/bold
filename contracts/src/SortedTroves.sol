@@ -45,8 +45,8 @@ contract SortedTroves is ISortedTroves {
     event TroveManagerAddressChanged(address _troveManagerAddress);
     event BorrowerOperationsAddressChanged(address _borrowerOperationsAddress);
 
-    address public borrowerOperationsAddress;
-    ITroveManager public troveManager;
+    address public immutable borrowerOperationsAddress;
+    ITroveManager public immutable troveManager;
 
     // Information for a node in the list
     struct Node {

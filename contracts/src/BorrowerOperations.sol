@@ -151,18 +151,15 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error MinInterestRateChangePeriodTooLow();
 
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event ActivePoolAddressChanged(address _activePoolAddress);
-    event DefaultPoolAddressChanged(address _defaultPoolAddress);
     event GasPoolAddressChanged(address _gasPoolAddress);
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
-    event PriceFeedAddressChanged(address _newPriceFeedAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
 
     event ShutDown(uint256 _tcr);
     event ShutDownFromOracleFailure(address _oracleAddress);
 
-    constructor(IAddressesRegistry _addressesRegistry) AddRemoveManagers(_addressesRegistry) {
+    constructor(IAddressesRegistry _addressesRegistry) AddRemoveManagers(_addressesRegistry) LiquityBase(_addressesRegistry) {
         // This makes impossible to open a trove with zero withdrawn Bold
         assert(MIN_DEBT > 0);
 
@@ -175,20 +172,14 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         MCR = _addressesRegistry.MCR();
 
         troveManager = _addressesRegistry.troveManager();
-        activePool = _addressesRegistry.activePool();
-        defaultPool = _addressesRegistry.defaultPool();
         gasPoolAddress = _addressesRegistry.gasPoolAddress();
         collSurplusPool = _addressesRegistry.collSurplusPool();
-        priceFeed = _addressesRegistry.priceFeed();
         sortedTroves = _addressesRegistry.sortedTroves();
         boldToken = _addressesRegistry.boldToken();
 
         emit TroveManagerAddressChanged(address(troveManager));
-        emit ActivePoolAddressChanged(address(activePool));
-        emit DefaultPoolAddressChanged(address(defaultPool));
         emit GasPoolAddressChanged(gasPoolAddress);
         emit CollSurplusPoolAddressChanged(address(collSurplusPool));
-        emit PriceFeedAddressChanged(address(priceFeed));
         emit SortedTrovesAddressChanged(address(sortedTroves));
         emit BoldTokenAddressChanged(address(boldToken));
 

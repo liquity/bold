@@ -23,8 +23,8 @@ contract DefaultPool is IDefaultPool {
     string public constant NAME = "DefaultPool";
 
     IERC20 public immutable collToken;
-    address public troveManagerAddress;
-    address public activePoolAddress;
+    address public immutable troveManagerAddress;
+    address public immutable activePoolAddress;
     uint256 internal collBalance; // deposited Coll tracker
     uint256 internal BoldDebt; // debt
 
@@ -67,14 +67,13 @@ contract DefaultPool is IDefaultPool {
 
     function sendCollToActivePool(uint256 _amount) external override {
         _requireCallerIsTroveManager();
-        address activePool = activePoolAddress; // cache to save an SLOAD
         uint256 newCollBalance = collBalance - _amount;
         collBalance = newCollBalance;
         emit DefaultPoolCollBalanceUpdated(newCollBalance);
-        emit EtherSent(activePool, _amount);
+        emit EtherSent(activePoolAddress, _amount);
 
         // Send Coll to Active Pool and increase its recorded Coll balance
-        IActivePool(activePool).receiveColl(_amount);
+        IActivePool(activePoolAddress).receiveColl(_amount);
     }
 
     function receiveColl(uint256 _amount) external {

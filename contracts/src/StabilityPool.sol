@@ -136,11 +136,11 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     string public constant NAME = "StabilityPool";
 
     IERC20 public immutable collToken;
-    IBorrowerOperations public borrowerOperations;
-    ITroveManager public troveManager;
-    IBoldToken public boldToken;
+    IBorrowerOperations public immutable borrowerOperations;
+    ITroveManager public immutable troveManager;
+    IBoldToken public immutable boldToken;
     // Needed to check if there are pending liquidations
-    ISortedTroves public sortedTroves;
+    ISortedTroves public immutable sortedTroves;
 
     uint256 internal collBalance; // deposited ether tracker
 
@@ -208,27 +208,20 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event ActivePoolAddressChanged(address _newActivePoolAddress);
-    event DefaultPoolAddressChanged(address _newDefaultPoolAddress);
     event BoldTokenAddressChanged(address _newBoldTokenAddress);
     event SortedTrovesAddressChanged(address _newSortedTrovesAddress);
-    event PriceFeedAddressChanged(address _newPriceFeedAddress);
 
-    constructor(IAddressesRegistry _addressesRegistry) {
+    constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) {
         collToken = _addressesRegistry.collToken();
         borrowerOperations = _addressesRegistry.borrowerOperations();
         troveManager = _addressesRegistry.troveManager();
-        activePool = _addressesRegistry.activePool();
         boldToken = _addressesRegistry.boldToken();
         sortedTroves = _addressesRegistry.sortedTroves();
-        priceFeed = _addressesRegistry.priceFeed();
 
         emit BorrowerOperationsAddressChanged(address(borrowerOperations));
         emit TroveManagerAddressChanged(address(troveManager));
-        emit ActivePoolAddressChanged(address(activePool));
         emit BoldTokenAddressChanged(address(boldToken));
         emit SortedTrovesAddressChanged(address(sortedTroves));
-        emit PriceFeedAddressChanged(address(priceFeed));
 
         // Allow funds movements between Liquity contracts
         collToken.approve(address(borrowerOperations), type(uint256).max);
@@ -539,8 +532,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     }
 
     function _moveOffsetCollAndDebt(uint256 _collToAdd, uint256 _debtToOffset) internal {
-        IActivePool activePoolCached = activePool;
-
         // Cancel the liquidated Bold debt with the Bold in the stability pool
         _updateTotalBoldDeposits(0, _debtToOffset);
 
@@ -552,7 +543,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         collBalance = newCollBalance;
 
         // Pull Coll from Active Pool
-        activePoolCached.sendColl(address(this), _collToAdd);
+        activePool.sendColl(address(this), _collToAdd);
 
         emit StabilityPoolCollBalanceUpdated(newCollBalance);
     }
