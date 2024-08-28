@@ -321,8 +321,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.activePool = activePool;
         vars.boldToken = boldToken;
 
-        (vars.price, vars.newOracleFailureDetected) = priceFeed.fetchPrice();
-        _requireOraclesLive(vars.newOracleFailureDetected);
+        vars.price = _requireOraclesLive();
 
         // --- Checks ---
 
@@ -575,8 +574,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.activePool = activePool;
         vars.boldToken = boldToken;
 
-        (vars.price, vars.newOracleFailureDetected) = priceFeed.fetchPrice();
-        _requireOraclesLive(vars.newOracleFailureDetected);
+        vars.price = _requireOraclesLive();
         vars.isBelowCriticalThreshold = _checkBelowCriticalThreshold(vars.price, CCR);
 
         // --- Checks ---
@@ -932,8 +930,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             batch.annualInterestRate != _newAnnualInterestRate
                 && block.timestamp < batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
         ) {
-            (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
-            _requireOraclesLive(newOracleFailureDetected);
+            uint256 price = _requireOraclesLive();
 
             uint256 avgInterestRate = activePoolCached.getNewApproxAvgInterestRateFromTroveChange(batchChange);
             batchChange.upfrontFee = _calcUpfrontFee(newDebt, avgInterestRate);
@@ -1128,8 +1125,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         TroveChange memory _troveChange,
         uint256 _maxUpfrontFee
     ) internal returns (uint256) {
-        (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
-        _requireOraclesLive(newOracleFailureDetected);
+        uint256 price = _requireOraclesLive();
 
         uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(_troveChange);
         _troveChange.upfrontFee = _calcUpfrontFee(_troveEntireDebt, avgInterestRate);
@@ -1515,10 +1511,13 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
     }
 
-    function _requireOraclesLive(bool _newOracleFailureDetected) internal pure {
-        if (_newOracleFailureDetected) {
+    function _requireOraclesLive() internal returns (uint256) {
+        (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
+        if (newOracleFailureDetected) {
             revert NewOracleFailureDetected();
         }
+
+        return price;
     }
 
     // --- ICR and TCR getters ---

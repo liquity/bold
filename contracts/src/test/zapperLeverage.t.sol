@@ -363,7 +363,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         IPriceFeed _priceFeed
     ) internal returns (uint256) {
         LeverVars memory vars;
-        (uint256 price, ) = _priceFeed.fetchPrice();
+        (vars.price, ) = _priceFeed.fetchPrice();
         IExchange exchange = _leverageZapper.exchange();
 
         // This should be done in the frontend
@@ -429,7 +429,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         );
 
         // Checks
-        (uint256 price, ) = contractsArray[_branch].priceFeed.fetchPrice();
+        (vars.price, ) = contractsArray[_branch].priceFeed.fetchPrice();
         // coll
         assertApproxEqAbs(
             getTroveEntireColl(contractsArray[_branch].troveManager, vars.troveId),
