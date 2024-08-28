@@ -1,6 +1,8 @@
 import type { PositionLoan, TroveId } from "@/src/types";
 import type { ReactNode } from "react";
 
+import { INFINITY } from "@/src/characters";
+import { Value } from "@/src/comps/Value/Value";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
 import { formatRisk } from "@/src/formatting";
@@ -50,6 +52,7 @@ export function Position({
 
   const {
     ltv,
+    depositPreLeverage,
     leverageFactor,
     redemptionRisk,
     liquidationRisk,
@@ -133,25 +136,22 @@ export function Position({
                     gap: 4,
                   })}
                 >
-                  <div
-                    title={`Leverage factor: ${
-                      loanDetails.isLiquidatable || leverageFactor === null
-                        ? "∞"
-                        : `${roundToDecimal(leverageFactor, 3)}x`
-                    }`}
-                    className={css({
-                      fontSize: 16,
-                    })}
-                  >
-                    <div
-                      style={{
-                        color: ltv && dn.lt(ltv, maxLtv) ? "inherit" : "var(--colors-negative)",
-                      }}
+                  <div>
+                    <Value
+                      negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
+                      title={`Leverage factor: ${
+                        loanDetails.status === "underwater" || leverageFactor === null
+                          ? INFINITY
+                          : `${roundToDecimal(leverageFactor, 3)}x`
+                      }`}
+                      className={css({
+                        fontSize: 16,
+                      })}
                     >
-                      {loanDetails.isLiquidatable || leverageFactor === null
-                        ? "∞"
+                      {loanDetails.status === "underwater" || leverageFactor === null
+                        ? INFINITY
                         : `${roundToDecimal(leverageFactor, 1)}x`}
-                    </div>
+                    </Value>
                   </div>
                   {
                     /*<div
@@ -201,8 +201,13 @@ export function Position({
       >
         {leverageMode
           ? (
-            <GridItem label="Debt">
-              {fmtnum(position.borrowed)} BOLD
+            <GridItem label="Net value">
+              <Value
+                negative={loanDetails.status === "underwater"}
+                title={`${fmtnum(depositPreLeverage)} ${TOKENS_BY_SYMBOL[position.collateral].name}`}
+              >
+                {fmtnum(depositPreLeverage)} {TOKENS_BY_SYMBOL[position.collateral].name}
+              </Value>
             </GridItem>
           )
           : (
@@ -213,16 +218,9 @@ export function Position({
             </GridItem>
           )}
         <GridItem label="Liq. price">
-          <div
-            className={css({
-              "--color-negative": "token(colors.negative)",
-            })}
-            style={{
-              color: ltv && dn.gt(ltv, maxLtv) ? "var(--color-negative)" : "inherit",
-            }}
-          >
-            ${fmtnum(loanDetails.liquidationPrice)}
-          </div>
+          <Value negative={ltv && dn.gt(ltv, maxLtv)}>
+            {fmtnum(loanDetails.liquidationPrice)}
+          </Value>
         </GridItem>
         <GridItem label="Interest rate">
           {fmtnum(dn.mul(position.interestRate, 100))}%

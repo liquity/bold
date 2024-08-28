@@ -2,6 +2,7 @@
 
 import type { PositionLoan } from "@/src/types";
 
+import { ARROW_RIGHT } from "@/src/characters";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import { InfoBox } from "@/src/comps/InfoBox/InfoBox";
@@ -33,9 +34,7 @@ import * as dn from "dnum";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type RelativeFieldMode = "add" | "remove";
-
-const ARROW_RIGHT = "→";
+type ValueUpdateMode = "add" | "remove";
 
 export function PanelUpdateBorrowPosition({ loan }: { loan: PositionLoan }) {
   const router = useRouter();
@@ -46,7 +45,7 @@ export function PanelUpdateBorrowPosition({ loan }: { loan: PositionLoan }) {
   const boldPriceUsd = usePrice("BOLD") ?? dn.from(0, 18);
 
   // deposit change
-  const [depositMode, setDepositMode] = useState<RelativeFieldMode>("add");
+  const [depositMode, setDepositMode] = useState<ValueUpdateMode>("add");
   const depositChange = useInputFieldValue((value) => dn.format(value));
 
   // deposit update
@@ -62,7 +61,7 @@ export function PanelUpdateBorrowPosition({ loan }: { loan: PositionLoan }) {
   );
 
   // debt change
-  const [debtMode, setDebtMode] = useState<RelativeFieldMode>("add");
+  const [debtMode, setDebtMode] = useState<ValueUpdateMode>("add");
   const debtChange = useInputFieldValue((value) => dn.format(value));
   const debtChangeUsd = debtChange.parsed && dn.mul(debtChange.parsed, boldPriceUsd);
 

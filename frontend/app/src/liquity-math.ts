@@ -110,8 +110,6 @@ export type LoanDetails = {
   depositToZero: Dnum | null;
   depositUsd: Dnum | null;
   interestRate: Dnum | null;
-  isLiquidatable: boolean;
-  isUnderwater: boolean;
   leverageFactor: number | null;
   liquidationPrice: Dnum | null;
   liquidationRisk: RiskLevel | null;
@@ -121,7 +119,12 @@ export type LoanDetails = {
   maxLtv: Dnum;
   maxLtvAllowed: Dnum;
   redemptionRisk: RiskLevel | null;
-  requiredCollateralToRecover: Dnum | null;
+  status:
+    | null
+    | "healthy"
+    | "at-risk" // above the max LTV allowed by the app when opening
+    | "liquidatable" // above the max LTV before liquidation
+    | "underwater"; // above 100% LTV
 };
 
 export function getLoanDetails(
@@ -135,24 +138,22 @@ export function getLoanDetails(
   const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED);
   const depositUsd = deposit && collPrice ? dn.mul(deposit, collPrice) : null;
 
-  let ltv: Dnum | null = null;
-  let isUnderwater = false;
-  let isLiquidatable = false;
-  let requiredCollateralToRecover: Dnum | null = null;
+  const ltv = debt && depositUsd && !dn.eq(depositUsd, 0)
+    ? dn.div(debt, depositUsd)
+    : deposit && dn.lt(deposit, 0)
+    ? dn.from(1, 18)
+    : null;
 
-  if (debt && depositUsd && dn.gt(depositUsd, 0) && dn.gt(debt, 0)) {
-    ltv = dn.div(debt, depositUsd);
-    isUnderwater = !dn.lt(ltv, dn.from(1, 18));
-    isLiquidatable = dn.gt(ltv, maxLtv);
-
-    if (isUnderwater && collPrice && deposit) {
-      const requiredDepositUsd = dn.mul(debt, minCollRatio);
-      requiredCollateralToRecover = dn.sub(
-        dn.div(requiredDepositUsd, collPrice),
-        deposit,
-      );
-    }
-  }
+  const status = match([ltv, deposit] as const)
+    .returnType<LoanDetails["status"]>()
+    .when(([ltv]) => !ltv, () => null)
+    .when(([ltv, deposit]) =>
+      ltv && deposit && (
+        dn.lt(deposit, 0) || dn.gt(ltv, 1)
+      ), () => "underwater")
+    .when(([ltv]) => ltv && dn.gt(ltv, maxLtv), () => "liquidatable")
+    .when(([ltv]) => ltv && dn.gt(ltv, maxLtvAllowed), () => "at-risk")
+    .otherwise(() => "healthy");
 
   const maxDebt = depositUsd && dn.mul(depositUsd, maxLtv);
 
@@ -163,6 +164,7 @@ export function getLoanDetails(
   const liquidationRisk = ltv
     ? getLiquidationRisk(ltv, maxLtv)
     : null;
+
   const redemptionRisk = getRedemptionRisk(interestRate);
 
   const leverageFactor = ltv
@@ -189,8 +191,6 @@ export function getLoanDetails(
     depositToZero,
     depositUsd,
     interestRate,
-    isLiquidatable,
-    isUnderwater,
     leverageFactor,
     liquidationPrice,
     liquidationRisk,
@@ -200,6 +200,6 @@ export function getLoanDetails(
     maxLtv,
     maxLtvAllowed,
     redemptionRisk,
-    requiredCollateralToRecover,
+    status,
   };
 }
