@@ -127,6 +127,14 @@ contract BaseTest is TestAccounts, Logging {
         return hintHelpers.predictJoinBatchInterestRateUpfrontFee(0, _troveId, _batchAddress);
     }
 
+    function forcePredictJoinBatchInterestRateUpfrontFee(uint256 _troveId, address _batchAddress)
+        internal
+        view
+        returns (uint256)
+    {
+        return hintHelpers.forcePredictJoinBatchInterestRateUpfrontFee(0, _troveId, _batchAddress);
+    }
+
     // Quick and dirty binary search instead of Newton's, because it's easier
     function findAmountToBorrowWithOpenTrove(uint256 targetDebt, uint256 interestRate)
         internal

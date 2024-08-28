@@ -216,15 +216,40 @@ contract HintHelpers is IHintHelpers {
             return 0;
         }
 
-        TroveChange memory newBatchTroveChange;
-        newBatchTroveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
-        newBatchTroveChange.batchAccruedManagementFee = batch.accruedManagementFee;
-        newBatchTroveChange.oldWeightedRecordedDebt = batch.weightedRecordedDebt + trove.weightedRecordedDebt;
-        newBatchTroveChange.newWeightedRecordedDebt =
-            (batch.entireDebtWithoutRedistribution + trove.entireDebt) * batch.annualInterestRate;
+        return _predictJoinBatchInterestRateUpfrontFee(activePool, trove, batch);
+    }
 
-        uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(newBatchTroveChange);
-        return _calcUpfrontFee(trove.entireDebt, avgInterestRate);
+    function forcePredictJoinBatchInterestRateUpfrontFee(uint256 _collIndex, uint256 _troveId, address _batchAddress)
+        external
+        view
+        returns (uint256)
+    {
+        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        IActivePool activePool = troveManager.activePool();
+        LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
+        LatestBatchData memory batch = troveManager.getLatestBatchData(_batchAddress);
+
+        return _predictJoinBatchInterestRateUpfrontFee(activePool, trove, batch);
+    }
+
+    function _predictJoinBatchInterestRateUpfrontFee(
+        IActivePool _activePool,
+        LatestTroveData memory _trove,
+        LatestBatchData memory _batch
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        TroveChange memory newBatchTroveChange;
+        newBatchTroveChange.appliedRedistBoldDebtGain = _trove.redistBoldDebtGain;
+        newBatchTroveChange.batchAccruedManagementFee = _batch.accruedManagementFee;
+        newBatchTroveChange.oldWeightedRecordedDebt = _batch.weightedRecordedDebt + _trove.weightedRecordedDebt;
+        newBatchTroveChange.newWeightedRecordedDebt =
+            (_batch.entireDebtWithoutRedistribution + _trove.entireDebt) * _batch.annualInterestRate;
+
+        uint256 avgInterestRate = _activePool.getNewApproxAvgInterestRateFromTroveChange(newBatchTroveChange);
+        return _calcUpfrontFee(_trove.entireDebt, avgInterestRate);
     }
 
     function predictRemoveFromBatchUpfrontFee(uint256 _collIndex, uint256 _troveId, uint256 _newInterestRate)
