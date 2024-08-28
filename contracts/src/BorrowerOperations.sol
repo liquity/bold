@@ -672,7 +672,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _moveTokensFromAdjustment(receiver, _troveChange, vars.boldToken, vars.activePool);
     }
 
-    function closeTrove(uint256 _troveId) external override returns (uint256) {
+    function closeTrove(uint256 _troveId) external override {
         ITroveManager troveManagerCached = troveManager;
         IActivePool activePoolCached = activePool;
         IBoldToken boldTokenCached = boldToken;
@@ -738,8 +738,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         activePoolCached.sendColl(receiver, trove.entireColl);
 
         _wipeTroveMappings(_troveId);
-
-        return trove.entireColl;
     }
 
     function applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint) public {

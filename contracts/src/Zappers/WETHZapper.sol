@@ -226,10 +226,10 @@ contract WETHZapper is AddRemoveManagers {
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
         boldToken.transferFrom(msg.sender, address(this), trove.entireDebt);
 
-        uint256 collLeft = borrowerOperations.closeTrove(_troveId);
+        borrowerOperations.closeTrove(_troveId);
 
-        WETH.withdraw(collLeft + ETH_GAS_COMPENSATION);
-        (bool success,) = receiver.call{value: collLeft + ETH_GAS_COMPENSATION}("");
+        WETH.withdraw(trove.entireColl + ETH_GAS_COMPENSATION);
+        (bool success,) = receiver.call{value: trove.entireColl + ETH_GAS_COMPENSATION}("");
         require(success, "WZ: Sending ETH failed");
     }
 
