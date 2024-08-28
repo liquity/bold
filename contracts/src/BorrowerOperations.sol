@@ -1413,7 +1413,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     function _requireDebtRepaymentGeCollWithdrawal(TroveChange memory _troveChange, uint256 _price) internal pure {
-        if ((_troveChange.debtDecrease < _troveChange.collDecrease * _price / DECIMAL_PRECISION)) {
+        if ((_troveChange.debtDecrease * DECIMAL_PRECISION < _troveChange.collDecrease * _price)) {
             revert RepaymentNotMatchingCollWithdrawal();
         }
     }
