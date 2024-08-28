@@ -6,9 +6,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./Interfaces/IStabilityPool.sol";
 import "./Interfaces/IAddressesRegistry.sol";
-import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/IStabilityPoolEvents.sol";
-import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ISortedTroves.sol";
@@ -136,7 +134,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     string public constant NAME = "StabilityPool";
 
     IERC20 public immutable collToken;
-    IBorrowerOperations public immutable borrowerOperations;
     ITroveManager public immutable troveManager;
     IBoldToken public immutable boldToken;
     // Needed to check if there are pending liquidations
@@ -206,25 +203,19 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     // --- Events ---
 
-    event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event BoldTokenAddressChanged(address _newBoldTokenAddress);
     event SortedTrovesAddressChanged(address _newSortedTrovesAddress);
 
     constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) {
         collToken = _addressesRegistry.collToken();
-        borrowerOperations = _addressesRegistry.borrowerOperations();
         troveManager = _addressesRegistry.troveManager();
         boldToken = _addressesRegistry.boldToken();
         sortedTroves = _addressesRegistry.sortedTroves();
 
-        emit BorrowerOperationsAddressChanged(address(borrowerOperations));
         emit TroveManagerAddressChanged(address(troveManager));
         emit BoldTokenAddressChanged(address(boldToken));
         emit SortedTrovesAddressChanged(address(sortedTroves));
-
-        // Allow funds movements between Liquity contracts
-        collToken.approve(address(borrowerOperations), type(uint256).max);
     }
 
     // --- Getters for public variables. Required by IPool interface ---
