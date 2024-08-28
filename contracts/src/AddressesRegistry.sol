@@ -6,10 +6,11 @@ import "./Dependencies/Ownable.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 
 contract AddressesRegistry is Ownable, IAddressesRegistry {
-    IERC20 public collToken;
+    IERC20Metadata public collToken;
     IBorrowerOperations public borrowerOperations;
     ITroveManager public troveManager;
     ITroveNFT public troveNFT;
+    IMetadataNFT public metadataNFT;
     IStabilityPool public stabilityPool;
     IPriceFeed public priceFeed;
     IActivePool public activePool;
@@ -49,6 +50,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     event BorrowerOperationsAddressChanged(address _borrowerOperationsAddress);
     event TroveManagerAddressChanged(address _troveManagerAddress);
     event TroveNFTAddressChanged(address _troveNFTAddress);
+    event MetadataNFTAddressChanged(address _metadataNFTAddress);
     event StabilityPoolAddressChanged(address _stabilityPoolAddress);
     event PriceFeedAddressChanged(address _priceFeedAddress);
     event ActivePoolAddressChanged(address _activePoolAddress);
@@ -90,6 +92,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         borrowerOperations = _vars.borrowerOperations;
         troveManager = _vars.troveManager;
         troveNFT = _vars.troveNFT;
+        metadataNFT = _vars.metadataNFT;
         stabilityPool = _vars.stabilityPool;
         priceFeed = _vars.priceFeed;
         activePool = _vars.activePool;
@@ -108,6 +111,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         emit BorrowerOperationsAddressChanged(address(_vars.borrowerOperations));
         emit TroveManagerAddressChanged(address(_vars.troveManager));
         emit TroveNFTAddressChanged(address(_vars.troveNFT));
+        emit MetadataNFTAddressChanged(address(_vars.metadataNFT));
         emit StabilityPoolAddressChanged(address(_vars.stabilityPool));
         emit PriceFeedAddressChanged(address(_vars.priceFeed));
         emit ActivePoolAddressChanged(address(_vars.activePool));

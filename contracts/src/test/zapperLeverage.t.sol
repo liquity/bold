@@ -302,7 +302,9 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         assertApproxEqAbs(boldToken.balanceOf(A), 0, 15, "BOLD bal mismatch");
         if (lst) {
             assertEq(A.balance, ethBalanceBefore - ETH_GAS_COMPENSATION, "ETH bal mismatch");
-            assertEq(contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore - collAmount, "Coll bal mismatch");
+            assertEq(
+                contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore - collAmount, "Coll bal mismatch"
+            );
         } else {
             assertEq(A.balance, ethBalanceBefore - ETH_GAS_COMPENSATION - collAmount, "ETH bal mismatch");
             assertEq(contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
@@ -537,8 +539,9 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         uint256 collAmount = 10 ether;
         uint256 initialLeverageRatio = 2e18;
 
-        uint256 troveId =
-            openLeveragedTrove(_leverageZapper, collAmount, initialLeverageRatio, contractsArray[_branch].priceFeed, _branch > 0);
+        uint256 troveId = openLeveragedTrove(
+            _leverageZapper, collAmount, initialLeverageRatio, contractsArray[_branch].priceFeed, _branch > 0
+        );
         uint256 initialDebt = getTroveEntireDebt(contractsArray[_branch].troveManager, troveId);
 
         uint256 newLeverageRatio = 1.5e18;
