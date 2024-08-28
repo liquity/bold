@@ -145,6 +145,7 @@ export function getLoanDetails(
     : null;
 
   const status = match([ltv, deposit] as const)
+    .returnType<LoanDetails["status"]>()
     .when(([ltv]) => !ltv, () => null)
     .when(([ltv, deposit]) =>
       ltv && deposit && (
