@@ -27,9 +27,9 @@ contract ActivePool is IActivePool {
     string public constant NAME = "ActivePool";
 
     IERC20 public immutable collToken;
-    address public borrowerOperationsAddress;
-    address public troveManagerAddress;
-    address public defaultPoolAddress;
+    address public immutable borrowerOperationsAddress;
+    address public immutable troveManagerAddress;
+    address public immutable defaultPoolAddress;
 
     IBoldToken boldToken;
 
@@ -173,10 +173,9 @@ contract ActivePool is IActivePool {
     function sendCollToDefaultPool(uint256 _amount) external override {
         _requireCallerIsTroveManager();
 
-        address defaultPoolAddressCached = defaultPoolAddress;
-        _accountForSendColl(defaultPoolAddressCached, _amount);
+        _accountForSendColl(defaultPoolAddress, _amount);
 
-        IDefaultPool(defaultPoolAddressCached).receiveColl(_amount);
+        IDefaultPool(defaultPoolAddress).receiveColl(_amount);
     }
 
     function _accountForSendColl(address _account, uint256 _amount) internal {
