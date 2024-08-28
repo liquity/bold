@@ -15,7 +15,6 @@ contract CollSurplusPool is ICollSurplusPool {
     IERC20 public immutable collToken;
     address public immutable borrowerOperationsAddress;
     address public immutable troveManagerAddress;
-    address public immutable activePoolAddress;
 
     // deposited ether tracker
     uint256 internal collBalance;
@@ -26,7 +25,6 @@ contract CollSurplusPool is ICollSurplusPool {
 
     event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event ActivePoolAddressChanged(address _newActivePoolAddress);
 
     event CollBalanceUpdated(address indexed _account, uint256 _newBalance);
     event CollSent(address _to, uint256 _amount);
@@ -35,11 +33,9 @@ contract CollSurplusPool is ICollSurplusPool {
         collToken = _addressesRegistry.collToken();
         borrowerOperationsAddress = address(_addressesRegistry.borrowerOperations());
         troveManagerAddress = address(_addressesRegistry.troveManager());
-        activePoolAddress = address(_addressesRegistry.activePool());
 
         emit BorrowerOperationsAddressChanged(borrowerOperationsAddress);
         emit TroveManagerAddressChanged(troveManagerAddress);
-        emit ActivePoolAddressChanged(activePoolAddress);
     }
 
     /* Returns the collBalance state variable
