@@ -914,6 +914,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         trove.entireDebt = trove.recordedDebt + trove.redistBoldDebtGain + trove.accruedInterest;
         trove.entireColl = Troves[_troveId].coll + trove.redistCollGain;
         trove.lastInterestRateAdjTime = Troves[_troveId].lastInterestRateAdjTime;
+        trove.interestBatchManager = Troves[_troveId].interestBatchManager;
     }
 
     function _getLatestTroveDataFromBatch(

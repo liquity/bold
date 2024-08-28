@@ -3,6 +3,7 @@
 pragma solidity 0.8.18;
 
 struct LatestTroveData {
+    address interestBatchManager;
     uint256 entireDebt;
     uint256 entireColl;
     uint256 redistBoldDebtGain;

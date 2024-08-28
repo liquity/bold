@@ -135,6 +135,7 @@ contract MultiTroveGetter is IMultiTroveGetter {
             LatestTroveData memory trove = troveManager.getLatestTroveData(currId);
             data[i].interestRate = trove.annualInterestRate;
             data[i].debt = trove.entireDebt;
+            data[i].interestBatchManager = trove.interestBatchManager;
         }
     }
 }
