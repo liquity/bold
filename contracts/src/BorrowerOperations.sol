@@ -889,7 +889,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         batchChange.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
         batchChange.oldWeightedRecordedBatchManagementFee = batch.weightedRecordedBatchManagementFee;
         batchChange.newWeightedRecordedBatchManagementFee =
-            batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
+            batch.entireDebtWithoutRedistribution * _newAnnualManagementFee;
 
         activePool.mintAggInterestAndAccountForTroveChange(batchChange, msg.sender);
     }
