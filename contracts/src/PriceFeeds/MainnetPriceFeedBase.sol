@@ -34,27 +34,32 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
 
     constructor(address _owner) Ownable(_owner) {}
 
+    // TODO: remove this and set address in constructor, since we'll use CREATE2
     function setAddresses(address _borrowOperationsAddress) external onlyOwner {
         borrowerOperations = IBorrowerOperations(_borrowOperationsAddress);
 
         _renounceOwnership();
     }
 
-    function fetchPrice() public returns (uint256) {
-        if (priceFeedDisabled) return lastGoodPrice;
+    // fetchPrice returns:
+    // - The price 
+    // - A bool indicating whether a new oracle failure was detected in the call
+    function fetchPrice() public returns (uint256, bool) {
+        if (priceFeedDisabled) {return (lastGoodPrice, false);}
 
         return _fetchPrice();
     }
 
-    // An individual Pricefeed instance implements _fetchPrice according to the data sources it uses.
-    function _fetchPrice() internal virtual returns (uint256) {}
+    // An individual Pricefeed instance implements _fetchPrice according to the data sources it uses. Returns:
+     // - The price 
+    // - A bool indicating whether a new oracle failure was detected in the call
+    function _fetchPrice() internal virtual returns (uint256, bool) {}
 
     function _getOracleAnswer(Oracle memory _oracle) internal view returns (uint256, bool) {
         ChainlinkResponse memory chainlinkResponse = _getCurrentChainlinkResponse(_oracle.aggregator);
 
         uint256 scaledPrice;
         bool oracleIsDown;
-
         // Check oracle is serving an up-to-date and sensible price. If not, shut down this collateral branch.
         if (!_isValidChainlinkPrice(chainlinkResponse, _oracle.stalenessThreshold)) {
             oracleIsDown = true;
@@ -80,12 +85,12 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
     {
         // Secondly, try to get latest price data:
         try _aggregator.latestRoundData() returns (
-            uint80 roundId, int256 answer, uint256, /* startedAt */ uint256 timestamp, uint80 /* answeredInRound */
+            uint80 roundId, int256 answer, uint256, /* startedAt */ uint256 updatedAt, uint80 /* answeredInRound */
         ) {
             // If call to Chainlink succeeds, return the response and success = true
             chainlinkResponse.roundId = roundId;
             chainlinkResponse.answer = answer;
-            chainlinkResponse.timestamp = timestamp;
+            chainlinkResponse.timestamp = updatedAt;
             chainlinkResponse.success = true;
 
             return chainlinkResponse;

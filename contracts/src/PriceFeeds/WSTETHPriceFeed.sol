@@ -31,18 +31,18 @@ contract WSTETHPriceFeed is MainnetPriceFeedBase, IWSTETHPriceFeed {
         assert(priceFeedDisabled == false);
     }
 
-    function _fetchPrice() internal override returns (uint256) {
+    function _fetchPrice() internal override returns (uint256, bool) {
         (uint256 stEthUsdPrice, bool stEthUsdOracleDown) = _getOracleAnswer(stEthUsdOracle);
 
         // If one of Chainlink's responses was invalid in this transaction, disable this PriceFeed and
         // return the last good WSTETH-USD price calculated
-        if (stEthUsdOracleDown) return _disableFeedAndShutDown(address(stEthUsdOracle.aggregator));
+        if (stEthUsdOracleDown) {return (_disableFeedAndShutDown(address(stEthUsdOracle.aggregator)), true);}
 
         // Calculate WSTETH-USD price: USD_per_WSTETH = USD_per_STETH * STETH_per_WSTETH
         uint256 wstEthUsdPrice = stEthUsdPrice * wstETH.stEthPerToken() / 1e18;
 
         lastGoodPrice = wstEthUsdPrice;
 
-        return wstEthUsdPrice;
+        return (wstEthUsdPrice, false);
     }
 }

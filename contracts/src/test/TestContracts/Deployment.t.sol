@@ -694,6 +694,9 @@ contract TestDeployer {
             address(contracts.activePool)
         );
 
+        // TODO: remove this and set address in constructor as per the CREATE2 approach above
+        _priceFeed.setAddresses(addresses.borrowerOperations);
+
         // deploy zappers
         (zappers.gasCompZapper, zappers.wethZapper, zappers.leverageZapperCurve, zappers.leverageZapperUniV3) =
         _deployZappers(contracts.addressesRegistry, contracts.collToken, _boldToken, _weth, contracts.priceFeed, true);
@@ -755,7 +758,7 @@ contract TestDeployer {
         IFlashLoanProvider _flashLoanProvider,
         bool _lst
     ) internal returns (ILeverageZapper) {
-        uint256 price = _priceFeed.fetchPrice();
+        (uint256 price, ) = _priceFeed.fetchPrice();
 
         // deploy Curve Twocrypto NG pool
         address[2] memory coins;
@@ -816,7 +819,7 @@ contract TestDeployer {
         }
 
         // Create Uni V3 pool
-        vars.price = _priceFeed.fetchPrice();
+        (vars.price, ) = _priceFeed.fetchPrice();
         if (address(_boldToken) < address(_collToken)) {
             //console2.log("b < c");
             vars.tokens[0] = address(_boldToken);
