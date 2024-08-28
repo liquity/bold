@@ -4,6 +4,7 @@ pragma solidity 0.8.18;
 
 import "./Interfaces/ICollateralRegistry.sol";
 import "./Interfaces/IMultiTroveGetter.sol";
+import "./Types/BatchId.sol";
 
 /*  Helper contract for grabbing Trove data for the front end. Not part of the core Liquity system. */
 contract MultiTroveGetter is IMultiTroveGetter {
@@ -110,6 +111,30 @@ contract MultiTroveGetter is IMultiTroveGetter {
         for (uint256 idx = 0; idx < _count; ++idx) {
             _getOneTrove(_troveManager, currentTroveId, _troves[idx]);
             currentTroveId = _sortedTroves.getPrev(currentTroveId);
+        }
+    }
+
+    function getDebtPerInterestRateAscending(uint256 _collIndex, uint256 _startId, uint256 _maxIterations)
+        external
+        view
+        returns (DebtPerInterestRate[] memory data, uint256 currId)
+    {
+        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        require(address(troveManager) != address(0), "Invalid collateral index");
+
+        ISortedTroves sortedTroves = troveManager.sortedTroves();
+        assert(address(sortedTroves) != address(0));
+
+        data = new DebtPerInterestRate[](_maxIterations);
+        currId = _startId;
+
+        for (uint256 i = 0; i < _maxIterations; ++i) {
+            currId = sortedTroves.getPrev(currId);
+            if (currId == 0) break;
+
+            LatestTroveData memory trove = troveManager.getLatestTroveData(currId);
+            data[i].interestRate = trove.annualInterestRate;
+            data[i].debt = trove.entireDebt;
         }
     }
 }
