@@ -792,8 +792,4 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     function _requireNonZeroAmount(uint256 _amount) internal pure {
         require(_amount > 0, "StabilityPool: Amount must be non-zero");
     }
-
-    function _requireValidKickbackRate(uint256 _kickbackRate) internal pure {
-        require(_kickbackRate <= DECIMAL_PRECISION, "StabilityPool: Kickback rate must be in range [0,1]");
-    }
 }
