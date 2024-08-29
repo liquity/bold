@@ -41,7 +41,7 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
     twice = true,
     method = "setAddresses",
   ) => {
-    const dumbContract = await GasPool.new(contracts.WETH.address, contracts.borrowerOperations.address, contracts.troveManager.address);
+    const dumbContract = await GasPool.new(contracts.addressesRegistry.address);
     const params = Array(numberOfAddresses).fill(dumbContract.address);
 
     // Attempt call from alice
@@ -62,47 +62,6 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
     });
     it("setCollateralRegistry(): reverts when called by non-owner, with wrong address, or twice", async () => {
       await testDeploymentSetter(boldToken, 1, true, "setCollateralRegistry");
-    });
-  });
-
-  describe("BorrowerOperations", async (accounts) => {
-    it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testDeploymentSetter(borrowerOperations, 7);
-    });
-  });
-
-  describe("DefaultPool", async (accounts) => {
-    it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testDeploymentSetter(defaultPool, 2);
-    });
-  });
-
-  describe("StabilityPool", async (accounts) => {
-    it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testDeploymentSetter(stabilityPool, 6);
-    });
-  });
-
-  describe("ActivePool", async (accounts) => {
-    it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      await testDeploymentSetter(activePool, 6, false);
-    });
-  });
-
-  describe("SortedTroves", async (accounts) => {
-    it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      const dumbContract = await GasPool.new(contracts.WETH.address, contracts.borrowerOperations.address, contracts.troveManager.address);
-      const params = [dumbContract.address, dumbContract.address];
-
-      // Attempt call from alice
-      await th.assertRevert(sortedTroves.setAddresses(...params, { from: alice }));
-
-      // Owner can successfully set params
-      const txOwner = await sortedTroves.setAddresses(...params, { from: owner });
-      assert.isTrue(txOwner.receipt.status);
-
-      // fails if called twice
-      await th.assertRevert(sortedTroves.setAddresses(...params, { from: owner }));
     });
   });
 });

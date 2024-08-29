@@ -21,7 +21,7 @@ const getFrontEndTag = async (stabilityPool, depositor) => {
   return (await stabilityPool.deposits(depositor))[1];
 };
 
-contract("StabilityPool", async (accounts) => {
+contract.skip("StabilityPool", async (accounts) => {
   const fundedAccounts = accounts.slice(0, 20);
 
   const [

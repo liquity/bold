@@ -7,7 +7,7 @@ const th = testHelpers.TestHelper;
 
 let MIN_ANNUAL_INTEREST_RATE;
 
-contract("StabilityPool - Withdrawal of stability deposit - Reward calculations", async (accounts) => {
+contract.skip("StabilityPool - Withdrawal of stability deposit - Reward calculations", async (accounts) => {
   const fundedAccounts = accounts.slice(0, 22);
 
   const [

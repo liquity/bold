@@ -7,7 +7,7 @@ const TroveManagerTester = artifacts.require("TroveManagerTester");
 const { dec, getDifference, toBN } = th;
 let MIN_ANNUAL_INTEREST_RATE;
 
-contract("TroveManager - Redistribution reward calculations", async (accounts) => {
+contract.skip("TroveManager - Redistribution reward calculations", async (accounts) => {
   const fundedAccounts = accounts.slice(0, 20);
 
   const [

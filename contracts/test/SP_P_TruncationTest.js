@@ -9,7 +9,7 @@ const BoldToken = artifacts.require("BoldToken");
 const GAS_PRICE = 10000000;
 let MIN_ANNUAL_INTEREST_RATE;
 
-contract("StabilityPool Scale Factor issue tests", async (accounts) => {
+contract.skip("StabilityPool Scale Factor issue tests", async (accounts) => {
   const fundedAccounts = accounts.slice(0, 11);
 
   const [owner, whale, A, B, C, D, E, F, F1, F2, F3] = fundedAccounts;

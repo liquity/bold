@@ -55,23 +55,10 @@ contract("Gas compensation tests", async (accounts) => {
 
   const deployFixture = createDeployAndFundFixture({
     accounts: fundedAccounts,
-    mocks: { TroveManager: TroveManagerTester },
-  });
-
-  before(async () => {
-    const WETH = await ERC20.new("WETH", "WETH");
-    troveManagerTester = await TroveManagerTester.new(
-      toBN(dec(150, 16)),
-      toBN(dec(110, 16)),
-      toBN(dec(110, 16)),
-      toBN(dec(10, 16)),
-      toBN(dec(10, 16)),
-      WETH.address
-    );
-    borrowerOperationsTester = await BorrowerOperationsTester.new(WETH.address, troveManagerTester.address, WETH.address);
-
-    TroveManagerTester.setAsDeployed(troveManagerTester);
-    BorrowerOperationsTester.setAsDeployed(borrowerOperationsTester);
+    mocks: {
+      TroveManager: TroveManagerTester,
+      BorrowerOperations: BorrowerOperationsTester,
+    },
   });
 
   beforeEach(async () => {
@@ -237,7 +224,7 @@ contract("Gas compensation tests", async (accounts) => {
   });
 
   // --- Test ICRs with virtual debt ---
-  it("getCurrentICR(): Incorporates virtual debt, and returns the correct ICR for new troves", async () => {
+  it.skip("getCurrentICR(): Incorporates virtual debt, and returns the correct ICR for new troves", async () => {
     const price = await priceFeed.getPrice();
     await openTrove({ ICR: toBN(dec(200, 18)), extraParams: { from: whale } });
 

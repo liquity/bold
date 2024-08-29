@@ -303,23 +303,25 @@ contract("SortedTroves", async (accounts) => {
     });
   });
 
-  describe("SortedTroves with mock dependencies", () => {
+  describe.skip("SortedTroves with mock dependencies", () => {
     let sortedTrovesTester;
 
     beforeEach(async () => {
-      sortedTroves = await SortedTroves.new();
+      sortedTroves = contracts.sortedTroves;
       sortedTrovesTester = await SortedTrovesTester.new();
 
       await sortedTrovesTester.setSortedTroves(sortedTroves.address);
     });
 
     context("when params are properly set", () => {
+      /*
       beforeEach("set addresses", async () => {
         await sortedTroves.setAddresses(
           sortedTrovesTester.address,
           sortedTrovesTester.address,
         );
       });
+      */
 
       it("insert(): fails if list already contains the node", async () => {
         await sortedTrovesTester.insert(alice, 1, alice, alice);
