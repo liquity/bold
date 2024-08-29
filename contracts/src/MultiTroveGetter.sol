@@ -129,10 +129,13 @@ contract MultiTroveGetter is IMultiTroveGetter {
         currId = _startId;
 
         for (uint256 i = 0; i < _maxIterations; ++i) {
-            currId = sortedTroves.getPrev(currId);
+            BatchId interestBatchManager;
+
+            (, currId, interestBatchManager,) = sortedTroves.nodes(currId);
             if (currId == 0) break;
 
             LatestTroveData memory trove = troveManager.getLatestTroveData(currId);
+            data[i].interestBatchManager = BatchId.unwrap(interestBatchManager);
             data[i].interestRate = trove.annualInterestRate;
             data[i].debt = trove.entireDebt;
         }

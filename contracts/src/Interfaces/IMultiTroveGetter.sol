@@ -19,6 +19,7 @@ interface IMultiTroveGetter {
     }
 
     struct DebtPerInterestRate {
+        address interestBatchManager;
         uint256 interestRate;
         uint256 debt;
     }
