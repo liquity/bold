@@ -4,7 +4,7 @@ pragma solidity 0.8.24;
 
 import "./MainnetPriceFeedBase.sol";
 
-// import "forge-std/console2.sol";
+import "forge-std/console2.sol";
 
 contract WETHPriceFeed is MainnetPriceFeedBase {
     constructor(
@@ -26,7 +26,8 @@ contract WETHPriceFeed is MainnetPriceFeedBase {
 
      function fetchPrice() public returns (uint256, bool) {
         // If branch is live and the primary oracle setup has been working, try to use it 
-        if (priceSource == PriceSource.primary) {return _fetchPrice();}
+        if (priceSource == PriceSource.primary) {
+            return _fetchPrice();}
 
         // Otherwise if branch is shut down and already using the lastGoodPrice, continue with it
         if (priceSource == PriceSource.lastGoodPrice) {return (lastGoodPrice, false);}
@@ -38,7 +39,6 @@ contract WETHPriceFeed is MainnetPriceFeedBase {
 
         // If the ETH-USD Chainlink response was invalid in this transaction, return the last good ETH-USD price calculated
         if (ethUsdOracleDown) {return (_shutDownAndSwitchToLastGoodPrice(address(ethUsdOracle.aggregator)), true);}
-
         lastGoodPrice = ethUsdPrice;
 
         return (ethUsdPrice, false);
