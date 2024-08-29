@@ -476,8 +476,7 @@ contract OraclesMainnet is TestAccounts {
         uint256 debtRequest = coll * calcdRethUsdPrice / 2 / 1e18;
 
         vm.startPrank(A);
-        /* uint256 troveId =  */
-        contractsArray[1].borrowerOperations.openTrove(
+        uint256 troveId = contractsArray[1].borrowerOperations.openTrove(
             A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
         );
 
