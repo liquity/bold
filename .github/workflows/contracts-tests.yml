@@ -71,7 +71,6 @@ jobs:
           ! grep -R console src | grep import | grep -v "://" | grep -v TestContracts | grep -v "/test/" | grep -v ExternalContracts  | grep -v "\.t\.sol" | grep -v "\.s\.sol"
 
   test-hardhat:
-    if: false
     name: Hardhat tests
     runs-on: ubuntu-latest
 
@@ -107,7 +106,6 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
 
   coverage:
-    if: false
     name: Coverage
     runs-on: ubuntu-latest
     continue-on-error: true
