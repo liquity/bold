@@ -23,7 +23,7 @@ export function LeverageField({
   collPrice,
   collToken,
   debt,
-  disabled,
+  deposit,
   highRiskLeverageFactor,
   leverageFactor,
   liquidationPriceField,
@@ -34,10 +34,11 @@ export function LeverageField({
 }: ReturnType<typeof useLeverageField> & {
   disabled?: boolean;
 }) {
+  const negativeDeposit = !deposit || dn.lt(deposit, 0);
   return (
     <InputField
       secondarySpacing={16}
-      disabled={disabled}
+      disabled={negativeDeposit}
       contextual={
         <div
           style={{
@@ -49,7 +50,6 @@ export function LeverageField({
           }}
         >
           <Slider
-            disabled={disabled}
             gradient={[
               norm(
                 mediumRiskLeverageFactor,
@@ -69,20 +69,18 @@ export function LeverageField({
       label={{
         end: (
           <div>
-            Total debt {debt
-              ? (
-                <>
-                  <span
-                    className={css({
-                      fontVariantNumeric: "tabular-nums",
-                    })}
-                  >
-                    {dn.format(debt, { digits: 2, trailingZeros: true })}
-                  </span>
-                  {" BOLD"}
-                </>
-              )
-              : "−"}
+            Total debt {!debt || negativeDeposit ? "−" : (
+              <>
+                <span
+                  className={css({
+                    fontVariantNumeric: "tabular-nums",
+                  })}
+                >
+                  {dn.format(debt, { digits: 2, trailingZeros: true })}
+                </span>
+                {" BOLD"}
+              </>
+            )}
           </div>
         ),
         start: content.leverageScreen.liquidationPriceField.label,
@@ -103,22 +101,34 @@ export function LeverageField({
         ),
         end: (
           <HFlex gap={8}>
-            Leverage{" "}
-            <span
-              style={{
-                color: liquidationRisk === "high"
-                  ? "#F36740"
-                  : "#2F3037",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {fmtnum(leverageFactor, "1z")}x
-            </span>
+            Leverage {
+              <span
+                style={{
+                  color: liquidationRisk === "high"
+                    ? "#F36740"
+                    : "#2F3037",
+                  fontVariantNumeric: "tabular-nums",
+                }}
+              >
+                {fmtnum(leverageFactor, "1z")}x
+              </span>
+            }
             <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.leverageLevel)} />
           </HFlex>
         ),
       }}
       {...liquidationPriceField.inputFieldProps}
+      valueUnfocused={negativeDeposit
+        ? (
+          <span
+            className={css({
+              color: "contentAlt",
+            })}
+          >
+            N/A
+          </span>
+        )
+        : liquidationPriceField.inputFieldProps.value}
     />
   );
 }
@@ -304,5 +314,8 @@ export function useLeverageField({
 }
 
 function getLeverageFactorFromRatio(minLeverageFactor: number, maxLeverageFactor: number, ratio: number) {
-  return Math.round(lerp(minLeverageFactor, maxLeverageFactor, ratio) * 10) / 10;
+  return Math.max(
+    LEVERAGE_FACTOR_MIN,
+    Math.round(lerp(minLeverageFactor, maxLeverageFactor, ratio)) * 10,
+  ) / 10;
 }

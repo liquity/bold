@@ -1794,6 +1794,67 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
     }
 
+    function lowerBatchManagementFee(uint256 i, uint256 newManagementFee) external {
+        i = _bound(i, 0, branches.length - 1);
+        Batch storage batch = _batches[i][msg.sender];
+        newManagementFee = _bound(newManagementFee, BATCH_MANAGEMENT_FEE_MIN, batch.managementRate);
+
+        TestDeployer.LiquityContractsDev memory c = branches[i];
+        uint256 pendingInterest = c.activePool.calcPendingAggInterest();
+        uint256 batchManagementFee = c.troveManager.getLatestBatchData(msg.sender).accruedManagementFee;
+
+        logCall("lowerBatchManagementFee", i.toString(), newManagementFee.decimal());
+
+        string memory errorString;
+        vm.prank(msg.sender);
+
+        try c.borrowerOperations.lowerBatchManagementFee(newManagementFee) {
+            // Preconditions
+            assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
+            assertTrue(_batchManagers[i].has(msg.sender), "Should have failed as batch manager wasn't valid");
+            assertLtDecimal(newManagementFee, batch.managementRate, 18, "Should have failed as new fee wasn't lower");
+
+            // Effects (Troves)
+            for (uint256 j = 0; j < batch.troves.size(); ++j) {
+                Trove storage trove = _troves[i][batch.troves.get(j)];
+                trove.batchManagementRate = newManagementFee;
+            }
+
+            // Effects (batch)
+            _touchBatch(i, msg.sender);
+            batch.managementRate = newManagementFee;
+
+            // Effects (system)
+            _mintYield(i, pendingInterest, 0);
+        } catch (bytes memory revertData) {
+            bytes4 selector;
+            (selector, errorString) = _decodeCustomError(revertData);
+
+            // Justify failures
+            if (selector == BorrowerOperations.IsShutDown.selector) {
+                assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
+            } else if (selector == BorrowerOperations.InvalidInterestBatchManager.selector) {
+                assertFalse(_batchManagers[i].has(msg.sender), "Shouldn't have failed as batch manager was valid");
+            } else if (selector == BorrowerOperations.NewFeeNotLower.selector) {
+                assertGeDecimal(
+                    newManagementFee, batch.managementRate, 18, "Shouldn't have failed as new fee was lower"
+                );
+            } else {
+                revert(string.concat("Unexpected error: ", errorString));
+            }
+        }
+
+        if (bytes(errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
+            info("Expected error: ", errorString);
+            _log();
+        } else {
+            // Cleanup (success)
+            _sweepBold(msg.sender, batchManagementFee);
+        }
+    }
+
     function setInterestBatchManager(uint256 i, uint32 newBatchManagerSeed, uint32 upperHintSeed, uint32 lowerHintSeed)
         external
     {

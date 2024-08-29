@@ -404,7 +404,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         TroveChange memory troveChange;
         LiquidationValues memory totals;
 
-        uint256 price = priceFeed.fetchPrice();
+        (uint256 price, ) = priceFeed.fetchPrice();
         uint256 boldInStabPool = stabilityPoolCached.getTotalBoldDeposits();
 
         // Perform the appropriate liquidation sequence - tally values and obtain their totals.
@@ -817,7 +817,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         IActivePool activePoolCached = activePool;
         TroveChange memory totalsTroveChange;
 
-        uint256 price = priceFeed.fetchPrice();
+        (uint256 price, ) = priceFeed.fetchPrice();
 
         uint256 remainingBold = _boldAmount;
         for (uint256 i = 0; i < _troveIds.length; i++) {
@@ -1148,7 +1148,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 spSize = stabilityPool.getTotalBoldDeposits();
         uint256 unbackedPortion = totalDebt > spSize ? totalDebt - spSize : 0;
 
-        uint256 price = priceFeed.fetchPrice();
+        (uint256 price, ) = priceFeed.fetchPrice();
         // It's redeemable if the TCR is above the shutdown threshold, and branch has not been shut down
         bool redeemable = _getTCR(price) >= SCR && shutdownTime == 0;
 

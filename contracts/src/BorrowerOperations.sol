@@ -83,6 +83,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 entireDebt;
         uint256 ICR;
         uint256 newTCR;
+        bool newOracleFailureDetected;
     }
 
     struct LocalVariables_adjustTrove {
@@ -94,6 +95,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 newICR;
         uint256 newDebt;
         uint256 newColl;
+        bool newOracleFailureDetected;
     }
 
     struct LocalVariables_setInterestBatchManager {
@@ -149,6 +151,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error MinGeMax();
     error AnnualManagementFeeTooHigh();
     error MinInterestRateChangePeriodTooLow();
+    error NewOracleFailureDetected();
 
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event GasPoolAddressChanged(address _gasPoolAddress);
@@ -309,7 +312,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.activePool = activePool;
         vars.boldToken = boldToken;
 
-        vars.price = priceFeed.fetchPrice();
+        vars.price = _requireOraclesLive();
 
         // --- Checks ---
 
@@ -562,7 +565,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.activePool = activePool;
         vars.boldToken = boldToken;
 
-        vars.price = priceFeed.fetchPrice();
+        vars.price = _requireOraclesLive();
         vars.isBelowCriticalThreshold = _checkBelowCriticalThreshold(vars.price, CCR);
 
         // --- Checks ---
@@ -710,7 +713,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             // troveChange.newWeightedRecordedDebt = 0;
         }
 
-        uint256 newTCR = _getNewTCRFromTroveChange(troveChange, priceFeed.fetchPrice());
+        (uint256 price, ) = priceFeed.fetchPrice();
+        uint256 newTCR = _getNewTCRFromTroveChange(troveChange, price);
         if (!hasBeenShutDown) _requireNewTCRisAboveCCR(newTCR);
 
         troveManagerCached.onCloseTrove(
@@ -878,7 +882,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         batchChange.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
         batchChange.oldWeightedRecordedBatchManagementFee = batch.weightedRecordedBatchManagementFee;
         batchChange.newWeightedRecordedBatchManagementFee =
-            batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
+            batch.entireDebtWithoutRedistribution * _newAnnualManagementFee;
 
         activePool.mintAggInterestAndAccountForTroveChange(batchChange, msg.sender);
     }
@@ -915,7 +919,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             batch.annualInterestRate != _newAnnualInterestRate
                 && block.timestamp < batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
         ) {
-            uint256 price = priceFeed.fetchPrice();
+            uint256 price = _requireOraclesLive();
+
             uint256 avgInterestRate = activePoolCached.getNewApproxAvgInterestRateFromTroveChange(batchChange);
             batchChange.upfrontFee = _calcUpfrontFee(newDebt, avgInterestRate);
             _requireUserAcceptsUpfrontFee(batchChange.upfrontFee, _maxUpfrontFee);
@@ -1109,7 +1114,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         TroveChange memory _troveChange,
         uint256 _maxUpfrontFee
     ) internal returns (uint256) {
-        uint256 price = priceFeed.fetchPrice();
+        uint256 price = _requireOraclesLive();
 
         uint256 avgInterestRate = activePool.getNewApproxAvgInterestRateFromTroveChange(_troveChange);
         _troveChange.upfrontFee = _calcUpfrontFee(_troveEntireDebt, avgInterestRate);
@@ -1160,7 +1165,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         uint256 totalColl = getEntireSystemColl();
         uint256 totalDebt = getEntireSystemDebt();
-        uint256 price = priceFeed.fetchPrice();
+        (uint256 price, ) = priceFeed.fetchPrice();
 
         uint256 TCR = LiquityMath._computeCR(totalColl, totalDebt, price);
         if (TCR >= SCR) revert TCRNotBelowSCR();
@@ -1175,6 +1180,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireCallerIsPriceFeed();
 
         // No-op rather than revert here, so that the outer function call which fetches the price does not revert
+        // if the system is already shut down.
         if (hasBeenShutDown) return;
 
         _applyShutdown();
@@ -1492,6 +1498,15 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         if (msg.sender != address(priceFeed)) {
             revert CallerNotPriceFeed();
         }
+    }
+
+    function _requireOraclesLive() internal returns (uint256) {
+        (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
+        if (newOracleFailureDetected) {
+            revert NewOracleFailureDetected();
+        }
+
+        return price;
     }
 
     // --- ICR and TCR getters ---

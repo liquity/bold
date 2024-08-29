@@ -121,7 +121,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         TestDeployer.Zappers[] memory _zappersArray
     ) internal {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
-            uint256 price = _contractsArray[i].priceFeed.fetchPrice();
+            (uint256 price, ) = _contractsArray[i].priceFeed.fetchPrice();
             ICurvePool curvePool = CurveExchange(address(_zappersArray[i].leverageZapperCurve.exchange())).curvePool();
 
             // Add liquidity
@@ -143,7 +143,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
 
     function fundUniV3Pools(TestDeployer.LiquityContracts[] memory _contractsArray) internal {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
-            uint256 price = _contractsArray[i].priceFeed.fetchPrice();
+            (uint256 price, ) = _contractsArray[i].priceFeed.fetchPrice();
             //console2.log(price, "price");
 
             // tokens and amounts
@@ -215,7 +215,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         IPriceFeed _priceFeed,
         bool _lst
     ) internal returns (uint256) {
-        uint256 price = _priceFeed.fetchPrice();
+        (uint256 price, ) = _priceFeed.fetchPrice();
         IExchange exchange = _leverageZapper.exchange();
 
         // This should be done in the frontend
@@ -273,7 +273,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             openLeveragedTrove(_leverageZapper, collAmount, leverageRatio, contractsArray[_branch].priceFeed, lst);
 
         // Checks
-        uint256 price = contractsArray[_branch].priceFeed.fetchPrice();
+        (uint256 price, ) = contractsArray[_branch].priceFeed.fetchPrice();
         // owner
         assertEq(contractsArray[_branch].troveNFT.ownerOf(troveId), A, "Wrong owner");
         // troveId
@@ -302,7 +302,9 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         assertApproxEqAbs(boldToken.balanceOf(A), 0, 15, "BOLD bal mismatch");
         if (lst) {
             assertEq(A.balance, ethBalanceBefore - ETH_GAS_COMPENSATION, "ETH bal mismatch");
-            assertEq(contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore - collAmount, "Coll bal mismatch");
+            assertEq(
+                contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore - collAmount, "Coll bal mismatch"
+            );
         } else {
             assertEq(A.balance, ethBalanceBefore - ETH_GAS_COMPENSATION - collAmount, "ETH bal mismatch");
             assertEq(contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
@@ -361,7 +363,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         IPriceFeed _priceFeed
     ) internal returns (uint256) {
         LeverVars memory vars;
-        vars.price = _priceFeed.fetchPrice();
+        (vars.price, ) = _priceFeed.fetchPrice();
         IExchange exchange = _leverageZapper.exchange();
 
         // This should be done in the frontend
@@ -427,7 +429,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         );
 
         // Checks
-        vars.price = contractsArray[_branch].priceFeed.fetchPrice();
+        (vars.price, ) = contractsArray[_branch].priceFeed.fetchPrice();
         // coll
         assertApproxEqAbs(
             getTroveEntireColl(contractsArray[_branch].troveManager, vars.troveId),
@@ -497,7 +499,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         ITroveManager _troveManager,
         IPriceFeed _priceFeed
     ) internal returns (uint256) {
-        uint256 price = _priceFeed.fetchPrice();
+        (uint256 price, ) = _priceFeed.fetchPrice();
 
         // This should be done in the frontend
         uint256 currentCR = _troveManager.getCurrentICR(_troveId, price);
@@ -537,8 +539,9 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         uint256 collAmount = 10 ether;
         uint256 initialLeverageRatio = 2e18;
 
-        uint256 troveId =
-            openLeveragedTrove(_leverageZapper, collAmount, initialLeverageRatio, contractsArray[_branch].priceFeed, _branch > 0);
+        uint256 troveId = openLeveragedTrove(
+            _leverageZapper, collAmount, initialLeverageRatio, contractsArray[_branch].priceFeed, _branch > 0
+        );
         uint256 initialDebt = getTroveEntireDebt(contractsArray[_branch].troveManager, troveId);
 
         uint256 newLeverageRatio = 1.5e18;
@@ -556,7 +559,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         );
 
         // Checks
-        uint256 price = contractsArray[_branch].priceFeed.fetchPrice();
+        (uint256 price, ) = contractsArray[_branch].priceFeed.fetchPrice();
         // coll
         assertApproxEqAbs(
             getTroveEntireColl(contractsArray[_branch].troveManager, troveId),

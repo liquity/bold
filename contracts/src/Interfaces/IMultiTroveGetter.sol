@@ -18,8 +18,19 @@ interface IMultiTroveGetter {
         uint256 snapshotBoldDebt;
     }
 
+    struct DebtPerInterestRate {
+        address interestBatchManager;
+        uint256 interestRate;
+        uint256 debt;
+    }
+
     function getMultipleSortedTroves(uint256 _collIndex, int256 _startIdx, uint256 _count)
         external
         view
         returns (CombinedTroveData[] memory _troves);
+
+    function getDebtPerInterestRateAscending(uint256 _collIndex, uint256 _startId, uint256 _maxIterations)
+        external
+        view
+        returns (DebtPerInterestRate[] memory, uint256 currId);
 }

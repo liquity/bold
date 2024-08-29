@@ -42,6 +42,7 @@ contract BaseTest is TestAccounts, Logging {
     IStabilityPool stabilityPool;
     ITroveManagerTester troveManager;
     ITroveNFT troveNFT;
+    IMetadataNFT metadataNFT;
     IBoldToken boldToken;
     ICollateralRegistry collateralRegistry;
     IPriceFeedTestnet priceFeed;

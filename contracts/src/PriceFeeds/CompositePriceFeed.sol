@@ -44,14 +44,14 @@ contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {
         assert(priceFeedDisabled == false);
     }
 
-    function _fetchPrice() internal override returns (uint256) {
+    function _fetchPrice() internal override returns (uint256, bool) {
         (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
         (uint256 lstEthPrice, bool lstEthOracleDown) = _getOracleAnswer(lstEthOracle);
 
         // If one of Chainlink's responses was invalid in this transaction, disable this PriceFeed and
         // return the last good LST-USD price calculated
-        if (ethUsdOracleDown) return _disableFeedAndShutDown(address(ethUsdOracle.aggregator));
-        if (lstEthOracleDown) return _disableFeedAndShutDown(address(lstEthOracle.aggregator));
+        if (ethUsdOracleDown) {return (_disableFeedAndShutDown(address(ethUsdOracle.aggregator)), true);}
+        if (lstEthOracleDown) {return (_disableFeedAndShutDown(address(lstEthOracle.aggregator)), true);}
 
         // Calculate the market LST-USD price: USD_per_LST = USD_per_ETH * ETH_per_LST
         uint256 lstUsdMarketPrice = ethUsdPrice * lstEthPrice / 1e18;
@@ -68,7 +68,7 @@ contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {
 
         lastGoodPrice = lstUsdPrice;
 
-        return lstUsdPrice;
+        return (lstUsdPrice, false);
     }
 
     // Returns the ETH_per_LST as from the LST smart contract. Implementation depends on the specific LST.
