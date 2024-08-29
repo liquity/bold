@@ -6,13 +6,14 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.s
 
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
-import "./Dependencies/LiquityBase.sol";
+import "./Dependencies/Constants.sol";
+import "./Dependencies/LiquityMath.sol";
 
 import "./Interfaces/ICollateralRegistry.sol";
 
 // import "forge-std/console2.sol";
 
-contract CollateralRegistry is LiquityBase, ICollateralRegistry {
+contract CollateralRegistry is ICollateralRegistry {
     // mapping from Collateral token address to the corresponding TroveManagers
     //mapping(address => address) troveManagers;
     // See: https://github.com/ethereum/solidity/issues/12587
@@ -258,7 +259,7 @@ contract CollateralRegistry is LiquityBase, ICollateralRegistry {
         return _calcRedemptionFee(getRedemptionRateWithDecay(), _ETHDrawn);
     }
 
-    function getEffectiveRedemptionFeeInBold(uint256 _redeemAmount) public view override returns (uint256) {
+    function getEffectiveRedemptionFeeInBold(uint256 _redeemAmount) external view override returns (uint256) {
         uint256 totalBoldSupply = boldToken.totalSupply();
         uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_redeemAmount, totalBoldSupply);
         return _calcRedemptionFee(_calcRedemptionRate(newBaseRate), _redeemAmount);

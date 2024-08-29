@@ -2978,10 +2978,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         if (revertData.length == 4 + 32) {
             bytes32 param = bytes32(revertData.slice(4));
 
-            if (selector == TroveManager.TroveNotOpen.selector) {
-                return (selector, string.concat("TroveManager.TroveNotOpen(", uint256(param).toString(), ")"));
-            }
-
             if (selector == TroveManager.MinCollNotReached.selector) {
                 return (selector, string.concat("TroveManager.MinCollNotReached(", uint256(param).decimal(), ")"));
             }

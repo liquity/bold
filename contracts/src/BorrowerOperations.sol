@@ -154,18 +154,15 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error NewOracleFailureDetected();
 
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event ActivePoolAddressChanged(address _activePoolAddress);
-    event DefaultPoolAddressChanged(address _defaultPoolAddress);
     event GasPoolAddressChanged(address _gasPoolAddress);
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
-    event PriceFeedAddressChanged(address _newPriceFeedAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
 
     event ShutDown(uint256 _tcr);
     event ShutDownFromOracleFailure(address _oracleAddress);
 
-    constructor(IAddressesRegistry _addressesRegistry) AddRemoveManagers(_addressesRegistry) {
+    constructor(IAddressesRegistry _addressesRegistry) AddRemoveManagers(_addressesRegistry) LiquityBase(_addressesRegistry) {
         // This makes impossible to open a trove with zero withdrawn Bold
         assert(MIN_DEBT > 0);
 
@@ -178,20 +175,14 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         MCR = _addressesRegistry.MCR();
 
         troveManager = _addressesRegistry.troveManager();
-        activePool = _addressesRegistry.activePool();
-        defaultPool = _addressesRegistry.defaultPool();
         gasPoolAddress = _addressesRegistry.gasPoolAddress();
         collSurplusPool = _addressesRegistry.collSurplusPool();
-        priceFeed = _addressesRegistry.priceFeed();
         sortedTroves = _addressesRegistry.sortedTroves();
         boldToken = _addressesRegistry.boldToken();
 
         emit TroveManagerAddressChanged(address(troveManager));
-        emit ActivePoolAddressChanged(address(activePool));
-        emit DefaultPoolAddressChanged(address(defaultPool));
         emit GasPoolAddressChanged(gasPoolAddress);
         emit CollSurplusPoolAddressChanged(address(collSurplusPool));
-        emit PriceFeedAddressChanged(address(priceFeed));
         emit SortedTrovesAddressChanged(address(sortedTroves));
         emit BoldTokenAddressChanged(address(boldToken));
 
@@ -684,7 +675,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _moveTokensFromAdjustment(receiver, _troveChange, vars.boldToken, vars.activePool);
     }
 
-    function closeTrove(uint256 _troveId) external override returns (uint256) {
+    function closeTrove(uint256 _troveId) external override {
         ITroveManager troveManagerCached = troveManager;
         IActivePool activePoolCached = activePool;
         IBoldToken boldTokenCached = boldToken;
@@ -751,8 +742,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         activePoolCached.sendColl(receiver, trove.entireColl);
 
         _wipeTroveMappings(_troveId);
-
-        return trove.entireColl;
     }
 
     function applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint) public {
@@ -1428,7 +1417,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     function _requireDebtRepaymentGeCollWithdrawal(TroveChange memory _troveChange, uint256 _price) internal pure {
-        if ((_troveChange.debtDecrease < _troveChange.collDecrease * _price / DECIMAL_PRECISION)) {
+        if ((_troveChange.debtDecrease * DECIMAL_PRECISION < _troveChange.collDecrease * _price)) {
             revert RepaymentNotMatchingCollWithdrawal();
         }
     }

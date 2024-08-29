@@ -9,7 +9,7 @@ import "./Interfaces/ITroveManager.sol";
 
 /**
  * The purpose of this contract is to hold WETH tokens for gas compensation:
- * https://github.com/liquity/dev#gas-compensation
+ * https://github.com/liquity/bold/?tab=readme-ov-file#liquidation-gas-compensation
  * When a borrower opens a trove, an additional amount of WETH is pulled,
  * and sent to this contract.
  * When a borrower closes their active trove, this gas compensation is refunded

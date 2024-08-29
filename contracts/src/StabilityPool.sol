@@ -6,9 +6,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./Interfaces/IStabilityPool.sol";
 import "./Interfaces/IAddressesRegistry.sol";
-import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/IStabilityPoolEvents.sol";
-import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ISortedTroves.sol";
@@ -136,11 +134,10 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     string public constant NAME = "StabilityPool";
 
     IERC20 public immutable collToken;
-    IBorrowerOperations public borrowerOperations;
-    ITroveManager public troveManager;
-    IBoldToken public boldToken;
+    ITroveManager public immutable troveManager;
+    IBoldToken public immutable boldToken;
     // Needed to check if there are pending liquidations
-    ISortedTroves public sortedTroves;
+    ISortedTroves public immutable sortedTroves;
 
     uint256 internal collBalance; // deposited ether tracker
 
@@ -206,32 +203,19 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     // --- Events ---
 
-    event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event ActivePoolAddressChanged(address _newActivePoolAddress);
-    event DefaultPoolAddressChanged(address _newDefaultPoolAddress);
     event BoldTokenAddressChanged(address _newBoldTokenAddress);
     event SortedTrovesAddressChanged(address _newSortedTrovesAddress);
-    event PriceFeedAddressChanged(address _newPriceFeedAddress);
 
-    constructor(IAddressesRegistry _addressesRegistry) {
+    constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) {
         collToken = _addressesRegistry.collToken();
-        borrowerOperations = _addressesRegistry.borrowerOperations();
         troveManager = _addressesRegistry.troveManager();
-        activePool = _addressesRegistry.activePool();
         boldToken = _addressesRegistry.boldToken();
         sortedTroves = _addressesRegistry.sortedTroves();
-        priceFeed = _addressesRegistry.priceFeed();
 
-        emit BorrowerOperationsAddressChanged(address(borrowerOperations));
         emit TroveManagerAddressChanged(address(troveManager));
-        emit ActivePoolAddressChanged(address(activePool));
         emit BoldTokenAddressChanged(address(boldToken));
         emit SortedTrovesAddressChanged(address(sortedTroves));
-        emit PriceFeedAddressChanged(address(priceFeed));
-
-        // Allow funds movements between Liquity contracts
-        collToken.approve(address(borrowerOperations), type(uint256).max);
     }
 
     // --- Getters for public variables. Required by IPool interface ---
@@ -539,8 +523,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     }
 
     function _moveOffsetCollAndDebt(uint256 _collToAdd, uint256 _debtToOffset) internal {
-        IActivePool activePoolCached = activePool;
-
         // Cancel the liquidated Bold debt with the Bold in the stability pool
         _updateTotalBoldDeposits(0, _debtToOffset);
 
@@ -552,7 +534,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         collBalance = newCollBalance;
 
         // Pull Coll from Active Pool
-        activePoolCached.sendColl(address(this), _collToAdd);
+        activePool.sendColl(address(this), _collToAdd);
 
         emit StabilityPoolCollBalanceUpdated(newCollBalance);
     }
@@ -809,9 +791,5 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     function _requireNonZeroAmount(uint256 _amount) internal pure {
         require(_amount > 0, "StabilityPool: Amount must be non-zero");
-    }
-
-    function _requireValidKickbackRate(uint256 _kickbackRate) internal pure {
-        require(_kickbackRate <= DECIMAL_PRECISION, "StabilityPool: Kickback rate must be in range [0,1]");
     }
 }

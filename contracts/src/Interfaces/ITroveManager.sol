@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import "./ILiquityBase.sol";
 import "./ITroveNFT.sol";
+import "./IBorrowerOperations.sol";
 import "./IStabilityPool.sol";
 import "./IBoldToken.sol";
 import "./ISortedTroves.sol";

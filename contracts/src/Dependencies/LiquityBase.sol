@@ -4,6 +4,7 @@ pragma solidity 0.8.18;
 
 import "./Constants.sol";
 import "./LiquityMath.sol";
+import "../Interfaces/IAddressesRegistry.sol";
 import "../Interfaces/IActivePool.sol";
 import "../Interfaces/IDefaultPool.sol";
 import "../Interfaces/IPriceFeed.sol";
@@ -17,11 +18,22 @@ import "../Interfaces/ILiquityBase.sol";
 */
 contract LiquityBase is ILiquityBase {
     IActivePool public activePool;
-
     IDefaultPool internal defaultPool;
-
     IPriceFeed internal priceFeed;
 
+    event ActivePoolAddressChanged(address _newActivePoolAddress);
+    event DefaultPoolAddressChanged(address _newDefaultPoolAddress);
+    event PriceFeedAddressChanged(address _newPriceFeedAddress);
+
+    constructor(IAddressesRegistry _addressesRegistry) {
+        activePool = _addressesRegistry.activePool();
+        defaultPool = _addressesRegistry.defaultPool();
+        priceFeed = _addressesRegistry.priceFeed();
+
+        emit ActivePoolAddressChanged(address(activePool));
+        emit DefaultPoolAddressChanged(address(defaultPool));
+        emit PriceFeedAddressChanged(address(priceFeed));
+    }
     // --- Gas compensation functions ---
 
     function getEntireSystemColl() public view returns (uint256 entireSystemColl) {

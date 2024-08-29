@@ -110,12 +110,6 @@ contract Deployment is DevTestSetup {
         assertEq(activePoolAddress, recordedActivePoolAddress);
     }
 
-    function testStabilityPoolHasCorrectCorrectBorrowerOpsAddress() public view {
-        address borrowerOperationsAddress = address(borrowerOperations);
-        address recordedBorrowerOperationsAddress = address(stabilityPool.borrowerOperations());
-        assertEq(borrowerOperationsAddress, recordedBorrowerOperationsAddress);
-    }
-
     function testStabilityPoolHasCorrectCorrectBoldTokenAddress() public view {
         address boldTokenAddress = address(boldToken);
         address recordedBoldTokenAddress = address(stabilityPool.boldToken());
