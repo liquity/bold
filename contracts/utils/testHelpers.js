@@ -609,210 +609,6 @@ class TestHelper {
 
   // --- BorrowerOperations gas functions ---
 
-  static async openTrove_allAccounts(
-    accounts,
-    contracts,
-    collAmount,
-    BoldAmount,
-  ) {
-    const gasCostList = [];
-    const totalDebt = await this.getOpenTroveTotalDebt(contracts, BoldAmount);
-
-    for (const account of accounts) {
-      const { upperHint, lowerHint } = await this.getBorrowerOpsListHint(
-        contracts,
-        collAmount,
-        totalDebt,
-      );
-
-      const tx = await contracts.borrowerOperations.openTrove(
-        this._100pct,
-        collAmount,
-        BoldAmount,
-        upperHint,
-        lowerHint,
-        { from: account },
-      );
-      const gas = this.gasUsed(tx);
-      gasCostList.push(gas);
-    }
-    return this.getGasMetrics(gasCostList);
-  }
-
-  static async openTrove_allAccounts_randomETH(
-    minETH,
-    maxETH,
-    accounts,
-    contracts,
-    BoldAmount,
-  ) {
-    const gasCostList = [];
-    const totalDebt = await this.getOpenTroveTotalDebt(contracts, BoldAmount);
-
-    for (const account of accounts) {
-      const randCollAmount = this.randAmountInWei(minETH, maxETH);
-      const { upperHint, lowerHint } = await this.getBorrowerOpsListHint(
-        contracts,
-        randCollAmount,
-        totalDebt,
-      );
-
-      const tx = await contracts.borrowerOperations.openTrove(
-        this._100pct,
-        randCollAmount,
-        BoldAmount,
-        upperHint,
-        lowerHint,
-        { from: account },
-      );
-      const gas = this.gasUsed(tx);
-      gasCostList.push(gas);
-    }
-    return this.getGasMetrics(gasCostList);
-  }
-
-  static async openTrove_allAccounts_randomETH_ProportionalBold(
-    minETH,
-    maxETH,
-    accounts,
-    contracts,
-    proportion,
-  ) {
-    const gasCostList = [];
-
-    for (const account of accounts) {
-      const randCollAmount = this.randAmountInWei(minETH, maxETH);
-      const proportionalBold = web3.utils
-        .toBN(proportion)
-        .mul(web3.utils.toBN(randCollAmount));
-      const totalDebt = await this.getOpenTroveTotalDebt(
-        contracts,
-        proportionalBold,
-      );
-
-      const { upperHint, lowerHint } = await this.getBorrowerOpsListHint(
-        contracts,
-        randCollAmount,
-        totalDebt,
-      );
-
-      const tx = await contracts.borrowerOperations.openTrove(
-        this._100pct,
-        randCollAmount,
-        proportionalBold,
-        upperHint,
-        lowerHint,
-        { from: account },
-      );
-      const gas = this.gasUsed(tx);
-      gasCostList.push(gas);
-    }
-    return this.getGasMetrics(gasCostList);
-  }
-
-  static async openTrove_allAccounts_randomETH_randomBold(
-    minETH,
-    maxETH,
-    accounts,
-    contracts,
-    minBoldProportion,
-    maxBoldProportion,
-    logging = false,
-  ) {
-    const gasCostList = [];
-    const price = await contracts.priceFeedTestnet.getPrice();
-    const _1e18 = web3.utils.toBN("1000000000000000000");
-
-    let i = 0;
-    for (const account of accounts) {
-      const randCollAmount = this.randAmountInWei(minETH, maxETH);
-      // console.log(`randCollAmount ${randCollAmount }`)
-      const randBoldProportion = this.randAmountInWei(
-        minBoldProportion,
-        maxBoldProportion,
-      );
-      const proportionalBold = web3.utils
-        .toBN(randBoldProportion)
-        .mul(web3.utils.toBN(randCollAmount).div(_1e18));
-      const totalDebt = await this.getOpenTroveTotalDebt(
-        contracts,
-        proportionalBold,
-      );
-      const { upperHint, lowerHint } = await this.getBorrowerOpsListHint(
-        contracts,
-        randCollAmount,
-        totalDebt,
-      );
-
-      const feeFloor = this.dec(5, 16);
-      const tx = await contracts.borrowerOperations.openTrove(
-        this._100pct,
-        randCollAmount,
-        proportionalBold,
-        upperHint,
-        lowerHint,
-        { from: account },
-      );
-
-      if (logging && tx.receipt.status) {
-        i++;
-        const ICR = await contracts.troveManager.getCurrentICR(account, price);
-        // console.log(`${i}. Trove opened. addr: ${this.squeezeAddr(account)} coll: ${randCollAmount} debt: ${proportionalBold} ICR: ${ICR}`)
-      }
-      const gas = this.gasUsed(tx);
-      gasCostList.push(gas);
-    }
-    return this.getGasMetrics(gasCostList);
-  }
-
-  static async openTrove_allAccounts_randomBold(
-    minBold,
-    maxBold,
-    accounts,
-    contracts,
-    collAmount,
-  ) {
-    const gasCostList = [];
-
-    for (const account of accounts) {
-      const randBoldAmount = this.randAmountInWei(minBold, maxBold);
-      const totalDebt = await this.getOpenTroveTotalDebt(
-        contracts,
-        randBoldAmount,
-      );
-      const { upperHint, lowerHint } = await this.getBorrowerOpsListHint(
-        contracts,
-        collAmount,
-        totalDebt,
-      );
-
-      const tx = await contracts.borrowerOperations.openTrove(
-        this._100pct,
-        collAmount,
-        randBoldAmount,
-        upperHint,
-        lowerHint,
-        { from: account },
-      );
-      const gas = this.gasUsed(tx);
-      gasCostList.push(gas);
-    }
-    return this.getGasMetrics(gasCostList);
-  }
-
-  static async closeTrove_allAccounts(accounts, contracts) {
-    const gasCostList = [];
-
-    for (const account of accounts) {
-      const tx = await contracts.borrowerOperations.closeTrove({
-        from: account,
-      });
-      const gas = this.gasUsed(tx);
-      gasCostList.push(gas);
-    }
-    return this.getGasMetrics(gasCostList);
-  }
-
   static async openTrove(
     contracts,
     {
@@ -876,6 +672,9 @@ class TestHelper {
         lowerHint,
         extraParams.batchManager,
         TestHelper.MAX_UINT256, // _maxUpfrontFee
+        this.ZERO_ADDRESS, // _addManager,
+        this.ZERO_ADDRESS, // _removeManager,
+        this.ZERO_ADDRESS, // _receiver
         { from: extraParams.from },
       );
     } else {
@@ -888,6 +687,9 @@ class TestHelper {
         lowerHint,
         extraParams.annualInterestRate,
         TestHelper.MAX_UINT256, // _maxUpfrontFee
+        this.ZERO_ADDRESS, // _addManager,
+        this.ZERO_ADDRESS, // _removeManager,
+        this.ZERO_ADDRESS, // _receiver
         { from: extraParams.from },
       );
     }
