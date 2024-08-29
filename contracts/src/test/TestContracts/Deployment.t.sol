@@ -43,8 +43,6 @@ import {ERC20Faucet} from "./ERC20Faucet.sol";
 import "../../PriceFeeds/WETHPriceFeed.sol";
 import "../../PriceFeeds/WSTETHPriceFeed.sol";
 import "../../PriceFeeds/RETHPriceFeed.sol";
-import "../../PriceFeeds/OSETHPriceFeed.sol";
-import "../../PriceFeeds/ETHXPriceFeed.sol";
 
 import "forge-std/console2.sol";
 
@@ -186,20 +184,14 @@ contract TestDeployer is MetadataDeployment {
         address ETHOracle;
         address STETHOracle;
         address RETHOracle;
-        address ETHXOracle;
-        address OSETHOracle;
         address WSTETHToken;
         address RETHToken;
-        address StaderOracle; // "StaderOracle" is the ETHX contract that manages the canonical exchange rate. Not a market pricacle.
-        address OsTokenVaultController;
     }
 
     struct OracleParams {
         uint256 ethUsdStalenessThreshold;
         uint256 stEthUsdStalenessThreshold;
         uint256 rEthEthStalenessThreshold;
-        uint256 ethXEthStalenessThreshold;
-        uint256 osEthEthStalenessThreshold;
     }
 
     // See: https://solidity-by-example.org/app/create2/
@@ -512,23 +504,16 @@ contract TestDeployer is MetadataDeployment {
         result.externalAddresses.ETHOracle = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
         result.externalAddresses.RETHOracle = 0x536218f9E9Eb48863970252233c8F271f554C2d0;
         result.externalAddresses.STETHOracle = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8;
-        result.externalAddresses.ETHXOracle = 0xC5f8c4aB091Be1A899214c0C3636ca33DcA0C547;
         result.externalAddresses.WSTETHToken = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-        // Redstone Oracle with CL interface
-        // TODO: obtain the Chainlink market price feed and use that, when it's ready
-        result.externalAddresses.OSETHOracle = 0x66ac817f997Efd114EDFcccdce99F3268557B32C;
 
         result.externalAddresses.RETHToken = 0xae78736Cd615f374D3085123A210448E74Fc6393;
-        result.externalAddresses.StaderOracle = 0xF64bAe65f6f2a5277571143A24FaaFDFC0C2a737;
-        result.externalAddresses.OsTokenVaultController = 0x2A261e60FB14586B474C208b1B7AC6D0f5000306;
 
         vars.oracleParams.ethUsdStalenessThreshold = _24_HOURS;
         vars.oracleParams.stEthUsdStalenessThreshold = _24_HOURS;
         vars.oracleParams.rEthEthStalenessThreshold = _48_HOURS;
-        vars.oracleParams.ethXEthStalenessThreshold = _48_HOURS;
-        vars.oracleParams.osEthEthStalenessThreshold = _48_HOURS;
 
-        vars.numCollaterals = 5;
+        // Colls: WETH, WSTETH, RETH
+        vars.numCollaterals = 3;
         result.contractsArray = new LiquityContracts[](vars.numCollaterals);
         result.zappersArray = new Zappers[](vars.numCollaterals);
         vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
@@ -556,29 +541,11 @@ contract TestDeployer is MetadataDeployment {
         // wstETH
         vars.priceFeeds[2] = new WSTETHPriceFeed(
             address(this),
+            result.externalAddresses.ETHOracle,
             result.externalAddresses.STETHOracle,
-            vars.oracleParams.stEthUsdStalenessThreshold,
-            result.externalAddresses.WSTETHToken
-        );
-
-        // ETHx
-        vars.priceFeeds[3] = new ETHXPriceFeed(
-            address(this),
-            result.externalAddresses.ETHOracle,
-            result.externalAddresses.ETHXOracle,
-            result.externalAddresses.StaderOracle,
+            result.externalAddresses.WSTETHToken,
             vars.oracleParams.ethUsdStalenessThreshold,
-            vars.oracleParams.ethXEthStalenessThreshold
-        );
-
-        // osETH
-        vars.priceFeeds[4] = new OSETHPriceFeed(
-            address(this),
-            result.externalAddresses.ETHOracle,
-            result.externalAddresses.OSETHOracle,
-            result.externalAddresses.OsTokenVaultController,
-            vars.oracleParams.ethUsdStalenessThreshold,
-            vars.oracleParams.osEthEthStalenessThreshold
+            vars.oracleParams.stEthUsdStalenessThreshold
         );
 
         // Deploy Bold
@@ -605,18 +572,6 @@ contract TestDeployer is MetadataDeployment {
         (vars.addressesRegistries[2], troveManagerAddress) =
             _deployAddressesRegistryMainnet(_troveManagerParamsArray[2]);
         vars.troveManagers[2] = ITroveManager(troveManagerAddress);
-
-        // ETHX
-        vars.collaterals[3] = IERC20Metadata(0xA35b1B31Ce002FBF2058D22F30f95D405200A15b);
-        (vars.addressesRegistries[3], troveManagerAddress) =
-            _deployAddressesRegistryMainnet(_troveManagerParamsArray[3]);
-        vars.troveManagers[3] = ITroveManager(troveManagerAddress);
-
-        // OSETH
-        vars.collaterals[4] = IERC20Metadata(0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38);
-        (vars.addressesRegistries[4], troveManagerAddress) =
-            _deployAddressesRegistryMainnet(_troveManagerParamsArray[4]);
-        vars.troveManagers[4] = ITroveManager(troveManagerAddress);
 
         // Deploy registry and register the TMs
         result.collateralRegistry = new CollateralRegistry(result.boldToken, vars.collaterals, vars.troveManagers);

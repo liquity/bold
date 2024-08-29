@@ -3,32 +3,41 @@
 pragma solidity 0.8.24;
 
 import "./MainnetPriceFeedBase.sol";
-import "../Interfaces/IWETHPriceFeed.sol";
 
-contract WETHPriceFeed is MainnetPriceFeedBase, IWETHPriceFeed {
-    Oracle public ethUsdOracle;
+// import "forge-std/console2.sol";
 
-    constructor(address _owner, address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold)
-        MainnetPriceFeedBase(_owner)
+contract WETHPriceFeed is MainnetPriceFeedBase {
+    constructor(
+        address _owner, 
+        address _ethUsdOracleAddress, 
+        uint256 _ethUsdStalenessThreshold
+    )
+        MainnetPriceFeedBase(
+            _owner,
+            _ethUsdOracleAddress,
+            _ethUsdStalenessThreshold
+    ) 
     {
-        ethUsdOracle.aggregator = AggregatorV3Interface(_ethUsdOracleAddress);
-        ethUsdOracle.stalenessThreshold = _ethUsdStalenessThreshold;
-        ethUsdOracle.decimals = ethUsdOracle.aggregator.decimals();
-
-        // Check ETH-USD aggregator has the expected 8 decimals
-        assert(ethUsdOracle.decimals == 8);
-
         _fetchPrice();
 
         // Check the oracle didn't already fail
-        assert(priceFeedDisabled == false);
+        assert(priceSource == PriceSource.primary);
+    }
+
+     function fetchPrice() public returns (uint256, bool) {
+        // If branch is live and the primary oracle setup has been working, try to use it 
+        if (priceSource == PriceSource.primary) {return _fetchPrice();}
+
+        // Otherwise if branch is shut down and already using the lastGoodPrice, continue with it
+        if (priceSource == PriceSource.lastGoodPrice) {return (lastGoodPrice, false);}
     }
 
     function _fetchPrice() internal override returns (uint256, bool) {
+        assert(priceSource == PriceSource.primary);
         (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
 
-        // If the Chainlink response was invalid in this transaction, return the last good ETH-USD price calculated
-        if (ethUsdOracleDown) return (_disableFeedAndShutDown(address(ethUsdOracle.aggregator)), true);
+        // If the ETH-USD Chainlink response was invalid in this transaction, return the last good ETH-USD price calculated
+        if (ethUsdOracleDown) {return (_shutDownAndSwitchToLastGoodPrice(address(ethUsdOracle.aggregator)), true);}
 
         lastGoodPrice = ethUsdPrice;
 

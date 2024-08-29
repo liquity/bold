@@ -7,13 +7,11 @@ import "./TestContracts/ChainlinkOracleMock.sol";
 import "./TestContracts/Deployment.t.sol";
 
 import "../Dependencies/AggregatorV3Interface.sol";
-import "../Interfaces/IWSTETH.sol";
-import "../Interfaces/ICompositePriceFeed.sol";
-import "../Interfaces/IWETHPriceFeed.sol";
+import "../Interfaces/IRETHPriceFeed.sol";
+import "../Interfaces/IWSTETHPriceFeed.sol";
 
-import "../Dependencies/IRETHToken.sol";
-import "../Dependencies/IOsTokenVaultController.sol";
-import "../Dependencies/IStaderOracle.sol";
+import "../Interfaces/IRETHToken.sol";
+import "../Interfaces/IWSTETH.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
@@ -22,22 +20,15 @@ contract OraclesMainnet is TestAccounts {
     AggregatorV3Interface ethOracle;
     AggregatorV3Interface stethOracle;
     AggregatorV3Interface rethOracle;
-    AggregatorV3Interface ethXOracle;
-    AggregatorV3Interface osEthOracle;
 
     ChainlinkOracleMock mockOracle;
 
-    IWSTETH wstETH;
-
-    IWETHPriceFeed wethPriceFeed;
-    ICompositePriceFeed rethPriceFeed;
+    IMainnetPriceFeed wethPriceFeed;
+    IRETHPriceFeed rethPriceFeed;
     IWSTETHPriceFeed wstethPriceFeed;
-    ICompositePriceFeed ethXPriceFeed;
-    ICompositePriceFeed osEthPriceFeed;
 
     IRETHToken rETHToken;
-    IOsTokenVaultController osTokenVaultController;
-    IStaderOracle staderOracle;
+    IWSTETH wstETH;
 
     TestDeployer.LiquityContracts[] contractsArray;
     ICollateralRegistry collateralRegistry;
@@ -58,7 +49,7 @@ contract OraclesMainnet is TestAccounts {
         (A, B, C, D, E, F) =
             (accountsList[0], accountsList[1], accountsList[2], accountsList[3], accountsList[4], accountsList[5]);
 
-        uint256 numCollaterals = 5;
+        uint256 numCollaterals = 3;
         TestDeployer.TroveManagerParams memory tmParams =
             TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
@@ -76,14 +67,10 @@ contract OraclesMainnet is TestAccounts {
         ethOracle = AggregatorV3Interface(result.externalAddresses.ETHOracle);
         rethOracle = AggregatorV3Interface(result.externalAddresses.RETHOracle);
         stethOracle = AggregatorV3Interface(result.externalAddresses.STETHOracle);
-        ethXOracle = AggregatorV3Interface(result.externalAddresses.ETHXOracle);
-        osEthOracle = AggregatorV3Interface(result.externalAddresses.OSETHOracle);
 
         mockOracle = new ChainlinkOracleMock();
 
         rETHToken = IRETHToken(result.externalAddresses.RETHToken);
-        staderOracle = IStaderOracle(result.externalAddresses.StaderOracle);
-        osTokenVaultController = IOsTokenVaultController(result.externalAddresses.OsTokenVaultController);
 
         wstETH = IWSTETH(result.externalAddresses.WSTETHToken);
 
@@ -108,18 +95,15 @@ contract OraclesMainnet is TestAccounts {
             vm.startPrank(accountsList[i]);
         }
 
-        wethPriceFeed = IWETHPriceFeed(address(contractsArray[0].priceFeed));
-        rethPriceFeed = ICompositePriceFeed(address(contractsArray[1].priceFeed));
+        wethPriceFeed = IMainnetPriceFeed(address(contractsArray[0].priceFeed));
+        rethPriceFeed = IRETHPriceFeed(address(contractsArray[1].priceFeed));
         wstethPriceFeed = IWSTETHPriceFeed(address(contractsArray[2].priceFeed));
-        ethXPriceFeed = ICompositePriceFeed(address(contractsArray[3].priceFeed));
-        osEthPriceFeed = ICompositePriceFeed(address(contractsArray[4].priceFeed));
 
         // log some current blockchain state
         // console2.log(block.timestamp, "block.timestamp");
         // console2.log(block.number, "block.number");
         // console2.log(ethOracle.decimals(), "ETHUSD decimals");
         // console2.log(rethOracle.decimals(), "RETHETH decimals");
-        // console2.log(ethXOracle.decimals(), "ETHXETH decimals");
         // console2.log(stethOracle.decimals(), "STETHETH decimals");
     }
 
@@ -162,44 +146,6 @@ contract OraclesMainnet is TestAccounts {
         assertEq(lastGoodPriceReth, expectedPrice);
     }
 
-    function testSetLastGoodPriceOnDeploymentETHX() public view {
-        uint256 lastGoodPriceEthX = ethXPriceFeed.lastGoodPrice();
-        assertGt(lastGoodPriceEthX, 0);
-
-        uint256 latestAnswerEthXEth = _getLatestAnswerFromOracle(ethXOracle);
-        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
-
-        uint256 expectedMarketPrice = latestAnswerEthXEth * latestAnswerEthUsd / 1e18;
-
-        (, uint256 ethBalance, uint256 ethXSupply) = staderOracle.exchangeRate();
-        uint256 rate = ethBalance * 1e18 / ethXSupply;
-        assertGt(rate, 1e18);
-
-        uint256 expectedCanonicalPrice = rate * latestAnswerEthUsd / 1e18;
-
-        uint256 expectedPrice = LiquityMath._min(expectedMarketPrice, expectedCanonicalPrice);
-
-        assertEq(lastGoodPriceEthX, expectedPrice);
-    }
-
-    function testSetLastGoodPriceOnDeploymentOSETH() public view {
-        uint256 lastGoodPriceOsUsd = osEthPriceFeed.lastGoodPrice();
-        assertGt(lastGoodPriceOsUsd, 0);
-
-        uint256 latestAnswerOsEthEth = _getLatestAnswerFromOracle(osEthOracle);
-        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
-
-        uint256 expectedMarketPrice = latestAnswerOsEthEth * latestAnswerEthUsd / 1e18;
-
-        uint256 rate = osTokenVaultController.convertToAssets(1e18);
-        assertGt(rate, 1e18);
-
-        uint256 expectedCanonicalPrice = rate * latestAnswerEthUsd / 1e18;
-
-        uint256 expectedPrice = LiquityMath._min(expectedMarketPrice, expectedCanonicalPrice);
-
-        assertEq(lastGoodPriceOsUsd, expectedPrice);
-    }
 
     function testSetLastGoodPriceOnDeploymentWSTETH() public view {
         uint256 lastGoodPriceWsteth = wstethPriceFeed.lastGoodPrice();
@@ -243,45 +189,6 @@ contract OraclesMainnet is TestAccounts {
         assertEq(fetchedRethUsdPrice, expectedPrice);
     }
 
-    function testFetchPriceReturnsCorrectPriceETHX() public {
-        (uint256 fetchedEthXUsdPrice,) = ethXPriceFeed.fetchPrice();
-        assertGt(fetchedEthXUsdPrice, 0);
-
-        uint256 latestAnswerEthXEth = _getLatestAnswerFromOracle(ethXOracle);
-        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
-
-        uint256 expectedMarketPrice = latestAnswerEthXEth * latestAnswerEthUsd / 1e18;
-
-        (, uint256 ethBalance, uint256 ethXSupply) = staderOracle.exchangeRate();
-        uint256 rate = ethBalance * 1e18 / ethXSupply;
-        assertGt(rate, 1e18);
-
-        uint256 expectedCanonicalPrice = rate * latestAnswerEthUsd / 1e18;
-
-        uint256 expectedPrice = LiquityMath._min(expectedMarketPrice, expectedCanonicalPrice);
-
-        assertEq(fetchedEthXUsdPrice, expectedPrice);
-    }
-
-    function testFetchPriceReturnsCorrectPriceOSETH() public {
-        (uint256 fetchedOsEthUsdPrice,) = osEthPriceFeed.fetchPrice();
-        assertGt(fetchedOsEthUsdPrice, 0);
-
-        uint256 latestAnswerOsEthEth = _getLatestAnswerFromOracle(osEthOracle);
-        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
-
-        uint256 expectedMarketPrice = latestAnswerOsEthEth * latestAnswerEthUsd / 1e18;
-
-        uint256 rate = osTokenVaultController.convertToAssets(1e18);
-        assertGt(rate, 1e18);
-
-        uint256 expectedCanonicalPrice = rate * latestAnswerEthUsd / 1e18;
-
-        uint256 expectedPrice = LiquityMath._min(expectedMarketPrice, expectedCanonicalPrice);
-
-        assertEq(fetchedOsEthUsdPrice, expectedPrice);
-    }
-
     function testFetchPriceReturnsCorrectPriceWSTETH() public {
         (uint256 fetchedStethUsdPrice,) = wstethPriceFeed.fetchPrice();
         assertGt(fetchedStethUsdPrice, 0);
@@ -307,28 +214,8 @@ contract OraclesMainnet is TestAccounts {
     }
 
     function testRethEthStalenessThresholdSetRETH() public view {
-        (, uint256 storedRethEthStaleness,) = rethPriceFeed.lstEthOracle();
+        (, uint256 storedRethEthStaleness,) = rethPriceFeed.rEthEthOracle();
         assertEq(storedRethEthStaleness, _48_HOURS);
-    }
-
-    function testEthUsdStalenessThresholdSetETHX() public view {
-        (, uint256 storedEthUsdStaleness,) = ethXPriceFeed.ethUsdOracle();
-        assertEq(storedEthUsdStaleness, _24_HOURS);
-    }
-
-    function testEthXEthStalenessThresholdSetETHX() public view {
-        (, uint256 storedEthXEthStaleness,) = ethXPriceFeed.lstEthOracle();
-        assertEq(storedEthXEthStaleness, _48_HOURS);
-    }
-
-    function testEthUsdStalenessThresholdSetOSETH() public view {
-        (, uint256 storedEthUsdStaleness,) = osEthPriceFeed.ethUsdOracle();
-        assertEq(storedEthUsdStaleness, _24_HOURS);
-    }
-
-    function testOsEthEthStalenessThresholdSetOSETH() public view {
-        (, uint256 storedOsEthStaleness,) = osEthPriceFeed.lstEthOracle();
-        assertEq(storedOsEthStaleness, _48_HOURS);
     }
 
     function testStethUsdStalenessThresholdSetWSTETH() public view {
@@ -374,48 +261,6 @@ contract OraclesMainnet is TestAccounts {
         );
 
         trovesCount = contractsArray[1].troveManager.getTroveIdsCount();
-        assertEq(trovesCount, 1);
-    }
-
-    function testOpenTroveETHX() public {
-        uint256 latestAnswerEthXEth = _getLatestAnswerFromOracle(ethXOracle);
-        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
-
-        uint256 calcdEthXUsdPrice = latestAnswerEthXEth * latestAnswerEthUsd / 1e18;
-
-        uint256 coll = 5 ether;
-        uint256 debtRequest = coll * calcdEthXUsdPrice / 2 / 1e18;
-
-        uint256 trovesCount = contractsArray[3].troveManager.getTroveIdsCount();
-        assertEq(trovesCount, 0);
-
-        vm.startPrank(A);
-        contractsArray[3].borrowerOperations.openTrove(
-            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
-        );
-
-        trovesCount = contractsArray[3].troveManager.getTroveIdsCount();
-        assertEq(trovesCount, 1);
-    }
-
-    function testOpenTroveOSETH() public {
-        uint256 latestAnswerOsEthEth = _getLatestAnswerFromOracle(osEthOracle);
-        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
-
-        uint256 calcdOsEthUsdPrice = latestAnswerOsEthEth * latestAnswerEthUsd / 1e18;
-
-        uint256 coll = 5 ether;
-        uint256 debtRequest = coll * calcdOsEthUsdPrice / 2 / 1e18;
-
-        uint256 trovesCount = contractsArray[4].troveManager.getTroveIdsCount();
-        assertEq(trovesCount, 0);
-
-        vm.startPrank(A);
-        contractsArray[4].borrowerOperations.openTrove(
-            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
-        );
-
-        trovesCount = contractsArray[4].troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
     }
 

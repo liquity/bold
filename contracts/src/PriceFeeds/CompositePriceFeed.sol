@@ -4,71 +4,81 @@ pragma solidity 0.8.24;
 
 import "../Dependencies/LiquityMath.sol";
 import "./MainnetPriceFeedBase.sol";
-import "../Interfaces/ICompositePriceFeed.sol";
 
+<<<<<<< HEAD
 // Composite PriceFeed: outputs an LST-USD price derived from two external price Oracles: LST-ETH, and ETH-USD.
 // Used where the LST token is non-rebasing (as per rETH, osETH, ETHx, etc).
 contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {
     Oracle public lstEthOracle;
     Oracle public ethUsdOracle;
 
+=======
+// import "forge-std/console2.sol";
+
+// The CompositePriceFeed is used for feeds that incorporate both a market price oracle (e.g. STETH-USD, or RETH-ETH) 
+// and an LST canonical rate (e.g. WSTETH:STETH, or RETH:ETH).
+contract CompositePriceFeed is MainnetPriceFeedBase {
+>>>>>>> 81a1a2aa (Add ETH-USD fallback logic and remove OSETH and ETHX contracts)
     address public rateProviderAddress;
 
     constructor(
         address _owner,
         address _ethUsdOracleAddress,
-        address _lstEthOracleAddress,
         address _rateProviderAddress,
-        uint256 _ethUsdStalenessThreshold,
-        uint256 _lstEthStalenessThreshold
-    ) MainnetPriceFeedBase(_owner) {
-        // Store ETH-USD oracle
-        ethUsdOracle.aggregator = AggregatorV3Interface(_ethUsdOracleAddress);
-        ethUsdOracle.stalenessThreshold = _ethUsdStalenessThreshold;
-        ethUsdOracle.decimals = ethUsdOracle.aggregator.decimals();
-        assert(ethUsdOracle.decimals == 8);
-
-        // Store LST-ETH oracle
-        lstEthOracle.aggregator = AggregatorV3Interface(_lstEthOracleAddress);
-        lstEthOracle.stalenessThreshold = _lstEthStalenessThreshold;
-        lstEthOracle.decimals = lstEthOracle.aggregator.decimals();
-
+        uint256 _ethUsdStalenessThreshold
+    ) MainnetPriceFeedBase(
+        _owner,
+        _ethUsdOracleAddress,
+        _ethUsdStalenessThreshold
+    ) {
         // Store rate provider
         rateProviderAddress = _rateProviderAddress;
+    }
+    
+    function fetchPrice() public returns (uint256, bool) {
+        // If branch is live and the primary oracle setup has been working, try to use it 
+        if (priceSource == PriceSource.primary) {return _fetchPrice();}
 
-        _fetchPrice();
+        // If branch is already shut down and using ETH-USD * canonical_rate, try to use that
+        if (priceSource == PriceSource.ETHUSDxCanonical) {
+                (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
+                //... but if the ETH-USD oracle *also* fails here, use the lastGoodPrice
+                if(ethUsdOracleDown) {
+                    // No need to shut down, since branch already is shut down
+                    return (lastGoodPrice, false);
+                } else {
+                    return (_fetchPriceETHUSDxCanonical(ethUsdPrice), false);
+                }
+            }
 
-        // Check an oracle didn't already fail
-        assert(priceFeedDisabled == false);
+        // Otherwise if branch is shut down and already using the lastGoodPrice, continue with it
+        if (priceSource == PriceSource.lastGoodPrice) {return (lastGoodPrice, false);}
     }
 
-    function _fetchPrice() internal override returns (uint256, bool) {
-        (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
-        (uint256 lstEthPrice, bool lstEthOracleDown) = _getOracleAnswer(lstEthOracle);
+    function _shutDownAndSwitchToETHUSDxCanonical(address _failedOracleAddr, uint256 _ethUsdPrice) internal returns (uint256) {
+        // Shut down the branch
+        borrowerOperations.shutdownFromOracleFailure(_failedOracleAddr);
 
-        // If one of Chainlink's responses was invalid in this transaction, disable this PriceFeed and
-        // return the last good LST-USD price calculated
-        if (ethUsdOracleDown) return (_disableFeedAndShutDown(address(ethUsdOracle.aggregator)), true);
-        if (lstEthOracleDown) return (_disableFeedAndShutDown(address(lstEthOracle.aggregator)), true);
+        priceSource = PriceSource.ETHUSDxCanonical;
+        return _fetchPriceETHUSDxCanonical(_ethUsdPrice);
+    }
 
-        // Calculate the market LST-USD price: USD_per_LST = USD_per_ETH * ETH_per_LST
-        uint256 lstUsdMarketPrice = ethUsdPrice * lstEthPrice / 1e18;
-
+    // Only called if the primary LST oracle has failed, branch has shut down, 
+    // and we've switched to using: ETH-USD * canonical_rate.
+    function _fetchPriceETHUSDxCanonical(uint256 _ethUsdPrice) internal returns (uint256) {
+        assert(priceSource == PriceSource.ETHUSDxCanonical);
         // Get the ETH_per_LST canonical rate directly from the LST contract
         // TODO: Should we also shutdown if the call to the canonical rate reverts, or returns 0?
         uint256 lstEthRate = _getCanonicalRate();
 
         // Calculate the canonical LST-USD price: USD_per_LST = USD_per_ETH * ETH_per_LST
-        uint256 lstUsdCanonicalPrice = ethUsdPrice * lstEthRate / 1e18;
+        uint256 lstUsdCanonicalPrice = _ethUsdPrice * lstEthRate / 1e18;
 
-        // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation
-        uint256 lstUsdPrice = LiquityMath._min(lstUsdMarketPrice, lstUsdCanonicalPrice);
+        lastGoodPrice = lstUsdCanonicalPrice;
 
-        lastGoodPrice = lstUsdPrice;
-
-        return (lstUsdPrice, false);
+        return (lstUsdCanonicalPrice);
     }
 
-    // Returns the ETH_per_LST as from the LST smart contract. Implementation depends on the specific LST.
+    // Returns the LST exchange rate from the LST smart contract. Implementation depends on the specific LST.
     function _getCanonicalRate() internal view virtual returns (uint256) {}
 }
