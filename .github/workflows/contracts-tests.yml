@@ -131,7 +131,7 @@ jobs:
 
       - name: Run Forge coverage
         run: |
-          forge coverage --report lcov --report-file lcov_foundry.info
+          forge coverage --no-match-contract Invariant --report lcov --report-file lcov_foundry.info
 
       - name: Install lcov
         run: sudo apt-get -y install lcov
