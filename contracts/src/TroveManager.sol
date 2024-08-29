@@ -1223,6 +1223,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         Troves[_troveId].status = Status.active;
         Troves[_troveId].arrayIndex = uint64(TroveIds.length);
         Troves[_troveId].interestBatchManager = _batchAddress;
+        Troves[_troveId].lastInterestRateAdjTime = uint64(block.timestamp);
 
         _updateTroveRewardSnapshots(_troveId);
 

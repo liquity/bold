@@ -774,6 +774,274 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(tmBatchManagerAddress, B, "Wrong batch manager in TM");
     }
 
+    function testJoinBatchBatchManagerChargesUpfrontFeeIfTroveShortChangeBatchNotSameInterestRate() public {
+        // B registers as batch manager
+        registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        // Cool down period gone by
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1);
+
+        // A opens trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+
+        uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 upfrontFee = predictJoinBatchInterestRateUpfrontFee(troveId, B);
+        assertGt(upfrontFee, 0, "Upfront fee should be > 0");
+
+        // A joins B
+        setInterestBatchManager(A, troveId, B);
+
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore + upfrontFee,
+            1e14,
+            "A debt should have increased by upfront fee"
+        );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
+    }
+
+    function testJoinBatchBatchManagerDoesNotChargeUpfrontFeeIfBatchShortChangeTroveNotSameInterestRate() public {
+        // B registers as batch manager
+        registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 6e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
+
+        // A opens trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+
+        // Cool down period gone by
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1);
+
+        // B changes interest rate
+        setBatchInterestRate(B, 5e16);
+
+        uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 upfrontFee = predictJoinBatchInterestRateUpfrontFee(troveId, B);
+        assertEq(upfrontFee, 0, "Upfront fee should be 0");
+
+        // A joins B
+        setInterestBatchManager(A, troveId, B);
+
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore,
+            1e14,
+            "A debt should stay the same"
+        );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
+    }
+
+    function testJoinBatchBatchManagerChargesUpfrontFeeIfTroveAndBatchShortChangeSameInterestRate() public {
+        // B registers as batch manager
+        registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 4e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        // Cool down period gone by
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1);
+
+        // A opens trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+
+        // B changes interest rate
+        setBatchInterestRate(B, 5e16);
+
+        uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 upfrontFee = predictJoinBatchInterestRateUpfrontFee(troveId, B);
+        assertGt(upfrontFee, 0, "Upfront fee should be > 0");
+
+        // A joins B
+        setInterestBatchManager(A, troveId, B);
+
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore + upfrontFee,
+            1e14,
+            "A debt should have increased by upfront fee"
+        );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
+    }
+
+    function testJoinBatchBatchManagerDoesNotChargeUpfrontFeeIfNotTroveNorBatchShortChangeSameInterestRate() public {
+        // B registers as batch manager
+        registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 6e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
+
+        // A opens trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+
+        // Cool down period gone by
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1);
+
+        uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 upfrontFee = predictJoinBatchInterestRateUpfrontFee(troveId, B);
+        assertEq(upfrontFee, 0, "Upfront fee should be 0");
+
+        // A joins B
+        setInterestBatchManager(A, troveId, B);
+
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore,
+            1e14,
+            "A debt should stay the same"
+        );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
+    }
+
+    function testCannotGameUpfrontFeeByJoiningABatchAndChangingInterest() public {
+        // B registers as batch manager
+        registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
+
+        // Interest rate change and cool down period gone by
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + MIN_INTEREST_RATE_CHANGE_PERIOD + 1);
+
+        // A opens trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+
+        uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 upfrontFee = predictJoinBatchInterestRateUpfrontFee(troveId, B);
+        assertGt(upfrontFee, 0, "Upfront fee should be > 0");
+
+        // A joins B
+        setInterestBatchManager(A, troveId, B);
+
+        // B changes interest rate
+        setBatchInterestRate(B, 4e16);
+
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore + upfrontFee,
+            1e14,
+            "A debt should have increased by upfront fee"
+        );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
+    }
+
+    function testJoinABatchWithSameInterestAndLeaveToSameInterestChargesUpfrontFeeOnlyOnce() public {
+        // B registers as batch manager
+        registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
+
+        // Cool down period gone by
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1);
+
+        // A opens trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+
+        uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 upfrontFee = predictJoinBatchInterestRateUpfrontFee(troveId, B);
+        assertGt(upfrontFee, 0, "Upfront fee should be > 0");
+
+        // A joins B
+        setInterestBatchManager(A, troveId, B);
+
+        // A leaves B
+        removeFromBatch(A, troveId, 5e16);
+
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore + upfrontFee,
+            1e14,
+            "A debt should have increased by upfront fee"
+        );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
+    }
+
+    function testJoinABatchWithDifferentInterestAndLeaveToSameInterestChargesUpfrontFeeOnlyOnce() public {
+        // B registers as batch manager
+        registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
+
+        // Cool down period gone by
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1);
+
+        // A opens trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 6e16);
+
+        uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 upfrontFee = predictJoinBatchInterestRateUpfrontFee(troveId, B);
+        assertGt(upfrontFee, 0, "Upfront fee should be > 0");
+
+        // A joins B
+        setInterestBatchManager(A, troveId, B);
+
+        // A leaves B
+        removeFromBatch(A, troveId, 5e16);
+
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore + upfrontFee,
+            1e14,
+            "A debt should have increased by upfront fee"
+        );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
+    }
+
+    function testJoinABatchWithSameInterestAndLeaveToDifferentInterestChargesUpfrontFeeTwice() public {
+        // B registers as batch manager
+        registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
+
+        // Cool down period gone by
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1);
+
+        // A opens trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+
+        uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 upfrontFee1 = predictJoinBatchInterestRateUpfrontFee(troveId, B);
+        assertGt(upfrontFee1, 0, "Upfront 1 fee should be > 0");
+
+        // A joins B
+        setInterestBatchManager(A, troveId, B);
+
+        uint256 upfrontFee2 = predictAdjustInterestRateUpfrontFee(troveId, 4e16);
+        assertGt(upfrontFee2, 0, "Upfront 2 fee should be > 0");
+
+        // A leaves B
+        removeFromBatch(A, troveId, 4e16);
+
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore + upfrontFee1 + upfrontFee2,
+            1e14,
+            "A debt should have increased by upfront fee twice"
+        );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
+    }
+
+    function testJoinABatchWithDifferentInterestAndLeaveToDifferentInterestChargesUpfrontFeeTwice() public {
+        // B registers as batch manager
+        registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 6e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
+
+        // Cool down period gone by
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1);
+
+        // A opens trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+
+        uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 upfrontFee1 = predictJoinBatchInterestRateUpfrontFee(troveId, B);
+        assertGt(upfrontFee1, 0, "Upfront 1 fee should be > 0");
+
+        // A joins B
+        setInterestBatchManager(A, troveId, B);
+
+        uint256 upfrontFee2 = predictAdjustInterestRateUpfrontFee(troveId, 4e16);
+        assertGt(upfrontFee2, 0, "Upfront 2 fee should be > 0");
+
+        // A leaves B
+        removeFromBatch(A, troveId, 4e16);
+
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore + upfrontFee1 + upfrontFee2,
+            1e14,
+            "A debt should have increased by upfront fee twice"
+        );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
+    }
+
     function testSwitchBatchBatchManagerChargesUpfrontFeeIfJoinedOldLessThanCooldownAgo() public {
         // C registers as batch manager
         registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
@@ -783,7 +1051,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         // Cool down period not gone by yet
         vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN - 60);
         uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
-        uint256 upfrontFee = predictAdjustInterestRateUpfrontFee(troveId, 5e16);
+        uint256 upfrontFee = predictJoinBatchInterestRateUpfrontFee(troveId, C);
         assertGt(upfrontFee, 0, "Upfront fee should be > 0");
 
         // Switch from B to C
@@ -795,6 +1063,33 @@ contract InterestBatchManagementTest is DevTestSetup {
             1e14,
             "A debt should have increased by upfront fee"
         );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
+    }
+
+    function testSwitchBatchBatchManagerChargesUpfrontFeeIfJoinedOldMoreThanCooldownAgo() public {
+        // C registers as batch manager
+        registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        // A opens trove and joins batch manager B (which has the same interest)
+        uint256 troveId = openTroveAndJoinBatchManager(A, 100 ether, 2000e18, B, 5e16);
+
+        // Cool down period gone by
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1);
+        uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 upfrontFee = forcePredictJoinBatchInterestRateUpfrontFee(troveId, C);
+        assertGt(upfrontFee, 0, "Upfront fee should be > 0");
+
+        // Switch from B to C
+        switchBatchManager(A, troveId, C);
+
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore + upfrontFee,
+            1e14,
+            "A debt should have increased by upfront fee"
+        );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
     }
 
     function testSwitchBatchBatchManagerChargesUpfrontFeeIfOldBatchChangedFeeLessThanCooldownAgo() public {
@@ -811,7 +1106,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         batch = troveManager.getLatestBatchData(B);
 
         uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
-        uint256 upfrontFee = predictAdjustInterestRateUpfrontFee(troveId, 5e16);
+        uint256 upfrontFee = predictJoinBatchInterestRateUpfrontFee(troveId, C);
         assertGt(upfrontFee, 0, "Upfront fee should be > 0");
         // Switch from B to C
         switchBatchManager(A, troveId, C);
@@ -821,16 +1116,19 @@ contract InterestBatchManagementTest is DevTestSetup {
             1,
             "A debt should have increased by upfront fee"
         );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
     }
 
     function testSwitchBatchBatchManagerDoesNotChargeTroveUpfrontFeeIfBatchChangesRateWithoutUpfrontFee() public {
+        // B registers as batch manager
         registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
-
-        // Cool down period not gone by yet
-        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN - 60);
 
         // C registers as batch manager
         registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
+
+        // Cool down period gone by
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1);
 
         // A opens trove and joins batch manager B (which has the same interest)
         uint256 troveId = openTroveAndJoinBatchManager(A, 100 ether, 2000e18, B, 5e16);
@@ -839,10 +1137,12 @@ contract InterestBatchManagementTest is DevTestSetup {
         switchBatchManager(A, troveId, C);
 
         uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
-        // B changes interest rate, but it doesn’t trigger upfront fee
-        setBatchInterestRate(B, 10e16);
+        // C changes interest rate, but it doesn’t trigger upfront fee
+        setBatchInterestRate(C, 10e16);
 
         assertEq(troveManager.getTroveEntireDebt(troveId), ADebtBefore, "A debt should be the same");
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
     }
 
     function testAnUnredeemableTroveGoesBackToTheBatch() public {
@@ -900,6 +1200,8 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 expectedUpfrontFeeA =
             initialDebt * avgInterestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
         assertEq(ATroveEntireDebt - initialDebt, expectedUpfrontFeeA, "Wrong upfront fee for A");
+        LatestTroveData memory ATroveData = troveManager.getLatestTroveData(ATroveId);
+        assertEq(ATroveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
 
         vm.warp(block.timestamp + 10 days);
 
@@ -914,5 +1216,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 expectedUpfrontFeeC =
             initialDebt * avgInterestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
         assertApproxEqAbs(CTroveEntireDebt - initialDebt, expectedUpfrontFeeC, 1, "Wrong upfront fee for C");
+        LatestTroveData memory CTroveData = troveManager.getLatestTroveData(CTroveId);
+        assertEq(CTroveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for C");
     }
 }
