@@ -948,6 +948,9 @@ class TestHelper {
         lowerHint,
         annualInterestRate,
         TestHelper.MAX_UINT256, // _maxUpfrontFee
+        this.ZERO_ADDRESS, // _addManager,
+        this.ZERO_ADDRESS, // _removeManager,
+        this.ZERO_ADDRESS, // _receiver
         { from: extraParams.from },
       );
     }

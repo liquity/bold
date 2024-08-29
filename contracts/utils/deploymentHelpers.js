@@ -1,5 +1,7 @@
 // Borrowing contracts
+const DeterministicDeployFactory = artifacts.require("./DeterministicDeployFactory.sol");
 const SortedTroves = artifacts.require("./SortedTroves.sol");
+const AddressesRegistry = artifacts.require("./AddressesRegistry.sol");
 const TroveManager = artifacts.require("./TroveManager.sol");
 const TroveNFT = artifacts.require("./TroveNFT.sol");
 const PriceFeedTestnet = artifacts.require("./PriceFeedTestnet.sol");
@@ -9,6 +11,7 @@ const GasPool = artifacts.require("./GasPool.sol");
 const CollSurplusPool = artifacts.require("./CollSurplusPool.sol");
 const BorrowerOperations = artifacts.require("./BorrowerOperations.sol");
 const HintHelpers = artifacts.require("./HintHelpers.sol");
+const MultiTroveGetter = artifacts.require("./MultiTroveGetter.sol");
 const BoldToken = artifacts.require("./BoldTokenTester.sol");
 const StabilityPool = artifacts.require("./StabilityPool.sol");
 const PriceFeedMock = artifacts.require("./PriceFeedMock.sol");
@@ -20,11 +23,17 @@ const Constants = artifacts.require("./Constants.sol");
 //  "../node_modules/@openzeppelin/contracts/build/contracts/ERC20PresetMinterPauser.json"
 // );
 
+//const { ethers } = require("ethers");
 const { web3, ethers } = require("hardhat");
+const hh = require("hardhat");
 const { accountsList } = require("../hardhatAccountsList2k.js");
 const { fundAccounts } = require("./fundAccounts.js");
 
+const SALT = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("LiquityV2"));
+//const CREATE2_PROXY_ADDRESS = "0x4e59b44847b379578588920cA78FbF26c0B4956C";
+
 class DeploymentHelper {
+
   static async deployLiquityCore(mocks = {}) {
     return await this.deployLiquityCoreHardhat(mocks);
   }
@@ -32,11 +41,13 @@ class DeploymentHelper {
   static async deployLiquityCoreHardhat(mocks = {
     PriceFeed: PriceFeedMock, // PriceFeed gets a mock by default
   }) {
+
     const WETH = await ERC20.new("WETH", "WETH");
 
     // Contracts, with mocks overriding defaults
     const Contracts = Object.fromEntries(
       Object.entries({
+        AddressesRegistry,
         ActivePool,
         TroveNFT,
         BorrowerOperations,
@@ -59,57 +70,76 @@ class DeploymentHelper {
         ]),
     );
 
+    this.defaultSender = new ethers.Wallet(accountsList[0].privateKey).address;
+
+    this.deterministicDeployFactory = await DeterministicDeployFactory.new();
+    //console.log('this.deterministicDeployFactory: ', this.deterministicDeployFactory.address)
+
     // Borrowing contracts
-    const activePool = await Contracts.ActivePool.new(WETH.address);
-    const troveManager = await Contracts.TroveManager.new(
+    const addressesRegistry = await Contracts.AddressesRegistry.new(
+      this.defaultSender,
       web3.utils.toBN("1500000000000000000"),
       web3.utils.toBN("1100000000000000000"),
       web3.utils.toBN("1100000000000000000"),
       web3.utils.toBN("100000000000000000"),
       web3.utils.toBN("100000000000000000"),
-      WETH.address
     );
-    const collSurplusPool = await Contracts.CollSurplusPool.new(WETH.address);
-    const defaultPool = await Contracts.DefaultPool.new(WETH.address);
-    const gasPool = await Contracts.GasPool.new();
+    this.addressesRegistryAddress = addressesRegistry.address;
+
+    const addresses = {}
+    addresses.troveManager = this.getCreate2Address(Contracts.TroveManager);
+
+    const boldToken = await Contracts.BoldToken.new(this.defaultSender);
+    const collateralRegistry = await Contracts.CollateralRegistry.new(boldToken.address, [WETH.address], [addresses.troveManager]);
+    //const priceFeed = await Contracts.PriceFeedMock.new();
     const priceFeedTestnet = await Contracts.PriceFeedTestnet.new();
-    const priceFeed = await Contracts.PriceFeedMock.new();
-    const sortedTroves = await Contracts.SortedTroves.new();
-    const stabilityPool = await Contracts.StabilityPool.new(WETH.address);
-    const constants = await Contracts.Constants.new();
-
-    const boldToken = await Contracts.BoldToken.new();
-
-    const collateralRegistry = await Contracts.CollateralRegistry.new(boldToken.address, [WETH.address]);
-    const troveManagerParams = {
-      liquidationPenaltySP: "100000000000000000",
-      liquidationPenaltyRedistribution: "100000000000000000",
-      troveNFT: troveNFT.address,
-      borrowerOperations: borrowerOperations.address,
-      activePool: activePool.address,
-      defaultPool: defaultPool.address,
-      stabilityPool: stabilityPool.address,
-      gasPoolAddress: gasPool.address,
-      collSurplusPool: collSurplusPool.address,
-      priceFeed: priceFeedTestnet.address,
-      boldToken: boldToken.address,
-      sortedTroves: sortedTroves.address,
-      weth: WETH.address,
-      collateralRegistry: collateralRegistry.address
-    };
-    const troveManager = await Contracts.TroveManager.new(troveManagerParams);
-
     const mockInterestRouter = await MockInterestRouter.new();
     const hintHelpers = await Contracts.HintHelpers.new(collateralRegistry.address);
+    const multiTroveGetter = await MultiTroveGetter.new(collateralRegistry.address);
 
-    // // Needed?
-    // const price = await priceFeed.getPrice();
-    // const uint128Max = web3.utils.toBN(
-    //   "340282366920938463463374607431768211455"
-    // );
-    // const uint192Max = web3.utils.toBN(
-    //   "6277101735386680763835789423207666416102355444464034512895"
-    // );
+
+    addresses.collToken = WETH.address;
+    addresses.borrowerOperations = this.getCreate2Address(Contracts.BorrowerOperations);
+    addresses.troveNFT = this.getCreate2Address(Contracts.TroveNFT);
+    addresses.stabilityPool = this.getCreate2Address(Contracts.StabilityPool);
+    addresses.priceFeed = priceFeedTestnet.address;
+    addresses.activePool = this.getCreate2Address(Contracts.ActivePool);
+    addresses.defaultPool = this.getCreate2Address(Contracts.DefaultPool);
+    addresses.gasPoolAddress = this.getCreate2Address(Contracts.GasPool);
+    addresses.collSurplusPool = this.getCreate2Address(Contracts.CollSurplusPool);
+    addresses.sortedTroves = this.getCreate2Address(Contracts.SortedTroves);
+    addresses.interestRouter = mockInterestRouter.address;
+    addresses.hintHelpers = hintHelpers.address;
+    addresses.multiTroveGetter = multiTroveGetter.address;
+    addresses.collateralRegistry = collateralRegistry.address;
+    addresses.boldToken = boldToken.address;
+    addresses.WETH = WETH.address;
+
+    //console.log('addresses: ', addresses)
+
+    // set addresses in the registry
+    await addressesRegistry.setAddresses(addresses);
+
+    await this.deployWithCreate2(Contracts.BorrowerOperations);
+    await this.deployWithCreate2(Contracts.TroveManager);
+    await this.deployWithCreate2(Contracts.TroveNFT);
+    await this.deployWithCreate2(Contracts.ActivePool);
+    await this.deployWithCreate2(Contracts.CollSurplusPool);
+    await this.deployWithCreate2(Contracts.GasPool);
+    await this.deployWithCreate2(Contracts.DefaultPool);
+    await this.deployWithCreate2(Contracts.SortedTroves);
+    await this.deployWithCreate2(Contracts.StabilityPool);
+
+    const troveManager = await Contracts.TroveManager.at(addresses.troveManager);
+    const troveNFT = await Contracts.TroveNFT.at(addresses.troveNFT);
+    const borrowerOperations = await Contracts.BorrowerOperations.at(addresses.borrowerOperations);
+    const activePool = await Contracts.ActivePool.at(addresses.activePool);
+    const collSurplusPool = await Contracts.CollSurplusPool.at(addresses.collSurplusPool);
+    const gasPool = await Contracts.GasPool.at(addresses.gasPoolAddress);
+    const defaultPool = await Contracts.DefaultPool.at(addresses.defaultPool);
+    const sortedTroves = await Contracts.SortedTroves.at(addresses.sortedTroves);
+    const stabilityPool = await Contracts.StabilityPool.at(addresses.stabilityPool);
+    const constants = await Contracts.Constants.new();
 
     // TODO: setAsDeployed all above?
 
@@ -130,6 +160,7 @@ class DeploymentHelper {
 
     const coreContracts = {
       WETH,
+      addressesRegistry,
       priceFeedTestnet,
       boldToken,
       sortedTroves,
@@ -149,6 +180,32 @@ class DeploymentHelper {
     return coreContracts;
   }
 
+  static getCreate2Address = (contract) => {
+    const initCode = this.getInitCode(contract);
+    const initCodeHash = ethers.utils.keccak256(initCode);
+    const contractAddress = ethers.utils.getCreate2Address(this.deterministicDeployFactory.address, SALT, initCodeHash);
+    //console.log('contractAddress: ', contractAddress)
+    return contractAddress;
+  }
+
+  static async deployWithCreate2(contract) {
+    const initCode = this.getInitCode(contract);
+
+    const tx = await this.deterministicDeployFactory.deploy(initCode, SALT);
+    //console.log('tx: ', tx)
+    const address = tx.logs[0].args[0];
+    //console.log('address: ', address);
+    return address;
+  }
+
+  static getInitCode = (contract) => contract.bytecode + this.encoder(["address"], [this.addressesRegistryAddress]);
+
+  static encoder = (types, values) => {
+    const abiCoder = ethers.utils.defaultAbiCoder;
+    const encodedParams = abiCoder.encode(types, values);
+    return encodedParams.slice(2);
+  };
+
   // Connect contracts to their dependencies
   static async connectCoreContracts(contracts) {
     await contracts.boldToken.setBranchAddresses(
@@ -158,68 +215,7 @@ class DeploymentHelper {
       contracts.activePool.address,
     );
 
-    await contracts.stabilityPool.setAddresses(
-      contracts.borrowerOperations.address,
-      contracts.troveManager.address,
-      contracts.activePool.address,
-      contracts.boldToken.address,
-      contracts.sortedTroves.address,
-      contracts.priceFeedTestnet.address,
-    );
-    // set TroveManager addr in SortedTroves
-    await contracts.sortedTroves.setAddresses(
-      contracts.troveManager.address,
-      contracts.borrowerOperations.address,
-    );
-
-    // set contracts in BorrowerOperations
-    await contracts.borrowerOperations.setAddresses(
-      contracts.troveManager.address,
-      contracts.activePool.address,
-      contracts.defaultPool.address,
-      contracts.gasPool.address,
-      contracts.collSurplusPool.address,
-      contracts.priceFeedTestnet.address,
-      contracts.sortedTroves.address,
-      contracts.boldToken.address,
-      // contracts.stETH.address
-    );
-
-    await contracts.troveNFT.setAddresses(contracts.troveManager.address);
-
-    await contracts.activePool.setAddresses(
-      contracts.borrowerOperations.address,
-      contracts.troveManager.address,
-      contracts.stabilityPool.address,
-      contracts.defaultPool.address,
-      contracts.boldToken.address,
-      contracts.mockInterestRouter.address,
-      // contracts.stETH.address,
-    );
-
-    await contracts.defaultPool.setAddresses(
-      contracts.troveManager.address,
-      contracts.activePool.address,
-      // contracts.stETH.address
-    );
-
-    await contracts.collSurplusPool.setAddresses(
-      contracts.borrowerOperations.address,
-      contracts.troveManager.address,
-      contracts.activePool.address,
-    );
-
-    await contracts.gasPool.setAllowance(
-      contracts.WETH.address,
-      contracts.borrowerOperations.address,
-      contracts.troveManager.address
-    );
-
-    await contracts.boldToken.setCollateralRegistry(
-      contracts.collateralRegistry.address,
-    );
-
-    await contracts.collateralRegistry.setTroveManager(0, contracts.troveManager.address);
+    await contracts.boldToken.setCollateralRegistry(contracts.collateralRegistry.address);
   }
 }
 module.exports = DeploymentHelper;
