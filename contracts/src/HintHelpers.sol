@@ -236,11 +236,7 @@ contract HintHelpers is IHintHelpers {
         IActivePool _activePool,
         LatestTroveData memory _trove,
         LatestBatchData memory _batch
-    )
-        internal
-        view
-        returns (uint256)
-    {
+    ) internal view returns (uint256) {
         TroveChange memory newBatchTroveChange;
         newBatchTroveChange.appliedRedistBoldDebtGain = _trove.redistBoldDebtGain;
         newBatchTroveChange.batchAccruedManagementFee = _batch.accruedManagementFee;
@@ -265,7 +261,7 @@ contract HintHelpers is IHintHelpers {
 
         if (
             _newInterestRate == batch.annualInterestRate
-                || block.timestamp >= batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
+                || block.timestamp >= trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
         ) {
             return 0;
         }

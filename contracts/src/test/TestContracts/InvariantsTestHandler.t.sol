@@ -468,7 +468,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 address batchManager = _batchManagerOf[j][troveId];
                 Trove storage trove = _troves[j][troveId];
 
-                if (batchManager == address(0)) _timeSinceLastTroveInterestRateAdjustment[j][troveId] += timeDelta;
+                _timeSinceLastTroveInterestRateAdjustment[j][troveId] += timeDelta;
                 if (isShutdown[j]) continue; // shutdown branches stop accruing interest & batch management fees
 
                 uint256 interest = trove.accrueInterest(timeDelta);
@@ -872,8 +872,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.trove = _troves[i][v.troveId];
         v.wasActive = _isActive(i, v.troveId);
         v.premature = _timeSinceLastTroveInterestRateAdjustment[i][v.troveId] < INTEREST_RATE_ADJ_COOLDOWN;
-        v.upfrontFee = hintHelpers.predictAdjustInterestRateUpfrontFee(i, v.troveId, newInterestRate);
-        if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
+
+        if (v.batchManager == address(0)) {
+            v.upfrontFee = hintHelpers.predictAdjustInterestRateUpfrontFee(i, v.troveId, newInterestRate);
+            if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
+        }
 
         info("upper hint: ", _hintToString(i, v.upperHint));
         info("lower hint: ", _hintToString(i, v.lowerHint));
@@ -1875,8 +1878,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.wasOpen = _isOpen(i, v.troveId);
         v.wasActive = _isActive(i, v.troveId);
         v.premature = _timeSinceLastTroveInterestRateAdjustment[i][v.troveId] < INTEREST_RATE_ADJ_COOLDOWN;
-        v.upfrontFee = hintHelpers.predictJoinBatchInterestRateUpfrontFee(i, v.troveId, v.newBatchManager);
-        if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
+
+        if (_batchManagerOf[i][v.troveId] == address(0)) {
+            v.upfrontFee = hintHelpers.predictJoinBatchInterestRateUpfrontFee(i, v.troveId, v.newBatchManager);
+            if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
+        }
 
         info("batch manager: ", vm.getLabel(v.newBatchManager));
         info("upper hint: ", _hintToString(i, v.upperHint));
@@ -1991,11 +1997,15 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.batchManager = _batchManagerOf[i][v.troveId];
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
         v.wasActive = _isActive(i, v.troveId);
-        v.premature = _timeSinceLastBatchInterestRateAdjustment[i][v.batchManager] < INTEREST_RATE_ADJ_COOLDOWN;
-        v.upfrontFee = v.batchManager != address(0)
-            ? hintHelpers.predictRemoveFromBatchUpfrontFee(i, v.troveId, newInterestRate)
-            : 0;
-        if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
+        v.premature = Math.min(
+            _timeSinceLastTroveInterestRateAdjustment[i][v.troveId],
+            _timeSinceLastBatchInterestRateAdjustment[i][v.batchManager]
+        ) < INTEREST_RATE_ADJ_COOLDOWN;
+
+        if (v.batchManager != address(0)) {
+            v.upfrontFee = hintHelpers.predictRemoveFromBatchUpfrontFee(i, v.troveId, newInterestRate);
+            if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
+        }
 
         Trove memory trove = _troves[i][v.troveId];
         Batch storage batch = _batches[i][v.batchManager];
@@ -2035,6 +2045,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             trove.interestRate = newInterestRate;
             trove.batchManagementRate = 0;
             _troves[i][v.troveId] = trove;
+            _timeSinceLastTroveInterestRateAdjustment[i][v.troveId] = 0;
             delete _batchManagerOf[i][v.troveId];
 
             // Effects (batch)
