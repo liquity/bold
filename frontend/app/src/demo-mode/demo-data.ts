@@ -106,6 +106,7 @@ export const EARN_POOLS: Record<
 
 const BUCKET_SIZE_MAX = 20_000_000;
 const RATE_STEPS = Math.round((INTEREST_RATE_MAX - INTEREST_RATE_MIN) / INTEREST_RATE_INCREMENT) + 1;
+
 export const INTEREST_RATE_BUCKETS = Array.from({ length: RATE_STEPS }, (_, i) => {
   const rate = Math.round(
     (INTEREST_RATE_MIN + i * INTEREST_RATE_INCREMENT) * 10,
