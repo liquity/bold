@@ -197,7 +197,7 @@ export function LeverageScreen() {
             field={
               <InterestRateField
                 debt={leverageField.debt}
-                interestRate={interestRate ?? dn.from(0, 18)}
+                interestRate={interestRate}
                 onChange={setInterestRate}
               />
             }
