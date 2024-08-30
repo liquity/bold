@@ -125,6 +125,13 @@ contract Logging {
         _log("// ", a, b, c, d, e);
     }
 
+    function info(string memory a, string memory b, string memory c, string memory d, string memory e, string memory f)
+        internal
+        pure
+    {
+        _log("// ", a, b, c, d, e, f);
+    }
+
     function _csv(string[2] memory strs) internal pure returns (string memory) {
         return string.concat(strs[0], ", ", strs[1]);
     }

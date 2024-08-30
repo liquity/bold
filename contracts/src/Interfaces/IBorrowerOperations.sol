@@ -56,7 +56,7 @@ interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
 
     function repayBold(uint256 _troveId, uint256 _amount) external;
 
-    function closeTrove(uint256 _troveId) external returns (uint256);
+    function closeTrove(uint256 _troveId) external;
 
     function adjustTrove(
         uint256 _troveId,

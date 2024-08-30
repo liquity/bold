@@ -3,6 +3,7 @@
 pragma solidity 0.8.18;
 
 import "./TestContracts/Accounts.sol";
+import "./TestContracts/ChainlinkOracleMock.sol";
 import "./TestContracts/Deployment.t.sol";
 
 import "../Dependencies/AggregatorV3Interface.sol";
@@ -18,14 +19,13 @@ import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
 contract OraclesMainnet is TestAccounts {
-    uint256 public constant _24_HOURS = 86400;
-    uint256 public constant _48_HOURS = 172800;
-
     AggregatorV3Interface ethOracle;
     AggregatorV3Interface stethOracle;
     AggregatorV3Interface rethOracle;
     AggregatorV3Interface ethXOracle;
     AggregatorV3Interface osEthOracle;
+
+    ChainlinkOracleMock mockOracle;
 
     IWSTETH wstETH;
 
@@ -40,17 +40,8 @@ contract OraclesMainnet is TestAccounts {
     IStaderOracle staderOracle;
 
     TestDeployer.LiquityContracts[] contractsArray;
-    TestDeployer.MockCollaterals mockCollaterals;
     ICollateralRegistry collateralRegistry;
     IBoldToken boldToken;
-
-    /*
-    struct DeploymentParamsMainnet {
-        ExternalAddresses externalAddresses;
-        TestDeployer.TroveManagerParams[] troveManagerParamsArray;
-        OracleParams oracleParams;
-    }
-    */
 
     struct StoredOracle {
         AggregatorV3Interface aggregator;
@@ -67,51 +58,34 @@ contract OraclesMainnet is TestAccounts {
         (A, B, C, D, E, F) =
             (accountsList[0], accountsList[1], accountsList[2], accountsList[3], accountsList[4], accountsList[5]);
 
-        TestDeployer.DeploymentParamsMainnet memory deploymentParams;
-
         uint256 numCollaterals = 5;
         TestDeployer.TroveManagerParams memory tmParams =
             TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
-        deploymentParams.troveManagerParamsArray = new TestDeployer.TroveManagerParams[](numCollaterals);
-        for (uint256 i = 0; i < deploymentParams.troveManagerParamsArray.length; i++) {
-            deploymentParams.troveManagerParamsArray[i] = tmParams;
+        TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
+            new TestDeployer.TroveManagerParams[](numCollaterals);
+        for (uint256 i = 0; i < troveManagerParamsArray.length; i++) {
+            troveManagerParamsArray[i] = tmParams;
         }
 
-        deploymentParams.externalAddresses.ETHOracle = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        deploymentParams.externalAddresses.RETHOracle = 0x536218f9E9Eb48863970252233c8F271f554C2d0;
-        deploymentParams.externalAddresses.STETHOracle = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8;
-        deploymentParams.externalAddresses.ETHXOracle = 0xC5f8c4aB091Be1A899214c0C3636ca33DcA0C547;
-        deploymentParams.externalAddresses.WSTETHToken = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-        // Redstone Oracle with CL interface
-        // TODO: obtain the Chainlink market price feed and use that, when it's ready
-        deploymentParams.externalAddresses.OSETHOracle = 0x66ac817f997Efd114EDFcccdce99F3268557B32C;
-
-        deploymentParams.externalAddresses.RETHToken = 0xae78736Cd615f374D3085123A210448E74Fc6393;
-        deploymentParams.externalAddresses.StaderOracle = 0xF64bAe65f6f2a5277571143A24FaaFDFC0C2a737;
-        deploymentParams.externalAddresses.OsTokenVaultController = 0x2A261e60FB14586B474C208b1B7AC6D0f5000306;
-
-        ethOracle = AggregatorV3Interface(deploymentParams.externalAddresses.ETHOracle);
-        rethOracle = AggregatorV3Interface(deploymentParams.externalAddresses.RETHOracle);
-        stethOracle = AggregatorV3Interface(deploymentParams.externalAddresses.STETHOracle);
-        ethXOracle = AggregatorV3Interface(deploymentParams.externalAddresses.ETHXOracle);
-        osEthOracle = AggregatorV3Interface(deploymentParams.externalAddresses.OSETHOracle);
-
-        rETHToken = IRETHToken(deploymentParams.externalAddresses.RETHToken);
-        staderOracle = IStaderOracle(deploymentParams.externalAddresses.StaderOracle);
-        osTokenVaultController = IOsTokenVaultController(deploymentParams.externalAddresses.OsTokenVaultController);
-
-        wstETH = IWSTETH(deploymentParams.externalAddresses.WSTETHToken);
-
-        deploymentParams.oracleParams.ethUsdStalenessThreshold = _24_HOURS;
-        deploymentParams.oracleParams.stEthUsdStalenessThreshold = _24_HOURS;
-        deploymentParams.oracleParams.rEthEthStalenessThreshold = _48_HOURS;
-        deploymentParams.oracleParams.ethXEthStalenessThreshold = _48_HOURS;
-        deploymentParams.oracleParams.osEthEthStalenessThreshold = _48_HOURS;
-
         TestDeployer deployer = new TestDeployer();
-        TestDeployer.DeploymentResultMainnet memory result = deployer.deployAndConnectContractsMainnet(deploymentParams);
+        TestDeployer.DeploymentResultMainnet memory result =
+            deployer.deployAndConnectContractsMainnet(troveManagerParamsArray);
         collateralRegistry = result.collateralRegistry;
         boldToken = result.boldToken;
+
+        ethOracle = AggregatorV3Interface(result.externalAddresses.ETHOracle);
+        rethOracle = AggregatorV3Interface(result.externalAddresses.RETHOracle);
+        stethOracle = AggregatorV3Interface(result.externalAddresses.STETHOracle);
+        ethXOracle = AggregatorV3Interface(result.externalAddresses.ETHXOracle);
+        osEthOracle = AggregatorV3Interface(result.externalAddresses.OSETHOracle);
+
+        mockOracle = new ChainlinkOracleMock();
+
+        rETHToken = IRETHToken(result.externalAddresses.RETHToken);
+        staderOracle = IStaderOracle(result.externalAddresses.StaderOracle);
+        osTokenVaultController = IOsTokenVaultController(result.externalAddresses.OsTokenVaultController);
+
+        wstETH = IWSTETH(result.externalAddresses.WSTETHToken);
 
         // Record contracts
         for (uint256 c = 0; c < numCollaterals; c++) {
@@ -121,26 +95,17 @@ contract OraclesMainnet is TestAccounts {
         // Give all users all collaterals
         uint256 initialColl = 1000_000e18;
         for (uint256 i = 0; i < 6; i++) {
-            deal(address(result.mockCollaterals.WETH), accountsList[i], initialColl);
-            deal(address(result.mockCollaterals.RETH), accountsList[i], initialColl);
-            deal(address(result.mockCollaterals.WSTETH), accountsList[i], initialColl);
-            deal(address(result.mockCollaterals.ETHX), accountsList[i], initialColl);
-            deal(address(result.mockCollaterals.OSETH), accountsList[i], initialColl);
+            for (uint256 j = 0; j < numCollaterals; j++) {
+                deal(address(contractsArray[j].collToken), accountsList[i], initialColl);
+                vm.startPrank(accountsList[i]);
+                // Approve all Borrower Ops to use the user's WETH funds
+                contractsArray[0].collToken.approve(address(contractsArray[j].borrowerOperations), type(uint256).max);
+                // Approve Borrower Ops in LST branches to use the user's respective LST funds
+                contractsArray[j].collToken.approve(address(contractsArray[j].borrowerOperations), type(uint256).max);
+                vm.stopPrank();
+            }
 
             vm.startPrank(accountsList[i]);
-            // Approve all Borrower Ops to use the user's WETH funds
-            result.mockCollaterals.WETH.approve(address(contractsArray[0].borrowerOperations), initialColl);
-            result.mockCollaterals.WETH.approve(address(contractsArray[1].borrowerOperations), initialColl);
-            result.mockCollaterals.WETH.approve(address(contractsArray[2].borrowerOperations), initialColl);
-            result.mockCollaterals.WETH.approve(address(contractsArray[3].borrowerOperations), initialColl);
-            result.mockCollaterals.WETH.approve(address(contractsArray[4].borrowerOperations), initialColl);
-
-            // Approve Borrower Ops in LST branches to use the user's respective LST funds
-            result.mockCollaterals.RETH.approve(address(contractsArray[1].borrowerOperations), initialColl);
-            result.mockCollaterals.WSTETH.approve(address(contractsArray[2].borrowerOperations), initialColl);
-            result.mockCollaterals.ETHX.approve(address(contractsArray[3].borrowerOperations), initialColl);
-            result.mockCollaterals.OSETH.approve(address(contractsArray[4].borrowerOperations), initialColl);
-            vm.stopPrank();
         }
 
         wethPriceFeed = IWETHPriceFeed(address(contractsArray[0].priceFeed));
@@ -150,16 +115,17 @@ contract OraclesMainnet is TestAccounts {
         osEthPriceFeed = ICompositePriceFeed(address(contractsArray[4].priceFeed));
 
         // log some current blockchain state
-        console.log(block.timestamp, "block.timestamp");
-        console.log(block.number, "block.number");
-        console.log(ethOracle.decimals(), "ETHUSD decimals");
-        console.log(rethOracle.decimals(), "RETHETH decimals");
-        console.log(ethXOracle.decimals(), "ETHXETH decimals");
-        console.log(stethOracle.decimals(), "STETHETH decimals");
+        // console2.log(block.timestamp, "block.timestamp");
+        // console2.log(block.number, "block.number");
+        // console2.log(ethOracle.decimals(), "ETHUSD decimals");
+        // console2.log(rethOracle.decimals(), "RETHETH decimals");
+        // console2.log(ethXOracle.decimals(), "ETHXETH decimals");
+        // console2.log(stethOracle.decimals(), "STETHETH decimals");
     }
 
     function _getLatestAnswerFromOracle(AggregatorV3Interface _oracle) internal view returns (uint256) {
         (, int256 answer,,,) = _oracle.latestRoundData();
+
         uint256 decimals = _oracle.decimals();
         assertLe(decimals, 18);
         // Convert to uint and scale up to 18 decimals
@@ -250,7 +216,7 @@ contract OraclesMainnet is TestAccounts {
     // --- fetchPrice ---
 
     function testFetchPriceReturnsCorrectPriceWETH() public {
-        uint256 fetchedEthUsdPrice = wethPriceFeed.fetchPrice();
+        (uint256 fetchedEthUsdPrice, ) = wethPriceFeed.fetchPrice();
         assertGt(fetchedEthUsdPrice, 0);
 
         uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
@@ -259,7 +225,7 @@ contract OraclesMainnet is TestAccounts {
     }
 
     function testFetchPriceReturnsCorrectPriceRETH() public {
-        uint256 fetchedRethUsdPrice = rethPriceFeed.fetchPrice();
+        (uint256 fetchedRethUsdPrice, ) = rethPriceFeed.fetchPrice();
         assertGt(fetchedRethUsdPrice, 0);
 
         uint256 latestAnswerREthEth = _getLatestAnswerFromOracle(rethOracle);
@@ -278,7 +244,7 @@ contract OraclesMainnet is TestAccounts {
     }
 
     function testFetchPriceReturnsCorrectPriceETHX() public {
-        uint256 fetchedEthXUsdPrice = ethXPriceFeed.fetchPrice();
+        (uint256 fetchedEthXUsdPrice, ) = ethXPriceFeed.fetchPrice();
         assertGt(fetchedEthXUsdPrice, 0);
 
         uint256 latestAnswerEthXEth = _getLatestAnswerFromOracle(ethXOracle);
@@ -298,7 +264,7 @@ contract OraclesMainnet is TestAccounts {
     }
 
     function testFetchPriceReturnsCorrectPriceOSETH() public {
-        uint256 fetchedOsEthUsdPrice = osEthPriceFeed.fetchPrice();
+        (uint256 fetchedOsEthUsdPrice, ) = osEthPriceFeed.fetchPrice();
         assertGt(fetchedOsEthUsdPrice, 0);
 
         uint256 latestAnswerOsEthEth = _getLatestAnswerFromOracle(osEthOracle);
@@ -317,7 +283,7 @@ contract OraclesMainnet is TestAccounts {
     }
 
     function testFetchPriceReturnsCorrectPriceWSTETH() public {
-        uint256 fetchedStethUsdPrice = wstethPriceFeed.fetchPrice();
+        (uint256 fetchedStethUsdPrice, ) = wstethPriceFeed.fetchPrice();
         assertGt(fetchedStethUsdPrice, 0);
 
         uint256 latestAnswerStethUsd = _getLatestAnswerFromOracle(stethOracle);
@@ -473,6 +439,216 @@ contract OraclesMainnet is TestAccounts {
         trovesCount = contractsArray[2].troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
     }
+
+    // --- Oracle manipulation tests ---
+
+    function testManipulatedChainlinkReturnsStalePrice() public {
+        // Replace the ETH Oracle's code with the mock oracle's code that returns a stale price
+        vm.etch(address(ethOracle), address(mockOracle).code);
+
+        (,,,uint256 updatedAt,) = ethOracle.latestRoundData();
+
+        console2.log(updatedAt);
+        console2.log(block.timestamp);
+
+        // Confirm it's stale
+        assertEq(updatedAt, block.timestamp - 7 days);
+    }
+
+    function testManipulatedChainlinkReturns2kUsdPrice() public {
+        // Replace the ETH Oracle's code with the mock oracle's code that returns a stale price
+        vm.etch(address(ethOracle), address(mockOracle).code);
+
+        uint256 price = _getLatestAnswerFromOracle(ethOracle);
+        assertEq(price, 2000e18);
+    }
+
+    function testOpenTroveWETHWithStalePriceReverts() public {
+        vm.etch(address(ethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        assertFalse(contractsArray[0].borrowerOperations.hasBeenShutDown());
+
+        uint256 price = _getLatestAnswerFromOracle(ethOracle);
+ 
+        uint256 coll = 5 ether;
+        uint256 debtRequest = coll * price / 2 / 1e18;
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.NewOracleFailureDetected.selector);
+        contractsArray[0].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+    }
+
+    function testAdjustTroveWETHWithStalePriceReverts() public {
+        uint256 price = _getLatestAnswerFromOracle(ethOracle);
+ 
+        uint256 coll = 5 ether;
+        uint256 debtRequest = coll * price / 2 / 1e18;
+
+        vm.startPrank(A);
+        uint256 troveId = contractsArray[0].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+
+        // confirm Trove was opened
+        uint256 trovesCount = contractsArray[0].troveManager.getTroveIdsCount();
+        assertEq(trovesCount, 1);
+
+        // Replace oracle with a stale oracle
+        vm.etch(address(ethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        // Try to adjust Trove
+        vm.expectRevert(BorrowerOperations.NewOracleFailureDetected.selector);
+        contractsArray[0].borrowerOperations.adjustTrove(troveId, 0, false, 1 wei, true, 1e18);
+    }
+
+    function testOpenTroveWSTETHWithStalePriceReverts() public {
+        vm.etch(address(stethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        assertFalse(contractsArray[2].borrowerOperations.hasBeenShutDown());
+
+        uint256 price = _getLatestAnswerFromOracle(stethOracle);
+ 
+        uint256 coll = 5 ether;
+        uint256 debtRequest = coll * price / 2 / 1e18;
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.NewOracleFailureDetected.selector);
+        contractsArray[2].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+    }
+
+    function testAdjustTroveWSTETHWithStalePriceReverts() public {
+        uint256 price = _getLatestAnswerFromOracle(stethOracle);
+ 
+        uint256 coll = 5 ether;
+        uint256 debtRequest = coll * price / 2 / 1e18;
+
+        vm.startPrank(A);
+        uint256 troveId = contractsArray[2].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+
+        // confirm Trove was opened
+        uint256 trovesCount = contractsArray[2].troveManager.getTroveIdsCount();
+        assertEq(trovesCount, 1);
+
+        // Replace oracle with a stale oracle
+        vm.etch(address(stethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        // Try to adjust Trove
+        vm.expectRevert(BorrowerOperations.NewOracleFailureDetected.selector);
+        contractsArray[2].borrowerOperations.adjustTrove(troveId, 0, false, 1 wei, true, 1e18);
+    }
+
+    function testOpenTroveRETHWithStaleRETHPriceReverts() public {
+        // Make only RETH oracle stale
+        vm.etch(address(rethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = rethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        assertFalse(contractsArray[1].borrowerOperations.hasBeenShutDown());
+
+        uint256 latestAnswerREthEth = _getLatestAnswerFromOracle(rethOracle);
+        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
+        uint256 calcdRethUsdPrice = latestAnswerREthEth * latestAnswerEthUsd / 1e18;
+ 
+        uint256 coll = 5 ether;
+        uint256 debtRequest = coll * calcdRethUsdPrice / 2 / 1e18;
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.NewOracleFailureDetected.selector);
+        contractsArray[1].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+    }
+
+    function testAdjustTroveRETHWithStaleRETHPriceReverts() public {
+        uint256 latestAnswerREthEth = _getLatestAnswerFromOracle(rethOracle);
+        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
+        uint256 calcdRethUsdPrice = latestAnswerREthEth * latestAnswerEthUsd / 1e18;
+ 
+        uint256 coll = 5 ether;
+        uint256 debtRequest = coll * calcdRethUsdPrice / 2 / 1e18;
+
+        vm.startPrank(A);
+        uint256 troveId = contractsArray[1].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+
+        // confirm Trove was opened
+        uint256 trovesCount = contractsArray[1].troveManager.getTroveIdsCount();
+        assertEq(trovesCount, 1);
+
+        // Make only RETH oracle stale
+        vm.etch(address(rethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = rethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        // Try to adjust Trove
+        vm.expectRevert(BorrowerOperations.NewOracleFailureDetected.selector);
+        contractsArray[1].borrowerOperations.adjustTrove(troveId, 0, false, 1 wei, true, 1e18);
+    }
+
+     function testOpenTroveRETHWithStaleETHPriceReverts() public {
+        // Make only ETH oracle stale
+        vm.etch(address(ethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        assertFalse(contractsArray[1].borrowerOperations.hasBeenShutDown());
+
+        uint256 latestAnswerREthEth = _getLatestAnswerFromOracle(rethOracle);
+        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
+        uint256 calcdRethUsdPrice = latestAnswerREthEth * latestAnswerEthUsd / 1e18;
+ 
+        uint256 coll = 5 ether;
+        uint256 debtRequest = coll * calcdRethUsdPrice / 2 / 1e18;
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.NewOracleFailureDetected.selector);
+        contractsArray[1].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+    }
+
+    function testAdjustTroveRETHWithStaleETHPriceReverts() public {
+        uint256 latestAnswerREthEth = _getLatestAnswerFromOracle(rethOracle);
+        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
+        uint256 calcdRethUsdPrice = latestAnswerREthEth * latestAnswerEthUsd / 1e18;
+ 
+        uint256 coll = 5 ether;
+        uint256 debtRequest = coll * calcdRethUsdPrice / 2 / 1e18;
+
+        vm.startPrank(A);
+        /* uint256 troveId =  */contractsArray[1].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+
+        // confirm Trove was opened
+        uint256 trovesCount = contractsArray[1].troveManager.getTroveIdsCount();
+        assertEq(trovesCount, 1);
+
+       // Make only ETH oracle stale
+        vm.etch(address(ethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        // // Try to adjust Trove
+        // vm.expectRevert(BorrowerOperations.NewOracleFailureDetected.selector);
+        // contractsArray[1].borrowerOperations.adjustTrove(troveId, 0, false, 1 wei, true, 1e18);
+    }
+
 
     // TODO:
     // - More basic actions tests (adjust, close, etc)

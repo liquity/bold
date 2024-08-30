@@ -49,7 +49,8 @@ contract DevTestSetup is BaseTest {
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev memory contracts;
-        (contracts, collateralRegistry, boldToken, hintHelpers,, WETH) = deployer.deployAndConnectContracts();
+        TestDeployer.Zappers memory zappers;
+        (contracts, collateralRegistry, boldToken, hintHelpers,, WETH, zappers) = deployer.deployAndConnectContracts();
         addressesRegistry = contracts.addressesRegistry;
         collToken = contracts.collToken;
         activePool = contracts.activePool;
@@ -61,7 +62,13 @@ contract DevTestSetup is BaseTest {
         sortedTroves = contracts.sortedTroves;
         stabilityPool = contracts.stabilityPool;
         troveManager = contracts.troveManager;
+        troveNFT = contracts.troveNFT;
+        metadataNFT = addressesRegistry.metadataNFT();
         mockInterestRouter = contracts.interestRouter;
+        wethZapper = zappers.wethZapper;
+        gasCompZapper = zappers.gasCompZapper;
+        leverageZapperCurve = zappers.leverageZapperCurve;
+        leverageZapperUniV3 = zappers.leverageZapperUniV3;
 
         // Give some Coll to test accounts, and approve it to BorrowerOperations
         uint256 initialCollAmount = 1000_000e18;

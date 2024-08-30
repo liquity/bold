@@ -506,8 +506,26 @@ The premature adjustment fee works as so:
 
 - When a Trove is opened, its `lastInterestRateAdjTime` property is set equal to the current time
 - When a borrower adjusts their interest rate via `adjustTroveInterestRate` the system checks that the cooldown period has passed since their last interest rate adjustment 
-
 - If the adjustment is sooner it incurs an upfront fee (equal to 7 days of average interest of the respective branch) which is added to their debt.
+
+#### Batches and upfront fee
+
+##### Joining a batch
+When a trove joins a batch, it pays upfront fee if the last trove adjustment was done more than the cool period ago. It does’t matter if trove and batch have the same interest rate, or when was the last adjustment by the batch.
+
+The last interest rate timestamp will be updated to the time of joining.
+
+Batch interest rate changes only take into account global batch timestamps, so when the new batch manager changes the interest rate less than the cooldown period after the borrower moved to the new batch, but more than the cooldown period after its last adjustment, the newly joined borrower wouldn't pay the upfront fee despite the fact that his last interest rate change happened less than the cooldown period ago.
+
+That’s why troves pay upfront fee when joining even if the interest is the same. Otherwise a trove may game it by having a batch created in advance (with no recent changens), joining it and the changing the rate of the batch.
+
+##### Leaving a batch
+When a trove leaves a batch, the user's timestamp is again reset to the current time.
+No upfront fee is charged, unless the interest rate is changed in the same transaction and the batch changed the interest rate less than the cooldown period ago.
+
+##### Switching batches
+As the function to switch batches is just a wrapper that calls the functions for leaving and joining a batch, this means that switching batches always incurs in upfront fee now (unless user doesn’t use the wrapper and waits for 1 week between leaving and joining).
+
 
 ## BOLD Redemptions
 
@@ -1011,7 +1029,7 @@ Chainlink push oracles were chosen due to Chainlink’s reliability and track re
 
 The pricing method for each LST depends on availability of oracles. Where possible, direct LST-USD market oracles have been used. 
 
-Otherwise, composite market oracles have been created which utilise the ETH-USD market feed and an LST-ETH market feed. In the case of the WSTETH oracle, the STETH price and the WSTETH-STETH exchange rate is used.
+Otherwise, composite market oracles have been created which utilise the ETH-USD market feed and an LST-ETH market feed. In the case of the WSTETH oracle, the STETH-USD price and the WSTETH-STETH exchange rate is used.
 
 LST-ETH canonical exchange rates are also used as sanity checks for the more vulnerable LSTs (i.e. lower liquidity/volume).
 
@@ -1020,10 +1038,10 @@ Here are the oracles and price calculations for each PriceFeed:
 | Liquity v2 PriceFeed | Oracles used                                  | Price calculation                                              |
 |----------------------|-----------------------------------------------|----------------------------------------------------------------|
 | WETH-USD             | ETH-USD                                       | ETH-USD                                                        |
-| WSTETH-USD           | STETH-USD, WSTETH-ETH_canonical               | STETH-ETH * STETH-WSTETH_canonical                             |
-| RETH-USD             | ETH-USD, RETH-ETH, RETH-ETH_canonical         | min(ETH-USD * RETH-ETH, ETH-USD * RETH_ETH_canonical)          |
+| WSTETH-USD           | STETH-USD, WSTETH-STETH_canonical               | STETH-USD * WSTETH-STETH_canonical                             |
+| RETH-USD             | ETH-USD, RETH-ETH, RETH-ETH_canonical         | min(ETH-USD * RETH-ETH, ETH-USD * RETH-ETH_canonical)          |
 | ETHX-USD             | ETH-USD, ETHX-ETH, ETHX-ETH_canonical         | min(ETH-USD * ETHX-ETH, ETH-USD * ETHX-ETH_canonical)          |
-| OSETH-USD            | ETH-USD, OSETH-ETH, OSETH-ETH_canonical       | min(ETH-USD * OSETH-ETH, ETH-USD * OSETH_ETH_canonical)        |
+| OSETH-USD            | ETH-USD, OSETH-ETH, OSETH-ETH_canonical       | min(ETH-USD * OSETH-ETH, ETH-USD * OSETH-ETH_canonical)        |
 
 ### TODO - [INHERITANCE DIAGRAM]
 

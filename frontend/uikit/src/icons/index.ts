@@ -8,6 +8,7 @@ export { IconBorrow } from "./IconBorrow";
 export { IconChevronDown } from "./IconChevronDown";
 export { IconChevronSmallUp } from "./IconChevronSmallUp";
 export { IconChevronUp } from "./IconChevronUp";
+export { IconCopy } from "./IconCopy";
 export { IconCross } from "./IconCross";
 export { IconDashboard } from "./IconDashboard";
 export { IconEarn } from "./IconEarn";

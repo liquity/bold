@@ -232,10 +232,10 @@ contract GasCompZapper is AddRemoveManagers {
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
         boldToken.transferFrom(msg.sender, address(this), trove.entireDebt);
 
-        uint256 collLeft = borrowerOperations.closeTrove(_troveId);
+        borrowerOperations.closeTrove(_troveId);
 
         // Send coll left
-        collToken.safeTransfer(receiver, collLeft);
+        collToken.safeTransfer(receiver, trove.entireColl);
 
         // Send gas compensation
         WETH.withdraw(ETH_GAS_COMPENSATION);

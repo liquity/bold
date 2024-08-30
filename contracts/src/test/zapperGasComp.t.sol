@@ -7,8 +7,6 @@ import "./TestContracts/WETH.sol";
 import "../Zappers/GasCompZapper.sol";
 
 contract ZapperGasCompTest is DevTestSetup {
-    GasCompZapper gasCompZapper;
-
     function setUp() public override {
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
@@ -34,7 +32,9 @@ contract ZapperGasCompTest is DevTestSetup {
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory contractsArray;
-        (contractsArray, collateralRegistry, boldToken,,) = deployer.deployAndConnectContracts(troveManagerParams, WETH);
+        TestDeployer.Zappers[] memory zappersArray;
+        (contractsArray, collateralRegistry, boldToken,,, zappersArray) =
+            deployer.deployAndConnectContracts(troveManagerParams, WETH);
 
         // Set price feeds
         contractsArray[1].priceFeed.setPrice(2000e18);
@@ -45,9 +45,7 @@ contract ZapperGasCompTest is DevTestSetup {
         troveManager = contractsArray[1].troveManager;
         troveNFT = contractsArray[1].troveNFT;
         collToken = contractsArray[1].collToken;
-
-        // Deploy zapper (TODO: should we move it to deployment contract?)
-        gasCompZapper = new GasCompZapper(addressesRegistry);
+        gasCompZapper = zappersArray[1].gasCompZapper;
 
         // Give some Collateral to test accounts
         uint256 initialCollateralAmount = 10_000e18;
@@ -88,7 +86,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 troveId = gasCompZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
-        assertEq(troveManager.ownerOf(troveId), A, "Wrong owner");
+        assertEq(troveNFT.ownerOf(troveId), A, "Wrong owner");
         assertGt(troveId, 0, "Trove id should be set");
         assertEq(troveManager.getTroveEntireColl(troveId), collAmount, "Coll mismatch");
         assertGt(troveManager.getTroveEntireDebt(troveId), boldAmount, "Debt mismatch");

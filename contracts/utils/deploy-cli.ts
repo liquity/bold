@@ -208,28 +208,37 @@ Deploying Liquity contracts with the following settings:
   echo("");
 }
 
-function isDeploymentLog(log: unknown): log is {
-  transactions: Array<{
-    transactionType: "CREATE";
-    contractName: string;
-    contractAddress: string;
-  }>;
-} {
+type Transaction = { transactionType: string };
+
+function isDeploymentLog(log: unknown): log is { transactions: Transaction[] } {
   return (
     typeof log === "object"
     && log !== null
     && "transactions" in log
     && Array.isArray(log.transactions)
-    && log.transactions
-      .filter((tx) => (
+    && (log.transactions as unknown[])
+      .every((tx) => (
         typeof tx === "object"
         && tx !== null
-        && tx.transactionType === "CREATE"
+        && "transactionType" in tx
+        && typeof tx.transactionType === "string"
       ))
-      .every((tx) => (
-        typeof tx.contractName === "string"
-        && typeof tx.contractAddress === "string"
-      ))
+  );
+}
+
+type ContractCreation = {
+  transactionType: "CREATE" | "CREATE2";
+  contractName: string;
+  contractAddress: string;
+};
+
+function isContractCreation(tx: Transaction): tx is ContractCreation {
+  return (
+    (tx.transactionType === "CREATE" || tx.transactionType === "CREATE2")
+    && "contractName" in tx
+    && typeof tx.contractName === "string"
+    && "contractAddress" in tx
+    && typeof tx.contractAddress === "string"
   );
 }
 
@@ -238,7 +247,7 @@ async function getDeployedContracts(jsonPath: string) {
 
   if (isDeploymentLog(latestRun)) {
     return latestRun.transactions
-      .filter((tx) => tx.transactionType === "CREATE" || tx.transactionType === "CREATE2")
+      .filter(isContractCreation)
       .map((tx) => [tx.contractName, tx.contractAddress]);
   }
 

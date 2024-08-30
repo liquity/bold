@@ -2,10 +2,11 @@ import type { ReactNode } from "react";
 
 import { a, useTransition } from "@react-spring/web";
 import FocusTrap from "focus-trap-react";
+import { useEffect } from "react";
 import { css } from "../../styled-system/css";
+import { IconCross } from "../icons";
 import { Root } from "../Root/Root";
-
-import closeSvg from "./close.svg";
+import { TextButton } from "../TextButton/TextButton";
 
 export function Modal({
   children,
@@ -25,28 +26,31 @@ export function Modal({
       friction: 80,
     },
     from: {
-      closeTransform: "scale3d(0.8, 0.8, 1)",
       opacity: 0,
       overlayOpacity: 0,
       transform: "scale3d(0.97, 0.97, 1)",
     },
     enter: {
-      closeTransform: "scale3d(1, 1, 1)",
       opacity: 1,
       overlayOpacity: 1,
       transform: "scale3d(1, 1, 1)",
     },
     leave: {
-      closeTransform: "scale3d(1, 1, 1)",
       opacity: 0,
       overlayOpacity: 0,
-      transform: "scale3d(1.05, 1.05, 1)",
+      transform: "scale3d(1, 1, 1)",
     },
   });
+
+  useEffect(() => {
+    if ("document" in globalThis) {
+      document.body.style.overflow = visible ? "hidden" : "auto";
+    }
+  }, [visible]);
+
   return (
     <Root>
       {visibility(({
-        closeTransform,
         opacity,
         overlayOpacity,
         transform,
@@ -96,25 +100,26 @@ export function Modal({
                   })}
                 >
                   <a.div
+                    className={css({
+                      position: "relative",
+                      width: 534,
+                      minHeight: "100%",
+                      maxWidth: "100%",
+                      padding: 24,
+                      outline: "2px solid accent",
+                      background: "background",
+                    })}
                     style={{
                       opacity,
                       transform,
                     }}
-                    className={css({
-                      width: 600,
-                      minHeight: "100%",
-                      maxWidth: "100%",
-                      padding: 40,
-                      outline: "2px solid accent",
-                      background: "white",
-                    })}
                   >
                     <div>
                       {title && (
                         <h1
                           className={css({
-                            paddingBottom: 16,
-                            fontSize: 20,
+                            paddingBottom: 8,
+                            fontSize: 24,
                           })}
                         >
                           {title}
@@ -122,20 +127,22 @@ export function Modal({
                       )}
                       {children}
                     </div>
-                  </a.div>
-                  <a.div
-                    style={{
-                      opacity,
-                      transform: closeTransform,
-                    }}
-                    className={css({
-                      position: "fixed",
-                      zIndex: 3,
-                      top: 24,
-                      right: 24,
-                    })}
-                  >
-                    <CloseButton onClick={onClose} />
+                    <div
+                      className={css({
+                        position: "absolute",
+                        top: 24,
+                        right: 24,
+                        display: "flex",
+                      })}
+                    >
+                      <TextButton
+                        label={<IconCross size={32} />}
+                        onClick={onClose}
+                        className={css({
+                          color: "content!",
+                        })}
+                      />
+                    </div>
                   </a.div>
                 </div>
               </FocusTrap>
@@ -144,40 +151,5 @@ export function Modal({
         )
       ))}
     </Root>
-  );
-}
-
-function CloseButton({
-  onClick,
-}: {
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={css({
-        width: 56,
-        height: 56,
-        padding: 0,
-        border: "none",
-        cursor: "pointer",
-        borderRadius: "50%",
-        backgroundColor: "#fff",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "50% 50%",
-        outline: 0,
-        _active: {
-          translate: "0 1px",
-        },
-        _focusVisible: {
-          outline: "2px solid accent",
-        },
-      })}
-      style={{
-        backgroundImage: `url("${closeSvg}")`,
-      }}
-    >
-    </button>
   );
 }
