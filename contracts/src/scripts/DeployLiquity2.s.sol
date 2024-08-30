@@ -27,6 +27,8 @@ import "../MockInterestRouter.sol";
 import "../test/TestContracts/PriceFeedTestnet.sol";
 import "../test/TestContracts/MetadataDeployment.sol";
 import {WETHTester} from "../test/TestContracts/WETHTester.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import "forge-std/console.sol";
 
 contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
     bytes32 SALT;
@@ -84,10 +86,12 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
     }
 
     struct DemoTroveParams {
-        uint256 coll;
-        uint256 debt;
+        uint256 collIndex;
         uint256 owner;
         uint256 ownerIndex;
+        uint256 coll;
+        uint256 debt;
+        uint256 annualInterestRate;
     }
 
     function run() external {
@@ -104,9 +108,10 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             vm.startBroadcast(privateKey);
         }
 
-        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](1);
+        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](2);
 
-        troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
+        troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WETH
+        troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // stETH
 
         // used for gas compensation and as collateral of the first branch
         IWETH WETH = new WETHTester(
@@ -115,7 +120,6 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         );
         (LiquityContractsTestnet[] memory contractsArray,,,,) =
             _deployAndConnectContracts(troveManagerParamsArray, WETH);
-        LiquityContractsTestnet memory contracts = contractsArray[0];
         vm.stopBroadcast();
 
         if (vm.envOr("OPEN_DEMO_TROVES", false)) {
@@ -131,35 +135,72 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             demoAccounts[6] = 0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e;
             demoAccounts[7] = 0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356;
 
-            DemoTroveParams[] memory demoTroves = new DemoTroveParams[](4);
-            demoTroves[0] = DemoTroveParams({owner: demoAccounts[0], ownerIndex: 0, coll: 25e18, debt: 2800e18});
-            demoTroves[1] = DemoTroveParams({owner: demoAccounts[1], ownerIndex: 0, coll: 37e18, debt: 2400e18});
-            demoTroves[2] = DemoTroveParams({owner: demoAccounts[2], ownerIndex: 0, coll: 30e18, debt: 4000e18});
-            demoTroves[3] = DemoTroveParams({owner: demoAccounts[3], ownerIndex: 0, coll: 65e18, debt: 6000e18});
+            DemoTroveParams[] memory demoTroves = new DemoTroveParams[](16);
 
-            tapFaucet(demoAccounts, contracts);
-            openDemoTroves(demoTroves, contracts);
+            demoTroves[0] = DemoTroveParams(0, demoAccounts[0], 0, 25e18, 2800e18, 5.0e16);
+            demoTroves[1] = DemoTroveParams(0, demoAccounts[1], 0, 37e18, 2400e18, 4.7e16);
+            demoTroves[2] = DemoTroveParams(0, demoAccounts[2], 0, 30e18, 4000e18, 3.3e16);
+            demoTroves[3] = DemoTroveParams(0, demoAccounts[3], 0, 65e18, 6000e18, 4.3e16);
+
+            demoTroves[4] = DemoTroveParams(0, demoAccounts[4], 0, 19e18, 2280e18, 5.0e16);
+            demoTroves[5] = DemoTroveParams(0, demoAccounts[5], 0, 48.37e18, 4400e18, 4.7e16);
+            demoTroves[6] = DemoTroveParams(0, demoAccounts[6], 0, 33.92e18, 5500e18, 3.8e16);
+            demoTroves[7] = DemoTroveParams(0, demoAccounts[7], 0, 47.2e18, 6000e18, 4.3e16);
+
+            demoTroves[8] = DemoTroveParams(1, demoAccounts[0], 0, 21e18, 2000e18, 3.3e16);
+            demoTroves[9] = DemoTroveParams(1, demoAccounts[1], 1, 16e18, 2000e18, 4.1e16);
+            demoTroves[10] = DemoTroveParams(1, demoAccounts[2], 1, 18e18, 2300e18, 3.8e16);
+            demoTroves[11] = DemoTroveParams(1, demoAccounts[3], 1, 22e18, 2200e18, 4.3e16);
+
+            demoTroves[12] = DemoTroveParams(1, demoAccounts[4], 1, 85e18, 12000e18, 7.0e16);
+            demoTroves[13] = DemoTroveParams(1, demoAccounts[5], 1, 87e18, 4000e18, 4.4e16);
+            demoTroves[14] = DemoTroveParams(1, demoAccounts[6], 1, 71e18, 11000e18, 3.3e16);
+            demoTroves[15] = DemoTroveParams(1, demoAccounts[7], 1, 84e18, 12800e18, 4.4e16);
+
+            for (uint256 i = 0; i < contractsArray.length; i++) {
+                tapFaucet(demoAccounts, contractsArray[i]);
+            }
+
+            openDemoTroves(demoTroves, contractsArray);
         }
     }
 
     function tapFaucet(uint256[] memory accounts, LiquityContractsTestnet memory contracts) internal {
         for (uint256 i = 0; i < accounts.length; i++) {
+            ERC20Faucet token = ERC20Faucet(address(contracts.collToken));
+
             vm.startBroadcast(accounts[i]);
-            ERC20Faucet(address(contracts.collToken)).tap();
+            token.tap();
             vm.stopBroadcast();
+
+            console.log(
+                "%s.tap() => %s (balance: %s)",
+                token.symbol(),
+                vm.addr(accounts[i]),
+                string.concat(formatAmount(token.balanceOf(vm.addr(accounts[i])), 18, 2), " ", token.symbol())
+            );
         }
     }
 
-    function openDemoTroves(DemoTroveParams[] memory troves, LiquityContractsTestnet memory contracts) internal {
-        for (uint256 i = 0; i < troves.length; i++) {
-            DemoTroveParams memory trove = troves[i];
+    function openDemoTroves(DemoTroveParams[] memory demoTroves, LiquityContractsTestnet[] memory contractsArray)
+        internal
+    {
+        for (uint256 i = 0; i < demoTroves.length; i++) {
+            DemoTroveParams memory trove = demoTroves[i];
+            LiquityContractsTestnet memory contracts = contractsArray[trove.collIndex];
 
             vm.startBroadcast(trove.owner);
 
+            IERC20 collToken = IERC20(contracts.collToken);
+            IERC20 wethToken = IERC20(contracts.addressesRegistry.WETH());
+
             // Approve collToken to BorrowerOperations
-            IERC20Metadata(contracts.collToken).approve(
-                address(contracts.borrowerOperations), trove.coll + ETH_GAS_COMPENSATION
-            );
+            if (collToken == wethToken) {
+                wethToken.approve(address(contracts.borrowerOperations), trove.coll + ETH_GAS_COMPENSATION);
+            } else {
+                wethToken.approve(address(contracts.borrowerOperations), ETH_GAS_COMPENSATION);
+                collToken.approve(address(contracts.borrowerOperations), trove.coll);
+            }
 
             IBorrowerOperations(contracts.borrowerOperations).openTrove(
                 vm.addr(trove.owner), // _owner
@@ -369,5 +410,24 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             address(contracts.borrowerOperations),
             address(contracts.activePool)
         );
+    }
+
+    function formatAmount(uint256 amount, uint256 decimals, uint256 digits) internal pure returns (string memory) {
+        if (digits > decimals) {
+            digits = decimals;
+        }
+
+        uint256 scaled = amount / (10 ** (decimals - digits));
+        string memory whole = Strings.toString(scaled / (10 ** digits));
+
+        if (digits == 0) {
+            return whole;
+        }
+
+        string memory fractional = Strings.toString(scaled % (10 ** digits));
+        for (uint256 i = bytes(fractional).length; i < digits; i++) {
+            fractional = string.concat("0", fractional);
+        }
+        return string.concat(whole, ".", fractional);
     }
 }
