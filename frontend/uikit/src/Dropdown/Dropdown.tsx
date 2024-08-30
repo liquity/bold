@@ -11,12 +11,13 @@ import { Root } from "../Root/Root";
 export type DropdownItem = {
   icon?: ReactNode;
   label: ReactNode;
+  secondary?: ReactNode;
   value?: ReactNode;
 };
 
 export type DropdownGroup = {
   label: ReactNode;
-  items: DropdownItem[];
+  items: readonly DropdownItem[];
 };
 
 export function Dropdown({
@@ -27,6 +28,7 @@ export function Dropdown({
   onSelect,
   placeholder,
   selected,
+  size = "medium",
 }: {
   buttonDisplay?:
     | "normal"
@@ -35,12 +37,13 @@ export function Dropdown({
       icon?: ReactNode;
       label: ReactNode;
     });
-  items: DropdownItem[] | DropdownGroup[];
+  items: readonly DropdownItem[] | readonly DropdownGroup[];
   menuPlacement?: "start" | "end";
   menuWidth?: number;
   onSelect: (index: number) => void;
   placeholder?: ReactNode | Exclude<DropdownItem, "value">;
   selected: number;
+  size?: "small" | "medium";
 }) {
   const groups = getGroups(items);
   const itemsOnly = groups.reduce((acc, { items }) => acc.concat(items), [] as DropdownItem[]);
@@ -164,18 +167,20 @@ export function Dropdown({
           css({
             display: "flex",
             height: 40,
-            fontSize: 24,
             outline: 0,
             cursor: "pointer",
           }),
         )}
+        style={{
+          height: size === "small" ? 32 : 40,
+          fontSize: size === "small" ? 16 : 24,
+        }}
       >
         <div
           className={css({
             display: "flex",
             alignItems: "center",
             padding: "0 10px 0 16px",
-            gap: 8,
             height: "100%",
             whiteSpace: "nowrap",
             borderWidth: "1px 1px 0 1px",
@@ -203,6 +208,7 @@ export function Dropdown({
             },
           })}
           style={{
+            gap: size === "small" ? 6 : 8,
             color: `var(--color-${buttonItem === placeholder ? "placeholder" : "normal"})`,
             background: `var(--background-${buttonItem === placeholder ? "placeholder" : "normal"})`,
           } as CSSProperties}
@@ -222,7 +228,7 @@ export function Dropdown({
             {buttonItem.label}
           </div>
           <div>
-            <IconChevronDown />
+            <IconChevronDown size={size === "small" ? 16 : 24} />
           </div>
         </div>
       </button>
@@ -235,6 +241,7 @@ export function Dropdown({
                 position: "absolute",
                 top: 0,
                 left: 0,
+                zIndex: 1,
               })}
               style={{
                 ...floatingStyles,
@@ -308,8 +315,6 @@ export function Dropdown({
                           className={cx(
                             "group",
                             css({
-                              display: "flex",
-                              height: 56,
                               padding: 4,
                               cursor: "pointer",
                               _focus: {
@@ -321,12 +326,13 @@ export function Dropdown({
                           <div
                             className={css({
                               display: "flex",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              gap: 16,
+                              flexDirection: "column",
+                              alignItems: "flex-start",
+                              gap: 8,
                               width: "100%",
                               height: "100%",
-                              padding: "0 16px",
+                              padding: 12,
+                              textAlign: "left",
                               borderRadius: 16,
                               transition: "background 80ms",
                               _groupFocus: {
@@ -340,22 +346,44 @@ export function Dropdown({
                             <div
                               className={css({
                                 display: "flex",
+                                justifyContent: "space-between",
                                 alignItems: "center",
-                                gap: 12,
+                                gap: 16,
+                                width: "100%",
+                                height: "100%",
                               })}
                             >
-                              {item.icon && <div>{item.icon}</div>}
                               <div
                                 className={css({
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: 8,
+                                  gap: 12,
                                 })}
                               >
-                                {item.label}
+                                {item.icon && <div>{item.icon}</div>}
+                                <div
+                                  className={css({
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                  })}
+                                >
+                                  {item.label}
+                                </div>
                               </div>
+                              {item.value && <div>{item.value}</div>}
                             </div>
-                            {item.value && <div>{item.value}</div>}
+                            {item.secondary && (
+                              <div
+                                className={css({
+                                  fontSize: 13,
+                                  color: "contentAlt",
+                                  fontWeight: 500,
+                                })}
+                              >
+                                {item.secondary}
+                              </div>
+                            )}
                           </div>
                         </button>
                       );
@@ -425,7 +453,7 @@ function isGroup(item: DropdownItem | DropdownGroup): item is DropdownGroup {
 }
 
 // Convert items to groups if necessary
-function getGroups(itemsOrGroup: DropdownItem[] | DropdownGroup[]): DropdownGroup[] {
+function getGroups(itemsOrGroup: readonly DropdownItem[] | readonly DropdownGroup[]): readonly DropdownGroup[] {
   const [firstItem] = itemsOrGroup;
   if (!firstItem) {
     return [];
