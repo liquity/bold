@@ -2647,6 +2647,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             r.totalDebtRedeemed += debtRedeemed;
 
             amount -= debtRedeemed;
+            if (amount == 0) break; // XXX why at the end?
         }
     }
 
