@@ -219,7 +219,7 @@ export function Position({
           )}
         <GridItem label="Liq. price">
           <Value negative={ltv && dn.gt(ltv, maxLtv)}>
-            {fmtnum(loanDetails.liquidationPrice)}
+            ${fmtnum(loanDetails.liquidationPrice)}
           </Value>
         </GridItem>
         <GridItem label="Interest rate">

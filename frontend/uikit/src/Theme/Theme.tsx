@@ -109,6 +109,7 @@ export const lightTheme = {
     background: "white",
     backgroundActive: "gray:50",
     border: "gray:200",
+    borderSoft: "gray:100",
     content: "gray:950",
     contentAlt: "gray:600",
     contentAlt2: "gray:500",

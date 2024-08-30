@@ -24,6 +24,7 @@ export const LQTY_SUPPLY = dn.from(100_000_000, 18);
 
 export const INTEREST_RATE_MIN = 1;
 export const INTEREST_RATE_MAX = 8;
+export const INTEREST_RATE_DEFAULT = 4;
 export const INTEREST_RATE_INCREMENT = 0.1;
 
 // LTV factor suggestions, as ratios of the leverage factor range
