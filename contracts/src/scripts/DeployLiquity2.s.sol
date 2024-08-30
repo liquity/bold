@@ -152,8 +152,8 @@ contract DeployLiquity2Script is Script, StdCheats {
 
             demoTroves[12] = DemoTroveParams(1, demoAccounts[4], 1, 85e18, 12000e18, 7.0e16);
             demoTroves[13] = DemoTroveParams(1, demoAccounts[5], 1, 87e18, 4000e18, 4.4e16);
-            demoTroves[14] = DemoTroveParams(1, demoAccounts[6], 1, 61e18, 11000e18, 3.3e16);
-            demoTroves[15] = DemoTroveParams(1, demoAccounts[7], 1, 84e18, 14800e18, 4.4e16);
+            demoTroves[14] = DemoTroveParams(1, demoAccounts[6], 1, 71e18, 11000e18, 3.3e16);
+            demoTroves[15] = DemoTroveParams(1, demoAccounts[7], 1, 84e18, 12800e18, 4.4e16);
 
             for (uint256 i = 0; i < contractsArray.length; i++) {
                 tapFaucet(demoAccounts, contractsArray[i]);
