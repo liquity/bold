@@ -736,6 +736,29 @@ contract SPTest is DevTestSetup {
         vm.stopPrank();
     }
 
+     function testClaimAllCollGainsRevertsWhenUserHasNoCollGains() public {
+        // A has stashed & current gains, B has only current
+        _setupStashedAndCurrentCollGains();
+
+        // B
+        uint256 compoundedDeposit_B = stabilityPool.getCompoundedBoldDeposit(B);
+        assertGt(compoundedDeposit_B, 0);
+       
+        // B withdraws deposit and tries to withdraw stashed coll gains
+        vm.startPrank(B);
+        stabilityPool.withdrawFromSP(compoundedDeposit_B, true);
+        assertEq(stabilityPool.getCompoundedBoldDeposit(B), 0);
+        vm.expectRevert("StabilityPool: Amount must be non-zero");
+        stabilityPool.claimAllCollGains();
+        vm.stopPrank();
+
+        //As does C, who never had a deposit
+        vm.startPrank(C);
+        vm.expectRevert("StabilityPool: Amount must be non-zero");
+        stabilityPool.claimAllCollGains();
+        vm.stopPrank();
+    }
+
     function testClaimAllCollGainsDoesNotChangeCompoundedDeposit() public {
         // A has stashed & current gains, B has only current
         _setupStashedAndCurrentCollGains();
