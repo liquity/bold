@@ -350,6 +350,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         activePool.mintAggInterest();
 
         uint256 collToSend = stashedColl[msg.sender];
+        _requireNonZeroAmount(collToSend);
         stashedColl[msg.sender] = 0;
 
         emit DepositOperation(msg.sender, Operation.claimAllCollGains, 0, 0, 0, 0, 0, collToSend);
