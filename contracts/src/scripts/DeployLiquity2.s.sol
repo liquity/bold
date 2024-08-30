@@ -109,7 +109,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](2);
 
         troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WETH
-        troveManagerParamsArray[1] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // stETH
+        troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // stETH
 
         // used for gas compensation and as collateral of the first branch
         IWETH WETH = new WETHTester(
