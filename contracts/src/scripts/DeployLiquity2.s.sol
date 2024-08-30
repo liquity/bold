@@ -3,7 +3,7 @@ pragma solidity 0.8.18;
 
 import {Script} from "forge-std/Script.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Accounts} from "../test/TestContracts/Accounts.sol";
 import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
 import {ETH_GAS_COMPENSATION} from "../Dependencies/Constants.sol";
@@ -25,11 +25,12 @@ import "../TroveNFT.sol";
 import "../CollateralRegistry.sol";
 import "../MockInterestRouter.sol";
 import "../test/TestContracts/PriceFeedTestnet.sol";
+import "../test/TestContracts/MetadataDeployment.sol";
 import {WETHTester} from "../test/TestContracts/WETHTester.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "forge-std/console.sol";
 
-contract DeployLiquity2Script is Script, StdCheats {
+contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
     bytes32 SALT;
 
     address deployer;
@@ -47,7 +48,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         IPriceFeedTestnet priceFeed; // Tester
         GasPool gasPool;
         IInterestRouter interestRouter;
-        IERC20 collToken;
+        IERC20Metadata collToken;
     }
 
     struct LiquityContractAddresses {
@@ -59,6 +60,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         address stabilityPool;
         address troveManager;
         address troveNFT;
+        address metadataNFT;
         address priceFeed;
         address gasPool;
         address interestRouter;
@@ -74,7 +76,7 @@ contract DeployLiquity2Script is Script, StdCheats {
 
     struct DeploymentVarsTestnet {
         uint256 numCollaterals;
-        IERC20[] collaterals;
+        IERC20Metadata[] collaterals;
         IAddressesRegistry[] addressesRegistries;
         ITroveManager[] troveManagers;
         LiquityContractsTestnet contracts;
@@ -109,7 +111,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](2);
 
         troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WETH
-        troveManagerParamsArray[1] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // stETH
+        troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // stETH
 
         // used for gas compensation and as collateral of the first branch
         IWETH WETH = new WETHTester(
@@ -152,8 +154,8 @@ contract DeployLiquity2Script is Script, StdCheats {
 
             demoTroves[12] = DemoTroveParams(1, demoAccounts[4], 1, 85e18, 12000e18, 7.0e16);
             demoTroves[13] = DemoTroveParams(1, demoAccounts[5], 1, 87e18, 4000e18, 4.4e16);
-            demoTroves[14] = DemoTroveParams(1, demoAccounts[6], 1, 61e18, 11000e18, 3.3e16);
-            demoTroves[15] = DemoTroveParams(1, demoAccounts[7], 1, 84e18, 14800e18, 4.4e16);
+            demoTroves[14] = DemoTroveParams(1, demoAccounts[6], 1, 71e18, 11000e18, 3.3e16);
+            demoTroves[15] = DemoTroveParams(1, demoAccounts[7], 1, 84e18, 12800e18, 4.4e16);
 
             for (uint256 i = 0; i < contractsArray.length; i++) {
                 tapFaucet(demoAccounts, contractsArray[i]);
@@ -192,6 +194,7 @@ contract DeployLiquity2Script is Script, StdCheats {
             IERC20 collToken = IERC20(contracts.collToken);
             IERC20 wethToken = IERC20(contracts.addressesRegistry.WETH());
 
+            // Approve collToken to BorrowerOperations
             if (collToken == wethToken) {
                 wethToken.approve(address(contracts.borrowerOperations), trove.coll + ETH_GAS_COMPENSATION);
             } else {
@@ -241,7 +244,7 @@ contract DeployLiquity2Script is Script, StdCheats {
         assert(address(boldToken) == vars.boldTokenAddress);
 
         contractsArray = new LiquityContractsTestnet[](vars.numCollaterals);
-        vars.collaterals = new IERC20[](vars.numCollaterals);
+        vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
@@ -308,7 +311,7 @@ contract DeployLiquity2Script is Script, StdCheats {
     }
 
     function _deployAndConnectCollateralContractsTestnet(
-        IERC20 _collToken,
+        IERC20Metadata _collToken,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
         IWETH _weth,
@@ -322,6 +325,13 @@ contract DeployLiquity2Script is Script, StdCheats {
 
         // Deploy all contracts, using testers for TM and PriceFeed
         contracts.addressesRegistry = _addressesRegistry;
+
+        // Deploy Metadata
+        MetadataNFT metadataNFT = deployMetadata(SALT);
+        addresses.metadataNFT = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(MetadataNFT).creationCode, address(initializedFixedAssetReader)))
+        );
+        assert(address(metadataNFT) == addresses.metadataNFT);
 
         contracts.priceFeed = new PriceFeedTestnet();
         contracts.interestRouter = new MockInterestRouter();
@@ -356,6 +366,7 @@ contract DeployLiquity2Script is Script, StdCheats {
             borrowerOperations: IBorrowerOperations(addresses.borrowerOperations),
             troveManager: ITroveManager(addresses.troveManager),
             troveNFT: ITroveNFT(addresses.troveNFT),
+            metadataNFT: IMetadataNFT(addresses.metadataNFT),
             stabilityPool: IStabilityPool(addresses.stabilityPool),
             priceFeed: contracts.priceFeed,
             activePool: IActivePool(addresses.activePool),

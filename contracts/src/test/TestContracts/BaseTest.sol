@@ -42,6 +42,7 @@ contract BaseTest is TestAccounts, Logging {
     IStabilityPool stabilityPool;
     ITroveManagerTester troveManager;
     ITroveNFT troveNFT;
+    IMetadataNFT metadataNFT;
     IBoldToken boldToken;
     ICollateralRegistry collateralRegistry;
     IPriceFeedTestnet priceFeed;
@@ -125,6 +126,14 @@ contract BaseTest is TestAccounts, Logging {
         returns (uint256)
     {
         return hintHelpers.predictJoinBatchInterestRateUpfrontFee(0, _troveId, _batchAddress);
+    }
+
+    function forcePredictJoinBatchInterestRateUpfrontFee(uint256 _troveId, address _batchAddress)
+        internal
+        view
+        returns (uint256)
+    {
+        return hintHelpers.forcePredictJoinBatchInterestRateUpfrontFee(0, _troveId, _batchAddress);
     }
 
     // Quick and dirty binary search instead of Newton's, because it's easier

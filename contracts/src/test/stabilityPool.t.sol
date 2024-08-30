@@ -736,6 +736,29 @@ contract SPTest is DevTestSetup {
         vm.stopPrank();
     }
 
+     function testClaimAllCollGainsRevertsWhenUserHasNoCollGains() public {
+        // A has stashed & current gains, B has only current
+        _setupStashedAndCurrentCollGains();
+
+        // B
+        uint256 compoundedDeposit_B = stabilityPool.getCompoundedBoldDeposit(B);
+        assertGt(compoundedDeposit_B, 0);
+       
+        // B withdraws deposit and tries to withdraw stashed coll gains
+        vm.startPrank(B);
+        stabilityPool.withdrawFromSP(compoundedDeposit_B, true);
+        assertEq(stabilityPool.getCompoundedBoldDeposit(B), 0);
+        vm.expectRevert("StabilityPool: Amount must be non-zero");
+        stabilityPool.claimAllCollGains();
+        vm.stopPrank();
+
+        //As does C, who never had a deposit
+        vm.startPrank(C);
+        vm.expectRevert("StabilityPool: Amount must be non-zero");
+        stabilityPool.claimAllCollGains();
+        vm.stopPrank();
+    }
+
     function testClaimAllCollGainsDoesNotChangeCompoundedDeposit() public {
         // A has stashed & current gains, B has only current
         _setupStashedAndCurrentCollGains();
@@ -1758,13 +1781,13 @@ contract SPTest is DevTestSetup {
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
             address(stabilityPool),
-            bytes32(uint256(13)), // 13th storage slot where P is stored
+            bytes32(uint256(9)), // 9th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
 
-        // Confirm that storage slot 13 is set
-        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(13))));
-        assertEq(storedVal, _cheatP, "value of slot 13 is not set");
+        // Confirm that storage slot 9 is set
+        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(9))));
+        assertEq(storedVal, _cheatP, "value of slot 9 is not set");
         // Confirm that P specfically is set
         assertEq(stabilityPool.P(), _cheatP, "P is not set");
 
@@ -1803,13 +1826,13 @@ contract SPTest is DevTestSetup {
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
             address(stabilityPool),
-            bytes32(uint256(13)), // 13th storage slot where P is stored
+            bytes32(uint256(9)), // 9th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
 
-        // Confirm that storage slot 13 is set
-        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(13))));
-        assertEq(storedVal, _cheatP, "value of slot 13 is not set");
+        // Confirm that storage slot 9 is set
+        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(9))));
+        assertEq(storedVal, _cheatP, "value of slot 9 is not set");
         // Confirm that P specfically is set
         assertEq(stabilityPool.P(), _cheatP, "P is not set");
 
@@ -1923,13 +1946,13 @@ contract SPTest is DevTestSetup {
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
             address(stabilityPool),
-            bytes32(uint256(13)), // 13th storage slot where P is stored
+            bytes32(uint256(9)), // 9th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
 
-        // Confirm that storage slot 13 is set
-        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(13))));
-        assertEq(storedVal, _cheatP, "value of slot 13 is not set");
+        // Confirm that storage slot 9 is set
+        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(9))));
+        assertEq(storedVal, _cheatP, "value of slot 9 is not set");
         // Confirm that P specfically is set
         assertEq(stabilityPool.P(), _cheatP, "P is not set");
 
@@ -2040,13 +2063,13 @@ contract SPTest is DevTestSetup {
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
             address(stabilityPool),
-            bytes32(uint256(13)), // 13th storage slot where P is stored
+            bytes32(uint256(9)), // 9th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
 
-        // Confirm that storage slot 13 is set
-        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(13))));
-        assertEq(storedVal, _cheatP, "value of slot 13 is not set");
+        // Confirm that storage slot 9 is set
+        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(9))));
+        assertEq(storedVal, _cheatP, "value of slot 9 is not set");
         // Confirm that P specfically is set
         console2.log(stabilityPool.P(), "stabilityPool.P()");
         console2.log(_cheatP, "_cheatP");
@@ -2080,13 +2103,13 @@ contract SPTest is DevTestSetup {
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
             address(stabilityPool),
-            bytes32(uint256(13)), // 13th storage slot where P is stored
+            bytes32(uint256(9)), // 9th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
 
-        // Confirm that storage slot 13 is set
-        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(13))));
-        assertEq(storedVal, _cheatP, "value of slot 13 is not set");
+        // Confirm that storage slot 9 is set
+        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(9))));
+        assertEq(storedVal, _cheatP, "value of slot 9 is not set");
         // Confirm that P specfically is set
         assertEq(stabilityPool.P(), _cheatP, "P is not set");
 

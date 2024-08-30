@@ -506,8 +506,26 @@ The premature adjustment fee works as so:
 
 - When a Trove is opened, its `lastInterestRateAdjTime` property is set equal to the current time
 - When a borrower adjusts their interest rate via `adjustTroveInterestRate` the system checks that the cooldown period has passed since their last interest rate adjustment 
-
 - If the adjustment is sooner it incurs an upfront fee (equal to 7 days of average interest of the respective branch) which is added to their debt.
+
+#### Batches and upfront fee
+
+##### Joining a batch
+When a trove joins a batch, it pays upfront fee if the last trove adjustment was done more than the cool period ago. It does’t matter if trove and batch have the same interest rate, or when was the last adjustment by the batch.
+
+The last interest rate timestamp will be updated to the time of joining.
+
+Batch interest rate changes only take into account global batch timestamps, so when the new batch manager changes the interest rate less than the cooldown period after the borrower moved to the new batch, but more than the cooldown period after its last adjustment, the newly joined borrower wouldn't pay the upfront fee despite the fact that his last interest rate change happened less than the cooldown period ago.
+
+That’s why troves pay upfront fee when joining even if the interest is the same. Otherwise a trove may game it by having a batch created in advance (with no recent changens), joining it and the changing the rate of the batch.
+
+##### Leaving a batch
+When a trove leaves a batch, the user's timestamp is again reset to the current time.
+No upfront fee is charged, unless the interest rate is changed in the same transaction and the batch changed the interest rate less than the cooldown period ago.
+
+##### Switching batches
+As the function to switch batches is just a wrapper that calls the functions for leaving and joining a batch, this means that switching batches always incurs in upfront fee now (unless user doesn’t use the wrapper and waits for 1 week between leaving and joining).
+
 
 ## BOLD Redemptions
 

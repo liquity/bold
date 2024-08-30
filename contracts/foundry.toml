@@ -4,6 +4,7 @@ out = "out"
 libs = ["lib"]
 evm_version = 'shanghai'
 ignored_error_codes = [5574] # contract-size
+fs_permissions = [{access = "read", path   = "./utils/assets/"}]
 
 [invariant]
 call_override = false

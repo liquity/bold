@@ -159,26 +159,23 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     error NothingToLiquidate();
     error CallerNotBorrowerOperations();
     error CallerNotCollateralRegistry();
-    error TroveNotOpen(uint256 _troveId);
     error OnlyOneTroveLeft();
     error NotShutDown();
+    error NotEnoughBoldBalance();
     error MinCollNotReached(uint256 _coll);
 
     // --- Events ---
 
     event TroveNFTAddressChanged(address _newTroveNFTAddress);
     event BorrowerOperationsAddressChanged(address _newBorrowerOperationsAddress);
-    event PriceFeedAddressChanged(address _newPriceFeedAddress);
     event BoldTokenAddressChanged(address _newBoldTokenAddress);
-    event ActivePoolAddressChanged(address _activePoolAddress);
-    event DefaultPoolAddressChanged(address _defaultPoolAddress);
     event StabilityPoolAddressChanged(address _stabilityPoolAddress);
     event GasPoolAddressChanged(address _gasPoolAddress);
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
-    constructor(IAddressesRegistry _addressesRegistry) {
+    constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) {
         CCR = _addressesRegistry.CCR();
         MCR = _addressesRegistry.MCR();
         SCR = _addressesRegistry.SCR();
@@ -187,12 +184,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         troveNFT = _addressesRegistry.troveNFT();
         borrowerOperations = _addressesRegistry.borrowerOperations();
-        activePool = _addressesRegistry.activePool();
-        defaultPool = _addressesRegistry.defaultPool();
         stabilityPool = _addressesRegistry.stabilityPool();
         gasPoolAddress = _addressesRegistry.gasPoolAddress();
         collSurplusPool = _addressesRegistry.collSurplusPool();
-        priceFeed = _addressesRegistry.priceFeed();
         boldToken = _addressesRegistry.boldToken();
         sortedTroves = _addressesRegistry.sortedTroves();
         WETH = _addressesRegistry.WETH();
@@ -200,12 +194,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         emit TroveNFTAddressChanged(address(troveNFT));
         emit BorrowerOperationsAddressChanged(address(borrowerOperations));
-        emit ActivePoolAddressChanged(address(activePool));
-        emit DefaultPoolAddressChanged(address(defaultPool));
         emit StabilityPoolAddressChanged(address(stabilityPool));
         emit GasPoolAddressChanged(gasPoolAddress);
         emit CollSurplusPoolAddressChanged(address(collSurplusPool));
-        emit PriceFeedAddressChanged(address(priceFeed));
         emit BoldTokenAddressChanged(address(boldToken));
         emit SortedTrovesAddressChanged(address(sortedTroves));
         emit CollateralRegistryAddressChanged(address(collateralRegistry));
@@ -413,7 +404,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         TroveChange memory troveChange;
         LiquidationValues memory totals;
 
-        uint256 price = priceFeed.fetchPrice();
+        (uint256 price, ) = priceFeed.fetchPrice();
         uint256 boldInStabPool = stabilityPoolCached.getTotalBoldDeposits();
 
         // Perform the appropriate liquidation sequence - tally values and obtain their totals.
@@ -423,7 +414,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             revert NothingToLiquidate();
         }
 
-        activePool.mintAggInterestAndAccountForTroveChange(troveChange, address(0));
+        activePoolCached.mintAggInterestAndAccountForTroveChange(troveChange, address(0));
 
         // Move liquidated Coll and Bold to the appropriate pools
         if (totals.debtToOffset > 0 || totals.collToSendToSP > 0) {
@@ -821,11 +812,12 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     function urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral) external {
         _requireIsShutDown();
+        _requireBoldBalanceCoversRedemption(boldToken, msg.sender, _boldAmount);
 
         IActivePool activePoolCached = activePool;
         TroveChange memory totalsTroveChange;
 
-        uint256 price = priceFeed.fetchPrice();
+        (uint256 price, ) = priceFeed.fetchPrice();
 
         uint256 remainingBold = _boldAmount;
         for (uint256 i = 0; i < _troveIds.length; i++) {
@@ -851,6 +843,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             totalsTroveChange.oldWeightedRecordedDebt += singleRedemption.oldWeightedRecordedDebt;
 
             remainingBold -= singleRedemption.boldLot;
+            if (remainingBold == 0) break;
         }
 
         if (totalsTroveChange.collDecrease < _minCollateral) {
@@ -982,10 +975,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 period = _getInterestPeriod(batch.lastDebtUpdateTime);
         latestBatchData.accruedInterest = _calcInterest(latestBatchData.weightedRecordedDebt, period);
         latestBatchData.annualManagementFee = batch.annualManagementFee;
-        latestBatchData.accruedManagementFee =
-            _calcInterest(latestBatchData.recordedDebt * latestBatchData.annualManagementFee, period);
         latestBatchData.weightedRecordedBatchManagementFee =
             latestBatchData.recordedDebt * latestBatchData.annualManagementFee;
+        latestBatchData.accruedManagementFee =
+            _calcInterest(latestBatchData.weightedRecordedBatchManagementFee, period);
 
         latestBatchData.entireDebtWithoutRedistribution =
             latestBatchData.recordedDebt + latestBatchData.accruedInterest + latestBatchData.accruedManagementFee;
@@ -1138,6 +1131,16 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         }
     }
 
+    function _requireBoldBalanceCoversRedemption(IBoldToken _boldToken, address _redeemer, uint256 _amount)
+        internal
+        view
+    {
+        uint256 boldBalance = _boldToken.balanceOf(_redeemer);
+        if (boldBalance < _amount) {
+            revert NotEnoughBoldBalance();
+        }
+    }
+
     // --- Trove property getters ---
 
     function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool) {
@@ -1145,7 +1148,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 spSize = stabilityPool.getTotalBoldDeposits();
         uint256 unbackedPortion = totalDebt > spSize ? totalDebt - spSize : 0;
 
-        uint256 price = priceFeed.fetchPrice();
+        (uint256 price, ) = priceFeed.fetchPrice();
         // It's redeemable if the TCR is above the shutdown threshold, and branch has not been shut down
         bool redeemable = _getTCR(price) >= SCR && shutdownTime == 0;
 
@@ -1223,6 +1226,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         Troves[_troveId].status = Status.active;
         Troves[_troveId].arrayIndex = uint64(TroveIds.length);
         Troves[_troveId].interestBatchManager = _batchAddress;
+        Troves[_troveId].lastInterestRateAdjTime = uint64(block.timestamp);
 
         _updateTroveRewardSnapshots(_troveId);
 
@@ -1787,7 +1791,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // Restore Trove state
         Troves[_troveId].debt = _newTroveDebt;
         Troves[_troveId].coll = _newTroveColl;
-        Troves[_troveId].stake = _computeNewStake(_newTroveColl);
         Troves[_troveId].lastDebtUpdateTime = uint64(block.timestamp);
         Troves[_troveId].annualInterestRate = _newAnnualInterestRate;
         Troves[_troveId].lastInterestRateAdjTime = uint64(block.timestamp);

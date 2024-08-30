@@ -16,9 +16,11 @@ import "../../StabilityPool.sol";
 import "./BorrowerOperationsTester.t.sol";
 import "./TroveManagerTester.t.sol";
 import "../../TroveNFT.sol";
+import "../../NFTMetadata/MetadataNFT.sol";
 import "../../CollateralRegistry.sol";
 import "../../MockInterestRouter.sol";
 import "./PriceFeedTestnet.sol";
+import "./MetadataDeployment.sol";
 import "../../Zappers/WETHZapper.sol";
 import "../../Zappers/GasCompZapper.sol";
 import "../../Zappers/LeverageLSTZapper.sol";
@@ -48,7 +50,7 @@ uint256 constant _24_HOURS = 86400;
 uint256 constant _48_HOURS = 172800;
 
 // TODO: Split dev and mainnet
-contract TestDeployer {
+contract TestDeployer is MetadataDeployment {
     ICurveFactory constant curveFactory = ICurveFactory(0x98EE851a00abeE0d95D08cF4CA2BdCE32aeaAF7F);
     ISwapRouter constant uniV3Router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     IQuoterV2 constant uniV3Quoter = IQuoterV2(0x61fFE014bA17989E743c5F6cB21bF9697530B21e);
@@ -71,7 +73,7 @@ contract TestDeployer {
         IPriceFeedTestnet priceFeed; // Tester
         GasPool gasPool;
         IInterestRouter interestRouter;
-        IERC20 collToken;
+        IERC20Metadata collToken;
     }
 
     struct LiquityContracts {
@@ -87,7 +89,7 @@ contract TestDeployer {
         IPriceFeed priceFeed;
         GasPool gasPool;
         IInterestRouter interestRouter;
-        IERC20 collToken;
+        IERC20Metadata collToken;
     }
 
     struct Zappers {
@@ -106,6 +108,7 @@ contract TestDeployer {
         address stabilityPool;
         address troveManager;
         address troveNFT;
+        address metadataNFT;
         address priceFeed;
         address gasPool;
         address interestRouter;
@@ -121,7 +124,7 @@ contract TestDeployer {
 
     struct DeploymentVarsDev {
         uint256 numCollaterals;
-        IERC20[] collaterals;
+        IERC20Metadata[] collaterals;
         IAddressesRegistry[] addressesRegistries;
         ITroveManager[] troveManagers;
         bytes bytecode;
@@ -142,7 +145,7 @@ contract TestDeployer {
     struct DeploymentVarsMainnet {
         OracleParams oracleParams;
         uint256 numCollaterals;
-        IERC20[] collaterals;
+        IERC20Metadata[] collaterals;
         IAddressesRegistry[] addressesRegistries;
         ITroveManager[] troveManagers;
         IPriceFeed[] priceFeeds;
@@ -264,7 +267,7 @@ contract TestDeployer {
 
         contractsArray = new LiquityContractsDev[](vars.numCollaterals);
         zappersArray = new Zappers[](vars.numCollaterals);
-        vars.collaterals = new IERC20[](vars.numCollaterals);
+        vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
@@ -275,7 +278,7 @@ contract TestDeployer {
         vars.addressesRegistries[0] = addressesRegistry;
         vars.troveManagers[0] = ITroveManager(troveManagerAddress);
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
-            IERC20 collToken = new ERC20Faucet(
+            IERC20Metadata collToken = new ERC20Faucet(
                 string.concat("Staked ETH", string(abi.encode(vars.i))), // _name
                 string.concat("stETH", string(abi.encode(vars.i))), // _symbol
                 100 ether, //     _tapAmount
@@ -340,7 +343,7 @@ contract TestDeployer {
     }
 
     function _deployAndConnectCollateralContractsDev(
-        IERC20 _collToken,
+        IERC20Metadata _collToken,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
         IWETH _weth,
@@ -357,6 +360,14 @@ contract TestDeployer {
         contracts.priceFeed = new PriceFeedTestnet();
         contracts.interestRouter = new MockInterestRouter();
 
+        // Deploy Metadata
+        MetadataNFT metadataNFT = deployMetadata(SALT);
+        addresses.metadataNFT = getAddress(
+            address(this), getBytecode(type(MetadataNFT).creationCode, address(initializedFixedAssetReader)), SALT
+        );
+        assert(address(metadataNFT) == addresses.metadataNFT);
+
+        // Pre-calc addresses
         addresses.borrowerOperations = getAddress(
             address(this),
             getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry)),
@@ -385,11 +396,13 @@ contract TestDeployer {
             address(this), getBytecode(type(SortedTroves).creationCode, address(contracts.addressesRegistry)), SALT
         );
 
+        // Deploy contracts
         IAddressesRegistry.AddressVars memory addressVars = IAddressesRegistry.AddressVars({
             collToken: _collToken,
             borrowerOperations: IBorrowerOperations(addresses.borrowerOperations),
             troveManager: ITroveManager(addresses.troveManager),
             troveNFT: ITroveNFT(addresses.troveNFT),
+            metadataNFT: IMetadataNFT(addresses.metadataNFT),
             stabilityPool: IStabilityPool(addresses.stabilityPool),
             priceFeed: contracts.priceFeed,
             activePool: IActivePool(addresses.activePool),
@@ -471,7 +484,7 @@ contract TestDeployer {
         result.contractsArray = new LiquityContracts[](vars.numCollaterals);
         result.zappersArray = new Zappers[](vars.numCollaterals);
         vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
-        vars.collaterals = new IERC20[](vars.numCollaterals);
+        vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
         address troveManagerAddress;
@@ -534,25 +547,25 @@ contract TestDeployer {
         vars.troveManagers[0] = ITroveManager(troveManagerAddress);
 
         // RETH
-        vars.collaterals[1] = IERC20(0xae78736Cd615f374D3085123A210448E74Fc6393);
+        vars.collaterals[1] = IERC20Metadata(0xae78736Cd615f374D3085123A210448E74Fc6393);
         (vars.addressesRegistries[1], troveManagerAddress) =
             _deployAddressesRegistryMainnet(_troveManagerParamsArray[1]);
         vars.troveManagers[1] = ITroveManager(troveManagerAddress);
 
         // WSTETH
-        vars.collaterals[2] = IERC20(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
+        vars.collaterals[2] = IERC20Metadata(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
         (vars.addressesRegistries[2], troveManagerAddress) =
             _deployAddressesRegistryMainnet(_troveManagerParamsArray[2]);
         vars.troveManagers[2] = ITroveManager(troveManagerAddress);
 
         // ETHX
-        vars.collaterals[3] = IERC20(0xA35b1B31Ce002FBF2058D22F30f95D405200A15b);
+        vars.collaterals[3] = IERC20Metadata(0xA35b1B31Ce002FBF2058D22F30f95D405200A15b);
         (vars.addressesRegistries[3], troveManagerAddress) =
             _deployAddressesRegistryMainnet(_troveManagerParamsArray[3]);
         vars.troveManagers[3] = ITroveManager(troveManagerAddress);
 
         // OSETH
-        vars.collaterals[4] = IERC20(0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38);
+        vars.collaterals[4] = IERC20Metadata(0xf1C9acDc66974dFB6dEcB12aA385b9cD01190E38);
         (vars.addressesRegistries[4], troveManagerAddress) =
             _deployAddressesRegistryMainnet(_troveManagerParamsArray[4]);
         vars.troveManagers[4] = ITroveManager(troveManagerAddress);
@@ -600,7 +613,7 @@ contract TestDeployer {
     }
 
     function _deployAndConnectCollateralContractsMainnet(
-        IERC20 _collToken,
+        IERC20Metadata _collToken,
         IPriceFeed _priceFeed,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
@@ -617,6 +630,14 @@ contract TestDeployer {
 
         contracts.addressesRegistry = _addressesRegistry;
 
+        // Deploy Metadata
+        MetadataNFT metadataNFT = deployMetadata(SALT);
+        addresses.metadataNFT = getAddress(
+            address(this), getBytecode(type(MetadataNFT).creationCode, address(initializedFixedAssetReader)), SALT
+        );
+        assert(address(metadataNFT) == addresses.metadataNFT);
+
+        // Pre-calc addresses
         addresses.borrowerOperations = getAddress(
             address(this),
             getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry)),
@@ -645,11 +666,13 @@ contract TestDeployer {
             address(this), getBytecode(type(SortedTroves).creationCode, address(contracts.addressesRegistry)), SALT
         );
 
+        // Deploy contracts
         IAddressesRegistry.AddressVars memory addressVars = IAddressesRegistry.AddressVars({
             collToken: _collToken,
             borrowerOperations: IBorrowerOperations(addresses.borrowerOperations),
             troveManager: ITroveManager(addresses.troveManager),
             troveNFT: ITroveNFT(addresses.troveNFT),
+            metadataNFT: IMetadataNFT(addresses.metadataNFT),
             stabilityPool: IStabilityPool(addresses.stabilityPool),
             priceFeed: contracts.priceFeed,
             activePool: IActivePool(addresses.activePool),
@@ -693,6 +716,9 @@ contract TestDeployer {
             address(contracts.borrowerOperations),
             address(contracts.activePool)
         );
+
+        // TODO: remove this and set address in constructor as per the CREATE2 approach above
+        _priceFeed.setAddresses(addresses.borrowerOperations);
 
         // deploy zappers
         (zappers.gasCompZapper, zappers.wethZapper, zappers.leverageZapperCurve, zappers.leverageZapperUniV3) =
@@ -755,7 +781,7 @@ contract TestDeployer {
         IFlashLoanProvider _flashLoanProvider,
         bool _lst
     ) internal returns (ILeverageZapper) {
-        uint256 price = _priceFeed.fetchPrice();
+        (uint256 price, ) = _priceFeed.fetchPrice();
 
         // deploy Curve Twocrypto NG pool
         address[2] memory coins;
@@ -780,11 +806,9 @@ contract TestDeployer {
         IExchange curveExchange = new CurveExchange(_collToken, _boldToken, curvePool, 1, 0);
         ILeverageZapper leverageZapperCurve;
         if (_lst) {
-            leverageZapperCurve =
-                new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
+            leverageZapperCurve = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
         } else {
-            leverageZapperCurve =
-                new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
+            leverageZapperCurve = new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
         }
 
         return leverageZapperCurve;
@@ -808,15 +832,13 @@ contract TestDeployer {
         vars.uniV3Exchange = new UniV3Exchange(_collToken, _boldToken, UNIV3_FEE, uniV3Router, uniV3Quoter);
         ILeverageZapper leverageZapperUniV3;
         if (_lst) {
-            leverageZapperUniV3 =
-                new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
+            leverageZapperUniV3 = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
         } else {
-            leverageZapperUniV3 =
-                new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
+            leverageZapperUniV3 = new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
         }
 
         // Create Uni V3 pool
-        vars.price = _priceFeed.fetchPrice();
+        (vars.price, ) = _priceFeed.fetchPrice();
         if (address(_boldToken) < address(_collToken)) {
             //console2.log("b < c");
             vars.tokens[0] = address(_boldToken);
