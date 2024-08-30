@@ -7,6 +7,7 @@ import { match, P } from "ts-pattern";
 const dnFormatOptions = {
   "1z": { digits: 1, trailingZeros: true },
   "2z": { digits: 2, trailingZeros: true },
+  "compact": { compact: true, digits: 2 },
   "full": undefined, // dnum defaults
 } as const;
 
@@ -19,6 +20,7 @@ export function fmtnum(
   optionsOrFormatName:
     | keyof typeof dnFormatOptions
     | Parameters<typeof dn.format>[1] = "2z",
+  scale = 1,
 ) {
   if (value === null) {
     return "";
@@ -28,6 +30,9 @@ export function fmtnum(
   }
   if (isDnFormatName(optionsOrFormatName)) {
     optionsOrFormatName = dnFormatOptions[optionsOrFormatName];
+  }
+  if (scale > 1) {
+    value = dn.mul(value, scale);
   }
   return dn.format(value, optionsOrFormatName);
 }

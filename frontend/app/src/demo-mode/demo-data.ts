@@ -107,13 +107,23 @@ export const EARN_POOLS: Record<
 const BUCKET_SIZE_MAX = 20_000_000;
 const RATE_STEPS = Math.round((INTEREST_RATE_MAX - INTEREST_RATE_MIN) / INTEREST_RATE_INCREMENT) + 1;
 export const INTEREST_RATE_BUCKETS = Array.from({ length: RATE_STEPS }, (_, i) => {
-  const rate = Math.round((INTEREST_RATE_MIN + i * INTEREST_RATE_INCREMENT) * 10) / 10;
+  const rate = Math.round(
+    (INTEREST_RATE_MIN + i * INTEREST_RATE_INCREMENT) * 10,
+  ) / 10;
   const baseFactor = 1 - Math.pow((i / (RATE_STEPS - 1) - 0.5) * 2, 2);
-  return [rate, dn.from(Math.pow(baseFactor * Math.random(), 2) * BUCKET_SIZE_MAX, 18)];
+  return [
+    rate,
+    dn.from(Math.pow(baseFactor * Math.random(), 2) * BUCKET_SIZE_MAX, 18),
+  ];
 }) as Array<[number, dn.Dnum]>;
 
 export const INTEREST_CHART = INTEREST_RATE_BUCKETS.map(([_, size]) => (
-  Math.max(0.1, dn.toNumber(size) / Math.max(...INTEREST_RATE_BUCKETS.map(([_, size]) => dn.toNumber(size))))
+  Math.max(
+    0.1,
+    dn.toNumber(size) / Math.max(
+      ...INTEREST_RATE_BUCKETS.map(([_, size]) => dn.toNumber(size)),
+    ),
+  )
 ));
 
 export function getDebtBeforeRateBucketIndex(index: number) {
@@ -129,3 +139,229 @@ export function getDebtBeforeRateBucketIndex(index: number) {
   }
   return debt;
 }
+
+export const DELEGATES = [
+  {
+    id: "0x01",
+    name: "DeFi Saver",
+    interestRate: dn.from(0.065, 18),
+    followers: 1202,
+    boldAmount: dn.from(25_130_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(900_000, 18),
+    interestRateChange: [
+      dn.from(0.028, 18),
+      dn.from(0.0812, 18),
+    ],
+  },
+  {
+    id: "0x02",
+    name: "Yield Harbor",
+    interestRate: dn.from(0.041, 18),
+    followers: 700,
+    boldAmount: dn.from(15_730_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(2_600_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.032, 18),
+      dn.from(0.069, 18),
+    ],
+  },
+  {
+    id: "0x03",
+    name: "Crypto Nexus",
+    interestRate: dn.from(0.031, 18),
+    followers: 500,
+    boldAmount: dn.from(12_000_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(1_200_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.025, 18),
+      dn.from(0.078, 18),
+    ],
+  },
+  {
+    id: "0x04",
+    name: "Block Ventures",
+    interestRate: dn.from(0.021, 18),
+    followers: 200,
+    boldAmount: dn.from(7_000_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(1_280_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.018, 18),
+      dn.from(0.065, 18),
+    ],
+  },
+  {
+    id: "0x05",
+    name: "Chain Gains",
+    interestRate: dn.from(0.011, 18),
+    followers: 100,
+    boldAmount: dn.from(3_000_000, 18),
+    lastDays: 47,
+    redemptions: dn.from(1_100_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.009, 18),
+      dn.from(0.058, 18),
+    ],
+  },
+  {
+    id: "0x06",
+    name: "TokenTrust",
+    interestRate: dn.from(0.001, 18),
+    followers: 50,
+    boldAmount: dn.from(1_000_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(334_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.001, 18),
+      dn.from(0.043, 18),
+    ],
+  },
+  {
+    id: "0x07",
+    name: "Yield Maximizer",
+    interestRate: dn.from(0.072, 18),
+    followers: 1500,
+    boldAmount: dn.from(30_000_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(750_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.035, 18),
+      dn.from(0.089, 18),
+    ],
+  },
+  {
+    id: "0x08",
+    name: "Stable Growth",
+    interestRate: dn.from(0.055, 18),
+    followers: 980,
+    boldAmount: dn.from(22_500_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(1_100_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.041, 18),
+      dn.from(0.072, 18),
+    ],
+  },
+  {
+    id: "0x09",
+    name: "Risk Taker",
+    interestRate: dn.from(0.089, 18),
+    followers: 750,
+    boldAmount: dn.from(18_000_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(2_200_000, 18),
+    liquidations: 1,
+    interestRateChange: [
+      dn.from(0.038, 18),
+      dn.from(0.102, 18),
+    ],
+  },
+  {
+    id: "0x0a",
+    name: "Conservative Gains",
+    interestRate: dn.from(0.038, 18),
+    followers: 620,
+    boldAmount: dn.from(14_800_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(500_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.029, 18),
+      dn.from(0.061, 18),
+    ],
+  },
+  {
+    id: "0x0b",
+    name: "Crypto Innovator",
+    interestRate: dn.from(0.062, 18),
+    followers: 890,
+    boldAmount: dn.from(20_500_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(1_500_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.033, 18),
+      dn.from(0.085, 18),
+    ],
+  },
+  {
+    id: "0x0c",
+    name: "DeFi Pioneer",
+    interestRate: dn.from(0.075, 18),
+    followers: 1100,
+    boldAmount: dn.from(26_000_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(1_800_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.037, 18),
+      dn.from(0.091, 18),
+    ],
+  },
+  {
+    id: "0x0d",
+    name: "Steady Returns",
+    interestRate: dn.from(0.049, 18),
+    followers: 780,
+    boldAmount: dn.from(17_500_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(600_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.036, 18),
+      dn.from(0.067, 18),
+    ],
+  },
+  {
+    id: "0x0e",
+    name: "Blockchain Believer",
+    interestRate: dn.from(0.058, 18),
+    followers: 850,
+    boldAmount: dn.from(19_800_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(1_300_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.031, 18),
+      dn.from(0.076, 18),
+    ],
+  },
+  {
+    id: "0x0f",
+    name: "Crypto Sage",
+    interestRate: dn.from(0.069, 18),
+    followers: 1300,
+    boldAmount: dn.from(28_500_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(950_000, 18),
+    liquidations: 0,
+    interestRateChange: [
+      dn.from(0.034, 18),
+      dn.from(0.088, 18),
+    ],
+  },
+  {
+    id: "0x10",
+    name: "Bold Strategist",
+    interestRate: dn.from(0.082, 18),
+    followers: 970,
+    boldAmount: dn.from(23_000_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(2_500_000, 18),
+    liquidations: 1,
+    interestRateChange: [
+      dn.from(0.039, 18),
+      dn.from(0.098, 18),
+    ],
+  },
+] as const;

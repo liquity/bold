@@ -34,11 +34,11 @@ export function LeverageField({
 }: ReturnType<typeof useLeverageField> & {
   disabled?: boolean;
 }) {
-  const negativeDeposit = !deposit || dn.lt(deposit, 0);
+  const isDepositNegative = !deposit || dn.lt(deposit, 0);
   return (
     <InputField
       secondarySpacing={16}
-      disabled={negativeDeposit}
+      disabled={isDepositNegative}
       contextual={
         <div
           style={{
@@ -69,7 +69,7 @@ export function LeverageField({
       label={{
         end: (
           <div>
-            Total debt {!debt || negativeDeposit ? "−" : (
+            Total debt {!debt || isDepositNegative ? "−" : (
               <>
                 <span
                   className={css({
@@ -118,7 +118,7 @@ export function LeverageField({
         ),
       }}
       {...liquidationPriceField.inputFieldProps}
-      valueUnfocused={negativeDeposit
+      valueUnfocused={isDepositNegative
         ? (
           <span
             className={css({
@@ -180,7 +180,11 @@ export function useLeverageField({
     ? dn.mul(depositPreLeverage, leverageFactor)
     : null;
 
-  const debt = depositPreLeverage && calculateDebt(depositPreLeverage, leverageFactor, collPrice);
+  const debt = depositPreLeverage && calculateDebt(
+    depositPreLeverage,
+    leverageFactor,
+    collPrice,
+  );
 
   const getLeverageFactorFromLiquidationPriceClamped = (liquidationPrice: Dnum) => {
     const leverageFactor = getLeverageFactorFromLiquidationPrice(
