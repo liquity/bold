@@ -174,11 +174,12 @@ Deploying Liquity contracts with the following settings:
     delete process.env.CI;
   }
 
-  // deploy
-  const deploymentOutput = await $`forge ${forgeArgs}`;
   if (options.debug) {
-    console.log(deploymentOutput.text());
+    $.verbose = true;
   }
+
+  // deploy
+  await $`forge ${forgeArgs}`;
 
   const deployedContracts = await getDeployedContracts(
     `broadcast/DeployLiquity2.s.sol/${options.chainId}/run-latest.json`,
