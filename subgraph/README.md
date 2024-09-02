@@ -4,7 +4,7 @@
 
 ```sh
 # 1. Run anvil
-anvil --host 0.0.0.0 --gas-limit 100000000000 --base-fee 1 --block-time 2
+anvil --host 0.0.0.0 --gas-limit 100000000000 --base-fee 1
 
 # 2. Deploy the contracts
 cd contracts

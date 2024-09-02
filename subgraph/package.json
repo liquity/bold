@@ -1,6 +1,9 @@
 {
   "name": "@liquity2/subgraph",
   "version": "1.0.0",
+  "scripts": {
+    "codegen": "pnpm graph codegen"
+  },
   "devDependencies": {
     "@graphprotocol/graph-cli": "^0.80.0"
   },
