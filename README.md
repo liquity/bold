@@ -192,6 +192,8 @@ The three main branch-level contracts - `BorrowerOperations`, `TroveManager` and
 
 - `TroveManager` - contains functionality for liquidations and redemptions and calculating individual Trove interest. Also contains the recorded  state of each Trove - i.e. a record of the Trove’s collateral, debt and interest rate, etc. TroveManager does not hold value (i.e. collateral or BOLD). TroveManager functions call in to the various Pools to tell them to move collateral or BOLD between Pools, where necessary.
 
+- `TroveNFT` - Implements basic mint and burn functionality for Trove NFTs, controlled by the `TroveManager`. Implements the tokenURI functionality which serves Trove metadata, i.e. a unique image for each Trove.
+
 - `LiquityBase` - Contains common functions and is inherited by `CollateralRegistry`, `TroveManager`, `BorrowerOperations`, `StabilityPool`. 
 
 - `StabilityPool` - contains functionality for Stability Pool operations: making deposits, and withdrawing compounded deposits and accumulated collateral and BOLD yield gains. Holds the BOLD Stability Pool deposits, BOLD yield gains and collateral gains from liquidations for all depositors on that branch.
@@ -305,7 +307,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
         uint256 _maxUpfrontFee
     )`: Change’s the caller’s annual interest rate on their Trove. The update is considered “premature” if they’ve recently changed their interest rate (i.e. within `INTEREST_RATE_ADJ_COOLDOWN` seconds), and if so, they incur an upfront fee - see the [interest rate adjustment section](#interest-rate-adjustments-redemption-evasion-mitigation).  The fee is also based on the system average interest rate, so the user may provide a `_maxUpfrontFee` if they make a premature adjustment.
 
-- `applyTroveInterestPermissionless(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint)`: Applies the Trove’s accrued interest, i.e. adds the accrued interest to its recorded debt and updates its `lastDebtUpdateTime` to now. The purpose is to make sure all Troves can have their interest applied with sufficient regularity even if their owner doesn’t touch them. Also makes unredeemable Troves that have reached `debt > MIN_DEBT` (e.g. from interest or redistribution gains) become redeemable again, by reinserting them to the SortedList and previous batch (if they were in one).
+- `applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint)`: Applies all pending debt to the Trove - i.e. adds its accrued interest and any redistribution debt gain, to its recorded debt and updates its `lastDebtUpdateTime` to now. The purpose is to make sure all Troves can have their interest and gains applied with sufficient regularity even if their owner doesn’t touch them. Also makes unredeemable Troves that have reached `debt > MIN_DEBT` (e.g. from interest or redistribution gains) become redeemable again, by reinserting them to the SortedList and previous batch (if they were in one).  If the Trove is in a batch, it applies all of the batch's accrued interest and accrued management fee to the batch's recorded debt, as well as the _individual_ Trove's redistribution debt gain.
 
 -  `setAddManager(uint256 _troveId, address _manager)`: sets an “Add” manager for the caller’s chosen Trove, who has permission to add collateral and repay debt to their Trove.
 
