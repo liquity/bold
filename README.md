@@ -894,7 +894,7 @@ The Trove owner may also revoke individual delegate’s permission to change the
 
 ### Batch interest managers
 
-A Trove owner may set a batch manager at any point after opening. They must choose a registered batch manager.
+A Trove owner may set a batch manager at any point after opening. They must choose a registered batch manager. The Trove owner may remove the Trove from the batch at any time.
 
 A batch manager controls the interest rate of Troves under their management, in a predefined range chosen when they register. This range may not be changed after registering, enabling borrowers to know in advance the min and max interest rates the manager could set.
 
@@ -910,13 +910,11 @@ When a batch manager updates their batch’s interest rate, the entire `Batch` i
 
  ### Internal representation as shared Trove
 
-A batch accrues three kinds of time-based debt increases: normal interest, management fees and possibly redistribution gains over time. 
+A batch accrues two kinds of time-based debt increases: normal interest and management fees. Individual Troves in the batch may also accrue redistribution gains (coll and debt), though these remained tracked at the individual Trove level, not at the batch level.
 
-To handle all these in a gas-efficient way, the batch is internally modelled as a single “shared” Trove. 
+To handle accrued interest and fees in a gas-efficient way, the batch is internally modelled as a single “shared” Trove. 
 
 The system tracks a batch’s `recordedDebt` and `annualInterestRate`. Accrued interest is calculated in the same way as for individual Troves, and the batch’s weighted debt is incorporated in the aggregate sum as usual.
-
-Similarly, redistributions are paid proportionally to the total collateral of the batch.
 
 ### Batch management fee
 
@@ -927,8 +925,9 @@ The management fee is an annual percentage, and is calculated in the same way as
 A batch’s `recordedDebt` is updated when:
 - a Trove in a batch has it’s debt updated by the borrower
 - The batch manager changes the batch’s interest rate
+- The pending debt of a Trove in the batch is permissionlessly applied 
 
-The accrued interest and accrued management fees are calculated and added to the debt
+The batch-level accrued interest and accrued management fees are calculated and added to the batch's recorded debt, along with any individual changes due to a Trove touch - i.e. the Trove's debt adjustment, and/or application of its pending redistribution debt gain.
 
 ### Batch premature adjustment fees
 
@@ -937,6 +936,14 @@ Batch managers incur premature fees in the same manner as individual Troves - i.
 When a borrower adds their Trove to a batch, there is a trust assumption: they expect the batch manager to manage interest rates well and not incur excessive adjustment fees.  However, the manager can commit in advance to a maximum update frequency when they register by passing a `_minInterestRateChangePeriod`.
 
 Generally is expected that competent batch managers will build good reputations and attract borrowers. Malicious or poor managers will likely end up with empty batches in the long-term.
+
+### Batch invariants
+
+Batch Troves are intended to be fundamentally equivalent to individual Troves. That is, if individual Trove A and batch Trove B have identical state at a given time (such as coll, debt, stake, accrued interest, etc) - then they would also have identical state after both undergoing the same operation (coll/debt adjustment, application of interest, receiving a redistribution gain).
+
+Also, since batches are modelled as "virtual Troves", equivalences between a Batch and an equivalent individual Trove hold across identical operations.
+
+A thorough description of these batch Trove invariants is found in the [properties and invariants](https://docs.google.com/spreadsheets/d/1WKEwXsmo_lwVWuJvcy3NmVh0IYogPQ-Z2Ab64HuJzkU/edit?usp=sharing) sheet in yellow.
 
 
 ## Collateral branch shutdown
