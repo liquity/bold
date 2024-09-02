@@ -1342,6 +1342,67 @@ This was chosen over other approaches because:
 
 If there is remaining collateral in the shutdown branch (albeit perhaps at zero USD value) and there are liquidateable Troves, Governance could alternatively vote to direct fees to a permissionless contract that deposits the BOLD to the SP of the shutdown branch and liquidates the Troves against those funds. The resulting collateral gains could, if they have non-zero value, be swapped on a DEX, e.g. for BOLD which could be then directed to LP incentives. All deposits and swaps could be handled permissionlessly by this governance-deployed contract.
 
+### 11 - ## Inaccurate calculation of average branch interest rate
+
+`getNewApproxAvgInterestRateFromTroveChange` does not actually calculate the correct average interest rate for a collateral branch. Ideally, we would like to calculate the debt-weighted average interest of all Troves within the branch, upon which our calculation of the upfront fee is based. The desired formula would be:
+
+```
+        sum(r_i * debt'_i)
+r_avg = -----------------
+           sum(debt'_i)
+```
+
+where `r_i` and `debt'_i` are the interest rate and _current_ debt of the i-th Trove, respectively. Here, `debt'_i` includes pending interest.
+
+However, in the actual implementation as Dedaub points out: in the denominator "the pending interest of all the troves is added", however the numerator "takes into account only the change in the Trove under consideration and not the pending interest of all the other troves". Thus, the actual implementation is closer to (disregarding the upfront fee that applies to the Trove being adjusted):
+
+```
+         sum(r_i * debt_i)
+r'_avg = -----------------
+            sum(debt'_i)
+```
+
+where `debt_i` is the debt of the i-th Trove when it was last adjusted, in other words: exluding pending interest. As we see, there's a discrepancy in weights between the numerator and denominator of our weighted average formula. As the sum of weights in the denominator is greater than the sum of weights in the numerator, our estimate of the average interest rate will be lower than the ideal average.
+
+Roughly speaking: if `s` is the current total debt of a collateral branch and `p` the total amount of interest that hasn't been compounded yet, our estimate will be off by a factor of `s / (s + p)`.
+
+#### Side-note: "discrete" compounding in v2
+
+By design, Trove debt in Liquity v2 is compounded "discretely", that is: whenever an operation directly modifies a Trove (such as a borrower making a Trove adjustment, or a Trove getting redeemed). Compounding only takes place for the Trove(s) "touched" by an operation, thus, each Trove has an individual timestamp (`lastDebtUpdateTime`) of the time when the Trove's debt was last compounded.
+
+#### Potential improvement 1
+
+One way to fix the above-mentioned discrepancy between the numerator and the denominator would be to take into account pending interest in the former. As mentioned before, the current definition of the numerator is:
+
+```
+sum(r_i * debt_i)
+```
+
+`ActivePool` keeps track of this sum in an O(1) fashion on-chain as `aggWeightedDebtSum`. To take into account pending interest, the numerator would have to be changed to:
+
+```
+sum(r_i * debt'_i) = sum(r_i * debt_i) + sum(r_i * debt_i * dT_i)
+```
+
+where `dT_i` is `block.timestamp - lastDebtUpdateTime`, i.e. the time elapsed since the i-th Trove was last compounded. While it seems possible to do so in O(1) complexity, `ActivePool` currently doesn't keep track of this metric. Thus without additional accounting (keeping track of the sum in a new state variable), it would take O(N) time to calculate the ideal numerator.
+
+#### Potential improvement 2
+
+Alternatively, we could modify the denominator to ignore pending debt instead. Currently, we use:
+
+```
+sum(debt'_i)
+```
+
+which is kept track of as `aggRecordedDebt` by `ActivePool`. Instead, we could use:
+
+```
+sum(debt_i)
+```
+
+While this wouldn't result in the most accurate estimation of the average interest rate either — considering we'd be using outdated debt values sampled at different times for each Trove as weights — at least we would have consistent weights in the numerator and denominator of our weighted average. To implement this though, we'd have to keep track of this modified sum (i.e. the sum of recorded Trove debts) in `ActivePool`, which we currently don't do.
+
+
 ## Requirements
 
 - [Node.js](https://nodejs.org/)
