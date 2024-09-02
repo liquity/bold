@@ -88,7 +88,7 @@
 
 - **Multi-collateral system.** The system now consists of a CollateralRegistry and multiple collateral branches. Each collateral branch is parameterized separately with its own Minimum Collateral Ratio (MCR), Critical Collateral Ratio (CCR) and Shutdown Collateral Ratio (SCR). Each collateral branch contains its own TroveManager and StabilityPool. Troves in a given branch only accept a single collateral (never mixed collateral). Liquidations of Troves in a given branch via SP offset are offset purely against the SP for that branch, and liquidation gains for SP depositors are always paid in a single collateral. Similarly, liquidations via redistribution split the collateral and debt across purely active Troves in that branch.
  
-- **Collateral choices.** The system will contain collateral branches for WETH and several LSTs: rETH, wstETH and either one (or both) of osETH and ETHx (TBD). It does not accept native ETH as collateral.
+- **Collateral choices.** The system will contain collateral branches for WETH and two LSTs: rETH and wstETH. It does not accept native ETH as collateral.
 
 - **User-set interest rates.** When a borrower opens a Trove, they choose their own annual interest rate. They may change their annual interest rate at any point. Simple (non-compounding) interest accrues on their debt continuously, and gets compounded discretely every time the Trove is touched. Aggregate accrued Trove debt is periodically minted as BOLD. 
 
@@ -229,11 +229,6 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
 - `WSTETHPriceFeed` - Inherits `MainnetPriceFeedBase`. Fetches the STETH-USD price from a Chainlink push oracle, and computes WSTETH-USD price from the STETH-USD price the WSTETH-STETH exchange rate from the LST contract. Used to price collateral on a WSTETH branch.
 
 - `RETHPriceFeed` - Inherits `CompositePriceFeed` and fetches the specific RETH-ETH exchange rate from RocketPool’s RETHToken. Used to price collateral on a RETH branch.
-
-- `ETHXPriceFeed` - Inherits `CompositePriceFeed` and fetches the specific ETHX-ETH exchange rate from Stader’s deployed StaderOracle on mainnet. Used to price collateral on an ETHX branch.
-
-- `OSETHPricFeed` - Inherits `CompositePriceFeed` and fetches the specific OSETH-ETH exchange rate from Stakewise’s deployed OsTokenVaultController contract. Used to price collateral on an OSETH branch.
-
 
 ## Public state-changing functions
 
@@ -1007,10 +1002,6 @@ Provisionally, v2 has been developed with the following collateral assets in min
 - WETH
 - WSTETH
 - RETH
-- OSETH (TBD)
-- ETHX (TBD)
-
-The final choice of LSTs is TBD, and may include one of (or both) OSETH and ETHX.
 
 ## Oracles in Liquity v2
 
@@ -1025,7 +1016,7 @@ All oracles are integrated via Chainlink’s `AggregatorV3Interface`, and all or
 
 ### Choice of oracles and price calculations
 
-Chainlink push oracles were chosen due to Chainlink’s reliability and track record. The system provisionally uses Redstone’s push oracle for OSETH, though the Chainlink oracle will be used when it is made public (and if we decide to include OSETH as collateral).
+Chainlink push oracles were chosen due to Chainlink’s reliability and track record. 
 
 The pricing method for each LST depends on availability of oracles. Where possible, direct LST-USD market oracles have been used. 
 
@@ -1040,8 +1031,6 @@ Here are the oracles and price calculations for each PriceFeed:
 | WETH-USD             | ETH-USD                                       | ETH-USD                                                        |
 | WSTETH-USD           | STETH-USD, WSTETH-STETH_canonical               | STETH-USD * WSTETH-STETH_canonical                             |
 | RETH-USD             | ETH-USD, RETH-ETH, RETH-ETH_canonical         | min(ETH-USD * RETH-ETH, ETH-USD * RETH-ETH_canonical)          |
-| ETHX-USD             | ETH-USD, ETHX-ETH, ETHX-ETH_canonical         | min(ETH-USD * ETHX-ETH, ETH-USD * ETHX-ETH_canonical)          |
-| OSETH-USD            | ETH-USD, OSETH-ETH, OSETH-ETH_canonical       | min(ETH-USD * OSETH-ETH, ETH-USD * OSETH-ETH_canonical)        |
 
 ### TODO - [INHERITANCE DIAGRAM]
 
@@ -1075,13 +1064,13 @@ If an oracle has failed, then the best the branch can do is use the last good pr
 
 ### Protection against upward market price manipulation
 
-The smaller LSTs (RETH, OSETH, ETHX) have lower liquidity and thus it is cheaper for a malicious actor to manipulate their market price.
+The smaller LST i.e. RETH has lower liquidity and thus it is cheaper for a malicious actor to manipulate their market price.
 
 The impacts of downward market manipulation are bounded - it could result in excessive liquidations and branch shutdown, but should not affect other branches nor BOLD stability.
 
 However, upward market manipulation could be catastrophic as it would allow excessive BOLD minting from Troves, which could cause a depeg.
 
-The system mitigates this by taking the minimum of the LST-USD prices derived from market and canonical rates on the RETH, ETHX and OSETH PriceFeeds. As such, to manipulate the system price upward, an attacker would need to manipulate both the market oracle _and_ the canonical rate which would be much more difficult.
+The system mitigates this by taking the minimum of the LST-USD prices derived from market and canonical rates on the RETHPriceFeed. As such, to manipulate the system price upward, an attacker would need to manipulate both the market oracle _and_ the canonical rate which would be much more difficult.
 
 
 However this is not the only LST/oracle risk scenario. There are several to consider - see the [LST oracle risks section](#lst-oracle-risks).
@@ -1214,8 +1203,6 @@ Provisionally, the preset staleness thresholds in Liquity v2 as follows, though 
 | Chainlink ETH-USD                                       | 1 hour           | 24 hours                                     |
 | Chainlink stETH-USD                                     | 1 hour           | 24 hours                                     |
 | Chainlink rETH-ETH                                      | 24 hours         | 48 hours                                     |
-| Chainlink ETHX-ETH                                      | 24 hours         | 48 hours                                     |
-| Redstone osETH-ETH (note: use Chainlink feed when released) | 24 hours         | 48 hours                                     |
 
 
 ### 6 - Batch management ops don’t check for a shutdown branch
