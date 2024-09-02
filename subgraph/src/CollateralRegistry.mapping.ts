@@ -1,4 +1,4 @@
-import { Address, BigInt, Bytes, log } from "@graphprotocol/graph-ts";
+import { Address, BigInt, Bytes, DataSourceContext } from "@graphprotocol/graph-ts";
 import { CollateralRegistry } from "../generated/CollateralRegistry/CollateralRegistry";
 import { BaseRateUpdated as BaseRateUpdatedEvent } from "../generated/CollateralRegistry/CollateralRegistry";
 import { ERC20 } from "../generated/CollateralRegistry/ERC20";
@@ -36,7 +36,11 @@ function addCollateral(
   addresses.save();
   token.save();
 
-  TroveManagerTemplate.create(troveManagerAddress);
+  let context = new DataSourceContext();
+  context.setBytes("tokenAddress", tokenAddress);
+  context.setBytes("troveManagerAddress", troveManagerAddress);
+
+  TroveManagerTemplate.createWithContext(troveManagerAddress, context);
 }
 
 export function handleBaseRateUpdated(event: BaseRateUpdatedEvent): void {

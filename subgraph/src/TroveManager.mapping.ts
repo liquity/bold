@@ -1,4 +1,4 @@
-import { BigInt } from "@graphprotocol/graph-ts";
+import { Address, BigInt, dataSource, log } from "@graphprotocol/graph-ts";
 import { InterestRateBracket, Trove } from "../generated/schema";
 import {
   TroveOperation as TroveOperationEvent,
@@ -19,37 +19,60 @@ let _1e15 = BigInt.fromI32(10).pow(15);
 let _1e16 = BigInt.fromI32(10).pow(16);
 
 export function handleTroveOperation(event: TroveOperationEvent): void {
-  let troveId = event.params._troveId.toHex();
+  let id = event.params._troveId.toHex();
+  let trove = Trove.load(id);
 
-  let trove = new Trove(troveId);
-  if (trove === null) {
+  if (!trove) {
     return;
   }
 
   if (event.params._operation === OP_CLOSE_TROVE) {
     trove.closedAt = event.block.timestamp;
-    trove.annualInterestRate = BigInt.fromI32(0);
+
+    // update rate bracket
+    let rateFloored = event.params._annualInterestRate.div(_1e15).times(_1e16);
+    let rateBracket = InterestRateBracket.load(rateFloored.toString());
+    if (rateBracket) {
+      rateBracket.totalDebt = rateBracket.totalDebt.minus(trove.debt);
+      rateBracket.totalTroves = rateBracket.totalTroves - 1;
+      rateBracket.save();
+    }
+
+    trove.interestRate = BigInt.fromI32(0);
     trove.save();
     return;
   }
 }
 
+function loadOrCreateInterestRateBracket(rateFloored: BigInt): InterestRateBracket {
+  let rateBracket = InterestRateBracket.load(rateFloored.toString());
+  if (!rateBracket) {
+    rateBracket = new InterestRateBracket(rateFloored.toString());
+    rateBracket.rate = rateFloored;
+    rateBracket.totalDebt = BigInt.fromI32(0);
+    rateBracket.totalTroves = 0;
+  }
+  rateBracket.save();
+  return rateBracket;
+}
+
 export function handleTroveUpdated(event: TroveUpdatedEvent): void {
-  let troveId = event.params._troveId.toHex();
-  let trove = Trove.load(troveId);
+  let id = event.params._troveId.toHex();
+  let trove = Trove.load(id);
 
   // previous & new rates, floored to the nearest 0.1% (rate brackets)
-  let prevRateFloored = trove ? trove.annualInterestRate.div(_1e15).times(_1e16) : null;
+  let prevRateFloored = trove ? trove.interestRate.div(_1e15).times(_1e16) : null;
   let rateFloored = event.params._annualInterestRate.div(_1e15).times(_1e16);
 
+  // create trove if it doesn't exist
   if (!trove) {
-    trove = new Trove(troveId);
-    trove.troveId = event.params._troveId;
-    trove.createdAt = event.block.timestamp;
+    trove = new Trove(id);
     trove.borrower = event.transaction.from;
+    trove.createdAt = event.block.timestamp;
   }
 
   // update interest rate brackets
+  let rateBracket = loadOrCreateInterestRateBracket(rateFloored);
   if (!prevRateFloored || rateFloored.notEqual(prevRateFloored)) {
     let prevRateBracket = prevRateFloored ? InterestRateBracket.load(prevRateFloored.toString()) : null;
     if (prevRateBracket) {
@@ -58,23 +81,19 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
       prevRateBracket.save();
     }
 
-    let rateBracket = InterestRateBracket.load(rateFloored.toString());
-    if (!rateBracket) {
-      rateBracket = new InterestRateBracket(rateFloored.toString());
-      rateBracket.rate = rateFloored;
-      rateBracket.totalDebt = BigInt.fromI32(0);
-      rateBracket.totalTroves = 0;
-    }
     rateBracket.totalDebt = rateBracket.totalDebt.plus(event.params._debt);
     rateBracket.totalTroves = rateBracket.totalTroves + 1;
-    rateBracket.save();
+  } else {
+    rateBracket.totalDebt = rateBracket.totalDebt.minus(trove.debt).plus(event.params._debt);
   }
 
+  rateBracket.save();
+
+  trove.deposit = event.params._coll;
   trove.debt = event.params._debt;
-  trove.coll = event.params._coll;
+  trove.interestRate = event.params._annualInterestRate;
+  trove.collateral = dataSource.context().getBytes("tokenAddress").toHexString();
   trove.stake = event.params._stake;
-  trove.annualInterestRate = event.params._annualInterestRate;
-  trove.collateral = "1";
 
   trove.save();
 }

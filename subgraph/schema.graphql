@@ -29,12 +29,11 @@ type CollateralAddresses @entity (immutable: true) {
 
 type Trove @entity {
   id: ID!
-  troveId: BigInt!
   borrower: Bytes!
   debt: BigInt!
-  coll: BigInt!
+  deposit: BigInt!
   stake: BigInt!
-  annualInterestRate: BigInt!
+  interestRate: BigInt!
   createdAt: BigInt!
   closedAt: BigInt
   collateral: Collateral!
