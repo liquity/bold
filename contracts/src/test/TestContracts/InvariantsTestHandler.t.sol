@@ -1662,12 +1662,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // Justify failures
             if (reason.equals("StabilityPool: User must have a non-zero deposit")) {
-                assertEqDecimal(
-                    v.c.stabilityPool.deposits(msg.sender),
-                    0,
-                    18,
-                    "Shouldn't have failed as user had a non-zero deposit"
-                );
+                assertEqDecimal(v.initialBoldDeposit, 0, 18, "Shouldn't have failed as user had a non-zero deposit");
             } else {
                 revert(reason);
             }
@@ -1682,6 +1677,57 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Cleanup (success)
             _sweepBold(msg.sender, v.boldClaimed + v.withdrawn);
             _sweepColl(i, msg.sender, v.ethClaimed);
+        }
+    }
+
+    function claimAllCollGains(uint256 i) external {
+        i = _bound(i, 0, branches.length - 1);
+
+        TestDeployer.LiquityContractsDev memory c = branches[i];
+        uint256 pendingInterest = c.activePool.calcPendingAggInterest();
+        uint256 initialBoldDeposit = c.stabilityPool.deposits(msg.sender);
+        uint256 ethStash = c.stabilityPool.stashedColl(msg.sender);
+
+        logCall("claimAllCollGains", i.toString());
+
+        string memory errorString;
+        vm.prank(msg.sender);
+
+        try c.stabilityPool.claimAllCollGains() {
+            // Preconditions
+            assertEqDecimal(initialBoldDeposit, 0, 18, "Should have failed as user had a non-zero deposit");
+            assertGtDecimal(ethStash, 0, 18, "Should have failed as ETH stash was zero");
+
+            // Effects (deposit)
+            assertEqDecimal(c.stabilityPool.getCompoundedBoldDeposit(msg.sender), 0, 18, "Wrong deposit");
+            assertEqDecimal(c.stabilityPool.getDepositorYieldGain(msg.sender), 0, 18, "Wrong yield gain");
+            assertEqDecimal(c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
+            assertEqDecimal(c.stabilityPool.stashedColl(msg.sender), 0, 18, "Wrong stashed coll");
+
+            // Effects (system)
+            _mintYield(i, pendingInterest, 0);
+            spColl[i] -= ethStash;
+        } catch Error(string memory reason) {
+            errorString = reason;
+
+            // Justify failures
+            if (reason.equals("StabilityPool: User must have no deposit")) {
+                assertGtDecimal(initialBoldDeposit, 0, 18, "Shouldn't have failed as user had no deposit");
+            } else if (reason.equals("StabilityPool: Amount must be non-zero")) {
+                assertEqDecimal(ethStash, 0, 18, "Shouldn't have failed as ETH stash was non-zero");
+            } else {
+                revert(reason);
+            }
+        }
+
+        if (bytes(errorString).length > 0) {
+            if (_assumeNoExpectedFailures) vm.assume(false);
+
+            info("Expected error: ", errorString);
+            _log();
+        } else {
+            // Cleanup (success)
+            _sweepColl(i, msg.sender, ethStash);
         }
     }
 
