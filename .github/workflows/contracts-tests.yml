@@ -103,7 +103,7 @@ jobs:
       - name: Test contracts
         run: pnpm test
         env:
-          NODE_OPTIONS: --max-old-space-size=16384
+          NODE_OPTIONS: --max-old-space-size=12288
 
   coverage:
     name: Coverage
