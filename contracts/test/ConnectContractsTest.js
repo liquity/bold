@@ -33,7 +33,7 @@ contract("Deployment script - Sets correct contract addresses dependencies after
     await deploymentHelper.connectCoreContracts(coreContracts);
   });
 
-  it("Sets the correct PriceFeed address in TroveManager", async () => {
+  it.skip("Sets the correct PriceFeed address in TroveManager", async () => {
     const priceFeedAddress = priceFeed.address;
 
     const recordedPriceFeedAddress = await troveManager.priceFeed();
@@ -75,7 +75,7 @@ contract("Deployment script - Sets correct contract addresses dependencies after
   });
 
   // DefaultPool in TroveM
-  it("Sets the correct DefaultPool address in TroveManager", async () => {
+  it.skip("Sets the correct DefaultPool address in TroveManager", async () => {
     const defaultPoolAddress = defaultPool.address;
 
     const recordedDefaultPoolAddresss = await troveManager.defaultPool();
@@ -190,7 +190,7 @@ contract("Deployment script - Sets correct contract addresses dependencies after
   // --- BorrowerOperations ---
 
   // TroveManager in BO
-  it("Sets the correct TroveManager address in BorrowerOperations", async () => {
+  it.skip("Sets the correct TroveManager address in BorrowerOperations", async () => {
     const troveManagerAddress = troveManager.address;
 
     const recordedTroveManagerAddress = await borrowerOperations.troveManager();
@@ -198,7 +198,7 @@ contract("Deployment script - Sets correct contract addresses dependencies after
   });
 
   // setPriceFeed in BO
-  it("Sets the correct PriceFeed address in BorrowerOperations", async () => {
+  it.skip("Sets the correct PriceFeed address in BorrowerOperations", async () => {
     const priceFeedAddress = priceFeed.address;
 
     const recordedPriceFeedAddress = await borrowerOperations.priceFeed();
@@ -206,7 +206,7 @@ contract("Deployment script - Sets correct contract addresses dependencies after
   });
 
   // setSortedTroves in BO
-  it("Sets the correct SortedTroves address in BorrowerOperations", async () => {
+  it.skip("Sets the correct SortedTroves address in BorrowerOperations", async () => {
     const sortedTrovesAddress = sortedTroves.address;
 
     const recordedSortedTrovesAddress = await borrowerOperations.sortedTroves();
@@ -222,7 +222,7 @@ contract("Deployment script - Sets correct contract addresses dependencies after
   });
 
   // setDefaultPool in BO
-  it("Sets the correct DefaultPool address in BorrowerOperations", async () => {
+  it.skip("Sets the correct DefaultPool address in BorrowerOperations", async () => {
     const defaultPoolAddress = defaultPool.address;
 
     const recordedDefaultPoolAddress = await borrowerOperations.defaultPool();

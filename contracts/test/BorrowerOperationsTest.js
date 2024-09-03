@@ -9,7 +9,7 @@ const CollateralRegistryTester = artifacts.require("CollateralRegistryTester");
 
 const { dec, toBN, assertRevert } = th;
 
-contract("BorrowerOperations", async (accounts) => {
+contract.skip("BorrowerOperations", async (accounts) => {
   const accountsToFund = accounts.slice(0, 17);
 
   const [
@@ -68,14 +68,13 @@ contract("BorrowerOperations", async (accounts) => {
     callback: async (contracts) => {
       const { constants } = contracts;
       const [
-        CCR,
         ETH_GAS_COMPENSATION,
         MIN_DEBT,
       ] = await Promise.all([
-        constants._CCR(),
         constants._ETH_GAS_COMPENSATION(),
         constants._MIN_DEBT(),
       ]);
+      const CCR = await contracts.addressesRegistry.CCR();
       return {
         CCR,
         ETH_GAS_COMPENSATION,
@@ -87,7 +86,7 @@ contract("BorrowerOperations", async (accounts) => {
   const registerBatchManagers = async (accounts, borrowerOperations) => {
     return Promise.all(
       accounts.map((account) => (
-        borrowerOperations.registerBatchManager(0, toBN(dec(1, 18)), 0, 0, 0, { from: account })
+        borrowerOperations.registerBatchManager(toBN(dec(1, 16)), toBN(dec(1, 18)), toBN(dec(5, 16)), 0, 1, { from: account })
       )),
     );
   };

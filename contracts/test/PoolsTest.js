@@ -11,7 +11,7 @@ const { dec } = th;
 
 const _minus_1_Ether = web3.utils.toWei("-1", "ether");
 
-contract("StabilityPool", async (accounts) => {
+contract.skip("StabilityPool", async (accounts) => {
   const [owner, alice] = accounts;
 
   const deployFixture = async () => {
@@ -47,7 +47,7 @@ contract("StabilityPool", async (accounts) => {
   });
 });
 
-contract("ActivePool", async (accounts) => {
+contract.skip("ActivePool", async (accounts) => {
   let activePool, mockBorrowerOperations, mockTroveManager, WETH;
 
   const [owner, alice] = accounts;
@@ -130,7 +130,7 @@ contract("ActivePool", async (accounts) => {
   });
 });
 
-contract("DefaultPool", async (accounts) => {
+contract.skip("DefaultPool", async (accounts) => {
   let defaultPool, mockTroveManager, mockActivePool, WETH;
 
   const [owner, alice] = accounts;

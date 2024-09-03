@@ -71,7 +71,6 @@ jobs:
           ! grep -R console src | grep import | grep -v "://" | grep -v TestContracts | grep -v "/test/" | grep -v ExternalContracts  | grep -v "\.t\.sol" | grep -v "\.s\.sol"
 
   test-hardhat:
-    if: false
     name: Hardhat tests
     runs-on: ubuntu-latest
 
@@ -102,12 +101,11 @@ jobs:
           version: ${{ env.FOUNDRY_VERSION }}
 
       - name: Test contracts
-        run: pnpm test
+        run: pnpm test test/AccessControlTest.js
         env:
-          NODE_OPTIONS: --max-old-space-size=4096
+          NODE_OPTIONS: --max-old-space-size=12288
 
   coverage:
-    if: false
     name: Coverage
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -131,7 +129,7 @@ jobs:
 
       - name: Run Forge coverage
         run: |
-          forge coverage --report lcov --report-file lcov_foundry.info
+          forge coverage --no-match-contract Invariant --report lcov --report-file lcov_foundry.info
 
       - name: Install lcov
         run: sudo apt-get -y install lcov

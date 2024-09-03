@@ -5,6 +5,7 @@ const { createDeployAndFundFixture } = require("../utils/testFixtures.js");
 const { dec, toBN, ZERO_ADDRESS } = th;
 
 let ETH_GAS_COMPENSATION;
+let MIN_ANNUAL_INTEREST_RATE;
 
 /* NOTE: Some tests involving ETH redemption fees do not test for specific fee values.
  * Some only test that the fees are non-zero when they should occur.
@@ -62,6 +63,7 @@ contract("TroveManager", async (accounts) => {
     hintHelpers = contracts.hintHelpers;
 
     ETH_GAS_COMPENSATION = await contracts.constants._ETH_GAS_COMPENSATION();
+    MIN_ANNUAL_INTEREST_RATE = await contracts.constants._MIN_ANNUAL_INTEREST_RATE();
   });
 
   it("A given trove's stake decline is negligible with adjustments and tiny liquidations", async () => {
@@ -73,7 +75,7 @@ contract("TroveManager", async (accounts) => {
       await getOpenTroveBoldAmount(dec(1, 31)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
-      0,
+      MIN_ANNUAL_INTEREST_RATE,
       { from: A, value: dec(2, 29) },
     );
 
@@ -83,7 +85,7 @@ contract("TroveManager", async (accounts) => {
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
-      0,
+      MIN_ANNUAL_INTEREST_RATE,
       { from: B, value: dec(5, 28) },
     );
     await th.openTroveWrapper(
@@ -91,7 +93,7 @@ contract("TroveManager", async (accounts) => {
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
-      0,
+      MIN_ANNUAL_INTEREST_RATE,
       { from: C, value: dec(4, 28) },
     );
     await th.openTroveWrapper(
@@ -99,7 +101,7 @@ contract("TroveManager", async (accounts) => {
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
-      0,
+      MIN_ANNUAL_INTEREST_RATE,
       { from: D, value: dec(4, 28) },
     );
     await th.openTroveWrapper(
@@ -107,7 +109,7 @@ contract("TroveManager", async (accounts) => {
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
-      0,
+      MIN_ANNUAL_INTEREST_RATE,
       { from: E, value: dec(4, 28) },
     );
     await th.openTroveWrapper(
@@ -115,7 +117,7 @@ contract("TroveManager", async (accounts) => {
       await getOpenTroveBoldAmount(dec(2, 30)),
       ZERO_ADDRESS,
       ZERO_ADDRESS,
-      0,
+      MIN_ANNUAL_INTEREST_RATE,
       { from: F, value: dec(4, 28) },
     );
 
@@ -129,7 +131,7 @@ contract("TroveManager", async (accounts) => {
         await getOpenTroveBoldAmount(dec(1, 22)),
         ZERO_ADDRESS,
         ZERO_ADDRESS,
-        0,
+        MIN_ANNUAL_INTEREST_RATE,
         { from: account, value: eth_amount },
       );
     }
