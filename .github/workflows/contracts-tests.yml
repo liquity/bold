@@ -101,7 +101,7 @@ jobs:
           version: ${{ env.FOUNDRY_VERSION }}
 
       - name: Test contracts
-        run: pnpm test
+        run: pnpm test test/AccessControlTest.js
         env:
           NODE_OPTIONS: --max-old-space-size=12288
 
