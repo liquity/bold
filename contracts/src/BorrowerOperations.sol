@@ -814,10 +814,18 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     ) external {
         _requireIsNotShutDown();
         _requireCallerIsBorrower(_troveId);
+        _requireValidAnnualInterestRate(_minInterestRate);
+        _requireValidAnnualInterestRate(_maxInterestRate);
+        // With the check below, it could only be ==
+        _requireOrderedRange(_minInterestRate, _maxInterestRate);
+
         interestIndividualDelegateOf[_troveId] =
             InterestIndividualDelegate(_delegate, _minInterestRate, _maxInterestRate);
         // Can’t have both individual delegation and batch manager
         if (interestBatchManagerOf[_troveId] != address(0)) {
+            _requireInterestRateInRange(_newAnnualInterestRate, _minInterestRate, _maxInterestRate);
+            // Not needed, implicitly checked in the condition above and in removeFromBatch
+            //_requireValidAnnualInterestRate(_newAnnualInterestRate);
             removeFromBatch(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint, _maxUpfrontFee);
         }
     }
@@ -843,7 +851,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireValidAnnualInterestRate(_minInterestRate);
         _requireValidAnnualInterestRate(_maxInterestRate);
         // With the check below, it could only be ==
-        if (_minInterestRate >= _maxInterestRate) revert MinGeMax();
+        _requireOrderedRange(_minInterestRate, _maxInterestRate);
         _requireInterestRateInRange(_currentInterestRate, _minInterestRate, _maxInterestRate);
         // Not needed, implicitly checked in the condition above:
         //_requireValidAnnualInterestRate(_currentInterestRate);
@@ -1290,6 +1298,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
 
         return batchManager;
+    }
+
+    function _requireOrderedRange(uint256 _minInterestRate, uint256 _maxInterestRate) internal pure {
+        if (_minInterestRate >= _maxInterestRate) revert MinGeMax();
     }
 
     function _requireInterestRateInDelegateRange(uint256 _troveId, uint256 _annualInterestRate) internal view {
