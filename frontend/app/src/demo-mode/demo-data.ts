@@ -1,4 +1,4 @@
-import type { Position } from "@/src/types";
+import type { Delegate, Position } from "@/src/types";
 import type { CollateralToken } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 
@@ -141,7 +141,7 @@ export function getDebtBeforeRateBucketIndex(index: number) {
   return debt;
 }
 
-export const DELEGATES = [
+export const DELEGATES: Delegate[] = [
   {
     id: "0x01",
     name: "DeFi Saver",
@@ -163,7 +163,6 @@ export const DELEGATES = [
     boldAmount: dn.from(15_730_000, 18),
     lastDays: 180,
     redemptions: dn.from(2_600_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.032, 18),
       dn.from(0.069, 18),
@@ -177,7 +176,6 @@ export const DELEGATES = [
     boldAmount: dn.from(12_000_000, 18),
     lastDays: 180,
     redemptions: dn.from(1_200_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.025, 18),
       dn.from(0.078, 18),
@@ -191,7 +189,6 @@ export const DELEGATES = [
     boldAmount: dn.from(7_000_000, 18),
     lastDays: 180,
     redemptions: dn.from(1_280_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.018, 18),
       dn.from(0.065, 18),
@@ -205,7 +202,6 @@ export const DELEGATES = [
     boldAmount: dn.from(3_000_000, 18),
     lastDays: 47,
     redemptions: dn.from(1_100_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.009, 18),
       dn.from(0.058, 18),
@@ -219,7 +215,6 @@ export const DELEGATES = [
     boldAmount: dn.from(1_000_000, 18),
     lastDays: 180,
     redemptions: dn.from(334_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.001, 18),
       dn.from(0.043, 18),
@@ -233,7 +228,6 @@ export const DELEGATES = [
     boldAmount: dn.from(30_000_000, 18),
     lastDays: 180,
     redemptions: dn.from(750_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.035, 18),
       dn.from(0.089, 18),
@@ -247,7 +241,6 @@ export const DELEGATES = [
     boldAmount: dn.from(22_500_000, 18),
     lastDays: 180,
     redemptions: dn.from(1_100_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.041, 18),
       dn.from(0.072, 18),
@@ -261,7 +254,6 @@ export const DELEGATES = [
     boldAmount: dn.from(18_000_000, 18),
     lastDays: 180,
     redemptions: dn.from(2_200_000, 18),
-    liquidations: 1,
     interestRateChange: [
       dn.from(0.038, 18),
       dn.from(0.102, 18),
@@ -275,7 +267,6 @@ export const DELEGATES = [
     boldAmount: dn.from(14_800_000, 18),
     lastDays: 180,
     redemptions: dn.from(500_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.029, 18),
       dn.from(0.061, 18),
@@ -289,7 +280,6 @@ export const DELEGATES = [
     boldAmount: dn.from(20_500_000, 18),
     lastDays: 180,
     redemptions: dn.from(1_500_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.033, 18),
       dn.from(0.085, 18),
@@ -303,7 +293,6 @@ export const DELEGATES = [
     boldAmount: dn.from(26_000_000, 18),
     lastDays: 180,
     redemptions: dn.from(1_800_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.037, 18),
       dn.from(0.091, 18),
@@ -317,7 +306,6 @@ export const DELEGATES = [
     boldAmount: dn.from(17_500_000, 18),
     lastDays: 180,
     redemptions: dn.from(600_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.036, 18),
       dn.from(0.067, 18),
@@ -331,7 +319,6 @@ export const DELEGATES = [
     boldAmount: dn.from(19_800_000, 18),
     lastDays: 180,
     redemptions: dn.from(1_300_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.031, 18),
       dn.from(0.076, 18),
@@ -345,7 +332,6 @@ export const DELEGATES = [
     boldAmount: dn.from(28_500_000, 18),
     lastDays: 180,
     redemptions: dn.from(950_000, 18),
-    liquidations: 0,
     interestRateChange: [
       dn.from(0.034, 18),
       dn.from(0.088, 18),
@@ -359,10 +345,29 @@ export const DELEGATES = [
     boldAmount: dn.from(23_000_000, 18),
     lastDays: 180,
     redemptions: dn.from(2_500_000, 18),
-    liquidations: 1,
     interestRateChange: [
       dn.from(0.039, 18),
       dn.from(0.098, 18),
     ],
   },
-] as const;
+];
+
+export const IC_STRATEGIES: Delegate[] = [
+  {
+    id: "0x11",
+    name: "Conservative",
+    interestRate: dn.from(0.065, 18),
+    followers: 1202,
+    boldAmount: dn.from(25_130_000, 18),
+    lastDays: 180,
+    redemptions: dn.from(900_000, 18),
+    interestRateChange: [
+      dn.from(0.028, 18),
+      dn.from(0.0812, 18),
+    ],
+    fee: dn.from(0.00003, 18),
+  },
+];
+
+// Delegates + IC strategies
+export const DELEGATES_FULL = DELEGATES.concat(IC_STRATEGIES);

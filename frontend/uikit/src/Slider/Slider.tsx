@@ -6,6 +6,9 @@ import type { Direction } from "../types";
 import { a, useSpring, useSprings } from "@react-spring/web";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { css } from "../../styled-system/css";
+import { token } from "../../styled-system/tokens";
+
+type GradientMode = "low-to-high" | "high-to-low";
 
 const PADDING = 4;
 const BAR_HEIGHT = 4;
@@ -20,6 +23,7 @@ export function Slider({
   chart,
   disabled,
   gradient,
+  gradientMode = "low-to-high",
   keyboardStep,
   onChange,
   onDragEnd,
@@ -28,6 +32,7 @@ export function Slider({
 }: {
   disabled?: boolean;
   gradient?: [number, number];
+  gradientMode?: GradientMode;
   chart?: number[];
   keyboardStep?: (value: number, direction: Direction) => number;
   onChange: (value: number) => void;
@@ -159,6 +164,8 @@ export function Slider({
     };
   }, [focused, keyboardStep, onChange, value, disabled]);
 
+  const gradientColors = useMemo(() => getGradientColors(gradientMode), [gradientMode]);
+
   return (
     <div
       tabIndex={disabled ? -1 : 0}
@@ -199,9 +206,10 @@ export function Slider({
               })}
             >
               <ChartSvg
-                chart={chart}
                 activeBarTransform={moveSpring.activeBarTransform}
+                chart={chart}
                 gradient={gradient}
+                gradientMode={gradientMode}
                 value={value}
               />
             </div>
@@ -236,21 +244,13 @@ export function Slider({
                     "--bgNormal": "token(colors.controlSurfaceAlt)",
                     "--bgDisabled": "token(colors.disabledBorder)",
                     "--gradient": `linear-gradient(
-                      in lab 90deg,
-                      token(colors.riskGradient1) 0%,
-                      token(colors.riskGradient2) calc(
-                        var(--gradientStep2) - var(--gradientTransitionBlur) / 2
-                      ),
-                      token(colors.riskGradient3) calc(
-                        var(--gradientStep2) + var(--gradientTransitionBlur) / 2
-                      ),
-                      token(colors.riskGradient4) calc(
-                        var(--gradientStep3) - var(--gradientTransitionBlur) / 2
-                      ),
-                      token(colors.riskGradient5) calc(
-                        var(--gradientStep3) + var(--gradientTransitionBlur) / 2
-                      ),
-                      token(colors.riskGradient5) 100%
+                      to right,
+                      var(--gradientColor1) 0%,
+                      var(--gradientColor2) calc(var(--gradientStep2) - var(--gradientTransitionBlur) / 2),
+                      var(--gradientColor3) calc(var(--gradientStep2) + var(--gradientTransitionBlur) / 2),
+                      var(--gradientColor4) calc(var(--gradientStep3) - var(--gradientTransitionBlur) / 2),
+                      var(--gradientColor5) calc(var(--gradientStep3) + var(--gradientTransitionBlur) / 2),
+                      var(--gradientColor5) 100%
                     )`,
                   })}
                   style={{
@@ -262,10 +262,13 @@ export function Slider({
                         : "--bgNormal"
                     })`,
                     "--gradientTransitionBlur": `${GRADIENT_TRANSITION_BLUR}%`,
-                    ...(Array.isArray(gradient) && {
-                      "--gradientStep2": `${(gradient[0] ?? 0.5) * 100}%`,
-                      "--gradientStep3": `${(gradient[1] ?? 0.5) * 100}%`,
-                    }),
+                    "--gradientStep2": `${(gradient?.[0] ?? 0.5) * 100}%`,
+                    "--gradientStep3": `${(gradient?.[1] ?? 0.5) * 100}%`,
+                    "--gradientColor1": gradientColors[0],
+                    "--gradientColor2": gradientColors[1],
+                    "--gradientColor3": gradientColors[2],
+                    "--gradientColor4": gradientColors[3],
+                    "--gradientColor5": gradientColors[4],
                   } as CSSProperties}
                 />
                 <a.div
@@ -342,11 +345,13 @@ function ChartSvg({
   activeBarTransform,
   chart,
   gradient,
+  gradientMode,
   value,
 }: {
   activeBarTransform: SpringValue<string>;
   chart: NonNullable<ComponentProps<typeof Slider>["chart"]>;
   gradient?: [number, number];
+  gradientMode: GradientMode;
   value: number;
 }) {
   const chartSprings = useSprings(
@@ -366,15 +371,18 @@ function ChartSvg({
 
     const [step2, step3] = gradient;
     const blur = GRADIENT_TRANSITION_BLUR / 100 / 2;
+
+    const gradientColors = getGradientColors(gradientMode);
+
     return [
-      { offset: "0%", color: "var(--colors-risk-gradient1)" },
-      { offset: `${(step2 - blur) * 100}%`, color: "var(--colors-risk-gradient2)" },
-      { offset: `${(step2 + blur) * 100}%`, color: "var(--colors-risk-gradient3)" },
-      { offset: `${(step3 - blur) * 100}%`, color: "var(--colors-risk-gradient4)" },
-      { offset: `${(step3 + blur) * 100}%`, color: "var(--colors-risk-gradient5)" },
-      { offset: "100%", color: "var(--colors-risk-gradient5)" },
+      { offset: "0%", color: gradientColors[0] },
+      { offset: `${(step2 - blur) * 100}%`, color: gradientColors[1] },
+      { offset: `${(step2 + blur) * 100}%`, color: gradientColors[2] },
+      { offset: `${(step3 - blur) * 100}%`, color: gradientColors[3] },
+      { offset: `${(step3 + blur) * 100}%`, color: gradientColors[4] },
+      { offset: "100%", color: gradientColors[4] },
     ];
-  }, [gradient]);
+  }, [gradient, gradientMode]);
 
   return (
     <svg
@@ -470,4 +478,17 @@ function isTouchEvent(
   event: ReactTouchEvent | ReactMouseEvent | TouchEvent | MouseEvent,
 ): event is TouchEvent | ReactTouchEvent {
   return "touches" in event;
+}
+
+function getGradientColors(gradientMode: GradientMode) {
+  const colors = [
+    token("colors.riskGradient1"),
+    token("colors.riskGradient2"),
+    token("colors.riskGradient3"),
+    token("colors.riskGradient4"),
+    token("colors.riskGradient5"),
+  ];
+  return gradientMode === "low-to-high"
+    ? colors
+    : colors.slice().reverse();
 }

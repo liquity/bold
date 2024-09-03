@@ -10,9 +10,10 @@ export const AnchorTextButton = forwardRef<
   ComponentPropsWithRef<"a"> & TextButtonProps
 >(function AnchorTextButton({
   label,
+  size,
   ...props
 }, ref) {
-  const textButtonStyles = useTextButtonStyles();
+  const textButtonStyles = useTextButtonStyles(size);
   return (
     <a
       ref={ref}
