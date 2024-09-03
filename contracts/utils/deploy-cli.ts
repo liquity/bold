@@ -40,6 +40,14 @@ e.g. --chain-id can be set via CHAIN_ID instead. Parameters take precedence over
 
 const ANVIL_FIRST_ACCOUNT = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
+const PROTOCOL_CONTRACTS_VALID_NAMES = [
+  "WETHTester",
+  "BoldToken",
+  "CollateralRegistry",
+  "HintHelpers",
+  "MultiTroveGetter",
+];
+
 const argv = minimist(process.argv.slice(2), {
   alias: {
     h: "help",
@@ -185,27 +193,43 @@ Deploying Liquity contracts with the following settings:
     `broadcast/DeployLiquity2.s.sol/${options.chainId}/run-latest.json`,
   );
 
+  const collateralContracts = await getAllCollateralsContracts(deployedContracts, options);
+
   // XXX hotfix: we were leaking Github secrets in "deployer"
   // TODO: check if "deployer" is a private key, and calculate its address and use it instead?
   const { deployer, ...safeOptions } = options;
 
+  const protocolContracts = Object.fromEntries(
+    filterProtocolContracts(deployedContracts),
+  );
+
   // write env file
   await fs.writeJson("deployment-context-latest.json", {
     options: safeOptions,
-    deployedContracts: Object.fromEntries(deployedContracts),
+    deployedContracts,
+    collateralContracts,
+    protocolContracts,
   });
 
   // format deployed contracts
   const longestContractName = Math.max(
     ...deployedContracts.map(([name]) => name.length),
   );
-  const deployedContractsFormatted = deployedContracts
-    .map(([name, address]) => `${name.padEnd(longestContractName)}  ${address}`)
-    .join("\n");
 
-  echo("Contract deployment complete.");
+  const formatContracts = (contracts: Array<string[]>) =>
+    contracts.map(([name, address]) => `  ${name.padEnd(longestContractName)}  ${address}`).join("\n");
+
+  echo("Protocol contracts:");
   echo("");
-  echo(deployedContractsFormatted);
+  echo(formatContracts(filterProtocolContracts(deployedContracts)));
+  echo("");
+  echo(
+    collateralContracts.map((collateral, index) => (
+      `Collateral ${index + 1} contracts:\n\n${formatContracts(Object.entries(collateral))}`
+    )).join("\n\n"),
+  );
+  echo("");
+  echo("Deployment complete.");
   echo("");
 }
 
@@ -255,6 +279,10 @@ async function getDeployedContracts(jsonPath: string) {
   throw new Error("Invalid deployment log: " + JSON.stringify(latestRun));
 }
 
+function filterProtocolContracts(contracts: Awaited<ReturnType<typeof getDeployedContracts>>) {
+  return contracts.filter(([name]) => PROTOCOL_CONTRACTS_VALID_NAMES.includes(name));
+}
+
 function safeParseInt(value: string) {
   const parsed = parseInt(value, 10);
   return isNaN(parsed) ? undefined : parsed;
@@ -295,4 +323,80 @@ async function parseArgs() {
   options.verifierUrl ??= process.env.VERIFIER_URL;
 
   return { options, networkPreset };
+}
+
+async function castCall(
+  rpcUrl: string,
+  contract: string,
+  method: string,
+  ...args: string[]
+) {
+  try {
+    const result = await $`cast call ${contract} ${method} ${args.join(" ")} --rpc-url '${rpcUrl}'`;
+    return result.stdout.trim();
+  } catch (error) {
+    console.error(`Error calling ${contract} ${method} ${args.join(" ")}: ${error}`);
+    throw error;
+  }
+}
+
+async function getCollateralContracts(
+  collateralIndex: number,
+  collateralRegistry: string,
+  rpcUrl: string,
+) {
+  const [token, troveManager] = await Promise.all([
+    castCall(rpcUrl, collateralRegistry, "getToken(uint256)(address)", String(collateralIndex)),
+    castCall(rpcUrl, collateralRegistry, "getTroveManager(uint256)(address)", String(collateralIndex)),
+  ]);
+
+  const [
+    activePool,
+    borrowerOperations,
+    sortedTroves,
+    stabilityPool,
+  ] = await Promise.all([
+    castCall(rpcUrl, troveManager, "activePool()(address)"),
+    castCall(rpcUrl, troveManager, "borrowerOperations()(address)"),
+    castCall(rpcUrl, troveManager, "sortedTroves()(address)"),
+    castCall(rpcUrl, troveManager, "stabilityPool()(address)"),
+  ]);
+
+  return {
+    activePool,
+    borrowerOperations,
+    sortedTroves,
+    stabilityPool,
+    token,
+    troveManager,
+  };
+}
+
+async function getAllCollateralsContracts(
+  deployedContracts: Array<string[]>,
+  options: Awaited<ReturnType<typeof parseArgs>>["options"],
+) {
+  const deployedContractsRecord = Object.fromEntries(deployedContracts);
+
+  const ccall = async (contract: string, method: string, ...args: string[]) => {
+    const result = await $`cast call ${contract} ${method} ${args.join(" ")} --rpc-url '${options.rpcUrl}'`;
+    return result.stdout.trim();
+  };
+
+  const totalCollaterals = Number(
+    await ccall(
+      deployedContractsRecord.CollateralRegistry,
+      "totalCollaterals()",
+    ),
+  );
+
+  return Promise.all(
+    Array.from({ length: totalCollaterals }, (_, index) => (
+      getCollateralContracts(
+        index,
+        deployedContractsRecord.CollateralRegistry,
+        options.rpcUrl,
+      )
+    )),
+  );
 }
