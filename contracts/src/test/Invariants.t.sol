@@ -60,17 +60,24 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
     function setUp() public override {
         super.setUp();
 
+        uint256 n;
+        try vm.envUint("NUM_BRANCHES") returns (uint256 value) {
+            n = value;
+        } catch {
+            n = 4;
+        }
+
         // TODO: randomize params? How to do it with Foundry invariant testing?
-        TestDeployer.TroveManagerParams[] memory paramsList = new TestDeployer.TroveManagerParams[](4);
-        paramsList[0] = TestDeployer.TroveManagerParams(1.5 ether, 1.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        paramsList[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        paramsList[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        paramsList[3] = TestDeployer.TroveManagerParams(1.6 ether, 1.25 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        TestDeployer.TroveManagerParams[] memory p = new TestDeployer.TroveManagerParams[](n);
+        if (n > 0) p[0] = TestDeployer.TroveManagerParams(1.5 ether, 1.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        if (n > 1) p[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        if (n > 2) p[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        if (n > 3) p[3] = TestDeployer.TroveManagerParams(1.6 ether, 1.25 ether, 1.01 ether, 0.05 ether, 0.1 ether);
 
         TestDeployer deployer = new TestDeployer();
         Contracts memory contracts;
         (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth,)
-        = deployer.deployAndConnectContractsMultiColl(paramsList);
+        = deployer.deployAndConnectContractsMultiColl(p);
         setupContracts(contracts);
 
         handler = new InvariantsTestHandler({contracts: contracts, assumeNoExpectedFailures: true});
