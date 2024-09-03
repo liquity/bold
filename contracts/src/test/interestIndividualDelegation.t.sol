@@ -102,6 +102,44 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         vm.stopPrank();
     }
 
+    function testSetDelegateRevertsIfTroveIsClosed() public {
+        vm.startPrank(B);
+        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        vm.stopPrank();
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        // Open a second one, so it’s not the last one and to have BOLD for interest
+        openTroveNoHints100pctWithIndex(A, 1, 100e18, 5000e18, 5e16);
+        // Close trove
+        closeTrove(A, troveId);
+
+        // Set batch manager (B)
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
+        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, 0, 0, 0, 10000e18);
+        vm.stopPrank();
+    }
+
+    function testSetDelegateRevertsIfTroveIsUnredeemable() public {
+        vm.startPrank(B);
+        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        vm.stopPrank();
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        // Make trove unredeemable
+        redeem(A, 4000e18);
+        // Check A’s trove is unredeemable
+        assertEq(troveManager.checkTroveIsUnredeemable(troveId), true, "A trove should be unredeemable");
+
+        // Set batch manager (B)
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
+        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, 0, 0, 0, 10000e18);
+        vm.stopPrank();
+    }
+
     function testSetDelegateRevertsIfMinTooLow() public {
         vm.startPrank(B);
         borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);

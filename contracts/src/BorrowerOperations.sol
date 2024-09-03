@@ -813,6 +813,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 _maxUpfrontFee
     ) external {
         _requireIsNotShutDown();
+        _requireTroveIsActive(troveManager, _troveId);
         _requireCallerIsBorrower(_troveId);
         _requireValidAnnualInterestRate(_minInterestRate);
         _requireValidAnnualInterestRate(_maxInterestRate);
