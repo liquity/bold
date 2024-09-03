@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.18;
 
-import "lib/Solady/src/utils/SSTORE2.sol";
+import "Solady/utils/SSTORE2.sol";
 
 contract FixedAssetReader {
     struct Asset {
