@@ -1,9 +1,16 @@
+import type { Delegate } from "@/src/types";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
 import { INTEREST_RATE_DEFAULT, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import content from "@/src/content";
-import { DELEGATES, getDebtBeforeRateBucketIndex, INTEREST_CHART } from "@/src/demo-mode";
+import {
+  DELEGATES,
+  DELEGATES_FULL,
+  getDebtBeforeRateBucketIndex,
+  IC_STRATEGIES,
+  INTEREST_CHART,
+} from "@/src/demo-mode";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRedemptionRisk } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
@@ -25,22 +32,23 @@ import {
   TextButton,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
+import Image from "next/image";
 import { useState } from "react";
+import { match } from "ts-pattern";
+
+import icLogo from "./ic-logo.svg";
 
 const MODES = [
   {
     label: "Manually",
-    value: "manual",
     secondary: "Set the interest rate as you see fit",
   },
   {
     label: "By Strategy",
-    value: "strategy",
     secondary: "It’s an automated strategy developed by ICP that helps avoid redemption and reduce costs",
   },
   {
     label: "By Delegation",
-    value: "delegation",
     secondary: `
       Delegates manage your interest rate, optimizing costs and preventing redemption.
       They charge a fee for this.
@@ -57,8 +65,11 @@ export function InterestRateField({
   interestRate: Dnum | null;
   onChange: (interestRate: Dnum) => void;
 }) {
-  const [delegate, setDelegate] = useState<typeof DELEGATES[number]["id"] | null>(null);
-  const [showDelegatePicker, setShowDelegatePicker] = useState(false);
+  // 0: manually, 1: by strategy, 2: by delegation
+  const [selectedMode, setSelectedMode] = useState<0 | 1 | 2>(0);
+
+  const [delegate, setDelegate] = useState<null | { id: string }>(null);
+  const [delegatePicker, setDelegatePicker] = useState<null | "strategy" | "delegate">(null);
 
   const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
     defaultValue: interestRate
@@ -79,15 +90,22 @@ export function InterestRateField({
       : 0,
   );
 
-  const [selectedMode, setSelectedMode] = useState<number>(0);
+  const onSelectDelegate = (id: string) => {
+    const delegate = DELEGATES_FULL.find((s) => s.id === id);
+    if (delegate) {
+      onChange(delegate.interestRate);
+    }
+    setDelegate(delegate ? { id } : null);
+    setDelegatePicker(null);
+  };
 
   return (
     <>
       <InputField
         labelHeight={32}
         labelSpacing={24}
-        contextual={delegate === null
-          ? (
+        contextual={match(selectedMode)
+          .with(0, () => (
             <div
               style={{
                 display: "flex",
@@ -98,6 +116,7 @@ export function InterestRateField({
             >
               <Slider
                 gradient={[1 / 3, 2 / 3]}
+                gradientMode="high-to-low"
                 chart={INTEREST_CHART}
                 onChange={(value) => {
                   fieldValue.setValue(String(
@@ -117,17 +136,26 @@ export function InterestRateField({
                 )}
               />
             </div>
-          )
-          : (
-            <Button
-              size="small"
-              mode="primary"
-              label={DELEGATES.find(({ id }) => id === delegate)?.name}
+          ))
+          .with(1, () => (
+            <TextButton
+              size="large"
+              label={delegate ? IC_STRATEGIES.find(({ id }) => id === delegate.id)?.name : "Choose strategy"}
               onClick={() => {
-                setShowDelegatePicker(true);
+                setDelegatePicker("strategy");
               }}
             />
-          )}
+          ))
+          .with(2, () => (
+            <TextButton
+              size="large"
+              label={delegate ? DELEGATES.find(({ id }) => id === delegate.id)?.name : "Choose delegate"}
+              onClick={() => {
+                setDelegatePicker("delegate");
+              }}
+            />
+          ))
+          .exhaustive()}
         label={{
           start: "Set interest rate",
           end: (
@@ -136,17 +164,10 @@ export function InterestRateField({
                 items={MODES}
                 menuWidth={300}
                 onSelect={(mode) => {
-                  if (mode === 2) {
-                    setShowDelegatePicker(true);
-                    return;
+                  if (mode === 0 || mode === 1 || mode === 2) {
+                    setSelectedMode(mode);
+                    setDelegate(null);
                   }
-                  if (mode === 1) {
-                    // strategy selection
-                    return;
-                  }
-
-                  setSelectedMode(mode);
-                  setDelegate(null);
                 }}
                 selected={selectedMode}
                 size="small"
@@ -187,53 +208,89 @@ export function InterestRateField({
           ),
         }}
         {...fieldValue.inputFieldProps}
-        value={fieldValue.value}
-        valueUnfocused={(!fieldValue.isEmpty && fieldValue.parsed && interestRate)
-          ? (
-            <span
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              {delegate !== null && <MiniChart size="medium" />}
+        value={
+          // no delegate selected yet
+          (selectedMode === 1 || selectedMode === 2) && delegate === null
+            ? ""
+            : fieldValue.value
+        }
+        valueUnfocused={
+          // no delegate selected yet
+          (selectedMode === 1 || selectedMode === 2) && delegate === null
+            ? null
+            : (!fieldValue.isEmpty && fieldValue.parsed && interestRate)
+            ? (
               <span
                 style={{
-                  fontVariantNumeric: "tabular-nums",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
                 }}
               >
-                {fmtnum(interestRate, "1z", 100)}
+                {delegate !== null && <MiniChart size="medium" />}
+                <span
+                  style={{
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {fmtnum(interestRate, "1z", 100)}
+                </span>
+                <span
+                  style={{
+                    color: "#878AA4",
+                    fontSize: 24,
+                  }}
+                >
+                  % per year
+                </span>
               </span>
-              <span
-                style={{
-                  color: "#878AA4",
-                  fontSize: 24,
-                }}
-              >
-                % per year
-              </span>
-            </span>
-          )
-          : null}
+            )
+            : null
+        }
       />
       <Modal
         onClose={() => {
-          setShowDelegatePicker(false);
+          setDelegatePicker(null);
         }}
-        title={`${DELEGATES.length} delegates`}
-        visible={showDelegatePicker}
+        title={
+          <div
+            title="Internet Computer Strategies"
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            })}
+          >
+            <div>IC Strategies</div>
+            <Image
+              alt=""
+              src={icLogo}
+              width={24}
+              height={24}
+            />
+          </div>
+        }
+        visible={delegatePicker === "strategy"}
       >
         <DelegatesModalContent
-          onSelectDelegate={(id) => {
-            const delegate = DELEGATES.find((delegate) => delegate.id === id);
-            setDelegate(delegate ? id : null);
-            setSelectedMode(delegate ? 2 : 0);
-            if (delegate) {
-              onChange(delegate.interestRate);
-            }
-            setShowDelegatePicker(false);
-          }}
+          chooseLabel="Choose"
+          delegates={IC_STRATEGIES}
+          intro="It’s an automated strategy developed by ICP that helps avoid redemption and reduce costs. More strategies soon."
+          onSelectDelegate={onSelectDelegate}
+        />
+      </Modal>
+      <Modal
+        onClose={() => {
+          setDelegatePicker(null);
+        }}
+        title={`${DELEGATES.length} delegates`}
+        visible={delegatePicker === "delegate"}
+      >
+        <DelegatesModalContent
+          chooseLabel="Choose delegate"
+          delegates={DELEGATES}
+          intro="Delegates manage your interest rate, optimizing costs and preventing redemption. They charge a fee for this."
+          onSelectDelegate={onSelectDelegate}
         />
       </Modal>
     </>
@@ -241,9 +298,15 @@ export function InterestRateField({
 }
 
 function DelegatesModalContent({
+  delegates,
+  chooseLabel,
+  intro,
   onSelectDelegate,
 }: {
-  onSelectDelegate: (id: typeof DELEGATES[number]["id"]) => void;
+  delegates: Delegate[];
+  chooseLabel: string;
+  intro: ReactNode;
+  onSelectDelegate: (id: Delegate["id"]) => void;
 }) {
   const [displayedDelegates, setDisplayedDelegates] = useState(5);
   return (
@@ -254,7 +317,7 @@ function DelegatesModalContent({
           color: "contentAlt",
         })}
       >
-        Delegates manage your interest rate, optimizing costs and preventing redemption. They charge a fee for this.
+        {intro}
       </div>
       <div
         className={css({
@@ -265,7 +328,7 @@ function DelegatesModalContent({
           paddingBottom: 24,
         })}
       >
-        {DELEGATES.slice(0, displayedDelegates).map((delegate) => {
+        {delegates.slice(0, displayedDelegates).map((delegate) => {
           const delegationRisk = getRedemptionRisk(delegate.interestRate);
           return (
             <ShadowBox key={delegate.id}>
@@ -374,7 +437,7 @@ function DelegatesModalContent({
                     })}
                   >
                     <div>Redemptions</div>
-                    <div>
+                    <div title={`${fmtnum(delegate.redemptions, "full")} BOLD`}>
                       {fmtnum(delegate.redemptions, "compact")} BOLD
                     </div>
                   </div>
@@ -392,6 +455,22 @@ function DelegatesModalContent({
                       {fmtnum(delegate.interestRateChange[0], 2, 100)}…{fmtnum(delegate.interestRateChange[1], 2, 100)}%
                     </div>
                   </div>
+                  {delegate.fee && (
+                    <div
+                      className={css({
+                        display: "flex",
+                        justifyContent: "space-between",
+                        width: "100%",
+                        fontSize: 14,
+                        color: "content",
+                      })}
+                    >
+                      <div>Fees</div>
+                      <div title={`${fmtnum(delegate.fee, 18, 100)}%`}>
+                        {fmtnum(delegate.fee, 4, 100)}%
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div
                   className={css({
@@ -434,7 +513,7 @@ function DelegatesModalContent({
                   </div>
                   <div>
                     <Button
-                      label="Choose delegate"
+                      label={chooseLabel}
                       mode="primary"
                       size="small"
                       onClick={() => {
@@ -447,7 +526,7 @@ function DelegatesModalContent({
             </ShadowBox>
           );
         })}
-        {displayedDelegates < DELEGATES.length && (
+        {displayedDelegates < delegates.length && (
           <ShadowBox>
             <TextButton
               label="Load more"
@@ -472,8 +551,8 @@ function MiniChart({ size = "small" }: { size?: "small" | "medium" }) {
         <svg width="45" height="18" fill="none">
           <path
             stroke="#9EA2B8"
-            stroke-linecap="round"
-            stroke-width="1.5"
+            strokeLinecap="round"
+            strokeWidth="1.5"
             d="m1 10.607 1.66 2.61a2 2 0 0 0 1.688.926H7.31c.29 0 .576.063.84.185l4.684 2.168a2 2 0 0 0 2.142-.296l2.995-2.568a2 2 0 0 0 .662-1.137l1.787-9.191a2 2 0 0 1 .318-.756l.096-.138a2 2 0 0 1 3.303.02l1.421 2.107a2 2 0 0 1 .278.616l1.295 4.996a2 2 0 0 0 .431.815l1.691 1.932c.163.187.29.402.375.635l.731 2.015a2 2 0 0 0 3.029.955l.079-.056a2 2 0 0 0 .744-.99l2.539-7.42 2.477-5.005a2 2 0 0 1 2.924-.762L44 3.536"
           />
         </svg>
@@ -482,8 +561,8 @@ function MiniChart({ size = "small" }: { size?: "small" | "medium" }) {
         <svg width="28" height="16" fill="none">
           <path
             stroke="#9EA2B8"
-            stroke-linecap="round"
-            stroke-width="1.5"
+            strokeLinecap="round"
+            strokeWidth="1.5"
             d="m2 8.893.618 1.009a2 2 0 0 0 1.706.955h.83a2 2 0 0 1 .867.198l1.731.832a2 2 0 0 0 2.197-.309l.901-.802a2 2 0 0 0 .636-1.126l.902-4.819c.028-.148.085-.288.169-.414v0a1.119 1.119 0 0 1 1.87.011l.64.986c.113.175.197.368.248.571l.613 2.458a2 2 0 0 0 .411.804l.686.814c.145.172.257.37.332.582l.339.97a1.09 1.09 0 0 0 1.671.522v0a1.09 1.09 0 0 0 .394-.54l1.361-4.13.847-1.778a2 2 0 0 1 2.966-.77l.065.047"
           />
         </svg>

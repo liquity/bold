@@ -24,14 +24,14 @@ export function TopBar() {
     <div
       className={css({
         position: "relative",
-        zIndex: 2,
+        zIndex: 1,
         height: 72,
       })}
     >
       <div
         className={css({
           position: "relative",
-          zIndex: 2,
+          zIndex: 1,
           display: "flex",
           justifyContent: "space-between",
           width: LAYOUT_WIDTH,

@@ -55,3 +55,15 @@ export type PositionStake = {
 };
 
 export type Position = PositionLoan | PositionEarn | PositionStake;
+
+export type Delegate = {
+  boldAmount: Dnum;
+  fee?: Dnum;
+  followers: number;
+  id: string;
+  interestRate: Dnum;
+  interestRateChange: [Dnum, Dnum];
+  lastDays: number;
+  name: string;
+  redemptions: Dnum;
+};
