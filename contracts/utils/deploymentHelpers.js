@@ -29,6 +29,8 @@ const hh = require("hardhat");
 const { accountsList } = require("../hardhatAccountsList2k.js");
 const { fundAccounts } = require("./fundAccounts.js");
 
+const ZERO_ADDRESS = "0x" + "0".repeat(40);
+
 const SALT = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("LiquityV2"));
 //const CREATE2_PROXY_ADDRESS = "0x4e59b44847b379578588920cA78FbF26c0B4956C";
 
@@ -101,6 +103,7 @@ class DeploymentHelper {
     addresses.collToken = WETH.address;
     addresses.borrowerOperations = this.getCreate2Address(Contracts.BorrowerOperations);
     addresses.troveNFT = this.getCreate2Address(Contracts.TroveNFT);
+    addresses.metadataNFT = ZERO_ADDRESS; // Not used in Hardhat tests
     addresses.stabilityPool = this.getCreate2Address(Contracts.StabilityPool);
     addresses.priceFeed = priceFeedTestnet.address;
     addresses.activePool = this.getCreate2Address(Contracts.ActivePool);
