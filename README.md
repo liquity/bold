@@ -88,7 +88,7 @@
 
 - **Multi-collateral system.** The system now consists of a CollateralRegistry and multiple collateral branches. Each collateral branch is parameterized separately with its own Minimum Collateral Ratio (MCR), Critical Collateral Ratio (CCR) and Shutdown Collateral Ratio (SCR). Each collateral branch contains its own TroveManager and StabilityPool. Troves in a given branch only accept a single collateral (never mixed collateral). Liquidations of Troves in a given branch via SP offset are offset purely against the SP for that branch, and liquidation gains for SP depositors are always paid in a single collateral. Similarly, liquidations via redistribution split the collateral and debt across purely active Troves in that branch.
  
-- **Collateral choices.** The system will contain collateral branches for WETH and several LSTs: rETH, wstETH and either one (or both) of osETH and ETHx (TBD). It does not accept native ETH as collateral.
+- **Collateral choices.** The system will contain collateral branches for WETH and two LSTs: rETH and wstETH. It does not accept native ETH as collateral.
 
 - **User-set interest rates.** When a borrower opens a Trove, they choose their own annual interest rate. They may change their annual interest rate at any point. Simple (non-compounding) interest accrues on their debt continuously, and gets compounded discretely every time the Trove is touched. Aggregate accrued Trove debt is periodically minted as BOLD. 
 
@@ -192,6 +192,8 @@ The three main branch-level contracts - `BorrowerOperations`, `TroveManager` and
 
 - `TroveManager` - contains functionality for liquidations and redemptions and calculating individual Trove interest. Also contains the recorded  state of each Trove - i.e. a record of the Trove’s collateral, debt and interest rate, etc. TroveManager does not hold value (i.e. collateral or BOLD). TroveManager functions call in to the various Pools to tell them to move collateral or BOLD between Pools, where necessary.
 
+- `TroveNFT` - Implements basic mint and burn functionality for Trove NFTs, controlled by the `TroveManager`. Implements the tokenURI functionality which serves Trove metadata, i.e. a unique image for each Trove.
+
 - `LiquityBase` - Contains common functions and is inherited by `CollateralRegistry`, `TroveManager`, `BorrowerOperations`, `StabilityPool`. 
 
 - `StabilityPool` - contains functionality for Stability Pool operations: making deposits, and withdrawing compounded deposits and accumulated collateral and BOLD yield gains. Holds the BOLD Stability Pool deposits, BOLD yield gains and collateral gains from liquidations for all depositors on that branch.
@@ -229,11 +231,6 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
 - `WSTETHPriceFeed` - Inherits `MainnetPriceFeedBase`. Fetches the STETH-USD price from a Chainlink push oracle, and computes WSTETH-USD price from the STETH-USD price the WSTETH-STETH exchange rate from the LST contract. Used to price collateral on a WSTETH branch.
 
 - `RETHPriceFeed` - Inherits `CompositePriceFeed` and fetches the specific RETH-ETH exchange rate from RocketPool’s RETHToken. Used to price collateral on a RETH branch.
-
-- `ETHXPriceFeed` - Inherits `CompositePriceFeed` and fetches the specific ETHX-ETH exchange rate from Stader’s deployed StaderOracle on mainnet. Used to price collateral on an ETHX branch.
-
-- `OSETHPricFeed` - Inherits `CompositePriceFeed` and fetches the specific OSETH-ETH exchange rate from Stakewise’s deployed OsTokenVaultController contract. Used to price collateral on an OSETH branch.
-
 
 ## Public state-changing functions
 
@@ -310,7 +307,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
         uint256 _maxUpfrontFee
     )`: Change’s the caller’s annual interest rate on their Trove. The update is considered “premature” if they’ve recently changed their interest rate (i.e. within `INTEREST_RATE_ADJ_COOLDOWN` seconds), and if so, they incur an upfront fee - see the [interest rate adjustment section](#interest-rate-adjustments-redemption-evasion-mitigation).  The fee is also based on the system average interest rate, so the user may provide a `_maxUpfrontFee` if they make a premature adjustment.
 
-- `applyTroveInterestPermissionless(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint)`: Applies the Trove’s accrued interest, i.e. adds the accrued interest to its recorded debt and updates its `lastDebtUpdateTime` to now. The purpose is to make sure all Troves can have their interest applied with sufficient regularity even if their owner doesn’t touch them. Also makes unredeemable Troves that have reached `debt > MIN_DEBT` (e.g. from interest or redistribution gains) become redeemable again, by reinserting them to the SortedList and previous batch (if they were in one).
+- `applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint)`: Applies all pending debt to the Trove - i.e. adds its accrued interest and any redistribution debt gain, to its recorded debt and updates its `lastDebtUpdateTime` to now. The purpose is to make sure all Troves can have their interest and gains applied with sufficient regularity even if their owner doesn’t touch them. Also makes unredeemable Troves that have reached `debt > MIN_DEBT` (e.g. from interest or redistribution gains) become redeemable again, by reinserting them to the SortedList and previous batch (if they were in one).  If the Trove is in a batch, it applies all of the batch's accrued interest and accrued management fee to the batch's recorded debt, as well as the _individual_ Trove's redistribution debt gain.
 
 -  `setAddManager(uint256 _troveId, address _manager)`: sets an “Add” manager for the caller’s chosen Trove, who has permission to add collateral and repay debt to their Trove.
 
@@ -897,7 +894,7 @@ The Trove owner may also revoke individual delegate’s permission to change the
 
 ### Batch interest managers
 
-A Trove owner may set a batch manager at any point after opening. They must choose a registered batch manager.
+A Trove owner may set a batch manager at any point after opening. They must choose a registered batch manager. The Trove owner may remove the Trove from the batch at any time.
 
 A batch manager controls the interest rate of Troves under their management, in a predefined range chosen when they register. This range may not be changed after registering, enabling borrowers to know in advance the min and max interest rates the manager could set.
 
@@ -913,13 +910,11 @@ When a batch manager updates their batch’s interest rate, the entire `Batch` i
 
  ### Internal representation as shared Trove
 
-A batch accrues three kinds of time-based debt increases: normal interest, management fees and possibly redistribution gains over time. 
+A batch accrues two kinds of time-based debt increases: normal interest and management fees. Individual Troves in the batch may also accrue redistribution gains (coll and debt), though these remained tracked at the individual Trove level, not at the batch level.
 
-To handle all these in a gas-efficient way, the batch is internally modelled as a single “shared” Trove. 
+To handle accrued interest and fees in a gas-efficient way, the batch is internally modelled as a single “shared” Trove. 
 
 The system tracks a batch’s `recordedDebt` and `annualInterestRate`. Accrued interest is calculated in the same way as for individual Troves, and the batch’s weighted debt is incorporated in the aggregate sum as usual.
-
-Similarly, redistributions are paid proportionally to the total collateral of the batch.
 
 ### Batch management fee
 
@@ -930,8 +925,9 @@ The management fee is an annual percentage, and is calculated in the same way as
 A batch’s `recordedDebt` is updated when:
 - a Trove in a batch has it’s debt updated by the borrower
 - The batch manager changes the batch’s interest rate
+- The pending debt of a Trove in the batch is permissionlessly applied 
 
-The accrued interest and accrued management fees are calculated and added to the debt
+The batch-level accrued interest and accrued management fees are calculated and added to the batch's recorded debt, along with any individual changes due to a Trove touch - i.e. the Trove's debt adjustment, and/or application of its pending redistribution debt gain.
 
 ### Batch premature adjustment fees
 
@@ -940,6 +936,14 @@ Batch managers incur premature fees in the same manner as individual Troves - i.
 When a borrower adds their Trove to a batch, there is a trust assumption: they expect the batch manager to manage interest rates well and not incur excessive adjustment fees.  However, the manager can commit in advance to a maximum update frequency when they register by passing a `_minInterestRateChangePeriod`.
 
 Generally is expected that competent batch managers will build good reputations and attract borrowers. Malicious or poor managers will likely end up with empty batches in the long-term.
+
+### Batch invariants
+
+Batch Troves are intended to be fundamentally equivalent to individual Troves. That is, if individual Trove A and batch Trove B have identical state at a given time (such as coll, debt, stake, accrued interest, etc) - then they would also have identical state after both undergoing the same operation (coll/debt adjustment, application of interest, receiving a redistribution gain).
+
+Also, since batches are modelled as "virtual Troves", equivalences between a Batch and an equivalent individual Trove hold across identical operations.
+
+A thorough description of these batch Trove invariants is found in the [properties and invariants](https://docs.google.com/spreadsheets/d/1WKEwXsmo_lwVWuJvcy3NmVh0IYogPQ-Z2Ab64HuJzkU/edit?usp=sharing) sheet in yellow.
 
 
 ## Collateral branch shutdown
@@ -1007,10 +1011,6 @@ Provisionally, v2 has been developed with the following collateral assets in min
 - WETH
 - WSTETH
 - RETH
-- OSETH (TBD)
-- ETHX (TBD)
-
-The final choice of LSTs is TBD, and may include one of (or both) OSETH and ETHX.
 
 ## Oracles in Liquity v2
 
@@ -1025,7 +1025,7 @@ All oracles are integrated via Chainlink’s `AggregatorV3Interface`, and all or
 
 ### Choice of oracles and price calculations
 
-Chainlink push oracles were chosen due to Chainlink’s reliability and track record. The system provisionally uses Redstone’s push oracle for OSETH, though the Chainlink oracle will be used when it is made public (and if we decide to include OSETH as collateral).
+Chainlink push oracles were chosen due to Chainlink’s reliability and track record. 
 
 The pricing method for each LST depends on availability of oracles. Where possible, direct LST-USD market oracles have been used. 
 
@@ -1040,8 +1040,6 @@ Here are the oracles and price calculations for each PriceFeed:
 | WETH-USD             | ETH-USD                                       | ETH-USD                                                        |
 | WSTETH-USD           | STETH-USD, WSTETH-STETH_canonical               | STETH-USD * WSTETH-STETH_canonical                             |
 | RETH-USD             | ETH-USD, RETH-ETH, RETH-ETH_canonical         | min(ETH-USD * RETH-ETH, ETH-USD * RETH-ETH_canonical)          |
-| ETHX-USD             | ETH-USD, ETHX-ETH, ETHX-ETH_canonical         | min(ETH-USD * ETHX-ETH, ETH-USD * ETHX-ETH_canonical)          |
-| OSETH-USD            | ETH-USD, OSETH-ETH, OSETH-ETH_canonical       | min(ETH-USD * OSETH-ETH, ETH-USD * OSETH-ETH_canonical)        |
 
 ### TODO - [INHERITANCE DIAGRAM]
 
@@ -1067,21 +1065,30 @@ The conditions for shutdown at the verification step are:
 - Oracle returns a price of 0
 - Oracle returns a price older than its `stalenessThreshold`
 
+If the `fetchPrice` call is the top-level call, then failed verification due to one of the above conditions being met results in the PriceFeed being disabled and teh branch is shut down.  
+
+If the `fetchPrice` call is called inside a borrower operation or redemption, then when a shutdown condition is met the transaction simply reverts. This is to prevent operations succeeding when the feed should be shut down. To disble the PriceFeed and shut down the branch, `fetchPrice` should be called directly.
+
+
+
 This is intended to catch some obvious oracle failure modes, as well as the scenario whereby the oracle provider disables their feed. Chainlink have stated that they may disable LST feeds if volume becomes too small, and that in this case, the call to the oracle will revert.
 
 ### Using `lastGoodPrice` if an oracle has been disabled
 
-If an oracle has failed, then the best the branch can do is use the last good price seen by the system. Using an out-of-date price obviously has undesirable consequences, but it’s the best that can be done in this extreme scenario. The impacts are addressed in the [known issues section](#known-issues-and-mitigations).
+If an oracle has failed, then the best the branch can do is use the last good price seen by the system. Using an out-of-date price obviously has undesirable consequences, but it’s the best that can be done in this extreme scenario. The impacts are addressed in [Known Issue 4](https://github.com/liquity/bold/blob/main/README.md#4---oracle-failure-and-urgent-redemptions-with-the-frozen-last-good-price).
+
+However, as mentioned there, a possible improvement exists whereby the ETH-USD price can be used alongside the canonical LST rate as a price fallback.  See this PR:
+https://github.com/liquity/bold/pull/393
 
 ### Protection against upward market price manipulation
 
-The smaller LSTs (RETH, OSETH, ETHX) have lower liquidity and thus it is cheaper for a malicious actor to manipulate their market price.
+The smaller LST i.e. RETH has lower liquidity and thus it is cheaper for a malicious actor to manipulate their market price.
 
 The impacts of downward market manipulation are bounded - it could result in excessive liquidations and branch shutdown, but should not affect other branches nor BOLD stability.
 
 However, upward market manipulation could be catastrophic as it would allow excessive BOLD minting from Troves, which could cause a depeg.
 
-The system mitigates this by taking the minimum of the LST-USD prices derived from market and canonical rates on the RETH, ETHX and OSETH PriceFeeds. As such, to manipulate the system price upward, an attacker would need to manipulate both the market oracle _and_ the canonical rate which would be much more difficult.
+The system mitigates this by taking the minimum of the LST-USD prices derived from market and canonical rates on the RETHPriceFeed. As such, to manipulate the system price upward, an attacker would need to manipulate both the market oracle _and_ the canonical rate which would be much more difficult.
 
 
 However this is not the only LST/oracle risk scenario. There are several to consider - see the [LST oracle risks section](#lst-oracle-risks).
@@ -1187,7 +1194,25 @@ No fix is implemented for this, for the following reasons:
 
 - In the second case, although urgent redemptions return too much value to the redeemer, they can still clear all debt from the branch.
 - In the first case, the final result is that some uncleared BOLD debt remains on the shut down branch, and the system carries this unbacked debt burden going forward.  This is an inherent risk of a multicollateral system anyway, which relies on the economic health of the LST assets it integrates. A solution to clear bad debt is TODO, to be chosen and implemented - see [Branch shutdown and bad debt](https://github.com/liquity/bold?tab=readme-ov-file#10---branch-shutdown-and-bad-debt) section.
-- Also an Oracle failure, if it occurs, will much more likely be due to a disabled Chainlink feed rather than hack or technical failure. A disabled LST oracle implies an LST with low liquidity/volume, which in turn probably implies that the LST constitutes a small fraction of total Liquity v2 collateral. 
+- Also an Oracle failure, if it occurs, will much more likely be due to a disabled Chainlink feed rather than hack or technical failure. A disabled LST oracle implies an LST with low liquidity/volume, which in turn probably implies that the LST constitutes a small fraction of total Liquity v2 collateral.
+
+#### Possible Improvement - use `ETH-USD * canonical_rate`
+If the primary oracle setup fails on a given LST branch, then using `lastGoodPrice` has the shortcoming noted above: when `lastGoodPrice > market price`, it may be unprofitable to redeem even with BOLD at $1, thus leaving excess bad debt in the branch.
+
+However, a fallback price utilizing the ETH-USD price and the LST's canonical rate could be used. The proposed fallback price calculation for each branch is here:
+
+| Collateral | Primary price calc                                             | Fallback price calc                        |
+|------------|----------------------------------------------------------------|--------------------------------------------|
+| WETH       | ETH-USD                                                        | lastGoodPrice                              |
+| WSTETH     | STETH-USD * WSTETH-STETH_canonical                             | ETH-USD * WSTETH-STETH_canonical           |
+| RETH       | min(ETH-USD * RETH-ETH, ETH-USD * RETH-ETH_canonical)          | ETH-USD * RETH-ETH_canonical               |
+
+During shutdown no borrower ops are allowed, so the main risk of a manipulated canonical rate (inflated price and excess BOLD minting) is eliminated, and it will be safe to use the canonical rate in conjunction with ETH-USD.
+
+Additionally, if the _ETH-USD_ oracle fails after shut down, then the LST PriceFeed should finally switch to the `lastGoodPrice`, and the branch remains shut down.
+
+The full logic is implemented in this PR:
+https://github.com/liquity/bold/pull/393
 
 ### 5 - Stale oracle price before shutdown triggered
 
@@ -1214,8 +1239,6 @@ Provisionally, the preset staleness thresholds in Liquity v2 as follows, though 
 | Chainlink ETH-USD                                       | 1 hour           | 24 hours                                     |
 | Chainlink stETH-USD                                     | 1 hour           | 24 hours                                     |
 | Chainlink rETH-ETH                                      | 24 hours         | 48 hours                                     |
-| Chainlink ETHX-ETH                                      | 24 hours         | 48 hours                                     |
-| Redstone osETH-ETH (note: use Chainlink feed when released) | 24 hours         | 48 hours                                     |
 
 
 ### 6 - Batch management ops don’t check for a shutdown branch
@@ -1341,6 +1364,67 @@ This was chosen over other approaches because:
 **Extension: governance can liquidate and swap collateral gains**
 
 If there is remaining collateral in the shutdown branch (albeit perhaps at zero USD value) and there are liquidateable Troves, Governance could alternatively vote to direct fees to a permissionless contract that deposits the BOLD to the SP of the shutdown branch and liquidates the Troves against those funds. The resulting collateral gains could, if they have non-zero value, be swapped on a DEX, e.g. for BOLD which could be then directed to LP incentives. All deposits and swaps could be handled permissionlessly by this governance-deployed contract.
+
+### 11 - ## Inaccurate calculation of average branch interest rate
+
+`getNewApproxAvgInterestRateFromTroveChange` does not actually calculate the correct average interest rate for a collateral branch. Ideally, we would like to calculate the debt-weighted average interest of all Troves within the branch, upon which our calculation of the upfront fee is based. The desired formula would be:
+
+```
+        sum(r_i * debt'_i)
+r_avg = -----------------
+           sum(debt'_i)
+```
+
+where `r_i` and `debt'_i` are the interest rate and _current_ debt of the i-th Trove, respectively. Here, `debt'_i` includes pending interest.
+
+However, in the actual implementation as Dedaub points out: in the denominator "the pending interest of all the troves is added", however the numerator "takes into account only the change in the Trove under consideration and not the pending interest of all the other troves". Thus, the actual implementation is closer to (disregarding the upfront fee that applies to the Trove being adjusted):
+
+```
+         sum(r_i * debt_i)
+r'_avg = -----------------
+            sum(debt'_i)
+```
+
+where `debt_i` is the debt of the i-th Trove when it was last adjusted, in other words: exluding pending interest. As we see, there's a discrepancy in weights between the numerator and denominator of our weighted average formula. As the sum of weights in the denominator is greater than the sum of weights in the numerator, our estimate of the average interest rate will be lower than the ideal average.
+
+Roughly speaking: if `s` is the current total debt of a collateral branch and `p` the total amount of interest that hasn't been compounded yet, our estimate will be off by a factor of `s / (s + p)`.
+
+#### Side-note: "discrete" compounding in v2
+
+By design, Trove debt in Liquity v2 is compounded "discretely", that is: whenever an operation directly modifies a Trove (such as a borrower making a Trove adjustment, or a Trove getting redeemed). Compounding only takes place for the Trove(s) "touched" by an operation, thus, each Trove has an individual timestamp (`lastDebtUpdateTime`) of the time when the Trove's debt was last compounded.
+
+#### Potential improvement 1
+
+One way to fix the above-mentioned discrepancy between the numerator and the denominator would be to take into account pending interest in the former. As mentioned before, the current definition of the numerator is:
+
+```
+sum(r_i * debt_i)
+```
+
+`ActivePool` keeps track of this sum in an O(1) fashion on-chain as `aggWeightedDebtSum`. To take into account pending interest, the numerator would have to be changed to:
+
+```
+sum(r_i * debt'_i) = sum(r_i * debt_i) + sum(r_i * debt_i * dT_i)
+```
+
+where `dT_i` is `block.timestamp - lastDebtUpdateTime`, i.e. the time elapsed since the i-th Trove was last compounded. While it seems possible to do so in O(1) complexity, `ActivePool` currently doesn't keep track of this metric. Thus without additional accounting (keeping track of the sum in a new state variable), it would take O(N) time to calculate the ideal numerator.
+
+#### Potential improvement 2
+
+Alternatively, we could modify the denominator to ignore pending debt instead. Currently, we use:
+
+```
+sum(debt'_i)
+```
+
+which is kept track of as `aggRecordedDebt` by `ActivePool`. Instead, we could use:
+
+```
+sum(debt_i)
+```
+
+While this wouldn't result in the most accurate estimation of the average interest rate either — considering we'd be using outdated debt values sampled at different times for each Trove as weights — at least we would have consistent weights in the numerator and denominator of our weighted average. To implement this though, we'd have to keep track of this modified sum (i.e. the sum of recorded Trove debts) in `ActivePool`, which we currently don't do.
+
 
 ## Requirements
 

@@ -12048,7 +12048,7 @@ packages:
       fs.realpath: 1.0.0
       minimatch: 8.0.4
       minipass: 4.2.8
-      path-scurry: 1.10.2
+      path-scurry: 1.11.1
     dev: true
 
   /global-modules@2.0.0:

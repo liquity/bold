@@ -78,7 +78,6 @@ export function Modal({
               className={css({
                 display: "flex",
                 justifyContent: "center",
-                minHeight: "100%",
               })}
             >
               <FocusTrap
@@ -95,7 +94,6 @@ export function Modal({
                     }
                   }}
                   className={css({
-                    minHeight: "100%",
                     padding: 64,
                   })}
                 >
@@ -103,7 +101,6 @@ export function Modal({
                     className={css({
                       position: "relative",
                       width: 534,
-                      minHeight: "100%",
                       maxWidth: "100%",
                       padding: 24,
                       outline: "2px solid accent",

@@ -5,6 +5,7 @@ import { css, cx } from "../../styled-system/css";
 
 export type TextButtonProps = {
   label: ReactNode;
+  size?: "medium" | "large";
 };
 
 export const TextButton = forwardRef<
@@ -13,16 +14,22 @@ export const TextButton = forwardRef<
 >(function TextButton({
   label,
   className,
+  style,
+  size,
   ...props
 }, ref) {
-  const textButtonStyles = useTextButtonStyles();
+  const textButtonStyles = useTextButtonStyles(size);
   return (
     <button
       ref={ref}
       className={cx(
-        className,
         textButtonStyles.className,
+        className,
       )}
+      style={{
+        ...textButtonStyles.style,
+        ...style,
+      }}
       {...props}
     >
       {label}
@@ -30,12 +37,11 @@ export const TextButton = forwardRef<
   );
 });
 
-export function useTextButtonStyles() {
+export function useTextButtonStyles(size: TextButtonProps["size"] = "medium") {
   const className = css({
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    fontSize: 16,
     fontWeight: 500,
     color: "accent",
     borderRadius: 4,
@@ -48,7 +54,12 @@ export function useTextButtonStyles() {
     },
   });
 
+  const style = {
+    fontSize: size === "large" ? 24 : 16,
+  };
+
   return {
     className,
+    style,
   };
 }

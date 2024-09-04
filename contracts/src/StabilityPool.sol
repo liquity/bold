@@ -136,8 +136,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     IERC20 public immutable collToken;
     ITroveManager public immutable troveManager;
     IBoldToken public immutable boldToken;
-    // Needed to check if there are pending liquidations
-    ISortedTroves public immutable sortedTroves;
 
     uint256 internal collBalance; // deposited ether tracker
 
@@ -205,17 +203,14 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event BoldTokenAddressChanged(address _newBoldTokenAddress);
-    event SortedTrovesAddressChanged(address _newSortedTrovesAddress);
 
     constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) {
         collToken = _addressesRegistry.collToken();
         troveManager = _addressesRegistry.troveManager();
         boldToken = _addressesRegistry.boldToken();
-        sortedTroves = _addressesRegistry.sortedTroves();
 
         emit TroveManagerAddressChanged(address(troveManager));
         emit BoldTokenAddressChanged(address(boldToken));
-        emit SortedTrovesAddressChanged(address(sortedTroves));
     }
 
     // --- Getters for public variables. Required by IPool interface ---
