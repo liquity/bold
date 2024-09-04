@@ -6,7 +6,7 @@ dataSources:
     kind: ethereum/contract
     network: mainnet
     source:
-      address: "0x5df37c979d7da88687a90ab73fe3cf809de674d9"
+      address: "0x13c9af280ae9147de75639e86a2d399116b9c608"
       abi: BoldToken
     mapping:
       kind: ethereum/events
