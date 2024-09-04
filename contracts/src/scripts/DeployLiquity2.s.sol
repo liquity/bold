@@ -203,17 +203,17 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             }
 
             IBorrowerOperations(contracts.borrowerOperations).openTrove(
-                vm.addr(trove.owner), // _owner
-                trove.ownerIndex, //     _ownerIndex
-                trove.coll, //           _collAmount
-                trove.debt, //           _boldAmount
-                0, //                    _upperHint
-                0, //                    _lowerHint
-                0.05e18, //              _annualInterestRate
-                type(uint256).max, //    _maxUpfrontFee
-                address(0), //           _addManager
-                address(0), //           _removeManager
-                address(0) //           _receiver
+                vm.addr(trove.owner), //     _owner
+                trove.ownerIndex, //         _ownerIndex
+                trove.coll, //               _collAmount
+                trove.debt, //               _boldAmount
+                0, //                        _upperHint
+                0, //                        _lowerHint
+                trove.annualInterestRate, // _annualInterestRate
+                type(uint256).max, //        _maxUpfrontFee
+                address(0), //               _addManager
+                address(0), //               _removeManager
+                address(0) //                _receiver
             );
 
             vm.stopBroadcast();
