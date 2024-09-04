@@ -19,6 +19,10 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
     IFlashLoanProvider public immutable flashLoanProvider;
     IExchange public immutable exchange;
 
+    uint256 private initialBoldBalance;
+    uint256 private initialWETHBalance;
+    address private initialSender;
+
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
         WETHZapper(_addressesRegistry)
     {
@@ -42,6 +46,7 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
         uint256 troveId;
         IBorrowerOperations borrowerOperations;
         IWETH WETH;
+        IBoldToken boldToken;
         uint256 boldAmount;
     }
 
@@ -49,6 +54,9 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
         require(msg.value == ETH_GAS_COMPENSATION + _params.collAmount, "LZ: Wrong amount of ETH");
 
         IWETH WETHCached = WETH;
+
+        // Set initial balances to make sure there are not lefovers
+        _setInitialBalances(WETHCached);
 
         // Convert ETH to WETH
         WETH.deposit{value: msg.value}();
@@ -69,6 +77,7 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
         OpenLeveragedTroveVars memory vars;
         vars.borrowerOperations = borrowerOperations;
         vars.WETH = WETH;
+        vars.boldToken = boldToken;
 
         uint256 totalCollAmount = _params.collAmount + _effectiveFlashLoanAmount;
         // We compute boldAmount off-chain for efficiency
@@ -100,15 +109,23 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
         // Send coll back to return flash loan
         vars.WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
         // WETH reverts on failure: https://etherscan.io/token/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2#code
+
+        // return leftovers to user
+        _returnLeftovers(vars.WETH, vars.boldToken);
     }
 
     function leverUpTrove(LeverUpTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
         _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
 
+        IWETH WETHCached = WETH;
+
+        // Set initial balances to make sure there are not lefovers
+        _setInitialBalances(WETHCached);
+
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverUpTrove, abi.encode(_params)
+            WETHCached, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverUpTrove, abi.encode(_params)
         );
     }
 
@@ -135,17 +152,27 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
         // The frontend should calculate in advance the `_params.boldAmount` needed for this to work
         exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount, address(this));
 
+        IWETH WETHCached = WETH;
+
         // Send coll back to return flash loan
-        WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
+        WETHCached.transfer(address(flashLoanProvider), _params.flashLoanAmount);
+
+        // return leftovers to user
+        _returnLeftovers(WETHCached, boldToken);
     }
 
     function leverDownTrove(LeverDownTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
         _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
 
+        IWETH WETHCached = WETH;
+
+        // Set initial balances to make sure there are not lefovers
+        _setInitialBalances(WETHCached);
+
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverDownTrove, abi.encode(_params)
+            WETHCached, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverDownTrove, abi.encode(_params)
         );
     }
 
@@ -172,8 +199,31 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
             0
         );
 
+        IWETH WETHCached = WETH;
+
         // Send coll back to return flash loan
-        WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
+        WETHCached.transfer(address(flashLoanProvider), _params.flashLoanAmount);
+
+        // return leftovers to user
+        _returnLeftovers(WETHCached, boldToken);
+    }
+
+    function _setInitialBalances(IWETH _WETH) internal {
+        initialBoldBalance = boldToken.balanceOf(address(this));
+        initialWETHBalance = _WETH.balanceOf(address(this));
+        initialSender = msg.sender;
+    }
+
+    function _returnLeftovers(IWETH _WETH, IBoldToken _boldToken) internal {
+        uint256 currentWETHBalance = _WETH.balanceOf(address(this));
+        if (currentWETHBalance > initialWETHBalance) {
+            _WETH.transfer(initialSender, currentWETHBalance - initialWETHBalance);
+        }
+        uint256 currentBoldBalance = _boldToken.balanceOf(address(this));
+        if (currentBoldBalance > initialBoldBalance) {
+            _boldToken.transfer(initialSender, currentBoldBalance - initialBoldBalance);
+        }
+        initialSender = address(0);
     }
 
     // As formulas are symmetrical, it can be used in both ways

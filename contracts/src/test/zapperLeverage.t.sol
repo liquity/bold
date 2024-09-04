@@ -58,11 +58,17 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         uint256 initialDebt;
         uint256 newLeverageRatio;
         uint256 resultingCollateralRatio;
-        uint256 boldBalanceBefore;
-        uint256 ethBalanceBefore;
-        uint256 collBalanceBefore;
         uint256 flashLoanAmount;
         uint256 price;
+        uint256 boldBalanceBeforeA;
+        uint256 ethBalanceBeforeA;
+        uint256 collBalanceBeforeA;
+        uint256 boldBalanceBeforeZapper;
+        uint256 ethBalanceBeforeZapper;
+        uint256 collBalanceBeforeZapper;
+        uint256 boldBalanceBeforeExchange;
+        uint256 ethBalanceBeforeExchange;
+        uint256 collBalanceBeforeExchange;
     }
 
     function setUp() public override {
@@ -273,6 +279,18 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         return vars.troveId;
     }
 
+    function _setInitialBalances(ILeverageZapper _leverageZapper, uint256 _branch, TestVars memory vars) internal view {
+        vars.boldBalanceBeforeA = boldToken.balanceOf(A);
+        vars.ethBalanceBeforeA = A.balance;
+        vars.collBalanceBeforeA = contractsArray[_branch].collToken.balanceOf(A);
+        vars.boldBalanceBeforeZapper = boldToken.balanceOf(address(_leverageZapper));
+        vars.ethBalanceBeforeZapper = address(_leverageZapper).balance;
+        vars.collBalanceBeforeZapper = contractsArray[_branch].collToken.balanceOf(address(_leverageZapper));
+        vars.boldBalanceBeforeExchange = boldToken.balanceOf(address(_leverageZapper.exchange()));
+        vars.ethBalanceBeforeExchange = address(_leverageZapper.exchange()).balance;
+        vars.collBalanceBeforeExchange = contractsArray[_branch].collToken.balanceOf(address(_leverageZapper.exchange()));
+    }
+
     function testCanOpenTroveWithCurve() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             _testCanOpenTrove(leverageZapperCurveArray[i], i);
@@ -287,54 +305,59 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
     }
 
     function _testCanOpenTrove(ILeverageZapper _leverageZapper, uint256 _branch) internal {
-        uint256 collAmount = 10 ether;
-        uint256 leverageRatio = 2e18;
-        uint256 resultingCollateralRatio = _leverageZapper.leverageRatioToCollateralRatio(leverageRatio);
+        TestVars memory vars;
+        vars.collAmount = 10 ether;
+        vars.newLeverageRatio = 2e18;
+        vars.resultingCollateralRatio = _leverageZapper.leverageRatioToCollateralRatio(vars.newLeverageRatio);
 
-        uint256 boldBalanceBefore = boldToken.balanceOf(A);
-        uint256 ethBalanceBefore = A.balance;
-        uint256 collBalanceBefore = contractsArray[_branch].collToken.balanceOf(A);
+        _setInitialBalances(_leverageZapper, _branch, vars);
 
         bool lst = _branch > 0;
-        uint256 troveId =
-            openLeveragedTrove(_leverageZapper, collAmount, leverageRatio, contractsArray[_branch].priceFeed, lst);
+        vars.troveId =
+            openLeveragedTrove(_leverageZapper, vars.collAmount, vars.newLeverageRatio, contractsArray[_branch].priceFeed, lst);
 
         // Checks
-        (uint256 price,) = contractsArray[_branch].priceFeed.fetchPrice();
+        (vars.price,) = contractsArray[_branch].priceFeed.fetchPrice();
         // owner
-        assertEq(contractsArray[_branch].troveNFT.ownerOf(troveId), A, "Wrong owner");
+        assertEq(contractsArray[_branch].troveNFT.ownerOf(vars.troveId), A, "Wrong owner");
         // troveId
-        assertGt(troveId, 0, "Trove id should be set");
+        assertGt(vars.troveId, 0, "Trove id should be set");
         // coll
         assertEq(
-            getTroveEntireColl(contractsArray[_branch].troveManager, troveId),
-            collAmount * leverageRatio / DECIMAL_PRECISION,
+            getTroveEntireColl(contractsArray[_branch].troveManager, vars.troveId),
+            vars.collAmount * vars.newLeverageRatio / DECIMAL_PRECISION,
             "Coll mismatch"
         );
         // debt
-        uint256 expectedMinNetDebt = collAmount * (leverageRatio - DECIMAL_PRECISION) / DECIMAL_PRECISION // * leverage ratio
-            * price / DECIMAL_PRECISION; // price
+        uint256 expectedMinNetDebt = vars.collAmount * (vars.newLeverageRatio - DECIMAL_PRECISION) / DECIMAL_PRECISION // * leverage ratio
+            * vars.price / DECIMAL_PRECISION; // price
         uint256 expectedMaxNetDebt = expectedMinNetDebt * 105 / 100;
-        uint256 troveEntireDebt = getTroveEntireDebt(contractsArray[_branch].troveManager, troveId);
+        uint256 troveEntireDebt = getTroveEntireDebt(contractsArray[_branch].troveManager, vars.troveId);
         assertGe(troveEntireDebt, expectedMinNetDebt, "Debt too low");
         assertLe(troveEntireDebt, expectedMaxNetDebt, "Debt too high");
         // CR
         assertApproxEqAbs(
-            contractsArray[_branch].troveManager.getCurrentICR(troveId, price),
-            resultingCollateralRatio,
+            contractsArray[_branch].troveManager.getCurrentICR(vars.troveId, vars.price),
+            vars.resultingCollateralRatio,
             3e16,
             "Wrong CR"
         );
         // token balances
-        assertEq(boldToken.balanceOf(A), boldBalanceBefore, "BOLD bal mismatch");
+        assertEq(boldToken.balanceOf(A), vars.boldBalanceBeforeA, "BOLD bal mismatch");
+        assertEq(boldToken.balanceOf(address(_leverageZapper)), vars.boldBalanceBeforeZapper, "Zapper should not keep BOLD");
+        assertEq(boldToken.balanceOf(address(_leverageZapper.exchange())), vars.boldBalanceBeforeExchange, "Exchange should not keep BOLD");
+        assertEq(contractsArray[_branch].collToken.balanceOf(address(_leverageZapper)), vars.collBalanceBeforeZapper, "Zapper should not keep Coll");
+        assertEq(contractsArray[_branch].collToken.balanceOf(address(_leverageZapper.exchange())), vars.collBalanceBeforeExchange, "Exchange should not keep Coll");
+        assertEq(address(_leverageZapper).balance, vars.ethBalanceBeforeZapper, "Zapper should not keep ETH");
+        assertEq(address(_leverageZapper.exchange()).balance, vars.ethBalanceBeforeExchange, "Exchange should not keep ETH");
         if (lst) {
-            assertEq(A.balance, ethBalanceBefore - ETH_GAS_COMPENSATION, "ETH bal mismatch");
-            assertEq(
-                contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore - collAmount, "Coll bal mismatch"
+            assertEq(A.balance, vars.ethBalanceBeforeA - ETH_GAS_COMPENSATION, "ETH bal mismatch");
+            assertGe(
+                contractsArray[_branch].collToken.balanceOf(A), vars.collBalanceBeforeA - vars.collAmount, "Coll bal mismatch"
             );
         } else {
-            assertEq(A.balance, ethBalanceBefore - ETH_GAS_COMPENSATION - collAmount, "ETH bal mismatch");
-            assertEq(contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
+            assertEq(A.balance, vars.ethBalanceBeforeA - ETH_GAS_COMPENSATION - vars.collAmount, "ETH bal mismatch");
+            assertGe(contractsArray[_branch].collToken.balanceOf(A), vars.collBalanceBeforeA, "Coll bal mismatch");
         }
     }
 
@@ -451,9 +474,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         vars.newLeverageRatio = 2.5e18;
         vars.resultingCollateralRatio = _leverageZapper.leverageRatioToCollateralRatio(vars.newLeverageRatio);
 
-        vars.boldBalanceBefore = boldToken.balanceOf(A);
-        vars.ethBalanceBefore = A.balance;
-        vars.collBalanceBefore = contractsArray[_branch].collToken.balanceOf(A);
+        _setInitialBalances(_leverageZapper, _branch, vars);
 
         vars.flashLoanAmount = leverUpTrove(
             _leverageZapper,
@@ -486,9 +507,15 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             "Wrong CR"
         );
         // token balances
-        assertEq(boldToken.balanceOf(A), vars.boldBalanceBefore, "BOLD bal mismatch");
-        assertEq(A.balance, vars.ethBalanceBefore, "ETH bal mismatch");
-        assertEq(contractsArray[_branch].collToken.balanceOf(A), vars.collBalanceBefore, "Coll bal mismatch");
+        assertEq(boldToken.balanceOf(A), vars.boldBalanceBeforeA, "BOLD bal mismatch");
+        assertEq(A.balance, vars.ethBalanceBeforeA, "ETH bal mismatch");
+        assertGe(contractsArray[_branch].collToken.balanceOf(A), vars.collBalanceBeforeA, "Coll bal mismatch");
+        assertEq(boldToken.balanceOf(address(_leverageZapper)), vars.boldBalanceBeforeZapper, "Zapper should not keep BOLD");
+        assertEq(boldToken.balanceOf(address(_leverageZapper.exchange())), vars.boldBalanceBeforeExchange, "Exchange should not keep BOLD");
+        assertEq(contractsArray[_branch].collToken.balanceOf(address(_leverageZapper)), vars.collBalanceBeforeZapper, "Zapper should not keep Coll");
+        assertEq(contractsArray[_branch].collToken.balanceOf(address(_leverageZapper.exchange())), vars.collBalanceBeforeExchange, "Exchange should not keep Coll");
+        assertEq(address(_leverageZapper).balance, vars.ethBalanceBeforeZapper, "Zapper should not keep ETH");
+        assertEq(address(_leverageZapper.exchange()).balance, vars.ethBalanceBeforeExchange, "Exchange should not keep ETH");
 
         // Check receiver is back to zero
         assertEq(address(_leverageZapper.flashLoanProvider().receiver()), address(0), "Receiver should be zero");
@@ -742,9 +769,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         vars.newLeverageRatio = 1.5e18;
         vars.resultingCollateralRatio = _leverageZapper.leverageRatioToCollateralRatio(vars.newLeverageRatio);
 
-        vars.boldBalanceBefore = boldToken.balanceOf(A);
-        vars.ethBalanceBefore = A.balance;
-        vars.collBalanceBefore = contractsArray[_branch].collToken.balanceOf(A);
+        _setInitialBalances(_leverageZapper, _branch, vars);
 
         vars.flashLoanAmount = leverDownTrove(
             _leverageZapper,
@@ -764,8 +789,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             "Coll mismatch"
         );
         // debt
-        uint256 expectedMinNetDebt =
-            vars.initialDebt - vars.flashLoanAmount * vars.price / DECIMAL_PRECISION * 101 / 100;
+        uint256 expectedMinNetDebt = vars.initialDebt - vars.flashLoanAmount * vars.price / DECIMAL_PRECISION * 101 / 100;
         uint256 expectedMaxNetDebt = expectedMinNetDebt * 105 / 100;
         uint256 troveEntireDebt = getTroveEntireDebt(contractsArray[_branch].troveManager, vars.troveId);
         assertGe(troveEntireDebt, expectedMinNetDebt, "Debt too low");
@@ -778,9 +802,15 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             "Wrong CR"
         );
         // token balances
-        assertEq(boldToken.balanceOf(A), vars.boldBalanceBefore, "BOLD bal mismatch");
-        assertEq(A.balance, vars.ethBalanceBefore, "ETH bal mismatch");
-        assertEq(contractsArray[_branch].collToken.balanceOf(A), vars.collBalanceBefore, "Coll bal mismatch");
+        assertEq(boldToken.balanceOf(A), vars.boldBalanceBeforeA, "BOLD bal mismatch");
+        assertEq(A.balance, vars.ethBalanceBeforeA, "ETH bal mismatch");
+        assertGe(contractsArray[_branch].collToken.balanceOf(A), vars.collBalanceBeforeA, "Coll bal mismatch");
+        assertEq(boldToken.balanceOf(address(_leverageZapper)), vars.boldBalanceBeforeZapper, "Zapper should not keep BOLD");
+        assertEq(boldToken.balanceOf(address(_leverageZapper.exchange())), vars.boldBalanceBeforeExchange, "Exchange should not keep BOLD");
+        assertEq(contractsArray[_branch].collToken.balanceOf(address(_leverageZapper)), vars.collBalanceBeforeZapper, "Zapper should not keep Coll");
+        assertEq(contractsArray[_branch].collToken.balanceOf(address(_leverageZapper.exchange())), vars.collBalanceBeforeExchange, "Exchange should not keep Coll");
+        assertEq(address(_leverageZapper).balance, vars.ethBalanceBeforeZapper, "Zapper should not keep ETH");
+        assertEq(address(_leverageZapper.exchange()).balance, vars.ethBalanceBeforeExchange, "Exchange should not keep ETH");
 
         // Check receiver is back to zero
         assertEq(address(_leverageZapper.flashLoanProvider().receiver()), address(0), "Receiver should be zero");

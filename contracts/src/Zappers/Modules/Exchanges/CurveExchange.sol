@@ -58,6 +58,7 @@ contract CurveExchange is IExchange {
     function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount, address _zapper) external returns (uint256) {
         ICurvePool curvePoolCached = curvePool;
         IBoldToken boldTokenCached = boldToken;
+        uint256 initialBoldBalance = boldTokenCached.balanceOf(address(this));
         boldTokenCached.transferFrom(_zapper, address(this), _boldAmount);
         boldTokenCached.approve(address(curvePoolCached), _boldAmount);
 
@@ -66,18 +67,29 @@ contract CurveExchange is IExchange {
         uint256 output = curvePoolCached.exchange(BOLD_TOKEN_INDEX, COLL_TOKEN_INDEX, _boldAmount, _minCollAmount);
         collToken.safeTransfer(_zapper, output);
 
+        uint256 currentBoldBalance = boldTokenCached.balanceOf(address(this));
+        if (currentBoldBalance > initialBoldBalance) {
+            boldTokenCached.transfer(_zapper, currentBoldBalance - initialBoldBalance);
+        }
+
         return output;
     }
 
     function swapToBold(uint256 _collAmount, uint256 _minBoldAmount, address _zapper) external returns (uint256) {
         ICurvePool curvePoolCached = curvePool;
         IERC20 collTokenCached = collToken;
+        uint256 initialCollBalance = collTokenCached.balanceOf(address(this));
         collTokenCached.safeTransferFrom(_zapper, address(this), _collAmount);
         collTokenCached.approve(address(curvePoolCached), _collAmount);
 
         //return curvePoolCached.exchange(COLL_TOKEN_INDEX, BOLD_TOKEN_INDEX, _collAmount, _minBoldAmount, false, _zapper);
         uint256 output = curvePoolCached.exchange(COLL_TOKEN_INDEX, BOLD_TOKEN_INDEX, _collAmount, _minBoldAmount);
         boldToken.transfer(_zapper, output);
+
+        uint256 currentCollBalance = collTokenCached.balanceOf(address(this));
+        if (currentCollBalance > initialCollBalance) {
+            collTokenCached.transfer(_zapper, currentCollBalance - initialCollBalance);
+        }
 
         return output;
     }

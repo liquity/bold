@@ -23,6 +23,10 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
     ISwapRouter public immutable uniV3Router;
     IQuoterV2 public immutable uniV3Quoter;
 
+    uint256 private initialBoldBalance;
+    uint256 private initialCollBalance;
+    address private initialSender;
+
     // From library TickMath
     /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
     //uint160 internal constant MIN_SQRT_RATIO = 4295128739;
@@ -69,6 +73,11 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
     function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount, address _zapper) external returns (uint256) {
         ISwapRouter uniV3RouterCached = uniV3Router;
         IBoldToken boldTokenCached = boldToken;
+        IERC20 collTokenCached = collToken;
+
+        // Set initial balances to make sure there are not lefovers
+        _setInitialBalances(collTokenCached, boldTokenCached);
+
         boldTokenCached.transferFrom(_zapper, address(this), _boldAmount);
         boldTokenCached.approve(address(uniV3RouterCached), _boldAmount);
 
@@ -88,7 +97,12 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
 
     function swapToBold(uint256 _collAmount, uint256 _minBoldAmount, address _zapper) external returns (uint256) {
         ISwapRouter uniV3RouterCached = uniV3Router;
+        IBoldToken boldTokenCached = boldToken;
         IERC20 collTokenCached = collToken;
+
+        // Set initial balances to make sure there are not lefovers
+        _setInitialBalances(collTokenCached, boldTokenCached);
+
         collTokenCached.safeTransferFrom(_zapper, address(this), _collAmount);
         collTokenCached.approve(address(uniV3RouterCached), _collAmount);
 
@@ -107,7 +121,8 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
     }
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {
-        //_requireCallerIsUniV3Router();
+        _requireCallerIsUniV3Router();
+
         IBoldToken boldTokenCached = boldToken;
         IERC20 collTokenCached = collToken;
         IERC20 token0;
@@ -126,6 +141,23 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
         if (amount1Delta > 0) {
             token1.transfer(msg.sender, uint256(amount1Delta));
         }
+
+        // return leftovers
+        uint256 currentCollBalance = collTokenCached.balanceOf(address(this));
+        if (currentCollBalance > initialCollBalance) {
+            collTokenCached.transfer(initialSender, currentCollBalance - initialCollBalance);
+        }
+        uint256 currentBoldBalance = boldTokenCached.balanceOf(address(this));
+        if (currentBoldBalance > initialBoldBalance) {
+            boldTokenCached.transfer(initialSender, currentBoldBalance - initialBoldBalance);
+        }
+        initialSender = address(0);
+    }
+
+    function _setInitialBalances(IERC20 _collToken, IBoldToken _boldToken) internal {
+        initialBoldBalance = _boldToken.balanceOf(address(this));
+        initialCollBalance = _collToken.balanceOf(address(this));
+        initialSender = msg.sender;
     }
 
     function priceToSqrtPrice(IBoldToken _boldToken, IERC20 _collToken, uint256 _price) public pure returns (uint160) {
