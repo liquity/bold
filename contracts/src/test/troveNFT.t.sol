@@ -33,4 +33,29 @@ contract troveNFTTest is DevTestSetup {
 
         emit log_string(uri);
     }
+
+    function testTroveURIAttributes() public {
+        uint256 troveId = _openTrove();
+
+        TroveNFT troveNFT = TroveNFT(address(troveManager.troveNFT()));
+
+        string memory uri = troveNFT.tokenURI(troveId);
+
+        emit log_string(uri); 
+        // Check for expected attributes
+        assertTrue(LibString.contains(attributesStr, '"trait_type": "Collateral Token"'), "Collateral Token attribute missing");
+        assertTrue(LibString.contains(attributesStr, '"trait_type": "Collateral Amount"'), "Collateral Amount attribute missing");
+        assertTrue(LibString.contains(attributesStr, '"trait_type": "Debt Token"'), "Debt Token attribute missing");
+        assertTrue(LibString.contains(attributesStr, '"trait_type": "Debt Amount"'), "Debt Amount attribute missing");
+        assertTrue(LibString.contains(attributesStr, '"trait_type": "Interest Rate"'), "Interest Rate attribute missing");
+        assertTrue(LibString.contains(attributesStr, '"trait_type": "Status"'), "Status attribute missing");
+        
+        // Check for expected values
+        assertTrue(LibString.contains(attributesStr, string.concat('"value": "', Strings.toHexString(address(collateral)))), "Incorrect Collateral Token value");
+        assertTrue(LibString.contains(attributesStr, '"value": "2000000000000000000"'), "Incorrect Collateral Amount value");
+        assertTrue(LibString.contains(attributesStr, string.concat('"value": "', Strings.toHexString(address(boldToken)))), "Incorrect Debt Token value");
+        assertTrue(LibString.contains(attributesStr, '"value": "1000000000000000000000"'), "Incorrect Debt Amount value");
+        assertTrue(LibString.contains(attributesStr, '"value": "5000000000000000"'), "Incorrect Interest Rate value");
+        assertTrue(LibString.contains(attributesStr, '"value": "Active"'), "Incorrect Status value");
+    }
 }
