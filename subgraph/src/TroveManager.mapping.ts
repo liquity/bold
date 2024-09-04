@@ -1,4 +1,4 @@
-import { Address, BigInt, dataSource, log } from "@graphprotocol/graph-ts";
+import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts";
 import { InterestRateBracket, Trove } from "../generated/schema";
 import { TroveNFT } from "../generated/templates/TroveManager/TroveNFT";
 import {
@@ -16,8 +16,10 @@ let OP_CLOSE_TROVE = 1;
 // let OP_LIQUIDATE = 5;
 // let OP_REDEEM_COLLATERAL = 6;
 
-let _1e15 = BigInt.fromI32(10).pow(15);
-let _1e16 = BigInt.fromI32(10).pow(16);
+function floorToDecimals(value: BigInt, decimals: u8): BigInt {
+  let factor = BigInt.fromI32(10).pow(18 - decimals);
+  return value.div(factor).times(factor);
+}
 
 export function handleTroveOperation(event: TroveOperationEvent): void {
   let id = event.params._troveId;
@@ -31,7 +33,7 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
     trove.closedAt = event.block.timestamp;
 
     // update rate bracket
-    let rateFloored = event.params._annualInterestRate.div(_1e15).times(_1e16);
+    let rateFloored = floorToDecimals(event.params._annualInterestRate, 3);
     let rateBracket = InterestRateBracket.load(rateFloored.toString());
     if (rateBracket) {
       rateBracket.totalDebt = rateBracket.totalDebt.minus(trove.debt);
@@ -63,8 +65,8 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
   let context = dataSource.context();
 
   // previous & new rates, floored to the nearest 0.1% (rate brackets)
-  let prevRateFloored = trove ? trove.interestRate.div(_1e15).times(_1e16) : null;
-  let rateFloored = event.params._annualInterestRate.div(_1e15).times(_1e16);
+  let prevRateFloored = trove ? floorToDecimals(trove.interestRate, 3) : null;
+  let rateFloored = floorToDecimals(event.params._annualInterestRate, 3);
 
   // create trove if it doesn't exist
   if (!trove) {
