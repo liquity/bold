@@ -26,7 +26,7 @@ contract LiquidationCostsTest is DevTestSetup {
 
         // Price drops
         priceFeed.setPrice(1000e18);
-        (uint256 price, ) = priceFeed.fetchPrice();
+        (uint256 price,) = priceFeed.fetchPrice();
 
         // Check not RM
         assertEq(troveManager.checkBelowCriticalThreshold(price), false, "System should not be below CT");
@@ -60,7 +60,7 @@ contract LiquidationCostsTest is DevTestSetup {
 
         // Price drops
         priceFeed.setPrice(1000e18);
-        (uint256 price, ) = priceFeed.fetchPrice();
+        (uint256 price,) = priceFeed.fetchPrice();
 
         // Check not RM
         assertEq(troveManager.checkBelowCriticalThreshold(price), false, "System should not be below CT");

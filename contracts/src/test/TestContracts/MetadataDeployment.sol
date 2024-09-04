@@ -7,7 +7,7 @@ import "src/NFTMetadata/MetadataNFT.sol";
 import "src/NFTMetadata/utils/Utils.sol";
 import "src/NFTMetadata/utils/FixedAssets.sol";
 
-contract MetadataDeployment is Script/* , StdAssertions */ {
+contract MetadataDeployment is Script /* , StdAssertions */ {
     struct File {
         bytes data;
         uint256 start;

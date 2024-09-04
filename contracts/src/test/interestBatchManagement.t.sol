@@ -820,12 +820,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         // A joins B
         setInterestBatchManager(A, troveId, B);
 
-        assertApproxEqAbs(
-            troveManager.getTroveEntireDebt(troveId),
-            ADebtBefore,
-            1e14,
-            "A debt should stay the same"
-        );
+        assertApproxEqAbs(troveManager.getTroveEntireDebt(troveId), ADebtBefore, 1e14, "A debt should stay the same");
         LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
         assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
     }
@@ -876,12 +871,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         // A joins B
         setInterestBatchManager(A, troveId, B);
 
-        assertApproxEqAbs(
-            troveManager.getTroveEntireDebt(troveId),
-            ADebtBefore,
-            1e14,
-            "A debt should stay the same"
-        );
+        assertApproxEqAbs(troveManager.getTroveEntireDebt(troveId), ADebtBefore, 1e14, "A debt should stay the same");
         LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
         assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
     }

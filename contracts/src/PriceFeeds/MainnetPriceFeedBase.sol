@@ -42,16 +42,16 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
     }
 
     // fetchPrice returns:
-    // - The price 
+    // - The price
     // - A bool indicating whether a new oracle failure was detected in the call
     function fetchPrice() public returns (uint256, bool) {
-        if (priceFeedDisabled) {return (lastGoodPrice, false);}
+        if (priceFeedDisabled) return (lastGoodPrice, false);
 
         return _fetchPrice();
     }
 
     // An individual Pricefeed instance implements _fetchPrice according to the data sources it uses. Returns:
-     // - The price 
+    // - The price
     // - A bool indicating whether a new oracle failure was detected in the call
     function _fetchPrice() internal virtual returns (uint256, bool) {}
 

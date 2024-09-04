@@ -781,7 +781,7 @@ contract TestDeployer is MetadataDeployment {
         IFlashLoanProvider _flashLoanProvider,
         bool _lst
     ) internal returns (ILeverageZapper) {
-        (uint256 price, ) = _priceFeed.fetchPrice();
+        (uint256 price,) = _priceFeed.fetchPrice();
 
         // deploy Curve Twocrypto NG pool
         address[2] memory coins;
@@ -838,7 +838,7 @@ contract TestDeployer is MetadataDeployment {
         }
 
         // Create Uni V3 pool
-        (vars.price, ) = _priceFeed.fetchPrice();
+        (vars.price,) = _priceFeed.fetchPrice();
         if (address(_boldToken) < address(_collToken)) {
             //console2.log("b < c");
             vars.tokens[0] = address(_boldToken);
