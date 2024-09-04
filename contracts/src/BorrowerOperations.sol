@@ -816,11 +816,19 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 _maxUpfrontFee
     ) external {
         _requireIsNotShutDown();
+        _requireTroveIsActive(troveManager, _troveId);
         _requireCallerIsBorrower(_troveId);
+        _requireValidAnnualInterestRate(_minInterestRate);
+        _requireValidAnnualInterestRate(_maxInterestRate);
+        // With the check below, it could only be ==
+        _requireOrderedRange(_minInterestRate, _maxInterestRate);
+
         interestIndividualDelegateOf[_troveId] =
             InterestIndividualDelegate(_delegate, _minInterestRate, _maxInterestRate);
         // Can’t have both individual delegation and batch manager
         if (interestBatchManagerOf[_troveId] != address(0)) {
+            // Not needed, implicitly checked in removeFromBatch
+            //_requireValidAnnualInterestRate(_newAnnualInterestRate);
             removeFromBatch(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint, _maxUpfrontFee);
         }
     }
@@ -846,7 +854,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireValidAnnualInterestRate(_minInterestRate);
         _requireValidAnnualInterestRate(_maxInterestRate);
         // With the check below, it could only be ==
-        if (_minInterestRate >= _maxInterestRate) revert MinGeMax();
+        _requireOrderedRange(_minInterestRate, _maxInterestRate);
         _requireInterestRateInRange(_currentInterestRate, _minInterestRate, _maxInterestRate);
         // Not needed, implicitly checked in the condition above:
         //_requireValidAnnualInterestRate(_currentInterestRate);
@@ -1295,45 +1303,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         return batchManager;
     }
 
-    function _requireInterestRateInDelegateRange(uint256 _troveId, uint256 _annualInterestRate) internal view {
-        InterestIndividualDelegate memory individualDelegate = interestIndividualDelegateOf[_troveId];
-        if (individualDelegate.account != address(0)) {
-            _requireInterestRateInRange(
-                _annualInterestRate, individualDelegate.minInterestRate, individualDelegate.maxInterestRate
-            );
-        }
-    }
-
-    function _requireInterestRateInBatchManagerRange(address _interestBatchManagerAddress, uint256 _annualInterestRate)
-        internal
-        view
-    {
-        InterestBatchManager memory interestBatchManager = interestBatchManagers[_interestBatchManagerAddress];
-        _requireInterestRateInRange(
-            _annualInterestRate, interestBatchManager.minInterestRate, interestBatchManager.maxInterestRate
-        );
-    }
-
-    function _requireInterestRateInRange(
-        uint256 _annualInterestRate,
-        uint256 _minInterestRate,
-        uint256 _maxInterestRate
-    ) internal pure {
-        if (_minInterestRate > _annualInterestRate || _annualInterestRate > _maxInterestRate) {
-            revert InterestNotInRange();
-        }
-    }
-
-    function _requireInterestRateChangePeriodPassed(
-        address _interestBatchManagerAddress,
-        uint256 _lastInterestRateAdjTime
-    ) internal view {
-        InterestBatchManager memory interestBatchManager = interestBatchManagers[_interestBatchManagerAddress];
-        if (block.timestamp < _lastInterestRateAdjTime + uint256(interestBatchManager.minInterestRateChangePeriod)) {
-            revert BatchInterestRateChangePeriodNotPassed();
-        }
-    }
-
     function _requireTroveIsOpen(ITroveManager _troveManager, uint256 _troveId) internal view {
         ITroveManager.Status status = _troveManager.getTroveStatus(_troveId);
         if (status != ITroveManager.Status.active && status != ITroveManager.Status.unredeemable) {
@@ -1467,6 +1436,49 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     {
         if (_oldAnnualInterestRate == _newAnnualInterestRate) {
             revert InterestRateNotNew();
+        }
+    }
+
+    function _requireOrderedRange(uint256 _minInterestRate, uint256 _maxInterestRate) internal pure {
+        if (_minInterestRate >= _maxInterestRate) revert MinGeMax();
+    }
+
+    function _requireInterestRateInDelegateRange(uint256 _troveId, uint256 _annualInterestRate) internal view {
+        InterestIndividualDelegate memory individualDelegate = interestIndividualDelegateOf[_troveId];
+        if (individualDelegate.account != address(0)) {
+            _requireInterestRateInRange(
+                _annualInterestRate, individualDelegate.minInterestRate, individualDelegate.maxInterestRate
+            );
+        }
+    }
+
+    function _requireInterestRateInBatchManagerRange(address _interestBatchManagerAddress, uint256 _annualInterestRate)
+        internal
+        view
+    {
+        InterestBatchManager memory interestBatchManager = interestBatchManagers[_interestBatchManagerAddress];
+        _requireInterestRateInRange(
+            _annualInterestRate, interestBatchManager.minInterestRate, interestBatchManager.maxInterestRate
+        );
+    }
+
+    function _requireInterestRateInRange(
+        uint256 _annualInterestRate,
+        uint256 _minInterestRate,
+        uint256 _maxInterestRate
+    ) internal pure {
+        if (_minInterestRate > _annualInterestRate || _annualInterestRate > _maxInterestRate) {
+            revert InterestNotInRange();
+        }
+    }
+
+    function _requireInterestRateChangePeriodPassed(
+        address _interestBatchManagerAddress,
+        uint256 _lastInterestRateAdjTime
+    ) internal view {
+        InterestBatchManager memory interestBatchManager = interestBatchManagers[_interestBatchManagerAddress];
+        if (block.timestamp < _lastInterestRateAdjTime + uint256(interestBatchManager.minInterestRateChangePeriod)) {
+            revert BatchInterestRateChangePeriodNotPassed();
         }
     }
 
