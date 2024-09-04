@@ -324,7 +324,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
         uint256 _upperHint,
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
-    )`: the Trove owner sets an individual delegate who will have permission to update the interest rate for that Trove in range `[ _minInterestRate,  _minInterestRate]`.  Removes the Trove from a batch if it was in one. 
+    )`: the Trove owner sets an individual delegate who will have permission to update the interest rate for that Trove in range `[ _minInterestRate,  _maxInterestRate]`.  Removes the Trove from a batch if it was in one. 
 
 - `removeInterestIndividualDelegate(uint256 _troveId):` the Trove owner revokes individual delegate’s permission to change the given Trove’s interest rate. 
 
@@ -886,7 +886,7 @@ Remove Managers may withdraw collateral or draw new BOLD debt.
 
 ### Individual interest delegates
 
-A Trove owner may set an individual delegate at any point after opening.The individual delegate has permission to update the Trove’s interest rate in a range set by the owner, i.e. `[ _minInterestRate,  _minInterestRate]`.  
+A Trove owner may set an individual delegate at any point after opening.The individual delegate has permission to update the Trove’s interest rate in a range set by the owner, i.e. `[ _minInterestRate,  _maxInterestRate]`.  
 
 A Trove can not be in a managed batch if it has an individual interest delegate. 
 
