@@ -72,6 +72,7 @@ const argv = minimist(process.argv.slice(2), {
     "rpc-url",
     "verifier",
     "verifier-url",
+    "gas-price",
   ],
 });
 
@@ -136,6 +137,11 @@ export async function main() {
 
   if (options.slow) {
     forgeArgs.push("--slow");
+  }
+
+  if (options.gasPrice) {
+    forgeArgs.push("--with-gas-price");
+    forgeArgs.push(options.gasPrice);
   }
 
   // verify
@@ -322,6 +328,7 @@ async function parseArgs() {
     verify: argv["verify"],
     verifier: argv["verifier"],
     verifierUrl: argv["verifier-url"],
+    gasPrice: argv["gas-price"],
   };
 
   const [networkPreset] = argv._;
