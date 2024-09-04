@@ -13,11 +13,7 @@ interface IFlashLoanProvider {
         LeverDownTrove
     }
 
-    function makeFlashLoan(
-        IERC20 _token,
-        uint256 _amount,
-        IFlashLoanReceiver _caller,
-        Operation _operation,
-        bytes calldata userData
-    ) external;
+    function receiver() external view returns (IFlashLoanReceiver);
+
+    function makeFlashLoan(IERC20 _token, uint256 _amount, Operation _operation, bytes calldata userData) external;
 }
