@@ -45,14 +45,6 @@ e.g. --chain-id can be set via CHAIN_ID instead. Parameters take precedence over
 
 const ANVIL_FIRST_ACCOUNT = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
-const PROTOCOL_CONTRACTS_VALID_NAMES = [
-  "WETHTester",
-  "BoldToken",
-  "CollateralRegistry",
-  "HintHelpers",
-  "MultiTroveGetter",
-];
-
 const argv = minimist(process.argv.slice(2), {
   alias: {
     h: "help",
@@ -261,52 +253,6 @@ Deploying Liquity contracts with the following settings:
   echo("");
   echo("Deployment complete.");
   echo("");
-}
-
-type Transaction = { transactionType: string };
-
-function isDeploymentLog(log: unknown): log is { transactions: Transaction[] } {
-  return (
-    typeof log === "object"
-    && log !== null
-    && "transactions" in log
-    && Array.isArray(log.transactions)
-    && (log.transactions as unknown[])
-      .every((tx) => (
-        typeof tx === "object"
-        && tx !== null
-        && "transactionType" in tx
-        && typeof tx.transactionType === "string"
-      ))
-  );
-}
-
-type ContractCreation = {
-  transactionType: "CREATE" | "CREATE2";
-  contractName: string;
-  contractAddress: string;
-};
-
-function isContractCreation(tx: Transaction): tx is ContractCreation {
-  return (
-    (tx.transactionType === "CREATE" || tx.transactionType === "CREATE2")
-    && "contractName" in tx
-    && typeof tx.contractName === "string"
-    && "contractAddress" in tx
-    && typeof tx.contractAddress === "string"
-  );
-}
-
-async function getDeployedContracts(jsonPath: string) {
-  const latestRun = await fs.readJson(jsonPath);
-
-  if (isDeploymentLog(latestRun)) {
-    return latestRun.transactions
-      .filter(isContractCreation)
-      .map((tx) => [tx.contractName, tx.contractAddress]);
-  }
-
-  throw new Error("Invalid deployment log: " + JSON.stringify(latestRun));
 }
 
 function safeParseInt(value: string) {
