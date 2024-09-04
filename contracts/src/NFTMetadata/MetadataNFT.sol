@@ -15,6 +15,7 @@ interface IMetadataNFT {
         uint256 _tokenId;
         address _owner;
         address _collToken;
+        address _boldToken;
         uint256 _collAmount;
         uint256 _debtAmount;
         uint256 _interestRate;
@@ -35,13 +36,32 @@ contract MetadataNFT is IMetadataNFT {
     }
 
     function uri(TroveData memory _troveData) public view returns (string memory) {
-        return json.formattedMetadata(name, description, renderSVGImage(_troveData));
+        return json.formattedMetadata(name, description, renderSVGImage(_troveData), attributes);
     }
 
     function renderSVGImage(TroveData memory _troveData) internal view returns (string memory) {
         return svg._svg(
             baseSVG._svgProps(),
             string.concat(baseSVG._baseElements(assetReader), bauhaus._bauhaus(), dynamicTextComponents(_troveData))
+        );
+    }
+
+    function attributes(TroveData memory _troveData) public view returns (string memory) {
+        //include: collateral token address, collateral amount, debt token address, debt amount, interest rate, status
+        return string.concat(
+            '[{"trait_type": "Collateral Token", "value": "',
+            _troveData._collToken,
+            '"}, {"trait_type": "Collateral Amount", "value": "',
+            _troveData._collAmount,
+            '"}, {"trait_type": "Debt Token", "value": "',
+            _troveData._boldToken,
+            '"}, {"trait_type": "Debt Amount", "value": "',
+            _troveData._debtAmount,
+            '"}, {"trait_type": "Interest Rate", "value": "',
+            _troveData._interestRate,
+            '"}, {"trait_type": "Status", "value": "',
+            _status2Str(_troveData._status),
+            '"} ]'
         );
     }
 

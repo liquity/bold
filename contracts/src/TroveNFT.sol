@@ -38,6 +38,7 @@ contract TroveNFT is ERC721, ITroveNFT {
             _tokenId: _tokenId,
             _owner: ownerOf(_tokenId),
             _collToken: address(collToken),
+            _boldToken: address(boldToken),
             _collAmount: coll,
             _debtAmount: debt,
             _interestRate: annualInterestRate,
