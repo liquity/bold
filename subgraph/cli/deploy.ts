@@ -105,7 +105,7 @@ export async function main() {
     options.version,
   ];
 
-  await updateCollateralRegistryAddress();
+  await updateDeclarationWithLatestBoldToken();
 
   echo`
 Deploying subgraph:
@@ -146,18 +146,17 @@ async function parseArgs() {
   return { options, networkPreset };
 }
 
-async function updateCollateralRegistryAddress() {
+async function updateDeclarationWithLatestBoldToken() {
   const declaration = subgraphDeclaration();
   const latestDeploymentContext = getLatestDeploymentContext();
 
-  const latestCollateralRegistry = latestDeploymentContext?.deployedContracts.CollateralRegistry;
-  if (!latestCollateralRegistry || (declaration.collateralRegistry === latestCollateralRegistry)) {
+  const deployedAddress = latestDeploymentContext?.deployedContracts.BoldToken;
+  if (!deployedAddress || (declaration.boldTokenAddress === deployedAddress)) {
     return;
   }
 
-  console.log("");
   const answer = await question(
-    `New CollateralRegistry detected (${latestCollateralRegistry}). Update subgraph.yaml? [Y/n] `,
+    `\nNew BoldToken detected (${deployedAddress}). Update subgraph.yaml? [Y/n] `,
   );
 
   const confirmed = answer === "" || answer.toLowerCase() === "y" || answer.toLowerCase() === "yes";
@@ -166,21 +165,21 @@ async function updateCollateralRegistryAddress() {
     return;
   }
 
-  declaration.updateCollateralRegistry(latestCollateralRegistry);
+  declaration.updateBoldTokenAddress(deployedAddress);
   console.log("");
-  console.log("Subgraph declaration updated with CollateralRegistry:", latestCollateralRegistry);
+  console.log("Subgraph declaration updated with CollateralRegistry:", deployedAddress);
 }
 
 function subgraphDeclaration() {
   const declaration = YAML.parse(fs.readFileSync(SUBGRAPH_PATH, "utf8"));
-  const collateralRegistry = declaration.dataSources.find((ds: any) => ds.name === "CollateralRegistry");
+  const boldToken = declaration.dataSources.find((ds: any) => ds.name === "BoldToken");
   return {
-    collateralRegistry: collateralRegistry.source.address,
-    updateCollateralRegistry: (address: string) => {
+    boldTokenAddress: boldToken.source.address,
+    updateBoldTokenAddress: (address: string) => {
       const updatedDeclaration = {
         ...declaration,
         dataSources: declaration.dataSources.map((ds: any) => (
-          ds.name === "CollateralRegistry"
+          ds.name === "BoldToken"
             ? { ...ds, source: { ...ds.source, address } }
             : ds
         )),

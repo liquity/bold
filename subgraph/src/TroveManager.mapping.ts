@@ -1,5 +1,6 @@
 import { Address, BigInt, dataSource, log } from "@graphprotocol/graph-ts";
 import { InterestRateBracket, Trove } from "../generated/schema";
+import { TroveNFT } from "../generated/templates/TroveManager/TroveNFT";
 import {
   TroveOperation as TroveOperationEvent,
   TroveUpdated as TroveUpdatedEvent,
@@ -19,8 +20,8 @@ let _1e15 = BigInt.fromI32(10).pow(15);
 let _1e16 = BigInt.fromI32(10).pow(16);
 
 export function handleTroveOperation(event: TroveOperationEvent): void {
-  let id = event.params._troveId.toHex();
-  let trove = Trove.load(id);
+  let id = event.params._troveId;
+  let trove = Trove.load(id.toHex());
 
   if (!trove) {
     return;
@@ -57,8 +58,9 @@ function loadOrCreateInterestRateBracket(rateFloored: BigInt): InterestRateBrack
 }
 
 export function handleTroveUpdated(event: TroveUpdatedEvent): void {
-  let id = event.params._troveId.toHex();
-  let trove = Trove.load(id);
+  let id = event.params._troveId;
+  let trove = Trove.load(id.toHex());
+  let context = dataSource.context();
 
   // previous & new rates, floored to the nearest 0.1% (rate brackets)
   let prevRateFloored = trove ? trove.interestRate.div(_1e15).times(_1e16) : null;
@@ -66,8 +68,8 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
 
   // create trove if it doesn't exist
   if (!trove) {
-    trove = new Trove(id);
-    trove.borrower = event.transaction.from;
+    trove = new Trove(id.toHex());
+    trove.borrower = TroveNFT.bind(Address.fromBytes(context.getBytes("address:troveNft"))).ownerOf(id);
     trove.createdAt = event.block.timestamp;
   }
 
@@ -92,7 +94,7 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
   trove.deposit = event.params._coll;
   trove.debt = event.params._debt;
   trove.interestRate = event.params._annualInterestRate;
-  trove.collateral = dataSource.context().getBytes("tokenAddress").toHexString();
+  trove.collateral = context.getBytes("address:token").toHexString();
   trove.stake = event.params._stake;
 
   trove.save();

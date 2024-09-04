@@ -16,15 +16,13 @@ type Token @entity (immutable: true) {
 
 type CollateralAddresses @entity (immutable: true) {
   id: ID!
-  collateral: Collateral!
-  activePool: Bytes!
   borrowerOperations: Bytes!
-  defaultPool: Bytes!
-  priceFeed: Bytes!
+  collateral: Collateral!
   sortedTroves: Bytes!
   stabilityPool: Bytes!
   token: Bytes!
   troveManager: Bytes!
+  troveNft: Bytes!
 }
 
 type Trove @entity {
