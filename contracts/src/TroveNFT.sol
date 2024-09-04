@@ -16,6 +16,7 @@ import {ITroveManager} from "./Interfaces/ITroveManager.sol";
 contract TroveNFT is ERC721, ITroveNFT {
     ITroveManager public immutable troveManager;
     IERC20Metadata internal immutable collToken;
+    IBoldToken internal immutable boldToken;
 
     IMetadataNFT public immutable metadataNFT;
 
@@ -28,6 +29,7 @@ contract TroveNFT is ERC721, ITroveNFT {
         troveManager = _addressesRegistry.troveManager();
         collToken = _addressesRegistry.collToken();
         metadataNFT = _addressesRegistry.metadataNFT();
+        boldToken = _addressesRegistry.boldToken();
     }
 
     function tokenURI(uint256 _tokenId) public view override(ERC721, IERC721Metadata) returns (string memory) {

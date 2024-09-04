@@ -8,6 +8,8 @@ import "./utils/baseSVG.sol";
 import "./utils/bauhaus.sol";
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+
 import {ITroveManager} from "src/Interfaces/ITroveManager.sol";
 
 interface IMetadataNFT {
@@ -36,7 +38,8 @@ contract MetadataNFT is IMetadataNFT {
     }
 
     function uri(TroveData memory _troveData) public view returns (string memory) {
-        return json.formattedMetadata(name, description, renderSVGImage(_troveData), attributes);
+        string memory attr = attributes(_troveData);
+        return json.formattedMetadata(name, description, renderSVGImage(_troveData), attr);
     }
 
     function renderSVGImage(TroveData memory _troveData) internal view returns (string memory) {
@@ -50,19 +53,21 @@ contract MetadataNFT is IMetadataNFT {
         //include: collateral token address, collateral amount, debt token address, debt amount, interest rate, status
         return string.concat(
             '[{"trait_type": "Collateral Token", "value": "',
-            _troveData._collToken,
+            Strings.toString(_troveData._collToken),
             '"}, {"trait_type": "Collateral Amount", "value": "',
-            _troveData._collAmount,
+            Strings.toString(_troveData._collAmount),
             '"}, {"trait_type": "Debt Token", "value": "',
-            _troveData._boldToken,
+            Strings.toString(_troveData._boldToken),
             '"}, {"trait_type": "Debt Amount", "value": "',
-            _troveData._debtAmount,
+            Strings.toString(_troveData._debtAmount),
             '"}, {"trait_type": "Interest Rate", "value": "',
-            _troveData._interestRate,
+            Strings.toString(_troveData._interestRate),
             '"}, {"trait_type": "Status", "value": "',
             _status2Str(_troveData._status),
             '"} ]'
         );
+
+        
     }
 
     function dynamicTextComponents(TroveData memory _troveData) public view returns (string memory) {
