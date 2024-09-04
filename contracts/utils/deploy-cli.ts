@@ -22,11 +22,12 @@ Options:
                                            Requires a Ledger if an address is used.
   --ledger-path <LEDGER_PATH>              HD path to use with the Ledger (only used
                                            when DEPLOYER is an address).
-  --etherscan-api-key <ETHERSCAN_API_KEY>  Etherscan API key to verify the contracts
-                                           (required when verifying with Etherscan).
-  --help, -h                               Show this help message.
   --dry-run                                Don't broadcast transaction, only
                                            simulate execution.
+  --etherscan-api-key <ETHERSCAN_API_KEY>  Etherscan API key to verify the contracts
+                                           (required when verifying with Etherscan).
+  --gas-price <GAS_PRICE>                  Max fee per gas to use in transactions.
+  --help, -h                               Show this help message.
   --open-demo-troves                       Open demo troves after deployment (local
                                            only).
   --rpc-url <RPC_URL>                      RPC URL to use.
