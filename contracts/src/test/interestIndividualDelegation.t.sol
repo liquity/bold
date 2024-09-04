@@ -209,9 +209,9 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         vm.stopPrank();
 
         // Try to switch to individual delegate (C) along with new interest
-        uint256 newAnnualInterestRate = 1e15;
+        uint256 newAnnualInterestRate = 1e14;
         vm.startPrank(A);
-        vm.expectRevert(BorrowerOperations.InterestNotInRange.selector);
+        vm.expectRevert(BorrowerOperations.InterestRateTooLow.selector);
         borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, newAnnualInterestRate, 0, 0, 10000e18);
         vm.stopPrank();
     }
@@ -229,9 +229,9 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         vm.stopPrank();
 
         // Try to switch to individual delegate (C) along with new interest
-        uint256 newAnnualInterestRate = 21e16;
+        uint256 newAnnualInterestRate = 101e16;
         vm.startPrank(A);
-        vm.expectRevert(BorrowerOperations.InterestNotInRange.selector);
+        vm.expectRevert(BorrowerOperations.InterestRateTooHigh.selector);
         borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, newAnnualInterestRate, 0, 0, 10000e18);
         vm.stopPrank();
     }

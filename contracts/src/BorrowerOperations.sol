@@ -824,8 +824,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             InterestIndividualDelegate(_delegate, _minInterestRate, _maxInterestRate);
         // Can’t have both individual delegation and batch manager
         if (interestBatchManagerOf[_troveId] != address(0)) {
-            _requireInterestRateInRange(_newAnnualInterestRate, _minInterestRate, _maxInterestRate);
-            // Not needed, implicitly checked in the condition above and in removeFromBatch
+            // Not needed, implicitly checked in removeFromBatch
             //_requireValidAnnualInterestRate(_newAnnualInterestRate);
             removeFromBatch(_troveId, _newAnnualInterestRate, _upperHint, _lowerHint, _maxUpfrontFee);
         }
