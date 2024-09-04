@@ -377,7 +377,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
 
 ### StabilityPool
 
-- `provideToSP(uint256 _amount, bool _doClaim)`: deposit _amount of BOLD to the Stability Pool. It transfers _amount of LUSD from the caller’s address to the Pool, and tops up their BOLD deposit by _amount. `doClaim` determines how the depositor’s existing collateral and BOLD yield gains (if any exist) are treated: if true they’re transferred to the depositor’s address, otherwise the collateral is stashed (added to a balance tracker) and the BOLD gain is added to their deposit.
+- `provideToSP(uint256 _amount, bool _doClaim)`: deposit _amount of BOLD to the Stability Pool. It transfers _amount of BOLD from the caller’s address to the Pool, and tops up their BOLD deposit by _amount. `doClaim` determines how the depositor’s existing collateral and BOLD yield gains (if any exist) are treated: if true they’re transferred to the depositor’s address, otherwise the collateral is stashed (added to a balance tracker) and the BOLD gain is added to their deposit.
 
 - `withdrawFromSP(uint256 _amount, bool doClaim)`: withdraws _amount of BOLD from the Stability Pool, up to the value of their remaining deposit. It increases their BOLD balance by _amount. If the user makes a partial withdrawal, their remaining deposit will earn further liquidation and yield gains.  `doClaim` determines how the depositor’s existing collateral and BOLD yield gains (if any exist) are treated: if true they’re transferred to the depositor’s address, otherwise the collateral is stashed (added to a balance tracker) and the BOLD gain is added to their deposit.
 
@@ -1172,7 +1172,7 @@ https://docs.google.com/spreadsheets/d/1MPVI6edLLbGnqsEo-abijaaLnXle-cJA_vE4CN16
 No fix is deemed necessary, since:
 
 - Redemption arbitrage is competitive and profit margins are thin. Chunking redemptions incurs a higher total gas cost and eats into arb profits.
-- Redemptions in Liquity v1 (with the same fee formula) have broadly functioned well, and proven effective in restoring the LUSD peg.
+- Redemptions in Liquity v1 (with the same fee formula) have broadly functioned well, and proven effective in restoring the BOLD peg.
 - The redemption fee spike gain and decay half-life are “best-guess” parameters anyway - there’s little reason to believe that even the intended fee scheme is absolutely optimal.
 
 ### 4 - Oracle failure and urgent redemptions with the frozen last good price
