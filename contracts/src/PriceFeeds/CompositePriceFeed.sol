@@ -50,8 +50,8 @@ contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {
 
         // If one of Chainlink's responses was invalid in this transaction, disable this PriceFeed and
         // return the last good LST-USD price calculated
-        if (ethUsdOracleDown) {return (_disableFeedAndShutDown(address(ethUsdOracle.aggregator)), true);}
-        if (lstEthOracleDown) {return (_disableFeedAndShutDown(address(lstEthOracle.aggregator)), true);}
+        if (ethUsdOracleDown) return (_disableFeedAndShutDown(address(ethUsdOracle.aggregator)), true);
+        if (lstEthOracleDown) return (_disableFeedAndShutDown(address(lstEthOracle.aggregator)), true);
 
         // Calculate the market LST-USD price: USD_per_LST = USD_per_ETH * ETH_per_LST
         uint256 lstUsdMarketPrice = ethUsdPrice * lstEthPrice / 1e18;

@@ -95,7 +95,7 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         // Price drops
         priceFeed.setPrice(1200e18 - 1);
-        (uint256 price, ) = priceFeed.fetchPrice();
+        (uint256 price,) = priceFeed.fetchPrice();
 
         InitialValues memory initialValues;
         initialValues.BDebt = troveManager.getTroveEntireDebt(BTroveId);

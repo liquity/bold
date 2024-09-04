@@ -142,7 +142,7 @@ contract BasicOps is DevTestSetup {
 
         // Price drops
         priceFeed.setPrice(1200e18);
-        (uint256 price, ) = priceFeed.fetchPrice();
+        (uint256 price,) = priceFeed.fetchPrice();
 
         // Check CR_A < MCR and TCR > CCR
         assertLt(troveManager.getCurrentICR(A_Id, price), MCR);

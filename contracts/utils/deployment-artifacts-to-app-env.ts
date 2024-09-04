@@ -33,7 +33,6 @@ const argv = minimist(process.argv.slice(2), {
 
 const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 const ZDeploymentContext = z.object({
-  deployedContracts: z.array(z.tuple([z.string(), ZAddress])),
   collateralContracts: z.array(
     z.object({
       activePool: ZAddress,

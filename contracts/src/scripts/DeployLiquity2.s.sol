@@ -4,6 +4,8 @@ pragma solidity 0.8.18;
 import {Script} from "forge-std/Script.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {IERC20Metadata} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {StringFormatting} from "../test/Utils/StringFormatting.sol";
 import {Accounts} from "../test/TestContracts/Accounts.sol";
 import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
 import {ETH_GAS_COMPENSATION} from "../Dependencies/Constants.sol";
@@ -31,8 +33,10 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "forge-std/console.sol";
 
 contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
-    bytes32 SALT;
+    using Strings for *;
+    using StringFormatting for *;
 
+    bytes32 SALT;
     address deployer;
 
     struct LiquityContractsTestnet {
@@ -45,6 +49,7 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         IStabilityPool stabilityPool;
         ITroveManager troveManager;
         ITroveNFT troveNFT;
+        MetadataNFT metadataNFT;
         IPriceFeedTestnet priceFeed; // Tester
         GasPool gasPool;
         IInterestRouter interestRouter;
@@ -94,6 +99,63 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         uint256 annualInterestRate;
     }
 
+    struct DeploymentResult {
+        LiquityContractsTestnet[] contractsArray;
+        ICollateralRegistry collateralRegistry;
+        IBoldToken boldToken;
+        HintHelpers hintHelpers;
+        MultiTroveGetter multiTroveGetter;
+    }
+
+    function _getBranchContractsJson(LiquityContractsTestnet memory c) internal pure returns (string memory) {
+        return string.concat(
+            "{",
+            string.concat(
+                // Avoid stack too deep by chunking concats
+                string.concat(
+                    string.concat('"addressesRegistry":"', address(c.addressesRegistry).toHexString(), '",'),
+                    string.concat('"activePool":"', address(c.activePool).toHexString(), '",'),
+                    string.concat('"borrowerOperations":"', address(c.borrowerOperations).toHexString(), '",'),
+                    string.concat('"collSurplusPool":"', address(c.collSurplusPool).toHexString(), '",'),
+                    string.concat('"defaultPool":"', address(c.defaultPool).toHexString(), '",'),
+                    string.concat('"sortedTroves":"', address(c.sortedTroves).toHexString(), '",'),
+                    string.concat('"stabilityPool":"', address(c.stabilityPool).toHexString(), '",'),
+                    string.concat('"troveManager":"', address(c.troveManager).toHexString(), '",')
+                ),
+                string.concat(
+                    string.concat('"troveNFT":"', address(c.troveNFT).toHexString(), '",'),
+                    string.concat('"metadataNFT":"', address(c.metadataNFT).toHexString(), '",'),
+                    string.concat('"priceFeed":"', address(c.priceFeed).toHexString(), '",'),
+                    string.concat('"gasPool":"', address(c.gasPool).toHexString(), '",'),
+                    string.concat('"interestRouter":"', address(c.interestRouter).toHexString(), '",'),
+                    string.concat('"collToken":"', address(c.collToken).toHexString(), '"') // no comma
+                )
+            ),
+            "}"
+        );
+    }
+
+    function _getManifestJson(DeploymentResult memory deployed) internal pure returns (string memory) {
+        string[] memory branches = new string[](deployed.contractsArray.length);
+
+        // Poor man's .map()
+        for (uint256 i = 0; i < branches.length; ++i) {
+            branches[i] = _getBranchContractsJson(deployed.contractsArray[i]);
+        }
+
+        return string.concat(
+            "{",
+            string.concat(
+                string.concat('"collateralRegistry":"', address(deployed.collateralRegistry).toHexString(), '",'),
+                string.concat('"boldToken":"', address(deployed.boldToken).toHexString(), '",'),
+                string.concat('"hintHelpers":"', address(deployed.hintHelpers).toHexString(), '",'),
+                string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",'),
+                string.concat('"branches":[', branches.join(","), "]") // no comma
+            ),
+            "}"
+        );
+    }
+
     function run() external {
         SALT = keccak256(abi.encodePacked(block.timestamp));
 
@@ -114,13 +176,11 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // stETH
 
         // used for gas compensation and as collateral of the first branch
-        IWETH WETH = new WETHTester(
-            100 ether, //     _tapAmount
-            1 days //         _tapPeriod
-        );
-        (LiquityContractsTestnet[] memory contractsArray,,,,) =
-            _deployAndConnectContracts(troveManagerParamsArray, WETH);
+        IWETH WETH = new WETHTester({_tapAmount: 100 ether, _tapPeriod: 1 days});
+        DeploymentResult memory deployed = _deployAndConnectContracts(troveManagerParamsArray, WETH);
         vm.stopBroadcast();
+
+        vm.writeFile("deployment-manifest.json", _getManifestJson(deployed));
 
         if (vm.envOr("OPEN_DEMO_TROVES", false)) {
             // Anvil default accounts
@@ -157,11 +217,11 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             demoTroves[14] = DemoTroveParams(1, demoAccounts[6], 1, 71e18, 11000e18, 3.3e16);
             demoTroves[15] = DemoTroveParams(1, demoAccounts[7], 1, 84e18, 12800e18, 4.4e16);
 
-            for (uint256 i = 0; i < contractsArray.length; i++) {
-                tapFaucet(demoAccounts, contractsArray[i]);
+            for (uint256 i = 0; i < deployed.contractsArray.length; i++) {
+                tapFaucet(demoAccounts, deployed.contractsArray[i]);
             }
 
-            openDemoTroves(demoTroves, contractsArray);
+            openDemoTroves(demoTroves, deployed.contractsArray);
         }
     }
 
@@ -227,23 +287,17 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
 
     function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerParamsArray, IWETH _WETH)
         internal
-        returns (
-            LiquityContractsTestnet[] memory contractsArray,
-            ICollateralRegistry collateralRegistry,
-            IBoldToken boldToken,
-            HintHelpers hintHelpers,
-            MultiTroveGetter multiTroveGetter
-        )
+        returns (DeploymentResult memory r)
     {
         DeploymentVarsTestnet memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
         // Deploy Bold
         vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(deployer));
         vars.boldTokenAddress = vm.computeCreate2Address(SALT, keccak256(vars.bytecode));
-        boldToken = new BoldToken{salt: SALT}(deployer);
-        assert(address(boldToken) == vars.boldTokenAddress);
+        r.boldToken = new BoldToken{salt: SALT}(deployer);
+        assert(address(r.boldToken) == vars.boldTokenAddress);
 
-        contractsArray = new LiquityContractsTestnet[](vars.numCollaterals);
+        r.contractsArray = new LiquityContractsTestnet[](vars.numCollaterals);
         vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
@@ -269,26 +323,26 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers);
-        hintHelpers = new HintHelpers(collateralRegistry);
-        multiTroveGetter = new MultiTroveGetter(collateralRegistry);
+        r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers);
+        r.hintHelpers = new HintHelpers(r.collateralRegistry);
+        r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
 
         // Deploy per-branch contracts for each branch
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
             vars.contracts = _deployAndConnectCollateralContractsTestnet(
                 vars.collaterals[vars.i],
-                boldToken,
-                collateralRegistry,
+                r.boldToken,
+                r.collateralRegistry,
                 _WETH,
                 vars.addressesRegistries[vars.i],
                 address(vars.troveManagers[vars.i]),
-                hintHelpers,
-                multiTroveGetter
+                r.hintHelpers,
+                r.multiTroveGetter
             );
-            contractsArray[vars.i] = vars.contracts;
+            r.contractsArray[vars.i] = vars.contracts;
         }
 
-        boldToken.setCollateralRegistry(address(collateralRegistry));
+        r.boldToken.setCollateralRegistry(address(r.collateralRegistry));
     }
 
     function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams)
@@ -327,11 +381,11 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         contracts.addressesRegistry = _addressesRegistry;
 
         // Deploy Metadata
-        MetadataNFT metadataNFT = deployMetadata(SALT);
+        contracts.metadataNFT = deployMetadata(SALT);
         addresses.metadataNFT = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(MetadataNFT).creationCode, address(initializedFixedAssetReader)))
         );
-        assert(address(metadataNFT) == addresses.metadataNFT);
+        assert(address(contracts.metadataNFT) == addresses.metadataNFT);
 
         contracts.priceFeed = new PriceFeedTestnet();
         contracts.interestRouter = new MockInterestRouter();

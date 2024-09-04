@@ -736,14 +736,14 @@ contract SPTest is DevTestSetup {
         vm.stopPrank();
     }
 
-     function testClaimAllCollGainsRevertsWhenUserHasNoCollGains() public {
+    function testClaimAllCollGainsRevertsWhenUserHasNoCollGains() public {
         // A has stashed & current gains, B has only current
         _setupStashedAndCurrentCollGains();
 
         // B
         uint256 compoundedDeposit_B = stabilityPool.getCompoundedBoldDeposit(B);
         assertGt(compoundedDeposit_B, 0);
-       
+
         // B withdraws deposit and tries to withdraw stashed coll gains
         vm.startPrank(B);
         stabilityPool.withdrawFromSP(compoundedDeposit_B, true);

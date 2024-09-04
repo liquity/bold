@@ -22,12 +22,17 @@ Options:
                                            Requires a Ledger if an address is used.
   --ledger-path <LEDGER_PATH>              HD path to use with the Ledger (only used
                                            when DEPLOYER is an address).
+  --dry-run                                Don't broadcast transaction, only
+                                           simulate execution.
   --etherscan-api-key <ETHERSCAN_API_KEY>  Etherscan API key to verify the contracts
                                            (required when verifying with Etherscan).
+  --gas-price <GAS_PRICE>                  Max fee per gas to use in transactions.
   --help, -h                               Show this help message.
   --open-demo-troves                       Open demo troves after deployment (local
                                            only).
   --rpc-url <RPC_URL>                      RPC URL to use.
+  --slow                                   Only send a transaction after the previous
+                                           one has been confirmed.
   --verify                                 Verify contracts after deployment.
   --verifier <VERIFIER>                    Verification provider to use.
                                            Possible values: etherscan, sourcify.
@@ -40,14 +45,6 @@ e.g. --chain-id can be set via CHAIN_ID instead. Parameters take precedence over
 
 const ANVIL_FIRST_ACCOUNT = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
-const PROTOCOL_CONTRACTS_VALID_NAMES = [
-  "WETHTester",
-  "BoldToken",
-  "CollateralRegistry",
-  "HintHelpers",
-  "MultiTroveGetter",
-];
-
 const argv = minimist(process.argv.slice(2), {
   alias: {
     h: "help",
@@ -57,6 +54,8 @@ const argv = minimist(process.argv.slice(2), {
     "help",
     "open-demo-troves",
     "verify",
+    "dry-run",
+    "slow",
   ],
   string: [
     "chain-id",
@@ -66,6 +65,7 @@ const argv = minimist(process.argv.slice(2), {
     "rpc-url",
     "verifier",
     "verifier-url",
+    "gas-price",
   ],
 });
 
@@ -122,8 +122,20 @@ export async function main() {
     String(options.chainId),
     "--rpc-url",
     options.rpcUrl,
-    "--broadcast",
   ];
+
+  if (!options.dryRun) {
+    forgeArgs.push("--broadcast");
+  }
+
+  if (options.slow) {
+    forgeArgs.push("--slow");
+  }
+
+  if (options.gasPrice) {
+    forgeArgs.push("--with-gas-price");
+    forgeArgs.push(options.gasPrice);
+  }
 
   // verify
   if (options.verify) {
@@ -189,31 +201,41 @@ Deploying Liquity contracts with the following settings:
   // deploy
   await $`forge ${forgeArgs}`;
 
-  const deployedContracts = await getDeployedContracts(
-    `broadcast/DeployLiquity2.s.sol/${options.chainId}/run-latest.json`,
-  );
-
-  const collateralContracts = await getAllCollateralsContracts(deployedContracts, options);
+  const deploymentManifestJson = fs.readFileSync("deployment-manifest.json", "utf-8");
+  const deploymentManifest = JSON.parse(deploymentManifestJson);
 
   // XXX hotfix: we were leaking Github secrets in "deployer"
   // TODO: check if "deployer" is a private key, and calculate its address and use it instead?
   const { deployer, ...safeOptions } = options;
 
-  const protocolContracts = Object.fromEntries(
-    filterProtocolContracts(deployedContracts),
-  );
+  const protocolContracts = {
+    WETHTester: deploymentManifest.branches[0].collToken as string,
+    BoldToken: deploymentManifest.boldToken as string,
+    CollateralRegistry: deploymentManifest.collateralRegistry as string,
+    HintHelpers: deploymentManifest.hintHelpers as string,
+    MultiTroveGetter: deploymentManifest.multiTroveGetter as string,
+  };
+
+  const collateralContracts = (deploymentManifest.branches as any[]).map((branch) => ({
+    activePool: branch.activePool as string,
+    borrowerOperations: branch.borrowerOperations as string,
+    sortedTroves: branch.sortedTroves as string,
+    stabilityPool: branch.stabilityPool as string,
+    token: branch.collToken as string,
+    troveManager: branch.troveManager as string,
+  }));
 
   // write env file
   await fs.writeJson("deployment-context-latest.json", {
     options: safeOptions,
-    deployedContracts,
     collateralContracts,
     protocolContracts,
   });
 
   // format deployed contracts
   const longestContractName = Math.max(
-    ...deployedContracts.map(([name]) => name.length),
+    ...Object.keys(protocolContracts).map((name) => name.length),
+    ...collateralContracts.flatMap((contracts) => Object.keys(contracts).map((name) => name.length)),
   );
 
   const formatContracts = (contracts: Array<string[]>) =>
@@ -221,7 +243,7 @@ Deploying Liquity contracts with the following settings:
 
   echo("Protocol contracts:");
   echo("");
-  echo(formatContracts(filterProtocolContracts(deployedContracts)));
+  echo(formatContracts(Object.entries(protocolContracts)));
   echo("");
   echo(
     collateralContracts.map((collateral, index) => (
@@ -231,56 +253,6 @@ Deploying Liquity contracts with the following settings:
   echo("");
   echo("Deployment complete.");
   echo("");
-}
-
-type Transaction = { transactionType: string };
-
-function isDeploymentLog(log: unknown): log is { transactions: Transaction[] } {
-  return (
-    typeof log === "object"
-    && log !== null
-    && "transactions" in log
-    && Array.isArray(log.transactions)
-    && (log.transactions as unknown[])
-      .every((tx) => (
-        typeof tx === "object"
-        && tx !== null
-        && "transactionType" in tx
-        && typeof tx.transactionType === "string"
-      ))
-  );
-}
-
-type ContractCreation = {
-  transactionType: "CREATE" | "CREATE2";
-  contractName: string;
-  contractAddress: string;
-};
-
-function isContractCreation(tx: Transaction): tx is ContractCreation {
-  return (
-    (tx.transactionType === "CREATE" || tx.transactionType === "CREATE2")
-    && "contractName" in tx
-    && typeof tx.contractName === "string"
-    && "contractAddress" in tx
-    && typeof tx.contractAddress === "string"
-  );
-}
-
-async function getDeployedContracts(jsonPath: string) {
-  const latestRun = await fs.readJson(jsonPath);
-
-  if (isDeploymentLog(latestRun)) {
-    return latestRun.transactions
-      .filter(isContractCreation)
-      .map((tx) => [tx.contractName, tx.contractAddress]);
-  }
-
-  throw new Error("Invalid deployment log: " + JSON.stringify(latestRun));
-}
-
-function filterProtocolContracts(contracts: Awaited<ReturnType<typeof getDeployedContracts>>) {
-  return contracts.filter(([name]) => PROTOCOL_CONTRACTS_VALID_NAMES.includes(name));
 }
 
 function safeParseInt(value: string) {
@@ -298,9 +270,12 @@ async function parseArgs() {
     ledgerPath: argv["ledger-path"],
     openDemoTroves: argv["open-demo-troves"],
     rpcUrl: argv["rpc-url"],
+    dryRun: argv["dry-run"],
+    slow: argv["slow"],
     verify: argv["verify"],
     verifier: argv["verifier"],
     verifierUrl: argv["verifier-url"],
+    gasPrice: argv["gas-price"],
   };
 
   const [networkPreset] = argv._;
@@ -323,80 +298,4 @@ async function parseArgs() {
   options.verifierUrl ??= process.env.VERIFIER_URL;
 
   return { options, networkPreset };
-}
-
-async function castCall(
-  rpcUrl: string,
-  contract: string,
-  method: string,
-  ...args: string[]
-) {
-  try {
-    const result = await $`cast call ${contract} ${method} ${args.join(" ")} --rpc-url '${rpcUrl}'`;
-    return result.stdout.trim();
-  } catch (error) {
-    console.error(`Error calling ${contract} ${method} ${args.join(" ")}: ${error}`);
-    throw error;
-  }
-}
-
-async function getCollateralContracts(
-  collateralIndex: number,
-  collateralRegistry: string,
-  rpcUrl: string,
-) {
-  const [token, troveManager] = await Promise.all([
-    castCall(rpcUrl, collateralRegistry, "getToken(uint256)(address)", String(collateralIndex)),
-    castCall(rpcUrl, collateralRegistry, "getTroveManager(uint256)(address)", String(collateralIndex)),
-  ]);
-
-  const [
-    activePool,
-    borrowerOperations,
-    sortedTroves,
-    stabilityPool,
-  ] = await Promise.all([
-    castCall(rpcUrl, troveManager, "activePool()(address)"),
-    castCall(rpcUrl, troveManager, "borrowerOperations()(address)"),
-    castCall(rpcUrl, troveManager, "sortedTroves()(address)"),
-    castCall(rpcUrl, troveManager, "stabilityPool()(address)"),
-  ]);
-
-  return {
-    activePool,
-    borrowerOperations,
-    sortedTroves,
-    stabilityPool,
-    token,
-    troveManager,
-  };
-}
-
-async function getAllCollateralsContracts(
-  deployedContracts: Array<string[]>,
-  options: Awaited<ReturnType<typeof parseArgs>>["options"],
-) {
-  const deployedContractsRecord = Object.fromEntries(deployedContracts);
-
-  const ccall = async (contract: string, method: string, ...args: string[]) => {
-    const result = await $`cast call ${contract} ${method} ${args.join(" ")} --rpc-url '${options.rpcUrl}'`;
-    return result.stdout.trim();
-  };
-
-  const totalCollaterals = Number(
-    await ccall(
-      deployedContractsRecord.CollateralRegistry,
-      "totalCollaterals()",
-    ),
-  );
-
-  return Promise.all(
-    Array.from({ length: totalCollaterals }, (_, index) => (
-      getCollateralContracts(
-        index,
-        deployedContractsRecord.CollateralRegistry,
-        options.rpcUrl,
-      )
-    )),
-  );
 }
