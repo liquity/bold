@@ -1350,7 +1350,7 @@ And some additional solutions that may help reduce the chance of bad debt occurr
 
 **Chosen solution**
 
-Solution 7 is chosen. Governance can vote to burn the interest under its control by sending the minted BOLD to a burn address. Although this does not directly clear the bad debt, economically, it should have the same impact  - since ultimately, it is the redeemability of _circulating_ BOLD that determines the peg.  When an amount equal to the bad debt has been burned, then all circulating BOLD is fully redeemable. 
+Solution 5 is chosen. Governance can vote to burn the interest under its control by sending the minted BOLD to a burn address. Although this does not directly clear the bad debt, economically, it should have the same impact  - since ultimately, it is the redeemability of _circulating_ BOLD that determines the peg.  When an amount equal to the bad debt has been burned, then all circulating BOLD is fully redeemable. 
 
 See this example:
 
