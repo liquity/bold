@@ -13,6 +13,8 @@ import "../Interfaces/IWSTETHPriceFeed.sol";
 import "../Interfaces/IRETHToken.sol";
 import "../Interfaces/IWSTETH.sol";
 
+import "../MainnetPriceFeedBase.sol";
+
 import "forge-std/Test.sol";
 import "forge-std/console2.sol";
 
@@ -628,6 +630,29 @@ contract OraclesMainnet is TestAccounts {
         assertEq(contractsArray[1].troveManager.shutdownTime(), block.timestamp);
     }
 
+    function testFetchPriceReturnsETHUSDxCanonicalWhenRETHETHOracleFails() public {
+        // Make the RETH-ETH oracle stale
+        vm.etch(address(rethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = rethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+        
+        // Fetch price 
+        (uint256 price, bool anOracleFailed) = rethPriceFeed.fetchPrice();
+        assertGt(price, 0);
+        
+        // Check that the primary calc oracle did fail
+        assertTrue(anOracleFailed);
+
+        // Calc expected price i.e. ETH-USD x canonical
+        uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
+        uint256 exchangeRate = rETHToken.getExchangeRate();
+        assertGt(ethUsdPrice, 0);
+        assertGt(exchangeRate, 0);
+        uint256 expectedPrice = ethUsdPrice * exchangeRate / 1e18;
+
+        assertEq(price, expectedPrice);
+    }
+
     function testRETHPriceFeedShutsDownWhenBothOraclesFail() public {
         // Fetch price
         (uint256 price, bool anOracleFailed) = rethPriceFeed.fetchPrice();
@@ -761,7 +786,54 @@ contract OraclesMainnet is TestAccounts {
         assertEq(contractsArray[2].troveManager.shutdownTime(), block.timestamp);
     }
 
-     function testWSTETHPriceShutdownWhenBothOraclesFail() public {
+    function testFetchPriceReturnsETHUSDxCanonicalWhenSTETHUSDOracleFails() public {
+        // Make the STETH-USD oracle stale
+        vm.etch(address(stethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+        
+        // Fetch price 
+        (uint256 price, bool anOracleFailed) = wstethPriceFeed.fetchPrice();
+        
+        // Check that the primary calc oracle did fail
+        assertTrue(anOracleFailed);
+
+        // Calc expected price i.e. ETH-USD x canonical
+        uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
+        uint256 exchangeRate = wstETH.stEthPerToken();
+        assertGt(ethUsdPrice, 0);
+        assertGt(exchangeRate, 0);
+        uint256 expectedPrice = ethUsdPrice * exchangeRate / 1e18;
+
+        assertEq(price, expectedPrice);
+    }
+
+    function testWhenUsingETHUSDxCanonicalSwitchesToLastGoodPRiceWhenETHUSDOracleFails() public {
+        // Make the STETH-USD oracle stale
+        vm.etch(address(stethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+        
+        // Check using primary
+        assertEq(MainnetPriceFeedBase.PriceSource.primary);
+
+        // Fetch price 
+        (uint256 price, bool anOracleFailed) = wstethPriceFeed.fetchPrice();
+        
+        // Check that the primary calc oracle did fail
+        assertTrue(anOracleFailed);
+
+        // Calc expected price i.e. ETH-USD x canonical
+        uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
+        uint256 exchangeRate = wstETH.stEthPerToken();
+        assertGt(ethUsdPrice, 0);
+        assertGt(exchangeRate, 0);
+        uint256 expectedPrice = ethUsdPrice * exchangeRate / 1e18;
+
+        assertEq(price, expectedPrice);
+    }
+
+    function testWSTETHPriceShutdownWhenBothOraclesFail() public {
         // Fetch price
         ( , bool anOracleFailed) = wstethPriceFeed.fetchPrice();
         
@@ -823,12 +895,10 @@ contract OraclesMainnet is TestAccounts {
     // TODO:
 
     // RETHPriceFeed: 
-    // - Switches to ETHUSDxCanonical when RETH-ETH failed
     // - When using ETHUSDxCanonical, switches to lastGoodPrice when ETHUSD fails
     // - When using ETHUSDxCanonical, remains shutdown when ETHUSD failed
 
     // WSTETHPriceFeed:
-    // - switches to ETHUSDxCanonical when WSTETH-STETH failed
     // - When using ETHUSDxCanonical, switches to lastGoodPrice when ETHUSD fails
     // - When using ETHUSDxCanonical, remains shutdown when ETHUSD failed
 
