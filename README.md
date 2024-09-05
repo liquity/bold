@@ -313,7 +313,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
 
 -  `setRemoveManager(uint256 _troveId, address _manager)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove.
 
-- `setRemoveManager(uint256 _troveId, address _manager, address _receiver)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove to the provided `_receiver` address.
+- `setRemoveManagerWithReceiver(uint256 _troveId, address _manager, address _receiver)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove to the provided `_receiver` address.
 
 - `setInterestIndividualDelegate(
         uint256 _troveId,
@@ -362,8 +362,6 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     )`: revokes the batch manager’s permission to manage the caller’s Trove. Sets a new owner-chosen annual interest rate, and removes it from the batch. Since this action very likely changes the Trove’s interest rate, it’s subject to a premature adjustment fee as per regular adjustments.
-
-- `applyBatchInterestAndFeePermissionless(address _batchAddress)`:  Applies the batch’s accrued interest and management fee to the batch.
 
 ### TroveManager
 
@@ -489,7 +487,7 @@ Pending aggregate interest is “applied” upon most system actions. That is:
 
 - The  `aggRecordedDebt` is updated - the pending aggregate interest is calculated and added to `aggRecordedDebt`, and the `lastDebtUpdateTime` is updated to now.
 
-- The pending aggregate interest is minted by the ActivePool as fresh BOLD. This is considered system “yield”.  A fixed part (75%) of it is immediately sent to the branch’s SP and split proportionally between depositors, and the remainder is sent to a router to be used as LP incentives on DEXes (determined by governance).
+- The pending aggregate interest is minted by the ActivePool as fresh BOLD. This is considered system “yield”.  A fixed part (72%, final value TBD) of it is immediately sent to the branch’s SP and split proportionally between depositors, and the remainder is sent to a router to be used as LP incentives on DEXes (determined by governance).
 
 This is the only way BOLD is ever minted as interest. Applying individual interest to a Trove updates its recorded debt, but does not actually mint new BOLD tokens.
 
