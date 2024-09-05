@@ -956,7 +956,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
 
         troveManagerCached.onSetBatchManagerAnnualInterestRate(
-            msg.sender, batch.entireCollWithoutRedistribution, newDebt, _newAnnualInterestRate
+            msg.sender, batch.entireCollWithoutRedistribution, newDebt, _newAnnualInterestRate, batchChange.upfrontFee
         );
     }
 
