@@ -279,7 +279,10 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         return vars.troveId;
     }
 
-    function _setInitialBalances(ILeverageZapper _leverageZapper, uint256 _branch, TestVars memory vars) internal view {
+    function _setInitialBalances(ILeverageZapper _leverageZapper, uint256 _branch, TestVars memory vars)
+        internal
+        view
+    {
         vars.boldBalanceBeforeA = boldToken.balanceOf(A);
         vars.ethBalanceBeforeA = A.balance;
         vars.collBalanceBeforeA = contractsArray[_branch].collToken.balanceOf(A);
@@ -288,7 +291,8 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         vars.collBalanceBeforeZapper = contractsArray[_branch].collToken.balanceOf(address(_leverageZapper));
         vars.boldBalanceBeforeExchange = boldToken.balanceOf(address(_leverageZapper.exchange()));
         vars.ethBalanceBeforeExchange = address(_leverageZapper.exchange()).balance;
-        vars.collBalanceBeforeExchange = contractsArray[_branch].collToken.balanceOf(address(_leverageZapper.exchange()));
+        vars.collBalanceBeforeExchange =
+            contractsArray[_branch].collToken.balanceOf(address(_leverageZapper.exchange()));
     }
 
     function testCanOpenTroveWithCurve() external {
@@ -313,8 +317,9 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         _setInitialBalances(_leverageZapper, _branch, vars);
 
         bool lst = _branch > 0;
-        vars.troveId =
-            openLeveragedTrove(_leverageZapper, vars.collAmount, vars.newLeverageRatio, contractsArray[_branch].priceFeed, lst);
+        vars.troveId = openLeveragedTrove(
+            _leverageZapper, vars.collAmount, vars.newLeverageRatio, contractsArray[_branch].priceFeed, lst
+        );
 
         // Checks
         (vars.price,) = contractsArray[_branch].priceFeed.fetchPrice();
@@ -344,16 +349,34 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         );
         // token balances
         assertEq(boldToken.balanceOf(A), vars.boldBalanceBeforeA, "BOLD bal mismatch");
-        assertEq(boldToken.balanceOf(address(_leverageZapper)), vars.boldBalanceBeforeZapper, "Zapper should not keep BOLD");
-        assertEq(boldToken.balanceOf(address(_leverageZapper.exchange())), vars.boldBalanceBeforeExchange, "Exchange should not keep BOLD");
-        assertEq(contractsArray[_branch].collToken.balanceOf(address(_leverageZapper)), vars.collBalanceBeforeZapper, "Zapper should not keep Coll");
-        assertEq(contractsArray[_branch].collToken.balanceOf(address(_leverageZapper.exchange())), vars.collBalanceBeforeExchange, "Exchange should not keep Coll");
+        assertEq(
+            boldToken.balanceOf(address(_leverageZapper)), vars.boldBalanceBeforeZapper, "Zapper should not keep BOLD"
+        );
+        assertEq(
+            boldToken.balanceOf(address(_leverageZapper.exchange())),
+            vars.boldBalanceBeforeExchange,
+            "Exchange should not keep BOLD"
+        );
+        assertEq(
+            contractsArray[_branch].collToken.balanceOf(address(_leverageZapper)),
+            vars.collBalanceBeforeZapper,
+            "Zapper should not keep Coll"
+        );
+        assertEq(
+            contractsArray[_branch].collToken.balanceOf(address(_leverageZapper.exchange())),
+            vars.collBalanceBeforeExchange,
+            "Exchange should not keep Coll"
+        );
         assertEq(address(_leverageZapper).balance, vars.ethBalanceBeforeZapper, "Zapper should not keep ETH");
-        assertEq(address(_leverageZapper.exchange()).balance, vars.ethBalanceBeforeExchange, "Exchange should not keep ETH");
+        assertEq(
+            address(_leverageZapper.exchange()).balance, vars.ethBalanceBeforeExchange, "Exchange should not keep ETH"
+        );
         if (lst) {
             assertEq(A.balance, vars.ethBalanceBeforeA - ETH_GAS_COMPENSATION, "ETH bal mismatch");
             assertGe(
-                contractsArray[_branch].collToken.balanceOf(A), vars.collBalanceBeforeA - vars.collAmount, "Coll bal mismatch"
+                contractsArray[_branch].collToken.balanceOf(A),
+                vars.collBalanceBeforeA - vars.collAmount,
+                "Coll bal mismatch"
             );
         } else {
             assertEq(A.balance, vars.ethBalanceBeforeA - ETH_GAS_COMPENSATION - vars.collAmount, "ETH bal mismatch");
@@ -510,12 +533,28 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         assertEq(boldToken.balanceOf(A), vars.boldBalanceBeforeA, "BOLD bal mismatch");
         assertEq(A.balance, vars.ethBalanceBeforeA, "ETH bal mismatch");
         assertGe(contractsArray[_branch].collToken.balanceOf(A), vars.collBalanceBeforeA, "Coll bal mismatch");
-        assertEq(boldToken.balanceOf(address(_leverageZapper)), vars.boldBalanceBeforeZapper, "Zapper should not keep BOLD");
-        assertEq(boldToken.balanceOf(address(_leverageZapper.exchange())), vars.boldBalanceBeforeExchange, "Exchange should not keep BOLD");
-        assertEq(contractsArray[_branch].collToken.balanceOf(address(_leverageZapper)), vars.collBalanceBeforeZapper, "Zapper should not keep Coll");
-        assertEq(contractsArray[_branch].collToken.balanceOf(address(_leverageZapper.exchange())), vars.collBalanceBeforeExchange, "Exchange should not keep Coll");
+        assertEq(
+            boldToken.balanceOf(address(_leverageZapper)), vars.boldBalanceBeforeZapper, "Zapper should not keep BOLD"
+        );
+        assertEq(
+            boldToken.balanceOf(address(_leverageZapper.exchange())),
+            vars.boldBalanceBeforeExchange,
+            "Exchange should not keep BOLD"
+        );
+        assertEq(
+            contractsArray[_branch].collToken.balanceOf(address(_leverageZapper)),
+            vars.collBalanceBeforeZapper,
+            "Zapper should not keep Coll"
+        );
+        assertEq(
+            contractsArray[_branch].collToken.balanceOf(address(_leverageZapper.exchange())),
+            vars.collBalanceBeforeExchange,
+            "Exchange should not keep Coll"
+        );
         assertEq(address(_leverageZapper).balance, vars.ethBalanceBeforeZapper, "Zapper should not keep ETH");
-        assertEq(address(_leverageZapper.exchange()).balance, vars.ethBalanceBeforeExchange, "Exchange should not keep ETH");
+        assertEq(
+            address(_leverageZapper.exchange()).balance, vars.ethBalanceBeforeExchange, "Exchange should not keep ETH"
+        );
 
         // Check receiver is back to zero
         assertEq(address(_leverageZapper.flashLoanProvider().receiver()), address(0), "Receiver should be zero");
@@ -789,7 +828,8 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             "Coll mismatch"
         );
         // debt
-        uint256 expectedMinNetDebt = vars.initialDebt - vars.flashLoanAmount * vars.price / DECIMAL_PRECISION * 101 / 100;
+        uint256 expectedMinNetDebt =
+            vars.initialDebt - vars.flashLoanAmount * vars.price / DECIMAL_PRECISION * 101 / 100;
         uint256 expectedMaxNetDebt = expectedMinNetDebt * 105 / 100;
         uint256 troveEntireDebt = getTroveEntireDebt(contractsArray[_branch].troveManager, vars.troveId);
         assertGe(troveEntireDebt, expectedMinNetDebt, "Debt too low");
@@ -805,12 +845,28 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         assertEq(boldToken.balanceOf(A), vars.boldBalanceBeforeA, "BOLD bal mismatch");
         assertEq(A.balance, vars.ethBalanceBeforeA, "ETH bal mismatch");
         assertGe(contractsArray[_branch].collToken.balanceOf(A), vars.collBalanceBeforeA, "Coll bal mismatch");
-        assertEq(boldToken.balanceOf(address(_leverageZapper)), vars.boldBalanceBeforeZapper, "Zapper should not keep BOLD");
-        assertEq(boldToken.balanceOf(address(_leverageZapper.exchange())), vars.boldBalanceBeforeExchange, "Exchange should not keep BOLD");
-        assertEq(contractsArray[_branch].collToken.balanceOf(address(_leverageZapper)), vars.collBalanceBeforeZapper, "Zapper should not keep Coll");
-        assertEq(contractsArray[_branch].collToken.balanceOf(address(_leverageZapper.exchange())), vars.collBalanceBeforeExchange, "Exchange should not keep Coll");
+        assertEq(
+            boldToken.balanceOf(address(_leverageZapper)), vars.boldBalanceBeforeZapper, "Zapper should not keep BOLD"
+        );
+        assertEq(
+            boldToken.balanceOf(address(_leverageZapper.exchange())),
+            vars.boldBalanceBeforeExchange,
+            "Exchange should not keep BOLD"
+        );
+        assertEq(
+            contractsArray[_branch].collToken.balanceOf(address(_leverageZapper)),
+            vars.collBalanceBeforeZapper,
+            "Zapper should not keep Coll"
+        );
+        assertEq(
+            contractsArray[_branch].collToken.balanceOf(address(_leverageZapper.exchange())),
+            vars.collBalanceBeforeExchange,
+            "Exchange should not keep Coll"
+        );
         assertEq(address(_leverageZapper).balance, vars.ethBalanceBeforeZapper, "Zapper should not keep ETH");
-        assertEq(address(_leverageZapper.exchange()).balance, vars.ethBalanceBeforeExchange, "Exchange should not keep ETH");
+        assertEq(
+            address(_leverageZapper.exchange()).balance, vars.ethBalanceBeforeExchange, "Exchange should not keep ETH"
+        );
 
         // Check receiver is back to zero
         assertEq(address(_leverageZapper.flashLoanProvider().receiver()), address(0), "Receiver should be zero");
