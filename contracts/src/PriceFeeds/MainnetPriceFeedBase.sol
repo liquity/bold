@@ -17,12 +17,6 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
 abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
     // Dummy flag raised when the collateral branch gets shut down.
     // Should be removed after actual shutdown logic is implemented.
-    
-    enum PriceSource {
-        primary,
-        ETHUSDxCanonical,
-        lastGoodPrice
-    }
 
     PriceSource public priceSource;
 >>>>>>> 81a1a2aa (Add ETH-USD fallback logic and remove OSETH and ETHX contracts)

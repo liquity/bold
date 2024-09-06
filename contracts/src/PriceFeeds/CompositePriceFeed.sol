@@ -35,6 +35,9 @@ contract CompositePriceFeed is MainnetPriceFeedBase {
         rateProviderAddress = _rateProviderAddress;
     }
     
+    // Returns:
+    // - The price, using the current price calculation
+    // - A bool that is true if a) the system was not shut down prior to this call and b) an oracle failed during this call.
     function fetchPrice() public returns (uint256, bool) {
         // If branch is live and the primary oracle setup has been working, try to use it 
         if (priceSource == PriceSource.primary) {return _fetchPrice();}
@@ -42,9 +45,10 @@ contract CompositePriceFeed is MainnetPriceFeedBase {
         // If branch is already shut down and using ETH-USD * canonical_rate, try to use that
         if (priceSource == PriceSource.ETHUSDxCanonical) {
                 (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
-                //... but if the ETH-USD oracle *also* fails here, use the lastGoodPrice
+                //... but if the ETH-USD oracle *also* fails here, switch to using the lastGoodPrice
                 if(ethUsdOracleDown) {
                     // No need to shut down, since branch already is shut down
+                    priceSource = PriceSource.lastGoodPrice;
                     return (lastGoodPrice, false);
                 } else {
                     return (_fetchPriceETHUSDxCanonical(ethUsdPrice), false);
