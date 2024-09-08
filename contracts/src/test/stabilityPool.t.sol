@@ -1776,7 +1776,7 @@ contract SPTest is DevTestSetup {
 
     function testLiquidationWithLowPDoesNotDecreaseP_Cheat_Fuzz(uint256 _cheatP, uint256 _surplus) public {
         // Choose a low value of P initially
-        _cheatP = bound(_cheatP, 1e9, 1e11);
+        _cheatP = bound(_cheatP, 1e9 + 1, 1e11);
 
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
@@ -1799,7 +1799,7 @@ contract SPTest is DevTestSetup {
 
         uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
 
-        _surplus = bound(_surplus, debtDelta + 1e9, debtDelta + 10e18);
+        _surplus = bound(_surplus, debtDelta + 1e9 + 1, debtDelta + 10e18);
         // B deposits the surplus to SP
         makeSPDepositAndClaim(B, _surplus);
 
@@ -1811,7 +1811,7 @@ contract SPTest is DevTestSetup {
         assertGt(scale2, scale1, "scale didnt change");
 
         // Confirm that P has not fallen below 1e9
-        assertGe(stabilityPool.P(), 1e9);
+        assertGt(stabilityPool.P(), 1e9);
     }
 
     function testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fuzz(
@@ -1821,7 +1821,7 @@ contract SPTest is DevTestSetup {
         PTestVars memory testVars;
 
         // Choose a low value of P initially
-        _cheatP = bound(_cheatP, 1e9, 1e11);
+        _cheatP = bound(_cheatP, 1e9 + 1, 1e11);
 
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
@@ -1846,7 +1846,7 @@ contract SPTest is DevTestSetup {
         uint256 troveDebt = troveManager.getTroveEntireDebt(troveIDs.D);
         uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
 
-        _surplus = bound(_surplus, debtDelta + 1e9, debtDelta + 10e18);
+        _surplus = bound(_surplus, debtDelta + 1e9 + 1, debtDelta + 10e18);
 
         // B transfers BOLD to A so he can slightly top up the SP
         transferBold(B, A, boldToken.balanceOf(B) / 2);
@@ -1941,7 +1941,7 @@ contract SPTest is DevTestSetup {
         PTestVars memory testVars;
 
         // Choose a low value of P initially
-        _cheatP = bound(_cheatP, 1e9, 1e11);
+        _cheatP = bound(_cheatP, 1e9 + 1, 1e11);
 
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
@@ -2058,7 +2058,7 @@ contract SPTest is DevTestSetup {
 
     function testHighFractionLiqWithLowPTriggersTwoScaleChanges_Cheat_Fuzz(uint256 _cheatP, uint256 _surplus) public {
         // Choose a low value of P initially
-        _cheatP = bound(_cheatP, 1e9, 1e11);
+        _cheatP = bound(_cheatP, 1e9 + 1, 1e11);
 
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
@@ -2084,7 +2084,7 @@ contract SPTest is DevTestSetup {
         uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
 
         // Tiny surplus
-        _surplus = bound(_surplus, debtDelta + 1e9, debtDelta + 1e10);
+        _surplus = bound(_surplus, debtDelta + 1e9 + 1, debtDelta + 1e10);
         // B deposits the surplus to SP
         makeSPDepositAndClaim(B, _surplus);
 
@@ -2098,7 +2098,7 @@ contract SPTest is DevTestSetup {
 
     function testHighFractionLiqWithLowPDoesNotDecreasePBelow1e9(uint256 _cheatP, uint256 _surplus) public {
         // Choose a low value of P initially
-        _cheatP = bound(_cheatP, 1e9, 1e11);
+        _cheatP = bound(_cheatP, 1e9 + 1, 1e11);
 
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
@@ -2122,7 +2122,7 @@ contract SPTest is DevTestSetup {
         uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
 
         // Tiny surplus
-        _surplus = bound(_surplus, debtDelta + 1e9, debtDelta + 1e10);
+        _surplus = bound(_surplus, debtDelta + 1e9 + 1, debtDelta + 1e10);
         // B deposits the surplus to SP
         makeSPDepositAndClaim(B, _surplus);
 
@@ -2134,7 +2134,7 @@ contract SPTest is DevTestSetup {
         assertGt(scale2, scale1, "scale didnt change");
 
         // Confirm that P has not fallen below 1e9
-        assertGe(stabilityPool.P(), 1e9);
+        assertGt(stabilityPool.P(), 1e9);
     }
 }
 
