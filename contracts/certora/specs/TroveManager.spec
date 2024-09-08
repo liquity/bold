@@ -1,7 +1,5 @@
 import "./ERC20/erc20cvl.spec";
 import "./ERC20/WETHcvl.spec";
-import "./ERC721/erc721.spec";
-import "./PriceAggregators/tellor.spec";
 import "./setup/builtin_assertions.spec";
 import "./generic.spec";
 
