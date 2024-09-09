@@ -64,11 +64,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            collTokenCached,
-            _params.flashLoanAmount,
-            IFlashLoanReceiver(address(this)),
-            IFlashLoanProvider.Operation.OpenTrove,
-            abi.encode(_params)
+            collTokenCached, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(_params)
         );
     }
 
@@ -120,11 +116,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            collToken,
-            _params.flashLoanAmount,
-            IFlashLoanReceiver(address(this)),
-            IFlashLoanProvider.Operation.LeverUpTrove,
-            abi.encode(_params)
+            collToken, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverUpTrove, abi.encode(_params)
         );
     }
 
@@ -161,11 +153,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            collToken,
-            _params.flashLoanAmount,
-            IFlashLoanReceiver(address(this)),
-            IFlashLoanProvider.Operation.LeverDownTrove,
-            abi.encode(_params)
+            collToken, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverDownTrove, abi.encode(_params)
         );
     }
 

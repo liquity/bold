@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 
+import "./IFlashLoanProvider.sol";
 import "./IExchange.sol";
 
 interface ILeverageZapper {
@@ -33,7 +34,9 @@ interface ILeverageZapper {
         uint256 minBoldAmount;
     }
 
-    function exchange() external returns (IExchange);
+    function flashLoanProvider() external view returns (IFlashLoanProvider);
+
+    function exchange() external view returns (IExchange);
 
     function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable;
 
