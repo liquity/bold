@@ -46,6 +46,9 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
         receiver = IFlashLoanReceiver(msg.sender);
 
         vault.flashLoan(this, tokens, amounts, userData);
+
+        // Reset receiver
+        receiver = IFlashLoanReceiver(address(0));
     }
 
     function receiveFlashLoan(
@@ -99,8 +102,5 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
 
         // Return flash loan
         tokens[0].safeTransfer(address(vault), amounts[0] + feeAmounts[0]);
-
-        // Reset receiver
-        receiver = IFlashLoanReceiver(address(0));
     }
 }
