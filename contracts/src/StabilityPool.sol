@@ -371,21 +371,22 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         yieldGainsOwed += _boldYield;
 
-        //console2.log(lastYieldError, "lastYieldError");
+        console2.log("--> Adding yield");
+        console2.log(lastYieldError, "lastYieldError");
         uint256 yieldPerUnitStaked = _computeYieldPerUnitStaked(_boldYield, totalBoldDepositsCached);
+        console2.log(lastYieldError, "lastYieldError");
 
         uint256 marginalYieldGain = yieldPerUnitStaked * P;
         epochToScaleToB[currentEpoch][currentScale] = epochToScaleToB[currentEpoch][currentScale] + marginalYieldGain;
 
-        //console2.log("--> Adding yield");
-        //console2.log(_boldYield, "_boldYield");
-        //console2.log(totalBoldDepositsCached, "totalBoldDepositsCached");
-        //console2.log(yieldPerUnitStaked, "yieldPerUnitStaked");
-        //console2.log(P, "P");
-        //console2.log(marginalYieldGain, "marginalYieldGain");
-        //console2.log(epochToScaleToB[currentEpoch][currentScale], "epochToScaleToB[currentEpoch][currentScale]");
-        //console2.log(lastYieldError, "lastYieldError");
-        //console2.log("");
+        console2.log(_boldYield, "_boldYield");
+        console2.log(totalBoldDepositsCached, "totalBoldDepositsCached");
+        console2.log(yieldPerUnitStaked, "yieldPerUnitStaked");
+        console2.log(P, "P");
+        console2.log(marginalYieldGain, "marginalYieldGain");
+        console2.log(epochToScaleToB[currentEpoch][currentScale], "epochToScaleToB[currentEpoch][currentScale]");
+        console2.log(lastYieldError, "lastYieldError");
+        console2.log("");
         emit B_Updated(epochToScaleToB[currentEpoch][currentScale], currentEpoch, currentScale);
     }
 
@@ -429,35 +430,44 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     // --- Offset helper functions ---
 
     function _getNewPAndUpdateBoldLossError(uint256 _debtToOffset, uint256 _totalBoldDeposits, uint256 _currentP, uint256 _scaleMultiplier) internal returns (uint256) {
-            uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION - lastBoldLossError_Offset;
-            /*
-             * Add 1 to make error in quotient positive. We want "slightly too much" Bold loss,
-             * which ensures the error in any given compoundedBoldDeposit favors the Stability Pool.
-             */
-            uint256 boldLossPerUnitStaked = boldLossNumerator * _scaleMultiplier / _totalBoldDeposits + 1;
-            console2.log("  -- newP --");
-            console2.log(_debtToOffset, "_debtToOffset");
-            console2.log(_totalBoldDeposits, "_totalBoldDeposits");
-            console2.log(boldLossPerUnitStaked, "boldLossPerUnitStaked");
-            lastBoldLossError_Offset = boldLossPerUnitStaked * _totalBoldDeposits / _scaleMultiplier - boldLossNumerator;
+        uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION;
+        /*
+         * Add 1 to make error in quotient positive. We want "slightly too much" Bold loss,
+         * which ensures the error in any given compoundedBoldDeposit favors the Stability Pool.
+         */
+        uint256 boldLossPerUnitStaked = _debtToOffset * DECIMAL_PRECISION * _scaleMultiplier / _totalBoldDeposits + 1;
+        console2.log("  -- newP --");
+        console2.log(_currentP, "currentP");
+        console2.log(_debtToOffset, "_debtToOffset");
+        console2.log(_totalBoldDeposits, "_totalBoldDeposits");
+        console2.log(boldLossPerUnitStaked, "boldLossPerUnitStaked");
+        console2.log(_debtToOffset * DECIMAL_PRECISION, "_debtToOffset * DECIMAL_PRECISION");
+        console2.log(boldLossNumerator, "boldLossNumerator");
 
-            /*
-             * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool Bold in the liquidation.
-             * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - boldLossPerUnitStaked)
-             */
-            uint256 newProductFactor = DECIMAL_PRECISION * _scaleMultiplier - boldLossPerUnitStaked;
-            uint256 newP = _currentP * newProductFactor / DECIMAL_PRECISION;
+        /*
+         * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool Bold in the liquidation.
+         * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - boldLossPerUnitStaked)
+         */
+        uint256 newProductFactor = DECIMAL_PRECISION * _scaleMultiplier - boldLossPerUnitStaked;
+        uint256 newP = (_currentP * newProductFactor + lastBoldLossError_Offset * newProductFactor / _totalBoldDeposits) / DECIMAL_PRECISION;
 
-            console2.log(DECIMAL_PRECISION * _scaleMultiplier, "DECIMAL_PRECISION * _scaleMultiplier");
-            console2.log(newProductFactor, "newProductFactor");
-            console2.log(_currentP, "currentP");
-            console2.log(boldLossPerUnitStaked, "_boldLossPerUnitStaked");
-            console2.log(_currentP * newProductFactor / DECIMAL_PRECISION, "currentP * newProductFactor / DECIMAL_PRECISION");
-            console2.log(SCALE_FACTOR, "SCALE_FACTOR");
-            console2.log(lastBoldLossError_Offset, "lastBoldLossError_Offset");
-            console2.log("  --      --");
+        lastBoldLossError_Offset = boldLossPerUnitStaked * _totalBoldDeposits / _scaleMultiplier - boldLossNumerator;
 
-            return newP;
+        console2.log(DECIMAL_PRECISION * _scaleMultiplier, "DECIMAL_PRECISION * _scaleMultiplier");
+        console2.log(newProductFactor, "newProductFactor");
+        console2.log(boldLossPerUnitStaked, "_boldLossPerUnitStaked");
+        console2.log(_currentP * newProductFactor / DECIMAL_PRECISION, "currentP * newProductFactor / DECIMAL_PRECISION");
+        console2.log(SCALE_FACTOR, "SCALE_FACTOR");
+        console2.log(lastBoldLossError_Offset, "lastBoldLossError_Offset");
+        console2.log(boldLossPerUnitStaked * _totalBoldDeposits, "boldLossPerUnitStaked * _totalBoldDeposits");
+        console2.log(boldLossNumerator, "boldLossNumerator");
+        console2.log(_scaleMultiplier, "_scaleMultiplier");
+        console2.log(DECIMAL_PRECISION * _scaleMultiplier - (_debtToOffset * DECIMAL_PRECISION * _scaleMultiplier / _totalBoldDeposits + 1), "newProductFactor without error");
+        console2.log(_currentP * (DECIMAL_PRECISION * _scaleMultiplier - (_debtToOffset * DECIMAL_PRECISION * _scaleMultiplier / _totalBoldDeposits + 1)) / DECIMAL_PRECISION, "newP without error");
+        console2.log(newP, "newP");
+        console2.log("  --      --");
+
+        return newP;
     }
 
     /*
@@ -570,6 +580,9 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     function _updateTotalBoldDeposits(uint256 _depositIncrease, uint256 _depositDecrease) internal {
         if (_depositIncrease == 0 && _depositDecrease == 0) return;
         uint256 newTotalBoldDeposits = totalBoldDeposits + _depositIncrease - _depositDecrease;
+        console2.log(" -- _updateTotalBoldDeposits -- ");
+        console2.log(newTotalBoldDeposits, "newTotalBoldDeposits");
+        console2.log("");
         totalBoldDeposits = newTotalBoldDeposits;
         emit StabilityPoolBoldBalanceUpdated(newTotalBoldDeposits);
     }
@@ -684,7 +697,15 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 secondPortion = epochToScaleToB[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
 
         uint256 yieldGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
-        /*
+        /**/
+        console2.log(" -- _getYieldGainFromSnapshots --");
+        console2.log(totalBoldDeposits, "totalBoldDeposits");
+        console2.log(P_Snapshot, "P_Snapshot");
+        console2.log(P, "P");
+        console2.log(totalBoldDeposits * P_Snapshot * SCALE_FACTOR / P, "D adjusted");
+        console2.log(P_Snapshot * SCALE_FACTOR / P, "D adjustment");
+        console2.log(initialDeposit * P / P_Snapshot, "initialDeposit adjusted 1st");
+        console2.log(initialDeposit * P / P_Snapshot / SCALE_FACTOR, "initialDeposit adjusted 2nd");
         console2.log(initialDeposit, "initialDeposit");
         console2.log(firstPortion, "firstPortion");
         console2.log(epochToScaleToB[epochSnapshot][scaleSnapshot], "epochToScaleToB[epochSnapshot][scaleSnapshot]");
@@ -693,7 +714,8 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         console2.log(epochToScaleToB[epochSnapshot][scaleSnapshot + 1], "epochToScaleToB[epochSnapshot][scaleSnapshot + 1]");
         console2.log(P_Snapshot, "P_Snapshot");
         console2.log(yieldGain, "yieldGain");
-        */
+        console2.log("");
+        /**/
 
         return yieldGain;
     }
