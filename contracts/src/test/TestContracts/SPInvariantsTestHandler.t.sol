@@ -204,7 +204,7 @@ contract SPInvariantsTestHandler is BaseHandler {
         priceFeed.setPrice(initialPrice);
 
         info("totalBoldDeposits = ", stabilityPool.getTotalBoldDeposits().decimal());
-        info("P = ", stabilityPool.P().decimal());
+        info("P = ", (stabilityPool.P() / 1e18).decimal());
         _log();
 
         uint256 collAfter = collateralToken.balanceOf(address(this));
