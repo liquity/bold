@@ -3,6 +3,7 @@
 pragma solidity 0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 import "./Interfaces/IStabilityPool.sol";
 import "./Interfaces/IAddressesRegistry.sol";
@@ -379,6 +380,8 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 marginalYieldGain = yieldPerUnitStaked * P;
         epochToScaleToB[currentEpoch][currentScale] = epochToScaleToB[currentEpoch][currentScale] + marginalYieldGain;
 
+        console2.log(currentEpoch, "currentEpoch");
+        console2.log(currentScale, "currentScale");
         console2.log(_boldYield, "_boldYield");
         console2.log(totalBoldDepositsCached, "totalBoldDepositsCached");
         console2.log(yieldPerUnitStaked, "yieldPerUnitStaked");
@@ -429,6 +432,47 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     // --- Offset helper functions ---
 
+    function _getNewPAndBoldLossError(uint256 _debtToOffset, uint256 _totalBoldDeposits, uint256 _currentP, uint256 _scaleMultiplier) internal view returns (uint256, uint256) {
+        uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION;
+        /*
+         * Add 1 to make error in quotient positive. We want "slightly too much" Bold loss,
+         * which ensures the error in any given compoundedBoldDeposit favors the Stability Pool.
+         */
+        uint256 boldLossPerUnitStaked = _debtToOffset * DECIMAL_PRECISION * _scaleMultiplier / _totalBoldDeposits + 1;
+        console2.log("  -- newP --");
+        console2.log(_currentP, "currentP");
+        console2.log(_debtToOffset, "_debtToOffset");
+        console2.log(_totalBoldDeposits, "_totalBoldDeposits");
+        console2.log(boldLossPerUnitStaked, "boldLossPerUnitStaked");
+        console2.log(_debtToOffset * DECIMAL_PRECISION, "_debtToOffset * DECIMAL_PRECISION");
+        console2.log(boldLossNumerator, "boldLossNumerator");
+
+        /*
+         * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool Bold in the liquidation.
+         * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - boldLossPerUnitStaked)
+         */
+        uint256 newProductFactor = DECIMAL_PRECISION * _scaleMultiplier - boldLossPerUnitStaked;
+        uint256 newP = (_currentP * newProductFactor + _currentP * lastBoldLossError_Offset / _totalBoldDeposits) / DECIMAL_PRECISION;
+
+        uint256 lastBoldLossError = boldLossPerUnitStaked * _totalBoldDeposits / _scaleMultiplier - boldLossNumerator;
+
+        console2.log(DECIMAL_PRECISION * _scaleMultiplier, "DECIMAL_PRECISION * _scaleMultiplier");
+        console2.log(newProductFactor, "newProductFactor");
+        console2.log(boldLossPerUnitStaked, "_boldLossPerUnitStaked");
+        console2.log(_currentP * newProductFactor / DECIMAL_PRECISION, "currentP * newProductFactor / DECIMAL_PRECISION");
+        console2.log(SCALE_FACTOR, "SCALE_FACTOR");
+        console2.log(lastBoldLossError_Offset, "lastBoldLossError_Offset");
+        console2.log(boldLossPerUnitStaked * _totalBoldDeposits, "boldLossPerUnitStaked * _totalBoldDeposits");
+        console2.log(boldLossNumerator, "boldLossNumerator");
+        console2.log(_scaleMultiplier, "_scaleMultiplier");
+        console2.log(DECIMAL_PRECISION * _scaleMultiplier - (_debtToOffset * DECIMAL_PRECISION * _scaleMultiplier / _totalBoldDeposits + 1), "newProductFactor without error");
+        console2.log(_currentP * (DECIMAL_PRECISION * _scaleMultiplier - (_debtToOffset * DECIMAL_PRECISION * _scaleMultiplier / _totalBoldDeposits + 1)) / DECIMAL_PRECISION, "newP without error");
+        console2.log(newP, "newP");
+        console2.log("  --      --");
+
+        return (newP, lastBoldLossError);
+    }
+
     function _getNewPAndUpdateBoldLossError(uint256 _debtToOffset, uint256 _totalBoldDeposits, uint256 _currentP, uint256 _scaleMultiplier) internal returns (uint256) {
         uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION;
         /*
@@ -449,7 +493,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
          * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - boldLossPerUnitStaked)
          */
         uint256 newProductFactor = DECIMAL_PRECISION * _scaleMultiplier - boldLossPerUnitStaked;
-        uint256 newP = (_currentP * newProductFactor + lastBoldLossError_Offset * newProductFactor / _totalBoldDeposits) / DECIMAL_PRECISION;
+        uint256 newP = (_currentP * newProductFactor + _currentP * lastBoldLossError_Offset / _totalBoldDeposits) / DECIMAL_PRECISION;
 
         lastBoldLossError_Offset = boldLossPerUnitStaked * _totalBoldDeposits / _scaleMultiplier - boldLossNumerator;
 
@@ -468,6 +512,43 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         console2.log("  --      --");
 
         return newP;
+    }
+
+    function _checkScaleToApplyToNewP(uint256 _debtToOffset, uint256 _totalBoldDeposits, uint256 _currentP, uint256 _scaleFactor) internal view returns (bool) {
+        uint256 DP_e = _totalBoldDeposits * _currentP + lastBoldLossError_Offset;
+        console2.log(" -- check scale to apply --");
+        console2.log(DP_e, "DP_e");
+        console2.log(_currentP, "_currentP");
+        console2.log(_scaleFactor, "_scaleFactor");
+        console2.log(_totalBoldDeposits, "_totalBoldDeposits");
+        console2.log(_debtToOffset, "_debtToOffset");
+        console2.log(_totalBoldDeposits * (DP_e / DECIMAL_PRECISION * (DECIMAL_PRECISION * _scaleFactor - 1) - SCALE_FACTOR) / DP_e / _scaleFactor, "D * ...");
+        console2.log(DP_e * (DECIMAL_PRECISION * _scaleFactor - 1), "DP_e * (DECIMAL_PRECISION * _scaleFactor - 1)");
+        console2.log(SCALE_FACTOR * DECIMAL_PRECISION, "SCALE_FACTOR * DECIMAL_PRECISION");
+        console2.log(DP_e * (DECIMAL_PRECISION * _scaleFactor - 1) - SCALE_FACTOR * DECIMAL_PRECISION, "DP_e * (DECIMAL_PRECISION * _scaleFactor - 1) - SCALE_FACTOR * DECIMAL_PRECISION");
+        //return _debtToOffset >= _totalBoldDeposits * (DP_e * (DECIMAL_PRECISION * _scaleFactor - 1) - SCALE_FACTOR * DECIMAL_PRECISION) / DP_e / DECIMAL_PRECISION / _scaleFactor;
+        return _debtToOffset >= _totalBoldDeposits * (DP_e / DECIMAL_PRECISION * (DECIMAL_PRECISION * _scaleFactor - 1) - SCALE_FACTOR) / DP_e / _scaleFactor;
+    }
+
+    function _getScaleToApplyToNewP(uint256 _debtToOffset, uint256 _totalBoldDeposits, uint256 _currentP) internal view returns (uint256, uint128) {
+        // We are assuming _totalBoldDeposits > _debtToOffset, as this was checked before, in the epoch increase if clause
+        // So assuming the worst case, _totalBoldDeposits - _debtToOffset = 1, and _currentP = 1e9 (= SCALE_FACTOR),
+        // `s` then would be _totalBoldDeposits
+        // To do a jump of 4 scales, _totalBoldDeposits should be > 1e27, i.e. 1e9 BOLD (1 billion)
+        // To do a jump of 5 scales, _totalBoldDeposits should be > 1e36, i.e. 1e18 BOLD, and so on
+        uint256 s = _totalBoldDeposits * SCALE_FACTOR / _currentP / (_totalBoldDeposits - _debtToOffset);
+        console2.log(s, "s");
+        uint256 scaleFactor = 1;
+        uint128 scaleUpdate = 0;
+        while (s > 0) {
+            scaleFactor *= SCALE_FACTOR;
+            scaleUpdate += 1;
+            s = s / SCALE_FACTOR;
+            console2.log(s, "s");
+            if (scaleUpdate > 5) { break; } // Impossible to reach in practice, but just as a security measure
+        }
+
+        return (scaleFactor, scaleUpdate);
     }
 
     /*
@@ -508,6 +589,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         // Update P
         uint256 newP;
         console2.log(lastBoldLossError_Offset, "lastBoldLossError_Offset");
+        console2.log(currentScale, "currentScale");
         console2.log(currentP, "currentP");
         console2.log(_totalBoldDeposits, "_totalBoldDeposits");
         console2.log(_debtToOffset, "_debtToOffset");
@@ -523,15 +605,68 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
             currentScale = 0;
             emit ScaleUpdated(currentScale);
             newP = DECIMAL_PRECISION;
+            /*
+        } else { // TODO!!!
+            uint256 lastBoldLossError;
+            (newP, lastBoldLossError) = _getNewPAndBoldLossError(_debtToOffset, _totalBoldDeposits, currentP, 1);
+            if (newP < SCALE_FACTOR) {
+                uint128 newScale;
+                (newP, lastBoldLossError) = _getNewPAndBoldLossError(_debtToOffset, _totalBoldDeposits, currentP, SCALE_FACTOR);
+                newScale = currentScaleCached + 1;
+                console2.log("   !!!  1");
+                console2.log(newScale, "newScale");
+                console2.log(currentP, "currentP");
+                console2.log(newP, "newP");
 
+                if (newP < SCALE_FACTOR) {
+                    (newP, lastBoldLossError) = _getNewPAndBoldLossError(_debtToOffset, _totalBoldDeposits, currentP, SCALE_FACTOR * SCALE_FACTOR);
+                    newScale = currentScaleCached + 2;
+                    console2.log("   !!!  2");
+                    console2.log(newScale, "newScale");
+                    console2.log(currentP, "currentP");
+                    console2.log(newP, "newP");
+
+                    if (newP < SCALE_FACTOR) {
+                        (newP, lastBoldLossError) = _getNewPAndBoldLossError(_debtToOffset, _totalBoldDeposits, currentP, SCALE_FACTOR * SCALE_FACTOR * SCALE_FACTOR);
+                        newScale = currentScaleCached + 3;
+                        console2.log("   !!!  3");
+                        console2.log(newScale, "newScale");
+                        console2.log(currentP, "currentP");
+                        console2.log(newP, "newP");
+                    }
+                }
+                currentScale = newScale;
+                console2.log(currentScale, "currentScale");
+                console2.log("   !!!  ");
+                emit ScaleUpdated(currentScale);
+            }
+            lastBoldLossError_Offset = lastBoldLossError;
+        }
+        */
+        } else {
+            (uint256 scaleFactor, uint128 scaleUpdate) = _getScaleToApplyToNewP(_debtToOffset, _totalBoldDeposits, currentP);
+            console2.log(scaleFactor, "scaleFactor");
+            console2.log(scaleUpdate, "scaleUpdate");
+            newP = _getNewPAndUpdateBoldLossError(_debtToOffset, _totalBoldDeposits, currentP, scaleFactor);
+            if (scaleUpdate > 0) {
+                currentScale = currentScaleCached + scaleUpdate;
+                console2.log("   !!! ");
+                console2.log(currentScale, "currentScale");
+                console2.log(currentP, "currentP");
+                console2.log(newP, "newP");
+                console2.log("   !!!  ");
+                emit ScaleUpdated(currentScale);
+            }
+        }
+            /*
             // If incrementing the scale once is not enough, let’s increment it twice
             // This ensures the invariant P >= 1e9 holds and addresses this issue
             // from Liquity v1: https://github.com/liquity/dev/security/advisories/GHSA-m9f3-hrx8-x2g3
             // This conditions equates to (currentP * newProductFactor * SCALE_FACTOR / DECIMAL_PRECISION <= SCALE_FACTOR)
-        } else if (_debtToOffset > (_totalBoldDeposits * (SCALE_FACTOR * DECIMAL_PRECISION - SCALE_FACTOR * DECIMAL_PRECISION / currentP - 1) / SCALE_FACTOR + lastBoldLossError_Offset) / DECIMAL_PRECISION) {
+            //} else if (_debtToOffset > (_totalBoldDeposits * (SCALE_FACTOR * DECIMAL_PRECISION - SCALE_FACTOR * DECIMAL_PRECISION / currentP - 1) / SCALE_FACTOR + lastBoldLossError_Offset) / DECIMAL_PRECISION) {
+        } else if (_checkScaleToApplyToNewP(_debtToOffset, _totalBoldDeposits, currentP, SCALE_FACTOR)) {
             newP = _getNewPAndUpdateBoldLossError(_debtToOffset, _totalBoldDeposits, currentP, SCALE_FACTOR * SCALE_FACTOR);
             currentScale = currentScaleCached + 2;
-            console2.log("   !!!  2");
             console2.log(currentScale, "currentScale");
             console2.log(currentP, "currentP");
             console2.log(newP, "newP");
@@ -539,7 +674,8 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
             emit ScaleUpdated(currentScale);
             // If multiplying P by a non-zero product factor would reduce P below the scale boundary, increment the scale
             // This condition equates to (currentP * newProductFactor / DECIMAL_PRECISION <= SCALE_FACTOR) {
-        } else if (_debtToOffset > (_totalBoldDeposits * (DECIMAL_PRECISION - SCALE_FACTOR * DECIMAL_PRECISION / currentP - 1) + lastBoldLossError_Offset) / DECIMAL_PRECISION) {
+            //} else if (_debtToOffset > (_totalBoldDeposits * (DECIMAL_PRECISION - SCALE_FACTOR * DECIMAL_PRECISION / currentP - 1) + lastBoldLossError_Offset) / DECIMAL_PRECISION) {
+        } else if (_checkScaleToApplyToNewP(_debtToOffset, _totalBoldDeposits, currentP, 1)) {
             newP = _getNewPAndUpdateBoldLossError(_debtToOffset, _totalBoldDeposits, currentP, SCALE_FACTOR);
             currentScale = currentScaleCached + 1;
             console2.log("   !!!  ");
@@ -553,8 +689,10 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         } else {
             newP = _getNewPAndUpdateBoldLossError(_debtToOffset, _totalBoldDeposits, currentP, 1);
         }
+        */
 
         assert(newP > 0);
+        //assert(newP >= SCALE_FACTOR);
         P = newP;
 
         emit P_Updated(newP);
@@ -694,8 +832,12 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 P_Snapshot = snapshots.P;
 
         uint256 firstPortion = epochToScaleToB[epochSnapshot][scaleSnapshot] - B_Snapshot;
-        uint256 secondPortion = epochToScaleToB[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
-
+        uint256 secondPortion;
+        uint256 scaleFactor = SCALE_FACTOR;
+        for (uint128 i = 1; i < 4; i++) {
+            secondPortion += epochToScaleToB[epochSnapshot][scaleSnapshot + i] / scaleFactor;
+            scaleFactor *= SCALE_FACTOR;
+        }
         uint256 yieldGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
         /**/
         console2.log(" -- _getYieldGainFromSnapshots --");
@@ -712,6 +854,10 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         console2.log(B_Snapshot, "B_Snapshot");
         console2.log(secondPortion, "secondPortion");
         console2.log(epochToScaleToB[epochSnapshot][scaleSnapshot + 1], "epochToScaleToB[epochSnapshot][scaleSnapshot + 1]");
+        //console2.log(thirdPortion, "thirdPortion");
+        console2.log(epochToScaleToB[epochSnapshot][scaleSnapshot + 2], "epochToScaleToB[epochSnapshot][scaleSnapshot + 2]");
+        //console2.log(fourthPortion, "fourthPortion");
+        console2.log(epochToScaleToB[epochSnapshot][scaleSnapshot + 3], "epochToScaleToB[epochSnapshot][scaleSnapshot + 3]");
         console2.log(P_Snapshot, "P_Snapshot");
         console2.log(yieldGain, "yieldGain");
         console2.log("");
