@@ -5,10 +5,10 @@ const SUBGRAPH_PATH = path.join(__dirname, "../subgraph.yaml");
 const LATEST_DEPLOYMENT_CONTEXT_PATH = path.join(__dirname, "../../contracts/deployment-context-latest.json");
 
 const HELP = `
-deploy - deploy the Liquity v2 subgraph
+deploy-subgraph - deploy the Liquity v2 subgraph
 
 Usage:
-  ./deploy [NETWORK_PRESET] [OPTIONS]
+  ./deploy-subgraph [NETWORK_PRESET] [OPTIONS]
 
 Arguments:
   NETWORK_PRESET  A network preset, which is a shorthand for setting certain options.
@@ -150,7 +150,7 @@ async function updateDeclarationWithLatestBoldToken() {
   const declaration = subgraphDeclaration();
   const latestDeploymentContext = getLatestDeploymentContext();
 
-  const deployedAddress = latestDeploymentContext?.deployedContracts.BoldToken;
+  const deployedAddress = latestDeploymentContext?.protocolContracts.BoldToken;
   if (!deployedAddress || (declaration.boldTokenAddress === deployedAddress)) {
     return;
   }

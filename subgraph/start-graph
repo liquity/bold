@@ -1,6 +1,6 @@
 #!/usr/bin/env -S pnpm exec tsx
 
-require("./cli/deploy-subgraph").main().catch(({ message }) => {
+require("./cli/start-graph").main().catch(({ message }) => {
   console.error("");
   console.error(`  Error: ${message}`);
   console.error("");
