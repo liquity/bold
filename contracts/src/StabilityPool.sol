@@ -146,6 +146,9 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     // TODO: from the contract's perspective, this is a write-only variable. It is only ever read in tests, so it would
     // be better to keep it outside the core contract.
     uint256 internal yieldGainsOwed;
+    // Total remaining Bold yield gains (from Trove interest mints) held by SP, not yet paid out to depositors,
+    // and not accounted for because they were received when the total deposits were too small
+    uint256 internal yieldGainsPending;
 
     // --- Data structures ---
 
@@ -225,6 +228,10 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     function getYieldGainsOwed() external view override returns (uint256) {
         return yieldGainsOwed;
+    }
+
+    function getYieldGainsPending() external view override returns (uint256) {
+        return yieldGainsPending;
     }
 
     // --- External Depositor Functions ---
@@ -360,16 +367,18 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         _requireCallerIsActivePool();
 
         uint256 totalBoldDepositsCached = totalBoldDeposits; // cached to save an SLOAD
-        /*
-        * When total deposits is 0, B is not updated. In this case, the BOLD issued can not be obtained by later
-        * depositors - it is missed out on, and remains in the balance of the SP.
-        *
-        */
-        if (totalBoldDepositsCached == 0 || _boldYield == 0) {
+
+        assert(_boldYield > 0); // TODO: remove before deploying
+
+        // When total deposits is very small, B is not updated. In this case, the BOLD issued can not be obtained by later
+        // depositors - it is missed out on, and remains in the balance of the SP.
+        if (totalBoldDepositsCached < DECIMAL_PRECISION) {
+            yieldGainsPending += _boldYield;
             return;
         }
 
-        yieldGainsOwed += _boldYield;
+        yieldGainsOwed += yieldGainsPending + _boldYield;
+        yieldGainsPending = 0;
 
         uint256 yieldPerUnitStaked = _computeYieldPerUnitStaked(_boldYield, totalBoldDepositsCached);
 
