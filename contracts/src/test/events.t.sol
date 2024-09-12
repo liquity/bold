@@ -674,6 +674,7 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
 
         // Increase epoch
         makeSPDepositNoClaim(A, liquidatedDebt);
+        makeSPWithdrawalAndClaim(A, 0); // Claim yield from first troves
         troveManager.liquidate(liquidatedTroveId[0]);
 
         current.epoch = stabilityPool.currentEpoch();
