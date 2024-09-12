@@ -10,10 +10,10 @@ import { Collateral, CollateralAddresses, Token } from "../generated/schema";
 import { TroveManager as TroveManagerTemplate } from "../generated/templates";
 
 function addCollateral(
-  id: string,
   tokenAddress: Address,
   troveManagerAddress: Address,
 ): void {
+  let id = tokenAddress.toHexString();
   let collateral = new Collateral(id);
   collateral.token = id;
   collateral.totalDebt = BigInt.fromI32(0);
@@ -67,10 +67,8 @@ export function handleCollateralRegistryAddressChanged(event: CollateralRegistry
     }
 
     // we use the token address as the id for the collateral
-    let id = tokenAddress.toHexString();
-
-    if (!Collateral.load(id)) {
-      addCollateral(id, tokenAddress, troveManagerAddress);
+    if (!Collateral.load(tokenAddress.toHexString())) {
+      addCollateral(tokenAddress, troveManagerAddress);
     }
   }
 }

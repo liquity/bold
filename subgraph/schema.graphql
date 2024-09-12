@@ -8,7 +8,7 @@ type Collateral @entity {
   totalDebt: BigInt!
 }
 
-type Token @entity (immutable: true) {
+type Token @entity(immutable: true) {
   id: ID!
   collateral: Collateral!
   name: String!
@@ -16,7 +16,7 @@ type Token @entity (immutable: true) {
   decimals: Int!
 }
 
-type CollateralAddresses @entity (immutable: true) {
+type CollateralAddresses @entity(immutable: true) {
   id: ID!
   borrowerOperations: Bytes!
   collateral: Collateral!
@@ -25,6 +25,13 @@ type CollateralAddresses @entity (immutable: true) {
   token: Bytes!
   troveManager: Bytes!
   troveNft: Bytes!
+}
+
+type InterestRateBracket @entity {
+  id: ID!
+  rate: BigInt!
+  totalDebt: BigInt!
+  totalTroves: Int!
 }
 
 type Trove @entity {
@@ -38,11 +45,3 @@ type Trove @entity {
   closedAt: BigInt
   collateral: Collateral!
 }
-
-type InterestRateBracket @entity {
-  id: ID!
-  rate: BigInt!
-  totalDebt: BigInt!
-  totalTroves: Int!
-}
-
