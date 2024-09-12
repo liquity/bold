@@ -42,40 +42,12 @@ methods {
     function _.safeTransferFrom(address a, address b, uint256 x) internal with (env e) => transferFromCVL(calledContract, e.msg.sender, a, b, x) expect bool;
 }
 
-// // For a given average system interest rate, Troves in a given batch always pay 
-// // the same upfront fee (as percentage of their debt) upon premature interest 
-// /// rate adjustments by the manager
-// rule same_upfront_fee_on_interest_adjust {
-//     env e;
-//     calldataarg args;
-//     uint256 troveIdx;
-//     uint256 troveIdy;
-//     uint256 newAnnualInterestRate;
-//     uint256 upperHint;
-//     uint256 lowerHint;
-//     uint256 maxUpfrontFee;
-// 
-//     // Need to set up:
-//     // troveIdX and troveIdY are in the same batch
-// 
-//     // * setBatchManagerAnnualInterest rate is where this charge happens.
-//     // * The upfront fee is calculated using _calcUpfrontFee, the result 
-//     // of which is stored in batchChange.upfrontFee.
-//     // * upfrontFee is added to newDebt (along with other values)
-//     // *  (batchChange is passed to activePoolCached.mintInterestAndAccountForTroveChange
-//     // which does not seem to touch the individual troves)
-//     // * newDebt is passed to troveManager.onSetBatchmanagerAnnualInterestRate
-//     // *onSetBatchmanagerAnnualInterest rate saves the newDebt for the batch,
-//     // but does not seem to affect Trove debt.
-//     setBatchManagerAnnualInterestRate(newAnnualInterestRate, upperHint, lowerHint, maxUpfrontFee);
-// }
-
-// For a given average system interest rate, Troves in a given batch always pay 
-// the same upfront fee (as percentage of their debt) upon premature interest 
-/// rate adjustments by the manager
-// Approach: split this into two rules:
-// 1) "When a trove belongs to a batch, the value of the debt in the individual trove structure has no effect on `getLatestTroveData`" (Essentially to show that we are really using the batch debt for this and not trove debt)
-// 2) "When a batch interest rate is increased prematurely, any two troves with the same share of the debt that are later removed will have their individual debt increased by the same amount" (To cover the removal case you mentioned. I may also be able to improve on the strenght of this property to cover more cases if this works)
+// Note: most of the time trove/batch data is just obtained 
+// from getLatestTroveData (when the system is in steady
+// state and values can be calculated). The data structures are changed in
+// the various "on..." calls. Most of these rules could be improved
+// by making them invariants or making an arbitrary call to one
+// of the functions that can change the state.
 
 // Same as TroveManager._getBatchManager
 function getBatchManager(uint256 troveId) returns address {
@@ -204,48 +176,65 @@ rule troves_in_batch_share_management_fee {
     assert unscaled_management_fee_x == unscaled_management_fee_y;
 }
 
-//-----------------------------------------------------------------------------
-// For troves in a batch, the sum of their individual debts is the 
-// same as the batch total debt.
-//-----------------------------------------------------------------------------
-ghost mapping(uint256 => address) batch_by_trove_id {
-    init_state axiom forall uint256 x. batch_by_trove_id[x] == 0;
-}
-hook Sstore troveManager.Troves[KEY uint256 troveId].interestBatchManager address batch {
-    batch_by_trove_id[troveId] = batch;
-}
-hook Sload address batch troveManager.Troves[KEY uint256 troveId].interestBatchManager {
-    require batch_by_trove_id[troveId] == batch;
-}
+// TODO invariant that the individual shares of
+// a trove in a batch sum to the total shares of the batch.
 
-invariant batch_by_trove_valid (uint256 troveId)
-    troveManager.Troves[troveId].interestBatchManager == batch_by_trove_id[troveId];
-
-
-ghost mapping(address=>uint256) total_trove_debt_by_batch {
-    init_state axiom forall address x. total_trove_debt_by_batch[x] == 0;
-}
-hook Sstore troveManager.Troves[KEY uint256 troveId].debt uint256 new_debt (uint256 old_debt) {
-    address batch = batch_by_trove_id[troveId];
-    if(batch != 0) {
-        total_trove_debt_by_batch[batch] = require_uint256(total_trove_debt_by_batch[batch] 
-            + new_debt - old_debt);
-    }
-}
-rule sum_of_trove_debts_is_batch_debt (method f){
+// Sum of a given batch’s individual Trove entire debts sans redistributions 
+// (recorded debts + accrued interest) equals the batch’s recorded debt plus 
+// its accrued interest
+// NOTE: This restricts us to the case where a batch has exactly 2 troves in it
+// Ideally we would generalize this by using hooks on the trove / batch data
+// structures if that is possible.
+// Another improvement would be to make even this rule an invariant.
+rule sum_of_trove_debts {
     env e;
     calldataarg args;
-    // Need to make batch_by_trove quantified or
-    // make this use troveId
-    uint256 troveId;
-    requireInvariant batch_by_trove_valid(troveId);
-    // Should be similar to requiring this invariant for all troveId
-    require forall uint256 x.
-        troveManager.Troves[x].interestBatchManager == batch_by_trove_id[x]; 
-    address batchManager;
-    require troveManager.batches[batchManager].debt == 
-        total_trove_debt_by_batch[batchManager];
-    f(e, args);
-    assert troveManager.batches[batchManager].debt ==
-        total_trove_debt_by_batch[batchManager];
+    uint256 troveIdX;
+    uint256 troveIdY;
+    address batchAddress;
+    require batchAddress != 0;
+    // Assume troveIdX and troveIdY belong to the same batch
+    // and that these are the only two members of the batch
+    require getBatchManager(troveIdX) == batchAddress;
+    require getBatchManager(troveIdY) == batchAddress;
+    // There is no third trove s.t. it is not one of x or y
+    // and still a member of the batch
+    uint256 troveIdZ;
+    require getBatchManager(troveIdZ) == batchAddress =>
+        (troveIdZ == troveIdX || troveIdZ == troveIdY);
+
+    // Require both troves have nonzero debt shares
+    // and the sum of both trove shares is LEQ the totalBatchShares
+    uint256 troveXBatchShares = getTroveBatchDebtShares(troveIdX);
+    uint256 troveYBatchShares = getTroveBatchDebtShares(troveIdY);
+    uint256 totalBatchShares = getBatchTotalShares(batchAddress);
+
+    require troveXBatchShares > 0;
+    require troveYBatchShares > 0;
+    // Sum of batch shares should be less or equal total shares
+    require require_uint256(troveXBatchShares + troveYBatchShares)
+        <= totalBatchShares;
+
+    TroveManager.LatestBatchData batchData = troveManager.getLatestBatchData(e, batchAddress);
+    TroveManager.LatestTroveData troveDataX = troveManager.getLatestTroveData(e, troveIdX);
+    TroveManager.LatestTroveData troveDataY = troveManager.getLatestTroveData(e, troveIdY);
+
+    uint256 batch_debt = require_uint256(batchData.recordedDebt 
+        + batchData.accruedInterest);
+    uint256 sum_trove_debt = require_uint256(
+        troveDataX.recordedDebt + troveDataX.accruedInterest +
+        troveDataY.recordedDebt + troveDataY.accruedInterest);
+    assert batch_debt == sum_trove_debt;
 }
+
+// NOTE: not correct but keeping this in case it helps inspire a better way later
+// ghost mapping(address=>uint256) total_trove_debt_by_batch {
+//     init_state axiom forall address x. total_trove_debt_by_batch[x] == 0;
+// }
+// hook Sstore troveManager.Troves[KEY uint256 troveId].debt uint256 new_debt (uint256 old_debt) {
+//     address batch = batch_by_trove_id[troveId];
+//     if(batch != 0) {
+//         total_trove_debt_by_batch[batch] = require_uint256(total_trove_debt_by_batch[batch] 
+//             + new_debt - old_debt);
+//     }
+// }
