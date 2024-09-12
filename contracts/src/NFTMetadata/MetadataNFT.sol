@@ -53,11 +53,11 @@ contract MetadataNFT is IMetadataNFT {
         //include: collateral token address, collateral amount, debt token address, debt amount, interest rate, status
         return string.concat(
             '[{"trait_type": "Collateral Token", "value": "',
-            Strings.toString(_troveData._collToken),
+            Strings.toHexString(_troveData._collToken),
             '"}, {"trait_type": "Collateral Amount", "value": "',
             Strings.toString(_troveData._collAmount),
             '"}, {"trait_type": "Debt Token", "value": "',
-            Strings.toString(_troveData._boldToken),
+            Strings.toHexString(_troveData._boldToken),
             '"}, {"trait_type": "Debt Amount", "value": "',
             Strings.toString(_troveData._debtAmount),
             '"}, {"trait_type": "Interest Rate", "value": "',
