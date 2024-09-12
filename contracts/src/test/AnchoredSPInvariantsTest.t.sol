@@ -5,7 +5,7 @@ import "./TestContracts/DevTestSetup.sol";
 import {SPInvariantsTestHandler} from "./TestContracts/SPInvariantsTestHandler.t.sol";
 import {Logging} from "./Utils/Logging.sol";
 
-contract SPYieldTest is DevTestSetup {
+contract AnchoredSPInvariantsTest is DevTestSetup {
     using StringFormatting for uint256;
 
     struct Actor {
