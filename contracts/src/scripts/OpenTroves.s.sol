@@ -71,10 +71,27 @@ contract OpenTroves is Script {
     function run() external {
         vm.startBroadcast();
 
-        ICollateralRegistry collateralRegistry = ICollateralRegistry(vm.envAddress("COLLATERAL_REGISTRY"));
+        string memory manifestJson;
+        try vm.readFile("deployment-manifest.json") returns (string memory content) {
+            manifestJson = content;
+        } catch {}
+
+        ICollateralRegistry collateralRegistry;
+        try vm.envAddress("COLLATERAL_REGISTRY") returns (address value) {
+            collateralRegistry = ICollateralRegistry(value);
+        } catch {
+            collateralRegistry = ICollateralRegistry(vm.parseJsonAddress(manifestJson, ".collateralRegistry"));
+        }
         vm.label(address(collateralRegistry), "CollateralRegistry");
-        IHintHelpers hintHelpers = IHintHelpers(vm.envAddress("HINT_HELPERS"));
+
+        IHintHelpers hintHelpers;
+        try vm.envAddress("HINT_HELPERS") returns (address value) {
+            hintHelpers = IHintHelpers(value);
+        } catch {
+            hintHelpers = IHintHelpers(vm.parseJsonAddress(manifestJson, ".hintHelpers"));
+        }
         vm.label(address(hintHelpers), "HintHelpers");
+
         address proxyImplementation = address(new Proxy());
         vm.label(proxyImplementation, "ProxyImplementation");
 

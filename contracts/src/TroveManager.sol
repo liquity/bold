@@ -311,7 +311,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: batches[batchAddress].coll,
             _annualInterestRate: batch.annualInterestRate,
             _annualManagementFee: batch.annualManagementFee,
-            _totalDebtShares: batches[batchAddress].totalDebtShares
+            _totalDebtShares: batches[batchAddress].totalDebtShares,
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 
@@ -681,7 +682,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: batch.entireCollWithoutRedistribution,
             _annualInterestRate: batch.annualInterestRate,
             _annualManagementFee: batch.annualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares
+            _totalDebtShares: batches[_batchAddress].totalDebtShares,
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 
@@ -1268,7 +1270,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: batches[_batchAddress].coll,
             _annualInterestRate: batches[_batchAddress].annualInterestRate,
             _annualManagementFee: batches[_batchAddress].annualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares
+            _totalDebtShares: batches[_batchAddress].totalDebtShares,
+            // Although the Trove joining the batch pays an upfront fee,
+            // it is an individual fee, so we don't include it here
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 
@@ -1400,7 +1405,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 _coll: batches[_batchAddress].coll,
                 _annualInterestRate: batches[_batchAddress].annualInterestRate,
                 _annualManagementFee: batches[_batchAddress].annualManagementFee,
-                _totalDebtShares: batches[_batchAddress].totalDebtShares
+                _totalDebtShares: batches[_batchAddress].totalDebtShares,
+                _debtIncreaseFromUpfrontFee: 0
             });
         }
     }
@@ -1507,7 +1513,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: batches[_batchAddress].coll,
             _annualInterestRate: batches[_batchAddress].annualInterestRate,
             _annualManagementFee: batches[_batchAddress].annualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares
+            _totalDebtShares: batches[_batchAddress].totalDebtShares,
+            // Although the Trove being adjusted may pay an upfront fee,
+            // it is an individual fee, so we don't include it here
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 
@@ -1534,7 +1543,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 _coll: _newBatchColl,
                 _annualInterestRate: batches[_batchAddress].annualInterestRate,
                 _annualManagementFee: batches[_batchAddress].annualManagementFee,
-                _totalDebtShares: batches[_batchAddress].totalDebtShares
+                _totalDebtShares: batches[_batchAddress].totalDebtShares,
+                _debtIncreaseFromUpfrontFee: 0
             });
         } else {
             Troves[_troveId].debt = _newTroveDebt;
@@ -1588,7 +1598,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: 0,
             _annualInterestRate: _annualInterestRate,
             _annualManagementFee: _annualManagementFee,
-            _totalDebtShares: 0
+            _totalDebtShares: 0,
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 
@@ -1612,7 +1623,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: _newColl,
             _annualInterestRate: batches[_batchAddress].annualInterestRate,
             _annualManagementFee: _newAnnualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares
+            _totalDebtShares: batches[_batchAddress].totalDebtShares,
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 
@@ -1620,7 +1632,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         address _batchAddress,
         uint256 _newColl,
         uint256 _newDebt,
-        uint256 _newAnnualInterestRate
+        uint256 _newAnnualInterestRate,
+        uint256 _upfrontFee
     ) external {
         _requireCallerIsBorrowerOperations();
 
@@ -1637,7 +1650,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: _newColl,
             _annualInterestRate: _newAnnualInterestRate,
             _annualManagementFee: batches[_batchAddress].annualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares
+            _totalDebtShares: batches[_batchAddress].totalDebtShares,
+            _debtIncreaseFromUpfrontFee: _upfrontFee
         });
     }
 
@@ -1696,7 +1710,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: batches[_params.newBatchAddress].coll,
             _annualInterestRate: batches[_params.newBatchAddress].annualInterestRate,
             _annualManagementFee: batches[_params.newBatchAddress].annualManagementFee,
-            _totalDebtShares: batches[_params.newBatchAddress].totalDebtShares
+            _totalDebtShares: batches[_params.newBatchAddress].totalDebtShares,
+            // Although the Trove joining the batch may pay an upfront fee,
+            // it is an individual fee, so we don't include it here
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 
@@ -1827,7 +1844,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: batches[_batchAddress].coll,
             _annualInterestRate: batches[_batchAddress].annualInterestRate,
             _annualManagementFee: batches[_batchAddress].annualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares
+            _totalDebtShares: batches[_batchAddress].totalDebtShares,
+            // Although the Trove leaving the batch may pay an upfront fee,
+            // it is an individual fee, so we don't include it here
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 

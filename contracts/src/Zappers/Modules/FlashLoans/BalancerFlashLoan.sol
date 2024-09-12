@@ -16,14 +16,9 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
     using SafeERC20 for IERC20;
 
     IVault private constant vault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
+    IFlashLoanReceiver public receiver;
 
-    function makeFlashLoan(
-        IERC20 _token,
-        uint256 _amount,
-        IFlashLoanReceiver _caller, // TODO: should it always be msg.sender?
-        Operation _operation,
-        bytes calldata _params
-    ) external {
+    function makeFlashLoan(IERC20 _token, uint256 _amount, Operation _operation, bytes calldata _params) external {
         IERC20[] memory tokens = new IERC20[](1);
         tokens[0] = _token;
         uint256[] memory amounts = new uint256[](1);
@@ -34,20 +29,26 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
         if (_operation == Operation.OpenTrove) {
             ILeverageZapper.OpenLeveragedTroveParams memory openTroveParams =
                 abi.decode(_params, (ILeverageZapper.OpenLeveragedTroveParams));
-            userData = abi.encode(_caller, _operation, openTroveParams);
+            userData = abi.encode(_operation, openTroveParams);
         } else if (_operation == Operation.LeverUpTrove) {
             ILeverageZapper.LeverUpTroveParams memory leverUpTroveParams =
                 abi.decode(_params, (ILeverageZapper.LeverUpTroveParams));
-            userData = abi.encode(_caller, _operation, leverUpTroveParams);
+            userData = abi.encode(_operation, leverUpTroveParams);
         } else if (_operation == Operation.LeverDownTrove) {
             ILeverageZapper.LeverDownTroveParams memory leverDownTroveParams =
                 abi.decode(_params, (ILeverageZapper.LeverDownTroveParams));
-            userData = abi.encode(_caller, _operation, leverDownTroveParams);
+            userData = abi.encode(_operation, leverDownTroveParams);
         } else {
             revert("LZ: Wrong Operation");
         }
 
+        // This will be used by the callback below no
+        receiver = IFlashLoanReceiver(msg.sender);
+
         vault.flashLoan(this, tokens, amounts, userData);
+
+        // Reset receiver
+        receiver = IFlashLoanReceiver(address(0));
     }
 
     function receiveFlashLoan(
@@ -57,16 +58,16 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
         bytes calldata userData
     ) external override {
         require(msg.sender == address(vault), "Caller is not Vault");
+        require(address(receiver) != address(0), "Flash loan not properly initiated");
 
-        // decode receiver and operation
-        IFlashLoanReceiver receiver = IFlashLoanReceiver(abi.decode(userData[0:32], (address)));
-        Operation operation = abi.decode(userData[32:64], (Operation));
+        // decode and operation
+        Operation operation = abi.decode(userData[0:32], (Operation));
 
         if (operation == Operation.OpenTrove) {
             // Open
             // decode params
             ILeverageZapper.OpenLeveragedTroveParams memory openTroveParams =
-                abi.decode(userData[64:], (ILeverageZapper.OpenLeveragedTroveParams));
+                abi.decode(userData[32:], (ILeverageZapper.OpenLeveragedTroveParams));
             // Flash loan minus fees
             uint256 effectiveFlashLoanAmount = amounts[0] - feeAmounts[0];
             // We send only effective flash loan, keeping fees here
@@ -77,7 +78,7 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
             // Lever up
             // decode params
             ILeverageZapper.LeverUpTroveParams memory leverUpTroveParams =
-                abi.decode(userData[64:], (ILeverageZapper.LeverUpTroveParams));
+                abi.decode(userData[32:], (ILeverageZapper.LeverUpTroveParams));
             // Flash loan minus fees
             uint256 effectiveFlashLoanAmount = amounts[0] - feeAmounts[0];
             // We send only effective flash loan, keeping fees here
@@ -88,7 +89,7 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
             // Lever down
             // decode params
             ILeverageZapper.LeverDownTroveParams memory leverDownTroveParams =
-                abi.decode(userData[64:], (ILeverageZapper.LeverDownTroveParams));
+                abi.decode(userData[32:], (ILeverageZapper.LeverDownTroveParams));
             // Flash loan minus fees
             uint256 effectiveFlashLoanAmount = amounts[0] - feeAmounts[0];
             // We send only effective flash loan, keeping fees here
