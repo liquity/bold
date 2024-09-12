@@ -1556,8 +1556,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.ethClaimed = claim ? v.ethStash + v.ethGain : 0;
         v.boldClaimed = claim ? v.boldYield : 0;
         uint256 totalBoldDepositsBefore = v.c.stabilityPool.getTotalBoldDeposits();
-        if (totalBoldDepositsBefore < DECIMAL_PRECISION && amount + totalBoldDepositsBefore >= DECIMAL_PRECISION) {
-            v.depositorPendingYield = v.pendingYield + SP_YIELD_SPLIT * v.pendingInterest / 1e18;
+        uint256 totalBoldDepositsAfter = amount + totalBoldDepositsBefore;
+        if (totalBoldDepositsBefore < DECIMAL_PRECISION && totalBoldDepositsAfter >= DECIMAL_PRECISION) {
+            v.depositorPendingYield = (v.pendingYield + SP_YIELD_SPLIT * v.pendingInterest / 1e18) * amount / totalBoldDepositsAfter;
         }
 
         info("initial deposit: ", v.initialBoldDeposit.decimal());
