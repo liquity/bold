@@ -1059,14 +1059,16 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.trove = vars.troveManager.getLatestTroveData(_troveId);
         vars.batch = vars.troveManager.getLatestBatchData(vars.batchManager);
 
+        uint256 batchFutureDebt =
+            vars.batch.entireDebtWithoutRedistribution - (vars.trove.entireDebt - vars.trove.redistBoldDebtGain);
+
         TroveChange memory batchChange;
         batchChange.appliedRedistBoldDebtGain = vars.trove.redistBoldDebtGain;
         batchChange.appliedRedistCollGain = vars.trove.redistCollGain;
         batchChange.batchAccruedManagementFee = vars.batch.accruedManagementFee;
-        batchChange.oldWeightedRecordedDebt = vars.batch.weightedRecordedDebt
-            + (vars.trove.entireDebt - vars.trove.redistBoldDebtGain) * vars.batch.annualInterestRate;
-        batchChange.newWeightedRecordedDebt = vars.batch.entireDebtWithoutRedistribution * vars.batch.annualInterestRate
-            + vars.trove.entireDebt * _newAnnualInterestRate;
+        batchChange.oldWeightedRecordedDebt = vars.batch.weightedRecordedDebt;
+        batchChange.newWeightedRecordedDebt =
+            batchFutureDebt * vars.batch.annualInterestRate + vars.trove.entireDebt * _newAnnualInterestRate;
 
         // Apply upfront fee on premature adjustments
         if (
@@ -1078,14 +1080,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
 
         // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee
-        batchChange.newWeightedRecordedDebt = vars.batch.entireDebtWithoutRedistribution * vars.batch.annualInterestRate
-            + vars.trove.entireDebt * _newAnnualInterestRate;
+        batchChange.newWeightedRecordedDebt =
+            batchFutureDebt * vars.batch.annualInterestRate + vars.trove.entireDebt * _newAnnualInterestRate;
         // Add batch fees
-        batchChange.oldWeightedRecordedBatchManagementFee = vars.batch.weightedRecordedBatchManagementFee
-            + (vars.trove.entireDebt - batchChange.upfrontFee - vars.trove.redistBoldDebtGain)
-                * vars.batch.annualManagementFee;
-        batchChange.newWeightedRecordedBatchManagementFee =
-            vars.batch.entireDebtWithoutRedistribution * vars.batch.annualManagementFee;
+        batchChange.oldWeightedRecordedBatchManagementFee = vars.batch.weightedRecordedBatchManagementFee;
+        batchChange.newWeightedRecordedBatchManagementFee = batchFutureDebt * vars.batch.annualManagementFee;
 
         activePool.mintAggInterestAndAccountForTroveChange(batchChange, vars.batchManager);
 
