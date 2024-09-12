@@ -4,6 +4,8 @@ type Collateral @entity {
   minCollRatio: BigInt!
   troves: [Trove!]! @derivedFrom(field: "collateral")
   addresses: CollateralAddresses! @derivedFrom(field: "collateral")
+  totalDeposited: BigInt!
+  totalDebt: BigInt!
 }
 
 type Token @entity (immutable: true) {
@@ -43,3 +45,4 @@ type InterestRateBracket @entity {
   totalDebt: BigInt!
   totalTroves: Int!
 }
+

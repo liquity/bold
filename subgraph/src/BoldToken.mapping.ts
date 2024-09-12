@@ -1,7 +1,8 @@
-import { Address, BigInt, Bytes, DataSourceContext, log } from "@graphprotocol/graph-ts";
+import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
 import {
   CollateralRegistryAddressChanged as CollateralRegistryAddressChangedEvent,
 } from "../generated/BoldToken/BoldToken";
+import { BorrowerOperations } from "../generated/BoldToken/BorrowerOperations";
 import { CollateralRegistry } from "../generated/BoldToken/CollateralRegistry";
 import { ERC20 } from "../generated/BoldToken/ERC20";
 import { TroveManager } from "../generated/BoldToken/TroveManager";
@@ -15,7 +16,8 @@ function addCollateral(
 ): void {
   let collateral = new Collateral(id);
   collateral.token = id;
-  collateral.minCollRatio = BigInt.fromI32(0);
+  collateral.totalDebt = BigInt.fromI32(0);
+  collateral.totalDeposited = BigInt.fromI32(0);
 
   let token = new Token(id);
   let tokenContract = ERC20.bind(tokenAddress);
@@ -34,6 +36,8 @@ function addCollateral(
   addresses.token = tokenAddress;
   addresses.troveManager = troveManagerAddress;
   addresses.troveNft = troveManager.troveNFT();
+
+  collateral.minCollRatio = BorrowerOperations.bind(Address.fromBytes(addresses.borrowerOperations)).MCR();
 
   collateral.save();
   addresses.save();
