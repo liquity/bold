@@ -606,11 +606,11 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         Snapshots memory snapshots = depositSnapshots[_depositor];
 
-        uint256 pendingSPYield = activePool.calcPendingSPYield();
+        uint256 pendingSPYield = activePool.calcPendingSPYield() + yieldGainsPending;
         uint256 firstPortionPending;
         uint256 secondPortionPending;
 
-        if (pendingSPYield > 0 && snapshots.epoch == currentEpoch) {
+        if (pendingSPYield > 0 && snapshots.epoch == currentEpoch && totalBoldDeposits >= DECIMAL_PRECISION) {
             uint256 yieldNumerator = pendingSPYield * DECIMAL_PRECISION + lastYieldError;
             uint256 yieldPerUnitStaked = yieldNumerator / totalBoldDeposits;
             uint256 marginalYieldGain = yieldPerUnitStaked * P;
