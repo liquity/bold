@@ -23,7 +23,7 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         TestDeployer deployer = new TestDeployer();
         Contracts memory contracts;
         (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth,)
-            = deployer.deployAndConnectContractsMultiColl(p);
+        = deployer.deployAndConnectContractsMultiColl(p);
         setupContracts(contracts);
 
         handler = new InvariantsTestHandler({contracts: contracts, assumeNoExpectedFailures: true});
@@ -47,10 +47,24 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         handler.addMeToUrgentRedemptionBatch();
 
         vm.prank(adam);
-        handler.registerBatchManager(0, 0.257486338754888547 ether, 0.580260126400716372 ether, 0.474304801140122485 ether, 0.84978254245815657 ether, 2121012);
+        handler.registerBatchManager(
+            0,
+            0.257486338754888547 ether,
+            0.580260126400716372 ether,
+            0.474304801140122485 ether,
+            0.84978254245815657 ether,
+            2121012
+        );
 
         vm.prank(eric);
-        handler.registerBatchManager(2, 0.995000000000011223 ether, 0.999999999997818617 ether, 0.999999999561578875 ether, 0.000000000000010359 ether, 5174410);
+        handler.registerBatchManager(
+            2,
+            0.995000000000011223 ether,
+            0.999999999997818617 ether,
+            0.999999999561578875 ether,
+            0.000000000000010359 ether,
+            5174410
+        );
 
         vm.prank(fran);
         handler.warp(3_662_052);
@@ -68,7 +82,9 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         // lower hint: 0
         // upfront fee: 1_246.586073354248297808 ether
         vm.prank(hope);
-        handler.openTrove(0, 99_999.999999999999999997 ether, 2.251600954885856105 ether, 0.650005595391858041 ether, 8768, 0);
+        handler.openTrove(
+            0, 99_999.999999999999999997 ether, 2.251600954885856105 ether, 0.650005595391858041 ether, 8768, 0
+        );
 
         vm.prank(adam);
         handler.addMeToLiquidationBatch();
@@ -86,10 +102,19 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         handler.addMeToUrgentRedemptionBatch();
 
         vm.prank(dana);
-        handler.registerBatchManager(2, 0.995000000000011139 ether, 0.998635073564148166 ether, 0.996010156573547401 ether, 0.000000000000011577 ether, 9078342);
+        handler.registerBatchManager(
+            2,
+            0.995000000000011139 ether,
+            0.998635073564148166 ether,
+            0.996010156573547401 ether,
+            0.000000000000011577 ether,
+            9078342
+        );
 
         vm.prank(carl);
-        handler.registerBatchManager(1, 0.995000004199127012 ether, 1 ether, 0.999139502777974999 ether, 0.059938454189132239 ether, 1706585);
+        handler.registerBatchManager(
+            1, 0.995000004199127012 ether, 1 ether, 0.999139502777974999 ether, 0.059938454189132239 ether, 1706585
+        );
 
         // initial deposit: 0 ether
         // compounded deposit: 0 ether
@@ -106,7 +131,14 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         handler.warp(18_162);
 
         vm.prank(carl);
-        handler.registerBatchManager(0, 0.995000001857124003 ether, 0.999999628575220679 ether, 0.999925530120657388 ether, 0.249999999999999999 ether, 12664);
+        handler.registerBatchManager(
+            0,
+            0.995000001857124003 ether,
+            0.999999628575220679 ether,
+            0.999925530120657388 ether,
+            0.249999999999999999 ether,
+            12664
+        );
 
         vm.prank(hope);
         handler.addMeToLiquidationBatch();
@@ -139,13 +171,22 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         handler.addMeToLiquidationBatch();
 
         vm.prank(hope);
-        handler.registerBatchManager(0, 0.739903753088089514 ether, 0.780288740735740819 ether, 0.767858707410717411 ether, 0.000000000000022941 ether, 21644);
+        handler.registerBatchManager(
+            0,
+            0.739903753088089514 ether,
+            0.780288740735740819 ether,
+            0.767858707410717411 ether,
+            0.000000000000022941 ether,
+            21644
+        );
 
         // upper hint: 80084422859880547211683076133703299733277748156566366325829078699459944778998
         // lower hint: 104346312485569601582594868672255666718935311025283394307913733247512361320190
         // upfront fee: 290.81243876303301812 ether
         vm.prank(adam);
-        handler.openTrove(3, 39_503.887731534058892956 ether, 1.6863644596244192 ether, 0.38385567397413886 ether, 1, 7433679);
+        handler.openTrove(
+            3, 39_503.887731534058892956 ether, 1.6863644596244192 ether, 0.38385567397413886 ether, 1, 7433679
+        );
 
         vm.prank(adam);
         handler.addMeToUrgentRedemptionBatch();
@@ -179,7 +220,14 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         handler.redeemCollateral(0.000000000000006302 ether, 1);
 
         vm.prank(hope);
-        handler.registerBatchManager(1, 0.822978751289802582 ether, 0.835495454680029657 ether, 0.833312890646159679 ether, 0.422857251385135959 ether, 29470036);
+        handler.registerBatchManager(
+            1,
+            0.822978751289802582 ether,
+            0.835495454680029657 ether,
+            0.833312890646159679 ether,
+            0.422857251385135959 ether,
+            29470036
+        );
 
         vm.prank(gabe);
         handler.addMeToUrgentRedemptionBatch();
@@ -207,10 +255,24 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         handler.setBatchManagerAnnualInterestRate(0, 0.998884384586837808 ether, 15539582, 63731457);
 
         vm.prank(gabe);
-        handler.registerBatchManager(0, 0.351143076054309979 ether, 0.467168361632094569 ether, 0.433984569464653931 ether, 0.000000000000000026 ether, 16482089);
+        handler.registerBatchManager(
+            0,
+            0.351143076054309979 ether,
+            0.467168361632094569 ether,
+            0.433984569464653931 ether,
+            0.000000000000000026 ether,
+            16482089
+        );
 
         vm.prank(adam);
-        handler.registerBatchManager(3, 0.995000000000006201 ether, 0.996462074472343849 ether, 0.995351673013151748 ether, 0.045759837128294745 ether, 10150905);
+        handler.registerBatchManager(
+            3,
+            0.995000000000006201 ether,
+            0.996462074472343849 ether,
+            0.995351673013151748 ether,
+            0.045759837128294745 ether,
+            10150905
+        );
 
         vm.prank(dana);
         handler.warp(23_299);
@@ -244,10 +306,24 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         handler.addMeToUrgentRedemptionBatch();
 
         vm.prank(dana);
-        handler.registerBatchManager(3, 0.30820256993275862 ether, 0.691797430067250243 ether, 0.383672204747583321 ether, 0.000000000000018015 ether, 11403);
+        handler.registerBatchManager(
+            3,
+            0.30820256993275862 ether,
+            0.691797430067250243 ether,
+            0.383672204747583321 ether,
+            0.000000000000018015 ether,
+            11403
+        );
 
         vm.prank(eric);
-        handler.registerBatchManager(3, 0.018392910495297323 ether, 0.98160708950470919 ether, 0.963214179009414206 ether, 0.000000000000019546 ether, 13319597);
+        handler.registerBatchManager(
+            3,
+            0.018392910495297323 ether,
+            0.98160708950470919 ether,
+            0.963214179009414206 ether,
+            0.000000000000019546 ether,
+            13319597
+        );
 
         vm.prank(fran);
         handler.warp(354);
@@ -262,7 +338,9 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         // lower hint: 69042136817699606427763587628766179145825895354994492055731203083594873444699
         // upfront fee: 1_702.831959251916404109 ether
         vm.prank(fran);
-        handler.openTrove(1, 99_999.999999999999999998 ether, 1.883224555937797003 ether, 0.887905235895642125 ether, 4164477, 39);
+        handler.openTrove(
+            1, 99_999.999999999999999998 ether, 1.883224555937797003 ether, 0.887905235895642125 ether, 4164477, 39
+        );
 
         vm.prank(dana);
         handler.warp(996);
@@ -293,7 +371,14 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         // lower hint: 0
         // upfront fee: 1_513.428916567114728229 ether
         vm.prank(barb);
-        handler.openTrove(2, 79_311.063107967331806055 ether, 1.900000000000001559 ether, 0.995000000000007943 ether, 3270556590, 1229144376);
+        handler.openTrove(
+            2,
+            79_311.063107967331806055 ether,
+            1.900000000000001559 ether,
+            0.995000000000007943 ether,
+            3270556590,
+            1229144376
+        );
 
         vm.prank(fran);
         handler.addMeToLiquidationBatch();
@@ -316,7 +401,9 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         // lower hint: 109724453348421969168156614404527408958334892291486496459024204968877369036377
         // upfront fee: 9.807887080131946403 ether
         vm.prank(eric);
-        handler.openTrove(3, 30_260.348082017558572105 ether, 1.683511222023706186 ether, 0.016900375815455486 ether, 108, 14159);
+        handler.openTrove(
+            3, 30_260.348082017558572105 ether, 1.683511222023706186 ether, 0.016900375815455486 ether, 108, 14159
+        );
 
         vm.prank(carl);
         handler.addMeToUrgentRedemptionBatch();
@@ -347,7 +434,14 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         handler.warp(20_216);
 
         vm.prank(carl);
-        handler.registerBatchManager(1, 0.995000000000425732 ether, 0.998288014105982235 ether, 0.996095220733623871 ether, 0.000000000000027477 ether, 3299);
+        handler.registerBatchManager(
+            1,
+            0.995000000000425732 ether,
+            0.998288014105982235 ether,
+            0.996095220733623871 ether,
+            0.000000000000027477 ether,
+            3299
+        );
 
         vm.prank(carl);
         handler.addMeToLiquidationBatch();
@@ -385,6 +479,5 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         // pendingInterest: 0 ether
         vm.prank(hope);
         handler.provideToSP(1, 4.127947448768090932 ether, false);
-
     }
 }

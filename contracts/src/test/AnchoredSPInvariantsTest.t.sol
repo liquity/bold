@@ -43,7 +43,7 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
                 stabilityPool: contracts.stabilityPool,
                 troveManager: contracts.troveManager,
                 collSurplusPool: contracts.collSurplusPool
-                }),
+            }),
             hintHelpers
         );
 

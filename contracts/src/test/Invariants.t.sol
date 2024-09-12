@@ -133,7 +133,10 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
                 "Wrong StabilityPool deposits"
             );
             assertEqDecimal(
-                c.stabilityPool.getYieldGainsOwed() + c.stabilityPool.getYieldGainsPending(), handler.spBoldYield(i), 18, "Wrong StabilityPool yield"
+                c.stabilityPool.getYieldGainsOwed() + c.stabilityPool.getYieldGainsPending(),
+                handler.spBoldYield(i),
+                18,
+                "Wrong StabilityPool yield"
             );
             assertEqDecimal(c.stabilityPool.getCollBalance(), handler.spColl(i), 18, "Wrong StabilityPool coll");
 

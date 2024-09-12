@@ -1558,7 +1558,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 totalBoldDepositsBefore = v.c.stabilityPool.getTotalBoldDeposits();
         uint256 totalBoldDepositsAfter = amount + totalBoldDepositsBefore;
         if (totalBoldDepositsBefore < DECIMAL_PRECISION && totalBoldDepositsAfter >= DECIMAL_PRECISION) {
-            v.depositorPendingYield = (v.pendingYield + SP_YIELD_SPLIT * v.pendingInterest / 1e18) * amount / totalBoldDepositsAfter;
+            v.depositorPendingYield =
+                (v.pendingYield + SP_YIELD_SPLIT * v.pendingInterest / 1e18) * amount / totalBoldDepositsAfter;
         }
 
         info("initial deposit: ", v.initialBoldDeposit.decimal());
@@ -1589,7 +1590,13 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             v.boldDeposit -= v.boldClaimed;
 
             assertEqDecimal(v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 18, "Wrong deposit");
-            assertApproxEqAbsDecimal(v.c.stabilityPool.getDepositorYieldGain(msg.sender), v.depositorPendingYield, 1e6, 18, "Wrong yield gain");
+            assertApproxEqAbsDecimal(
+                v.c.stabilityPool.getDepositorYieldGain(msg.sender),
+                v.depositorPendingYield,
+                1e6,
+                18,
+                "Wrong yield gain"
+            );
             assertEqDecimal(v.c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
             assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");
 

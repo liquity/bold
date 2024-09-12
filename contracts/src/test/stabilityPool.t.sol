@@ -2076,8 +2076,18 @@ contract SPTest is DevTestSetup {
         // Check all BOLD and Coll gains are as expected
         testVars.boldGainA = stabilityPool.getDepositorYieldGain(A);
         testVars.boldGainB = stabilityPool.getDepositorYieldGain(B);
-        assertApproximatelyEqual(testVars.initialBoldGainA + testVars.expectedShareOfYield1_A, testVars.boldGainA, 1e4, "A yield gain mismatch");
-        assertApproximatelyEqual(testVars.initialBoldGainB + testVars.expectedShareOfYield1_B, testVars.boldGainB, 1e4, "B yield gain mismatch");
+        assertApproximatelyEqual(
+            testVars.initialBoldGainA + testVars.expectedShareOfYield1_A,
+            testVars.boldGainA,
+            1e4,
+            "A yield gain mismatch"
+        );
+        assertApproximatelyEqual(
+            testVars.initialBoldGainB + testVars.expectedShareOfYield1_B,
+            testVars.boldGainB,
+            1e4,
+            "B yield gain mismatch"
+        );
 
         uint256 ethGainA = stabilityPool.getDepositorCollGain(A);
         uint256 ethGainB = stabilityPool.getDepositorCollGain(B);
