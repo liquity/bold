@@ -22,8 +22,8 @@ library json {
                     string.concat("{", _prop("name", name),
                     _prop("description", description),
                     _xmlImage(svgImg),
-                    ",",
-                    _prop("attributes", attributes),
+                    ',"attributes":',
+                    attributes,
                     "}")
                 )
             )
