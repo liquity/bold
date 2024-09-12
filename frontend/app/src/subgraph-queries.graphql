@@ -1,0 +1,41 @@
+query TrovesByAccount($account: Bytes!) {
+  troves(where: { borrower: $account }) {
+    id
+    borrower
+    debt
+    deposit
+    stake
+    interestRate
+    createdAt
+    closedAt
+    collateral {
+      id
+      token {
+        symbol
+        name
+      }
+      minCollRatio
+    }
+  }
+}
+
+query TroveById($id: ID!) {
+  trove(id: $id) {
+    id
+    borrower
+    debt
+    deposit
+    stake
+    interestRate
+    createdAt
+    closedAt
+    collateral {
+      id
+      token {
+        symbol
+        name
+      }
+      minCollRatio
+    }
+  }
+}

@@ -6,7 +6,11 @@ export type { Address, CollateralSymbol, Dnum, Token };
 
 export type RiskLevel = "low" | "medium" | "high";
 
-export type TroveId = bigint;
+export type TroveId = `0x${string}`;
+
+export function isTroveId(value: unknown): value is TroveId {
+  return typeof value === "string" && /^0x[0-9a-f]+$/.test(value);
+}
 
 // Utility type to get type-safe entries of an object,
 // to be used like this: Object.entries(o) as Entries<typeof o>)
@@ -33,6 +37,10 @@ export type PositionLoan = {
   interestRate: Dnum;
   troveId: TroveId;
 };
+
+export function isPositionLoan(position: Position): position is PositionLoan {
+  return position.type === "borrow" || position.type === "leverage";
+}
 
 export type PositionEarn = {
   type: "earn";

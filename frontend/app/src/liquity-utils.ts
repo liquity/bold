@@ -1,5 +1,5 @@
 import type { TroveId } from "@/src/types";
-import type { Address } from "@liquity2/uikit";
+import type { Address, CollateralSymbol } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 
 import { useCollateralContract, useProtocolContract } from "@/src/contracts";
@@ -33,6 +33,12 @@ type Rewards = {
   eth: Dnum;
   bold: Dnum;
 };
+
+export function shortenTroveId(troveId: TroveId, chars = 4) {
+  return troveId.length < chars * 2 + 2
+    ? troveId
+    : troveId.slice(0, chars + 2) + "…" + troveId.slice(-chars);
+}
 
 function troveStatusFromNumber(value: number): TroveStatus {
   return match<number, TroveStatus>(value)
@@ -331,6 +337,21 @@ export function getTroveId(owner: Address, ownerIndex: bigint | number) {
     parseAbiParameters("address, uint256"),
     [owner, BigInt(ownerIndex)],
   )));
+}
+
+export function getCollateralFromTroveSymbol(symbol: string): null | CollateralSymbol {
+  symbol = symbol.toUpperCase();
+  if (symbol === "ETH" || symbol === "WETH") {
+    return "ETH";
+  }
+  // this is to handle symbols used for testing, like stETH1, stETH2, etc.
+  if (symbol.startsWith("RETH")) {
+    return "RETH";
+  }
+  if (symbol.startsWith("STETH")) {
+    return "STETH";
+  }
+  return null;
 }
 
 export function useCollTokenAllowance() {

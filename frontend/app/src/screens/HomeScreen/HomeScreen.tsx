@@ -6,7 +6,6 @@ import { css } from "@/styled-system/css";
 import { AnchorTextButton, COLLATERALS, IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
-import { HomeProtocolStats } from "./HomeProtocolStats";
 import { HomeTable } from "./HomeTable";
 
 export function HomeScreen() {
@@ -151,13 +150,6 @@ export function HomeScreen() {
             ];
           })}
         />
-      </div>
-      <div
-        className={css({
-          paddingTop: 16,
-        })}
-      >
-        <HomeProtocolStats />
       </div>
     </div>
   );

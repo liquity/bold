@@ -9,6 +9,10 @@ import tokenSteth from "./token-icons/wsteth.svg";
 
 export type CollateralSymbol = "ETH" | "RETH" | "STETH";
 
+export function isCollateralSymbol(symbol: string): symbol is CollateralSymbol {
+  return symbol === "ETH" || symbol === "RETH" || symbol === "STETH";
+}
+
 export type CollateralToken = Token & {
   collateralRatio: number;
   symbol: CollateralSymbol;
