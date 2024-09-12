@@ -79,7 +79,8 @@ interface ITroveEvents {
         uint256 _coll,
         uint256 _annualInterestRate,
         uint256 _annualManagementFee,
-        uint256 _totalDebtShares
+        uint256 _totalDebtShares,
+        uint256 _debtIncreaseFromUpfrontFee
     );
 
     event BatchedTroveUpdated(

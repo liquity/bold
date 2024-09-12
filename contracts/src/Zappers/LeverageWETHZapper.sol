@@ -55,11 +55,7 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            WETHCached,
-            _params.flashLoanAmount,
-            IFlashLoanReceiver(address(this)),
-            IFlashLoanProvider.Operation.OpenTrove,
-            abi.encode(_params)
+            WETHCached, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(_params)
         );
     }
 
@@ -112,11 +108,7 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            WETH,
-            _params.flashLoanAmount,
-            IFlashLoanReceiver(address(this)),
-            IFlashLoanProvider.Operation.LeverUpTrove,
-            abi.encode(_params)
+            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverUpTrove, abi.encode(_params)
         );
     }
 
@@ -153,11 +145,7 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            WETH,
-            _params.flashLoanAmount,
-            IFlashLoanReceiver(address(this)),
-            IFlashLoanProvider.Operation.LeverDownTrove,
-            abi.encode(_params)
+            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverDownTrove, abi.encode(_params)
         );
     }
 
