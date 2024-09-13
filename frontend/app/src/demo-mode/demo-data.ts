@@ -29,6 +29,7 @@ export const ACCOUNT_BALANCES = {
   LQTY: dn.from(2008.217, 18),
   RETH: dn.from(1.3732, 18),
   STETH: dn.from(17.912, 18),
+  LUSD: dn.from(1_200, 18),
 } as const;
 
 export const ACCOUNT_POSITIONS: Position[] = [
