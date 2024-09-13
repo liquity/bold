@@ -90,6 +90,9 @@ export const openLoanPosition: FlowDeclaration<Request> = {
           request.lowerHint[0],
           request.annualInterestRate[0],
           request.maxUpfrontFee[0],
+          ADDRESS_ZERO,
+          ADDRESS_ZERO,
+          ADDRESS_ZERO,
         ],
       };
     }
