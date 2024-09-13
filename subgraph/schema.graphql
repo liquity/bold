@@ -45,3 +45,8 @@ type Trove @entity {
   closedAt: BigInt
   collateral: Collateral!
 }
+
+type BorrowerInfo @entity {
+  id: ID!
+  troves: Int!
+}

@@ -1,5 +1,5 @@
 import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts";
-import { Collateral, InterestRateBracket, Trove } from "../generated/schema";
+import { BorrowerInfo, Collateral, InterestRateBracket, Trove } from "../generated/schema";
 import { TroveNFT } from "../generated/templates/TroveManager/TroveNFT";
 import {
   TroveOperation as TroveOperationEvent,
@@ -86,11 +86,23 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
   collateral.totalDebt = collateral.totalDebt.minus(prevDebt).plus(debt);
   collateral.save();
 
-  // create trove if it doesn't exist
+  // create trove if needed
   if (!trove) {
+    let troveNftAddress = context.getBytes("address:troveNft");
+    let borrowerAddress = TroveNFT.bind(Address.fromBytes(troveNftAddress)).ownerOf(id);
+
+    // create borrower if needed
+    let borrowerInfo = BorrowerInfo.load(borrowerAddress.toHexString());
+    if (!borrowerInfo) {
+      borrowerInfo = new BorrowerInfo(borrowerAddress.toHexString());
+    }
+
     trove = new Trove(id.toHex());
-    trove.borrower = TroveNFT.bind(Address.fromBytes(context.getBytes("address:troveNft"))).ownerOf(id);
     trove.createdAt = event.block.timestamp;
+    trove.borrower = borrowerAddress;
+
+    borrowerInfo.troves = borrowerInfo.troves + 1;
+    borrowerInfo.save();
   }
 
   // update interest rate brackets
