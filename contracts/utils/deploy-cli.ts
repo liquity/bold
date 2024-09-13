@@ -209,20 +209,22 @@ Deploying Liquity contracts with the following settings:
   const { deployer, ...safeOptions } = options;
 
   const protocolContracts = {
-    WETHTester: deploymentManifest.branches[0].collToken as string,
     BoldToken: deploymentManifest.boldToken as string,
     CollateralRegistry: deploymentManifest.collateralRegistry as string,
     HintHelpers: deploymentManifest.hintHelpers as string,
     MultiTroveGetter: deploymentManifest.multiTroveGetter as string,
+    WETHTester: deploymentManifest.branches[0].collToken as string,
   };
 
   const collateralContracts = (deploymentManifest.branches as any[]).map((branch) => ({
     activePool: branch.activePool as string,
     borrowerOperations: branch.borrowerOperations as string,
+    gasCompZapper: branch.gasCompZapper as string,
     sortedTroves: branch.sortedTroves as string,
     stabilityPool: branch.stabilityPool as string,
     token: branch.collToken as string,
     troveManager: branch.troveManager as string,
+    wethZapper: branch.wethZapper as string,
   }));
 
   // write env file
