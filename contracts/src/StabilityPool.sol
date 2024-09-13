@@ -332,9 +332,15 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         _updateDepositAndSnapshots(msg.sender, newDeposit, newStashedColl);
         _decreaseYieldGainsOwed(currentYieldGain);
-        _updateTotalBoldDeposits(keptYieldGain, boldToWithdraw);
+        uint256 totalBoldDepositsCached = _updateTotalBoldDeposits(keptYieldGain, boldToWithdraw);
         _sendBoldtoDepositor(msg.sender, boldToWithdraw + yieldGainToSend);
         _sendCollGainToDepositor(collToSend);
+
+        // If there were pending yields and with the new deposit we are reaching the threshold, let’s move the yield to owed
+        uint256 yieldGainsPendingCached = yieldGainsPending;
+        if (yieldGainsPendingCached > 0 && totalBoldDepositsCached >= DECIMAL_PRECISION) {
+            _updateYieldRewardsSum(yieldGainsPendingCached, totalBoldDepositsCached);
+        }
     }
 
     function _getNewStashedCollAndCollToSend(address _depositor, uint256 _currentCollGain, bool _doClaim)
