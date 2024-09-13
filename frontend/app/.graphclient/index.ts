@@ -62,6 +62,38 @@ export type Block_height = {
   readonly number_gte?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type BorrowerInfo = {
+  readonly id: Scalars['ID']['output'];
+  readonly troves: Scalars['Int']['output'];
+};
+
+export type BorrowerInfo_filter = {
+  readonly id?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_not?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly troves?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_not?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_gt?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_lt?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_gte?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_lte?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly troves_not_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  /** Filter for the block changed event. */
+  readonly _change_block?: InputMaybe<BlockChangedFilter>;
+  readonly and?: InputMaybe<ReadonlyArray<InputMaybe<BorrowerInfo_filter>>>;
+  readonly or?: InputMaybe<ReadonlyArray<InputMaybe<BorrowerInfo_filter>>>;
+};
+
+export type BorrowerInfo_orderBy =
+  | 'id'
+  | 'troves';
+
 export type Collateral = {
   readonly id: Scalars['ID']['output'];
   readonly token: Token;
@@ -352,6 +384,8 @@ export type Query = {
   readonly interestRateBrackets: ReadonlyArray<InterestRateBracket>;
   readonly trove?: Maybe<Trove>;
   readonly troves: ReadonlyArray<Trove>;
+  readonly borrowerInfo?: Maybe<BorrowerInfo>;
+  readonly borrowerInfos: ReadonlyArray<BorrowerInfo>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -447,6 +481,24 @@ export type QuerytrovesArgs = {
 };
 
 
+export type QueryborrowerInfoArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryborrowerInfosArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<BorrowerInfo_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<BorrowerInfo_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
 export type Query_metaArgs = {
   block?: InputMaybe<Block_height>;
 };
@@ -462,6 +514,8 @@ export type Subscription = {
   readonly interestRateBrackets: ReadonlyArray<InterestRateBracket>;
   readonly trove?: Maybe<Trove>;
   readonly troves: ReadonlyArray<Trove>;
+  readonly borrowerInfo?: Maybe<BorrowerInfo>;
+  readonly borrowerInfos: ReadonlyArray<BorrowerInfo>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -552,6 +606,24 @@ export type SubscriptiontrovesArgs = {
   orderBy?: InputMaybe<Trove_orderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   where?: InputMaybe<Trove_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionborrowerInfoArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionborrowerInfosArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<BorrowerInfo_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<BorrowerInfo_filter>;
   block?: InputMaybe<Block_height>;
   subgraphError?: _SubgraphErrorPolicy_;
 };
@@ -910,6 +982,9 @@ export type ResolversTypes = ResolversObject<{
   BlockChangedFilter: BlockChangedFilter;
   Block_height: Block_height;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']['output']>;
+  BorrowerInfo: ResolverTypeWrapper<BorrowerInfo>;
+  BorrowerInfo_filter: BorrowerInfo_filter;
+  BorrowerInfo_orderBy: BorrowerInfo_orderBy;
   Bytes: ResolverTypeWrapper<Scalars['Bytes']['output']>;
   Collateral: ResolverTypeWrapper<Collateral>;
   CollateralAddresses: ResolverTypeWrapper<CollateralAddresses>;
@@ -947,6 +1022,8 @@ export type ResolversParentTypes = ResolversObject<{
   BlockChangedFilter: BlockChangedFilter;
   Block_height: Block_height;
   Boolean: Scalars['Boolean']['output'];
+  BorrowerInfo: BorrowerInfo;
+  BorrowerInfo_filter: BorrowerInfo_filter;
   Bytes: Scalars['Bytes']['output'];
   Collateral: Collateral;
   CollateralAddresses: CollateralAddresses;
@@ -993,6 +1070,12 @@ export interface BigDecimalScalarConfig extends GraphQLScalarTypeConfig<Resolver
 export interface BigIntScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['BigInt'], any> {
   name: 'BigInt';
 }
+
+export type BorrowerInfoResolvers<ContextType = MeshContext, ParentType extends ResolversParentTypes['BorrowerInfo'] = ResolversParentTypes['BorrowerInfo']> = ResolversObject<{
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  troves?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
 
 export interface BytesScalarConfig extends GraphQLScalarTypeConfig<ResolversTypes['Bytes'], any> {
   name: 'Bytes';
@@ -1044,6 +1127,8 @@ export type QueryResolvers<ContextType = MeshContext, ParentType extends Resolve
   interestRateBrackets?: Resolver<ReadonlyArray<ResolversTypes['InterestRateBracket']>, ParentType, ContextType, RequireFields<QueryinterestRateBracketsArgs, 'skip' | 'first' | 'subgraphError'>>;
   trove?: Resolver<Maybe<ResolversTypes['Trove']>, ParentType, ContextType, RequireFields<QuerytroveArgs, 'id' | 'subgraphError'>>;
   troves?: Resolver<ReadonlyArray<ResolversTypes['Trove']>, ParentType, ContextType, RequireFields<QuerytrovesArgs, 'skip' | 'first' | 'subgraphError'>>;
+  borrowerInfo?: Resolver<Maybe<ResolversTypes['BorrowerInfo']>, ParentType, ContextType, RequireFields<QueryborrowerInfoArgs, 'id' | 'subgraphError'>>;
+  borrowerInfos?: Resolver<ReadonlyArray<ResolversTypes['BorrowerInfo']>, ParentType, ContextType, RequireFields<QueryborrowerInfosArgs, 'skip' | 'first' | 'subgraphError'>>;
   _meta?: Resolver<Maybe<ResolversTypes['_Meta_']>, ParentType, ContextType, Partial<Query_metaArgs>>;
 }>;
 
@@ -1058,6 +1143,8 @@ export type SubscriptionResolvers<ContextType = MeshContext, ParentType extends 
   interestRateBrackets?: SubscriptionResolver<ReadonlyArray<ResolversTypes['InterestRateBracket']>, "interestRateBrackets", ParentType, ContextType, RequireFields<SubscriptioninterestRateBracketsArgs, 'skip' | 'first' | 'subgraphError'>>;
   trove?: SubscriptionResolver<Maybe<ResolversTypes['Trove']>, "trove", ParentType, ContextType, RequireFields<SubscriptiontroveArgs, 'id' | 'subgraphError'>>;
   troves?: SubscriptionResolver<ReadonlyArray<ResolversTypes['Trove']>, "troves", ParentType, ContextType, RequireFields<SubscriptiontrovesArgs, 'skip' | 'first' | 'subgraphError'>>;
+  borrowerInfo?: SubscriptionResolver<Maybe<ResolversTypes['BorrowerInfo']>, "borrowerInfo", ParentType, ContextType, RequireFields<SubscriptionborrowerInfoArgs, 'id' | 'subgraphError'>>;
+  borrowerInfos?: SubscriptionResolver<ReadonlyArray<ResolversTypes['BorrowerInfo']>, "borrowerInfos", ParentType, ContextType, RequireFields<SubscriptionborrowerInfosArgs, 'skip' | 'first' | 'subgraphError'>>;
   _meta?: SubscriptionResolver<Maybe<ResolversTypes['_Meta_']>, "_meta", ParentType, ContextType, Partial<Subscription_metaArgs>>;
 }>;
 
@@ -1105,6 +1192,7 @@ export type _Meta_Resolvers<ContextType = MeshContext, ParentType extends Resolv
 export type Resolvers<ContextType = MeshContext> = ResolversObject<{
   BigDecimal?: GraphQLScalarType;
   BigInt?: GraphQLScalarType;
+  BorrowerInfo?: BorrowerInfoResolvers<ContextType>;
   Bytes?: GraphQLScalarType;
   Collateral?: CollateralResolvers<ContextType>;
   CollateralAddresses?: CollateralAddressesResolvers<ContextType>;
@@ -1192,8 +1280,9 @@ const merger = new(BareMerger as any)({
         store: rootStore.child('bareMerger')
       })
 const documentHashMap = {
-        "45745732d955f1e9e56be85453b7766bb2b5d776bad265e1e6734958fbc111c8": TrovesByAccountDocument,
-"45745732d955f1e9e56be85453b7766bb2b5d776bad265e1e6734958fbc111c8": TroveByIdDocument
+        "3d59270b3def3b38f371cc1c86453c5973663945ac0caac26be606899bbfb1e5": TrovesByAccountDocument,
+"3d59270b3def3b38f371cc1c86453c5973663945ac0caac26be606899bbfb1e5": TrovesCountDocument,
+"3d59270b3def3b38f371cc1c86453c5973663945ac0caac26be606899bbfb1e5": TroveByIdDocument
       }
 additionalEnvelopPlugins.push(usePersistedOperations({
         getPersistedOperation(key) {
@@ -1220,14 +1309,21 @@ additionalEnvelopPlugins.push(usePersistedOperations({
           return printWithCache(TrovesByAccountDocument);
         },
         location: 'TrovesByAccountDocument.graphql',
-        sha256Hash: '45745732d955f1e9e56be85453b7766bb2b5d776bad265e1e6734958fbc111c8'
+        sha256Hash: '3d59270b3def3b38f371cc1c86453c5973663945ac0caac26be606899bbfb1e5'
+      },{
+        document: TrovesCountDocument,
+        get rawSDL() {
+          return printWithCache(TrovesCountDocument);
+        },
+        location: 'TrovesCountDocument.graphql',
+        sha256Hash: '3d59270b3def3b38f371cc1c86453c5973663945ac0caac26be606899bbfb1e5'
       },{
         document: TroveByIdDocument,
         get rawSDL() {
           return printWithCache(TroveByIdDocument);
         },
         location: 'TroveByIdDocument.graphql',
-        sha256Hash: '45745732d955f1e9e56be85453b7766bb2b5d776bad265e1e6734958fbc111c8'
+        sha256Hash: '3d59270b3def3b38f371cc1c86453c5973663945ac0caac26be606899bbfb1e5'
       }
     ];
     },
@@ -1295,6 +1391,13 @@ export type TrovesByAccountQuery = { readonly troves: ReadonlyArray<(
     ) }
   )> };
 
+export type TrovesCountQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TrovesCountQuery = { readonly borrowerInfo?: Maybe<Pick<BorrowerInfo, 'troves'>> };
+
 export type TroveByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -1331,6 +1434,13 @@ export const TrovesByAccountDocument = gql`
   }
 }
     ` as unknown as DocumentNode<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
+export const TrovesCountDocument = gql`
+    query TrovesCount($id: ID!) {
+  borrowerInfo(id: $id) {
+    troves
+  }
+}
+    ` as unknown as DocumentNode<TrovesCountQuery, TrovesCountQueryVariables>;
 export const TroveByIdDocument = gql`
     query TroveById($id: ID!) {
   trove(id: $id) {
@@ -1356,11 +1466,15 @@ export const TroveByIdDocument = gql`
 
 
 
+
 export type Requester<C = {}, E = unknown> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C, E>(requester: Requester<C, E>) {
   return {
     TrovesByAccount(variables: TrovesByAccountQueryVariables, options?: C): Promise<TrovesByAccountQuery> {
       return requester<TrovesByAccountQuery, TrovesByAccountQueryVariables>(TrovesByAccountDocument, variables, options) as Promise<TrovesByAccountQuery>;
+    },
+    TrovesCount(variables: TrovesCountQueryVariables, options?: C): Promise<TrovesCountQuery> {
+      return requester<TrovesCountQuery, TrovesCountQueryVariables>(TrovesCountDocument, variables, options) as Promise<TrovesCountQuery>;
     },
     TroveById(variables: TroveByIdQueryVariables, options?: C): Promise<TroveByIdQuery> {
       return requester<TroveByIdQuery, TroveByIdQueryVariables>(TroveByIdDocument, variables, options) as Promise<TroveByIdQuery>;

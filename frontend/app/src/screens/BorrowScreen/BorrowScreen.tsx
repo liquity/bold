@@ -7,13 +7,13 @@ import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { DEBT_SUGGESTIONS, INTEREST_RATE_DEFAULT } from "@/src/constants";
 import content from "@/src/content";
-import { ACCOUNT_BALANCES } from "@/src/demo-mode";
 import { useInputFieldValue } from "@/src/form-utils";
+import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
-import { useFindAvailableTroveIndex } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
+import { useTroveCount } from "@/src/subgraph-hooks";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
@@ -34,7 +34,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { match, P } from "ts-pattern";
 
-const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
+const COLLATERAL_SYMBOLS = COLLATERALS.map(({ symbol }) => symbol);
 
 export function BorrowScreen() {
   const account = useAccount();
@@ -47,9 +47,6 @@ export function BorrowScreen() {
     flow,
   } = useTransactionFlow();
 
-  const availableTroveIndex = useFindAvailableTroveIndex(account.address);
-  const openedTroveIndex = (availableTroveIndex.data ?? 0) - 1;
-
   const router = useRouter();
 
   // useParams() can return an array, but not with the current
@@ -58,14 +55,28 @@ export function BorrowScreen() {
   if (!isCollateralSymbol(collSymbol)) {
     throw new Error(`Invalid collateral symbol: ${collSymbol}`);
   }
-  const collateralIndex = collateralSymbols.indexOf(collSymbol);
-  const collateral = COLLATERALS[collateralIndex];
 
-  const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral.name}`);
-  const debt = useInputFieldValue((value) => `${dn.format(value)} BOLD`);
+  // this is not the collIndex as deployed, but rather the index of the collateral
+  // in COLLATERALS, which is the list of collaterals known by the app.
+  const knownCollIndex = COLLATERAL_SYMBOLS.indexOf(collSymbol);
+  const collateral = COLLATERALS[knownCollIndex];
+
+  const deposit = useInputFieldValue((value) => `${fmtnum(value)} ${collateral.name}`);
+  const debt = useInputFieldValue((value) => `${fmtnum(value)} BOLD`);
   const [interestRate, setInterestRate] = useState(dn.div(dn.from(INTEREST_RATE_DEFAULT, 18), 100));
 
   const collPrice = usePrice(collateral.symbol);
+
+  const balances = COLLATERAL_SYMBOLS.map((symbol) => {
+    // collateral symbols are static so we always
+    // call the same number of useBalance hooks
+    return useBalance(account.address, symbol);
+  });
+
+  const collBalance = balances[knownCollIndex];
+
+  const troveCount = useTroveCount(account.address);
+  const newTroveIndex = troveCount.data ?? 0;
 
   if (!collPrice) {
     return null;
@@ -101,7 +112,7 @@ export function BorrowScreen() {
 
   const currentStepId = flow?.steps?.[currentStepIndex]?.id;
 
-  const txMode = false;
+  const txMode = true;
 
   return (
     <Screen
@@ -131,11 +142,10 @@ export function BorrowScreen() {
         >
           <div>
             <div>
-              next available trove: {match(availableTroveIndex)
-                .with({ status: "idle" }, () => "−")
-                .with({ status: "loading" }, () => "fetching")
+              next available trove id: {match(troveCount)
+                .with({ status: "pending" }, () => "fetching")
                 .with({ status: "error" }, () => "error")
-                .with({ status: "success" }, ({ data }) => `#${data}`)
+                .with({ status: "success" }, ({ data }) => data)
                 .exhaustive()}
             </div>
             <div>flow: {flow?.request.flowId}</div>
@@ -150,13 +160,13 @@ export function BorrowScreen() {
               flow step error: <pre>{flow?.steps?.[currentStepIndex]?.error}</pre>
             </div>
           </div>
-          {match([account, availableTroveIndex])
+          {match([account, troveCount])
             .with([
               { status: "connected", address: P.nonNullable },
               { status: "success" },
             ], ([
               account,
-              availableTroveIndex,
+              troveCount,
             ]) => (
               (
                 <div
@@ -174,31 +184,33 @@ export function BorrowScreen() {
                   >
                     <Button
                       size="mini"
-                      label={`openLoanPosition (#${availableTroveIndex.data})`}
+                      label={`openLoanPosition (#${troveCount.data})`}
                       onClick={() => {
-                        start({
-                          flowId: "openLoanPosition",
-                          collIndex: 0,
-                          owner: account.address,
-                          ownerIndex: availableTroveIndex.data,
-                          collAmount: dn.from(25, 18),
-                          boldAmount: dn.from(2800, 18),
-                          upperHint: dn.from(0, 18),
-                          lowerHint: dn.from(0, 18),
-                          annualInterestRate: dn.from(0.05, 18),
-                          maxUpfrontFee: dn.from(100, 18),
-                        });
+                        if (deposit.parsed && debt.parsed && dn.gt(interestRate, 0)) {
+                          start({
+                            flowId: "openLoanPosition",
+                            collIndex: 0,
+                            owner: account.address,
+                            ownerIndex: troveCount.data ?? 0,
+                            collAmount: deposit.parsed,
+                            boldAmount: debt.parsed,
+                            upperHint: dn.from(0, 18),
+                            lowerHint: dn.from(0, 18),
+                            annualInterestRate: dn.div(interestRate, 100),
+                            maxUpfrontFee: [2n ** 256n - 1n, 18], // type(uint256).max
+                          });
+                        }
                       }}
                     />
                     <Button
-                      disabled={openedTroveIndex < 0}
-                      label={`updateLoanPosition (#${availableTroveIndex.data - 1})`}
+                      disabled={newTroveIndex < 0}
+                      label={`updateLoanPosition (#${(troveCount.data ?? 0) - 1})`}
                       onClick={() => {
                         start({
                           flowId: "updateLoanPosition",
                           collIndex: 0,
                           owner: account.address,
-                          ownerIndex: availableTroveIndex.data - 1,
+                          ownerIndex: (troveCount.data ?? 0) - 1,
                           collChange: dn.from(1, 18),
                           boldChange: dn.from(0, 18),
                           maxUpfrontFee: dn.from(100, 18),
@@ -207,14 +219,14 @@ export function BorrowScreen() {
                       size="mini"
                     />
                     <Button
-                      disabled={openedTroveIndex < 0}
-                      label={`repayAndCloseLoanPosition (#${availableTroveIndex.data - 1})`}
+                      disabled={newTroveIndex < 0}
+                      label={`repayAndCloseLoanPosition (#${(troveCount.data ?? 0) - 1})`}
                       onClick={() => {
                         start({
                           flowId: "repayAndCloseLoanPosition",
                           collIndex: 0,
                           owner: account.address,
-                          ownerIndex: availableTroveIndex.data - 1,
+                          ownerIndex: (troveCount.data ?? 0) - 1,
                         });
                       }}
                       size="mini"
@@ -263,10 +275,12 @@ export function BorrowScreen() {
             <InputField
               contextual={
                 <Dropdown
-                  items={COLLATERALS.map(({ symbol, name }) => ({
+                  items={COLLATERALS.map(({ symbol, name }, index) => ({
                     icon: <TokenIcon symbol={symbol} />,
                     label: name,
-                    value: account.isConnected ? dn.format(ACCOUNT_BALANCES[symbol]) : "−",
+                    value: account.isConnected
+                      ? fmtnum(balances[index].data ?? 0)
+                      : "−",
                   }))}
                   menuPlacement="end"
                   menuWidth={300}
@@ -277,7 +291,7 @@ export function BorrowScreen() {
                       { scroll: false },
                     );
                   }}
-                  selected={collateralIndex}
+                  selected={knownCollIndex}
                 />
               }
               label={content.borrowScreen.depositField.label}
@@ -285,15 +299,15 @@ export function BorrowScreen() {
               secondary={{
                 start: `$${
                   deposit.parsed
-                    ? dn.format(dn.mul(collPrice, deposit.parsed), { digits: 2, trailingZeros: true })
+                    ? fmtnum(dn.mul(collPrice, deposit.parsed), "2z")
                     : "0.00"
                 }`,
                 end: account.isConnected && (
                   <TextButton
-                    label={`Max ${dn.format(ACCOUNT_BALANCES[collateral.symbol])} ${collateral.name}`}
+                    label={`Max ${fmtnum(collBalance.data)} ${collateral.name}`}
                     onClick={() => {
                       deposit.setValue(
-                        dn.format(ACCOUNT_BALANCES[collateral.symbol]).replace(",", ""),
+                        fmtnum(collBalance.data).replace(",", ""),
                       );
                     }}
                   />
@@ -328,10 +342,7 @@ export function BorrowScreen() {
               secondary={{
                 start: `$${
                   debt.parsed
-                    ? dn.format(dn.mul(collPrice, debt.parsed), {
-                      digits: 2,
-                      trailingZeros: true,
-                    })
+                    ? fmtnum(dn.mul(collPrice, debt.parsed), "2z")
                     : "0.00"
                 }`,
                 end: debtSuggestions && (
@@ -340,7 +351,7 @@ export function BorrowScreen() {
                       s.debt && s.risk && (
                         <PillButton
                           key={dn.toString(s.debt)}
-                          label={`$${dn.format(s.debt, { compact: true, digits: 0 })}`}
+                          label={`$${fmtnum(s.debt, { compact: true, digits: 0 })}`}
                           onClick={() => {
                             if (s.debt) {
                               debt.setValue(dn.toString(s.debt, 0));

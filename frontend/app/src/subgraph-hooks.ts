@@ -31,6 +31,35 @@ function subgraphTroveToLoan(
   };
 }
 
+export let useTroveCount = (account?: Address) => {
+  return useQuery({
+    queryKey: ["TrovesCount", account],
+    queryFn: async () => {
+      if (!account) {
+        return null;
+      }
+      const { borrowerInfo } = await graphSdk.TrovesCount({ id: account.toLowerCase() });
+      return borrowerInfo?.troves ?? 0;
+    },
+  });
+};
+
+if (DEMO_MODE) {
+  useTroveCount = (account?: Address) => {
+    return useQuery({
+      queryKey: ["TrovesCount", account],
+      queryFn: async () => {
+        if (!account) {
+          return null;
+        }
+        return Object.values(ACCOUNT_POSITIONS)
+          .filter(isPositionLoan)
+          .length;
+      },
+    });
+  };
+}
+
 export let useLoansByAccount = (account?: Address) => {
   return useQuery({
     queryKey: ["TrovesByAccount", account],

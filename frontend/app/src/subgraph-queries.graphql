@@ -19,6 +19,12 @@ query TrovesByAccount($account: Bytes!) {
   }
 }
 
+query TrovesCount($id: ID!) {
+  borrowerInfo(id: $id) {
+    troves
+  }
+}
+
 query TroveById($id: ID!) {
   trove(id: $id) {
     id

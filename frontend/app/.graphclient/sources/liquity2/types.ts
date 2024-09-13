@@ -39,6 +39,38 @@ export type Block_height = {
   readonly number_gte?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type BorrowerInfo = {
+  readonly id: Scalars['ID']['output'];
+  readonly troves: Scalars['Int']['output'];
+};
+
+export type BorrowerInfo_filter = {
+  readonly id?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_not?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly troves?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_not?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_gt?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_lt?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_gte?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_lte?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly troves_not_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  /** Filter for the block changed event. */
+  readonly _change_block?: InputMaybe<BlockChangedFilter>;
+  readonly and?: InputMaybe<ReadonlyArray<InputMaybe<BorrowerInfo_filter>>>;
+  readonly or?: InputMaybe<ReadonlyArray<InputMaybe<BorrowerInfo_filter>>>;
+};
+
+export type BorrowerInfo_orderBy =
+  | 'id'
+  | 'troves';
+
 export type Collateral = {
   readonly id: Scalars['ID']['output'];
   readonly token: Token;
@@ -329,6 +361,8 @@ export type Query = {
   readonly interestRateBrackets: ReadonlyArray<InterestRateBracket>;
   readonly trove?: Maybe<Trove>;
   readonly troves: ReadonlyArray<Trove>;
+  readonly borrowerInfo?: Maybe<BorrowerInfo>;
+  readonly borrowerInfos: ReadonlyArray<BorrowerInfo>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -424,6 +458,24 @@ export type QuerytrovesArgs = {
 };
 
 
+export type QueryborrowerInfoArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryborrowerInfosArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<BorrowerInfo_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<BorrowerInfo_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
 export type Query_metaArgs = {
   block?: InputMaybe<Block_height>;
 };
@@ -439,6 +491,8 @@ export type Subscription = {
   readonly interestRateBrackets: ReadonlyArray<InterestRateBracket>;
   readonly trove?: Maybe<Trove>;
   readonly troves: ReadonlyArray<Trove>;
+  readonly borrowerInfo?: Maybe<BorrowerInfo>;
+  readonly borrowerInfos: ReadonlyArray<BorrowerInfo>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -529,6 +583,24 @@ export type SubscriptiontrovesArgs = {
   orderBy?: InputMaybe<Trove_orderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   where?: InputMaybe<Trove_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionborrowerInfoArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionborrowerInfosArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<BorrowerInfo_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<BorrowerInfo_filter>;
   block?: InputMaybe<Block_height>;
   subgraphError?: _SubgraphErrorPolicy_;
 };
@@ -816,6 +888,10 @@ export type _SubgraphErrorPolicy_ =
   trove: InContextSdkMethod<Query['trove'], QuerytroveArgs, MeshContext>,
   /** null **/
   troves: InContextSdkMethod<Query['troves'], QuerytrovesArgs, MeshContext>,
+  /** null **/
+  borrowerInfo: InContextSdkMethod<Query['borrowerInfo'], QueryborrowerInfoArgs, MeshContext>,
+  /** null **/
+  borrowerInfos: InContextSdkMethod<Query['borrowerInfos'], QueryborrowerInfosArgs, MeshContext>,
   /** Access to subgraph metadata **/
   _meta: InContextSdkMethod<Query['_meta'], Query_metaArgs, MeshContext>
   };
@@ -845,6 +921,10 @@ export type _SubgraphErrorPolicy_ =
   trove: InContextSdkMethod<Subscription['trove'], SubscriptiontroveArgs, MeshContext>,
   /** null **/
   troves: InContextSdkMethod<Subscription['troves'], SubscriptiontrovesArgs, MeshContext>,
+  /** null **/
+  borrowerInfo: InContextSdkMethod<Subscription['borrowerInfo'], SubscriptionborrowerInfoArgs, MeshContext>,
+  /** null **/
+  borrowerInfos: InContextSdkMethod<Subscription['borrowerInfos'], SubscriptionborrowerInfosArgs, MeshContext>,
   /** Access to subgraph metadata **/
   _meta: InContextSdkMethod<Subscription['_meta'], Subscription_metaArgs, MeshContext>
   };
