@@ -381,8 +381,8 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         uint256 totalBoldDepositsCached = totalBoldDeposits; // cached to save an SLOAD
 
-        // When total deposits is very small, B is not updated. In this case, the BOLD issued can not be obtained by later
-        // depositors - it is missed out on, and remains in the balance of the SP.
+        // When total deposits is very small, B is not updated. In this case, the BOLD issued is hold
+        // until the total deposits reach 1 BOLD (remains in the balance of the SP).
         if (totalBoldDepositsCached < DECIMAL_PRECISION) {
             yieldGainsPending += _boldYield;
             return;
