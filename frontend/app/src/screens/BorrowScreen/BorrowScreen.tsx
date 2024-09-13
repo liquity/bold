@@ -7,6 +7,7 @@ import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { DEBT_SUGGESTIONS, INTEREST_RATE_DEFAULT } from "@/src/constants";
 import content from "@/src/content";
+import { useDemoMode } from "@/src/demo-mode";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
@@ -112,7 +113,7 @@ export function BorrowScreen() {
 
   const currentStepId = flow?.steps?.[currentStepIndex]?.id;
 
-  const txMode = true;
+  const demoMode = useDemoMode();
 
   return (
     <Screen
@@ -132,7 +133,7 @@ export function BorrowScreen() {
         </HFlex>
       }
     >
-      {txMode && (
+      {!demoMode.enabled && (
         <div
           className={css({
             display: "flex",

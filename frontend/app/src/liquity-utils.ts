@@ -5,7 +5,6 @@ import type { Dnum } from "dnum";
 import { useCollateralContract, useProtocolContract } from "@/src/contracts";
 import { ADDRESS_ZERO } from "@/src/eth-utils";
 import { useWatchQueries } from "@/src/wagmi-utils";
-import { useEffect, useState } from "react";
 import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, maxUint256, parseAbiParameters } from "viem";
 import { useAccount, useBalance, useReadContract, useReadContracts, useWriteContract } from "wagmi";
@@ -62,8 +61,10 @@ export function troveStatusToLabel(status: TroveStatus) {
     .exhaustive();
 }
 
-export function useTroveDetails(troveId: TroveId = 0n) {
+export function useTroveDetails(troveId: TroveId = "0x0") {
   const TroveManagerContract = useCollateralContract(collSymbol, "TroveManager");
+
+  const troveIdBigInt = BigInt(troveId);
 
   const read = useReadContracts({
     allowFailure: false,
@@ -72,27 +73,27 @@ export function useTroveDetails(troveId: TroveId = 0n) {
         {
           ...TroveManagerContract,
           functionName: "getTroveStatus",
-          args: [troveId],
+          args: [troveIdBigInt],
         },
         {
           ...TroveManagerContract,
           functionName: "getTroveStake",
-          args: [troveId],
+          args: [troveIdBigInt],
         },
         {
           ...TroveManagerContract,
           functionName: "getTroveDebt",
-          args: [troveId],
+          args: [troveIdBigInt],
         },
         {
           ...TroveManagerContract,
           functionName: "getTroveColl",
-          args: [troveId],
+          args: [troveIdBigInt],
         },
         {
           ...TroveManagerContract,
           functionName: "getTroveAnnualInterestRate",
-          args: [troveId],
+          args: [troveIdBigInt],
         },
       ]
       : [],
@@ -168,7 +169,7 @@ export function useCloseTrove(troveId: TroveId) {
       writeContract({
         ...BorrowerOperationsContract,
         functionName: "closeTrove",
-        args: [troveId],
+        args: [BigInt(troveId)],
       });
     }
   };
@@ -184,12 +185,12 @@ export function useTroveRewards(troveId: TroveId) {
         {
           ...TroveManagerContract,
           functionName: "getPendingCollReward",
-          args: [troveId],
+          args: [BigInt(troveId)],
         },
         {
           ...TroveManagerContract,
           functionName: "getPendingBoldDebtReward",
-          args: [troveId],
+          args: [BigInt(troveId)],
         },
       ]
       : [],

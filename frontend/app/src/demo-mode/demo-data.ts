@@ -7,7 +7,7 @@ import * as dn from "dnum";
 
 export const PRICE_UPDATE_INTERVAL = 15_000;
 export const PRICE_UPDATE_VARIATION = 0.003;
-export const PRICE_UPDATE_MANUAL = false;
+export const PRICE_UPDATE_MANUAL = true;
 
 export const LQTY_PRICE = dn.from(0.64832, 18);
 export const ETH_PRICE = dn.from(2_580.293872, 18);

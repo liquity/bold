@@ -111,6 +111,7 @@ if (DEMO_MODE) {
         if (!troveId || !isTroveId(troveId)) {
           return null;
         }
+        await sleep(500);
         for (const position of ACCOUNT_POSITIONS) {
           if (isPositionLoan(position) && position.troveId === troveId) {
             return position;
