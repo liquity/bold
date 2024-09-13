@@ -2,11 +2,14 @@
 
 import "@rainbow-me/rainbowkit/styles.css";
 
+import type { Token } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 import type { ComponentProps, ReactNode } from "react";
 import type { Chain } from "wagmi/chains";
 
+import { ACCOUNT_BALANCES } from "@/src/demo-mode";
 import { useDemoMode } from "@/src/demo-mode";
+import { dnum18 } from "@/src/dnum-utils";
 import {
   CHAIN_BLOCK_EXPLORER,
   CHAIN_CONTRACT_ENS_REGISTRY,
@@ -16,10 +19,14 @@ import {
   CHAIN_ID,
   CHAIN_NAME,
   CHAIN_RPC_URL,
+  COLLATERAL_CONTRACTS,
+  CONTRACT_BOLD_TOKEN,
+  LQTY_TOKEN,
+  LUSD_TOKEN,
   WALLET_CONNECT_PROJECT_ID,
 } from "@/src/env";
 import { noop } from "@/src/utils";
-import { useTheme } from "@liquity2/uikit";
+import { isCollateralSymbol, useTheme } from "@liquity2/uikit";
 import {
   getDefaultConfig,
   lightTheme,
@@ -29,7 +36,16 @@ import {
 } from "@rainbow-me/rainbowkit";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { http, useAccount as useAccountWagmi, useEnsName, WagmiProvider } from "wagmi";
+import { match } from "ts-pattern";
+import { erc20Abi } from "viem";
+import {
+  http,
+  useAccount as useAccountWagmi,
+  useBalance as useBalanceWagmi,
+  useEnsName,
+  useReadContract,
+  WagmiProvider,
+} from "wagmi";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +82,48 @@ export function useAccount():
     disconnect: account.isConnected && openAccountModal || noop,
     ensName: ensName.data ?? undefined,
   };
+}
+
+export function useBalance(
+  address: Address | undefined,
+  token: Token["symbol"] | undefined,
+) {
+  const demoMode = useDemoMode();
+
+  const tokenAddress = match(token)
+    .when(
+      (symbol) => Boolean(symbol && isCollateralSymbol(symbol) && symbol !== "ETH"),
+      (symbol) => (
+        symbol && isCollateralSymbol(symbol) && symbol !== "ETH" ? COLLATERAL_CONTRACTS[symbol]?.TOKEN ?? null : null
+      ),
+    )
+    .with("BOLD", () => CONTRACT_BOLD_TOKEN)
+    .with("LQTY", () => LQTY_TOKEN)
+    .with("LUSD", () => LUSD_TOKEN)
+    .otherwise(() => null);
+
+  const tokenBalance = useReadContract({
+    address: tokenAddress ?? undefined,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: address && [address],
+    query: {
+      select: (value) => dnum18(value ?? 0n),
+      enabled: Boolean(!demoMode.enabled && address && token !== "ETH"),
+    },
+  });
+
+  const ethBalance = useBalanceWagmi({
+    address,
+    query: {
+      select: ({ value }) => dnum18(value ?? 0n),
+      enabled: Boolean(!demoMode.enabled && address && token === "ETH"),
+    },
+  });
+
+  return demoMode.enabled && token
+    ? { data: ACCOUNT_BALANCES[token], isLoading: false }
+    : (token === "ETH" ? ethBalance : tokenBalance);
 }
 
 function useRainbowKitProps(): Omit<ComponentProps<typeof RainbowKitProvider>, "children"> {
