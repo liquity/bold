@@ -28,6 +28,8 @@ import "../CollateralRegistry.sol";
 import "../MockInterestRouter.sol";
 import "../test/TestContracts/PriceFeedTestnet.sol";
 import "../test/TestContracts/MetadataDeployment.sol";
+import "../Zappers/WETHZapper.sol";
+import "../Zappers/GasCompZapper.sol";
 import {WETHTester} from "../test/TestContracts/WETHTester.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "forge-std/console.sol";
@@ -54,6 +56,8 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         GasPool gasPool;
         IInterestRouter interestRouter;
         IERC20Metadata collToken;
+        WETHZapper wethZapper;
+        GasCompZapper gasCompZapper;
     }
 
     struct LiquityContractAddresses {
@@ -69,6 +73,11 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         address priceFeed;
         address gasPool;
         address interestRouter;
+    }
+
+    struct Zappers {
+        WETHZapper wethZapper;
+        GasCompZapper gasCompZapper;
     }
 
     struct TroveManagerParams {
@@ -128,6 +137,8 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
                     string.concat('"priceFeed":"', address(c.priceFeed).toHexString(), '",'),
                     string.concat('"gasPool":"', address(c.gasPool).toHexString(), '",'),
                     string.concat('"interestRouter":"', address(c.interestRouter).toHexString(), '",'),
+                    string.concat('"wethZapper":"', address(c.wethZapper).toHexString(), '",'),
+                    string.concat('"gasCompZapper":"', address(c.gasCompZapper).toHexString(), '",'),
                     string.concat('"collToken":"', address(c.collToken).toHexString(), '"') // no comma
                 )
             ),
@@ -464,6 +475,31 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             address(contracts.borrowerOperations),
             address(contracts.activePool)
         );
+
+        // deploy zappers
+        (contracts.gasCompZapper, contracts.wethZapper) =
+        _deployZappers(contracts.addressesRegistry, contracts.collToken, _weth);
+    }
+
+    function _deployZappers(
+        IAddressesRegistry _addressesRegistry,
+        IERC20 _collToken,
+        IWETH _weth
+    )
+        internal
+        returns (
+            GasCompZapper gasCompZapper,
+            WETHZapper wethZapper
+        )
+    {
+        bool lst = _collToken != _weth;
+        if (lst) {
+            gasCompZapper = new GasCompZapper(_addressesRegistry);
+        } else {
+            wethZapper = new WETHZapper(_addressesRegistry);
+        }
+
+        return (gasCompZapper, wethZapper);
     }
 
     function formatAmount(uint256 amount, uint256 decimals, uint256 digits) internal pure returns (string memory) {
