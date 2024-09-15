@@ -161,6 +161,22 @@ contract DevTestSetup is BaseTest {
         assertEq(uint8(troveManager.getTroveStatus(troveIDs.C)), uint8(ITroveManager.Status.closedByLiquidation));
     }
 
+    function _setupForSPDepositAdjustmentsWithoutOwedYieldRewards() internal returns (ABCDEF memory troveIDs) {
+        (troveIDs.A, troveIDs.B, troveIDs.C, troveIDs.D) = _setupForBatchLiquidateTrovesPureOffset();
+
+        // A claims yield rewards
+        makeSPWithdrawalAndClaim(A, 0);
+
+        // A liquidates C
+        liquidate(A, troveIDs.C);
+
+        // D sends BOLD to A and B so they have some to use in tests
+        transferBold(D, A, boldToken.balanceOf(D) / 2);
+        transferBold(D, B, boldToken.balanceOf(D));
+
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.C)), uint8(ITroveManager.Status.closedByLiquidation));
+    }
+
     function _setupForPTests() internal returns (ABCDEF memory) {
         ABCDEF memory troveIDs;
         (troveIDs.A, troveIDs.B, troveIDs.C, troveIDs.D) = _setupForBatchLiquidateTrovesPureOffset();

@@ -198,9 +198,26 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         string errorString;
     }
 
+    struct ProvideToSPContext {
+        TestDeployer.LiquityContractsDev c;
+        uint256 pendingInterest;
+        uint256 totalBoldDeposits;
+        uint256 blockedSPYield;
+        uint256 initialBoldDeposit;
+        uint256 boldDeposit;
+        uint256 boldYield;
+        uint256 ethGain;
+        uint256 ethStash;
+        uint256 ethClaimed;
+        uint256 boldClaimed;
+        string errorString;
+    }
+
     struct WithdrawFromSPContext {
         TestDeployer.LiquityContractsDev c;
         uint256 pendingInterest;
+        uint256 totalBoldDeposits;
+        uint256 blockedSPYield;
         uint256 initialBoldDeposit;
         uint256 boldDeposit;
         uint256 boldYield;
@@ -332,10 +349,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     // Price per branch
     mapping(uint256 branchIdx => uint256) _price;
-
-    // Bold yield sent to the SP at a time when there are no deposits is lost forever
-    // We keep track of the lost amount so we can use it in invariants
-    mapping(uint256 branchIdx => uint256) public spUnclaimableBoldYield;
 
     // All free-floating BOLD is kept in the handler, to be dealt out to actors as needed
     uint256 _handlerBold;
@@ -1529,59 +1542,74 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     }
 
     function provideToSP(uint256 i, uint256 amount, bool claim) external {
+        ProvideToSPContext memory v;
+
         i = _bound(i, 0, branches.length - 1);
         amount = _bound(amount, 0, _handlerBold);
 
-        TestDeployer.LiquityContractsDev memory c = branches[i];
-        uint256 pendingInterest = c.activePool.calcPendingAggInterest();
-        uint256 initialBoldDeposit = c.stabilityPool.deposits(msg.sender);
-        uint256 boldDeposit = c.stabilityPool.getCompoundedBoldDeposit(msg.sender);
-        uint256 boldYield = c.stabilityPool.getDepositorYieldGainWithPending(msg.sender);
-        uint256 ethGain = c.stabilityPool.getDepositorCollGain(msg.sender);
-        uint256 ethStash = c.stabilityPool.stashedColl(msg.sender);
-        uint256 ethClaimed = claim ? ethStash + ethGain : 0;
-        uint256 boldClaimed = claim ? boldYield : 0;
+        v.c = branches[i];
+        v.pendingInterest = v.c.activePool.calcPendingAggInterest();
+        v.totalBoldDeposits = v.c.stabilityPool.getTotalBoldDeposits();
+        v.blockedSPYield = v.totalBoldDeposits < DECIMAL_PRECISION
+            ? v.c.activePool.calcPendingSPYield() + v.c.stabilityPool.getYieldGainsPending()
+            : 0;
+        v.initialBoldDeposit = v.c.stabilityPool.deposits(msg.sender);
+        v.boldDeposit = v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender);
+        v.boldYield = v.c.stabilityPool.getDepositorYieldGainWithPending(msg.sender);
+        v.ethGain = v.c.stabilityPool.getDepositorCollGain(msg.sender);
+        v.ethStash = v.c.stabilityPool.stashedColl(msg.sender);
+        v.ethClaimed = claim ? v.ethStash + v.ethGain : 0;
+        v.boldClaimed = claim ? v.boldYield : 0;
 
-        info("initial deposit: ", initialBoldDeposit.decimal());
-        info("compounded deposit: ", boldDeposit.decimal());
-        info("yield gain: ", boldYield.decimal());
-        info("coll gain: ", ethGain.decimal());
-        info("stashed coll: ", ethStash.decimal());
+        info("initial deposit: ", v.initialBoldDeposit.decimal());
+        info("compounded deposit: ", v.boldDeposit.decimal());
+        info("yield gain: ", v.boldYield.decimal());
+        info("coll gain: ", v.ethGain.decimal());
+        info("stashed coll: ", v.ethStash.decimal());
+        info("blocked SP yield: ", v.blockedSPYield.decimal());
         logCall("provideToSP", i.toString(), amount.decimal(), claim.toString());
 
         // TODO: randomly deal less than amount?
         _dealBold(msg.sender, amount);
 
-        string memory errorString;
         vm.prank(msg.sender);
-
-        try c.stabilityPool.provideToSP(amount, claim) {
+        try v.c.stabilityPool.provideToSP(amount, claim) {
             // Preconditions
             assertGtDecimal(amount, 0, 18, "Should have failed as amount was zero");
 
             // Effects (deposit)
-            ethStash += ethGain;
-            ethStash -= ethClaimed;
+            v.ethStash += v.ethGain;
+            v.ethStash -= v.ethClaimed;
 
-            boldDeposit += amount;
-            boldDeposit += boldYield;
-            boldDeposit -= boldClaimed;
+            v.boldDeposit += amount;
+            v.boldDeposit += v.boldYield;
+            v.boldDeposit -= v.boldClaimed;
 
-            assertEqDecimal(c.stabilityPool.getCompoundedBoldDeposit(msg.sender), boldDeposit, 18, "Wrong deposit");
-            assertEqDecimal(c.stabilityPool.getDepositorYieldGain(msg.sender), 0, 18, "Wrong yield gain");
-            assertEqDecimal(c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
-            assertEqDecimal(c.stabilityPool.stashedColl(msg.sender), ethStash, 18, "Wrong stashed coll");
+            // See if the change unblocked any pending yield
+            v.totalBoldDeposits += amount;
+            v.totalBoldDeposits += v.boldYield;
+            v.totalBoldDeposits -= v.boldClaimed;
+
+            uint256 newBoldYield =
+                v.totalBoldDeposits >= DECIMAL_PRECISION ? v.blockedSPYield * v.boldDeposit / v.totalBoldDeposits : 0;
+
+            assertEqDecimal(v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 18, "Wrong deposit");
+            assertApproxEqAbsDecimal(
+                v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e6, 18, "Wrong yield gain"
+            );
+            assertEqDecimal(v.c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
+            assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");
 
             // Effects (system)
-            _mintYield(i, pendingInterest, 0);
+            _mintYield(i, v.pendingInterest, 0);
 
-            spColl[i] -= ethClaimed;
+            spColl[i] -= v.ethClaimed;
             spBoldDeposits[i] += amount;
-            spBoldDeposits[i] += boldYield;
-            spBoldDeposits[i] -= boldClaimed;
-            spBoldYield[i] -= boldYield;
+            spBoldDeposits[i] += v.boldYield;
+            spBoldDeposits[i] -= v.boldClaimed;
+            spBoldYield[i] -= v.boldYield;
         } catch Error(string memory reason) {
-            errorString = reason;
+            v.errorString = reason;
 
             // Justify failures
             if (reason.equals("StabilityPool: Amount must be non-zero")) {
@@ -1591,18 +1619,18 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             }
         }
 
-        if (bytes(errorString).length > 0) {
+        if (bytes(v.errorString).length > 0) {
             if (_assumeNoExpectedFailures) vm.assume(false);
 
-            info("Expected error: ", errorString);
+            info("Expected error: ", v.errorString);
             _log();
 
             // Cleanup (failure)
             _sweepBold(msg.sender, amount); // Take back the BOLD that was dealt
         } else {
             // Cleanup (success)
-            _sweepBold(msg.sender, boldClaimed);
-            _sweepColl(i, msg.sender, ethClaimed);
+            _sweepBold(msg.sender, v.boldClaimed);
+            _sweepColl(i, msg.sender, v.ethClaimed);
         }
     }
 
@@ -1613,6 +1641,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         v.c = branches[i];
         v.pendingInterest = v.c.activePool.calcPendingAggInterest();
+        v.totalBoldDeposits = v.c.stabilityPool.getTotalBoldDeposits();
+        v.blockedSPYield = v.totalBoldDeposits < DECIMAL_PRECISION
+            ? v.c.activePool.calcPendingSPYield() + v.c.stabilityPool.getYieldGainsPending()
+            : 0;
         v.initialBoldDeposit = v.c.stabilityPool.deposits(msg.sender);
         v.boldDeposit = v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender);
         v.boldYield = v.c.stabilityPool.getDepositorYieldGainWithPending(msg.sender);
@@ -1629,6 +1661,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         info("yield gain: ", v.boldYield.decimal());
         info("coll gain: ", v.ethGain.decimal());
         info("stashed coll: ", v.ethStash.decimal());
+        info("blocked SP yield: ", v.blockedSPYield.decimal());
         logCall("withdrawFromSP", i.toString(), amount.decimal(), claim.toString());
 
         vm.prank(msg.sender);
@@ -1644,8 +1677,18 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             v.boldDeposit -= v.boldClaimed;
             v.boldDeposit -= v.withdrawn;
 
+            // See if the change unblocked any pending yield
+            v.totalBoldDeposits += v.boldYield;
+            v.totalBoldDeposits -= v.boldClaimed;
+            v.totalBoldDeposits -= v.withdrawn;
+
+            uint256 newBoldYield =
+                v.totalBoldDeposits >= DECIMAL_PRECISION ? v.blockedSPYield * v.boldDeposit / v.totalBoldDeposits : 0;
+
             assertEqDecimal(v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 18, "Wrong deposit");
-            assertEqDecimal(v.c.stabilityPool.getDepositorYieldGain(msg.sender), 0, 18, "Wrong yield gain");
+            assertApproxEqAbsDecimal(
+                v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e6, 18, "Wrong yield gain"
+            );
             assertEqDecimal(v.c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
             assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");
 
@@ -2445,12 +2488,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 mintedYield = pendingInterest + upfrontFee;
         uint256 mintedSPBoldYield = mintedYield * SP_YIELD_SPLIT / DECIMAL_PRECISION;
 
-        if (spBoldDeposits[i] == 0) {
-            spUnclaimableBoldYield[i] += mintedSPBoldYield;
-        } else {
-            spBoldYield[i] += mintedSPBoldYield;
-        }
-
+        spBoldYield[i] += mintedSPBoldYield;
         _pendingInterest[i] = 0;
     }
 

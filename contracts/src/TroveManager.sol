@@ -304,16 +304,18 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _collChangeFromOperation: -int256(trove.entireColl)
         });
 
-        emit BatchUpdated({
-            _interestBatchManager: batchAddress,
-            _operation: BatchOperation.exitBatch,
-            _debt: batches[batchAddress].debt,
-            _coll: batches[batchAddress].coll,
-            _annualInterestRate: batch.annualInterestRate,
-            _annualManagementFee: batch.annualManagementFee,
-            _totalDebtShares: batches[batchAddress].totalDebtShares,
-            _debtIncreaseFromUpfrontFee: 0
-        });
+        if (isTroveInBatch) {
+            emit BatchUpdated({
+                _interestBatchManager: batchAddress,
+                _operation: BatchOperation.exitBatch,
+                _debt: batches[batchAddress].debt,
+                _coll: batches[batchAddress].coll,
+                _annualInterestRate: batch.annualInterestRate,
+                _annualManagementFee: batch.annualManagementFee,
+                _totalDebtShares: batches[batchAddress].totalDebtShares,
+                _debtIncreaseFromUpfrontFee: 0
+            });
+        }
     }
 
     // Return the amount of Coll to be drawn from a trove's collateral and sent as gas compensation.
@@ -620,6 +622,19 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _collChangeFromOperation: -int256(_singleRedemption.collLot)
         });
 
+        if (_isTroveInBatch) {
+            emit BatchUpdated({
+                _interestBatchManager: _singleRedemption.batchAddress,
+                _operation: BatchOperation.troveChange,
+                _debt: batches[_singleRedemption.batchAddress].debt,
+                _coll: batches[_singleRedemption.batchAddress].coll,
+                _annualInterestRate: _singleRedemption.batch.annualInterestRate,
+                _annualManagementFee: _singleRedemption.batch.annualManagementFee,
+                _totalDebtShares: batches[_singleRedemption.batchAddress].totalDebtShares,
+                _debtIncreaseFromUpfrontFee: 0
+            });
+        }
+
         emit RedemptionFeePaidToTrove(_singleRedemption.troveId, _singleRedemption.collFee);
 
         return newDebt;
@@ -674,17 +689,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
 
         _activePool.mintAggInterestAndAccountForTroveChange(batchTroveChange, _batchAddress);
-
-        emit BatchUpdated({
-            _interestBatchManager: _batchAddress,
-            _operation: BatchOperation.troveChange,
-            _debt: batch.entireDebtWithoutRedistribution,
-            _coll: batch.entireCollWithoutRedistribution,
-            _annualInterestRate: batch.annualInterestRate,
-            _annualManagementFee: batch.annualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares,
-            _debtIncreaseFromUpfrontFee: 0
-        });
     }
 
     /* Send _boldamount Bold to the system and redeem the corresponding amount of collateral from as many Troves as are needed to fill the redemption

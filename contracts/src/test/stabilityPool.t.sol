@@ -71,6 +71,8 @@ contract SPTest is DevTestSetup {
         uint256 totalDepositsBefore;
         uint256 spEthBal1;
         uint256 spEthBal2;
+        uint256 initialBoldGainA;
+        uint256 initialBoldGainB;
     }
 
     function _setupStashedAndCurrentCollGains() internal {
@@ -777,7 +779,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testClaimAllCollGainsDoesntChangeCurrentCollGain() public {
-        _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustmentsWithoutOwedYieldRewards();
 
         // A withdraws deposit and stashes gain
         uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
@@ -795,7 +797,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testClaimAllCollGainsZerosStashedCollGain() public {
-        _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustmentsWithoutOwedYieldRewards();
 
         // A withdraws deposit and stashes gain
         uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
@@ -813,7 +815,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testClaimAllCollGainsIncreasesUserBalanceByStashedCollGain() public {
-        _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustmentsWithoutOwedYieldRewards();
 
         // A withdraws deposit and stashes gain
         uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
@@ -859,16 +861,16 @@ contract SPTest is DevTestSetup {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
-        assertEq(pendingAggInterest, 0);
+        assertEq(pendingAggInterest, 0, "Pending interest should be zero");
 
         uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
-        assertEq(boldRewardSum_1, 0);
+        assertGt(boldRewardSum_1, 0, "BOLD reward sum 1");
 
         // Adjust a Trove in a way that doesn't incur an upfront fee
         repayBold(B, troveIDs.B, 1_000 ether);
 
         uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
-        assertEq(boldRewardSum_2, boldRewardSum_1);
+        assertEq(boldRewardSum_2, boldRewardSum_1, "BOLD reward sum 2");
     }
 
     function testBoldRewardSumIncreasesWhenTroveOpened() public {
@@ -880,7 +882,7 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
-        assertEq(boldRewardSum_1, 0);
+        assertGt(boldRewardSum_1, 0);
 
         openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
@@ -897,7 +899,7 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
-        assertEq(boldRewardSum_1, 0);
+        assertGt(boldRewardSum_1, 0);
 
         changeInterestRateNoHints(B, troveIDs.B, 75e16);
 
@@ -937,7 +939,7 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
-        assertEq(boldRewardSum_1, 0);
+        assertGt(boldRewardSum_1, 0);
 
         adjustTrove100pct(A, troveIDs.A, 1, 1, true, true);
 
@@ -954,7 +956,7 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
-        assertEq(boldRewardSum_1, 0);
+        assertGt(boldRewardSum_1, 0);
 
         // B applies A's pending interest
         applyPendingDebt(B, troveIDs.A);
@@ -972,7 +974,7 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
-        assertEq(boldRewardSum_1, 0);
+        assertGt(boldRewardSum_1, 0);
 
         // A liquidates D
         liquidate(A, troveIDs.D);
@@ -991,7 +993,7 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
-        assertEq(boldRewardSum_1, 0);
+        assertGt(boldRewardSum_1, 0);
 
         uint256 wethBalBefore_A = collToken.balanceOf(A);
         // A redeems
@@ -1089,12 +1091,16 @@ contract SPTest is DevTestSetup {
         assertEq(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_1, 0);
+        uint256 yieldGainsPending_1 = stabilityPool.getYieldGainsPending();
+        assertGt(yieldGainsOwed_1, 0, "Yield owed mismatch 1");
+        assertEq(yieldGainsPending_1, 0, "Yield pending mismatch 1");
 
         (, uint256 upfrontFee) = openTroveHelper(E, 0, 3 ether, 2000e18, 25e16);
 
         uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_2, yieldGainsOwed_1 + _getSPYield(upfrontFee));
+        uint256 yieldGainsPending_2 = stabilityPool.getYieldGainsPending();
+        assertEq(yieldGainsOwed_2, yieldGainsOwed_1 + _getSPYield(upfrontFee), "Yield owed mismatch 2");
+        assertEq(yieldGainsPending_2, 0, "Yield pending mismatch 2");
     }
 
     function testBoldRewardsOwedIncreasesWhenTroveOpened() public {
@@ -1106,7 +1112,9 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_1, 0);
+        uint256 yieldGainsPending_1 = stabilityPool.getYieldGainsPending();
+        assertGt(yieldGainsOwed_1, 0, "Yield owed mismatch 1");
+        assertEq(yieldGainsPending_1, 0, "Yield pending mismatch 1");
 
         openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
@@ -1123,7 +1131,9 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_1, 0);
+        uint256 yieldGainsPending_1 = stabilityPool.getYieldGainsPending();
+        assertGt(yieldGainsOwed_1, 0, "Yield owed mismatch 1");
+        assertEq(yieldGainsPending_1, 0, "Yield pending mismatch 1");
 
         changeInterestRateNoHints(B, troveIDs.B, 75e16);
 
@@ -1142,7 +1152,9 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertGt(yieldGainsOwed_1, 0); // yield from upfront fee
+        uint256 yieldGainsPending_1 = stabilityPool.getYieldGainsPending();
+        assertGt(yieldGainsOwed_1, 0, "Yield owed mismatch 1");
+        assertEq(yieldGainsPending_1, 0, "Yield pending mismatch 1");
 
         // F sends E his bold so he can close
         vm.startPrank(F);
@@ -1163,7 +1175,9 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_1, 0);
+        uint256 yieldGainsPending_1 = stabilityPool.getYieldGainsPending();
+        assertGt(yieldGainsOwed_1, 0, "Yield owed mismatch 1");
+        assertEq(yieldGainsPending_1, 0, "Yield pending mismatch 1");
 
         adjustTrove100pct(A, troveIDs.A, 1, 1, true, true);
 
@@ -1180,7 +1194,9 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_1, 0);
+        uint256 yieldGainsPending_1 = stabilityPool.getYieldGainsPending();
+        assertGt(yieldGainsOwed_1, 0, "Yield owed mismatch 1");
+        assertEq(yieldGainsPending_1, 0, "Yield pending mismatch 1");
 
         // B applies A's pending interest
         applyPendingDebt(B, troveIDs.A);
@@ -1198,7 +1214,9 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_1, 0);
+        uint256 yieldGainsPending_1 = stabilityPool.getYieldGainsPending();
+        assertGt(yieldGainsOwed_1, 0, "Yield owed mismatch 1");
+        assertEq(yieldGainsPending_1, 0, "Yield pending mismatch 1");
 
         // A liquidates D
         liquidate(A, troveIDs.D);
@@ -1217,8 +1235,11 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertEq(yieldGainsOwed_1, 0);
+        uint256 yieldGainsPending_1 = stabilityPool.getYieldGainsPending();
+        assertGt(yieldGainsOwed_1, 0, "Yield owed mismatch 1");
+        assertEq(yieldGainsPending_1, 0, "Yield pending mismatch 1");
         uint256 wethBalBefore_A = collToken.balanceOf(A);
+
         // A redeems
         redeem(A, 1e18);
         assertGt(collToken.balanceOf(A), wethBalBefore_A);
@@ -1237,7 +1258,9 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
 
         uint256 yieldGainsOwed_1 = stabilityPool.getYieldGainsOwed();
-        assertGt(yieldGainsOwed_1, 0); // yield from upfront fee
+        uint256 yieldGainsPending_1 = stabilityPool.getYieldGainsPending();
+        assertGt(yieldGainsOwed_1, 0, "Yield owed mismatch 1");
+        assertEq(yieldGainsPending_1, 0, "Yield pending mismatch 1");
 
         // E Makes deposit
         makeSPDepositAndClaim(E, 1e18);
@@ -1287,7 +1310,7 @@ contract SPTest is DevTestSetup {
     // --- depositor BOLD rewards tests ---
 
     function testGetDepositorBoldGain_1SPDepositor1RewardEvent_EarnsAllSPYield() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustmentsWithoutOwedYieldRewards();
 
         // B withdraws entirely
         makeSPWithdrawalAndClaim(B, stabilityPool.getCompoundedBoldDeposit(B));
@@ -1302,14 +1325,14 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest, 0);
         uint256 expectedSpYield = SP_YIELD_SPLIT * pendingAggInterest / 1e18;
 
-        // A trove gets poked, interst minted and yield paid to SP
+        // A trove gets poked, interest minted and yield paid to SP
         applyPendingDebt(B, troveIDs.A);
 
         assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedSpYield, 1e4);
     }
 
     function testGetDepositorBoldGain_2SPDepositor1RewardEvent_EarnFairShareOfSPYield() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustmentsWithoutOwedYieldRewards();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
@@ -1332,7 +1355,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testGetDepositorBoldGain_1SPDepositor2RewardEvent_EarnsAllSPYield() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustmentsWithoutOwedYieldRewards();
 
         // B withdraws entirely
         makeSPWithdrawalAndClaim(B, stabilityPool.getCompoundedBoldDeposit(B));
@@ -1367,7 +1390,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testGetDepositorBoldGain_2SPDepositor2RewardEvent_EarnFairShareOfSPYield() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustmentsWithoutOwedYieldRewards();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
@@ -1414,7 +1437,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testGetDepositorBoldGain_2SPDepositor1Liq1FreshDeposit_EarnFairShareOfSPYield() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustmentsWithoutOwedYieldRewards();
 
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
 
@@ -1781,13 +1804,13 @@ contract SPTest is DevTestSetup {
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
             address(stabilityPool),
-            bytes32(uint256(9)), // 9th storage slot where P is stored
+            bytes32(uint256(10)), // 10th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
 
-        // Confirm that storage slot 9 is set
-        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(9))));
-        assertEq(storedVal, _cheatP, "value of slot 9 is not set");
+        // Confirm that storage slot 10 is set
+        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(10))));
+        assertEq(storedVal, _cheatP, "value of slot 10 is not set");
         // Confirm that P specfically is set
         assertEq(stabilityPool.P(), _cheatP, "P is not set");
 
@@ -1826,13 +1849,13 @@ contract SPTest is DevTestSetup {
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
             address(stabilityPool),
-            bytes32(uint256(9)), // 9th storage slot where P is stored
+            bytes32(uint256(10)), // 10th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
 
-        // Confirm that storage slot 9 is set
-        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(9))));
-        assertEq(storedVal, _cheatP, "value of slot 9 is not set");
+        // Confirm that storage slot 10 is set
+        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(10))));
+        assertEq(storedVal, _cheatP, "value of slot 10 is not set");
         // Confirm that P specfically is set
         assertEq(stabilityPool.P(), _cheatP, "P is not set");
 
@@ -1946,17 +1969,19 @@ contract SPTest is DevTestSetup {
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
             address(stabilityPool),
-            bytes32(uint256(9)), // 9th storage slot where P is stored
+            bytes32(uint256(10)), // 10th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
 
-        // Confirm that storage slot 9 is set
-        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(9))));
-        assertEq(storedVal, _cheatP, "value of slot 9 is not set");
+        // Confirm that storage slot 10 is set
+        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(10))));
+        assertEq(storedVal, _cheatP, "value of slot 10 is not set");
         // Confirm that P specfically is set
         assertEq(stabilityPool.P(), _cheatP, "P is not set");
 
         ABCDEF memory troveIDs = _setupForPTests();
+        testVars.initialBoldGainA = stabilityPool.getDepositorYieldGain(A);
+        testVars.initialBoldGainB = stabilityPool.getDepositorYieldGain(B);
 
         uint256 troveDebt = troveManager.getTroveEntireDebt(troveIDs.D);
         uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
@@ -1974,6 +1999,7 @@ contract SPTest is DevTestSetup {
 
         uint256 spEthBalBefore = collToken.balanceOf(address(stabilityPool));
         liquidate(A, troveIDs.C);
+        bool spTooLowAfterLiquidateA = stabilityPool.getTotalBoldDeposits() < DECIMAL_PRECISION;
         uint256 spEthBalAfter = collToken.balanceOf(address(stabilityPool));
         testVars.spEthGain1 = spEthBalAfter - spEthBalBefore;
 
@@ -2010,9 +2036,6 @@ contract SPTest is DevTestSetup {
         testVars.expectedShareOfYield1_A = getShareofSPReward(A, expectedSpYield1);
         testVars.expectedShareOfYield1_B = getShareofSPReward(B, expectedSpYield1);
 
-        assertGt(testVars.expectedShareOfYield1_A, 0);
-        assertGt(testVars.expectedShareOfYield1_B, 0);
-
         testVars.troveDebt_D = troveManager.getTroveEntireDebt(troveIDs.D);
 
         // D makes fresh deposit so that SP can cover the liq
@@ -2020,6 +2043,14 @@ contract SPTest is DevTestSetup {
         makeSPDepositAndClaim(D, boldToken.balanceOf(D));
         testVars.totalSPBeforeLiq_D = stabilityPool.getTotalBoldDeposits();
         assertGt(testVars.totalSPBeforeLiq_D, testVars.troveDebt_D);
+
+        if (spTooLowAfterLiquidateA) {
+            testVars.expectedShareOfYield1_A = getShareofSPReward(A, expectedSpYield1);
+            testVars.expectedShareOfYield1_B = getShareofSPReward(B, expectedSpYield1);
+        }
+
+        assertGt(testVars.expectedShareOfYield1_A, 0);
+        assertGt(testVars.expectedShareOfYield1_B, 0);
 
         // D's trove liquidated
         spEthBalBefore = collToken.balanceOf(address(stabilityPool));
@@ -2045,8 +2076,18 @@ contract SPTest is DevTestSetup {
         // Check all BOLD and Coll gains are as expected
         testVars.boldGainA = stabilityPool.getDepositorYieldGain(A);
         testVars.boldGainB = stabilityPool.getDepositorYieldGain(B);
-        assertApproximatelyEqual(testVars.expectedShareOfYield1_A, testVars.boldGainA, 1e4);
-        assertApproximatelyEqual(testVars.expectedShareOfYield1_B, testVars.boldGainB, 1e4);
+        assertApproximatelyEqual(
+            testVars.initialBoldGainA + testVars.expectedShareOfYield1_A,
+            testVars.boldGainA,
+            1e4,
+            "A yield gain mismatch"
+        );
+        assertApproximatelyEqual(
+            testVars.initialBoldGainB + testVars.expectedShareOfYield1_B,
+            testVars.boldGainB,
+            1e4,
+            "B yield gain mismatch"
+        );
 
         uint256 ethGainA = stabilityPool.getDepositorCollGain(A);
         uint256 ethGainB = stabilityPool.getDepositorCollGain(B);
@@ -2063,13 +2104,13 @@ contract SPTest is DevTestSetup {
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
             address(stabilityPool),
-            bytes32(uint256(9)), // 9th storage slot where P is stored
+            bytes32(uint256(10)), // 10th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
 
-        // Confirm that storage slot 9 is set
-        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(9))));
-        assertEq(storedVal, _cheatP, "value of slot 9 is not set");
+        // Confirm that storage slot 10 is set
+        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(10))));
+        assertEq(storedVal, _cheatP, "value of slot 10 is not set");
         // Confirm that P specfically is set
         console2.log(stabilityPool.P(), "stabilityPool.P()");
         console2.log(_cheatP, "_cheatP");
@@ -2103,13 +2144,13 @@ contract SPTest is DevTestSetup {
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
             address(stabilityPool),
-            bytes32(uint256(9)), // 9th storage slot where P is stored
+            bytes32(uint256(10)), // 10th storage slot where P is stored
             bytes32(uint256(_cheatP))
         );
 
-        // Confirm that storage slot 9 is set
-        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(9))));
-        assertEq(storedVal, _cheatP, "value of slot 9 is not set");
+        // Confirm that storage slot 10 is set
+        uint256 storedVal = uint256(vm.load(address(stabilityPool), bytes32(uint256(10))));
+        assertEq(storedVal, _cheatP, "value of slot 10 is not set");
         // Confirm that P specfically is set
         assertEq(stabilityPool.P(), _cheatP, "P is not set");
 

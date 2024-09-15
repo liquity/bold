@@ -133,7 +133,10 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
                 "Wrong StabilityPool deposits"
             );
             assertEqDecimal(
-                c.stabilityPool.getYieldGainsOwed(), handler.spBoldYield(i), 18, "Wrong StabilityPool yield"
+                c.stabilityPool.getYieldGainsOwed() + c.stabilityPool.getYieldGainsPending(),
+                handler.spBoldYield(i),
+                18,
+                "Wrong StabilityPool yield"
             );
             assertEqDecimal(c.stabilityPool.getCollBalance(), handler.spColl(i), 18, "Wrong StabilityPool coll");
 
@@ -276,10 +279,10 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
             // This only holds as long as no one sends BOLD directly to the SP's address other than ActivePool
             assertApproxEqAbsDecimal(
                 boldToken.balanceOf(address(stabilityPool)),
-                sumBoldDeposit + sumYieldGain + handler.spUnclaimableBoldYield(j),
+                sumBoldDeposit + sumYieldGain + stabilityPool.getYieldGainsPending(),
                 1e-3 ether,
                 18,
-                "SP BOLD balance !~= claimable + unclaimable BOLD"
+                "SP BOLD balance !~= claimable + pending"
             );
         }
     }
