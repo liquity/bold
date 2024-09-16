@@ -42,6 +42,7 @@ export type Block_height = {
 export type BorrowerInfo = {
   readonly id: Scalars['ID']['output'];
   readonly troves: Scalars['Int']['output'];
+  readonly trovesByCollateral: ReadonlyArray<Scalars['Int']['output']>;
 };
 
 export type BorrowerInfo_filter = {
@@ -61,6 +62,12 @@ export type BorrowerInfo_filter = {
   readonly troves_lte?: InputMaybe<Scalars['Int']['input']>;
   readonly troves_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
   readonly troves_not_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_not?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_contains?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_contains_nocase?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_not_contains?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_not_contains_nocase?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
   /** Filter for the block changed event. */
   readonly _change_block?: InputMaybe<BlockChangedFilter>;
   readonly and?: InputMaybe<ReadonlyArray<InputMaybe<BorrowerInfo_filter>>>;
@@ -69,10 +76,12 @@ export type BorrowerInfo_filter = {
 
 export type BorrowerInfo_orderBy =
   | 'id'
-  | 'troves';
+  | 'troves'
+  | 'trovesByCollateral';
 
 export type Collateral = {
   readonly id: Scalars['ID']['output'];
+  readonly collIndex: Scalars['Int']['output'];
   readonly token: Token;
   readonly minCollRatio: Scalars['BigInt']['output'];
   readonly troves: ReadonlyArray<Trove>;
@@ -202,6 +211,7 @@ export type CollateralAddresses_orderBy =
   | 'borrowerOperations'
   | 'collateral'
   | 'collateral__id'
+  | 'collateral__collIndex'
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
   | 'collateral__totalDebt'
@@ -220,6 +230,14 @@ export type Collateral_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly collIndex?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_not?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_gt?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_lt?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_gte?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_lte?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly collIndex_not_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
   readonly token?: InputMaybe<Scalars['String']['input']>;
   readonly token_not?: InputMaybe<Scalars['String']['input']>;
   readonly token_gt?: InputMaybe<Scalars['String']['input']>;
@@ -275,6 +293,7 @@ export type Collateral_filter = {
 
 export type Collateral_orderBy =
   | 'id'
+  | 'collIndex'
   | 'token'
   | 'token__id'
   | 'token__name'
@@ -706,6 +725,7 @@ export type Token_orderBy =
   | 'id'
   | 'collateral'
   | 'collateral__id'
+  | 'collateral__collIndex'
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
   | 'collateral__totalDebt'
@@ -830,6 +850,7 @@ export type Trove_orderBy =
   | 'closedAt'
   | 'collateral'
   | 'collateral__id'
+  | 'collateral__collIndex'
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
   | 'collateral__totalDebt';

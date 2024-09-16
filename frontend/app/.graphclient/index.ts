@@ -65,6 +65,7 @@ export type Block_height = {
 export type BorrowerInfo = {
   readonly id: Scalars['ID']['output'];
   readonly troves: Scalars['Int']['output'];
+  readonly trovesByCollateral: ReadonlyArray<Scalars['Int']['output']>;
 };
 
 export type BorrowerInfo_filter = {
@@ -84,6 +85,12 @@ export type BorrowerInfo_filter = {
   readonly troves_lte?: InputMaybe<Scalars['Int']['input']>;
   readonly troves_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
   readonly troves_not_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_not?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_contains?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_contains_nocase?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_not_contains?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_not_contains_nocase?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
   /** Filter for the block changed event. */
   readonly _change_block?: InputMaybe<BlockChangedFilter>;
   readonly and?: InputMaybe<ReadonlyArray<InputMaybe<BorrowerInfo_filter>>>;
@@ -92,10 +99,12 @@ export type BorrowerInfo_filter = {
 
 export type BorrowerInfo_orderBy =
   | 'id'
-  | 'troves';
+  | 'troves'
+  | 'trovesByCollateral';
 
 export type Collateral = {
   readonly id: Scalars['ID']['output'];
+  readonly collIndex: Scalars['Int']['output'];
   readonly token: Token;
   readonly minCollRatio: Scalars['BigInt']['output'];
   readonly troves: ReadonlyArray<Trove>;
@@ -225,6 +234,7 @@ export type CollateralAddresses_orderBy =
   | 'borrowerOperations'
   | 'collateral'
   | 'collateral__id'
+  | 'collateral__collIndex'
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
   | 'collateral__totalDebt'
@@ -243,6 +253,14 @@ export type Collateral_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly collIndex?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_not?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_gt?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_lt?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_gte?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_lte?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly collIndex_not_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
   readonly token?: InputMaybe<Scalars['String']['input']>;
   readonly token_not?: InputMaybe<Scalars['String']['input']>;
   readonly token_gt?: InputMaybe<Scalars['String']['input']>;
@@ -298,6 +316,7 @@ export type Collateral_filter = {
 
 export type Collateral_orderBy =
   | 'id'
+  | 'collIndex'
   | 'token'
   | 'token__id'
   | 'token__name'
@@ -729,6 +748,7 @@ export type Token_orderBy =
   | 'id'
   | 'collateral'
   | 'collateral__id'
+  | 'collateral__collIndex'
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
   | 'collateral__totalDebt'
@@ -853,6 +873,7 @@ export type Trove_orderBy =
   | 'closedAt'
   | 'collateral'
   | 'collateral__id'
+  | 'collateral__collIndex'
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
   | 'collateral__totalDebt';
@@ -1074,6 +1095,7 @@ export interface BigIntScalarConfig extends GraphQLScalarTypeConfig<ResolversTyp
 export type BorrowerInfoResolvers<ContextType = MeshContext, ParentType extends ResolversParentTypes['BorrowerInfo'] = ResolversParentTypes['BorrowerInfo']> = ResolversObject<{
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
   troves?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
+  trovesByCollateral?: Resolver<ReadonlyArray<ResolversTypes['Int']>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1083,6 +1105,7 @@ export interface BytesScalarConfig extends GraphQLScalarTypeConfig<ResolversType
 
 export type CollateralResolvers<ContextType = MeshContext, ParentType extends ResolversParentTypes['Collateral'] = ResolversParentTypes['Collateral']> = ResolversObject<{
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  collIndex?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   token?: Resolver<ResolversTypes['Token'], ParentType, ContextType>;
   minCollRatio?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   troves?: Resolver<ReadonlyArray<ResolversTypes['Trove']>, ParentType, ContextType, RequireFields<CollateraltrovesArgs, 'skip' | 'first'>>;
@@ -1280,9 +1303,9 @@ const merger = new(BareMerger as any)({
         store: rootStore.child('bareMerger')
       })
 const documentHashMap = {
-        "3d59270b3def3b38f371cc1c86453c5973663945ac0caac26be606899bbfb1e5": TrovesByAccountDocument,
-"3d59270b3def3b38f371cc1c86453c5973663945ac0caac26be606899bbfb1e5": TrovesCountDocument,
-"3d59270b3def3b38f371cc1c86453c5973663945ac0caac26be606899bbfb1e5": TroveByIdDocument
+        "5fd5ba329409d1541ecdc4ad31b82623e2307e50d1e9c36a777005b30829f6e7": TrovesByAccountDocument,
+"5fd5ba329409d1541ecdc4ad31b82623e2307e50d1e9c36a777005b30829f6e7": TrovesCountDocument,
+"5fd5ba329409d1541ecdc4ad31b82623e2307e50d1e9c36a777005b30829f6e7": TroveByIdDocument
       }
 additionalEnvelopPlugins.push(usePersistedOperations({
         getPersistedOperation(key) {
@@ -1309,21 +1332,21 @@ additionalEnvelopPlugins.push(usePersistedOperations({
           return printWithCache(TrovesByAccountDocument);
         },
         location: 'TrovesByAccountDocument.graphql',
-        sha256Hash: '3d59270b3def3b38f371cc1c86453c5973663945ac0caac26be606899bbfb1e5'
+        sha256Hash: '5fd5ba329409d1541ecdc4ad31b82623e2307e50d1e9c36a777005b30829f6e7'
       },{
         document: TrovesCountDocument,
         get rawSDL() {
           return printWithCache(TrovesCountDocument);
         },
         location: 'TrovesCountDocument.graphql',
-        sha256Hash: '3d59270b3def3b38f371cc1c86453c5973663945ac0caac26be606899bbfb1e5'
+        sha256Hash: '5fd5ba329409d1541ecdc4ad31b82623e2307e50d1e9c36a777005b30829f6e7'
       },{
         document: TroveByIdDocument,
         get rawSDL() {
           return printWithCache(TroveByIdDocument);
         },
         location: 'TroveByIdDocument.graphql',
-        sha256Hash: '3d59270b3def3b38f371cc1c86453c5973663945ac0caac26be606899bbfb1e5'
+        sha256Hash: '5fd5ba329409d1541ecdc4ad31b82623e2307e50d1e9c36a777005b30829f6e7'
       }
     ];
     },
@@ -1396,7 +1419,7 @@ export type TrovesCountQueryVariables = Exact<{
 }>;
 
 
-export type TrovesCountQuery = { readonly borrowerInfo?: Maybe<Pick<BorrowerInfo, 'troves'>> };
+export type TrovesCountQuery = { readonly borrowerInfo?: Maybe<Pick<BorrowerInfo, 'troves' | 'trovesByCollateral'>> };
 
 export type TroveByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -1438,6 +1461,7 @@ export const TrovesCountDocument = gql`
     query TrovesCount($id: ID!) {
   borrowerInfo(id: $id) {
     troves
+    trovesByCollateral
   }
 }
     ` as unknown as DocumentNode<TrovesCountQuery, TrovesCountQueryVariables>;
