@@ -71,7 +71,7 @@ function getBatchDebt(address batchAddress) returns uint256 {
 
 // Sum of a given batch’s individual Trove entire debts sans redistributions 
 // (recorded debts + accrued interest) equals the batch’s recorded debt plus 
-// its accrued interest
+// its accrued interest plus management fees.
 // NOTE: This restricts us to the case where a batch has exactly 2 troves in it.
 // Ideally we would generalize this by using hooks on the trove / batch data
 // structures if that is possible.
@@ -113,15 +113,10 @@ rule sum_of_trove_debts {
     TroveManager.LatestTroveData troveDataY = troveManager.getLatestTroveData(e, troveIdY);
 
     uint256 batch_debt = require_uint256(batchData.recordedDebt 
-        + batchData.accruedInterest);
-    // trove.recordedDebt is first calculated from the batch in the 
-    // function call in _getLatestTroveDataFromBatch using the value
-    // from the batch data it gets with _getLatestBatchData.
-    // then in line 907 of _getLatestTroveData it is overwritten with the data 
-    // from the trove data structure.
+        + batchData.accruedInterest + batchData.accruedManagementFee);
     uint256 sum_trove_debt = require_uint256(
-        troveDataX.recordedDebt + troveDataX.accruedInterest +
-        troveDataY.recordedDebt + troveDataY.accruedInterest);
+        troveDataX.entireDebt - troveDataX.redistBoldDebtGain
+        + troveDataY.entireDebt - troveDataY.redistBoldDebtGain);
     assert batch_debt == sum_trove_debt;
 }
 
