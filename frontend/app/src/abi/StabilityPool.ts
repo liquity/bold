@@ -3,7 +3,7 @@
 export const StabilityPool = [
   {
     "type": "constructor",
-    "inputs": [{ "name": "_collAddress", "type": "address", "internalType": "address" }],
+    "inputs": [{ "name": "_addressesRegistry", "type": "address", "internalType": "contract IAddressesRegistry" }],
     "stateMutability": "nonpayable",
   },
   {
@@ -41,13 +41,6 @@ export const StabilityPool = [
     "outputs": [{ "name": "", "type": "address", "internalType": "contract IBoldToken" }],
     "stateMutability": "view",
   },
-  {
-    "type": "function",
-    "name": "borrowerOperations",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "address", "internalType": "contract IBorrowerOperations" }],
-    "stateMutability": "view",
-  },
   { "type": "function", "name": "claimAllCollGains", "inputs": [], "outputs": [], "stateMutability": "nonpayable" },
   {
     "type": "function",
@@ -68,13 +61,6 @@ export const StabilityPool = [
     "name": "currentScale",
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint128", "internalType": "uint128" }],
-    "stateMutability": "view",
-  },
-  {
-    "type": "function",
-    "name": "defaultPool",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "address", "internalType": "contract IDefaultPool" }],
     "stateMutability": "view",
   },
   {
@@ -184,9 +170,9 @@ export const StabilityPool = [
   },
   {
     "type": "function",
-    "name": "isOwner",
+    "name": "getYieldGainsPending",
     "inputs": [],
-    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
   },
   {
@@ -223,20 +209,6 @@ export const StabilityPool = [
   },
   {
     "type": "function",
-    "name": "owner",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
-    "stateMutability": "view",
-  },
-  {
-    "type": "function",
-    "name": "priceFeed",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "address", "internalType": "contract IPriceFeed" }],
-    "stateMutability": "view",
-  },
-  {
-    "type": "function",
     "name": "provideToSP",
     "inputs": [{ "name": "_topUp", "type": "uint256", "internalType": "uint256" }, {
       "name": "_doClaim",
@@ -245,27 +217,6 @@ export const StabilityPool = [
     }],
     "outputs": [],
     "stateMutability": "nonpayable",
-  },
-  {
-    "type": "function",
-    "name": "setAddresses",
-    "inputs": [
-      { "name": "_borrowerOperationsAddress", "type": "address", "internalType": "address" },
-      { "name": "_troveManagerAddress", "type": "address", "internalType": "address" },
-      { "name": "_activePoolAddress", "type": "address", "internalType": "address" },
-      { "name": "_boldTokenAddress", "type": "address", "internalType": "address" },
-      { "name": "_sortedTrovesAddress", "type": "address", "internalType": "address" },
-      { "name": "_priceFeedAddress", "type": "address", "internalType": "address" },
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable",
-  },
-  {
-    "type": "function",
-    "name": "sortedTroves",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "address", "internalType": "contract ISortedTroves" }],
-    "stateMutability": "view",
   },
   {
     "type": "function",
@@ -320,17 +271,6 @@ export const StabilityPool = [
     "type": "event",
     "name": "BoldTokenAddressChanged",
     "inputs": [{ "name": "_newBoldTokenAddress", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "BorrowerOperationsAddressChanged",
-    "inputs": [{
-      "name": "_newBorrowerOperationsAddress",
-      "type": "address",
-      "indexed": false,
-      "internalType": "address",
-    }],
     "anonymous": false,
   },
   {
@@ -393,17 +333,6 @@ export const StabilityPool = [
   },
   {
     "type": "event",
-    "name": "OwnershipTransferred",
-    "inputs": [{ "name": "previousOwner", "type": "address", "indexed": true, "internalType": "address" }, {
-      "name": "newOwner",
-      "type": "address",
-      "indexed": true,
-      "internalType": "address",
-    }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
     "name": "P_Updated",
     "inputs": [{ "name": "_P", "type": "uint256", "indexed": false, "internalType": "uint256" }],
     "anonymous": false,
@@ -429,12 +358,6 @@ export const StabilityPool = [
     "type": "event",
     "name": "ScaleUpdated",
     "inputs": [{ "name": "_currentScale", "type": "uint128", "indexed": false, "internalType": "uint128" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "SortedTrovesAddressChanged",
-    "inputs": [{ "name": "_newSortedTrovesAddress", "type": "address", "indexed": false, "internalType": "address" }],
     "anonymous": false,
   },
   {

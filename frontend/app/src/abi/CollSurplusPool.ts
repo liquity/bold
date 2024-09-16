@@ -2,7 +2,7 @@
 // please do not edit it manually
 export const CollSurplusPool = [{
   "type": "constructor",
-  "inputs": [{ "name": "_collAddress", "type": "address", "internalType": "address" }],
+  "inputs": [{ "name": "_addressesRegistry", "type": "address", "internalType": "contract IAddressesRegistry" }],
   "stateMutability": "nonpayable",
 }, {
   "type": "function",
@@ -20,12 +20,6 @@ export const CollSurplusPool = [{
   }],
   "outputs": [],
   "stateMutability": "nonpayable",
-}, {
-  "type": "function",
-  "name": "activePoolAddress",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
-  "stateMutability": "view",
 }, {
   "type": "function",
   "name": "borrowerOperationsAddress",
@@ -58,37 +52,10 @@ export const CollSurplusPool = [{
   "stateMutability": "view",
 }, {
   "type": "function",
-  "name": "isOwner",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
-  "name": "owner",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
-  "name": "setAddresses",
-  "inputs": [{ "name": "_borrowerOperationsAddress", "type": "address", "internalType": "address" }, {
-    "name": "_troveManagerAddress",
-    "type": "address",
-    "internalType": "address",
-  }, { "name": "_activePoolAddress", "type": "address", "internalType": "address" }],
-  "outputs": [],
-  "stateMutability": "nonpayable",
-}, {
-  "type": "function",
   "name": "troveManagerAddress",
   "inputs": [],
   "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
   "stateMutability": "view",
-}, {
-  "type": "event",
-  "name": "ActivePoolAddressChanged",
-  "inputs": [{ "name": "_newActivePoolAddress", "type": "address", "indexed": false, "internalType": "address" }],
-  "anonymous": false,
 }, {
   "type": "event",
   "name": "BorrowerOperationsAddressChanged",
@@ -117,16 +84,6 @@ export const CollSurplusPool = [{
     "type": "uint256",
     "indexed": false,
     "internalType": "uint256",
-  }],
-  "anonymous": false,
-}, {
-  "type": "event",
-  "name": "OwnershipTransferred",
-  "inputs": [{ "name": "previousOwner", "type": "address", "indexed": true, "internalType": "address" }, {
-    "name": "newOwner",
-    "type": "address",
-    "indexed": true,
-    "internalType": "address",
   }],
   "anonymous": false,
 }, {
