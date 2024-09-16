@@ -65,6 +65,67 @@ function getBatchDebt(address batchAddress) returns uint256 {
     return troveManager.batches[batchAddress].debt;
 }
 
+// TODO invariant that the individual shares of
+// a trove in a batch sum to the total shares of the batch.
+// This is an assumption I think we need to make
+
+// Sum of a given batch’s individual Trove entire debts sans redistributions 
+// (recorded debts + accrued interest) equals the batch’s recorded debt plus 
+// its accrued interest
+// NOTE: This restricts us to the case where a batch has exactly 2 troves in it.
+// Ideally we would generalize this by using hooks on the trove / batch data
+// structures if that is possible.
+// Another improvement would be to make even this rule an invariant.
+// Current status: CEX
+// https://prover.certora.com/output/65266/45f3210f8517415a8b4193b659e3b9f3/?anonymousKey=8d1919287fcf809e2fa914020950b63765c868d5
+rule sum_of_trove_debts {
+    env e;
+    calldataarg args;
+    uint256 troveIdX;
+    uint256 troveIdY;
+    address batchAddress;
+    require batchAddress != 0;
+    // Assume troveIdX and troveIdY belong to the same batch
+    // and that these are the only two members of the batch
+    require getBatchManager(troveIdX) == batchAddress;
+    require getBatchManager(troveIdY) == batchAddress;
+    // There is no third trove s.t. it is not one of x or y
+    // and still a member of the batch
+    uint256 troveIdZ;
+    require getBatchManager(troveIdZ) == batchAddress =>
+        (troveIdZ == troveIdX || troveIdZ == troveIdY);
+
+    // Require both troves have nonzero debt shares
+    // and the sum of both trove shares is LEQ the totalBatchShares
+    uint256 troveXBatchShares = getTroveBatchDebtShares(troveIdX);
+    uint256 troveYBatchShares = getTroveBatchDebtShares(troveIdY);
+    uint256 totalBatchShares = getBatchTotalShares(batchAddress);
+
+    require troveXBatchShares > 0;
+    require troveYBatchShares > 0;
+    // Sum of batch shares should be equal to total shares
+    // (note in an invariant we should be able to relax this to leq)
+    require require_uint256(troveXBatchShares + troveYBatchShares)
+        == totalBatchShares;
+
+    TroveManager.LatestBatchData batchData = troveManager.getLatestBatchData(e, batchAddress);
+    TroveManager.LatestTroveData troveDataX = troveManager.getLatestTroveData(e, troveIdX);
+    TroveManager.LatestTroveData troveDataY = troveManager.getLatestTroveData(e, troveIdY);
+
+    uint256 batch_debt = require_uint256(batchData.recordedDebt 
+        + batchData.accruedInterest);
+    // trove.recordedDebt is first calculated from the batch in the 
+    // function call in _getLatestTroveDataFromBatch using the value
+    // from the batch data it gets with _getLatestBatchData.
+    // then in line 907 of _getLatestTroveData it is overwritten with the data 
+    // from the trove data structure.
+    uint256 sum_trove_debt = require_uint256(
+        troveDataX.recordedDebt + troveDataX.accruedInterest +
+        troveDataY.recordedDebt + troveDataY.accruedInterest);
+    assert batch_debt == sum_trove_debt;
+}
+
+// Note: this is not a requested property. This was used for debugging
 // Show that when a trove belongs to a batch, the batch data is used
 // rather than the individual trove data. 
 rule troves_in_batch_use_batch_structure {
@@ -176,56 +237,89 @@ rule troves_in_batch_share_management_fee {
     assert unscaled_management_fee_x == unscaled_management_fee_y;
 }
 
-// TODO invariant that the individual shares of
-// a trove in a batch sum to the total shares of the batch.
+/*
+When any borrower with a batch Trove i adjusts its coll by x:
+-All of the batch’s accrued interest is applied to the batch’s recorded debt
+-All of the batch’s accrued management fee is applied to the batch’s recorded debt
+-Trove i’s pending redistribution debt gain is applied to the batch’s recorded debt
+-Trove i’s pending redistribution coll gain is applied to the batch’s recorded coll
+-Trove i’s entire coll changes only by x
+-Trove i’s entire debt does not change
+*/
 
-// Sum of a given batch’s individual Trove entire debts sans redistributions 
-// (recorded debts + accrued interest) equals the batch’s recorded debt plus 
-// its accrued interest
-// NOTE: This restricts us to the case where a batch has exactly 2 troves in it
-// Ideally we would generalize this by using hooks on the trove / batch data
-// structures if that is possible.
-// Another improvement would be to make even this rule an invariant.
-rule sum_of_trove_debts {
+// Should be similar for withdrawColl and the effects on debt changes
+rule collateral_adjust_effect_addColl {
     env e;
     calldataarg args;
-    uint256 troveIdX;
-    uint256 troveIdY;
+    uint256 troveId;
+    uint256 collAmount;
+
+    // the trove belongs to a batch
     address batchAddress;
     require batchAddress != 0;
-    // Assume troveIdX and troveIdY belong to the same batch
-    // and that these are the only two members of the batch
-    require getBatchManager(troveIdX) == batchAddress;
-    require getBatchManager(troveIdY) == batchAddress;
-    // There is no third trove s.t. it is not one of x or y
-    // and still a member of the batch
-    uint256 troveIdZ;
-    require getBatchManager(troveIdZ) == batchAddress =>
-        (troveIdZ == troveIdX || troveIdZ == troveIdY);
+    require getBatchManager(troveId) == batchAddress;
 
-    // Require both troves have nonzero debt shares
-    // and the sum of both trove shares is LEQ the totalBatchShares
-    uint256 troveXBatchShares = getTroveBatchDebtShares(troveIdX);
-    uint256 troveYBatchShares = getTroveBatchDebtShares(troveIdY);
-    uint256 totalBatchShares = getBatchTotalShares(batchAddress);
+    TroveManager.LatestTroveData troveDataBefore = 
+        troveManager.getLatestTroveData(e, troveId);
 
-    require troveXBatchShares > 0;
-    require troveYBatchShares > 0;
-    // Sum of batch shares should be less or equal total shares
-    require require_uint256(troveXBatchShares + troveYBatchShares)
-        <= totalBatchShares;
+    // it adjusts its collateral by collAmount.
+    addColl(e, troveId, collAmount);
+    TroveManager.LatestTroveData troveDataAfter = 
+        troveManager.getLatestTroveData(e, troveId);
 
-    TroveManager.LatestBatchData batchData = troveManager.getLatestBatchData(e, batchAddress);
-    TroveManager.LatestTroveData troveDataX = troveManager.getLatestTroveData(e, troveIdX);
-    TroveManager.LatestTroveData troveDataY = troveManager.getLatestTroveData(e, troveIdY);
-
-    uint256 batch_debt = require_uint256(batchData.recordedDebt 
-        + batchData.accruedInterest);
-    uint256 sum_trove_debt = require_uint256(
-        troveDataX.recordedDebt + troveDataX.accruedInterest +
-        troveDataY.recordedDebt + troveDataY.accruedInterest);
-    assert batch_debt == sum_trove_debt;
+    // Trove i's entire coll changes only by x:
+    // PASSES
+    assert troveDataAfter.entireColl == troveDataBefore.entireColl + collAmount;
+    // Trove i's entire debt does not change:
+    // FAILS, maybe missing something that sets up the relationship between the 
+    // batch / troves data structures. Maybe try calling 
+    //         OpenTroveAndJoinBatchManager to set this up.
+    /// assert troveDataAfter.entireDebt == troveDataBefore.entireDebt;
 }
+
+
+// This also has a CEX so it may not be true.
+rule collateral_adjust_effect_addColl_join {
+    env e;
+
+    // Join the troveManager initially to setup any preconditions
+    IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams openBatchParams;
+    require openBatchParams.interestBatchManager != 0;
+    uint256 troveId = openTroveAndJoinInterestBatchManager(e, openBatchParams);
+
+
+    TroveManager.LatestTroveData troveDataBefore = 
+        troveManager.getLatestTroveData(e, troveId);
+
+    // TODO: Ideally we would also call any other function here
+    uint256 collAmount;
+    // it adjusts its collateral by collAmount.
+    addColl(e, troveId, collAmount);
+    TroveManager.LatestTroveData troveDataAfter = 
+        troveManager.getLatestTroveData(e, troveId);
+
+    assert troveDataAfter.entireDebt == troveDataBefore.entireDebt;
+}
+
+// Notes:
+// The two ways to adjust collateral are: addColl/WithdrawColl
+// Both of those functions result in a call to _adjustTrove
+// When the trove is in a batch it eventually calls TroveManager.onAdjustTroveInsideBatch
+// Inside TroveManager.onAdjustTroveInsideBatch:
+// - batches[_batchAddress].debt is changed by applying 
+//   `debtIncrease/debtDecrease` via TroveManager.updateBatchShares
+//      -  where is the managementFee, accrued interest figured 
+//         into debtIncrease?
+// - Troves[_troveId].coll is updated
+
+// Batch debt change notes:
+//     uint256 debtIncrease =
+// _troveChange.debtIncrease + _troveChange.upfrontFee + _troveChange.appliedRedistBoldDebtGain;
+
+// Much earlier than this in the same call path I see
+// BorrowerOperations._adjustTrove setting a few values in
+// _troveChange that seem related to these:
+// *
 
 // NOTE: not correct but keeping this in case it helps inspire a better way later
 // ghost mapping(address=>uint256) total_trove_debt_by_batch {
