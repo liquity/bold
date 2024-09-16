@@ -13,19 +13,12 @@ methods {
     // depepnds on 2 state variables totalStakesSnapshot / totalCollateralSnapshot
     function TroveManager._computeNewStake(uint _coll) internal returns (uint) => NONDET;
 
-    // function SortedTroves.insertIntoBatch(gt
-    //     uint256 _troveId,
-    //     SortedTroves.BatchId _batchId,
-    //     uint256 _annualInterestRate,
-    //     uint256 _prevId,
-    //     uint256 _nextId
-    // ) external => NONDET;
-
-    // We need to write summaries for this.
-    function SortedTroves.insert(uint256 _id, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external => NONDET;
-
-    // This is not safe. Pending solution to this
-    function SortedTroves._ external => NONDET;
+    function SortedTroves._findInsertPosition(
+        address _troveManager,
+        uint256 _annualInterestRate,
+        uint256 _prevId,
+        uint256 _nextId
+    ) internal returns (uint256, uint256) => NONDET;
     
     // not marked as view but it is almost one... updates a single state field lastBoldLossError_Offset
     function StabilityPool._computeCollRewardsPerUnitStaked(
