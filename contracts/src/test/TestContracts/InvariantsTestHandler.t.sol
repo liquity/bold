@@ -143,8 +143,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 batchManagementFee;
         Trove trove;
         bool wasActive;
-        bool wasUnredeemable;
-        bool useUnredeemable;
+        bool wasZombie;
+        bool useZombie;
         uint256 maxDebtDec;
         int256 collDelta;
         int256 debtDelta;
@@ -272,6 +272,20 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         string errorString;
     }
 
+    struct RedemptionContext {
+        uint256 totalProportions;
+        uint256[] proportions;
+        uint256 remainingAmount;
+        uint256 troveId;
+        uint256 lastZombieTroveId;
+        uint256 j;
+        uint256 i;
+        uint256 debtRedeemed;
+        uint256 collRedeemedPlusFee;
+        uint256 fee;
+        uint256 collRedeemed;
+    }
+
     struct LiquidationTotals {
         uint256 collGasComp;
         uint256 spCollGain;
@@ -328,7 +342,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     ITroveManager.Status constant ACTIVE = ITroveManager.Status.active;
     ITroveManager.Status constant CLOSED_BY_OWNER = ITroveManager.Status.closedByOwner;
     ITroveManager.Status constant CLOSED_BY_LIQ = ITroveManager.Status.closedByLiquidation;
-    ITroveManager.Status constant UNREDEEMABLE = ITroveManager.Status.unredeemable;
+    ITroveManager.Status constant UNREDEEMABLE = ITroveManager.Status.zombie;
 
     FunctionCaller immutable _functionCaller;
     bool immutable _assumeNoExpectedFailures; // vm.assume() away calls that fail extectedly
@@ -421,7 +435,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         coll = trove.coll;
         debt = trove.debt;
-        status = _isUnredeemable(i, troveId) ? UNREDEEMABLE : ACTIVE;
+        status = _isZombie(i, troveId) ? UNREDEEMABLE : ACTIVE;
         batchManager = _batchManagerOf[i][troveId];
     }
 
@@ -694,7 +708,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         bool isCollInc,
         uint256 debtChange,
         bool isDebtInc,
-        uint32 useUnredeemableSeed,
+        uint32 useZombieSeed,
         uint32 upperHintSeed,
         uint32 lowerHintSeed
     ) external {
@@ -702,7 +716,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         i = _bound(i, 0, branches.length - 1);
         v.prop = AdjustedTroveProperties(_bound(prop, 0, uint8(AdjustedTroveProperties._COUNT) - 1));
-        useUnredeemableSeed %= 100;
+        useZombieSeed %= 100;
         v.upperHint = _pickHint(i, upperHintSeed);
         v.lowerHint = _pickHint(i, lowerHintSeed);
 
@@ -715,18 +729,18 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
         v.trove = _troves[i][v.troveId];
         v.wasActive = _isActive(i, v.troveId);
-        v.wasUnredeemable = _isUnredeemable(i, v.troveId);
+        v.wasZombie = _isZombie(i, v.troveId);
 
-        if (v.wasActive || v.wasUnredeemable) {
+        if (v.wasActive || v.wasZombie) {
             // Choose the wrong type of adjustment 1% of the time
-            if (v.wasUnredeemable) {
-                v.useUnredeemable = useUnredeemableSeed != 0;
+            if (v.wasZombie) {
+                v.useZombie = useZombieSeed != 0;
             } else {
-                v.useUnredeemable = useUnredeemableSeed == 0;
+                v.useZombie = useZombieSeed == 0;
             }
         } else {
-            // Choose with equal probability between normal vs. unredeemable adjustment
-            v.useUnredeemable = useUnredeemableSeed < 50;
+            // Choose with equal probability between normal vs. zombie adjustment
+            v.useZombie = useZombieSeed < 50;
         }
 
         collChange = v.prop != AdjustedTroveProperties.onlyDebt ? _bound(collChange, 0, v.t.entireColl + 1) : 0;
@@ -738,7 +752,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.$collDelta = v.collDelta * int256(_price[i]) / int256(DECIMAL_PRECISION);
         v.upfrontFee = hintHelpers.predictAdjustTroveUpfrontFee(i, v.troveId, isDebtInc ? debtChange : 0);
         if (v.upfrontFee > 0) assertGtDecimal(v.debtDelta, 0, 18, "Only debt increase should incur upfront fee");
-        v.functionName = _getAdjustmentFunctionName(v.prop, isCollInc, isDebtInc, v.useUnredeemable);
+        v.functionName = _getAdjustmentFunctionName(v.prop, isCollInc, isDebtInc, v.useZombie);
 
         info("upper hint: ", _hintToString(i, v.upperHint));
         info("lower hint: ", _hintToString(i, v.lowerHint));
@@ -753,7 +767,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             isCollInc.toString(),
             debtChange.decimal(),
             isDebtInc.toString(),
-            useUnredeemableSeed.toString(),
+            useZombieSeed.toString(),
             upperHintSeed.toString(),
             lowerHintSeed.toString()
         );
@@ -765,8 +779,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         vm.prank(msg.sender);
         try _functionCaller.call(
             address(v.c.borrowerOperations),
-            v.useUnredeemable
-                ? _encodeUnredeemableTroveAdjustment(
+            v.useZombie
+                ? _encodeZombieTroveAdjustment(
                     v.troveId, collChange, isCollInc, debtChange, isDebtInc, v.upperHint, v.lowerHint, v.upfrontFee
                 )
                 : _encodeActiveTroveAdjustment(
@@ -779,8 +793,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Preconditions
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
             assertFalse(v.collDelta == 0 && v.debtDelta == 0, "Should have failed as there was no change");
-            if (v.useUnredeemable) assertTrue(v.wasUnredeemable, "Should have failed as Trove wasn't unredeemable");
-            if (!v.useUnredeemable) assertTrue(v.wasActive, "Should have failed as Trove wasn't active");
+            if (v.useZombie) assertTrue(v.wasZombie, "Should have failed as Trove wasn't zombie");
+            if (!v.useZombie) assertTrue(v.wasActive, "Should have failed as Trove wasn't active");
             assertLeDecimal(-v.collDelta, int256(v.t.entireColl), 18, "Should have failed as withdrawal > coll");
             assertLeDecimal(-v.debtDelta, int256(v.t.entireDebt), 18, "Should have failed as repayment > debt");
             v.newDebt = v.t.entireDebt.add(v.debtDelta) + v.upfrontFee;
@@ -817,11 +831,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertEqDecimal(v.collDelta, 0, 18, "Shouldn't have failed as there was a coll change");
                 assertEqDecimal(v.debtDelta, 0, 18, "Shouldn't have failed as there was a debt change");
             } else if (selector == BorrowerOperations.TroveNotActive.selector) {
-                assertFalse(v.useUnredeemable, string.concat("Shouldn't have been thrown by ", v.functionName));
+                assertFalse(v.useZombie, string.concat("Shouldn't have been thrown by ", v.functionName));
                 assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
-            } else if (selector == BorrowerOperations.TroveNotUnredeemable.selector) {
-                assertTrue(v.useUnredeemable, string.concat("Shouldn't have been thrown by ", v.functionName));
-                assertFalse(v.wasUnredeemable, "Shouldn't have failed as Trove was unredeemable");
+            } else if (selector == BorrowerOperations.TroveNotZombie.selector) {
+                assertTrue(v.useZombie, string.concat("Shouldn't have been thrown by ", v.functionName));
+                assertFalse(v.wasZombie, "Shouldn't have failed as Trove was zombie");
             } else if (selector == BorrowerOperations.CollWithdrawalTooHigh.selector) {
                 assertGtDecimal(-v.collDelta, int256(v.t.entireColl), 18, "Shouldn't have failed as withdrawal <= coll");
             } else if (selector == BorrowerOperations.DebtBelowMin.selector) {
@@ -1275,7 +1289,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                     _troves[j][redeemed.troveId] = trove;
 
-                    if (branches[j].troveManager.getTroveEntireDebt(redeemed.troveId) < MIN_DEBT) {
+                    uint256 troveDebt = branches[j].troveManager.getTroveEntireDebt(redeemed.troveId);
+                    if (troveDebt < MIN_DEBT) {
                         _zombieTroveIds[j].add(redeemed.troveId);
                     }
                 }
@@ -2423,12 +2438,12 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         return _troveIds[i].has(troveId);
     }
 
-    function _isUnredeemable(uint256 i, uint256 troveId) internal view returns (bool) {
+    function _isZombie(uint256 i, uint256 troveId) internal view returns (bool) {
         return _zombieTroveIds[i].has(troveId);
     }
 
     function _isActive(uint256 i, uint256 troveId) internal view returns (bool) {
-        return _isOpen(i, troveId) && !_isUnredeemable(i, troveId);
+        return _isOpen(i, troveId) && !_isZombie(i, troveId);
     }
 
     function _pickHint(uint256 i, uint256 seed) internal view returns (uint256) {
@@ -2636,56 +2651,63 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         internal
         returns (uint256 totalDebtRedeemed, mapping(uint256 branchIdx => RedemptionTransientState) storage r)
     {
-        uint256 totalProportions = 0;
-        uint256[] memory proportions = new uint256[](branches.length);
+        RedemptionContext memory vars;
+        vars.totalProportions = 0;
+        vars.proportions = new uint256[](branches.length);
         r = _redemption;
 
         // Try in proportion to unbacked
-        for (uint256 j = 0; j < branches.length; ++j) {
-            if (isShutdown[j] || _TCR(j) < SCR[j]) continue;
-            totalProportions += proportions[j] = _getUnbacked(j);
+        for (vars.j = 0; vars.j < branches.length; ++vars.j) {
+            if (isShutdown[vars.j] || _TCR(vars.j) < SCR[vars.j]) continue;
+            vars.totalProportions += vars.proportions[vars.j] = _getUnbacked(vars.j);
         }
 
         // Fallback: in proportion to branch debt
-        if (totalProportions == 0) {
-            for (uint256 j = 0; j < branches.length; ++j) {
-                if (isShutdown[j] || _TCR(j) < SCR[j]) continue;
-                totalProportions += proportions[j] = _getTotalDebt(j);
+        if (vars.totalProportions == 0) {
+            for (vars.j = 0; vars.j < branches.length; ++vars.j) {
+                if (isShutdown[vars.j] || _TCR(vars.j) < SCR[vars.j]) continue;
+                vars.totalProportions += vars.proportions[vars.j] = _getTotalDebt(vars.j);
             }
         }
 
-        if (totalProportions == 0) return (0, r);
+        if (vars.totalProportions == 0) return (0, r);
 
-        for (uint256 j = 0; j < branches.length; ++j) {
-            r[j].attemptedAmount = amount * proportions[j] / totalProportions;
-            if (r[j].attemptedAmount == 0) continue;
+        for (vars.j = 0; vars.j < branches.length; ++vars.j) {
+            r[vars.j].attemptedAmount = amount * vars.proportions[vars.j] / vars.totalProportions;
+            if (r[vars.j].attemptedAmount == 0) continue;
 
-            TestDeployer.LiquityContractsDev memory c = branches[j];
-            uint256 remainingAmount = r[j].attemptedAmount;
-            uint256 troveId = 0; // "root node" ID
+            TestDeployer.LiquityContractsDev memory c = branches[vars.j];
+            vars.remainingAmount = r[vars.j].attemptedAmount;
+            vars.troveId = 0; // "root node" ID
+            vars.lastZombieTroveId = c.troveManager.lastZombieTroveId();
 
-            for (uint256 i = 0; i < maxIterationsPerCollateral || maxIterationsPerCollateral == 0; ++i) {
-                if (remainingAmount == 0) break;
+            for (vars.i = 0; vars.i < maxIterationsPerCollateral || maxIterationsPerCollateral == 0; ++vars.i) {
+                if (vars.remainingAmount == 0) break;
 
-                troveId = c.sortedTroves.getPrev(troveId);
-                if (troveId == 0) break;
+                vars.troveId = vars.lastZombieTroveId != 0 ? vars.lastZombieTroveId : c.sortedTroves.getPrev(vars.troveId);
+                if (vars.troveId == 0) break;
 
-                LatestTroveData memory trove = c.troveManager.getLatestTroveData(troveId);
-                if (_ICR(j, trove) < _100pct) continue;
+                LatestTroveData memory trove = c.troveManager.getLatestTroveData(vars.troveId);
+                if (_ICR(vars.j, trove) >= _100pct) {
+                    vars.debtRedeemed = Math.min(vars.remainingAmount, trove.entireDebt);
+                    vars.collRedeemedPlusFee = vars.debtRedeemed * DECIMAL_PRECISION / _price[vars.j];
+                    vars.fee = vars.collRedeemedPlusFee * feePct / _100pct;
+                    vars.collRedeemed = vars.collRedeemedPlusFee - vars.fee;
 
-                uint256 debtRedeemed = Math.min(remainingAmount, trove.entireDebt);
-                uint256 collRedeemedPlusFee = debtRedeemed * DECIMAL_PRECISION / _price[j];
-                uint256 fee = collRedeemedPlusFee * feePct / _100pct;
-                uint256 collRedeemed = collRedeemedPlusFee - fee;
+                    r[vars.j].redeemed.push(Redeemed({troveId: vars.troveId, coll: vars.collRedeemed, debt: vars.debtRedeemed}));
 
-                r[j].redeemed.push(Redeemed({troveId: troveId, coll: collRedeemed, debt: debtRedeemed}));
+                    address batchManager = _batchManagerOf[vars.j][vars.troveId];
+                    if (batchManager != address(0)) r[vars.j].batchManagers.add(batchManager);
 
-                address batchManager = _batchManagerOf[j][troveId];
-                if (batchManager != address(0)) r[j].batchManagers.add(batchManager);
+                    r[vars.j].totalCollRedeemed += vars.collRedeemed;
+                    totalDebtRedeemed += vars.debtRedeemed;
+                    vars.remainingAmount -= vars.debtRedeemed;
+                }
 
-                r[j].totalCollRedeemed += collRedeemed;
-                totalDebtRedeemed += debtRedeemed;
-                remainingAmount -= debtRedeemed;
+                if (vars.lastZombieTroveId != 0) {
+                    vars.lastZombieTroveId = 0;
+                    vars.troveId = 0;
+                }
             }
         }
     }
@@ -2783,10 +2805,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         AdjustedTroveProperties prop,
         bool isCollIncrease,
         bool isDebtIncrease,
-        bool unredeemable
+        bool zombie
     ) internal pure returns (string memory) {
-        if (unredeemable) {
-            return "adjustUnredeemableTrove()";
+        if (zombie) {
+            return "adjustZombieTrove()";
         }
 
         if (prop == AdjustedTroveProperties.onlyColl) {
@@ -2847,7 +2869,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         revert("Invalid prop");
     }
 
-    function _encodeUnredeemableTroveAdjustment(
+    function _encodeZombieTroveAdjustment(
         uint256 troveId,
         uint256 collChange,
         bool isCollIncrease,
@@ -2858,7 +2880,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 maxUpfrontFee
     ) internal pure returns (bytes memory) {
         return abi.encodeCall(
-            IBorrowerOperations.adjustUnredeemableTrove,
+            IBorrowerOperations.adjustZombieTrove,
             (troveId, collChange, isCollIncrease, debtChange, isDebtIncrease, upperHint, lowerHint, maxUpfrontFee)
         );
     }
@@ -2947,8 +2969,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 return (selector, "BorrowerOperations.TroveNotActive()");
             }
 
-            if (selector == BorrowerOperations.TroveNotUnredeemable.selector) {
-                return (selector, "BorrowerOperations.TroveNotUnredeemable()");
+            if (selector == BorrowerOperations.TroveNotZombie.selector) {
+                return (selector, "BorrowerOperations.TroveNotZombie()");
             }
 
             if (selector == BorrowerOperations.TroveOpen.selector) {

@@ -128,7 +128,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error BatchInterestRateChangePeriodNotPassed();
     error TroveNotOpen();
     error TroveNotActive();
-    error TroveNotUnredeemable();
+    error TroveNotZombie();
     error TroveOpen();
     error UpfrontFeeTooHigh();
     error BelowCriticalThreshold();
@@ -470,7 +470,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _adjustTrove(troveManagerCached, _troveId, troveChange, _maxUpfrontFee);
     }
 
-    function adjustUnredeemableTrove(
+    function adjustZombieTrove(
         uint256 _troveId,
         uint256 _collChange,
         bool _isCollIncrease,
@@ -481,7 +481,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 _maxUpfrontFee
     ) external override {
         ITroveManager troveManagerCached = troveManager;
-        _requireTroveIsUnredeemable(troveManagerCached, _troveId);
+        _requireTroveIsZombie(troveManagerCached, _troveId);
 
         TroveChange memory troveChange;
         _initTroveChange(troveChange, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
@@ -650,8 +650,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             }
         }
 
-        // Make sure the Trove doesn't end up unredeemable
-        // Now the max repayment is capped to stay above MIN_DEBT, so this only applies to adjustUnredeemableTrove
+        // Make sure the Trove doesn't end up zombie
+        // Now the max repayment is capped to stay above MIN_DEBT, so this only applies to adjustZombieTrove
         _requireAtLeastMinDebt(vars.newDebt);
 
         vars.newICR = LiquityMath._computeCR(vars.newColl, vars.newDebt, vars.price);
@@ -787,8 +787,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         );
         activePool.mintAggInterestAndAccountForTroveChange(change, batchManager);
 
-        // If the trove was unredeemable, and now it’s not anymore, put it back in the list
-        if (_checkTroveIsUnredeemable(troveManagerCached, _troveId) && trove.entireDebt >= MIN_DEBT) {
+        // If the trove was zombie, and now it’s not anymore, put it back in the list
+        if (_checkTroveIsZombie(troveManagerCached, _troveId) && trove.entireDebt >= MIN_DEBT) {
             troveManagerCached.setTroveStatusToActive(_troveId);
             _reInsertIntoSortedTroves(
                 _troveId, trove.annualInterestRate, _upperHint, _lowerHint, batchManager, batch.annualInterestRate
@@ -1304,7 +1304,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
     function _requireTroveIsOpen(ITroveManager _troveManager, uint256 _troveId) internal view {
         ITroveManager.Status status = _troveManager.getTroveStatus(_troveId);
-        if (status != ITroveManager.Status.active && status != ITroveManager.Status.unredeemable) {
+        if (status != ITroveManager.Status.active && status != ITroveManager.Status.zombie) {
             revert TroveNotOpen();
         }
     }
@@ -1316,20 +1316,20 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
     }
 
-    function _requireTroveIsUnredeemable(ITroveManager _troveManager, uint256 _troveId) internal view {
-        if (!_checkTroveIsUnredeemable(_troveManager, _troveId)) {
-            revert TroveNotUnredeemable();
+    function _requireTroveIsZombie(ITroveManager _troveManager, uint256 _troveId) internal view {
+        if (!_checkTroveIsZombie(_troveManager, _troveId)) {
+            revert TroveNotZombie();
         }
     }
 
-    function _checkTroveIsUnredeemable(ITroveManager _troveManager, uint256 _troveId) internal view returns (bool) {
+    function _checkTroveIsZombie(ITroveManager _troveManager, uint256 _troveId) internal view returns (bool) {
         ITroveManager.Status status = _troveManager.getTroveStatus(_troveId);
-        return status == ITroveManager.Status.unredeemable;
+        return status == ITroveManager.Status.zombie;
     }
 
     function _requireTroveIsNotOpen(ITroveManager _troveManager, uint256 _troveId) internal view {
         ITroveManager.Status status = _troveManager.getTroveStatus(_troveId);
-        if (status == ITroveManager.Status.active || status == ITroveManager.Status.unredeemable) {
+        if (status == ITroveManager.Status.active || status == ITroveManager.Status.zombie) {
             revert TroveOpen();
         }
     }
