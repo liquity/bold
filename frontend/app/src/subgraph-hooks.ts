@@ -31,21 +31,23 @@ function subgraphTroveToLoan(
   };
 }
 
-export let useTroveCount = (account?: Address) => {
+export let useTroveCount = (account?: Address, collIndex?: number) => {
   return useQuery({
-    queryKey: ["TrovesCount", account],
+    queryKey: ["TrovesCount", account, collIndex],
     queryFn: async () => {
       if (!account) {
         return null;
       }
       const { borrowerInfo } = await graphSdk.TrovesCount({ id: account.toLowerCase() });
-      return borrowerInfo?.troves ?? 0;
+      return collIndex === undefined
+        ? borrowerInfo?.troves ?? 0
+        : borrowerInfo?.trovesByCollateral[collIndex] ?? null;
     },
   });
 };
 
 if (DEMO_MODE) {
-  useTroveCount = (account?: Address) => {
+  useTroveCount = (account?: Address, _collIndex?: number) => {
     return useQuery({
       queryKey: ["TrovesCount", account],
       queryFn: async () => {

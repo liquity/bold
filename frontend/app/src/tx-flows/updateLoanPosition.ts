@@ -1,7 +1,6 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
-import { getCollateralContracts } from "@/src/contracts";
 import { ADDRESS_ZERO } from "@/src/eth-utils";
 import { getTroveId } from "@/src/liquity-utils";
 import { vAddress, vDnum } from "@/src/valibot-utils";
@@ -35,11 +34,11 @@ export const updateLoanPosition: FlowDeclaration<Request> = {
       return ["adjustTrove"];
     }
 
-    const collSymbol = contracts.collaterals[request.collIndex][0];
-    const { BorrowerOperations, Token } = getCollateralContracts(collSymbol, contracts.collaterals) ?? {};
+    const collateral = contracts.collaterals[request.collIndex];
+    const { BorrowerOperations, Token } = collateral.contracts;
 
     if (!BorrowerOperations || !Token) {
-      throw new Error(`Collateral ${collSymbol} not supported`);
+      throw new Error(`Collateral ${collateral.symbol} not supported`);
     }
 
     const allowance = await readContract(wagmiConfig, {
@@ -62,11 +61,11 @@ export const updateLoanPosition: FlowDeclaration<Request> = {
     return v.parse(RequestSchema, request);
   },
   writeContractParams: async ({ contracts, request, stepId }) => {
-    const collSymbol = contracts.collaterals[request.collIndex][0];
-    const { BorrowerOperations, Token } = getCollateralContracts(collSymbol, contracts.collaterals) ?? {};
+    const collateral = contracts.collaterals[request.collIndex];
+    const { BorrowerOperations, Token } = collateral.contracts;
 
     if (!BorrowerOperations || !Token) {
-      throw new Error(`Collateral ${collSymbol} not supported`);
+      throw new Error(`Collateral ${collateral.symbol} not supported`);
     }
 
     if (stepId === "approve") {

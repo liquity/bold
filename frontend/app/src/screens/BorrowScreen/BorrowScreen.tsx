@@ -7,6 +7,7 @@ import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { DEBT_SUGGESTIONS, INTEREST_RATE_DEFAULT } from "@/src/constants";
 import content from "@/src/content";
+import { useCollateralContracts } from "@/src/contracts";
 import { useDemoMode } from "@/src/demo-mode";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
@@ -19,7 +20,7 @@ import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
-  COLLATERALS,
+  COLLATERALS as KNOWN_COLLATERALS,
   Dropdown,
   HFlex,
   IconSuggestion,
@@ -34,8 +35,9 @@ import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { match, P } from "ts-pattern";
+import { maxUint256 } from "viem";
 
-const COLLATERAL_SYMBOLS = COLLATERALS.map(({ symbol }) => symbol);
+const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
 
 export function BorrowScreen() {
   const account = useAccount();
@@ -50,17 +52,29 @@ export function BorrowScreen() {
 
   const router = useRouter();
 
-  // useParams() can return an array, but not with the current
-  // routing setup so we can safely assume it’s a string
-  const collSymbol = String(useParams().collateral ?? "eth").toUpperCase();
+  const allCollContracts = useCollateralContracts();
+
+  // useParams() can return an array but not with the current
+  // routing setup, so we can safely cast it to a string
+  const collSymbol = String(useParams().collateral ?? allCollContracts[0].symbol).toUpperCase();
   if (!isCollateralSymbol(collSymbol)) {
     throw new Error(`Invalid collateral symbol: ${collSymbol}`);
   }
 
-  // this is not the collIndex as deployed, but rather the index of the collateral
-  // in COLLATERALS, which is the list of collaterals known by the app.
-  const knownCollIndex = COLLATERAL_SYMBOLS.indexOf(collSymbol);
-  const collateral = COLLATERALS[knownCollIndex];
+  const collIndex = allCollContracts.findIndex(({ symbol }) => symbol === collSymbol);
+  if (collIndex === -1) {
+    throw new Error(`Unknown collateral symbol: ${collSymbol}`);
+  }
+
+  const collaterals = allCollContracts.map(({ symbol }) => {
+    const collateral = KNOWN_COLLATERALS.find((c) => c.symbol === symbol);
+    if (!collateral) {
+      throw new Error(`Unknown collateral symbol: ${symbol}`);
+    }
+    return collateral;
+  });
+
+  const collateral = collaterals[collIndex];
 
   const deposit = useInputFieldValue((value) => `${fmtnum(value)} ${collateral.name}`);
   const debt = useInputFieldValue((value) => `${fmtnum(value)} BOLD`);
@@ -68,16 +82,18 @@ export function BorrowScreen() {
 
   const collPrice = usePrice(collateral.symbol);
 
-  const balances = COLLATERAL_SYMBOLS.map((symbol) => {
-    // collateral symbols are static so we always
-    // call the same number of useBalance hooks
-    return useBalance(account.address, symbol);
-  });
+  const balances = Object.fromEntries(KNOWN_COLLATERAL_SYMBOLS.map((symbol) => ([
+    symbol,
+    // known collaterals are static so we can safely call this hook in a .map()
+    useBalance(account.address, symbol),
+  ] as const)));
 
-  const collBalance = balances[knownCollIndex];
+  const collBalance = balances[collateral.symbol];
 
-  const troveCount = useTroveCount(account.address);
+  const troveCount = useTroveCount(account.address, collIndex);
   const newTroveIndex = troveCount.data ?? 0;
+
+  const demoMode = useDemoMode();
 
   if (!collPrice) {
     return null;
@@ -113,15 +129,13 @@ export function BorrowScreen() {
 
   const currentStepId = flow?.steps?.[currentStepIndex]?.id;
 
-  const demoMode = useDemoMode();
-
   return (
     <Screen
       title={
         <HFlex>
           {content.borrowScreen.headline(
             <TokenIcon.Group>
-              {COLLATERALS.map(({ symbol }) => (
+              {allCollContracts.map(({ symbol }) => (
                 <TokenIcon
                   key={symbol}
                   symbol={symbol}
@@ -142,6 +156,7 @@ export function BorrowScreen() {
           })}
         >
           <div>
+            <div>collIndex: {collIndex} ({collateral.symbol})</div>
             <div>
               next available trove id: {match(troveCount)
                 .with({ status: "pending" }, () => "fetching")
@@ -190,15 +205,15 @@ export function BorrowScreen() {
                         if (deposit.parsed && debt.parsed && dn.gt(interestRate, 0)) {
                           start({
                             flowId: "openLoanPosition",
-                            collIndex: 0,
+                            collIndex,
                             owner: account.address,
                             ownerIndex: troveCount.data ?? 0,
                             collAmount: deposit.parsed,
                             boldAmount: debt.parsed,
                             upperHint: dn.from(0, 18),
                             lowerHint: dn.from(0, 18),
-                            annualInterestRate: dn.div(interestRate, 100),
-                            maxUpfrontFee: [2n ** 256n - 1n, 18], // type(uint256).max
+                            annualInterestRate: interestRate,
+                            maxUpfrontFee: [maxUint256, 18],
                           });
                         }
                       }}
@@ -209,7 +224,7 @@ export function BorrowScreen() {
                       onClick={() => {
                         start({
                           flowId: "updateLoanPosition",
-                          collIndex: 0,
+                          collIndex,
                           owner: account.address,
                           ownerIndex: (troveCount.data ?? 0) - 1,
                           collChange: dn.from(1, 18),
@@ -225,7 +240,7 @@ export function BorrowScreen() {
                       onClick={() => {
                         start({
                           flowId: "repayAndCloseLoanPosition",
-                          collIndex: 0,
+                          collIndex,
                           owner: account.address,
                           ownerIndex: (troveCount.data ?? 0) - 1,
                         });
@@ -276,23 +291,24 @@ export function BorrowScreen() {
             <InputField
               contextual={
                 <Dropdown
-                  items={COLLATERALS.map(({ symbol, name }, index) => ({
+                  items={collaterals.map(({ symbol, name }) => ({
                     icon: <TokenIcon symbol={symbol} />,
                     label: name,
                     value: account.isConnected
-                      ? fmtnum(balances[index].data ?? 0)
+                      ? fmtnum(balances[symbol].data ?? 0)
                       : "−",
                   }))}
                   menuPlacement="end"
                   menuWidth={300}
                   onSelect={(index) => {
                     deposit.setValue("");
+                    const { symbol } = collaterals[index];
                     router.push(
-                      `/borrow/${COLLATERALS[index].symbol.toLowerCase()}`,
+                      `/borrow/${symbol.toLowerCase()}`,
                       { scroll: false },
                     );
                   }}
-                  selected={knownCollIndex}
+                  selected={collIndex}
                 />
               }
               label={content.borrowScreen.depositField.label}
@@ -305,10 +321,10 @@ export function BorrowScreen() {
                 }`,
                 end: account.isConnected && (
                   <TextButton
-                    label={`Max ${fmtnum(collBalance.data)} ${collateral.name}`}
+                    label={`Max ${fmtnum(collBalance.data ?? 0)} ${collateral.name}`}
                     onClick={() => {
                       deposit.setValue(
-                        fmtnum(collBalance.data).replace(",", ""),
+                        fmtnum(collBalance.data ?? 0).replace(",", ""),
                       );
                     }}
                   />

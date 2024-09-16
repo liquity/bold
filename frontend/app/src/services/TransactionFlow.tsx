@@ -14,6 +14,7 @@ import type { Request as OpenLoanPositionRequest } from "@/src/tx-flows/openLoan
 import type { Request as RepayAndCloseLoanPositionRequest } from "@/src/tx-flows/repayAndCloseLoanPosition.ts";
 import type { Request as UpdateLoanPositionRequest } from "@/src/tx-flows/updateLoanPosition.ts";
 import type { Address } from "@/src/types";
+import type { WriteContractParameters } from "@wagmi/core";
 import type { ReactNode } from "react";
 
 import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
@@ -102,7 +103,7 @@ type WriteContractParamsFn<FR extends FlowRequest> = (args: {
   contracts: ReturnType<typeof useContracts>;
   request: FR;
   stepId: string;
-}) => Promise<Parameters<ReturnType<typeof useWriteContract>["writeContract"]>[0] | null>;
+}) => Promise<null | WriteContractParameters>;
 
 export type FlowDeclaration<FR extends FlowRequest> = {
   getSteps: GetStepsFn<FR>;

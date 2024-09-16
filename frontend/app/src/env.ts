@@ -1,8 +1,13 @@
 import type { Address } from "@/src/types";
 
-import { CollateralIdSchema } from "@/src/constants";
 import { vAddress, vEnvAddressAndBlock, vEnvCurrency, vEnvFlag, vEnvLink } from "@/src/valibot-utils";
 import * as v from "valibot";
+
+export const CollateralSymbolSchema = v.union([
+  v.literal("ETH"),
+  v.literal("RETH"),
+  v.literal("STETH"),
+]);
 
 export const EnvSchema = v.pipe(
   v.object({
@@ -44,7 +49,7 @@ export const EnvSchema = v.pipe(
     COLL_0_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
     COLL_0_CONTRACT_TOKEN: v.optional(vAddress()),
     COLL_0_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
-    COLL_0_TOKEN_ID: v.optional(CollateralIdSchema),
+    COLL_0_TOKEN_ID: v.optional(CollateralSymbolSchema),
 
     COLL_1_CONTRACT_ACTIVE_POOL: v.optional(vAddress()),
     COLL_1_CONTRACT_BORROWER_OPERATIONS: v.optional(vAddress()),
@@ -54,7 +59,7 @@ export const EnvSchema = v.pipe(
     COLL_1_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
     COLL_1_CONTRACT_TOKEN: v.optional(vAddress()),
     COLL_1_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
-    COLL_1_TOKEN_ID: v.optional(CollateralIdSchema),
+    COLL_1_TOKEN_ID: v.optional(CollateralSymbolSchema),
 
     COLL_2_CONTRACT_ACTIVE_POOL: v.optional(vAddress()),
     COLL_2_CONTRACT_BORROWER_OPERATIONS: v.optional(vAddress()),
@@ -64,7 +69,7 @@ export const EnvSchema = v.pipe(
     COLL_2_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
     COLL_2_CONTRACT_TOKEN: v.optional(vAddress()),
     COLL_2_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
-    COLL_2_TOKEN_ID: v.optional(CollateralIdSchema),
+    COLL_2_TOKEN_ID: v.optional(CollateralSymbolSchema),
 
     DEMO_MODE: vEnvFlag(),
     WALLET_CONNECT_PROJECT_ID: v.string(),
@@ -85,18 +90,13 @@ export const EnvSchema = v.pipe(
 
     type ContractEnvName = typeof contractsEnvNames[number];
 
-    const collateralContracts: Record<
-      v.InferOutput<typeof CollateralIdSchema>,
-      Record<ContractEnvName, Address> | null
-    > = {
-      ETH: null,
-      RETH: null,
-      STETH: null,
-    };
+    const collateralContracts: Array<{
+      symbol: v.InferOutput<typeof CollateralSymbolSchema>;
+      contracts: Record<ContractEnvName, Address>;
+    }> = [];
 
     for (const index of Array(10).keys()) {
       const collEnvName = `COLL_${index}`;
-
       const contracts: Partial<Record<ContractEnvName, Address>> = {};
 
       for (const name of contractsEnvNames) {
@@ -108,11 +108,17 @@ export const EnvSchema = v.pipe(
       }
 
       const contractsCount = Object.values(contracts).filter((v) => v).length;
-      if (contractsCount === contractsEnvNames.length) {
-        collateralContracts[
-          env[`${collEnvName}_TOKEN_ID` as keyof typeof env] as v.InferOutput<typeof CollateralIdSchema>
-        ] = contracts as Record<ContractEnvName, Address>;
+      if (contractsCount === 0) {
+        break;
       }
+      if (contractsCount !== contractsEnvNames.length) {
+        throw new Error(`Incomplete contracts for collateral ${index}`);
+      }
+
+      collateralContracts[index] = {
+        symbol: env[`${collEnvName}_TOKEN_ID` as keyof typeof env] as v.InferOutput<typeof CollateralSymbolSchema>,
+        contracts: contracts as Record<ContractEnvName, Address>,
+      };
     }
 
     return {

@@ -7,6 +7,7 @@ import type { Address } from "@liquity2/uikit";
 import type { ComponentProps, ReactNode } from "react";
 import type { Chain } from "wagmi/chains";
 
+import { useContracts } from "@/src/contracts";
 import { ACCOUNT_BALANCES } from "@/src/demo-mode";
 import { useDemoMode } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
@@ -89,13 +90,18 @@ export function useBalance(
   token: Token["symbol"] | undefined,
 ) {
   const demoMode = useDemoMode();
+  const contracts = useContracts();
 
   const tokenAddress = match(token)
     .when(
       (symbol) => Boolean(symbol && isCollateralSymbol(symbol) && symbol !== "ETH"),
-      (symbol) => (
-        symbol && isCollateralSymbol(symbol) && symbol !== "ETH" ? COLLATERAL_CONTRACTS[symbol]?.TOKEN ?? null : null
-      ),
+      (symbol) => {
+        if (!symbol || !isCollateralSymbol(symbol) || symbol === "ETH") {
+          return null;
+        }
+        const collateral = contracts.collaterals.find((c) => c.symbol === symbol);
+        return collateral?.contracts.Token.address ?? null;
+      },
     )
     .with("BOLD", () => CONTRACT_BOLD_TOKEN)
     .with("LQTY", () => LQTY_TOKEN)
