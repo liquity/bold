@@ -1,5 +1,6 @@
 type Collateral @entity {
   id: ID!
+  collIndex: Int!
   token: Token!
   minCollRatio: BigInt!
   troves: [Trove!]! @derivedFrom(field: "collateral")
@@ -49,4 +50,5 @@ type Trove @entity {
 type BorrowerInfo @entity {
   id: ID!
   troves: Int!
+  trovesByCollateral: [Int!]!
 }

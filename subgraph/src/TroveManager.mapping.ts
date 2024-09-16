@@ -95,13 +95,23 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
     let borrowerInfo = BorrowerInfo.load(borrowerAddress.toHexString());
     if (!borrowerInfo) {
       borrowerInfo = new BorrowerInfo(borrowerAddress.toHexString());
+      borrowerInfo.troves = 0;
+
+      let totalCollaterals = context.getI32("totalCollaterals");
+      borrowerInfo.trovesByCollateral = (new Array<i32>(totalCollaterals)).fill(0);
+      borrowerInfo.save();
     }
 
     trove = new Trove(id.toHex());
     trove.createdAt = event.block.timestamp;
     trove.borrower = borrowerAddress;
 
-    borrowerInfo.troves = borrowerInfo.troves + 1;
+    borrowerInfo.troves += 1;
+
+    let trovesByColl = borrowerInfo.trovesByCollateral;
+    trovesByColl[collateral.collIndex] += 1;
+    borrowerInfo.trovesByCollateral = trovesByColl;
+
     borrowerInfo.save();
   }
 
