@@ -799,6 +799,58 @@ contract OraclesMainnet is TestAccounts {
         assertEq(price, lastGoodPrice, "fetched price != lastGoodPrice");
     }
 
+    function testRETHWhenUsingETHUSDxCanonicalSwitchesToLastGoodPriceWhenExchangeRateFails() public {
+        // Make the RETH-USD oracle stale
+        vm.etch(address(rethOracle), address(mockOracle).code);
+        (,,, uint256 updatedAt,) = rethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        // Check using primary
+        assertEq(uint8(rethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary), "not using primary");
+
+        // Fetch price
+        (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
+
+        // Check that the primary calc oracle did fail
+        assertTrue(oracleFailedWhileBranchLive, "primary oracle calc didnt fail");
+
+        // Check using ETHUSDxCanonical
+        assertEq(
+            uint8(rethPriceFeed.priceSource()),
+            uint8(IMainnetPriceFeed.PriceSource.ETHUSDxCanonical),
+            "not using ethusdxcanonical"
+        );
+
+        uint256 lastGoodPrice = rethPriceFeed.lastGoodPrice();
+
+        // Calc expected price if didnt fail,  i.e. ETH-USD x canonical
+        uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
+        uint256 exchangeRate = rethToken.getExchangeRate();
+        assertGt(ethUsdPrice, 0);
+        assertGt(exchangeRate, 0);
+        uint256 priceIfDidntFail = ethUsdPrice * exchangeRate / 1e18;
+        
+        // Make the exchange rate return 0
+        vm.etch(address(rethToken), address(mockRethToken).code);
+        uint256 rate =  rethToken.getExchangeRate();
+        assertEq(rate, 0, "mock rate non-zero");
+
+        // Now fetch the price
+        (price, oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
+
+        // This should be false, since the branch is already shutdown and not live
+        assertFalse(oracleFailedWhileBranchLive);
+
+        // Confirm the returned price is the last good price
+        assertEq(price, lastGoodPrice, "fetched price != lastGoodPrice");
+         // Check we've switched to lastGoodPrice source 
+        assertEq(
+            uint8(rethPriceFeed.priceSource()),
+            uint8(IMainnetPriceFeed.PriceSource.lastGoodPrice),
+            "not using lastGoodPrice"
+        );
+    }
+
     function testRETHWhenUsingETHUSDxCanonicalReturnsMinOfLastGoodPriceAndETHUSDxCanonical() public {
         // Make the RETH-ETH oracle stale
         vm.etch(address(rethOracle), address(mockOracle).code);
@@ -968,7 +1020,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(contractsArray[2].troveManager.shutdownTime(), block.timestamp, "timestamps not equal");
     }
 
-     function testWSTETHPriceFeedReturnsLastGoodPriceWhenExchangeRateFails() public {
+    function testWSTETHPriceFeedReturnsLastGoodPriceWhenExchangeRateFails() public {
         // Fetch price
         wstethPriceFeed.fetchPrice();
         uint256 lastGoodPrice1 = wstethPriceFeed.lastGoodPrice();
@@ -1176,6 +1228,58 @@ contract OraclesMainnet is TestAccounts {
         assertEq(price, lastGoodPrice, "fetched price != lastGoodPrice");
     }
 
+     function testSTETHWhenUsingETHUSDxCanonicalSwitchesToLastGoodPriceWhenExchangeRateFails() public {
+        // Make the STETH-USD oracle stale
+        vm.etch(address(stethOracle), address(mockOracle).code);
+        (,,, uint256 updatedAt,) = stethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        // Check using primary
+        assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary), "not using primary");
+
+        // Fetch price
+        (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+
+        // Check that the primary calc oracle did fail
+        assertTrue(oracleFailedWhileBranchLive, "primary oracle calc didnt fail");
+
+        // Check using ETHUSDxCanonical
+        assertEq(
+            uint8(wstethPriceFeed.priceSource()),
+            uint8(IMainnetPriceFeed.PriceSource.ETHUSDxCanonical),
+            "not using ethusdxcanonical"
+        );
+
+        uint256 lastGoodPrice = wstethPriceFeed.lastGoodPrice();
+
+        // Calc expected price if didnt fail,  i.e. ETH-USD x canonical
+        uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
+        uint256 exchangeRate = wstETH.stEthPerToken();
+        assertGt(ethUsdPrice, 0);
+        assertGt(exchangeRate, 0);
+        uint256 priceIfDidntFail = ethUsdPrice * exchangeRate / 1e18;
+        
+        // Make the exchange rate return 0
+        vm.etch(address(wstETH), address(mockWstethToken).code);
+        uint256 rate =  wstETH.stEthPerToken();
+        assertEq(rate, 0, "mock rate non-zero");
+
+        // Now fetch the price
+        (price, oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+
+        // This should be false, since the branch is already shutdown and not live
+        assertFalse(oracleFailedWhileBranchLive);
+
+        // Confirm the returned price is the last good price
+        assertEq(price, lastGoodPrice, "fetched price != lastGoodPrice");
+         // Check we've switched to lastGoodPrice source 
+        assertEq(
+            uint8(wstethPriceFeed.priceSource()),
+            uint8(IMainnetPriceFeed.PriceSource.lastGoodPrice),
+            "not using lastGoodPrice"
+        );
+    }
+
     function testSTETHWhenUsingETHUSDxCanonicalRemainsShutDownWhenETHUSDOracleFails() public {
         // Make the STETH-USD oracle stale
         vm.etch(address(stethOracle), address(mockOracle).code);
@@ -1356,15 +1460,6 @@ contract OraclesMainnet is TestAccounts {
     }
 
     // TODO:
-
-    // - fix test (make sure altering sotrage correctly)
-
-    // - RETH: When using primary and exchange rate fails, switch to last good price
-    // - RETH: When using canonical and exchange rate fails, switch to last good price
-    // - STETH: When using primary and exchange rate fails, switch to last good price
-    // - STETH: When using canonical and exchange rate fails, switch to last good price
-    
-
     // - More basic actions tests (adjust, close, etc)
-    // - liq tests (manipulate aggregator stored price
+    // - liq tests (manipulate aggregator stored price)
 }
