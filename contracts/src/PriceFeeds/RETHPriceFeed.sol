@@ -6,7 +6,7 @@ import "./CompositePriceFeed.sol";
 import "../Interfaces/IRETHToken.sol";
 import "../Interfaces/IRETHPriceFeed.sol";
 
-import "forge-std/console2.sol";
+// import "forge-std/console2.sol";
 
 contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
     constructor(
@@ -35,10 +35,6 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
         (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
         (uint256 rEthEthPrice, bool rEthEthOracleDown) = _getOracleAnswer(rEthEthOracle);
         (uint256 rEthPerEth, bool exchangeRateIsDown) = _getCanonicalRate();
-
-        console2.log(rEthPerEth, "rEthPerEth");
-        console2.log(exchangeRateIsDown, "exchangeRateIsDown");
-        console2.log(exchangeRateIsDown, "exchangeRateIsDown");
 
         // If the ETH-USD feed is down, shut down and switch to the last good price seen by the system
         // since we need both ETH-USD and canonical for primary and fallback price calcs
