@@ -7,7 +7,7 @@
 // - Request: The initial request parameters that starts a flow.
 // - Flow: A series of transactions that are executed in sequence.
 // - Flow steps: Series of transactions in a flow (determined by the request).
-// - Flow declaration: Contains the logic for a specific flow.
+// - Flow declaration: Contains the logic for a specific flow (get steps, parse request, tx params).
 // - Flow context: a transaction flow as stored in local storage (steps + request).
 
 import type { Request as OpenLoanPositionRequest } from "@/src/tx-flows/openLoanPosition.ts";
