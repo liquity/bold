@@ -1724,7 +1724,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 _batchColl, // without trove change
         uint256 _batchDebt // entire (with interest, batch fee), but without trove change, nor upfront fee nor redist
     ) internal {
-        // Debt
+        // Debt        
         uint256 currentBatchDebtShares = batches[_batchAddress].totalDebtShares;
         uint256 batchDebtSharesDelta;
         uint256 debtIncrease =
