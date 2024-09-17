@@ -166,8 +166,13 @@ export function BorrowScreen() {
             </div>
             <div>flow: {flow?.request.flowId}</div>
             <div>
-              flow steps:{" "}
-              {flow?.steps && <>[{flow?.steps.map(({ id, txHash }) => txHash ? `${id} (ok)` : id).join(", ")}]</>}
+              flow steps: {flow?.steps && (
+                <>
+                  [{flow?.steps
+                    .map(({ id, txHash }) => txHash ? `${id} (ok)` : id)
+                    .join(", ")}]
+                </>
+              )}
             </div>
             <div>
               current flow step: {currentStepIndex} ({flow?.steps && flow?.steps[currentStepIndex]?.id})
@@ -176,14 +181,8 @@ export function BorrowScreen() {
               flow step error: <pre>{flow?.steps?.[currentStepIndex]?.error}</pre>
             </div>
           </div>
-          {match([account, troveCount])
-            .with([
-              { status: "connected", address: P.nonNullable },
-              { status: "success" },
-            ], ([
-              account,
-              troveCount,
-            ]) => (
+          {match(account)
+            .with({ status: "connected", address: P.nonNullable }, (account) => (
               (
                 <div
                   className={css({
@@ -200,7 +199,8 @@ export function BorrowScreen() {
                   >
                     <Button
                       size="mini"
-                      label={`openLoanPosition (#${troveCount.data})`}
+                      disabled={troveCount.status !== "success"}
+                      label={`openLoanPosition (#${troveCount.data ?? 0})`}
                       onClick={() => {
                         if (deposit.parsed && debt.parsed && dn.gt(interestRate, 0)) {
                           start({
@@ -219,7 +219,7 @@ export function BorrowScreen() {
                       }}
                     />
                     <Button
-                      disabled={newTroveIndex < 0}
+                      disabled={newTroveIndex < 0 || troveCount.status !== "success"}
                       label={`updateLoanPosition (#${(troveCount.data ?? 0) - 1})`}
                       onClick={() => {
                         start({
@@ -235,7 +235,7 @@ export function BorrowScreen() {
                       size="mini"
                     />
                     <Button
-                      disabled={newTroveIndex < 0}
+                      disabled={newTroveIndex < 0 || troveCount.status !== "success"}
                       label={`repayAndCloseLoanPosition (#${(troveCount.data ?? 0) - 1})`}
                       onClick={() => {
                         start({
@@ -452,7 +452,21 @@ export function BorrowScreen() {
             size="large"
             wide
             onClick={() => {
-              router.push("/transactions/borrow");
+              if (deposit.parsed && debt.parsed && account.address) {
+                start({
+                  flowId: "openLoanPosition",
+                  collIndex,
+                  owner: account.address,
+                  ownerIndex: troveCount.data ?? 0,
+                  collAmount: deposit.parsed,
+                  boldAmount: debt.parsed,
+                  upperHint: dn.from(0, 18),
+                  lowerHint: dn.from(0, 18),
+                  annualInterestRate: interestRate,
+                  maxUpfrontFee: [maxUint256, 18],
+                });
+                router.push("/transactions");
+              }
             }}
           />
         </div>
