@@ -4,6 +4,8 @@ pragma solidity 0.8.24;
 
 import "./TestContracts/Accounts.sol";
 import "./TestContracts/ChainlinkOracleMock.sol";
+import "./TestContracts/RETHTokenMock.sol";
+import "./TestContracts/WSTETHTokenMock.sol";
 import "./TestContracts/Deployment.t.sol";
 
 import "../Dependencies/AggregatorV3Interface.sol";
@@ -27,8 +29,11 @@ contract OraclesMainnet is TestAccounts {
     IRETHPriceFeed rethPriceFeed;
     IWSTETHPriceFeed wstethPriceFeed;
 
-    IRETHToken rETHToken;
+    IRETHToken rethToken;
     IWSTETH wstETH;
+
+    RETHTokenMock mockRethToken;
+    WSTETHTokenMock mockWstethToken;
 
     TestDeployer.LiquityContracts[] contractsArray;
     ICollateralRegistry collateralRegistry;
@@ -70,9 +75,12 @@ contract OraclesMainnet is TestAccounts {
 
         mockOracle = new ChainlinkOracleMock();
 
-        rETHToken = IRETHToken(result.externalAddresses.RETHToken);
+        rethToken = IRETHToken(result.externalAddresses.RETHToken);
 
         wstETH = IWSTETH(result.externalAddresses.WSTETHToken);
+
+        mockRethToken = new RETHTokenMock();
+        mockWstethToken = new WSTETHTokenMock();
 
         // Record contracts
         for (uint256 c = 0; c < numCollaterals; c++) {
@@ -136,7 +144,7 @@ contract OraclesMainnet is TestAccounts {
 
         uint256 expectedMarketPrice = latestAnswerREthEth * latestAnswerEthUsd / 1e18;
 
-        uint256 rate = rETHToken.getExchangeRate();
+        uint256 rate = rethToken.getExchangeRate();
         assertGt(rate, 1e18);
 
         uint256 expectedCanonicalPrice = rate * latestAnswerEthUsd / 1e18;
@@ -145,7 +153,6 @@ contract OraclesMainnet is TestAccounts {
 
         assertEq(lastGoodPriceReth, expectedPrice);
     }
-
 
     function testSetLastGoodPriceOnDeploymentWSTETH() public view {
         uint256 lastGoodPriceWsteth = wstethPriceFeed.lastGoodPrice();
@@ -179,7 +186,7 @@ contract OraclesMainnet is TestAccounts {
 
         uint256 expectedMarketPrice = latestAnswerREthEth * latestAnswerEthUsd / 1e18;
 
-        uint256 rate = rETHToken.getExchangeRate();
+        uint256 rate = rethToken.getExchangeRate();
         assertGt(rate, 1e18);
 
         uint256 expectedCanonicalPrice = rate * latestAnswerEthUsd / 1e18;
@@ -509,16 +516,16 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the ETH-USD oracle stale
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
+
         // Fetch price again
         (, ethUsdFailed) = wethPriceFeed.fetchPrice();
 
-        // Check oracle call failed this time 
+        // Check oracle call failed this time
         assertTrue(ethUsdFailed);
 
-        // Confirm the branch is now shutdown 
+        // Confirm the branch is now shutdown
         assertEq(contractsArray[0].troveManager.shutdownTime(), block.timestamp);
     }
 
@@ -530,7 +537,7 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the ETH-USD oracle stale
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,int256 mockPrice,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        (, int256 mockPrice,, uint256 updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
         assertGt(mockPrice, 0, "mockPrice 0");
         // Confirm the lastGoodPrice is not coincidentally equal to the mock oracle's price
@@ -538,8 +545,8 @@ contract OraclesMainnet is TestAccounts {
 
         // Fetch price again
         (uint256 price, bool ethUsdFailed) = wethPriceFeed.fetchPrice();
-        
-        // Check oracle call failed this time 
+
+        // Check oracle call failed this time
         assertTrue(ethUsdFailed);
 
         // Confirm the PriceFeed's returned price equals the lastGoodPrice
@@ -564,17 +571,43 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the ETH-USD oracle stale
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
+
         // Fetch price again
         (, oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
 
-        // Check an oracle call failed this time 
+        // Check an oracle call failed this time
         assertTrue(oracleFailedWhileBranchLive);
 
-        // Confirm the branch is now shutdown 
+        // Confirm the branch is now shutdown
         assertEq(contractsArray[1].troveManager.shutdownTime(), block.timestamp);
+    }
+
+    function testRETHPriceFeedShutsDownWhenExchangeRateFails() public {
+        // Fetch price
+        (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
+        assertGt(price, 0);
+
+        // Check oracle call didn't fail
+        assertFalse(oracleFailedWhileBranchLive);
+
+        // Check branch is live, not shut down
+        assertEq(contractsArray[1].troveManager.shutdownTime(), 0);
+
+        // Make the exchange rate 0
+        vm.etch(address(rethToken), address(mockRethToken).code);
+        uint256 rate = rethToken.getExchangeRate();
+        assertEq(rate, 0);
+
+        // Fetch price again
+        (, oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
+
+        // Check a call failed this time
+        assertTrue(oracleFailedWhileBranchLive);
+
+        // Confirm the branch is now shutdown
+        assertEq(contractsArray[1].troveManager.shutdownTime(), block.timestamp, "timestamps not equal");
     }
 
     function testRETHPriceFeedReturnsLastGoodPriceWhenETHUSDOracleFails() public {
@@ -585,14 +618,38 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the ETH-USD oracle stale
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,int256 mockPrice,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        (, int256 mockPrice,, uint256 updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
         assertGt(mockPrice, 0, "mockPrice 0");
 
         // Fetch price again
         (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
-        
-        // Check an oracle call failed this time 
+
+        // Check an oracle call failed this time
+        assertTrue(oracleFailedWhileBranchLive);
+
+        // Confirm the PriceFeed's returned price equals the lastGoodPrice
+        assertEq(price, lastGoodPrice1);
+
+        // Confirm the stored lastGoodPrice has not changed
+        assertEq(rethPriceFeed.lastGoodPrice(), lastGoodPrice1);
+    }
+
+    function testRETHPriceFeedReturnsLastGoodPriceWhenExchangeRateFails() public {
+        // Fetch price
+        rethPriceFeed.fetchPrice();
+        uint256 lastGoodPrice1 = rethPriceFeed.lastGoodPrice();
+        assertGt(lastGoodPrice1, 0, "lastGoodPrice 0");
+
+         // Make the exchange rate 0
+        vm.etch(address(rethToken), address(mockRethToken).code);
+        uint256 rate = rethToken.getExchangeRate();
+        assertEq(rate, 0);
+
+        // Fetch price again
+        (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
+
+        // Check an oracle call failed this time
         assertTrue(oracleFailedWhileBranchLive);
 
         // Confirm the PriceFeed's returned price equals the lastGoodPrice
@@ -609,9 +666,9 @@ contract OraclesMainnet is TestAccounts {
         // Check using primary
         assertEq(uint8(rethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
 
-        // Make the ETH-USD oracle stale 
+        // Make the ETH-USD oracle stale
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
@@ -636,35 +693,35 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the RETH-ETH oracle stale
         vm.etch(address(rethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = rethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = rethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
+
         // Fetch price again
         (, oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
 
-        // Check an oracle call failed this time 
+        // Check an oracle call failed this time
         assertTrue(oracleFailedWhileBranchLive);
 
-        // Confirm the branch is now shutdown 
+        // Confirm the branch is now shutdown
         assertEq(contractsArray[1].troveManager.shutdownTime(), block.timestamp);
     }
 
     function testFetchPriceReturnsETHUSDxCanonicalWhenRETHETHOracleFails() public {
         // Make the RETH-ETH oracle stale
         vm.etch(address(rethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = rethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = rethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
-        // Fetch price 
+
+        // Fetch price
         (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
         assertGt(price, 0);
-        
+
         // Check that the primary calc oracle did fail
         assertTrue(oracleFailedWhileBranchLive);
 
         // Calc expected price i.e. ETH-USD x canonical
         uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
-        uint256 exchangeRate = rETHToken.getExchangeRate();
+        uint256 exchangeRate = rethToken.getExchangeRate();
         assertGt(ethUsdPrice, 0);
         assertGt(exchangeRate, 0);
         uint256 expectedPrice = ethUsdPrice * exchangeRate / 1e18;
@@ -679,9 +736,9 @@ contract OraclesMainnet is TestAccounts {
         // Check using primary
         assertEq(uint8(rethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
 
-        // Make the RETH-ETH oracle stale 
+        // Make the RETH-ETH oracle stale
         vm.etch(address(rethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = rethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = rethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
@@ -696,20 +753,24 @@ contract OraclesMainnet is TestAccounts {
     function testRETHWhenUsingETHUSDxCanonicalSwitchesToLastGoodPriceWhenETHUSDOracleFails() public {
         // Make the RETH-USD oracle stale
         vm.etch(address(rethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = rethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = rethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
+
         // Check using primary
         assertEq(uint8(rethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary), "not using primary");
 
-        // Fetch price 
+        // Fetch price
         (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
-        
+
         // Check that the primary calc oracle did fail
         assertTrue(oracleFailedWhileBranchLive, "primary oracle calc didnt fail");
 
         // Check using ETHUSDxCanonical
-        assertEq(uint8(rethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.ETHUSDxCanonical), "not using ethusdxcanonical");
+        assertEq(
+            uint8(rethPriceFeed.priceSource()),
+            uint8(IMainnetPriceFeed.PriceSource.ETHUSDxCanonical),
+            "not using ethusdxcanonical"
+        );
 
         uint256 lastGoodPrice = rethPriceFeed.lastGoodPrice();
 
@@ -717,10 +778,10 @@ contract OraclesMainnet is TestAccounts {
         vm.etch(address(ethOracle), address(mockOracle).code);
         (,,, updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
+
         // Calc expected price if didnt fail,  i.e. ETH-USD x canonical
         uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
-        uint256 exchangeRate = rETHToken.getExchangeRate();
+        uint256 exchangeRate = rethToken.getExchangeRate();
         assertGt(ethUsdPrice, 0);
         assertGt(exchangeRate, 0);
         uint256 priceIfDidntFail = ethUsdPrice * exchangeRate / 1e18;
@@ -730,12 +791,67 @@ contract OraclesMainnet is TestAccounts {
 
         // Now fetch the price
         (price, oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
-        
+
         // This should be false, since the branch is already shutdown and not live
         assertFalse(oracleFailedWhileBranchLive);
 
         // Confirm the returned price is the last good price
         assertEq(price, lastGoodPrice, "fetched price != lastGoodPrice");
+    }
+
+    function testRETHWhenUsingETHUSDxCanonicalReturnsMinOfLastGoodPriceAndETHUSDxCanonical() public {
+        // Make the RETH-ETH oracle stale
+        vm.etch(address(rethOracle), address(mockOracle).code);
+        (,,, uint256 updatedAt,) = rethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        // Check using primary
+        assertEq(uint8(rethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
+        
+        // Fetch price
+        (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
+
+        // Check that the primary calc oracle did fail
+        assertTrue(oracleFailedWhileBranchLive);
+
+        // Check using ETHUSDxCanonical
+        assertEq(uint8(rethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.ETHUSDxCanonical));
+
+        // Make lastGoodPrice tiny, and below ETHUSDxCanonical
+        vm.store(
+            address(rethPriceFeed),
+            bytes32(uint256(1)), // 1st storage slot where lastGoodPrice is stored
+            bytes32(uint256(1)) // make lastGoodPrice equal to 1 wei
+        );
+        assertEq(rethPriceFeed.lastGoodPrice(), 1);
+
+
+        //  Fetch the price again
+        (price, ) = rethPriceFeed.fetchPrice();
+
+        // Check price was lastGoodPrice
+        assertEq(price, rethPriceFeed.lastGoodPrice());
+
+        // Now make lastGoodPrice massive, and greater than ETHUSDxCanonical
+        vm.store(
+            address(rethPriceFeed),
+            bytes32(uint256(1)), // 1st storage slot where lastGoodPrice is stored
+            bytes32(uint256(1e27)) // make lastGoodPrice equal to 1e27 i.e. 1 billion (with 18 decimal digits)
+        );
+        assertEq(rethPriceFeed.lastGoodPrice(), 1e27);
+        
+        //  Fetch the price again
+        (price, ) = rethPriceFeed.fetchPrice();
+
+        // Check price is expected ETH-USDxCanonical
+        // Calc expected price if didnt fail,  i.e. 
+        uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
+        uint256 exchangeRate = rethToken.getExchangeRate();
+        assertGt(ethUsdPrice, 0);
+        assertGt(exchangeRate, 0);
+        uint256 priceIfDidntFail = ethUsdPrice * exchangeRate / 1e18;
+
+        assertEq(price, priceIfDidntFail, "price not equal expected");
     }
 
     function testRETHPriceFeedShutsDownWhenBothOraclesFail() public {
@@ -751,21 +867,21 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the RETH-ETH oracle stale
         vm.etch(address(rethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = rethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = rethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
 
-         // Make the ETH-USD oracle stale too
+        // Make the ETH-USD oracle stale too
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,,,updatedAt,) = ethOracle.latestRoundData();
+        (,,, updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
+
         // Fetch price again
         (, oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
 
-        // Check an oracle call failed this time 
+        // Check an oracle call failed this time
         assertTrue(oracleFailedWhileBranchLive);
 
-        // Confirm the branch is now shutdown 
+        // Confirm the branch is now shutdown
         assertEq(contractsArray[1].troveManager.shutdownTime(), block.timestamp);
     }
 
@@ -777,18 +893,18 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the ETH-USD oracle stale
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,int256 mockPrice,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        (, int256 mockPrice,, uint256 updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-      
+
         // Make the RETH-ETH oracle stale too
         vm.etch(address(rethOracle), address(mockOracle).code);
-        (,mockPrice,,updatedAt,) = rethOracle.latestRoundData();
+        (, mockPrice,, updatedAt,) = rethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
         (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
-        
-        // Check an oracle call failed this time 
+
+        // Check an oracle call failed this time
         assertTrue(oracleFailedWhileBranchLive);
 
         // Confirm the PriceFeed's returned price equals the lastGoodPrice
@@ -809,12 +925,12 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the ETH-USD oracle stale
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,int256 mockPrice,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        (, int256 mockPrice,, uint256 updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-      
+
         // Make the RETH-ETH oracle stale too
         vm.etch(address(rethOracle), address(mockOracle).code);
-        (,mockPrice,,updatedAt,) = rethOracle.latestRoundData();
+        (, mockPrice,, updatedAt,) = rethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
@@ -826,45 +942,95 @@ contract OraclesMainnet is TestAccounts {
 
     // --- WSTETH shutdown ---
 
+    function testWSTETHPriceFeedShutsDownWhenExchangeRateFails() public {
+        // Fetch price
+        (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+        assertGt(price, 0);
+
+        // Check oracle call didn't fail
+        assertFalse(oracleFailedWhileBranchLive);
+
+        // Check branch is live, not shut down
+        assertEq(contractsArray[1].troveManager.shutdownTime(), 0);
+
+        // Make the exchange rate 0
+        vm.etch(address(wstETH), address(mockWstethToken).code);
+        uint256 rate = wstETH.stEthPerToken();
+        assertEq(rate, 0);
+
+        // Fetch price again
+        (, oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+
+        // Check a call failed this time
+        assertTrue(oracleFailedWhileBranchLive);
+
+        // Confirm the branch is now shutdown
+        assertEq(contractsArray[2].troveManager.shutdownTime(), block.timestamp, "timestamps not equal");
+    }
+
+     function testWSTETHPriceFeedReturnsLastGoodPriceWhenExchangeRateFails() public {
+        // Fetch price
+        wstethPriceFeed.fetchPrice();
+        uint256 lastGoodPrice1 = wstethPriceFeed.lastGoodPrice();
+        assertGt(lastGoodPrice1, 0, "lastGoodPrice 0");
+
+        // Make the exchange rate 0
+        vm.etch(address(wstETH), address(mockWstethToken).code);
+        uint256 rate = wstETH.stEthPerToken();
+        assertEq(rate, 0);
+
+        // Fetch price 
+        (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+
+        // Check a call failed this time
+        assertTrue(oracleFailedWhileBranchLive);
+
+        // Confirm the PriceFeed's returned price equals the lastGoodPrice
+        assertEq(price, lastGoodPrice1);
+
+        // Confirm the stored lastGoodPrice has not changed
+        assertEq(wstethPriceFeed.lastGoodPrice(), lastGoodPrice1);
+    }
+
     function testWSTETHPriceSourceIsPrimaryPriceWhenETHUSDOracleFails() public {
         // Fetch price
-        (uint256 price1, ) = wstethPriceFeed.fetchPrice();
+        (uint256 price1,) = wstethPriceFeed.fetchPrice();
         assertGt(price1, 0, "price is 0");
 
         // Check using primary
         assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
-        
+
         // Make the ETH-USD oracle stale
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,int256 mockPrice,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        (, int256 mockPrice,, uint256 updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
         assertGt(mockPrice, 0, "mockPrice 0");
 
         // Fetch price again
         (uint256 price2, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
-        // Check no oracle failed in this call, since it uses only STETH-USD oracle in the primary calc 
+
+        // Check no oracle failed in this call, since it uses only STETH-USD oracle in the primary calc
         assertFalse(oracleFailedWhileBranchLive);
 
         // Check using primary
         assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
     }
 
-     function testWSTETHPriceFeedReturnsPrimaryPriceWhenETHUSDOracleFails() public {
+    function testWSTETHPriceFeedReturnsPrimaryPriceWhenETHUSDOracleFails() public {
         // Fetch price
-        (uint256 price1, ) = wstethPriceFeed.fetchPrice();
+        (uint256 price1,) = wstethPriceFeed.fetchPrice();
         assertGt(price1, 0, "price is 0");
 
         // Make the ETH-USD oracle stale
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,int256 mockPrice,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        (, int256 mockPrice,, uint256 updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
         assertGt(mockPrice, 0, "mockPrice 0");
 
         // Fetch price again
         (uint256 price2, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
-        // Check no oracle failed in this call, since it uses only STETH-USD oracle in the primary calc 
+
+        // Check no oracle failed in this call, since it uses only STETH-USD oracle in the primary calc
         assertFalse(oracleFailedWhileBranchLive);
 
         // Confirm the PriceFeed's returned price equals the previous price
@@ -873,9 +1039,9 @@ contract OraclesMainnet is TestAccounts {
 
     function testWSTETHPriceDoesNotShutdownWhenETHUSDOracleFails() public {
         // Fetch price
-        ( , bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
-        // Check no oracle failed in this call, since it uses only STETH-USD oracle in the primary calc 
+        (, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+
+        // Check no oracle failed in this call, since it uses only STETH-USD oracle in the primary calc
         assertFalse(oracleFailedWhileBranchLive);
 
         // Check branch is live, not shut down
@@ -883,12 +1049,12 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the ETH-USD oracle stale
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
+
         // Fetch price again
         (, oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
+
         // Check that again primary calc oracle did not fail
         assertFalse(oracleFailedWhileBranchLive);
 
@@ -898,9 +1064,9 @@ contract OraclesMainnet is TestAccounts {
 
     function testWSTETHPriceShutdownWhenSTETHUSDOracleFails() public {
         // Fetch price
-        ( , bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
-        // Check no oracle failed in this call, since it uses only STETH-USD oracle in the primary calc 
+        (, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+
+        // Check no oracle failed in this call, since it uses only STETH-USD oracle in the primary calc
         assertFalse(oracleFailedWhileBranchLive);
 
         // Check branch is live, not shut down
@@ -908,12 +1074,12 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the STETH-USD oracle stale
         vm.etch(address(stethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = stethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
+
         // Fetch price again
         (, oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
+
         // Check that this time the primary calc oracle did fail
         assertTrue(oracleFailedWhileBranchLive);
 
@@ -924,12 +1090,12 @@ contract OraclesMainnet is TestAccounts {
     function testFetchPriceReturnsETHUSDxCanonicalWhenSTETHUSDOracleFails() public {
         // Make the STETH-USD oracle stale
         vm.etch(address(stethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = stethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
-        // Fetch price 
+
+        // Fetch price
         (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
+
         // Check that the primary calc oracle did fail
         assertTrue(oracleFailedWhileBranchLive);
 
@@ -946,15 +1112,15 @@ contract OraclesMainnet is TestAccounts {
     function testSTETHPriceSourceIsETHUSDxCanonicalWhenSTETHUSDOracleFails() public {
         // Check using primary
         assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
-        
+
         // Make the STETH-USD oracle stale
         vm.etch(address(stethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = stethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
-        // Fetch price 
+
+        // Fetch price
         (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
+
         // Check that the primary calc oracle did fail
         assertTrue(oracleFailedWhileBranchLive);
 
@@ -965,15 +1131,15 @@ contract OraclesMainnet is TestAccounts {
     function testSTETHWhenUsingETHUSDxCanonicalSwitchesToLastGoodPriceWhenETHUSDOracleFails() public {
         // Make the STETH-USD oracle stale
         vm.etch(address(stethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = stethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
+
         // Check using primary
         assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
 
-        // Fetch price 
+        // Fetch price
         (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
+
         // Check that the primary calc oracle did fail
         assertTrue(oracleFailedWhileBranchLive);
 
@@ -986,7 +1152,7 @@ contract OraclesMainnet is TestAccounts {
         vm.etch(address(ethOracle), address(mockOracle).code);
         (,,, updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
+
         // Calc expected price if didnt fail,  i.e. ETH-USD x canonical
         uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
         uint256 exchangeRate = wstETH.stEthPerToken();
@@ -1000,9 +1166,9 @@ contract OraclesMainnet is TestAccounts {
         // Now fetch the price
         (price, oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
 
-         // Check using lastGoodPrice
+        // Check using lastGoodPrice
         assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.lastGoodPrice));
-        
+
         // This should be false, since the branch is already shutdown and not live
         assertFalse(oracleFailedWhileBranchLive);
 
@@ -1013,18 +1179,18 @@ contract OraclesMainnet is TestAccounts {
     function testSTETHWhenUsingETHUSDxCanonicalRemainsShutDownWhenETHUSDOracleFails() public {
         // Make the STETH-USD oracle stale
         vm.etch(address(stethOracle), address(mockOracle).code);
-        (,,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        (,,, uint256 updatedAt,) = stethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
+
         // Check using primary
         assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
 
         // Check branch is live, not shut down
         assertEq(contractsArray[2].troveManager.shutdownTime(), 0);
 
-        // Fetch price 
+        // Fetch price
         (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
+
         // Check that the primary calc oracle did fail
         assertTrue(oracleFailedWhileBranchLive);
 
@@ -1044,16 +1210,71 @@ contract OraclesMainnet is TestAccounts {
 
         // Check using lastGoodPrice
         assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.lastGoodPrice));
-        
-       // Check branch is still down
+
+        // Check branch is still down
         assertEq(contractsArray[2].troveManager.shutdownTime(), block.timestamp);
+    }
+
+    function testSTETHWhenUsingETHUSDxCanonicalReturnsMinOfLastGoodPriceAndETHUSDxCanonical() public {
+        // Make the STETH-USD oracle stale
+        vm.etch(address(stethOracle), address(mockOracle).code);
+        (,,, uint256 updatedAt,) = stethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        // Check using primary
+        assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
+        
+        // Fetch price
+        (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+
+        // Check that the primary calc oracle did fail
+        assertTrue(oracleFailedWhileBranchLive);
+
+        // Check using ETHUSDxCanonical
+        assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.ETHUSDxCanonical));
+
+        // Make lastGoodPrice tiny, and below ETHUSDxCanonical
+        vm.store(
+            address(wstethPriceFeed),
+            bytes32(uint256(1)), // 1st storage slot where lastGoodPrice is stored
+            bytes32(uint256(1)) // make lastGoodPrice equal to 1 wei
+        );
+        assertEq(wstethPriceFeed.lastGoodPrice(), 1);
+
+
+        //  Fetch the price again
+        (price, ) = wstethPriceFeed.fetchPrice();
+
+        // Check price was lastGoodPrice
+        assertEq(price, wstethPriceFeed.lastGoodPrice());
+
+        // Now make lastGoodPrice massive, and greater than ETHUSDxCanonical
+        vm.store(
+            address(wstethPriceFeed),
+            bytes32(uint256(1)), // 1st storage slot where lastGoodPrice is stored
+            bytes32(uint256(1e27)) // make lastGoodPrice equal to 1e27 i.e. 1 billion (with 18 decimal digits)
+        );
+        assertEq(wstethPriceFeed.lastGoodPrice(), 1e27);
+        
+        //  Fetch the price again
+        (price, ) = wstethPriceFeed.fetchPrice();
+
+        // Check price is expected ETH-USDxCanonical
+        // Calc expected price if didnt fail,  i.e. 
+        uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
+        uint256 exchangeRate = wstETH.stEthPerToken();
+        assertGt(ethUsdPrice, 0);
+        assertGt(exchangeRate, 0);
+        uint256 priceIfDidntFail = ethUsdPrice * exchangeRate / 1e18;
+
+        assertEq(price, priceIfDidntFail);
     }
 
     function testWSTETHPriceShutdownWhenBothOraclesFail() public {
         // Fetch price
-        ( , bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
-        // Check no oracle failed in this call, since it uses only STETH-USD oracle in the primary calc 
+        (, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+
+        // Check no oracle failed in this call, since it uses only STETH-USD oracle in the primary calc
         assertFalse(oracleFailedWhileBranchLive);
 
         // Check branch is live, not shut down
@@ -1061,17 +1282,17 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the STETH-USD oracle stale
         vm.etch(address(stethOracle), address(mockOracle).code);
-        (,int256 mockPrice,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        (, int256 mockPrice,, uint256 updatedAt,) = stethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Make the ETH-USD oracle stale too
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,mockPrice,,updatedAt,) = ethOracle.latestRoundData();
+        (, mockPrice,, updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
-        
+
         // Fetch price again
         (, oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
+
         // Check that this time the primary calc oracle did fail
         assertTrue(oracleFailedWhileBranchLive);
 
@@ -1085,20 +1306,20 @@ contract OraclesMainnet is TestAccounts {
         uint256 lastGoodPrice1 = wstethPriceFeed.lastGoodPrice();
         assertGt(lastGoodPrice1, 0, "lastGoodPrice 0");
 
-       // Make the STETH-USD oracle stale
+        // Make the STETH-USD oracle stale
         vm.etch(address(stethOracle), address(mockOracle).code);
-        (,int256 mockPrice,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        (, int256 mockPrice,, uint256 updatedAt,) = stethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Make the ETH-USD oracle stale too
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,mockPrice,,updatedAt,) = ethOracle.latestRoundData();
+        (, mockPrice,, updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
         (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
-        // Check an oracle call failed this time 
+
+        // Check an oracle call failed this time
         assertTrue(oracleFailedWhileBranchLive);
 
         // Confirm the PriceFeed's returned price equals the lastGoodPrice
@@ -1117,32 +1338,33 @@ contract OraclesMainnet is TestAccounts {
         // Check using primary
         assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
 
-       // Make the STETH-USD oracle stale
+        // Make the STETH-USD oracle stale
         vm.etch(address(stethOracle), address(mockOracle).code);
-        (,int256 mockPrice,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        (, int256 mockPrice,, uint256 updatedAt,) = stethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Make the ETH-USD oracle stale too
         vm.etch(address(ethOracle), address(mockOracle).code);
-        (,mockPrice,,updatedAt,) = ethOracle.latestRoundData();
+        (, mockPrice,, updatedAt,) = ethOracle.latestRoundData();
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
         (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
-        
+
         // Check using lastGoodPrice
         assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.lastGoodPrice));
     }
 
     // TODO:
 
-    // WETHPriceFeed: 
-    // - Source when ETH-USD failed: lastGoodPrice
+    // - fix test (make sure altering sotrage correctly)
 
-    // RETHPriceFeed: 
-    // - Source when RETH-ETH failed: ETHUSDxCanonical
-    // - Source when ETH-USD failed: lastGoodPrice
+    // - RETH: When using primary and exchange rate fails, switch to last good price
+    // - RETH: When using canonical and exchange rate fails, switch to last good price
+    // - STETH: When using primary and exchange rate fails, switch to last good price
+    // - STETH: When using canonical and exchange rate fails, switch to last good price
     
+
     // - More basic actions tests (adjust, close, etc)
     // - liq tests (manipulate aggregator stored price
 }

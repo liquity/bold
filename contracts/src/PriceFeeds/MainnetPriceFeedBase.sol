@@ -37,17 +37,13 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
         bool success;
     }
 
+    event ShutDownFromOracleFailure(address _failedOracleAddr);
+
     Oracle public ethUsdOracle;
 
     IBorrowerOperations borrowerOperations;
 
-    constructor(
-        address _owner,
-        address _ethUsdOracleAddress,
-        uint256 _ethUsdStalenessThreshold
-    ) 
-        Ownable(_owner) 
-    {
+    constructor(address _owner, address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold) Ownable(_owner) {
         // Store ETH-USD oracle
         ethUsdOracle.aggregator = AggregatorV3Interface(_ethUsdOracleAddress);
         ethUsdOracle.stalenessThreshold = _ethUsdStalenessThreshold;
@@ -63,10 +59,10 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
         _renounceOwnership();
     }
 
-    // An individual Pricefeed instance implements _fetchPrice according to the data sources it uses. Returns:
+    // An individual Pricefeed instance implements _fetchPricePrimary according to the data sources it uses. Returns:
     // - The price
-    // - A bool indicating whether a new oracle failure was detected in the call
-    function _fetchPrice() internal virtual returns (uint256, bool) {}
+    // - A bool indicating whether a new oracle failure or exchange rate failure was detected in the call
+    function _fetchPricePrimary() internal virtual returns (uint256, bool) {}
 
     function _getOracleAnswer(Oracle memory _oracle) internal view returns (uint256, bool) {
         ChainlinkResponse memory chainlinkResponse = _getCurrentChainlinkResponse(_oracle.aggregator);
@@ -85,9 +81,11 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
 
     function _shutDownAndSwitchToLastGoodPrice(address _failedOracleAddr) internal returns (uint256) {
         // Shut down the branch
-        borrowerOperations.shutdownFromOracleFailure(_failedOracleAddr);
-
+        borrowerOperations.shutdownFromOracleFailure();
+       
         priceSource = PriceSource.lastGoodPrice;
+
+        emit ShutDownFromOracleFailure(_failedOracleAddr);
         return lastGoodPrice;
     }
 
