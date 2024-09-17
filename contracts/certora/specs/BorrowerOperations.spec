@@ -225,6 +225,28 @@ rule troves_in_batch_share_management_fee {
     assert unscaled_management_fee_x == unscaled_management_fee_y;
 }
 
+// This is used to assume that trove rewards is updated and is equivalent
+// to TroveManager._updateTroveRewardSnapshots. _updateTroveRewardsSnapshots
+// is called upon opening a trove.
+function troveRewardsUpdated(uint256 _troveId) returns bool {
+    return troveManager.rewardSnapshots[_troveId].coll == troveManager.L_coll &&
+        troveManager.rewardSnapshots[_troveId].boldDebt == troveManager.L_boldDebt;
+}
+
+function futureDebtsSettled(TroveManager.LatestBatchData batchData, address batchAddress) returns bool {
+    return troveManager.batches[batchAddress].debt == 
+        batchData.entireDebtWithoutRedistribution;
+}
+
+// Assume batch is not shut down and the debt has already been updated.
+// (Otherwise we will have a spurious counterexample where the update
+// was not yet applied in the prestate but it gets applied during 
+// addCollaterall and other similar functions)
+function interestUpdatedAssumption(env e, TroveManager.LatestBatchData batchData) returns bool {
+    return troveManager.shutdownTime != 0 &&
+        e.block.timestamp == batchData.lastDebtUpdateTime;
+}
+
 /*
 When any borrower with a batch Trove i adjusts its coll by x:
 -All of the batch’s accrued interest is applied to the batch’s recorded debt
@@ -235,10 +257,22 @@ When any borrower with a batch Trove i adjusts its coll by x:
 -Trove i’s entire debt does not change
 */
 
-// Should be similar for withdrawColl and the effects on debt changes
-rule collateral_adjust_effect_addColl {
+// This is a helper method so that we can parameterize the rule
+// for just the two calls related to collateral changes
+function callCollateralAdjustFunction(env e, method f, uint256 troveId, uint256 collAmount) {
+    if(f.selector == sig:addColl(uint256,uint256).selector) {
+        addColl(e, troveId, collAmount);
+    }
+    if(f.selector == sig:withdrawColl(uint256,uint256).selector) {
+        withdrawColl(e, troveId, collAmount);
+    }
+}
+
+rule collateral_adjust_effect_addColl (method f) filtered {
+    f -> f.selector == sig:addColl(uint256,uint256).selector
+    || f.selector == sig:withdrawColl(uint256,uint256).selector 
+}{
     env e;
-    calldataarg args;
     uint256 troveId;
     uint256 collAmount;
 
@@ -247,76 +281,60 @@ rule collateral_adjust_effect_addColl {
     require batchAddress != 0;
     require getBatchManager(troveId) == batchAddress;
 
-    TroveManager.LatestTroveData troveDataBefore = 
-        troveManager.getLatestTroveData(e, troveId);
+    // Assume rewardSnapshots is updated (this will always happen on opening a 
+    // Trove, for example). TroveManager._updateTroveRewardSnapshots is called 
+    // as part of addCol, so without this assumption the prover will choose 
+    // executions where the rewardSnapshots are not updated, this will affect 
+    // troveDataBefore, then addColl will do the update 
+    /// spuriously changing the debt calculation for the troveDataAfter
+    require troveRewardsUpdated(troveId);
+    
+    TroveManager.LatestBatchData batchDataBefore =
+        troveManager.getLatestBatchData(e, batchAddress);
 
-    // it adjusts its collateral by collAmount.
-    addColl(e, troveId, collAmount);
-    TroveManager.LatestTroveData troveDataAfter = 
-        troveManager.getLatestTroveData(e, troveId);
+    // During adColl which eventually calls _adjustTrove,
+    // troveManager.batches[batchAddress].debt will get updated
+    // to <...>.entireDebtWithoutRedistribution.
+    // So here we assume the pending debts have been applied.
+    require futureDebtsSettled(batchDataBefore, batchAddress);
 
-    // Trove i's entire coll changes only by x:
-    // PASSES
-    assert troveDataAfter.entireColl == troveDataBefore.entireColl + collAmount;
-    // Trove i's entire debt does not change:
-    // FAILS, maybe missing something that sets up the relationship between the 
-    // batch / troves data structures. Maybe try calling 
-    //         OpenTroveAndJoinBatchManager to set this up.
-    /// assert troveDataAfter.entireDebt == troveDataBefore.entireDebt;
-}
-
-
-// This also has a CEX so it may not be true.
-rule collateral_adjust_effect_addColl_join {
-    env e;
-
-    // Join the troveManager initially to setup any preconditions
-    IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams openBatchParams;
-    require openBatchParams.interestBatchManager != 0;
-    uint256 troveId = openTroveAndJoinInterestBatchManager(e, openBatchParams);
-
+    // Assume debt has been updated.
+    require interestUpdatedAssumption(e, batchDataBefore);
 
     TroveManager.LatestTroveData troveDataBefore = 
         troveManager.getLatestTroveData(e, troveId);
 
-    // TODO: Ideally we would also call any other function here
-    uint256 collAmount;
-    // it adjusts its collateral by collAmount.
-    addColl(e, troveId, collAmount);
+    // trove increases its collateral by collAmount.
+    // addColl(e, troveId, collAmount);
+    callCollateralAdjustFunction(e, f, troveId, collAmount);
+
+    TroveManager.LatestBatchData batchDataAfter=
+        troveManager.getLatestBatchData(e, batchAddress);
     TroveManager.LatestTroveData troveDataAfter = 
         troveManager.getLatestTroveData(e, troveId);
 
+    // The batch's recorded debt should increase from
+    // the old recorded debt by at least each of these values.
+    // It is >= this sum rather than == because the batch
+    // may also be charged an upfront fee
+    assert batchDataAfter.recordedDebt >= 
+        batchDataBefore.recordedDebt +
+        // -All of the batch’s accrued management fee is applied to the batch’s recorded debt
+        batchDataBefore.accruedManagementFee +
+        // -All of the batch’s accrued interest is applied to the batch’s recorded debt
+        batchDataBefore.accruedInterest +
+        // -Trove i’s pending redistribution debt gain is applied to the batch’s recorded debt
+        troveDataBefore.redistBoldDebtGain;
+
+    // Trove i’s pending redistribution coll gain is applied to the batch’s recorded coll
+
+    // -Trove i’s entire coll changes only by x
+    assert (troveDataAfter.entireColl == 
+        // addColl
+        troveDataBefore.entireColl + collAmount) ||
+        (troveDataAfter.entireColl ==
+        // withdrawColl
+        troveDataBefore.entireColl - collAmount);
+    // -Trove i’s entire debt does not change
     assert troveDataAfter.entireDebt == troveDataBefore.entireDebt;
 }
-
-// Notes:
-// The two ways to adjust collateral are: addColl/WithdrawColl
-// Both of those functions result in a call to _adjustTrove
-// When the trove is in a batch it eventually calls TroveManager.onAdjustTroveInsideBatch
-// Inside TroveManager.onAdjustTroveInsideBatch:
-// - batches[_batchAddress].debt is changed by applying 
-//   `debtIncrease/debtDecrease` via TroveManager.updateBatchShares
-//      -  where is the managementFee, accrued interest figured 
-//         into debtIncrease?
-// - Troves[_troveId].coll is updated
-
-// Batch debt change notes:
-//     uint256 debtIncrease =
-// _troveChange.debtIncrease + _troveChange.upfrontFee + _troveChange.appliedRedistBoldDebtGain;
-
-// Much earlier than this in the same call path I see
-// BorrowerOperations._adjustTrove setting a few values in
-// _troveChange that seem related to these:
-// *
-
-// NOTE: not correct but keeping this in case it helps inspire a better way later
-// ghost mapping(address=>uint256) total_trove_debt_by_batch {
-//     init_state axiom forall address x. total_trove_debt_by_batch[x] == 0;
-// }
-// hook Sstore troveManager.Troves[KEY uint256 troveId].debt uint256 new_debt (uint256 old_debt) {
-//     address batch = batch_by_trove_id[troveId];
-//     if(batch != 0) {
-//         total_trove_debt_by_batch[batch] = require_uint256(total_trove_debt_by_batch[batch] 
-//             + new_debt - old_debt);
-//     }
-// }
