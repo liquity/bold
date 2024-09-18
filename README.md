@@ -476,7 +476,7 @@ For a given branch, the system maintains the following invariant:
 
 That is:
 
-`ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest() = SUM_i=1_n(TroveManager.getEntireTroveDebt())`
+`ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest() + DefaultPool.BoldDebt = SUM_i=1_n(TroveManager.getEntireTroveDebt())`
 
 For all `n` Troves in the branch.
 
@@ -492,6 +492,17 @@ Pending aggregate interest is “applied” upon most system actions. That is:
 
 This is the only way BOLD is ever minted as interest. Applying individual interest to a Trove updates its recorded debt, but interest is always minted in aggregate.
 
+### Redistribution gains and interest accrual
+
+The redistribution mechanism from Liquity v1 is carried over to Liquity v2. That is, when the Stability Pool is empty, liquidations are performed by redistributing all debt and collateral from the liquidated Trove(s) to all other active Troves in proportion to their collateral.
+
+Thus active Troves potentially accrue redistribution debt gains over time. The total redistributed debt is recorded in the `DefaultPool`, and individual Troves' pending redistribution gains are handled in `TroveManager` by the `L_coll` and `L_boldDebt` global trackers. 
+
+Whenever a Trove is touched e.g. by the borrower adjusting debt, its pending redistribution debt gain is "applied" i.e. moved into its recorded debt.
+
+Pending redistribution gains do **not** accrue interest at aggregate or individual level. All redistribution debt gains are held outside and apart from the interest accrual calculations. This means that a Trove with a relatively high pending redistribution debt gain has a slight advantage: it pays less interest than a Trove with equal entire debt but no pending redistribution gains.
+
+However, it is possible for anyone to permissionlessly apply a Trove's redistribution gain, i.e. to move them into the Trove's recorded debt via `TroveManager.applyPendingDebt`.  This works for batch and non-batched Troves. As such, any unfairness in interest accrual due to redistribution gains can be manually removed.
 
 ### Redemption evasion mitigation
 
@@ -522,7 +533,7 @@ The premature adjustment fee works as so:
 #### Batches and premature adjustment fees
 
 ##### Joining a batch
-When a trove joins a batch, it pays an upfront fee if the last trove adjustment was done more than the cool period ago. It does’t matter if the Trove and batch have the same interest rate, or when was the last adjustment by the batch.
+When a trove joins a batch, it pays an upfront fee if the last trove adjustment was done less than the cool period ago. It does’t matter if the Trove and batch have the same interest rate, or when was the last adjustment by the batch.
 
 The last interest rate timestamp will be updated to the time of joining.
 
@@ -1271,7 +1282,7 @@ As mentioned in the interest rate [implementation section](#core-debt-invariant)
 
 That is:
 
-`ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest() = SUM_i=1_n(TroveManager.getEntireTroveDebt())`
+`ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest() + DefaultBool.BoltDebt = SUM_i=1_n(TroveManager.getEntireTroveDebt())`
 
 For all `n` Troves in the branch.
 
