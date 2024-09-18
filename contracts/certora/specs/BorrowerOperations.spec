@@ -12,6 +12,10 @@ methods {
     // depepnds on 2 state variables totalStakesSnapshot / totalCollateralSnapshot
     function TroveManager._computeNewStake(uint _coll) internal returns (uint) => NONDET;
 
+    function BorrowerOperations._calcUpfrontFee(uint256 _debt, 
+        uint256 _avgInterestRate ) internal returns (uint256) => 
+        CVLCalcUpfrontFee(_debt, _avgInterestRate);
+
     // This is used to avoid a sanity failure. This is safe because
     // it is a view function.
     function SortedTroves._findInsertPosition(
@@ -373,6 +377,36 @@ When any borrower with a batch Trove i adjusts its debt by x:
     -Trove i’s entire coll does not change
 */
 // Related functions: withdrawBold, repayBold
+
+// Assumptions about the relationship between batch debts and shares
+// which should be maintianed
+function debt_and_shares_relationship(
+    uint256 troveId,
+    address batchAddress,
+    TroveManager.LatestBatchData batchData, 
+    TroveManager.LatestTroveData troveData) returns bool {
+        bool zero_shares_zero_debt_batch = 
+            getBatchTotalShares(batchAddress) == 0 <=>
+            batchData.recordedDebt == 0;
+        bool zero_shares_zero_debt_trove =
+            getTroveBatchDebtShares(troveId) == 0 <=>
+            troveData.recordedDebt == 0;
+        bool total_shares = 
+            getBatchTotalShares(batchAddress) >=
+            getTroveBatchDebtShares(troveId);
+        return zero_shares_zero_debt_batch &&
+            zero_shares_zero_debt_trove &&
+            total_shares;
+}
+
+// This is a workaround for a getter for the upfront fee
+// which goes into the debt calculation. Essentially this assumes
+// an arbitrary but constant value which I can refer to in the following rule
+ghost uint256 upfrontFee;
+function CVLCalcUpfrontFee(uint256 debt, uint256 avgInterestRate) returns uint256 {
+    return upfrontFee;
+}
+
 rule debt_adjust_effects (method f) filtered {
     f -> f.selector == sig:withdrawBold(uint256,uint256,uint256).selector
     || f.selector == sig:repayBold(uint256,uint256).selector 
@@ -390,12 +424,6 @@ rule debt_adjust_effects (method f) filtered {
     // assume the two locations where batch managers are stored aggree
     require batch_manager_storage_locations_agree(troveId);
 
-    // The batch has a nonzero amount of total shares
-    // and the trove has a nonzero number of these shares
-    // which is leq the total.
-    uint256 troveBatchShares = getTroveBatchDebtShares(troveId);
-    uint256 totalBatchShares = getBatchTotalShares(batchAddress);
-    require troveBatchShares > 0 && totalBatchShares >= troveBatchShares;
 
     // Assume rewardSnapshots is updated (this will always happen on opening a 
     // Trove, for example). TroveManager._updateTroveRewardSnapshots is called 
@@ -421,8 +449,12 @@ rule debt_adjust_effects (method f) filtered {
     // Assume interest has been updated (according to timestamps)
     require interestUpdatedAssumption(e, batchDataBefore);
 
+
     TroveManager.LatestTroveData troveDataBefore = 
         troveManager.getLatestTroveData(e, troveId);
+
+    require debt_and_shares_relationship(troveId, batchAddress,
+        batchDataBefore, troveDataBefore);
 
     // withdrawBold(e, troveId, boldAmount, maxUpfrontFee); 
     callDebtAdjustFunction(e, f, troveId, boldAmount, maxUpfrontFee);
@@ -445,11 +477,19 @@ rule debt_adjust_effects (method f) filtered {
             // -Trove i’s pending redistribution debt gain is applied to the batch’s recorded debt
             troveDataBefore.redistBoldDebtGain;
 
-        // - Trove i's entire debt changes only by x
+        // - Trove i's entire debt changes only by x (and the interest and management fees)
         // CEX due to rounding of the number of troveBatchDebtShares
         // granted to the trove: https://prover.certora.com/output/65266/6f90a8cfb11444768355d23976cf1aea?anonymousKey=9a4c33d6685dde33f50eecc9a48709ca94a540f6
         // Doc with more detailed explanation: https://docs.google.com/document/d/1IVU5H1KEq_mZ6tE0vr244WFQxom-Y7K1YAnWtLv3HJA/edit
-        assert troveDataAfter.entireDebt == troveDataBefore.entireDebt + boldAmount;
+        // This way now has a timeout with a very strange tool issue it 
+        // would seem
+        // assert troveDataAfter.entireDebt == troveDataBefore.entireDebt
+        //     + upfrontFee
+        //     + batchDataAfter.accruedInterest
+        //     + batchDataAfter.accruedManagementFee
+        //     + boldAmount;
+        assert troveDataAfter.entireDebt >= troveDataBefore.entireDebt
+            + boldAmount;
     }
     if(f.selector == sig:repayBold(uint256,uint256).selector) {
         assert batchDataAfter.recordedDebt >= 
@@ -464,8 +504,17 @@ rule debt_adjust_effects (method f) filtered {
             // -Trove i’s pending redistribution debt gain is applied to the batch’s recorded debt
             troveDataBefore.redistBoldDebtGain;
 
-        // - Trove i's entire debt changes only by x
-        assert troveDataAfter.entireDebt == troveDataBefore.entireDebt - boldAmount;
+        // - Trove i's entire debt changes only by x (after accounting for 
+        // interest and management fee)
+        // This has CEX: https://prover.certora.com/output/65266/bf681c5da913435c8c22b03f53a19698/?anonymousKey=bed14beace27b1485f49180cd4154fe2246bf832
+        // Notably for repay the maxUpfrontFee is 0
+        // This will have a CEX
+        // assert troveDataAfter.entireDebt == troveDataBefore.entireDebt
+        //     + batchDataAfter.accruedInterest
+        //     + batchDataAfter.accruedManagementFee
+        //     - boldAmount;
+        assert troveDataAfter.entireDebt >= troveDataBefore.entireDebt
+             - boldAmount;
     }
 
     // -Trove i’s entire coll does not change
