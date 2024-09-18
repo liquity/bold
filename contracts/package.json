@@ -9,7 +9,9 @@
   "scripts": {
     "format": "forge fmt && dprint fmt",
     "test": "hardhat test --parallel",
-    "coverage": "hardhat coverage"
+    "coverage": "hardhat coverage",
+    "fuzz": "tsx utils/fuzz.ts",
+    "fuzz-repro": "tsx utils/fuzz-repro.ts"
   },
   "repository": "github:liquity/bold",
   "author": "Liquity AG",
@@ -35,6 +37,7 @@
     "decimal.js": "^10.4.3",
     "hardhat": "^2.14.0",
     "hardhat-gas-reporter": "^1.0.8",
+    "p-queue": "^8.0.1",
     "solidity-coverage": "^0.8.8",
     "ts-node": ">=8.0.0",
     "tsx": "^4.16.5",
