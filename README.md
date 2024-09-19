@@ -1210,8 +1210,8 @@ When `lastGoodPrice` is used to price the LST, the _real_ market price may be hi
 
 | Scenario                     | Consequence                                                                                                                                       |
 |------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| lastGoodPrice > market price | Urgent redemptions return too little LST collateral, and may be unprofitable even when BOLD trades at $1 or below                                   |
-| lastGoodPrice < market price | Urgent redemptions return too much LST collateral. They may be too profitable, compared to the market price.              |
+| lastGoodPrice > real market price | Urgent redemptions return too little LST collateral, and may be unprofitable even when BOLD trades at $1 or below                                   |
+| lastGoodPrice < real market price | Urgent redemptions return too much LST collateral. They may be too profitable, compared to the market price.              |
 
 #### Solution
 
@@ -1226,15 +1226,25 @@ If the primary oracle setup fails on a given LST branch, then using `lastGoodPri
 
 However, a fallback price utilizing the ETH-USD price and the LST's canonical rate could be used. The proposed fallback price calculation for each branch is here:
 
-| Collateral | Primary price calc                                             | Fallback price calc                        |
-|------------|----------------------------------------------------------------|--------------------------------------------|
-| WETH       | ETH-USD                                                        | lastGoodPrice                              |
-| WSTETH     | STETH-USD * WSTETH-STETH_canonical                             | ETH-USD * WSTETH-STETH_canonical           |
-| RETH       | min(ETH-USD * RETH-ETH, ETH-USD * RETH-ETH_canonical)          | ETH-USD * RETH-ETH_canonical               |
+| Collateral | Primary price calc                                      | Fallback if LST market oracle fails                        | Fallback if ETH-USD market oracle fails | Fallback if canonical rate fails |
+|------------|---------------------------------------------------------|------------------------------------------------------------|-----------------------------------------|----------------------------------|
+| WETH       | ETH-USD                                                 | N/A                                                        | lastGoodPrice                          | N/A                              |
+| WSTETH     | STETH-USD * WSTETH-STETH_canonical                      | min(lastGoodPrice, ETH-USD * WSTETH-STETH_canonical)       | lastGoodPrice                          | lastGoodPrice                    |
+| RETH       | min(ETH-USD * RETH-ETH, ETH-USD * RETH-ETH_canonical)   | min(lastGoodPrice, ETH-USD * RETH-ETH_canonical)           | lastGoodPrice                          | lastGoodPrice                    |
 
-During shutdown no borrower ops are allowed, so the main risk of a manipulated canonical rate (inflated price and excess BOLD minting) is eliminated, and it will be safe to use the canonical rate in conjunction with ETH-USD.
 
-Additionally, if the _ETH-USD_ oracle fails after shut down, then the LST PriceFeed should finally switch to the `lastGoodPrice`, and the branch remains shut down.
+## Primary LST feed failure
+
+During shutdown no borrower ops are allowed, so the main risk of a manipulated canonical rate (inflated price and excess BOLD minting) is eliminated.  However, in this case we still take a minimum: `min(lastGoodPrice, ETH-USD * canonical_rate)`. This ensures that if the canonical rate is also manipulated up, we still give urgent redemptions a chance of being profitable (and clearing bad debt) with the `lastGoodPrice`.  
+
+## Canonical rate failure 
+The LST canonical exchange rate is used in all calculations on all PriceFeeds. If it fails, the branch falls back to using the `lastGoodPrice`, and the branch gets shut down if it is live. If the canonical rate fails _after_ shut down, then the LST PriceFeed switches `lastGoodPrice` and the branch remains shut down. When calling the LST contract externally to fetch the canonical rate,  failure is defined as:
+
+- The returned rate is 0, or
+- The external call reverts
+
+## ETH-USD feed failure 
+The ETH-USD market oracle is used in all calculations on all PriceFeeds. If it fails, the branch falls back to using the `lastGoodPrice`, and the branch gets shut down if it is live. If the ETH-USD oracle fails _after_ shut down, then the LST PriceFeed switches `lastGoodPrice` and the branch remains shut down.
 
 The full logic is implemented in this PR:
 https://github.com/liquity/bold/pull/393
