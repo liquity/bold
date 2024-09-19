@@ -1,9 +1,6 @@
 import assert from "assert";
-import { $, argv, fs, path } from "zx";
-import { logError, ReproducibleCounterexampleJson } from "./fuzz-common";
-
-const reproFile = path.join("src", "test", "fuzz-repro.t.sol");
-const reproFunction = "test_FuzzRepro";
+import { $, argv, fs } from "zx";
+import { logError, ReproducibleCounterexampleJson, reproFile, reproFunction } from "./fuzz-common";
 
 const main = async () => {
   if (argv.help || argv._.length == 0) {
