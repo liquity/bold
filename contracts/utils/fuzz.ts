@@ -1,6 +1,6 @@
 import PQueue from "p-queue";
 import { $, chalk, fs, path } from "zx";
-import { logError, ReproducibleCounterexampleJson, TestListJson, TestResultsJson } from "./fuzz-common";
+import { logError, ReproducibleCounterexampleJson, reproFile, TestListJson, TestResultsJson } from "./fuzz-common";
 
 const debug = true;
 const concurrency = 8;
@@ -56,6 +56,8 @@ const main = async () => {
 
   const testListJson = TestListJson.parse(
     await $`forge test ${[
+      "--no-match-path",
+      reproFile,
       "--match-test",
       testFilter,
       "--list",

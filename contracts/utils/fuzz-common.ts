@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { ProcessOutput } from "zx";
+import { path, ProcessOutput } from "zx";
+
+export const reproFile = path.join("src", "test", "fuzz-repro.t.sol");
+export const reproFunction = "test_FuzzRepro";
 
 export const TestListJson = z.record(z.record(z.array(z.string())));
 
