@@ -272,20 +272,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         string errorString;
     }
 
-    struct RedemptionContext {
-        uint256 totalProportions;
-        uint256[] proportions;
-        uint256 remainingAmount;
-        uint256 troveId;
-        uint256 lastZombieTroveId;
-        uint256 j;
-        uint256 i;
-        uint256 debtRedeemed;
-        uint256 collRedeemedPlusFee;
-        uint256 fee;
-        uint256 collRedeemed;
-    }
-
     struct LiquidationTotals {
         uint256 collGasComp;
         uint256 spCollGain;
@@ -314,6 +300,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         uint256 totalCollRedeemed;
         Redeemed[] redeemed;
         EnumerableAddressSet batchManagers; // batch managers touched by redemption
+        uint256 newDesignatedVictimId;
     }
 
     struct UrgentRedemptionTransientState {
@@ -355,6 +342,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     mapping(uint256 branchIdx => uint256) LIQ_PENALTY_REDIST;
 
     // Public ghost variables (per branch, exposed to InvariantsTest)
+    mapping(uint256 branchIdx => uint256) public designatedVictimId; // ID of zombie Trove that'll be redeemed first
     mapping(uint256 branchIdx => uint256) public collSurplus;
     mapping(uint256 branchIdx => uint256) public spBoldDeposits;
     mapping(uint256 branchIdx => uint256) public spBoldYield;
@@ -814,6 +802,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             v.trove.debt = v.trove.debt.add(v.debtDelta) + v.upfrontFee;
             _troves[i][v.troveId] = v.trove;
             _zombieTroveIds[i].remove(v.troveId);
+            if (designatedVictimId[i] == v.troveId) designatedVictimId[i] = 0;
 
             // Effects (batch)
             if (v.batchManager != address(0)) _touchBatch(i, v.batchManager);
@@ -1028,6 +1017,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             delete _timeSinceLastTroveInterestRateAdjustment[i][v.troveId];
             _troveIds[i].remove(v.troveId);
             _zombieTroveIds[i].remove(v.troveId);
+            if (designatedVictimId[i] == v.troveId) designatedVictimId[i] = 0;
 
             // Effects (batch)
             if (v.batchManager != address(0)) {
@@ -1126,6 +1116,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 delete _timeSinceLastTroveInterestRateAdjustment[i][troveId];
                 _troveIds[i].remove(troveId);
                 _zombieTroveIds[i].remove(troveId);
+                if (designatedVictimId[i] == troveId) designatedVictimId[i] = 0;
                 if (batchManager != address(0)) _batches[i][batchManager].troves.remove(troveId);
             }
 
@@ -1289,11 +1280,12 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                     _troves[j][redeemed.troveId] = trove;
 
-                    uint256 troveDebt = branches[j].troveManager.getTroveEntireDebt(redeemed.troveId);
-                    if (troveDebt < MIN_DEBT) {
+                    if (branches[j].troveManager.getTroveEntireDebt(redeemed.troveId) < MIN_DEBT) {
                         _zombieTroveIds[j].add(redeemed.troveId);
                     }
                 }
+
+                designatedVictimId[j] = r[j].newDesignatedVictimId;
 
                 // Effects (batches)
                 for (uint256 i = 0; i < r[j].batchManagers.size(); ++i) {
@@ -1524,7 +1516,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             // Effects (Trove)
             v.trove.applyPending();
             _troves[i][v.troveId] = v.trove;
-            if (v.t.entireDebt >= MIN_DEBT) _zombieTroveIds[i].remove(v.troveId);
+
+            if (v.t.entireDebt >= MIN_DEBT) {
+                _zombieTroveIds[i].remove(v.troveId);
+                if (designatedVictimId[i] == v.troveId) designatedVictimId[i] = 0;
+            }
 
             // Effects (batch)
             if (v.batchManager != address(0)) _touchBatch(i, v.batchManager);
@@ -2647,67 +2643,75 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         delete _liquidation;
     }
 
+    function _planOneRedemption(uint256 i, uint256 troveId, uint256 remainingAmount, uint256 feePct)
+        internal
+        returns (uint256 debtRedeemed)
+    {
+        LatestTroveData memory trove = branches[i].troveManager.getLatestTroveData(troveId);
+        if (_ICR(i, trove) < _100pct) return 0;
+
+        debtRedeemed = Math.min(remainingAmount, trove.entireDebt);
+        uint256 collRedeemedPlusFee = debtRedeemed * DECIMAL_PRECISION / _price[i];
+        uint256 fee = collRedeemedPlusFee * feePct / _100pct;
+        uint256 collRedeemed = collRedeemedPlusFee - fee;
+
+        mapping(uint256 branchIdx => RedemptionTransientState) storage r = _redemption;
+        r[i].redeemed.push(Redeemed({troveId: troveId, coll: collRedeemed, debt: debtRedeemed}));
+        r[i].totalCollRedeemed += collRedeemed;
+
+        address batchManager = _batchManagerOf[i][troveId];
+        if (batchManager != address(0)) r[i].batchManagers.add(batchManager);
+
+        uint256 newDebt = trove.entireDebt - debtRedeemed;
+        r[i].newDesignatedVictimId = 0 < newDebt && newDebt < MIN_DEBT ? troveId : 0;
+    }
+
     function _planRedemption(uint256 amount, uint256 maxIterationsPerCollateral, uint256 feePct)
         internal
         returns (uint256 totalDebtRedeemed, mapping(uint256 branchIdx => RedemptionTransientState) storage r)
     {
-        RedemptionContext memory vars;
-        vars.totalProportions = 0;
-        vars.proportions = new uint256[](branches.length);
+        uint256 totalProportions = 0;
+        uint256[] memory proportions = new uint256[](branches.length);
         r = _redemption;
 
         // Try in proportion to unbacked
-        for (vars.j = 0; vars.j < branches.length; ++vars.j) {
-            if (isShutdown[vars.j] || _TCR(vars.j) < SCR[vars.j]) continue;
-            vars.totalProportions += vars.proportions[vars.j] = _getUnbacked(vars.j);
+        for (uint256 i = 0; i < branches.length; ++i) {
+            if (isShutdown[i] || _TCR(i) < SCR[i]) continue;
+            totalProportions += proportions[i] = _getUnbacked(i);
         }
 
         // Fallback: in proportion to branch debt
-        if (vars.totalProportions == 0) {
-            for (vars.j = 0; vars.j < branches.length; ++vars.j) {
-                if (isShutdown[vars.j] || _TCR(vars.j) < SCR[vars.j]) continue;
-                vars.totalProportions += vars.proportions[vars.j] = _getTotalDebt(vars.j);
+        if (totalProportions == 0) {
+            for (uint256 i = 0; i < branches.length; ++i) {
+                if (isShutdown[i] || _TCR(i) < SCR[i]) continue;
+                totalProportions += proportions[i] = _getTotalDebt(i);
             }
         }
 
-        if (vars.totalProportions == 0) return (0, r);
+        if (totalProportions == 0) return (0, r);
 
-        for (vars.j = 0; vars.j < branches.length; ++vars.j) {
-            r[vars.j].attemptedAmount = amount * vars.proportions[vars.j] / vars.totalProportions;
-            if (r[vars.j].attemptedAmount == 0) continue;
+        for (uint256 i = 0; i < branches.length; ++i) {
+            r[i].newDesignatedVictimId = designatedVictimId[i];
 
-            TestDeployer.LiquityContractsDev memory c = branches[vars.j];
-            vars.remainingAmount = r[vars.j].attemptedAmount;
-            vars.troveId = 0; // "root node" ID
-            vars.lastZombieTroveId = c.troveManager.lastZombieTroveId();
+            r[i].attemptedAmount = amount * proportions[i] / totalProportions;
+            if (r[i].attemptedAmount == 0) continue;
 
-            for (vars.i = 0; vars.i < maxIterationsPerCollateral || maxIterationsPerCollateral == 0; ++vars.i) {
-                if (vars.remainingAmount == 0) break;
+            uint256 remainingAmount = r[i].attemptedAmount;
+            uint256 lastTrove = branches[i].sortedTroves.getPrev(0);
 
-                vars.troveId = vars.lastZombieTroveId != 0 ? vars.lastZombieTroveId : c.sortedTroves.getPrev(vars.troveId);
-                if (vars.troveId == 0) break;
+            (uint256 troveId, uint256 nextTroveId) = designatedVictimId[i] != 0
+                ? (designatedVictimId[i], lastTrove)
+                : (lastTrove, branches[i].sortedTroves.getPrev(lastTrove));
 
-                LatestTroveData memory trove = c.troveManager.getLatestTroveData(vars.troveId);
-                if (_ICR(vars.j, trove) >= _100pct) {
-                    vars.debtRedeemed = Math.min(vars.remainingAmount, trove.entireDebt);
-                    vars.collRedeemedPlusFee = vars.debtRedeemed * DECIMAL_PRECISION / _price[vars.j];
-                    vars.fee = vars.collRedeemedPlusFee * feePct / _100pct;
-                    vars.collRedeemed = vars.collRedeemedPlusFee - vars.fee;
+            for (uint256 j = 0; j < maxIterationsPerCollateral || maxIterationsPerCollateral == 0; ++j) {
+                if (remainingAmount == 0 || troveId == 0) break;
 
-                    r[vars.j].redeemed.push(Redeemed({troveId: vars.troveId, coll: vars.collRedeemed, debt: vars.debtRedeemed}));
+                uint256 debtRedeemed = _planOneRedemption(i, troveId, remainingAmount, feePct);
+                totalDebtRedeemed += debtRedeemed;
+                remainingAmount -= debtRedeemed;
 
-                    address batchManager = _batchManagerOf[vars.j][vars.troveId];
-                    if (batchManager != address(0)) r[vars.j].batchManagers.add(batchManager);
-
-                    r[vars.j].totalCollRedeemed += vars.collRedeemed;
-                    totalDebtRedeemed += vars.debtRedeemed;
-                    vars.remainingAmount -= vars.debtRedeemed;
-                }
-
-                if (vars.lastZombieTroveId != 0) {
-                    vars.lastZombieTroveId = 0;
-                    vars.troveId = 0;
-                }
+                troveId = nextTroveId;
+                nextTroveId = branches[i].sortedTroves.getPrev(nextTroveId);
             }
         }
     }

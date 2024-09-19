@@ -109,6 +109,7 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
             TestDeployer.LiquityContractsDev memory c = branches[i];
 
             assertEq(c.troveManager.getTroveIdsCount(), handler.numTroves(i), "Wrong number of Troves");
+            assertEq(c.troveManager.lastZombieTroveId(), handler.designatedVictimId(i), "Wrong designated victim");
             assertEq(c.sortedTroves.getSize(), handler.numTroves(i) - handler.numZombies(i), "Wrong SortedTroves size");
             assertApproxEqAbsDecimal(
                 c.activePool.calcPendingAggInterest(), handler.getPendingInterest(i), 1e-10 ether, 18, "Wrong interest"
@@ -186,8 +187,7 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
                 ITroveManager.Status status = c.troveManager.getTroveStatus(troveId);
 
                 assertTrue(
-                    status == ITroveManager.Status.active || status == ITroveManager.Status.zombie,
-                    "Unexpected status"
+                    status == ITroveManager.Status.active || status == ITroveManager.Status.zombie, "Unexpected status"
                 );
 
                 if (status == ITroveManager.Status.active) {
