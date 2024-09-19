@@ -706,7 +706,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(contractsArray[1].troveManager.shutdownTime(), block.timestamp);
     }
 
-    function testFetchPriceReturnsETHUSDxCanonicalWhenRETHETHOracleFails() public {
+    function testFetchPriceReturnsMinETHUSDxCanonicalAndLastGoodPriceWhenRETHETHOracleFails() public {
         // Make the RETH-ETH oracle stale
         vm.etch(address(rethOracle), address(mockOracle).code);
         (,,, uint256 updatedAt,) = rethOracle.latestRoundData();
@@ -724,9 +724,10 @@ contract OraclesMainnet is TestAccounts {
         uint256 exchangeRate = rethToken.getExchangeRate();
         assertGt(ethUsdPrice, 0);
         assertGt(exchangeRate, 0);
-        uint256 expectedPrice = ethUsdPrice * exchangeRate / 1e18;
 
-        assertEq(price, expectedPrice);
+        uint256 expectedPrice = LiquityMath._min(rethPriceFeed.lastGoodPrice(), ethUsdPrice * exchangeRate / 1e18);
+
+        assertEq(price, expectedPrice, "price not expected price");
     }
 
     function testRETHPriceSourceIsETHUSDxCanonicalWhenRETHETHFails() public {
@@ -1139,7 +1140,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(contractsArray[2].troveManager.shutdownTime(), block.timestamp);
     }
 
-    function testFetchPriceReturnsETHUSDxCanonicalWhenSTETHUSDOracleFails() public {
+    function testFetchPriceReturnsMinETHUSDxCanonicalAndLastGoodPriceWhenSTETHUSDOracleFails() public {
         // Make the STETH-USD oracle stale
         vm.etch(address(stethOracle), address(mockOracle).code);
         (,,, uint256 updatedAt,) = stethOracle.latestRoundData();
@@ -1151,14 +1152,16 @@ contract OraclesMainnet is TestAccounts {
         // Check that the primary calc oracle did fail
         assertTrue(oracleFailedWhileBranchLive);
 
+        
         // Calc expected price i.e. ETH-USD x canonical
         uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
         uint256 exchangeRate = wstETH.stEthPerToken();
         assertGt(ethUsdPrice, 0);
         assertGt(exchangeRate, 0);
-        uint256 expectedPrice = ethUsdPrice * exchangeRate / 1e18;
 
-        assertEq(price, expectedPrice);
+        uint256 expectedPrice = LiquityMath._min(wstethPriceFeed.lastGoodPrice(), ethUsdPrice * exchangeRate / 1e18);
+
+        assertEq(price, expectedPrice, "price not expected price");
     }
 
     function testSTETHPriceSourceIsETHUSDxCanonicalWhenSTETHUSDOracleFails() public {
