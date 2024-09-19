@@ -452,7 +452,11 @@ contract Redemptions is DevTestSetup {
         closeTrove(B, troveIDs.B);
 
         // Check B is closed
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.closedByOwner), "B trove should be closed");
+        assertEq(
+            uint8(troveManager.getTroveStatus(troveIDs.B)),
+            uint8(ITroveManager.Status.closedByOwner),
+            "B trove should be closed"
+        );
 
         // Check last Zombie trove pointer
         assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer after");
@@ -467,12 +471,19 @@ contract Redemptions is DevTestSetup {
         assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer before");
 
         // Liquidate B
-        console2.log(troveManager.getCurrentICR(troveIDs.B, priceFeed.getPrice()), "troveManager.getCurrentICR(troveIDs.E, price)");
+        console2.log(
+            troveManager.getCurrentICR(troveIDs.B, priceFeed.getPrice()),
+            "troveManager.getCurrentICR(troveIDs.E, price)"
+        );
         priceFeed.setPrice(priceFeed.getPrice() / 25);
         liquidate(A, troveIDs.B);
 
         // Check B is liquidated
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.closedByLiquidation), "B trove should be liquidated");
+        assertEq(
+            uint8(troveManager.getTroveStatus(troveIDs.B)),
+            uint8(ITroveManager.Status.closedByLiquidation),
+            "B trove should be liquidated"
+        );
 
         // Check last Zombie trove pointer
         assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer after");

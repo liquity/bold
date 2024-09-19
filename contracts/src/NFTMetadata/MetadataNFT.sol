@@ -66,8 +66,6 @@ contract MetadataNFT is IMetadataNFT {
             _status2Str(_troveData._status),
             '"} ]'
         );
-
-        
     }
 
     function dynamicTextComponents(TroveData memory _troveData) public view returns (string memory) {
