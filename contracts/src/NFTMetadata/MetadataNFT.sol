@@ -87,7 +87,7 @@ contract MetadataNFT is IMetadataNFT {
         if (status == ITroveManager.Status.active) return "Active";
         if (status == ITroveManager.Status.closedByOwner) return "Closed";
         if (status == ITroveManager.Status.closedByLiquidation) return "Liquidated";
-        if (status == ITroveManager.Status.unredeemable) return "Unredeemable";
+        if (status == ITroveManager.Status.zombie) return "Zombie";
         return "";
     }
 }
