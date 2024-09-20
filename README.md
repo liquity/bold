@@ -1233,9 +1233,13 @@ However, a fallback price utilizing the ETH-USD price and the LST's canonical ra
 | RETH       | min(ETH-USD * RETH-ETH, ETH-USD * RETH-ETH_canonical)   | min(lastGoodPrice, ETH-USD * RETH-ETH_canonical)           | lastGoodPrice                          | lastGoodPrice                    |
 
 
-## Primary LST feed failure
+## Primary LST oracle failure
 
 During shutdown no borrower ops are allowed, so the main risk of a manipulated canonical rate (inflated price and excess BOLD minting) is eliminated.  However, in this case we still take a minimum: `min(lastGoodPrice, ETH-USD * canonical_rate)`. This ensures that if the canonical rate is also manipulated up, we still give urgent redemptions a chance of being profitable (and clearing bad debt) with the `lastGoodPrice`.  
+
+#### STETH-USD oracle failure
+
+When this oracle fails, the WSTETH PriceFeed switches to pricing WSTETH in USD with `min(lastGoodPrice, ETH-USD * WSTETH-STETH_canonical)`. Since we substitute the failed STETH-USD oracle with the ETH-USD oracle, this inherently assumes that 1 STETH is worth 1 ETH. This is not guaranteed, though its deemed a reasonable assumption during branch shut down, where the system's priority is purely to clear bad debt via urgent redemptions.
 
 ## Canonical rate failure 
 The LST canonical exchange rate is used in all calculations on all PriceFeeds. If it fails, the branch falls back to using the `lastGoodPrice`, and the branch gets shut down if it is live. If the canonical rate fails _after_ shut down, then the LST PriceFeed switches `lastGoodPrice` and the branch remains shut down. When calling the LST contract externally to fetch the canonical rate,  failure is defined as:
@@ -1243,7 +1247,7 @@ The LST canonical exchange rate is used in all calculations on all PriceFeeds. I
 - The returned rate is 0, or
 - The external call reverts
 
-## ETH-USD feed failure 
+## ETH-USD oracle failure 
 The ETH-USD market oracle is used in all calculations on all PriceFeeds. If it fails, the branch falls back to using the `lastGoodPrice`, and the branch gets shut down if it is live. If the ETH-USD oracle fails _after_ shut down, then the LST PriceFeed switches `lastGoodPrice` and the branch remains shut down.
 
 The full logic is implemented in this PR:
