@@ -1468,11 +1468,11 @@ While this wouldn't result in the most accurate estimation of the average intere
 
 Brought up by @javalasers on Discord:
 
-Description
+**Description:**
 
 (credit @javalasers) There's an attack vector where the user can:
 
-- Create a trove with MIN_DEBT of debt and MIN_ANNUAL_INTEREST_RATE interest.
+- Create a trove with `MIN_DEBT` of debt and `MIN_ANNUAL_INTEREST_RATE` interest.
 - Redeem a tiny amount of BOLD worth of collateral from the protocol
 - If they hit their own Trove, They now have a trove paying the min interest but with `debt < MIN_DEBT`, which (in previous system logic) makes this Trove unredeemable.
 - This operation could be repeated in order to create multiple Troves at `debt < MIN_DEBT`, for a total unredeemable debt of ~ `n * MIN_DEBT`
@@ -1483,6 +1483,7 @@ https://github.com/liquity/bold/pull/426
 Here is the original impact, pre-fix:
 
 **Impact:**
+
 If this attack were profitable, it may break the whole equilibrium and game theory of the user set interest rate.
 
 Some math should be done, and it heavily depends on gas price, but some considerations:
@@ -1502,6 +1503,7 @@ Also, the management of the Trove needs to be considered, so:
 2. When a trove gets redeemed and ends up with non zero debt, automatically set it to the max interest rate (h/t @cvalkan)
 
 **Chosen solution**
+
 Solution 1. was implemented in this PR:
 https://github.com/liquity/bold/pull/426
 
