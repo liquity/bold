@@ -1,9 +1,10 @@
 import PQueue from "p-queue";
-import { $, chalk, fs, path } from "zx";
+import { $, chalk, fs, path, sleep } from "zx";
 import { logError, ReproducibleCounterexampleJson, reproFile, TestListJson, TestResultsJson } from "./fuzz-common";
 
 const debug = true;
-const concurrency = 8;
+const concurrency = 24;
+const softStartDelayMs = 500;
 const testFilter = "^invariant";
 const failuresDir = path.join("cache", "invariant", "failures");
 const counterexamplesDir = "counterexamples";
@@ -14,8 +15,8 @@ const dimensions: Record<string, Record<string, string>>[] = [
     "3coll": { NUM_BRANCHES: "3" },
   },
   {
-    "skin": { FOUNDRY_INVARIANT_RUNS: "1000", FOUNDRY_INVARIANT_DEPTH: "100" },
-    "deep": { FOUNDRY_INVARIANT_RUNS: "100", FOUNDRY_INVARIANT_DEPTH: "1000" },
+    "skin": { FOUNDRY_INVARIANT_RUNS: "500", FOUNDRY_INVARIANT_DEPTH: "100" },
+    "deep": { FOUNDRY_INVARIANT_RUNS: "50", FOUNDRY_INVARIANT_DEPTH: "1000" },
   },
 ];
 
@@ -80,16 +81,19 @@ const main = async () => {
       + `in ${matrix.length} configurations using ${concurrency} concurrent processes...`,
   );
 
-  const queue = new PQueue({ concurrency });
+  const sequential = new PQueue({ concurrency: 1 });
+  const concurrent = new PQueue({ concurrency });
 
   tests.forEach(({ solPath, contract, test }) => {
     matrix.forEach(async ([key, env]) => {
       const logPrefix = `[${key}] ${contract}::${test}()`;
 
       for (;;) {
-        await queue.add(async () => {
-          // Workaround: don't replay previous failure.
-          // (There's no way to disable this in Foundry).
+        await concurrent.add(async () => {
+          // Workaround: avoid spawning a lot of child processes at the same time, as there can be race conditions
+          await sequential.add(() => sleep(softStartDelayMs));
+
+          // Workaround: don't replay previous failure (no way to disable this in Foundry)
           await $`rm -f ${failuresDir}/${contract}/${test}`;
 
           log.debug(`> ${logPrefix} started`);
@@ -142,7 +146,7 @@ const main = async () => {
     });
   });
 
-  queue.on("error", logError);
+  concurrent.on("error", logError);
 };
 
 main().catch(logError);
