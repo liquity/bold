@@ -1404,7 +1404,7 @@ This was chosen over other approaches because:
 
 If there is remaining collateral in the shutdown branch (albeit perhaps at zero USD value) and there are liquidateable Troves, Governance could alternatively vote to direct fees to a permissionless contract that deposits the BOLD to the SP of the shutdown branch and liquidates the Troves against those funds. The resulting collateral gains could, if they have non-zero value, be swapped on a DEX, e.g. for BOLD which could be then directed to LP incentives. All deposits and swaps could be handled permissionlessly by this governance-deployed contract.
 
-### 11 - ## Inaccurate calculation of average branch interest rate
+### 11 - Inaccurate calculation of average branch interest rate
 
 `getNewApproxAvgInterestRateFromTroveChange` does not actually calculate the correct average interest rate for a collateral branch. Ideally, we would like to calculate the debt-weighted average interest of all Troves within the branch, upon which our calculation of the upfront fee is based. The desired formula would be:
 
@@ -1464,6 +1464,50 @@ sum(debt_i)
 
 While this wouldn't result in the most accurate estimation of the average interest rate either — considering we'd be using outdated debt values sampled at different times for each Trove as weights — at least we would have consistent weights in the numerator and denominator of our weighted average. To implement this though, we'd have to keep track of this modified sum (i.e. the sum of recorded Trove debts) in `ActivePool`, which we currently don't do.
 
+## 12 - Borrower can create multiple unredeemable Troves and evade redemptions
+
+Brought up by @javalasers on Discord:
+
+Description
+
+(credit @javalasers) There's an attack vector where the user can:
+
+- Create a trove with MIN_DEBT of debt and MIN_ANNUAL_INTEREST_RATE interest.
+- Redeem a tiny amount of BOLD worth of collateral from the protocol
+- If they hit their own Trove, They now have a trove paying the min interest but with `debt < MIN_DEBT`, which (in previous system logic) makes this Trove unredeemable.
+- This operation could be repeated in order to create multiple Troves at `debt < MIN_DEBT`, for a total unredeemable debt of ~ `n * MIN_DEBT`
+
+This has been fixed in this PR:
+https://github.com/liquity/bold/pull/426
+
+Here is the original impact, pre-fix:
+
+**Impact:**
+If this attack were profitable, it may break the whole equilibrium and game theory of the user set interest rate.
+
+Some math should be done, and it heavily depends on gas price, but some considerations:
+
+- The interest wouldn’t be zero due to the min. interest rate, so eventually the Trove would become redeemable again when it's debt rises above `MIN_DEBT` close to `MIN_DEBT`. So if the aim is to keep it 1 year, at min interest rate of 0.5%, the zombie troves should have 1,990 BOLD debt.
+- To set it up `~2n` txs are needed, where `n ~= total debt / MIN_DEBT`
+- There’s an additional `(n-1) * ETH_GAS_COMPENSATION` ETH that needs to be locked up.
+
+Also, the management of the Trove needs to be considered, so:
+- Either they all have a very high CR -> not capital efficient, it’s kind of a hidden cost
+- Or then 2n times more gas have to be spent to adjust troves every time if the attacker is trying to have a low CR and actively manage them (for each trove there’s 1 adjustment that brings it up above `MIN_DEBT` and then again a redemption).
+
+**Potential Solutions**
+
+1. Keep a pointer to the last redemeed zombie trove, and use that one first when the next redemption happens (h/t @danielattilasimon ). The attack would still work with redistributions - even after having debt reduced to 0 redistributions could result in the attacker's Trove at `debt < MIN_DEBT` but that’s far more unlikely and much harder to perform (with an extra cost of 5% of the SP size, a huge trove to be liquidated could be opened and then go for the redistributions - however, it’s hard, expensive, can’t be done in 1 tx, it depends on ETH fluctuations, on the global TCR...).
+
+2. When a trove gets redeemed and ends up with non zero debt, automatically set it to the max interest rate (h/t @cvalkan)
+
+**Chosen solution**
+Solution 1. was implemented in this PR:
+https://github.com/liquity/bold/pull/426
+
+Note: with this approach, it can happen that a zombie Trove belonging to a batch gets its debt increased to above `MIN_DEBT` due to its batch being updated but without a direct adjustment occurring on the Trove itself - in which case, the Trove remains a zombie and holds the pointer to the last zombie trove, so it will get still redeemed first in the list upon the next redemption.
+
+However this seems like quite an edge case: the Trove needs to be batched, get partially redeemed, become a zombie, and then the batch updated before the borrower touches it and debt increased to above MIN_DEBT, and then redeemed _again_ as first in the list. The borrower can easily prevent the last step if desired by touching the Trove and updating its debt to `debt > MIN_DEBT` beforehand.
 
 ## Requirements
 
