@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactElement, ReactNode } from "react";
+import type { CSSProperties, HTMLAttributes, ReactElement, ReactNode } from "react";
 
 import { a, useSpring } from "@react-spring/web";
 import { forwardRef, useState } from "react";
@@ -17,12 +17,14 @@ export const StrongCard = forwardRef<
   {
     contextual?: ReactNode;
     heading: ElementOrString | ElementOrString[];
+    loading?: boolean;
     main?: Cell;
     secondary: ReactNode;
   } & HTMLAttributes<HTMLAnchorElement>
 >(function StrongCard({
   contextual,
   heading,
+  loading,
   main,
   secondary,
   ...anchorProps
@@ -50,6 +52,15 @@ export const StrongCard = forwardRef<
     },
   });
 
+  const loadingGradientSpring = useSpring({
+    from: { progress: 0 },
+    to: { progress: 1 },
+    loop: true,
+    config: {
+      duration: 2_000,
+    },
+  });
+
   return (
     <a.a
       ref={ref}
@@ -62,25 +73,65 @@ export const StrongCard = forwardRef<
       className={cx(
         "group",
         css({
+          position: "relative",
+          overflow: "hidden",
           display: "flex",
           flexDirection: "column",
           padding: "16px 16px 12px",
-          background: "strongSurface",
           borderRadius: 8,
           outline: "none",
+          "--background": "token(colors.strongSurface)",
           _focusVisible: {
             outline: "2px solid token(colors.focused)",
           },
         }),
       )}
-      style={hoverSpring}
+      style={loading ? {} : {
+        transform: hoverSpring.transform,
+        boxShadow: hoverSpring.boxShadow,
+        background: "var(--background)",
+      }}
     >
+      {loading && (
+        <a.div
+          className={css({
+            position: "absolute",
+            inset: 0,
+            backgroundColor: "loadingGradient1",
+            backgroundImage: `linear-gradient(
+              var(--loading-angle),
+              token(colors.loadingGradient1) 0%,
+              token(colors.loadingGradient2) var(--loading-midpoint1),
+              token(colors.loadingGradient2) var(--loading-midpoint2),
+              token(colors.loadingGradient1) 100%
+            )`,
+          })}
+          style={{
+            transform: loadingGradientSpring.progress
+              .to([0, 0.5, 1], [1, 2, 1])
+              .to((p) => `scale3d(${p}, ${p}, 1)`),
+            ...{
+              "--loading-angle": loadingGradientSpring.progress.to(
+                (p) => `${p * 360 - 45}deg`,
+              ),
+              "--loading-midpoint1": loadingGradientSpring.progress
+                .to([0, 0.5, 1], ["50%", "20%", "50%"]),
+              "--loading-midpoint2": loadingGradientSpring.progress
+                .to([0, 0.5, 1], ["50%", "80%", "50%"]),
+            } as CSSProperties,
+          }}
+        />
+      )}
       <section
         className={css({
           display: "flex",
           flexDirection: "column",
           gap: 20,
         })}
+        style={{
+          opacity: loading ? 0 : 1,
+          pointerEvents: loading ? "none" : "auto",
+        }}
       >
         <header
           className={css({
