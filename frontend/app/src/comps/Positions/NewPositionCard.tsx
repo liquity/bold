@@ -62,11 +62,11 @@ export function NewPositionCard() {
   const [hovered, setHovered_] = useState(-1);
 
   const delayedSetHovered = useRef<ReturnType<typeof setTimeout>>();
-  const setHovered = (index: number) => {
+  const setHovered = (index: number, delay: number = 0) => {
     clearTimeout(delayedSetHovered.current);
     delayedSetHovered.current = setTimeout(() => {
       setHovered_(index);
-    }, index === -1 ? RESET_DELAY : 0);
+    }, delay);
   };
   useEffect(() => () => {
     clearTimeout(delayedSetHovered.current);
@@ -117,15 +117,12 @@ export function NewPositionCard() {
   return (
     <div
       className={css({
-        overflow: "hidden",
         position: "relative",
-        borderRadius: 8,
         display: "grid",
       })}
     >
       <a.div
         className={css({
-          overflow: "hidden",
           display: "grid",
         })}
         style={{
@@ -152,10 +149,6 @@ export function NewPositionCard() {
                 position: "relative",
                 height: "100%",
               })}
-              style={{
-                background: colors.background,
-                color: colors.foreground,
-              }}
             >
               <a.h1
                 className={css({
@@ -212,16 +205,29 @@ export function NewPositionCard() {
           );
 
           const className = css({
+            position: "relative",
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
+            _focusVisible: {
+              outline: "2px solid token(colors.focused)",
+              outlineOffset: 2,
+            },
           });
+
+          const style = {
+            zIndex: index === hovered ? 1 : 0,
+            background: colors.background,
+            color: colors.foreground,
+            borderRadius: index === 0 ? "8px 0 0 8px" : index === 3 ? "0 8px 8px 0" : 0,
+          };
 
           return FIXED_AREAS
             ? (
               <div
                 key={path}
                 className={className}
+                style={style}
               >
                 {content}
               </div>
@@ -231,8 +237,11 @@ export function NewPositionCard() {
                 key={path}
                 href={path}
                 onMouseEnter={() => setHovered(index)}
-                onMouseLeave={() => setHovered(-1)}
+                onMouseLeave={() => setHovered(-1, RESET_DELAY)}
+                onFocus={() => setHovered(index)}
+                onBlur={() => setHovered(-1)}
                 className={className}
+                style={style}
               >
                 {content}
               </Link>
@@ -252,14 +261,25 @@ export function NewPositionCard() {
             <Link
               key={path}
               href={path}
+              onMouseEnter={() => setHovered(index)}
+              onMouseLeave={() => setHovered(-1, RESET_DELAY)}
+              onFocus={() => setHovered(index)}
+              onBlur={() => setHovered(-1)}
               className={css({
+                position: "relative",
                 overflow: "hidden",
                 display: "flex",
                 flexDirection: "column",
                 height: "100%",
+                _focusVisible: {
+                  outline: "2px solid token(colors.focused)",
+                  outlineOffset: 2,
+                },
               })}
-              onMouseEnter={() => setHovered(index)}
-              onMouseLeave={() => setHovered(-1)}
+              style={{
+                zIndex: index === hovered ? 1 : 0,
+                borderRadius: index === 0 ? "8px 0 0 8px" : index === 3 ? "0 8px 8px 0" : 0,
+              }}
             />
           ))}
         </div>
