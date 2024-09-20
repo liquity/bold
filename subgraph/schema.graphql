@@ -37,6 +37,7 @@ type InterestRateBracket @entity {
 
 type Trove @entity {
   id: ID!
+  troveId: String!
   borrower: Bytes!
   debt: BigInt!
   deposit: BigInt!

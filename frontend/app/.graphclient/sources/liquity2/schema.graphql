@@ -804,6 +804,7 @@ enum Token_orderBy {
 
 type Trove {
   id: ID!
+  troveId: String!
   borrower: Bytes!
   debt: BigInt!
   deposit: BigInt!
@@ -823,6 +824,26 @@ input Trove_filter {
   id_lte: ID
   id_in: [ID!]
   id_not_in: [ID!]
+  troveId: String
+  troveId_not: String
+  troveId_gt: String
+  troveId_lt: String
+  troveId_gte: String
+  troveId_lte: String
+  troveId_in: [String!]
+  troveId_not_in: [String!]
+  troveId_contains: String
+  troveId_contains_nocase: String
+  troveId_not_contains: String
+  troveId_not_contains_nocase: String
+  troveId_starts_with: String
+  troveId_starts_with_nocase: String
+  troveId_not_starts_with: String
+  troveId_not_starts_with_nocase: String
+  troveId_ends_with: String
+  troveId_ends_with_nocase: String
+  troveId_not_ends_with: String
+  troveId_not_ends_with_nocase: String
   borrower: Bytes
   borrower_not: Bytes
   borrower_gt: Bytes
@@ -910,6 +931,7 @@ input Trove_filter {
 
 enum Trove_orderBy {
   id
+  troveId
   borrower
   debt
   deposit

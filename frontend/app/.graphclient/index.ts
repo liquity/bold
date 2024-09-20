@@ -758,6 +758,7 @@ export type Token_orderBy =
 
 export type Trove = {
   readonly id: Scalars['ID']['output'];
+  readonly troveId: Scalars['String']['output'];
   readonly borrower: Scalars['Bytes']['output'];
   readonly debt: Scalars['BigInt']['output'];
   readonly deposit: Scalars['BigInt']['output'];
@@ -777,6 +778,26 @@ export type Trove_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly troveId?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly troveId_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly troveId_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
   readonly borrower?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_not?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_gt?: InputMaybe<Scalars['Bytes']['input']>;
@@ -864,6 +885,7 @@ export type Trove_filter = {
 
 export type Trove_orderBy =
   | 'id'
+  | 'troveId'
   | 'borrower'
   | 'debt'
   | 'deposit'
@@ -1186,6 +1208,7 @@ export type TokenResolvers<ContextType = MeshContext, ParentType extends Resolve
 
 export type TroveResolvers<ContextType = MeshContext, ParentType extends ResolversParentTypes['Trove'] = ResolversParentTypes['Trove']> = ResolversObject<{
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  troveId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   borrower?: Resolver<ResolversTypes['Bytes'], ParentType, ContextType>;
   debt?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   deposit?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
@@ -1303,9 +1326,9 @@ const merger = new(BareMerger as any)({
         store: rootStore.child('bareMerger')
       })
 const documentHashMap = {
-        "5fd5ba329409d1541ecdc4ad31b82623e2307e50d1e9c36a777005b30829f6e7": TrovesByAccountDocument,
-"5fd5ba329409d1541ecdc4ad31b82623e2307e50d1e9c36a777005b30829f6e7": TrovesCountDocument,
-"5fd5ba329409d1541ecdc4ad31b82623e2307e50d1e9c36a777005b30829f6e7": TroveByIdDocument
+        "c7650d49c37dbcafc2de849b649dd278cd34d574a802c42c96543aa01dc6896d": TrovesByAccountDocument,
+"c7650d49c37dbcafc2de849b649dd278cd34d574a802c42c96543aa01dc6896d": TrovesCountDocument,
+"c7650d49c37dbcafc2de849b649dd278cd34d574a802c42c96543aa01dc6896d": TroveByIdDocument
       }
 additionalEnvelopPlugins.push(usePersistedOperations({
         getPersistedOperation(key) {
@@ -1332,21 +1355,21 @@ additionalEnvelopPlugins.push(usePersistedOperations({
           return printWithCache(TrovesByAccountDocument);
         },
         location: 'TrovesByAccountDocument.graphql',
-        sha256Hash: '5fd5ba329409d1541ecdc4ad31b82623e2307e50d1e9c36a777005b30829f6e7'
+        sha256Hash: 'c7650d49c37dbcafc2de849b649dd278cd34d574a802c42c96543aa01dc6896d'
       },{
         document: TrovesCountDocument,
         get rawSDL() {
           return printWithCache(TrovesCountDocument);
         },
         location: 'TrovesCountDocument.graphql',
-        sha256Hash: '5fd5ba329409d1541ecdc4ad31b82623e2307e50d1e9c36a777005b30829f6e7'
+        sha256Hash: 'c7650d49c37dbcafc2de849b649dd278cd34d574a802c42c96543aa01dc6896d'
       },{
         document: TroveByIdDocument,
         get rawSDL() {
           return printWithCache(TroveByIdDocument);
         },
         location: 'TroveByIdDocument.graphql',
-        sha256Hash: '5fd5ba329409d1541ecdc4ad31b82623e2307e50d1e9c36a777005b30829f6e7'
+        sha256Hash: 'c7650d49c37dbcafc2de849b649dd278cd34d574a802c42c96543aa01dc6896d'
       }
     ];
     },
@@ -1407,9 +1430,9 @@ export type TrovesByAccountQueryVariables = Exact<{
 
 
 export type TrovesByAccountQuery = { readonly troves: ReadonlyArray<(
-    Pick<Trove, 'id' | 'borrower' | 'debt' | 'deposit' | 'stake' | 'interestRate' | 'createdAt' | 'closedAt'>
+    Pick<Trove, 'id' | 'troveId' | 'borrower' | 'debt' | 'deposit' | 'stake' | 'interestRate' | 'createdAt' | 'closedAt'>
     & { readonly collateral: (
-      Pick<Collateral, 'id' | 'minCollRatio'>
+      Pick<Collateral, 'id' | 'minCollRatio' | 'collIndex'>
       & { readonly token: Pick<Token, 'symbol' | 'name'> }
     ) }
   )> };
@@ -1427,9 +1450,9 @@ export type TroveByIdQueryVariables = Exact<{
 
 
 export type TroveByIdQuery = { readonly trove?: Maybe<(
-    Pick<Trove, 'id' | 'borrower' | 'debt' | 'deposit' | 'stake' | 'interestRate' | 'createdAt' | 'closedAt'>
+    Pick<Trove, 'id' | 'troveId' | 'borrower' | 'debt' | 'deposit' | 'stake' | 'interestRate' | 'createdAt' | 'closedAt'>
     & { readonly collateral: (
-      Pick<Collateral, 'id' | 'minCollRatio'>
+      Pick<Collateral, 'id' | 'minCollRatio' | 'collIndex'>
       & { readonly token: Pick<Token, 'symbol' | 'name'> }
     ) }
   )> };
@@ -1439,6 +1462,7 @@ export const TrovesByAccountDocument = gql`
     query TrovesByAccount($account: Bytes!) {
   troves(where: {borrower: $account}) {
     id
+    troveId
     borrower
     debt
     deposit
@@ -1453,6 +1477,7 @@ export const TrovesByAccountDocument = gql`
         name
       }
       minCollRatio
+      collIndex
     }
   }
 }
@@ -1469,6 +1494,7 @@ export const TroveByIdDocument = gql`
     query TroveById($id: ID!) {
   trove(id: $id) {
     id
+    troveId
     borrower
     debt
     deposit
@@ -1483,6 +1509,7 @@ export const TroveByIdDocument = gql`
         name
       }
       minCollRatio
+      collIndex
     }
   }
 }

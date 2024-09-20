@@ -735,6 +735,7 @@ export type Token_orderBy =
 
 export type Trove = {
   readonly id: Scalars['ID']['output'];
+  readonly troveId: Scalars['String']['output'];
   readonly borrower: Scalars['Bytes']['output'];
   readonly debt: Scalars['BigInt']['output'];
   readonly deposit: Scalars['BigInt']['output'];
@@ -754,6 +755,26 @@ export type Trove_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly troveId?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly troveId_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly troveId_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
   readonly borrower?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_not?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_gt?: InputMaybe<Scalars['Bytes']['input']>;
@@ -841,6 +862,7 @@ export type Trove_filter = {
 
 export type Trove_orderBy =
   | 'id'
+  | 'troveId'
   | 'borrower'
   | 'debt'
   | 'deposit'
