@@ -102,6 +102,22 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         vm.stopPrank();
     }
 
+    function testOwnerCanSetInterestBelowMin() public {
+        uint256 troveId = openTroveAndSetIndividualDelegate();
+
+        vm.startPrank(A);
+        borrowerOperations.adjustTroveInterestRate(troveId, MIN_ANNUAL_INTEREST_RATE, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
+    function testOwnerCanSetInterestAboveMax() public {
+        uint256 troveId = openTroveAndSetIndividualDelegate();
+
+        vm.startPrank(A);
+        borrowerOperations.adjustTroveInterestRate(troveId, 50e16, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
     function testSetDelegateRevertsIfTroveIsClosed() public {
         vm.startPrank(B);
         borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
