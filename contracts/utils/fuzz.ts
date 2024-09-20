@@ -2,7 +2,7 @@ import PQueue from "p-queue";
 import { $, chalk, fs, path, sleep } from "zx";
 import { logError, ReproducibleCounterexampleJson, reproFile, TestListJson, TestResultsJson } from "./fuzz-common";
 
-const debug = true;
+const debug = !!process.env.DEBUG;
 const concurrency = 24;
 const softStartDelayMs = 500;
 const testFilter = "^invariant";
