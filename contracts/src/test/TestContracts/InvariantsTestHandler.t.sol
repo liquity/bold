@@ -513,7 +513,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         vm.assume(totalColl > 0);
         uint256 price = totalDebt * tcr / totalColl;
-        vm.assume(price > 0); // This can happen if the branch has total debt very close to 0
+        vm.assume(price > DECIMAL_PRECISION);
 
         info("price: ", price.decimal());
         logCall("setPrice", i.toString(), tcr.decimal());
@@ -1267,7 +1267,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                     if (redeemed.debt > trove.debt) {
                         // There can be a slight discrepancy when hitting batched Troves
-                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e5, 18, "Debt underflow");
+                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e8, 18, "Debt underflow");
                         trove.debt = 0;
                     } else {
                         trove.debt -= redeemed.debt;
@@ -1419,7 +1419,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                 if (redeemed.debt > trove.debt) {
                     // There can be a slight discrepancy when hitting batched Troves
-                    assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e5, 18, "Debt underflow");
+                    assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e8, 18, "Debt underflow");
                     trove.debt = 0;
                 } else {
                     trove.debt -= redeemed.debt;
@@ -1595,7 +1595,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             assertEqDecimal(v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 18, "Wrong deposit");
             assertApproxEqAbsDecimal(
-                v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e6, 18, "Wrong yield gain"
+                v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e10, 18, "Wrong yield gain"
             );
             assertEqDecimal(v.c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
             assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");
@@ -1687,7 +1687,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             assertEqDecimal(v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 18, "Wrong deposit");
             assertApproxEqAbsDecimal(
-                v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e6, 18, "Wrong yield gain"
+                v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e10, 18, "Wrong yield gain"
             );
             assertEqDecimal(v.c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
             assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");

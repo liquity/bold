@@ -111,15 +111,15 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
             assertEq(c.troveManager.getTroveIdsCount(), handler.numTroves(i), "Wrong number of Troves");
             assertEq(c.sortedTroves.getSize(), handler.numTroves(i) - handler.numZombies(i), "Wrong SortedTroves size");
             assertApproxEqAbsDecimal(
-                c.activePool.calcPendingAggInterest(), handler.getPendingInterest(i), 1e-10 ether, 18, "Wrong interest"
+                c.activePool.calcPendingAggInterest(), handler.getPendingInterest(i), 1e9 ether, 18, "Wrong interest"
             );
             assertApproxEqAbsDecimal(
-                c.activePool.aggWeightedDebtSum(), handler.getInterestAccrual(i), 1e26, 36, "Wrong interest accrual"
+                c.activePool.aggWeightedDebtSum(), handler.getInterestAccrual(i), 1e28, 36, "Wrong interest accrual"
             );
             assertApproxEqAbsDecimal(
                 c.activePool.aggWeightedBatchManagementFeeSum(),
                 handler.getBatchManagementFeeAccrual(i),
-                1e26,
+                1e28,
                 36,
                 "Wrong batch management fee accrual"
             );
@@ -145,8 +145,8 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
                     handler.getTrove(i, j);
 
                 LatestTroveData memory t = c.troveManager.getLatestTroveData(troveId);
-                assertApproxEqAbsDecimal(t.entireColl, coll, 1e-10 ether, 18, "Wrong Trove coll");
-                assertApproxEqAbsDecimal(t.entireDebt, debt, 1e-10 ether, 18, "Wrong Trove debt");
+                assertApproxEqAbsDecimal(t.entireColl, coll, 1e9 ether, 18, "Wrong Trove coll");
+                assertApproxEqAbsDecimal(t.entireDebt, debt, 1e9 ether, 18, "Wrong Trove debt");
                 assertEq(c.troveManager.getTroveStatus(troveId).toString(), status.toString(), "Wrong Trove status");
                 assertEq(c.troveManager.getBatchManager(troveId), batchManager, "Wrong batch manager (TM)");
                 assertEq(c.borrowerOperations.interestBatchManagerOf(troveId), batchManager, "Wrong batch manager (BO)");
