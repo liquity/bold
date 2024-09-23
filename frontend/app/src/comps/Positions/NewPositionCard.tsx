@@ -51,11 +51,8 @@ const actionAttributes = {
   },
 } as const;
 
-const FIXED_AREAS = false;
 const RESET_DELAY = 500;
-// const RESET_DELAY = 0;
-const COMPRESSED_WIDTH = 24;
-// const COMPRESSED_WIDTH = 36;
+const COMPRESSED_WIDTH = 28;
 const ANIMATE_ICONS = true;
 
 export function NewPositionCard() {
@@ -160,7 +157,10 @@ export function NewPositionCard() {
                   left: hprogress.to((p) => lerp(8, 12, p)),
                   bottom: hprogress.to((p) => lerp(12, 80, p)),
                   transformOrigin: "0% 100%",
-                  transform: hprogress.to([0, 0.5, 1], [0, 1, 1]).to((p) => `
+                  transform: hprogress.to(
+                    [0, 0.5, 1],
+                    [0, 1, 1],
+                  ).to((p) => `
                     rotate(${(1 - p) * -90}deg)
                     translateY(${(1 - p) * 100}%)
                   `),
@@ -222,42 +222,7 @@ export function NewPositionCard() {
             borderRadius: index === 0 ? "8px 0 0 8px" : index === 3 ? "0 8px 8px 0" : 0,
           };
 
-          return FIXED_AREAS
-            ? (
-              <div
-                key={path}
-                className={className}
-                style={style}
-              >
-                {content}
-              </div>
-            )
-            : (
-              <Link
-                key={path}
-                href={path}
-                onMouseEnter={() => setHovered(index)}
-                onMouseLeave={() => setHovered(-1, RESET_DELAY)}
-                onFocus={() => setHovered(index)}
-                onBlur={() => setHovered(-1)}
-                className={className}
-                style={style}
-              >
-                {content}
-              </Link>
-            );
-        })}
-      </a.div>
-      {FIXED_AREAS && (
-        <div
-          className={css({
-            position: "absolute",
-            inset: 0,
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-          })}
-        >
-          {Object.entries(actionAttributes).map(([_, { path }], index) => (
+          return (
             <Link
               key={path}
               href={path}
@@ -265,25 +230,14 @@ export function NewPositionCard() {
               onMouseLeave={() => setHovered(-1, RESET_DELAY)}
               onFocus={() => setHovered(index)}
               onBlur={() => setHovered(-1)}
-              className={css({
-                position: "relative",
-                overflow: "hidden",
-                display: "flex",
-                flexDirection: "column",
-                height: "100%",
-                _focusVisible: {
-                  outline: "2px solid token(colors.focused)",
-                  outlineOffset: 2,
-                },
-              })}
-              style={{
-                zIndex: index === hovered ? 1 : 0,
-                borderRadius: index === 0 ? "8px 0 0 8px" : index === 3 ? "0 8px 8px 0" : 0,
-              }}
-            />
-          ))}
-        </div>
-      )}
+              className={className}
+              style={style}
+            >
+              {content}
+            </Link>
+          );
+        })}
+      </a.div>
     </div>
   );
 }
