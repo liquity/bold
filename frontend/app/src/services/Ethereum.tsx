@@ -20,7 +20,6 @@ import {
   CHAIN_ID,
   CHAIN_NAME,
   CHAIN_RPC_URL,
-  COLLATERAL_CONTRACTS,
   CONTRACT_BOLD_TOKEN,
   LQTY_TOKEN,
   LUSD_TOKEN,
@@ -79,7 +78,7 @@ export function useAccount():
   const ensName = useEnsName({ address: account?.address });
   return demoMode.enabled ? demoMode.account : {
     ...account,
-    connect: account.isConnected && openConnectModal || noop,
+    connect: openConnectModal || noop,
     disconnect: account.isConnected && openAccountModal || noop,
     ensName: ensName.data ?? undefined,
   };

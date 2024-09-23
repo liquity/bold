@@ -42,6 +42,7 @@ export type MenuSection = {
 export type PositionLoan = {
   type: "borrow" | "leverage";
   borrowed: Dnum;
+  collIndex: CollIndex;
   collateral: CollateralSymbol;
   deposit: Dnum;
   interestRate: Dnum;

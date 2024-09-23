@@ -8,6 +8,19 @@ const FlowIdSchema = v.literal("repayAndCloseLoanPosition");
 
 const RequestSchema = v.object({
   flowId: FlowIdSchema,
+  backLink: v.union([
+    v.null(),
+    v.tuple([
+      v.string(), // path
+      v.string(), // label
+    ]),
+  ]),
+  successLink: v.tuple([
+    v.string(), // path
+    v.string(), // label
+  ]),
+  successMessage: v.string(),
+
   collIndex: v.number(),
   owner: vAddress(),
   ownerIndex: v.number(),
@@ -16,6 +29,12 @@ const RequestSchema = v.object({
 export type Request = v.InferOutput<typeof RequestSchema>;
 
 export const repayAndCloseLoanPosition: FlowDeclaration<Request> = {
+  title: "",
+  subtitle: "",
+  Summary: () => null,
+  Details: () => null,
+  getStepName: () => "",
+
   getSteps: async function getSteps() {
     return ["closeTrove"];
   },
