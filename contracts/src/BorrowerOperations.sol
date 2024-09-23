@@ -520,7 +520,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireIsNotInBatch(_troveId);
         address owner = troveNFT.ownerOf(_troveId);
         _requireSenderIsOwnerOrInterestManager(_troveId, owner);
-        _requireInterestRateInDelegateRange(_troveId, _newAnnualInterestRate);
+        _requireInterestRateInDelegateRange(_troveId, _newAnnualInterestRate, owner);
         _requireTroveIsActive(troveManagerCached, _troveId);
 
         LatestTroveData memory trove = troveManagerCached.getLatestTroveData(_troveId);
@@ -1287,6 +1287,17 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
     }
 
+    function _requireInterestRateInDelegateRange(uint256 _troveId, uint256 _annualInterestRate, address _owner) internal view {
+        InterestIndividualDelegate memory individualDelegate = interestIndividualDelegateOf[_troveId];
+        // We have previously checked that sender is either owner or delegate
+        // If it’s owner, this restriction doesn’t apply
+        if (individualDelegate.account == msg.sender) {
+            _requireInterestRateInRange(
+                _annualInterestRate, individualDelegate.minInterestRate, individualDelegate.maxInterestRate
+            );
+        }
+    }
+
     function _requireIsNotInBatch(uint256 _troveId) internal view {
         if (interestBatchManagerOf[_troveId] != address(0)) {
             revert TroveInBatch();
@@ -1440,15 +1451,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
     function _requireOrderedRange(uint256 _minInterestRate, uint256 _maxInterestRate) internal pure {
         if (_minInterestRate >= _maxInterestRate) revert MinGeMax();
-    }
-
-    function _requireInterestRateInDelegateRange(uint256 _troveId, uint256 _annualInterestRate) internal view {
-        InterestIndividualDelegate memory individualDelegate = interestIndividualDelegateOf[_troveId];
-        if (individualDelegate.account != address(0)) {
-            _requireInterestRateInRange(
-                _annualInterestRate, individualDelegate.minInterestRate, individualDelegate.maxInterestRate
-            );
-        }
     }
 
     function _requireInterestRateInBatchManagerRange(address _interestBatchManagerAddress, uint256 _annualInterestRate)
