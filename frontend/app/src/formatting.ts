@@ -20,7 +20,7 @@ export function fmtnum(
   optionsOrFormatName:
     | keyof typeof dnFormatOptions
     | Parameters<typeof dn.format>[1] = "2z",
-  scale = 1,
+  scale = 1, // pass 100 here to format as percentage
 ) {
   if (value === null || value === undefined) {
     return "";
