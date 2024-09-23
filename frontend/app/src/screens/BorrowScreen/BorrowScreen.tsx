@@ -8,7 +8,7 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import { DEBT_SUGGESTIONS, INTEREST_RATE_DEFAULT } from "@/src/constants";
 import content from "@/src/content";
 import { useCollateralContracts } from "@/src/contracts";
-import { useDemoMode } from "@/src/demo-mode";
+import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
@@ -16,6 +16,7 @@ import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useTroveCount } from "@/src/subgraph-hooks";
+import { isCollIndex } from "@/src/types";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
@@ -34,24 +35,15 @@ import {
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { match, P } from "ts-pattern";
 import { maxUint256 } from "viem";
 
 const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
 
 export function BorrowScreen() {
-  const account = useAccount();
-
-  const {
-    currentStepIndex,
-    discard,
-    signAndSend,
-    start,
-    flow,
-  } = useTransactionFlow();
-
   const router = useRouter();
 
+  const account = useAccount();
+  const txFlow = useTransactionFlow();
   const allCollContracts = useCollateralContracts();
 
   // useParams() can return an array but not with the current
@@ -62,7 +54,7 @@ export function BorrowScreen() {
   }
 
   const collIndex = allCollContracts.findIndex(({ symbol }) => symbol === collSymbol);
-  if (collIndex === -1) {
+  if (!isCollIndex(collIndex)) {
     throw new Error(`Unknown collateral symbol: ${collSymbol}`);
   }
 
@@ -91,9 +83,6 @@ export function BorrowScreen() {
   const collBalance = balances[collateral.symbol];
 
   const troveCount = useTroveCount(account.address, collIndex);
-  const newTroveIndex = troveCount.data ?? 0;
-
-  const demoMode = useDemoMode();
 
   if (!collPrice) {
     return null;
@@ -127,8 +116,6 @@ export function BorrowScreen() {
     && interestRate
     && dn.gt(interestRate, 0);
 
-  const currentStepId = flow?.steps?.[currentStepIndex]?.id;
-
   return (
     <Screen
       title={
@@ -147,136 +134,6 @@ export function BorrowScreen() {
         </HFlex>
       }
     >
-      {!demoMode.enabled && (
-        <div
-          className={css({
-            display: "flex",
-            flexDirection: "column",
-            gap: 16,
-          })}
-        >
-          <div>
-            <div>collIndex: {collIndex} ({collateral.symbol})</div>
-            <div>
-              next available trove id: {match(troveCount)
-                .with({ status: "pending" }, () => "fetching")
-                .with({ status: "error" }, () => "error")
-                .with({ status: "success" }, ({ data }) => data)
-                .exhaustive()}
-            </div>
-            <div>flow: {flow?.request.flowId}</div>
-            <div>
-              flow steps: {flow?.steps && (
-                <>
-                  [{flow?.steps
-                    .map(({ id, txHash }) => txHash ? `${id} (ok)` : id)
-                    .join(", ")}]
-                </>
-              )}
-            </div>
-            <div>
-              current flow step: {currentStepIndex} ({flow?.steps && flow?.steps[currentStepIndex]?.id})
-            </div>
-            <div>
-              flow step error: <pre>{flow?.steps?.[currentStepIndex]?.error}</pre>
-            </div>
-          </div>
-          {match(account)
-            .with({ status: "connected", address: P.nonNullable }, (account) => (
-              (
-                <div
-                  className={css({
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 16,
-                  })}
-                >
-                  <div
-                    className={css({
-                      display: "flex",
-                      gap: 16,
-                    })}
-                  >
-                    <Button
-                      size="mini"
-                      disabled={troveCount.status !== "success"}
-                      label={`openLoanPosition (#${troveCount.data ?? 0})`}
-                      onClick={() => {
-                        if (deposit.parsed && debt.parsed && dn.gt(interestRate, 0)) {
-                          start({
-                            flowId: "openLoanPosition",
-                            collIndex,
-                            owner: account.address,
-                            ownerIndex: troveCount.data ?? 0,
-                            collAmount: deposit.parsed,
-                            boldAmount: debt.parsed,
-                            upperHint: dn.from(0, 18),
-                            lowerHint: dn.from(0, 18),
-                            annualInterestRate: interestRate,
-                            maxUpfrontFee: [maxUint256, 18],
-                          });
-                        }
-                      }}
-                    />
-                    <Button
-                      disabled={newTroveIndex < 0 || troveCount.status !== "success"}
-                      label={`updateLoanPosition (#${(troveCount.data ?? 0) - 1})`}
-                      onClick={() => {
-                        start({
-                          flowId: "updateLoanPosition",
-                          collIndex,
-                          owner: account.address,
-                          ownerIndex: (troveCount.data ?? 0) - 1,
-                          collChange: dn.from(1, 18),
-                          boldChange: dn.from(0, 18),
-                          maxUpfrontFee: dn.from(100, 18),
-                        });
-                      }}
-                      size="mini"
-                    />
-                    <Button
-                      disabled={newTroveIndex < 0 || troveCount.status !== "success"}
-                      label={`repayAndCloseLoanPosition (#${(troveCount.data ?? 0) - 1})`}
-                      onClick={() => {
-                        start({
-                          flowId: "repayAndCloseLoanPosition",
-                          collIndex,
-                          owner: account.address,
-                          ownerIndex: (troveCount.data ?? 0) - 1,
-                        });
-                      }}
-                      size="mini"
-                    />
-                  </div>
-                  <div
-                    className={css({
-                      display: "flex",
-                      gap: 16,
-                    })}
-                  >
-                    <Button
-                      size="mini"
-                      label="discard"
-                      onClick={discard}
-                      disabled={!flow}
-                    />
-                    <Button
-                      size="mini"
-                      label={`sign & send${currentStepId ? ` (${currentStepId})` : ""}`}
-                      onClick={() => {
-                        if (currentStepIndex >= 0) {
-                          signAndSend();
-                        }
-                      }}
-                      disabled={!flow || currentStepIndex < 0}
-                    />
-                  </div>
-                </div>
-              )
-            ))
-            .otherwise(() => null)}
-        </div>
-      )}
       <div
         className={css({
           display: "flex",
@@ -453,17 +310,21 @@ export function BorrowScreen() {
             wide
             onClick={() => {
               if (deposit.parsed && debt.parsed && account.address) {
-                start({
+                txFlow.start({
                   flowId: "openLoanPosition",
+                  backLink: ["/borrow", "Back to editing"],
+                  successLink: ["/", "Go to the Dashboard"],
+                  successMessage: "The position has been created successfully.",
+
                   collIndex,
                   owner: account.address,
                   ownerIndex: troveCount.data ?? 0,
                   collAmount: deposit.parsed,
                   boldAmount: debt.parsed,
-                  upperHint: dn.from(0, 18),
-                  lowerHint: dn.from(0, 18),
+                  upperHint: dnum18(0),
+                  lowerHint: dnum18(0),
                   annualInterestRate: interestRate,
-                  maxUpfrontFee: [maxUint256, 18],
+                  maxUpfrontFee: dnum18(maxUint256),
                 });
                 router.push("/transactions");
               }

@@ -7,6 +7,7 @@ import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
 import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
+import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
@@ -58,8 +59,8 @@ export function Positions() {
 
   const cards = match(mode)
     .returnType<Array<[number, ReactNode]>>()
-    .with("positions", () => {
-      const cards = positions.data?.map((position, index) => (
+    .with("positions", () => [
+      ...(positions.data?.map((position, index) => (
         match(position)
           .returnType<[number, ReactNode]>()
           .with({ type: "borrow" }, (props) => [index, <PositionBorrow {...props} />])
@@ -67,13 +68,9 @@ export function Positions() {
           .with({ type: "leverage" }, (props) => [index, <PositionLeverage {...props} />])
           .with({ type: "stake" }, (props) => [index, <PositionStake {...props} />])
           .exhaustive()
-      )) ?? [];
-
-      return [...cards, [
-        positions.data?.length ?? -1,
-        <NewPositionCard />,
-      ]];
-    })
+      )) ?? []),
+      [positions.data?.length ?? -1, <NewPositionCard />],
+    ])
     .with("loading", () => [
       [0, <LoadingCard />],
       [1, <LoadingCard />],
@@ -91,7 +88,6 @@ export function Positions() {
     from: { opacity: 0, transform: "scale3d(0.97, 0.97, 1)" },
     enter: { opacity: 1, transform: "scale3d(1, 1, 1)" },
     leave: { display: "none", immediate: true },
-    trail: 10,
     config: {
       mass: 2,
       tension: 1800,
@@ -205,6 +201,13 @@ function PositionBorrow({
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
   const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
 
+  const title = [
+    `Loan ID: ${troveId}`,
+    `Borrowed: ${fmtnum(borrowed, "full")} BOLD`,
+    `Collateral: ${fmtnum(deposit, "full")} ${token.name}`,
+    `Interest rate: ${fmtnum(interestRate, "full", 100)}%`,
+  ];
+
   return (
     <Link
       href={`/loan?id=${collIndex}:${troveId}`}
@@ -212,7 +215,7 @@ function PositionBorrow({
       passHref
     >
       <StrongCard
-        title={`Loan ${troveId}`}
+        title={title.join("\n")}
         heading={
           <div
             className={css({
@@ -237,7 +240,7 @@ function PositionBorrow({
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-              {dn.format(dn.add(deposit, borrowed), 2)}
+              {fmtnum(borrowed)}
               <TokenIcon
                 size={24}
                 symbol="BOLD"

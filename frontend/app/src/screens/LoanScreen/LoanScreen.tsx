@@ -1,8 +1,9 @@
 "use client";
 
 import { Screen } from "@/src/comps/Screen/Screen";
+import { getPrefixedTroveId, parsePrefixedTroveId } from "@/src/liquity-utils";
 import { useLoanById } from "@/src/subgraph-hooks";
-import { isTroveId } from "@/src/types";
+import { isPrefixedtroveId } from "@/src/types";
 import { css } from "@/styled-system/css";
 import { Button, IconSettings, Tabs, VFlex } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
@@ -40,11 +41,16 @@ export function LoanScreen() {
   const router = useRouter();
   const action = useSelectedLayoutSegment() ?? "colldebt";
   const searchParams = useSearchParams();
-  const paramId = searchParams.get("id");
-  const troveId = isTroveId(paramId) ? paramId : null;
+  const paramPrefixedId = searchParams.get("id");
 
-  const loan = useLoanById(troveId);
-  if (loan.isLoadingError || !troveId) {
+  if (!isPrefixedtroveId(paramPrefixedId)) {
+    notFound();
+  }
+
+  const { troveId } = parsePrefixedTroveId(paramPrefixedId);
+  const loan = useLoanById(paramPrefixedId);
+
+  if (loan.isLoadingError || !paramPrefixedId) {
     notFound();
   }
 
@@ -158,8 +164,12 @@ export function LoanScreen() {
                   }))}
                   selected={tab}
                   onSelect={(index) => {
+                    if (!loan.data) {
+                      return;
+                    }
+                    const id = getPrefixedTroveId(loan.data.collIndex, loan.data.troveId);
                     router.push(
-                      `/loan/${TABS[index].id}?id=${loan.data?.troveId}`,
+                      `/loan/${TABS[index].id}?id=${id}`,
                       { scroll: false },
                     );
                   }}

@@ -1,6 +1,9 @@
-import type { TroveId } from "@/src/types";
-import type { Address, CollateralSymbol } from "@liquity2/uikit";
+import type { CollIndex, PrefixedTroveId, TroveId } from "@/src/types";
+import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
 
+import { useCollateralContracts } from "@/src/contracts";
+import { isCollIndex, isTroveId } from "@/src/types";
+import { COLLATERALS } from "@liquity2/uikit";
 import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 
@@ -60,4 +63,31 @@ export function getCollateralFromTroveSymbol(symbol: string): null | CollateralS
     return "STETH";
   }
   return null;
+}
+
+export function parsePrefixedTroveId(value: PrefixedTroveId): {
+  collIndex: CollIndex;
+  troveId: TroveId;
+} {
+  const [collIndex_, troveId] = value.split(":");
+  const collIndex = parseInt(collIndex_, 10);
+  if (!isCollIndex(collIndex) || !isTroveId(troveId)) {
+    throw new Error(`Invalid prefixed trove ID: ${value}`);
+  }
+  return { collIndex, troveId };
+}
+
+export function getPrefixedTroveId(collIndex: CollIndex, troveId: TroveId): PrefixedTroveId {
+  return `${collIndex}:${troveId}`;
+}
+
+export function useCollateral(collIndex: number): CollateralToken {
+  const collContracts = useCollateralContracts();
+  return collContracts.map(({ symbol }) => {
+    const collateral = COLLATERALS.find((c) => c.symbol === symbol);
+    if (!collateral) {
+      throw new Error(`Unknown collateral symbol: ${symbol}`);
+    }
+    return collateral;
+  })[collIndex];
 }

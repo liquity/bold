@@ -1,6 +1,7 @@
 query TrovesByAccount($account: Bytes!) {
   troves(where: { borrower: $account }) {
     id
+    troveId
     borrower
     debt
     deposit
@@ -15,6 +16,7 @@ query TrovesByAccount($account: Bytes!) {
         name
       }
       minCollRatio
+      collIndex
     }
   }
 }
@@ -29,6 +31,7 @@ query TrovesCount($id: ID!) {
 query TroveById($id: ID!) {
   trove(id: $id) {
     id
+    troveId
     borrower
     debt
     deposit
@@ -43,6 +46,7 @@ query TroveById($id: ID!) {
         name
       }
       minCollRatio
+      collIndex
     }
   }
 }
