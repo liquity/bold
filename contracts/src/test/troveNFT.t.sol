@@ -7,13 +7,14 @@ import "src/TroveNFT.sol";
 
 contract troveNFTTest is DevTestSetup {
     uint256 NUM_COLLATERALS = 3;
+    uint256 NUM_VARIANTS = 4;
     TestDeployer.LiquityContractsDev[] public contractsArray;
     TroveNFT troveNFTWETH;
-    uint256 troveIdWETH;
+    uint256[] troveIdWETH;
     TroveNFT troveNFTWstETH;
-    uint256 troveIdWstETH;
+    uint256[] troveIdWstETH;
     TroveNFT troveNFTRETH;
-    uint256 troveIdRETH;
+    uint256[] troveIdRETH;
 
     function openMulticollateralTroveNoHints100pctWithIndex(
         uint256 _collIndex,
@@ -108,13 +109,27 @@ contract troveNFTTest is DevTestSetup {
             }
         }
 
+        troveIdWETH = new uint256[](NUM_VARIANTS);
+        troveIdWstETH = new uint256[](NUM_VARIANTS);
+        troveIdRETH = new uint256[](NUM_VARIANTS);
+
         // 0 = WETH
-        troveIdWETH = openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 10e18, 10000e18, 5e16);
+        troveIdWETH[0] = openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 10e18, 10000e18, 5e16);
+        troveIdWETH[1] = openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 10e18, 10000e18, 5e16);
+        troveIdWETH[2] = openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 10e18, 10000e18, 5e16);
+        troveIdWETH[3] = openMulticollateralTroveNoHints100pctWithIndex(0, A, 10, 10e18, 10000e18, 5e16);
+
         // 1 = wstETH
-        troveIdWstETH = openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 100e18, 10000e18, 5e16);
+        troveIdWstETH[0] = openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 100e18, 10000e18, 5e16);
+        troveIdWstETH[1] = openMulticollateralTroveNoHints100pctWithIndex(1, A, 1, 100e18, 10000e18, 5e16);
+        troveIdWstETH[2] = openMulticollateralTroveNoHints100pctWithIndex(1, A, 2, 100e18, 10000e18, 5e16);
+        troveIdWstETH[3] = openMulticollateralTroveNoHints100pctWithIndex(1, A, 10, 100e18, 10000e18, 5e16);
+
         // 2 = rETH
-        troveIdRETH = openMulticollateralTroveNoHints100pctWithIndex(2, A, 0, 100e18, 10000e18, 5e16);
-        
+        troveIdRETH[0] = openMulticollateralTroveNoHints100pctWithIndex(2, A, 0, 100e18, 10000e18, 5e16);
+        troveIdRETH[1] = openMulticollateralTroveNoHints100pctWithIndex(2, A, 1, 100e18, 10000e18, 5e16);
+        troveIdRETH[2] = openMulticollateralTroveNoHints100pctWithIndex(2, A, 2, 100e18, 10000e18, 5e16);
+        troveIdRETH[3] = openMulticollateralTroveNoHints100pctWithIndex(2, A, 10, 100e18, 10000e18, 5e16);
 
         troveNFTWETH = TroveNFT(address(contractsArray[0].troveManager.troveNFT()));
         troveNFTWstETH = TroveNFT(address(contractsArray[1].troveManager.troveNFT()));
@@ -123,7 +138,6 @@ contract troveNFTTest is DevTestSetup {
 
     function testTroveNFTMetadata() public {
         
-
         assertEq(troveNFTWETH.name(), "Liquity v2 Trove - Wrapped Ether Tester", "Invalid Trove Name");
         assertEq(troveNFTWETH.symbol(), "Lv2T_WETH", "Invalid Trove Symbol");
 
@@ -133,24 +147,6 @@ contract troveNFTTest is DevTestSetup {
         assertEq(troveNFTRETH.name(), "Liquity v2 Trove - Rocket Pool ETH", "Invalid Trove Name");
         assertEq(troveNFTRETH.symbol(), "Lv2T_rETH", "Invalid Trove Symbol");
     }
-
-   
-
-    //function _writeUriFile(string memory _uri, string memory _name) public {
-    //    string memory pathClean = string.concat("utils/assets/test_output/uri_", _name, ".html");
-//
-    //    try vm.removeFile(pathClean) {} catch {}
-//
-    //    vm.writeLine(pathClean, top);
-//
-    //    vm.writeLine(pathClean, string.concat(
-    //        'var output=document.getElementById("output"),image=document.getElementById("image"),encodedString="', 
-    //        _uri,
-    //        '";',
-    //        'try{let r=JSON.parse(atob(encodedString.split(",")[1]));output.innerText=JSON.stringify(r.attributes,null,2),r.image?image.src=r.image:image.src=""}catch(e){output.innerText="Error decoding or parsing JSON: "+e.message}'));
-//
-    //    vm.writeLine(pathClean, string.concat("</script></div></body></html>"));
-    //}
 
     string topMulti = '<!DOCTYPE html><html lang="en"><head><Title>Test Uri</Title><style>.container{display:flex;flex-direction:row;margin-bottom:20px}.container img{width:300px;height:484px;margin-right:20px}.container pre{flex:1}</style></head><body><script>';
 
@@ -163,13 +159,10 @@ contract troveNFTTest is DevTestSetup {
 
         string memory uriCombined;
 
+        uriCombined = 'const encodedStrings=[';
         for (uint256 i = 0; i < _uris.length; i++) {
-            // if first uri, start the array
-            if(i == 0) uriCombined = string.concat('const encodedStrings=["', _uris[i], '",');
             uriCombined = string.concat(uriCombined, '"', _uris[i], '",');
-            // if last uri, close the array
         }
-
         uriCombined = string.concat(uriCombined, '];');
 
         vm.writeLine(pathClean, string.concat(
@@ -183,20 +176,26 @@ contract troveNFTTest is DevTestSetup {
 
     function testTroveURI() public {
 
-        string[] memory uris = new string[](3);
-         
-        uris[0] = troveNFTWETH.tokenURI(troveIdWETH);
-        uris[1] = troveNFTWstETH.tokenURI(troveIdWstETH);
-        uris[2] = troveNFTRETH.tokenURI(troveIdRETH);
+        string[] memory uris = new string[](NUM_VARIANTS * NUM_COLLATERALS);
+
+        for(uint256 i = 0; i < NUM_VARIANTS; i++) {
+            uris[i] = troveNFTWETH.tokenURI(troveIdWETH[i]);
+        }
+        for(uint256 i = NUM_VARIANTS; i < NUM_VARIANTS*2; i++) {
+            uris[i] = troveNFTWstETH.tokenURI(troveIdWstETH[i/2]);
+        }
+        for(uint256 i = NUM_VARIANTS*2; i < NUM_VARIANTS*3; i++) {
+            uris[i] = troveNFTRETH.tokenURI(troveIdRETH[i/3]);
+        }
 
         _writeUriFile(uris);
     }
 
     function testTroveURIAttributes() public {
 
-        string memory uri = troveNFTRETH.tokenURI(troveIdRETH);
+        string memory uri = troveNFTRETH.tokenURI(troveIdRETH[0]);
 
-        emit log_string(uri);
+        //emit log_string(uri);
 
         /**
          * TODO: validate each individual attribute, or manually make a json and validate it all at once
