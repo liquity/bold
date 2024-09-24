@@ -1,0 +1,56 @@
+specVersion: 1.2.0
+schema:
+  file: ./schema.graphql
+dataSources:
+  - name: BoldToken
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      address: "0x2705179df91e93d2be0f3b56454002f52e27ef87"
+      abi: BoldToken
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Collateral
+        - CollateralAddresses
+        - Token
+      abis:
+        - name: BorrowerOperations
+          file: ../contracts/out/BorrowerOperations.sol/BorrowerOperations.json
+        - name: BoldToken
+          file: ../contracts/out/BoldToken.sol/BoldToken.json
+        - name: CollateralRegistry
+          file: ../contracts/out/CollateralRegistry.sol/CollateralRegistry.json
+        - name: ERC20
+          file: ../contracts/out/ERC20.sol/ERC20.json
+        - name: TroveManager
+          file: ../contracts/out/TroveManager.sol/TroveManager.json
+      eventHandlers:
+        - event: CollateralRegistryAddressChanged(address)
+          handler: handleCollateralRegistryAddressChanged
+      file: ./src/BoldToken.mapping.ts
+templates:
+  - name: TroveManager
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: TroveManager
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/TroveManager.mapping.ts
+      entities:
+        - Trove
+      abis:
+        - name: TroveManager
+          file: ../contracts/out/TroveManager.sol/TroveManager.json
+        - name: TroveNFT
+          file: ../contracts/out/TroveNFT.sol/TroveNFT.json
+      eventHandlers:
+        - event: TroveOperation(indexed uint256,uint8,uint256,uint256,uint256,int256,uint256,int256)
+          handler: handleTroveOperation
+        - event: TroveUpdated(indexed uint256,uint256,uint256,uint256,uint256,uint256,uint256)
+          handler: handleTroveUpdated
