@@ -1395,7 +1395,7 @@ And some additional solutions that may help reduce the chance of bad debt occurr
 
 **Conclusion**
 
-Ultimately, no measures have been implemented in the protocol directly, so the protocol may end up with some bad debt in the case of a branch shut down.  Here there is a theoretical possibility that the BOLD supply may be reduced by either users accidentally burning BOLD, or that borrower's interest on that branch could be directed by governance to burn BOLD, which would restore its backing over time.
+Ultimately, no measures have been implemented in the protocol directly, so the protocol may end up with some bad debt in the case of a branch shut down.  Here there is a theoretical possibility that the BOLD supply may be reduced by either users accidentally burning BOLD, or that borrower's interest could be directed by governance to burn BOLD, which would restore its backing over time.
 
 
 ### 11 - Inaccurate calculation of average branch interest rate
