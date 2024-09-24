@@ -37,10 +37,12 @@ const ZDeploymentContext = z.object({
     z.object({
       activePool: ZAddress,
       borrowerOperations: ZAddress,
+      gasCompZapper: ZAddress,
       sortedTroves: ZAddress,
       stabilityPool: ZAddress,
       token: ZAddress,
       troveManager: ZAddress,
+      wethZapper: ZAddress,
     }),
   ),
   protocolContracts: z.object({
@@ -169,6 +171,10 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_TOKEN`;
     case "troveManager":
       return `${prefix}_TROVE_MANAGER`;
+    case "wethZapper":
+      return `${prefix}_WETH_ZAPPER`;
+    case "gasCompZapper":
+      return `${prefix}_GAS_COMP_ZAPPER`;
   }
   return null;
 }

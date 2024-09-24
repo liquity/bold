@@ -8,6 +8,8 @@ import "./utils/baseSVG.sol";
 import "./utils/bauhaus.sol";
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+
 import {ITroveManager} from "src/Interfaces/ITroveManager.sol";
 
 interface IMetadataNFT {
@@ -15,6 +17,7 @@ interface IMetadataNFT {
         uint256 _tokenId;
         address _owner;
         address _collToken;
+        address _boldToken;
         uint256 _collAmount;
         uint256 _debtAmount;
         uint256 _interestRate;
@@ -35,13 +38,33 @@ contract MetadataNFT is IMetadataNFT {
     }
 
     function uri(TroveData memory _troveData) public view returns (string memory) {
-        return json.formattedMetadata(name, description, renderSVGImage(_troveData));
+        string memory attr = attributes(_troveData);
+        return json.formattedMetadata(name, description, renderSVGImage(_troveData), attr);
     }
 
     function renderSVGImage(TroveData memory _troveData) internal view returns (string memory) {
         return svg._svg(
             baseSVG._svgProps(),
             string.concat(baseSVG._baseElements(assetReader), bauhaus._bauhaus(), dynamicTextComponents(_troveData))
+        );
+    }
+
+    function attributes(TroveData memory _troveData) public view returns (string memory) {
+        //include: collateral token address, collateral amount, debt token address, debt amount, interest rate, status
+        return string.concat(
+            '[{"trait_type": "Collateral Token", "value": "',
+            Strings.toHexString(_troveData._collToken),
+            '"}, {"trait_type": "Collateral Amount", "value": "',
+            Strings.toString(_troveData._collAmount),
+            '"}, {"trait_type": "Debt Token", "value": "',
+            Strings.toHexString(_troveData._boldToken),
+            '"}, {"trait_type": "Debt Amount", "value": "',
+            Strings.toString(_troveData._debtAmount),
+            '"}, {"trait_type": "Interest Rate", "value": "',
+            Strings.toString(_troveData._interestRate),
+            '"}, {"trait_type": "Status", "value": "',
+            _status2Str(_troveData._status),
+            '"} ]'
         );
     }
 
@@ -62,7 +85,7 @@ contract MetadataNFT is IMetadataNFT {
         if (status == ITroveManager.Status.active) return "Active";
         if (status == ITroveManager.Status.closedByOwner) return "Closed";
         if (status == ITroveManager.Status.closedByLiquidation) return "Liquidated";
-        if (status == ITroveManager.Status.unredeemable) return "Unredeemable";
+        if (status == ITroveManager.Status.zombie) return "Zombie";
         return "";
     }
 }

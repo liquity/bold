@@ -258,9 +258,11 @@ contract ActivePool is IActivePool {
             uint256 remainderToLPs = mintedAmount - spYield;
 
             _boldToken.mint(address(interestRouter), remainderToLPs);
-            _boldToken.mint(address(stabilityPool), spYield);
 
-            stabilityPool.triggerBoldRewards(spYield);
+            if (spYield > 0) {
+                _boldToken.mint(address(stabilityPool), spYield);
+                stabilityPool.triggerBoldRewards(spYield);
+            }
         }
 
         lastAggUpdateTime = block.timestamp;

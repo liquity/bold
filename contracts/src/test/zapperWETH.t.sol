@@ -342,7 +342,7 @@ contract ZapperWETHTest is DevTestSetup {
     }
 
     // TODO: more adjustment combinations
-    function testCanAdjustUnredeemableTroveWithdrawCollAndBold() external {
+    function testCanAdjustZombieTroveWithdrawCollAndBold() external {
         uint256 ethAmount1 = 10 ether;
         uint256 ethAmount2 = 1 ether;
         uint256 boldAmount1 = 10000e18;
@@ -369,7 +369,7 @@ contract ZapperWETHTest is DevTestSetup {
         wethZapper.setRemoveManagerWithReceiver(troveId, B, A);
         vm.stopPrank();
 
-        // Redeem to make trove unredeemable
+        // Redeem to make trove zombie
         vm.startPrank(A);
         collateralRegistry.redeemCollateral(boldAmount1 - boldAmount2, 10, 1e18);
         vm.stopPrank();
@@ -381,7 +381,7 @@ contract ZapperWETHTest is DevTestSetup {
 
         // Adjust (withdraw coll and Bold)
         vm.startPrank(B);
-        wethZapper.adjustUnredeemableTroveWithRawETH(troveId, ethAmount2, false, boldAmount2, true, 0, 0, boldAmount2);
+        wethZapper.adjustZombieTroveWithRawETH(troveId, ethAmount2, false, boldAmount2, true, 0, 0, boldAmount2);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveEntireColl(troveId), troveCollBefore - ethAmount2, "Trove coll mismatch");
