@@ -134,30 +134,62 @@ contract troveNFTTest is DevTestSetup {
         assertEq(troveNFTRETH.symbol(), "Lv2T_rETH", "Invalid Trove Symbol");
     }
 
-    string top = '<!DOCTYPE html><html lang="en"><head><Title>Test Uri</Title></head><body><div class="container"><img id="image" /><pre id="output"></pre><script>';
+   
 
-    function _writeUriFile(string memory _uri, string memory _name) public {
-        string memory pathClean = string.concat("utils/assets/test_output/uri_", _name, ".html");
+    //function _writeUriFile(string memory _uri, string memory _name) public {
+    //    string memory pathClean = string.concat("utils/assets/test_output/uri_", _name, ".html");
+//
+    //    try vm.removeFile(pathClean) {} catch {}
+//
+    //    vm.writeLine(pathClean, top);
+//
+    //    vm.writeLine(pathClean, string.concat(
+    //        'var output=document.getElementById("output"),image=document.getElementById("image"),encodedString="', 
+    //        _uri,
+    //        '";',
+    //        'try{let r=JSON.parse(atob(encodedString.split(",")[1]));output.innerText=JSON.stringify(r.attributes,null,2),r.image?image.src=r.image:image.src=""}catch(e){output.innerText="Error decoding or parsing JSON: "+e.message}'));
+//
+    //    vm.writeLine(pathClean, string.concat("</script></div></body></html>"));
+    //}
+
+    string topMulti = '<!DOCTYPE html><html lang="en"><head><Title>Test Uri</Title><style>.container{display:flex;flex-direction:row;margin-bottom:20px}.container img{width:300px;height:484px;margin-right:20px}.container pre{flex:1}</style></head><body><script>';
+
+    function _writeUriFile(string[] memory _uris) public {
+        string memory pathClean = string.concat("utils/assets/test_output/uris.html");
 
         try vm.removeFile(pathClean) {} catch {}
 
-        vm.writeLine(pathClean, top);
+        vm.writeLine(pathClean, topMulti);
+
+        string memory uriCombined;
+
+        for (uint256 i = 0; i < _uris.length; i++) {
+            // if first uri, start the array
+            if(i == 0) uriCombined = string.concat('const encodedStrings=["', _uris[i], '",');
+            uriCombined = string.concat(uriCombined, '"', _uris[i], '",');
+            // if last uri, close the array
+        }
+
+        uriCombined = string.concat(uriCombined, '];');
 
         vm.writeLine(pathClean, string.concat(
-            'var output=document.getElementById("output"),image=document.getElementById("image"),encodedString="', 
-            _uri,
-            '";',
-            'try{let r=JSON.parse(atob(encodedString.split(",")[1]));output.innerText=JSON.stringify(r.attributes,null,2),r.image?image.src=r.image:image.src=""}catch(e){output.innerText="Error decoding or parsing JSON: "+e.message}'));
+            'function processEncodedString(encodedString) { const container = document.createElement("div"); container.className = "container"; container.innerHTML = ` <img><pre></pre>`; const output = container.querySelector("pre"); const image = container.querySelector("img"); try { const base64Data = encodedString.split(",")[1]; const jsonData = JSON.parse(atob(base64Data)); output.innerText = JSON.stringify(jsonData.attributes, null, 2); image.src = jsonData.image || ""; } catch (error) { output.innerText = `Error decoding or parsing JSON: ${error.message}`; } document.body.appendChild(container); } ', 
+            uriCombined,
+            'encodedStrings.forEach((encodedString) => { processEncodedString(encodedString); });'));
 
-        vm.writeLine(pathClean, string.concat("</script></div></body></html>"));
+        vm.writeLine(pathClean, string.concat("</script></body></html>"));
     }
 
 
     function testTroveURI() public {
-        _writeUriFile(troveNFTWETH.tokenURI(troveIdWETH), "weth");
-        _writeUriFile(troveNFTWstETH.tokenURI(troveIdWstETH), "wsteth");
-        _writeUriFile(troveNFTRETH.tokenURI(troveIdRETH), "reth");
 
+        string[] memory uris = new string[](3);
+         
+        uris[0] = troveNFTWETH.tokenURI(troveIdWETH);
+        uris[1] = troveNFTWstETH.tokenURI(troveIdWstETH);
+        uris[2] = troveNFTRETH.tokenURI(troveIdRETH);
+
+        _writeUriFile(uris);
     }
 
     function testTroveURIAttributes() public {
