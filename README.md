@@ -1379,7 +1379,13 @@ Various solutions have been fielded. Generally, any solution which appears to cr
 
 4. **New multi-collateral Stability Pool.** This pool would absorb some fraction of liquidations from all branches, including shut down branches. 
 
-5. **Governance can direct BOLD interest to pay down bad debt**. BOLD interest could be voted to be redirected to paying down the bad debt over time. 
+5. **Governance can direct BOLD interest to pay down bad debt**. BOLD interest could be voted to be redirected to paying down the bad debt over time.  Although this would not directly clear the bad debt, economically, it should have the same impact  - since ultimately, it is the redeemability of _circulating_ BOLD that determines the peg.  When an amount equal to the bad debt has been burned, then all circulating BOLD is fully redeemable. 
+
+See this example:
+
+<img width="537" alt="image" src="https://github.com/user-attachments/assets/3045cba9-45a3-46b4-a5d0-58bed7f38a04">
+
+This provides a credible way of eventually "filling the hole" created by bad debt (unlike other approaches such as the SP haircut, which depends on SP funds). No additional core system code nor additional governance features are required. Governance may simply propose to redirect BOLD interest to a burn address. 
 
 And some additional solutions that may help reduce the chance of bad debt occurring in the first place:
 
@@ -1387,18 +1393,7 @@ And some additional solutions that may help reduce the chance of bad debt occurr
 
 7. **Pro-rata redemptions at TCR < 100% (branch specific, not routed)**. Urgent redemptions are helpful for shrinking the debt of a shut down branch when it is at `TCR > 100%`. However, at `TCR < 100%`, urgent redemptions do not help clear the bad debt. They simply remove all collateral and push it into its final state faster (and in fact, make it slightly worse since they pay a slight collateral bonus).  At `TCR < 100%`, we could offer special pro-rata redemptions only on the shut down branch - e.g. at `TCR = 80%`, users may redeem 1 BOLD for $0.80 worth of collateral. This would (in principle) allow someone to completely clear the bad debt via redemption. At first glance it seems unprofitable, but if the redeemer has reason to believe the collateral is underpriced and the price may rebound at some point in future, they may believe it to be profitable to redeem pro-rata.
 
-**Chosen solution**
-
-Solution 5 is chosen. Governance can vote to burn the interest under its control by sending the minted BOLD to a burn address. Although this does not directly clear the bad debt, economically, it should have the same impact  - since ultimately, it is the redeemability of _circulating_ BOLD that determines the peg.  When an amount equal to the bad debt has been burned, then all circulating BOLD is fully redeemable. 
-
-See this example:
-
-<img width="537" alt="image" src="https://github.com/user-attachments/assets/3045cba9-45a3-46b4-a5d0-58bed7f38a04">
-
-This was chosen over other approaches because:
-
-- It provides a credible way of eventually "filling the hole" created by bad debt (unlike other approaches such as the SP haircut, which depends on SP funds)
-- No additional core system code nor additional governance features are required. Governance can simply propose to redirect BOLD interest to a burn address.
+Ultimately, no measures have been implemented in the protocol directly, so the protocol may end up with some bad debt in the case of a branch shut down.  In case of bad debt, there is a theoretical possibility that BOLD supply may be reduced by either users accidentally burning BOLD or that borrower's interest could be directed by governance to burn BOLD, which would restore its backing.
 
 **Extension: governance can liquidate and swap collateral gains**
 
