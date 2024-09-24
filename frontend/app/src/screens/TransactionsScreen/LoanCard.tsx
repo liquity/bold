@@ -19,6 +19,7 @@ import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 
 const LOAN_CARD_HEIGHT = 246 - 16;
+const LOAN_CARD_HEIGHT_REDUCED = 176;
 
 export function LoanCard({
   leverageMode,
@@ -33,8 +34,14 @@ export function LoanCard({
   prevLoan?: PositionLoan | null;
   onRetry: () => void;
 }) {
-  const collateral = loan && TOKENS_BY_SYMBOL[loan.collateral];
+  const collateral = (
+    loan && TOKENS_BY_SYMBOL[loan.collateral]
+  ) || (
+    prevLoan && TOKENS_BY_SYMBOL[prevLoan.collateral]
+  );
   const collPriceUsd = usePrice(collateral ? collateral.symbol : null);
+
+  const isLoanClosing = prevLoan && !loan;
 
   const loanDetails = loan && collateral && getLoanDetails(
     loan.deposit,
@@ -67,100 +74,23 @@ export function LoanCard({
 
   return (
     <LoadingCard
+      height={isLoanClosing ? LOAN_CARD_HEIGHT_REDUCED : LOAN_CARD_HEIGHT}
       leverage={leverageMode}
       loadingState={loadingState}
       onRetry={onRetry}
     >
-      {loan
-        && loanDetails
-        && collateral
-        && typeof leverageFactor === "number"
-        && depositPreLeverage
-        && maxLtv
-        && liquidationRisk
-        && (
+      {isLoanClosing
+        ? (
           <>
-            <div
-              className={css({
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              })}
-            >
-              <div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: 28,
-                  lineHeight: 1,
-                  gap: 12,
-                })}
-              >
-                {leverageMode
-                  ? (
-                    <div
-                      title={`${fmtnum(loan.deposit, "full")} ${collateral}`}
-                      className={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                      })}
-                    >
-                      <div>{fmtnum(loan.deposit)}</div>
-                      <TokenIcon symbol={collateral.symbol} size={32} />
-                      <div
-                        className={css({
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 4,
-                        })}
-                      >
-                        <div>
-                          <Value
-                            negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
-                            title={`Leverage factor: ${
-                              loanDetails.status === "underwater" || leverageFactor === null
-                                ? INFINITY
-                                : `${roundToDecimal(leverageFactor, 3)}x`
-                            }`}
-                            className={css({
-                              fontSize: 16,
-                            })}
-                          >
-                            {loanDetails.status === "underwater" || leverageFactor === null
-                              ? INFINITY
-                              : `${roundToDecimal(leverageFactor, 1)}x`}
-                          </Value>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                  : (
-                    <div
-                      title={`${fmtnum(loan.borrowed, "full")} BOLD`}
-                      className={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                      })}
-                    >
-                      {fmtnum(loan.borrowed)}
-                      <TokenIcon symbol="BOLD" size={32} />
-                      {prevLoan && !dn.eq(prevLoan.borrowed, loan.borrowed) && (
-                        <div
-                          title={`${fmtnum(prevLoan.borrowed, "full")} BOLD`}
-                          className={css({
-                            color: "contentAlt",
-                            textDecoration: "line-through",
-                          })}
-                        >
-                          {fmtnum(prevLoan.borrowed)}
-                        </div>
-                      )}
-                    </div>
-                  )}
-              </div>
-            </div>
+            <TotalDebt
+              positive
+              loan={{
+                ...prevLoan,
+                deposit: dn.from(0, 18),
+                borrowed: dn.from(0, 18),
+              }}
+              prevLoan={prevLoan}
+            />
             <div
               className={css({
                 display: "grid",
@@ -169,164 +99,388 @@ export function LoanCard({
                 paddingTop: 32,
               })}
             >
+              {collateral && (
+                <GridItem label="Collateral">
+                  <div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    })}
+                  >
+                    <div
+                      style={{
+                        color: "var(--colors-positive-alt)",
+                      }}
+                    >
+                      {fmtnum(0)} {collateral.name}
+                    </div>
+                    {prevLoan && (
+                      <div
+                        title={`${fmtnum(prevLoan.deposit, "full")} ${collateral.name}`}
+                        className={css({
+                          color: "contentAlt",
+                          textDecoration: "line-through",
+                        })}
+                      >
+                        {fmtnum(prevLoan.deposit)} {collateral.name}
+                      </div>
+                    )}
+                  </div>
+                </GridItem>
+              )}
+            </div>
+          </>
+        )
+        : loan
+          && loanDetails
+          && collateral
+          && typeof leverageFactor === "number"
+          && depositPreLeverage
+          && maxLtv
+          && liquidationRisk
+          && (
+            <>
               {leverageMode
                 ? (
-                  <GridItem label="Net value">
-                    <Value
-                      negative={loanDetails.status === "underwater"}
-                      title={`${fmtnum(depositPreLeverage)} ${collateral.name}`}
-                    >
-                      {fmtnum(depositPreLeverage)} {collateral.name}
-                    </Value>
-                  </GridItem>
+                  <TotalExposure
+                    loan={loan}
+                    loanDetails={loanDetails}
+                  />
                 )
                 : (
-                  <GridItem label="Collateral">
-                    <div
-                      className={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                      })}
-                    >
-                      <div title={`${fmtnum(loan.deposit, "full")} ${collateral.name}`}>
-                        {fmtnum(loan.deposit)} {collateral.name}
+                  <TotalDebt
+                    loan={loan}
+                    prevLoan={prevLoan}
+                  />
+                )}
+              <div
+                className={css({
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: 12,
+                  paddingTop: 32,
+                })}
+              >
+                {leverageMode
+                  ? (
+                    <GridItem label="Net value">
+                      <Value
+                        negative={loanDetails.status === "underwater"}
+                        title={`${fmtnum(depositPreLeverage)} ${collateral.name}`}
+                      >
+                        {fmtnum(depositPreLeverage)} {collateral.name}
+                      </Value>
+                    </GridItem>
+                  )
+                  : (
+                    <GridItem label="Collateral">
+                      <div
+                        className={css({
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        })}
+                      >
+                        <div title={`${fmtnum(loan.deposit, "full")} ${collateral.name}`}>
+                          {fmtnum(loan.deposit)} {collateral.name}
+                        </div>
+                        {prevLoan && !dn.eq(prevLoan.deposit, loan.deposit) && (
+                          <div
+                            title={`${fmtnum(prevLoan.deposit, "full")} ${collateral.name}`}
+                            className={css({
+                              color: "contentAlt",
+                              textDecoration: "line-through",
+                            })}
+                          >
+                            {fmtnum(prevLoan.deposit)} {collateral.name}
+                          </div>
+                        )}
                       </div>
-                      {prevLoan && !dn.eq(prevLoan.deposit, loan.deposit) && (
+                    </GridItem>
+                  )}
+                <GridItem label="Liq. price" title="Liquidation price">
+                  <div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    })}
+                  >
+                    <Value negative={ltv && dn.gt(ltv, maxLtv)}>
+                      ${fmtnum(loanDetails.liquidationPrice)}
+                    </Value>
+                    {loanDetails?.liquidationPrice
+                      && prevLoanDetails?.liquidationPrice
+                      && !dn.eq(
+                        prevLoanDetails.liquidationPrice,
+                        loanDetails.liquidationPrice,
+                      )
+                      && (
                         <div
-                          title={`${fmtnum(prevLoan.deposit, "full")} ${collateral.name}`}
                           className={css({
                             color: "contentAlt",
                             textDecoration: "line-through",
                           })}
                         >
-                          {fmtnum(prevLoan.deposit)} {collateral.name}
+                          ${fmtnum(prevLoanDetails.liquidationPrice)}
                         </div>
                       )}
-                    </div>
-                  </GridItem>
-                )}
-              <GridItem label="Liq. price" title="Liquidation price">
-                <div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                  })}
-                >
-                  <Value negative={ltv && dn.gt(ltv, maxLtv)}>
-                    ${fmtnum(loanDetails.liquidationPrice)}
-                  </Value>
-                  {loanDetails?.liquidationPrice
-                    && prevLoanDetails?.liquidationPrice
-                    && !dn.eq(
-                      prevLoanDetails.liquidationPrice,
-                      loanDetails.liquidationPrice,
-                    )
-                    && (
-                      <div
-                        className={css({
-                          color: "contentAlt",
-                          textDecoration: "line-through",
-                        })}
-                      >
-                        ${fmtnum(prevLoanDetails.liquidationPrice)}
-                      </div>
-                    )}
-                </div>
-              </GridItem>
-              <GridItem label="Interest rate">
-                {fmtnum(dn.mul(loan.interestRate, 100))}%
-              </GridItem>
-              <GridItem label="LTV" title="Loan-to-value ratio">
-                <div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                  })}
-                >
+                  </div>
+                </GridItem>
+                <GridItem label="Interest rate">
                   <div
                     className={css({
-                      "--status-positive": "token(colors.positiveAlt)",
-                      "--status-warning": "token(colors.warning)",
-                      "--status-negative": "token(colors.negative)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
                     })}
-                    style={{
-                      color: liquidationRisk === "low"
-                        ? "var(--status-positive)"
-                        : liquidationRisk === "medium"
-                        ? "var(--status-warning)"
-                        : "var(--status-negative)",
-                    }}
                   >
-                    {ltv && fmtnum(dn.mul(ltv, 100))}%
-                  </div>
-                  {ltv
-                    && prevLoanDetails?.ltv
-                    && !dn.eq(prevLoanDetails.ltv, ltv)
-                    && (
+                    {fmtnum(dn.mul(loan.interestRate, 100))}%
+                    {prevLoan && !dn.eq(prevLoan.interestRate, loan.interestRate) && (
                       <div
                         className={css({
                           color: "contentAlt",
                           textDecoration: "line-through",
                         })}
                       >
-                        {prevLoanDetails.ltv && fmtnum(dn.mul(prevLoanDetails.ltv, 100))}%
+                        {fmtnum(dn.mul(prevLoan.interestRate, 100))}%
                       </div>
                     )}
-                </div>
-              </GridItem>
-              <GridItem label="Liquidation risk">
-                <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-                  <StatusDot
-                    mode={riskLevelToStatusMode(liquidationRisk)}
-                    size={8}
-                  />
-                  {formatRisk(liquidationRisk)}
-                  {prevLoanDetails && liquidationRisk !== prevLoanDetails.liquidationRisk && (
-                    <>
-                      <StatusDot
-                        mode={riskLevelToStatusMode(prevLoanDetails.liquidationRisk)}
-                        size={8}
-                      />
-                      <div
-                        className={css({
-                          color: "contentAlt",
-                          textDecoration: "line-through",
-                        })}
-                      >
-                        {formatRisk(prevLoanDetails.liquidationRisk)}
-                      </div>
-                    </>
-                  )}
-                </HFlex>
-              </GridItem>
-              {redemptionRisk && (
-                <GridItem label="Redemption risk">
+                  </div>
+                </GridItem>
+                <GridItem label="LTV" title="Loan-to-value ratio">
+                  <div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    })}
+                  >
+                    <div
+                      className={css({
+                        "--status-positive": "token(colors.positiveAlt)",
+                        "--status-warning": "token(colors.warning)",
+                        "--status-negative": "token(colors.negative)",
+                      })}
+                      style={{
+                        color: liquidationRisk === "low"
+                          ? "var(--status-positive)"
+                          : liquidationRisk === "medium"
+                          ? "var(--status-warning)"
+                          : "var(--status-negative)",
+                      }}
+                    >
+                      {ltv && fmtnum(dn.mul(ltv, 100))}%
+                    </div>
+                    {ltv
+                      && prevLoanDetails?.ltv
+                      && !dn.eq(prevLoanDetails.ltv, ltv)
+                      && (
+                        <div
+                          className={css({
+                            color: "contentAlt",
+                            textDecoration: "line-through",
+                          })}
+                        >
+                          {prevLoanDetails.ltv && fmtnum(dn.mul(prevLoanDetails.ltv, 100))}%
+                        </div>
+                      )}
+                  </div>
+                </GridItem>
+                <GridItem label="Liquidation risk">
                   <HFlex gap={8} alignItems="center" justifyContent="flex-start">
                     <StatusDot
-                      mode={riskLevelToStatusMode(redemptionRisk)}
+                      mode={riskLevelToStatusMode(liquidationRisk)}
                       size={8}
                     />
-                    {formatRisk(redemptionRisk)}
+                    {formatRisk(liquidationRisk)}
+                    {prevLoanDetails && liquidationRisk !== prevLoanDetails.liquidationRisk && (
+                      <>
+                        <StatusDot
+                          mode={riskLevelToStatusMode(prevLoanDetails.liquidationRisk)}
+                          size={8}
+                        />
+                        <div
+                          className={css({
+                            color: "contentAlt",
+                            textDecoration: "line-through",
+                          })}
+                        >
+                          {formatRisk(prevLoanDetails.liquidationRisk)}
+                        </div>
+                      </>
+                    )}
                   </HFlex>
                 </GridItem>
-              )}
-            </div>
-          </>
-        )}
+                {redemptionRisk && (
+                  <GridItem label="Redemption risk">
+                    <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+                      <StatusDot
+                        mode={riskLevelToStatusMode(redemptionRisk)}
+                        size={8}
+                      />
+                      {formatRisk(redemptionRisk)}
+                      {prevLoanDetails && redemptionRisk !== prevLoanDetails.redemptionRisk && (
+                        <>
+                          <StatusDot
+                            mode={riskLevelToStatusMode(prevLoanDetails.redemptionRisk)}
+                            size={8}
+                          />
+                          <div
+                            className={css({
+                              color: "contentAlt",
+                              textDecoration: "line-through",
+                            })}
+                          >
+                            {formatRisk(prevLoanDetails.redemptionRisk)}
+                          </div>
+                        </>
+                      )}
+                    </HFlex>
+                  </GridItem>
+                )}
+              </div>
+            </>
+          )}
     </LoadingCard>
+  );
+}
+
+function TotalDebt({
+  positive,
+  loan,
+  prevLoan,
+}: {
+  positive?: boolean;
+  loan: PositionLoan;
+  prevLoan?: PositionLoan | null;
+}) {
+  return (
+    <div
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      })}
+    >
+      <div
+        className={css({
+          display: "flex",
+          alignItems: "center",
+          fontSize: 28,
+          lineHeight: 1,
+          gap: 12,
+        })}
+      >
+        <div
+          title={`${fmtnum(loan.borrowed, "full")} BOLD`}
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          })}
+        >
+          <div
+            style={{
+              color: positive ? "var(--colors-positive-alt)" : undefined,
+            }}
+          >
+            {fmtnum(loan.borrowed)}
+          </div>
+          <TokenIcon symbol="BOLD" size={32} />
+          {prevLoan && !dn.eq(prevLoan.borrowed, loan.borrowed) && (
+            <div
+              title={`${fmtnum(prevLoan.borrowed, "full")} BOLD`}
+              className={css({
+                color: "contentAlt",
+                textDecoration: "line-through",
+              })}
+            >
+              {fmtnum(prevLoan.borrowed)}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TotalExposure({
+  loan,
+  loanDetails,
+}: {
+  loan: PositionLoan;
+  loanDetails: ReturnType<typeof getLoanDetails>;
+}) {
+  const collateral = loan && TOKENS_BY_SYMBOL[loan.collateral];
+  return (
+    <div
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      })}
+    >
+      <div
+        className={css({
+          display: "flex",
+          alignItems: "center",
+          fontSize: 28,
+          lineHeight: 1,
+          gap: 12,
+        })}
+      >
+        <div
+          title={`${fmtnum(loan.deposit, "full")} ${collateral}`}
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          })}
+        >
+          <div>{fmtnum(loan.deposit)}</div>
+          <TokenIcon symbol={collateral.symbol} size={32} />
+          <div
+            className={css({
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+            })}
+          >
+            <div>
+              <Value
+                negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
+                title={`Leverage factor: ${
+                  loanDetails.status === "underwater" || loanDetails.leverageFactor === null
+                    ? INFINITY
+                    : `${roundToDecimal(loanDetails.leverageFactor, 3)}x`
+                }`}
+                className={css({
+                  fontSize: 16,
+                })}
+              >
+                {loanDetails.status === "underwater" || loanDetails.leverageFactor === null
+                  ? INFINITY
+                  : `${roundToDecimal(loanDetails.leverageFactor, 1)}x`}
+              </Value>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
 function LoadingCard({
   children,
+  height,
   leverage,
   loadingState,
   onRetry,
 }: {
   children: ReactNode;
+  height: number;
   leverage: boolean;
   loadingState: LoadingState;
   onRetry: () => void;
@@ -358,8 +512,8 @@ function LoadingCard({
       )
       .otherwise(() => ({
         cardtransform: "scale3d(1, 1, 1)",
-        containerHeight: LOAN_CARD_HEIGHT,
-        cardHeight: LOAN_CARD_HEIGHT,
+        containerHeight: height,
+        cardHeight: height,
         cardBackground: token("colors.blue:950"),
         cardColor: token("colors.white"),
       })),
@@ -390,7 +544,7 @@ function LoadingCard({
           userSelect: "none",
         })}
         style={{
-          height: loadingState === "success" ? LOAN_CARD_HEIGHT : spring.cardHeight,
+          height: loadingState === "success" ? height : spring.cardHeight,
           color: spring.cardColor,
           background: spring.cardBackground,
           transform: spring.cardtransform,

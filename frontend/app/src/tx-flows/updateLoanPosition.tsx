@@ -47,11 +47,11 @@ type Step = "approve" | "adjustTrove";
 
 const stepNames: Record<Step, string> = {
   approve: "Approve",
-  adjustTrove: "Adjust Trove",
+  adjustTrove: "Update Position",
 };
 
 export const updateLoanPosition: FlowDeclaration<Request, Step> = {
-  title: "Review & Confirm",
+  title: "Review & Send Transaction",
   subtitle: "Please review the changes of your borrow position before confirming",
   Summary({ flow }) {
     const { symbol } = useCollateral(flow.request.collIndex);
@@ -189,7 +189,7 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
 
     return isApproved ? ["adjustTrove"] : ["approve", "adjustTrove"];
   },
-  parseRequest(request): Request {
+  parseRequest(request) {
     return v.parse(RequestSchema, request);
   },
   async writeContractParams({ contracts, request, stepId }) {

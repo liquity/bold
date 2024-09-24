@@ -1,5 +1,5 @@
 query TrovesByAccount($account: Bytes!) {
-  troves(where: { borrower: $account }) {
+  troves(where: { borrower: $account, closedAt: null }) {
     id
     troveId
     borrower

@@ -52,7 +52,7 @@ const stepNames: Record<Step, string> = {
 };
 
 export const openLoanPosition: FlowDeclaration<Request, Step> = {
-  title: "Review & Confirm",
+  title: "Review & Send Transaction",
   subtitle: "Please review your borrow position before confirming",
 
   Summary({ flow }) {

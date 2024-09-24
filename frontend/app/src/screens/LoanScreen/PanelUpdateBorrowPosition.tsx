@@ -46,7 +46,6 @@ export function PanelUpdateBorrowPosition({
 }) {
   const router = useRouter();
   const account = useAccount();
-
   const txFlow = useTransactionFlow();
 
   const collateral = TOKENS_BY_SYMBOL[loan.collateral];

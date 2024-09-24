@@ -5,7 +5,6 @@ import type { LoanLoadingState } from "./LoanScreen";
 import { INFINITY } from "@/src/characters";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { Value } from "@/src/comps/Value/Value";
-import { dnum18 } from "@/src/dnum-utils";
 import { formatRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
@@ -190,7 +189,7 @@ export function LoanCard({
                 </Value>
               </GridItem>
               <GridItem label="Interest rate">
-                {fmtnum(dn.mul(loan.interestRate, 100))}%
+                {fmtnum(loan.interestRate, 2, 100)}%
               </GridItem>
               <GridItem label="LTV" title="Loan-to-value ratio">
                 <div
@@ -207,7 +206,7 @@ export function LoanCard({
                       : "var(--status-negative)",
                   }}
                 >
-                  {ltv && fmtnum(dn.mul(ltv, 100))}%
+                  {fmtnum(ltv, "2z", 100)}%
                 </div>
               </GridItem>
               <GridItem label="Liquidation risk">
@@ -455,7 +454,6 @@ function GridItem({
 }) {
   return (
     <div
-      title={title}
       className={css({
         display: "flex",
         flexDirection: "column",
@@ -464,6 +462,7 @@ function GridItem({
       })}
     >
       <div
+        title={title}
         className={css({
           color: "strongSurfaceContentAlt",
         })}

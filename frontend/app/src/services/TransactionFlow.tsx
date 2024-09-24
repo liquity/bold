@@ -10,8 +10,9 @@
 // - Flow declaration: Contains the logic for a specific flow (get steps, parse request, tx params).
 // - Flow context: a transaction flow as stored in local storage (steps + request).
 
+import type { Request as CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
 import type { Request as OpenLoanPositionRequest } from "@/src/tx-flows/openLoanPosition";
-import type { Request as RepayAndCloseLoanPositionRequest } from "@/src/tx-flows/repayAndCloseLoanPosition";
+import type { Request as UpdateLoanInterestRateRequest } from "@/src/tx-flows/updateLoanInterestRate";
 import type { Request as UpdateLoanPositionRequest } from "@/src/tx-flows/updateLoanPosition";
 import type { Address } from "@/src/types";
 import type { WriteContractParameters } from "@wagmi/core";
@@ -21,8 +22,9 @@ import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import { useContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useAccount, useWagmiConfig } from "@/src/services/Ethereum";
+import { closeLoanPosition } from "@/src/tx-flows/closeLoanPosition";
 import { openLoanPosition } from "@/src/tx-flows/openLoanPosition";
-import { repayAndCloseLoanPosition } from "@/src/tx-flows/repayAndCloseLoanPosition";
+import { updateLoanInterestRate } from "@/src/tx-flows/updateLoanInterestRate";
 import { updateLoanPosition } from "@/src/tx-flows/updateLoanPosition";
 import { noop } from "@/src/utils";
 import { vAddress } from "@/src/valibot-utils";
@@ -35,8 +37,9 @@ const TRANSACTION_FLOW_KEY = `${LOCAL_STORAGE_PREFIX}transaction_flow`;
 
 export type FlowRequest =
   | OpenLoanPositionRequest
-  | RepayAndCloseLoanPositionRequest
-  | UpdateLoanPositionRequest;
+  | UpdateLoanPositionRequest
+  | UpdateLoanInterestRateRequest
+  | CloseLoanPositionRequest;
 
 const flowDeclarations: {
   [K in FlowIdFromFlowRequest<FlowRequest>]: FlowDeclaration<
@@ -44,15 +47,17 @@ const flowDeclarations: {
     any // Use 'any' here to allow any StepId type
   >;
 } = {
+  closeLoanPosition,
   openLoanPosition,
-  repayAndCloseLoanPosition,
+  updateLoanInterestRate,
   updateLoanPosition,
 };
 
 const FlowIdSchema = v.union([
+  v.literal("closeLoanPosition"),
   v.literal("openLoanPosition"),
-  v.literal("repayAndCloseLoanPosition"),
   v.literal("updateLoanPosition"),
+  v.literal("updateLoanInterestRate"),
 ]);
 
 type ExtractStepId<T> = T extends FlowDeclaration<any, infer S> ? S : never;
@@ -161,8 +166,8 @@ export type FlowDeclaration<
   FR extends FlowRequest,
   StepId extends string = string,
 > = {
-  title: string;
-  subtitle: string;
+  title: ReactNode;
+  subtitle: ReactNode;
   Summary: ComponentType<{ flow: FlowContext<FR> }>;
   Details: ComponentType<{ flow: FlowContext<FR> }>;
   getSteps: GetStepsFn<FR, StepId>;
