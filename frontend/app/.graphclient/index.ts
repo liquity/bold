@@ -1326,9 +1326,9 @@ const merger = new(BareMerger as any)({
         store: rootStore.child('bareMerger')
       })
 const documentHashMap = {
-        "c7650d49c37dbcafc2de849b649dd278cd34d574a802c42c96543aa01dc6896d": TrovesByAccountDocument,
-"c7650d49c37dbcafc2de849b649dd278cd34d574a802c42c96543aa01dc6896d": TrovesCountDocument,
-"c7650d49c37dbcafc2de849b649dd278cd34d574a802c42c96543aa01dc6896d": TroveByIdDocument
+        "1117fda82156c6f9afe1ba1a1b37888d86ad9be723d9b2a14aeac6633ce20aad": TrovesByAccountDocument,
+"1117fda82156c6f9afe1ba1a1b37888d86ad9be723d9b2a14aeac6633ce20aad": TrovesCountDocument,
+"1117fda82156c6f9afe1ba1a1b37888d86ad9be723d9b2a14aeac6633ce20aad": TroveByIdDocument
       }
 additionalEnvelopPlugins.push(usePersistedOperations({
         getPersistedOperation(key) {
@@ -1355,21 +1355,21 @@ additionalEnvelopPlugins.push(usePersistedOperations({
           return printWithCache(TrovesByAccountDocument);
         },
         location: 'TrovesByAccountDocument.graphql',
-        sha256Hash: 'c7650d49c37dbcafc2de849b649dd278cd34d574a802c42c96543aa01dc6896d'
+        sha256Hash: '1117fda82156c6f9afe1ba1a1b37888d86ad9be723d9b2a14aeac6633ce20aad'
       },{
         document: TrovesCountDocument,
         get rawSDL() {
           return printWithCache(TrovesCountDocument);
         },
         location: 'TrovesCountDocument.graphql',
-        sha256Hash: 'c7650d49c37dbcafc2de849b649dd278cd34d574a802c42c96543aa01dc6896d'
+        sha256Hash: '1117fda82156c6f9afe1ba1a1b37888d86ad9be723d9b2a14aeac6633ce20aad'
       },{
         document: TroveByIdDocument,
         get rawSDL() {
           return printWithCache(TroveByIdDocument);
         },
         location: 'TroveByIdDocument.graphql',
-        sha256Hash: 'c7650d49c37dbcafc2de849b649dd278cd34d574a802c42c96543aa01dc6896d'
+        sha256Hash: '1117fda82156c6f9afe1ba1a1b37888d86ad9be723d9b2a14aeac6633ce20aad'
       }
     ];
     },
@@ -1460,7 +1460,7 @@ export type TroveByIdQuery = { readonly trove?: Maybe<(
 
 export const TrovesByAccountDocument = gql`
     query TrovesByAccount($account: Bytes!) {
-  troves(where: {borrower: $account}) {
+  troves(where: {borrower: $account, closedAt: null}) {
     id
     troveId
     borrower
