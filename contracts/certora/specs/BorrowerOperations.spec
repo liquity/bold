@@ -604,11 +604,13 @@ rule debt_adjust_debt_change(method f) filtered {
 // in case divideNoRemainder true causes performance problems that are to 
 // severe. Here we assume initially the total shares of the batch is the same
 // as the total debt of the batch
+ghost uint256 share_debt_scalar;
 function num_shares_num_debt_assumption(
     TroveManager.LatestBatchData batchData,
     address batchAddress) returns bool {
-    return getBatchTotalShares(batchAddress) ==
-        batchData.recordedDebt;
+    return (share_debt_scalar >= 1) &&
+        getBatchTotalShares(batchAddress) ==
+        share_debt_scalar * batchData.recordedDebt;
 }
 
 rule withdraw_debt_change {
