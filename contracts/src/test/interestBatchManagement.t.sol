@@ -114,7 +114,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         vm.stopPrank();
     }
 
-    function testCannotSetBatchManagerIfTroveIsZombie() public {
+    function testCannotSetBatchManagerIfTroveIsUnredeemable() public {
         registerBatchManager(B);
 
         // Open trove
@@ -754,7 +754,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         redeem(A, 500e18);
 
         // Check A is zombie
-        assertEq(uint8(troveManager.getTroveStatus(ATroveId)), uint8(ITroveManager.Status.zombie));
+        assertEq(uint8(troveManager.getTroveStatus(ATroveId)), uint8(ITroveManager.Status.unredeemable));
 
         // Fast-forward time
         vm.warp(block.timestamp + 3650 days);
@@ -1135,7 +1135,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
     }
 
-    function testAnZombieTroveGoesBackToTheBatch() public {
+    function testAnUnredeemableTroveGoesBackToTheBatch() public {
         // A opens trove and joins batch manager B
         uint256 troveId = openTroveAndJoinBatchManager(A, 100 ether, 2000e18, B, 5e16);
 
@@ -1144,11 +1144,11 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         vm.warp(block.timestamp + 10 days);
 
-        // C redeems and makes A zombie
+        // C redeems and makes A unredeemable
         redeem(C, 1000e18);
 
         // A adjusts back to normal
-        adjustZombieTrove(A, troveId, 0, false, 1000e18, true);
+        adjustUnredeemableTrove(A, troveId, 0, false, 1000e18, true);
 
         assertEq(borrowerOperations.interestBatchManagerOf(troveId), B, "A should be in batch (BO)");
         (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);

@@ -68,7 +68,8 @@ export function LeverageScreen() {
     && depositPreLeverage.parsed
     && dn.gt(depositPreLeverage.parsed, 0)
     && interestRate
-    && dn.gt(interestRate, 0);
+    && dn.gt(interestRate, 0)
+    && false;
 
   return (
     <Screen

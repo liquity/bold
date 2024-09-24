@@ -1,5 +1,6 @@
 type Collateral @entity {
   id: ID!
+  collIndex: Int!
   token: Token!
   minCollRatio: BigInt!
   troves: [Trove!]! @derivedFrom(field: "collateral")
@@ -36,6 +37,7 @@ type InterestRateBracket @entity {
 
 type Trove @entity {
   id: ID!
+  troveId: String!
   borrower: Bytes!
   debt: BigInt!
   deposit: BigInt!
@@ -44,4 +46,10 @@ type Trove @entity {
   createdAt: BigInt!
   closedAt: BigInt
   collateral: Collateral!
+}
+
+type BorrowerInfo @entity {
+  id: ID!
+  troves: Int!
+  trovesByCollateral: [Int!]!
 }

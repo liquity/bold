@@ -15,7 +15,6 @@ import {
   RETH_PRICE as DEMO_RETH_PRICE,
   STETH_PRICE as DEMO_STETH_PRICE,
 } from "@/src/demo-mode";
-import { DEMO_MODE } from "@/src/env";
 import * as dn from "dnum";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useReadContract } from "wagmi";

@@ -10,11 +10,14 @@ import { Collateral, CollateralAddresses, Token } from "../generated/schema";
 import { TroveManager as TroveManagerTemplate } from "../generated/templates";
 
 function addCollateral(
+  collIndex: i32,
+  totalCollaterals: i32,
   tokenAddress: Address,
   troveManagerAddress: Address,
 ): void {
   let id = tokenAddress.toHexString();
   let collateral = new Collateral(id);
+  collateral.collIndex = collIndex;
   collateral.token = id;
   collateral.totalDebt = BigInt.fromI32(0);
   collateral.totalDeposited = BigInt.fromI32(0);
@@ -44,6 +47,7 @@ function addCollateral(
   token.save();
 
   let context = new DataSourceContext();
+  context.setI32("totalCollaterals", totalCollaterals);
   context.setBytes("address:borrowerOperations", addresses.borrowerOperations);
   context.setBytes("address:sortedTroves", addresses.sortedTroves);
   context.setBytes("address:stabilityPool", addresses.stabilityPool);
@@ -56,11 +60,11 @@ function addCollateral(
 
 export function handleCollateralRegistryAddressChanged(event: CollateralRegistryAddressChangedEvent): void {
   let registry = CollateralRegistry.bind(event.params._newCollateralRegistryAddress);
-  let colls = registry.totalCollaterals().toI32();
+  let totalCollaterals = registry.totalCollaterals().toI32();
 
-  for (let i = 0; i < colls; i++) {
-    let tokenAddress = Address.fromBytes(registry.getToken(BigInt.fromI32(i)));
-    let troveManagerAddress = Address.fromBytes(registry.getTroveManager(BigInt.fromI32(i)));
+  for (let index = 0; index < totalCollaterals; index++) {
+    let tokenAddress = Address.fromBytes(registry.getToken(BigInt.fromI32(index)));
+    let troveManagerAddress = Address.fromBytes(registry.getTroveManager(BigInt.fromI32(index)));
 
     if (tokenAddress.toHex() === Address.zero().toHex() || troveManagerAddress.toHex() === Address.zero().toHex()) {
       break;
@@ -68,7 +72,12 @@ export function handleCollateralRegistryAddressChanged(event: CollateralRegistry
 
     // we use the token address as the id for the collateral
     if (!Collateral.load(tokenAddress.toHexString())) {
-      addCollateral(tokenAddress, troveManagerAddress);
+      addCollateral(
+        index,
+        totalCollaterals,
+        tokenAddress,
+        troveManagerAddress,
+      );
     }
   }
 }

@@ -1,8 +1,8 @@
-import YAML from "yaml";
 import { $, echo, fs, minimist, path, question } from "zx";
-
-const SUBGRAPH_PATH = path.join(__dirname, "../subgraph.yaml");
 const LATEST_DEPLOYMENT_CONTEXT_PATH = path.join(__dirname, "../../contracts/deployment-context-latest.json");
+
+const NETWORKS_JSON_PATH = path.join(__dirname, "../networks.json");
+const GENERATED_NETWORKS_JSON_PATH = path.join(__dirname, "../networks-generated.json");
 
 const HELP = `
 deploy-subgraph - deploy the Liquity v2 subgraph
@@ -14,6 +14,7 @@ Arguments:
   NETWORK_PRESET  A network preset, which is a shorthand for setting certain options.
                   Options take precedence over network presets. Available presets:
                   - local: Deploy to a local network
+                  - sepolia: Deploy to Ethereum Sepolia
                   - mainnet: Deploy to the Ethereum mainnet (not implemented)
                   - liquity-testnet: Deploy to the Liquity v2 testnet (not implemented)
 
@@ -25,6 +26,7 @@ Options:
   --help, -h                               Show this help message.
   --ipfs-node <IPFS_NODE_URL>              The IPFS node URL to use.
   --name <SUBGRAPH_NAME>                   The subgraph name to use.
+  --network <SUBGRAPH_NETWORK>             The subgraph network to use.
   --version <SUBGRAPH_VERSION>             The subgraph version to use.
 `;
 
@@ -41,24 +43,41 @@ const argv = minimist(process.argv.slice(2), {
     "graph-node",
     "ipfs-node",
     "name",
+    "network",
     "version",
   ],
 });
 
 export async function main() {
-  const { networkPreset, options } = await parseArgs();
+  const options = {
+    debug: argv["debug"],
+    help: argv["help"],
+    create: argv["create"],
+    graphNode: argv["graph-node"],
+    ipfsNode: argv["ipfs-node"],
+    name: argv["name"],
+    network: argv["network"], // subgraph network, not to be confused with the network preset
+    version: argv["version"],
+  };
+
+  const [networkPreset] = argv._;
 
   if (options.help) {
     echo`${HELP}`;
     process.exit(0);
   }
 
-  options.name ??= "liquity2/liquity2";
-
   // network preset: local
   if (networkPreset === "local") {
+    options.name ??= "liquity2/liquity2";
     options.graphNode ??= "http://localhost:8020/";
     options.ipfsNode ??= "http://localhost:5001/";
+    options.network ??= "local";
+  }
+
+  if (networkPreset === "sepolia") {
+    options.name ??= "liquity2";
+    options.network ??= "sepolia";
   }
 
   // network preset: liquity-testnet
@@ -71,41 +90,45 @@ export async function main() {
     // TODO: implement
   }
 
-  // handle missing options
-  if (!options.graphNode) {
-    throw new Error("--graph-node <GRAPH_NODE_URL> is required");
-  }
+  const isLocal = options.network === "local";
+  if (isLocal) options.network = "mainnet";
+
   if (!options.name) {
     throw new Error("--name <SUBGRAPH_NAME> is required");
   }
-  if (!options.version) {
-    throw new Error("--version <SUBGRAPH_VERSION> is required");
+  if (!options.network) {
+    throw new Error("--network <SUBGRAPH_NETWORK> is required");
   }
-  if (!options.ipfsNode) {
+  if (!options.graphNode && !options.network) {
+    throw new Error("--graph-node <GRAPH_NODE_URL> is required");
+  }
+  if (!options.ipfsNode && !options.network) {
     throw new Error("--ipfs-node <IPFS_NODE_URL> is required");
   }
+
+  const graphBuildCommand: string[] = [
+    "graph",
+    "build",
+    "--network",
+    options.network,
+  ];
 
   const graphCreateCommand: null | string[] = !options.create ? null : [
     "graph",
     "create",
-    "--node",
-    options.graphNode,
+    ...(options.graphNode ? ["--node", options.graphNode] : []),
     options.name,
   ];
 
-  const graphDeployCommand: string[] = [
-    "graph",
-    "deploy",
-    "--node",
-    options.graphNode,
-    "--ipfs",
-    options.ipfsNode,
-    options.name,
-    "--version-label",
-    options.version,
-  ];
+  const graphDeployCommand: string[] = ["graph", "deploy"];
+  if (options.graphNode) graphDeployCommand.push("--node", options.graphNode);
+  if (options.network) graphDeployCommand.push("--network", options.network);
+  if (options.version) graphDeployCommand.push("--version-label", options.version);
+  if (options.ipfsNode) graphDeployCommand.push("--ipfs", options.ipfsNode);
+  graphDeployCommand.push(options.name);
 
-  await updateDeclarationWithLatestBoldToken();
+  await updateNetworksWithLocalBoldToken();
+  await generateNetworksJson(isLocal);
 
   echo`
 Deploying subgraph:
@@ -120,6 +143,8 @@ Deploying subgraph:
 
   $.verbose = options.debug;
 
+  await $`pnpm ${graphBuildCommand}`;
+
   if (graphCreateCommand) {
     await $`pnpm ${graphCreateCommand}`;
   }
@@ -130,33 +155,32 @@ Deploying subgraph:
   echo("");
 }
 
-async function parseArgs() {
-  const options = {
-    debug: argv["debug"],
-    help: argv["help"],
-    create: argv["create"],
-    graphNode: argv["graph-node"],
-    ipfsNode: argv["ipfs-node"],
-    name: argv["name"],
-    version: argv["version"],
-  };
-
-  const [networkPreset] = argv._;
-
-  return { options, networkPreset };
+async function generateNetworksJson(isLocal = false) {
+  const networksJson = JSON.parse(await fs.readFile(NETWORKS_JSON_PATH, "utf8"));
+  return fs.writeFile(
+    GENERATED_NETWORKS_JSON_PATH,
+    JSON.stringify(
+      {
+        ...networksJson,
+        mainnet: isLocal ? networksJson.local : networksJson.mainnet,
+      },
+      null,
+      2,
+    ),
+  );
 }
 
-async function updateDeclarationWithLatestBoldToken() {
-  const declaration = subgraphDeclaration();
+async function updateNetworksWithLocalBoldToken() {
+  const networksJson = JSON.parse(await fs.readFile(NETWORKS_JSON_PATH, "utf8"));
   const latestDeploymentContext = getLatestDeploymentContext();
 
   const deployedAddress = latestDeploymentContext?.protocolContracts.BoldToken;
-  if (!deployedAddress || (declaration.boldTokenAddress === deployedAddress)) {
+  if (!deployedAddress || (networksJson.local.BoldToken.address === deployedAddress)) {
     return;
   }
 
   const answer = await question(
-    `\nNew BoldToken detected (${deployedAddress}). Update subgraph.yaml? [Y/n] `,
+    `\nNew BoldToken detected (${deployedAddress}) for local network. Update networks.json? [Y/n] `,
   );
 
   const confirmed = answer === "" || answer.toLowerCase() === "y" || answer.toLowerCase() === "yes";
@@ -165,31 +189,11 @@ async function updateDeclarationWithLatestBoldToken() {
     return;
   }
 
-  declaration.updateBoldTokenAddress(deployedAddress);
-  console.log("");
-  console.log("Subgraph declaration updated with CollateralRegistry:", deployedAddress);
-}
+  networksJson.local.BoldToken.address = deployedAddress;
+  await fs.writeFile(NETWORKS_JSON_PATH, JSON.stringify(networksJson, null, 2));
 
-function subgraphDeclaration() {
-  const declaration = YAML.parse(fs.readFileSync(SUBGRAPH_PATH, "utf8"));
-  const boldToken = declaration.dataSources.find((ds: any) => ds.name === "BoldToken");
-  return {
-    boldTokenAddress: boldToken.source.address,
-    updateBoldTokenAddress: (address: string) => {
-      const updatedDeclaration = {
-        ...declaration,
-        dataSources: declaration.dataSources.map((ds: any) => (
-          ds.name === "BoldToken"
-            ? { ...ds, source: { ...ds.source, address } }
-            : ds
-        )),
-      };
-      fs.writeFileSync(
-        SUBGRAPH_PATH,
-        YAML.stringify(updatedDeclaration, { lineWidth: 120 }),
-      );
-    },
-  };
+  console.log("");
+  console.log("networks.json updated with local BoldToken:", deployedAddress);
 }
 
 function getLatestDeploymentContext() {
@@ -198,4 +202,24 @@ function getLatestDeploymentContext() {
   } catch (_) {
     return null;
   }
+}
+
+declare module "zx" {
+  type MinimistOptions<B extends string, S extends string> = {
+    string?: readonly S[];
+    boolean?: readonly B[];
+    alias?: { [key: string]: B | S };
+    default?: { [key in B | S]?: boolean | string };
+  };
+
+  type MinimistResult<B extends string, S extends string> =
+    & { _: string[] }
+    & { [K in B]: boolean }
+    & { [K in S]: string | undefined }
+    & { [K in string]: boolean | string | string[] };
+
+  function minimist<B extends string, S extends string>(
+    args: string[],
+    options?: MinimistOptions<B, S>,
+  ): MinimistResult<B, S>;
 }

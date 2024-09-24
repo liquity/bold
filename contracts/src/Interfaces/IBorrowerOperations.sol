@@ -67,7 +67,7 @@ interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
         uint256 _maxUpfrontFee
     ) external;
 
-    function adjustZombieTrove(
+    function adjustUnredeemableTrove(
         uint256 _troveId,
         uint256 _collChange,
         bool _isCollIncrease,

@@ -5,21 +5,26 @@ import { Field } from "@/src/comps/Field/Field";
 import { InfoBox } from "@/src/comps/InfoBox/InfoBox";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
+import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
+import { getPrefixedTroveId } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
+import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { Button, HFlex, InfoTooltip, StatusDot, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { maxUint256 } from "viem";
 
 export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
   const router = useRouter();
   const account = useAccount();
+  const txFlow = useTransactionFlow();
 
   const collateral = TOKENS_BY_SYMBOL[loan.collateral];
   const collPrice = usePrice(collateral.symbol);
@@ -145,7 +150,26 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
           size="large"
           wide
           onClick={() => {
-            router.push("/transactions/update-loan");
+            if (account.address) {
+              txFlow.start({
+                flowId: "updateLoanInterestRate",
+                backLink: [
+                  `/loan/rate?id=${loan.collIndex}:${loan.troveId}`,
+                  "Back to editing",
+                ],
+                successLink: ["/", "Go to the dashboard"],
+                successMessage: "The position interest rate has been updated successfully.",
+
+                collIndex: loan.collIndex,
+                interestRate,
+                lowerHint: dnum18(0),
+                maxUpfrontFee: dnum18(maxUint256),
+                owner: account.address,
+                prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
+                upperHint: dnum18(0),
+              });
+              router.push("/transactions");
+            }
           }}
         />
       </div>

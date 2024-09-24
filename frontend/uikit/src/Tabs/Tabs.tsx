@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { MouseEvent, MutableRefObject, ReactNode, TouchEvent } from "react";
 
 import { a, useSpring } from "@react-spring/web";
 import { useEffect, useRef, useState } from "react";
@@ -23,6 +23,11 @@ export type TabItem = {
 // [1] https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
 // [2] https://www.w3.org/WAI/ARIA/apg/patterns/tabs/examples/tabs-automatic/
 
+type OnSelectContext =
+  | { origin: "mouse"; event: MouseEvent<HTMLButtonElement> }
+  | { origin: "touch"; event: TouchEvent<HTMLButtonElement> }
+  | { origin: "keyboard"; event: KeyboardEvent };
+
 export function Tabs({
   compact,
   items,
@@ -31,7 +36,7 @@ export function Tabs({
 }: {
   compact?: boolean;
   items: TabItem[];
-  onSelect: (index: number) => void;
+  onSelect: (index: number, context: OnSelectContext) => void;
   selected: number;
 }) {
   const container = useRef<HTMLDivElement>(null);
@@ -164,7 +169,7 @@ export function Tabs({
             <Tab
               key={index}
               compact={compact}
-              onSelect={() => onSelect(index)}
+              onSelect={(context) => onSelect(index, context)}
               selected={index === selected}
               tabItem={item}
             />
@@ -199,7 +204,7 @@ function Tab({
   tabItem: { label, tabId, panelId },
 }: {
   compact?: boolean;
-  onSelect: () => void;
+  onSelect: (context: Exclude<OnSelectContext, { origin: "keyboard" }>) => void;
   selected: boolean;
   tabItem: TabItem;
 }) {
@@ -219,8 +224,12 @@ function Tab({
       aria-controls={panelId}
       aria-selected={selected}
       id={tabId}
-      onMouseDown={onSelect}
-      onTouchEnd={onSelect}
+      onMouseDown={(event) => {
+        onSelect({ origin: "mouse", event });
+      }}
+      onTouchStart={(event) => {
+        onSelect({ origin: "touch", event });
+      }}
       role="tab"
       tabIndex={selected ? 0 : -1}
       className={css({
@@ -257,9 +266,12 @@ function useKeyboardNavigation({
   onSelect,
   selected,
 }: {
-  isFocused: React.MutableRefObject<boolean>;
+  isFocused: MutableRefObject<boolean>;
   itemsLength: number;
-  onSelect: (index: number) => void;
+  onSelect: (
+    index: number,
+    context: Extract<OnSelectContext, { origin: "keyboard" }>,
+  ) => void;
   selected: number;
 }) {
   useEffect(() => {
@@ -267,14 +279,15 @@ function useKeyboardNavigation({
       if (!isFocused.current) {
         return;
       }
+      const context = { origin: "keyboard", event } as const;
       if (event.key === "ArrowRight") {
         event.preventDefault();
-        onSelect((selected + 1) % itemsLength);
+        onSelect((selected + 1) % itemsLength, context);
         return;
       }
       if (event.key === "ArrowLeft") {
         event.preventDefault();
-        onSelect(selected === 0 ? itemsLength - 1 : selected - 1);
+        onSelect(selected === 0 ? itemsLength - 1 : selected - 1, context);
         return;
       }
     };
@@ -291,8 +304,8 @@ function useFocusSelected({
   isFocused,
   selected,
 }: {
-  container: React.MutableRefObject<HTMLDivElement | null>;
-  isFocused: React.MutableRefObject<boolean>;
+  container: MutableRefObject<HTMLDivElement | null>;
+  isFocused: MutableRefObject<boolean>;
   selected: number;
 }) {
   useEffect(() => {

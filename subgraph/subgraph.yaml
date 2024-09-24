@@ -1,13 +1,15 @@
 specVersion: 1.2.0
+indexerHints:
+  prune: auto
 schema:
   file: ./schema.graphql
 dataSources:
-  - name: BoldToken
-    kind: ethereum/contract
-    network: mainnet
+  - kind: ethereum/contract
+    name: BoldToken
     source:
-      address: "0x2705179df91e93d2be0f3b56454002f52e27ef87"
       abi: BoldToken
+      address: "0x8b6142b0469bad2a695a25caa2d40778e06ada10"
+      startBlock: 6631293
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -31,10 +33,11 @@ dataSources:
         - event: CollateralRegistryAddressChanged(address)
           handler: handleCollateralRegistryAddressChanged
       file: ./src/BoldToken.mapping.ts
+    network: sepolia
 templates:
   - name: TroveManager
     kind: ethereum/contract
-    network: mainnet
+    network: sepolia
     source:
       abi: TroveManager
     mapping:
@@ -50,7 +53,9 @@ templates:
         - name: TroveNFT
           file: ../contracts/out/TroveNFT.sol/TroveNFT.json
       eventHandlers:
-        - event: TroveOperation(indexed uint256,uint8,uint256,uint256,uint256,int256,uint256,int256)
+        - event: TroveOperation(indexed
+            uint256,uint8,uint256,uint256,uint256,int256,uint256,int256)
           handler: handleTroveOperation
-        - event: TroveUpdated(indexed uint256,uint256,uint256,uint256,uint256,uint256,uint256)
+        - event: TroveUpdated(indexed
+            uint256,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleTroveUpdated

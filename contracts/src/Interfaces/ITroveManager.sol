@@ -18,7 +18,7 @@ interface ITroveManager is ILiquityBase {
         active,
         closedByOwner,
         closedByLiquidation,
-        zombie
+        unredeemable
     }
 
     function shutdownTime() external view returns (uint256);
@@ -52,8 +52,6 @@ interface ITroveManager is ILiquityBase {
     function getTroveFromTroveIdsArray(uint256 _index) external view returns (uint256);
 
     function getCurrentICR(uint256 _troveId, uint256 _price) external view returns (uint256);
-
-    function lastZombieTroveId() external view returns (uint256);
 
     function batchLiquidateTroves(uint256[] calldata _troveArray) external;
 
@@ -90,7 +88,7 @@ interface ITroveManager is ILiquityBase {
         uint256 _batchDebt
     ) external;
 
-    // Called from `adjustZombieTrove()`
+    // Called from `adjustUnredeemableTrove()`
     function setTroveStatusToActive(uint256 _troveId) external;
 
     function onAdjustTroveInterestRate(

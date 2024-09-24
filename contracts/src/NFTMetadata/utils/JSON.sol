@@ -10,25 +10,16 @@ library json {
 
     string constant DOUBLE_QUOTES = '\\"';
 
-    function formattedMetadata(
-        string memory name,
-        string memory description,
-        string memory svgImg,
-        string memory attributes
-    ) internal pure returns (string memory) {
+    function formattedMetadata(string memory name, string memory description, string memory svgImg)
+        internal
+        pure
+        returns (string memory)
+    {
         return string.concat(
             "data:application/json;base64,",
             encode(
                 bytes(
-                    string.concat(
-                        "{",
-                        _prop("name", name),
-                        _prop("description", description),
-                        _xmlImage(svgImg),
-                        ',"attributes":',
-                        attributes,
-                        "}"
-                    )
+                    string.concat("{", _prop("name", name), _prop("description", description), _xmlImage(svgImg), "}")
                 )
             )
         );

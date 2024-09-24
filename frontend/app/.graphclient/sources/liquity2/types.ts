@@ -39,8 +39,49 @@ export type Block_height = {
   readonly number_gte?: InputMaybe<Scalars['Int']['input']>;
 };
 
+export type BorrowerInfo = {
+  readonly id: Scalars['ID']['output'];
+  readonly troves: Scalars['Int']['output'];
+  readonly trovesByCollateral: ReadonlyArray<Scalars['Int']['output']>;
+};
+
+export type BorrowerInfo_filter = {
+  readonly id?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_not?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly troves?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_not?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_gt?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_lt?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_gte?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_lte?: InputMaybe<Scalars['Int']['input']>;
+  readonly troves_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly troves_not_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_not?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_contains?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_contains_nocase?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_not_contains?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly trovesByCollateral_not_contains_nocase?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  /** Filter for the block changed event. */
+  readonly _change_block?: InputMaybe<BlockChangedFilter>;
+  readonly and?: InputMaybe<ReadonlyArray<InputMaybe<BorrowerInfo_filter>>>;
+  readonly or?: InputMaybe<ReadonlyArray<InputMaybe<BorrowerInfo_filter>>>;
+};
+
+export type BorrowerInfo_orderBy =
+  | 'id'
+  | 'troves'
+  | 'trovesByCollateral';
+
 export type Collateral = {
   readonly id: Scalars['ID']['output'];
+  readonly collIndex: Scalars['Int']['output'];
   readonly token: Token;
   readonly minCollRatio: Scalars['BigInt']['output'];
   readonly troves: ReadonlyArray<Trove>;
@@ -170,6 +211,7 @@ export type CollateralAddresses_orderBy =
   | 'borrowerOperations'
   | 'collateral'
   | 'collateral__id'
+  | 'collateral__collIndex'
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
   | 'collateral__totalDebt'
@@ -188,6 +230,14 @@ export type Collateral_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly collIndex?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_not?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_gt?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_lt?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_gte?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_lte?: InputMaybe<Scalars['Int']['input']>;
+  readonly collIndex_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
+  readonly collIndex_not_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
   readonly token?: InputMaybe<Scalars['String']['input']>;
   readonly token_not?: InputMaybe<Scalars['String']['input']>;
   readonly token_gt?: InputMaybe<Scalars['String']['input']>;
@@ -243,6 +293,7 @@ export type Collateral_filter = {
 
 export type Collateral_orderBy =
   | 'id'
+  | 'collIndex'
   | 'token'
   | 'token__id'
   | 'token__name'
@@ -329,6 +380,8 @@ export type Query = {
   readonly interestRateBrackets: ReadonlyArray<InterestRateBracket>;
   readonly trove?: Maybe<Trove>;
   readonly troves: ReadonlyArray<Trove>;
+  readonly borrowerInfo?: Maybe<BorrowerInfo>;
+  readonly borrowerInfos: ReadonlyArray<BorrowerInfo>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -424,6 +477,24 @@ export type QuerytrovesArgs = {
 };
 
 
+export type QueryborrowerInfoArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryborrowerInfosArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<BorrowerInfo_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<BorrowerInfo_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
 export type Query_metaArgs = {
   block?: InputMaybe<Block_height>;
 };
@@ -439,6 +510,8 @@ export type Subscription = {
   readonly interestRateBrackets: ReadonlyArray<InterestRateBracket>;
   readonly trove?: Maybe<Trove>;
   readonly troves: ReadonlyArray<Trove>;
+  readonly borrowerInfo?: Maybe<BorrowerInfo>;
+  readonly borrowerInfos: ReadonlyArray<BorrowerInfo>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -529,6 +602,24 @@ export type SubscriptiontrovesArgs = {
   orderBy?: InputMaybe<Trove_orderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   where?: InputMaybe<Trove_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionborrowerInfoArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionborrowerInfosArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<BorrowerInfo_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<BorrowerInfo_filter>;
   block?: InputMaybe<Block_height>;
   subgraphError?: _SubgraphErrorPolicy_;
 };
@@ -634,6 +725,7 @@ export type Token_orderBy =
   | 'id'
   | 'collateral'
   | 'collateral__id'
+  | 'collateral__collIndex'
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
   | 'collateral__totalDebt'
@@ -643,6 +735,7 @@ export type Token_orderBy =
 
 export type Trove = {
   readonly id: Scalars['ID']['output'];
+  readonly troveId: Scalars['String']['output'];
   readonly borrower: Scalars['Bytes']['output'];
   readonly debt: Scalars['BigInt']['output'];
   readonly deposit: Scalars['BigInt']['output'];
@@ -662,6 +755,26 @@ export type Trove_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly troveId?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly troveId_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly troveId_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
   readonly borrower?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_not?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_gt?: InputMaybe<Scalars['Bytes']['input']>;
@@ -749,6 +862,7 @@ export type Trove_filter = {
 
 export type Trove_orderBy =
   | 'id'
+  | 'troveId'
   | 'borrower'
   | 'debt'
   | 'deposit'
@@ -758,6 +872,7 @@ export type Trove_orderBy =
   | 'closedAt'
   | 'collateral'
   | 'collateral__id'
+  | 'collateral__collIndex'
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
   | 'collateral__totalDebt';
@@ -816,6 +931,10 @@ export type _SubgraphErrorPolicy_ =
   trove: InContextSdkMethod<Query['trove'], QuerytroveArgs, MeshContext>,
   /** null **/
   troves: InContextSdkMethod<Query['troves'], QuerytrovesArgs, MeshContext>,
+  /** null **/
+  borrowerInfo: InContextSdkMethod<Query['borrowerInfo'], QueryborrowerInfoArgs, MeshContext>,
+  /** null **/
+  borrowerInfos: InContextSdkMethod<Query['borrowerInfos'], QueryborrowerInfosArgs, MeshContext>,
   /** Access to subgraph metadata **/
   _meta: InContextSdkMethod<Query['_meta'], Query_metaArgs, MeshContext>
   };
@@ -845,6 +964,10 @@ export type _SubgraphErrorPolicy_ =
   trove: InContextSdkMethod<Subscription['trove'], SubscriptiontroveArgs, MeshContext>,
   /** null **/
   troves: InContextSdkMethod<Subscription['troves'], SubscriptiontrovesArgs, MeshContext>,
+  /** null **/
+  borrowerInfo: InContextSdkMethod<Subscription['borrowerInfo'], SubscriptionborrowerInfoArgs, MeshContext>,
+  /** null **/
+  borrowerInfos: InContextSdkMethod<Subscription['borrowerInfos'], SubscriptionborrowerInfosArgs, MeshContext>,
   /** Access to subgraph metadata **/
   _meta: InContextSdkMethod<Subscription['_meta'], Subscription_metaArgs, MeshContext>
   };

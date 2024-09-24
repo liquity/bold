@@ -478,12 +478,19 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
 
         // deploy zappers
         (contracts.gasCompZapper, contracts.wethZapper) =
-            _deployZappers(contracts.addressesRegistry, contracts.collToken, _weth);
+        _deployZappers(contracts.addressesRegistry, contracts.collToken, _weth);
     }
 
-    function _deployZappers(IAddressesRegistry _addressesRegistry, IERC20 _collToken, IWETH _weth)
+    function _deployZappers(
+        IAddressesRegistry _addressesRegistry,
+        IERC20 _collToken,
+        IWETH _weth
+    )
         internal
-        returns (GasCompZapper gasCompZapper, WETHZapper wethZapper)
+        returns (
+            GasCompZapper gasCompZapper,
+            WETHZapper wethZapper
+        )
     {
         bool lst = _collToken != _weth;
         if (lst) {

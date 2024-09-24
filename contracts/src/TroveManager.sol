@@ -111,8 +111,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // Array of all batch managers - used to fetch them off-chain
     address[] public batchIds;
 
-    uint256 public lastZombieTroveId;
-
     // Error trackers for the trove redistribution calculation
     uint256 internal lastCollError_Redistribution;
     uint256 internal lastBoldDebtError_Redistribution;
@@ -151,7 +149,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 oldWeightedRecordedDebt;
         uint256 newWeightedRecordedDebt;
         uint256 newStake;
-        bool isZombieTrove;
         LatestTroveData trove;
         LatestBatchData batch;
     }
@@ -455,7 +452,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     }
 
     function _isLiquidatableStatus(Status _status) internal pure returns (bool) {
-        return _status == Status.active || _status == Status.zombie;
+        return _status == Status.active || _status == Status.unredeemable;
     }
 
     function _batchLiquidateTroves(
@@ -666,26 +663,14 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         bool isTroveInBatch = _singleRedemption.batchAddress != address(0);
         uint256 newDebt = _applySingleRedemption(_defaultPool, _singleRedemption, isTroveInBatch);
 
-        // Make Trove zombie if it's tiny (and it wasn’t already), in order to prevent griefing future (normal, sequential) redemptions
+        // Make Trove unredeemable if it's tiny, in order to prevent griefing future (normal, sequential) redemptions
         if (newDebt < MIN_DEBT) {
-            if (!_singleRedemption.isZombieTrove) {
-                Troves[_singleRedemption.troveId].status = Status.zombie;
-                if (isTroveInBatch) {
-                    sortedTroves.removeFromBatch(_singleRedemption.troveId);
-                } else {
-                    sortedTroves.remove(_singleRedemption.troveId);
-                }
-                // If it’s a partial redemption, let’s store a pointer to it so it’s used first in the next one
-                if (newDebt > 0) {
-                    lastZombieTroveId = _singleRedemption.troveId;
-                }
-            } else if (newDebt == 0) {
-                // Reset last zombie trove pointer if the previous one was fully redeemed now
-                lastZombieTroveId = 0;
+            Troves[_singleRedemption.troveId].status = Status.unredeemable;
+            if (isTroveInBatch) {
+                sortedTroves.removeFromBatch(_singleRedemption.troveId);
+            } else {
+                sortedTroves.remove(_singleRedemption.troveId);
             }
-        } else {
-            // Reset last zombie trove pointer if the previous one ended up above min debt
-            lastZombieTroveId = 0;
         }
     }
 
@@ -745,13 +730,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 remainingBold = _boldamount;
 
         SingleRedemptionValues memory singleRedemption;
-        // Let’s check if there’s a pending zombie trove from previous redemption
-        if (lastZombieTroveId != 0) {
-            singleRedemption.troveId = lastZombieTroveId;
-            singleRedemption.isZombieTrove = true;
-        } else {
-            singleRedemption.troveId = sortedTrovesCached.getLast();
-        }
+        singleRedemption.troveId = sortedTrovesCached.getLast();
         address lastBatchUpdatedInterest = address(0);
 
         // Loop through the Troves starting from the one with lowest collateral ratio until _amount of Bold is exchanged for collateral
@@ -759,13 +738,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         while (singleRedemption.troveId != 0 && remainingBold > 0 && _maxIterations > 0) {
             _maxIterations--;
             // Save the uint256 of the Trove preceding the current one
-            uint256 nextUserToCheck;
-            if (singleRedemption.isZombieTrove) {
-                nextUserToCheck = sortedTrovesCached.getLast();
-            } else {
-                nextUserToCheck = sortedTrovesCached.getPrev(singleRedemption.troveId);
-            }
-
+            uint256 nextUserToCheck = sortedTrovesCached.getPrev(singleRedemption.troveId);
             // Skip if ICR < 100%, to make sure that redemptions always improve the CR of hit Troves
             if (getCurrentICR(singleRedemption.troveId, _price) < _100pct) {
                 singleRedemption.troveId = nextUserToCheck;
@@ -796,7 +769,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
             remainingBold -= singleRedemption.boldLot;
             singleRedemption.troveId = nextUserToCheck;
-            singleRedemption.isZombieTrove = false;
         }
 
         // We are removing this condition to prevent blocking redemptions
@@ -839,7 +811,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         bool isTroveInBatch = _singleRedemption.batchAddress != address(0);
         _applySingleRedemption(_defaultPool, _singleRedemption, isTroveInBatch);
 
-        // No need to make this Trove zombie if it has tiny debt, since:
+        // No need to make this Trove unredeemable if it has tiny debt, since:
         // - This collateral branch has shut down and urgent redemptions are enabled
         // - Urgent redemptions aren't sequential, so they can't be griefed by tiny Troves.
     }
@@ -1312,9 +1284,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     function setTroveStatusToActive(uint256 _troveId) external {
         _requireCallerIsBorrowerOperations();
         Troves[_troveId].status = Status.active;
-        if (lastZombieTroveId == _troveId) {
-            lastZombieTroveId = 0;
-        }
     }
 
     function onAdjustTroveInterestRate(
@@ -1467,8 +1436,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         if (_batchAddress != address(0)) {
             if (trove.status == Status.active) {
                 sortedTroves.removeFromBatch(_troveId);
-            } else if (trove.status == Status.zombie && lastZombieTroveId == _troveId) {
-                lastZombieTroveId = 0;
             }
 
             _removeTroveSharesFromBatch(
@@ -1483,8 +1450,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         } else {
             if (trove.status == Status.active) {
                 sortedTroves.remove(_troveId);
-            } else if (trove.status == Status.zombie && lastZombieTroveId == _troveId) {
-                lastZombieTroveId = 0;
             }
         }
 

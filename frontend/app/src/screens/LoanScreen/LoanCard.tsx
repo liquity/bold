@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { LoanLoadingState } from "./LoanScreen";
 
 import { INFINITY } from "@/src/characters";
+import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { Value } from "@/src/comps/Value/Value";
 import { formatRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
@@ -182,15 +183,15 @@ export function LoanCard({
                     </div>
                   </GridItem>
                 )}
-              <GridItem label="Liq. price">
+              <GridItem label="Liq. price" title="Liquidation price">
                 <Value negative={ltv && dn.gt(ltv, maxLtv)}>
                   ${fmtnum(loanDetails.liquidationPrice)}
                 </Value>
               </GridItem>
               <GridItem label="Interest rate">
-                {fmtnum(dn.mul(loan.interestRate, 100))}%
+                {fmtnum(loan.interestRate, 2, 100)}%
               </GridItem>
-              <GridItem label="LTV">
+              <GridItem label="LTV" title="Loan-to-value ratio">
                 <div
                   className={css({
                     "--status-positive": "token(colors.positiveAlt)",
@@ -205,7 +206,7 @@ export function LoanCard({
                       : "var(--status-negative)",
                   }}
                 >
-                  {ltv && fmtnum(dn.mul(ltv, 100))}%
+                  {fmtnum(ltv, "2z", 100)}%
                 </div>
               </GridItem>
               <GridItem label="Liquidation risk">
@@ -442,48 +443,14 @@ function LoadingCard({
   );
 }
 
-function Spinner({
-  size = 24,
-}: {
-  size?: number;
-}) {
-  const spring = useSpring({
-    from: { rotate: 0 },
-    to: { rotate: 360 },
-    loop: true,
-    config: {
-      duration: 1000,
-    },
-  });
-  return (
-    <a.svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      style={{
-        transform: spring.rotate.to((r) => `rotate(${r}deg)`),
-      }}
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="10"
-        fill="none"
-        stroke="currentColor"
-        strokeDasharray="40"
-        strokeDashoffset="0"
-        strokeWidth="2"
-      />
-    </a.svg>
-  );
-}
-
 function GridItem({
   children,
   label,
+  title,
 }: {
   children: ReactNode;
   label: string;
+  title?: string;
 }) {
   return (
     <div
@@ -495,6 +462,7 @@ function GridItem({
       })}
     >
       <div
+        title={title}
         className={css({
           color: "strongSurfaceContentAlt",
         })}
