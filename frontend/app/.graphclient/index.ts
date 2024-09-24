@@ -1305,7 +1305,7 @@ const liquity2Transforms = [];
 const additionalTypeDefs = [] as any[];
 const liquity2Handler = new GraphqlHandler({
               name: "liquity2",
-              config: {"endpoint":"http://localhost:8000/subgraphs/name/liquity2/liquity2"},
+              config: {"endpoint":"https://api.studio.thegraph.com/query/42403/liquity2/version/latest"},
               baseDir,
               cache,
               pubsub,
