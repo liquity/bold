@@ -2,6 +2,10 @@ import type { Dnum } from "dnum";
 
 import * as dn from "dnum";
 
+export function dnum18(value: string | bigint | number): Dnum {
+  return [BigInt(value), 18];
+}
+
 export function formatAmountCompact(value: Dnum, digits: number = 2) {
   const valueAbs = dn.abs(value);
   if (dn.eq(valueAbs, 1e9) || dn.gt(valueAbs, 1e9)) {

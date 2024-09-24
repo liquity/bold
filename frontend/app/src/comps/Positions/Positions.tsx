@@ -5,10 +5,12 @@ import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import { LQTY_SUPPLY } from "@/src/constants";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
+import { DEMO_MODE } from "@/src/env";
 import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
+import { useLoansByAccount } from "@/src/subgraph-hooks";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
@@ -26,12 +28,16 @@ import {
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import Link from "next/link";
+import { useState } from "react";
 import { match } from "ts-pattern";
 
 export function Positions() {
   const account = useAccount();
+  const loans = useLoansByAccount(account.address);
 
-  const positionCards = ACCOUNT_POSITIONS.map((position, index) => (
+  const positions = DEMO_MODE ? ACCOUNT_POSITIONS : loans.data ?? [];
+
+  const positionCards = positions.map((position, index) => (
     match(position)
       .with({ type: "borrow" }, ({ type, ...props }) => [index, <PositionBorrow {...props} />])
       .with({ type: "earn" }, ({ type, ...props }) => [index, <PositionEarn {...props} />])
@@ -40,7 +46,7 @@ export function Positions() {
       .exhaustive()
   ));
 
-  const mode = account.isConnected && positionCards.length > 0 ? "positions" : "actions";
+  const mode = account.isConnected && (positionCards.length > 0 || loans.isLoading) ? "positions" : "actions";
 
   const actionCards = [
     <ActionCard type="borrow" />,
@@ -49,52 +55,152 @@ export function Positions() {
     <ActionCard type="stake" />,
   ].map((card, index) => [index, card]);
 
-  const positionTransitions = useTransition(mode === "positions" ? positionCards : actionCards, {
-    keys: ([index]) => `${index}${mode}`,
-    from: { opacity: 0, transform: "scale3d(0.95, 0.95, 1)" },
-    enter: { opacity: 1, transform: "scale3d(1, 1, 1)" },
-    leave: { display: "none", immediate: true },
-    trail: 10,
+  const [increment, setIncrement] = useState(0);
+
+  const positionTransitions = useTransition(
+    mode === "positions" ? positionCards : actionCards,
+    {
+      keys: ([index]) => `${index}${mode}${increment}`,
+      from: { opacity: 0, transform: "scale3d(0.95, 0.95, 1)" },
+      enter: { opacity: 1, transform: "scale3d(1, 1, 1)" },
+      leave: { display: "none", immediate: true },
+      trail: 10,
+      config: {
+        mass: 1,
+        tension: 2800,
+        friction: 80,
+      },
+    },
+  );
+
+  const [forceLoading, setForceLoading] = useState(false);
+
+  return (
+    <PositionsGroup
+      mode={mode}
+      loading={mode === "positions" && loans.isLoading || forceLoading}
+      onTitleClick={() => {
+        setForceLoading(true);
+        setTimeout(() => {
+          setForceLoading(false);
+          setIncrement((i) => i + 1);
+        }, 1000);
+      }}
+    >
+      {positionTransitions((style, [_, card]) => (
+        <a.div
+          className={css({
+            display: "grid",
+            height: "100%",
+          })}
+          style={style}
+        >
+          {card}
+        </a.div>
+      ))}
+    </PositionsGroup>
+  );
+}
+
+function PositionsGroup({
+  children,
+  loading,
+  mode,
+  onTitleClick,
+}: {
+  children: ReactNode;
+  loading?: boolean;
+  mode: "positions" | "actions";
+  onTitleClick?: () => void;
+}) {
+  const loadingTransition = useTransition(loading, {
+    from: {
+      opacity: 0,
+      transform: "scale3d(0.95, 0.95, 1)",
+    },
+    enter: {
+      opacity: 1,
+      transform: "scale3d(1, 1, 1)",
+    },
+    leave: {
+      opacity: 0,
+      transform: "scale3d(0.95, 0.95, 1)",
+    },
     config: {
       mass: 1,
-      tension: 2800,
+      tension: 1800,
       friction: 80,
     },
   });
-
   return (
     <div>
       <h1
         className={css({
           fontSize: 32,
           color: "content",
+          userSelect: "none",
         })}
         style={{
           paddingBottom: mode === "positions" ? 32 : 48,
         }}
+        onClick={onTitleClick}
       >
         {mode === "positions" ? content.home.myPositionsTitle : content.home.openPositionTitle}
       </h1>
       <div
         className={css({
-          display: "grid",
-          gap: 24,
+          position: "relative",
         })}
         style={{
-          gridTemplateColumns: `repeat(${mode === "positions" ? 3 : 4}, 1fr)`,
+          minHeight: mode === "positions" ? 185 : undefined,
         }}
       >
-        {positionTransitions((style, [_, card]) => (
-          <a.div
+        {loadingTransition((style, loading) => (
+          loading && (
+            <a.div
+              className={css({
+                position: "absolute",
+                zIndex: 2,
+                inset: 0,
+                display: "grid",
+                placeItems: "center",
+              })}
+              style={style}
+            >
+              <div
+                className={css({
+                  position: "absolute",
+                  inset: 0,
+                  background: "accent",
+                  opacity: 0.05,
+                  borderRadius: 8,
+                })}
+              />
+              <div
+                className={css({
+                  display: "grid",
+                  placeItems: "center",
+                  fontSize: 18,
+                })}
+              >
+                Fetching positions…
+              </div>
+            </a.div>
+          )
+        ))}
+        {!loading && (
+          <div
             className={css({
               display: "grid",
-              height: "100%",
+              gap: 24,
             })}
-            style={style}
+            style={{
+              gridTemplateColumns: `repeat(${mode === "positions" ? 3 : 4}, 1fr)`,
+            }}
           >
-            {card}
-          </a.div>
-        ))}
+            {children}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -131,13 +237,13 @@ function PositionBorrow({
     <Link
       href={{
         pathname: "/loan",
-        query: { id: String(troveId) },
+        query: { id: troveId },
       }}
       legacyBehavior
       passHref
     >
       <StrongCard
-        title={`Loan #${troveId}`}
+        title={`Loan ${troveId}`}
         heading={
           <div
             className={css({
@@ -162,14 +268,26 @@ function PositionBorrow({
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-              {dn.format(dn.add(deposit, borrowed), 4)}
+              {dn.format(dn.add(deposit, borrowed), 2)}
               <TokenIcon
                 size={24}
                 symbol="BOLD"
               />
             </HFlex>
           ),
-          label: "Total debt",
+          // label: "Total debt",
+          label: (
+            <div
+              className={css({
+                display: "flex",
+                gap: 8,
+                alignItems: "cente",
+              })}
+            >
+              Backed by {deposit ? dn.format(deposit, 2) : "−"} {token.name}
+              <TokenIcon size="small" symbol={token.symbol} />
+            </div>
+          ),
         }}
         secondary={
           <CardRows>

@@ -7,7 +7,7 @@ import * as dn from "dnum";
 
 export const PRICE_UPDATE_INTERVAL = 15_000;
 export const PRICE_UPDATE_VARIATION = 0.003;
-export const PRICE_UPDATE_MANUAL = true;
+export const PRICE_UPDATE_MANUAL = false;
 
 export const LQTY_PRICE = dn.from(0.64832, 18);
 export const ETH_PRICE = dn.from(2_580.293872, 18);
@@ -38,7 +38,7 @@ export const ACCOUNT_POSITIONS: Position[] = [
     collateral: "RETH",
     deposit: dn.from(5.5, 18),
     interestRate: dn.from(0.067, 18),
-    troveId: 1n,
+    troveId: "0x01",
   },
   {
     type: "leverage",
@@ -46,7 +46,7 @@ export const ACCOUNT_POSITIONS: Position[] = [
     collateral: "ETH",
     deposit: dn.from(19.20, 18), // 8 ETH @ 2.4 leverage
     interestRate: dn.from(0.045, 18),
-    troveId: 2n,
+    troveId: "0x02",
   },
   {
     type: "earn",

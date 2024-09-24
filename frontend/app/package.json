@@ -6,15 +6,17 @@
   "scripts": {
     "build": "pnpm build-uikit && pnpm panda-codegen && next build",
     "build-uikit": "cd ../uikit && pnpm build && pnpm panda-codegen",
+    "coverage": "vitest run --coverage ./src",
     "dev": "rm -rf ./.next && next dev",
     "fmt": "dprint fmt **/*.{ts,tsx,js,json,html,md}",
     "lint": "pnpm oxlint ./src --import-plugin --nextjs-plugin --react-perf-plugin --jsx-a11y-plugin --allow pedantic",
     "panda-codegen": "panda codegen --silent",
+    "subgraph-codegen": "pnpm graphclient build",
     "test": "vitest",
-    "coverage": "vitest run --coverage ./src",
     "update-liquity-abis": "node --loader ts-node/esm ./scripts/update-liquity-abis.ts"
   },
   "dependencies": {
+    "@graphprotocol/client-cli": "^3.0.7",
     "@liquity2/uikit": "workspace:*",
     "@rainbow-me/rainbowkit": "^2.1.3",
     "@react-spring/web": "^9.7.4",

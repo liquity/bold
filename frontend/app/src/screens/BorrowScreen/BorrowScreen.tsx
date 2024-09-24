@@ -24,6 +24,7 @@ import {
   IconSuggestion,
   InfoTooltip,
   InputField,
+  isCollateralSymbol,
   PillButton,
   TextButton,
   TokenIcon,
@@ -34,11 +35,6 @@ import { useState } from "react";
 import { match, P } from "ts-pattern";
 
 const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
-
-function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[number] {
-  const c: string[] = collateralSymbols;
-  return c.includes(symbol);
-}
 
 export function BorrowScreen() {
   const account = useAccount();

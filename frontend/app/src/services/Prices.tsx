@@ -65,7 +65,8 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
   ]);
 };
 
-if (DEMO_MODE) {
+// if (DEMO_MODE) {
+if (true) { // TODO: fix useWatchPrices above so we only use this if DEMO_MODE=true
   // in demo mode, simulate a variation of the prices
   useWatchPrices = (callback) => {
     useEffect(() => {

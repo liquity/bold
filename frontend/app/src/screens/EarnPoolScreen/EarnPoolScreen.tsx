@@ -11,7 +11,15 @@ import { ACCOUNT_BALANCES, ACCOUNT_POSITIONS, EARN_POOLS } from "@/src/demo-mode
 import { useAccount } from "@/src/services/Ethereum";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { COLLATERALS, HFlex, InfoTooltip, Tabs, TokenIcon, TokenIconGroup, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import {
+  HFlex,
+  InfoTooltip,
+  isCollateralSymbol,
+  Tabs,
+  TokenIcon,
+  TokenIconGroup,
+  TOKENS_BY_SYMBOL,
+} from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { DepositPanel } from "./DepositPanel";
@@ -23,13 +31,6 @@ const TABS = [
   { action: "withdraw", label: content.earnScreen.tabs.withdraw },
   { action: "claim", label: content.earnScreen.tabs.claim },
 ] as const;
-
-const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
-function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[number] {
-  console.log(symbol, collateralSymbols);
-  const c: string[] = collateralSymbols;
-  return c.includes(symbol);
-}
 
 export function EarnPoolScreen() {
   const account = useAccount();
