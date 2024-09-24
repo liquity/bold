@@ -55,6 +55,7 @@ contract SPInvariantsTest is BaseInvariantTest {
         assertApproxEqAbsDecimal(stabilityPoolColl, claimableColl, 0.00001 ether, 18, "SP Coll !~ claimable Coll");
         assertApproxEqAbsDecimal(stabilityPoolBold, claimableBold, 0.001 ether, 18, "SP BOLD !~ claimable BOLD");
         assertApproxEqAbsDecimal(yieldGainsOwed, sumYieldGains, 0.001 ether, 18, "SP yieldGainsOwed !~= sum(yieldGain)");
+        assertGe(yieldGainsOwed, sumYieldGains, "Not enough yield gains for all depositors");
     }
 
     function test_Issue_NoLossOfFundsAfterAnyTwoLiquidationsFollowingTinyP() external {
