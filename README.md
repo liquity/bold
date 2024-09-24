@@ -1379,9 +1379,7 @@ Various solutions have been fielded. Generally, any solution which appears to cr
 
 4. **New multi-collateral Stability Pool.** This pool would absorb some fraction of liquidations from all branches, including shut down branches. 
 
-5. **Governance can direct BOLD interest to pay down bad debt**. BOLD interest could be voted to be redirected to paying down the bad debt over time.  Although this would not directly clear the bad debt, economically, it should have the same impact  - since ultimately, it is the redeemability of _circulating_ BOLD that determines the peg.  When an amount equal to the bad debt has been burned, then all circulating BOLD is fully redeemable. 
-
-See this example:
+5. **Governance can direct BOLD interest to pay down bad debt**. BOLD interest could be voted to be redirected to paying down the bad debt over time.  Although this would not directly clear the bad debt, economically, it should have the same impact  - since ultimately, it is the redeemability of _circulating_ BOLD that determines the peg.  When an amount equal to the bad debt has been burned, then all circulating BOLD is fully redeemable. See this example:
 
 <img width="537" alt="image" src="https://github.com/user-attachments/assets/3045cba9-45a3-46b4-a5d0-58bed7f38a04">
 
@@ -1397,7 +1395,7 @@ And some additional solutions that may help reduce the chance of bad debt occurr
 
 **Conclusion**
 
-Ultimately, no measures have been implemented in the protocol directly, so the protocol may end up with some bad debt in the case of a branch shut down.  In case of bad debt, there is a theoretical possibility that BOLD supply may be reduced by either users accidentally burning BOLD or that borrower's interest could be directed by governance to burn BOLD, which would restore its backing.
+Ultimately, no measures have been implemented in the protocol directly, so the protocol may end up with some bad debt in the case of a branch shut down.  Here there is a theoretical possibility that the BOLD supply may be reduced by either users accidentally burning BOLD, or that borrower's interest on that branch could be directed by governance to burn BOLD, which would restore its backing over time.
 
 
 ### 11 - Inaccurate calculation of average branch interest rate
