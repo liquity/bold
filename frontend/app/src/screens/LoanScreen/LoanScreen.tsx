@@ -1,6 +1,7 @@
 "use client";
 
 import { Screen } from "@/src/comps/Screen/Screen";
+import { LOAN_SCREEN_MANUAL_LOADING_STATE } from "@/src/demo-mode/demo-data";
 import { getPrefixedTroveId, parsePrefixedTroveId } from "@/src/liquity-utils";
 import { useLoanById } from "@/src/subgraph-hooks";
 import { isPrefixedtroveId } from "@/src/types";
@@ -58,6 +59,7 @@ export function LoanScreen() {
   const [leverageMode, setLeverageMode] = useState(false);
 
   const [forcedLoadingState, setForcedLoadingState] = useState<LoanLoadingState | null>(null);
+
   const loadingState = forcedLoadingState ?? match(loan)
     .returnType<LoanLoadingState>()
     .with({ status: "error" }, () => "error")
@@ -65,11 +67,6 @@ export function LoanScreen() {
     .with({ data: null }, () => "not-found")
     .with({ data: P.nonNullable }, () => "success")
     .otherwise(() => "error");
-
-  const setLoadingstate = (state: LoanLoadingState) => {
-    setForcedLoadingState(state);
-  };
-  // const [loadingState, setLoadingstate] = useState<LoanLoadingState>("loading");
 
   const tabsTransition = useTransition(loadingState, {
     from: { opacity: 0 },
@@ -84,36 +81,38 @@ export function LoanScreen() {
 
   return (
     <Screen>
-      <div
-        className={css({
-          position: "fixed",
-          zIndex: 2,
-          // bottom: 39,
-          bottom: 0,
-          left: 0,
-          right: 0,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          height: 48,
-          padding: "12px 32px",
-          fontSize: 14,
-          color: "contentAlt",
-          background: "background",
-          border: "1px solid token(colors.border)",
-        })}
-      >
-        loan state: {LOAN_STATES.map((s) => (
-          <Button
-            key={s}
-            label={s}
-            size="mini"
-            onClick={() => {
-              setLoadingstate(s);
-            }}
-          />
-        ))}
-      </div>
+      {LOAN_SCREEN_MANUAL_LOADING_STATE && (
+        <div
+          className={css({
+            position: "fixed",
+            zIndex: 2,
+            // bottom: 39,
+            bottom: 0,
+            left: 0,
+            right: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            height: 48,
+            padding: "12px 32px",
+            fontSize: 14,
+            color: "contentAlt",
+            background: "background",
+            border: "1px solid token(colors.border)",
+          })}
+        >
+          loan state: {LOAN_STATES.map((s) => (
+            <Button
+              key={s}
+              label={s}
+              size="mini"
+              onClick={() => {
+                setForcedLoadingState(s);
+              }}
+            />
+          ))}
+        </div>
+      )}
       <VFlex gap={0}>
         <LoanCard
           leverageMode={leverageMode}
@@ -121,7 +120,6 @@ export function LoanScreen() {
           loan={loan.data ?? null}
           onLeverageModeChange={setLeverageMode}
           onRetry={() => {
-            setLoadingstate("loading");
             loan.refetch();
           }}
           troveId={troveId}

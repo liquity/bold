@@ -5,6 +5,8 @@ import type { Dnum } from "dnum";
 import { INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import * as dn from "dnum";
 
+export const LOAN_SCREEN_MANUAL_LOADING_STATE = false;
+
 export const PRICE_UPDATE_INTERVAL = 15_000;
 export const PRICE_UPDATE_VARIATION = 0.003;
 export const PRICE_UPDATE_MANUAL = false;
