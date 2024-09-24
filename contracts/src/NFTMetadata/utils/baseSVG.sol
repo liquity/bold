@@ -7,7 +7,7 @@ import "./FixedAssets.sol";
 
 library baseSVG {
     string constant GEIST = 'style="font-family: Geist" ';
-    string constant DARK_BLUE = "#1C1D4F";
+    string constant DARK_BLUE = "#121B44";
     string constant STOIC_WHITE = "#DEE4FB";
 
     function _svgProps() internal pure returns (string memory) {

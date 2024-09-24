@@ -10,8 +10,8 @@ library bauhaus {
     string constant GREEN = "#63D77D";
     string constant CYAN = "#95CBF3";
     string constant BLUE = "#405AE5";
-    string constant DARK_BLUE = "#1C1D4F";
-    string constant BROWN = "#DBB79B";
+    string constant DARK_BLUE = "#121B44";
+    string constant BROWN = "#D99664";
 
     enum colorCode {
         GOLDEN,
@@ -56,21 +56,21 @@ library bauhaus {
         }
     }
 
-    struct COLORS_1 {
-        colorCode rect1; // large right rect
-        colorCode rect2; // small upper right rect
-        colorCode rect3; // large central left rect 
-        colorCode rect4; // small lower left rect
-        colorCode rect5; // small lower right rect
-        colorCode poly; // triangles
-        colorCode circle1; // large central circle
-        colorCode circle2; // small right circle
-        colorCode circle3; // small right half circle
+    struct COLORS {
+        colorCode rect1; 
+        colorCode rect2; 
+        colorCode rect3;  
+        colorCode rect4; 
+        colorCode rect5; 
+        colorCode poly; 
+        colorCode circle1; 
+        colorCode circle2; 
+        colorCode circle3; 
     }
 
-    function _colors1(uint256 _variant) internal pure returns (COLORS_1 memory) {
+    function _colors1(uint256 _variant) internal pure returns (COLORS memory) {
         if(_variant == 0) {
-            return COLORS_1(
+            return COLORS(
                 colorCode.BLUE, // rect1
                 colorCode.GOLDEN, // rect2
                 colorCode.GOLDEN, // rect3
@@ -82,7 +82,7 @@ library bauhaus {
                 colorCode.GOLDEN // circle3
             );
         } else if(_variant == 1) {
-            return COLORS_1(
+            return COLORS(
                 colorCode.GREEN, // rect1
                 colorCode.BLUE, // rect2
                 colorCode.GOLDEN, // rect3
@@ -94,7 +94,7 @@ library bauhaus {
                 colorCode.BLUE // circle3
             );
         } else if(_variant == 2) {
-            return COLORS_1(
+            return COLORS(
                 colorCode.BLUE, // rect1
                 colorCode.GOLDEN, // rect2
                 colorCode.CYAN, // rect3
@@ -106,7 +106,7 @@ library bauhaus {
                 colorCode.BROWN // circle3
             );
         } else {
-            return COLORS_1(
+            return COLORS(
                 colorCode.CYAN, // rect1
                 colorCode.BLUE, // rect2
                 colorCode.BLUE, // rect3
@@ -121,13 +121,11 @@ library bauhaus {
     }
 
     function _img1(uint256 _variant) internal pure returns (string memory) {
-        COLORS_1 memory colors = _colors1(_variant);
+        COLORS memory colors = _colors1(_variant);
         return string.concat(_rects1(colors), _polygons1(colors), _circles1(colors));
     }
 
-    
-
-    function _rects1(COLORS_1 memory _colors) internal pure returns (string memory) {
+    function _rects1(COLORS memory _colors) internal pure returns (string memory) {
         return string.concat(
             //background
             svg.rect(
@@ -192,7 +190,7 @@ library bauhaus {
         );
     }
 
-    function _polygons1(COLORS_1 memory _colors) internal pure returns (string memory) {
+    function _polygons1(COLORS memory _colors) internal pure returns (string memory) {
         return string.concat(
             // left triangle | poly1
             svg.polygon(
@@ -211,7 +209,7 @@ library bauhaus {
         );
     }
 
-    function _circles1(COLORS_1 memory _colors) internal pure returns (string memory) {
+    function _circles1(COLORS memory _colors) internal pure returns (string memory) {
         return string.concat(
             //large central circle | circle1
             svg.circle(
@@ -233,11 +231,64 @@ library bauhaus {
         );
     }   
 
-    function _img2(uint256 _variant) internal pure returns (string memory) {
-        return string.concat(_rects2(), _circles2());
+    function _colors2(uint256 _variant) internal pure returns (COLORS memory) {
+        if(_variant == 0) {
+            return COLORS(
+                colorCode.BROWN, // rect1
+                colorCode.GOLDEN, // rect2
+                colorCode.BLUE, // rect3
+                colorCode.GREEN, // rect4
+                colorCode.CORAL, // rect5
+                colorCode.GOLDEN, // unused
+                colorCode.GOLDEN, // circle1
+                colorCode.CYAN, // circle2
+                colorCode.GREEN // circle3
+            );
+        } else if(_variant == 1) {
+            return COLORS(
+                colorCode.GREEN, // rect1
+                colorCode.BROWN, // rect2
+                colorCode.GOLDEN, // rect3
+                colorCode.BLUE, // rect4
+                colorCode.CYAN, // rect5
+                colorCode.GOLDEN, // unused
+                colorCode.GREEN, // circle1
+                colorCode.CORAL, // circle2
+                colorCode.BLUE // circle3
+            );
+        } else if(_variant == 2) {
+            return COLORS(
+                colorCode.BLUE, // rect1
+                colorCode.GOLDEN, // rect2
+                colorCode.GREEN, // rect3
+                colorCode.BLUE, // rect4
+                colorCode.CORAL, // rect5
+                colorCode.GOLDEN, // unused
+                colorCode.CYAN, // circle1
+                colorCode.BROWN, // circle2
+                colorCode.BROWN // circle3
+            );
+        } else {
+            return COLORS(
+                colorCode.GOLDEN, // rect1
+                colorCode.GREEN, // rect2
+                colorCode.BLUE, // rect3
+                colorCode.GOLDEN, // rect4
+                colorCode.BROWN, // rect5
+                colorCode.GOLDEN, // unused
+                colorCode.BROWN, // circle1
+                colorCode.CYAN, // circle2
+                colorCode.CORAL // circle3
+            );
+        }
     }
 
-    function _rects2() internal pure returns (string memory) {
+    function _img2(uint256 _variant) internal pure returns (string memory) {
+        COLORS memory colors = _colors2(_variant);
+        return string.concat(_rects2(colors), _circles2(colors));
+    }
+
+    function _rects2(COLORS memory _colors) internal pure returns (string memory) {
         return string.concat(
             //background
             svg.rect(
@@ -249,85 +300,138 @@ library bauhaus {
                     svg.prop("fill", DARK_BLUE)
                 )
             ),
-            // large upper right rect
+            // large upper right rect | rect1
             svg.rect(
                 string.concat(
                     svg.prop("x", "128"),
                     svg.prop("y", "55"),
                     svg.prop("width", "156"),
                     svg.prop("height", "156"),
-                    svg.prop("fill", BROWN)
+                    svg.prop("fill", _colorCode2Hex(_colors.rect1))
                 )
             ),
-            // large central left rect
+            // large central left rect | rect2
             svg.rect(
                 string.concat(
                     svg.prop("x", "16"),
                     svg.prop("y", "111"),
                     svg.prop("width", "134"),
                     svg.prop("height", "100"),
-                    svg.prop("fill", GOLDEN)
+                    svg.prop("fill", _colorCode2Hex(_colors.rect2))
                 )
             ),
-            // large lower left rect
+            // large lower left rect | rect3
             svg.rect(
                 string.concat(
                     svg.prop("x", "16"),
                     svg.prop("y", "211"),
                     svg.prop("width", "212"),
                     svg.prop("height", "56"),
-                    svg.prop("fill", BLUE)
+                    svg.prop("fill", _colorCode2Hex(_colors.rect3))
                 )
             ),
-            // small lower central rect
+            // small lower central rect | rect4
             svg.rect(
                 string.concat(
                     svg.prop("x", "72"),
                     svg.prop("y", "267"),
                     svg.prop("width", "78"),
                     svg.prop("height", "56"),
-                    svg.prop("fill", GREEN)
+                    svg.prop("fill", _colorCode2Hex(_colors.rect4))
                 )
             ),
-            // small lower right rect
+            // small lower right rect | rect5
             svg.rect(
                 string.concat(
                     svg.prop("x", "150"),
                     svg.prop("y", "267"),
                     svg.prop("width", "134"),
                     svg.prop("height", "56"),
-                    svg.prop("fill", CORAL)
+                    svg.prop("fill", _colorCode2Hex(_colors.rect5))
                 )
             )
         );
     }
 
-    function _circles2() internal pure returns (string memory) {
+    function _circles2(COLORS memory _colors) internal pure returns (string memory) {
         return string.concat(
-            //lower left circle
+            //lower left circle | circle1
             svg.circle(
                 string.concat(
-                    svg.prop("cx", "44"), svg.prop("cy", "295"), svg.prop("r", "28"), svg.prop("fill", GOLDEN)
+                    svg.prop("cx", "44"), svg.prop("cy", "295"), svg.prop("r", "28"), svg.prop("fill", _colorCode2Hex(_colors.circle1))
                 )
             ),
-            //upper left half circle
+            //upper left half circle | circle2
             svg.path(
                 "M16 55C16 62.4 17.4 69.6 20.3 76.4C23.1 83.2 27.2 89.4 32.4 94.6C37.6 99.8 43.8 103.9 50.6 106.7C57.4 109.6 64.6 111 72 111C79.4 111 86.6 109.6 93.4 106.7C100.2 103.9 106.4 99.8 111.6 94.6C116.8 89.4 120.9 83.2 123.7 76.4C126.6 69.6 128 62.4 128 55L16 55Z",
-                svg.prop("fill", CYAN)
+                svg.prop("fill", _colorCode2Hex(_colors.circle2))
             ),
-            //central right half circle
+            //central right half circle | circle3
             svg.path(
                 "M284 211C284 190.3 275.8 170.5 261.2 155.8C246.5 141.2 226.7 133 206 133C185.3 133 165.5 141.2 150.9 155.86C136.2 170.5 128 190.3 128 211L284 211Z",
-                svg.prop("fill", GREEN)
+                svg.prop("fill", _colorCode2Hex(_colors.circle3))
             )
         );
+    }
+
+    function _colors3(uint256 _variant) internal pure returns (COLORS memory) {
+        if(_variant == 0) {
+            return COLORS(
+                colorCode.BLUE, // rect1
+                colorCode.CORAL, // rect2
+                colorCode.BLUE, // rect3
+                colorCode.GREEN, // rect4
+                colorCode.GOLDEN, // unused
+                colorCode.GOLDEN, // unused
+                colorCode.GOLDEN, // circle1
+                colorCode.CYAN, // circle2
+                colorCode.GOLDEN // circle3
+            );
+        } else if(_variant == 1) {
+            return COLORS(
+                colorCode.CORAL, // rect1
+                colorCode.GREEN, // rect2
+                colorCode.BROWN, // rect3
+                colorCode.GOLDEN, // rect4
+                colorCode.GOLDEN, // unused
+                colorCode.GOLDEN, // unused
+                colorCode.BLUE, // circle1
+                colorCode.BLUE, // circle2
+                colorCode.CYAN // circle3
+            );
+        } else if(_variant == 2) {
+            return COLORS(
+                colorCode.CORAL, // rect1
+                colorCode.CYAN, // rect2
+                colorCode.CORAL, // rect3
+                colorCode.GOLDEN, // rect4
+                colorCode.GOLDEN, // unused
+                colorCode.GOLDEN, // unused
+                colorCode.GREEN, // circle1
+                colorCode.BLUE, // circle2
+                colorCode.GREEN // circle3
+            );
+        } else {
+            return COLORS(
+                colorCode.GOLDEN, // rect1
+                colorCode.CORAL, // rect2
+                colorCode.GREEN, // rect3
+                colorCode.BLUE, // rect4
+                colorCode.GOLDEN, // unused
+                colorCode.GOLDEN, // unused
+                colorCode.BROWN, // circle1
+                colorCode.BLUE, // circle2
+                colorCode.GREEN // circle3
+            );
+        }
     }
 
     function _img3(uint256 _variant) internal pure returns (string memory) {
-        return string.concat(_rects3(), _circles3());
+        COLORS memory colors = _colors3(_variant);
+        return string.concat(_rects3(colors), _circles3(colors));
     }
 
-    function _rects3() internal pure returns (string memory) {
+    function _rects3(COLORS memory _colors) internal pure returns (string memory) {
         return string.concat(
             //background
             svg.rect(
@@ -339,66 +443,66 @@ library bauhaus {
                     svg.prop("fill", DARK_BLUE)
                 )
             ),
-            // lower left rect
+            // lower left rect | rect1
             svg.rect(
                 string.concat(
                     svg.prop("x", "16"),
                     svg.prop("y", "205"),
                     svg.prop("width", "75"),
                     svg.prop("height", "118"),
-                    svg.prop("fill", BLUE)
+                    svg.prop("fill", _colorCode2Hex(_colors.rect1))
                 )
             ),
-            // central rect
+            // central rect | rect2
             svg.rect(
                 string.concat(
                     svg.prop("x", "91"),
                     svg.prop("y", "205"),
                     svg.prop("width", "136"),
                     svg.prop("height", "59"),
-                    svg.prop("fill", CORAL)
+                    svg.prop("fill", _colorCode2Hex(_colors.rect2))
                 )
             ),
-            // central right rect
+            // central right rect | rect3
             svg.rect(
                 string.concat(
                     svg.prop("x", "166"),
                     svg.prop("y", "180"),
                     svg.prop("width", "118"),
                     svg.prop("height", "25"),
-                    svg.prop("fill", BLUE)
+                    svg.prop("fill", _colorCode2Hex(_colors.rect3))
                 )
             ),
-            // lower right rect
+            // upper right rect | rect4
             svg.rect(
                 string.concat(
                     svg.prop("x", "166"),
                     svg.prop("y", "55"),
                     svg.prop("width", "118"),
                     svg.prop("height", "126"),
-                    svg.prop("fill", GREEN)
+                    svg.prop("fill", _colorCode2Hex(_colors.rect4))
                 )
             )
         );
     }
 
-    function _circles3() internal pure returns (string memory) {
+    function _circles3(COLORS memory _colors) internal pure returns (string memory) {
         return string.concat(
-            //upper left circle
+            //upper left circle | circle1
             svg.circle(
                 string.concat(
-                    svg.prop("cx", "91"), svg.prop("cy", "130"), svg.prop("r", "75"), svg.prop("fill", GOLDEN)
+                    svg.prop("cx", "91"), svg.prop("cy", "130"), svg.prop("r", "75"), svg.prop("fill", _colorCode2Hex(_colors.circle1))
                 )
             ),
-            //upper right half circle
+            //upper right half circle | circle2
             svg.path(
                 "M284 264 166 264 166 263C166 232 193 206 225 205C258 206 284 232 284 264C284 264 284 264 284 264Z",
-                svg.prop("fill", CYAN)
+                svg.prop("fill", _colorCode2Hex(_colors.circle2))
             ),
-            //lower right half circle
+            //lower right half circle | circle3
             svg.path(
                 "M284 323 166 323 166 323C166 290 193 265 225 264C258 265 284 290 284 323C284 323 284 323 284 323Z",
-                svg.prop("fill", GOLDEN)
+                svg.prop("fill", _colorCode2Hex(_colors.circle3))
             )
         );
     }

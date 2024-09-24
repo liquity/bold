@@ -10,11 +10,9 @@ contract troveNFTTest is DevTestSetup {
     uint256 NUM_VARIANTS = 4;
     TestDeployer.LiquityContractsDev[] public contractsArray;
     TroveNFT troveNFTWETH;
-    uint256[] troveIdWETH;
     TroveNFT troveNFTWstETH;
-    uint256[] troveIdWstETH;
     TroveNFT troveNFTRETH;
-    uint256[] troveIdRETH;
+    uint256[] troveIds;
 
     function openMulticollateralTroveNoHints100pctWithIndex(
         uint256 _collIndex,
@@ -109,27 +107,25 @@ contract troveNFTTest is DevTestSetup {
             }
         }
 
-        troveIdWETH = new uint256[](NUM_VARIANTS);
-        troveIdWstETH = new uint256[](NUM_VARIANTS);
-        troveIdRETH = new uint256[](NUM_VARIANTS);
+        troveIds = new uint256[](NUM_VARIANTS);
 
         // 0 = WETH
-        troveIdWETH[0] = openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 10e18, 10000e18, 5e16);
-        troveIdWETH[1] = openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 10e18, 10000e18, 5e16);
-        troveIdWETH[2] = openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 10e18, 10000e18, 5e16);
-        troveIdWETH[3] = openMulticollateralTroveNoHints100pctWithIndex(0, A, 10, 10e18, 10000e18, 5e16);
+        troveIds[0] = openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 10e18, 10000e18, 5e16);
+        troveIds[1] = openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 10e18, 10000e18, 5e16);
+        troveIds[2] = openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 10e18, 10000e18, 5e16);
+        troveIds[3] = openMulticollateralTroveNoHints100pctWithIndex(0, A, 10, 10e18, 10000e18, 5e16);
 
         // 1 = wstETH
-        troveIdWstETH[0] = openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 100e18, 10000e18, 5e16);
-        troveIdWstETH[1] = openMulticollateralTroveNoHints100pctWithIndex(1, A, 1, 100e18, 10000e18, 5e16);
-        troveIdWstETH[2] = openMulticollateralTroveNoHints100pctWithIndex(1, A, 2, 100e18, 10000e18, 5e16);
-        troveIdWstETH[3] = openMulticollateralTroveNoHints100pctWithIndex(1, A, 10, 100e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 100e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(1, A, 1, 100e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(1, A, 2, 100e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(1, A, 10, 100e18, 10000e18, 5e16);
 
         // 2 = rETH
-        troveIdRETH[0] = openMulticollateralTroveNoHints100pctWithIndex(2, A, 0, 100e18, 10000e18, 5e16);
-        troveIdRETH[1] = openMulticollateralTroveNoHints100pctWithIndex(2, A, 1, 100e18, 10000e18, 5e16);
-        troveIdRETH[2] = openMulticollateralTroveNoHints100pctWithIndex(2, A, 2, 100e18, 10000e18, 5e16);
-        troveIdRETH[3] = openMulticollateralTroveNoHints100pctWithIndex(2, A, 10, 100e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(2, A, 0, 100e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(2, A, 1, 100e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(2, A, 2, 100e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(2, A, 10, 100e18, 10000e18, 5e16);
 
         troveNFTWETH = TroveNFT(address(contractsArray[0].troveManager.troveNFT()));
         troveNFTWstETH = TroveNFT(address(contractsArray[1].troveManager.troveNFT()));
@@ -179,13 +175,10 @@ contract troveNFTTest is DevTestSetup {
         string[] memory uris = new string[](NUM_VARIANTS * NUM_COLLATERALS);
 
         for(uint256 i = 0; i < NUM_VARIANTS; i++) {
-            uris[i] = troveNFTWETH.tokenURI(troveIdWETH[i]);
-        }
-        for(uint256 i = NUM_VARIANTS; i < NUM_VARIANTS*2; i++) {
-            uris[i] = troveNFTWstETH.tokenURI(troveIdWstETH[i/2]);
-        }
-        for(uint256 i = NUM_VARIANTS*2; i < NUM_VARIANTS*3; i++) {
-            uris[i] = troveNFTRETH.tokenURI(troveIdRETH[i/3]);
+            uris[i] = troveNFTWETH.tokenURI(troveIds[i]);
+            uris[i+NUM_VARIANTS] = troveNFTWstETH.tokenURI(troveIds[i]);
+            uris[i+(NUM_VARIANTS*2)] = troveNFTRETH.tokenURI(troveIds[i]);
+
         }
 
         _writeUriFile(uris);
@@ -193,7 +186,7 @@ contract troveNFTTest is DevTestSetup {
 
     function testTroveURIAttributes() public {
 
-        string memory uri = troveNFTRETH.tokenURI(troveIdRETH[0]);
+        string memory uri = troveNFTRETH.tokenURI(troveIds[0]);
 
         //emit log_string(uri);
 
