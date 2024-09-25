@@ -198,6 +198,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     // Error trackers for the error correction in the offset calculation
     uint256 public lastCollError_Offset;
     uint256 public lastBoldLossError_Offset;
+    uint256 public lastBoldLossError_TotalDeposits;
 
     // Error tracker fror the error correction in the BOLD reward calculation
     uint256 public lastYieldError;
@@ -437,10 +438,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 totalBold = totalBoldDeposits; // cached to save an SLOAD
         if (totalBold == 0 || _debtToOffset == 0) return;
 
-        (uint256 collGainPerUnitStaked, uint256 boldLossPerUnitStaked) =
-            _computeCollRewardsPerUnitStaked(_collToAdd, _debtToOffset, totalBold);
-
-        _updateCollRewardSumAndProduct(collGainPerUnitStaked, boldLossPerUnitStaked); // updates S and P
+        _updateCollRewardSumAndProduct(_collToAdd, _debtToOffset, totalBold); // updates S and P
 
         _moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
     }
@@ -449,7 +447,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     function _computeCollRewardsPerUnitStaked(uint256 _collToAdd, uint256 _debtToOffset, uint256 _totalBoldDeposits)
         internal
-        returns (uint256 collGainPerUnitStaked, uint256 boldLossPerUnitStaked)
+        returns (uint256 collGainPerUnitStaked, uint256 boldLossPerUnitStaked, uint256 newLastBoldLossErrorOffset)
     {
         /*
         * Compute the Bold and Coll rewards. Uses a "feedback" error correction, to keep
@@ -468,33 +466,37 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         if (_debtToOffset == _totalBoldDeposits) {
             boldLossPerUnitStaked = DECIMAL_PRECISION; // When the Pool depletes to 0, so does each deposit
             lastBoldLossError_Offset = 0;
+            lastBoldLossError_TotalDeposits = _totalBoldDeposits;
         } else {
-            uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION - lastBoldLossError_Offset;
+            uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION;
             /*
             * Add 1 to make error in quotient positive. We want "slightly too much" Bold loss,
             * which ensures the error in any given compoundedBoldDeposit favors the Stability Pool.
             */
             boldLossPerUnitStaked = boldLossNumerator / _totalBoldDeposits + 1;
-            lastBoldLossError_Offset = boldLossPerUnitStaked * _totalBoldDeposits - boldLossNumerator;
+            newLastBoldLossErrorOffset = boldLossPerUnitStaked * _totalBoldDeposits - boldLossNumerator;
         }
 
         collGainPerUnitStaked = collNumerator / _totalBoldDeposits;
         lastCollError_Offset = collNumerator - collGainPerUnitStaked * _totalBoldDeposits;
 
-        return (collGainPerUnitStaked, boldLossPerUnitStaked);
+        return (collGainPerUnitStaked, boldLossPerUnitStaked, newLastBoldLossErrorOffset);
     }
 
     // Update the Stability Pool reward sum S and product P
-    function _updateCollRewardSumAndProduct(uint256 _collGainPerUnitStaked, uint256 _boldLossPerUnitStaked) internal {
+    function _updateCollRewardSumAndProduct(uint256 _collToAdd, uint256 _debtToOffset, uint256 _totalBoldDeposits) internal {
+        (uint256 collGainPerUnitStaked, uint256 boldLossPerUnitStaked, uint256 newLastBoldLossErrorOffset) =
+            _computeCollRewardsPerUnitStaked(_collToAdd, _debtToOffset, _totalBoldDeposits);
+
         uint256 currentP = P;
         uint256 newP;
 
-        assert(_boldLossPerUnitStaked <= DECIMAL_PRECISION);
+        assert(boldLossPerUnitStaked <= DECIMAL_PRECISION);
         /*
         * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool Bold in the liquidation.
         * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - boldLossPerUnitStaked)
         */
-        uint256 newProductFactor = uint256(DECIMAL_PRECISION) - _boldLossPerUnitStaked;
+        uint256 newProductFactor = uint256(DECIMAL_PRECISION) - boldLossPerUnitStaked;
 
         uint128 currentScaleCached = currentScale;
         uint128 currentEpochCached = currentEpoch;
@@ -507,7 +509,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         *
         * Since S corresponds to Coll gain, and P to deposit loss, we update S first.
         */
-        uint256 marginalCollGain = _collGainPerUnitStaked * currentP;
+        uint256 marginalCollGain = collGainPerUnitStaked * currentP;
         uint256 newS = currentS + marginalCollGain;
         epochToScaleToS[currentEpochCached][currentScaleCached] = newS;
         emit S_Updated(newS, currentEpochCached, currentScaleCached);
@@ -535,8 +537,14 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
             emit ScaleUpdated(currentScale);
             // If there's no scale change and no pool-emptying, just do a standard multiplication
         } else {
-            newP = currentP * newProductFactor / DECIMAL_PRECISION;
+            uint256 errorFactor;
+            if (lastBoldLossError_Offset > 0) {
+                errorFactor = lastBoldLossError_Offset * newProductFactor / lastBoldLossError_TotalDeposits;
+            }
+            newP = (currentP * newProductFactor + errorFactor) / DECIMAL_PRECISION;
         }
+        lastBoldLossError_Offset = newLastBoldLossErrorOffset;
+        lastBoldLossError_TotalDeposits = _totalBoldDeposits;
 
         assert(newP > 0);
         P = newP;
