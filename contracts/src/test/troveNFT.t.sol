@@ -5,6 +5,8 @@ import "./TestContracts/DevTestSetup.sol";
 import "src/NFTMetadata/MetadataNFT.sol";
 import "src/TroveNFT.sol";
 
+import "lib/Solady/src/utils/Base64.sol";
+
 contract troveNFTTest is DevTestSetup {
     uint256 NUM_COLLATERALS = 3;
     uint256 NUM_VARIANTS = 4;
@@ -132,8 +134,7 @@ contract troveNFTTest is DevTestSetup {
         troveNFTRETH = TroveNFT(address(contractsArray[2].troveManager.troveNFT()));
     }
 
-    function testTroveNFTMetadata() public {
-        
+    function testTroveNFTMetadata() public view {
         assertEq(troveNFTWETH.name(), "Liquity v2 Trove - Wrapped Ether Tester", "Invalid Trove Name");
         assertEq(troveNFTWETH.symbol(), "Lv2T_WETH", "Invalid Trove Symbol");
 
@@ -144,7 +145,8 @@ contract troveNFTTest is DevTestSetup {
         assertEq(troveNFTRETH.symbol(), "Lv2T_rETH", "Invalid Trove Symbol");
     }
 
-    string topMulti = '<!DOCTYPE html><html lang="en"><head><Title>Test Uri</Title><style>.container{display:flex;flex-direction:row;margin-bottom:20px}.container img{width:300px;height:484px;margin-right:20px}.container pre{flex:1}</style></head><body><script>';
+    string topMulti =
+        '<!DOCTYPE html><html lang="en"><head><Title>Test Uri</Title><style>.container{display:flex;flex-direction:row;margin-bottom:20px}.container img{width:300px;height:484px;margin-right:20px}.container pre{flex:1}</style></head><body><script>';
 
     function _writeUriFile(string[] memory _uris) public {
         string memory pathClean = string.concat("utils/assets/test_output/uris.html");
@@ -155,58 +157,69 @@ contract troveNFTTest is DevTestSetup {
 
         string memory uriCombined;
 
-        uriCombined = 'const encodedStrings=[';
+        uriCombined = "const encodedStrings=[";
         for (uint256 i = 0; i < _uris.length; i++) {
             uriCombined = string.concat(uriCombined, '"', _uris[i], '",');
         }
-        uriCombined = string.concat(uriCombined, '];');
+        uriCombined = string.concat(uriCombined, "];");
 
-        vm.writeLine(pathClean, string.concat(
-            'function processEncodedString(encodedString) { const container = document.createElement("div"); container.className = "container"; container.innerHTML = ` <img><pre></pre>`; const output = container.querySelector("pre"); const image = container.querySelector("img"); try { const base64Data = encodedString.split(",")[1]; const jsonData = JSON.parse(atob(base64Data)); output.innerText = JSON.stringify(jsonData.attributes, null, 2); image.src = jsonData.image || ""; } catch (error) { output.innerText = `Error decoding or parsing JSON: ${error.message}`; } document.body.appendChild(container); } ', 
-            uriCombined,
-            'encodedStrings.forEach((encodedString) => { processEncodedString(encodedString); });'));
+        vm.writeLine(
+            pathClean,
+            string.concat(
+                'function processEncodedString(encodedString) { const container = document.createElement("div"); container.className = "container"; container.innerHTML = ` <img><pre></pre>`; const output = container.querySelector("pre"); const image = container.querySelector("img"); try { const base64Data = encodedString.split(",")[1]; const jsonData = JSON.parse(atob(base64Data)); output.innerText = JSON.stringify(jsonData.attributes, null, 2); image.src = jsonData.image || ""; } catch (error) { output.innerText = `Error decoding or parsing JSON: ${error.message}`; } document.body.appendChild(container); } ',
+                uriCombined,
+                "encodedStrings.forEach((encodedString) => { processEncodedString(encodedString); });"
+            )
+        );
 
         vm.writeLine(pathClean, string.concat("</script></body></html>"));
     }
 
-
     function testTroveURI() public {
-
         string[] memory uris = new string[](NUM_VARIANTS * NUM_COLLATERALS);
 
-        for(uint256 i = 0; i < NUM_VARIANTS; i++) {
+        for (uint256 i = 0; i < NUM_VARIANTS; i++) {
             uris[i] = troveNFTWETH.tokenURI(troveIds[i]);
-            uris[i+NUM_VARIANTS] = troveNFTWstETH.tokenURI(troveIds[i]);
-            uris[i+(NUM_VARIANTS*2)] = troveNFTRETH.tokenURI(troveIds[i]);
-
+            uris[i + NUM_VARIANTS] = troveNFTWstETH.tokenURI(troveIds[i]);
+            uris[i + (NUM_VARIANTS * 2)] = troveNFTRETH.tokenURI(troveIds[i]);
         }
 
         _writeUriFile(uris);
     }
 
     function testTroveURIAttributes() public {
+        address collateral = address(contractsArray[0].collToken);
 
-        string memory uri = troveNFTRETH.tokenURI(troveIds[0]);
+        string memory uri = troveNFTWETH.tokenURI(troveIds[0]);
+        string memory uriSplit = LibString.slice(uri, 29, bytes(uri).length);
+        string memory decodedUri = string(Base64.decode(uriSplit));
 
-        //emit log_string(uri);
+        // Check for expected attributes
+        assertTrue(
+            LibString.contains(decodedUri, '"trait_type": "Collateral Token"'), "Collateral Token attribute missing"
+        );
+        assertTrue(
+            LibString.contains(decodedUri, '"trait_type": "Collateral Amount"'), "Collateral Amount attribute missing"
+        );
+        assertTrue(LibString.contains(decodedUri, '"trait_type": "Debt Token"'), "Debt Token attribute missing");
+        assertTrue(LibString.contains(decodedUri, '"trait_type": "Debt Amount"'), "Debt Amount attribute missing");
+        assertTrue(LibString.contains(decodedUri, '"trait_type": "Interest Rate"'), "Interest Rate attribute missing");
+        assertTrue(LibString.contains(decodedUri, '"trait_type": "Status"'), "Status attribute missing");
 
-        /**
-         * TODO: validate each individual attribute, or manually make a json and validate it all at once
-         *     // Check for expected attributes
-         *     assertTrue(LibString.contains(uri, '"trait_type": "Collateral Token"'), "Collateral Token attribute missing");
-         *     assertTrue(LibString.contains(uri, '"trait_type": "Collateral Amount"'), "Collateral Amount attribute missing");
-         *     assertTrue(LibString.contains(uri, '"trait_type": "Debt Token"'), "Debt Token attribute missing");
-         *     assertTrue(LibString.contains(uri, '"trait_type": "Debt Amount"'), "Debt Amount attribute missing");
-         *     assertTrue(LibString.contains(uri, '"trait_type": "Interest Rate"'), "Interest Rate attribute missing");
-         *     assertTrue(LibString.contains(uri, '"trait_type": "Status"'), "Status attribute missing");
-         *
-         *     // Check for expected values
-         *     //assertTrue(LibString.contains(uri, string.concat('"value": "', Strings.toHexString(address(collateral)))), "Incorrect Collateral Token value");
-         *     assertTrue(LibString.contains(uri, '"value": "2000000000000000000"'), "Incorrect Collateral Amount value");
-         *     assertTrue(LibString.contains(uri, string.concat('"value": "', Strings.toHexString(address(boldToken)))), "Incorrect Debt Token value");
-         *     assertTrue(LibString.contains(uri, '"value": "1000000000000000000000"'), "Incorrect Debt Amount value");
-         *     assertTrue(LibString.contains(uri, '"value": "5000000000000000"'), "Incorrect Interest Rate value");
-         *     assertTrue(LibString.contains(uri, '"value": "Active"'), "Incorrect Status value");
-         */
+        // Check for expected values
+        assertTrue(
+            LibString.contains(decodedUri, string.concat('"value": "', Strings.toHexString(collateral))),
+            "Incorrect Collateral Token value"
+        );
+        assertTrue(
+            LibString.contains(decodedUri, '"value": "10000000000000000000"'), "Incorrect Collateral Amount value"
+        );
+        assertTrue(
+            LibString.contains(decodedUri, string.concat('"value": "', Strings.toHexString(address(boldToken)))),
+            "Incorrect Debt Token value"
+        );
+        assertTrue(LibString.contains(decodedUri, '"value": "10009589041095890410958"'), "Incorrect Debt Amount value");
+        assertTrue(LibString.contains(decodedUri, '"value": "50000000000000000"'), "Incorrect Interest Rate value");
+        assertTrue(LibString.contains(decodedUri, '"value": "Active"'), "Incorrect Status value");
     }
 }

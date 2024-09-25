@@ -44,7 +44,11 @@ contract MetadataNFT is IMetadataNFT {
     function renderSVGImage(TroveData memory _troveData) internal view returns (string memory) {
         return svg._svg(
             baseSVG._svgProps(),
-            string.concat(baseSVG._baseElements(assetReader), bauhaus._bauhaus(IERC20Metadata(_troveData._collToken).symbol(), _troveData._tokenId), dynamicTextComponents(_troveData))
+            string.concat(
+                baseSVG._baseElements(assetReader),
+                bauhaus._bauhaus(IERC20Metadata(_troveData._collToken).symbol(), _troveData._tokenId),
+                dynamicTextComponents(_troveData)
+            )
         );
     }
 

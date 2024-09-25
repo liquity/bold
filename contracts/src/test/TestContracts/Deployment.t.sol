@@ -247,15 +247,14 @@ contract TestDeployer is MetadataDeployment {
     }
 
     function _nameToken(uint256 _index) internal pure returns (string memory) {
-        if(_index == 1) return "Wrapped Staked Ether";
-        if(_index == 2) return "Rocket Pool ETH";
+        if (_index == 1) return "Wrapped Staked Ether";
+        if (_index == 2) return "Rocket Pool ETH";
         return "LST Tester";
     }
 
-
     function _symboltoken(uint256 _index) internal pure returns (string memory) {
-        if(_index == 1) return "wstETH";
-        if(_index == 2) return "rETH";
+        if (_index == 1) return "wstETH";
+        if (_index == 2) return "rETH";
         return "LST";
     }
 

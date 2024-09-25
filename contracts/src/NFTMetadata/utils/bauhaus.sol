@@ -4,7 +4,6 @@ pragma solidity 0.8.18;
 import "./SVG.sol";
 
 library bauhaus {
-
     string constant GOLDEN = "#F5D93A";
     string constant CORAL = "#FB7C59";
     string constant GREEN = "#63D77D";
@@ -27,29 +26,28 @@ library bauhaus {
         bytes32 collSig = keccak256(bytes(_collName));
         uint256 variant = _troveId % 4;
 
-        if(collSig == keccak256("WETH")) {
+        if (collSig == keccak256("WETH")) {
             return _img1(variant);
-        } else if(collSig == keccak256("wstETH")) {
+        } else if (collSig == keccak256("wstETH")) {
             return _img2(variant);
         } else {
             // assume rETH
             return _img3(variant);
         }
-        
     }
 
     function _colorCode2Hex(colorCode _color) private pure returns (string memory) {
-        if(_color == colorCode.GOLDEN) {
+        if (_color == colorCode.GOLDEN) {
             return GOLDEN;
-        } else if(_color == colorCode.CORAL) {
+        } else if (_color == colorCode.CORAL) {
             return CORAL;
-        } else if(_color == colorCode.GREEN) {
+        } else if (_color == colorCode.GREEN) {
             return GREEN;
-        } else if(_color == colorCode.CYAN) {
+        } else if (_color == colorCode.CYAN) {
             return CYAN;
-        } else if(_color == colorCode.BLUE) {
+        } else if (_color == colorCode.BLUE) {
             return BLUE;
-        } else if(_color == colorCode.DARK_BLUE) {
+        } else if (_color == colorCode.DARK_BLUE) {
             return DARK_BLUE;
         } else {
             return BROWN;
@@ -57,19 +55,19 @@ library bauhaus {
     }
 
     struct COLORS {
-        colorCode rect1; 
-        colorCode rect2; 
-        colorCode rect3;  
-        colorCode rect4; 
-        colorCode rect5; 
-        colorCode poly; 
-        colorCode circle1; 
-        colorCode circle2; 
-        colorCode circle3; 
+        colorCode rect1;
+        colorCode rect2;
+        colorCode rect3;
+        colorCode rect4;
+        colorCode rect5;
+        colorCode poly;
+        colorCode circle1;
+        colorCode circle2;
+        colorCode circle3;
     }
 
     function _colors1(uint256 _variant) internal pure returns (COLORS memory) {
-        if(_variant == 0) {
+        if (_variant == 0) {
             return COLORS(
                 colorCode.BLUE, // rect1
                 colorCode.GOLDEN, // rect2
@@ -81,7 +79,7 @@ library bauhaus {
                 colorCode.DARK_BLUE, // circle2
                 colorCode.GOLDEN // circle3
             );
-        } else if(_variant == 1) {
+        } else if (_variant == 1) {
             return COLORS(
                 colorCode.GREEN, // rect1
                 colorCode.BLUE, // rect2
@@ -93,7 +91,7 @@ library bauhaus {
                 colorCode.DARK_BLUE, // circle2
                 colorCode.BLUE // circle3
             );
-        } else if(_variant == 2) {
+        } else if (_variant == 2) {
             return COLORS(
                 colorCode.BLUE, // rect1
                 colorCode.GOLDEN, // rect2
@@ -194,17 +192,11 @@ library bauhaus {
         return string.concat(
             // left triangle | poly1
             svg.polygon(
-                string.concat(
-                    svg.prop("points","16,55 72,55 16,111"),
-                    svg.prop("fill", _colorCode2Hex(_colors.poly))
-                )
+                string.concat(svg.prop("points", "16,55 72,55 16,111"), svg.prop("fill", _colorCode2Hex(_colors.poly)))
             ),
             // right triangle | poly2
             svg.polygon(
-                string.concat(
-                    svg.prop("points","72,55 128,55 72,111"),
-                    svg.prop("fill", _colorCode2Hex(_colors.poly))
-                )
+                string.concat(svg.prop("points", "72,55 128,55 72,111"), svg.prop("fill", _colorCode2Hex(_colors.poly)))
             )
         );
     }
@@ -214,13 +206,19 @@ library bauhaus {
             //large central circle | circle1
             svg.circle(
                 string.concat(
-                    svg.prop("cx", "150"), svg.prop("cy", "189"), svg.prop("r", "78"), svg.prop("fill", _colorCode2Hex(_colors.circle1))
+                    svg.prop("cx", "150"),
+                    svg.prop("cy", "189"),
+                    svg.prop("r", "78"),
+                    svg.prop("fill", _colorCode2Hex(_colors.circle1))
                 )
             ),
             //small right circle | circle2
             svg.circle(
                 string.concat(
-                    svg.prop("cx", "228"), svg.prop("cy", "295"), svg.prop("r", "28"), svg.prop("fill", _colorCode2Hex(_colors.circle2))
+                    svg.prop("cx", "228"),
+                    svg.prop("cy", "295"),
+                    svg.prop("r", "28"),
+                    svg.prop("fill", _colorCode2Hex(_colors.circle2))
                 )
             ),
             //small right half circle | circle3
@@ -229,10 +227,10 @@ library bauhaus {
                 svg.prop("fill", _colorCode2Hex(_colors.circle3))
             )
         );
-    }   
+    }
 
     function _colors2(uint256 _variant) internal pure returns (COLORS memory) {
-        if(_variant == 0) {
+        if (_variant == 0) {
             return COLORS(
                 colorCode.BROWN, // rect1
                 colorCode.GOLDEN, // rect2
@@ -244,7 +242,7 @@ library bauhaus {
                 colorCode.CYAN, // circle2
                 colorCode.GREEN // circle3
             );
-        } else if(_variant == 1) {
+        } else if (_variant == 1) {
             return COLORS(
                 colorCode.GREEN, // rect1
                 colorCode.BROWN, // rect2
@@ -256,7 +254,7 @@ library bauhaus {
                 colorCode.CORAL, // circle2
                 colorCode.BLUE // circle3
             );
-        } else if(_variant == 2) {
+        } else if (_variant == 2) {
             return COLORS(
                 colorCode.BLUE, // rect1
                 colorCode.GOLDEN, // rect2
@@ -358,7 +356,10 @@ library bauhaus {
             //lower left circle | circle1
             svg.circle(
                 string.concat(
-                    svg.prop("cx", "44"), svg.prop("cy", "295"), svg.prop("r", "28"), svg.prop("fill", _colorCode2Hex(_colors.circle1))
+                    svg.prop("cx", "44"),
+                    svg.prop("cy", "295"),
+                    svg.prop("r", "28"),
+                    svg.prop("fill", _colorCode2Hex(_colors.circle1))
                 )
             ),
             //upper left half circle | circle2
@@ -375,7 +376,7 @@ library bauhaus {
     }
 
     function _colors3(uint256 _variant) internal pure returns (COLORS memory) {
-        if(_variant == 0) {
+        if (_variant == 0) {
             return COLORS(
                 colorCode.BLUE, // rect1
                 colorCode.CORAL, // rect2
@@ -387,7 +388,7 @@ library bauhaus {
                 colorCode.CYAN, // circle2
                 colorCode.GOLDEN // circle3
             );
-        } else if(_variant == 1) {
+        } else if (_variant == 1) {
             return COLORS(
                 colorCode.CORAL, // rect1
                 colorCode.GREEN, // rect2
@@ -399,7 +400,7 @@ library bauhaus {
                 colorCode.BLUE, // circle2
                 colorCode.CYAN // circle3
             );
-        } else if(_variant == 2) {
+        } else if (_variant == 2) {
             return COLORS(
                 colorCode.CORAL, // rect1
                 colorCode.CYAN, // rect2
@@ -491,7 +492,10 @@ library bauhaus {
             //upper left circle | circle1
             svg.circle(
                 string.concat(
-                    svg.prop("cx", "91"), svg.prop("cy", "130"), svg.prop("r", "75"), svg.prop("fill", _colorCode2Hex(_colors.circle1))
+                    svg.prop("cx", "91"),
+                    svg.prop("cy", "130"),
+                    svg.prop("r", "75"),
+                    svg.prop("fill", _colorCode2Hex(_colors.circle1))
                 )
             ),
             //upper right half circle | circle2
