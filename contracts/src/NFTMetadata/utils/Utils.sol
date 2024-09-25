@@ -36,6 +36,11 @@ library numUtils {
         string memory wholeStr = toLocale(LibString.toString(whole));
 
         if (fraction == 0) {
+            wholeStr = string.concat(wholeStr, ".");
+            for(uint8 i = 0; i < _precision; i++) {
+                wholeStr = string.concat(wholeStr, "0");
+            }
+
             return wholeStr;
         }
 
