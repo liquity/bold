@@ -45,8 +45,7 @@ library SafeTransferLib {
     uint256 internal constant GAS_STIPEND_NO_GRIEF = 100000;
 
     /// @dev The unique EIP-712 domain domain separator for the DAI token contract.
-    bytes32 internal constant DAI_DOMAIN_SEPARATOR =
-        0xdbb8cf42e1ecb028be3f3dbc922e1d878b963f411dc388ced501601c60f7c6f7;
+    bytes32 internal constant DAI_DOMAIN_SEPARATOR = 0xdbb8cf42e1ecb028be3f3dbc922e1d878b963f411dc388ced501601c60f7c6f7;
 
     /// @dev The address for the WETH9 contract on Ethereum mainnet.
     address internal constant WETH9 = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -164,10 +163,7 @@ library SafeTransferLib {
     }
 
     /// @dev Sends `amount` (in wei) ETH to `to`, with a `gasStipend`.
-    function trySafeTransferETH(address to, uint256 amount, uint256 gasStipend)
-        internal
-        returns (bool success)
-    {
+    function trySafeTransferETH(address to, uint256 amount, uint256 gasStipend) internal returns (bool success) {
         /// @solidity memory-safe-assembly
         assembly {
             success := call(gasStipend, to, amount, codesize(), 0x00, codesize(), 0x00)
@@ -175,10 +171,7 @@ library SafeTransferLib {
     }
 
     /// @dev Sends all the ETH in the current contract to `to`, with a `gasStipend`.
-    function trySafeTransferAllETH(address to, uint256 gasStipend)
-        internal
-        returns (bool success)
-    {
+    function trySafeTransferAllETH(address to, uint256 gasStipend) internal returns (bool success) {
         /// @solidity memory-safe-assembly
         assembly {
             success := call(gasStipend, to, selfbalance(), codesize(), 0x00, codesize(), 0x00)
@@ -245,10 +238,7 @@ library SafeTransferLib {
     /// Reverts upon failure.
     ///
     /// The `from` account must have their entire balance approved for the current contract to manage.
-    function safeTransferAllFrom(address token, address from, address to)
-        internal
-        returns (uint256 amount)
-    {
+    function safeTransferAllFrom(address token, address from, address to) internal returns (uint256 amount) {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40) // Cache the free memory pointer.
@@ -427,9 +417,7 @@ library SafeTransferLib {
 
     /// @dev Sends `amount` of ERC20 `token` from `from` to `to` via Permit2.
     /// Reverts upon failure.
-    function permit2TransferFrom(address token, address from, address to, uint256 amount)
-        internal
-    {
+    function permit2TransferFrom(address token, address from, address to, uint256 amount) internal {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40)

@@ -80,13 +80,11 @@ contract MockERC6551Registry {
         }
     }
 
-    function account(
-        address implementation,
-        bytes32 salt,
-        uint256 chainId,
-        address tokenContract,
-        uint256 tokenId
-    ) external view returns (address) {
+    function account(address implementation, bytes32 salt, uint256 chainId, address tokenContract, uint256 tokenId)
+        external
+        view
+        returns (address)
+    {
         assembly {
             // Silence unused variable warnings
             pop(chainId)

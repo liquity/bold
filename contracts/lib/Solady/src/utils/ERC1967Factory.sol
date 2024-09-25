@@ -66,8 +66,7 @@ contract ERC1967Factory {
 
     /// @dev The ERC-1967 storage slot for the implementation in the proxy.
     /// `uint256(keccak256("eip1967.proxy.implementation")) - 1`.
-    uint256 internal constant _IMPLEMENTATION_SLOT =
-        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+    uint256 internal constant _IMPLEMENTATION_SLOT = 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      ADMIN FUNCTIONS                       */
@@ -109,10 +108,7 @@ contract ERC1967Factory {
     /// @dev Upgrades the proxy to point to `implementation`.
     /// Then, calls the proxy with abi encoded `data`.
     /// The caller of this function must be the admin of the proxy on this factory.
-    function upgradeAndCall(address proxy, address implementation, bytes calldata data)
-        public
-        payable
-    {
+    function upgradeAndCall(address proxy, address implementation, bytes calldata data) public payable {
         assembly {
             // Check if the caller is the admin of the proxy.
             if iszero(eq(sload(shl(96, proxy)), caller())) {
@@ -178,12 +174,11 @@ contract ERC1967Factory {
     /// and returns its deterministic address.
     /// The value passed into this function will be forwarded to the proxy.
     /// Then, calls the proxy with abi encoded `data`.
-    function deployDeterministicAndCall(
-        address implementation,
-        address admin,
-        bytes32 salt,
-        bytes calldata data
-    ) public payable returns (address proxy) {
+    function deployDeterministicAndCall(address implementation, address admin, bytes32 salt, bytes calldata data)
+        public
+        payable
+        returns (address proxy)
+    {
         assembly {
             // If the salt does not start with the zero address or the caller.
             if iszero(or(iszero(shr(96, salt)), eq(caller(), shr(96, salt)))) {
@@ -195,13 +190,10 @@ contract ERC1967Factory {
     }
 
     /// @dev Deploys the proxy, with optionality to deploy deterministically with a `salt`.
-    function _deploy(
-        address implementation,
-        address admin,
-        bytes32 salt,
-        bool useSalt,
-        bytes calldata data
-    ) internal returns (address proxy) {
+    function _deploy(address implementation, address admin, bytes32 salt, bool useSalt, bytes calldata data)
+        internal
+        returns (address proxy)
+    {
         bytes32 m = _initCode();
         assembly {
             // Create the proxy.

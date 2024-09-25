@@ -51,11 +51,7 @@ library EfficientHashLib {
     }
 
     /// @dev Returns `keccak256(abi.encode(value0, value1, value2))`.
-    function hash(bytes32 value0, bytes32 value1, bytes32 value2)
-        internal
-        pure
-        returns (bytes32 result)
-    {
+    function hash(bytes32 value0, bytes32 value1, bytes32 value2) internal pure returns (bytes32 result) {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40)
@@ -67,11 +63,7 @@ library EfficientHashLib {
     }
 
     /// @dev Returns `keccak256(abi.encode(value0, value1, value2))`.
-    function hash(uint256 value0, uint256 value1, uint256 value2)
-        internal
-        pure
-        returns (bytes32 result)
-    {
+    function hash(uint256 value0, uint256 value1, uint256 value2) internal pure returns (bytes32 result) {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40)
@@ -153,14 +145,11 @@ library EfficientHashLib {
     }
 
     /// @dev Returns `keccak256(abi.encode(value0, .., value5))`.
-    function hash(
-        bytes32 value0,
-        bytes32 value1,
-        bytes32 value2,
-        bytes32 value3,
-        bytes32 value4,
-        bytes32 value5
-    ) internal pure returns (bytes32 result) {
+    function hash(bytes32 value0, bytes32 value1, bytes32 value2, bytes32 value3, bytes32 value4, bytes32 value5)
+        internal
+        pure
+        returns (bytes32 result)
+    {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40)
@@ -175,14 +164,11 @@ library EfficientHashLib {
     }
 
     /// @dev Returns `keccak256(abi.encode(value0, .., value5))`.
-    function hash(
-        uint256 value0,
-        uint256 value1,
-        uint256 value2,
-        uint256 value3,
-        uint256 value4,
-        uint256 value5
-    ) internal pure returns (bytes32 result) {
+    function hash(uint256 value0, uint256 value1, uint256 value2, uint256 value3, uint256 value4, uint256 value5)
+        internal
+        pure
+        returns (bytes32 result)
+    {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40)
@@ -306,11 +292,7 @@ library EfficientHashLib {
 
     /// @dev Sets `buffer[i]` to `value`, without a bounds check.
     /// Returns the `buffer` for function chaining.
-    function set(bytes32[] memory buffer, uint256 i, bytes32 value)
-        internal
-        pure
-        returns (bytes32[] memory)
-    {
+    function set(bytes32[] memory buffer, uint256 i, bytes32 value) internal pure returns (bytes32[] memory) {
         /// @solidity memory-safe-assembly
         assembly {
             mstore(add(buffer, shl(5, add(1, i))), value)
@@ -320,11 +302,7 @@ library EfficientHashLib {
 
     /// @dev Sets `buffer[i]` to `value`, without a bounds check.
     /// Returns the `buffer` for function chaining.
-    function set(bytes32[] memory buffer, uint256 i, uint256 value)
-        internal
-        pure
-        returns (bytes32[] memory)
-    {
+    function set(bytes32[] memory buffer, uint256 i, uint256 value) internal pure returns (bytes32[] memory) {
         /// @solidity memory-safe-assembly
         assembly {
             mstore(add(buffer, shl(5, add(1, i))), value)

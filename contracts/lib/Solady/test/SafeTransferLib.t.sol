@@ -64,12 +64,10 @@ contract SafeTransferLibTest is SoladyTest {
         "PermitSingle(PermitDetails details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)"
     );
 
-    bytes32 internal constant _DAI_PERMIT_TYPEHASH = keccak256(
-        "Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed)"
-    );
-    bytes32 internal constant _PERMIT_TYPEHASH = keccak256(
-        "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-    );
+    bytes32 internal constant _DAI_PERMIT_TYPEHASH =
+        keccak256("Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed)");
+    bytes32 internal constant _PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     function setUp() public {
         vm.chainId(1);
@@ -125,9 +123,7 @@ contract SafeTransferLibTest is SoladyTest {
     }
 
     function testTransferFromWithMissingReturn() public {
-        verifySafeTransferFrom(
-            address(missingReturn), address(0xFEED), address(0xBEEF), 1e18, _SUCCESS
-        );
+        verifySafeTransferFrom(address(missingReturn), address(0xFEED), address(0xBEEF), 1e18, _SUCCESS);
     }
 
     function testTransferFromWithStandardERC20() public {
@@ -135,9 +131,7 @@ contract SafeTransferLibTest is SoladyTest {
     }
 
     function testTransferFromWithReturnsTooMuch() public {
-        verifySafeTransferFrom(
-            address(returnsTooMuch), address(0xFEED), address(0xBEEF), 1e18, _SUCCESS
-        );
+        verifySafeTransferFrom(address(returnsTooMuch), address(0xFEED), address(0xBEEF), 1e18, _SUCCESS);
     }
 
     function testTransferFromWithNonContract() public {
@@ -196,9 +190,8 @@ contract SafeTransferLibTest is SoladyTest {
 
         {
             uint256 counterBefore = recipient.counter();
-            bool success = SafeTransferLib.trySafeTransferETH(
-                address(recipient), 1e18, SafeTransferLib.GAS_STIPEND_NO_GRIEF
-            );
+            bool success =
+                SafeTransferLib.trySafeTransferETH(address(recipient), 1e18, SafeTransferLib.GAS_STIPEND_NO_GRIEF);
             assertTrue(success);
             assertEq(recipient.counter(), counterBefore + 1);
         }
@@ -223,9 +216,8 @@ contract SafeTransferLibTest is SoladyTest {
         }
 
         {
-            bool success = SafeTransferLib.trySafeTransferETH(
-                address(recipient), 1e18, SafeTransferLib.GAS_STIPEND_NO_GRIEF
-            );
+            bool success =
+                SafeTransferLib.trySafeTransferETH(address(recipient), 1e18, SafeTransferLib.GAS_STIPEND_NO_GRIEF);
             assertFalse(success);
             assertTrue(recipient.garbage() == 0);
         }
@@ -250,13 +242,9 @@ contract SafeTransferLibTest is SoladyTest {
             uint256 r = uint256(keccak256(abi.encode(randomness))) % 3;
             // Send to a griever with a gas stipend. Should not revert.
             if (r == 0) {
-                this.forceSafeTransferETH(
-                    address(recipient), amount, SafeTransferLib.GAS_STIPEND_NO_STORAGE_WRITES
-                );
+                this.forceSafeTransferETH(address(recipient), amount, SafeTransferLib.GAS_STIPEND_NO_STORAGE_WRITES);
             } else if (r == 1) {
-                this.forceSafeTransferETH(
-                    address(recipient), amount, SafeTransferLib.GAS_STIPEND_NO_GRIEF
-                );
+                this.forceSafeTransferETH(address(recipient), amount, SafeTransferLib.GAS_STIPEND_NO_GRIEF);
             } else {
                 this.forceSafeTransferETH(address(recipient), amount);
             }
@@ -312,24 +300,16 @@ contract SafeTransferLibTest is SoladyTest {
     }
 
     function testTransferFromWithReturnsFalseReverts() public {
-        verifySafeTransferFrom(
-            address(returnsFalse), address(0xFEED), address(0xBEEF), 1e18, _REVERTS_WITH_SELECTOR
-        );
+        verifySafeTransferFrom(address(returnsFalse), address(0xFEED), address(0xBEEF), 1e18, _REVERTS_WITH_SELECTOR);
     }
 
     function testTransferFromWithRevertingReverts() public {
-        verifySafeTransferFrom(
-            address(reverting), address(0xFEED), address(0xBEEF), 1e18, _REVERTS_WITH_ANY
-        );
+        verifySafeTransferFrom(address(reverting), address(0xFEED), address(0xBEEF), 1e18, _REVERTS_WITH_ANY);
     }
 
     function testTransferFromWithReturnsTooLittleReverts() public {
         verifySafeTransferFrom(
-            address(returnsTooLittle),
-            address(0xFEED),
-            address(0xBEEF),
-            1e18,
-            _REVERTS_WITH_SELECTOR
+            address(returnsTooLittle), address(0xFEED), address(0xBEEF), 1e18, _REVERTS_WITH_SELECTOR
         );
     }
 
@@ -394,9 +374,7 @@ contract SafeTransferLibTest is SoladyTest {
         SafeTransferLib.safeTransferAllFrom(address(erc20), address(this), address(1));
     }
 
-    function testTransferAllFromWithStandardERC20(address from, address to, uint256 amount)
-        public
-    {
+    function testTransferAllFromWithStandardERC20(address from, address to, uint256 amount) public {
         while (!(to != from && to != address(this) && from != address(this))) {
             to = _randomNonZeroAddress();
             from = _randomNonZeroAddress();
@@ -409,15 +387,10 @@ contract SafeTransferLibTest is SoladyTest {
 
         forceApprove(address(erc20), from, address(this), type(uint256).max);
 
-        SafeTransferLib.safeTransferFrom(
-            address(erc20), _brutalized(from), _brutalized(to), originalBalance - amount
-        );
+        SafeTransferLib.safeTransferFrom(address(erc20), _brutalized(from), _brutalized(to), originalBalance - amount);
         assertEq(erc20.balanceOf(from), amount);
 
-        assertEq(
-            SafeTransferLib.safeTransferAllFrom(address(erc20), _brutalized(from), _brutalized(to)),
-            amount
-        );
+        assertEq(SafeTransferLib.safeTransferAllFrom(address(erc20), _brutalized(from), _brutalized(to)), amount);
 
         assertEq(erc20.balanceOf(address(this)), 0);
         assertEq(erc20.balanceOf(to), originalBalance);
@@ -473,12 +446,7 @@ contract SafeTransferLibTest is SoladyTest {
         verifySafeTransferFrom(address(returnsRawBytes), from, to, amount, _SUCCESS);
     }
 
-    function testTransferFromWithNonContract(
-        address nonContract,
-        address from,
-        address to,
-        uint256 amount
-    ) public {
+    function testTransferFromWithNonContract(address nonContract, address from, address to, uint256 amount) public {
         if (uint256(uint160(nonContract)) <= 18 || nonContract.code.length > 0) {
             return;
         }
@@ -512,9 +480,7 @@ contract SafeTransferLibTest is SoladyTest {
         SafeTransferLib.safeApprove(nonContract, _brutalized(to), amount);
     }
 
-    function testApproveWithRetryWithNonContract(address nonContract, address to, uint256 amount)
-        public
-    {
+    function testApproveWithRetryWithNonContract(address nonContract, address to, uint256 amount) public {
         if (uint256(uint160(nonContract)) <= 18 || nonContract.code.length > 0) {
             return;
         }
@@ -569,27 +535,19 @@ contract SafeTransferLibTest is SoladyTest {
         verifySafeTransfer(address(returnsRawBytes), to, amount, _REVERTS_WITH_ANY);
     }
 
-    function testTransferFromWithReturnsFalseReverts(address from, address to, uint256 amount)
-        public
-    {
+    function testTransferFromWithReturnsFalseReverts(address from, address to, uint256 amount) public {
         verifySafeTransferFrom(address(returnsFalse), from, to, amount, _REVERTS_WITH_SELECTOR);
     }
 
-    function testTransferFromWithRevertingReverts(address from, address to, uint256 amount)
-        public
-    {
+    function testTransferFromWithRevertingReverts(address from, address to, uint256 amount) public {
         verifySafeTransferFrom(address(reverting), from, to, amount, _REVERTS_WITH_ANY);
     }
 
-    function testTransferFromWithReturnsTooLittleReverts(address from, address to, uint256 amount)
-        public
-    {
+    function testTransferFromWithReturnsTooLittleReverts(address from, address to, uint256 amount) public {
         verifySafeTransferFrom(address(returnsTooLittle), from, to, amount, _REVERTS_WITH_SELECTOR);
     }
 
-    function testTransferFromWithReturnsTwoReverts(address from, address to, uint256 amount)
-        public
-    {
+    function testTransferFromWithReturnsTwoReverts(address from, address to, uint256 amount) public {
         verifySafeTransferFrom(address(returnsTwo), from, to, amount, _REVERTS_WITH_SELECTOR);
     }
 
@@ -636,9 +594,7 @@ contract SafeTransferLibTest is SoladyTest {
             vm.expectRevert(SafeTransferLib.TransferFailed.selector);
         } else if (mode == _REVERTS_WITH_ANY) {
             (bool success,) = address(this).call(
-                abi.encodeWithSignature(
-                    "verifySafeTransfer(address,address,uint256)", token, to, amount
-                )
+                abi.encodeWithSignature("verifySafeTransfer(address,address,uint256)", token, to, amount)
             );
             assertFalse(success);
             return;
@@ -663,23 +619,13 @@ contract SafeTransferLibTest is SoladyTest {
         }
     }
 
-    function verifySafeTransferFrom(
-        address token,
-        address from,
-        address to,
-        uint256 amount,
-        uint256 mode
-    ) public {
+    function verifySafeTransferFrom(address token, address from, address to, uint256 amount, uint256 mode) public {
         if (mode == _REVERTS_WITH_SELECTOR) {
             vm.expectRevert(SafeTransferLib.TransferFromFailed.selector);
         } else if (mode == _REVERTS_WITH_ANY) {
             (bool success,) = address(this).call(
                 abi.encodeWithSignature(
-                    "verifySafeTransferFrom(address,address,address,uint256)",
-                    token,
-                    from,
-                    to,
-                    amount
+                    "verifySafeTransferFrom(address,address,address,uint256)", token, from, to, amount
                 )
             );
             assertFalse(success);
@@ -688,10 +634,7 @@ contract SafeTransferLibTest is SoladyTest {
         this.verifySafeTransferFrom(token, from, to, amount);
     }
 
-    function verifySafeTransferFrom(address token, address from, address to, uint256 amount)
-        public
-        brutalizeMemory
-    {
+    function verifySafeTransferFrom(address token, address from, address to, uint256 amount) public brutalizeMemory {
         forceApprove(token, from, address(this), amount);
 
         // We cast to MissingReturnToken here because it won't check
@@ -718,9 +661,7 @@ contract SafeTransferLibTest is SoladyTest {
             vm.expectRevert(SafeTransferLib.ApproveFailed.selector);
         } else if (mode == _REVERTS_WITH_ANY) {
             (bool success,) = address(this).call(
-                abi.encodeWithSignature(
-                    "verifySafeApprove(address,address,uint256)", token, to, amount
-                )
+                abi.encodeWithSignature("verifySafeApprove(address,address,uint256)", token, to, amount)
             );
             assertFalse(success);
             return;
@@ -747,9 +688,7 @@ contract SafeTransferLibTest is SoladyTest {
             vm.store(token, allowanceSlot, bytes32(uint256(amount)));
         } else {
             vm.store(
-                token,
-                keccak256(abi.encode(to, keccak256(abi.encode(from, uint256(2))))),
-                bytes32(uint256(amount))
+                token, keccak256(abi.encode(to, keccak256(abi.encode(from, uint256(2))))), bytes32(uint256(amount))
             );
         }
 
@@ -827,9 +766,7 @@ contract SafeTransferLibTest is SoladyTest {
         t.spender = _randomNonZeroAddress();
         t.amount = _bound(_random(), 0, type(uint160).max);
         t.nonce = erc20.nonces(t.signer);
-        t.hash = keccak256(
-            abi.encode(_PERMIT_TYPEHASH, t.signer, t.spender, t.amount, t.nonce, t.deadline)
-        );
+        t.hash = keccak256(abi.encode(_PERMIT_TYPEHASH, t.signer, t.spender, t.amount, t.nonce, t.deadline));
         t.hash = keccak256(abi.encodePacked("\x19\x01", erc20.DOMAIN_SEPARATOR(), t.hash));
         (t.v, t.r, t.s) = vm.sign(t.privateKey, t.hash);
         this.permit2(t);
@@ -843,11 +780,8 @@ contract SafeTransferLibTest is SoladyTest {
         t.spender = _randomNonZeroAddress();
         t.amount = _bound(_random(), 0, type(uint160).max);
         t.nonce = ERC20(_DAI).nonces(t.signer);
-        t.hash = keccak256(
-            abi.encode(_DAI_PERMIT_TYPEHASH, t.signer, t.spender, t.nonce, t.deadline, true)
-        );
-        t.hash =
-            keccak256(abi.encodePacked("\x19\x01", SafeTransferLib.DAI_DOMAIN_SEPARATOR, t.hash));
+        t.hash = keccak256(abi.encode(_DAI_PERMIT_TYPEHASH, t.signer, t.spender, t.nonce, t.deadline, true));
+        t.hash = keccak256(abi.encodePacked("\x19\x01", SafeTransferLib.DAI_DOMAIN_SEPARATOR, t.hash));
         (t.v, t.r, t.s) = vm.sign(t.privateKey, t.hash);
         this.permit2(t);
     }
@@ -873,8 +807,7 @@ contract SafeTransferLibTest is SoladyTest {
         t.permit.details.token = address(erc20);
         t.permit.details.amount = t.amount;
         t.permit.details.expiration = type(uint48).max;
-        (,, t.permit.details.nonce) =
-            IPermit2(_PERMIT2).allowance(t.signer, address(erc20), t.spender);
+        (,, t.permit.details.nonce) = IPermit2(_PERMIT2).allowance(t.signer, address(erc20), t.spender);
         t.permit.spender = t.spender;
         t.permit.sigDeadline = t.deadline;
 
@@ -910,8 +843,7 @@ contract SafeTransferLibTest is SoladyTest {
         t.permit.details.token = address(erc20);
         t.permit.details.amount = uint160(t.amount);
         t.permit.details.expiration = type(uint48).max;
-        (,, t.permit.details.nonce) =
-            IPermit2(_PERMIT2).allowance(t.signer, address(erc20), t.spender);
+        (,, t.permit.details.nonce) = IPermit2(_PERMIT2).allowance(t.signer, address(erc20), t.spender);
         t.permit.spender = t.spender;
         t.permit.sigDeadline = t.deadline;
 
@@ -939,8 +871,7 @@ contract SafeTransferLibTest is SoladyTest {
         t.permit.details.token = address(erc20);
         t.permit.details.amount = uint160(t.amount);
         t.permit.details.expiration = type(uint48).max;
-        (,, t.permit.details.nonce) =
-            IPermit2(_PERMIT2).allowance(t.signer, address(erc20), t.spender);
+        (,, t.permit.details.nonce) = IPermit2(_PERMIT2).allowance(t.signer, address(erc20), t.spender);
         t.permit.spender = t.spender;
         t.permit.sigDeadline = t.deadline;
 
@@ -968,8 +899,7 @@ contract SafeTransferLibTest is SoladyTest {
         t.permit.details.token = address(erc20);
         t.permit.details.amount = t.amount;
         t.permit.details.expiration = type(uint48).max;
-        (,, t.permit.details.nonce) =
-            IPermit2(_PERMIT2).allowance(t.signer, address(erc20), t.spender);
+        (,, t.permit.details.nonce) = IPermit2(_PERMIT2).allowance(t.signer, address(erc20), t.spender);
         t.permit.spender = t.spender;
         t.permit.sigDeadline = t.deadline;
 
@@ -981,48 +911,28 @@ contract SafeTransferLibTest is SoladyTest {
     function _generatePermitSignatureRaw(_TestTemps memory t) internal view {
         bytes32 domainSeparator = ERC20(_PERMIT2).DOMAIN_SEPARATOR();
         t.hash = keccak256(abi.encode(_PERMIT_DETAILS_TYPEHASH, t.permit.details));
-        t.hash = keccak256(
-            abi.encode(_PERMIT_SINGLE_TYPEHASH, t.hash, t.permit.spender, t.permit.sigDeadline)
-        );
+        t.hash = keccak256(abi.encode(_PERMIT_SINGLE_TYPEHASH, t.hash, t.permit.spender, t.permit.sigDeadline));
         t.hash = keccak256(abi.encodePacked("\x19\x01", domainSeparator, t.hash));
         (t.v, t.r, t.s) = vm.sign(t.privateKey, t.hash);
     }
 
     function permit2TransferFrom(address token, address from, address to, uint256 amount) public {
-        SafeTransferLib.permit2TransferFrom(
-            _brutalized(token), _brutalized(from), _brutalized(to), amount
-        );
+        SafeTransferLib.permit2TransferFrom(_brutalized(token), _brutalized(from), _brutalized(to), amount);
     }
 
     function safeTransferFrom2(address token, address from, address to, uint256 amount) public {
-        SafeTransferLib.safeTransferFrom2(
-            _brutalized(token), _brutalized(from), _brutalized(to), amount
-        );
+        SafeTransferLib.safeTransferFrom2(_brutalized(token), _brutalized(from), _brutalized(to), amount);
     }
 
     function permit2(_TestTemps calldata t) public {
         SafeTransferLib.permit2(
-            _brutalized(t.token),
-            _brutalized(t.signer),
-            _brutalized(t.spender),
-            t.amount,
-            t.deadline,
-            t.v,
-            t.r,
-            t.s
+            _brutalized(t.token), _brutalized(t.signer), _brutalized(t.spender), t.amount, t.deadline, t.v, t.r, t.s
         );
     }
 
     function simplePermit2(_TestTemps calldata t) public {
         SafeTransferLib.simplePermit2(
-            _brutalized(t.token),
-            _brutalized(t.signer),
-            _brutalized(t.spender),
-            t.amount,
-            t.deadline,
-            t.v,
-            t.r,
-            t.s
+            _brutalized(t.token), _brutalized(t.signer), _brutalized(t.spender), t.amount, t.deadline, t.v, t.r, t.s
         );
     }
 }

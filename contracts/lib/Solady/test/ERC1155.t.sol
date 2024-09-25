@@ -6,21 +6,15 @@ import "./utils/SoladyTest.sol";
 import {ERC1155, MockERC1155} from "./utils/mocks/MockERC1155.sol";
 
 abstract contract ERC1155TokenReceiver {
-    function onERC1155Received(address, address, uint256, uint256, bytes calldata)
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata) external virtual returns (bytes4) {
+        return ERC1155TokenReceiver.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata)
         external
         virtual
         returns (bytes4)
     {
-        return ERC1155TokenReceiver.onERC1155Received.selector;
-    }
-
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata
-    ) external virtual returns (bytes4) {
         return ERC1155TokenReceiver.onERC1155BatchReceived.selector;
     }
 }
@@ -32,13 +26,11 @@ contract ERC1155Recipient is ERC1155TokenReceiver {
     uint256 public amount;
     bytes public mintData;
 
-    function onERC1155Received(
-        address _operator,
-        address _from,
-        uint256 _id,
-        uint256 _amount,
-        bytes calldata _data
-    ) public override returns (bytes4) {
+    function onERC1155Received(address _operator, address _from, uint256 _id, uint256 _amount, bytes calldata _data)
+        public
+        override
+        returns (bytes4)
+    {
         operator = _operator;
         from = _from;
         id = _id;
@@ -89,13 +81,12 @@ contract RevertingERC1155Recipient is ERC1155TokenReceiver {
         revert(string(abi.encodePacked(ERC1155TokenReceiver.onERC1155Received.selector)));
     }
 
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata
-    ) external pure override returns (bytes4) {
+    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata)
+        external
+        pure
+        override
+        returns (bytes4)
+    {
         revert(string(abi.encodePacked(ERC1155TokenReceiver.onERC1155BatchReceived.selector)));
     }
 }
@@ -110,13 +101,12 @@ contract WrongReturnDataERC1155Recipient is ERC1155TokenReceiver {
         return 0xCAFEBEEF;
     }
 
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata
-    ) external pure override returns (bytes4) {
+    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata)
+        external
+        pure
+        override
+        returns (bytes4)
+    {
         return 0xCAFEBEEF;
     }
 }
@@ -135,13 +125,11 @@ contract MockERC1155WithHooks is MockERC1155 {
         return true;
     }
 
-    function _beforeTokenTransfer(
-        address,
-        address,
-        uint256[] memory,
-        uint256[] memory,
-        bytes memory
-    ) internal virtual override {
+    function _beforeTokenTransfer(address, address, uint256[] memory, uint256[] memory, bytes memory)
+        internal
+        virtual
+        override
+    {
         beforeCounter++;
     }
 
@@ -159,14 +147,8 @@ contract ERC1155HooksTest is SoladyTest, ERC1155TokenReceiver {
     uint256 public expectedAfterCounter;
 
     function _checkCounters() internal view {
-        require(
-            expectedBeforeCounter == MockERC1155WithHooks(msg.sender).beforeCounter(),
-            "Before counter mismatch."
-        );
-        require(
-            expectedAfterCounter == MockERC1155WithHooks(msg.sender).afterCounter(),
-            "After counter mismatch."
-        );
+        require(expectedBeforeCounter == MockERC1155WithHooks(msg.sender).beforeCounter(), "Before counter mismatch.");
+        require(expectedAfterCounter == MockERC1155WithHooks(msg.sender).afterCounter(), "After counter mismatch.");
     }
 
     function onERC1155Received(address, address, uint256, uint256, bytes calldata)
@@ -179,13 +161,12 @@ contract ERC1155HooksTest is SoladyTest, ERC1155TokenReceiver {
         return ERC1155TokenReceiver.onERC1155Received.selector;
     }
 
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata
-    ) external virtual override returns (bytes4) {
+    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata)
+        external
+        virtual
+        override
+        returns (bytes4)
+    {
         _checkCounters();
         return ERC1155TokenReceiver.onERC1155BatchReceived.selector;
     }
@@ -239,19 +220,11 @@ contract ERC1155Test is SoladyTest, ERC1155TokenReceiver {
     MockERC1155 token;
 
     event TransferSingle(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256 id,
-        uint256 amount
+        address indexed operator, address indexed from, address indexed to, uint256 id, uint256 amount
     );
 
     event TransferBatch(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256[] ids,
-        uint256[] amounts
+        address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] amounts
     );
 
     event ApprovalForAll(address indexed owner, address indexed operator, bool isApproved);
@@ -312,13 +285,7 @@ contract ERC1155Test is SoladyTest, ERC1155TokenReceiver {
         }
     }
 
-    function _safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) internal {
+    function _safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes memory data) internal {
         if (_randomChance(2)) {
             token.safeTransferFrom(from, to, id, amount, data);
         } else {
@@ -360,9 +327,7 @@ contract ERC1155Test is SoladyTest, ERC1155TokenReceiver {
         _expectBurnEvent(address(this), from, id, amount);
     }
 
-    function _expectBurnEvent(address operator, address from, uint256 id, uint256 amount)
-        internal
-    {
+    function _expectBurnEvent(address operator, address from, uint256 id, uint256 amount) internal {
         _expectTransferEvent(operator, from, address(0), id, amount);
     }
 
@@ -370,53 +335,30 @@ contract ERC1155Test is SoladyTest, ERC1155TokenReceiver {
         _expectTransferEvent(address(this), from, to, id, amount);
     }
 
-    function _expectTransferEvent(
-        address operator,
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount
-    ) internal {
+    function _expectTransferEvent(address operator, address from, address to, uint256 id, uint256 amount) internal {
         vm.expectEmit(true, true, true, true);
         emit TransferSingle(operator, from, to, id, amount);
     }
 
-    function _expectMintEvent(address to, uint256[] memory ids, uint256[] memory amounts)
-        internal
-    {
+    function _expectMintEvent(address to, uint256[] memory ids, uint256[] memory amounts) internal {
         _expectMintEvent(address(this), to, ids, amounts);
     }
 
-    function _expectMintEvent(
-        address operator,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts
-    ) internal {
+    function _expectMintEvent(address operator, address to, uint256[] memory ids, uint256[] memory amounts) internal {
         _expectTransferEvent(operator, address(0), to, ids, amounts);
     }
 
-    function _expectBurnEvent(address from, uint256[] memory ids, uint256[] memory amounts)
-        internal
-    {
+    function _expectBurnEvent(address from, uint256[] memory ids, uint256[] memory amounts) internal {
         _expectBurnEvent(address(this), from, ids, amounts);
     }
 
-    function _expectBurnEvent(
-        address operator,
-        address from,
-        uint256[] memory ids,
-        uint256[] memory amounts
-    ) internal {
+    function _expectBurnEvent(address operator, address from, uint256[] memory ids, uint256[] memory amounts)
+        internal
+    {
         _expectTransferEvent(operator, from, address(0), ids, amounts);
     }
 
-    function _expectTransferEvent(
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts
-    ) internal {
+    function _expectTransferEvent(address from, address to, uint256[] memory ids, uint256[] memory amounts) internal {
         _expectTransferEvent(address(this), from, to, ids, amounts);
     }
 
@@ -435,9 +377,7 @@ contract ERC1155Test is SoladyTest, ERC1155TokenReceiver {
         _expectApprovalForAllEvent(address(this), operator, isApproved);
     }
 
-    function _expectApprovalForAllEvent(address owner, address operator, bool isApproved)
-        internal
-    {
+    function _expectApprovalForAllEvent(address owner, address operator, bool isApproved) internal {
         vm.expectEmit(true, true, true, true);
         emit ApprovalForAll(owner, operator, isApproved);
     }
@@ -608,10 +548,7 @@ contract ERC1155Test is SoladyTest, ERC1155TokenReceiver {
         for (uint256 i = 0; i < t.ids.length; i++) {
             uint256 id = t.ids[i];
 
-            assertEq(
-                token.balanceOf(t.to, id),
-                userMintAmounts[t.to][id] - userTransferOrBurnAmounts[t.to][id]
-            );
+            assertEq(token.balanceOf(t.to, id), userMintAmounts[t.to][id] - userTransferOrBurnAmounts[t.to][id]);
         }
     }
 
@@ -720,9 +657,7 @@ contract ERC1155Test is SoladyTest, ERC1155TokenReceiver {
 
         if (_randomChance(2)) {
             _expectTransferEvent(t.from, t.to, t.ids, t.transferAmounts);
-            token.uncheckedSafeBatchTransferFrom(
-                t.from, t.to, t.ids, t.transferAmounts, t.transferData
-            );
+            token.uncheckedSafeBatchTransferFrom(t.from, t.to, t.ids, t.transferAmounts, t.transferData);
         } else if (_randomChance(8)) {
             vm.expectRevert(ERC1155.NotOwnerNorApproved.selector);
             _safeBatchTransferFrom(t.from, t.to, t.ids, t.transferAmounts, t.transferData);
@@ -739,10 +674,7 @@ contract ERC1155Test is SoladyTest, ERC1155TokenReceiver {
             uint256 id = t.ids[i];
 
             assertEq(token.balanceOf(t.to, id), userTransferOrBurnAmounts[t.from][id]);
-            assertEq(
-                token.balanceOf(t.from, id),
-                userMintAmounts[t.from][id] - userTransferOrBurnAmounts[t.from][id]
-            );
+            assertEq(token.balanceOf(t.from, id), userMintAmounts[t.from][id] - userTransferOrBurnAmounts[t.from][id]);
         }
     }
 

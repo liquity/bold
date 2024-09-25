@@ -29,13 +29,7 @@ contract MockOwnable is Ownable, Brutalizer {
         super.transferOwnership(_brutalized(newOwner));
     }
 
-    function ownershipHandoverExpiresAt(address pendingOwner)
-        public
-        view
-        virtual
-        override
-        returns (uint256 result)
-    {
+    function ownershipHandoverExpiresAt(address pendingOwner) public view virtual override returns (uint256 result) {
         result = super.ownershipHandoverExpiresAt(_brutalized(pendingOwner));
     }
 

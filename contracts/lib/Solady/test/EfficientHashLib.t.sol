@@ -29,9 +29,7 @@ contract EfficientHashLibTest is SoladyTest {
         assertEq(EfficientHashLib.hash(a[0], a[1], a[2], a[3], a[4]), _hash(encoded, 5));
         assertEq(EfficientHashLib.hash(a[0], a[1], a[2], a[3], a[4], a[5]), _hash(encoded, 6));
         assertEq(EfficientHashLib.hash(a[0], a[1], a[2], a[3], a[4], a[5], a[6]), _hash(encoded, 7));
-        assertEq(
-            EfficientHashLib.hash(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]), _hash(encoded, 8)
-        );
+        assertEq(EfficientHashLib.hash(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]), _hash(encoded, 8));
         _checkMemory();
         EfficientHashLib.free(a);
         _checkMemory();
@@ -55,9 +53,7 @@ contract EfficientHashLibTest is SoladyTest {
         assertEq(EfficientHashLib.hash(a[0], a[1], a[2], a[3], a[4]), _hash(encoded, 5));
         assertEq(EfficientHashLib.hash(a[0], a[1], a[2], a[3], a[4], a[5]), _hash(encoded, 6));
         assertEq(EfficientHashLib.hash(a[0], a[1], a[2], a[3], a[4], a[5], a[6]), _hash(encoded, 7));
-        assertEq(
-            EfficientHashLib.hash(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]), _hash(encoded, 8)
-        );
+        assertEq(EfficientHashLib.hash(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]), _hash(encoded, 8));
     }
 
     function testEfficientHashSet() public {
@@ -65,10 +61,7 @@ contract EfficientHashLibTest is SoladyTest {
             EfficientHashLib.malloc(3).set(0, 1).set(1, 2).set(2, 3).hash(),
             keccak256(abi.encode(uint256(1), uint256(2), uint256(3)))
         );
-        assertEq(
-            EfficientHashLib.malloc(2).set(0, 1).set(1, 2).hash(),
-            keccak256(abi.encode(uint256(1), uint256(2)))
-        );
+        assertEq(EfficientHashLib.malloc(2).set(0, 1).set(1, 2).hash(), keccak256(abi.encode(uint256(1), uint256(2))));
         assertEq(EfficientHashLib.malloc(1).set(0, 1).hash(), keccak256(abi.encode(uint256(1))));
         assertEq(EfficientHashLib.malloc(0).hash(), keccak256(""));
         assertEq(EfficientHashLib.malloc(0).hash(), keccak256(""));

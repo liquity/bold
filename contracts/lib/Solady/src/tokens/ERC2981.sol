@@ -127,10 +127,7 @@ abstract contract ERC2981 {
     /// Requirements:
     /// - `receiver` must not be the zero address.
     /// - `feeNumerator` must not be greater than the fee denominator.
-    function _setTokenRoyalty(uint256 tokenId, address receiver, uint96 feeNumerator)
-        internal
-        virtual
-    {
+    function _setTokenRoyalty(uint256 tokenId, address receiver, uint96 feeNumerator) internal virtual {
         uint256 feeDenominator = _feeDenominator();
         /// @solidity memory-safe-assembly
         assembly {

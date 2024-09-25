@@ -9,11 +9,9 @@ contract ECDSATest is SoladyTest {
     using ECDSA for bytes32;
     using ECDSA for bytes;
 
-    bytes32 constant TEST_MESSAGE =
-        0x7dbaf558b0a1a5dc7a67202117ab143c1d8605a983e4a743bc06fcc03162dc0d;
+    bytes32 constant TEST_MESSAGE = 0x7dbaf558b0a1a5dc7a67202117ab143c1d8605a983e4a743bc06fcc03162dc0d;
 
-    bytes32 constant WRONG_MESSAGE =
-        0x2d0828dd7c97cff316356da3c16c68ba2316886a0e05ebafb8291939310d51a3;
+    bytes32 constant WRONG_MESSAGE = 0x2d0828dd7c97cff316356da3c16c68ba2316886a0e05ebafb8291939310d51a3;
 
     address constant SIGNER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
 
@@ -218,14 +216,7 @@ contract ECDSATest is SoladyTest {
         address recovered;
     }
 
-    function _checkSignature(
-        address signer,
-        bytes32 digest,
-        uint8 v,
-        bytes32 r,
-        bytes32 s,
-        bool expected
-    ) internal {
+    function _checkSignature(address signer, bytes32 digest, uint8 v, bytes32 r, bytes32 s, bool expected) internal {
         _CheckSignatureTestTemps memory t;
         t.signer = signer;
         t.expected = expected;
@@ -250,24 +241,20 @@ contract ECDSATest is SoladyTest {
 
     function _checkSignature(_CheckSignatureTestTemps memory t) internal {
         t.s = bytes4(keccak256(abi.encodePacked("tryRecover", t.argsSignature)));
-        (t.success[0], t.result[0]) =
-            address(this).call(abi.encodePacked(t.s, t.encodedCalldataArgs));
+        (t.success[0], t.result[0]) = address(this).call(abi.encodePacked(t.s, t.encodedCalldataArgs));
         t.recovered = t.success[0] ? abi.decode(t.result[0], (address)) : address(0);
         assertEq(t.recovered == t.signer, t.expected);
 
         t.s = bytes4(keccak256(abi.encodePacked("tryRecoverBrutalized", t.argsSignature)));
-        (t.success[1], t.result[1]) =
-            address(this).call(abi.encodePacked(t.s, t.encodedCalldataArgs));
+        (t.success[1], t.result[1]) = address(this).call(abi.encodePacked(t.s, t.encodedCalldataArgs));
         t.recovered = t.success[1] ? abi.decode(t.result[1], (address)) : address(0);
         assertEq(t.recovered == t.signer, t.expected);
 
         t.s = bytes4(keccak256(abi.encodePacked("recover", t.argsSignature)));
-        (t.success[0], t.result[0]) =
-            address(this).call(abi.encodePacked(t.s, t.encodedCalldataArgs));
+        (t.success[0], t.result[0]) = address(this).call(abi.encodePacked(t.s, t.encodedCalldataArgs));
 
         t.s = bytes4(keccak256(abi.encodePacked("recoverBrutalized", t.argsSignature)));
-        (t.success[1], t.result[1]) =
-            address(this).call(abi.encodePacked(t.s, t.encodedCalldataArgs));
+        (t.success[1], t.result[1]) = address(this).call(abi.encodePacked(t.s, t.encodedCalldataArgs));
 
         assertEq(t.success[0], t.success[1]);
         assertEq(t.result[0], t.result[1]);
@@ -352,9 +339,7 @@ contract ECDSATest is SoladyTest {
         }
         assertEq(
             message.toEthSignedMessageHash(),
-            keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n", LibString.toString(n), message)
-            )
+            keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n", LibString.toString(n), message))
         );
         /// @solidity memory-safe-assembly
         assembly {
@@ -367,11 +352,7 @@ contract ECDSATest is SoladyTest {
         assertEq(ECDSA.tryRecover(hash, signature), result);
     }
 
-    function tryRecover(bytes32 hash, uint8 v, bytes32 r, bytes32 s)
-        external
-        view
-        returns (address)
-    {
+    function tryRecover(bytes32 hash, uint8 v, bytes32 r, bytes32 s) external view returns (address) {
         return ECDSA.tryRecover(hash, v, r, s);
     }
 
@@ -428,12 +409,7 @@ contract ECDSATest is SoladyTest {
         assertEq(ECDSA.recover(hash, signature), result);
     }
 
-    function recoverBrutalized(bytes32 hash, bytes32 r, bytes32 vs)
-        external
-        view
-        brutalizeMemory
-        returns (address)
-    {
+    function recoverBrutalized(bytes32 hash, bytes32 r, bytes32 vs) external view brutalizeMemory returns (address) {
         return ECDSA.recover(hash, r, vs);
     }
 
@@ -474,9 +450,7 @@ contract ECDSATest is SoladyTest {
             hex"8688e590483917863a35ef230c0f839be8418aa4ee765228eddfcea7fe265281a24fe3d37b4f138b91e48b268b8a3a6506db9b47083084edbdf3fbcca4c426571c";
 
         assertEq(this.canonicalHashCalldata(signature_malleable), keccak256(signature));
-        assertEq(
-            this.canonicalHashCalldataBrutalizeMemory(signature_malleable), keccak256(signature)
-        );
+        assertEq(this.canonicalHashCalldataBrutalizeMemory(signature_malleable), keccak256(signature));
     }
 
     function testCanonicalHashCalldataWith64bytesSignature() public {
@@ -532,10 +506,7 @@ contract ECDSATest is SoladyTest {
 
             if (_randomChance(4)) {
                 uint8 corruptedV = _brutalizedUint8(uint8(_random()));
-                assertEq(
-                    ECDSA.canonicalHash(abi.encodePacked(r, s, corruptedV)),
-                    ECDSA.canonicalHash(corruptedV, r, s)
-                );
+                assertEq(ECDSA.canonicalHash(abi.encodePacked(r, s, corruptedV)), ECDSA.canonicalHash(corruptedV, r, s));
                 if (corruptedV == 27 || corruptedV == 28) {
                     assertEq(
                         ECDSA.canonicalHash(abi.encodePacked(r, s, corruptedV)),
@@ -551,9 +522,7 @@ contract ECDSATest is SoladyTest {
         if (_randomChance(8)) {
             assertEq(this.canonicalHashCalldata(corruptedSignature), corruptedCHash);
             if (_randomChance(2)) {
-                assertEq(
-                    this.canonicalHashCalldataBrutalizeMemory(corruptedSignature), corruptedCHash
-                );
+                assertEq(this.canonicalHashCalldataBrutalizeMemory(corruptedSignature), corruptedCHash);
             }
         }
 

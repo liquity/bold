@@ -5,26 +5,28 @@ pragma solidity >=0.6.12;
 
 contract Uint96ERC20 {
     // --- ERC20 Data ---
-    string  public constant name = "Token";
-    string  public constant symbol = "TKN";
-    uint8   public decimals = 18;
-    uint96  internal supply;
+    string public constant name = "Token";
+    string public constant symbol = "TKN";
+    uint8 public decimals = 18;
+    uint96 internal supply;
 
-    mapping (address => uint96)                      internal balances;
-    mapping (address => mapping (address => uint96)) internal allowances;
+    mapping(address => uint96) internal balances;
+    mapping(address => mapping(address => uint96)) internal allowances;
 
-    event Approval(address indexed src, address indexed guy, uint wad);
-    event Transfer(address indexed src, address indexed dst, uint wad);
+    event Approval(address indexed src, address indexed guy, uint256 wad);
+    event Transfer(address indexed src, address indexed dst, uint256 wad);
 
     // --- Math ---
     function add(uint96 x, uint96 y) internal pure returns (uint96 z) {
         require((z = x + y) >= x);
     }
+
     function sub(uint96 x, uint96 y) internal pure returns (uint96 z) {
         require((z = x - y) <= x);
     }
+
     function safe96(uint256 n) internal pure returns (uint96) {
-        require(n < 2**96);
+        require(n < 2 ** 96);
         return uint96(n);
     }
 
@@ -36,21 +38,24 @@ contract Uint96ERC20 {
     }
 
     // --- Getters ---
-    function totalSupply() external view returns (uint) {
+    function totalSupply() external view returns (uint256) {
         return supply;
     }
-    function balanceOf(address usr) external view returns (uint) {
+
+    function balanceOf(address usr) external view returns (uint256) {
         return balances[usr];
     }
-    function allowance(address src, address dst) external view returns (uint) {
+
+    function allowance(address src, address dst) external view returns (uint256) {
         return allowances[src][dst];
     }
 
     // --- Token ---
-    function transfer(address dst, uint wad) virtual public returns (bool) {
+    function transfer(address dst, uint256 wad) public virtual returns (bool) {
         return transferFrom(msg.sender, dst, wad);
     }
-    function transferFrom(address src, address dst, uint wad) virtual public returns (bool) {
+
+    function transferFrom(address src, address dst, uint256 wad) public virtual returns (bool) {
         uint96 amt = safe96(wad);
 
         if (src != msg.sender && allowances[src][msg.sender] != type(uint96).max) {
@@ -62,9 +67,10 @@ contract Uint96ERC20 {
         emit Transfer(src, dst, wad);
         return true;
     }
-    function approve(address usr, uint wad) virtual public returns (bool) {
+
+    function approve(address usr, uint256 wad) public virtual returns (bool) {
         uint96 amt;
-        if (wad == type(uint).max) {
+        if (wad == type(uint256).max) {
             amt = type(uint96).max;
         } else {
             amt = safe96(wad);
@@ -76,11 +82,11 @@ contract Uint96ERC20 {
         return true;
     }
 
-    function mint(address usr, uint wad) virtual public {
+    function mint(address usr, uint256 wad) public virtual {
         uint96 amt = safe96(wad);
 
         balances[usr] = add(balances[usr], amt);
-        supply        = add(supply, amt);
+        supply = add(supply, amt);
 
         emit Transfer(address(0), usr, wad);
     }

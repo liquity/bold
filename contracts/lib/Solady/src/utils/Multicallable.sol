@@ -69,8 +69,7 @@ abstract contract Multicallable {
                 returndatacopy(add(m, 0x20), 0x00, returndatasize())
                 // Advance the `resultsOffset` by `returndatasize() + 0x20`,
                 // rounded up to the next multiple of 32.
-                resultsOffset :=
-                    and(add(add(resultsOffset, returndatasize()), 0x3f), 0xffffffffffffffe0)
+                resultsOffset := and(add(add(resultsOffset, returndatasize()), 0x3f), 0xffffffffffffffe0)
                 if iszero(lt(results, end)) { break }
             }
             return(0x00, add(resultsOffset, 0x40))

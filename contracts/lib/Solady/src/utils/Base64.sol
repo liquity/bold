@@ -10,11 +10,7 @@ library Base64 {
     /// See: https://datatracker.ietf.org/doc/html/rfc4648
     /// @param fileSafe  Whether to replace '+' with '-' and '/' with '_'.
     /// @param noPadding Whether to strip away the padding.
-    function encode(bytes memory data, bool fileSafe, bool noPadding)
-        internal
-        pure
-        returns (string memory result)
-    {
+    function encode(bytes memory data, bool fileSafe, bool noPadding) internal pure returns (string memory result) {
         /// @solidity memory-safe-assembly
         assembly {
             let dataLength := mload(data)
@@ -80,11 +76,7 @@ library Base64 {
 
     /// @dev Encodes `data` using the base64 encoding described in RFC 4648.
     /// Equivalent to `encode(data, fileSafe, false)`.
-    function encode(bytes memory data, bool fileSafe)
-        internal
-        pure
-        returns (string memory result)
-    {
+    function encode(bytes memory data, bool fileSafe) internal pure returns (string memory result) {
         result = encode(data, fileSafe, false);
     }
 

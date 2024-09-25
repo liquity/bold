@@ -40,8 +40,7 @@ library DelegateCheckerLib {
             isValid := eq(mload(staticcall(gas(), DELEGATE_REGISTRY_V2, 0x1c, 0x64, 0x01, 0x20)), 1)
             if iszero(isValid) {
                 mstore(0x01, 0x9c395bc200) // `checkDelegateForAll(address,address)`.
-                isValid :=
-                    eq(mload(staticcall(gas(), DELEGATE_REGISTRY_V1, 0x1c, 0x44, 0x01, 0x20)), 1)
+                isValid := eq(mload(staticcall(gas(), DELEGATE_REGISTRY_V1, 0x1c, 0x44, 0x01, 0x20)), 1)
             }
             mstore(0x40, m) // Restore the free memory pointer.
         }
@@ -52,11 +51,7 @@ library DelegateCheckerLib {
     ///     v2.checkDelegateForAll(to, from, rights) ||
     ///     (rights == "" && v1.checkDelegateForAll(to, from))
     /// ```
-    function checkDelegateForAll(address to, address from, bytes32 rights)
-        internal
-        view
-        returns (bool isValid)
-    {
+    function checkDelegateForAll(address to, address from, bytes32 rights) internal view returns (bool isValid) {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40)
@@ -67,8 +62,7 @@ library DelegateCheckerLib {
             isValid := eq(mload(staticcall(gas(), DELEGATE_REGISTRY_V2, 0x1c, 0x64, 0x01, 0x20)), 1)
             if iszero(or(rights, isValid)) {
                 mstore(0x01, 0x9c395bc200) // `checkDelegateForAll(address,address)`.
-                isValid :=
-                    eq(mload(staticcall(gas(), DELEGATE_REGISTRY_V1, 0x1c, 0x44, 0x01, 0x20)), 1)
+                isValid := eq(mload(staticcall(gas(), DELEGATE_REGISTRY_V1, 0x1c, 0x44, 0x01, 0x20)), 1)
             }
             mstore(0x40, m) // Restore the free memory pointer.
             mstore(0x60, 0) // Restore the zero pointer.
@@ -172,13 +166,11 @@ library DelegateCheckerLib {
     ///     (rights == "" && v1.checkDelegateForToken(to, from, contract_, id))
     /// ```
     /// Returns true if `checkDelegateForContract(to, from, contract_, rights)` returns true.
-    function checkDelegateForERC721(
-        address to,
-        address from,
-        address contract_,
-        uint256 id,
-        bytes32 rights
-    ) internal view returns (bool isValid) {
+    function checkDelegateForERC721(address to, address from, address contract_, uint256 id, bytes32 rights)
+        internal
+        view
+        returns (bool isValid)
+    {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40)
@@ -311,13 +303,11 @@ library DelegateCheckerLib {
     ///     )
     /// ```
     /// Returns `type(uint256).max` if `checkDelegateForContract(to, from, contract_, rights)` returns true.
-    function checkDelegateForERC1155(
-        address to,
-        address from,
-        address contract_,
-        uint256 id,
-        bytes32 rights
-    ) internal view returns (uint256 amount) {
+    function checkDelegateForERC1155(address to, address from, address contract_, uint256 id, bytes32 rights)
+        internal
+        view
+        returns (uint256 amount)
+    {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40)

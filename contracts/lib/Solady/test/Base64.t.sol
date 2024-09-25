@@ -82,10 +82,7 @@ contract Base64Test is SoladyTest {
 
     function testBase64DecodeSentenceGas() public {
         assertEq(
-            Base64.decode(
-                "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdC4="
-            ).length,
-            56
+            Base64.decode("TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdC4=").length, 56
         );
     }
 
@@ -121,9 +118,7 @@ contract Base64Test is SoladyTest {
         }
     }
 
-    function testBase64EncodeFileSafeAndNoPadding(bytes memory input, bool fileSafe, bool noPadding)
-        public
-    {
+    function testBase64EncodeFileSafeAndNoPadding(bytes memory input, bool fileSafe, bool noPadding) public {
         string memory expectedEncoded = Base64.encode(input);
 
         if (fileSafe) {

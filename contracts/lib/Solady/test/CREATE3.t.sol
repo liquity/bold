@@ -15,8 +15,7 @@ contract CREATE3Test is SoladyTest {
 
         MockERC20 deployed = MockERC20(
             this.deployDeterministic(
-                abi.encodePacked(type(MockERC20).creationCode, abi.encode("Mock Token", "MOCK", 18)),
-                salt
+                abi.encodePacked(type(MockERC20).creationCode, abi.encode("Mock Token", "MOCK", 18)), salt
             )
         );
 
@@ -52,16 +51,10 @@ contract CREATE3Test is SoladyTest {
         this.deployDeterministic(type(MockCd).creationCode, salt);
     }
 
-    function testDeployERC20(
-        bytes32 salt,
-        string calldata name,
-        string calldata symbol,
-        uint8 decimals
-    ) public {
+    function testDeployERC20(bytes32 salt, string calldata name, string calldata symbol, uint8 decimals) public {
         MockERC20 deployed = MockERC20(
             this.deployDeterministic(
-                abi.encodePacked(type(MockERC20).creationCode, abi.encode(name, symbol, decimals)),
-                salt
+                abi.encodePacked(type(MockERC20).creationCode, abi.encode(name, symbol, decimals)), salt
             )
         );
 
@@ -79,27 +72,19 @@ contract CREATE3Test is SoladyTest {
         this.deployDeterministic(creationCode, salt);
     }
 
-    function testDoubleDeployDifferentBytecodeReverts(
-        bytes32 salt,
-        bytes memory bytecode1,
-        bytes memory bytecode2
-    ) public {
+    function testDoubleDeployDifferentBytecodeReverts(bytes32 salt, bytes memory bytecode1, bytes memory bytecode2)
+        public
+    {
         this.deployDeterministic(_initCode(bytecode1), salt);
         vm.expectRevert(CREATE3.DeploymentFailed.selector);
         this.deployDeterministic(_initCode(bytecode2), salt);
     }
 
-    function deployDeterministic(uint256 value, bytes calldata creationCode, bytes32 salt)
-        public
-        returns (address)
-    {
+    function deployDeterministic(uint256 value, bytes calldata creationCode, bytes32 salt) public returns (address) {
         return CREATE3.deployDeterministic(value, creationCode, salt);
     }
 
-    function deployDeterministic(bytes calldata creationCode, bytes32 salt)
-        public
-        returns (address)
-    {
+    function deployDeterministic(bytes calldata creationCode, bytes32 salt) public returns (address) {
         return deployDeterministic(0, creationCode, salt);
     }
 

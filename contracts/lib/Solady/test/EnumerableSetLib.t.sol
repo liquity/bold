@@ -592,11 +592,7 @@ contract EnumerableSetLibTest is SoladyTest {
         }
     }
 
-    function _makeArray(uint256 size, uint256 maxCap)
-        internal
-        pure
-        returns (uint256[] memory result)
-    {
+    function _makeArray(uint256 size, uint256 maxCap) internal pure returns (uint256[] memory result) {
         /// @solidity memory-safe-assembly
         assembly {
             result := mload(0x40)

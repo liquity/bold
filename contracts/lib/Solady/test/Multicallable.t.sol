@@ -13,8 +13,7 @@ contract MulticallableTest is SoladyTest {
 
     function testMulticallableRevertWithMessage(string memory revertMessage) public {
         bytes[] memory data = new bytes[](1);
-        data[0] =
-            abi.encodeWithSelector(MockMulticallable.revertsWithString.selector, revertMessage);
+        data[0] = abi.encodeWithSelector(MockMulticallable.revertsWithString.selector, revertMessage);
         vm.expectRevert(bytes(revertMessage));
         multicallable.multicall(data);
     }
@@ -37,12 +36,7 @@ contract MulticallableTest is SoladyTest {
         multicallable.multicall(data);
     }
 
-    function testMulticallableReturnDataIsProperlyEncoded(
-        uint256 a0,
-        uint256 b0,
-        uint256 a1,
-        uint256 b1
-    ) public {
+    function testMulticallableReturnDataIsProperlyEncoded(uint256 a0, uint256 b0, uint256 a1, uint256 b1) public {
         bytes[] memory data = new bytes[](2);
         data[0] = abi.encodeWithSelector(MockMulticallable.returnsTuple.selector, a0, b0);
         data[1] = abi.encodeWithSelector(MockMulticallable.returnsTuple.selector, a1, b1);
@@ -55,20 +49,14 @@ contract MulticallableTest is SoladyTest {
         assertEq(t1.b, b1);
     }
 
-    function testMulticallableReturnDataIsProperlyEncoded(
-        string memory sIn0,
-        string memory sIn1,
-        uint256 n
-    ) public {
+    function testMulticallableReturnDataIsProperlyEncoded(string memory sIn0, string memory sIn1, uint256 n) public {
         n = n % 2;
         bytes[] memory dataIn = new bytes[](n);
         if (n > 0) {
-            dataIn[0] =
-                abi.encodeWithSelector(MockMulticallable.returnsRandomizedString.selector, sIn0);
+            dataIn[0] = abi.encodeWithSelector(MockMulticallable.returnsRandomizedString.selector, sIn0);
         }
         if (n > 1) {
-            dataIn[1] =
-                abi.encodeWithSelector(MockMulticallable.returnsRandomizedString.selector, sIn1);
+            dataIn[1] = abi.encodeWithSelector(MockMulticallable.returnsRandomizedString.selector, sIn1);
         }
         bytes[] memory dataOut = multicallable.multicall(dataIn);
         if (n > 0) {

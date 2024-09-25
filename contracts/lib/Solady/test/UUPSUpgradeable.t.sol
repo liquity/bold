@@ -70,9 +70,7 @@ contract UUPSUpgradeableTest is SoladyTest {
     function testUpgradeToAndCallRevertWithCustomError() public {
         MockUUPSImplementation impl2 = new MockUUPSImplementation();
         bytes memory data = abi.encodeWithSignature("revertWithError()");
-        vm.expectRevert(
-            abi.encodeWithSelector(MockUUPSImplementation.CustomError.selector, address(this))
-        );
+        vm.expectRevert(abi.encodeWithSelector(MockUUPSImplementation.CustomError.selector, address(this)));
         MockUUPSImplementation(proxy).upgradeToAndCall(address(impl2), data);
     }
 

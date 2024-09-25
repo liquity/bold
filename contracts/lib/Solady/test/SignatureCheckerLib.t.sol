@@ -9,21 +9,17 @@ import {MockERC1271Malicious} from "./utils/mocks/MockERC1271Malicious.sol";
 import {LibClone} from "../src/utils/LibClone.sol";
 
 contract SignatureCheckerLibTest is SoladyTest {
-    bytes32 constant TEST_MESSAGE =
-        0x7dbaf558b0a1a5dc7a67202117ab143c1d8605a983e4a743bc06fcc03162dc0d;
+    bytes32 constant TEST_MESSAGE = 0x7dbaf558b0a1a5dc7a67202117ab143c1d8605a983e4a743bc06fcc03162dc0d;
 
-    bytes32 constant WRONG_MESSAGE =
-        0x2d0828dd7c97cff316356da3c16c68ba2316886a0e05ebafb8291939310d51a3;
+    bytes32 constant WRONG_MESSAGE = 0x2d0828dd7c97cff316356da3c16c68ba2316886a0e05ebafb8291939310d51a3;
 
     address constant SIGNER = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
 
     address constant OTHER = address(uint160(1));
 
-    bytes32 constant TEST_SIGNED_MESSAGE_HASH =
-        0x7d768af957ef8cbf6219a37e743d5546d911dae3e46449d8a5810522db2ef65e;
+    bytes32 constant TEST_SIGNED_MESSAGE_HASH = 0x7d768af957ef8cbf6219a37e743d5546d911dae3e46449d8a5810522db2ef65e;
 
-    bytes32 constant WRONG_SIGNED_MESSAGE_HASH =
-        0x8cd3e659093d21364c6330514aff328218aa29c2693c5b0e96602df075561952;
+    bytes32 constant WRONG_SIGNED_MESSAGE_HASH = 0x8cd3e659093d21364c6330514aff328218aa29c2693c5b0e96602df075561952;
 
     bytes constant SIGNATURE =
         hex"8688e590483917863a35ef230c0f839be8418aa4ee765228eddfcea7fe2652815db01c2c84b0ec746e1b74d97475c599b3d3419fa7181b4e01de62c02b721aea1b";
@@ -57,9 +53,7 @@ contract SignatureCheckerLibTest is SoladyTest {
     }
 
     function testSignatureCheckerOnWalletWithMatchingSignerAndSignature() public {
-        _checkSignatureBothModes(
-            address(mockERC1271Wallet), TEST_SIGNED_MESSAGE_HASH, SIGNATURE, true
-        );
+        _checkSignatureBothModes(address(mockERC1271Wallet), TEST_SIGNED_MESSAGE_HASH, SIGNATURE, true);
     }
 
     function testSignatureCheckerOnWalletWithInvalidSigner() public {
@@ -71,21 +65,15 @@ contract SignatureCheckerLibTest is SoladyTest {
     }
 
     function testSignatureCheckerOnWalletWithWrongSignedMessageHash() public {
-        _checkSignatureBothModes(
-            address(mockERC1271Wallet), WRONG_SIGNED_MESSAGE_HASH, SIGNATURE, false
-        );
+        _checkSignatureBothModes(address(mockERC1271Wallet), WRONG_SIGNED_MESSAGE_HASH, SIGNATURE, false);
     }
 
     function testSignatureCheckerOnWalletWithInvalidSignature() public {
-        _checkSignatureBothModes(
-            address(mockERC1271Wallet), TEST_SIGNED_MESSAGE_HASH, INVALID_SIGNATURE, false
-        );
+        _checkSignatureBothModes(address(mockERC1271Wallet), TEST_SIGNED_MESSAGE_HASH, INVALID_SIGNATURE, false);
     }
 
     function testSignatureCheckerOnMaliciousWallet() public {
-        _checkSignatureBothModes(
-            address(mockERC1271Malicious), WRONG_SIGNED_MESSAGE_HASH, SIGNATURE, false
-        );
+        _checkSignatureBothModes(address(mockERC1271Malicious), WRONG_SIGNED_MESSAGE_HASH, SIGNATURE, false);
     }
 
     function testSignatureChecker(bytes32 digest) public {
@@ -95,25 +83,10 @@ contract SignatureCheckerLibTest is SoladyTest {
         _checkSignature(signer, digest, abi.encodePacked(r, s, v), true);
 
         if (_randomChance(8)) {
-            assertEq(
-                this.isValidSignatureNowCalldata(signer, digest, abi.encodePacked(r, s, v)), true
-            );
-            assertEq(
-                SignatureCheckerLib.isValidSignatureNow(signer, digest, abi.encodePacked(r, s, v)),
-                true
-            );
-            assertEq(
-                SignatureCheckerLib.isValidSignatureNow(
-                    signer, digest, abi.encodePacked(r, s, v + 1)
-                ),
-                false
-            );
-            assertEq(
-                SignatureCheckerLib.isValidSignatureNow(
-                    signer, digest, abi.encodePacked(r, s, v - 1)
-                ),
-                false
-            );
+            assertEq(this.isValidSignatureNowCalldata(signer, digest, abi.encodePacked(r, s, v)), true);
+            assertEq(SignatureCheckerLib.isValidSignatureNow(signer, digest, abi.encodePacked(r, s, v)), true);
+            assertEq(SignatureCheckerLib.isValidSignatureNow(signer, digest, abi.encodePacked(r, s, v + 1)), false);
+            assertEq(SignatureCheckerLib.isValidSignatureNow(signer, digest, abi.encodePacked(r, s, v - 1)), false);
             assertEq(SignatureCheckerLib.isValidSignatureNow(signer, digest, v, r, s), true);
         }
 
@@ -124,9 +97,7 @@ contract SignatureCheckerLibTest is SoladyTest {
                 vs := or(shl(255, sub(v, 27)), s)
             }
             assertEq(SignatureCheckerLib.isValidSignatureNow(signer, digest, r, vs), true);
-            assertEq(
-                SignatureCheckerLib.isValidSignatureNow(signer, digest, abi.encode(r, vs)), true
-            );
+            assertEq(SignatureCheckerLib.isValidSignatureNow(signer, digest, abi.encode(r, vs)), true);
             assertEq(this.isValidSignatureNowCalldata(signer, digest, abi.encode(r, vs)), true);
         }
 
@@ -137,9 +108,7 @@ contract SignatureCheckerLibTest is SoladyTest {
                 vsc := or(shl(255, xor(1, sub(v, 27))), s)
             }
             assertEq(SignatureCheckerLib.isValidSignatureNow(signer, digest, r, vsc), false);
-            assertEq(
-                SignatureCheckerLib.isValidSignatureNow(signer, digest, abi.encode(r, vsc)), false
-            );
+            assertEq(SignatureCheckerLib.isValidSignatureNow(signer, digest, abi.encode(r, vsc)), false);
             assertEq(this.isValidSignatureNowCalldata(signer, digest, abi.encode(r, vsc)), false);
         }
 
@@ -154,32 +123,19 @@ contract SignatureCheckerLibTest is SoladyTest {
             uint8 vc = uint8(_random()); // Corrupted `v`.
             while (vc == 28 || vc == 27) vc = uint8(_random());
             assertEq(SignatureCheckerLib.isValidSignatureNow(signer, digest, vc, r, s), false);
-            assertEq(
-                SignatureCheckerLib.isValidSignatureNow(signer, digest, abi.encodePacked(r, s, vc)),
-                false
-            );
-            assertEq(
-                this.isValidSignatureNowCalldata(signer, digest, abi.encodePacked(r, s, vc)), false
-            );
+            assertEq(SignatureCheckerLib.isValidSignatureNow(signer, digest, abi.encodePacked(r, s, vc)), false);
+            assertEq(this.isValidSignatureNowCalldata(signer, digest, abi.encodePacked(r, s, vc)), false);
         }
     }
 
-    function _checkSignatureBothModes(
-        address signer,
-        bytes32 hash,
-        bytes memory signature,
-        bool expectedResult
-    ) internal {
+    function _checkSignatureBothModes(address signer, bytes32 hash, bytes memory signature, bool expectedResult)
+        internal
+    {
         _checkSignature(false, signer, hash, signature, expectedResult);
         _checkSignature(true, signer, hash, signature, expectedResult);
     }
 
-    function _checkSignature(
-        address signer,
-        bytes32 hash,
-        bytes memory signature,
-        bool expectedResult
-    ) internal {
+    function _checkSignature(address signer, bytes32 hash, bytes memory signature, bool expectedResult) internal {
         _checkSignature(false, signer, hash, signature, expectedResult);
     }
 
@@ -259,13 +215,8 @@ contract SignatureCheckerLibTest is SoladyTest {
         }
 
         if (onlyERC1271) {
-            assertEq(
-                SignatureCheckerLib.isValidERC1271SignatureNow(signer, hash, r, vs), expectedResult
-            );
-            assertEq(
-                SignatureCheckerLib.isValidERC1271SignatureNow(signer, hash, v, r, s),
-                expectedResult
-            );
+            assertEq(SignatureCheckerLib.isValidERC1271SignatureNow(signer, hash, r, vs), expectedResult);
+            assertEq(SignatureCheckerLib.isValidERC1271SignatureNow(signer, hash, v, r, s), expectedResult);
         } else {
             assertEq(SignatureCheckerLib.isValidSignatureNow(signer, hash, r, vs), expectedResult);
             assertEq(SignatureCheckerLib.isValidSignatureNow(signer, hash, v, r, s), expectedResult);
@@ -316,26 +267,22 @@ contract SignatureCheckerLibTest is SoladyTest {
         result = SignatureCheckerLib.isValidSignatureNowCalldata(signer, hash, signature);
     }
 
-    function isValidERC1271SignatureNowCalldata(
-        address signer,
-        bytes32 hash,
-        bytes calldata signature
-    ) external view returns (bool result) {
+    function isValidERC1271SignatureNowCalldata(address signer, bytes32 hash, bytes calldata signature)
+        external
+        view
+        returns (bool result)
+    {
         result = SignatureCheckerLib.isValidERC1271SignatureNowCalldata(signer, hash, signature);
     }
 
     function testEmptyCalldataHelpers() public {
         assertFalse(
-            SignatureCheckerLib.isValidSignatureNow(
-                address(1), bytes32(0), SignatureCheckerLib.emptySignature()
-            )
+            SignatureCheckerLib.isValidSignatureNow(address(1), bytes32(0), SignatureCheckerLib.emptySignature())
         );
     }
 
     function testToEthSignedMessageHashDifferential(bytes32 hash) public {
-        assertEq(
-            SignatureCheckerLib.toEthSignedMessageHash(hash), ECDSA.toEthSignedMessageHash(hash)
-        );
+        assertEq(SignatureCheckerLib.toEthSignedMessageHash(hash), ECDSA.toEthSignedMessageHash(hash));
     }
 
     function testToEthSignedMessageHashDifferential(bytes memory s) public {
@@ -378,8 +325,7 @@ contract SignatureCheckerLibTest is SoladyTest {
         t.initcode = abi.encodePacked(type(MockERC1271Wallet).creationCode, uint256(uint160(t.eoa)));
         t.salt = bytes32(_random());
         t.factoryCalldata = abi.encodePacked(t.salt, t.initcode);
-        t.smartAccount =
-            LibClone.predictDeterministicAddress(keccak256(t.initcode), t.salt, t.factory);
+        t.smartAccount = LibClone.predictDeterministicAddress(keccak256(t.initcode), t.salt, t.factory);
         assertEq(t.smartAccount.code.length, 0);
 
         t.digest = keccak256(abi.encodePacked("Hehe", _random()));
@@ -414,47 +360,35 @@ contract SignatureCheckerLibTest is SoladyTest {
         (bool success,) = t.factory.call(t.factoryCalldata);
         require(success);
         assertGt(t.smartAccount.code.length, 0);
-        t.result = SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(
-            t.smartAccount, t.digest, t.innerSignature
-        );
+        t.result =
+            SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(t.smartAccount, t.digest, t.innerSignature);
         assertTrue(t.result);
 
         _makeNewEOA(t);
-        t.result = SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(
-            t.smartAccount, t.digest, t.signature
-        );
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(t.smartAccount, t.digest, t.signature);
         assertTrue(t.result);
         assertEq(MockERC1271Wallet(t.smartAccount).signer(), t.eoa);
     }
 
     function testERC6492AllowSideEffectsPreDeploy() public {
         _ERC6492TestTemps memory t = _erc6492TestTemps();
-        t.result = SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(
-            t.smartAccount, t.digest, t.innerSignature
-        );
+        t.result =
+            SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(t.smartAccount, t.digest, t.innerSignature);
         assertFalse(t.result);
         // This should return false, as the function does NOT do ECDSA fallback.
-        t.result = SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(
-            t.eoa, t.digest, t.innerSignature
-        );
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(t.eoa, t.digest, t.innerSignature);
         assertFalse(t.result);
         assertEq(t.smartAccount.code.length, 0);
-        t.result = SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(
-            t.smartAccount, t.digest, t.signature
-        );
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(t.smartAccount, t.digest, t.signature);
         assertTrue(t.result);
         assertGt(t.smartAccount.code.length, 0);
-        t.result = SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(
-            t.smartAccount, t.digest, t.signature
-        );
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(t.smartAccount, t.digest, t.signature);
         assertTrue(t.result);
         assertGt(t.smartAccount.code.length, 0);
         assertEq(MockERC1271Wallet(t.smartAccount).signer(), t.eoa);
 
         _makeNewEOA(t);
-        t.result = SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(
-            t.smartAccount, t.digest, t.signature
-        );
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNowAllowSideEffects(t.smartAccount, t.digest, t.signature);
         assertTrue(t.result);
         assertEq(MockERC1271Wallet(t.smartAccount).signer(), t.eoa);
     }
@@ -466,8 +400,7 @@ contract SignatureCheckerLibTest is SoladyTest {
         t.factory = _etchNicksFactory();
         t.salt = 0x000000000000000000000000000000000000000068f35e1510740001fd13984a;
         (bool success,) = t.factory.call(abi.encodePacked(t.salt, t.initcode));
-        revertingVerifier =
-            LibClone.predictDeterministicAddress(keccak256(t.initcode), t.salt, t.factory);
+        revertingVerifier = LibClone.predictDeterministicAddress(keccak256(t.initcode), t.salt, t.factory);
         assertTrue(success);
         assertGt(revertingVerifier.code.length, 0);
         emit LogBytes32(keccak256(t.initcode));
@@ -485,15 +418,12 @@ contract SignatureCheckerLibTest is SoladyTest {
         require(success);
 
         assertGt(t.smartAccount.code.length, 0);
-        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(
-            t.smartAccount, t.digest, t.innerSignature
-        );
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.innerSignature);
         assertTrue(t.result);
 
         address oldEOA = t.eoa;
         _makeNewEOA(t);
-        t.result =
-            SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.signature);
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.signature);
         assertTrue(t.result);
         assertEq(MockERC1271Wallet(t.smartAccount).signer(), oldEOA);
     }
@@ -502,26 +432,20 @@ contract SignatureCheckerLibTest is SoladyTest {
         _ERC6492TestTemps memory t = _erc6492TestTemps();
         t.revertingVerifier = _etchERC6492RevertingVerifier();
 
-        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(
-            t.smartAccount, t.digest, t.innerSignature
-        );
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.innerSignature);
         assertFalse(t.result);
         // This should return false, as the function does NOT do ECDSA fallback.
         t.result = SignatureCheckerLib.isValidERC6492SignatureNow(t.eoa, t.digest, t.innerSignature);
         assertFalse(t.result);
         assertEq(t.smartAccount.code.length, 0);
-        t.result =
-            SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.signature);
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.signature);
         assertTrue(t.result);
         assertEq(t.smartAccount.code.length, 0);
-        t.result =
-            SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.signature);
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.signature);
         assertTrue(t.result);
         assertEq(t.smartAccount.code.length, 0);
 
-        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(
-            t.smartAccount, keccak256(""), t.signature
-        );
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, keccak256(""), t.signature);
         assertFalse(t.result);
         assertEq(t.smartAccount.code.length, 0);
     }
@@ -529,26 +453,20 @@ contract SignatureCheckerLibTest is SoladyTest {
     function testERC6492WithoutRevertingVerifier() public {
         _ERC6492TestTemps memory t = _erc6492TestTemps();
 
-        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(
-            t.smartAccount, t.digest, t.innerSignature
-        );
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.innerSignature);
         assertFalse(t.result);
 
-        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(
-            t.smartAccount, t.digest, t.innerSignature
-        );
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.innerSignature);
         assertFalse(t.result);
         // This should return false, as the function does NOT do ECDSA fallback.
         t.result = SignatureCheckerLib.isValidERC6492SignatureNow(t.eoa, t.digest, t.innerSignature);
         assertFalse(t.result);
         assertEq(t.smartAccount.code.length, 0);
         // Without the reverting verifier, the function will simply return false.
-        t.result =
-            SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.signature);
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.signature);
         assertFalse(t.result);
         assertEq(t.smartAccount.code.length, 0);
-        t.result =
-            SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.signature);
+        t.result = SignatureCheckerLib.isValidERC6492SignatureNow(t.smartAccount, t.digest, t.signature);
         assertFalse(t.result);
         assertEq(t.smartAccount.code.length, 0);
     }

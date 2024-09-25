@@ -34,10 +34,7 @@ contract FixedPointMathLibTest is SoladyTest {
         // True value: 5184705528587072464_087453322933485384827.47
         // Relative error: 1.1780031733243328e-20
 
-        assertEq(
-            FixedPointMathLib.expWad(100e18),
-            268811714181613544841_34666106240937146178367581647816351662017
-        );
+        assertEq(FixedPointMathLib.expWad(100e18), 268811714181613544841_34666106240937146178367581647816351662017);
         // True value: 268811714181613544841_26255515800135873611118773741922415191608
         // Relative error: 3.128803544297531e-22
 
@@ -842,10 +839,7 @@ contract FixedPointMathLibTest is SoladyTest {
         assertEq(FixedPointMathLib.sqrtWad(type(uint32).max), 65535999992370);
         assertEq(FixedPointMathLib.sqrtWad(type(uint64).max), 4294967295999999999);
         assertEq(FixedPointMathLib.sqrtWad(type(uint128).max), 18446744073709551615999999999);
-        assertEq(
-            FixedPointMathLib.sqrtWad(type(uint256).max),
-            340282366920938463463374607431768211455999999999
-        );
+        assertEq(FixedPointMathLib.sqrtWad(type(uint256).max), 340282366920938463463374607431768211455999999999);
     }
 
     function testCbrt() public {
@@ -885,9 +879,7 @@ contract FixedPointMathLibTest is SoladyTest {
         assertEq(FixedPointMathLib.cbrtWad(type(uint32).max), 1625498677089280);
         assertEq(FixedPointMathLib.cbrtWad(type(uint64).max), 2642245949629133047);
         assertEq(FixedPointMathLib.cbrtWad(type(uint128).max), 6981463658331559092288464);
-        assertEq(
-            FixedPointMathLib.cbrtWad(type(uint256).max), 48740834812604276470692694885616578541
-        );
+        assertEq(FixedPointMathLib.cbrtWad(type(uint256).max), 48740834812604276470692694885616578541);
     }
 
     function testCbrtWadDebug() public {
@@ -1000,10 +992,7 @@ contract FixedPointMathLibTest is SoladyTest {
     function testAvgEdgeCase() public {
         assertEq(FixedPointMathLib.avg(uint256(2 ** 256 - 1), uint256(1)), uint256(2 ** 255));
         assertEq(FixedPointMathLib.avg(uint256(2 ** 256 - 1), uint256(10)), uint256(2 ** 255 + 4));
-        assertEq(
-            FixedPointMathLib.avg(uint256(2 ** 256 - 1), uint256(2 ** 256 - 1)),
-            uint256(2 ** 256 - 1)
-        );
+        assertEq(FixedPointMathLib.avg(uint256(2 ** 256 - 1), uint256(2 ** 256 - 1)), uint256(2 ** 256 - 1));
     }
 
     function testAbs() public {
@@ -1356,10 +1345,7 @@ contract FixedPointMathLibTest is SoladyTest {
                 FixedPointMathLib.mulDivUp(x, y, denominator);
             }
         }
-        assertEq(
-            FixedPointMathLib.mulDivUp(x, y, denominator),
-            x * y == 0 ? 0 : (x * y - 1) / denominator + 1
-        );
+        assertEq(FixedPointMathLib.mulDivUp(x, y, denominator), x * y == 0 ? 0 : (x * y - 1) / denominator + 1);
     }
 
     function testMulDivUpOverflowReverts(uint256 x, uint256 y, uint256 denominator) public {
@@ -1414,9 +1400,7 @@ contract FixedPointMathLibTest is SoladyTest {
     }
 
     function testCbrtWadMonotonicallyIncreasing() public {
-        this.testCbrtWadMonotonicallyIncreasing(
-            57896044618658097711785492504343953926634992332820282019727, 939263490
-        );
+        this.testCbrtWadMonotonicallyIncreasing(57896044618658097711785492504343953926634992332820282019727, 939263490);
     }
 
     function testCbrtWadConverged(uint256 x) public {
@@ -1965,9 +1949,7 @@ contract FixedPointMathLibTest is SoladyTest {
     }
 
     function testLerpUint(uint256 a, uint256 b, uint256 t, uint256 begin, uint256 end) public {
-        assertEq(
-            _lerpUintOriginal(a, b, t, begin, end), FixedPointMathLib.lerp(a, b, t, begin, end)
-        );
+        assertEq(_lerpUintOriginal(a, b, t, begin, end), FixedPointMathLib.lerp(a, b, t, begin, end));
     }
 
     function testLerpInt(int256 a, int256 b, int256 t, int256 begin, int256 end) public {
@@ -2055,9 +2037,7 @@ contract FixedPointMathLibTest is SoladyTest {
             if (t <= end) return b;
         }
         uint256 delta = FixedPointMathLib.fullMulDiv(
-            FixedPointMathLib.dist(a, b),
-            FixedPointMathLib.dist(t, begin),
-            FixedPointMathLib.dist(end, begin)
+            FixedPointMathLib.dist(a, b), FixedPointMathLib.dist(t, begin), FixedPointMathLib.dist(end, begin)
         );
         if (b > a) {
             uint256 result = a + delta;
@@ -2072,42 +2052,25 @@ contract FixedPointMathLibTest is SoladyTest {
         return a;
     }
 
-    function _lerpIntOriginal(int256 a, int256 b, int256 t, int256 begin, int256 end)
-        internal
-        pure
-        returns (int256)
-    {
+    function _lerpIntOriginal(int256 a, int256 b, int256 t, int256 begin, int256 end) internal pure returns (int256) {
         int256 result1 = _lerpIntOriginal1(a, b, t, begin, end);
         int256 result2 = _lerpIntOriginal2(a, b, t, begin, end);
         assert(result1 == result2);
         return result2;
     }
 
-    function _lerpIntOriginal1(int256 a, int256 b, int256 t, int256 begin, int256 end)
-        internal
-        pure
-        returns (int256)
-    {
+    function _lerpIntOriginal1(int256 a, int256 b, int256 t, int256 begin, int256 end) internal pure returns (int256) {
         if (begin == end) return t <= begin ? a : b;
         unchecked {
             uint256 w = 1 << 255;
             return int256(
-                _lerpUintOriginal(
-                    uint256(a) + w,
-                    uint256(b) + w,
-                    uint256(t) + w,
-                    uint256(begin) + w,
-                    uint256(end) + w
-                ) + w
+                _lerpUintOriginal(uint256(a) + w, uint256(b) + w, uint256(t) + w, uint256(begin) + w, uint256(end) + w)
+                    + w
             );
         }
     }
 
-    function _lerpIntOriginal2(int256 a, int256 b, int256 t, int256 begin, int256 end)
-        internal
-        pure
-        returns (int256)
-    {
+    function _lerpIntOriginal2(int256 a, int256 b, int256 t, int256 begin, int256 end) internal pure returns (int256) {
         if (begin == end) return t <= begin ? a : b;
         if (begin < end) {
             if (t <= begin) return a;
@@ -2118,9 +2081,7 @@ contract FixedPointMathLibTest is SoladyTest {
             if (t <= end) return b;
         }
         uint256 delta = FixedPointMathLib.fullMulDiv(
-            FixedPointMathLib.dist(a, b),
-            FixedPointMathLib.dist(t, begin),
-            FixedPointMathLib.dist(end, begin)
+            FixedPointMathLib.dist(a, b), FixedPointMathLib.dist(t, begin), FixedPointMathLib.dist(end, begin)
         );
         unchecked {
             if (b > a) {

@@ -67,12 +67,8 @@ contract LibStringTest is SoladyTest {
             mstore(mload(0x40), not(0))
             mstore(0x40, add(mload(0x40), 0x20))
         }
-        assertEq(
-            s0, "115792089237316195423570985008687907853269984665640564039457584007913129639935"
-        );
-        assertEq(
-            s1, "115792089237316195423570985008687907853269984665640564039457584007913129639935"
-        );
+        assertEq(s0, "115792089237316195423570985008687907853269984665640564039457584007913129639935");
+        assertEq(s1, "115792089237316195423570985008687907853269984665640564039457584007913129639935");
     }
 
     function testToStringZeroRightPadded(uint256 x) public view brutalizeMemory {
@@ -112,9 +108,8 @@ contract LibStringTest is SoladyTest {
 
     function _toStringSignedOriginal(int256 x) internal pure returns (string memory) {
         unchecked {
-            return x >= 0
-                ? LibString.toString(uint256(x))
-                : string(abi.encodePacked("-", LibString.toString(uint256(-x))));
+            return
+                x >= 0 ? LibString.toString(uint256(x)) : string(abi.encodePacked("-", LibString.toString(uint256(-x))));
         }
     }
 
@@ -135,8 +130,7 @@ contract LibStringTest is SoladyTest {
 
     function testToHexStringFixedLengthPositiveNumberLong() public {
         assertEq(
-            LibString.toHexString(0x4132, 32),
-            "0x0000000000000000000000000000000000000000000000000000000000004132"
+            LibString.toHexString(0x4132, 32), "0x0000000000000000000000000000000000000000000000000000000000004132"
         );
     }
 
@@ -268,10 +262,7 @@ contract LibStringTest is SoladyTest {
         );
     }
 
-    function testFromAddressToHexStringChecksummedDifferential(uint256 randomness)
-        public
-        brutalizeMemory
-    {
+    function testFromAddressToHexStringChecksummedDifferential(uint256 randomness) public brutalizeMemory {
         address r;
         /// @solidity memory-safe-assembly
         assembly {
@@ -397,10 +388,7 @@ contract LibStringTest is SoladyTest {
 
     function testTo7BitASCIIAllowedLookup() public {
         assertEq(LibString.to7BitASCIIAllowedLookup("0123456789"), LibString.DIGITS_7_BIT_ASCII);
-        assertEq(
-            LibString.to7BitASCIIAllowedLookup("abcdefghijklmnopqrstuvwxyz"),
-            LibString.LOWERCASE_7_BIT_ASCII
-        );
+        assertEq(LibString.to7BitASCIIAllowedLookup("abcdefghijklmnopqrstuvwxyz"), LibString.LOWERCASE_7_BIT_ASCII);
     }
 
     function testStringIs7BitASCIIWithAllowedLookupDifferential(bytes memory raw, uint128 allowed)
@@ -578,10 +566,7 @@ contract LibStringTest is SoladyTest {
         assertEq(LibString.indexOf(subject, "qrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW"), 16);
         assertEq(LibString.indexOf(subject, "qrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"), 16);
         assertEq(LibString.indexOf(subject, "qrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 16), 16);
-        assertEq(
-            LibString.indexOf(subject, "qrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 17),
-            LibString.NOT_FOUND
-        );
+        assertEq(LibString.indexOf(subject, "qrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 17), LibString.NOT_FOUND);
         assertEq(LibString.indexOf("abcabcabc", "abc"), 0);
         assertEq(LibString.indexOf("abcabcabc", "abc", 1), 3);
 
@@ -636,10 +621,7 @@ contract LibStringTest is SoladyTest {
         assertEq(LibString.lastIndexOf(subject, "qrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 52), 16);
         assertEq(LibString.lastIndexOf(subject, "qrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 51), 16);
         assertEq(LibString.lastIndexOf(subject, "qrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 16), 16);
-        assertEq(
-            LibString.lastIndexOf(subject, "qrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 15),
-            LibString.NOT_FOUND
-        );
+        assertEq(LibString.lastIndexOf(subject, "qrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 15), LibString.NOT_FOUND);
 
         assertEq(LibString.lastIndexOf("abcabcabc", "abc"), 6);
         assertEq(LibString.lastIndexOf("abcabcabc", "abc", 5), 3);
@@ -777,8 +759,7 @@ contract LibStringTest is SoladyTest {
         string memory expectedResult = _generateString("abcdefghijklmnopqrstuvwxyz");
         string memory filler1 = _generateString("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
-        string memory subject =
-            string(bytes.concat(bytes(filler0), bytes(expectedResult), bytes(filler1)));
+        string memory subject = string(bytes.concat(bytes(filler0), bytes(expectedResult), bytes(filler1)));
 
         uint256 start = bytes(filler0).length;
         uint256 end = start + bytes(expectedResult).length;
@@ -789,10 +770,7 @@ contract LibStringTest is SoladyTest {
         assertEq(slice, expectedResult);
     }
 
-    function testStringSlice(bytes calldata subject, uint256 start, uint256 end)
-        public
-        brutalizeMemory
-    {
+    function testStringSlice(bytes calldata subject, uint256 start, uint256 end) public brutalizeMemory {
         _misalignFreeMemoryPointer();
         do {
             start = _bound(_random(), 0, subject.length);
@@ -822,9 +800,7 @@ contract LibStringTest is SoladyTest {
         string memory subject = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
         assertEq(LibString.slice(subject, 0), subject);
         assertEq(LibString.slice(subject, 1), "bcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
-        assertEq(
-            LibString.slice(subject, 1, 51), "bcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY"
-        );
+        assertEq(LibString.slice(subject, 1, 51), "bcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXY");
         assertEq(LibString.slice(subject, 11, 41), "lmnopqrstuvwxyzABCDEFGHIJKLMNO");
         assertEq(LibString.slice(subject, 21, 31), "vwxyzABCDE");
         assertEq(LibString.slice(subject, 31, 21), "");
@@ -915,8 +891,7 @@ contract LibStringTest is SoladyTest {
         string memory filler1 = _generateString("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
         string memory delimiter = _generateString("abcdefghijklmnopqrstuvwxyz");
 
-        string memory subject =
-            string(bytes.concat(bytes(filler0), bytes(delimiter), bytes(filler1)));
+        string memory subject = string(bytes.concat(bytes(filler0), bytes(delimiter), bytes(filler1)));
 
         unchecked {
             string[] memory elements;
@@ -1049,11 +1024,9 @@ contract LibStringTest is SoladyTest {
 
         uint256 r = _random() % 5;
 
-        string memory expectedResult =
-            string(bytes.concat(bytes(filler0), bytes(escapedChars[r]), bytes(filler1)));
+        string memory expectedResult = string(bytes.concat(bytes(filler0), bytes(escapedChars[r]), bytes(filler1)));
 
-        string memory input =
-            string(bytes.concat(bytes(filler0), bytes(originalChars[r]), bytes(filler1)));
+        string memory input = string(bytes.concat(bytes(filler0), bytes(originalChars[r]), bytes(filler1)));
 
         _misalignFreeMemoryPointer();
         string memory escaped = LibString.escapeHTML(input);
@@ -1084,11 +1057,9 @@ contract LibStringTest is SoladyTest {
         unchecked {
             for (uint256 i; i <= 0x1f; ++i) {
                 if (i != 0x8 && i != 0x9 && i != 0x0a && i != 0x0c && i != 0x0d) {
-                    string memory input =
-                        string(bytes.concat(bytes("abc"), bytes1(uint8(i)), bytes("_123")));
+                    string memory input = string(bytes.concat(bytes("abc"), bytes1(uint8(i)), bytes("_123")));
                     string memory hexCode = LibString.replace(LibString.toHexString(i), "0x", "00");
-                    string memory expectedOutput =
-                        string(bytes.concat(bytes("abc\\u"), bytes(hexCode), bytes("_123")));
+                    string memory expectedOutput = string(bytes.concat(bytes("abc\\u"), bytes(hexCode), bytes("_123")));
                     string memory escaped = LibString.escapeJSON(input);
                     _checkMemory(escaped);
                     assertEq(escaped, expectedOutput);
@@ -1116,9 +1087,7 @@ contract LibStringTest is SoladyTest {
         assertTrue(LibString.eqs("12", "12"));
         assertTrue(LibString.eqs("123", "123"));
         assertTrue(LibString.eqs("Hello", "Hello"));
-        assertTrue(
-            LibString.eqs("12345678901234567890123456789012", "12345678901234567890123456789012")
-        );
+        assertTrue(LibString.eqs("12345678901234567890123456789012", "12345678901234567890123456789012"));
 
         assertTrue(LibString.eqs("", hex"0061"));
         assertTrue(LibString.eqs("a", hex"610061"));
@@ -1174,10 +1143,7 @@ contract LibStringTest is SoladyTest {
         }
     }
 
-    function testStringPackAndUnpackTwoDifferential(string memory a, string memory b)
-        public
-        brutalizeMemory
-    {
+    function testStringPackAndUnpackTwoDifferential(string memory a, string memory b) public brutalizeMemory {
         a = LibString.slice(a, 0);
         b = LibString.slice(b, 0);
         bytes32 packed = LibString.packTwo(a, b);
@@ -1339,14 +1305,8 @@ contract LibStringTest is SoladyTest {
         assertEq(LibString.toSmallString("a"), "a");
         assertEq(LibString.toSmallString("ab"), "ab");
         assertEq(LibString.toSmallString("abc"), "abc");
-        assertEq(
-            LibString.toSmallString("1234567890123456789012345678901"),
-            "1234567890123456789012345678901"
-        );
-        assertEq(
-            LibString.toSmallString("12345678901234567890123456789012"),
-            "12345678901234567890123456789012"
-        );
+        assertEq(LibString.toSmallString("1234567890123456789012345678901"), "1234567890123456789012345678901");
+        assertEq(LibString.toSmallString("12345678901234567890123456789012"), "12345678901234567890123456789012");
         vm.expectRevert(LibString.TooBigForSmallString.selector);
         LibString.toSmallString("123456789012345678901234567890123");
     }
@@ -1359,9 +1319,7 @@ contract LibStringTest is SoladyTest {
                 /// @solidity memory-safe-assembly
                 assembly {
                     let b := byte(0, mload(add(add(subject, 0x20), i)))
-                    mstore8(
-                        add(add(result, 0x20), i), add(b, mul(0x20, and(lt(0x40, b), lt(b, 0x5b))))
-                    )
+                    mstore8(add(add(result, 0x20), i), add(b, mul(0x20, and(lt(0x40, b), lt(b, 0x5b)))))
                 }
             }
         }
@@ -1375,9 +1333,7 @@ contract LibStringTest is SoladyTest {
                 /// @solidity memory-safe-assembly
                 assembly {
                     let b := byte(0, mload(add(add(subject, 0x20), i)))
-                    mstore8(
-                        add(add(result, 0x20), i), sub(b, mul(0x20, and(lt(0x60, b), lt(b, 0x7b))))
-                    )
+                    mstore8(add(add(result, 0x20), i), sub(b, mul(0x20, and(lt(0x60, b), lt(b, 0x7b)))))
                 }
             }
         }
@@ -1429,11 +1385,7 @@ contract LibStringTest is SoladyTest {
         }
     }
 
-    function _repeatOriginal(string memory subject, uint256 times)
-        internal
-        pure
-        returns (string memory)
-    {
+    function _repeatOriginal(string memory subject, uint256 times) internal pure returns (string memory) {
         unchecked {
             string memory result;
             if (!(times == 0 || bytes(subject).length == 0)) {
@@ -1485,11 +1437,7 @@ contract LibStringTest is SoladyTest {
         return _random() % 16;
     }
 
-    function _stringArraysAreSame(string[] memory a, string[] memory b)
-        internal
-        pure
-        returns (bool)
-    {
+    function _stringArraysAreSame(string[] memory a, string[] memory b) internal pure returns (bool) {
         unchecked {
             if (a.length != b.length) {
                 return false;

@@ -6,11 +6,7 @@ import "./utils/SoladyTest.sol";
 import {ERC721, MockERC721} from "./utils/mocks/MockERC721.sol";
 
 abstract contract ERC721TokenReceiver {
-    function onERC721Received(address, address, uint256, bytes calldata)
-        external
-        virtual
-        returns (bytes4)
-    {
+    function onERC721Received(address, address, uint256, bytes calldata) external virtual returns (bytes4) {
         return ERC721TokenReceiver.onERC721Received.selector;
     }
 }
@@ -37,23 +33,13 @@ contract ERC721Recipient is ERC721TokenReceiver {
 }
 
 contract RevertingERC721Recipient is ERC721TokenReceiver {
-    function onERC721Received(address, address, uint256, bytes calldata)
-        public
-        virtual
-        override
-        returns (bytes4)
-    {
+    function onERC721Received(address, address, uint256, bytes calldata) public virtual override returns (bytes4) {
         revert(string(abi.encodePacked(ERC721TokenReceiver.onERC721Received.selector)));
     }
 }
 
 contract WrongReturnDataERC721Recipient is ERC721TokenReceiver {
-    function onERC721Received(address, address, uint256, bytes calldata)
-        public
-        virtual
-        override
-        returns (bytes4)
-    {
+    function onERC721Received(address, address, uint256, bytes calldata) public virtual override returns (bytes4) {
         return 0xCAFEBEEF;
     }
 }
@@ -79,30 +65,18 @@ contract ERC721HooksTest is SoladyTest, ERC721TokenReceiver {
     uint256 public ticker;
 
     function _checkCounters() internal view {
-        require(
-            expectedBeforeCounter == MockERC721WithHooks(msg.sender).beforeCounter(),
-            "Before counter mismatch."
-        );
-        require(
-            expectedAfterCounter == MockERC721WithHooks(msg.sender).afterCounter(),
-            "After counter mismatch."
-        );
+        require(expectedBeforeCounter == MockERC721WithHooks(msg.sender).beforeCounter(), "Before counter mismatch.");
+        require(expectedAfterCounter == MockERC721WithHooks(msg.sender).afterCounter(), "After counter mismatch.");
     }
 
-    function onERC721Received(address, address, uint256, bytes calldata)
-        external
-        virtual
-        override
-        returns (bytes4)
-    {
+    function onERC721Received(address, address, uint256, bytes calldata) external virtual override returns (bytes4) {
         _checkCounters();
         return ERC721TokenReceiver.onERC721Received.selector;
     }
 
     function _testHooks(MockERC721WithHooks token) internal {
         address from = _randomNonZeroAddress();
-        uint256 tokenId =
-            uint256(keccak256(abi.encode(expectedBeforeCounter, expectedAfterCounter)));
+        uint256 tokenId = uint256(keccak256(abi.encode(expectedBeforeCounter, expectedAfterCounter)));
         expectedBeforeCounter++;
         expectedAfterCounter++;
         token.mint(address(this), tokenId);
@@ -277,9 +251,7 @@ contract ERC721Test is SoladyTest {
         require(safe, "Custom storage not safe");
     }
 
-    function testAuthorizedEquivalence(address by, bool isOwnerOrOperator, bool isApprovedAccount)
-        public
-    {
+    function testAuthorizedEquivalence(address by, bool isOwnerOrOperator, bool isApprovedAccount) public {
         bool a = true;
         bool b = true;
         /// @solidity memory-safe-assembly
@@ -913,9 +885,7 @@ contract ERC721Test is SoladyTest {
         _safeTransferFrom(address(this), address(to), id);
     }
 
-    function testSafeTransferFromToNonERC721RecipientWithDataReverts(uint256 id, bytes memory data)
-        public
-    {
+    function testSafeTransferFromToNonERC721RecipientWithDataReverts(uint256 id, bytes memory data) public {
         token.mint(address(this), id);
         address to = address(new NonERC721Recipient());
         vm.expectRevert(ERC721.TransferToNonERC721ReceiverImplementer.selector);
@@ -929,10 +899,7 @@ contract ERC721Test is SoladyTest {
         _safeTransferFrom(address(this), to, id);
     }
 
-    function testSafeTransferFromToRevertingERC721RecipientWithDataReverts(
-        uint256 id,
-        bytes memory data
-    ) public {
+    function testSafeTransferFromToRevertingERC721RecipientWithDataReverts(uint256 id, bytes memory data) public {
         token.mint(address(this), id);
         address to = address(new RevertingERC721Recipient());
         vm.expectRevert(abi.encodePacked(ERC721TokenReceiver.onERC721Received.selector));
@@ -946,10 +913,9 @@ contract ERC721Test is SoladyTest {
         _safeTransferFrom(address(this), to, id);
     }
 
-    function testSafeTransferFromToERC721RecipientWithWrongReturnDataWithDataReverts(
-        uint256 id,
-        bytes memory data
-    ) public {
+    function testSafeTransferFromToERC721RecipientWithWrongReturnDataWithDataReverts(uint256 id, bytes memory data)
+        public
+    {
         token.mint(address(this), id);
         address to = address(new WrongReturnDataERC721Recipient());
         vm.expectRevert(ERC721.TransferToNonERC721ReceiverImplementer.selector);
@@ -962,9 +928,7 @@ contract ERC721Test is SoladyTest {
         token.safeMint(to, id);
     }
 
-    function testSafeMintToNonERC721RecipientWithDataReverts(uint256 id, bytes memory data)
-        public
-    {
+    function testSafeMintToNonERC721RecipientWithDataReverts(uint256 id, bytes memory data) public {
         address to = address(new NonERC721Recipient());
         vm.expectRevert(ERC721.TransferToNonERC721ReceiverImplementer.selector);
         token.safeMint(to, id, data);
@@ -976,9 +940,7 @@ contract ERC721Test is SoladyTest {
         token.safeMint(to, id);
     }
 
-    function testSafeMintToRevertingERC721RecipientWithDataReverts(uint256 id, bytes memory data)
-        public
-    {
+    function testSafeMintToRevertingERC721RecipientWithDataReverts(uint256 id, bytes memory data) public {
         address to = address(new RevertingERC721Recipient());
         vm.expectRevert(abi.encodePacked(ERC721TokenReceiver.onERC721Received.selector));
         token.safeMint(to, id, data);
@@ -990,9 +952,7 @@ contract ERC721Test is SoladyTest {
         token.safeMint(to, id);
     }
 
-    function testSafeMintToERC721RecipientWithWrongReturnDataWithData(uint256 id, bytes memory data)
-        public
-    {
+    function testSafeMintToERC721RecipientWithWrongReturnDataWithData(uint256 id, bytes memory data) public {
         address to = address(new WrongReturnDataERC721Recipient());
         vm.expectRevert(ERC721.TransferToNonERC721ReceiverImplementer.selector);
         token.safeMint(to, id, data);

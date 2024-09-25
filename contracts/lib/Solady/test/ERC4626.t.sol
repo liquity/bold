@@ -14,13 +14,7 @@ contract ERC4626Test is SoladyTest {
 
     event Deposit(address indexed by, address indexed owner, uint256 assets, uint256 shares);
 
-    event Withdraw(
-        address indexed by,
-        address indexed to,
-        address indexed owner,
-        uint256 assets,
-        uint256 shares
-    );
+    event Withdraw(address indexed by, address indexed to, address indexed owner, uint256 assets, uint256 shares);
 
     function setUp() public {
         underlying = new MockERC20("Mock Token", "TKN", 18);
@@ -37,12 +31,10 @@ contract ERC4626Test is SoladyTest {
 
     function testDifferentialFullMulDiv(uint256 x, uint256 y, uint256 d) public {
         d = type(uint256).max - d % 4;
-        (bool success0,) = address(this).call(
-            abi.encodeWithSignature("fullMulDivChecked(uint256,uint256,uint256)", x, y, d)
-        );
-        (bool success1,) = address(this).call(
-            abi.encodeWithSignature("fullMulDivUnchecked(uint256,uint256,uint256)", x, y, d)
-        );
+        (bool success0,) =
+            address(this).call(abi.encodeWithSignature("fullMulDivChecked(uint256,uint256,uint256)", x, y, d));
+        (bool success1,) =
+            address(this).call(abi.encodeWithSignature("fullMulDivUnchecked(uint256,uint256,uint256)", x, y, d));
         if (d == type(uint256).max) {
             assertFalse(success0);
             assertFalse(success1);

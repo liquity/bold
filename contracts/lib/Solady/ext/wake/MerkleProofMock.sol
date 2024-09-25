@@ -11,11 +11,20 @@ contract MerkleProofMock {
         return MerkleProofLib.verify(proof, root, leaf);
     }
 
-    function verifyMultiProof(bytes32[] memory proof, bytes32 root, bytes32[] memory leaves, bool[] memory flags) external pure returns (bool) {
+    function verifyMultiProof(bytes32[] memory proof, bytes32 root, bytes32[] memory leaves, bool[] memory flags)
+        external
+        pure
+        returns (bool)
+    {
         return MerkleProofLib.verifyMultiProof(proof, root, leaves, flags);
     }
 
-    function verifyMultiProofCalldata(bytes32[] calldata proof, bytes32 root, bytes32[] calldata leaves, bool[] calldata flags) external pure returns (bool) {
+    function verifyMultiProofCalldata(
+        bytes32[] calldata proof,
+        bytes32 root,
+        bytes32[] calldata leaves,
+        bool[] calldata flags
+    ) external pure returns (bool) {
         return MerkleProofLib.verifyMultiProof(proof, root, leaves, flags);
     }
 }

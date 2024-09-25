@@ -64,10 +64,7 @@ abstract contract Test is Script {
         if (left != right) vm.assertEqDecimal(left, right, decimals);
     }
 
-    function assertEqDecimal(uint256 left, uint256 right, uint256 decimals, string memory err)
-        internal
-        virtual
-    {
+    function assertEqDecimal(uint256 left, uint256 right, uint256 decimals, string memory err) internal virtual {
         if (left != right) vm.assertEqDecimal(left, right, decimals, err);
     }
 
@@ -83,10 +80,7 @@ abstract contract Test is Script {
         if (left != right) vm.assertEqDecimal(left, right, decimals);
     }
 
-    function assertEqDecimal(int256 left, int256 right, uint256 decimals, string memory err)
-        internal
-        virtual
-    {
+    function assertEqDecimal(int256 left, int256 right, uint256 decimals, string memory err) internal virtual {
         if (left != right) vm.assertEqDecimal(left, right, decimals, err);
     }
 
@@ -110,10 +104,7 @@ abstract contract Test is Script {
         if (!__eq(left, right)) vm.assertEq(left, right);
     }
 
-    function assertEq(string memory left, string memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertEq(string memory left, string memory right, string memory err) internal virtual {
         if (!__eq(left, right)) vm.assertEq(left, right, err);
     }
 
@@ -129,10 +120,7 @@ abstract contract Test is Script {
         if (!__eq(left, right)) vm.assertEq(left, right);
     }
 
-    function assertEq(bool[] memory left, bool[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertEq(bool[] memory left, bool[] memory right, string memory err) internal virtual {
         if (!__eq(left, right)) vm.assertEq(left, right, err);
     }
 
@@ -140,10 +128,7 @@ abstract contract Test is Script {
         if (!__eq(left, right)) vm.assertEq(left, right);
     }
 
-    function assertEq(uint256[] memory left, uint256[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertEq(uint256[] memory left, uint256[] memory right, string memory err) internal virtual {
         if (!__eq(left, right)) vm.assertEq(left, right, err);
     }
 
@@ -151,10 +136,7 @@ abstract contract Test is Script {
         if (!__eq(left, right)) vm.assertEq(left, right);
     }
 
-    function assertEq(int256[] memory left, int256[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertEq(int256[] memory left, int256[] memory right, string memory err) internal virtual {
         if (!__eq(left, right)) vm.assertEq(left, right, err);
     }
 
@@ -162,10 +144,7 @@ abstract contract Test is Script {
         if (!__eq(left, right)) vm.assertEq(left, right);
     }
 
-    function assertEq(address[] memory left, address[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertEq(address[] memory left, address[] memory right, string memory err) internal virtual {
         if (!__eq(left, right)) vm.assertEq(left, right, err);
     }
 
@@ -173,10 +152,7 @@ abstract contract Test is Script {
         if (!__eq(left, right)) vm.assertEq(left, right);
     }
 
-    function assertEq(bytes32[] memory left, bytes32[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertEq(bytes32[] memory left, bytes32[] memory right, string memory err) internal virtual {
         if (!__eq(left, right)) vm.assertEq(left, right, err);
     }
 
@@ -184,10 +160,7 @@ abstract contract Test is Script {
         if (!__eq(left, right)) vm.assertEq(left, right);
     }
 
-    function assertEq(string[] memory left, string[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertEq(string[] memory left, string[] memory right, string memory err) internal virtual {
         if (!__eq(left, right)) vm.assertEq(left, right, err);
     }
 
@@ -195,10 +168,7 @@ abstract contract Test is Script {
         if (!__eq(left, right)) vm.assertEq(left, right);
     }
 
-    function assertEq(bytes[] memory left, bytes[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertEq(bytes[] memory left, bytes[] memory right, string memory err) internal virtual {
         if (!__eq(left, right)) vm.assertEq(left, right, err);
     }
 
@@ -222,10 +192,7 @@ abstract contract Test is Script {
         if (left == right) vm.assertNotEqDecimal(left, right, decimals);
     }
 
-    function assertNotEqDecimal(uint256 left, uint256 right, uint256 decimals, string memory err)
-        internal
-        virtual
-    {
+    function assertNotEqDecimal(uint256 left, uint256 right, uint256 decimals, string memory err) internal virtual {
         if (left == right) vm.assertNotEqDecimal(left, right, decimals, err);
     }
 
@@ -241,10 +208,7 @@ abstract contract Test is Script {
         if (left == right) vm.assertNotEqDecimal(left, right, decimals);
     }
 
-    function assertNotEqDecimal(int256 left, int256 right, uint256 decimals, string memory err)
-        internal
-        virtual
-    {
+    function assertNotEqDecimal(int256 left, int256 right, uint256 decimals, string memory err) internal virtual {
         if (left == right) vm.assertNotEqDecimal(left, right, decimals, err);
     }
 
@@ -268,10 +232,7 @@ abstract contract Test is Script {
         if (__eq(left, right)) vm.assertNotEq(left, right);
     }
 
-    function assertNotEq(string memory left, string memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertNotEq(string memory left, string memory right, string memory err) internal virtual {
         if (__eq(left, right)) vm.assertNotEq(left, right, err);
     }
 
@@ -279,10 +240,7 @@ abstract contract Test is Script {
         if (__eq(left, right)) vm.assertNotEq(left, right);
     }
 
-    function assertNotEq(bytes memory left, bytes memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertNotEq(bytes memory left, bytes memory right, string memory err) internal virtual {
         if (__eq(left, right)) vm.assertNotEq(left, right, err);
     }
 
@@ -290,10 +248,7 @@ abstract contract Test is Script {
         if (__eq(left, right)) vm.assertNotEq(left, right);
     }
 
-    function assertNotEq(bool[] memory left, bool[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertNotEq(bool[] memory left, bool[] memory right, string memory err) internal virtual {
         if (__eq(left, right)) vm.assertNotEq(left, right, err);
     }
 
@@ -301,10 +256,7 @@ abstract contract Test is Script {
         if (__eq(left, right)) vm.assertNotEq(left, right);
     }
 
-    function assertNotEq(uint256[] memory left, uint256[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertNotEq(uint256[] memory left, uint256[] memory right, string memory err) internal virtual {
         if (__eq(left, right)) vm.assertNotEq(left, right, err);
     }
 
@@ -312,10 +264,7 @@ abstract contract Test is Script {
         if (__eq(left, right)) vm.assertNotEq(left, right);
     }
 
-    function assertNotEq(int256[] memory left, int256[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertNotEq(int256[] memory left, int256[] memory right, string memory err) internal virtual {
         if (__eq(left, right)) vm.assertNotEq(left, right, err);
     }
 
@@ -323,10 +272,7 @@ abstract contract Test is Script {
         if (__eq(left, right)) vm.assertNotEq(left, right);
     }
 
-    function assertNotEq(address[] memory left, address[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertNotEq(address[] memory left, address[] memory right, string memory err) internal virtual {
         if (__eq(left, right)) vm.assertNotEq(left, right, err);
     }
 
@@ -334,10 +280,7 @@ abstract contract Test is Script {
         if (__eq(left, right)) vm.assertNotEq(left, right);
     }
 
-    function assertNotEq(bytes32[] memory left, bytes32[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertNotEq(bytes32[] memory left, bytes32[] memory right, string memory err) internal virtual {
         if (__eq(left, right)) vm.assertNotEq(left, right, err);
     }
 
@@ -345,10 +288,7 @@ abstract contract Test is Script {
         if (__eq(left, right)) vm.assertNotEq(left, right);
     }
 
-    function assertNotEq(string[] memory left, string[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertNotEq(string[] memory left, string[] memory right, string memory err) internal virtual {
         if (__eq(left, right)) vm.assertNotEq(left, right, err);
     }
 
@@ -356,10 +296,7 @@ abstract contract Test is Script {
         if (__eq(left, right)) vm.assertNotEq(left, right);
     }
 
-    function assertNotEq(bytes[] memory left, bytes[] memory right, string memory err)
-        internal
-        virtual
-    {
+    function assertNotEq(bytes[] memory left, bytes[] memory right, string memory err) internal virtual {
         if (__eq(left, right)) vm.assertNotEq(left, right, err);
     }
 
@@ -375,10 +312,7 @@ abstract contract Test is Script {
         if (left >= right) vm.assertLtDecimal(left, right, decimals);
     }
 
-    function assertLtDecimal(uint256 left, uint256 right, uint256 decimals, string memory err)
-        internal
-        virtual
-    {
+    function assertLtDecimal(uint256 left, uint256 right, uint256 decimals, string memory err) internal virtual {
         if (left >= right) vm.assertLtDecimal(left, right, decimals, err);
     }
 
@@ -394,10 +328,7 @@ abstract contract Test is Script {
         if (left >= right) vm.assertLtDecimal(left, right, decimals);
     }
 
-    function assertLtDecimal(int256 left, int256 right, uint256 decimals, string memory err)
-        internal
-        virtual
-    {
+    function assertLtDecimal(int256 left, int256 right, uint256 decimals, string memory err) internal virtual {
         if (left >= right) vm.assertLtDecimal(left, right, decimals, err);
     }
 
@@ -413,10 +344,7 @@ abstract contract Test is Script {
         if (left <= right) vm.assertGtDecimal(left, right, decimals);
     }
 
-    function assertGtDecimal(uint256 left, uint256 right, uint256 decimals, string memory err)
-        internal
-        virtual
-    {
+    function assertGtDecimal(uint256 left, uint256 right, uint256 decimals, string memory err) internal virtual {
         if (left <= right) vm.assertGtDecimal(left, right, decimals, err);
     }
 
@@ -432,10 +360,7 @@ abstract contract Test is Script {
         if (left <= right) vm.assertGtDecimal(left, right, decimals);
     }
 
-    function assertGtDecimal(int256 left, int256 right, uint256 decimals, string memory err)
-        internal
-        virtual
-    {
+    function assertGtDecimal(int256 left, int256 right, uint256 decimals, string memory err) internal virtual {
         if (left <= right) vm.assertGtDecimal(left, right, decimals, err);
     }
 
@@ -451,10 +376,7 @@ abstract contract Test is Script {
         if (left > right) vm.assertLeDecimal(left, right, decimals);
     }
 
-    function assertLeDecimal(uint256 left, uint256 right, uint256 decimals, string memory err)
-        internal
-        virtual
-    {
+    function assertLeDecimal(uint256 left, uint256 right, uint256 decimals, string memory err) internal virtual {
         if (left > right) vm.assertLeDecimal(left, right, decimals, err);
     }
 
@@ -470,10 +392,7 @@ abstract contract Test is Script {
         if (left > right) vm.assertLeDecimal(left, right, decimals);
     }
 
-    function assertLeDecimal(int256 left, int256 right, uint256 decimals, string memory err)
-        internal
-        virtual
-    {
+    function assertLeDecimal(int256 left, int256 right, uint256 decimals, string memory err) internal virtual {
         if (left > right) vm.assertLeDecimal(left, right, decimals, err);
     }
 
@@ -489,10 +408,7 @@ abstract contract Test is Script {
         if (left < right) vm.assertGeDecimal(left, right, decimals);
     }
 
-    function assertGeDecimal(uint256 left, uint256 right, uint256 decimals, string memory err)
-        internal
-        virtual
-    {
+    function assertGeDecimal(uint256 left, uint256 right, uint256 decimals, string memory err) internal virtual {
         if (left < right) vm.assertGeDecimal(left, right, decimals, err);
     }
 
@@ -508,10 +424,7 @@ abstract contract Test is Script {
         if (left < right) vm.assertGeDecimal(left, right, decimals);
     }
 
-    function assertGeDecimal(int256 left, int256 right, uint256 decimals, string memory err)
-        internal
-        virtual
-    {
+    function assertGeDecimal(int256 left, int256 right, uint256 decimals, string memory err) internal virtual {
         if (left < right) vm.assertGeDecimal(left, right, decimals, err);
     }
 
@@ -519,19 +432,14 @@ abstract contract Test is Script {
         vm.assertApproxEqAbs(left, right, maxDelta);
     }
 
-    function assertApproxEqAbs(uint256 left, uint256 right, uint256 maxDelta, string memory err)
-        internal
-        virtual
-    {
+    function assertApproxEqAbs(uint256 left, uint256 right, uint256 maxDelta, string memory err) internal virtual {
         vm.assertApproxEqAbs(left, right, maxDelta, err);
     }
 
-    function assertApproxEqAbsDecimal(
-        uint256 left,
-        uint256 right,
-        uint256 maxDelta,
-        uint256 decimals
-    ) internal virtual {
+    function assertApproxEqAbsDecimal(uint256 left, uint256 right, uint256 maxDelta, uint256 decimals)
+        internal
+        virtual
+    {
         vm.assertApproxEqAbsDecimal(left, right, maxDelta, decimals);
     }
 
@@ -549,27 +457,18 @@ abstract contract Test is Script {
         vm.assertApproxEqAbs(left, right, maxDelta);
     }
 
-    function assertApproxEqAbs(int256 left, int256 right, uint256 maxDelta, string memory err)
-        internal
-        virtual
-    {
+    function assertApproxEqAbs(int256 left, int256 right, uint256 maxDelta, string memory err) internal virtual {
         vm.assertApproxEqAbs(left, right, maxDelta, err);
     }
 
-    function assertApproxEqAbsDecimal(int256 left, int256 right, uint256 maxDelta, uint256 decimals)
-        internal
-        virtual
-    {
+    function assertApproxEqAbsDecimal(int256 left, int256 right, uint256 maxDelta, uint256 decimals) internal virtual {
         vm.assertApproxEqAbsDecimal(left, right, maxDelta, decimals);
     }
 
-    function assertApproxEqAbsDecimal(
-        int256 left,
-        int256 right,
-        uint256 maxDelta,
-        uint256 decimals,
-        string memory err
-    ) internal virtual {
+    function assertApproxEqAbsDecimal(int256 left, int256 right, uint256 maxDelta, uint256 decimals, string memory err)
+        internal
+        virtual
+    {
         vm.assertApproxEqAbsDecimal(left, right, maxDelta, decimals, err);
     }
 
@@ -609,10 +508,7 @@ abstract contract Test is Script {
         vm.assertApproxEqRelDecimal(left, right, maxPercentDelta, decimals, err);
     }
 
-    function assertApproxEqRel(int256 left, int256 right, uint256 maxPercentDelta)
-        internal
-        virtual
-    {
+    function assertApproxEqRel(int256 left, int256 right, uint256 maxPercentDelta) internal virtual {
         vm.assertApproxEqRel(left, right, maxPercentDelta);
     }
 
@@ -660,11 +556,7 @@ abstract contract Test is Script {
         }
     }
 
-    function __eq(address[] memory left, address[] memory right)
-        internal
-        pure
-        returns (bool result)
-    {
+    function __eq(address[] memory left, address[] memory right) internal pure returns (bool result) {
         /// @solidity memory-safe-assembly
         assembly {
             let n := mload(left)
@@ -680,11 +572,7 @@ abstract contract Test is Script {
         }
     }
 
-    function __eq(bytes32[] memory left, bytes32[] memory right)
-        internal
-        pure
-        returns (bool result)
-    {
+    function __eq(bytes32[] memory left, bytes32[] memory right) internal pure returns (bool result) {
         /// @solidity memory-safe-assembly
         assembly {
             result := keccak256(left, shl(5, add(1, mload(left))))
@@ -692,11 +580,7 @@ abstract contract Test is Script {
         }
     }
 
-    function __eq(int256[] memory left, int256[] memory right)
-        internal
-        pure
-        returns (bool result)
-    {
+    function __eq(int256[] memory left, int256[] memory right) internal pure returns (bool result) {
         /// @solidity memory-safe-assembly
         assembly {
             result := keccak256(left, shl(5, add(1, mload(left))))
@@ -704,11 +588,7 @@ abstract contract Test is Script {
         }
     }
 
-    function __eq(uint256[] memory left, uint256[] memory right)
-        internal
-        pure
-        returns (bool result)
-    {
+    function __eq(uint256[] memory left, uint256[] memory right) internal pure returns (bool result) {
         /// @solidity memory-safe-assembly
         assembly {
             result := keccak256(left, shl(5, add(1, mload(left))))
@@ -716,11 +596,7 @@ abstract contract Test is Script {
         }
     }
 
-    function __eq(string[] memory left, string[] memory right)
-        internal
-        pure
-        returns (bool result)
-    {
+    function __eq(string[] memory left, string[] memory right) internal pure returns (bool result) {
         /// @solidity memory-safe-assembly
         assembly {
             let n := mload(left)

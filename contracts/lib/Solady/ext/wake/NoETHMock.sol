@@ -38,6 +38,7 @@ contract NoETHMock {
     receive() external payable {
         revert("No ETH pls");
     }
+
     fallback() external payable {
         revert("No ETH pls");
     }

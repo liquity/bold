@@ -96,20 +96,15 @@ contract DeploylessPredeployQueryerTest is SoladyTest {
         bytes[] decoded;
     }
 
-    function _deployQuery(
-        address target,
-        bytes[] memory targetQueryCalldata,
-        bytes memory factoryCalldata
-    ) internal returns (address result) {
+    function _deployQuery(address target, bytes[] memory targetQueryCalldata, bytes memory factoryCalldata)
+        internal
+        returns (address result)
+    {
         if (_randomChance(2)) {
-            return address(
-                new DeploylessPredeployQueryer(
-                    target, targetQueryCalldata, address(factory), factoryCalldata
-                )
-            );
+            return
+                address(new DeploylessPredeployQueryer(target, targetQueryCalldata, address(factory), factoryCalldata));
         }
-        bytes memory args =
-            abi.encode(target, targetQueryCalldata, address(factory), factoryCalldata);
+        bytes memory args = abi.encode(target, targetQueryCalldata, address(factory), factoryCalldata);
         bytes memory initcode;
         if (false && _randomChance(2)) {
             initcode = _CREATION_CODE;
@@ -151,17 +146,13 @@ contract DeploylessPredeployQueryerTest is SoladyTest {
             if (_randomChance(2)) {
                 for (uint256 i; i < t.n; ++i) {
                     t.bytesSeeds[i] = _randomBytes();
-                    t.targetQueryCalldata[i] =
-                        abi.encodeWithSignature("generate(bytes)", t.bytesSeeds[i]);
+                    t.targetQueryCalldata[i] = abi.encodeWithSignature("generate(bytes)", t.bytesSeeds[i]);
                 }
                 t.deployed = _deployQuery(t.target, t.targetQueryCalldata, t.factoryCalldata);
                 t.decoded = abi.decode(t.deployed.code, (bytes[]));
                 assertEq(t.decoded.length, t.n);
                 for (uint256 i; i < t.n; ++i) {
-                    assertEq(
-                        abi.decode(t.decoded[i], (bytes)),
-                        RandomBytesGeneratorLib.generate(t.bytesSeeds[i])
-                    );
+                    assertEq(abi.decode(t.decoded[i], (bytes)), RandomBytesGeneratorLib.generate(t.bytesSeeds[i]));
                 }
             }
             for (uint256 i; i < t.n; ++i) {
@@ -171,9 +162,7 @@ contract DeploylessPredeployQueryerTest is SoladyTest {
             t.deployed = _deployQuery(t.target, t.targetQueryCalldata, t.factoryCalldata);
             t.decoded = abi.decode(t.deployed.code, (bytes[]));
             for (uint256 i; i < t.n; ++i) {
-                assertEq(
-                    abi.decode(t.decoded[i], (uint256)), RandomBytesGeneratorLib.next(t.seeds[i])
-                );
+                assertEq(abi.decode(t.decoded[i], (uint256)), RandomBytesGeneratorLib.next(t.seeds[i]));
             }
         }
     }

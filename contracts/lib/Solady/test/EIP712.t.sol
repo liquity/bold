@@ -66,10 +66,8 @@ contract EIP712Test is SoladyTest {
 
         string memory message = "Hello Milady!";
 
-        bytes32 structHash =
-            keccak256(abi.encode("Message(address to,string message)", to, message));
-        bytes32 expectedDigest =
-            keccak256(abi.encodePacked("\x19\x01", mockToTest.DOMAIN_SEPARATOR(), structHash));
+        bytes32 structHash = keccak256(abi.encode("Message(address to,string message)", to, message));
+        bytes32 expectedDigest = keccak256(abi.encodePacked("\x19\x01", mockToTest.DOMAIN_SEPARATOR(), structHash));
 
         assertEq(mockToTest.hashTypedData(structHash), expectedDigest);
 
@@ -117,14 +115,10 @@ contract EIP712Test is SoladyTest {
         _testDomainSeparator(MockEIP712(address(mockDynamicClone)), "Remilio", "2");
     }
 
-    function _testDomainSeparator(MockEIP712 mockToTest, bytes memory name, bytes memory version)
-        internal
-    {
+    function _testDomainSeparator(MockEIP712 mockToTest, bytes memory name, bytes memory version) internal {
         bytes32 expectedDomainSeparator = keccak256(
             abi.encode(
-                keccak256(
-                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-                ),
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256(name),
                 keccak256(version),
                 block.chainid,
@@ -159,8 +153,7 @@ contract EIP712Test is SoladyTest {
 
     function _testEIP5267(MockEIP712 mockToTest) public {
         _testEIP5267Variables memory t;
-        (t.fields, t.name, t.version, t.chainId, t.verifyingContract, t.salt, t.extensions) =
-            mockToTest.eip712Domain();
+        (t.fields, t.name, t.version, t.chainId, t.verifyingContract, t.salt, t.extensions) = mockToTest.eip712Domain();
 
         assertEq(t.fields, hex"0f");
         assertEq(t.name, "Milady");

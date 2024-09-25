@@ -379,11 +379,11 @@ library SignatureCheckerLib {
     }
 
     /// @dev Returns whether `signature` is valid for `hash` for an ERC1271 `signer` contract.
-    function isValidERC1271SignatureNowCalldata(
-        address signer,
-        bytes32 hash,
-        bytes calldata signature
-    ) internal view returns (bool isValid) {
+    function isValidERC1271SignatureNowCalldata(address signer, bytes32 hash, bytes calldata signature)
+        internal
+        view
+        returns (bool isValid)
+    {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40)
@@ -503,11 +503,10 @@ library SignatureCheckerLib {
     /// If the signature is postfixed with the ERC6492 magic number, it will attempt to
     /// deploy / prepare the `signer` smart account before doing a regular ERC1271 check.
     /// Note: This function is NOT reentrancy safe.
-    function isValidERC6492SignatureNowAllowSideEffects(
-        address signer,
-        bytes32 hash,
-        bytes memory signature
-    ) internal returns (bool isValid) {
+    function isValidERC6492SignatureNowAllowSideEffects(address signer, bytes32 hash, bytes memory signature)
+        internal
+        returns (bool isValid)
+    {
         /// @solidity memory-safe-assembly
         assembly {
             function callIsValidSignature(signer_, hash_, signature_) -> _isValid {
@@ -520,10 +519,7 @@ library SignatureCheckerLib {
                 let n_ := add(0x20, mload(signature_))
                 pop(staticcall(gas(), 4, signature_, n_, add(m_, 0x44), n_))
                 _isValid :=
-                    and(
-                        eq(mload(d_), f_),
-                        staticcall(gas(), signer_, m_, add(returndatasize(), 0x44), d_, 0x20)
-                    )
+                    and(eq(mload(d_), f_), staticcall(gas(), signer_, m_, add(returndatasize(), 0x44), d_, 0x20))
             }
             for { let n := mload(signature) } 1 {} {
                 if iszero(eq(mload(add(signature, n)), mul(0x6492, div(not(isValid), 0xffff)))) {
@@ -533,9 +529,7 @@ library SignatureCheckerLib {
                 let o := add(signature, 0x20) // Signature bytes.
                 let d := add(o, mload(add(o, 0x20))) // Factory calldata.
                 if iszero(extcodesize(signer)) {
-                    if iszero(call(gas(), mload(o), 0, add(d, 0x20), mload(d), codesize(), 0x00)) {
-                        break
-                    }
+                    if iszero(call(gas(), mload(o), 0, add(d, 0x20), mload(d), codesize(), 0x00)) { break }
                 }
                 let s := add(o, mload(add(o, 0x40))) // Inner signature.
                 isValid := callIsValidSignature(signer, hash, s)
@@ -573,10 +567,7 @@ library SignatureCheckerLib {
                 let n_ := add(0x20, mload(signature_))
                 pop(staticcall(gas(), 4, signature_, n_, add(m_, 0x44), n_))
                 _isValid :=
-                    and(
-                        eq(mload(d_), f_),
-                        staticcall(gas(), signer_, m_, add(returndatasize(), 0x44), d_, 0x20)
-                    )
+                    and(eq(mload(d_), f_), staticcall(gas(), signer_, m_, add(returndatasize(), 0x44), d_, 0x20))
             }
             for { let n := mload(signature) } 1 {} {
                 if iszero(eq(mload(add(signature, n)), mul(0x6492, div(not(isValid), 0xffff)))) {

@@ -42,11 +42,7 @@ library MetadataReaderLib {
     }
 
     /// @dev Equivalent to `readString(abi.encodeWithSignature("name()"), limit, gasStipend)`.
-    function readName(address target, uint256 limit, uint256 gasStipend)
-        internal
-        view
-        returns (string memory)
-    {
+    function readName(address target, uint256 limit, uint256 gasStipend) internal view returns (string memory) {
         return _string(target, _ptr(0x06fdde03), limit, gasStipend);
     }
 
@@ -61,11 +57,7 @@ library MetadataReaderLib {
     }
 
     /// @dev Equivalent to `readString(abi.encodeWithSignature("symbol()"), limit, gasStipend)`.
-    function readSymbol(address target, uint256 limit, uint256 gasStipend)
-        internal
-        view
-        returns (string memory)
-    {
+    function readSymbol(address target, uint256 limit, uint256 gasStipend) internal view returns (string memory) {
         return _string(target, _ptr(0x95d89b41), limit, gasStipend);
     }
 
@@ -77,11 +69,7 @@ library MetadataReaderLib {
 
     /// @dev Performs a best-effort string query on `target` with `data` as the calldata.
     /// The string will be truncated to `limit` bytes.
-    function readString(address target, bytes memory data, uint256 limit)
-        internal
-        view
-        returns (string memory)
-    {
+    function readString(address target, bytes memory data, uint256 limit) internal view returns (string memory) {
         return _string(target, _ptr(data), limit, GAS_STIPEND_NO_GRIEF);
     }
 
@@ -123,11 +111,7 @@ library MetadataReaderLib {
     }
 
     /// @dev Performs a best-effort uint query on `target` with `data` as the calldata.
-    function readUint(address target, bytes memory data, uint256 gasStipend)
-        internal
-        view
-        returns (uint256)
-    {
+    function readUint(address target, bytes memory data, uint256 gasStipend) internal view returns (uint256) {
         return _uint(target, _ptr(data), gasStipend);
     }
 
@@ -185,11 +169,7 @@ library MetadataReaderLib {
     }
 
     /// @dev Attempts to read and return a uint at `target`.
-    function _uint(address target, bytes32 ptr, uint256 gasStipend)
-        private
-        view
-        returns (uint256 result)
-    {
+    function _uint(address target, bytes32 ptr, uint256 gasStipend) private view returns (uint256 result) {
         /// @solidity memory-safe-assembly
         assembly {
             result :=

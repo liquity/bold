@@ -21,12 +21,7 @@ abstract contract ERC1271 is EIP712 {
 
     /// @dev Validates the signature with ERC1271 return,
     /// so that this account can also be used as a signer.
-    function isValidSignature(bytes32 hash, bytes calldata signature)
-        public
-        view
-        virtual
-        returns (bytes4 result)
-    {
+    function isValidSignature(bytes32 hash, bytes calldata signature) public view virtual returns (bytes4 result) {
         bool success = _erc1271IsValidSignature(hash, _erc1271UnwrapSignature(signature));
         /// @solidity memory-safe-assembly
         assembly {
@@ -72,12 +67,7 @@ abstract contract ERC1271 is EIP712 {
     }
 
     /// @dev Unwraps and returns the signature.
-    function _erc1271UnwrapSignature(bytes calldata signature)
-        internal
-        view
-        virtual
-        returns (bytes calldata result)
-    {
+    function _erc1271UnwrapSignature(bytes calldata signature) internal view virtual returns (bytes calldata result) {
         result = signature;
         /// @solidity memory-safe-assembly
         assembly {
@@ -95,15 +85,9 @@ abstract contract ERC1271 is EIP712 {
     }
 
     /// @dev Returns whether the `signature` is valid for the `hash.
-    function _erc1271IsValidSignature(bytes32 hash, bytes calldata signature)
-        internal
-        view
-        virtual
-        returns (bool)
-    {
+    function _erc1271IsValidSignature(bytes32 hash, bytes calldata signature) internal view virtual returns (bool) {
         return _erc1271IsValidSignatureViaSafeCaller(hash, signature)
-            || _erc1271IsValidSignatureViaNestedEIP712(hash, signature)
-            || _erc1271IsValidSignatureViaRPC(hash, signature);
+            || _erc1271IsValidSignatureViaNestedEIP712(hash, signature) || _erc1271IsValidSignatureViaRPC(hash, signature);
     }
 
     /// @dev Performs the signature validation without nested EIP-712 if the caller is

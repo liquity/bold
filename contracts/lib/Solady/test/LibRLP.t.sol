@@ -42,27 +42,15 @@ contract LibRLPTest is SoladyTest {
         assertTrue(computeAddressOriginal(deployer, 0xffffffffffffffff) != address(0));
     }
 
-    function computeAddressWithRLPList(address deployer, uint256 nonce)
-        internal
-        pure
-        returns (address)
-    {
+    function computeAddressWithRLPList(address deployer, uint256 nonce) internal pure returns (address) {
         return address(uint160(uint256(keccak256(LibRLP.l(deployer).p(nonce).encode()))));
     }
 
-    function computeAddressOriginal(address deployer, uint256 nonce)
-        internal
-        pure
-        returns (address)
-    {
+    function computeAddressOriginal(address deployer, uint256 nonce) internal pure returns (address) {
         return address(uint160(uint256(keccak256(_computeAddressOriginal(deployer, nonce)))));
     }
 
-    function _computeAddressOriginal(address deployer, uint256 nonce)
-        internal
-        pure
-        returns (bytes memory)
-    {
+    function _computeAddressOriginal(address deployer, uint256 nonce) internal pure returns (bytes memory) {
         // Although the theoretical allowed limit, based on EIP-2681,
         // for an account nonce is 2**64-2: https://eips.ethereum.org/EIPS/eip-2681,
         // we just test all the way to 2**256-1 to ensure that the computeAddress function does not revert
@@ -198,9 +186,7 @@ contract LibRLPTest is SoladyTest {
             mstore(0x00, 0)
             let head := and(mload(l), 0xffffffffff)
             if head {
-                for { let j := 0 } iszero(eq(j, i)) { j := add(j, 1) } {
-                    head := and(mload(head), 0xffffffffff)
-                }
+                for { let j := 0 } iszero(eq(j, i)) { j := add(j, 1) } { head := and(mload(head), 0xffffffffff) }
                 result := shr(48, mload(head))
                 if eq(1, byte(26, mload(head))) { result := mload(result) }
             }
@@ -228,15 +214,10 @@ contract LibRLPTest is SoladyTest {
     function testRLPEncodeBytes2() public {
         assertEq(LibRLP.encode(""), hex"80");
         for (uint256 i = 0; i < 128; ++i) {
-            assertEq(
-                LibRLP.encode(bytes(abi.encodePacked(uint8(i)))), bytes(abi.encodePacked(uint8(i)))
-            );
+            assertEq(LibRLP.encode(bytes(abi.encodePacked(uint8(i)))), bytes(abi.encodePacked(uint8(i))));
         }
         for (uint256 i = 128; i < 256; ++i) {
-            assertEq(
-                LibRLP.encode(bytes(abi.encodePacked(uint8(i)))),
-                bytes(abi.encodePacked(bytes1(0x81), uint8(i)))
-            );
+            assertEq(LibRLP.encode(bytes(abi.encodePacked(uint8(i)))), bytes(abi.encodePacked(bytes1(0x81), uint8(i))));
         }
     }
 

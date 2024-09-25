@@ -105,9 +105,7 @@ contract LibZipTest is SoladyTest {
         if (_randomChance(2)) {
             /// @solidity memory-safe-assembly
             assembly {
-                for { let i := 0 } lt(i, n) { i := add(i, 0x20) } {
-                    mstore(add(add(data, 0x20), i), not(0))
-                }
+                for { let i := 0 } lt(i, n) { i := add(i, 0x20) } { mstore(add(add(data, 0x20), i), not(0)) }
             }
         }
         if (n != 0) {
@@ -197,9 +195,7 @@ contract LibZipTest is SoladyTest {
         vm.deal(address(this), callValue * 2);
 
         (bool success, bytes memory result) = payable(mockCd).call{value: callValue}(
-            LibZip.cdCompress(
-                abi.encodeWithSignature("storeNumbersHash(uint256[],bool)", numbers, true)
-            )
+            LibZip.cdCompress(abi.encodeWithSignature("storeNumbersHash(uint256[],bool)", numbers, true))
         );
 
         assertTrue(success);
@@ -212,9 +208,7 @@ contract LibZipTest is SoladyTest {
         assertEq(address(mockCd).balance, callValue);
 
         (success, result) = payable(mockCd).call{value: callValue}(
-            LibZip.cdCompress(
-                abi.encodeWithSignature("storeNumbersHash(uint256[],bool)", numbers, false)
-            )
+            LibZip.cdCompress(abi.encodeWithSignature("storeNumbersHash(uint256[],bool)", numbers, false))
         );
 
         assertFalse(success);

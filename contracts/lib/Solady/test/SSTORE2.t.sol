@@ -129,9 +129,7 @@ contract SSTORE2Test is SoladyTest {
         }
     }
 
-    function testWriteReadCounterfactual(bytes calldata data, bytes32 salt, address deployer)
-        public
-    {
+    function testWriteReadCounterfactual(bytes calldata data, bytes32 salt, address deployer) public {
         while (deployer.code.length != 0) deployer = _randomHashedAddress();
         address predicted = SSTORE2.predictCounterfactualAddress(data, salt, deployer);
 

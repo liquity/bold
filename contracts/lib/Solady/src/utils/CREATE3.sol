@@ -46,8 +46,7 @@ library CREATE3 {
 
     /// @dev Hash of the `_PROXY_INITCODE`.
     /// Equivalent to `keccak256(abi.encodePacked(hex"67363d3d37363d34f03d5260086018f3"))`.
-    bytes32 internal constant PROXY_INITCODE_HASH =
-        0x21c35dbe1b344a2488cf3321d6ce542f8e9f305544ff09e4993a62319a497c1f;
+    bytes32 internal constant PROXY_INITCODE_HASH = 0x21c35dbe1b344a2488cf3321d6ce542f8e9f305544ff09e4993a62319a497c1f;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                      CREATE3 OPERATIONS                    */
@@ -56,10 +55,7 @@ library CREATE3 {
     /// @dev Deploys `initCode` deterministically with a `salt`.
     /// Returns the deterministic address of the deployed contract,
     /// which solely depends on `salt`.
-    function deployDeterministic(bytes memory initCode, bytes32 salt)
-        internal
-        returns (address deployed)
-    {
+    function deployDeterministic(bytes memory initCode, bytes32 salt) internal returns (address deployed) {
         deployed = deployDeterministic(0, initCode, salt);
     }
 
@@ -87,9 +83,7 @@ library CREATE3 {
             deployed := keccak256(0x1e, 0x17)
             if iszero(
                 mul( // The arguments of `mul` are evaluated last to first.
-                    extcodesize(deployed),
-                    call(gas(), proxy, value, add(initCode, 0x20), mload(initCode), 0x00, 0x00)
-                )
+                extcodesize(deployed), call(gas(), proxy, value, add(initCode, 0x20), mload(initCode), 0x00, 0x00))
             ) {
                 mstore(0x00, 0x30116425) // `DeploymentFailed()`.
                 revert(0x1c, 0x04)
@@ -103,11 +97,7 @@ library CREATE3 {
     }
 
     /// @dev Returns the deterministic address for `salt` with `deployer`.
-    function predictDeterministicAddress(bytes32 salt, address deployer)
-        internal
-        pure
-        returns (address deployed)
-    {
+    function predictDeterministicAddress(bytes32 salt, address deployer) internal pure returns (address deployed) {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40) // Cache the free memory pointer.

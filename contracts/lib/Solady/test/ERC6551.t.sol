@@ -45,12 +45,10 @@ contract ERC6551Test is SoladyTest {
     // By right, this should be the keccak256 of some long-ass string:
     // (e.g. `keccak256("Parent(bytes32 childHash,Mail child)Mail(Person from,Person to,string contents)Person(string name,address wallet)")`).
     // But I'm lazy and will use something randomish here.
-    bytes32 internal constant _PARENT_TYPEHASH =
-        0xd61db970ec8a2edc5f9fd31d876abe01b785909acb16dcd4baaf3b434b4c439b;
+    bytes32 internal constant _PARENT_TYPEHASH = 0xd61db970ec8a2edc5f9fd31d876abe01b785909acb16dcd4baaf3b434b4c439b;
 
     // By right, this should be a proper domain separator, but I'm lazy.
-    bytes32 internal constant _DOMAIN_SEP_B =
-        0xa1a044077d7677adbbfa892ded5390979b33993e0e2a457e3f974bbcda53821b;
+    bytes32 internal constant _DOMAIN_SEP_B = 0xa1a044077d7677adbbfa892ded5390979b33993e0e2a457e3f974bbcda53821b;
 
     bytes32 internal constant _ERC1967_IMPLEMENTATION_SLOT =
         0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
@@ -95,8 +93,7 @@ contract ERC6551Test is SoladyTest {
     function _testTempsMint(address owner) internal returns (uint256 tokenId) {
         while (true) {
             tokenId = _randomChance(8) ? _random() % 32 : _random();
-            (bool success,) =
-                _erc721.call(abi.encodeWithSignature("mint(address,uint256)", owner, tokenId));
+            (bool success,) = _erc721.call(abi.encodeWithSignature("mint(address,uint256)", owner, tokenId));
             if (success) return tokenId;
         }
     }
@@ -158,9 +155,7 @@ contract ERC6551Test is SoladyTest {
                 t[i] = _testTemps();
                 if (i != 0) {
                     vm.prank(t[i].owner);
-                    MockERC721(_erc721).safeTransferFrom(
-                        t[i].owner, address(t[i - 1].account), t[i].tokenId
-                    );
+                    MockERC721(_erc721).safeTransferFrom(t[i].owner, address(t[i - 1].account), t[i].tokenId);
                     t[i].owner = address(t[i - 1].account);
                 }
             }
@@ -168,19 +163,13 @@ contract ERC6551Test is SoladyTest {
                 for (uint256 j = i; j != n; ++j) {
                     vm.prank(t[i].owner);
                     vm.expectRevert(ERC6551.SelfOwnDetected.selector);
-                    MockERC721(_erc721).safeTransferFrom(
-                        t[i].owner, address(t[j].account), t[i].tokenId
-                    );
+                    MockERC721(_erc721).safeTransferFrom(t[i].owner, address(t[j].account), t[i].tokenId);
                 }
                 for (uint256 j; j != i; ++j) {
                     vm.prank(t[i].owner);
-                    MockERC721(_erc721).safeTransferFrom(
-                        t[i].owner, address(t[j].account), t[i].tokenId
-                    );
+                    MockERC721(_erc721).safeTransferFrom(t[i].owner, address(t[j].account), t[i].tokenId);
                     vm.prank(address(t[j].account));
-                    MockERC721(_erc721).safeTransferFrom(
-                        address(t[j].account), t[i].owner, t[i].tokenId
-                    );
+                    MockERC721(_erc721).safeTransferFrom(address(t[j].account), t[i].owner, t[i].tokenId);
                 }
             }
 
@@ -198,9 +187,7 @@ contract ERC6551Test is SoladyTest {
                 t[i] = _testTemps();
                 if (i != 0) {
                     vm.prank(t[i].owner);
-                    MockERC721(_erc721).safeTransferFrom(
-                        t[i].owner, address(t[i - 1].account), t[i].tokenId
-                    );
+                    MockERC721(_erc721).safeTransferFrom(t[i].owner, address(t[i - 1].account), t[i].tokenId);
                     t[i].owner = address(t[i - 1].account);
                 }
             }
@@ -268,15 +255,11 @@ contract ERC6551Test is SoladyTest {
 
         vm.prank(t.owner);
         vm.expectRevert(abi.encodeWithSignature("TargetError(bytes)", data));
-        t.account.execute(
-            target, 123, abi.encodeWithSignature("revertWithTargetError(bytes)", data), 0
-        );
+        t.account.execute(target, 123, abi.encodeWithSignature("revertWithTargetError(bytes)", data), 0);
 
         vm.prank(t.owner);
         vm.expectRevert(ERC6551.OperationNotSupported.selector);
-        t.account.execute(
-            target, 123, abi.encodeWithSignature("revertWithTargetError(bytes)", data), 1
-        );
+        t.account.execute(target, 123, abi.encodeWithSignature("revertWithTargetError(bytes)", data), 1);
     }
 
     function testExecuteBatch() public {
@@ -355,8 +338,7 @@ contract ERC6551Test is SoladyTest {
         assertEq(t.account.mockId(), "1");
 
         vm.prank(t.owner);
-        bytes memory data =
-            abi.encodeWithSignature("upgradeToAndCall(address,bytes)", _erc6551V2, "");
+        bytes memory data = abi.encodeWithSignature("upgradeToAndCall(address,bytes)", _erc6551V2, "");
         (bool success,) = address(t.account).call(data);
         assertTrue(success);
         assertEq(t.account.mockId(), "2");
@@ -392,9 +374,8 @@ contract ERC6551Test is SoladyTest {
         calls[0].data = abi.encodeWithSignature("setData(bytes)", _randomBytes(111));
         calls[1].data = abi.encodeWithSignature("setData(bytes)", _randomBytes(222));
 
-        bytes memory data = LibZip.cdCompress(
-            abi.encodeWithSignature("executeBatch((address,uint256,bytes)[],uint8)", calls, 0)
-        );
+        bytes memory data =
+            LibZip.cdCompress(abi.encodeWithSignature("executeBatch((address,uint256,bytes)[],uint8)", calls, 0));
         vm.prank(t.owner);
         (bool success,) = address(t.account).call{value: 1 ether}(data);
         assertTrue(success);

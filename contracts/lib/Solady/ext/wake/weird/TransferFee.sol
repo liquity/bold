@@ -6,18 +6,17 @@ pragma solidity >=0.6.12;
 import {ERC20} from "./ERC20.sol";
 
 contract TransferFeeToken is ERC20 {
-
-    uint immutable fee;
+    uint256 immutable fee;
 
     // --- Init ---
-    constructor(uint _totalSupply, uint _fee) ERC20(_totalSupply) public {
+    constructor(uint256 _totalSupply, uint256 _fee) public ERC20(_totalSupply) {
         fee = _fee;
     }
 
     // --- Token ---
-    function transferFrom(address src, address dst, uint wad) override public returns (bool) {
+    function transferFrom(address src, address dst, uint256 wad) public override returns (bool) {
         require(balanceOf[src] >= wad, "insufficient-balance");
-        if (src != msg.sender && allowance[src][msg.sender] != type(uint).max) {
+        if (src != msg.sender && allowance[src][msg.sender] != type(uint256).max) {
             require(allowance[src][msg.sender] >= wad, "insufficient-allowance");
             allowance[src][msg.sender] = sub(allowance[src][msg.sender], wad);
         }

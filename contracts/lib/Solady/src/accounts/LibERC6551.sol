@@ -94,12 +94,7 @@ library LibERC6551 {
             mstore(add(m, 0x94), tokenId_)
             // `createAccount(address,bytes32,uint256,address,uint256)`.
             mstore(m, 0x8a54c52f000000000000000000000000)
-            if iszero(
-                and(
-                    gt(returndatasize(), 0x1f),
-                    call(gas(), REGISTRY, 0, add(m, 0x10), 0xa4, 0x00, 0x20)
-                )
-            ) {
+            if iszero(and(gt(returndatasize(), 0x1f), call(gas(), REGISTRY, 0, add(m, 0x10), 0xa4, 0x00, 0x20))) {
                 mstore(0x00, 0x20188a59) // `AccountCreationFailed()`.
                 revert(0x1c, 0x04)
             }
@@ -108,13 +103,11 @@ library LibERC6551 {
     }
 
     /// @dev Returns the address of the ERC6551 account.
-    function account(
-        address implementation_,
-        bytes32 salt_,
-        uint256 chainId_,
-        address tokenContract_,
-        uint256 tokenId_
-    ) internal pure returns (address result) {
+    function account(address implementation_, bytes32 salt_, uint256 chainId_, address tokenContract_, uint256 tokenId_)
+        internal
+        pure
+        returns (address result)
+    {
         /// @solidity memory-safe-assembly
         assembly {
             result := mload(0x40) // Grab the free memory pointer.
@@ -137,11 +130,7 @@ library LibERC6551 {
     }
 
     /// @dev Returns if `a` is an ERC6551 account with `expectedImplementation`.
-    function isERC6551Account(address a, address expectedImplementation)
-        internal
-        view
-        returns (bool result)
-    {
+    function isERC6551Account(address a, address expectedImplementation) internal view returns (bool result) {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40) // Grab the free memory pointer..

@@ -127,12 +127,9 @@ contract ERC2981Test is SoladyTest {
         _checkRoyaltyInfo(t, i, t.receivers[i], expected);
     }
 
-    function _checkRoyaltyInfo(
-        _TestTemps memory t,
-        uint256 i,
-        address expectedReceiver,
-        uint256 expectedAmount
-    ) internal {
+    function _checkRoyaltyInfo(_TestTemps memory t, uint256 i, address expectedReceiver, uint256 expectedAmount)
+        internal
+    {
         (address receiver, uint256 amount) = token.royaltyInfo(t.tokenIds[i], t.salePrices[i]);
         assertEq(receiver, expectedReceiver);
         assertEq(amount, expectedAmount);

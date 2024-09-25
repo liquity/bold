@@ -66,8 +66,7 @@ abstract contract Ownable {
     /// to avoid collision with lower slots.
     /// The choice of manual storage layout is to enable compatibility
     /// with both regular and upgradeable contracts.
-    bytes32 internal constant _OWNER_SLOT =
-        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff74873927;
+    bytes32 internal constant _OWNER_SLOT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffff74873927;
 
     /// The ownership handover slot of `newOwner` is given by:
     /// ```
@@ -250,12 +249,7 @@ abstract contract Ownable {
     }
 
     /// @dev Returns the expiry timestamp for the two-step ownership handover to `pendingOwner`.
-    function ownershipHandoverExpiresAt(address pendingOwner)
-        public
-        view
-        virtual
-        returns (uint256 result)
-    {
+    function ownershipHandoverExpiresAt(address pendingOwner) public view virtual returns (uint256 result) {
         /// @solidity memory-safe-assembly
         assembly {
             // Compute the handover slot.

@@ -120,16 +120,12 @@ contract ERC1967FactoryTest is SoladyTest {
         if (_randomChance(8)) {
             t.salt = keccak256(abi.encode(_random()));
             vm.expectRevert(ERC1967Factory.SaltDoesNotStartWithCaller.selector);
-            t.proxy = factory.deployDeterministicAndCall{value: t.msgValue}(
-                implementation0, admin, t.salt, data
-            );
+            t.proxy = factory.deployDeterministicAndCall{value: t.msgValue}(implementation0, admin, t.salt, data);
             return;
         } else {
             vm.expectEmit(true, true, true, true);
             emit Deployed(t.predictedProxy, implementation0, _cleaned(admin));
-            t.proxy = factory.deployDeterministicAndCall{value: t.msgValue}(
-                implementation0, admin, t.salt, data
-            );
+            t.proxy = factory.deployDeterministicAndCall{value: t.msgValue}(implementation0, admin, t.salt, data);
             assertEq(t.proxy, t.predictedProxy);
         }
 
@@ -278,8 +274,7 @@ contract ERC1967FactoryTest is SoladyTest {
     }
 
     function testFactoryDeployment() public {
-        address deployment =
-            _safeCreate2(ERC1967FactoryConstants.SALT, ERC1967FactoryConstants.INITCODE);
+        address deployment = _safeCreate2(ERC1967FactoryConstants.SALT, ERC1967FactoryConstants.INITCODE);
         assertEq(deployment, ERC1967FactoryConstants.ADDRESS);
         assertEq(deployment.code, ERC1967FactoryConstants.BYTECODE);
     }

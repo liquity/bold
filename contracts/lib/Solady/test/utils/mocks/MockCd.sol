@@ -13,11 +13,7 @@ contract MockCd {
     uint256 public lastCallvalue;
     address public lastCaller;
 
-    function storeDataHash(bytes calldata data, bool success)
-        external
-        payable
-        returns (bytes32 result)
-    {
+    function storeDataHash(bytes calldata data, bool success) external payable returns (bytes32 result) {
         result = keccak256(data);
         if (!success) {
             revert Hash(result);
@@ -27,11 +23,7 @@ contract MockCd {
         lastCaller = msg.sender;
     }
 
-    function storeNumbersHash(uint256[] calldata numbers, bool success)
-        external
-        payable
-        returns (bytes32 result)
-    {
+    function storeNumbersHash(uint256[] calldata numbers, bool success) external payable returns (bytes32 result) {
         result = keccak256(abi.encode(numbers));
         if (!success) {
             revert Hash(result);

@@ -250,8 +250,7 @@ contract LibBitmapTest is SoladyTest {
         uint256 expected = _bound(_random(), 0, 1000);
         bitmap.unset(expected);
         assertEq(
-            bitmap.findFirstUnset(begin, upTo),
-            expected < begin || expected > upTo ? LibBitmap.NOT_FOUND : expected
+            bitmap.findFirstUnset(begin, upTo), expected < begin || expected > upTo ? LibBitmap.NOT_FOUND : expected
         );
 
         while (_randomChance(4)) {

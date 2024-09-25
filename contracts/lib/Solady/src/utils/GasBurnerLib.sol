@@ -18,9 +18,8 @@ library GasBurnerLib {
             mstore(0x10, or(1, x))
             let n := mul(gt(x, 120), div(x, 91))
             // We use keccak256 instead of blake2f precompile for better widespread compatibility.
-            for { let i := 0 } iszero(eq(i, n)) { i := add(i, 1) } {
-                mstore(0x10, keccak256(0x10, 0x10)) // Yes.
-            }
+            for { let i := 0 } iszero(eq(i, n)) { i := add(i, 1) } { mstore(0x10, keccak256(0x10, 0x10)) } // Yes.
+
             if iszero(mload(0x10)) { invalid() }
         }
     }
@@ -36,9 +35,7 @@ library GasBurnerLib {
             mstore(0x20, 27) // `v`.
             mstore(0x40, 45) // `r`.
             mstore(0x60, 10) // `s`.
-            for { let i := 0 } iszero(eq(i, n)) { i := add(i, 1) } {
-                pop(staticcall(gas(), 1, 0x00, 0x81, 0x00, 0x20))
-            }
+            for { let i := 0 } iszero(eq(i, n)) { i := add(i, 1) } { pop(staticcall(gas(), 1, 0x00, 0x81, 0x00, 0x20)) }
             if iszero(mload(0x10)) { invalid() }
             mstore(0x60, 0) // Restore the zero slot.
             mstore(0x40, m) // Restore the free memory pointer.

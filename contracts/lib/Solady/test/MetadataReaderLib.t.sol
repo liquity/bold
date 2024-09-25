@@ -292,9 +292,7 @@ contract MetadataReaderLibTest is SoladyTest {
         /// @solidity memory-safe-assembly
         assembly {
             if iszero(lt(rds, 0x40)) {
-                if iszero(gt(o, sub(rds, 0x20))) {
-                    if iszero(gt(n, sub(rds, add(o, 0x20)))) { result := 1 }
-                }
+                if iszero(gt(o, sub(rds, 0x20))) { if iszero(gt(n, sub(rds, add(o, 0x20)))) { result := 1 } }
             }
         }
         bool expected = rds >= 0x40 && !(o + 0x20 > rds) && !(n + o + 0x20 > rds);

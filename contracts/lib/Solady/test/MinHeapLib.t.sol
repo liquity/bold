@@ -164,11 +164,7 @@ contract MinHeapLibTest is SoladyTest {
         }
     }
 
-    function _smallest(uint256[] memory a, uint256 n)
-        internal
-        view
-        returns (uint256[] memory result)
-    {
+    function _smallest(uint256[] memory a, uint256 n) internal view returns (uint256[] memory result) {
         result = _copy(a);
         LibSort.insertionSort(result);
         uint256 k = _min(n, result.length);
@@ -196,11 +192,7 @@ contract MinHeapLibTest is SoladyTest {
         assertEq(_heapPSiftTrick(c, h, e), _heapPSiftTrickOriginal(c, h, e));
     }
 
-    function _heapPSiftTrick(uint256 c, uint256 h, uint256 e)
-        internal
-        pure
-        returns (uint256 result)
-    {
+    function _heapPSiftTrick(uint256 c, uint256 h, uint256 e) internal pure returns (uint256 result) {
         /// @solidity memory-safe-assembly
         assembly {
             function pValue(h_, p_) -> _v {

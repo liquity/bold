@@ -44,13 +44,7 @@ abstract contract ERC4626 is ERC20 {
     event Deposit(address indexed by, address indexed owner, uint256 assets, uint256 shares);
 
     /// @dev Emitted during a withdraw call or redeem call.
-    event Withdraw(
-        address indexed by,
-        address indexed to,
-        address indexed owner,
-        uint256 assets,
-        uint256 shares
-    );
+    event Withdraw(address indexed by, address indexed to, address indexed owner, uint256 assets, uint256 shares);
 
     /// @dev `keccak256(bytes("Deposit(address,address,uint256,uint256)"))`.
     uint256 private constant _DEPOSIT_EVENT_SIGNATURE =
@@ -119,11 +113,7 @@ abstract contract ERC4626 is ERC20 {
     /// (bool success, uint8 result) = _tryGetAssetDecimals(underlying);
     /// _decimals = success ? result : _DEFAULT_UNDERLYING_DECIMALS;
     /// ```
-    function _tryGetAssetDecimals(address underlying)
-        internal
-        view
-        returns (bool success, uint8 result)
-    {
+    function _tryGetAssetDecimals(address underlying) internal view returns (bool success, uint8 result) {
         /// @solidity memory-safe-assembly
         assembly {
             // Store the function selector of `decimals()`.
@@ -406,11 +396,7 @@ abstract contract ERC4626 is ERC20 {
     ///
     /// Note: Some implementations will require pre-requesting to the Vault before a withdrawal
     /// may be performed. Those methods should be performed separately.
-    function withdraw(uint256 assets, address to, address owner)
-        public
-        virtual
-        returns (uint256 shares)
-    {
+    function withdraw(uint256 assets, address to, address owner) public virtual returns (uint256 shares) {
         if (assets > maxWithdraw(owner)) _revert(0x936941fc); // `WithdrawMoreThanMax()`.
         shares = previewWithdraw(assets);
         _withdraw(msg.sender, to, owner, assets, shares);
@@ -426,11 +412,7 @@ abstract contract ERC4626 is ERC20 {
     ///
     /// Note: Some implementations will require pre-requesting to the Vault before a redeem
     /// may be performed. Those methods should be performed separately.
-    function redeem(uint256 shares, address to, address owner)
-        public
-        virtual
-        returns (uint256 assets)
-    {
+    function redeem(uint256 shares, address to, address owner) public virtual returns (uint256 assets) {
         if (shares > maxRedeem(owner)) _revert(0x4656425a); // `RedeemMoreThanMax()`.
         assets = previewRedeem(shares);
         _withdraw(msg.sender, to, owner, assets, shares);
@@ -469,10 +451,7 @@ abstract contract ERC4626 is ERC20 {
     /// @dev For withdrawals and redemptions.
     ///
     /// Emits a {Withdraw} event.
-    function _withdraw(address by, address to, address owner, uint256 assets, uint256 shares)
-        internal
-        virtual
-    {
+    function _withdraw(address by, address to, address owner, uint256 assets, uint256 shares) internal virtual {
         if (by != owner) _spendAllowance(owner, by, shares);
         _beforeWithdraw(assets, shares);
         _burn(owner, shares);
@@ -492,12 +471,7 @@ abstract contract ERC4626 is ERC20 {
     ///
     /// Note: Make sure to keep this function consistent with {_initialConvertToAssets}
     /// when overriding it.
-    function _initialConvertToShares(uint256 assets)
-        internal
-        view
-        virtual
-        returns (uint256 shares)
-    {
+    function _initialConvertToShares(uint256 assets) internal view virtual returns (uint256 shares) {
         shares = assets;
     }
 
@@ -506,12 +480,7 @@ abstract contract ERC4626 is ERC20 {
     ///
     /// Note: Make sure to keep this function consistent with {_initialConvertToShares}
     /// when overriding it.
-    function _initialConvertToAssets(uint256 shares)
-        internal
-        view
-        virtual
-        returns (uint256 assets)
-    {
+    function _initialConvertToAssets(uint256 shares) internal view virtual returns (uint256 assets) {
         assets = shares;
     }
 

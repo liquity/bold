@@ -126,9 +126,7 @@ library JSONParserLib {
     function index(Item memory item) internal pure returns (uint256 result) {
         /// @solidity memory-safe-assembly
         assembly {
-            if and(mload(item), _PARENT_IS_ARRAY) {
-                result := and(_BITMASK_POINTER, shr(_BITPOS_KEY, mload(item)))
-            }
+            if and(mload(item), _PARENT_IS_ARRAY) { result := and(_BITMASK_POINTER, shr(_BITPOS_KEY, mload(item))) }
         }
     }
 
@@ -183,9 +181,7 @@ library JSONParserLib {
         /// @solidity memory-safe-assembly
         assembly {
             result := mload(add(add(r, 0x20), shl(5, i)))
-            if iszero(and(lt(i, mload(r)), eq(and(mload(item), _BITMASK_TYPE), TYPE_ARRAY))) {
-                result := 0x60 // Reset to the zero pointer.
-            }
+            if iszero(and(lt(i, mload(r)), eq(and(mload(item), _BITMASK_TYPE), TYPE_ARRAY))) { result := 0x60 } // Reset to the zero pointer.
         }
     }
 
@@ -427,9 +423,8 @@ library JSONParserLib {
 
             let n := mload(s)
             let end := add(add(s, n), 0x1f)
-            if iszero(and(gt(n, 1), eq(0x2222, or(and(0xff00, mload(add(s, 2))), chr(end))))) {
-                fail() // Fail if not double-quoted.
-            }
+            if iszero(and(gt(n, 1), eq(0x2222, or(and(0xff00, mload(add(s, 2))), chr(end))))) { fail() } // Fail if not double-quoted.
+
             let out := add(mload(0x40), 0x20)
             for { let curr := add(s, 0x21) } iszero(eq(curr, end)) {} {
                 let c := chr(curr)
@@ -670,9 +665,8 @@ library JSONParserLib {
             }
 
             function skip0To9s(pIn_, end_, atLeastOne_) -> _pOut {
-                for { _pOut := pIn_ } 1 { _pOut := add(_pOut, 1) } {
-                    if iszero(lt(sub(chr(_pOut), 48), 10)) { break } // Not '0'..'9'.
-                }
+                for { _pOut := pIn_ } 1 { _pOut := add(_pOut, 1) } { if iszero(lt(sub(chr(_pOut), 48), 10)) { break } } // Not '0'..'9'.
+
                 if and(atLeastOne_, eq(pIn_, _pOut)) { fail() }
             }
 

@@ -310,9 +310,7 @@ contract LibPRNGTest is SoladyTest {
     function _bytesOrderAgnosticChecksum(bytes memory a) internal pure returns (uint256 result) {
         /// @solidity memory-safe-assembly
         assembly {
-            for { let n := mload(a) } n { n := sub(n, 1) } {
-                result := add(result, and(mload(add(a, n)), 0xff))
-            }
+            for { let n := mload(a) } n { n := sub(n, 1) } { result := add(result, and(mload(add(a, n)), 0xff)) }
         }
     }
 

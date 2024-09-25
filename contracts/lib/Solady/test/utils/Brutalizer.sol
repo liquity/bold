@@ -9,8 +9,7 @@ contract Brutalizer {
     uint256 private constant _LPRNG_MULTIPLIER = 0x100000000000000000000000000000051;
 
     /// @dev Modulo for a mulmod Lehmer psuedorandom number generator. (prime)
-    uint256 private constant _LPRNG_MODULO =
-        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43;
+    uint256 private constant _LPRNG_MODULO = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff43;
 
     /// @dev Fills the memory with junk, for more robust testing of inline assembly
     /// which reads/write to the memory.
@@ -771,9 +770,7 @@ contract Brutalizer {
             mstore(0x10, xor(seed, mload(0x10)))
             result := keccak256(0x00, 0x88)
             mstore(0x10, result)
-            if iszero(and(7, shr(128, mulmod(result, _LPRNG_MULTIPLIER, _LPRNG_MODULO)))) {
-                result := 0
-            }
+            if iszero(and(7, shr(128, mulmod(result, _LPRNG_MULTIPLIER, _LPRNG_MODULO)))) { result := 0 }
         }
     }
 

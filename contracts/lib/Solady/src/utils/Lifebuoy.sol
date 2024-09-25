@@ -120,12 +120,7 @@ contract Lifebuoy {
 
     /// @dev Sends `amount` (in wei) ETH from the current contract to `to`.
     /// Reverts upon failure.
-    function rescueETH(address to, uint256 amount)
-        public
-        payable
-        virtual
-        onlyRescuer(_LIFEBUOY_RESCUE_ETH_LOCK)
-    {
+    function rescueETH(address to, uint256 amount) public payable virtual onlyRescuer(_LIFEBUOY_RESCUE_ETH_LOCK) {
         /// @solidity memory-safe-assembly
         assembly {
             if iszero(call(gas(), to, amount, codesize(), 0x00, codesize(), 0x00)) {
@@ -179,9 +174,7 @@ contract Lifebuoy {
             // `RescueTransferFailed()` and `transferFrom(address,address,uint256)`.
             mstore(0x00, 0x7ec62e7623b872dd)
             // Perform the transfer, reverting upon failure.
-            if iszero(mul(extcodesize(token), call(gas(), token, 0, 0x1c, 0x64, 0x00, 0x00))) {
-                revert(0x18, 0x04)
-            }
+            if iszero(mul(extcodesize(token), call(gas(), token, 0, 0x1c, 0x64, 0x00, 0x00))) { revert(0x18, 0x04) }
             mstore(0x60, 0) // Restore the zero slot to zero.
             mstore(0x40, m) // Restore the free memory pointer.
         }
@@ -201,12 +194,7 @@ contract Lifebuoy {
     }
 
     /// @dev Locks (i.e. permanently removes) access to rescue functions (including `lockRescue`).
-    function lockRescue(uint256 locksToSet)
-        public
-        payable
-        virtual
-        onlyRescuer(_LIFEBUOY_LOCK_RESCUE_LOCK)
-    {
+    function lockRescue(uint256 locksToSet) public payable virtual onlyRescuer(_LIFEBUOY_LOCK_RESCUE_LOCK) {
         _lockRescue(locksToSet);
     }
 

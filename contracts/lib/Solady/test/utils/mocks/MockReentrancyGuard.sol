@@ -104,9 +104,7 @@ contract MockReentrancyGuard is ReentrancyGuard {
 
             (bool success, bytes memory data) = address(this).call(
                 abi.encodeWithSignature(
-                    guarded
-                        ? "countGuardedIndirectRecursive(uint256)"
-                        : "countUnguardedIndirectRecursive(uint256)",
+                    guarded ? "countGuardedIndirectRecursive(uint256)" : "countUnguardedIndirectRecursive(uint256)",
                     recursion - 1
                 )
             );

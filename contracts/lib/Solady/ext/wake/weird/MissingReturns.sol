@@ -5,39 +5,41 @@ pragma solidity >=0.6.12;
 
 contract MissingReturnToken {
     // --- ERC20 Data ---
-    string  public constant name = "Token";
-    string  public constant symbol = "TKN";
-    uint8   public constant decimals = 18;
+    string public constant name = "Token";
+    string public constant symbol = "TKN";
+    uint8 public constant decimals = 18;
     uint256 public totalSupply;
 
-    mapping (address => uint)                      public balanceOf;
-    mapping (address => mapping (address => uint)) public allowance;
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
 
-    event Approval(address indexed src, address indexed guy, uint wad);
-    event Transfer(address indexed src, address indexed dst, uint wad);
+    event Approval(address indexed src, address indexed guy, uint256 wad);
+    event Transfer(address indexed src, address indexed dst, uint256 wad);
 
     // --- Math ---
-    function add(uint x, uint y) internal pure returns (uint z) {
+    function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
         require((z = x + y) >= x);
     }
-    function sub(uint x, uint y) internal pure returns (uint z) {
+
+    function sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
         require((z = x - y) <= x);
     }
 
     // --- Init ---
-    constructor(uint _totalSupply) public {
+    constructor(uint256 _totalSupply) public {
         totalSupply = _totalSupply;
         balanceOf[msg.sender] = _totalSupply;
         emit Transfer(address(0), msg.sender, _totalSupply);
     }
 
     // --- Token ---
-    function transfer(address dst, uint wad) external {
+    function transfer(address dst, uint256 wad) external {
         transferFrom(msg.sender, dst, wad);
     }
-    function transferFrom(address src, address dst, uint wad) public {
+
+    function transferFrom(address src, address dst, uint256 wad) public {
         require(balanceOf[src] >= wad, "insufficient-balance");
-        if (src != msg.sender && allowance[src][msg.sender] != type(uint).max) {
+        if (src != msg.sender && allowance[src][msg.sender] != type(uint256).max) {
             require(allowance[src][msg.sender] >= wad, "insufficient-allowance");
             allowance[src][msg.sender] = sub(allowance[src][msg.sender], wad);
         }
@@ -45,14 +47,15 @@ contract MissingReturnToken {
         balanceOf[dst] = add(balanceOf[dst], wad);
         emit Transfer(src, dst, wad);
     }
-    function approve(address usr, uint wad) external {
+
+    function approve(address usr, uint256 wad) external {
         allowance[msg.sender][usr] = wad;
         emit Approval(msg.sender, usr, wad);
     }
 
-    function mint(address usr, uint wad) external {
+    function mint(address usr, uint256 wad) external {
         balanceOf[usr] = add(balanceOf[usr], wad);
-        totalSupply    = add(totalSupply, wad);
+        totalSupply = add(totalSupply, wad);
         emit Transfer(address(0), usr, wad);
     }
 }

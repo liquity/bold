@@ -41,8 +41,7 @@ contract ERC4337Factory {
         // Check that the salt is tied to the owner if required, regardless.
         LibClone.checkStartsWith(salt, owner);
         // Constructor data is optional, and is omitted for easier Etherscan verification.
-        (bool alreadyDeployed, address account) =
-            LibClone.createDeterministicERC1967(msg.value, implementation, salt);
+        (bool alreadyDeployed, address account) = LibClone.createDeterministicERC1967(msg.value, implementation, salt);
 
         if (!alreadyDeployed) {
             /// @solidity memory-safe-assembly

@@ -51,8 +51,7 @@ contract ERC4337FactoryTest is SoladyTest {
 
     function testCreateAccountRepeatedDeployment(uint256) public {
         address owner = _randomNonZeroAddress();
-        bytes32 salt =
-            bytes32((_random() & uint256(type(uint96).max)) | (uint256(uint160(owner)) << 96));
+        bytes32 salt = bytes32((_random() & uint256(type(uint96).max)) | (uint256(uint160(owner)) << 96));
         address expectedInstance = factory.getAddress(salt);
         address notOwner = _randomNonZeroAddress();
         while (owner == notOwner) notOwner = _randomNonZeroAddress();

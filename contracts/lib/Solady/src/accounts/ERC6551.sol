@@ -74,8 +74,7 @@ abstract contract ERC6551 is UUPSUpgradeable, Receiver, ERC1271 {
     /// to avoid collision with lower slots.
     /// The choice of manual storage layout is to enable compatibility
     /// with both regular and upgradeable contracts.
-    uint256 internal constant _ERC6551_STATE_SLOT =
-        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffb919c7a5;
+    uint256 internal constant _ERC6551_STATE_SLOT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffb919c7a5;
 
     /// @dev Caches the chain ID in the deployed bytecode,
     /// so that in the rare case of a hard fork, `owner` will still work.
@@ -86,12 +85,7 @@ abstract contract ERC6551 is UUPSUpgradeable, Receiver, ERC1271 {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Returns the token-bound information.
-    function token()
-        public
-        view
-        virtual
-        returns (uint256 chainId, address tokenContract, uint256 tokenId)
-    {
+    function token() public view virtual returns (uint256 chainId, address tokenContract, uint256 tokenId) {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40) // Cache the free memory pointer.
@@ -116,12 +110,7 @@ abstract contract ERC6551 is UUPSUpgradeable, Receiver, ERC1271 {
                 mstore(0x20, 0x6352211e) // `ownerOf(uint256)`.
                 result :=
                     mul( // Returns `address(0)` on failure or if contract does not exist.
-                        mload(0x20),
-                        and(
-                            gt(returndatasize(), 0x1f),
-                            staticcall(gas(), tokenContract, 0x3c, 0x24, 0x20, 0x20)
-                        )
-                    )
+                    mload(0x20), and(gt(returndatasize(), 0x1f), staticcall(gas(), tokenContract, 0x3c, 0x24, 0x20, 0x20)))
             }
             mstore(0x40, m) // Restore the free memory pointer.
         }
@@ -144,12 +133,7 @@ abstract contract ERC6551 is UUPSUpgradeable, Receiver, ERC1271 {
     /// MUST return the bytes4 magic value `0x523e3260` if the given signer is valid.
     /// By default, the holder of the non-fungible token the account is bound to
     /// MUST be considered a valid signer.
-    function isValidSigner(address signer, bytes calldata context)
-        public
-        view
-        virtual
-        returns (bytes4 result)
-    {
+    function isValidSigner(address signer, bytes calldata context) public view virtual returns (bytes4 result) {
         bool isValid = _isValidSigner(signer, bytes32(0), context);
         /// @solidity memory-safe-assembly
         assembly {
@@ -325,9 +309,7 @@ abstract contract ERC6551 is UUPSUpgradeable, Receiver, ERC1271 {
                 if iszero(eq(currentOwner, address())) {
                     if iszero(
                         and( // `(chainId, tokenContract, tokenId) = currentOwner.token()`.
-                            gt(returndatasize(), 0x5f),
-                            staticcall(gas(), currentOwner, 0x7c, 0x04, 0x00, 0x60)
-                        )
+                        gt(returndatasize(), 0x5f), staticcall(gas(), currentOwner, 0x7c, 0x04, 0x00, 0x60))
                     ) { break }
                     continue
                 }
@@ -345,12 +327,7 @@ abstract contract ERC6551 is UUPSUpgradeable, Receiver, ERC1271 {
 
     /// @dev To ensure that only the owner or the account itself can upgrade the implementation.
     /// If you don't need upgradeability, override this function to return false.
-    function _authorizeUpgrade(address)
-        internal
-        virtual
-        override(UUPSUpgradeable)
-        onlyValidSigner
-    {
+    function _authorizeUpgrade(address) internal virtual override(UUPSUpgradeable) onlyValidSigner {
         _updateState();
     }
 

@@ -53,13 +53,7 @@ contract MockOwnableRoles is OwnableRoles, Brutalizer {
         result = super.rolesOf(_brutalized(user));
     }
 
-    function ownershipHandoverExpiresAt(address pendingOwner)
-        public
-        view
-        virtual
-        override
-        returns (uint256 result)
-    {
+    function ownershipHandoverExpiresAt(address pendingOwner) public view virtual override returns (uint256 result) {
         result = super.ownershipHandoverExpiresAt(_brutalized(pendingOwner));
     }
 

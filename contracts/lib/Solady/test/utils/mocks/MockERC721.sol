@@ -94,12 +94,7 @@ contract MockERC721 is ERC721, Brutalizer {
         _transfer(_brutalized(msg.sender), _brutalized(from), _brutalized(to), id);
     }
 
-    function safeTransferFrom(address from, address to, uint256 id)
-        public
-        payable
-        virtual
-        override
-    {
+    function safeTransferFrom(address from, address to, uint256 id) public payable virtual override {
         super.safeTransferFrom(_brutalized(from), _brutalized(to), id);
     }
 
@@ -116,10 +111,7 @@ contract MockERC721 is ERC721, Brutalizer {
         super.safeTransferFrom(_brutalized(from), _brutalized(to), id, data);
     }
 
-    function directSafeTransferFrom(address from, address to, uint256 id, bytes calldata data)
-        public
-        virtual
-    {
+    function directSafeTransferFrom(address from, address to, uint256 id, bytes calldata data) public virtual {
         _safeTransfer(_brutalized(msg.sender), _brutalized(from), _brutalized(to), id, data);
     }
 

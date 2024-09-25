@@ -114,11 +114,7 @@ contract LibCWIATest is SoladyTest, CWIA {
         return result;
     }
 
-    function getArgUint256Array(uint256 argOffset, uint256 length)
-        public
-        pure
-        returns (uint256[] memory)
-    {
+    function getArgUint256Array(uint256 argOffset, uint256 length) public pure returns (uint256[] memory) {
         uint256[] memory result = _getArgUint256Array(argOffset, length);
         bytes32 hash = keccak256(abi.encode(_getArgBytes32Array(argOffset, length)));
         require(keccak256(abi.encode(result)) == hash);
@@ -141,8 +137,7 @@ contract LibCWIATest is SoladyTest, CWIA {
         uint64 argUint64,
         uint8 argUint8
     ) public {
-        bytes memory data =
-            abi.encodePacked(argAddress, argUint256, argUint256Array, argUint64, argUint8);
+        bytes memory data = abi.encodePacked(argAddress, argUint256, argUint256Array, argUint64, argUint8);
         LibCWIATest clone = LibCWIATest(LibCWIA.clone(address(this), data));
         _shouldBehaveLikeClone(address(clone), value_);
 
@@ -186,14 +181,7 @@ contract LibCWIATest is SoladyTest, CWIA {
             salt = bytes32(argUint256 + 123);
 
             data = abi.encodePacked(
-                argUint256,
-                argAddress,
-                argUint256,
-                argUint256Array,
-                argBytes,
-                argUint64,
-                argUint8,
-                argUint256
+                argUint256, argAddress, argUint256, argUint256Array, argBytes, argUint64, argUint8, argUint256
             );
 
             bytes32 saltKey = keccak256(abi.encode(data, salt));
@@ -235,8 +223,7 @@ contract LibCWIATest is SoladyTest, CWIA {
         }
 
         {
-            address predicted =
-                LibCWIA.predictDeterministicAddress(address(this), data, salt, address(this));
+            address predicted = LibCWIA.predictDeterministicAddress(address(this), data, salt, address(this));
             assertEq(address(clone), predicted);
         }
 
@@ -306,10 +293,7 @@ contract LibCWIATest is SoladyTest, CWIA {
         assertEq(keccak256(initCode), expected);
     }
 
-    function cloneDeterministic(address implementation, bytes calldata data, bytes32 salt)
-        external
-        returns (address)
-    {
+    function cloneDeterministic(address implementation, bytes calldata data, bytes32 salt) external returns (address) {
         return LibCWIA.cloneDeterministic(_brutalized(implementation), data, salt);
     }
 }

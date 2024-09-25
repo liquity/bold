@@ -34,17 +34,13 @@ abstract contract ERC6909 {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Emitted when `by` transfers `amount` of token `id` from `from` to `to`.
-    event Transfer(
-        address by, address indexed from, address indexed to, uint256 indexed id, uint256 amount
-    );
+    event Transfer(address by, address indexed from, address indexed to, uint256 indexed id, uint256 amount);
 
     /// @dev Emitted when `owner` enables or disables `operator` to manage all of their tokens.
     event OperatorSet(address indexed owner, address indexed operator, bool approved);
 
     /// @dev Emitted when `owner` approves `spender` to use `amount` of `id` token.
-    event Approval(
-        address indexed owner, address indexed spender, uint256 indexed id, uint256 amount
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 indexed id, uint256 amount);
 
     /// @dev `keccak256(bytes("Transfer(address,address,address,uint256,uint256)"))`.
     uint256 private constant _TRANSFER_EVENT_SIGNATURE =
@@ -127,12 +123,7 @@ abstract contract ERC6909 {
     }
 
     /// @dev Returns the amount of token `id` that `spender` can spend on behalf of `owner`.
-    function allowance(address owner, address spender, uint256 id)
-        public
-        view
-        virtual
-        returns (uint256 amount)
-    {
+    function allowance(address owner, address spender, uint256 id) public view virtual returns (uint256 amount) {
         /// @solidity memory-safe-assembly
         assembly {
             mstore(0x34, _ERC6909_MASTER_SLOT_SEED)
@@ -162,12 +153,7 @@ abstract contract ERC6909 {
     /// - caller must at least have `amount`.
     ///
     /// Emits a {Transfer} event.
-    function transfer(address to, uint256 id, uint256 amount)
-        public
-        payable
-        virtual
-        returns (bool)
-    {
+    function transfer(address to, uint256 id, uint256 amount) public payable virtual returns (bool) {
         _beforeTokenTransfer(msg.sender, to, id, amount);
         /// @solidity memory-safe-assembly
         assembly {
@@ -216,12 +202,7 @@ abstract contract ERC6909 {
     ///    tokens of `from` or approved as an operator.
     ///
     /// Emits a {Transfer} event.
-    function transferFrom(address from, address to, uint256 id, uint256 amount)
-        public
-        payable
-        virtual
-        returns (bool)
-    {
+    function transferFrom(address from, address to, uint256 id, uint256 amount) public payable virtual returns (bool) {
         _beforeTokenTransfer(from, to, id, amount);
         /// @solidity memory-safe-assembly
         assembly {
@@ -285,12 +266,7 @@ abstract contract ERC6909 {
     /// @dev Sets `amount` as the allowance of `spender` for the caller for token `id`.
     ///
     /// Emits a {Approval} event.
-    function approve(address spender, uint256 id, uint256 amount)
-        public
-        payable
-        virtual
-        returns (bool)
-    {
+    function approve(address spender, uint256 id, uint256 amount) public payable virtual returns (bool) {
         /// @solidity memory-safe-assembly
         assembly {
             // Compute the allowance slot and store the amount.
@@ -410,10 +386,7 @@ abstract contract ERC6909 {
     ///   tokens of `from` or approved as an operator.
     ///
     /// Emits a {Transfer} event.
-    function _transfer(address by, address from, address to, uint256 id, uint256 amount)
-        internal
-        virtual
-    {
+    function _transfer(address by, address from, address to, uint256 id, uint256 amount) internal virtual {
         _beforeTokenTransfer(from, to, id, amount);
         /// @solidity memory-safe-assembly
         assembly {
@@ -480,10 +453,7 @@ abstract contract ERC6909 {
     /// @dev Sets `amount` as the allowance of `spender` for `owner` for token `id`.
     ///
     /// Emits a {Approval} event.
-    function _approve(address owner, address spender, uint256 id, uint256 amount)
-        internal
-        virtual
-    {
+    function _approve(address owner, address spender, uint256 id, uint256 amount) internal virtual {
         /// @solidity memory-safe-assembly
         assembly {
             // Compute the allowance slot and store the amount.
@@ -527,15 +497,9 @@ abstract contract ERC6909 {
 
     /// @dev Hook that is called before any transfer of tokens.
     /// This includes minting and burning.
-    function _beforeTokenTransfer(address from, address to, uint256 id, uint256 amount)
-        internal
-        virtual
-    {}
+    function _beforeTokenTransfer(address from, address to, uint256 id, uint256 amount) internal virtual {}
 
     /// @dev Hook that is called after any transfer of tokens.
     /// This includes minting and burning.
-    function _afterTokenTransfer(address from, address to, uint256 id, uint256 amount)
-        internal
-        virtual
-    {}
+    function _afterTokenTransfer(address from, address to, uint256 id, uint256 amount) internal virtual {}
 }

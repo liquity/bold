@@ -7,10 +7,10 @@ import {ERC20} from "./ERC20.sol";
 
 contract ApprovalRaceToken is ERC20 {
     // --- Init ---
-    constructor(uint _totalSupply) ERC20(_totalSupply) public {}
+    constructor(uint256 _totalSupply) public ERC20(_totalSupply) {}
 
     // --- Token ---
-    function approve(address usr, uint wad) override public returns (bool) {
+    function approve(address usr, uint256 wad) public override returns (bool) {
         require(allowance[msg.sender][usr] == 0, "unsafe-approve");
         return super.approve(usr, wad);
     }

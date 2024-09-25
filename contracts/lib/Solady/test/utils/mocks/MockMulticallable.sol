@@ -63,11 +63,7 @@ contract MockMulticallable is Multicallable {
         return msg.sender;
     }
 
-    function multicallOriginal(bytes[] calldata data)
-        public
-        payable
-        returns (bytes[] memory results)
-    {
+    function multicallOriginal(bytes[] calldata data) public payable returns (bytes[] memory results) {
         unchecked {
             results = new bytes[](data.length);
             for (uint256 i = 0; i < data.length; i++) {

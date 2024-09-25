@@ -53,10 +53,7 @@ contract ReentrancyGuardTest is SoladyTest {
         assertEq(target.enterTimes(), 10);
     }
 
-    function testRevertRecursiveDirectGuardedCall()
-        external
-        expectBeforeAfterReentrancyGuardUnlocked
-    {
+    function testRevertRecursiveDirectGuardedCall() external expectBeforeAfterReentrancyGuardUnlocked {
         // Attempt to reenter a `nonReentrant` method from a direct call.
         // Expect a revert with the `Reentrancy` error.
         vm.expectRevert(ReentrancyGuard.Reentrancy.selector);
@@ -64,20 +61,14 @@ contract ReentrancyGuardTest is SoladyTest {
         assertEq(target.enterTimes(), 0);
     }
 
-    function testRecursiveIndirectUnguardedCall()
-        external
-        expectBeforeAfterReentrancyGuardUnlocked
-    {
+    function testRecursiveIndirectUnguardedCall() external expectBeforeAfterReentrancyGuardUnlocked {
         // Expect to be able to call unguarded methods recursively.
         // Expect a success.
         target.countUnguardedIndirectRecursive(10);
         assertEq(target.enterTimes(), 10);
     }
 
-    function testRevertRecursiveIndirectGuardedCall()
-        external
-        expectBeforeAfterReentrancyGuardUnlocked
-    {
+    function testRevertRecursiveIndirectGuardedCall() external expectBeforeAfterReentrancyGuardUnlocked {
         // Attempt to reenter a `nonReentrant` method from an indirect call.
         vm.expectRevert(ReentrancyGuard.Reentrancy.selector);
         target.countGuardedIndirectRecursive(10);

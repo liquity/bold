@@ -204,12 +204,7 @@ abstract contract ERC721 {
     }
 
     /// @dev Returns whether `operator` is approved to manage the tokens of `owner`.
-    function isApprovedForAll(address owner, address operator)
-        public
-        view
-        virtual
-        returns (bool result)
-    {
+    function isApprovedForAll(address owner, address operator) public view virtual returns (bool result) {
         /// @solidity memory-safe-assembly
         assembly {
             mstore(0x1c, operator)
@@ -327,11 +322,7 @@ abstract contract ERC721 {
     ///   {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
     ///
     /// Emits a {Transfer} event.
-    function safeTransferFrom(address from, address to, uint256 id, bytes calldata data)
-        public
-        payable
-        virtual
-    {
+    function safeTransferFrom(address from, address to, uint256 id, bytes calldata data) public payable virtual {
         transferFrom(from, to, id);
         if (_hasCode(to)) _checkOnERC721Received(from, to, id, data);
     }
@@ -611,12 +602,7 @@ abstract contract ERC721 {
     ///
     /// Requirements:
     /// - Token `id` must exist.
-    function _isApprovedOrOwner(address account, uint256 id)
-        internal
-        view
-        virtual
-        returns (bool result)
-    {
+    function _isApprovedOrOwner(address account, uint256 id) internal view virtual returns (bool result) {
         /// @solidity memory-safe-assembly
         assembly {
             result := 1
@@ -636,9 +622,7 @@ abstract contract ERC721 {
             if iszero(eq(account, owner)) {
                 mstore(0x00, owner)
                 // Check if `account` is approved to manage the token.
-                if iszero(sload(keccak256(0x0c, 0x30))) {
-                    result := eq(account, sload(add(1, ownershipSlot)))
-                }
+                if iszero(sload(keccak256(0x0c, 0x30))) { result := eq(account, sload(add(1, ownershipSlot))) }
             }
         }
     }
@@ -820,10 +804,7 @@ abstract contract ERC721 {
     ///   {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
     ///
     /// Emits a {Transfer} event.
-    function _safeTransfer(address from, address to, uint256 id, bytes memory data)
-        internal
-        virtual
-    {
+    function _safeTransfer(address from, address to, uint256 id, bytes memory data) internal virtual {
         _transfer(address(0), from, to, id);
         if (_hasCode(to)) _checkOnERC721Received(from, to, id, data);
     }
@@ -846,10 +827,7 @@ abstract contract ERC721 {
     ///   {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
     ///
     /// Emits a {Transfer} event.
-    function _safeTransfer(address by, address from, address to, uint256 id, bytes memory data)
-        internal
-        virtual
-    {
+    function _safeTransfer(address by, address from, address to, uint256 id, bytes memory data) internal virtual {
         _transfer(by, from, to, id);
         if (_hasCode(to)) _checkOnERC721Received(from, to, id, data);
     }
@@ -878,9 +856,7 @@ abstract contract ERC721 {
 
     /// @dev Perform a call to invoke {IERC721Receiver-onERC721Received} on `to`.
     /// Reverts if the target does not support the function correctly.
-    function _checkOnERC721Received(address from, address to, uint256 id, bytes memory data)
-        private
-    {
+    function _checkOnERC721Received(address from, address to, uint256 id, bytes memory data) private {
         /// @solidity memory-safe-assembly
         assembly {
             // Prepare the calldata.

@@ -36,8 +36,7 @@ abstract contract Initializable {
     /// Bits Layout:
     /// - [0]     `initializing`
     /// - [1..64] `initializedVersion`
-    bytes32 private constant _INITIALIZABLE_SLOT =
-        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffbf601132;
+    bytes32 private constant _INITIALIZABLE_SLOT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffbf601132;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                         OPERATIONS                         */

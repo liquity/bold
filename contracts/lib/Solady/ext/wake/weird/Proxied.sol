@@ -16,27 +16,28 @@ pragma solidity >=0.6.12;
 
 contract ProxiedToken {
     // --- ERC20 Data ---
-    string  public constant name = "Token";
-    string  public constant symbol = "TKN";
-    uint8   public constant decimals = 18;
+    string public constant name = "Token";
+    string public constant symbol = "TKN";
+    uint8 public constant decimals = 18;
     uint256 public totalSupply;
 
-    mapping (address => uint)                      public balanceOf;
-    mapping (address => mapping (address => uint)) public allowance;
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
 
-    event Approval(address indexed src, address indexed guy, uint wad);
-    event Transfer(address indexed src, address indexed dst, uint wad);
+    event Approval(address indexed src, address indexed guy, uint256 wad);
+    event Transfer(address indexed src, address indexed dst, uint256 wad);
 
     // --- Math ---
-    function add(uint x, uint y) internal pure returns (uint z) {
+    function add(uint256 x, uint256 y) internal pure returns (uint256 z) {
         require((z = x + y) >= x);
     }
-    function sub(uint x, uint y) internal pure returns (uint z) {
+
+    function sub(uint256 x, uint256 y) internal pure returns (uint256 z) {
         require((z = x - y) <= x);
     }
 
     // --- Init ---
-    constructor(uint _totalSupply) public {
+    constructor(uint256 _totalSupply) public {
         admin[msg.sender] = true;
         totalSupply = _totalSupply;
         balanceOf[msg.sender] = _totalSupply;
@@ -45,33 +46,48 @@ contract ProxiedToken {
 
     // --- Access Control ---
     mapping(address => bool) public admin;
-    function rely(address usr) external auth { admin[usr] = true; }
-    function deny(address usr) external auth { admin[usr] = false; }
-    modifier auth() { require(admin[msg.sender], "non-admin-call"); _; }
+
+    function rely(address usr) external auth {
+        admin[usr] = true;
+    }
+
+    function deny(address usr) external auth {
+        admin[usr] = false;
+    }
+
+    modifier auth() {
+        require(admin[msg.sender], "non-admin-call");
+        _;
+    }
 
     mapping(address => bool) public delegators;
-    modifier delegated() { require(delegators[msg.sender], "non-delegator-call"); _; }
+
+    modifier delegated() {
+        require(delegators[msg.sender], "non-delegator-call");
+        _;
+    }
+
     function setDelegator(address delegator, bool status) external {
         delegators[delegator] = status;
     }
 
     // --- Token ---
-    function transfer(address dst, uint wad) delegated external returns (bool) {
+    function transfer(address dst, uint256 wad) external delegated returns (bool) {
         return _transferFrom(_getCaller(), _getCaller(), dst, wad);
     }
-    function transferFrom(address src, address dst, uint wad) delegated external returns (bool) {
+
+    function transferFrom(address src, address dst, uint256 wad) external delegated returns (bool) {
         return _transferFrom(_getCaller(), src, dst, wad);
     }
-    function approve(address usr, uint wad) delegated external returns (bool) {
+
+    function approve(address usr, uint256 wad) external delegated returns (bool) {
         return _approve(_getCaller(), usr, wad);
     }
 
     // --- Internals ---
-    function _transferFrom(
-        address caller, address src, address dst, uint wad
-    ) internal returns (bool) {
+    function _transferFrom(address caller, address src, address dst, uint256 wad) internal returns (bool) {
         require(balanceOf[src] >= wad, "insufficient-balance");
-        if (src != caller && allowance[src][caller] != type(uint).max) {
+        if (src != caller && allowance[src][caller] != type(uint256).max) {
             require(allowance[src][caller] >= wad, "insufficient-allowance");
             allowance[src][caller] = sub(allowance[src][caller], wad);
         }
@@ -80,13 +96,15 @@ contract ProxiedToken {
         emit Transfer(src, dst, wad);
         return true;
     }
-    function _approve(address caller, address usr, uint wad) internal returns (bool) {
+
+    function _approve(address caller, address usr, uint256 wad) internal returns (bool) {
         allowance[caller][usr] = wad;
         emit Approval(caller, usr, wad);
         return true;
     }
     // grabs the first word after the calldata and masks it with 20bytes of 1's
     // to turn it into an address
+
     function _getCaller() internal pure returns (address result) {
         bytes memory array = msg.data;
         uint256 index = msg.data.length;
@@ -96,20 +114,23 @@ contract ProxiedToken {
         return result;
     }
 
-    function mint(address usr, uint wad) external {
+    function mint(address usr, uint256 wad) external {
         balanceOf[usr] = add(balanceOf[usr], wad);
-        totalSupply    = add(totalSupply,    wad);
+        totalSupply = add(totalSupply, wad);
         emit Transfer(address(0), usr, wad);
     }
 }
 
 contract TokenProxy {
-    address payable immutable public impl;
+    address payable public immutable impl;
+
     constructor(address _impl) public {
         impl = payable(_impl);
     }
 
-    receive() external payable { revert("don't send me ETH!"); }
+    receive() external payable {
+        revert("don't send me ETH!");
+    }
 
     fallback() external payable {
         address _impl = impl; // pull impl onto the stack
@@ -136,5 +157,4 @@ contract TokenProxy {
             default { return(ptr, size) }
         }
     }
-
 }

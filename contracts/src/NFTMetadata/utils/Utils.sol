@@ -28,15 +28,28 @@ library numUtils {
         return string(result);
     }
 
-    // TODO handle underflow
     function toLocaleString(uint256 _value, uint8 _divisor, uint8 _precision) internal pure returns (string memory) {
-        uint256 whole = _value / 10 ** _divisor;
-        uint256 fraction = (_value % 10 ** _divisor) / 10 ** (_divisor - _precision);
+        uint256 whole;
+        uint256 fraction;
 
-        string memory wholeStr = toLocale(LibString.toString(whole));
+        if (_divisor > 0) {
+            whole = _value / 10 ** _divisor;
+            // check if the divisor is less than the precision
+            if (_divisor < _precision) {
+                fraction = (_value % 10 ** _divisor);
+                // adjust fraction to be the same as the precision
+                fraction = fraction * 10 ** (_precision - _divisor);
+            } else {
+                fraction = (_value % 10 ** _divisor) / 10 ** (_divisor - _precision - 1);
+            }
+        } else {
+            whole = _value;
+        }
+
+        string memory wholeStr = numUtils.toLocale(LibString.toString(whole));
 
         if (fraction == 0) {
-            wholeStr = string.concat(wholeStr, ".");
+            if (whole > 0 && _precision > 0) wholeStr = string.concat(wholeStr, ".");
             for (uint8 i = 0; i < _precision; i++) {
                 wholeStr = string.concat(wholeStr, "0");
             }
@@ -46,7 +59,7 @@ library numUtils {
 
         string memory fractionStr = LibString.slice(LibString.toString(fraction), 0, _precision);
 
-        return string.concat(wholeStr, ".", fractionStr);
+        return string.concat(wholeStr, _precision > 0 ? "." : "", fractionStr);
     }
 }
 

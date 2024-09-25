@@ -19,12 +19,7 @@ contract MockEIP712Dynamic is EIP712 {
         _version = version;
     }
 
-    function _domainNameAndVersion()
-        internal
-        view
-        override
-        returns (string memory name, string memory version)
-    {
+    function _domainNameAndVersion() internal view override returns (string memory name, string memory version) {
         name = _name;
         version = _version;
     }

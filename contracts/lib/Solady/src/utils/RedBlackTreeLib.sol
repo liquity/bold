@@ -677,11 +677,7 @@ library RedBlackTreeLib {
     }
 
     /// @dev Finds `x` in `tree`. The `key` will be zero if `x` is not found.
-    function _find(Tree storage tree, uint256 x)
-        private
-        view
-        returns (uint256 nodes, uint256 cursor, uint256 key)
-    {
+    function _find(Tree storage tree, uint256 x) private view returns (uint256 nodes, uint256 cursor, uint256 key) {
         if (x == uint256(0)) _revert(0xc94f1877); // `ValueIsEmpty()`.
         /// @solidity memory-safe-assembly
         assembly {
@@ -694,9 +690,7 @@ library RedBlackTreeLib {
                 cursor := probe
                 let nodePacked := sload(or(nodes, probe))
                 let nodeValue := shr(_BITPOS_PACKED_VALUE, nodePacked)
-                if iszero(nodeValue) {
-                    nodeValue := sload(or(or(nodes, probe), _BIT_FULL_VALUE_SLOT))
-                }
+                if iszero(nodeValue) { nodeValue := sload(or(or(nodes, probe), _BIT_FULL_VALUE_SLOT)) }
                 if eq(nodeValue, x) {
                     key := cursor
                     break

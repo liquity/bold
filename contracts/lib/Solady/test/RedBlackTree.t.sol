@@ -260,11 +260,7 @@ contract RedBlackTreeLibTest is SoladyTest {
         }
     }
 
-    function _makeArray(uint256 size, uint256 maxCap)
-        internal
-        pure
-        returns (uint256[] memory result)
-    {
+    function _makeArray(uint256 size, uint256 maxCap) internal pure returns (uint256[] memory result) {
         /// @solidity memory-safe-assembly
         assembly {
             result := mload(0x40)
@@ -519,11 +515,7 @@ contract RedBlackTreeLibTest is SoladyTest {
         }
     }
 
-    function _nearestIndex(uint256[] memory a, uint256 x)
-        internal
-        pure
-        returns (uint256 nearestIndex, bool found)
-    {
+    function _nearestIndex(uint256[] memory a, uint256 x) internal pure returns (uint256 nearestIndex, bool found) {
         unchecked {
             uint256 nearestValue = type(uint256).max;
             uint256 nearestDist = type(uint256).max;

@@ -491,11 +491,7 @@ contract LibSortTest is SoladyTest {
         }
     }
 
-    function _nearestIndexBefore(uint256[] memory a, uint256 x)
-        internal
-        pure
-        returns (uint256 nearestIndex)
-    {
+    function _nearestIndexBefore(uint256[] memory a, uint256 x) internal pure returns (uint256 nearestIndex) {
         unchecked {
             uint256 nearestDist = type(uint256).max;
             uint256 n = a.length;
@@ -901,11 +897,7 @@ contract LibSortTest is SoladyTest {
         }
     }
 
-    function _unionOriginal(uint256[] memory a, uint256[] memory b)
-        private
-        pure
-        returns (uint256[] memory c)
-    {
+    function _unionOriginal(uint256[] memory a, uint256[] memory b) private pure returns (uint256[] memory c) {
         unchecked {
             c = new uint256[](a.length + b.length);
             uint256 o;
@@ -920,11 +912,7 @@ contract LibSortTest is SoladyTest {
         }
     }
 
-    function _unionOriginal(int256[] memory a, int256[] memory b)
-        private
-        pure
-        returns (int256[] memory c)
-    {
+    function _unionOriginal(int256[] memory a, int256[] memory b) private pure returns (int256[] memory c) {
         unchecked {
             c = new int256[](a.length + b.length);
             uint256 o;
@@ -939,11 +927,7 @@ contract LibSortTest is SoladyTest {
         }
     }
 
-    function _intersectionOriginal(uint256[] memory a, uint256[] memory b)
-        private
-        pure
-        returns (uint256[] memory c)
-    {
+    function _intersectionOriginal(uint256[] memory a, uint256[] memory b) private pure returns (uint256[] memory c) {
         unchecked {
             c = new uint256[](a.length + b.length);
             uint256 o;
@@ -961,11 +945,7 @@ contract LibSortTest is SoladyTest {
         }
     }
 
-    function _intersectionOriginal(int256[] memory a, int256[] memory b)
-        private
-        pure
-        returns (int256[] memory c)
-    {
+    function _intersectionOriginal(int256[] memory a, int256[] memory b) private pure returns (int256[] memory c) {
         unchecked {
             c = new int256[](a.length + b.length);
             uint256 o;
@@ -983,11 +963,7 @@ contract LibSortTest is SoladyTest {
         }
     }
 
-    function _differenceOriginal(uint256[] memory a, uint256[] memory b)
-        private
-        pure
-        returns (uint256[] memory c)
-    {
+    function _differenceOriginal(uint256[] memory a, uint256[] memory b) private pure returns (uint256[] memory c) {
         unchecked {
             c = new uint256[](a.length + b.length);
             uint256 o;
@@ -1005,11 +981,7 @@ contract LibSortTest is SoladyTest {
         }
     }
 
-    function _differenceOriginal(int256[] memory a, int256[] memory b)
-        private
-        pure
-        returns (int256[] memory c)
-    {
+    function _differenceOriginal(int256[] memory a, int256[] memory b) private pure returns (int256[] memory c) {
         unchecked {
             c = new int256[](a.length + b.length);
             uint256 o;

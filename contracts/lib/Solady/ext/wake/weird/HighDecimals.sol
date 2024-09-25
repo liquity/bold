@@ -6,7 +6,7 @@ pragma solidity >=0.6.12;
 import {ERC20} from "./ERC20.sol";
 
 contract HighDecimalToken is ERC20 {
-    constructor(uint _totalSupply) ERC20(_totalSupply) public {
+    constructor(uint256 _totalSupply) public ERC20(_totalSupply) {
         decimals = 50;
     }
 }

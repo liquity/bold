@@ -6,7 +6,7 @@ contract ERC1155Mock is ERC1155 {
 
     event AfterTokenTransfer(address from, address to, uint256[] ids, uint256[] amounts, bytes data);
 
-    bool immutable private _enableHooks;
+    bool private immutable _enableHooks;
 
     constructor(bool enableHooks_) {
         _enableHooks = enableHooks_;
@@ -46,12 +46,7 @@ contract ERC1155Mock is ERC1155 {
         _mint(to, id, amount, data);
     }
 
-    function batchMint(
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) external {
+    function batchMint(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) external {
         _batchMint(to, ids, amounts, data);
     }
 
@@ -75,14 +70,9 @@ contract ERC1155Mock is ERC1155 {
         _setApprovalForAll(by, operator, approved);
     }
 
-    function safeTransferUnchecked(
-        address by,
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) external {
+    function safeTransferUnchecked(address by, address from, address to, uint256 id, uint256 amount, bytes memory data)
+        external
+    {
         _safeTransfer(by, from, to, id, amount, data);
     }
 
@@ -99,51 +89,40 @@ contract ERC1155Mock is ERC1155 {
 }
 
 contract ERC1155ReceiverMock {
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata data
-    ) external pure returns(bytes4) {
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata data)
+        external
+        pure
+        returns (bytes4)
+    {
         require(keccak256(data) == keccak256(hex"00112233"), "ERC1155ReceiverMock: invalid payload received");
         return this.onERC1155Received.selector;
     }
 
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata data
-    ) external pure returns(bytes4) {
+    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata data)
+        external
+        pure
+        returns (bytes4)
+    {
         require(keccak256(data) == keccak256(hex"00112233"), "ERC1155ReceiverMock: invalid payload received");
         return this.onERC1155BatchReceived.selector;
     }
 }
 
 contract ERC1155ReentrancyAttacker {
-    function onERC1155Received(
-        address,
-        address,
-        uint256,
-        uint256,
-        bytes calldata data
-    ) external returns(bytes4) {
-        if (data.length == 0)
+    function onERC1155Received(address, address, uint256, uint256, bytes calldata data) external returns (bytes4) {
+        if (data.length == 0) {
             ERC1155Mock(msg.sender).mint(address(this), 1024, 1, hex"00112233");
+        }
         return this.onERC1155Received.selector;
     }
 
-    function onERC1155BatchReceived(
-        address,
-        address,
-        uint256[] calldata,
-        uint256[] calldata,
-        bytes calldata data
-    ) external returns(bytes4) {
-        if (data.length == 0)
+    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata data)
+        external
+        returns (bytes4)
+    {
+        if (data.length == 0) {
             ERC1155Mock(msg.sender).mint(address(this), 1024, 1, hex"00112233");
+        }
         return this.onERC1155BatchReceived.selector;
     }
 }

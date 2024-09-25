@@ -168,9 +168,7 @@ contract JSONParserLibTest is SoladyTest {
         }
     }
 
-    function _checkSoloEmptyObject(JSONParserLib.Item memory item, string memory trimmed)
-        internal
-    {
+    function _checkSoloEmptyObject(JSONParserLib.Item memory item, string memory trimmed) internal {
         for (uint256 i; i != 2; ++i) {
             assertEq(item.getType(), JSONParserLib.TYPE_OBJECT);
             assertEq(item.isObject(), true);
@@ -362,11 +360,8 @@ contract JSONParserLibTest is SoladyTest {
     function testParseValidObjectDoesNotRevert(string memory key, string memory value) public {
         _limitStringLength(key);
         _limitStringLength(value);
-        string memory s = string(
-            abi.encodePacked(
-                '{"', LibString.escapeJSON(key), '":"', LibString.escapeJSON(value), '"}'
-            )
-        );
+        string memory s =
+            string(abi.encodePacked('{"', LibString.escapeJSON(key), '":"', LibString.escapeJSON(value), '"}'));
         this.parsedValue(s);
     }
 
@@ -517,9 +512,7 @@ contract JSONParserLibTest is SoladyTest {
         _checkParseUintFromHex("f", 0xf);
         _checkParseUintFromHex("ff", 0xff);
         _checkParseUintFromHex("fff", 0xfff);
-        _checkParseUintFromHex(
-            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", type(uint256).max
-        );
+        _checkParseUintFromHex("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", type(uint256).max);
         _checkParseUintFromHex(
             "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
             0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef
@@ -567,15 +560,9 @@ contract JSONParserLibTest is SoladyTest {
         _checkParseInvalidUintFromHexReverts("0x123g");
         _checkParseInvalidUintFromHexReverts("123g");
         _checkParseInvalidUintFromHexReverts("z");
-        _checkParseInvalidUintFromHexReverts(
-            "1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-        );
-        _checkParseInvalidUintFromHexReverts(
-            "10000000000000000000000000000000000000000000000000000000000000000"
-        );
-        _checkParseInvalidUintFromHexReverts(
-            "ff0000000000000000000000000000000000000000000000000000000000000000"
-        );
+        _checkParseInvalidUintFromHexReverts("1ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+        _checkParseInvalidUintFromHexReverts("10000000000000000000000000000000000000000000000000000000000000000");
+        _checkParseInvalidUintFromHexReverts("ff0000000000000000000000000000000000000000000000000000000000000000");
     }
 
     function _checkParseInvalidUintFromHexReverts(string memory s) internal {
@@ -771,12 +758,7 @@ contract JSONParserLibTest is SoladyTest {
         this.decodeString(s);
     }
 
-    function decodeString(string memory s)
-        public
-        view
-        miniBrutalizeMemory
-        returns (string memory)
-    {
+    function decodeString(string memory s) public view miniBrutalizeMemory returns (string memory) {
         return JSONParserLib.decodeString(s);
     }
 
@@ -790,10 +772,8 @@ contract JSONParserLibTest is SoladyTest {
         string memory jwt =
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
         string[] memory jwtSplitted = LibString.split(jwt, ".");
-        JSONParserLib.Item memory header =
-            JSONParserLib.parse(string(Base64.decode(jwtSplitted[0])));
-        JSONParserLib.Item memory payload =
-            JSONParserLib.parse(string(Base64.decode(jwtSplitted[1])));
+        JSONParserLib.Item memory header = JSONParserLib.parse(string(Base64.decode(jwtSplitted[0])));
+        JSONParserLib.Item memory payload = JSONParserLib.parse(string(Base64.decode(jwtSplitted[1])));
         assertEq(jwtSplitted.length, 3);
         assertEq(jwtSplitted[2], "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
         assertEq(header.at('"alg"').value(), '"HS256"');

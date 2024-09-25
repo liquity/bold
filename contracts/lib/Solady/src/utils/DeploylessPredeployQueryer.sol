@@ -36,27 +36,16 @@ contract DeploylessPredeployQueryer {
     /// For example, if `targetQueryCalldata`'s 0th call is expected to return a `uint256`,
     /// you will use `abi.decode(abi.decode(deployed.code, (bytes[]))[0], (uint256))` to
     /// get the returned `uint256`.
-    constructor(
-        address target,
-        bytes[] memory targetQueryCalldata,
-        address factory,
-        bytes memory factoryCalldata
-    ) payable {
+    constructor(address target, bytes[] memory targetQueryCalldata, address factory, bytes memory factoryCalldata)
+        payable
+    {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40)
             // If the target does not exist, deploy it.
             if iszero(extcodesize(target)) {
                 if iszero(
-                    call(
-                        gas(),
-                        factory,
-                        selfbalance(),
-                        add(factoryCalldata, 0x20),
-                        mload(factoryCalldata),
-                        m,
-                        0x20
-                    )
+                    call(gas(), factory, selfbalance(), add(factoryCalldata, 0x20), mload(factoryCalldata), m, 0x20)
                 ) {
                     returndatacopy(m, 0x00, returndatasize())
                     revert(m, returndatasize())
@@ -72,9 +61,7 @@ contract DeploylessPredeployQueryer {
             let o := add(r, n)
             for { let i := 0 } iszero(eq(i, n)) { i := add(0x20, i) } {
                 let j := mload(add(add(targetQueryCalldata, 0x20), i))
-                if iszero(
-                    call(gas(), target, selfbalance(), add(j, 0x20), mload(j), codesize(), 0x00)
-                ) {
+                if iszero(call(gas(), target, selfbalance(), add(j, 0x20), mload(j), codesize(), 0x00)) {
                     returndatacopy(m, 0x00, returndatasize())
                     revert(m, returndatasize())
                 }

@@ -47,11 +47,7 @@ contract OwnableTest is SoladyTest {
         assertEq(mockOwnable.owner(), address(0));
     }
 
-    function testTransferOwnership(
-        address newOwner,
-        bool setNewOwnerToZeroAddress,
-        bool callerIsOwner
-    ) public {
+    function testTransferOwnership(address newOwner, bool setNewOwnerToZeroAddress, bool callerIsOwner) public {
         assertEq(mockOwnable.owner(), address(this));
 
         while (newOwner == address(this)) newOwner = _randomNonZeroAddress();

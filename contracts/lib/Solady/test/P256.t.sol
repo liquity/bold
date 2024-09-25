@@ -13,12 +13,9 @@ contract P256Test is SoladyTest {
     uint256 private constant _X = 0x65a2fa44daad46eab0278703edb6c4dcf5e30b8a9aec09fdc71a56f52aa392e4;
     uint256 private constant _Y = 0x4a7a9e4604aa36898209997288e902ac544a555e4b5e0a9efef2b59233f3f437;
     uint256 private constant _R = 0x01655c1753db6b61a9717e4ccc5d6c4bf7681623dd54c2d6babc55125756661c;
-    uint256 private constant _NON_MALLEABLE_S =
-        0xf8cfdc3921ecf0f7aef50be09b0f98383392dd8079014df95fde2a04b79023a;
-    uint256 private constant _MALLEABLE_S =
-        0xf073023b6de130f18510af41f64f067c39adccd59f8789a55dbbe822b0ea2317;
-    bytes32 private constant _HASH =
-        0x267f9ea080b54bbea2443dff8aa543604564329783b6a515c6663a691c555490;
+    uint256 private constant _NON_MALLEABLE_S = 0xf8cfdc3921ecf0f7aef50be09b0f98383392dd8079014df95fde2a04b79023a;
+    uint256 private constant _MALLEABLE_S = 0xf073023b6de130f18510af41f64f067c39adccd59f8789a55dbbe822b0ea2317;
+    bytes32 private constant _HASH = 0x267f9ea080b54bbea2443dff8aa543604564329783b6a515c6663a691c555490;
     uint256 private constant _N = 0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551;
     uint256 private constant _MALLEABILITY_THRESHOLD =
         0x7fffffff800000007fffffffffffffffde737d56d38bcf4279dce5617e3192a8;
@@ -55,23 +52,15 @@ contract P256Test is SoladyTest {
         _testP256VerifyMalleable();
     }
 
-    function _verifySignatureAllowMalleability(
-        bytes32 hash,
-        uint256 r,
-        uint256 s,
-        uint256 x,
-        uint256 y
-    ) internal view returns (bool) {
-        return P256.verifySignatureAllowMalleability(
-            hash, bytes32(r), bytes32(s), bytes32(x), bytes32(y)
-        );
-    }
-
-    function _verifySignature(bytes32 hash, uint256 r, uint256 s, uint256 x, uint256 y)
+    function _verifySignatureAllowMalleability(bytes32 hash, uint256 r, uint256 s, uint256 x, uint256 y)
         internal
         view
         returns (bool)
     {
+        return P256.verifySignatureAllowMalleability(hash, bytes32(r), bytes32(s), bytes32(x), bytes32(y));
+    }
+
+    function _verifySignature(bytes32 hash, uint256 r, uint256 s, uint256 x, uint256 y) internal view returns (bool) {
         return P256.verifySignature(hash, bytes32(r), bytes32(s), bytes32(x), bytes32(y));
     }
 
@@ -88,14 +77,9 @@ contract P256Test is SoladyTest {
         _testP256VerifyNonMalleable();
     }
 
-    function testP256VerifyNotDeployedReverts(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 s,
-        bytes32 x,
-        bytes32 y,
-        bool t
-    ) public {
+    function testP256VerifyNotDeployedReverts(bytes32 hash, bytes32 r, bytes32 s, bytes32 x, bytes32 y, bool t)
+        public
+    {
         _etchVerifier(false);
         _etchRIPPrecompile(false);
         if (t) {
@@ -107,21 +91,15 @@ contract P256Test is SoladyTest {
         }
     }
 
-    function verifySignature(bytes32 hash, bytes32 r, bytes32 s, bytes32 x, bytes32 y)
+    function verifySignature(bytes32 hash, bytes32 r, bytes32 s, bytes32 x, bytes32 y) public view returns (bool) {
+        return P256.verifySignature(hash, r, s, x, y);
+    }
+
+    function verifySignatureAllowMalleability(bytes32 hash, bytes32 r, bytes32 s, bytes32 x, bytes32 y)
         public
         view
         returns (bool)
     {
-        return P256.verifySignature(hash, r, s, x, y);
-    }
-
-    function verifySignatureAllowMalleability(
-        bytes32 hash,
-        bytes32 r,
-        bytes32 s,
-        bytes32 x,
-        bytes32 y
-    ) public view returns (bool) {
         return P256.verifySignatureAllowMalleability(hash, r, s, x, y);
     }
 
@@ -172,17 +150,11 @@ contract P256Test is SoladyTest {
         vm.resumeGasMetering();
     }
 
-    function _verifyViaVerifier(bytes32 hash, uint256 r, uint256 s, uint256 x, uint256 y)
-        internal
-        returns (bool)
-    {
+    function _verifyViaVerifier(bytes32 hash, uint256 r, uint256 s, uint256 x, uint256 y) internal returns (bool) {
         return _verifyViaVerifier(hash, bytes32(r), bytes32(s), bytes32(x), bytes32(y));
     }
 
-    function _verifyViaVerifier(bytes32 hash, bytes32 r, bytes32 s, bytes32 x, bytes32 y)
-        internal
-        returns (bool)
-    {
+    function _verifyViaVerifier(bytes32 hash, bytes32 r, bytes32 s, bytes32 x, bytes32 y) internal returns (bool) {
         bytes memory payload = abi.encode(hash, r, s, x, y);
         if (uint256(y) & 0xff == 0) {
             bytes memory truncatedPayload = abi.encodePacked(hash, r, s, x, bytes31(y));
@@ -221,18 +193,14 @@ contract P256Test is SoladyTest {
 /// See: https://github.com/foundry-rs/foundry/issues/7908
 /// From: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/cryptography/P256.sol
 library P256PublicKey {
-    uint256 internal constant GX =
-        0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296;
-    uint256 internal constant GY =
-        0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5;
+    uint256 internal constant GX = 0x6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296;
+    uint256 internal constant GY = 0x4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5;
     uint256 internal constant P = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF;
     uint256 internal constant N = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551;
     uint256 internal constant A = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFC;
     uint256 internal constant B = 0x5AC635D8AA3A93E7B3EBBD55769886BC651D06B0CC53B0F63BCE3C3E27D2604B;
-    uint256 internal constant P1DIV4 =
-        0x3fffffffc0000000400000000000000000000000400000000000000000000000;
-    uint256 internal constant HALF_N =
-        0x7fffffff800000007fffffffffffffffde737d56d38bcf4279dce5617e3192a8;
+    uint256 internal constant P1DIV4 = 0x3fffffffc0000000400000000000000000000000400000000000000000000000;
+    uint256 internal constant HALF_N = 0x7fffffff800000007fffffffffffffffde737d56d38bcf4279dce5617e3192a8;
 
     function getPublicKey(uint256 privateKey) internal view returns (bytes32, bytes32) {
         (uint256 x, uint256 y, uint256 z) = _jMult(GX, GY, 1, privateKey);
@@ -261,11 +229,7 @@ library P256PublicKey {
         }
     }
 
-    function _affineFromJacobian(uint256 jx, uint256 jy, uint256 jz)
-        private
-        view
-        returns (bytes32 ax, bytes32 ay)
-    {
+    function _affineFromJacobian(uint256 jx, uint256 jy, uint256 jz) private view returns (bytes32 ax, bytes32 ay) {
         if (jz == uint256(0)) return (0, 0);
         uint256 zinv = invModPrime(jz, P);
         uint256 zzinv = mulmod(zinv, zinv, P);
@@ -274,11 +238,7 @@ library P256PublicKey {
         ay = bytes32(mulmod(jy, zzzinv, P));
     }
 
-    function _jDouble(uint256 x, uint256 y, uint256 z)
-        private
-        pure
-        returns (uint256 rx, uint256 ry, uint256 rz)
-    {
+    function _jDouble(uint256 x, uint256 y, uint256 z) private pure returns (uint256 rx, uint256 ry, uint256 rz) {
         uint256 p = P;
         /// @solidity memory-safe-assembly
         assembly {
@@ -289,9 +249,7 @@ library P256PublicKey {
             rx := addmod(mulmod(mload(0x20), mload(0x20), p), sub(p, mulmod(2, mload(0x00), p)), p)
             ry :=
                 addmod(
-                    mulmod(mload(0x20), addmod(mload(0x00), sub(p, rx), p), p),
-                    sub(p, mulmod(8, mulmod(yy, yy, p), p)),
-                    p
+                    mulmod(mload(0x20), addmod(mload(0x00), sub(p, rx), p), p), sub(p, mulmod(8, mulmod(yy, yy, p), p)), p
                 )
             rz := mulmod(2, mulmod(y, z, p), p)
         }
@@ -313,17 +271,10 @@ library P256PublicKey {
             let hh := mulmod(mload(0x60), mload(0x60), p)
             let hhh := mulmod(mload(0x60), hh, p)
             let r := addmod(mulmod(y2, mulmod(zz1, z1, p), p), sub(p, mload(0x20)), p)
-            rx :=
-                addmod(
-                    addmod(mulmod(r, r, p), sub(p, hhh), p),
-                    sub(p, mulmod(2, mulmod(mload(0x00), hh, p), p)),
-                    p
-                )
+            rx := addmod(addmod(mulmod(r, r, p), sub(p, hhh), p), sub(p, mulmod(2, mulmod(mload(0x00), hh, p), p)), p)
             ry :=
                 addmod(
-                    mulmod(r, addmod(mulmod(mload(0x00), hh, p), sub(p, rx), p), p),
-                    sub(p, mulmod(mload(0x20), hhh, p)),
-                    p
+                    mulmod(r, addmod(mulmod(mload(0x00), hh, p), sub(p, rx), p), p), sub(p, mulmod(mload(0x20), hhh, p)), p
                 )
             rz := mulmod(mload(0x60), mulmod(z1, z2, p), p)
             mstore(0x60, 0)
@@ -342,11 +293,7 @@ library P256PublicKey {
         return result;
     }
 
-    function tryModExp(uint256 b, uint256 e, uint256 m)
-        internal
-        view
-        returns (bool success, uint256 result)
-    {
+    function tryModExp(uint256 b, uint256 e, uint256 m) internal view returns (bool success, uint256 result) {
         if (m == 0) return (false, 0);
         /// @solidity memory-safe-assembly
         assembly {

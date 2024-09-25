@@ -66,10 +66,7 @@ library SSTORE2 {
 
     /// @dev Writes `data` into the bytecode of a storage contract with `salt`
     /// and returns its normal CREATE2 deterministic address.
-    function writeCounterfactual(bytes memory data, bytes32 salt)
-        internal
-        returns (address pointer)
-    {
+    function writeCounterfactual(bytes memory data, bytes32 salt) internal returns (address pointer) {
         /// @solidity memory-safe-assembly
         assembly {
             let n := mload(data)
@@ -88,10 +85,7 @@ library SSTORE2 {
     /// @dev Writes `data` into the bytecode of a storage contract and returns its address.
     /// This uses the so-called "CREATE3" workflow,
     /// which means that `pointer` is agnostic to `data, and only depends on `salt`.
-    function writeDeterministic(bytes memory data, bytes32 salt)
-        internal
-        returns (address pointer)
-    {
+    function writeDeterministic(bytes memory data, bytes32 salt) internal returns (address pointer) {
         /// @solidity memory-safe-assembly
         assembly {
             let n := mload(data)
@@ -112,9 +106,7 @@ library SSTORE2 {
             mstore(add(data, gt(n, 0xfffe)), add(0xfe61000180600a3d393df300, shl(0x40, n)))
             if iszero(
                 mul( // The arguments of `mul` are evaluated last to first.
-                    extcodesize(pointer),
-                    call(gas(), proxy, 0, add(data, 0x15), add(n, 0xb), codesize(), 0x00)
-                )
+                extcodesize(pointer), call(gas(), proxy, 0, add(data, 0x15), add(n, 0xb), codesize(), 0x00))
             ) {
                 mstore(0x00, 0x30116425) // `DeploymentFailed()`.
                 revert(0x1c, 0x04)
@@ -142,11 +134,7 @@ library SSTORE2 {
     }
 
     /// @dev Equivalent to `predictCounterfactualAddress(data, salt, address(this))`
-    function predictCounterfactualAddress(bytes memory data, bytes32 salt)
-        internal
-        view
-        returns (address pointer)
-    {
+    function predictCounterfactualAddress(bytes memory data, bytes32 salt) internal view returns (address pointer) {
         pointer = predictCounterfactualAddress(data, salt, address(this));
     }
 
@@ -178,11 +166,7 @@ library SSTORE2 {
     }
 
     /// @dev Returns the "CREATE3" deterministic address for `salt` with `deployer`.
-    function predictDeterministicAddress(bytes32 salt, address deployer)
-        internal
-        pure
-        returns (address pointer)
-    {
+    function predictDeterministicAddress(bytes32 salt, address deployer) internal pure returns (address pointer) {
         /// @solidity memory-safe-assembly
         assembly {
             let m := mload(0x40) // Cache the free memory pointer.
@@ -234,11 +218,7 @@ library SSTORE2 {
     /// The `pointer` MUST be deployed via the SSTORE2 write functions.
     /// Otherwise, the behavior is undefined.
     /// Out-of-gas reverts if `pointer` does not have any code.
-    function read(address pointer, uint256 start, uint256 end)
-        internal
-        view
-        returns (bytes memory data)
-    {
+    function read(address pointer, uint256 start, uint256 end) internal view returns (bytes memory data) {
         /// @solidity memory-safe-assembly
         assembly {
             data := mload(0x40)

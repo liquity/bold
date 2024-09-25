@@ -77,10 +77,7 @@ contract UpgradeableBeacon {
     }
 
     /// @dev Called in the constructor. Override as required.
-    function _constructUpgradeableBeacon(address initialOwner, address initialImplementation)
-        internal
-        virtual
-    {
+    function _constructUpgradeableBeacon(address initialOwner, address initialImplementation) internal virtual {
         _initializeUpgradeableBeacon(initialOwner, initialImplementation);
     }
 
@@ -90,10 +87,7 @@ contract UpgradeableBeacon {
 
     /// @dev Required to be called in the constructor or initializer.
     /// This function does not guard against double-initialization.
-    function _initializeUpgradeableBeacon(address initialOwner, address initialImplementation)
-        internal
-        virtual
-    {
+    function _initializeUpgradeableBeacon(address initialOwner, address initialImplementation) internal virtual {
         // We don't need to check if `initialOwner` is the zero address here,
         // as some use cases may not want the beacon to be owned.
         _setOwner(initialOwner);

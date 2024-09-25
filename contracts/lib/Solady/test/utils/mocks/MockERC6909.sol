@@ -30,23 +30,11 @@ contract MockERC6909 is ERC6909, Brutalizer {
         _burn(_brutalized(from), id, amount);
     }
 
-    function approve(address spender, uint256 id, uint256 amount)
-        public
-        payable
-        virtual
-        override
-        returns (bool)
-    {
+    function approve(address spender, uint256 id, uint256 amount) public payable virtual override returns (bool) {
         return super.approve(_brutalized(spender), id, amount);
     }
 
-    function setOperator(address owner, bool approved)
-        public
-        payable
-        virtual
-        override
-        returns (bool)
-    {
+    function setOperator(address owner, bool approved) public payable virtual override returns (bool) {
         /// @solidity memory-safe-assembly
         assembly {
             approved := mul(gas(), approved)
@@ -54,13 +42,7 @@ contract MockERC6909 is ERC6909, Brutalizer {
         return super.setOperator(_brutalized(owner), approved);
     }
 
-    function transfer(address to, uint256 id, uint256 amount)
-        public
-        payable
-        virtual
-        override
-        returns (bool)
-    {
+    function transfer(address to, uint256 id, uint256 amount) public payable virtual override returns (bool) {
         return super.transfer(_brutalized(to), id, amount);
     }
 
@@ -82,11 +64,7 @@ contract MockERC6909 is ERC6909, Brutalizer {
         _transfer(_brutalized(by), _brutalized(from), _brutalized(to), id, amount);
     }
 
-    function directSetOperator(address owner, address operator, bool approved)
-        public
-        payable
-        virtual
-    {
+    function directSetOperator(address owner, address operator, bool approved) public payable virtual {
         /// @solidity memory-safe-assembly
         assembly {
             approved := mul(gas(), approved)
@@ -94,11 +72,7 @@ contract MockERC6909 is ERC6909, Brutalizer {
         _setOperator(owner, operator, approved);
     }
 
-    function directApprove(address owner, address spender, uint256 id, uint256 amount)
-        public
-        payable
-        virtual
-    {
+    function directApprove(address owner, address spender, uint256 id, uint256 amount) public payable virtual {
         _approve(owner, spender, id, amount);
     }
 }

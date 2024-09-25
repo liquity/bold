@@ -8,15 +8,11 @@ import {ERC6909, MockERC6909} from "./utils/mocks/MockERC6909.sol";
 contract ERC6909Test is SoladyTest {
     MockERC6909 token;
 
-    event Transfer(
-        address by, address indexed from, address indexed to, uint256 indexed id, uint256 amount
-    );
+    event Transfer(address by, address indexed from, address indexed to, uint256 indexed id, uint256 amount);
 
     event OperatorSet(address indexed owner, address indexed spender, bool approved);
 
-    event Approval(
-        address indexed owner, address indexed spender, uint256 indexed id, uint256 amount
-    );
+    event Approval(address indexed owner, address indexed spender, uint256 indexed id, uint256 amount);
 
     function setUp() public {
         token = new MockERC6909();
@@ -225,14 +221,9 @@ contract ERC6909Test is SoladyTest {
         }
     }
 
-    function testTransferFrom(
-        address spender,
-        address from,
-        address to,
-        uint256 id,
-        uint256 approval,
-        uint256 amount
-    ) public {
+    function testTransferFrom(address spender, address from, address to, uint256 id, uint256 approval, uint256 amount)
+        public
+    {
         amount = _bound(amount, 0, approval);
 
         token.mint(from, id, amount);
@@ -263,9 +254,7 @@ contract ERC6909Test is SoladyTest {
         _setOperator(owner, spender, approved);
     }
 
-    function testMintOverMaxUintReverts(address to, uint256 id, uint256 amount0, uint256 amount1)
-        public
-    {
+    function testMintOverMaxUintReverts(address to, uint256 id, uint256 amount0, uint256 amount1) public {
         amount0 = _bound(amount0, 1, type(uint256).max);
         amount1 = _bound(amount1, type(uint256).max - amount0 + 1, type(uint256).max);
         token.mint(to, id, amount0);
@@ -274,12 +263,9 @@ contract ERC6909Test is SoladyTest {
         token.mint(to, id, amount1);
     }
 
-    function testBurnInsufficientBalanceReverts(
-        address to,
-        uint256 mintAmount,
-        uint256 id,
-        uint256 burnAmount
-    ) public {
+    function testBurnInsufficientBalanceReverts(address to, uint256 mintAmount, uint256 id, uint256 burnAmount)
+        public
+    {
         if (mintAmount == type(uint256).max) mintAmount--;
         burnAmount = _bound(burnAmount, mintAmount + 1, type(uint256).max);
 
@@ -289,12 +275,7 @@ contract ERC6909Test is SoladyTest {
         token.burn(to, id, burnAmount);
     }
 
-    function testTransferOverMaxUintReverts(
-        address to,
-        uint256 id,
-        uint256 amount0,
-        uint256 amount1
-    ) public {
+    function testTransferOverMaxUintReverts(address to, uint256 id, uint256 amount0, uint256 amount1) public {
         amount0 = _bound(amount0, 1, type(uint256).max);
         amount1 = _bound(amount1, type(uint256).max - amount0 + 1, type(uint256).max);
 
@@ -309,12 +290,9 @@ contract ERC6909Test is SoladyTest {
         token.transfer(to, id, amount1);
     }
 
-    function testTransferInsufficientBalanceReverts(
-        address to,
-        uint256 id,
-        uint256 mintAmount,
-        uint256 sendAmount
-    ) public {
+    function testTransferInsufficientBalanceReverts(address to, uint256 id, uint256 mintAmount, uint256 sendAmount)
+        public
+    {
         if (mintAmount == type(uint256).max) mintAmount--;
         sendAmount = _bound(sendAmount, mintAmount + 1, type(uint256).max);
 
@@ -324,12 +302,7 @@ contract ERC6909Test is SoladyTest {
         token.transfer(to, id, sendAmount);
     }
 
-    function testTransferFromOverMaxUintReverts(
-        address to,
-        uint256 id,
-        uint256 amount0,
-        uint256 amount1
-    ) public {
+    function testTransferFromOverMaxUintReverts(address to, uint256 id, uint256 amount0, uint256 amount1) public {
         amount0 = _bound(amount0, 1, type(uint256).max);
         amount1 = _bound(amount1, type(uint256).max - amount0 + 1, type(uint256).max);
 
@@ -353,12 +326,9 @@ contract ERC6909Test is SoladyTest {
         token.transferFrom(from, to, id, amount1);
     }
 
-    function testTransferFromInsufficientAllowanceReverts(
-        address to,
-        uint256 id,
-        uint256 approval,
-        uint256 amount
-    ) public {
+    function testTransferFromInsufficientAllowanceReverts(address to, uint256 id, uint256 approval, uint256 amount)
+        public
+    {
         if (approval == type(uint256).max) approval--;
         amount = _bound(amount, approval + 1, type(uint256).max);
 
@@ -372,12 +342,9 @@ contract ERC6909Test is SoladyTest {
         token.transferFrom(from, to, id, amount);
     }
 
-    function testTransferFromInsufficientBalanceReverts(
-        address to,
-        uint256 id,
-        uint256 mintAmount,
-        uint256 sendAmount
-    ) public {
+    function testTransferFromInsufficientBalanceReverts(address to, uint256 id, uint256 mintAmount, uint256 sendAmount)
+        public
+    {
         if (mintAmount == type(uint256).max) mintAmount--;
         sendAmount = _bound(sendAmount, mintAmount + 1, type(uint256).max);
 

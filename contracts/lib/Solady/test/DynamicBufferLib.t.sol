@@ -70,10 +70,7 @@ contract DynamicBufferLibTest is SoladyTest {
             buffer.pBytes3(bytes3(bytes32(x)));
             assertEq(buffer.data, abi.encodePacked(bytes3(bytes32(x))));
             buffer.pBytes3(bytes3(bytes32(y))).pBytes3(bytes3(bytes32(z)));
-            assertEq(
-                buffer.data,
-                abi.encodePacked(bytes3(bytes32(x)), bytes3(bytes32(y)), bytes3(bytes32(z)))
-            );
+            assertEq(buffer.data, abi.encodePacked(bytes3(bytes32(x)), bytes3(bytes32(y)), bytes3(bytes32(z))));
         }
         if (_randomChance(32)) _brutalizeMemory();
         if (_randomChance(4)) {
@@ -86,10 +83,7 @@ contract DynamicBufferLibTest is SoladyTest {
             buffer.pBytes1(bytes1(bytes32(x)));
             assertEq(buffer.data, abi.encodePacked(bytes1(bytes32(x))));
             buffer.pBytes1(bytes1(bytes32(y))).pBytes1(bytes1(bytes32(z)));
-            assertEq(
-                buffer.data,
-                abi.encodePacked(bytes1(bytes32(x)), bytes1(bytes32(y)), bytes1(bytes32(z)))
-            );
+            assertEq(buffer.data, abi.encodePacked(bytes1(bytes32(x)), bytes1(bytes32(y)), bytes1(bytes32(z))));
         }
         if (_randomChance(32)) _brutalizeMemory();
         if (_randomChance(4)) {
@@ -115,10 +109,7 @@ contract DynamicBufferLibTest is SoladyTest {
             buffer.pAddress(address(uint160(x)));
             assertEq(buffer.data, abi.encodePacked(address(uint160(x))));
             buffer.pAddress(address(uint160(y))).pAddress(address(uint160(z)));
-            assertEq(
-                buffer.data,
-                abi.encodePacked(address(uint160(x)), address(uint160(y)), address(uint160(z)))
-            );
+            assertEq(buffer.data, abi.encodePacked(address(uint160(x)), address(uint160(y)), address(uint160(z))));
         }
     }
 
@@ -225,11 +216,7 @@ contract DynamicBufferLibTest is SoladyTest {
         }
     }
 
-    function _bufferLocation(DynamicBufferLib.DynamicBuffer memory buffer)
-        internal
-        pure
-        returns (uint256 result)
-    {
+    function _bufferLocation(DynamicBufferLib.DynamicBuffer memory buffer) internal pure returns (uint256 result) {
         /// @solidity memory-safe-assembly
         assembly {
             result := mload(buffer)
@@ -294,11 +281,7 @@ contract DynamicBufferLibTest is SoladyTest {
         }
     }
 
-    function _generateRandomBytes(uint256 n, uint256 seed)
-        internal
-        pure
-        returns (bytes memory result)
-    {
+    function _generateRandomBytes(uint256 n, uint256 seed) internal pure returns (bytes memory result) {
         /// @solidity memory-safe-assembly
         assembly {
             if n {
@@ -441,10 +424,9 @@ contract DynamicBufferLibTest is SoladyTest {
         assertEq(bufferB.data, "010120123012340123450123456");
     }
 
-    function _checkSamePointers(
-        DynamicBufferLib.DynamicBuffer memory a,
-        DynamicBufferLib.DynamicBuffer memory b
-    ) internal {
+    function _checkSamePointers(DynamicBufferLib.DynamicBuffer memory a, DynamicBufferLib.DynamicBuffer memory b)
+        internal
+    {
         bool isSamePointer;
         assembly {
             isSamePointer := eq(a, b)

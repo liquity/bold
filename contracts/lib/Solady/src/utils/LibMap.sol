@@ -176,12 +176,7 @@ library LibMap {
     }
 
     /// @dev Updates the value at `index` in `map`.
-    function set(
-        mapping(uint256 => uint256) storage map,
-        uint256 index,
-        uint256 value,
-        uint256 bitWidth
-    ) internal {
+    function set(mapping(uint256 => uint256) storage map, uint256 index, uint256 value, uint256 bitWidth) internal {
         unchecked {
             uint256 d = _rawDiv(256, bitWidth); // Bucket size.
             uint256 m = (1 << bitWidth) - 1; // Value mask.

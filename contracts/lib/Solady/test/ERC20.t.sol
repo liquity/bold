@@ -9,9 +9,8 @@ import {ERC20, MockERC20} from "./utils/mocks/MockERC20.sol";
 contract ERC20Test is SoladyTest {
     MockERC20 token;
 
-    bytes32 constant PERMIT_TYPEHASH = keccak256(
-        "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-    );
+    bytes32 constant PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     event Transfer(address indexed from, address indexed to, uint256 amount);
 
@@ -213,13 +212,7 @@ contract ERC20Test is SoladyTest {
         }
     }
 
-    function testTransferFrom(
-        address spender,
-        address from,
-        address to,
-        uint256 approval,
-        uint256 amount
-    ) public {
+    function testTransferFrom(address spender, address from, address to, uint256 approval, uint256 amount) public {
         amount = _bound(amount, 0, approval);
 
         token.mint(from, amount);
@@ -303,9 +296,7 @@ contract ERC20Test is SoladyTest {
         assertEq(token.nonces(t.owner), t.nonce + 1);
     }
 
-    function testBurnInsufficientBalanceReverts(address to, uint256 mintAmount, uint256 burnAmount)
-        public
-    {
+    function testBurnInsufficientBalanceReverts(address to, uint256 mintAmount, uint256 burnAmount) public {
         if (mintAmount == type(uint256).max) mintAmount--;
         burnAmount = _bound(burnAmount, mintAmount + 1, type(uint256).max);
 
@@ -314,11 +305,7 @@ contract ERC20Test is SoladyTest {
         token.burn(to, burnAmount);
     }
 
-    function testTransferInsufficientBalanceReverts(
-        address to,
-        uint256 mintAmount,
-        uint256 sendAmount
-    ) public {
+    function testTransferInsufficientBalanceReverts(address to, uint256 mintAmount, uint256 sendAmount) public {
         if (mintAmount == type(uint256).max) mintAmount--;
         sendAmount = _bound(sendAmount, mintAmount + 1, type(uint256).max);
 
@@ -327,11 +314,7 @@ contract ERC20Test is SoladyTest {
         token.transfer(to, sendAmount);
     }
 
-    function testTransferFromInsufficientAllowanceReverts(
-        address to,
-        uint256 approval,
-        uint256 amount
-    ) public {
+    function testTransferFromInsufficientAllowanceReverts(address to, uint256 approval, uint256 amount) public {
         if (approval == type(uint256).max) approval--;
         amount = _bound(amount, approval + 1, type(uint256).max);
 
@@ -346,11 +329,7 @@ contract ERC20Test is SoladyTest {
         token.transferFrom(from, to, amount);
     }
 
-    function testTransferFromInsufficientBalanceReverts(
-        address to,
-        uint256 mintAmount,
-        uint256 sendAmount
-    ) public {
+    function testTransferFromInsufficientBalanceReverts(address to, uint256 mintAmount, uint256 sendAmount) public {
         if (mintAmount == type(uint256).max) mintAmount--;
         sendAmount = _bound(sendAmount, mintAmount + 1, type(uint256).max);
 
@@ -411,8 +390,7 @@ contract ERC20Test is SoladyTest {
     }
 
     function _signPermit(_TestTemps memory t) internal view {
-        bytes32 innerHash =
-            keccak256(abi.encode(PERMIT_TYPEHASH, t.owner, t.to, t.amount, t.nonce, t.deadline));
+        bytes32 innerHash = keccak256(abi.encode(PERMIT_TYPEHASH, t.owner, t.to, t.amount, t.nonce, t.deadline));
         bytes32 domainSeparator = token.DOMAIN_SEPARATOR();
         bytes32 outerHash = keccak256(abi.encodePacked("\x19\x01", domainSeparator, innerHash));
         (t.v, t.r, t.s) = vm.sign(t.privateKey, outerHash);

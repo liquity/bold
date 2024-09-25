@@ -43,11 +43,7 @@ library LibRLP {
     /// `address(uint160(uint256(keccak256(LibRLP.l(deployer).p(nonce).encode()))))`.
     ///
     /// Note: The returned result has dirty upper 96 bits. Please clean if used in assembly.
-    function computeAddress(address deployer, uint256 nonce)
-        internal
-        pure
-        returns (address deployed)
-    {
+    function computeAddress(address deployer, uint256 nonce) internal pure returns (address deployed) {
         /// @solidity memory-safe-assembly
         assembly {
             for {} 1 {} {

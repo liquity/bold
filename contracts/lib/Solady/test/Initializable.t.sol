@@ -123,11 +123,7 @@ contract InitializableTest is SoladyTest {
         m.reinitialize(a);
     }
 
-    function testInitializeInititalizerTrick(
-        bool initializing,
-        uint64 initializedVersion,
-        uint16 codeSize
-    ) public {
+    function testInitializeInititalizerTrick(bool initializing, uint64 initializedVersion, uint16 codeSize) public {
         bool isTopLevelCall = !initializing;
         bool initialSetup = initializedVersion == 0 && isTopLevelCall;
         bool construction = initializedVersion == 1 && codeSize == 0;
@@ -142,11 +138,7 @@ contract InitializableTest is SoladyTest {
         assertEq(computed, expected);
     }
 
-    function testInitializeReinititalizerTrick(
-        bool initializing,
-        uint64 initializedVersion,
-        uint64 version
-    ) public {
+    function testInitializeReinititalizerTrick(bool initializing, uint64 initializedVersion, uint64 version) public {
         bool expected = initializing == true || initializedVersion >= version;
         bool computed;
         /// @solidity memory-safe-assembly

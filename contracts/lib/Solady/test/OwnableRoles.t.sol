@@ -38,11 +38,7 @@ contract OwnableRolesTest is SoladyTest {
         assertEq(mockOwnableRoles.owner(), newOwner);
     }
 
-    function testGrantAndRemoveRolesDirect(
-        address user,
-        uint256 rolesToGrant,
-        uint256 rolesToRemove
-    ) public {
+    function testGrantAndRemoveRolesDirect(address user, uint256 rolesToGrant, uint256 rolesToRemove) public {
         mockOwnableRoles.removeRolesDirect(user, mockOwnableRoles.rolesOf(user));
         assertEq(mockOwnableRoles.rolesOf(user), 0);
         mockOwnableRoles.grantRolesDirect(user, rolesToGrant);
@@ -90,11 +86,7 @@ contract OwnableRolesTest is SoladyTest {
         assertEq(mockOwnableRoles.owner(), address(0));
     }
 
-    function testTransferOwnership(
-        address newOwner,
-        bool setNewOwnerToZeroAddress,
-        bool callerIsOwner
-    ) public {
+    function testTransferOwnership(address newOwner, bool setNewOwnerToZeroAddress, bool callerIsOwner) public {
         assertEq(mockOwnableRoles.owner(), address(this));
 
         while (newOwner == address(this)) newOwner = _randomNonZeroAddress();
@@ -258,9 +250,7 @@ contract OwnableRolesTest is SoladyTest {
         mockOwnableRoles.updateFlagWithOnlyOwner();
     }
 
-    function testOnlyRolesModifier(address user, uint256 rolesToGrant, uint256 rolesToCheck)
-        public
-    {
+    function testOnlyRolesModifier(address user, uint256 rolesToGrant, uint256 rolesToCheck) public {
         mockOwnableRoles.grantRoles(user, rolesToGrant);
 
         if (rolesToGrant & rolesToCheck == 0) {
@@ -270,12 +260,9 @@ contract OwnableRolesTest is SoladyTest {
         mockOwnableRoles.updateFlagWithOnlyRoles(rolesToCheck);
     }
 
-    function testOnlyOwnerOrRolesModifier(
-        address user,
-        bool callerIsOwner,
-        uint256 rolesToGrant,
-        uint256 rolesToCheck
-    ) public {
+    function testOnlyOwnerOrRolesModifier(address user, bool callerIsOwner, uint256 rolesToGrant, uint256 rolesToCheck)
+        public
+    {
         while (user == address(this)) user = _randomNonZeroAddress();
 
         mockOwnableRoles.grantRoles(user, rolesToGrant);
@@ -289,12 +276,9 @@ contract OwnableRolesTest is SoladyTest {
         mockOwnableRoles.updateFlagWithOnlyOwnerOrRoles(rolesToCheck);
     }
 
-    function testOnlyRolesOrOwnerModifier(
-        address user,
-        bool callerIsOwner,
-        uint256 rolesToGrant,
-        uint256 rolesToCheck
-    ) public {
+    function testOnlyRolesOrOwnerModifier(address user, bool callerIsOwner, uint256 rolesToGrant, uint256 rolesToCheck)
+        public
+    {
         while (user == address(this)) user = _randomNonZeroAddress();
 
         mockOwnableRoles.grantRoles(user, rolesToGrant);

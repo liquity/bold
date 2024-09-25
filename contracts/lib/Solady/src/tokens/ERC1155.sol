@@ -49,21 +49,13 @@ abstract contract ERC1155 {
     /// @dev Emitted when `amount` of token `id` is transferred
     /// from `from` to `to` by `operator`.
     event TransferSingle(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256 id,
-        uint256 amount
+        address indexed operator, address indexed from, address indexed to, uint256 id, uint256 amount
     );
 
     /// @dev Emitted when `amounts` of token `ids` are transferred
     /// from `from` to `to` by `operator`.
     event TransferBatch(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint256[] ids,
-        uint256[] amounts
+        address indexed operator, address indexed from, address indexed to, uint256[] ids, uint256[] amounts
     );
 
     /// @dev Emitted when `owner` enables or disables `operator` to manage all of their tokens.
@@ -141,12 +133,7 @@ abstract contract ERC1155 {
     }
 
     /// @dev Returns whether `operator` is approved to manage the tokens of `owner`.
-    function isApprovedForAll(address owner, address operator)
-        public
-        view
-        virtual
-        returns (bool result)
-    {
+    function isApprovedForAll(address owner, address operator) public view virtual returns (bool result) {
         /// @solidity memory-safe-assembly
         assembly {
             mstore(0x20, _ERC1155_MASTER_SLOT_SEED)
@@ -187,13 +174,10 @@ abstract contract ERC1155 {
     ///   {ERC1155-onERC1155Received}, which is called upon a batch transfer.
     ///
     /// Emits a {TransferSingle} event.
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes calldata data
-    ) public virtual {
+    function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes calldata data)
+        public
+        virtual
+    {
         if (_useBeforeTokenTransfer()) {
             _beforeTokenTransfer(from, to, _single(id), _single(amount), data);
         }
@@ -517,12 +501,10 @@ abstract contract ERC1155 {
     ///   {ERC1155-onERC1155BatchReceived}, which is called upon a batch transfer.
     ///
     /// Emits a {TransferBatch} event.
-    function _batchMint(
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) internal virtual {
+    function _batchMint(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
+        internal
+        virtual
+    {
         if (_useBeforeTokenTransfer()) {
             _beforeTokenTransfer(address(0), to, ids, amounts, data);
         }
@@ -636,10 +618,7 @@ abstract contract ERC1155 {
     }
 
     /// @dev Equivalent to `_batchBurn(address(0), from, ids, amounts)`.
-    function _batchBurn(address from, uint256[] memory ids, uint256[] memory amounts)
-        internal
-        virtual
-    {
+    function _batchBurn(address from, uint256[] memory ids, uint256[] memory amounts) internal virtual {
         _batchBurn(address(0), from, ids, amounts);
     }
 
@@ -652,10 +631,7 @@ abstract contract ERC1155 {
     ///   or approved to manage the tokens of `from`.
     ///
     /// Emits a {TransferBatch} event.
-    function _batchBurn(address by, address from, uint256[] memory ids, uint256[] memory amounts)
-        internal
-        virtual
-    {
+    function _batchBurn(address by, address from, uint256[] memory ids, uint256[] memory amounts) internal virtual {
         if (_useBeforeTokenTransfer()) {
             _beforeTokenTransfer(from, address(0), ids, amounts, "");
         }
@@ -747,10 +723,7 @@ abstract contract ERC1155 {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @dev Equivalent to `_safeTransfer(address(0), from, to, id, amount, data)`.
-    function _safeTransfer(address from, address to, uint256 id, uint256 amount, bytes memory data)
-        internal
-        virtual
-    {
+    function _safeTransfer(address from, address to, uint256 id, uint256 amount, bytes memory data) internal virtual {
         _safeTransfer(address(0), from, to, id, amount, data);
     }
 
@@ -765,14 +738,10 @@ abstract contract ERC1155 {
     ///   {ERC1155-onERC1155Received}, which is called upon a batch transfer.
     ///
     /// Emits a {TransferSingle} event.
-    function _safeTransfer(
-        address by,
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) internal virtual {
+    function _safeTransfer(address by, address from, address to, uint256 id, uint256 amount, bytes memory data)
+        internal
+        virtual
+    {
         if (_useBeforeTokenTransfer()) {
             _beforeTokenTransfer(from, to, _single(id), _single(amount), data);
         }
@@ -1014,13 +983,7 @@ abstract contract ERC1155 {
 
     /// @dev Perform a call to invoke {IERC1155Receiver-onERC1155Received} on `to`.
     /// Reverts if the target does not support the function correctly.
-    function _checkOnERC1155Received(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) private {
+    function _checkOnERC1155Received(address from, address to, uint256 id, uint256 amount, bytes memory data) private {
         /// @solidity memory-safe-assembly
         assembly {
             // Prepare the calldata.

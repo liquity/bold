@@ -107,11 +107,7 @@ abstract contract ERC4337 is Ownable, UUPSUpgradeable, Receiver, ERC1271 {
     /// This allows making a "simulation call" without a valid signature.
     /// Other failures (e.g. nonce mismatch, or invalid signature format)
     /// should still revert to signal failure.
-    function validateUserOp(
-        PackedUserOperation calldata userOp,
-        bytes32 userOpHash,
-        uint256 missingAccountFunds
-    )
+    function validateUserOp(PackedUserOperation calldata userOp, bytes32 userOpHash, uint256 missingAccountFunds)
         external
         payable
         virtual

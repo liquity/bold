@@ -256,31 +256,19 @@ library LibSort {
 
     /// @dev Returns whether `a` contains `needle`, and the index of `needle`.
     /// `index` precedence: equal to > nearest before > nearest after.
-    function searchSorted(uint256[] memory a, uint256 needle)
-        internal
-        pure
-        returns (bool found, uint256 index)
-    {
+    function searchSorted(uint256[] memory a, uint256 needle) internal pure returns (bool found, uint256 index) {
         (found, index) = _searchSorted(a, needle, 0);
     }
 
     /// @dev Returns whether `a` contains `needle`, and the index of `needle`.
     /// `index` precedence: equal to > nearest before > nearest after.
-    function searchSorted(int256[] memory a, int256 needle)
-        internal
-        pure
-        returns (bool found, uint256 index)
-    {
+    function searchSorted(int256[] memory a, int256 needle) internal pure returns (bool found, uint256 index) {
         (found, index) = _searchSorted(_toUints(a), uint256(needle), 1 << 255);
     }
 
     /// @dev Returns whether `a` contains `needle`, and the index of `needle`.
     /// `index` precedence: equal to > nearest before > nearest after.
-    function searchSorted(address[] memory a, address needle)
-        internal
-        pure
-        returns (bool found, uint256 index)
-    {
+    function searchSorted(address[] memory a, address needle) internal pure returns (bool found, uint256 index) {
         (found, index) = _searchSorted(_toUints(a), uint256(uint160(needle)), 0);
     }
 
@@ -420,91 +408,55 @@ library LibSort {
 
     /// @dev Returns the sorted set difference of `a` and `b`.
     /// Note: Behaviour is undefined if inputs are not sorted and uniquified.
-    function difference(uint256[] memory a, uint256[] memory b)
-        internal
-        pure
-        returns (uint256[] memory c)
-    {
+    function difference(uint256[] memory a, uint256[] memory b) internal pure returns (uint256[] memory c) {
         c = _difference(a, b, 0);
     }
 
     /// @dev Returns the sorted set difference between `a` and `b`.
     /// Note: Behaviour is undefined if inputs are not sorted and uniquified.
-    function difference(int256[] memory a, int256[] memory b)
-        internal
-        pure
-        returns (int256[] memory c)
-    {
+    function difference(int256[] memory a, int256[] memory b) internal pure returns (int256[] memory c) {
         c = _toInts(_difference(_toUints(a), _toUints(b), 1 << 255));
     }
 
     /// @dev Returns the sorted set difference between `a` and `b`.
     /// Note: Behaviour is undefined if inputs are not sorted and uniquified.
-    function difference(address[] memory a, address[] memory b)
-        internal
-        pure
-        returns (address[] memory c)
-    {
+    function difference(address[] memory a, address[] memory b) internal pure returns (address[] memory c) {
         c = _toAddresses(_difference(_toUints(a), _toUints(b), 0));
     }
 
     /// @dev Returns the sorted set intersection between `a` and `b`.
     /// Note: Behaviour is undefined if inputs are not sorted and uniquified.
-    function intersection(uint256[] memory a, uint256[] memory b)
-        internal
-        pure
-        returns (uint256[] memory c)
-    {
+    function intersection(uint256[] memory a, uint256[] memory b) internal pure returns (uint256[] memory c) {
         c = _intersection(a, b, 0);
     }
 
     /// @dev Returns the sorted set intersection between `a` and `b`.
     /// Note: Behaviour is undefined if inputs are not sorted and uniquified.
-    function intersection(int256[] memory a, int256[] memory b)
-        internal
-        pure
-        returns (int256[] memory c)
-    {
+    function intersection(int256[] memory a, int256[] memory b) internal pure returns (int256[] memory c) {
         c = _toInts(_intersection(_toUints(a), _toUints(b), 1 << 255));
     }
 
     /// @dev Returns the sorted set intersection between `a` and `b`.
     /// Note: Behaviour is undefined if inputs are not sorted and uniquified.
-    function intersection(address[] memory a, address[] memory b)
-        internal
-        pure
-        returns (address[] memory c)
-    {
+    function intersection(address[] memory a, address[] memory b) internal pure returns (address[] memory c) {
         c = _toAddresses(_intersection(_toUints(a), _toUints(b), 0));
     }
 
     /// @dev Returns the sorted set union of `a` and `b`.
     /// Note: Behaviour is undefined if inputs are not sorted and uniquified.
-    function union(uint256[] memory a, uint256[] memory b)
-        internal
-        pure
-        returns (uint256[] memory c)
-    {
+    function union(uint256[] memory a, uint256[] memory b) internal pure returns (uint256[] memory c) {
         c = _union(a, b, 0);
     }
 
     /// @dev Returns the sorted set union of `a` and `b`.
     /// Note: Behaviour is undefined if inputs are not sorted and uniquified.
-    function union(int256[] memory a, int256[] memory b)
-        internal
-        pure
-        returns (int256[] memory c)
-    {
+    function union(int256[] memory a, int256[] memory b) internal pure returns (int256[] memory c) {
         c = _toInts(_union(_toUints(a), _toUints(b), 1 << 255));
     }
 
     /// @dev Returns the sorted set union between `a` and `b`.
     /// Note: Behaviour is undefined if inputs are not sorted and uniquified.
-    function union(address[] memory a, address[] memory b)
-        internal
-        pure
-        returns (address[] memory c)
-    {
+    function union(address[] memory a, address[] memory b) internal pure returns (address[] memory c) {
         c = _toAddresses(_union(_toUints(a), _toUints(b), 0));
     }
 
@@ -674,11 +626,7 @@ library LibSort {
 
     /// @dev Returns the sorted set union of `a` and `b`.
     /// Note: Behaviour is undefined if inputs are not sorted and uniquified.
-    function _union(uint256[] memory a, uint256[] memory b, uint256 signed)
-        private
-        pure
-        returns (uint256[] memory c)
-    {
+    function _union(uint256[] memory a, uint256[] memory b, uint256 signed) private pure returns (uint256[] memory c) {
         /// @solidity memory-safe-assembly
         assembly {
             let s := 0x20

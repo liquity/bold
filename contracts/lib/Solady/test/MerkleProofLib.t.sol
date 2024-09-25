@@ -6,12 +6,9 @@ import {MerkleProofLib} from "../src/utils/MerkleProofLib.sol";
 import {LibString} from "../src/utils/LibString.sol";
 
 contract MerkleProofLibTest is SoladyTest {
-    function testVerifyProofForHeightOneTree(
-        bool hasProof,
-        bool nonEmptyProof,
-        bool nonEmptyRoot,
-        bool nonEmptyLeaf
-    ) public {
+    function testVerifyProofForHeightOneTree(bool hasProof, bool nonEmptyProof, bool nonEmptyRoot, bool nonEmptyLeaf)
+        public
+    {
         bytes32 root;
         if (nonEmptyRoot) {
             root = bytes32("a");
@@ -77,12 +74,7 @@ contract MerkleProofLibTest is SoladyTest {
         assertFalse(this.verifyMultiProof(maliciousProof, root, maliciousLeaves, maliciousFlags));
     }
 
-    function testVerifyProofBasicCase(
-        bool damageProof,
-        bool damageRoot,
-        bool damageLeaf,
-        bytes32 randomness
-    ) public {
+    function testVerifyProofBasicCase(bool damageProof, bool damageRoot, bool damageLeaf, bytes32 randomness) public {
         bool noDamage = true;
         uint256 ri; // Randomness index.
 
@@ -95,8 +87,7 @@ contract MerkleProofLibTest is SoladyTest {
             proof[i] = bytes32(uint256(proof[i]) ^ 1); // Flip a bit.
         }
 
-        bytes32 root =
-            _hashPair(_hashPair(bytes32("a"), bytes32("b")), _hashPair(bytes32("c"), bytes32(0)));
+        bytes32 root = _hashPair(_hashPair(bytes32("a"), bytes32("b")), _hashPair(bytes32("c"), bytes32(0)));
 
         if (damageRoot) {
             noDamage = false;
@@ -112,10 +103,7 @@ contract MerkleProofLibTest is SoladyTest {
         assertEq(this.verify(proof, root, leaf), noDamage);
     }
 
-    function testVerifyMultiProofForSingleLeaf(bytes32[] memory data, uint256 randomness)
-        public
-        brutalizeMemory
-    {
+    function testVerifyMultiProofForSingleLeaf(bytes32[] memory data, uint256 randomness) public brutalizeMemory {
         if (!(data.length > 1)) data = _randomData();
         uint256 nodeIndex = randomness % data.length;
         bytes32 root = _getRoot(data);
@@ -161,8 +149,7 @@ contract MerkleProofLibTest is SoladyTest {
         }
         bool leafSameAsRoot = leaves.length == 1 && leaves[0] == root;
         bool proofSameAsRoot = proof.length == 1 && proof[0] == root;
-        bool isValid = flags.length == 0 && (leafSameAsRoot || proofSameAsRoot)
-            && (leaves.length + proof.length == 1);
+        bool isValid = flags.length == 0 && (leafSameAsRoot || proofSameAsRoot) && (leaves.length + proof.length == 1);
         assertEq(this.verifyMultiProof(proof, root, leaves, flags), isValid);
     }
 
@@ -289,20 +276,15 @@ contract MerkleProofLibTest is SoladyTest {
         assertEq(this.verifyMultiProof(proof, root, leaves, flags), noDamage);
     }
 
-    function verify(bytes32[] calldata proof, bytes32 root, bytes32 leaf)
-        external
-        returns (bool result)
-    {
+    function verify(bytes32[] calldata proof, bytes32 root, bytes32 leaf) external returns (bool result) {
         result = MerkleProofLib.verifyCalldata(proof, root, leaf);
         assertEq(MerkleProofLib.verify(proof, root, leaf), result);
     }
 
-    function verifyMultiProof(
-        bytes32[] calldata proof,
-        bytes32 root,
-        bytes32[] calldata leaves,
-        bool[] calldata flags
-    ) external returns (bool result) {
+    function verifyMultiProof(bytes32[] calldata proof, bytes32 root, bytes32[] calldata leaves, bool[] calldata flags)
+        external
+        returns (bool result)
+    {
         uint256[] memory offsetsAndLengths = new uint256[](12);
 
         // Basically, we want to demonstrate that the `verifyMultiProof` does not
@@ -350,11 +332,7 @@ contract MerkleProofLibTest is SoladyTest {
         return data[0];
     }
 
-    function _getProof(bytes32[] memory data, uint256 nodeIndex)
-        private
-        pure
-        returns (bytes32[] memory)
-    {
+    function _getProof(bytes32[] memory data, uint256 nodeIndex) private pure returns (bytes32[] memory) {
         require(data.length > 1);
 
         bytes32[] memory result = new bytes32[](64);
@@ -421,19 +399,13 @@ contract MerkleProofLibTest is SoladyTest {
     function testEmptyCalldataHelpers() public {
         assertFalse(
             MerkleProofLib.verifyMultiProofCalldata(
-                MerkleProofLib.emptyProof(),
-                bytes32(0),
-                MerkleProofLib.emptyLeaves(),
-                MerkleProofLib.emptyFlags()
+                MerkleProofLib.emptyProof(), bytes32(0), MerkleProofLib.emptyLeaves(), MerkleProofLib.emptyFlags()
             )
         );
 
         assertFalse(
             MerkleProofLib.verifyMultiProof(
-                MerkleProofLib.emptyProof(),
-                bytes32(0),
-                MerkleProofLib.emptyLeaves(),
-                MerkleProofLib.emptyFlags()
+                MerkleProofLib.emptyProof(), bytes32(0), MerkleProofLib.emptyLeaves(), MerkleProofLib.emptyFlags()
             )
         );
     }
