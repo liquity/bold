@@ -15,7 +15,6 @@ import {
   RETH_PRICE as DEMO_RETH_PRICE,
   STETH_PRICE as DEMO_STETH_PRICE,
 } from "@/src/demo-mode";
-import { DEMO_MODE } from "@/src/env";
 import * as dn from "dnum";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useReadContract } from "wagmi";
@@ -65,7 +64,8 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
   ]);
 };
 
-if (DEMO_MODE) {
+// if (DEMO_MODE) {
+if (true) { // TODO: fix useWatchPrices above so we only use this if DEMO_MODE=true
   // in demo mode, simulate a variation of the prices
   useWatchPrices = (callback) => {
     useEffect(() => {

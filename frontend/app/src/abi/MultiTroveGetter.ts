@@ -12,6 +12,25 @@ export const MultiTroveGetter = [{
   "stateMutability": "view",
 }, {
   "type": "function",
+  "name": "getDebtPerInterestRateAscending",
+  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+    "name": "_startId",
+    "type": "uint256",
+    "internalType": "uint256",
+  }, { "name": "_maxIterations", "type": "uint256", "internalType": "uint256" }],
+  "outputs": [{
+    "name": "data",
+    "type": "tuple[]",
+    "internalType": "struct IMultiTroveGetter.DebtPerInterestRate[]",
+    "components": [{ "name": "interestBatchManager", "type": "address", "internalType": "address" }, {
+      "name": "interestRate",
+      "type": "uint256",
+      "internalType": "uint256",
+    }, { "name": "debt", "type": "uint256", "internalType": "uint256" }],
+  }, { "name": "currId", "type": "uint256", "internalType": "uint256" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
   "name": "getMultipleSortedTroves",
   "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
     "name": "_startIdx",
@@ -21,7 +40,7 @@ export const MultiTroveGetter = [{
   "outputs": [{
     "name": "_troves",
     "type": "tuple[]",
-    "internalType": "struct MultiTroveGetter.CombinedTroveData[]",
+    "internalType": "struct IMultiTroveGetter.CombinedTroveData[]",
     "components": [
       { "name": "id", "type": "uint256", "internalType": "uint256" },
       { "name": "debt", "type": "uint256", "internalType": "uint256" },
@@ -30,6 +49,9 @@ export const MultiTroveGetter = [{
       { "name": "annualInterestRate", "type": "uint256", "internalType": "uint256" },
       { "name": "lastDebtUpdateTime", "type": "uint256", "internalType": "uint256" },
       { "name": "lastInterestRateAdjTime", "type": "uint256", "internalType": "uint256" },
+      { "name": "interestBatchManager", "type": "address", "internalType": "address" },
+      { "name": "batchDebtShares", "type": "uint256", "internalType": "uint256" },
+      { "name": "batchCollShares", "type": "uint256", "internalType": "uint256" },
       { "name": "snapshotETH", "type": "uint256", "internalType": "uint256" },
       { "name": "snapshotBoldDebt", "type": "uint256", "internalType": "uint256" },
     ],

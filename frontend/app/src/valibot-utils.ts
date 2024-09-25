@@ -1,3 +1,4 @@
+import type { PrefixedTroveId } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 
@@ -11,6 +12,30 @@ export function vAddress() {
 
 export function vDnum() {
   return v.custom<Dnum>(isDnum, "not a Dnum");
+}
+
+export function vCollIndex() {
+  return v.union([
+    v.literal(0),
+    v.literal(1),
+    v.literal(2),
+    v.literal(3),
+    v.literal(4),
+    v.literal(5),
+    v.literal(6),
+    v.literal(7),
+    v.literal(8),
+    v.literal(9),
+  ]);
+}
+
+export function vPrefixedTroveId() {
+  return v.pipe(
+    v.string(),
+    v.trim(),
+    v.regex(/^[0-9]:0x[0-9a-f]+$/),
+    v.transform((value) => value as PrefixedTroveId),
+  );
 }
 
 // Env var link, e.g. Etherscan|https://etherscan.io

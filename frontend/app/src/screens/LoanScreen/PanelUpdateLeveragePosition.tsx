@@ -121,21 +121,19 @@ export function PanelUpdateLeveragePosition({ loan }: { loan: PositionLoan }) {
     setAgreeToLiquidationRisk(false);
   }, [newLoanDetails.status]);
 
-  const allowSubmit = (
-    account.isConnected
-  ) && (
-    newLoanDetails.status !== "at-risk" || agreeToLiquidationRisk
-  ) && (
-    newLoanDetails.status !== "underwater" && newLoanDetails.status !== "liquidatable"
-  ) && (
-    // either the deposit or the leverage factor has changed
-    !dn.eq(
-      initialLoanDetails.deposit ?? dn.from(0, 18),
-      newLoanDetails.deposit ?? dn.from(0, 18),
-    ) || (
-      initialLoanDetails.leverageFactor !== newLoanDetails.leverageFactor
-    )
-  );
+  const allowSubmit = account.isConnected
+      && newLoanDetails.status !== "at-risk" || agreeToLiquidationRisk
+      && newLoanDetails.status !== "underwater" && newLoanDetails.status !== "liquidatable"
+      && (
+        // either the deposit or the leverage factor has changed
+        !dn.eq(
+          initialLoanDetails.deposit ?? dn.from(0, 18),
+          newLoanDetails.deposit ?? dn.from(0, 18),
+        ) || (
+          initialLoanDetails.leverageFactor !== newLoanDetails.leverageFactor
+        )
+      )
+      && false;
 
   return (
     <>

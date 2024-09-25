@@ -2,7 +2,7 @@
 // please do not edit it manually
 export const DefaultPool = [{
   "type": "constructor",
-  "inputs": [{ "name": "_collAddress", "type": "address", "internalType": "address" }],
+  "inputs": [{ "name": "_addressesRegistry", "type": "address", "internalType": "contract IAddressesRegistry" }],
   "stateMutability": "nonpayable",
 }, {
   "type": "function",
@@ -48,18 +48,6 @@ export const DefaultPool = [{
   "stateMutability": "nonpayable",
 }, {
   "type": "function",
-  "name": "isOwner",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
-  "name": "owner",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
   "name": "receiveColl",
   "inputs": [{ "name": "_amount", "type": "uint256", "internalType": "uint256" }],
   "outputs": [],
@@ -72,16 +60,6 @@ export const DefaultPool = [{
   "stateMutability": "nonpayable",
 }, {
   "type": "function",
-  "name": "setAddresses",
-  "inputs": [{ "name": "_troveManagerAddress", "type": "address", "internalType": "address" }, {
-    "name": "_activePoolAddress",
-    "type": "address",
-    "internalType": "address",
-  }],
-  "outputs": [],
-  "stateMutability": "nonpayable",
-}, {
-  "type": "function",
   "name": "troveManagerAddress",
   "inputs": [],
   "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
@@ -90,6 +68,11 @@ export const DefaultPool = [{
   "type": "event",
   "name": "ActivePoolAddressChanged",
   "inputs": [{ "name": "_newActivePoolAddress", "type": "address", "indexed": false, "internalType": "address" }],
+  "anonymous": false,
+}, {
+  "type": "event",
+  "name": "CollTokenAddressChanged",
+  "inputs": [{ "name": "_newCollTokenAddress", "type": "address", "indexed": false, "internalType": "address" }],
   "anonymous": false,
 }, {
   "type": "event",
@@ -109,16 +92,6 @@ export const DefaultPool = [{
     "type": "uint256",
     "indexed": false,
     "internalType": "uint256",
-  }],
-  "anonymous": false,
-}, {
-  "type": "event",
-  "name": "OwnershipTransferred",
-  "inputs": [{ "name": "previousOwner", "type": "address", "indexed": true, "internalType": "address" }, {
-    "name": "newOwner",
-    "type": "address",
-    "indexed": true,
-    "internalType": "address",
   }],
   "anonymous": false,
 }, {

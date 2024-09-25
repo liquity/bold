@@ -121,17 +121,17 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         vm.stopPrank();
     }
 
-    function testSetDelegateRevertsIfTroveIsZombie() public {
+    function testSetDelegateRevertsIfTroveIsUnredeemable() public {
         vm.startPrank(B);
         borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
         vm.stopPrank();
 
         // Open trove
         uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
-        // Make trove zombie
+        // Make trove unredeemable
         redeem(A, 4000e18);
-        // Check A’s trove is zombie
-        assertEq(troveManager.checkTroveIsZombie(troveId), true, "A trove should be zombie");
+        // Check A’s trove is unredeemable
+        assertEq(troveManager.checkTroveIsUnredeemable(troveId), true, "A trove should be unredeemable");
 
         // Set batch manager (B)
         vm.startPrank(A);

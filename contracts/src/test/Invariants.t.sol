@@ -38,7 +38,7 @@ library ToStringFunctions {
         if (status == ITroveManager.Status.active) return "ITroveManager.Status.active";
         if (status == ITroveManager.Status.closedByOwner) return "ITroveManager.Status.closedByOwner";
         if (status == ITroveManager.Status.closedByLiquidation) return "ITroveManager.Status.closedByLiquidation";
-        if (status == ITroveManager.Status.zombie) return "ITroveManager.Status.zombie";
+        if (status == ITroveManager.Status.unredeemable) return "ITroveManager.Status.unredeemable";
         revert("Invalid status");
     }
 }
@@ -109,7 +109,6 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
             TestDeployer.LiquityContractsDev memory c = branches[i];
 
             assertEq(c.troveManager.getTroveIdsCount(), handler.numTroves(i), "Wrong number of Troves");
-            assertEq(c.troveManager.lastZombieTroveId(), handler.designatedVictimId(i), "Wrong designated victim");
             assertEq(c.sortedTroves.getSize(), handler.numTroves(i) - handler.numZombies(i), "Wrong SortedTroves size");
             assertApproxEqAbsDecimal(
                 c.activePool.calcPendingAggInterest(), handler.getPendingInterest(i), 1e-10 ether, 18, "Wrong interest"
@@ -187,13 +186,14 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
                 ITroveManager.Status status = c.troveManager.getTroveStatus(troveId);
 
                 assertTrue(
-                    status == ITroveManager.Status.active || status == ITroveManager.Status.zombie, "Unexpected status"
+                    status == ITroveManager.Status.active || status == ITroveManager.Status.unredeemable,
+                    "Unexpected status"
                 );
 
                 if (status == ITroveManager.Status.active) {
                     assertTrue(c.sortedTroves.contains(troveId), "SortedTroves should contain active Troves");
                 } else {
-                    assertFalse(c.sortedTroves.contains(troveId), "SortedTroves shouldn't contain zombie Troves");
+                    assertFalse(c.sortedTroves.contains(troveId), "SortedTroves shouldn't contain unredeemable Troves");
                 }
             }
         }

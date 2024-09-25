@@ -11,6 +11,7 @@ import { PriceFeed } from "@/src/abi/PriceFeed";
 import { SortedTroves } from "@/src/abi/SortedTroves";
 import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
+import { WETH } from "@/src/abi/WETH";
 import {
   COLLATERAL_CONTRACTS,
   CONTRACT_BOLD_TOKEN,
@@ -27,7 +28,7 @@ const protocolAbis = {
   CollateralRegistry,
   HintHelpers,
   MultiTroveGetter,
-  WETH: erc20Abi,
+  WETH,
 } as const;
 
 const collateralAbis = {
@@ -60,30 +61,16 @@ type Contract<T extends ContractName> = {
 
 type CollateralContracts<T extends CollateralContractName> = Record<T, Contract<T>>;
 
-type Collaterals = Array<[keyof typeof COLLATERAL_CONTRACTS, CollateralContracts<CollateralContractName>]>;
+type Collaterals = Array<{
+  symbol: CollateralSymbol;
+  contracts: CollateralContracts<CollateralContractName>;
+}>;
 
 type Contracts = {
   [K in (ProtocolContractName | "collaterals")]: K extends "collaterals" ? Collaterals
     : K extends ContractName ? Contract<K>
     : never;
 };
-
-function collateralAddressesToContracts(
-  collateral: typeof COLLATERAL_CONTRACTS[keyof typeof COLLATERAL_CONTRACTS],
-): CollateralContracts<CollateralContractName> | null {
-  return collateral
-    ? {
-      ActivePool: { abi: abis.ActivePool, address: collateral.ACTIVE_POOL },
-      BorrowerOperations: { abi: abis.BorrowerOperations, address: collateral.BORROWER_OPERATIONS },
-      DefaultPool: { abi: abis.DefaultPool, address: collateral.DEFAULT_POOL },
-      PriceFeed: { abi: abis.PriceFeed, address: collateral.PRICE_FEED },
-      SortedTroves: { abi: abis.SortedTroves, address: collateral.SORTED_TROVES },
-      StabilityPool: { abi: abis.StabilityPool, address: collateral.STABILITY_POOL },
-      Token: { abi: abis.Token, address: collateral.TOKEN },
-      TroveManager: { abi: abis.TroveManager, address: collateral.TROVE_MANAGER },
-    }
-    : null;
-}
 
 // Note: even though the contracts related data is coming from the environment,
 // hooks are being used so that we could later change these at runtime.
@@ -95,13 +82,24 @@ export function useContracts(): Contracts {
       HintHelpers: { abi: abis.HintHelpers, address: CONTRACT_HINT_HELPERS },
       MultiTroveGetter: { abi: abis.MultiTroveGetter, address: CONTRACT_MULTI_TROVE_GETTER },
       WETH: { abi: abis.WETH, address: CONTRACT_WETH },
-      collaterals: Object.entries(COLLATERAL_CONTRACTS).map(([symbol, collateral]) => [
+      collaterals: COLLATERAL_CONTRACTS.map(({ symbol, contracts }) => ({
         symbol,
-        collateralAddressesToContracts(collateral),
-      ]) as Collaterals,
+        contracts: {
+          ActivePool: { address: contracts.ACTIVE_POOL, abi: abis.ActivePool },
+          BorrowerOperations: { address: contracts.BORROWER_OPERATIONS, abi: abis.BorrowerOperations },
+          DefaultPool: { address: contracts.DEFAULT_POOL, abi: abis.DefaultPool },
+          PriceFeed: { address: contracts.PRICE_FEED, abi: abis.PriceFeed },
+          SortedTroves: { address: contracts.SORTED_TROVES, abi: abis.SortedTroves },
+          StabilityPool: { address: contracts.STABILITY_POOL, abi: abis.StabilityPool },
+          Token: { address: contracts.TOKEN, abi: abis.Token },
+          TroveManager: { address: contracts.TROVE_MANAGER, abi: abis.TroveManager },
+        },
+      })),
     };
   }, []);
 }
+
+export const useCollateralContracts = () => useContracts().collaterals;
 
 export function useProtocolContract(name: ProtocolContractName): Contract<ProtocolContractName> {
   return useContracts()[name];
@@ -112,24 +110,12 @@ export function useCollateralContract(
   name: CollateralContractName,
 ): Contract<CollateralContractName> | null {
   const { collaterals } = useContracts();
-  return getCollateralContracts(symbol, collaterals)?.[name] ?? null;
-}
-
-export function useAvailableCollaterals(): CollateralSymbol[] {
-  return Object.keys(useContracts().collaterals) as CollateralSymbol[];
-}
-
-export function findCollateralIndex(symbol: CollateralSymbol, collaterals: Collaterals): number {
-  return collaterals.findIndex(([s]) => s === symbol);
+  return collaterals.find((c) => c.symbol === symbol)?.contracts?.[name] ?? null;
 }
 
 export function getCollateralContracts(
-  symbolOrIndex: CollateralSymbol | number,
+  symbolOrIndex: CollateralSymbol,
   collaterals: Collaterals,
 ): CollateralContracts<CollateralContractName> | null {
-  return collaterals[
-    typeof symbolOrIndex === "string"
-      ? findCollateralIndex(symbolOrIndex, collaterals)
-      : symbolOrIndex
-  ][1] ?? null;
+  return collaterals.find(({ symbol }) => symbol === symbolOrIndex)?.contracts ?? null;
 }

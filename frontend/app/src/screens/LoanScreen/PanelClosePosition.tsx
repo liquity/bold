@@ -4,8 +4,10 @@ import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningB
 import { Field } from "@/src/comps/Field/Field";
 import { fmtnum } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
+import { getPrefixedTroveId } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
+import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
 import { Button, Dropdown, TokenIcon, TOKENS_BY_SYMBOL, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -15,6 +17,8 @@ import { useState } from "react";
 export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
   const router = useRouter();
   const account = useAccount();
+  const txFlow = useTransactionFlow();
+
   const collPrice = usePrice(loan.collateral);
   const boldPriceUsd = usePrice("BOLD");
   const [tokenIndex, setTokenIndex] = useState(0);
@@ -43,7 +47,7 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
     ? loan.deposit
     : dn.sub(loan.deposit, amountToRepay);
 
-  const allowSubmit = account.isConnected;
+  const allowSubmit = account.isConnected && tokenIndex === 0;
 
   return (
     <>
@@ -189,7 +193,21 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
           size="large"
           wide
           onClick={() => {
-            router.push("/transactions/close-loan");
+            if (account.address) {
+              txFlow.start({
+                flowId: "closeLoanPosition",
+                backLink: [
+                  `/loan/close?id=${loan.collIndex}:${loan.troveId}`,
+                  "Back to editing",
+                ],
+                successLink: ["/", "Go to the dashboard"],
+                successMessage: "The loan position has been closed successfully.",
+
+                collIndex: loan.collIndex,
+                prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
+              });
+              router.push("/transactions");
+            }
           }}
         />
       </div>

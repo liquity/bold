@@ -476,7 +476,7 @@ For a given branch, the system maintains the following invariant:
 
 That is:
 
-`ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest() + DefaultPool.BoldDebt = SUM_i=1_n(TroveManager.getEntireTroveDebt())`
+`ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest() = SUM_i=1_n(TroveManager.getEntireTroveDebt())`
 
 For all `n` Troves in the branch.
 
@@ -492,17 +492,6 @@ Pending aggregate interest is “applied” upon most system actions. That is:
 
 This is the only way BOLD is ever minted as interest. Applying individual interest to a Trove updates its recorded debt, but interest is always minted in aggregate.
 
-### Redistribution gains and interest accrual
-
-The redistribution mechanism from Liquity v1 is carried over to Liquity v2. That is, when the Stability Pool is empty, liquidations are performed by redistributing all debt and collateral from the liquidated Trove(s) to all other active Troves in proportion to their collateral.
-
-Thus active Troves potentially accrue redistribution debt gains over time. The total redistributed debt is recorded in the `DefaultPool`, and individual Troves' pending redistribution gains are handled in `TroveManager` by the `L_coll` and `L_boldDebt` global trackers. 
-
-Whenever a Trove is touched e.g. by the borrower adjusting debt, its pending redistribution debt gain is "applied" i.e. moved into its recorded debt.
-
-Pending redistribution gains do **not** accrue interest at aggregate or individual level. All redistribution debt gains are held outside and apart from the interest accrual calculations. This means that a Trove with a relatively high pending redistribution debt gain has a slight advantage: it pays less interest than a Trove with equal entire debt but no pending redistribution gains.
-
-However, it is possible for anyone to permissionlessly apply a Trove's redistribution gain, i.e. to move them into the Trove's recorded debt via `TroveManager.applyPendingDebt`.  This works for batch and non-batched Troves. As such, any unfairness in interest accrual due to redistribution gains can be manually removed.
 
 ### Redemption evasion mitigation
 
@@ -533,7 +522,7 @@ The premature adjustment fee works as so:
 #### Batches and premature adjustment fees
 
 ##### Joining a batch
-When a trove joins a batch, it pays an upfront fee if the last trove adjustment was done less than the cool period ago. It does’t matter if the Trove and batch have the same interest rate, or when was the last adjustment by the batch.
+When a trove joins a batch, it pays an upfront fee if the last trove adjustment was done more than the cool period ago. It does’t matter if the Trove and batch have the same interest rate, or when was the last adjustment by the batch.
 
 The last interest rate timestamp will be updated to the time of joining.
 
@@ -1210,8 +1199,8 @@ When `lastGoodPrice` is used to price the LST, the _real_ market price may be hi
 
 | Scenario                     | Consequence                                                                                                                                       |
 |------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| lastGoodPrice > real market price | Urgent redemptions return too little LST collateral, and may be unprofitable even when BOLD trades at $1 or below                                   |
-| lastGoodPrice < real market price | Urgent redemptions return too much LST collateral. They may be too profitable, compared to the market price.              |
+| lastGoodPrice > market price | Urgent redemptions return too little LST collateral, and may be unprofitable even when BOLD trades at $1 or below                                   |
+| lastGoodPrice < market price | Urgent redemptions return too much LST collateral. They may be too profitable, compared to the market price.              |
 
 #### Solution
 
@@ -1226,29 +1215,15 @@ If the primary oracle setup fails on a given LST branch, then using `lastGoodPri
 
 However, a fallback price utilizing the ETH-USD price and the LST's canonical rate could be used. The proposed fallback price calculation for each branch is here:
 
-| Collateral | Primary price calc                                      | Fallback if LST market oracle fails                        | Fallback if ETH-USD market oracle fails | Fallback if canonical rate fails |
-|------------|---------------------------------------------------------|------------------------------------------------------------|-----------------------------------------|----------------------------------|
-| WETH       | ETH-USD                                                 | N/A                                                        | lastGoodPrice                          | N/A                              |
-| WSTETH     | STETH-USD * WSTETH-STETH_canonical                      | min(lastGoodPrice, ETH-USD * WSTETH-STETH_canonical)       | lastGoodPrice                          | lastGoodPrice                    |
-| RETH       | min(ETH-USD * RETH-ETH, ETH-USD * RETH-ETH_canonical)   | min(lastGoodPrice, ETH-USD * RETH-ETH_canonical)           | lastGoodPrice                          | lastGoodPrice                    |
+| Collateral | Primary price calc                                             | Fallback price calc                        |
+|------------|----------------------------------------------------------------|--------------------------------------------|
+| WETH       | ETH-USD                                                        | lastGoodPrice                              |
+| WSTETH     | STETH-USD * WSTETH-STETH_canonical                             | ETH-USD * WSTETH-STETH_canonical           |
+| RETH       | min(ETH-USD * RETH-ETH, ETH-USD * RETH-ETH_canonical)          | ETH-USD * RETH-ETH_canonical               |
 
+During shutdown no borrower ops are allowed, so the main risk of a manipulated canonical rate (inflated price and excess BOLD minting) is eliminated, and it will be safe to use the canonical rate in conjunction with ETH-USD.
 
-## Primary LST oracle failure
-
-During shutdown no borrower ops are allowed, so the main risk of a manipulated canonical rate (inflated price and excess BOLD minting) is eliminated.  However, in this case we still take a minimum: `min(lastGoodPrice, ETH-USD * canonical_rate)`. This ensures that if the canonical rate is also manipulated up, we still give urgent redemptions a chance of being profitable (and clearing bad debt) with the `lastGoodPrice`.  
-
-#### STETH-USD oracle failure
-
-When this oracle fails, the WSTETH PriceFeed switches to pricing WSTETH in USD with `min(lastGoodPrice, ETH-USD * WSTETH-STETH_canonical)`. Since we substitute the failed STETH-USD oracle with the ETH-USD oracle, this inherently assumes that 1 STETH is worth 1 ETH. This is not guaranteed, though its deemed a reasonable assumption during branch shut down, where the system's priority is purely to clear bad debt via urgent redemptions.
-
-## Canonical rate failure 
-The LST canonical exchange rate is used in all calculations on all PriceFeeds. If it fails, the branch falls back to using the `lastGoodPrice`, and the branch gets shut down if it is live. If the canonical rate fails _after_ shut down, then the LST PriceFeed switches `lastGoodPrice` and the branch remains shut down. When calling the LST contract externally to fetch the canonical rate,  failure is defined as:
-
-- The returned rate is 0, or
-- The external call reverts
-
-## ETH-USD oracle failure 
-The ETH-USD market oracle is used in all calculations on all PriceFeeds. If it fails, the branch falls back to using the `lastGoodPrice`, and the branch gets shut down if it is live. If the ETH-USD oracle fails _after_ shut down, then the LST PriceFeed switches `lastGoodPrice` and the branch remains shut down.
+Additionally, if the _ETH-USD_ oracle fails after shut down, then the LST PriceFeed should finally switch to the `lastGoodPrice`, and the branch remains shut down.
 
 The full logic is implemented in this PR:
 https://github.com/liquity/bold/pull/393
@@ -1296,7 +1271,7 @@ As mentioned in the interest rate [implementation section](#core-debt-invariant)
 
 That is:
 
-`ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest() + DefaultBool.BoltDebt = SUM_i=1_n(TroveManager.getEntireTroveDebt())`
+`ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest() = SUM_i=1_n(TroveManager.getEntireTroveDebt())`
 
 For all `n` Troves in the branch.
 
@@ -1404,7 +1379,7 @@ This was chosen over other approaches because:
 
 If there is remaining collateral in the shutdown branch (albeit perhaps at zero USD value) and there are liquidateable Troves, Governance could alternatively vote to direct fees to a permissionless contract that deposits the BOLD to the SP of the shutdown branch and liquidates the Troves against those funds. The resulting collateral gains could, if they have non-zero value, be swapped on a DEX, e.g. for BOLD which could be then directed to LP incentives. All deposits and swaps could be handled permissionlessly by this governance-deployed contract.
 
-### 11 - Inaccurate calculation of average branch interest rate
+### 11 - ## Inaccurate calculation of average branch interest rate
 
 `getNewApproxAvgInterestRateFromTroveChange` does not actually calculate the correct average interest rate for a collateral branch. Ideally, we would like to calculate the debt-weighted average interest of all Troves within the branch, upon which our calculation of the upfront fee is based. The desired formula would be:
 
@@ -1464,52 +1439,6 @@ sum(debt_i)
 
 While this wouldn't result in the most accurate estimation of the average interest rate either — considering we'd be using outdated debt values sampled at different times for each Trove as weights — at least we would have consistent weights in the numerator and denominator of our weighted average. To implement this though, we'd have to keep track of this modified sum (i.e. the sum of recorded Trove debts) in `ActivePool`, which we currently don't do.
 
-## 12 - Borrower can create multiple unredeemable Troves and evade redemptions
-
-Brought up by @javalasers on Discord:
-
-**Description:**
-
-(credit @javalasers) There's an attack vector where the user can:
-
-- Create a trove with `MIN_DEBT` of debt and `MIN_ANNUAL_INTEREST_RATE` interest.
-- Redeem a tiny amount of BOLD worth of collateral from the protocol
-- If they hit their own Trove, They now have a trove paying the min interest but with `debt < MIN_DEBT`, which (in previous system logic) makes this Trove unredeemable.
-- This operation could be repeated in order to create multiple Troves at `debt < MIN_DEBT`, for a total unredeemable debt of ~ `n * MIN_DEBT`
-
-This has been fixed in this PR:
-https://github.com/liquity/bold/pull/426
-
-Here is the original impact, pre-fix:
-
-**Impact:**
-
-If this attack were profitable, it may break the whole equilibrium and game theory of the user set interest rate.
-
-Some math should be done, and it heavily depends on gas price, but some considerations:
-
-- The interest wouldn’t be zero due to the min. interest rate, so eventually the Trove would become redeemable again when it's debt rises above `MIN_DEBT` close to `MIN_DEBT`. So if the aim is to keep it 1 year, at min interest rate of 0.5%, the zombie troves should have 1,990 BOLD debt.
-- To set it up `~2n` txs are needed, where `n ~= total debt / MIN_DEBT`
-- There’s an additional `(n-1) * ETH_GAS_COMPENSATION` ETH that needs to be locked up.
-
-Also, the management of the Trove needs to be considered, so:
-- Either they all have a very high CR -> not capital efficient, it’s kind of a hidden cost
-- Or then 2n times more gas have to be spent to adjust troves every time if the attacker is trying to have a low CR and actively manage them (for each trove there’s 1 adjustment that brings it up above `MIN_DEBT` and then again a redemption).
-
-**Potential Solutions**
-
-1. Keep a pointer to the last redemeed zombie trove, and use that one first when the next redemption happens (h/t @danielattilasimon ). The attack would still work with redistributions - even after having debt reduced to 0 redistributions could result in the attacker's Trove at `debt < MIN_DEBT` but that’s far more unlikely and much harder to perform (with an extra cost of 5% of the SP size, a huge trove to be liquidated could be opened and then go for the redistributions - however, it’s hard, expensive, can’t be done in 1 tx, it depends on ETH fluctuations, on the global TCR...).
-
-2. When a trove gets redeemed and ends up with non zero debt, automatically set it to the max interest rate (h/t @cvalkan)
-
-**Chosen solution**
-
-Solution 1. was implemented in this PR:
-https://github.com/liquity/bold/pull/426
-
-Note: with this approach, it can happen that a zombie Trove belonging to a batch gets its debt increased to above `MIN_DEBT` due to its batch being updated but without a direct adjustment occurring on the Trove itself - in which case, the Trove remains a zombie and holds the pointer to the last zombie trove, so it will get still redeemed first in the list upon the next redemption.
-
-However this seems like quite an edge case: the Trove needs to be batched, get partially redeemed, become a zombie, and then the batch updated before the borrower touches it and debt increased to above MIN_DEBT, and then redeemed _again_ as first in the list. The borrower can easily prevent the last step if desired by touching the Trove and updating its debt to `debt > MIN_DEBT` beforehand.
 
 ## Requirements
 

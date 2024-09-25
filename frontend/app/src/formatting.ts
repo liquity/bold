@@ -16,13 +16,13 @@ function isDnFormatName(value: unknown): value is keyof typeof dnFormatOptions {
 }
 
 export function fmtnum(
-  value: Dnum | number | null,
+  value: Dnum | number | null | undefined,
   optionsOrFormatName:
     | keyof typeof dnFormatOptions
     | Parameters<typeof dn.format>[1] = "2z",
-  scale = 1,
+  scale = 1, // pass 100 here to format as percentage
 ) {
-  if (value === null) {
+  if (value === null || value === undefined) {
     return "";
   }
   if (typeof value === "number") {

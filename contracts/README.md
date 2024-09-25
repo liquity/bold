@@ -27,8 +27,6 @@ $ forge build
 $ forge test
 ```
 
-Run tests with `forge test -vvv` to see the console logs, which will show trove URI data.
-
 ### Format
 
 ```shell
