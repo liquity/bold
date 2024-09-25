@@ -33,7 +33,6 @@ contract TroveNFT is ERC721, ITroveNFT {
     }
 
     function tokenURI(uint256 _tokenId) public view override(ERC721, IERC721Metadata) returns (string memory) {
-        
         LatestTroveData memory latestTroveData = troveManager.getLatestTroveData(_tokenId);
 
         IMetadataNFT.TroveData memory troveData = IMetadataNFT.TroveData({

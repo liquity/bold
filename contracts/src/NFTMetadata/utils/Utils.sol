@@ -50,7 +50,9 @@ library numUtils {
     }
 }
 
-// Core utils used extensively to format CSS and numbers.
+/// @notice Core utils used extensively to format CSS and numbers.
+/// @author Modified from (https://github.com/w1nt3r-eth/hot-chain-svg/blob/main/contracts/Utils.sol) by w1nt3r-eth.
+
 library utils {
     // used to simulate empty strings
     string internal constant NULL = "";
