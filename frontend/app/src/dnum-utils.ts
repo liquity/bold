@@ -64,11 +64,11 @@ export function dnumMin(a: Dnum, ...rest: Dnum[]) {
 }
 
 export function dnumGte(a: Dnum, b: Dnum) {
-  return dn.gt(a, b) || dn.eq(a, b);
+  return !dn.lt(a, b);
 }
 
 export function dnumLte(a: Dnum, b: Dnum) {
-  return dn.lt(a, b) || dn.eq(a, b);
+  return !dn.gt(a, b);
 }
 
 export const DNUM_0 = dn.from(0, 18);
