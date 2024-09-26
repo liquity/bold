@@ -43,11 +43,12 @@ const RequestSchema = v.object({
 
 export type Request = v.InferOutput<typeof RequestSchema>;
 
-type Step = "wrapEth" | "approve" | "openTrove";
+// type Step = "wrapEth" | "approve" | "openTrove";
+type Step = "openTrove";
 
 const stepNames: Record<Step, string> = {
-  wrapEth: "Wrap ETH",
-  approve: "Approve",
+  // wrapEth: "Wrap ETH",
+  // approve: "Approve",
   openTrove: "Open Position",
 };
 
@@ -108,53 +109,55 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
   },
 
   async getSteps({
-    account,
+    // account,
     contracts,
     request,
-    wagmiConfig,
+    // wagmiConfig,
   }) {
-    const collateral = contracts.collaterals[request.collIndex];
-    const { BorrowerOperations, Token } = collateral.contracts;
+    return ["openTrove"];
 
-    if (!BorrowerOperations || !Token) {
-      throw new Error(`Collateral ${collateral.symbol} not supported`);
-    }
+    // const collateral = contracts.collaterals[request.collIndex];
+    // const { BorrowerOperations, CollToken } = collateral.contracts;
 
-    const allowance = dnum18(
-      await readContract(wagmiConfig, {
-        ...Token,
-        functionName: "allowance",
-        args: [
-          account.address ?? ADDRESS_ZERO,
-          BorrowerOperations.address,
-        ],
-      }),
-    );
+    // if (!BorrowerOperations || !CollToken) {
+    //   throw new Error(`Collateral ${collateral.symbol} not supported`);
+    // }
 
-    const wethBalance = collateral.symbol !== "ETH" ? null : dnum18(
-      await readContract(wagmiConfig, {
-        ...Token,
-        functionName: "balanceOf",
-        args: [account.address ?? ADDRESS_ZERO],
-      }),
-    );
+    // const allowance = dnum18(
+    //   await readContract(wagmiConfig, {
+    //     ...CollToken,
+    //     functionName: "allowance",
+    //     args: [
+    //       account.address ?? ADDRESS_ZERO,
+    //       BorrowerOperations.address,
+    //     ],
+    //   }),
+    // );
 
-    const isApproved = !dn.gt(
-      dn.add(request.collAmount, ETH_GAS_COMPENSATION),
-      allowance,
-    );
+    // const wethBalance = collateral.symbol !== "ETH" ? null : dnum18(
+    //   await readContract(wagmiConfig, {
+    //     ...CollToken,
+    //     functionName: "balanceOf",
+    //     args: [account.address ?? ADDRESS_ZERO],
+    //   }),
+    // );
 
-    const steps: Step[] = [];
+    // const isApproved = !dn.gt(
+    //   dn.add(request.collAmount, ETH_GAS_COMPENSATION),
+    //   allowance,
+    // );
 
-    if (wethBalance && dn.lt(wethBalance, request.collAmount)) {
-      steps.push("wrapEth");
-    }
+    // const steps: Step[] = [];
 
-    if (!isApproved) {
-      steps.push("approve");
-    }
+    // if (wethBalance && dn.lt(wethBalance, request.collAmount)) {
+    //   steps.push("wrapEth");
+    // }
 
-    return [...steps, "openTrove"];
+    // if (!isApproved) {
+    //   steps.push("approve");
+    // }
+
+    // return [...steps, "openTrove"];
   },
 
   getStepName(stepId) {
@@ -167,52 +170,77 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
 
   async writeContractParams({ contracts, request, stepId }) {
     const collateral = contracts.collaterals[request.collIndex];
-    const { BorrowerOperations, Token } = collateral.contracts;
+    // const { BorrowerOperations, CollToken, WETHZapper } = collateral.contracts;
+    const { WETHZapper } = collateral.contracts;
 
-    if (!BorrowerOperations || !Token) {
+    if (!WETHZapper) {
       throw new Error(`Collateral ${collateral.symbol} not supported`);
-    }
-
-    if (stepId === "wrapEth") {
-      return {
-        ...contracts.WETH,
-        functionName: "deposit" as const,
-        args: [],
-        value: request.collAmount[0],
-      };
-    }
-
-    if (stepId === "approve") {
-      const amount = dn.add(request.collAmount, ETH_GAS_COMPENSATION);
-      return {
-        ...Token,
-        functionName: "approve" as const,
-        args: [
-          BorrowerOperations.address,
-          amount[0],
-        ],
-      };
     }
 
     if (stepId === "openTrove") {
       return {
-        ...BorrowerOperations,
-        functionName: "openTrove" as const,
-        args: [
-          request.owner ?? ADDRESS_ZERO,
-          request.ownerIndex,
-          request.collAmount[0],
-          request.boldAmount[0],
-          request.upperHint[0],
-          request.lowerHint[0],
-          request.annualInterestRate[0],
-          request.maxUpfrontFee[0],
-          ADDRESS_ZERO,
-          ADDRESS_ZERO,
-          ADDRESS_ZERO,
-        ],
+        ...WETHZapper,
+        functionName: "openTroveWithRawETH" as const,
+        args: [{
+          owner: request.owner ?? ADDRESS_ZERO,
+          ownerIndex: BigInt(request.ownerIndex),
+          boldAmount: request.boldAmount[0],
+          upperHint: request.upperHint[0],
+          lowerHint: request.lowerHint[0],
+          annualInterestRate: request.annualInterestRate[0],
+          maxUpfrontFee: request.maxUpfrontFee[0],
+          addManager: ADDRESS_ZERO,
+          removeManager: ADDRESS_ZERO,
+          receiver: ADDRESS_ZERO,
+        }],
+        value: request.collAmount[0],
       };
     }
+
+    // if (!BorrowerOperations || !CollToken) {
+    //   throw new Error(`Collateral ${collateral.symbol} not supported`);
+    // }
+
+    // if (stepId === "wrapEth") {
+    //   return {
+    //     ...contracts.WETH,
+    //     functionName: "deposit" as const,
+    //     args: [],
+    //     value: request.collAmount[0],
+    //   };
+    // }
+
+    // if (stepId === "approve") {
+    //   const amount = dn.add(request.collAmount, ETH_GAS_COMPENSATION);
+    //   return {
+    //     ...CollToken,
+    //     functionName: "approve" as const,
+    //     args: [
+    //       BorrowerOperations.address,
+    //       amount[0],
+    //     ],
+    //   };
+    // }
+
+    // if (stepId === "openTrove") {
+    //   return {
+    //     ...BorrowerOperations,
+    //     functionName: "openTrove" as const,
+    //     args: [
+    //       request.owner ?? ADDRESS_ZERO,
+    //       request.ownerIndex,
+    //       request.collAmount[0],
+    //       request.boldAmount[0],
+    //       request.upperHint[0],
+    //       request.lowerHint[0],
+    //       request.annualInterestRate[0],
+    //       request.maxUpfrontFee[0],
+    //       ADDRESS_ZERO,
+    //       ADDRESS_ZERO,
+    //       ADDRESS_ZERO,
+    //     ],
+    //   };
+    // }
     return null;
   },
 };

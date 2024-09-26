@@ -18,7 +18,9 @@
       "priceFeed": "0x866b1f628d0f37dfa394622ed3d4557df2654243",
       "gasPool": "0x85245ccf25a87532944bd31ec4fd10d148f9980c",
       "interestRouter": "0x48aac152025fe9db7a53527252bca83835094531",
-      "collToken": "0x75a42d1e31ede2a9e90b1449302efcd606b990aa"
+      "collToken": "0x75a42d1e31ede2a9e90b1449302efcd606b990aa",
+      "gasCompZapper": "0x228bb5AfBec2A557B423803F80813F24875bd962",
+      "wethZapper": "0x87330bC825aa985abc62f2D92A14Fb434914F6BD"
     },
     {
       "addressesRegistry": "0x9493d5d108b7dce38eebff1ca51cad6fb10cbfd6",
@@ -34,7 +36,9 @@
       "priceFeed": "0xafe5f84d89857e87e09d7d860764e7ac6f72d476",
       "gasPool": "0xb6a10b5d4ce8903bda4daa4cd6dbbc120bdfb064",
       "interestRouter": "0x845ee65bc38b7afc15bd2c91abe4b0f77be17364",
-      "collToken": "0xb62005e3957e5f64edb144fa0c10146727086dad"
+      "collToken": "0xb62005e3957e5f64edb144fa0c10146727086dad",
+      "gasCompZapper": "0x0000000000000000000000000000000000000000",
+      "wethZapper": "0x0000000000000000000000000000000000000000"
     }
   ]
 }

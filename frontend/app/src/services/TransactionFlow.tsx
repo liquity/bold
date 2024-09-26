@@ -21,6 +21,7 @@ import type { ComponentType, ReactNode } from "react";
 import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import { useContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { ADDRESS_ZERO } from "@/src/eth-utils";
 import { useAccount, useWagmiConfig } from "@/src/services/Ethereum";
 import { closeLoanPosition } from "@/src/tx-flows/closeLoanPosition";
 import { openLoanPosition } from "@/src/tx-flows/openLoanPosition";

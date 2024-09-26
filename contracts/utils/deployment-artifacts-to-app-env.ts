@@ -37,10 +37,10 @@ const ZDeploymentContext = z.object({
     z.object({
       activePool: ZAddress,
       borrowerOperations: ZAddress,
+      collToken: ZAddress,
       gasCompZapper: ZAddress,
       sortedTroves: ZAddress,
       stabilityPool: ZAddress,
-      token: ZAddress,
       troveManager: ZAddress,
       wethZapper: ZAddress,
     }),
@@ -161,20 +161,26 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
     // collateral contracts
     case "activePool":
       return `${prefix}_ACTIVE_POOL`;
+    case "addressesRegistry":
+      return `${prefix}_ADDRESSES_REGISTRY`;
     case "borrowerOperations":
       return `${prefix}_BORROWER_OPERATIONS`;
+    case "collToken":
+      return `${prefix}_COLL_TOKEN`;
+    case "defaultPool":
+      return `${prefix}_DEFAULT_POOL`;
+    case "gasCompZapper":
+      return `${prefix}_GAS_COMP_ZAPPER`;
+    case "priceFeed":
+      return `${prefix}_PRICE_FEED`;
     case "sortedTroves":
       return `${prefix}_SORTED_TROVES`;
     case "stabilityPool":
       return `${prefix}_STABILITY_POOL`;
-    case "token":
-      return `${prefix}_TOKEN`;
     case "troveManager":
       return `${prefix}_TROVE_MANAGER`;
     case "wethZapper":
       return `${prefix}_WETH_ZAPPER`;
-    case "gasCompZapper":
-      return `${prefix}_GAS_COMP_ZAPPER`;
   }
   return null;
 }
