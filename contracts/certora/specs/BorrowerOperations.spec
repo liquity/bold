@@ -1,52 +1,44 @@
 import "./ERC20/erc20cvl.spec";
 import "./ERC20/WETHcvl.spec";
-import "./setup/builtin_assertions.spec";
-import "./generic.spec";
 
 using TroveManager as troveManager;
 methods {
     function SafeERC20._callOptionalReturn(address token, bytes memory data) internal => NONDET;
-    // contributes to non-linearity
-    function _.fetchPrice() external => NONDET;
-    
-    // depepnds on 2 state variables totalStakesSnapshot / totalCollateralSnapshot
-    function TroveManager._computeNewStake(uint _coll) internal returns (uint) => NONDET;
 
     function BorrowerOperations._calcUpfrontFee(uint256 _debt, 
         uint256 _avgInterestRate ) internal returns (uint256) => 
         CVLCalcUpfrontFee(_debt, _avgInterestRate);
 
-    // This is used to avoid a sanity failure. This is safe because
-    // it is a view function.
-    // function SortedTroves._findInsertPosition(
-    //     address _troveManager,
-    //     uint256 _annualInterestRate,
-    //     uint256 _prevId,
-    //     uint256 _nextId
-    // ) internal returns (uint256, uint256) => NONDET;
+    // This is safe because it is a view function.
+    function SortedTroves._findInsertPosition(
+        address _troveManager,
+        uint256 _annualInterestRate,
+        uint256 _prevId,
+        uint256 _nextId
+    ) internal returns (uint256, uint256) => NONDET;
     
-    // not marked as view but it is almost one... updates a single state field lastBoldLossError_Offset
+    // Not marked as view but it is almost one Updates a single state field lastBoldLossError_Offset which is not relevant to these rules.
     function StabilityPool._computeCollRewardsPerUnitStaked(
         uint _collToAdd,
         uint _debtToOffset,
         uint _totalBoldDeposits
     ) internal returns (uint, uint) => NONDET;
 
-    // I think it's okay to ignore gas compensations in the first step
+    // We ignore gas compensation as it is not related to these rules.
     function TroveManager._sendGasCompensation(address _activePool, address _liquidator, uint _bold, uint _ETH) internal => NONDET;
 
-    // safeTransfer* leads to some overhead
+    // These summaries are for performance optimization.
     function _.safeTransfer(address a, uint256 x) internal with (env e) => transferCVL(calledContract, e.msg.sender, a, x) expect bool;
     function _.safeTransferFrom(address a, address b, uint256 x) internal with (env e) => transferFromCVL(calledContract, e.msg.sender, a, b, x) expect bool;
+    // Performance optimization. This contributes to non-linearity
+    function _.fetchPrice() external => NONDET;
+    // Depepnds on 2 state variables totalStakesSnapshot / totalCollateralSnapshot
+    function TroveManager._computeNewStake(uint _coll) internal returns (uint) => NONDET;
 }
 
-// Note: most of the time trove/batch data is just obtained 
-// from getLatestTroveData (when the system is in steady
-// state and values can be calculated). The data structures are changed in
-// the various "on..." calls. Most of these rules could be improved
-// by making them invariants or making an arbitrary call to one
-// of the functions that can change the state.
-
+//-----------------------------------------------------------------------------
+// Helper functions for accessing storage locations
+//-----------------------------------------------------------------------------
 // Same as TroveManager._getBatchManager
 function getBatchManager(uint256 troveId) returns address {
     return troveManager.Troves[troveId].interestBatchManager;
@@ -63,6 +55,35 @@ function getBatchDebt(address batchAddress) returns uint256 {
     return troveManager.batches[batchAddress].debt;
 }
 
+function getTroveLastDebtUpdateTime(uint256 troveId) returns uint256 {
+    return troveManager.Troves[troveId].lastDebtUpdateTime;
+}
+
+//-----------------------------------------------------------------------------
+// Helper functions for Assumptions
+//-----------------------------------------------------------------------------
+// This is used to assume that trove rewards is updated and is equivalent
+// to TroveManager._updateTroveRewardSnapshots. _updateTroveRewardsSnapshots
+// is called upon opening a trove.
+function troveRewardsUpdated(uint256 _troveId) returns bool {
+    return troveManager.rewardSnapshots[_troveId].coll == troveManager.L_coll &&
+        troveManager.rewardSnapshots[_troveId].boldDebt == troveManager.L_boldDebt;
+}
+
+function batchDataDebtUpdated(TroveManager.LatestBatchData batchData, address batchAddress) returns bool {
+    return troveManager.batches[batchAddress].debt == 
+        batchData.entireDebtWithoutRedistribution;
+}
+
+// Assume batch is not shut down and the debt has already been updated.
+// (Otherwise we will have a spurious counterexample where the update
+// was not yet applied in the prestate but it gets applied during 
+// addCollaterall and other similar functions)
+function interestUpdatedAssumption(env e, TroveManager.LatestBatchData batchData) returns bool {
+    return troveManager.shutdownTime == 0 &&
+        e.block.timestamp == batchData.lastDebtUpdateTime;
+}
+
 // Used to assume that BorrowerOperations.interestBatchmanager[troveId] 
 // is the same as troveManager.Troves[troveId].interestBatchManagerOf
 function batch_manager_storage_locations_agree(uint256 troveId) returns bool {
@@ -70,15 +91,86 @@ function batch_manager_storage_locations_agree(uint256 troveId) returns bool {
         currentContract.interestBatchManagerOf[troveId];
 }
 
+// Assumptions about the relationship between batch debts and shares
+// which should be maintianed
+function debt_and_shares_relationship(
+    uint256 troveId,
+    address batchAddress,
+    TroveManager.LatestBatchData batchData, 
+    TroveManager.LatestTroveData troveData) returns bool {
+        bool zero_shares_zero_debt_batch = 
+            getBatchTotalShares(batchAddress) == 0 <=>
+            batchData.recordedDebt == 0;
+        bool zero_shares_zero_debt_trove =
+            getTroveBatchDebtShares(troveId) == 0 <=>
+            troveData.recordedDebt == 0;
+        bool total_shares = 
+            getBatchTotalShares(batchAddress) >=
+            getTroveBatchDebtShares(troveId);
+        return zero_shares_zero_debt_batch &&
+            zero_shares_zero_debt_trove &&
+            total_shares;
+}
+
+// An alternative to ignoring the rounding errors during debt adjustment
+// in case the divideNoRemainder causes performance problems that are too
+// severe. Here we assume the number of total 
+ghost uint256 share_debt_scalar;
+function num_shares_num_debt_assumption(
+    TroveManager.LatestBatchData batchData,
+    address batchAddress) returns bool {
+    return (share_debt_scalar >= 1) &&
+        getBatchTotalShares(batchAddress) ==
+        share_debt_scalar * batchData.recordedDebt;
+}
+
+//-----------------------------------------------------------------------------
+// CVL Summaries
+//-----------------------------------------------------------------------------
+
+// This is a workaround for a getter for the upfront fee
+// which goes into the debt calculation. Essentially this assumes
+// an arbitrary but constant value. This is relevant to the debt
+// adjustment effect rules
+ghost uint256 upfrontFee;
+function CVLCalcUpfrontFee(uint256 debt, uint256 avgInterestRate) returns uint256 {
+    return upfrontFee;
+}
+
+//-----------------------------------------------------------------------------
+// Helper functions for calling functions in parameterized rules
+//-----------------------------------------------------------------------------
+
+// This is a helper method so that we can parameterize the rule
+// for just the two calls related to collateral changes
+function callCollateralAdjustFunction(env e, method f, uint256 troveId, uint256 collAmount) {
+    if(f.selector == sig:addColl(uint256,uint256).selector) {
+        addColl(e, troveId, collAmount);
+    }
+    if(f.selector == sig:withdrawColl(uint256,uint256).selector) {
+        withdrawColl(e, troveId, collAmount);
+    }
+}
+
+// This is a helper method so that we can parameterize the rule
+// for just the two calls related to collateral changes
+function callDebtAdjustFunction(env e, method f, uint256 troveId, uint256 boldAmount, uint256 maxUpfrontFee) {
+    if(f.selector == sig:withdrawBold(uint256,uint256,uint256).selector) {
+        withdrawBold(e, troveId, boldAmount, maxUpfrontFee);
+    }
+    if(f.selector == sig:repayBold(uint256,uint256).selector) {
+        repayBold(e, troveId, boldAmount);
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Rules
+//-----------------------------------------------------------------------------
 // Sum of a given batch’s individual Trove entire debts sans redistributions 
 // (recorded debts + accrued interest) equals the batch’s recorded debt plus 
 // its accrued interest plus management fees.
-// NOTE: This restricts us to the case where a batch has exactly 2 troves in it.
-// Ideally we would generalize this by using hooks on the trove / batch data
-// structures if that is possible.
-// Another improvement would be to make even this rule an invariant.
-// Current status: CEX
-// https://prover.certora.com/output/65266/45f3210f8517415a8b4193b659e3b9f3/?anonymousKey=8d1919287fcf809e2fa914020950b63765c868d5
+// Note this restricts us to the case where a batch has exactly 2 troves in it.
+// PASSING: https://prover.certora.com/output/65266/95ee72fb04b04d0d988afe2837b6f55a?anonymousKey=ffb75907ce6d7d24cc52f0cca17f1841c73a3c5b
 rule sum_of_trove_debts {
     env e;
     calldataarg args;
@@ -113,17 +205,26 @@ rule sum_of_trove_debts {
     TroveManager.LatestTroveData troveDataX = troveManager.getLatestTroveData(e, troveIdX);
     TroveManager.LatestTroveData troveDataY = troveManager.getLatestTroveData(e, troveIdY);
 
-    uint256 batch_debt = require_uint256(batchData.recordedDebt 
-        + batchData.accruedInterest + batchData.accruedManagementFee);
+    
+    require interestUpdatedAssumption(e, batchData);
+    require batchData.lastDebtUpdateTime == getTroveLastDebtUpdateTime(troveIdX) 
+                && batchData.lastDebtUpdateTime == getTroveLastDebtUpdateTime(troveIdY);
+    require batchData.annualInterestRate == troveDataX.annualInterestRate 
+                && batchData.annualInterestRate == troveDataY.annualInterestRate;
+
+
+    uint256 batch_debt = require_uint256(batchData.recordedDebt + batchData.accruedInterest);
+
     uint256 sum_trove_debt = require_uint256(
         troveDataX.entireDebt - troveDataX.redistBoldDebtGain
         + troveDataY.entireDebt - troveDataY.redistBoldDebtGain);
+
     assert batch_debt == sum_trove_debt;
 }
 
-// Note: this is not a requested property. This was used for debugging
-// Show that when a trove belongs to a batch, the batch data is used
-// rather than the individual trove data. 
+// When a trove is a member of a batch its recorded debt is calculated 
+// as the batch debt normalized by its fraction of the total shares.
+// PASSING: https://prover.certora.com/output/65266/c0e1a7786ace429caf6e6eedd922d5a2/?anonymousKey=960711ced6445e0deb29fe76e11ea835ad32bfb3
 rule troves_in_batch_use_batch_structure {
     env e;
     uint256 troveIdX;
@@ -133,7 +234,6 @@ rule troves_in_batch_use_batch_structure {
     // troveIdX and troveIdY belong to the same batch. But we
     // do not constrain their individual debts at all so they may differ
     require getBatchManager(troveIdX) == batchAddress;
-    // require getBatchManager(troveIdY) == batchAddress;
     // Show that despite the fact the trove individual debts may differ,
     // the batch data is the same (and thus the shared batch data is used for
     // any trove belonging to a batch)
@@ -152,6 +252,7 @@ rule troves_in_batch_use_batch_structure {
 // For a given average system interest rate, Troves in a given batch always pay 
 // the same upfront fee (as percentage of their debt) upon premature interest 
 // rate adjustments by the manager
+// PASSING: https://prover.certora.com/output/65266/3ddd19827f39495385104a7e0d1efa03?anonymousKey=d6ba94dc667f4e49a6005c404c82817260b2650e
 rule troves_in_batch_share_upfront_fee {
     env e;
 
@@ -202,6 +303,7 @@ rule troves_in_batch_share_upfront_fee {
 
 // Troves in a given batch are charged the same management fee (as percentage 
 // of their debt)
+// PASSING: https://prover.certora.com/output/65266/df7a72e887c04bf2b22755db10e51750/?anonymousKey=65f67b65a18ddd5063fa723489231ae5cfc7ce3c
 rule troves_in_batch_share_management_fee {
     env e;
 
@@ -238,40 +340,6 @@ rule troves_in_batch_share_management_fee {
     assert unscaled_management_fee_x == unscaled_management_fee_y;
 }
 
-// This is used to assume that trove rewards is updated and is equivalent
-// to TroveManager._updateTroveRewardSnapshots. _updateTroveRewardsSnapshots
-// is called upon opening a trove.
-function troveRewardsUpdated(uint256 _troveId) returns bool {
-    return troveManager.rewardSnapshots[_troveId].coll == troveManager.L_coll &&
-        troveManager.rewardSnapshots[_troveId].boldDebt == troveManager.L_boldDebt;
-}
-
-function batchDataDebtUpdated(TroveManager.LatestBatchData batchData, address batchAddress) returns bool {
-    return troveManager.batches[batchAddress].debt == 
-        batchData.entireDebtWithoutRedistribution;
-}
-
-// Assume batch is not shut down and the debt has already been updated.
-// (Otherwise we will have a spurious counterexample where the update
-// was not yet applied in the prestate but it gets applied during 
-// addCollaterall and other similar functions)
-function interestUpdatedAssumption(env e, TroveManager.LatestBatchData batchData) returns bool {
-    return troveManager.shutdownTime == 0 &&
-        e.block.timestamp == batchData.lastDebtUpdateTime;
-}
-
-
-
-// This is a helper method so that we can parameterize the rule
-// for just the two calls related to collateral changes
-function callCollateralAdjustFunction(env e, method f, uint256 troveId, uint256 collAmount) {
-    if(f.selector == sig:addColl(uint256,uint256).selector) {
-        addColl(e, troveId, collAmount);
-    }
-    if(f.selector == sig:withdrawColl(uint256,uint256).selector) {
-        withdrawColl(e, troveId, collAmount);
-    }
-}
 
 /*
 When any borrower with a batch Trove i adjusts its coll by x:
@@ -282,7 +350,7 @@ When any borrower with a batch Trove i adjusts its coll by x:
 -Trove i’s entire coll changes only by x
 -Trove i’s entire debt does not change
 */
-// Passing: https://prover.certora.com/output/65266/2d1baa02b9eb48b2a900c7ac803dcab2/?anonymousKey=e5acfc5adc9d5f327e799505f16e36de4f884b4b
+// PASSING: https://prover.certora.com/output/65266/3edac4f9134b484bb112a585fa8268d6/?anonymousKey=041d059c08e8d9a08608bda2bd9411b75134ad10
 rule collateral_adjust_effects (method f) filtered {
     f -> f.selector == sig:addColl(uint256,uint256).selector
     || f.selector == sig:withdrawColl(uint256,uint256).selector 
@@ -360,16 +428,6 @@ rule collateral_adjust_effects (method f) filtered {
     assert troveDataAfter.entireDebt == troveDataBefore.entireDebt;
 }
 
-// This is a helper method so that we can parameterize the rule
-// for just the two calls related to collateral changes
-function callDebtAdjustFunction(env e, method f, uint256 troveId, uint256 boldAmount, uint256 maxUpfrontFee) {
-    if(f.selector == sig:withdrawBold(uint256,uint256,uint256).selector) {
-        withdrawBold(e, troveId, boldAmount, maxUpfrontFee);
-    }
-    if(f.selector == sig:repayBold(uint256,uint256).selector) {
-        repayBold(e, troveId, boldAmount);
-    }
-}
 
 /*
 When any borrower with a batch Trove i adjusts its debt by x:
@@ -378,40 +436,12 @@ When any borrower with a batch Trove i adjusts its debt by x:
     -Trove i’s pending redistribution debt gain is applied to the batch’s recorded debt
     -Trove i’s pending redistribution coll gain is applied to the batch’s recorded coll
     -Trove i’s debt change x is applied to the batch’s recorded debt
-    -Trove i’s entire debt changes only by x
     -Trove i’s entire coll does not change
+NOTE: For performance reasons, we have a separate rule to show:
+    -Trove i’s entire debt changes only by x
 */
 // Related functions: withdrawBold, repayBold
-
-// Assumptions about the relationship between batch debts and shares
-// which should be maintianed
-function debt_and_shares_relationship(
-    uint256 troveId,
-    address batchAddress,
-    TroveManager.LatestBatchData batchData, 
-    TroveManager.LatestTroveData troveData) returns bool {
-        bool zero_shares_zero_debt_batch = 
-            getBatchTotalShares(batchAddress) == 0 <=>
-            batchData.recordedDebt == 0;
-        bool zero_shares_zero_debt_trove =
-            getTroveBatchDebtShares(troveId) == 0 <=>
-            troveData.recordedDebt == 0;
-        bool total_shares = 
-            getBatchTotalShares(batchAddress) >=
-            getTroveBatchDebtShares(troveId);
-        return zero_shares_zero_debt_batch &&
-            zero_shares_zero_debt_trove &&
-            total_shares;
-}
-
-// This is a workaround for a getter for the upfront fee
-// which goes into the debt calculation. Essentially this assumes
-// an arbitrary but constant value which I can refer to in the following rule
-ghost uint256 upfrontFee;
-function CVLCalcUpfrontFee(uint256 debt, uint256 avgInterestRate) returns uint256 {
-    return upfrontFee;
-}
-
+// PASSING: https://prover.certora.com/output/65266/3edac4f9134b484bb112a585fa8268d6/?anonymousKey=041d059c08e8d9a08608bda2bd9411b75134ad10
 rule debt_adjust_effects (method f) filtered {
     f -> f.selector == sig:withdrawBold(uint256,uint256,uint256).selector
     || f.selector == sig:repayBold(uint256,uint256).selector 
@@ -428,7 +458,6 @@ rule debt_adjust_effects (method f) filtered {
     require getBatchManager(troveId) == batchAddress;
     // assume the two locations where batch managers are stored aggree
     require batch_manager_storage_locations_agree(troveId);
-
 
     // Assume rewardSnapshots is updated (this will always happen on opening a 
     // Trove, for example). TroveManager._updateTroveRewardSnapshots is called 
@@ -454,14 +483,12 @@ rule debt_adjust_effects (method f) filtered {
     // Assume interest has been updated (according to timestamps)
     require interestUpdatedAssumption(e, batchDataBefore);
 
-
     TroveManager.LatestTroveData troveDataBefore = 
         troveManager.getLatestTroveData(e, troveId);
 
     require debt_and_shares_relationship(troveId, batchAddress,
         batchDataBefore, troveDataBefore);
 
-    // withdrawBold(e, troveId, boldAmount, maxUpfrontFee); 
     callDebtAdjustFunction(e, f, troveId, boldAmount, maxUpfrontFee);
 
     TroveManager.LatestBatchData batchDataAfter=
@@ -486,10 +513,6 @@ rule debt_adjust_effects (method f) filtered {
             batchDataBefore.accruedInterest +
             // -Trove i’s pending redistribution debt gain is applied to the batch’s recorded debt
             troveDataBefore.redistBoldDebtGain;
-
-        assert troveDataAfter.entireDebt == troveDataBefore.entireDebt
-            + upfrontFee
-            + boldAmount;
     }
     if(f.selector == sig:repayBold(uint256,uint256).selector) {
         assert batchDataAfter.recordedDebt >= 
@@ -503,116 +526,17 @@ rule debt_adjust_effects (method f) filtered {
             batchDataBefore.accruedInterest +
             // -Trove i’s pending redistribution debt gain is applied to the batch’s recorded debt
             troveDataBefore.redistBoldDebtGain;
-
-        //  the amount deducted is actually adjusted to be above 
-        // the MIN_DEBT in _adjustTrove. CEX without this assumption:
-        // https://prover.certora.com/output/65266/3a3adac163764998a5414508d53abf10/?anonymousKey=b4ca5fce00fc0c8a8c11808400e52fa749faf804
-        require troveDataBefore.entireDebt - boldAmount >
-            /* MIN_DEBT */
-            2000000000000000000000;
-        assert troveDataAfter.entireDebt == troveDataBefore.entireDebt
-            - boldAmount;
     }
 
     // -Trove i’s entire coll does not change
     assert troveDataAfter.entireColl == troveDataBefore.entireColl;
 }
 
-
-rule debt_adjust_debt_change(method f) filtered {
-    f -> f.selector == sig:withdrawBold(uint256,uint256,uint256).selector
-    || f.selector == sig:repayBold(uint256,uint256).selector 
-}{
-    env e;
-    uint256 troveId;
-    uint256 boldAmount;
-    // Note: this is only used for withdrawBold
-    uint256 maxUpfrontFee;
-
-    // the trove belongs to a batch
-    address batchAddress;
-    require batchAddress != 0;
-    require getBatchManager(troveId) == batchAddress;
-    // assume the two locations where batch managers are stored aggree
-    require batch_manager_storage_locations_agree(troveId);
-
-
-    // Assume rewardSnapshots is updated (this will always happen on opening a 
-    // Trove, for example). TroveManager._updateTroveRewardSnapshots is called 
-    // as part of addCol, so without this assumption the prover will choose 
-    // executions where the rewardSnapshots are not updated, this will affect 
-    // troveDataBefore, then addColl will do the update 
-    /// spuriously changing the debt calculation for the troveDataAfter
-    require troveRewardsUpdated(troveId);
-    
-    TroveManager.LatestBatchData batchDataBefore =
-        troveManager.getLatestBatchData(e, batchAddress);
-
-    // During any the debt/coll channging functions
-    // which eventually call _adjustTrove,
-    // troveManager.batches[batchAddress].debt will get updated
-    // to <...>.entireDebtWithoutRedistribution.
-    // So here we assume troveManager.batches was updated
-    // in the prestate as we will otherwise get a spurious
-    // counterexample due to this update happening during the
-    // function under test.
-    require batchDataDebtUpdated(batchDataBefore, batchAddress);
-
-    // Assume interest has been updated (according to timestamps)
-    require interestUpdatedAssumption(e, batchDataBefore);
-
-
-    TroveManager.LatestTroveData troveDataBefore = 
-        troveManager.getLatestTroveData(e, troveId);
-
-    require debt_and_shares_relationship(troveId, batchAddress,
-        batchDataBefore, troveDataBefore);
-
-    // withdrawBold(e, troveId, boldAmount, maxUpfrontFee); 
-    callDebtAdjustFunction(e, f, troveId, boldAmount, maxUpfrontFee);
-
-    TroveManager.LatestBatchData batchDataAfter=
-        troveManager.getLatestBatchData(e, batchAddress);
-    TroveManager.LatestTroveData troveDataAfter = 
-        troveManager.getLatestTroveData(e, troveId);
-
-
-    // Assume also interest does not accrue between the time
-    // the  debt is adjust and the values are read back out
-    require interestUpdatedAssumption(e, batchDataAfter);
-
-    if(f.selector == sig:withdrawBold(uint256,uint256,uint256).selector) {
-        assert troveDataAfter.entireDebt == troveDataBefore.entireDebt
-            + upfrontFee
-            + boldAmount;
-    }
-    if(f.selector == sig:repayBold(uint256,uint256).selector) {
-        //  the amount deducted is actually adjusted to be above 
-        // the MIN_DEBT in _adjustTrove. CEX without this assumption:
-        // https://prover.certora.com/output/65266/3a3adac163764998a5414508d53abf10/?anonymousKey=b4ca5fce00fc0c8a8c11808400e52fa749faf804
-        require troveDataBefore.entireDebt - boldAmount >
-            /* MIN_DEBT */
-            2000000000000000000000;
-        assert troveDataAfter.entireDebt == troveDataBefore.entireDebt
-            - boldAmount;
-    }
-    // This is just here to get around a syntax requirement
-    satisfy true;
-}
-
-// An alternative to dealing with the rounding errors during debt adjustment
-// in case divideNoRemainder true causes performance problems that are to 
-// severe. Here we assume initially the total shares of the batch is the same
-// as the total debt of the batch
-ghost uint256 share_debt_scalar;
-function num_shares_num_debt_assumption(
-    TroveManager.LatestBatchData batchData,
-    address batchAddress) returns bool {
-    return (share_debt_scalar >= 1) &&
-        getBatchTotalShares(batchAddress) ==
-        share_debt_scalar * batchData.recordedDebt;
-}
-
+/*
+When any borrower with a batch Trove i adjusts its debt by withdrawing x:
+    -Trove i’s entire debt changes only by x
+*/
+// TIMEOUT, not verified
 rule withdraw_debt_change {
     env e;
     uint256 troveId;
@@ -680,6 +604,84 @@ rule withdraw_debt_change {
         + boldAmount;
 }
 
+/*
+When any borrower with a batch Trove i adjusts its debt by withdrawing x:
+    -Trove i’s entire debt changes only by x
+*/
+// PASSING: https://prover.certora.com/output/65266/78295d27c6044289b654eb03aa9910cf/?anonymousKey=b1be798ab843caa68f8a0426ea8dce832ebcd073
+rule withdraw_debt_change_assume_debt_eq_shares {
+    env e;
+    uint256 troveId;
+    uint256 boldAmount;
+    // Note: this is only used for withdrawBold
+    uint256 maxUpfrontFee;
+
+    // the trove belongs to a batch
+    address batchAddress;
+    require batchAddress != 0;
+    require getBatchManager(troveId) == batchAddress;
+    // assume the two locations where batch managers are stored aggree
+    require batch_manager_storage_locations_agree(troveId);
+
+
+    // Assume rewardSnapshots is updated (this will always happen on opening a 
+    // Trove, for example). TroveManager._updateTroveRewardSnapshots is called 
+    // as part of addCol, so without this assumption the prover will choose 
+    // executions where the rewardSnapshots are not updated, this will affect 
+    // troveDataBefore, then addColl will do the update 
+    /// spuriously changing the debt calculation for the troveDataAfter
+    require troveRewardsUpdated(troveId);
+    
+    TroveManager.LatestBatchData batchDataBefore =
+        troveManager.getLatestBatchData(e, batchAddress);
+
+    // During any the debt/coll channging functions
+    // which eventually call _adjustTrove,
+    // troveManager.batches[batchAddress].debt will get updated
+    // to <...>.entireDebtWithoutRedistribution.
+    // So here we assume troveManager.batches was updated
+    // in the prestate as we will otherwise get a spurious
+    // counterexample due to this update happening during the
+    // function under test.
+    require batchDataDebtUpdated(batchDataBefore, batchAddress);
+
+    // Assume interest has been updated (according to timestamps)
+    require interestUpdatedAssumption(e, batchDataBefore);
+
+
+    TroveManager.LatestTroveData troveDataBefore = 
+        troveManager.getLatestTroveData(e, troveId);
+
+    require debt_and_shares_relationship(troveId, batchAddress,
+        batchDataBefore, troveDataBefore);
+
+    // Overly conservative but to avoid performance issues
+    // Overly limiting: assume total batch shares = total batch debt
+    require getBatchTotalShares(batchAddress) ==  batchDataBefore.recordedDebt;
+
+    withdrawBold(e, troveId, boldAmount, maxUpfrontFee);
+
+    TroveManager.LatestBatchData batchDataAfter=
+        troveManager.getLatestBatchData(e, batchAddress);
+    TroveManager.LatestTroveData troveDataAfter = 
+        troveManager.getLatestTroveData(e, troveId);
+
+
+    // Assume also interest does not accrue between the time
+    // the  debt is adjust and the values are read back out
+    require interestUpdatedAssumption(e, batchDataAfter);
+
+    assert troveDataAfter.entireDebt == troveDataBefore.entireDebt
+        + upfrontFee
+        + boldAmount;
+}
+
+
+/*
+When any borrower with a batch Trove i adjusts its debt by repaying x:
+    -Trove i’s entire debt changes only by x
+*/
+// TIMEOUT, not verified
 rule repay_debt_change {
     env e;
     uint256 troveId;
@@ -728,6 +730,82 @@ rule repay_debt_change {
     // Overly conservative but to avoid performance issues
     require num_shares_num_debt_assumption(batchDataBefore,
         batchAddress);
+
+    repayBold(e, troveId, boldAmount);
+
+    TroveManager.LatestBatchData batchDataAfter=
+        troveManager.getLatestBatchData(e, batchAddress);
+    TroveManager.LatestTroveData troveDataAfter = 
+        troveManager.getLatestTroveData(e, troveId);
+
+
+    // Assume also interest does not accrue between the time
+    // the  debt is adjust and the values are read back out
+    require interestUpdatedAssumption(e, batchDataAfter);
+
+    //  the amount deducted is actually adjusted to be above 
+    // the MIN_DEBT in _adjustTrove. CEX without this assumption:
+    // https://prover.certora.com/output/65266/3a3adac163764998a5414508d53abf10/?anonymousKey=b4ca5fce00fc0c8a8c11808400e52fa749faf804
+    require troveDataBefore.entireDebt - boldAmount >
+        /* MIN_DEBT */
+        2000000000000000000000;
+    assert troveDataAfter.entireDebt == troveDataBefore.entireDebt
+        - boldAmount;
+}
+
+/*
+When any borrower with a batch Trove i adjusts its debt by withdrawing x:
+    -Trove i’s entire debt changes only by x
+*/
+// PASSING: https://prover.certora.com/output/65266/17879203acb74c79af0fa7f54f811ac6/?anonymousKey=348fcf7ea7240ea13ee49d5d0d8061b72cc2bc9e
+rule repay_debt_change_assume_debt_eq_shares {
+    env e;
+    uint256 troveId;
+    uint256 boldAmount;
+
+    // the trove belongs to a batch
+    address batchAddress;
+    require batchAddress != 0;
+    require getBatchManager(troveId) == batchAddress;
+    // assume the two locations where batch managers are stored aggree
+    require batch_manager_storage_locations_agree(troveId);
+
+
+    // Assume rewardSnapshots is updated (this will always happen on opening a 
+    // Trove, for example). TroveManager._updateTroveRewardSnapshots is called 
+    // as part of addCol, so without this assumption the prover will choose 
+    // executions where the rewardSnapshots are not updated, this will affect 
+    // troveDataBefore, then addColl will do the update 
+    /// spuriously changing the debt calculation for the troveDataAfter
+    require troveRewardsUpdated(troveId);
+    
+    TroveManager.LatestBatchData batchDataBefore =
+        troveManager.getLatestBatchData(e, batchAddress);
+
+    // During any the debt/coll channging functions
+    // which eventually call _adjustTrove,
+    // troveManager.batches[batchAddress].debt will get updated
+    // to <...>.entireDebtWithoutRedistribution.
+    // So here we assume troveManager.batches was updated
+    // in the prestate as we will otherwise get a spurious
+    // counterexample due to this update happening during the
+    // function under test.
+    require batchDataDebtUpdated(batchDataBefore, batchAddress);
+
+    // Assume interest has been updated (according to timestamps)
+    require interestUpdatedAssumption(e, batchDataBefore);
+
+
+    TroveManager.LatestTroveData troveDataBefore = 
+        troveManager.getLatestTroveData(e, troveId);
+
+    require debt_and_shares_relationship(troveId, batchAddress,
+        batchDataBefore, troveDataBefore);
+
+
+    // Overly conservative but to avoid performance issues
+    // Overly limiting: assume total batch shares = total batch debt
+    require getBatchTotalShares(batchAddress) ==  batchDataBefore.recordedDebt;
 
     repayBold(e, troveId, boldAmount);
 
