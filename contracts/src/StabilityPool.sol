@@ -400,7 +400,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         uint256 yieldPerUnitStaked = _computeYieldPerUnitStaked(_accumulatedYield, _totalBoldDeposits);
 
-        uint256 marginalYieldGain = yieldPerUnitStaked * P;
+        uint256 marginalYieldGain = yieldPerUnitStaked * (P - 1);
         epochToScaleToB[currentEpoch][currentScale] = epochToScaleToB[currentEpoch][currentScale] + marginalYieldGain;
 
         emit B_Updated(epochToScaleToB[currentEpoch][currentScale], currentEpoch, currentScale);
@@ -627,7 +627,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         if (pendingSPYield > 0 && snapshots.epoch == currentEpoch && totalBoldDeposits >= DECIMAL_PRECISION) {
             uint256 yieldNumerator = pendingSPYield * DECIMAL_PRECISION + lastYieldError;
             uint256 yieldPerUnitStaked = yieldNumerator / totalBoldDeposits;
-            uint256 marginalYieldGain = yieldPerUnitStaked * P;
+            uint256 marginalYieldGain = yieldPerUnitStaked * (P - 1);
 
             if (currentScale == snapshots.scale) firstPortionPending = marginalYieldGain;
             else if (currentScale == snapshots.scale + 1) secondPortionPending = marginalYieldGain;
