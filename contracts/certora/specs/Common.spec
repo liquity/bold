@@ -81,7 +81,7 @@ function debt_and_shares_relationship(
             total_shares;
 }
 
-
+// To assume two troves have equal and valid timestamps
 function trove_trove_valid_eq_timestamp(env e, uint256 troveIdX, 
     uint256 troveIdY) returns bool {
     return troveManager.shutdownTime == 0 &&
@@ -89,4 +89,13 @@ function trove_trove_valid_eq_timestamp(env e, uint256 troveIdX,
         troveManager.Troves[troveIdX].lastDebtUpdateTime <= e.block.timestamp &&
         troveManager.Troves[troveIdY].lastDebtUpdateTime <= e.block.timestamp &&
         troveManager.Troves[troveIdX].lastDebtUpdateTime == troveManager.Troves[troveIdY].lastDebtUpdateTime;
+}
+
+// To assume a trove and a batch have equal and valid timestamps
+function trove_batch_valid_eq_timestamp(env e, uint256 troveId, 
+    address batchAddress) returns bool {
+    return e.block.timestamp > 0 && e.block.timestamp <= max_uint64 &&
+        troveManager.Troves[troveId].lastDebtUpdateTime <= e.block.timestamp &&
+        troveManager.batches[batchAddress].lastDebtUpdateTime <= e.block.timestamp &&
+        troveManager.Troves[troveId].lastDebtUpdateTime == troveManager.batches[batchAddress].lastDebtUpdateTime;
 }

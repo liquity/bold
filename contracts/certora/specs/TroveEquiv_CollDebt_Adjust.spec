@@ -1,6 +1,7 @@
 import "./ERC20/erc20cvl.spec";
 import "./ERC20/WETHcvl.spec";
 import "Common.spec";
+import "Equivalences.spec";
 
 using TroveManager as troveManager;
 
@@ -35,42 +36,6 @@ methods {
 
 ghost mapping(uint256 => mapping(uint256 => uint256)) upFrontFee;
 
-/////////////////// CVL Functions /////////////////////////
-
-function troveBatchTroveEquivalent(env e, uint256 troveIdX, uint256 troveIdY) returns bool{
-    TroveManager.LatestTroveData troveDataX = troveManager.getLatestTroveData(e, troveIdX);
-    TroveManager.LatestTroveData troveDataY = troveManager.getLatestTroveData(e, troveIdY);
-
-    return (troveManager.Troves[troveIdX].coll  == troveManager.Troves[troveIdY].coll   &&
-            troveManager.Troves[troveIdX].stake == troveManager.Troves[troveIdY].stake  &&
-            troveDataX.accruedInterest          == troveDataY.accruedInterest           &&
-            troveDataX.recordedDebt             == troveDataY.recordedDebt              &&
-            troveDataX.redistBoldDebtGain       == troveDataY.redistBoldDebtGain        &&
-            troveDataX.redistCollGain           == troveDataY.redistCollGain);
-}
-
-function troveBatchTroveEquivalent_(env e, uint256 troveIdX, uint256 troveIdY,
-                                    TroveManager.LatestTroveData troveDataX, 
-                                    TroveManager.LatestTroveData troveDataY) returns bool{
-    return (troveManager.Troves[troveIdX].coll  == troveManager.Troves[troveIdY].coll   &&
-            troveManager.Troves[troveIdX].stake == troveManager.Troves[troveIdY].stake  &&
-            troveDataX.accruedInterest          == troveDataY.accruedInterest           &&
-            troveDataX.recordedDebt             == troveDataY.recordedDebt              &&
-            troveDataX.redistBoldDebtGain       == troveDataY.redistBoldDebtGain        &&
-            troveDataX.redistCollGain           == troveDataY.redistCollGain);
-}
-
-/*-----------------------------------------------------------------------------------------------------------------
-///////////////////////////////////// Trove - batch trove equivalance //////////////////////////////////////////////
------------------------------------------------------------------------------------------------------------------ */
-// "For individual Trove i and batch Trove j in the same branch where i != j, and i and j have equivalence E:
-
-// E: (recorded_coll_i, recorded_debt_i, accrued_interest_i, stake_i, redistribution_debt_gain_i, redistribution_coll_gain_i) = (recorded_coll_j, recorded_debt_j, accrued_interest_j, stake_j, redistribution_debt_gain_j, redistribution_coll_gain_j) 
-
-// Then, the following pairs of simultaneous actions maintain equivalence E:
-
-
-
 
 //////////////////////////////////////////// Collateral adjustment /////////////////////////////////////////////////
 
@@ -95,7 +60,7 @@ rule troveBatchTroveEquivalenceAddColl_accruedInterest(){
     
     TroveManager.LatestTroveData troveDataY_before  = troveManager.getLatestTroveData(e, troveIdY);
     
-    require troveBatchTroveEquivalent_(e, troveIdX, troveIdY, troveDataX_before, troveDataY_before);
+    require troveBatchTroveEquivalent_(troveIdX, troveIdY, troveDataX_before, troveDataY_before);
 
     require troveRewardsUpdated(troveIdX);
     require troveRewardsUpdated(troveIdY);
@@ -142,7 +107,7 @@ rule troveBatchTroveEquivalenceAddColl_recordedDebt(){
     
     TroveManager.LatestTroveData troveDataY_before  = troveManager.getLatestTroveData(e, troveIdY);
     
-    require troveBatchTroveEquivalent_(e, troveIdX, troveIdY, troveDataX_before, troveDataY_before);
+    require troveBatchTroveEquivalent_(troveIdX, troveIdY, troveDataX_before, troveDataY_before);
 
     require troveRewardsUpdated(troveIdX);
     require troveRewardsUpdated(troveIdY);
@@ -226,7 +191,7 @@ rule troveBatchTroveEquivalenceWithdrawColl_accruedInterest(){
     
     TroveManager.LatestTroveData troveDataY_before  = troveManager.getLatestTroveData(e, troveIdY);
     
-    require troveBatchTroveEquivalent_(e, troveIdX, troveIdY, troveDataX_before, troveDataY_before);
+    require troveBatchTroveEquivalent_(troveIdX, troveIdY, troveDataX_before, troveDataY_before);
 
     require troveRewardsUpdated(troveIdX);
     require troveRewardsUpdated(troveIdY);
@@ -273,7 +238,7 @@ rule troveBatchTroveEquivalenceWithdrawColl_recordedDebt(){
     
     TroveManager.LatestTroveData troveDataY_before  = troveManager.getLatestTroveData(e, troveIdY);
     
-    require troveBatchTroveEquivalent_(e, troveIdX, troveIdY, troveDataX_before, troveDataY_before);
+    require troveBatchTroveEquivalent_(troveIdX, troveIdY, troveDataX_before, troveDataY_before);
 
     require troveRewardsUpdated(troveIdX);
     require troveRewardsUpdated(troveIdY);
@@ -363,7 +328,7 @@ rule troveBatchTroveEquivalenceWithdrawBold_accruedInterest(){
     
     TroveManager.LatestTroveData troveDataY_before  = troveManager.getLatestTroveData(e, troveIdY);
     
-    require troveBatchTroveEquivalent_(e, troveIdX, troveIdY, troveDataX_before, troveDataY_before);
+    require troveBatchTroveEquivalent_(troveIdX, troveIdY, troveDataX_before, troveDataY_before);
 
     require troveRewardsUpdated(troveIdX);
     require troveRewardsUpdated(troveIdY);
@@ -412,7 +377,7 @@ rule troveBatchTroveEquivalenceWithdrawBold_recordedDebt(){
     
     TroveManager.LatestTroveData troveDataY_before  = troveManager.getLatestTroveData(e, troveIdY);
     
-    require troveBatchTroveEquivalent_(e, troveIdX, troveIdY, troveDataX_before, troveDataY_before);
+    require troveBatchTroveEquivalent_(troveIdX, troveIdY, troveDataX_before, troveDataY_before);
 
     require troveRewardsUpdated(troveIdX);
     require troveRewardsUpdated(troveIdY);
@@ -461,7 +426,7 @@ rule troveBatchTroveEquivalenceWithdrawBold_gainsColl(){
     
     TroveManager.LatestTroveData troveDataY_before  = troveManager.getLatestTroveData(e, troveIdY);
     
-    require troveBatchTroveEquivalent_(e, troveIdX, troveIdY, troveDataX_before, troveDataY_before);
+    require troveBatchTroveEquivalent_(troveIdX, troveIdY, troveDataX_before, troveDataY_before);
 
     require troveRewardsUpdated(troveIdX);
     require troveRewardsUpdated(troveIdY);
@@ -516,7 +481,7 @@ rule troveBatchTroveEquivalenceRepayBold_accruedInterest(){
     
     TroveManager.LatestTroveData troveDataY_before  = troveManager.getLatestTroveData(e, troveIdY);
     
-    require troveBatchTroveEquivalent_(e, troveIdX, troveIdY, troveDataX_before, troveDataY_before);
+    require troveBatchTroveEquivalent_(troveIdX, troveIdY, troveDataX_before, troveDataY_before);
 
     require troveRewardsUpdated(troveIdX);
     require troveRewardsUpdated(troveIdY);
@@ -563,7 +528,7 @@ rule troveBatchTroveEquivalenceRepayBold_recordedDebt(){
     
     TroveManager.LatestTroveData troveDataY_before  = troveManager.getLatestTroveData(e, troveIdY);
     
-    require troveBatchTroveEquivalent_(e, troveIdX, troveIdY, troveDataX_before, troveDataY_before);
+    require troveBatchTroveEquivalent_(troveIdX, troveIdY, troveDataX_before, troveDataY_before);
 
     require troveRewardsUpdated(troveIdX);
     require troveRewardsUpdated(troveIdY);
@@ -610,7 +575,7 @@ rule troveBatchTroveEquivalenceRepayBold_gainsColl(){
     
     TroveManager.LatestTroveData troveDataY_before  = troveManager.getLatestTroveData(e, troveIdY);
     
-    require troveBatchTroveEquivalent_(e, troveIdX, troveIdY, troveDataX_before, troveDataY_before);
+    require troveBatchTroveEquivalent_(troveIdX, troveIdY, troveDataX_before, troveDataY_before);
 
     require troveRewardsUpdated(troveIdX);
     require troveRewardsUpdated(troveIdY);
