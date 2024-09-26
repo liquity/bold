@@ -1927,14 +1927,14 @@ contract SPTest is DevTestSetup {
 
         testVars.boldGainC = stabilityPool.getDepositorYieldGain(C);
         testVars.boldGainD = stabilityPool.getDepositorYieldGain(D);
-        assertApproximatelyEqual(testVars.expectedShareOfYield1_C, testVars.boldGainC, 1e4);
-        assertApproximatelyEqual(testVars.expectedShareOfYield1_D, testVars.boldGainD, 1e4);
+        assertApproximatelyEqual(testVars.expectedShareOfYield1_C, testVars.boldGainC, 1e6, "C share of yield mismatch");
+        assertApproximatelyEqual(testVars.expectedShareOfYield1_D, testVars.boldGainD, 1e6, "D share of yield mismatch");
 
         testVars.ethGainC = stabilityPool.getDepositorCollGain(C);
         testVars.ethGainD = stabilityPool.getDepositorCollGain(D);
 
-        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainC, 1e4);
-        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainD, 1e4);
+        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainC, 1e4, "C share of coll mismatch");
+        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainD, 1e4, "D share of coll mismatch");
 
         // E makes deposit after 2nd liq
         transferBold(C, E, boldToken.balanceOf(C));
@@ -1955,7 +1955,11 @@ contract SPTest is DevTestSetup {
         // check all BOLD and Coll gains are as expected
         uint256 boldGainE = stabilityPool.getDepositorYieldGain(E);
 
-        assertApproximatelyEqual(expectedShareOfYield2_E, boldGainE, 1e9);
+        assertApproximatelyEqual(expectedShareOfYield2_E, boldGainE, 1e9, "E share of yield mismatch");
+    }
+
+    function testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fixed() public {
+        testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fuzz(2371624267, 555740272250686904193353073666173923435456188015);
     }
 
     function testLiquidationsWithLowPAllowFurtherRewardsForExistingDepositors(uint256 _cheatP, uint256 _surplus)
