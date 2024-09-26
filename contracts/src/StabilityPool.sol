@@ -251,7 +251,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 initialDeposit = deposits[msg.sender].initialValue;
 
         uint256 currentCollGain = getDepositorCollGain(msg.sender);
-        uint256 currentYieldGain = getDepositorYieldGain(msg.sender);
+        uint256 currentYieldGain = LiquityMath._min(getDepositorYieldGain(msg.sender), yieldGainsOwed);
         uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         (uint256 keptYieldGain, uint256 yieldGainToSend) = _getYieldToKeepOrSend(currentYieldGain, _doClaim);
         uint256 newDeposit = compoundedBoldDeposit + _topUp + keptYieldGain;
@@ -312,7 +312,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         activePool.mintAggInterest();
 
         uint256 currentCollGain = getDepositorCollGain(msg.sender);
-        uint256 currentYieldGain = getDepositorYieldGain(msg.sender);
+        uint256 currentYieldGain = LiquityMath._min(getDepositorYieldGain(msg.sender), yieldGainsOwed);
         uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         uint256 boldToWithdraw = LiquityMath._min(_amount, compoundedBoldDeposit);
         (uint256 keptYieldGain, uint256 yieldGainToSend) = _getYieldToKeepOrSend(currentYieldGain, _doClaim);
