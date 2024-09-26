@@ -40,7 +40,7 @@ interface ITroveManagerTester is ITroveManager {
     // Trove and batch getters
     function checkTroveIsActive(uint256 _troveId) external view returns (bool);
     function checkTroveIsOpen(uint256 _troveId) external view returns (bool);
-    function checkTroveIsUnredeemable(uint256 _troveId) external view returns (bool);
+    function checkTroveIsZombie(uint256 _troveId) external view returns (bool);
 
     function hasRedistributionGains(uint256 _troveId) external view returns (bool);
 

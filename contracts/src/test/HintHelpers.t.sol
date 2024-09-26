@@ -16,7 +16,7 @@ contract HintHelpersTest is DevTestSetup {
 
         assertEq(
             uint8(troveManager.getTroveStatus(redeemedTroveId)),
-            uint8(ITroveManager.Status.unredeemable),
+            uint8(ITroveManager.Status.zombie),
             "Redeemed Trove should have become a zombie"
         );
 
