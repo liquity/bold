@@ -8,8 +8,8 @@ dataSources:
     name: BoldToken
     source:
       abi: BoldToken
-      address: "0x8b6142b0469bad2a695a25caa2d40778e06ada10"
-      startBlock: 6631293
+      address: "0x21a6370b245c05fade18c601f5efa23e1a3c9833"
+      startBlock: 6684588
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
