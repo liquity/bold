@@ -1,5 +1,6 @@
 import "./ERC20/erc20cvl.spec";
 import "./ERC20/WETHcvl.spec";
+import "Common.spec";
 
 using TroveManager as troveManager;
 methods {
@@ -34,94 +35,6 @@ methods {
     function _.fetchPrice() external => NONDET;
     // Depepnds on 2 state variables totalStakesSnapshot / totalCollateralSnapshot
     function TroveManager._computeNewStake(uint _coll) internal returns (uint) => NONDET;
-}
-
-//-----------------------------------------------------------------------------
-// Helper functions for accessing storage locations
-//-----------------------------------------------------------------------------
-// Same as TroveManager._getBatchManager
-function getBatchManager(uint256 troveId) returns address {
-    return troveManager.Troves[troveId].interestBatchManager;
-}
-
-function getTroveBatchDebtShares(uint256 troveId) returns uint256 {
-    return troveManager.Troves[troveId].batchDebtShares;
-}
-
-function getBatchTotalShares(address batchAddress) returns uint256 {
-    return troveManager.batches[batchAddress].totalDebtShares;
-}
-function getBatchDebt(address batchAddress) returns uint256 {
-    return troveManager.batches[batchAddress].debt;
-}
-
-function getTroveLastDebtUpdateTime(uint256 troveId) returns uint256 {
-    return troveManager.Troves[troveId].lastDebtUpdateTime;
-}
-
-//-----------------------------------------------------------------------------
-// Helper functions for Assumptions
-//-----------------------------------------------------------------------------
-// This is used to assume that trove rewards is updated and is equivalent
-// to TroveManager._updateTroveRewardSnapshots. _updateTroveRewardsSnapshots
-// is called upon opening a trove.
-function troveRewardsUpdated(uint256 _troveId) returns bool {
-    return troveManager.rewardSnapshots[_troveId].coll == troveManager.L_coll &&
-        troveManager.rewardSnapshots[_troveId].boldDebt == troveManager.L_boldDebt;
-}
-
-function batchDataDebtUpdated(TroveManager.LatestBatchData batchData, address batchAddress) returns bool {
-    return troveManager.batches[batchAddress].debt == 
-        batchData.entireDebtWithoutRedistribution;
-}
-
-// Assume batch is not shut down and the debt has already been updated.
-// (Otherwise we will have a spurious counterexample where the update
-// was not yet applied in the prestate but it gets applied during 
-// addCollaterall and other similar functions)
-function interestUpdatedAssumption(env e, TroveManager.LatestBatchData batchData) returns bool {
-    return troveManager.shutdownTime == 0 &&
-        e.block.timestamp == batchData.lastDebtUpdateTime;
-}
-
-// Used to assume that BorrowerOperations.interestBatchmanager[troveId] 
-// is the same as troveManager.Troves[troveId].interestBatchManagerOf
-function batch_manager_storage_locations_agree(uint256 troveId) returns bool {
-    return troveManager.Troves[troveId].interestBatchManager ==
-        currentContract.interestBatchManagerOf[troveId];
-}
-
-// Assumptions about the relationship between batch debts and shares
-// which should be maintianed
-function debt_and_shares_relationship(
-    uint256 troveId,
-    address batchAddress,
-    TroveManager.LatestBatchData batchData, 
-    TroveManager.LatestTroveData troveData) returns bool {
-        bool zero_shares_zero_debt_batch = 
-            getBatchTotalShares(batchAddress) == 0 <=>
-            batchData.recordedDebt == 0;
-        bool zero_shares_zero_debt_trove =
-            getTroveBatchDebtShares(troveId) == 0 <=>
-            troveData.recordedDebt == 0;
-        bool total_shares = 
-            getBatchTotalShares(batchAddress) >=
-            getTroveBatchDebtShares(troveId);
-        return zero_shares_zero_debt_batch &&
-            zero_shares_zero_debt_trove &&
-            total_shares;
-}
-
-// An alternative to ignoring the rounding errors during debt adjustment
-// in case the divideNoRemainder causes performance problems that are too
-// severe. Here we assume the number of total 
-ghost uint256 share_debt_scalar;
-function num_shares_num_debt_assumption(
-    TroveManager.LatestBatchData batchData,
-    address batchAddress) returns bool {
-    return (share_debt_scalar >= 1) &&
-        getBatchTotalShares(batchAddress) ==
-        share_debt_scalar * batchData.recordedDebt;
 }
 
 //-----------------------------------------------------------------------------
@@ -225,7 +138,7 @@ rule sum_of_trove_debts {
 
 // simple rule to check that all the troves in a batch have the same interest rate
 // STATUS: PASSING
-// https://prover.certora.com/output/11775/2466df33e3d44744ad6527aefb4b32cd?anonymousKey=55d4e23ebd5af8f32e39a649e4b290694fdee04b
+// https://prover.certora.com/output/65266/0c1e6565d8524f568302eb35f45e77ff/?anonymousKey=8f9f47eb773e45384e98117ea9d5f0bab4ac8c71
 rule sameInterestRateForBatchTroves(env e, uint256 troveId1, uint256 troveId2){
     
     address batchManager1 = troveManager.Troves[troveId1].interestBatchManager;
@@ -241,7 +154,7 @@ rule sameInterestRateForBatchTroves(env e, uint256 troveId1, uint256 troveId2){
 
 // Troves in a given batch always accrue interest at the same rate
 // STATUS: PASSING
-// https://prover.certora.com/output/11775/8158494aa4054f668ca4fcaf19cfc87a?anonymousKey=1314ab3f2fd88aedb3efb638564be37d56e5814a
+// https://prover.certora.com/output/65266/0c1e6565d8524f568302eb35f45e77ff/?anonymousKey=8f9f47eb773e45384e98117ea9d5f0bab4ac8c71
 rule troves_in_batch_accrue_interest_at_same_rate {
     env e;
 
@@ -583,6 +496,18 @@ rule debt_adjust_effects (method f) filtered {
 
     // -Trove i’s entire coll does not change
     assert troveDataAfter.entireColl == troveDataBefore.entireColl;
+}
+
+// An alternative to ignoring the rounding errors during debt adjustment
+// in case the divideNoRemainder causes performance problems that are too
+// severe. Here we assume the number of total 
+ghost uint256 share_debt_scalar;
+function num_shares_num_debt_assumption(
+    TroveManager.LatestBatchData batchData,
+    address batchAddress) returns bool {
+    return (share_debt_scalar >= 1) &&
+        getBatchTotalShares(batchAddress) ==
+        share_debt_scalar * batchData.recordedDebt;
 }
 
 /*
