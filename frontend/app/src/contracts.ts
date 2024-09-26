@@ -41,7 +41,10 @@ const collateralAbis = {
   SortedTroves,
   StabilityPool,
   TroveManager,
-  WETHZapper,
+  WETHZapper: [
+    ...WETHZapper,
+    ...BorrowerOperations.filter((f) => f.type === "error"),
+  ],
 } as const;
 
 const abis = {
