@@ -20,17 +20,24 @@ export type LoadingState =
 
 export function TransactionsScreen() {
   const {
+    contracts,
     currentStepIndex,
     flow,
     flowDeclaration: fd,
     signAndSend,
   } = useTransactionFlow();
 
-  if (!flow?.steps || !fd) {
+  if (!flow?.steps || !fd || !contracts) {
     return <NoTransactionsScreen />;
   }
 
   const currentStep = flow.steps[currentStepIndex];
+
+  const showBackLink = currentStepIndex === 0 && (
+    currentStep.txStatus === "idle"
+    || currentStep.txStatus === "error"
+    || currentStep.txStatus === "awaiting-signature"
+  );
 
   return (
     <Screen title={fd.title} subtitle={fd.subtitle}>
@@ -105,15 +112,16 @@ export function TransactionsScreen() {
               <FlowStep
                 key={index}
                 isCurrent={index === currentStepIndex}
-                label={fd.getStepName(step.id)}
+                label={fd.getStepName(step.id, {
+                  contracts,
+                  request: flow.request,
+                })}
                 status={step.txStatus}
               />
             ))}
           </div>
         )}
-        {currentStepIndex === 0
-          && currentStep.txStatus !== "awaiting-confirmation"
-          && currentStep.txStatus !== "confirmed" && flow.request.backLink && (
+        {showBackLink && flow.request.backLink && (
           <div
             style={{
               display: "flex",
