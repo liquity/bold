@@ -73,7 +73,7 @@ type Collaterals = Array<{
   contracts: CollateralContracts;
 }>;
 
-type Contracts = {
+export type Contracts = {
   [K in (ProtocolContractName | "collaterals")]: K extends "collaterals" ? Collaterals
     : K extends ContractName ? Contract<K>
     : never;
