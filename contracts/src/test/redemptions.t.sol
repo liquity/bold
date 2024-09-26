@@ -22,12 +22,14 @@ contract Redemptions is DevTestSetup {
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
+        /*
         console.log(troveIDs.A, "A id");
         console.log(troveIDs.B, "B id");
         console.log(sortedTroves.contains(troveIDs.B), "B is in list t0");
         console.log(troveManager.getTroveEntireDebt(troveIDs.B), "A debt t0");
         console.log(troveManager.getTroveEntireDebt(troveIDs.B), "B debt t0");
         console.log(sortedTroves.getLast(), "first to redeem t0");
+        */
         uint256 debt_C = troveManager.getTroveEntireDebt(troveIDs.C);
         uint256 debt_D = troveManager.getTroveEntireDebt(troveIDs.D);
 
@@ -73,8 +75,8 @@ contract Redemptions is DevTestSetup {
         redeem(E, redeemAmount_1);
 
         // Check A and B still open
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(ITroveManager.Status.unredeemable));
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(ITroveManager.Status.zombie));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.zombie));
     }
 
     function testFullRedemptionLeavesTrovesWithDebtEqualToZero() public {
@@ -112,8 +114,8 @@ contract Redemptions is DevTestSetup {
         redeem(E, redeemAmount_2);
 
         // Check A and B still open with debt == zero
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(ITroveManager.Status.unredeemable));
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(ITroveManager.Status.zombie));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.zombie));
         assertEq(troveManager.getTroveEntireDebt(troveIDs.A), 0);
         assertEq(troveManager.getTroveEntireDebt(troveIDs.B), 0);
 
@@ -279,7 +281,8 @@ contract Redemptions is DevTestSetup {
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(ITroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(ITroveManager.Status.zombie));
+        assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer");
     }
 
     function testTroveRedeemedToBelowMIN_DEBTBecomesZombieTrove() public {
@@ -287,7 +290,8 @@ contract Redemptions is DevTestSetup {
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
 
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.zombie));
+        assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer");
     }
 
     function testTroveRedeemedToAboveMIN_DEBTDoesNotBecomesZombieTrove() public {
@@ -296,6 +300,7 @@ contract Redemptions is DevTestSetup {
         _redeemAndCreateZombieTroveAAndHitB(troveIDs);
 
         assertEq(uint8(troveManager.getTroveStatus(troveIDs.C)), uint8(ITroveManager.Status.active));
+        assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer");
     }
 
     function testZombieTrovesRemovedFromSortedList() public {
@@ -317,9 +322,12 @@ contract Redemptions is DevTestSetup {
 
         // Check Trove with lowest interest rate is C
         assertEq(sortedTroves.getLast(), troveIDs.C);
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer");
     }
 
-    function testZombieTroveCantBeRedeemedFrom() public {
+    function testZombieTroveCanStillBeRedeemedFrom() public {
         (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
         _redeemAndCreateZombieTrovesAAndB(troveIDs);
@@ -331,14 +339,154 @@ contract Redemptions is DevTestSetup {
         uint256 redeemAmount = debt_B / 2;
         redeem(E, redeemAmount);
 
-        // Check B's debt unchanged from redeemAmount < debt_B;
-        assertEq(debt_B, troveManager.getTroveEntireDebt(troveIDs.B));
+        // Check B's debt changed from redeemAmount < debt_B;
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), debt_B - redeemAmount);
 
+        debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
         redeemAmount = debt_B + 1;
         redeem(E, redeemAmount);
 
-        // Check B's debt unchanged from redeemAmount > debt_B;
-        assertEq(debt_B, troveManager.getTroveEntireDebt(troveIDs.B));
+        // Check B's debt changed from redeemAmount > debt_B;
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), 0);
+    }
+
+    function testRedemptionsWithNoPartialLeaveNoPointerToZombieTroves() public {
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        _redeemAndCreateEmptyZombieTrovesAAndB(troveIDs);
+
+        // Check A, B removed from sorted list
+        assertFalse(sortedTroves.contains(troveIDs.A));
+        assertFalse(sortedTroves.contains(troveIDs.B));
+
+        // Check A, B zombie (already checked in helper above)
+        //assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(ITroveManager.Status.zombie));
+        //assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.zombie));
+
+        // Check A, B empty (already checked in helper above)
+        //assertEq(troveManager.getTroveEntireDebt(troveIDs.A), 0);
+        //assertEq(troveManager.getTroveEntireDebt(troveIDs.B), 0);
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer");
+    }
+
+    function testZombieTrovePointerGetsResetIfLastOneIsFullyRedemeed() public {
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        _redeemAndCreateZombieTrovesAAndB(troveIDs);
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer before");
+
+        // Get B debt before 2nd redeem
+        uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
+        assertGt(debt_B, 0, "B debt should be non zero");
+
+        uint256 redeemAmount = debt_B;
+        console2.log("redeem again");
+        console2.log(redeemAmount, "redeemAmount");
+        redeem(E, redeemAmount);
+
+        // Check B is empty now
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), 0, "B debt should be zero");
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer after");
+    }
+
+    function testZombieTrovePointerGetsResetIfTroveIsResuscitatedManuallyByOwner() public {
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        _redeemAndCreateZombieTrovesAAndB(troveIDs);
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer before");
+
+        // Restore trove
+        adjustZombieTrove(B, troveIDs.B, 0, false, MIN_DEBT, true);
+
+        // Check B is above min debt
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT, "B debt should be above min");
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer after");
+    }
+
+    function testZombieTrovePointerGetsResetIfTroveIsResuscitatedViaInterest() public {
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        _redeemAndCreateZombieTrovesAAndB(troveIDs);
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer before");
+
+        // Restore trove
+        adjustZombieTrove(B, troveIDs.B, 0, false, MIN_DEBT, true);
+        // fast-forward time a lot
+        vm.warp(block.timestamp + 3650 days);
+
+        // E applies interest on B's Trove
+        applyPendingDebt(E, troveIDs.B);
+
+        // Check B is above min debt
+        assertGt(troveManager.getTroveEntireDebt(troveIDs.B), MIN_DEBT, "B debt should be above min");
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer after");
+    }
+
+    function testZombieTrovePointerGetsResetIfTroveIsClosed() public {
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        _redeemAndCreateZombieTrovesAAndB(troveIDs);
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer before");
+
+        // Get B debt before 2nd redeem
+        uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
+        assertGt(debt_B, 0, "B debt should be non zero");
+
+        deal(address(boldToken), B, debt_B);
+        closeTrove(B, troveIDs.B);
+
+        // Check B is closed
+        assertEq(
+            uint8(troveManager.getTroveStatus(troveIDs.B)),
+            uint8(ITroveManager.Status.closedByOwner),
+            "B trove should be closed"
+        );
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer after");
+    }
+
+    function testZombieTrovePointerGetsResetIfTroveIsLiquidated() public {
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        _redeemAndCreateZombieTrovesAAndB(troveIDs);
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer before");
+
+        // Liquidate B
+        console2.log(
+            troveManager.getCurrentICR(troveIDs.B, priceFeed.getPrice()),
+            "troveManager.getCurrentICR(troveIDs.E, price)"
+        );
+        priceFeed.setPrice(priceFeed.getPrice() / 25);
+        liquidate(A, troveIDs.B);
+
+        // Check B is liquidated
+        assertEq(
+            uint8(troveManager.getTroveStatus(troveIDs.B)),
+            uint8(ITroveManager.Status.closedByLiquidation),
+            "B trove should be liquidated"
+        );
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer after");
     }
 
     function testZombieTrovesCanReceiveRedistGains() public {
@@ -469,8 +617,8 @@ contract Redemptions is DevTestSetup {
         transferBold(E, A, boldToken.balanceOf(E) / 2);
         transferBold(E, B, boldToken.balanceOf(E));
 
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(ITroveManager.Status.unredeemable));
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(ITroveManager.Status.zombie));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.zombie));
 
         closeTrove(A, troveIDs.A);
         closeTrove(B, troveIDs.B);
@@ -496,8 +644,8 @@ contract Redemptions is DevTestSetup {
         uint256 surplusDebt = 37;
 
         // A and B withdraw Bold from their zombie Trove
-        adjustUnredeemableTrove(A, troveIDs.A, 0, false, debtDelta_A + surplusDebt, true);
-        adjustUnredeemableTrove(B, troveIDs.B, 0, false, debtDelta_A + surplusDebt, true);
+        adjustZombieTrove(A, troveIDs.A, 0, false, debtDelta_A + surplusDebt, true);
+        adjustZombieTrove(B, troveIDs.B, 0, false, debtDelta_A + surplusDebt, true);
 
         // Check they are above the min debt
         assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
@@ -521,8 +669,8 @@ contract Redemptions is DevTestSetup {
         uint256 surplusDebt = 37;
 
         // A and B withdraw Bold from their zombie Trove
-        adjustUnredeemableTrove(A, troveIDs.A, 0, false, debtDelta_A + surplusDebt, true);
-        adjustUnredeemableTrove(B, troveIDs.B, 0, false, debtDelta_A + surplusDebt, true);
+        adjustZombieTrove(A, troveIDs.A, 0, false, debtDelta_A + surplusDebt, true);
+        adjustZombieTrove(B, troveIDs.B, 0, false, debtDelta_A + surplusDebt, true);
 
         // Check they are above the min debt
         assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
@@ -554,8 +702,8 @@ contract Redemptions is DevTestSetup {
         assertFalse(sortedTroves.contains(troveIDs.B));
 
         // A and B withdraw Bold from their zombie Trove
-        adjustUnredeemableTrove(A, troveIDs.A, 0, false, debtDelta_A + surplusDebt, true);
-        adjustUnredeemableTrove(B, troveIDs.B, 0, false, debtDelta_A + surplusDebt, true);
+        adjustZombieTrove(A, troveIDs.A, 0, false, debtDelta_A + surplusDebt, true);
+        adjustZombieTrove(B, troveIDs.B, 0, false, debtDelta_A + surplusDebt, true);
 
         // Check they are above the min debt
         assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT);
@@ -586,8 +734,8 @@ contract Redemptions is DevTestSetup {
         uint256 surplusDebt = 37;
 
         // A and B withdraw Bold from their zombie Trove
-        adjustUnredeemableTrove(A, troveIDs.A, 0, false, debtDelta_A + surplusDebt, true);
-        adjustUnredeemableTrove(B, troveIDs.B, 0, false, debtDelta_A + surplusDebt, true);
+        adjustZombieTrove(A, troveIDs.A, 0, false, debtDelta_A + surplusDebt, true);
+        adjustZombieTrove(B, troveIDs.B, 0, false, debtDelta_A + surplusDebt, true);
 
         // Check they are above the min debt
         assertGt(troveManager.getTroveEntireDebt(troveIDs.A), MIN_DEBT, "A debt should be above min");
@@ -611,10 +759,10 @@ contract Redemptions is DevTestSetup {
 
         // A and B attempt to withdraw Bold, but not enough
         vm.expectRevert(BorrowerOperations.DebtBelowMin.selector);
-        this.adjustUnredeemableTrove(A, troveIDs.A, 0, false, borrow_A, true);
+        this.adjustZombieTrove(A, troveIDs.A, 0, false, borrow_A, true);
 
         vm.expectRevert(BorrowerOperations.DebtBelowMin.selector);
-        this.adjustUnredeemableTrove(B, troveIDs.B, 0, false, borrow_B, true);
+        this.adjustZombieTrove(B, troveIDs.B, 0, false, borrow_B, true);
     }
 
     function testZombieTroveBorrowerCanNotRepayDebt() public {
@@ -723,9 +871,9 @@ contract Redemptions is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
         assertGt(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
         // Troves are zombie
-        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.A));
+        assertTrue(troveManager.checkTroveIsZombie(troveIDs.A));
         assertFalse(sortedTroves.contains(troveIDs.A));
-        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.B));
+        assertTrue(troveManager.checkTroveIsZombie(troveIDs.B));
         assertFalse(sortedTroves.contains(troveIDs.B));
 
         // E applies interest on A and B's Troves
@@ -736,9 +884,9 @@ contract Redemptions is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
 
         // Troves are still zombie
-        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.A));
+        assertTrue(troveManager.checkTroveIsZombie(troveIDs.A));
         assertFalse(sortedTroves.contains(troveIDs.A));
-        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.B));
+        assertTrue(troveManager.checkTroveIsZombie(troveIDs.B));
         assertFalse(sortedTroves.contains(troveIDs.B));
     }
 
@@ -753,9 +901,9 @@ contract Redemptions is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
         assertGt(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
         // Troves are zombie
-        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.A));
+        assertTrue(troveManager.checkTroveIsZombie(troveIDs.A));
         assertFalse(sortedTroves.contains(troveIDs.A));
-        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.B));
+        assertTrue(troveManager.checkTroveIsZombie(troveIDs.B));
         assertFalse(sortedTroves.contains(troveIDs.B));
 
         // E applies interest on A and B's Troves
@@ -765,9 +913,9 @@ contract Redemptions is DevTestSetup {
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.B), 0);
         // Troves B is not zombie anymore (A still is)
-        assertTrue(troveManager.checkTroveIsUnredeemable(troveIDs.A));
+        assertTrue(troveManager.checkTroveIsZombie(troveIDs.A));
         assertFalse(sortedTroves.contains(troveIDs.A));
-        assertFalse(troveManager.checkTroveIsUnredeemable(troveIDs.B));
+        assertFalse(troveManager.checkTroveIsZombie(troveIDs.B));
         assertTrue(sortedTroves.contains(troveIDs.B));
     }
 
@@ -791,7 +939,7 @@ contract Redemptions is DevTestSetup {
         // assertFalse(troveManager.checkBelowCriticalThreshold(price));
         assertLt(troveManager.getCurrentICR(troveIDs.B, price), MCR);
 
-        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.zombie));
 
         // E liquidates B
         liquidate(E, troveIDs.B);

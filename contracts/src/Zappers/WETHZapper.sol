@@ -143,7 +143,7 @@ contract WETHZapper is AddRemoveManagers {
         _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver);
     }
 
-    function adjustUnredeemableTroveWithRawETH(
+    function adjustZombieTroveWithRawETH(
         uint256 _troveId,
         uint256 _collChange,
         bool _isCollIncrease,
@@ -154,7 +154,7 @@ contract WETHZapper is AddRemoveManagers {
         uint256 _maxUpfrontFee
     ) external {
         address payable receiver = _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
-        borrowerOperations.adjustUnredeemableTrove(
+        borrowerOperations.adjustZombieTrove(
             _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _upperHint, _lowerHint, _maxUpfrontFee
         );
         _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver);

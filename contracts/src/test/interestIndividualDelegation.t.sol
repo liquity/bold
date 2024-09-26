@@ -102,6 +102,22 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         vm.stopPrank();
     }
 
+    function testOwnerCanSetInterestBelowMin() public {
+        uint256 troveId = openTroveAndSetIndividualDelegate();
+
+        vm.startPrank(A);
+        borrowerOperations.adjustTroveInterestRate(troveId, MIN_ANNUAL_INTEREST_RATE, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
+    function testOwnerCanSetInterestAboveMax() public {
+        uint256 troveId = openTroveAndSetIndividualDelegate();
+
+        vm.startPrank(A);
+        borrowerOperations.adjustTroveInterestRate(troveId, 50e16, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
     function testSetDelegateRevertsIfTroveIsClosed() public {
         vm.startPrank(B);
         borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
@@ -121,17 +137,17 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         vm.stopPrank();
     }
 
-    function testSetDelegateRevertsIfTroveIsUnredeemable() public {
+    function testSetDelegateRevertsIfTroveIsZombie() public {
         vm.startPrank(B);
         borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
         vm.stopPrank();
 
         // Open trove
         uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
-        // Make trove unredeemable
+        // Make trove zombie
         redeem(A, 4000e18);
-        // Check A’s trove is unredeemable
-        assertEq(troveManager.checkTroveIsUnredeemable(troveId), true, "A trove should be unredeemable");
+        // Check A’s trove is zombie
+        assertEq(troveManager.checkTroveIsZombie(troveId), true, "A trove should be zombie");
 
         // Set batch manager (B)
         vm.startPrank(A);
