@@ -222,6 +222,59 @@ rule sum_of_trove_debts {
     assert batch_debt == sum_trove_debt;
 }
 
+
+// simple rule to check that all the troves in a batch have the same interest rate
+// STATUS: PASSING
+// https://prover.certora.com/output/11775/2466df33e3d44744ad6527aefb4b32cd?anonymousKey=55d4e23ebd5af8f32e39a649e4b290694fdee04b
+rule sameInterestRateForBatchTroves(env e, uint256 troveId1, uint256 troveId2){
+    
+    address batchManager1 = troveManager.Troves[troveId1].interestBatchManager;
+    address batchManager2 = troveManager.Troves[troveId2].interestBatchManager;
+
+    require batchManager1 == batchManager2 && batchManager1 != 0;
+
+    uint256 interestRate1 = troveManager.getLatestTroveData(e, troveId1).annualInterestRate;
+    uint256 interestRate2 = troveManager.getLatestTroveData(e, troveId2).annualInterestRate;
+
+    assert interestRate1 == interestRate2,"troves in the same batch should have the same interest rate";
+}
+
+// Troves in a given batch always accrue interest at the same rate
+// STATUS: PASSING
+// https://prover.certora.com/output/11775/8158494aa4054f668ca4fcaf19cfc87a?anonymousKey=1314ab3f2fd88aedb3efb638564be37d56e5814a
+rule troves_in_batch_accrue_interest_at_same_rate {
+    env e;
+
+    uint256 troveIdX;
+    uint256 troveIdY;
+    address batchAddress;
+    require batchAddress != 0;
+    require getBatchManager(troveIdX) == batchAddress;
+    require getBatchManager(troveIdY) == batchAddress;
+
+    // Require both troves have nonzero debt shares
+    // and the sum of both trove shares is LEQ the totalBatchShares
+    uint256 troveXBatchShares = getTroveBatchDebtShares(troveIdX);
+    uint256 troveYBatchShares = getTroveBatchDebtShares(troveIdY);
+    uint256 totalBatchShares = getBatchTotalShares(batchAddress);
+
+    require troveXBatchShares > 0;
+    require troveYBatchShares > 0;
+    // require require_uint256(troveXBatchShares + troveYBatchShares)
+    //     <= totalBatchShares;
+
+
+    TroveManager.LatestTroveData troveDataX = troveManager.getLatestTroveData(e, troveIdX);
+    TroveManager.LatestTroveData troveDataY = troveManager.getLatestTroveData(e, troveIdY);
+
+
+    // these unscaled debts are the trove's individual debt
+    // with the scaling due to its individual batch debt shares removed
+    uint256 unscaled_interest_x = require_uint256(troveDataX.accruedInterest / troveXBatchShares);
+    uint256 unscaled_interest_y = require_uint256(troveDataY.accruedInterest / troveYBatchShares);
+    assert unscaled_interest_x == unscaled_interest_y;
+}
+
 // When a trove is a member of a batch its recorded debt is calculated 
 // as the batch debt normalized by its fraction of the total shares.
 // PASSING: https://prover.certora.com/output/65266/c0e1a7786ace429caf6e6eedd922d5a2/?anonymousKey=960711ced6445e0deb29fe76e11ea835ad32bfb3
@@ -252,7 +305,7 @@ rule troves_in_batch_use_batch_structure {
 // For a given average system interest rate, Troves in a given batch always pay 
 // the same upfront fee (as percentage of their debt) upon premature interest 
 // rate adjustments by the manager
-// PASSING: https://prover.certora.com/output/65266/3ddd19827f39495385104a7e0d1efa03?anonymousKey=d6ba94dc667f4e49a6005c404c82817260b2650e
+// PASSING: https://prover.certora.com/output/17512/60354eb235f74b91a64c62d953a33e97/?anonymousKey=2e684f40438900acdf9215143556681e0320e86d
 rule troves_in_batch_share_upfront_fee {
     env e;
 
