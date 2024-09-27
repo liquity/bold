@@ -398,32 +398,26 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         yieldGainsOwed += _accumulatedYield;
         yieldGainsPending = 0;
 
-        uint256 yieldPerUnitStaked = _computeYieldPerUnitStaked(_accumulatedYield, _totalBoldDeposits);
+        /*
+         * Calculate the BOLD-per-unit staked.  Division uses a "feedback" error correction, to keep the
+         * cumulative error low in the running total B:
+         *
+         * 1) Form a numerator which compensates for the floor division error that occurred the last time this
+         * function was called.
+         * 2) Calculate "per-unit-staked" ratio.
+         * 3) Multiply the ratio back by its denominator, to reveal the current floor division error.
+         * 4) Store this error for use in the next correction when this function is called.
+         * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
+         */
+        uint256 yieldNumerator = _accumulatedYield * DECIMAL_PRECISION + lastYieldError;
+        uint256 yieldPerUnitStaked = yieldNumerator / _totalBoldDeposits;
+
+        lastYieldError = yieldNumerator - yieldPerUnitStaked * _totalBoldDeposits;
 
         uint256 marginalYieldGain = yieldPerUnitStaked * (P - 1);
         epochToScaleToB[currentEpoch][currentScale] = epochToScaleToB[currentEpoch][currentScale] + marginalYieldGain;
 
         emit B_Updated(epochToScaleToB[currentEpoch][currentScale], currentEpoch, currentScale);
-    }
-
-    function _computeYieldPerUnitStaked(uint256 _yield, uint256 _totalBoldDeposits) internal returns (uint256) {
-        /*
-        * Calculate the BOLD-per-unit staked.  Division uses a "feedback" error correction, to keep the
-        * cumulative error low in the running total B:
-        *
-        * 1) Form a numerator which compensates for the floor division error that occurred the last time this
-        * function was called.
-        * 2) Calculate "per-unit-staked" ratio.
-        * 3) Multiply the ratio back by its denominator, to reveal the current floor division error.
-        * 4) Store this error for use in the next correction when this function is called.
-        * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
-        */
-        uint256 yieldNumerator = _yield * DECIMAL_PRECISION + lastYieldError;
-
-        uint256 yieldPerUnitStaked = yieldNumerator / _totalBoldDeposits;
-        lastYieldError = yieldNumerator - yieldPerUnitStaked * _totalBoldDeposits;
-
-        return yieldPerUnitStaked;
     }
 
     // --- Liquidation functions ---
