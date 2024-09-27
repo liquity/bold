@@ -1959,7 +1959,9 @@ contract SPTest is DevTestSetup {
     }
 
     function testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fixed() public {
-        testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fuzz(2371624267, 555740272250686904193353073666173923435456188015);
+        testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fuzz(
+            2371624267, 555740272250686904193353073666173923435456188015
+        );
     }
 
     function testLiquidationsWithLowPAllowFurtherRewardsForExistingDepositors(uint256 _cheatP, uint256 _surplus)

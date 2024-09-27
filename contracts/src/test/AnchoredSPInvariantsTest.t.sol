@@ -89,7 +89,11 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
         info("yieldGainsOwed:             ", yieldGainsOwed.decimal());
         info("sumYieldGains:              ", sumYieldGains.decimal());
         for (uint256 i = 0; i < actors.length; ++i) {
-            info(actors[i].label, ":                       ", stabilityPool.getDepositorYieldGain(actors[i].account).decimal());
+            info(
+                actors[i].label,
+                ":                       ",
+                stabilityPool.getDepositorYieldGain(actors[i].account).decimal()
+            );
         }
         info("");
         assertApproxEqAbsDecimal(stabilityPoolColl, claimableColl, 0.00001 ether, 18, "SP Coll !~ claimable Coll");
@@ -571,7 +575,10 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
         // P = 0.000000005252708102 ether
         info("");
         info("P ratio:        ", (5252708102 * DECIMAL_PRECISION / 6237247764).decimal());
-        info("deposits ratio: ", (312_724.220142735330535195 ether * DECIMAL_PRECISION / 371339584252979675162290).decimal());
+        info(
+            "deposits ratio: ",
+            (312_724.220142735330535195 ether * DECIMAL_PRECISION / 371339584252979675162290).decimal()
+        );
         info("");
 
         info("");
@@ -593,7 +600,10 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
         // P = 0.000000003706602850 ether
         info("");
         info("P ratio:        ", (3706602850 * DECIMAL_PRECISION / 6237247764).decimal());
-        info("deposits ratio: ", (220_675.594968675749714429 ether * DECIMAL_PRECISION / 371339584252979675162290).decimal());
+        info(
+            "deposits ratio: ",
+            (220_675.594968675749714429 ether * DECIMAL_PRECISION / 371339584252979675162290).decimal()
+        );
         info("P - 1 ratio:    ", (3706602849 * DECIMAL_PRECISION / 6237247764).decimal());
         info("");
 
@@ -768,7 +778,10 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
 
         info("");
         info("P ratio:        ", (3615289994393 * DECIMAL_PRECISION / 22715721016141).decimal());
-        info("deposits ratio: ", (17_525.230265653071151161 ether * DECIMAL_PRECISION / 110_115.161460252303389397 ether).decimal());
+        info(
+            "deposits ratio: ",
+            (17_525.230265653071151161 ether * DECIMAL_PRECISION / 110_115.161460252303389397 ether).decimal()
+        );
         info("");
 
         vm.prank(eric);
@@ -779,7 +792,10 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
 
         info("");
         info("P ratio:        ", (3173654104960 * DECIMAL_PRECISION / 22715721016141).decimal());
-        info("deposits ratio: ", (15_384.386607767348466801 ether * DECIMAL_PRECISION / 110_115.161460252303389397 ether).decimal());
+        info(
+            "deposits ratio: ",
+            (15_384.386607767348466801 ether * DECIMAL_PRECISION / 110_115.161460252303389397 ether).decimal()
+        );
         info("");
 
         // coll = 472.174813390591817645 ether, debt = 62_956.641785412242352578 ether
