@@ -76,7 +76,6 @@ contract CompositePriceFeed is MainnetPriceFeedBase {
     function _fetchPriceETHUSDxCanonical(uint256 _ethUsdPrice) internal returns (uint256) {
         assert(priceSource == PriceSource.ETHUSDxCanonical);
         // Get the underlying_per_LST canonical rate directly from the LST contract
-        // TODO: Should we also shutdown if the call to the canonical rate reverts, or returns 0?
         (uint256 lstRate, bool exchangeRateIsDown) = _getCanonicalRate();
 
         // If the exchange rate contract is down, switch to (and return) lastGoodPrice. 
