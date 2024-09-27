@@ -52,7 +52,6 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
         uint256 lstUsdMarketPrice = ethUsdPrice * rEthEthPrice / 1e18;
 
         // Calculate the canonical LST-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
-        // TODO: Should we also shutdown if the call to the canonical rate reverts, or returns 0?
         uint256 lstUsdCanonicalPrice = ethUsdPrice * rEthPerEth / 1e18;
 
         // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation.
