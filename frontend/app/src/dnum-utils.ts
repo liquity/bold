@@ -14,14 +14,6 @@ export function dnumMin(a: Dnum, ...rest: Dnum[]) {
   return rest.reduce((min, value) => dn.lt(value, min) ? value : min, a);
 }
 
-export function dnumGte(a: Dnum, b: Dnum) {
-  return !dn.lt(a, b);
-}
-
-export function dnumLte(a: Dnum, b: Dnum) {
-  return !dn.gt(a, b);
-}
-
 export const DNUM_0 = dn.from(0, 18);
 export const DNUM_1 = dn.from(1, 18);
 
