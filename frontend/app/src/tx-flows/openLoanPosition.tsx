@@ -1,7 +1,5 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
-import { ETH_GAS_COMPENSATION } from "@/src/constants";
-import { dnum18 } from "@/src/dnum-utils";
 import { ADDRESS_ZERO } from "@/src/eth-utils";
 import { fmtnum } from "@/src/formatting";
 import { useCollateral } from "@/src/liquity-utils";
@@ -11,7 +9,6 @@ import { usePrice } from "@/src/services/Prices";
 import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { readContract } from "wagmi/actions";
 
 const FlowIdSchema = v.literal("openLoanPosition");
 
@@ -43,11 +40,9 @@ const RequestSchema = v.object({
 
 export type Request = v.InferOutput<typeof RequestSchema>;
 
-type Step = "wrapEth" | "approve" | "openTrove";
+type Step = "openTrove";
 
 const stepNames: Record<Step, string> = {
-  wrapEth: "Wrap ETH",
-  approve: "Approve",
   openTrove: "Open Position",
 };
 
@@ -107,54 +102,8 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
     );
   },
 
-  async getSteps({
-    account,
-    contracts,
-    request,
-    wagmiConfig,
-  }) {
-    const collateral = contracts.collaterals[request.collIndex];
-    const { BorrowerOperations, Token } = collateral.contracts;
-
-    if (!BorrowerOperations || !Token) {
-      throw new Error(`Collateral ${collateral.symbol} not supported`);
-    }
-
-    const allowance = dnum18(
-      await readContract(wagmiConfig, {
-        ...Token,
-        functionName: "allowance",
-        args: [
-          account.address ?? ADDRESS_ZERO,
-          BorrowerOperations.address,
-        ],
-      }),
-    );
-
-    const wethBalance = collateral.symbol !== "ETH" ? null : dnum18(
-      await readContract(wagmiConfig, {
-        ...Token,
-        functionName: "balanceOf",
-        args: [account.address ?? ADDRESS_ZERO],
-      }),
-    );
-
-    const isApproved = !dn.gt(
-      dn.add(request.collAmount, ETH_GAS_COMPENSATION),
-      allowance,
-    );
-
-    const steps: Step[] = [];
-
-    if (wethBalance && dn.lt(wethBalance, request.collAmount)) {
-      steps.push("wrapEth");
-    }
-
-    if (!isApproved) {
-      steps.push("approve");
-    }
-
-    return [...steps, "openTrove"];
+  async getSteps() {
+    return ["openTrove"];
   },
 
   getStepName(stepId) {
@@ -165,54 +114,30 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
     return v.parse(RequestSchema, request);
   },
 
-  async writeContractParams({ contracts, request, stepId }) {
+  async writeContractParams(stepId, { contracts, request }) {
     const collateral = contracts.collaterals[request.collIndex];
-    const { BorrowerOperations, Token } = collateral.contracts;
 
-    if (!BorrowerOperations || !Token) {
-      throw new Error(`Collateral ${collateral.symbol} not supported`);
-    }
-
-    if (stepId === "wrapEth") {
+    // WETHZapper mode
+    if (collateral.symbol === "ETH" && stepId === "openTrove") {
       return {
-        ...contracts.WETH,
-        functionName: "deposit" as const,
-        args: [],
+        ...collateral.contracts.WETHZapper,
+        functionName: "openTroveWithRawETH" as const,
+        args: [{
+          owner: request.owner ?? ADDRESS_ZERO,
+          ownerIndex: BigInt(request.ownerIndex),
+          boldAmount: request.boldAmount[0],
+          upperHint: request.upperHint[0],
+          lowerHint: request.lowerHint[0],
+          annualInterestRate: request.annualInterestRate[0],
+          maxUpfrontFee: request.maxUpfrontFee[0],
+          addManager: ADDRESS_ZERO,
+          removeManager: ADDRESS_ZERO,
+          receiver: ADDRESS_ZERO,
+        }],
         value: request.collAmount[0],
       };
     }
 
-    if (stepId === "approve") {
-      const amount = dn.add(request.collAmount, ETH_GAS_COMPENSATION);
-      return {
-        ...Token,
-        functionName: "approve" as const,
-        args: [
-          BorrowerOperations.address,
-          amount[0],
-        ],
-      };
-    }
-
-    if (stepId === "openTrove") {
-      return {
-        ...BorrowerOperations,
-        functionName: "openTrove" as const,
-        args: [
-          request.owner ?? ADDRESS_ZERO,
-          request.ownerIndex,
-          request.collAmount[0],
-          request.boldAmount[0],
-          request.upperHint[0],
-          request.lowerHint[0],
-          request.annualInterestRate[0],
-          request.maxUpfrontFee[0],
-          ADDRESS_ZERO,
-          ADDRESS_ZERO,
-          ADDRESS_ZERO,
-        ],
-      };
-    }
-    return null;
+    throw new Error("Not implemented");
   },
 };

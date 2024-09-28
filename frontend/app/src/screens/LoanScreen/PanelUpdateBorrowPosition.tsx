@@ -384,7 +384,7 @@ export function PanelUpdateBorrowPosition({
                 prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
                 owner: account.address,
                 collChange: dn.sub(newDeposit ?? dnum18(0), loan.deposit),
-                boldChange: dn.sub(newDebt ?? dnum18(0), loan.borrowed),
+                debtChange: dn.sub(newDebt ?? dnum18(0), loan.borrowed),
                 maxUpfrontFee: dnum18(maxUint256),
               });
               router.push("/transactions");

@@ -8,8 +8,10 @@ import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { useLoanById } from "@/src/subgraph-hooks";
 import { vCollIndex, vPrefixedTroveId } from "@/src/valibot-utils";
+import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
+import { readContract } from "wagmi/actions";
 
 const FlowIdSchema = v.literal("closeLoanPosition");
 
@@ -35,9 +37,10 @@ const RequestSchema = v.object({
 
 export type Request = v.InferOutput<typeof RequestSchema>;
 
-type Step = "closeLoanPosition";
+type Step = "closeLoanPosition" | "approveBold";
 
 const stepNames: Record<Step, string> = {
+  approveBold: "Approve BOLD",
   closeLoanPosition: "Close Position",
 };
 
@@ -102,32 +105,89 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
       </>
     );
   },
+
   getStepName(stepid) {
     return stepNames[stepid];
   },
-  async getSteps() {
-    return ["closeLoanPosition"];
+
+  async getSteps({ account, contracts, request, wagmiConfig }) {
+    const { collIndex, prefixedTroveId } = request;
+    const coll = contracts.collaterals[collIndex];
+
+    const Controller = coll.symbol === "ETH"
+      ? coll.contracts.WETHZapper
+      : coll.contracts.BorrowerOperations;
+
+    if (!account.address) {
+      throw new Error("Account address is required");
+    }
+
+    const { troveId } = parsePrefixedTroveId(prefixedTroveId);
+
+    const [debt] = await readContract(wagmiConfig, {
+      ...coll.contracts.TroveManager,
+      functionName: "Troves",
+      args: [BigInt(troveId)],
+    });
+
+    const isBoldApproved = !dn.gt(debt, [
+      await readContract(wagmiConfig, {
+        ...contracts.BoldToken,
+        functionName: "allowance",
+        args: [account.address, Controller.address],
+      }) ?? 0n,
+      18,
+    ]);
+
+    return [
+      isBoldApproved ? null : "approveBold" as const,
+      "closeLoanPosition" as const,
+    ].filter((step) => step !== null);
   },
+
   parseRequest(request) {
     return v.parse(RequestSchema, request);
   },
-  async writeContractParams({ contracts, request, stepId }) {
-    const collateral = contracts.collaterals[request.collIndex];
-    const { BorrowerOperations } = collateral.contracts;
 
-    if (!BorrowerOperations) {
-      throw new Error(`Collateral ${collateral.symbol} not supported`);
+  async writeContractParams(stepId, { contracts, request, wagmiConfig }) {
+    const coll = contracts.collaterals[request.collIndex];
+    const { troveId } = parsePrefixedTroveId(request.prefixedTroveId);
+
+    if (stepId === "approveBold") {
+      const [debt] = await readContract(wagmiConfig, {
+        ...coll.contracts.TroveManager,
+        functionName: "Troves",
+        args: [BigInt(troveId)],
+      });
+
+      const Controller = coll.symbol === "ETH"
+        ? coll.contracts.WETHZapper
+        : coll.contracts.BorrowerOperations;
+
+      return {
+        ...contracts.BoldToken,
+        functionName: "approve",
+        args: [Controller.address, dn.mul([debt, 18], 1.1)[0]], // TODO: calculate the amount to approve in a more precise way
+      };
+    }
+
+    // WETHZapper mode
+    if (coll.symbol === "ETH" && stepId === "closeLoanPosition") {
+      return {
+        ...coll.contracts.WETHZapper,
+        functionName: "closeTroveToRawETH" as const,
+        args: [troveId],
+      };
     }
 
     if (stepId === "closeLoanPosition") {
-      const { troveId } = parsePrefixedTroveId(request.prefixedTroveId);
-
       return {
-        ...BorrowerOperations,
+        ...coll.contracts.BorrowerOperations,
         functionName: "closeTrove" as const,
         args: [troveId],
       };
     }
-    return null;
+
+    throw new Error("Invalid stepId: " + stepId);
   },
 };
