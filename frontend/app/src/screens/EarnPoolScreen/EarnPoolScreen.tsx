@@ -3,6 +3,7 @@
 import type { PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 
+import { Amount } from "@/src/comps/Amount/Amount";
 import { BackButton } from "@/src/comps/BackButton/BackButton";
 import { Details } from "@/src/comps/Details/Details";
 import { Screen } from "@/src/comps/Screen/Screen";
@@ -55,6 +56,8 @@ export function EarnPoolScreen() {
 
   const poolSharePercentage = position && dn.mul(dn.div(position.deposit, pool.boldQty), 100);
 
+  const poolToken = TOKENS_BY_SYMBOL[collateralSymbol];
+
   return pool && tab && (
     <Screen>
       <BackButton href="/earn" label={content.earnScreen.backButton} />
@@ -68,15 +71,11 @@ export function EarnPoolScreen() {
           items={[
             {
               label: content.earnScreen.accountPosition.depositLabel,
-              value: `${dn.format(position.deposit, { digits: 2, trailingZeros: true })} BOLD`,
+              value: <Amount value={position.deposit} suffix=" BOLD" />,
             },
             {
               label: content.earnScreen.accountPosition.shareLabel,
-              value: poolSharePercentage && (
-                <span title={`${dn.format(poolSharePercentage)}%`}>
-                  {`${dn.format(poolSharePercentage, { digits: 2, trailingZeros: true })}%`}
-                </span>
-              ),
+              value: <Amount percentage value={poolSharePercentage} />,
             },
             {
               label: content.earnScreen.accountPosition.rewardsLabel,
@@ -90,7 +89,7 @@ export function EarnPoolScreen() {
                     whiteSpace: "nowrap",
                   })}
                 >
-                  {dn.format(position.rewards.bold, 2)} BOLD
+                  <Amount value={position.rewards.bold} suffix=" BOLD" />
                   <div
                     className={css({
                       display: "flex",
@@ -100,7 +99,7 @@ export function EarnPoolScreen() {
                       backgroundColor: "dimmed",
                     })}
                   />
-                  {dn.format(position.rewards.eth, 2)} ETH
+                  <Amount value={position.rewards.coll} suffix={` ${poolToken.name}`} />
                 </HFlex>
               ),
             },
@@ -209,7 +208,13 @@ function PoolSummary({
             })}
           >
             <div>
-              {content.earnScreen.headerTvl(`${dn.format(boldQty, { compact: true })} BOLD`)}
+              {content.earnScreen.headerTvl(
+                <Amount
+                  format="compact"
+                  suffix=" BOLD"
+                  value={boldQty}
+                />,
+              )}
             </div>
             <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.tvl(poolToken.name))} />
           </div>
@@ -228,7 +233,11 @@ function PoolSummary({
             fontSize: 24,
           })}
         >
-          {dn.format(dn.mul(apr, 100), 2)}%
+          <Amount
+            format={2}
+            percentage
+            value={apr}
+          />
         </div>
         <div
           className={css({
