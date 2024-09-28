@@ -616,7 +616,7 @@ function PositionEarn({
           ),
           label: (
             <HFlex gap={4} justifyContent="flex-start">
-              <span>+{dn.format(rewards.eth, 4)}</span>
+              <span>+{dn.format(rewards.coll, 4)}</span>
               <TokenIcon
                 size="small"
                 symbol={token.symbol}

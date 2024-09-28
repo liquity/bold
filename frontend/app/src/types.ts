@@ -60,7 +60,7 @@ export type PositionEarn = {
   deposit: Dnum;
   rewards: {
     bold: Dnum;
-    eth: Dnum;
+    coll: Dnum;
   };
 };
 
