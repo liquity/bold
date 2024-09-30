@@ -1,29 +1,29 @@
 import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts";
 import { StabilityPoolDeposit } from "../generated/schema";
 import { DepositUpdated as DepositUpdatedEvent } from "../generated/templates/StabilityPool/StabilityPool";
-import { getCollPrefixId } from "./collateral-context-utils";
 
-function loadOrCreateStabilityPoolDeposit(depositor: Address, collateralId: string): StabilityPoolDeposit {
-  let stabilityPoolDepositId = getCollPrefixId() + depositor.toHexString();
-  let stabilityPoolDeposit = StabilityPoolDeposit.load(stabilityPoolDepositId);
+function loadOrCreateStabilityPoolDeposit(depositor: Address, collId: string): StabilityPoolDeposit {
+  let spId = collId + ":" + depositor.toHexString();
+  let spDeposit = StabilityPoolDeposit.load(spId);
 
-  if (!stabilityPoolDeposit) {
-    stabilityPoolDeposit = new StabilityPoolDeposit(stabilityPoolDepositId);
-
-    stabilityPoolDeposit.depositor = depositor;
-    stabilityPoolDeposit.collateral = collateralId;
-    stabilityPoolDeposit.deposit = BigInt.fromI32(0);
-    stabilityPoolDeposit.boldGain = BigInt.fromI32(0);
-    stabilityPoolDeposit.collGain = BigInt.fromI32(0);
+  if (!spDeposit) {
+    spDeposit = new StabilityPoolDeposit(spId);
+    spDeposit.boldGain = BigInt.fromI32(0);
+    spDeposit.collGain = BigInt.fromI32(0);
+    spDeposit.collateral = collId;
+    spDeposit.deposit = BigInt.fromI32(0);
+    spDeposit.depositor = depositor;
   }
 
-  return stabilityPoolDeposit;
+  return spDeposit;
 }
 
 export function handleDepositUpdated(event: DepositUpdatedEvent): void {
-  let collateralId = dataSource.context().getString("collateralId");
-  let stabilityPoolDeposit = loadOrCreateStabilityPoolDeposit(event.params._depositor, collateralId);
+  let spDeposit = loadOrCreateStabilityPoolDeposit(
+    event.params._depositor,
+    dataSource.context().getString("collId"),
+  );
 
-  stabilityPoolDeposit.deposit = event.params._newDeposit;
-  stabilityPoolDeposit.save();
+  spDeposit.deposit = event.params._newDeposit;
+  spDeposit.save();
 }
