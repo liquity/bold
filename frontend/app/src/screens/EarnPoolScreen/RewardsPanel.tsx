@@ -5,6 +5,7 @@ import { ReactNode } from "react";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
+import { useCollateral } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
@@ -19,10 +20,11 @@ export function RewardsPanel({
 }) {
   const account = useAccount();
 
-  const collPriceUsd = usePrice(position?.collateral ?? null);
+  const collateral = useCollateral(position?.collIndex ?? null);
+  const collPriceUsd = usePrice(collateral?.symbol ?? null);
   const boldPriceUsd = usePrice("BOLD");
 
-  if (!collPriceUsd || !boldPriceUsd) {
+  if (!collPriceUsd || !boldPriceUsd || !collateral) {
     return null;
   }
 
@@ -81,7 +83,7 @@ export function RewardsPanel({
                 value={position.rewards?.bold}
               />
               <RewardsAmount
-                symbol={position.collateral}
+                symbol={collateral.symbol}
                 tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsEth)} />}
                 value={position.rewards?.coll}
               />

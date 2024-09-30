@@ -1,27 +1,17 @@
-import type { CollateralSymbol, PositionEarn } from "@/src/types";
+import type { PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
-import { useCollateralContracts } from "@/src/contracts";
 import { parseInputFloat } from "@/src/form-utils";
+import { useCollateral } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { isCollIndex } from "@/src/types";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import {
-  Button,
-  Checkbox,
-  HFlex,
-  InfoTooltip,
-  InputField,
-  TextButton,
-  TokenIcon,
-  TOKENS_BY_SYMBOL,
-} from "@liquity2/uikit";
+import { Button, Checkbox, HFlex, InfoTooltip, InputField, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -58,9 +48,7 @@ export function DepositPanel({
     ? dn.div(updatedDeposit, dn.add(boldQty, depositDifference))
     : null;
 
-  const allCollContracts = useCollateralContracts();
-
-  const collIndex = allCollContracts.findIndex(({ symbol }) => symbol === position?.collateral);
+  const collateral = useCollateral(position?.collIndex ?? null);
 
   const allowSubmit = account.isConnected && parsedValue;
 
@@ -181,19 +169,21 @@ export function DepositPanel({
                   BOLD
                 </span>
               </div>
-              <div>
-                <Amount
-                  format={2}
-                  value={position.rewards.coll}
-                />{" "}
-                <span
-                  className={css({
-                    color: "contentAlt",
-                  })}
-                >
-                  {TOKENS_BY_SYMBOL[position.collateral].name}
-                </span>
-              </div>
+              {collateral && (
+                <div>
+                  <Amount
+                    format={2}
+                    value={position.rewards.coll}
+                  />{" "}
+                  <span
+                    className={css({
+                      color: "contentAlt",
+                    })}
+                  >
+                    {collateral.name}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </HFlex>
@@ -205,15 +195,11 @@ export function DepositPanel({
           size="large"
           wide
           onClick={() => {
-            if (
-              position?.collateral !== undefined
-              && account.address
-              && isCollIndex(collIndex)
-            ) {
+            if (collateral && account.address && position) {
               txFlow.start({
                 flowId: "earnDeposit",
                 backLink: [
-                  `/earn/${position.collateral.toLowerCase()}`,
+                  `/earn/${collateral.name.toLowerCase()}`,
                   "Back to editing",
                 ],
                 successLink: ["/", "Go to the Dashboard"],
@@ -222,7 +208,7 @@ export function DepositPanel({
                 depositor: account.address,
                 boldAmount: depositDifference,
                 claim: claimRewards,
-                collIndex,
+                collIndex: position.collIndex,
               });
               router.push("/transactions");
             }

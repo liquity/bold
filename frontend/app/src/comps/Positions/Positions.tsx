@@ -9,6 +9,7 @@ import { DEMO_MODE } from "@/src/env";
 import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
+import { useCollateral } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useLoansByAccount } from "@/src/subgraph-hooks";
@@ -565,18 +566,18 @@ function PositionLeverage({
 
 function PositionEarn({
   apr,
-  collateral,
+  collIndex,
   deposit,
   rewards,
 }: Pick<
   PositionEarn,
   | "apr"
-  | "collateral"
+  | "collIndex"
   | "deposit"
   | "rewards"
 >) {
-  const token = TOKENS_BY_SYMBOL[collateral];
-  return (
+  const token = useCollateral(collIndex);
+  return token && (
     <Link
       href={`/earn/${token.symbol.toLowerCase()}`}
       legacyBehavior

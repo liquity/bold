@@ -91,7 +91,7 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
   subtitle: "Please review the changes of your borrow position before confirming",
   Summary({ flow }) {
-    const { symbol } = useCollateral(flow.request.collIndex);
+    const collateral = useCollateral(flow.request.collIndex);
     const loan = useLoanById(flow.request.prefixedTroveId);
     const { troveId } = parsePrefixedTroveId(flow.request.prefixedTroveId);
     const loadingState = match(loan)
@@ -102,6 +102,10 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
       .with({ data: P.nonNullable }, () => "success")
       .otherwise(() => "error");
 
+    if (!collateral) {
+      return null;
+    }
+
     const newDeposit = dn.add(loan.data?.deposit ?? 0n, flow.request.collChange);
     const newBorrowed = dn.add(loan.data?.borrowed ?? 0n, flow.request.debtChange);
 
@@ -109,7 +113,7 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
       troveId,
       borrowed: newBorrowed,
       collIndex: flow.request.collIndex,
-      collateral: symbol,
+      collateral: collateral.symbol,
       deposit: newDeposit,
       interestRate: loan.data.interestRate,
       type: "borrow" as const,
@@ -134,13 +138,13 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
   Details({ flow }) {
     const { request } = flow;
     const collateral = useCollateral(flow.request.collIndex);
-    const collPrice = usePrice(collateral.symbol);
+    const collPrice = usePrice(collateral?.symbol ?? null);
     const boldPrice = usePrice("BOLD");
 
     const collChangeUnsigned = dn.abs(request.collChange);
     const debtChangeUnsigned = dn.abs(request.debtChange);
 
-    return (
+    return collateral && (
       <>
         <TransactionDetailsRow
           label={dn.gt(request.collChange, 0n)

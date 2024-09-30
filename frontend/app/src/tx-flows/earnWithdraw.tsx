@@ -7,7 +7,7 @@ import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 
-const FlowIdSchema = v.literal("earnDeposit");
+const FlowIdSchema = v.literal("earnWithdraw");
 
 const RequestSchema = v.object({
   flowId: FlowIdSchema,
@@ -32,13 +32,13 @@ const RequestSchema = v.object({
 
 export type Request = v.InferOutput<typeof RequestSchema>;
 
-type Step = "provideToStabilityPool";
+type Step = "withdrawFromStabilityPool";
 
 const stepNames: Record<Step, string> = {
-  provideToStabilityPool: "Add deposit",
+  withdrawFromStabilityPool: "Withdraw",
 };
 
-export const earnDeposit: FlowDeclaration<Request, Step> = {
+export const earnWithdraw: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
   subtitle: "Please review your borrow position before confirming",
 
@@ -66,7 +66,7 @@ export const earnDeposit: FlowDeclaration<Request, Step> = {
   },
 
   async getSteps() {
-    return ["provideToStabilityPool"];
+    return ["withdrawFromStabilityPool"];
   },
 
   getStepName(stepId) {
@@ -79,10 +79,9 @@ export const earnDeposit: FlowDeclaration<Request, Step> = {
 
   async writeContractParams(_stepId, { contracts, request }) {
     const collateral = contracts.collaterals[request.collIndex];
-
     return {
       ...collateral.contracts.StabilityPool,
-      functionName: "provideToSP",
+      functionName: "withdrawFromSP",
       args: [
         request.boldAmount[0],
         request.claim,

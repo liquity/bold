@@ -6,11 +6,14 @@ import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
+import { useCollateral } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
+import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { Button, Checkbox, HFlex, InfoTooltip, InputField, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function WithdrawPanel({
@@ -20,7 +23,9 @@ export function WithdrawPanel({
   boldQty: Dnum;
   position?: PositionEarn;
 }) {
+  const router = useRouter();
   const account = useAccount();
+  const txFlow = useTransactionFlow();
 
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
@@ -40,6 +45,8 @@ export function WithdrawPanel({
   const updatedPoolShare = depositDifference
     ? dn.div(updatedDeposit, dn.add(boldQty, depositDifference))
     : null;
+
+  const collateral = useCollateral(position?.collIndex ?? null);
 
   const allowSubmit = account.isConnected && parsedValue;
 
@@ -174,6 +181,25 @@ export function WithdrawPanel({
           mode="primary"
           size="large"
           wide
+          onClick={() => {
+            if (collateral && account.address && position) {
+              txFlow.start({
+                flowId: "earnWithdraw",
+                backLink: [
+                  `/earn/${collateral.symbol.toLowerCase()}`,
+                  "Back to editing",
+                ],
+                successLink: ["/", "Go to the Dashboard"],
+                successMessage: "The earn position has been created successfully.",
+
+                depositor: account.address,
+                boldAmount: depositDifference,
+                claim: claimRewards,
+                collIndex: position.collIndex,
+              });
+              router.push("/transactions");
+            }
+          }}
         />
       </div>
     </div>

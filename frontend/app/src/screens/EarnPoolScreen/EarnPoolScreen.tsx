@@ -9,6 +9,7 @@ import { Details } from "@/src/comps/Details/Details";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { ACCOUNT_BALANCES, ACCOUNT_POSITIONS, EARN_POOLS } from "@/src/demo-mode";
+import { useCollIndexFromSymbol } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -39,15 +40,17 @@ export function EarnPoolScreen() {
   const params = useParams();
 
   const collateralSymbol = String(params.pool).toUpperCase();
+  const isCollSymbolOk = isCollateralSymbol(collateralSymbol);
+  const collIndex = useCollIndexFromSymbol(isCollSymbolOk ? collateralSymbol : null);
 
-  if (!isCollateralSymbol(collateralSymbol)) {
+  if (!collIndex === null || !isCollSymbolOk) {
     return null;
   }
 
   const pool = EARN_POOLS[collateralSymbol];
 
   const position: PositionEarn | undefined = ACCOUNT_POSITIONS.find((position) => (
-    position.type === "earn" && position.collateral === collateralSymbol
+    position.type === "earn" && position.collIndex === collIndex
   )) as PositionEarn | undefined;
 
   const accountBoldBalance = account.isConnected ? ACCOUNT_BALANCES.BOLD : undefined;

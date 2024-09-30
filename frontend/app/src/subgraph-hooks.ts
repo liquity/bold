@@ -1,4 +1,4 @@
-import type { Address, PositionLoan, PrefixedTroveId } from "@/src/types";
+import type { Address, PositionEarn, PositionLoan, PrefixedTroveId } from "@/src/types";
 
 import { getBuiltGraphSDK } from "@/.graphclient";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
@@ -11,7 +11,15 @@ import { useQuery } from "@tanstack/react-query";
 
 const REFETCH_INTERVAL = 10_000;
 
-const graphSdk = getBuiltGraphSDK();
+const graph = getBuiltGraphSDK();
+
+type GraphTrove = Awaited<
+  ReturnType<typeof graph.TrovesByAccount>
+>["troves"][number];
+
+type GraphStabilityPoolDeposit = Awaited<
+  ReturnType<typeof graph.StabilityPoolDepositsByAccount>
+>["stabilityPoolDeposits"][number];
 
 export let useTroveCount = (account?: Address, collIndex?: number) => {
   return useQuery({
@@ -20,7 +28,7 @@ export let useTroveCount = (account?: Address, collIndex?: number) => {
       if (!account) {
         return null;
       }
-      const { borrowerInfo } = await graphSdk.TrovesCount({ id: account.toLowerCase() });
+      const { borrowerInfo } = await graph.TrovesCount({ id: account.toLowerCase() });
       return collIndex === undefined
         ? borrowerInfo?.troves ?? 0
         : borrowerInfo?.trovesByCollateral[collIndex] ?? null;
@@ -52,7 +60,7 @@ export let useLoansByAccount = (account?: Address) => {
       if (!account) {
         return null;
       }
-      const { troves } = await graphSdk.TrovesByAccount({ account });
+      const { troves } = await graph.TrovesByAccount({ account });
       return troves.map(subgraphTroveToLoan);
     },
     refetchInterval: REFETCH_INTERVAL,
@@ -73,6 +81,44 @@ if (DEMO_MODE) {
   };
 }
 
+export let useEarnPositionsByAccount = (account?: Address) => {
+  return useQuery({
+    queryKey: ["StabilityPoolDepositsByAccount", account],
+    queryFn: async () => {
+      if (!account) {
+        return null;
+      }
+      const { stabilityPoolDeposits } = await graph.StabilityPoolDepositsByAccount({ account });
+      return stabilityPoolDeposits.map(subgraphStabilityPoolDepositToEarnPosition);
+    },
+    refetchInterval: REFETCH_INTERVAL,
+  });
+};
+
+if (DEMO_MODE) {
+  useEarnPositionsByAccount = (account?: Address) => {
+    return useQuery({
+      queryKey: ["StabilityPoolDepositsByAccount", account],
+      queryFn: async () => {
+        if (!account) {
+          return [];
+        }
+        return ACCOUNT_POSITIONS
+          .filter((position) => position.type === "earn")
+          .map((position): GraphStabilityPoolDeposit => ({
+            id: "0x" + position.collIndex.toString(16),
+            deposit: position.deposit[0],
+            collGain: position.rewards.coll[0],
+            boldGain: position.rewards.bold[0],
+            collateral: {
+              collIndex: position.collIndex,
+            },
+          }));
+      },
+    });
+  };
+}
+
 export let useLoanById = (id?: PrefixedTroveId | null) => {
   return useQuery({
     queryKey: ["TroveById", id],
@@ -81,7 +127,7 @@ export let useLoanById = (id?: PrefixedTroveId | null) => {
         return null;
       }
       await sleep(500);
-      const { trove } = await graphSdk.TroveById({ id });
+      const { trove } = await graph.TroveById({ id });
       return trove
         ? subgraphTroveToLoan(trove)
         : null;
@@ -110,9 +156,7 @@ if (DEMO_MODE) {
   };
 }
 
-function subgraphTroveToLoan(
-  trove: Awaited<ReturnType<typeof graphSdk.TrovesByAccount>>["troves"][0],
-): PositionLoan {
+function subgraphTroveToLoan(trove: GraphTrove): PositionLoan {
   if (!isTroveId(trove.troveId)) {
     throw new Error(`Invalid trove ID: ${trove.id} / ${trove.troveId}`);
   }
@@ -132,5 +176,23 @@ function subgraphTroveToLoan(
     interestRate: dnum18(trove.interestRate),
     troveId: trove.troveId,
     collIndex,
+  };
+}
+
+function subgraphStabilityPoolDepositToEarnPosition(spDeposit: GraphStabilityPoolDeposit): PositionEarn {
+  const collIndex = spDeposit.collateral.collIndex;
+  if (!isCollIndex(collIndex)) {
+    throw new Error(`Invalid collateral index: ${collIndex}`);
+  }
+
+  return {
+    type: "earn",
+    apr: dnum18(0),
+    deposit: dnum18(spDeposit.deposit),
+    collIndex,
+    rewards: {
+      bold: dnum18(spDeposit.boldGain),
+      coll: dnum18(spDeposit.collGain),
+    },
   };
 }
