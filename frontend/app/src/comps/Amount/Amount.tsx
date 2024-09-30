@@ -4,11 +4,13 @@ export function Amount({
   value,
   format,
   percentage = false,
+  prefix = "",
   suffix = "",
 }: {
   value: Parameters<typeof fmtnum>[0];
   format?: Parameters<typeof fmtnum>[1];
   percentage?: boolean;
+  prefix?: string;
   suffix?: string;
 }) {
   if (percentage && !suffix) {
@@ -16,14 +18,11 @@ export function Amount({
   }
   return value && (
     <span
-      title={format === "full" ? undefined : `${
-        fmtnum(
-          value,
-          "full",
-          percentage ? 100 : 1,
-        )
-      }${suffix}`}
+      title={format === "full" ? undefined : (
+        `${prefix}${fmtnum(value, "full", percentage ? 100 : 1)}${suffix}`
+      )}
     >
+      {prefix}
       {fmtnum(
         value,
         format,
