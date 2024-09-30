@@ -1933,8 +1933,8 @@ contract SPTest is DevTestSetup {
         testVars.ethGainC = stabilityPool.getDepositorCollGain(C);
         testVars.ethGainD = stabilityPool.getDepositorCollGain(D);
 
-        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainC, 1e4, "C share of coll mismatch");
-        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainD, 1e4, "D share of coll mismatch");
+        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainC, 1e5, "C share of coll mismatch");
+        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainD, 1e5, "D share of coll mismatch");
 
         // E makes deposit after 2nd liq
         transferBold(C, E, boldToken.balanceOf(C));
