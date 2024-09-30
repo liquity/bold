@@ -505,7 +505,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         *
         * Since S corresponds to Coll gain, and P to deposit loss, we update S first.
         */
-        uint256 marginalCollGain = collGainPerUnitStaked * currentP;
+        uint256 marginalCollGain = collGainPerUnitStaked * (currentP - 1);
         uint256 newS = currentS + marginalCollGain;
         epochToScaleToS[currentEpochCached][currentScaleCached] = newS;
         emit S_Updated(newS, currentEpochCached, currentScaleCached);
@@ -594,8 +594,22 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         Snapshots memory snapshots = depositSnapshots[_depositor];
 
-        uint256 collGain = _getCollGainFromSnapshots(initialDeposit, snapshots);
-        return collGain;
+        /*
+         * Grab the sum 'S' from the epoch at which the stake was made. The Coll gain may span up to one scale change.
+         * If it does, the second portion of the Coll gain is scaled by 1e9.
+         * If the gain spans no scale change, the second portion will be 0.
+         */
+        uint128 epochSnapshot = snapshots.epoch;
+        uint128 scaleSnapshot = snapshots.scale;
+        uint256 S_Snapshot = snapshots.S;
+        uint256 P_Snapshot = snapshots.P;
+
+        uint256 firstPortion = epochToScaleToS[epochSnapshot][scaleSnapshot] - S_Snapshot;
+        uint256 secondPortion = epochToScaleToS[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
+
+        uint256 collGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
+
+        return LiquityMath._min(collGain, collBalance);
     }
 
     function getDepositorYieldGain(address _depositor) public view override returns (uint256) {
@@ -648,29 +662,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
             (epochToScaleToB[snapshots.epoch][snapshots.scale + 1] + secondPortionPending) / SCALE_FACTOR;
 
         return initialDeposit * (firstPortion + secondPortion) / snapshots.P / DECIMAL_PRECISION;
-    }
-
-    function _getCollGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots)
-        internal
-        view
-        returns (uint256)
-    {
-        /*
-        * Grab the sum 'S' from the epoch at which the stake was made. The Coll gain may span up to one scale change.
-        * If it does, the second portion of the Coll gain is scaled by 1e9.
-        * If the gain spans no scale change, the second portion will be 0.
-        */
-        uint128 epochSnapshot = snapshots.epoch;
-        uint128 scaleSnapshot = snapshots.scale;
-        uint256 S_Snapshot = snapshots.S;
-        uint256 P_Snapshot = snapshots.P;
-
-        uint256 firstPortion = epochToScaleToS[epochSnapshot][scaleSnapshot] - S_Snapshot;
-        uint256 secondPortion = epochToScaleToS[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
-
-        uint256 collGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
-
-        return collGain;
     }
 
     // --- Compounded deposit ---
