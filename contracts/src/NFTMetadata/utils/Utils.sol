@@ -39,8 +39,10 @@ library numUtils {
                 fraction = (_value % 10 ** _divisor);
                 // adjust fraction to be the same as the precision
                 fraction = fraction * 10 ** (_precision - _divisor);
-            } else {
+            } else if (_divisor > _precision) {
                 fraction = (_value % 10 ** _divisor) / 10 ** (_divisor - _precision - 1);
+            } else {
+                fraction = (_value % 10 ** _divisor) * 10;
             }
         } else {
             whole = _value;

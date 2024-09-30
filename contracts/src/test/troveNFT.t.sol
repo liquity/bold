@@ -187,7 +187,7 @@ contract troveNFTTest is DevTestSetup {
         _writeUriFile(uris);
     }
 
-    function testTroveURIAttributes() public {
+    function testTroveURIAttributes() public view {
         address collateral = address(contractsArray[0].collToken);
 
         string memory uri = troveNFTWETH.tokenURI(troveIds[0]);
