@@ -1,10 +1,11 @@
 import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts";
 import { BorrowerInfo, Collateral, InterestRateBracket, Trove } from "../generated/schema";
-import { TroveNFT } from "../generated/templates/TroveManager/TroveNFT";
 import {
   TroveOperation as TroveOperationEvent,
   TroveUpdated as TroveUpdatedEvent,
-} from "../generated/TroveManager/TroveManager";
+} from "../generated/templates/TroveManager/TroveManager";
+import { TroveNFT as TroveNFTContract } from "../generated/templates/TroveManager/TroveNFT";
+import { getCollPrefixId } from "./collateral-context-utils";
 
 // see Operation enum in
 // contracts/src/Interfaces/ITroveEvents.sol
@@ -19,16 +20,6 @@ let OP_CLOSE_TROVE = 1;
 function floorToDecimals(value: BigInt, decimals: u8): BigInt {
   let factor = BigInt.fromI32(10).pow(18 - decimals);
   return value.div(factor).times(factor);
-}
-
-// prefix an id with the collateral index
-function getCollPrefixId(): string {
-  let collId = dataSource.context().getBytes("address:token").toHexString();
-  let collateral = Collateral.load(collId);
-  if (!collateral) {
-    throw new Error("Collateral not found: " + collId);
-  }
-  return collateral.collIndex.toString() + ":";
 }
 
 export function handleTroveOperation(event: TroveOperationEvent): void {
@@ -108,7 +99,7 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
   // create trove if needed
   if (!trove) {
     let troveNftAddress = context.getBytes("address:troveNft");
-    let borrowerAddress = TroveNFT.bind(Address.fromBytes(troveNftAddress)).ownerOf(troveId);
+    let borrowerAddress = TroveNFTContract.bind(Address.fromBytes(troveNftAddress)).ownerOf(troveId);
 
     // create borrower if needed
     let borrowerInfo = BorrowerInfo.load(borrowerAddress.toHexString());
