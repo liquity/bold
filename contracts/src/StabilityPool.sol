@@ -251,7 +251,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 initialDeposit = deposits[msg.sender].initialValue;
 
         uint256 currentCollGain = getDepositorCollGain(msg.sender);
-        uint256 currentYieldGain = LiquityMath._min(getDepositorYieldGain(msg.sender), yieldGainsOwed);
+        uint256 currentYieldGain = getDepositorYieldGain(msg.sender);
         uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         (uint256 keptYieldGain, uint256 yieldGainToSend) = _getYieldToKeepOrSend(currentYieldGain, _doClaim);
         uint256 newDeposit = compoundedBoldDeposit + _topUp + keptYieldGain;
@@ -312,7 +312,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         activePool.mintAggInterest();
 
         uint256 currentCollGain = getDepositorCollGain(msg.sender);
-        uint256 currentYieldGain = LiquityMath._min(getDepositorYieldGain(msg.sender), yieldGainsOwed);
+        uint256 currentYieldGain = getDepositorYieldGain(msg.sender);
         uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
         uint256 boldToWithdraw = LiquityMath._min(_amount, compoundedBoldDeposit);
         (uint256 keptYieldGain, uint256 yieldGainToSend) = _getYieldToKeepOrSend(currentYieldGain, _doClaim);
@@ -605,8 +605,22 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         Snapshots memory snapshots = depositSnapshots[_depositor];
 
-        uint256 yieldGain = _getYieldGainFromSnapshots(initialDeposit, snapshots);
-        return yieldGain;
+        /*
+         * Grab the sum 'B' from the epoch at which the stake was made. The Bold gain may span up to one scale change.
+         * If it does, the second portion of the Bold gain is scaled by 1e9.
+         * If the gain spans no scale change, the second portion will be 0.
+         */
+        uint128 epochSnapshot = snapshots.epoch;
+        uint128 scaleSnapshot = snapshots.scale;
+        uint256 B_Snapshot = snapshots.B;
+        uint256 P_Snapshot = snapshots.P;
+
+        uint256 firstPortion = epochToScaleToB[epochSnapshot][scaleSnapshot] - B_Snapshot;
+        uint256 secondPortion = epochToScaleToB[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
+
+        uint256 yieldGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
+
+        return LiquityMath._min(yieldGain, yieldGainsOwed);
     }
 
     function getDepositorYieldGainWithPending(address _depositor) external view override returns (uint256) {
@@ -657,29 +671,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 collGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
 
         return collGain;
-    }
-
-    function _getYieldGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots)
-        internal
-        view
-        returns (uint256)
-    {
-        /*
-        * Grab the sum 'B' from the epoch at which the stake was made. The Bold gain may span up to one scale change.
-        * If it does, the second portion of the Bold gain is scaled by 1e9.
-        * If the gain spans no scale change, the second portion will be 0.
-        */
-        uint128 epochSnapshot = snapshots.epoch;
-        uint128 scaleSnapshot = snapshots.scale;
-        uint256 B_Snapshot = snapshots.B;
-        uint256 P_Snapshot = snapshots.P;
-
-        uint256 firstPortion = epochToScaleToB[epochSnapshot][scaleSnapshot] - B_Snapshot;
-        uint256 secondPortion = epochToScaleToB[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
-
-        uint256 yieldGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
-
-        return yieldGain;
     }
 
     // --- Compounded deposit ---
