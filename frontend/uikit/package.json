@@ -54,23 +54,23 @@
     "ts-pattern": "^5.2.0"
   },
   "dependencies": {
-    "@floating-ui/react-dom": "^2.1.1",
-    "focus-trap-react": "^10.2.3"
+    "@floating-ui/react-dom": "^2.1.2",
+    "focus-trap-react": "^10.3.0"
   },
   "devDependencies": {
     "@svgr/core": "^8.1.0",
     "@svgr/plugin-jsx": "^8.1.0",
     "@svgr/plugin-svgo": "^8.1.0",
-    "@types/react": "^18.3.3",
+    "@types/react": "^18.3.10",
     "@types/react-dom": "^18.2.22",
-    "@vitejs/plugin-react-swc": "^3.7.0",
+    "@vitejs/plugin-react-swc": "^3.7.1",
     "dprint": "^0.47.2",
     "globals": "^15.9.0",
-    "oxlint": "^0.6.1",
+    "oxlint": "^0.9.9",
     "tsx": "^4.16.5",
     "typescript": "^5.5.4",
-    "vite": "^5.3.5",
-    "vite-plugin-dts": "^3.9.1",
+    "vite": "^5.4.8",
+    "vite-plugin-dts": "^4.2.3",
     "zx": "^8.1.4"
   }
 }
