@@ -155,7 +155,7 @@ export function WithdrawPanel({
                 </span>
               </div>
               <div>
-                {dn.format(position.rewards.eth, 2)}{" "}
+                {dn.format(position.rewards.coll, 2)}{" "}
                 <span
                   className={css({
                     color: "contentAlt",

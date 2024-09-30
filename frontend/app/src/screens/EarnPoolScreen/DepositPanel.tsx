@@ -1,12 +1,15 @@
-import type { PositionEarn } from "@/src/types";
+import type { CollateralSymbol, PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
+import { useCollateralContracts } from "@/src/contracts";
 import { parseInputFloat } from "@/src/form-utils";
 import { useAccount } from "@/src/services/Ethereum";
+import { useTransactionFlow } from "@/src/services/TransactionFlow";
+import { isCollIndex } from "@/src/types";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
@@ -20,6 +23,7 @@ import {
   TOKENS_BY_SYMBOL,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function DepositPanel({
@@ -31,7 +35,9 @@ export function DepositPanel({
   boldQty: Dnum;
   position?: PositionEarn;
 }) {
+  const router = useRouter();
   const account = useAccount();
+  const txFlow = useTransactionFlow();
 
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
@@ -51,6 +57,10 @@ export function DepositPanel({
   const updatedPoolShare = depositDifference
     ? dn.div(updatedDeposit, dn.add(boldQty, depositDifference))
     : null;
+
+  const allCollContracts = useCollateralContracts();
+
+  const collIndex = allCollContracts.findIndex(({ symbol }) => symbol === position?.collateral);
 
   const allowSubmit = account.isConnected && parsedValue;
 
@@ -194,6 +204,29 @@ export function DepositPanel({
           mode="primary"
           size="large"
           wide
+          onClick={() => {
+            if (
+              position?.collateral !== undefined
+              && account.address
+              && isCollIndex(collIndex)
+            ) {
+              txFlow.start({
+                flowId: "earnDeposit",
+                backLink: [
+                  `/earn/${position.collateral.toLowerCase()}`,
+                  "Back to editing",
+                ],
+                successLink: ["/", "Go to the Dashboard"],
+                successMessage: "The earn position has been created successfully.",
+
+                depositor: account.address,
+                boldAmount: depositDifference,
+                claim: claimRewards,
+                collIndex,
+              });
+              router.push("/transactions");
+            }
+          }}
         />
       </div>
     </div>

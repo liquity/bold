@@ -19,19 +19,19 @@ export function RewardsPanel({
 }) {
   const account = useAccount();
 
-  const ethPriceUsd = usePrice("ETH");
+  const collPriceUsd = usePrice(position?.collateral ?? null);
   const boldPriceUsd = usePrice("BOLD");
 
-  if (!ethPriceUsd || !boldPriceUsd) {
+  if (!collPriceUsd || !boldPriceUsd) {
     return null;
   }
 
   const totalRewards = dn.add(
     dn.mul(position?.rewards?.bold ?? DNUM_0, boldPriceUsd),
-    dn.mul(position?.rewards?.eth ?? DNUM_0, ethPriceUsd),
+    dn.mul(position?.rewards?.coll ?? DNUM_0, collPriceUsd),
   );
 
-  const gasFeeUsd = dn.multiply(dn.from(0.0015, 18), ethPriceUsd);
+  const gasFeeUsd = dn.multiply(dn.from(0.0015, 18), collPriceUsd);
 
   const allowSubmit = account.isConnected;
 
@@ -75,15 +75,15 @@ export function RewardsPanel({
                 gap: 32,
               })}
             >
-              <Amount
+              <RewardsAmount
                 symbol="BOLD"
                 tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsBold)} />}
                 value={position.rewards?.bold}
               />
-              <Amount
-                symbol="ETH"
+              <RewardsAmount
+                symbol={position.collateral}
                 tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsEth)} />}
-                value={position.rewards?.eth}
+                value={position.rewards?.coll}
               />
             </div>
           )
@@ -128,7 +128,7 @@ export function RewardsPanel({
   );
 }
 
-function Amount({
+function RewardsAmount({
   symbol,
   tooltip,
   value,
