@@ -71,6 +71,25 @@ contract MetadataNFT is IMetadataNFT {
         );
     }
 
+    function attributes(TroveData memory _troveData) public view returns (string memory) {
+        //include: collateral token address, collateral amount, debt token address, debt amount, interest rate, status
+        return string.concat(
+            '[{"trait_type": "Collateral Token", "value": "',
+            Strings.toHexString(_troveData._collToken),
+            '"}, {"trait_type": "Collateral Amount", "value": "',
+            Strings.toString(_troveData._collAmount),
+            '"}, {"trait_type": "Debt Token", "value": "',
+            Strings.toHexString(_troveData._boldToken),
+            '"}, {"trait_type": "Debt Amount", "value": "',
+            Strings.toString(_troveData._debtAmount),
+            '"}, {"trait_type": "Interest Rate", "value": "',
+            Strings.toString(_troveData._interestRate),
+            '"}, {"trait_type": "Status", "value": "',
+            _status2Str(_troveData._status),
+            '"} ]'
+        );
+    }
+
     function dynamicTextComponents(TroveData memory _troveData) public view returns (string memory) {
         string memory id = LibString.toHexString(_troveData._tokenId);
         id = string.concat(LibString.slice(id, 0, 6), "...", LibString.slice(id, 38, 42));

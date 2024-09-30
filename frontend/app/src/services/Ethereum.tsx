@@ -99,7 +99,7 @@ export function useBalance(
           return null;
         }
         const collateral = contracts.collaterals.find((c) => c.symbol === symbol);
-        return collateral?.contracts.Token.address ?? null;
+        return collateral?.contracts.CollToken.address ?? null;
       },
     )
     .with("BOLD", () => CONTRACT_BOLD_TOKEN)

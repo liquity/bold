@@ -1,8 +1,6 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
-import { ETH_GAS_COMPENSATION } from "@/src/constants";
-import { ADDRESS_ZERO } from "@/src/eth-utils";
 import { fmtnum } from "@/src/formatting";
 import { useCollateral } from "@/src/liquity-utils";
 import { parsePrefixedTroveId } from "@/src/liquity-utils";
@@ -33,7 +31,7 @@ const RequestSchema = v.object({
   ]),
   successMessage: v.string(),
 
-  boldChange: vDnum(),
+  debtChange: vDnum(),
   collChange: vDnum(),
   collIndex: vCollIndex(),
   maxUpfrontFee: vDnum(),
@@ -43,12 +41,51 @@ const RequestSchema = v.object({
 
 export type Request = v.InferOutput<typeof RequestSchema>;
 
-type Step = "approve" | "adjustTrove";
+type FinalStep =
+  | "adjustTrove" // update both collateral and borrowed
+  | "depositBold"
+  | "depositColl"
+  | "withdrawBold"
+  | "withdrawColl";
+
+type Step =
+  | FinalStep
+  | "approveBold"
+  | "approveColl";
 
 const stepNames: Record<Step, string> = {
-  approve: "Approve",
+  approveBold: "Approve BOLD",
+  approveColl: "Approve {collSymbol}",
   adjustTrove: "Update Position",
+  depositBold: "Update Position",
+  depositColl: "Update Position",
+  withdrawBold: "Update Position",
+  withdrawColl: "Update Position",
 };
+
+function getFinalStep(request: Request): FinalStep {
+  const { collChange, debtChange } = request;
+  if (!dn.eq(collChange, 0) && !dn.eq(debtChange, 0)) {
+    return "adjustTrove";
+  }
+  // coll increases => deposit
+  if (dn.gt(collChange, 0)) {
+    return "depositColl";
+  }
+  // coll decreases => withdraw
+  if (dn.lt(collChange, 0)) {
+    return "withdrawColl";
+  }
+  // debt increases => withdraw BOLD (borrow)
+  if (dn.gt(debtChange, 0)) {
+    return "withdrawBold";
+  }
+  // debt decreases => deposit BOLD (repay)
+  if (dn.lt(debtChange, 0)) {
+    return "depositBold";
+  }
+  throw new Error("Invalid request");
+}
 
 export const updateLoanPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
@@ -66,7 +103,7 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
       .otherwise(() => "error");
 
     const newDeposit = dn.add(loan.data?.deposit ?? 0n, flow.request.collChange);
-    const newBorrowed = dn.add(loan.data?.borrowed ?? 0n, flow.request.boldChange);
+    const newBorrowed = dn.add(loan.data?.borrowed ?? 0n, flow.request.debtChange);
 
     const newLoan = !loan.data ? null : {
       troveId,
@@ -101,7 +138,7 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
     const boldPrice = usePrice("BOLD");
 
     const collChangeUnsigned = dn.abs(request.collChange);
-    const boldChangeUnsigned = dn.abs(request.boldChange);
+    const debtChangeUnsigned = dn.abs(request.debtChange);
 
     return (
       <>
@@ -128,21 +165,21 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
           ]}
         />
         <TransactionDetailsRow
-          label={dn.gt(request.boldChange, 0n) ? "You borrow" : "You repay"}
+          label={dn.gt(request.debtChange, 0n) ? "You borrow" : "You repay"}
           value={[
             <div
-              title={`${fmtnum(boldChangeUnsigned, "full")} BOLD`}
+              title={`${fmtnum(debtChangeUnsigned, "full")} BOLD`}
               style={{
-                color: dn.eq(boldChangeUnsigned, 0n)
+                color: dn.eq(debtChangeUnsigned, 0n)
                   ? "var(--colors-content-alt2)"
                   : undefined,
               }}
             >
-              {fmtnum(boldChangeUnsigned)} BOLD
+              {fmtnum(debtChangeUnsigned)} BOLD
             </div>,
             boldPrice && (
-              <div title={fmtnum(dn.mul(boldChangeUnsigned, boldPrice))}>
-                ${fmtnum(dn.mul(boldChangeUnsigned, boldPrice))}
+              <div title={fmtnum(dn.mul(debtChangeUnsigned, boldPrice))}>
+                ${fmtnum(dn.mul(debtChangeUnsigned, boldPrice))}
               </div>
             ),
           ]}
@@ -151,82 +188,126 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
     );
   },
 
-  getStepName(stepId) {
-    return stepNames[stepId];
-  },
-
-  async getSteps({
-    account,
-    contracts,
-    request,
-    wagmiConfig,
-  }) {
-    // no need for approval if collateral change is negative
-    if (!dn.gt(request.collChange, 0)) {
-      return ["adjustTrove"];
-    }
-
-    const collateral = contracts.collaterals[request.collIndex];
-    const { BorrowerOperations, Token } = collateral.contracts;
-
-    if (!BorrowerOperations || !Token) {
-      throw new Error(`Collateral ${collateral.symbol} not supported`);
-    }
-
-    const allowance = await readContract(wagmiConfig, {
-      ...Token,
-      functionName: "allowance",
-      args: [
-        account.address ?? ADDRESS_ZERO,
-        BorrowerOperations.address,
-      ],
-    });
-
-    const isApproved = !dn.gt(
-      dn.add(request.collChange, ETH_GAS_COMPENSATION),
-      [allowance ?? 0n, 18],
-    );
-
-    return isApproved ? ["adjustTrove"] : ["approve", "adjustTrove"];
-  },
   parseRequest(request) {
     return v.parse(RequestSchema, request);
   },
-  async writeContractParams({ contracts, request, stepId }) {
-    const collateral = contracts.collaterals[request.collIndex];
-    const { BorrowerOperations, Token } = collateral.contracts;
 
-    if (!BorrowerOperations || !Token) {
-      throw new Error(`Collateral ${collateral.symbol} not supported`);
+  getStepName(stepId, { contracts, request }) {
+    const name = stepNames[stepId];
+    const coll = contracts.collaterals[request.collIndex];
+    return name.replace(/\{collSymbol\}/g, coll.symbol);
+  },
+
+  async getSteps({ account, contracts, request, wagmiConfig }) {
+    const { collIndex, debtChange } = request;
+    const coll = contracts.collaterals[collIndex];
+
+    const Controller = coll.symbol === "ETH"
+      ? coll.contracts.WETHZapper
+      : coll.contracts.BorrowerOperations;
+
+    if (!account.address) {
+      throw new Error("Account address is required");
     }
 
-    if (stepId === "approve") {
-      const amount = dn.add(request.collChange, ETH_GAS_COMPENSATION);
+    const isBoldApproved = !dn.lt(debtChange, 0) || !dn.gt(dn.abs(debtChange), [
+      await readContract(wagmiConfig, {
+        ...contracts.BoldToken,
+        functionName: "allowance",
+        args: [account.address, Controller.address],
+      }) ?? 0n,
+      18,
+    ]);
+
+    // Collateral token needs to be approved if collChange > 0 and collToken != "ETH" (no WETHZapper)
+    const isCollApproved = coll.symbol === "ETH" || !dn.gt(request.collChange, 0) || !dn.gt(request.collChange, [
+      await readContract(wagmiConfig, {
+        ...coll.contracts.CollToken,
+        functionName: "allowance",
+        args: [account.address, Controller.address],
+      }) ?? 0n,
+      18,
+    ]);
+
+    return [
+      isBoldApproved ? null : "approveBold" as const,
+      isCollApproved ? null : "approveColl" as const,
+      getFinalStep(request),
+    ].filter((step) => step !== null);
+  },
+
+  async writeContractParams(stepId, { account, contracts, request }) {
+    const { collIndex, collChange, debtChange, maxUpfrontFee } = request;
+    const collateral = contracts.collaterals[collIndex];
+    const { BorrowerOperations, WETHZapper } = collateral.contracts;
+
+    const Controller = collateral.symbol === "ETH"
+      ? WETHZapper
+      : BorrowerOperations;
+
+    if (!account.address) {
+      throw new Error("Account address is required");
+    }
+
+    const { troveId } = parsePrefixedTroveId(request.prefixedTroveId);
+
+    if (stepId === "approveBold") {
       return {
-        ...Token,
-        functionName: "approve" as const,
+        ...contracts.BoldToken,
+        functionName: "approve",
         args: [
-          BorrowerOperations.address,
-          amount[0],
+          Controller.address,
+          dn.abs(debtChange)[0],
         ],
       };
     }
 
-    if (stepId === "adjustTrove") {
-      const { troveId } = parsePrefixedTroveId(request.prefixedTroveId);
-      return {
-        ...BorrowerOperations,
-        functionName: "adjustTrove" as const,
-        args: [
-          troveId,
-          dn.abs(request.collChange)[0],
-          !dn.lt(request.collChange, 0n),
-          dn.abs(request.boldChange)[0],
-          !dn.lt(request.boldChange, 0n),
-          request.maxUpfrontFee[0],
-        ],
-      };
+    if (stepId === "approveColl") {
+      // TODO
+      throw new Error("Not implemented");
     }
-    return null;
+
+    // WETHZapper mode
+    if (collateral.symbol === "ETH") {
+      return match(stepId)
+        .with("adjustTrove", () => ({
+          ...WETHZapper,
+          functionName: "adjustTroveWithRawETH",
+          args: [
+            troveId,
+            dn.abs(collChange)[0],
+            !dn.lt(collChange, 0n),
+            dn.abs(debtChange)[0],
+            !dn.lt(debtChange, 0n),
+            maxUpfrontFee[0],
+          ],
+          value: collChange[0],
+        }))
+        .with("depositColl", () => ({
+          ...WETHZapper,
+          functionName: "addCollWithRawETH",
+          args: [troveId],
+          value: collChange[0],
+        }))
+        .with("withdrawColl", () => ({
+          ...WETHZapper,
+          functionName: "withdrawCollToRawETH",
+          args: [troveId, dn.abs(collChange)[0]],
+        }))
+        .with("depositBold", () => ({
+          ...WETHZapper,
+          functionName: "repayBold",
+          args: [troveId, dn.abs(debtChange)[0]],
+        }))
+        .with("withdrawBold", () => ({
+          ...WETHZapper,
+          functionName: "withdrawBold",
+          args: [troveId, debtChange[0], maxUpfrontFee[0]],
+        }))
+        .exhaustive();
+    }
+
+    // Normal mode
+    throw new Error("Not implemented");
   },
 };

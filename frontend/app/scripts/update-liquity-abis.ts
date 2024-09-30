@@ -31,6 +31,7 @@ const ABIS = [
   ["SortedTroves"],
   ["StabilityPool"],
   ["TroveManager"],
+  ["WETHZapper"],
 ];
 
 const ArtifactSchema = v.object({

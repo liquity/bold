@@ -1,6 +1,6 @@
 import { $, echo, fs, minimist, path, question } from "zx";
-const LATEST_DEPLOYMENT_CONTEXT_PATH = path.join(__dirname, "../../contracts/deployment-context-latest.json");
 
+const LATEST_DEPLOYMENT_CONTEXT_PATH = path.join(__dirname, "../../contracts/deployment-context-latest.json");
 const NETWORKS_JSON_PATH = path.join(__dirname, "../networks.json");
 const GENERATED_NETWORKS_JSON_PATH = path.join(__dirname, "../networks-generated.json");
 

@@ -102,7 +102,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
   parseRequest(request) {
     return v.parse(RequestSchema, request);
   },
-  async writeContractParams({ contracts, request, stepId }) {
+  async writeContractParams(stepId, { contracts, request }) {
     const collateral = contracts.collaterals[request.collIndex];
     const { BorrowerOperations } = collateral.contracts;
 
