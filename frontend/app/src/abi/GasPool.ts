@@ -2,10 +2,6 @@
 // please do not edit it manually
 export const GasPool = [{
   "type": "constructor",
-  "inputs": [{ "name": "_weth", "type": "address", "internalType": "contract IWETH" }, {
-    "name": "_borrowerOperations",
-    "type": "address",
-    "internalType": "contract IBorrowerOperations",
-  }, { "name": "_troveManager", "type": "address", "internalType": "contract ITroveManager" }],
+  "inputs": [{ "name": "_addressesRegistry", "type": "address", "internalType": "contract IAddressesRegistry" }],
   "stateMutability": "nonpayable",
 }] as const;

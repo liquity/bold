@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { UpdatePrices } from "@/src/comps/Debug/UpdatePrices";
+import { ProtocolStats } from "@/src/comps/ProtocolStats/ProtocolStats";
 import { TopBar } from "@/src/comps/TopBar/TopBar";
 import { css } from "@/styled-system/css";
 
@@ -45,6 +46,14 @@ export function AppLayout({
         })}
       >
         {children}
+        <div
+          className={css({
+            width: "100%",
+            paddingTop: 64,
+          })}
+        >
+          <ProtocolStats />
+        </div>
       </div>
       <UpdatePrices />
     </div>

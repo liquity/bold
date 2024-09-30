@@ -218,7 +218,7 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             demoTroves[6] = DemoTroveParams(0, demoAccounts[6], 0, 33.92e18, 5500e18, 3.8e16);
             demoTroves[7] = DemoTroveParams(0, demoAccounts[7], 0, 47.2e18, 6000e18, 4.3e16);
 
-            demoTroves[8] = DemoTroveParams(1, demoAccounts[0], 0, 21e18, 2000e18, 3.3e16);
+            demoTroves[8] = DemoTroveParams(1, demoAccounts[0], 1, 21e18, 2000e18, 3.3e16);
             demoTroves[9] = DemoTroveParams(1, demoAccounts[1], 1, 16e18, 2000e18, 4.1e16);
             demoTroves[10] = DemoTroveParams(1, demoAccounts[2], 1, 18e18, 2300e18, 3.8e16);
             demoTroves[11] = DemoTroveParams(1, demoAccounts[3], 1, 22e18, 2200e18, 4.3e16);
@@ -274,17 +274,17 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             }
 
             IBorrowerOperations(contracts.borrowerOperations).openTrove(
-                vm.addr(trove.owner), // _owner
-                trove.ownerIndex, //     _ownerIndex
-                trove.coll, //           _collAmount
-                trove.debt, //           _boldAmount
-                0, //                    _upperHint
-                0, //                    _lowerHint
-                0.05e18, //              _annualInterestRate
-                type(uint256).max, //    _maxUpfrontFee
-                address(0), //           _addManager
-                address(0), //           _removeManager
-                address(0) //           _receiver
+                vm.addr(trove.owner), //     _owner
+                trove.ownerIndex, //         _ownerIndex
+                trove.coll, //               _collAmount
+                trove.debt, //               _boldAmount
+                0, //                        _upperHint
+                0, //                        _lowerHint
+                trove.annualInterestRate, // _annualInterestRate
+                type(uint256).max, //        _maxUpfrontFee
+                address(0), //               _addManager
+                address(0), //               _removeManager
+                address(0) //                _receiver
             );
 
             vm.stopBroadcast();
@@ -478,19 +478,12 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
 
         // deploy zappers
         (contracts.gasCompZapper, contracts.wethZapper) =
-        _deployZappers(contracts.addressesRegistry, contracts.collToken, _weth);
+            _deployZappers(contracts.addressesRegistry, contracts.collToken, _weth);
     }
 
-    function _deployZappers(
-        IAddressesRegistry _addressesRegistry,
-        IERC20 _collToken,
-        IWETH _weth
-    )
+    function _deployZappers(IAddressesRegistry _addressesRegistry, IERC20 _collToken, IWETH _weth)
         internal
-        returns (
-            GasCompZapper gasCompZapper,
-            WETHZapper wethZapper
-        )
+        returns (GasCompZapper gasCompZapper, WETHZapper wethZapper)
     {
         bool lst = _collToken != _weth;
         if (lst) {

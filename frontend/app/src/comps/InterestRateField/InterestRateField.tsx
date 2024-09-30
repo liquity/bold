@@ -38,23 +38,19 @@ import { match } from "ts-pattern";
 
 import icLogo from "./ic-logo.svg";
 
-const MODES = [
-  {
-    label: "Manually",
-    secondary: "Set the interest rate as you see fit",
-  },
-  {
-    label: "By Strategy",
-    secondary: "It’s an automated strategy developed by ICP that helps avoid redemption and reduce costs",
-  },
-  {
-    label: "By Delegation",
-    secondary: `
-      Delegates manage your interest rate, optimizing costs and preventing redemption.
-      They charge a fee for this.
-    `,
-  },
-] as const;
+const MODES = [{
+  label: "Manually",
+  secondary: "Set your interest rate manually and update it anytime.",
+}, {
+  label: "By Internet Computer (ICP) strategy",
+  secondary: "Choose a smart contract strategy on the decentralized Internet Computer (ICP) network.",
+}, {
+  label: "By Delegation",
+  secondary: `
+    Delegates manage your interest rate, optimizing costs and preventing redemption.
+    They charge a fee for this.
+  `,
+}] as const;
 
 export function InterestRateField({
   debt,

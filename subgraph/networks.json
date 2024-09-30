@@ -1,0 +1,19 @@
+{
+  "local": {
+    "BoldToken": {
+      "address": "0x21a6370b245c05fade18c601f5efa23e1a3c9833"
+    }
+  },
+  "mainnet": {
+    "BoldToken": {
+      "address": "0x0000000000000000000000000000000000000000",
+      "startBlock": 0
+    }
+  },
+  "sepolia": {
+    "BoldToken": {
+      "address": "0x21a6370b245c05fade18c601f5efa23e1a3c9833",
+      "startBlock": 6684588
+    }
+  }
+}
