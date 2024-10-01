@@ -68,6 +68,7 @@ templates:
       language: wasm/assemblyscript
       file: ./src/StabilityPool.mapping.ts
       entities:
+        - StabilityPool
         - StabilityPoolDeposit
       abis:
         - name: StabilityPool
