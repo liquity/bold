@@ -405,6 +405,8 @@ export type Query = {
   readonly troves: ReadonlyArray<Trove>;
   readonly borrowerInfo?: Maybe<BorrowerInfo>;
   readonly borrowerInfos: ReadonlyArray<BorrowerInfo>;
+  readonly stabilityPool?: Maybe<StabilityPool>;
+  readonly stabilityPools: ReadonlyArray<StabilityPool>;
   readonly stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
   readonly stabilityPoolDeposits: ReadonlyArray<StabilityPoolDeposit>;
   /** Access to subgraph metadata */
@@ -520,6 +522,24 @@ export type QueryborrowerInfosArgs = {
 };
 
 
+export type QuerystabilityPoolArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QuerystabilityPoolsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPool_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPool_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
 export type QuerystabilityPoolDepositArgs = {
   id: Scalars['ID']['input'];
   block?: InputMaybe<Block_height>;
@@ -540,6 +560,11 @@ export type QuerystabilityPoolDepositsArgs = {
 
 export type Query_metaArgs = {
   block?: InputMaybe<Block_height>;
+};
+
+export type StabilityPool = {
+  readonly id: Scalars['ID']['output'];
+  readonly totalDeposited: Scalars['BigInt']['output'];
 };
 
 export type StabilityPoolDeposit = {
@@ -635,6 +660,33 @@ export type StabilityPoolDeposit_orderBy =
   | 'deposit'
   | 'depositor';
 
+export type StabilityPool_filter = {
+  readonly id?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_not?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly totalDeposited?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly totalDeposited_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  /** Filter for the block changed event. */
+  readonly _change_block?: InputMaybe<BlockChangedFilter>;
+  readonly and?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPool_filter>>>;
+  readonly or?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPool_filter>>>;
+};
+
+export type StabilityPool_orderBy =
+  | 'id'
+  | 'totalDeposited';
+
 export type Subscription = {
   readonly collateral?: Maybe<Collateral>;
   readonly collaterals: ReadonlyArray<Collateral>;
@@ -648,6 +700,8 @@ export type Subscription = {
   readonly troves: ReadonlyArray<Trove>;
   readonly borrowerInfo?: Maybe<BorrowerInfo>;
   readonly borrowerInfos: ReadonlyArray<BorrowerInfo>;
+  readonly stabilityPool?: Maybe<StabilityPool>;
+  readonly stabilityPools: ReadonlyArray<StabilityPool>;
   readonly stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
   readonly stabilityPoolDeposits: ReadonlyArray<StabilityPoolDeposit>;
   /** Access to subgraph metadata */
@@ -758,6 +812,24 @@ export type SubscriptionborrowerInfosArgs = {
   orderBy?: InputMaybe<BorrowerInfo_orderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   where?: InputMaybe<BorrowerInfo_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPool_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPool_filter>;
   block?: InputMaybe<Block_height>;
   subgraphError?: _SubgraphErrorPolicy_;
 };
@@ -1094,6 +1166,10 @@ export type _SubgraphErrorPolicy_ =
   /** null **/
   borrowerInfos: InContextSdkMethod<Query['borrowerInfos'], QueryborrowerInfosArgs, MeshContext>,
   /** null **/
+  stabilityPool: InContextSdkMethod<Query['stabilityPool'], QuerystabilityPoolArgs, MeshContext>,
+  /** null **/
+  stabilityPools: InContextSdkMethod<Query['stabilityPools'], QuerystabilityPoolsArgs, MeshContext>,
+  /** null **/
   stabilityPoolDeposit: InContextSdkMethod<Query['stabilityPoolDeposit'], QuerystabilityPoolDepositArgs, MeshContext>,
   /** null **/
   stabilityPoolDeposits: InContextSdkMethod<Query['stabilityPoolDeposits'], QuerystabilityPoolDepositsArgs, MeshContext>,
@@ -1130,6 +1206,10 @@ export type _SubgraphErrorPolicy_ =
   borrowerInfo: InContextSdkMethod<Subscription['borrowerInfo'], SubscriptionborrowerInfoArgs, MeshContext>,
   /** null **/
   borrowerInfos: InContextSdkMethod<Subscription['borrowerInfos'], SubscriptionborrowerInfosArgs, MeshContext>,
+  /** null **/
+  stabilityPool: InContextSdkMethod<Subscription['stabilityPool'], SubscriptionstabilityPoolArgs, MeshContext>,
+  /** null **/
+  stabilityPools: InContextSdkMethod<Subscription['stabilityPools'], SubscriptionstabilityPoolsArgs, MeshContext>,
   /** null **/
   stabilityPoolDeposit: InContextSdkMethod<Subscription['stabilityPoolDeposit'], SubscriptionstabilityPoolDepositArgs, MeshContext>,
   /** null **/

@@ -57,6 +57,11 @@ type BorrowerInfo @entity {
   trovesByCollateral: [Int!]!
 }
 
+type StabilityPool @entity {
+  id: ID!
+  totalDeposited: BigInt!
+}
+
 type StabilityPoolDeposit @entity {
   id: ID!
   boldGain: BigInt!

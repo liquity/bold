@@ -428,6 +428,8 @@ export type Query = {
   readonly troves: ReadonlyArray<Trove>;
   readonly borrowerInfo?: Maybe<BorrowerInfo>;
   readonly borrowerInfos: ReadonlyArray<BorrowerInfo>;
+  readonly stabilityPool?: Maybe<StabilityPool>;
+  readonly stabilityPools: ReadonlyArray<StabilityPool>;
   readonly stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
   readonly stabilityPoolDeposits: ReadonlyArray<StabilityPoolDeposit>;
   /** Access to subgraph metadata */
@@ -543,6 +545,24 @@ export type QueryborrowerInfosArgs = {
 };
 
 
+export type QuerystabilityPoolArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QuerystabilityPoolsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPool_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPool_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
 export type QuerystabilityPoolDepositArgs = {
   id: Scalars['ID']['input'];
   block?: InputMaybe<Block_height>;
@@ -563,6 +583,11 @@ export type QuerystabilityPoolDepositsArgs = {
 
 export type Query_metaArgs = {
   block?: InputMaybe<Block_height>;
+};
+
+export type StabilityPool = {
+  readonly id: Scalars['ID']['output'];
+  readonly totalDeposited: Scalars['BigInt']['output'];
 };
 
 export type StabilityPoolDeposit = {
@@ -658,6 +683,33 @@ export type StabilityPoolDeposit_orderBy =
   | 'deposit'
   | 'depositor';
 
+export type StabilityPool_filter = {
+  readonly id?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_not?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly totalDeposited?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly totalDeposited_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  /** Filter for the block changed event. */
+  readonly _change_block?: InputMaybe<BlockChangedFilter>;
+  readonly and?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPool_filter>>>;
+  readonly or?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPool_filter>>>;
+};
+
+export type StabilityPool_orderBy =
+  | 'id'
+  | 'totalDeposited';
+
 export type Subscription = {
   readonly collateral?: Maybe<Collateral>;
   readonly collaterals: ReadonlyArray<Collateral>;
@@ -671,6 +723,8 @@ export type Subscription = {
   readonly troves: ReadonlyArray<Trove>;
   readonly borrowerInfo?: Maybe<BorrowerInfo>;
   readonly borrowerInfos: ReadonlyArray<BorrowerInfo>;
+  readonly stabilityPool?: Maybe<StabilityPool>;
+  readonly stabilityPools: ReadonlyArray<StabilityPool>;
   readonly stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
   readonly stabilityPoolDeposits: ReadonlyArray<StabilityPoolDeposit>;
   /** Access to subgraph metadata */
@@ -781,6 +835,24 @@ export type SubscriptionborrowerInfosArgs = {
   orderBy?: InputMaybe<BorrowerInfo_orderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   where?: InputMaybe<BorrowerInfo_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPool_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPool_filter>;
   block?: InputMaybe<Block_height>;
   subgraphError?: _SubgraphErrorPolicy_;
 };
@@ -1202,9 +1274,12 @@ export type ResolversTypes = ResolversObject<{
   InterestRateBracket_orderBy: InterestRateBracket_orderBy;
   OrderDirection: OrderDirection;
   Query: ResolverTypeWrapper<{}>;
+  StabilityPool: ResolverTypeWrapper<StabilityPool>;
   StabilityPoolDeposit: ResolverTypeWrapper<StabilityPoolDeposit>;
   StabilityPoolDeposit_filter: StabilityPoolDeposit_filter;
   StabilityPoolDeposit_orderBy: StabilityPoolDeposit_orderBy;
+  StabilityPool_filter: StabilityPool_filter;
+  StabilityPool_orderBy: StabilityPool_orderBy;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
   Subscription: ResolverTypeWrapper<{}>;
   Timestamp: ResolverTypeWrapper<Scalars['Timestamp']['output']>;
@@ -1240,8 +1315,10 @@ export type ResolversParentTypes = ResolversObject<{
   InterestRateBracket: InterestRateBracket;
   InterestRateBracket_filter: InterestRateBracket_filter;
   Query: {};
+  StabilityPool: StabilityPool;
   StabilityPoolDeposit: StabilityPoolDeposit;
   StabilityPoolDeposit_filter: StabilityPoolDeposit_filter;
+  StabilityPool_filter: StabilityPool_filter;
   String: Scalars['String']['output'];
   Subscription: {};
   Timestamp: Scalars['Timestamp']['output'];
@@ -1339,9 +1416,17 @@ export type QueryResolvers<ContextType = MeshContext, ParentType extends Resolve
   troves?: Resolver<ReadonlyArray<ResolversTypes['Trove']>, ParentType, ContextType, RequireFields<QuerytrovesArgs, 'skip' | 'first' | 'subgraphError'>>;
   borrowerInfo?: Resolver<Maybe<ResolversTypes['BorrowerInfo']>, ParentType, ContextType, RequireFields<QueryborrowerInfoArgs, 'id' | 'subgraphError'>>;
   borrowerInfos?: Resolver<ReadonlyArray<ResolversTypes['BorrowerInfo']>, ParentType, ContextType, RequireFields<QueryborrowerInfosArgs, 'skip' | 'first' | 'subgraphError'>>;
+  stabilityPool?: Resolver<Maybe<ResolversTypes['StabilityPool']>, ParentType, ContextType, RequireFields<QuerystabilityPoolArgs, 'id' | 'subgraphError'>>;
+  stabilityPools?: Resolver<ReadonlyArray<ResolversTypes['StabilityPool']>, ParentType, ContextType, RequireFields<QuerystabilityPoolsArgs, 'skip' | 'first' | 'subgraphError'>>;
   stabilityPoolDeposit?: Resolver<Maybe<ResolversTypes['StabilityPoolDeposit']>, ParentType, ContextType, RequireFields<QuerystabilityPoolDepositArgs, 'id' | 'subgraphError'>>;
   stabilityPoolDeposits?: Resolver<ReadonlyArray<ResolversTypes['StabilityPoolDeposit']>, ParentType, ContextType, RequireFields<QuerystabilityPoolDepositsArgs, 'skip' | 'first' | 'subgraphError'>>;
   _meta?: Resolver<Maybe<ResolversTypes['_Meta_']>, ParentType, ContextType, Partial<Query_metaArgs>>;
+}>;
+
+export type StabilityPoolResolvers<ContextType = MeshContext, ParentType extends ResolversParentTypes['StabilityPool'] = ResolversParentTypes['StabilityPool']> = ResolversObject<{
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  totalDeposited?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
 export type StabilityPoolDepositResolvers<ContextType = MeshContext, ParentType extends ResolversParentTypes['StabilityPoolDeposit'] = ResolversParentTypes['StabilityPoolDeposit']> = ResolversObject<{
@@ -1367,6 +1452,8 @@ export type SubscriptionResolvers<ContextType = MeshContext, ParentType extends 
   troves?: SubscriptionResolver<ReadonlyArray<ResolversTypes['Trove']>, "troves", ParentType, ContextType, RequireFields<SubscriptiontrovesArgs, 'skip' | 'first' | 'subgraphError'>>;
   borrowerInfo?: SubscriptionResolver<Maybe<ResolversTypes['BorrowerInfo']>, "borrowerInfo", ParentType, ContextType, RequireFields<SubscriptionborrowerInfoArgs, 'id' | 'subgraphError'>>;
   borrowerInfos?: SubscriptionResolver<ReadonlyArray<ResolversTypes['BorrowerInfo']>, "borrowerInfos", ParentType, ContextType, RequireFields<SubscriptionborrowerInfosArgs, 'skip' | 'first' | 'subgraphError'>>;
+  stabilityPool?: SubscriptionResolver<Maybe<ResolversTypes['StabilityPool']>, "stabilityPool", ParentType, ContextType, RequireFields<SubscriptionstabilityPoolArgs, 'id' | 'subgraphError'>>;
+  stabilityPools?: SubscriptionResolver<ReadonlyArray<ResolversTypes['StabilityPool']>, "stabilityPools", ParentType, ContextType, RequireFields<SubscriptionstabilityPoolsArgs, 'skip' | 'first' | 'subgraphError'>>;
   stabilityPoolDeposit?: SubscriptionResolver<Maybe<ResolversTypes['StabilityPoolDeposit']>, "stabilityPoolDeposit", ParentType, ContextType, RequireFields<SubscriptionstabilityPoolDepositArgs, 'id' | 'subgraphError'>>;
   stabilityPoolDeposits?: SubscriptionResolver<ReadonlyArray<ResolversTypes['StabilityPoolDeposit']>, "stabilityPoolDeposits", ParentType, ContextType, RequireFields<SubscriptionstabilityPoolDepositsArgs, 'skip' | 'first' | 'subgraphError'>>;
   _meta?: SubscriptionResolver<Maybe<ResolversTypes['_Meta_']>, "_meta", ParentType, ContextType, Partial<Subscription_metaArgs>>;
@@ -1424,6 +1511,7 @@ export type Resolvers<ContextType = MeshContext> = ResolversObject<{
   Int8?: GraphQLScalarType;
   InterestRateBracket?: InterestRateBracketResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  StabilityPool?: StabilityPoolResolvers<ContextType>;
   StabilityPoolDeposit?: StabilityPoolDepositResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
   Timestamp?: GraphQLScalarType;
@@ -1506,10 +1594,12 @@ const merger = new(BareMerger as any)({
         store: rootStore.child('bareMerger')
       })
 const documentHashMap = {
-        "ed915b864c4574f9a3f68ba71da37795d154d71c5887473fd6eaeedd5f7c3614": TrovesByAccountDocument,
-"ed915b864c4574f9a3f68ba71da37795d154d71c5887473fd6eaeedd5f7c3614": StabilityPoolDepositsByAccountDocument,
-"ed915b864c4574f9a3f68ba71da37795d154d71c5887473fd6eaeedd5f7c3614": TrovesCountDocument,
-"ed915b864c4574f9a3f68ba71da37795d154d71c5887473fd6eaeedd5f7c3614": TroveByIdDocument
+        "6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d": TrovesByAccountDocument,
+"6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d": TrovesCountDocument,
+"6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d": TroveByIdDocument,
+"6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d": StabilityPoolDepositsByAccountDocument,
+"6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d": StabilityPoolDepositDocument,
+"6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d": StabilityPoolDocument
       }
 additionalEnvelopPlugins.push(usePersistedOperations({
         getPersistedOperation(key) {
@@ -1536,28 +1626,42 @@ additionalEnvelopPlugins.push(usePersistedOperations({
           return printWithCache(TrovesByAccountDocument);
         },
         location: 'TrovesByAccountDocument.graphql',
-        sha256Hash: 'ed915b864c4574f9a3f68ba71da37795d154d71c5887473fd6eaeedd5f7c3614'
-      },{
-        document: StabilityPoolDepositsByAccountDocument,
-        get rawSDL() {
-          return printWithCache(StabilityPoolDepositsByAccountDocument);
-        },
-        location: 'StabilityPoolDepositsByAccountDocument.graphql',
-        sha256Hash: 'ed915b864c4574f9a3f68ba71da37795d154d71c5887473fd6eaeedd5f7c3614'
+        sha256Hash: '6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d'
       },{
         document: TrovesCountDocument,
         get rawSDL() {
           return printWithCache(TrovesCountDocument);
         },
         location: 'TrovesCountDocument.graphql',
-        sha256Hash: 'ed915b864c4574f9a3f68ba71da37795d154d71c5887473fd6eaeedd5f7c3614'
+        sha256Hash: '6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d'
       },{
         document: TroveByIdDocument,
         get rawSDL() {
           return printWithCache(TroveByIdDocument);
         },
         location: 'TroveByIdDocument.graphql',
-        sha256Hash: 'ed915b864c4574f9a3f68ba71da37795d154d71c5887473fd6eaeedd5f7c3614'
+        sha256Hash: '6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d'
+      },{
+        document: StabilityPoolDepositsByAccountDocument,
+        get rawSDL() {
+          return printWithCache(StabilityPoolDepositsByAccountDocument);
+        },
+        location: 'StabilityPoolDepositsByAccountDocument.graphql',
+        sha256Hash: '6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d'
+      },{
+        document: StabilityPoolDepositDocument,
+        get rawSDL() {
+          return printWithCache(StabilityPoolDepositDocument);
+        },
+        location: 'StabilityPoolDepositDocument.graphql',
+        sha256Hash: '6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d'
+      },{
+        document: StabilityPoolDocument,
+        get rawSDL() {
+          return printWithCache(StabilityPoolDocument);
+        },
+        location: 'StabilityPoolDocument.graphql',
+        sha256Hash: '6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d'
       }
     ];
     },
@@ -1625,16 +1729,6 @@ export type TrovesByAccountQuery = { readonly troves: ReadonlyArray<(
     ) }
   )> };
 
-export type StabilityPoolDepositsByAccountQueryVariables = Exact<{
-  account: Scalars['Bytes']['input'];
-}>;
-
-
-export type StabilityPoolDepositsByAccountQuery = { readonly stabilityPoolDeposits: ReadonlyArray<(
-    Pick<StabilityPoolDeposit, 'id' | 'boldGain' | 'collGain' | 'deposit'>
-    & { readonly collateral: Pick<Collateral, 'collIndex'> }
-  )> };
-
 export type TrovesCountQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -1654,6 +1748,33 @@ export type TroveByIdQuery = { readonly trove?: Maybe<(
       & { readonly token: Pick<Token, 'symbol' | 'name'> }
     ) }
   )> };
+
+export type StabilityPoolDepositsByAccountQueryVariables = Exact<{
+  account: Scalars['Bytes']['input'];
+}>;
+
+
+export type StabilityPoolDepositsByAccountQuery = { readonly stabilityPoolDeposits: ReadonlyArray<(
+    Pick<StabilityPoolDeposit, 'id' | 'boldGain' | 'collGain' | 'deposit'>
+    & { readonly collateral: Pick<Collateral, 'collIndex'> }
+  )> };
+
+export type StabilityPoolDepositQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type StabilityPoolDepositQuery = { readonly stabilityPoolDeposit?: Maybe<(
+    Pick<StabilityPoolDeposit, 'id' | 'boldGain' | 'collGain' | 'deposit' | 'depositor'>
+    & { readonly collateral: Pick<Collateral, 'collIndex'> }
+  )> };
+
+export type StabilityPoolQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type StabilityPoolQuery = { readonly stabilityPool?: Maybe<Pick<StabilityPool, 'id' | 'totalDeposited'>> };
 
 
 export const TrovesByAccountDocument = gql`
@@ -1680,19 +1801,6 @@ export const TrovesByAccountDocument = gql`
   }
 }
     ` as unknown as DocumentNode<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
-export const StabilityPoolDepositsByAccountDocument = gql`
-    query StabilityPoolDepositsByAccount($account: Bytes!) {
-  stabilityPoolDeposits(where: {depositor: $account, deposit_gt: 0}) {
-    id
-    boldGain
-    collGain
-    deposit
-    collateral {
-      collIndex
-    }
-  }
-}
-    ` as unknown as DocumentNode<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>;
 export const TrovesCountDocument = gql`
     query TrovesCount($id: ID!) {
   borrowerInfo(id: $id) {
@@ -1725,6 +1833,43 @@ export const TroveByIdDocument = gql`
   }
 }
     ` as unknown as DocumentNode<TroveByIdQuery, TroveByIdQueryVariables>;
+export const StabilityPoolDepositsByAccountDocument = gql`
+    query StabilityPoolDepositsByAccount($account: Bytes!) {
+  stabilityPoolDeposits(where: {depositor: $account, deposit_gt: 0}) {
+    id
+    boldGain
+    collGain
+    deposit
+    collateral {
+      collIndex
+    }
+  }
+}
+    ` as unknown as DocumentNode<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>;
+export const StabilityPoolDepositDocument = gql`
+    query StabilityPoolDeposit($id: ID!) {
+  stabilityPoolDeposit(id: $id) {
+    id
+    boldGain
+    collGain
+    deposit
+    depositor
+    collateral {
+      collIndex
+    }
+  }
+}
+    ` as unknown as DocumentNode<StabilityPoolDepositQuery, StabilityPoolDepositQueryVariables>;
+export const StabilityPoolDocument = gql`
+    query StabilityPool($id: ID!) {
+  stabilityPool(id: $id) {
+    id
+    totalDeposited
+  }
+}
+    ` as unknown as DocumentNode<StabilityPoolQuery, StabilityPoolQueryVariables>;
+
+
 
 
 
@@ -1736,14 +1881,20 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     TrovesByAccount(variables: TrovesByAccountQueryVariables, options?: C): Promise<TrovesByAccountQuery> {
       return requester<TrovesByAccountQuery, TrovesByAccountQueryVariables>(TrovesByAccountDocument, variables, options) as Promise<TrovesByAccountQuery>;
     },
-    StabilityPoolDepositsByAccount(variables: StabilityPoolDepositsByAccountQueryVariables, options?: C): Promise<StabilityPoolDepositsByAccountQuery> {
-      return requester<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>(StabilityPoolDepositsByAccountDocument, variables, options) as Promise<StabilityPoolDepositsByAccountQuery>;
-    },
     TrovesCount(variables: TrovesCountQueryVariables, options?: C): Promise<TrovesCountQuery> {
       return requester<TrovesCountQuery, TrovesCountQueryVariables>(TrovesCountDocument, variables, options) as Promise<TrovesCountQuery>;
     },
     TroveById(variables: TroveByIdQueryVariables, options?: C): Promise<TroveByIdQuery> {
       return requester<TroveByIdQuery, TroveByIdQueryVariables>(TroveByIdDocument, variables, options) as Promise<TroveByIdQuery>;
+    },
+    StabilityPoolDepositsByAccount(variables: StabilityPoolDepositsByAccountQueryVariables, options?: C): Promise<StabilityPoolDepositsByAccountQuery> {
+      return requester<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>(StabilityPoolDepositsByAccountDocument, variables, options) as Promise<StabilityPoolDepositsByAccountQuery>;
+    },
+    StabilityPoolDeposit(variables: StabilityPoolDepositQueryVariables, options?: C): Promise<StabilityPoolDepositQuery> {
+      return requester<StabilityPoolDepositQuery, StabilityPoolDepositQueryVariables>(StabilityPoolDepositDocument, variables, options) as Promise<StabilityPoolDepositQuery>;
+    },
+    StabilityPool(variables: StabilityPoolQueryVariables, options?: C): Promise<StabilityPoolQuery> {
+      return requester<StabilityPoolQuery, StabilityPoolQueryVariables>(StabilityPoolDocument, variables, options) as Promise<StabilityPoolQuery>;
     }
   };
 }

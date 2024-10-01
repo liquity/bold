@@ -540,6 +540,32 @@ type Query {
     """
     subgraphError: _SubgraphErrorPolicy_! = deny
   ): [BorrowerInfo!]!
+  stabilityPool(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): StabilityPool
+  stabilityPools(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: StabilityPool_orderBy
+    orderDirection: OrderDirection
+    where: StabilityPool_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [StabilityPool!]!
   stabilityPoolDeposit(
     id: ID!
     """
@@ -568,6 +594,11 @@ type Query {
   ): [StabilityPoolDeposit!]!
   """Access to subgraph metadata"""
   _meta(block: Block_height): _Meta_
+}
+
+type StabilityPool {
+  id: ID!
+  totalDeposited: BigInt!
 }
 
 type StabilityPoolDeposit {
@@ -662,6 +693,34 @@ enum StabilityPoolDeposit_orderBy {
   collateral__price
   deposit
   depositor
+}
+
+input StabilityPool_filter {
+  id: ID
+  id_not: ID
+  id_gt: ID
+  id_lt: ID
+  id_gte: ID
+  id_lte: ID
+  id_in: [ID!]
+  id_not_in: [ID!]
+  totalDeposited: BigInt
+  totalDeposited_not: BigInt
+  totalDeposited_gt: BigInt
+  totalDeposited_lt: BigInt
+  totalDeposited_gte: BigInt
+  totalDeposited_lte: BigInt
+  totalDeposited_in: [BigInt!]
+  totalDeposited_not_in: [BigInt!]
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [StabilityPool_filter]
+  or: [StabilityPool_filter]
+}
+
+enum StabilityPool_orderBy {
+  id
+  totalDeposited
 }
 
 type Subscription {
@@ -821,6 +880,32 @@ type Subscription {
     """
     subgraphError: _SubgraphErrorPolicy_! = deny
   ): [BorrowerInfo!]!
+  stabilityPool(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): StabilityPool
+  stabilityPools(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: StabilityPool_orderBy
+    orderDirection: OrderDirection
+    where: StabilityPool_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [StabilityPool!]!
   stabilityPoolDeposit(
     id: ID!
     """

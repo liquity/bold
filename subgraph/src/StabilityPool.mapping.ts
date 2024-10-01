@@ -1,9 +1,20 @@
 import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts";
-import { StabilityPoolDeposit } from "../generated/schema";
+import { StabilityPool, StabilityPoolDeposit } from "../generated/schema";
 import { DepositUpdated as DepositUpdatedEvent } from "../generated/templates/StabilityPool/StabilityPool";
 
+function loadOrCreateStabilityPool(collId: string): StabilityPool {
+  let sp = StabilityPool.load(collId);
+
+  if (!sp) {
+    sp = new StabilityPool(collId);
+    sp.totalDeposited = BigInt.fromI32(0);
+  }
+
+  return sp;
+}
+
 function loadOrCreateStabilityPoolDeposit(depositor: Address, collId: string): StabilityPoolDeposit {
-  let spId = collId + ":" + depositor.toHexString();
+  let spId = collId + ":" + depositor.toHexString().toLowerCase();
   let spDeposit = StabilityPoolDeposit.load(spId);
 
   if (!spDeposit) {
@@ -19,11 +30,17 @@ function loadOrCreateStabilityPoolDeposit(depositor: Address, collId: string): S
 }
 
 export function handleDepositUpdated(event: DepositUpdatedEvent): void {
-  let spDeposit = loadOrCreateStabilityPoolDeposit(
-    event.params._depositor,
-    dataSource.context().getString("collId"),
-  );
+  let collId = dataSource.context().getString("collId");
+  let newDeposit = event.params._newDeposit;
+  let depositor = event.params._depositor;
 
-  spDeposit.deposit = event.params._newDeposit;
+  let sp = loadOrCreateStabilityPool(collId);
+  let spDeposit = loadOrCreateStabilityPoolDeposit(depositor, collId);
+
+  let diff = newDeposit.minus(spDeposit.deposit);
+  sp.totalDeposited = sp.totalDeposited.plus(diff);
+  sp.save();
+
+  spDeposit.deposit = newDeposit;
   spDeposit.save();
 }
