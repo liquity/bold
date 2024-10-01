@@ -1,10 +1,10 @@
 import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts";
 import { BorrowerInfo, Collateral, InterestRateBracket, Trove } from "../generated/schema";
-import { TroveNFT } from "../generated/templates/TroveManager/TroveNFT";
 import {
   TroveOperation as TroveOperationEvent,
   TroveUpdated as TroveUpdatedEvent,
-} from "../generated/TroveManager/TroveManager";
+} from "../generated/templates/TroveManager/TroveManager";
+import { TroveNFT as TroveNFTContract } from "../generated/templates/TroveManager/TroveNFT";
 
 // see Operation enum in
 // contracts/src/Interfaces/ITroveEvents.sol
@@ -21,24 +21,14 @@ function floorToDecimals(value: BigInt, decimals: u8): BigInt {
   return value.div(factor).times(factor);
 }
 
-// prefix an id with the collateral index
-function getCollPrefixId(): string {
-  let collId = dataSource.context().getBytes("address:token").toHexString();
-  let collateral = Collateral.load(collId);
-  if (!collateral) {
-    throw new Error("Collateral not found: " + collId);
-  }
-  return collateral.collIndex.toString() + ":";
-}
-
 export function handleTroveOperation(event: TroveOperationEvent): void {
   let troveId = event.params._troveId;
+  let collId = dataSource.context().getString("collId");
+  let troveFullId = collId + ":" + troveId.toHexString();
 
-  let collPrefixId = getCollPrefixId();
-
-  let trove = Trove.load(collPrefixId + troveId.toHexString());
+  let trove = Trove.load(troveFullId);
   if (!trove) {
-    throw new Error("Trove not found: " + collPrefixId + troveId.toHexString());
+    throw new Error("Trove not found: " + troveFullId);
   }
 
   if (event.params._operation === OP_CLOSE_TROVE) {
@@ -46,7 +36,7 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
 
     // update rate bracket
     let rateFloored = floorToDecimals(event.params._annualInterestRate, 3);
-    let rateBracket = InterestRateBracket.load(collPrefixId + rateFloored.toString());
+    let rateBracket = InterestRateBracket.load(collId + ":" + rateFloored.toString());
     if (rateBracket) {
       rateBracket.totalDebt = rateBracket.totalDebt.minus(trove.debt);
       rateBracket.totalTroves = rateBracket.totalTroves - 1;
@@ -60,13 +50,14 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
 }
 
 function loadOrCreateInterestRateBracket(
-  collPrefixId: string,
+  collId: string,
   rateFloored: BigInt,
 ): InterestRateBracket {
-  let rateBracket = InterestRateBracket.load(collPrefixId + rateFloored.toString());
+  let rateBracketId = collId + ":" + rateFloored.toString();
+  let rateBracket = InterestRateBracket.load(rateBracketId);
 
   if (!rateBracket) {
-    rateBracket = new InterestRateBracket(collPrefixId + rateFloored.toString());
+    rateBracket = new InterestRateBracket(rateBracketId);
     rateBracket.rate = rateFloored;
     rateBracket.totalDebt = BigInt.fromI32(0);
     rateBracket.totalTroves = 0;
@@ -78,9 +69,9 @@ function loadOrCreateInterestRateBracket(
 
 export function handleTroveUpdated(event: TroveUpdatedEvent): void {
   let troveId = event.params._troveId;
+  let collId = dataSource.context().getString("collId");
+  let troveFullId = collId + ":" + troveId.toHexString();
 
-  let context = dataSource.context();
-  let collId = context.getBytes("address:token").toHexString();
   let collateral = Collateral.load(collId);
 
   // should never happen
@@ -88,8 +79,7 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
     return;
   }
 
-  let collPrefixId = getCollPrefixId();
-  let trove = Trove.load(collPrefixId + troveId.toHexString());
+  let trove = Trove.load(troveFullId);
 
   // previous & new rates, floored to the nearest 0.1% (rate brackets)
   let prevRateFloored = trove ? floorToDecimals(trove.interestRate, 3) : null;
@@ -107,8 +97,9 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
 
   // create trove if needed
   if (!trove) {
-    let troveNftAddress = context.getBytes("address:troveNft");
-    let borrowerAddress = TroveNFT.bind(Address.fromBytes(troveNftAddress)).ownerOf(troveId);
+    let borrowerAddress = TroveNFTContract.bind(Address.fromBytes(
+      dataSource.context().getBytes("address:troveNft"),
+    )).ownerOf(troveId);
 
     // create borrower if needed
     let borrowerInfo = BorrowerInfo.load(borrowerAddress.toHexString());
@@ -116,16 +107,15 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
       borrowerInfo = new BorrowerInfo(borrowerAddress.toHexString());
       borrowerInfo.troves = 0;
 
-      let totalCollaterals = context.getI32("totalCollaterals");
+      let totalCollaterals = dataSource.context().getI32("totalCollaterals");
       borrowerInfo.trovesByCollateral = (new Array<i32>(totalCollaterals)).fill(0);
       borrowerInfo.save();
     }
 
-    trove = new Trove(collPrefixId + troveId.toHexString());
+    trove = new Trove(troveFullId);
     trove.troveId = troveId.toHexString();
     trove.createdAt = event.block.timestamp;
     trove.borrower = borrowerAddress;
-
     borrowerInfo.troves += 1;
 
     let trovesByColl = borrowerInfo.trovesByCollateral;
@@ -136,9 +126,11 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
   }
 
   // update interest rate brackets
-  let rateBracket = loadOrCreateInterestRateBracket(collPrefixId, rateFloored);
+  let rateBracket = loadOrCreateInterestRateBracket(collId, rateFloored);
   if (!prevRateFloored || rateFloored.notEqual(prevRateFloored)) {
-    let prevRateBracket = prevRateFloored ? InterestRateBracket.load(collPrefixId + prevRateFloored.toString()) : null;
+    let prevRateBracket = prevRateFloored
+      ? InterestRateBracket.load(collId + ":" + prevRateFloored.toString())
+      : null;
     if (prevRateBracket) {
       prevRateBracket.totalDebt = prevRateBracket.totalDebt.minus(trove.debt);
       prevRateBracket.totalTroves = prevRateBracket.totalTroves - 1;
@@ -156,7 +148,7 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
   trove.deposit = event.params._coll;
   trove.debt = event.params._debt;
   trove.interestRate = event.params._annualInterestRate;
-  trove.collateral = context.getBytes("address:token").toHexString();
+  trove.collateral = dataSource.context().getString("collId");
   trove.stake = event.params._stake;
 
   trove.save();

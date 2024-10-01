@@ -12,6 +12,8 @@
 
 import type { Contracts } from "@/src/contracts";
 import type { Request as CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
+import type { Request as EarnDepositRequest } from "@/src/tx-flows/earnDeposit";
+import type { Request as EarnWithdrawRequest } from "@/src/tx-flows/earnWithdraw";
 import type { Request as OpenLoanPositionRequest } from "@/src/tx-flows/openLoanPosition";
 import type { Request as UpdateLoanInterestRateRequest } from "@/src/tx-flows/updateLoanInterestRate";
 import type { Request as UpdateLoanPositionRequest } from "@/src/tx-flows/updateLoanPosition";
@@ -24,6 +26,8 @@ import { useContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useAccount, useWagmiConfig } from "@/src/services/Ethereum";
 import { closeLoanPosition } from "@/src/tx-flows/closeLoanPosition";
+import { earnDeposit } from "@/src/tx-flows/earnDeposit";
+import { earnWithdraw } from "@/src/tx-flows/earnWithdraw";
 import { openLoanPosition } from "@/src/tx-flows/openLoanPosition";
 import { updateLoanInterestRate } from "@/src/tx-flows/updateLoanInterestRate";
 import { updateLoanPosition } from "@/src/tx-flows/updateLoanPosition";
@@ -37,10 +41,12 @@ import { useTransactionReceipt, useWriteContract } from "wagmi";
 const TRANSACTION_FLOW_KEY = `${LOCAL_STORAGE_PREFIX}transaction_flow`;
 
 export type FlowRequest =
+  | CloseLoanPositionRequest
+  | EarnDepositRequest
+  | EarnWithdrawRequest
   | OpenLoanPositionRequest
-  | UpdateLoanPositionRequest
   | UpdateLoanInterestRateRequest
-  | CloseLoanPositionRequest;
+  | UpdateLoanPositionRequest;
 
 const flowDeclarations: {
   [K in FlowIdFromFlowRequest<FlowRequest>]: FlowDeclaration<
@@ -49,6 +55,8 @@ const flowDeclarations: {
   >;
 } = {
   closeLoanPosition,
+  earnDeposit,
+  earnWithdraw,
   openLoanPosition,
   updateLoanInterestRate,
   updateLoanPosition,
@@ -56,9 +64,11 @@ const flowDeclarations: {
 
 const FlowIdSchema = v.union([
   v.literal("closeLoanPosition"),
+  v.literal("earnDeposit"),
+  v.literal("earnWithdraw"),
   v.literal("openLoanPosition"),
-  v.literal("updateLoanPosition"),
   v.literal("updateLoanInterestRate"),
+  v.literal("updateLoanPosition"),
 ]);
 
 type ExtractStepId<T> = T extends FlowDeclaration<any, infer S> ? S : never;

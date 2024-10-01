@@ -56,8 +56,8 @@ export const ACCOUNT_POSITIONS: Position[] = [
   {
     type: "earn",
     apr: dn.from(0.078, 18),
-    collateral: "ETH",
     deposit: dn.from(5_000, 18),
+    collIndex: 0,
     rewards: {
       bold: dn.from(789.438, 18),
       coll: dn.from(0.943, 18),

@@ -1,6 +1,4 @@
 specVersion: 1.2.0
-indexerHints:
-  prune: auto
 schema:
   file: ./schema.graphql
 dataSources:
@@ -59,3 +57,23 @@ templates:
         - event: TroveUpdated(indexed
             uint256,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleTroveUpdated
+  - name: StabilityPool
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: StabilityPool
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/StabilityPool.mapping.ts
+      entities:
+        - StabilityPool
+        - StabilityPoolDeposit
+      abis:
+        - name: StabilityPool
+          file: ../contracts/out/StabilityPool.sol/StabilityPool.json
+      eventHandlers:
+        - event: DepositUpdated(indexed
+            address,uint256,uint256,uint256,uint256,uint256,uint256,uint256)
+          handler: handleDepositUpdated

@@ -2,12 +2,12 @@ import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
 import {
   CollateralRegistryAddressChanged as CollateralRegistryAddressChangedEvent,
 } from "../generated/BoldToken/BoldToken";
-import { BorrowerOperations } from "../generated/BoldToken/BorrowerOperations";
-import { CollateralRegistry } from "../generated/BoldToken/CollateralRegistry";
-import { ERC20 } from "../generated/BoldToken/ERC20";
-import { TroveManager } from "../generated/BoldToken/TroveManager";
+import { BorrowerOperations as BorrowerOperationsContract } from "../generated/BoldToken/BorrowerOperations";
+import { CollateralRegistry as CollateralRegistryContract } from "../generated/BoldToken/CollateralRegistry";
+import { ERC20 as ERC20Contract } from "../generated/BoldToken/ERC20";
+import { TroveManager as TroveManagerContract } from "../generated/BoldToken/TroveManager";
 import { Collateral, CollateralAddresses, Token } from "../generated/schema";
-import { TroveManager as TroveManagerTemplate } from "../generated/templates";
+import { StabilityPool as StabilityPoolTemplate, TroveManager as TroveManagerTemplate } from "../generated/templates";
 
 function addCollateral(
   collIndex: i32,
@@ -15,25 +15,26 @@ function addCollateral(
   tokenAddress: Address,
   troveManagerAddress: Address,
 ): void {
-  let id = tokenAddress.toHexString();
-  let collateral = new Collateral(id);
+  let collId = collIndex.toString();
+
+  let collateral = new Collateral(collId);
   collateral.collIndex = collIndex;
-  collateral.token = id;
+  collateral.token = collId;
   collateral.totalDebt = BigInt.fromI32(0);
   collateral.totalDeposited = BigInt.fromI32(0);
   collateral.price = BigInt.fromI32(0);
 
-  let token = new Token(id);
-  let tokenContract = ERC20.bind(tokenAddress);
-  token.collateral = id;
+  let token = new Token(collId);
+  let tokenContract = ERC20Contract.bind(tokenAddress);
+  token.collateral = collId;
   token.name = tokenContract.name();
   token.symbol = tokenContract.symbol();
   token.decimals = tokenContract.decimals();
 
-  let troveManager = TroveManager.bind(troveManagerAddress);
+  let troveManager = TroveManagerContract.bind(troveManagerAddress);
 
-  let addresses = new CollateralAddresses(id);
-  addresses.collateral = id;
+  let addresses = new CollateralAddresses(collId);
+  addresses.collateral = collId;
   addresses.borrowerOperations = troveManager.borrowerOperations();
   addresses.sortedTroves = troveManager.sortedTroves();
   addresses.stabilityPool = troveManager.stabilityPool();
@@ -41,26 +42,28 @@ function addCollateral(
   addresses.troveManager = troveManagerAddress;
   addresses.troveNft = troveManager.troveNFT();
 
-  collateral.minCollRatio = BorrowerOperations.bind(Address.fromBytes(addresses.borrowerOperations)).MCR();
+  collateral.minCollRatio = BorrowerOperationsContract.bind(Address.fromBytes(addresses.borrowerOperations)).MCR();
 
   collateral.save();
   addresses.save();
   token.save();
 
   let context = new DataSourceContext();
-  context.setI32("totalCollaterals", totalCollaterals);
   context.setBytes("address:borrowerOperations", addresses.borrowerOperations);
   context.setBytes("address:sortedTroves", addresses.sortedTroves);
   context.setBytes("address:stabilityPool", addresses.stabilityPool);
   context.setBytes("address:token", addresses.token);
   context.setBytes("address:troveManager", addresses.troveManager);
   context.setBytes("address:troveNft", addresses.troveNft);
+  context.setString("collId", collId);
+  context.setI32("totalCollaterals", totalCollaterals);
 
   TroveManagerTemplate.createWithContext(troveManagerAddress, context);
+  StabilityPoolTemplate.createWithContext(Address.fromBytes(addresses.stabilityPool), context);
 }
 
 export function handleCollateralRegistryAddressChanged(event: CollateralRegistryAddressChangedEvent): void {
-  let registry = CollateralRegistry.bind(event.params._newCollateralRegistryAddress);
+  let registry = CollateralRegistryContract.bind(event.params._newCollateralRegistryAddress);
   let totalCollaterals = registry.totalCollaterals().toI32();
 
   for (let index = 0; index < totalCollaterals; index++) {

@@ -86,8 +86,10 @@ export type Collateral = {
   readonly minCollRatio: Scalars['BigInt']['output'];
   readonly troves: ReadonlyArray<Trove>;
   readonly addresses: CollateralAddresses;
+  readonly stabilityPoolDeposits: ReadonlyArray<StabilityPoolDeposit>;
   readonly totalDeposited: Scalars['BigInt']['output'];
   readonly totalDebt: Scalars['BigInt']['output'];
+  readonly price: Scalars['BigInt']['output'];
 };
 
 
@@ -97,6 +99,15 @@ export type CollateraltrovesArgs = {
   orderBy?: InputMaybe<Trove_orderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   where?: InputMaybe<Trove_filter>;
+};
+
+
+export type CollateralstabilityPoolDepositsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPoolDeposit_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPoolDeposit_filter>;
 };
 
 export type CollateralAddresses = {
@@ -215,6 +226,7 @@ export type CollateralAddresses_orderBy =
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
   | 'collateral__totalDebt'
+  | 'collateral__price'
   | 'sortedTroves'
   | 'stabilityPool'
   | 'token'
@@ -269,6 +281,7 @@ export type Collateral_filter = {
   readonly minCollRatio_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
   readonly troves_?: InputMaybe<Trove_filter>;
   readonly addresses_?: InputMaybe<CollateralAddresses_filter>;
+  readonly stabilityPoolDeposits_?: InputMaybe<StabilityPoolDeposit_filter>;
   readonly totalDeposited?: InputMaybe<Scalars['BigInt']['input']>;
   readonly totalDeposited_not?: InputMaybe<Scalars['BigInt']['input']>;
   readonly totalDeposited_gt?: InputMaybe<Scalars['BigInt']['input']>;
@@ -285,6 +298,14 @@ export type Collateral_filter = {
   readonly totalDebt_lte?: InputMaybe<Scalars['BigInt']['input']>;
   readonly totalDebt_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
   readonly totalDebt_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly price?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly price_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly price_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly price_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly price_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly price_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly price_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly price_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
   /** Filter for the block changed event. */
   readonly _change_block?: InputMaybe<BlockChangedFilter>;
   readonly and?: InputMaybe<ReadonlyArray<InputMaybe<Collateral_filter>>>;
@@ -309,8 +330,10 @@ export type Collateral_orderBy =
   | 'addresses__token'
   | 'addresses__troveManager'
   | 'addresses__troveNft'
+  | 'stabilityPoolDeposits'
   | 'totalDeposited'
-  | 'totalDebt';
+  | 'totalDebt'
+  | 'price';
 
 export type InterestRateBracket = {
   readonly id: Scalars['ID']['output'];
@@ -382,6 +405,10 @@ export type Query = {
   readonly troves: ReadonlyArray<Trove>;
   readonly borrowerInfo?: Maybe<BorrowerInfo>;
   readonly borrowerInfos: ReadonlyArray<BorrowerInfo>;
+  readonly stabilityPool?: Maybe<StabilityPool>;
+  readonly stabilityPools: ReadonlyArray<StabilityPool>;
+  readonly stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
+  readonly stabilityPoolDeposits: ReadonlyArray<StabilityPoolDeposit>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -495,9 +522,170 @@ export type QueryborrowerInfosArgs = {
 };
 
 
+export type QuerystabilityPoolArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QuerystabilityPoolsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPool_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPool_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QuerystabilityPoolDepositArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QuerystabilityPoolDepositsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPoolDeposit_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPoolDeposit_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
 export type Query_metaArgs = {
   block?: InputMaybe<Block_height>;
 };
+
+export type StabilityPool = {
+  readonly id: Scalars['ID']['output'];
+  readonly totalDeposited: Scalars['BigInt']['output'];
+};
+
+export type StabilityPoolDeposit = {
+  readonly id: Scalars['ID']['output'];
+  readonly boldGain: Scalars['BigInt']['output'];
+  readonly collGain: Scalars['BigInt']['output'];
+  readonly collateral: Collateral;
+  readonly deposit: Scalars['BigInt']['output'];
+  readonly depositor: Scalars['Bytes']['output'];
+};
+
+export type StabilityPoolDeposit_filter = {
+  readonly id?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_not?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly boldGain?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly boldGain_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly boldGain_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly boldGain_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly boldGain_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly boldGain_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly boldGain_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly boldGain_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly collGain?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly collGain_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly collGain_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly collGain_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly collGain_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly collGain_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly collGain_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly collGain_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly collateral?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly collateral_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly collateral_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_?: InputMaybe<Collateral_filter>;
+  readonly deposit?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly deposit_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly deposit_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly deposit_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly deposit_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly deposit_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly deposit_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly deposit_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly depositor?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly depositor_not?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly depositor_gt?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly depositor_lt?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly depositor_gte?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly depositor_lte?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly depositor_in?: InputMaybe<ReadonlyArray<Scalars['Bytes']['input']>>;
+  readonly depositor_not_in?: InputMaybe<ReadonlyArray<Scalars['Bytes']['input']>>;
+  readonly depositor_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly depositor_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  /** Filter for the block changed event. */
+  readonly _change_block?: InputMaybe<BlockChangedFilter>;
+  readonly and?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPoolDeposit_filter>>>;
+  readonly or?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPoolDeposit_filter>>>;
+};
+
+export type StabilityPoolDeposit_orderBy =
+  | 'id'
+  | 'boldGain'
+  | 'collGain'
+  | 'collateral'
+  | 'collateral__id'
+  | 'collateral__collIndex'
+  | 'collateral__minCollRatio'
+  | 'collateral__totalDeposited'
+  | 'collateral__totalDebt'
+  | 'collateral__price'
+  | 'deposit'
+  | 'depositor';
+
+export type StabilityPool_filter = {
+  readonly id?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_not?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly totalDeposited?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly totalDeposited_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly totalDeposited_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  /** Filter for the block changed event. */
+  readonly _change_block?: InputMaybe<BlockChangedFilter>;
+  readonly and?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPool_filter>>>;
+  readonly or?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPool_filter>>>;
+};
+
+export type StabilityPool_orderBy =
+  | 'id'
+  | 'totalDeposited';
 
 export type Subscription = {
   readonly collateral?: Maybe<Collateral>;
@@ -512,6 +700,10 @@ export type Subscription = {
   readonly troves: ReadonlyArray<Trove>;
   readonly borrowerInfo?: Maybe<BorrowerInfo>;
   readonly borrowerInfos: ReadonlyArray<BorrowerInfo>;
+  readonly stabilityPool?: Maybe<StabilityPool>;
+  readonly stabilityPools: ReadonlyArray<StabilityPool>;
+  readonly stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
+  readonly stabilityPoolDeposits: ReadonlyArray<StabilityPoolDeposit>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -625,6 +817,42 @@ export type SubscriptionborrowerInfosArgs = {
 };
 
 
+export type SubscriptionstabilityPoolArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPool_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPool_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolDepositArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolDepositsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPoolDeposit_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPoolDeposit_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
 export type Subscription_metaArgs = {
   block?: InputMaybe<Block_height>;
 };
@@ -729,6 +957,7 @@ export type Token_orderBy =
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
   | 'collateral__totalDebt'
+  | 'collateral__price'
   | 'name'
   | 'symbol'
   | 'decimals';
@@ -875,7 +1104,8 @@ export type Trove_orderBy =
   | 'collateral__collIndex'
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
-  | 'collateral__totalDebt';
+  | 'collateral__totalDebt'
+  | 'collateral__price';
 
 export type _Block_ = {
   /** The hash of the block */
@@ -935,6 +1165,14 @@ export type _SubgraphErrorPolicy_ =
   borrowerInfo: InContextSdkMethod<Query['borrowerInfo'], QueryborrowerInfoArgs, MeshContext>,
   /** null **/
   borrowerInfos: InContextSdkMethod<Query['borrowerInfos'], QueryborrowerInfosArgs, MeshContext>,
+  /** null **/
+  stabilityPool: InContextSdkMethod<Query['stabilityPool'], QuerystabilityPoolArgs, MeshContext>,
+  /** null **/
+  stabilityPools: InContextSdkMethod<Query['stabilityPools'], QuerystabilityPoolsArgs, MeshContext>,
+  /** null **/
+  stabilityPoolDeposit: InContextSdkMethod<Query['stabilityPoolDeposit'], QuerystabilityPoolDepositArgs, MeshContext>,
+  /** null **/
+  stabilityPoolDeposits: InContextSdkMethod<Query['stabilityPoolDeposits'], QuerystabilityPoolDepositsArgs, MeshContext>,
   /** Access to subgraph metadata **/
   _meta: InContextSdkMethod<Query['_meta'], Query_metaArgs, MeshContext>
   };
@@ -968,6 +1206,14 @@ export type _SubgraphErrorPolicy_ =
   borrowerInfo: InContextSdkMethod<Subscription['borrowerInfo'], SubscriptionborrowerInfoArgs, MeshContext>,
   /** null **/
   borrowerInfos: InContextSdkMethod<Subscription['borrowerInfos'], SubscriptionborrowerInfosArgs, MeshContext>,
+  /** null **/
+  stabilityPool: InContextSdkMethod<Subscription['stabilityPool'], SubscriptionstabilityPoolArgs, MeshContext>,
+  /** null **/
+  stabilityPools: InContextSdkMethod<Subscription['stabilityPools'], SubscriptionstabilityPoolsArgs, MeshContext>,
+  /** null **/
+  stabilityPoolDeposit: InContextSdkMethod<Subscription['stabilityPoolDeposit'], SubscriptionstabilityPoolDepositArgs, MeshContext>,
+  /** null **/
+  stabilityPoolDeposits: InContextSdkMethod<Subscription['stabilityPoolDeposits'], SubscriptionstabilityPoolDepositsArgs, MeshContext>,
   /** Access to subgraph metadata **/
   _meta: InContextSdkMethod<Subscription['_meta'], Subscription_metaArgs, MeshContext>
   };

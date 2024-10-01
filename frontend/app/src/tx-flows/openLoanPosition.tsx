@@ -51,8 +51,8 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
   subtitle: "Please review your borrow position before confirming",
 
   Summary({ flow }) {
-    const { symbol } = useCollateral(flow.request.collIndex);
-    return (
+    const collateral = useCollateral(flow.request.collIndex);
+    return collateral && (
       <LoanCard
         leverageMode={false}
         loadingState="success"
@@ -60,7 +60,7 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
           troveId: "0x",
           borrowed: flow.request.boldAmount,
           collIndex: flow.request.collIndex,
-          collateral: symbol,
+          collateral: collateral.symbol,
           deposit: flow.request.collAmount,
           interestRate: flow.request.annualInterestRate,
           type: "borrow",
@@ -73,9 +73,9 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
   Details({ flow }) {
     const { request } = flow;
     const collateral = useCollateral(flow.request.collIndex);
-    const collPrice = usePrice(collateral.symbol);
+    const collPrice = usePrice(collateral?.symbol ?? null);
     const boldPrice = usePrice("BOLD");
-    return (
+    return collateral && (
       <>
         <TransactionDetailsRow
           label="You deposit"

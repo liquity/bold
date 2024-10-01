@@ -1,26 +1,35 @@
-import type { PositionEarn } from "@/src/types";
+import type { CollIndex, PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 
+import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
+import { fmtnum } from "@/src/formatting";
+import { useCollateral } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
+import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { Button, Checkbox, HFlex, InfoTooltip, InputField, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function WithdrawPanel({
   boldQty,
+  collIndex,
   position,
 }: {
   boldQty: Dnum;
+  collIndex: null | CollIndex;
   position?: PositionEarn;
 }) {
+  const router = useRouter();
   const account = useAccount();
+  const txFlow = useTransactionFlow();
 
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
@@ -28,7 +37,7 @@ export function WithdrawPanel({
 
   const parsedValue = parseInputFloat(value);
 
-  const value_ = (focused || !parsedValue) ? value : `${dn.format(parsedValue)} BOLD`;
+  const value_ = (focused || !parsedValue) ? value : `${fmtnum(parsedValue, "full")} BOLD`;
 
   const depositDifference = dn.mul(parsedValue ?? DNUM_0, -1);
 
@@ -37,9 +46,13 @@ export function WithdrawPanel({
     DNUM_0,
   );
 
-  const updatedPoolShare = depositDifference
-    ? dn.div(updatedDeposit, dn.add(boldQty, depositDifference))
-    : null;
+  const updatedBoldQty = dn.add(boldQty, depositDifference);
+
+  const updatedPoolShare = depositDifference && dn.gt(updatedBoldQty, 0)
+    ? dn.div(updatedDeposit, updatedBoldQty)
+    : DNUM_0;
+
+  const collateral = useCollateral(collIndex);
 
   const allowSubmit = account.isConnected && parsedValue;
 
@@ -92,16 +105,17 @@ export function WithdrawPanel({
                 <HFlex gap={4}>
                   <div>{content.earnScreen.depositPanel.shareLabel}</div>
                   <div>
-                    {updatedPoolShare
-                      ? dn.format(dn.mul(updatedPoolShare, 100), 2)
-                      : "0"}%
+                    <Amount
+                      value={updatedPoolShare}
+                      percentage
+                    />
                   </div>
                   <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.depositPoolShare)} />
                 </HFlex>
               ),
-              end: (position?.deposit && dn.gt(position?.deposit, 0) && (
+              end: (position?.deposit && dn.gt(position.deposit, 0) && (
                 <TextButton
-                  label={`Max ${dn.format(position.deposit)} BOLD`}
+                  label={`Max ${fmtnum(position.deposit, 2)} BOLD`}
                   onClick={() => {
                     setValue(dn.toString(position.deposit));
                   }}
@@ -145,7 +159,7 @@ export function WithdrawPanel({
               })}
             >
               <div>
-                {dn.format(position.rewards.bold, 2)}{" "}
+                {fmtnum(position.rewards.bold)}{" "}
                 <span
                   className={css({
                     color: "contentAlt",
@@ -155,7 +169,7 @@ export function WithdrawPanel({
                 </span>
               </div>
               <div>
-                {dn.format(position.rewards.eth, 2)}{" "}
+                {fmtnum(position.rewards.coll)}{" "}
                 <span
                   className={css({
                     color: "contentAlt",
@@ -174,6 +188,25 @@ export function WithdrawPanel({
           mode="primary"
           size="large"
           wide
+          onClick={() => {
+            if (collateral && account.address && position) {
+              txFlow.start({
+                flowId: "earnWithdraw",
+                backLink: [
+                  `/earn/${collateral.symbol.toLowerCase()}`,
+                  "Back to editing",
+                ],
+                successLink: ["/", "Go to the Dashboard"],
+                successMessage: "The earn position has been created successfully.",
+
+                depositor: account.address,
+                boldAmount: dn.abs(depositDifference),
+                claim: claimRewards,
+                collIndex: position.collIndex,
+              });
+              router.push("/transactions");
+            }
+          }}
         />
       </div>
     </div>

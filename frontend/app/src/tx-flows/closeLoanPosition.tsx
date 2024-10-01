@@ -84,7 +84,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
     const collateral = useCollateral(request.collIndex);
     const loan = useLoanById(request.prefixedTroveId);
 
-    return loan.data && (
+    return loan.data && collateral && (
       <>
         <TransactionDetailsRow
           label="You repay with"
