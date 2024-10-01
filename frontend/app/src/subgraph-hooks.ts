@@ -1,7 +1,7 @@
 import type { Address, PositionEarn, PositionLoan, PrefixedTroveId } from "@/src/types";
 
 import { getBuiltGraphSDK } from "@/.graphclient";
-import { ACCOUNT_POSITIONS, EARN_POOLS } from "@/src/demo-mode";
+import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
 import { DEMO_MODE } from "@/src/env";
 import { getCollateralFromTroveSymbol } from "@/src/liquity-utils";

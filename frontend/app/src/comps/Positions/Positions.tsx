@@ -57,7 +57,9 @@ export function Positions() {
     },
   });
 
-  const positionsPending = loans.isPending || earnPositions.isPending || positions.isPending;
+  const positionsPending = account.isConnected && (
+    loans.isPending || earnPositions.isPending || positions.isPending
+  );
 
   let mode: Mode = account.isConnected && positions.data && positions.data.length > 0
     ? "positions"
