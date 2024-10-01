@@ -91,7 +91,7 @@ export function BorrowScreen() {
   const loanDetails = getLoanDetails(
     deposit.isEmpty ? null : deposit.parsed,
     debt.isEmpty ? null : debt.parsed,
-    interestRate && dn.div(interestRate, 100),
+    interestRate,
     collateral.collateralRatio,
     collPrice,
   );
