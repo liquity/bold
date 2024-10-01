@@ -1,11 +1,13 @@
-import type { PositionEarn } from "@/src/types";
+import type { CollIndex, PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
+import { DNUM_0 } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
+import { fmtnum } from "@/src/formatting";
 import { useCollateral } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -19,10 +21,12 @@ import { useState } from "react";
 export function DepositPanel({
   accountBoldBalance,
   boldQty,
+  collIndex,
   position,
 }: {
   accountBoldBalance?: Dnum;
   boldQty: Dnum;
+  collIndex: null | CollIndex;
   position?: PositionEarn;
 }) {
   const router = useRouter();
@@ -35,7 +39,7 @@ export function DepositPanel({
 
   const parsedValue = parseInputFloat(value);
 
-  const value_ = (focused || !parsedValue) ? value : `${dn.format(parsedValue)} BOLD`;
+  const value_ = (focused || !parsedValue) ? value : `${fmtnum(parsedValue, "full")} BOLD`;
 
   const depositDifference = parsedValue ?? dn.from(0, 18);
 
@@ -44,11 +48,13 @@ export function DepositPanel({
     depositDifference,
   );
 
-  const updatedPoolShare = depositDifference
-    ? dn.div(updatedDeposit, dn.add(boldQty, depositDifference))
-    : null;
+  const updatedBoldQty = dn.add(boldQty, depositDifference);
 
-  const collateral = useCollateral(position?.collIndex ?? null);
+  const updatedPoolShare = depositDifference && dn.gt(updatedBoldQty, 0)
+    ? dn.div(updatedDeposit, updatedBoldQty)
+    : DNUM_0;
+
+  const collateral = useCollateral(collIndex);
 
   const allowSubmit = account.isConnected && parsedValue;
 
@@ -114,7 +120,7 @@ export function DepositPanel({
               ),
               end: accountBoldBalance && (
                 <TextButton
-                  label={`Max ${dn.format(accountBoldBalance)} BOLD`}
+                  label={`Max ${fmtnum(accountBoldBalance, 2)} BOLD`}
                   onClick={() => setValue(dn.toString(accountBoldBalance))}
                 />
               ),

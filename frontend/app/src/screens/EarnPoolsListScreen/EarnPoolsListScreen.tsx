@@ -1,21 +1,22 @@
 "use client";
 
-import type { PositionEarn } from "@/src/types";
 import type { CollateralSymbol } from "@liquity2/uikit";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { ACCOUNT_POSITIONS, EARN_POOLS } from "@/src/demo-mode";
+import { useCollateralContracts } from "@/src/contracts";
 import { useCollateral, useCollIndexFromSymbol } from "@/src/liquity-utils";
+import { useAccount } from "@/src/services/Ethereum";
+import { useEarnPosition, useStabilityPool } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { HFlex, IconArrowRight, IconPlus, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 
 export function EarnPoolsListScreen() {
-  const poolCollaterals = Object.keys(EARN_POOLS) as CollateralSymbol[];
+  const collSymbols = useCollateralContracts().map((coll) => coll.symbol);
   return (
     <Screen
       title={
@@ -29,7 +30,7 @@ export function EarnPoolsListScreen() {
         >
           {content.earnHome.headline(
             <TokenIcon.Group>
-              {["BOLD" as const, ...poolCollaterals].map((symbol) => (
+              {["BOLD" as const, ...collSymbols].map((symbol) => (
                 <TokenIcon
                   key={symbol}
                   symbol={symbol}
@@ -44,7 +45,7 @@ export function EarnPoolsListScreen() {
       width={67 * 8}
       gap={16}
     >
-      {poolCollaterals.map((symbol) => (
+      {collSymbols.map((symbol) => (
         <Pool
           key={symbol}
           collSymbol={symbol}
@@ -61,16 +62,18 @@ function Pool({
   collSymbol: CollateralSymbol;
   title?: ReactNode;
 }) {
+  const account = useAccount();
   const collIndex = useCollIndexFromSymbol(collSymbol);
   const collateral = useCollateral(collIndex);
 
-  // demo
-  const pool = EARN_POOLS[collSymbol];
-  const position = ACCOUNT_POSITIONS.find((position): position is PositionEarn => (
-    position.type === "earn" && position.collIndex === collIndex
-  ));
+  const earnPosition = useEarnPosition(account.address, collIndex ?? undefined);
+  const stabilityPool = useStabilityPool(collIndex ?? 0);
 
-  const active = Boolean(position?.deposit && dn.gt(position.deposit, 0));
+  const share = earnPosition.data && stabilityPool.data && dn.gt(stabilityPool.data.totalDeposited, 0)
+    ? dn.div(earnPosition.data.deposit, stabilityPool.data.totalDeposited)
+    : dn.from(0, 18);
+
+  const active = Boolean(earnPosition.data?.deposit && dn.gt(earnPosition.data.deposit, 0));
 
   return collateral && (
     <div
@@ -149,10 +152,14 @@ function Pool({
             >
               <div>TVL</div>
               <div>
-                <Amount value={pool.boldQty} format="compact" />
+                <Amount
+                  format="compact"
+                  prefix="$"
+                  value={stabilityPool.data?.totalDeposited}
+                />
               </div>
               <InfoTooltip heading="Total Value Locked">
-                test
+                Total amount of BOLD deposited in the stability pool.
               </InfoTooltip>
             </div>
           </div>
@@ -164,7 +171,11 @@ function Pool({
             })}
           >
             <div>
-              <Amount value={pool.apr} format="1z" percentage />
+              <Amount
+                value={stabilityPool.data?.apr}
+                format="1z"
+                percentage
+              />
             </div>
             <div
               className={css({
@@ -178,7 +189,7 @@ function Pool({
             >
               <div>Current APR</div>
               <InfoTooltip heading="APR">
-                test
+                Annual percentage rate being earned by the {collateral.name} stability pool’s deposits over the past 7 days.
               </InfoTooltip>
             </div>
           </div>
@@ -210,7 +221,7 @@ function Pool({
                 Deposit
               </div>
               <HFlex gap={4}>
-                <Amount value={position?.deposit} />
+                <Amount value={earnPosition.data?.deposit} />
                 <TokenIcon symbol="BOLD" size="mini" />
               </HFlex>
             </div>
@@ -233,11 +244,11 @@ function Pool({
               ? (
                 <HFlex>
                   <HFlex gap={4}>
-                    <Amount value={position?.rewards.bold} />
+                    <Amount value={earnPosition.data?.rewards.bold} />
                     <TokenIcon symbol="BOLD" size="mini" />
                   </HFlex>
                   <HFlex gap={4}>
-                    <Amount value={position?.rewards.coll} />
+                    <Amount value={earnPosition.data?.rewards.coll} />
                     <TokenIcon symbol={collateral.symbol} size="mini" />
                   </HFlex>
                 </HFlex>
@@ -259,12 +270,7 @@ function Pool({
                 Pool share
               </div>
               <div>
-                <Amount
-                  percentage
-                  value={position && dn.gt(position.deposit, 0)
-                    ? dn.div(position.deposit, pool.boldQty)
-                    : dn.from(0, 18)}
-                />
+                <Amount percentage value={share} />
               </div>
             </div>
           )}

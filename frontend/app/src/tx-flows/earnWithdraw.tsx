@@ -55,7 +55,7 @@ export const earnWithdraw: FlowDeclaration<Request, Step> = {
     return (
       <>
         <TransactionDetailsRow
-          label="You deposit"
+          label="You withdraw"
           value={[
             <Amount value={request.boldAmount} suffix=" BOLD" />,
             <Amount value={boldPrice && dn.mul(request.boldAmount, boldPrice)} prefix="$" />,

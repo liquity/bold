@@ -1,4 +1,4 @@
-import type { PositionEarn } from "@/src/types";
+import type { CollIndex, PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 import { ReactNode } from "react";
 
@@ -14,13 +14,15 @@ import { Button, InfoTooltip } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 export function RewardsPanel({
+  collIndex,
   position,
 }: {
+  collIndex: null | CollIndex;
   position?: PositionEarn;
 }) {
   const account = useAccount();
 
-  const collateral = useCollateral(position?.collIndex ?? null);
+  const collateral = useCollateral(collIndex);
   const collPriceUsd = usePrice(collateral?.symbol ?? null);
   const boldPriceUsd = usePrice("BOLD");
 
@@ -69,27 +71,23 @@ export function RewardsPanel({
           {content.earnScreen.rewardsPanel.label}
         </div>
 
-        {position
-          ? (
-            <div
-              className={css({
-                display: "flex",
-                gap: 32,
-              })}
-            >
-              <RewardsAmount
-                symbol="BOLD"
-                tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsBold)} />}
-                value={position.rewards?.bold}
-              />
-              <RewardsAmount
-                symbol={collateral.symbol}
-                tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsEth)} />}
-                value={position.rewards?.coll}
-              />
-            </div>
-          )
-          : <div>N/A</div>}
+        <div
+          className={css({
+            display: "flex",
+            gap: 32,
+          })}
+        >
+          <RewardsAmount
+            symbol="BOLD"
+            tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsBold)} />}
+            value={position?.rewards?.bold ?? DNUM_0}
+          />
+          <RewardsAmount
+            symbol={collateral.symbol}
+            tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsEth)} />}
+            value={position?.rewards?.coll ?? DNUM_0}
+          />
+        </div>
 
         <div
           className={css({
