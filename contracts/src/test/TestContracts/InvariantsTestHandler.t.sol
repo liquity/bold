@@ -887,7 +887,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
         v.trove = _troves[i][v.troveId];
         v.wasActive = _isActive(i, v.troveId);
-        v.premature = _timeSinceLastTroveInterestRateAdjustment[i][v.troveId] < INTEREST_RATE_ADJ_COOLDOWN;
+        v.premature = newInterestRate != v.t.annualInterestRate
+            && _timeSinceLastTroveInterestRateAdjustment[i][v.troveId] < INTEREST_RATE_ADJ_COOLDOWN;
 
         if (v.batchManager == address(0)) {
             v.upfrontFee = hintHelpers.predictAdjustInterestRateUpfrontFee(i, v.troveId, newInterestRate);
@@ -2097,10 +2098,11 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.batchManager = _batchManagerOf[i][v.troveId];
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
         v.wasActive = _isActive(i, v.troveId);
-        v.premature = Math.min(
-            _timeSinceLastTroveInterestRateAdjustment[i][v.troveId],
-            _timeSinceLastBatchInterestRateAdjustment[i][v.batchManager]
-        ) < INTEREST_RATE_ADJ_COOLDOWN;
+        v.premature = newInterestRate != v.t.annualInterestRate
+            && Math.min(
+                _timeSinceLastTroveInterestRateAdjustment[i][v.troveId],
+                _timeSinceLastBatchInterestRateAdjustment[i][v.batchManager]
+            ) < INTEREST_RATE_ADJ_COOLDOWN;
 
         if (v.batchManager != address(0)) {
             v.upfrontFee = hintHelpers.predictRemoveFromBatchUpfrontFee(i, v.troveId, newInterestRate);
@@ -2214,7 +2216,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.c = branches[i];
         v.pendingInterest = v.c.activePool.calcPendingAggInterest();
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(msg.sender).accruedManagementFee;
-        v.premature = _timeSinceLastBatchInterestRateAdjustment[i][msg.sender] < INTEREST_RATE_ADJ_COOLDOWN;
+        v.premature = newAnnualInterestRate != batch.interestRate
+            && _timeSinceLastBatchInterestRateAdjustment[i][msg.sender] < INTEREST_RATE_ADJ_COOLDOWN;
+
         v.upfrontFee = hintHelpers.predictAdjustBatchInterestRateUpfrontFee(i, msg.sender, newAnnualInterestRate);
         if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
 
@@ -2250,9 +2254,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 batch.period,
                 "Should have failed as period hasn't passed"
             );
-            if (v.premature && newAnnualInterestRate != batch.interestRate) {
-                assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
-            }
+            if (v.premature) assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
 
             // Effects (Troves)
             for (uint256 j = 0; j < batch.troves.size(); ++j) {
@@ -2300,9 +2302,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
                 uint256 newTCR = _TCR(i, 0, 0, v.upfrontFee);
                 assertTrue(v.premature, "Shouldn't have failed as adjustment was not premature");
-                assertNotEq(
-                    newAnnualInterestRate, batch.interestRate, "Shouldn't have failed as there was no adjustment"
-                );
                 assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
             } else {
