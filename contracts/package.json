@@ -12,7 +12,7 @@
     "coverage": "hardhat coverage",
     "fuzz": "tsx utils/fuzz.ts",
     "fuzz-repro": "tsx utils/fuzz-repro.ts",
-    "fuzz-start": "pm2 start --interpreter node --interpreter-args '--import tsx' utils/fuzz.ts",
+    "fuzz-start": "pm2 start --time --interpreter node --interpreter-args '--import tsx' utils/fuzz.ts",
     "fuzz-stop": "pm2 stop utils/fuzz.ts",
     "fuzz-monit": "pm2 monit",
     "fuzz-logs": "pm2 logs"
