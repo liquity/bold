@@ -661,7 +661,9 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 secondPortion =
             (epochToScaleToB[snapshots.epoch][snapshots.scale + 1] + secondPortionPending) / SCALE_FACTOR;
 
-        return initialDeposit * (firstPortion + secondPortion) / snapshots.P / DECIMAL_PRECISION;
+        uint256 yieldGain = initialDeposit * (firstPortion + secondPortion) / snapshots.P / DECIMAL_PRECISION;
+
+        return LiquityMath._min(yieldGain, yieldGainsOwed);
     }
 
     // --- Compounded deposit ---
