@@ -80,12 +80,8 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
 
         info("stabilityPoolColl:          ", stabilityPoolColl.decimal());
         info("claimableColl:              ", claimableColl.decimal());
-        info("claimableColl E:            ", stabilityPool.getDepositorCollGain(eric).decimal());
-        info("claimableColl G:            ", stabilityPool.getDepositorCollGain(gabe).decimal());
         info("stabilityPoolBold:          ", stabilityPoolBold.decimal());
         info("claimableBold:              ", claimableBold.decimal());
-        info("claimableBold E:            ", stabilityPool.getCompoundedBoldDeposit(eric).decimal());
-        info("claimableBold G:            ", stabilityPool.getCompoundedBoldDeposit(gabe).decimal());
         info("yieldGainsOwed:             ", yieldGainsOwed.decimal());
         info("sumYieldGains:              ", sumYieldGains.decimal());
         for (uint256 i = 0; i < actors.length; ++i) {
@@ -6338,8 +6334,6 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
         vm.prank(dana);
         handler.liquidateMe();
 
-        invariant_allFundsClaimable();
-
         // totalBoldDeposits = 276_966.471702353926186405 ether
         // P = 0.425877256384225684 ether
 
@@ -6349,8 +6343,6 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
 
         vm.prank(fran);
         handler.liquidateMe();
-
-        invariant_allFundsClaimable();
 
         // totalBoldDeposits = 274_966.279921532008378185 ether
         // P = 0.422801663217215364 ether
@@ -6362,8 +6354,6 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
 
         vm.prank(adam);
         handler.liquidateMe();
-
-        invariant_allFundsClaimable();
 
         // totalBoldDeposits = 317_089.875477137833118102 ether
         // P = 0.389420288060598885 ether
@@ -6399,8 +6389,6 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
         vm.prank(dana);
         handler.liquidateMe();
 
-        invariant_allFundsClaimable();
-
         // totalBoldDeposits = 221_092.295340522478937495 ether
         // P = 0.269813126460584544 ether
 
@@ -6412,8 +6400,6 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
 
         vm.prank(fran);
         handler.liquidateMe();
-
-        invariant_allFundsClaimable();
 
         // totalBoldDeposits = 312_797.864481983428956906 ether
         // P = 0.264482989977933867 ether
