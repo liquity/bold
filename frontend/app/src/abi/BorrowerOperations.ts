@@ -81,7 +81,7 @@ export const BorrowerOperations = [
   },
   {
     "type": "function",
-    "name": "adjustUnredeemableTrove",
+    "name": "adjustZombieTrove",
     "inputs": [
       { "name": "_troveId", "type": "uint256", "internalType": "uint256" },
       { "name": "_collChange", "type": "uint256", "internalType": "uint256" },
@@ -513,7 +513,7 @@ export const BorrowerOperations = [
   { "type": "error", "name": "TroveNotActive", "inputs": [] },
   { "type": "error", "name": "TroveNotInBatch", "inputs": [] },
   { "type": "error", "name": "TroveNotOpen", "inputs": [] },
-  { "type": "error", "name": "TroveNotUnredeemable", "inputs": [] },
+  { "type": "error", "name": "TroveNotZombie", "inputs": [] },
   { "type": "error", "name": "TroveOpen", "inputs": [] },
   { "type": "error", "name": "UpfrontFeeTooHigh", "inputs": [] },
   { "type": "error", "name": "ZeroAdjustment", "inputs": [] },

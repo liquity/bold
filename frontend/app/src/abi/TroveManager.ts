@@ -172,6 +172,13 @@ export const TroveManager = [
   },
   {
     "type": "function",
+    "name": "lastZombieTroveId",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
     "name": "onAdjustTrove",
     "inputs": [
       { "name": "_troveId", "type": "uint256", "internalType": "uint256" },
