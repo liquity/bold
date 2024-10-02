@@ -9,7 +9,13 @@
   "scripts": {
     "format": "forge fmt && dprint fmt",
     "test": "hardhat test --parallel",
-    "coverage": "hardhat coverage"
+    "coverage": "hardhat coverage",
+    "fuzz": "tsx utils/fuzz.ts",
+    "fuzz-repro": "tsx utils/fuzz-repro.ts",
+    "fuzz-start": "pm2 start --time --interpreter node --interpreter-args '--import tsx' utils/fuzz.ts",
+    "fuzz-stop": "pm2 stop utils/fuzz.ts",
+    "fuzz-monit": "pm2 monit",
+    "fuzz-logs": "pm2 logs"
   },
   "repository": "github:liquity/bold",
   "author": "Liquity AG",
@@ -35,6 +41,8 @@
     "decimal.js": "^10.4.3",
     "hardhat": "^2.14.0",
     "hardhat-gas-reporter": "^1.0.8",
+    "p-queue": "^8.0.1",
+    "pm2": "^5.4.2",
     "solidity-coverage": "^0.8.8",
     "ts-node": ">=8.0.0",
     "tsx": "^4.16.5",

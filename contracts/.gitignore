@@ -29,3 +29,6 @@ mochaOutput.json
 testMatrix.json
 /deployment-context-latest.json
 /deployment-manifest.json
+
+# Invariant test counterexamples
+/counterexamples
