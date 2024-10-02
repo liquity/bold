@@ -56,11 +56,11 @@ export const ACCOUNT_POSITIONS: Position[] = [
   {
     type: "earn",
     apr: dn.from(0.078, 18),
-    collateral: "STETH",
+    collateral: "ETH",
     deposit: dn.from(5_000, 18),
     rewards: {
       bold: dn.from(789.438, 18),
-      eth: dn.from(0.943, 18),
+      coll: dn.from(0.943, 18),
     },
   },
   {

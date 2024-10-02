@@ -302,7 +302,7 @@ contract BaseTest is TestAccounts, Logging {
         vm.stopPrank();
     }
 
-    function adjustUnredeemableTrove(
+    function adjustZombieTrove(
         address _account,
         uint256 _troveId,
         uint256 _collChange,
@@ -312,7 +312,7 @@ contract BaseTest is TestAccounts, Logging {
     ) public {
         vm.startPrank(_account);
 
-        borrowerOperations.adjustUnredeemableTrove(
+        borrowerOperations.adjustZombieTrove(
             _troveId,
             _collChange,
             _isCollIncrease,

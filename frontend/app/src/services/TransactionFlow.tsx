@@ -10,6 +10,7 @@
 // - Flow declaration: Contains the logic for a specific flow (get steps, parse request, tx params).
 // - Flow context: a transaction flow as stored in local storage (steps + request).
 
+import type { Contracts } from "@/src/contracts";
 import type { Request as CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
 import type { Request as OpenLoanPositionRequest } from "@/src/tx-flows/openLoanPosition";
 import type { Request as UpdateLoanInterestRateRequest } from "@/src/tx-flows/updateLoanInterestRate";
@@ -149,18 +150,19 @@ const FlowStateSchema = v.object({
   steps: FlowStepsSchema,
 });
 
-type GetStepsFn<FR extends FlowRequest, StepId extends string> = (args: {
+type FlowArgs<FR extends FlowRequest> = {
   account: ReturnType<typeof useAccount>;
-  contracts: ReturnType<typeof useContracts>;
+  contracts: Contracts;
   request: FR;
   wagmiConfig: ReturnType<typeof useWagmiConfig>;
-}) => Promise<StepId[]>;
+};
 
-type WriteContractParamsFn<FR extends FlowRequest, StepId extends string> = (args: {
-  contracts: ReturnType<typeof useContracts>;
-  request: FR;
-  stepId: StepId;
-}) => Promise<null | WriteContractParameters>;
+type GetStepsFn<FR extends FlowRequest, StepId extends string> = (args: FlowArgs<FR>) => Promise<StepId[]>;
+
+type WriteContractParamsFn<FR extends FlowRequest, StepId extends string> = (
+  stepId: StepId,
+  args: FlowArgs<FR>,
+) => Promise<null | WriteContractParameters>;
 
 export type FlowDeclaration<
   FR extends FlowRequest,
@@ -171,12 +173,16 @@ export type FlowDeclaration<
   Summary: ComponentType<{ flow: FlowContext<FR> }>;
   Details: ComponentType<{ flow: FlowContext<FR> }>;
   getSteps: GetStepsFn<FR, StepId>;
-  getStepName: (stepId: StepId) => string;
+  getStepName: (stepId: StepId, args: {
+    contracts: Contracts;
+    request: FR;
+  }) => string;
   parseRequest: (request: unknown) => FR | null;
   writeContractParams: WriteContractParamsFn<FR, StepId>;
 };
 
 type Context<FR extends FlowRequest = FlowRequest> = {
+  contracts: null | Contracts;
   currentStepIndex: number;
   discard: () => void;
   signAndSend: () => Promise<void>;
@@ -186,6 +192,7 @@ type Context<FR extends FlowRequest = FlowRequest> = {
 };
 
 const TransactionFlowContext = createContext<Context>({
+  contracts: null,
   currentStepIndex: -1,
   discard: noop,
   signAndSend: async () => {},
@@ -306,6 +313,9 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
   const contractWrite = useWriteContract();
   const txReceipt = useTransactionReceipt({
     hash: contractWrite.data,
+    query: {
+      retry: true,
+    },
   });
 
   const flowDeclaration = flow && getFlowDeclaration(flow.request.flowId);
@@ -323,10 +333,11 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
       txStatus: "awaiting-signature",
     });
 
-    const params = await flowDeclaration.writeContractParams({
+    const params = await flowDeclaration.writeContractParams(currentStepId, {
       contracts,
       request: flow.request,
-      stepId: currentStepId,
+      account,
+      wagmiConfig,
     });
 
     if (params) {
@@ -348,6 +359,7 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
     flow,
     flowDeclaration,
     updateStep,
+    wagmiConfig,
   ]);
 
   const totalSteps = flow?.steps?.length ?? 0;
@@ -382,6 +394,7 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
   return (
     <TransactionFlowContext.Provider
       value={{
+        contracts,
         currentStepIndex,
         discard,
         start,
@@ -406,7 +419,7 @@ function useSteps<FR extends FlowRequest>({
   flow: FlowContext<FR> | null;
   enabled: boolean;
   account: ReturnType<typeof useAccount>;
-  contracts: ReturnType<typeof useContracts>;
+  contracts: Contracts;
   wagmiConfig: ReturnType<typeof useWagmiConfig>;
   onSteps: (steps: string[]) => void;
 }) {

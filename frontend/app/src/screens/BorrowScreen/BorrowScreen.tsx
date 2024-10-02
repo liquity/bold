@@ -216,7 +216,7 @@ export function BorrowScreen() {
               secondary={{
                 start: `$${
                   debt.parsed
-                    ? fmtnum(dn.mul(collPrice, debt.parsed), "2z")
+                    ? fmtnum(debt.parsed, "2z")
                     : "0.00"
                 }`,
                 end: debtSuggestions && (

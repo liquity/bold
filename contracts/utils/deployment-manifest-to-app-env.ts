@@ -2,18 +2,17 @@ import { z } from "zod";
 import { echo, fs, minimist } from "zx";
 
 const HELP = `
-Converts the deployment artifacts created by ./deploy into environment variables
-to be used by the Next.js app located in frontend/.
+Converts the deployment manifest created by scripts/DeployLiquity2.s.sol into 
+environment variables meant to be used by the Next.js app located in frontend/app.
 
 Usage:
-  ./deployment-artifacts-to-app-env.ts <INPUT_JSON> [OUTPUT_ENV] [OPTIONS]
+  ./deployment-manifest-to-app-env.ts <MANIFEST_JSON> [OUTPUT_ENV] [OPTIONS]
 
 Arguments:
-  INPUT_JSON                               Path to the deployment artifacts
-                                           JSON file.
+  MANIFEST_JSON                            Path to the manifest file.
   OUTPUT_ENV                               Path to the environment variables
-                                           file to write. If not provided, it
-                                           writes to stdout.
+                                           file to write. If not provided, they
+                                           will be printed to stdout.
 
 Options:
   --help, -h                               Show this help message.
@@ -32,29 +31,35 @@ const argv = minimist(process.argv.slice(2), {
 });
 
 const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
-const ZDeploymentContext = z.object({
-  collateralContracts: z.array(
+const ZDeploymentManifest = z.object({
+  collateralRegistry: ZAddress,
+  boldToken: ZAddress,
+  hintHelpers: ZAddress,
+  multiTroveGetter: ZAddress,
+
+  branches: z.array(
     z.object({
       activePool: ZAddress,
+      addressesRegistry: ZAddress,
       borrowerOperations: ZAddress,
+      collSurplusPool: ZAddress,
+      collToken: ZAddress,
+      defaultPool: ZAddress,
       gasCompZapper: ZAddress,
+      gasPool: ZAddress,
+      interestRouter: ZAddress,
+      metadataNFT: ZAddress,
+      priceFeed: ZAddress,
       sortedTroves: ZAddress,
       stabilityPool: ZAddress,
-      token: ZAddress,
       troveManager: ZAddress,
+      troveNFT: ZAddress,
       wethZapper: ZAddress,
     }),
   ),
-  protocolContracts: z.object({
-    BoldToken: ZAddress,
-    CollateralRegistry: ZAddress,
-    HintHelpers: ZAddress,
-    MultiTroveGetter: ZAddress,
-    WETHTester: ZAddress,
-  }),
 });
 
-type DeploymentContext = z.infer<typeof ZDeploymentContext>;
+type DeploymentManifest = z.infer<typeof ZDeploymentManifest>;
 
 const NULL_ADDRESS = `0x${"0".repeat(40)}`;
 
@@ -76,12 +81,12 @@ export function main() {
     process.exit(1);
   }
 
-  const deploymentContext = parseDeploymentContext(
+  const manifest = parseDeploymentManifest(
     fs.readFileSync(options.inputJsonPath, "utf-8"),
   );
 
   const outputEnv = objectToEnvironmentVariables(
-    deployedContractsToAppEnvVariables(deploymentContext),
+    deployedContractsToAppEnvVariables(manifest),
   );
 
   if (!options.outputEnvPath) {
@@ -115,22 +120,28 @@ function objectToEnvironmentVariables(object: Record<string, unknown>) {
     .join("\n");
 }
 
-function deployedContractsToAppEnvVariables(deployedContext: DeploymentContext) {
-  const appEnvVariables: Record<string, string> = {};
+function deployedContractsToAppEnvVariables(manifest: DeploymentManifest) {
+  if (manifest.branches.length === 0) {
+    console.error("\nNo collateral contracts found in the deployment manifest.\n");
+    process.exit(1);
+  }
+
+  const appEnvVariables: Record<string, string> = {
+    // WETH is always the first collateral token
+    NEXT_PUBLIC_CONTRACT_WETH: manifest.branches[0].collToken,
+  };
 
   // protocol contracts
-  for (const [contractName, address] of Object.entries(deployedContext.protocolContracts)) {
+  const protocolEntries = Object.entries(manifest).filter(([k]) => k !== "branches");
+  for (const [contractName, address] of protocolEntries) {
     const envVarName = contractNameToAppEnvVariable(contractName, "CONTRACT");
     if (envVarName) {
       appEnvVariables[envVarName] = address;
     }
   }
 
-  appEnvVariables.NEXT_PUBLIC_CONTRACT_FUNCTION_CALLER = NULL_ADDRESS;
-  appEnvVariables.NEXT_PUBLIC_CONTRACT_HINT_HELPERS = NULL_ADDRESS;
-
   // collateral contracts
-  for (const [index, contract] of Object.entries(deployedContext.collateralContracts)) {
+  for (const [index, contract] of Object.entries(manifest.branches)) {
     for (const [contractName, address] of Object.entries(contract)) {
       const envVarName = contractNameToAppEnvVariable(contractName, `COLL_${index}_CONTRACT`);
       if (envVarName) {
@@ -146,42 +157,45 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
   prefix = `NEXT_PUBLIC_${prefix}`;
   switch (contractName) {
     // protocol contracts
-    case "BoldToken":
+    case "boldToken":
       return `${prefix}_BOLD_TOKEN`;
-    case "CollateralRegistry":
+    case "collateralRegistry":
       return `${prefix}_COLLATERAL_REGISTRY`;
-    case "HintHelpers":
+    case "hintHelpers":
       return `${prefix}_HINT_HELPERS`;
-    case "MultiTroveGetter":
+    case "multiTroveGetter":
       return `${prefix}_MULTI_TROVE_GETTER`;
-    case "WETH":
-    case "WETHTester":
-      return `${prefix}_WETH`;
 
     // collateral contracts
     case "activePool":
       return `${prefix}_ACTIVE_POOL`;
+    case "addressesRegistry":
+      return `${prefix}_ADDRESSES_REGISTRY`;
     case "borrowerOperations":
       return `${prefix}_BORROWER_OPERATIONS`;
+    case "collToken":
+      return `${prefix}_COLL_TOKEN`;
+    case "defaultPool":
+      return `${prefix}_DEFAULT_POOL`;
+    case "gasCompZapper":
+      return `${prefix}_GAS_COMP_ZAPPER`;
+    case "priceFeed":
+      return `${prefix}_PRICE_FEED`;
     case "sortedTroves":
       return `${prefix}_SORTED_TROVES`;
     case "stabilityPool":
       return `${prefix}_STABILITY_POOL`;
-    case "token":
-      return `${prefix}_TOKEN`;
     case "troveManager":
       return `${prefix}_TROVE_MANAGER`;
     case "wethZapper":
       return `${prefix}_WETH_ZAPPER`;
-    case "gasCompZapper":
-      return `${prefix}_GAS_COMP_ZAPPER`;
   }
   return null;
 }
 
-function parseDeploymentContext(content: string) {
+function parseDeploymentManifest(content: string) {
   if (!content.trim()) {
-    console.error("\nNo deployment context provided.\n");
+    console.error("\nNo deployment manifest provided.\n");
     process.exit(1);
   }
 
@@ -193,11 +207,11 @@ function parseDeploymentContext(content: string) {
     process.exit(1);
   }
 
-  const context = ZDeploymentContext.safeParse(json);
-  if (!context.success) {
-    console.error("\nInvalid deployment context provided.\n");
+  const manifest = ZDeploymentManifest.safeParse(json);
+  if (!manifest.success) {
+    console.error("\nInvalid deployment manifest provided.\n");
     console.error(
-      context.error.errors.map((error) => {
+      manifest.error.errors.map((error) => {
         return `${error.path.join(".")}: ${error.message} (${error.code})`;
       }).join("\n"),
     );
@@ -208,7 +222,7 @@ function parseDeploymentContext(content: string) {
     process.exit(1);
   }
 
-  return context.data;
+  return manifest.data;
 }
 
 main();

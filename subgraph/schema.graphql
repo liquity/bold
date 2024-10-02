@@ -7,6 +7,7 @@ type Collateral @entity {
   addresses: CollateralAddresses! @derivedFrom(field: "collateral")
   totalDeposited: BigInt!
   totalDebt: BigInt!
+  price: BigInt!
 }
 
 type Token @entity(immutable: true) {
