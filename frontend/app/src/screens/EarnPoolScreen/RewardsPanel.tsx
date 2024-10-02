@@ -1,10 +1,11 @@
-import type { PositionEarn } from "@/src/types";
+import type { CollIndex, PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 import { ReactNode } from "react";
 
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
+import { useCollateral } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
@@ -13,25 +14,28 @@ import { Button, InfoTooltip } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 export function RewardsPanel({
+  collIndex,
   position,
 }: {
+  collIndex: null | CollIndex;
   position?: PositionEarn;
 }) {
   const account = useAccount();
 
-  const ethPriceUsd = usePrice("ETH");
+  const collateral = useCollateral(collIndex);
+  const collPriceUsd = usePrice(collateral?.symbol ?? null);
   const boldPriceUsd = usePrice("BOLD");
 
-  if (!ethPriceUsd || !boldPriceUsd) {
+  if (!collPriceUsd || !boldPriceUsd || !collateral) {
     return null;
   }
 
   const totalRewards = dn.add(
     dn.mul(position?.rewards?.bold ?? DNUM_0, boldPriceUsd),
-    dn.mul(position?.rewards?.eth ?? DNUM_0, ethPriceUsd),
+    dn.mul(position?.rewards?.coll ?? DNUM_0, collPriceUsd),
   );
 
-  const gasFeeUsd = dn.multiply(dn.from(0.0015, 18), ethPriceUsd);
+  const gasFeeUsd = dn.multiply(dn.from(0.0015, 18), collPriceUsd);
 
   const allowSubmit = account.isConnected;
 
@@ -67,27 +71,23 @@ export function RewardsPanel({
           {content.earnScreen.rewardsPanel.label}
         </div>
 
-        {position
-          ? (
-            <div
-              className={css({
-                display: "flex",
-                gap: 32,
-              })}
-            >
-              <Amount
-                symbol="BOLD"
-                tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsBold)} />}
-                value={position.rewards?.bold}
-              />
-              <Amount
-                symbol="ETH"
-                tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsEth)} />}
-                value={position.rewards?.eth}
-              />
-            </div>
-          )
-          : <div>N/A</div>}
+        <div
+          className={css({
+            display: "flex",
+            gap: 32,
+          })}
+        >
+          <RewardsAmount
+            symbol="BOLD"
+            tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsBold)} />}
+            value={position?.rewards?.bold ?? DNUM_0}
+          />
+          <RewardsAmount
+            symbol={collateral.symbol}
+            tooltip={<InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.rewardsEth)} />}
+            value={position?.rewards?.coll ?? DNUM_0}
+          />
+        </div>
 
         <div
           className={css({
@@ -128,7 +128,7 @@ export function RewardsPanel({
   );
 }
 
-function Amount({
+function RewardsAmount({
   symbol,
   tooltip,
   value,

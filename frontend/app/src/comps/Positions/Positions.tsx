@@ -9,9 +9,10 @@ import { DEMO_MODE } from "@/src/env";
 import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
+import { useCollateral } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
-import { useLoansByAccount } from "@/src/subgraph-hooks";
+import { useEarnPositionsByAccount, useLoansByAccount } from "@/src/subgraph-hooks";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { sleep } from "@/src/utils";
 import { css } from "@/styled-system/css";
@@ -39,21 +40,30 @@ type Mode = "positions" | "loading" | "actions";
 export function Positions() {
   const account = useAccount();
   const loans = useLoansByAccount(account.address);
+  const earnPositions = useEarnPositionsByAccount(account.address);
 
   const positions = useQuery({
-    enabled: account.isConnected && !loans.isLoading,
+    enabled: account.isConnected && !loans.isPending && !earnPositions.isPending,
     queryKey: ["CombinedPositions", account.address],
     queryFn: async () => {
       await sleep(300);
-      return DEMO_MODE ? ACCOUNT_POSITIONS : loans.data ?? [];
+      if (DEMO_MODE) {
+        return ACCOUNT_POSITIONS;
+      }
+      return [
+        ...loans.data ?? [],
+        ...earnPositions.data ?? [],
+      ];
     },
   });
 
-  const positionsLoading = loans.isLoading || positions.isLoading;
+  const positionsPending = account.isConnected && (
+    loans.isPending || earnPositions.isPending || positions.isPending
+  );
 
   let mode: Mode = account.isConnected && positions.data && positions.data.length > 0
     ? "positions"
-    : positionsLoading
+    : positionsPending
     ? "loading"
     : "actions";
 
@@ -565,18 +575,18 @@ function PositionLeverage({
 
 function PositionEarn({
   apr,
-  collateral,
+  collIndex,
   deposit,
   rewards,
 }: Pick<
   PositionEarn,
   | "apr"
-  | "collateral"
+  | "collIndex"
   | "deposit"
   | "rewards"
 >) {
-  const token = TOKENS_BY_SYMBOL[collateral];
-  return (
+  const token = useCollateral(collIndex);
+  return token && (
     <Link
       href={`/earn/${token.symbol.toLowerCase()}`}
       legacyBehavior

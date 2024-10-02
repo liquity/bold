@@ -67,12 +67,15 @@ export async function main() {
     process.exit(0);
   }
 
+  let isLocal = false;
+
   // network preset: local
   if (networkPreset === "local") {
     options.name ??= "liquity2/liquity2";
     options.graphNode ??= "http://localhost:8020/";
     options.ipfsNode ??= "http://localhost:5001/";
-    options.network ??= "local";
+    options.network ??= "mainnet";
+    isLocal = true;
   }
 
   if (networkPreset === "sepolia") {
@@ -89,9 +92,6 @@ export async function main() {
   if (networkPreset === "mainnet") {
     // TODO: implement
   }
-
-  const isLocal = options.network === "local";
-  if (isLocal) options.network = "mainnet";
 
   if (!options.name) {
     throw new Error("--name <SUBGRAPH_NAME> is required");
@@ -111,6 +111,8 @@ export async function main() {
     "build",
     "--network",
     options.network,
+    "--network-file",
+    GENERATED_NETWORKS_JSON_PATH,
   ];
 
   const graphCreateCommand: null | string[] = !options.create ? null : [
@@ -120,11 +122,18 @@ export async function main() {
     options.name,
   ];
 
-  const graphDeployCommand: string[] = ["graph", "deploy"];
+  const graphDeployCommand: string[] = [
+    "graph",
+    "deploy",
+    "--network-file",
+    GENERATED_NETWORKS_JSON_PATH,
+  ];
+
   if (options.graphNode) graphDeployCommand.push("--node", options.graphNode);
   if (options.network) graphDeployCommand.push("--network", options.network);
   if (options.version) graphDeployCommand.push("--version-label", options.version);
   if (options.ipfsNode) graphDeployCommand.push("--ipfs", options.ipfsNode);
+
   graphDeployCommand.push(options.name);
 
   await updateNetworksWithLocalBoldToken();
@@ -144,13 +153,19 @@ Deploying subgraph:
   $.verbose = options.debug;
 
   await $`pnpm ${graphBuildCommand}`;
+  echo("");
+  echo("Subgraph build complete.");
+  echo("");
 
   if (graphCreateCommand) {
     await $`pnpm ${graphCreateCommand}`;
   }
+  echo("");
+  echo("Subgraph create complete.");
+  echo("");
 
   await $`pnpm ${graphDeployCommand}`;
-
+  echo("");
   echo("Subgraph deployment complete.");
   echo("");
 }

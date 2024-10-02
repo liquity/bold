@@ -1,27 +1,22 @@
 "use client";
 
-import type { Dnum, Entries, PositionEarn } from "@/src/types";
-import type { CollateralSymbol, Token } from "@liquity2/uikit";
+import type { CollateralSymbol } from "@liquity2/uikit";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { ACCOUNT_POSITIONS, EARN_POOLS } from "@/src/demo-mode";
+import { useCollateralContracts } from "@/src/contracts";
+import { useCollateral, useCollIndexFromSymbol } from "@/src/liquity-utils";
+import { useAccount } from "@/src/services/Ethereum";
+import { useEarnPosition, useStabilityPool } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
-import { HFlex, IconArrowRight, IconPlus, InfoTooltip, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import { HFlex, IconArrowRight, IconPlus, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 
 export function EarnPoolsListScreen() {
-  const earnPositions = new Map<CollateralSymbol, PositionEarn>();
-
-  for (const position of ACCOUNT_POSITIONS) {
-    if (position.type === "earn") {
-      earnPositions.set(position.collateral, position);
-    }
-  }
-
+  const collSymbols = useCollateralContracts().map((coll) => coll.symbol);
   return (
     <Screen
       title={
@@ -35,10 +30,7 @@ export function EarnPoolsListScreen() {
         >
           {content.earnHome.headline(
             <TokenIcon.Group>
-              {[
-                "BOLD" as const,
-                ...Object.keys(EARN_POOLS) as (keyof typeof EARN_POOLS)[],
-              ].map((symbol) => (
+              {["BOLD" as const, ...collSymbols].map((symbol) => (
                 <TokenIcon
                   key={symbol}
                   symbol={symbol}
@@ -53,61 +45,37 @@ export function EarnPoolsListScreen() {
       width={67 * 8}
       gap={16}
     >
-      {(Object.entries(EARN_POOLS) as Entries<typeof EARN_POOLS>).map(([symbol, pool]) => {
-        const token = TOKENS_BY_SYMBOL[symbol];
-        const { deposit, rewards } = earnPositions.get(symbol) ?? {};
-        console.log(
-          { deposit, rewards },
-          earnPositions.get(symbol),
-          earnPositions,
-          symbol,
-        );
-        return (
-          <Pool
-            key={symbol}
-            apr={pool.apr}
-            deposit={deposit}
-            path={`/earn/${symbol.toLowerCase()}`}
-            rewards={[
-              { amount: rewards?.bold ?? dn.from(0, 18), token: "BOLD" },
-              { amount: rewards?.coll ?? dn.from(0, 18), token: symbol },
-            ]}
-            share={deposit && dn.gt(deposit, 0)
-              ? dn.div(deposit, pool.boldQty)
-              : dn.from(0, 18)}
-            token={token}
-            tvl={pool.boldQty}
-          />
-        );
-      })}
+      {collSymbols.map((symbol) => (
+        <Pool
+          key={symbol}
+          collSymbol={symbol}
+        />
+      ))}
     </Screen>
   );
 }
 
 function Pool({
-  apr,
-  deposit,
-  path,
-  share,
-  token,
-  rewards = [],
-  tvl,
-  customTitle,
+  collSymbol,
+  title,
 }: {
-  apr: Dnum;
-  deposit?: Dnum;
-  path: string;
-  share: Dnum;
-  token: Token;
-  rewards?: {
-    amount: Dnum;
-    token: Token["symbol"];
-  }[];
-  tvl: Dnum;
-  customTitle?: ReactNode;
+  collSymbol: CollateralSymbol;
+  title?: ReactNode;
 }) {
-  const active = deposit && dn.gt(deposit, 0);
-  return (
+  const account = useAccount();
+  const collIndex = useCollIndexFromSymbol(collSymbol);
+  const collateral = useCollateral(collIndex);
+
+  const earnPosition = useEarnPosition(account.address, collIndex ?? undefined);
+  const stabilityPool = useStabilityPool(collIndex ?? 0);
+
+  const share = earnPosition.data && stabilityPool.data && dn.gt(stabilityPool.data.totalDeposited, 0)
+    ? dn.div(earnPosition.data.deposit, stabilityPool.data.totalDeposited)
+    : dn.from(0, 18);
+
+  const active = Boolean(earnPosition.data?.deposit && dn.gt(earnPosition.data.deposit, 0));
+
+  return collateral && (
     <div
       className={css({
         display: "flex",
@@ -152,7 +120,7 @@ function Pool({
           })}
         >
           <TokenIcon
-            symbol={token.symbol}
+            symbol={collateral.symbol}
             size={34}
           />
         </div>
@@ -170,9 +138,7 @@ function Pool({
             })}
           >
             <div>
-              {customTitle || (
-                `BOLD • ${token.name} stability pool`
-              )}
+              {title ?? `BOLD • ${collateral.name} stability pool`}
             </div>
             <div
               className={css({
@@ -186,10 +152,14 @@ function Pool({
             >
               <div>TVL</div>
               <div>
-                <Amount value={tvl} format="compact" />
+                <Amount
+                  format="compact"
+                  prefix="$"
+                  value={stabilityPool.data?.totalDeposited}
+                />
               </div>
               <InfoTooltip heading="Total Value Locked">
-                test
+                Total amount of BOLD deposited in the stability pool.
               </InfoTooltip>
             </div>
           </div>
@@ -201,7 +171,11 @@ function Pool({
             })}
           >
             <div>
-              <Amount value={apr} format="1z" percentage />
+              <Amount
+                value={stabilityPool.data?.apr}
+                format="1z"
+                percentage
+              />
             </div>
             <div
               className={css({
@@ -215,7 +189,7 @@ function Pool({
             >
               <div>Current APR</div>
               <InfoTooltip heading="APR">
-                test
+                Annual percentage rate being earned by the {collateral.name} stability pool’s deposits over the past 7 days.
               </InfoTooltip>
             </div>
           </div>
@@ -247,7 +221,7 @@ function Pool({
                 Deposit
               </div>
               <HFlex gap={4}>
-                <Amount value={deposit} />
+                <Amount value={earnPosition.data?.deposit} />
                 <TokenIcon symbol="BOLD" size="mini" />
               </HFlex>
             </div>
@@ -269,22 +243,20 @@ function Pool({
             {active
               ? (
                 <HFlex>
-                  {rewards.map(({ amount, token }) => (
-                    <HFlex key={token} gap={4}>
-                      <Amount value={amount} />
-                      <TokenIcon symbol={token} size="mini" />
-                    </HFlex>
-                  ))}
+                  <HFlex gap={4}>
+                    <Amount value={earnPosition.data?.rewards.bold} />
+                    <TokenIcon symbol="BOLD" size="mini" />
+                  </HFlex>
+                  <HFlex gap={4}>
+                    <Amount value={earnPosition.data?.rewards.coll} />
+                    <TokenIcon symbol={collateral.symbol} size="mini" />
+                  </HFlex>
                 </HFlex>
               )
               : (
                 <TokenIcon.Group size="mini">
-                  {rewards.map(({ token }) => (
-                    <TokenIcon
-                      key={token}
-                      symbol={token}
-                    />
-                  ))}
+                  <TokenIcon symbol="BOLD" />
+                  <TokenIcon symbol={collateral.symbol} />
                 </TokenIcon.Group>
               )}
           </div>
@@ -298,7 +270,7 @@ function Pool({
                 Pool share
               </div>
               <div>
-                <Amount value={share} percentage />
+                <Amount percentage value={share} />
               </div>
             </div>
           )}
@@ -306,8 +278,8 @@ function Pool({
 
         <PoolLink
           active={active}
-          path={path}
-          title={`${active ? "Manage" : "Join"} ${token.name} pool`}
+          path={`/earn/${collateral?.symbol.toLowerCase()}`}
+          title={`${active ? "Manage" : "Join"} ${collateral.name} pool`}
         />
       </div>
     </div>

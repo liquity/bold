@@ -5,6 +5,8 @@ type Collateral @entity {
   minCollRatio: BigInt!
   troves: [Trove!]! @derivedFrom(field: "collateral")
   addresses: CollateralAddresses! @derivedFrom(field: "collateral")
+  stabilityPoolDeposits: [StabilityPoolDeposit!]!
+  @derivedFrom(field: "collateral")
   totalDeposited: BigInt!
   totalDebt: BigInt!
   price: BigInt!
@@ -53,4 +55,18 @@ type BorrowerInfo @entity {
   id: ID!
   troves: Int!
   trovesByCollateral: [Int!]!
+}
+
+type StabilityPool @entity {
+  id: ID!
+  totalDeposited: BigInt!
+}
+
+type StabilityPoolDeposit @entity {
+  id: ID!
+  boldGain: BigInt!
+  collGain: BigInt!
+  collateral: Collateral!
+  deposit: BigInt!
+  depositor: Bytes!
 }

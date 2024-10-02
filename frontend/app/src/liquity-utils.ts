@@ -81,8 +81,11 @@ export function getPrefixedTroveId(collIndex: CollIndex, troveId: TroveId): Pref
   return `${collIndex}:${troveId}`;
 }
 
-export function useCollateral(collIndex: number): CollateralToken {
+export function useCollateral(collIndex: null | number): null | CollateralToken {
   const collContracts = useCollateralContracts();
+  if (collIndex === null) {
+    return null;
+  }
   return collContracts.map(({ symbol }) => {
     const collateral = COLLATERALS.find((c) => c.symbol === symbol);
     if (!collateral) {
@@ -90,4 +93,13 @@ export function useCollateral(collIndex: number): CollateralToken {
     }
     return collateral;
   })[collIndex];
+}
+
+export function useCollIndexFromSymbol(symbol: CollateralSymbol | null): CollIndex | null {
+  const collContracts = useCollateralContracts();
+  if (symbol === null) {
+    return null;
+  }
+  const collIndex = collContracts.findIndex((coll) => coll.symbol === symbol);
+  return isCollIndex(collIndex) ? collIndex : null;
 }
