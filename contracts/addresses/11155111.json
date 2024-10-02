@@ -19,7 +19,7 @@
       "gasPool": "0x6b6245e40406cc38784aa9645a95c081b23079d2",
       "interestRouter": "0x6f75a9c5e464df532dd076b868200c0e155d4560",
       "collToken": "0x8ec93304165f683ae06b5466aade336256911cea",
-      "gasCompZapper": "0x228bb5afbec2a557b423803f80813f24875bd962",
+      "gasCompZapper": "0x0000000000000000000000000000000000000000",
       "wethZapper": "0x87330bc825aa985abc62f2d92a14fb434914f6bd"
     },
     {
@@ -37,7 +37,7 @@
       "gasPool": "0x32d108a299ef25751e29f02f94614e247704db8b",
       "interestRouter": "0xcdc9ab5ca932d4ffba3468b0bb0becda1f2bb370",
       "collToken": "0x1fb81f86e2c08f87faefea3e9bc629da39ace3e0",
-      "gasCompZapper": "0x0000000000000000000000000000000000000000",
+      "gasCompZapper": "0x228bb5afbec2a557b423803f80813f24875bd962",
       "wethZapper": "0x0000000000000000000000000000000000000000"
     }
   ]

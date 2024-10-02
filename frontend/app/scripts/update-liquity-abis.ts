@@ -26,6 +26,7 @@ const ABIS = [
   ["BorrowerOperations"],
   ["CollSurplusPool"],
   ["DefaultPool"],
+  ["GasCompZapper"],
   ["GasPool"],
   ["PriceFeed", "PriceFeedTestNet", "PriceFeedMock"],
   ["SortedTroves"],

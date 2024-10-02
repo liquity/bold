@@ -201,7 +201,7 @@ export function DepositPanel({
           size="large"
           wide
           onClick={() => {
-            if (collateral && account.address && position) {
+            if (collateral && account.address && collIndex !== null) {
               txFlow.start({
                 flowId: "earnDeposit",
                 backLink: [
@@ -214,7 +214,7 @@ export function DepositPanel({
                 depositor: account.address,
                 boldAmount: depositDifference,
                 claim: claimRewards,
-                collIndex: position.collIndex,
+                collIndex,
               });
               router.push("/transactions");
             }
