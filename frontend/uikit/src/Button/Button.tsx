@@ -1,7 +1,7 @@
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { match, P } from "ts-pattern";
-import { css } from "../../styled-system/css";
+import { css, cx } from "../../styled-system/css";
 import { useTheme } from "../Theme/Theme";
 
 export type ButtonProps = {
@@ -13,21 +13,24 @@ export type ButtonProps = {
 };
 
 export function Button({
-  size = "medium",
+  className,
   label,
   maxWidth,
-  wide,
   mode = "secondary",
+  size = "medium",
+  style,
+  wide,
   ...props
 }: ComponentPropsWithoutRef<"button"> & ButtonProps) {
   const buttonStyles = useButtonStyles(size, mode);
   return (
     <button
-      className={buttonStyles.className}
+      className={cx(buttonStyles.className, className)}
       style={{
         maxWidth,
         width: wide ? "100%" : undefined,
         ...buttonStyles.styles,
+        ...style,
       }}
       {...props}
     >
