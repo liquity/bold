@@ -4,7 +4,7 @@ import { logError, ReproducibleCounterexampleJson, reproFile, TestListJson, Test
 
 const debug = !!process.env.DEBUG;
 const concurrency = 24;
-const softStartDelayMs = 500;
+const softStartDelayMs = 1000;
 const testFilter = "^invariant";
 const failuresDir = path.join("cache", "invariant", "failures");
 const counterexamplesDir = "counterexamples";
