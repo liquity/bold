@@ -46,7 +46,7 @@ export function useTroveCount(account?: Address, collIndex?: number) {
   });
 }
 
-export function useLoansByAccount(account?: Address) {
+export function useLoansByAccount(account?: Address | null) {
   return useQuery({
     queryKey: ["TrovesByAccount", account],
     queryFn: DEMO_MODE
@@ -62,7 +62,7 @@ export function useLoansByAccount(account?: Address) {
   });
 }
 
-export function useLoanById(id?: PrefixedTroveId | null) {
+export function useLoanById(id?: null | PrefixedTroveId) {
   return useQuery({
     queryKey: ["TroveById", id],
     queryFn: DEMO_MODE
@@ -92,7 +92,7 @@ export function useLoanById(id?: PrefixedTroveId | null) {
   });
 }
 
-export function useEarnPositionsByAccount(account?: Address) {
+export function useEarnPositionsByAccount(account?: null | Address) {
   return useQuery({
     queryKey: ["StabilityPoolDepositsByAccount", account],
     queryFn: DEMO_MODE
