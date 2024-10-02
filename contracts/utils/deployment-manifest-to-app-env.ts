@@ -61,8 +61,6 @@ const ZDeploymentManifest = z.object({
 
 type DeploymentManifest = z.infer<typeof ZDeploymentManifest>;
 
-const NULL_ADDRESS = `0x${"0".repeat(40)}`;
-
 export function main() {
   const options = {
     help: argv["help"],

@@ -5,6 +5,7 @@ import { ActivePool } from "@/src/abi/ActivePool";
 import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
 import { CollateralRegistry } from "@/src/abi/CollateralRegistry";
 import { DefaultPool } from "@/src/abi/DefaultPool";
+import { GasCompZapper } from "@/src/abi/GasCompZapper";
 import { HintHelpers } from "@/src/abi/HintHelpers";
 import { MultiTroveGetter } from "@/src/abi/MultiTroveGetter";
 import { PriceFeed } from "@/src/abi/PriceFeed";
@@ -41,6 +42,10 @@ const collateralAbis = {
   SortedTroves,
   StabilityPool,
   TroveManager,
+  GasCompZapper: [
+    ...GasCompZapper,
+    ...BorrowerOperations.filter((f) => f.type === "error"),
+  ],
   WETHZapper: [
     ...WETHZapper,
     ...BorrowerOperations.filter((f) => f.type === "error"),
@@ -94,11 +99,12 @@ export function useContracts(): Contracts {
         contracts: {
           ActivePool: { address: contracts.ACTIVE_POOL, abi: abis.ActivePool },
           BorrowerOperations: { address: contracts.BORROWER_OPERATIONS, abi: abis.BorrowerOperations },
+          CollToken: { address: contracts.COLL_TOKEN, abi: abis.CollToken },
           DefaultPool: { address: contracts.DEFAULT_POOL, abi: abis.DefaultPool },
+          GasCompZapper: { address: contracts.GAS_COMP_ZAPPER, abi: abis.GasCompZapper },
           PriceFeed: { address: contracts.PRICE_FEED, abi: abis.PriceFeed },
           SortedTroves: { address: contracts.SORTED_TROVES, abi: abis.SortedTroves },
           StabilityPool: { address: contracts.STABILITY_POOL, abi: abis.StabilityPool },
-          CollToken: { address: contracts.COLL_TOKEN, abi: abis.CollToken },
           TroveManager: { address: contracts.TROVE_MANAGER, abi: abis.TroveManager },
           WETHZapper: { address: contracts.WETH_ZAPPER, abi: abis.WETHZapper },
         },
