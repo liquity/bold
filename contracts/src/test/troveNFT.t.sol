@@ -222,4 +222,53 @@ contract troveNFTTest is DevTestSetup {
         assertTrue(LibString.contains(decodedUri, '"value": "50000000000000000"'), "Incorrect Interest Rate value");
         assertTrue(LibString.contains(decodedUri, '"value": "Active"'), "Incorrect Status value");
     }
+
+    function test_toLocale() public {
+        string memory result = numUtils.toLocale("123456789");
+        console.log(result);
+        assertEq(result, "123,456,789");
+    }
+
+    function test_toLocaleString() public {
+        string memory result = numUtils.toLocaleString(123456789, 0, 2);
+        console.log(result);
+        assertEq(result, "123,456,789.00");
+
+        result = numUtils.toLocaleString(123456789, 1, 2);
+        console.log(result);
+        assertEq(result, "12,345,678.90");
+
+        result = numUtils.toLocaleString(123456789, 1, 3);
+        console.log(result);
+        assertEq(result, "12,345,678.900");
+
+        result = numUtils.toLocaleString(123456789, 1, 0);
+        console.log(result);
+        assertEq(result, "12,345,678");
+
+        result = numUtils.toLocaleString(123456789, 10, 0);
+        console.log(result);
+        assertEq(result, "0");
+
+        result = numUtils.toLocaleString(123456789, 10, 1);
+        console.log(result);
+        assertEq(result, "0.1");
+
+        result = numUtils.toLocaleString(123456789, 10, 2);
+        console.log(result);
+        assertEq(result, "0.12");
+
+        result = numUtils.toLocaleString(123456789, 10, 3);
+        console.log(result);
+        assertEq(result, "0.123");
+
+        result = numUtils.toLocaleString(123456789, 10, 4);
+        console.log(result);
+        assertEq(result, "0.1234");
+
+        result = numUtils.toLocaleString(123456789, 10, 10);
+        console.log(result);
+        assertEq(result, "0.1234567890", "10");
+    }
+
 }
