@@ -645,6 +645,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         Snapshots memory snapshots = depositSnapshots[_depositor];
 
         uint256 pendingSPYield = activePool.calcPendingSPYield() + yieldGainsPending;
+        uint256 newYieldGainsOwed = yieldGainsOwed + (totalBoldDeposits >= DECIMAL_PRECISION ? pendingSPYield : 0);
         uint256 firstPortionPending;
         uint256 secondPortionPending;
 
@@ -663,7 +664,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         uint256 yieldGain = initialDeposit * (firstPortion + secondPortion) / snapshots.P / DECIMAL_PRECISION;
 
-        return LiquityMath._min(yieldGain, yieldGainsOwed);
+        return LiquityMath._min(yieldGain, newYieldGainsOwed);
     }
 
     // --- Compounded deposit ---
