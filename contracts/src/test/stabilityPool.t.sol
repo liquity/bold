@@ -1933,8 +1933,8 @@ contract SPTest is DevTestSetup {
         testVars.ethGainC = stabilityPool.getDepositorCollGain(C);
         testVars.ethGainD = stabilityPool.getDepositorCollGain(D);
 
-        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainC, 1e5, "C share of coll mismatch");
-        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainD, 1e5, "D share of coll mismatch");
+        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainC, 1e7, "C share of coll mismatch");
+        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainD, 1e7, "D share of coll mismatch");
 
         // E makes deposit after 2nd liq
         transferBold(C, E, boldToken.balanceOf(C));
@@ -1962,6 +1962,10 @@ contract SPTest is DevTestSetup {
         testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fuzz(
             2371624267, 555740272250686904193353073666173923435456188015
         );
+    }
+
+    function test_Issue_ShareOfCollMismatch() external {
+        testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fuzz(0, 504242351683211589370490);
     }
 
     function testLiquidationsWithLowPAllowFurtherRewardsForExistingDepositors(uint256 _cheatP, uint256 _surplus)
