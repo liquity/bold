@@ -3,6 +3,7 @@
 pragma solidity 0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 import "./Interfaces/IStabilityPool.sol";
 import "./Interfaces/IAddressesRegistry.sol";
@@ -426,108 +427,113 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 totalBold = totalBoldDeposits; // cached to save an SLOAD
         if (totalBold == 0 || _debtToOffset == 0) return;
 
-        (uint256 collGainPerUnitStaked, uint256 boldLossPerUnitStaked) =
-            _computeCollRewardsPerUnitStaked(_collToAdd, _debtToOffset, totalBold);
-
-        _updateCollRewardSumAndProduct(collGainPerUnitStaked, boldLossPerUnitStaked); // updates S and P
+        _updateCollRewardSumAndProduct(_collToAdd, _debtToOffset, totalBold); // updates S and P
 
         _moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
     }
 
     // --- Offset helper functions ---
 
-    function _computeCollRewardsPerUnitStaked(uint256 _collToAdd, uint256 _debtToOffset, uint256 _totalBoldDeposits)
-        internal
-        returns (uint256 collGainPerUnitStaked, uint256 boldLossPerUnitStaked)
-    {
+    function _getNewPAndUpdateBoldLossError(uint256 _debtToOffset, uint256 _totalBoldDeposits, uint256 _currentP, uint256 _scaleMultiplier) internal returns (uint256) {
+        uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION;
         /*
-        * Compute the Bold and Coll rewards. Uses a "feedback" error correction, to keep
-        * the cumulative error in the P and S state variables low:
-        *
-        * 1) Form numerators which compensate for the floor division errors that occurred the last time this
-        * function was called.
-        * 2) Calculate "per-unit-staked" ratios.
-        * 3) Multiply each ratio back by its denominator, to reveal the current floor division error.
-        * 4) Store these errors for use in the next correction when this function is called.
-        * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
-        */
-        uint256 collNumerator = _collToAdd * DECIMAL_PRECISION + lastCollError_Offset;
+         * Add 1 to make error in quotient positive. We want "slightly too much" Bold loss,
+         * which ensures the error in any given compoundedBoldDeposit favors the Stability Pool.
+         */
+        uint256 boldLossPerUnitStaked = _debtToOffset * DECIMAL_PRECISION * _scaleMultiplier / _totalBoldDeposits + 1;
 
-        assert(_debtToOffset <= _totalBoldDeposits);
-        if (_debtToOffset == _totalBoldDeposits) {
-            boldLossPerUnitStaked = DECIMAL_PRECISION; // When the Pool depletes to 0, so does each deposit
-            lastBoldLossError_Offset = 0;
-        } else {
-            uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION - lastBoldLossError_Offset;
-            /*
-            * Add 1 to make error in quotient positive. We want "slightly too much" Bold loss,
-            * which ensures the error in any given compoundedBoldDeposit favors the Stability Pool.
-            */
-            boldLossPerUnitStaked = boldLossNumerator / _totalBoldDeposits + 1;
-            lastBoldLossError_Offset = boldLossPerUnitStaked * _totalBoldDeposits - boldLossNumerator;
-        }
+        /*
+         * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool Bold in the liquidation.
+         * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - boldLossPerUnitStaked)
+         */
+        uint256 newProductFactor = DECIMAL_PRECISION * _scaleMultiplier - boldLossPerUnitStaked;
+        uint256 newP = (_currentP * newProductFactor + _currentP * lastBoldLossError_Offset / _totalBoldDeposits) / DECIMAL_PRECISION;
 
-        collGainPerUnitStaked = collNumerator / _totalBoldDeposits;
-        lastCollError_Offset = collNumerator - collGainPerUnitStaked * _totalBoldDeposits;
+        lastBoldLossError_Offset = boldLossPerUnitStaked * _totalBoldDeposits / _scaleMultiplier - boldLossNumerator;
 
-        return (collGainPerUnitStaked, boldLossPerUnitStaked);
+        return newP;
     }
 
-    // Update the Stability Pool reward sum S and product P
-    function _updateCollRewardSumAndProduct(uint256 _collGainPerUnitStaked, uint256 _boldLossPerUnitStaked) internal {
+    function _getScaleToApplyToNewP(uint256 _debtToOffset, uint256 _totalBoldDeposits, uint256 _currentP) internal view returns (uint256, uint128) {
+        // We are assuming _totalBoldDeposits > _debtToOffset, as this was checked before, in the epoch increase if clause
+        // So assuming the worst case, _totalBoldDeposits - _debtToOffset = 1, and _currentP = 1e9 (= SCALE_FACTOR),
+        // `s` then would be _totalBoldDeposits
+        // To do a jump of 4 scales, _totalBoldDeposits should be > 1e27, i.e. 1e9 BOLD (1 billion)
+        // To do a jump of 5 scales, _totalBoldDeposits should be > 1e36, i.e. 1e18 BOLD, and so on
+        uint256 s = _totalBoldDeposits * SCALE_FACTOR / _currentP / (_totalBoldDeposits - _debtToOffset);
+        uint256 scaleFactor = 1;
+        uint128 scaleUpdate = 0;
+        while (s > 0) {
+            scaleFactor *= SCALE_FACTOR;
+            scaleUpdate += 1;
+            s = s / SCALE_FACTOR;
+            if (scaleUpdate > 5) { break; } // Impossible to reach in practice, but just as a security measure
+        }
+
+        return (scaleFactor, scaleUpdate);
+    }
+
+    /*
+     * Compute the Bold and Coll rewards and updates S and P. Uses a "feedback" error correction, to keep
+     * the cumulative error in the P and S state variables low:
+     *
+     * 1) Form numerators which compensate for the floor division errors that occurred the last time this
+     * function was called.
+     * 2) Calculate "per-unit-staked" ratios.
+     * 3) Multiply each ratio back by its denominator, to reveal the current floor division error.
+     * 4) Store these errors for use in the next correction when this function is called.
+     * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
+     */
+    function _updateCollRewardSumAndProduct(uint256 _collToAdd, uint256 _debtToOffset, uint256 _totalBoldDeposits) internal {
+        assert(_debtToOffset <= _totalBoldDeposits);
+
         uint256 currentP = P;
-        uint256 newP;
-
-        assert(_boldLossPerUnitStaked <= DECIMAL_PRECISION);
-        /*
-        * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool Bold in the liquidation.
-        * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - boldLossPerUnitStaked)
-        */
-        uint256 newProductFactor = uint256(DECIMAL_PRECISION) - _boldLossPerUnitStaked;
-
         uint128 currentScaleCached = currentScale;
         uint128 currentEpochCached = currentEpoch;
         uint256 currentS = epochToScaleToS[currentEpochCached][currentScaleCached];
-
         /*
-        * Calculate the new S first, before we update P.
-        * The Coll gain for any given depositor from a liquidation depends on the value of their deposit
-        * (and the value of totalDeposits) prior to the Stability being depleted by the debt in the liquidation.
-        *
-        * Since S corresponds to Coll gain, and P to deposit loss, we update S first.
-        */
-        uint256 marginalCollGain = _collGainPerUnitStaked * currentP;
+         * Calculate the new S first, before we update P.
+         * The Coll gain for any given depositor from a liquidation depends on the value of their deposit
+         * (and the value of totalDeposits) prior to the Stability being depleted by the debt in the liquidation.
+         *
+         * Since S corresponds to Coll gain, and P to deposit loss, we update S first.
+         */
+        uint256 collNumerator = _collToAdd * DECIMAL_PRECISION + lastCollError_Offset;
+        uint256 collGainPerUnitStaked = collNumerator / _totalBoldDeposits;
+        lastCollError_Offset = collNumerator - collGainPerUnitStaked * _totalBoldDeposits;
+        uint256 marginalCollGain = collGainPerUnitStaked * currentP;
         uint256 newS = currentS + marginalCollGain;
         epochToScaleToS[currentEpochCached][currentScaleCached] = newS;
         emit S_Updated(newS, currentEpochCached, currentScaleCached);
 
+        // Update P
+        uint256 newP;
         // If the Stability Pool was emptied, increment the epoch, and reset the scale and product P
-        if (newProductFactor == 0) {
+        if (_debtToOffset == _totalBoldDeposits) {
             currentEpoch = currentEpochCached + 1;
             emit EpochUpdated(currentEpoch);
             currentScale = 0;
             emit ScaleUpdated(currentScale);
             newP = DECIMAL_PRECISION;
-
-            // If multiplying P by a non-zero product factor would reduce P below the scale boundary, increment the scale
-        } else if (currentP * newProductFactor / DECIMAL_PRECISION < SCALE_FACTOR) {
-            newP = currentP * newProductFactor * SCALE_FACTOR / DECIMAL_PRECISION;
-            currentScale = currentScaleCached + 1;
-
-            // Increment the scale again if it's still below the boundary. This ensures the invariant P >= 1e9 holds and addresses this issue
-            // from Liquity v1: https://github.com/liquity/dev/security/advisories/GHSA-m9f3-hrx8-x2g3
-            if (newP < SCALE_FACTOR) {
-                newP *= SCALE_FACTOR;
-                currentScale = currentScaleCached + 2;
-            }
-
-            emit ScaleUpdated(currentScale);
-            // If there's no scale change and no pool-emptying, just do a standard multiplication
         } else {
-            newP = currentP * newProductFactor / DECIMAL_PRECISION;
+            (uint256 scaleFactor, uint128 scaleUpdate) = _getScaleToApplyToNewP(_debtToOffset, _totalBoldDeposits, currentP);
+            newP = _getNewPAndUpdateBoldLossError(_debtToOffset, _totalBoldDeposits, currentP, scaleFactor);
+            if (scaleUpdate > 0) {
+                currentScale = currentScaleCached + scaleUpdate;
+                emit ScaleUpdated(currentScale);
+            }
         }
+        // TODO: adapt this comments to the code above:
+        // If incrementing the scale once is not enough, let’s increment it twice
+        // This ensures the invariant P >= 1e9 holds and addresses this issue
+        // from Liquity v1: https://github.com/liquity/dev/security/advisories/GHSA-m9f3-hrx8-x2g3
+        // This conditions equates to (currentP * newProductFactor * SCALE_FACTOR / DECIMAL_PRECISION <= SCALE_FACTOR)
+        // (...)
+        // If multiplying P by a non-zero product factor would reduce P below the scale boundary, increment the scale
+        // This condition equates to (currentP * newProductFactor / DECIMAL_PRECISION <= SCALE_FACTOR) {
 
-        assert(newP > 0);
+        //assert(newP > 0);
+        assert(newP >= SCALE_FACTOR);
         P = newP;
 
         emit P_Updated(newP);
@@ -658,8 +664,12 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 P_Snapshot = snapshots.P;
 
         uint256 firstPortion = epochToScaleToB[epochSnapshot][scaleSnapshot] - B_Snapshot;
-        uint256 secondPortion = epochToScaleToB[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
-
+        uint256 secondPortion;
+        uint256 scaleFactor = SCALE_FACTOR;
+        for (uint128 i = 1; i < 4; i++) {
+            secondPortion += epochToScaleToB[epochSnapshot][scaleSnapshot + i] / scaleFactor;
+            scaleFactor *= SCALE_FACTOR;
+        }
         uint256 yieldGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
 
         return yieldGain;
