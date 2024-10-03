@@ -699,14 +699,18 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 compoundedStake;
         uint128 scaleDiff = currentScale - scaleSnapshot;
 
+        // To make sure rouning errors favour the system, we use P - 1 if P decreased
+        uint256 cachedP = P;
+        uint256 currentPToUse = cachedP != snapshot_P ? cachedP - 1 : cachedP;
+
         /* Compute the compounded stake. If a scale change in P was made during the stake's lifetime,
         * account for it. If more than one scale change was made, then the stake has decreased by a factor of
         * at least 1e-9 -- so return 0.
         */
         if (scaleDiff == 0) {
-            compoundedStake = initialStake * (P - 1) / snapshot_P;
+            compoundedStake = initialStake * currentPToUse / snapshot_P;
         } else if (scaleDiff == 1) {
-            compoundedStake = initialStake * (P - 1) / snapshot_P / SCALE_FACTOR;
+            compoundedStake = initialStake * currentPToUse / snapshot_P / SCALE_FACTOR;
         } else {
             // if scaleDiff >= 2
             compoundedStake = 0;
