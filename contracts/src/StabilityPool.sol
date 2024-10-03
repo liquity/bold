@@ -379,7 +379,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     function _updateYieldRewardsSum(uint256 _newYield) internal {
         uint256 accumulatedYieldGains = yieldGainsPending + _newYield;
-        if (accumulatedYieldGains == 0) {return;}
+        if (accumulatedYieldGains == 0) return;
 
         // When total deposits is very small, B is not updated. In this case, the BOLD issued is hold
         // until the total deposits reach 1 BOLD (remains in the balance of the SP).
