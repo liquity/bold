@@ -5,9 +5,11 @@ import type { Dnum } from "dnum";
 import { INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import * as dn from "dnum";
 
+export const LOAN_SCREEN_MANUAL_LOADING_STATE = false;
+
 export const PRICE_UPDATE_INTERVAL = 15_000;
 export const PRICE_UPDATE_VARIATION = 0.003;
-export const PRICE_UPDATE_MANUAL = true;
+export const PRICE_UPDATE_MANUAL = false;
 
 export const LQTY_PRICE = dn.from(0.64832, 18);
 export const ETH_PRICE = dn.from(2_580.293872, 18);
@@ -29,6 +31,7 @@ export const ACCOUNT_BALANCES = {
   LQTY: dn.from(2008.217, 18),
   RETH: dn.from(1.3732, 18),
   STETH: dn.from(17.912, 18),
+  LUSD: dn.from(1_200, 18),
 } as const;
 
 export const ACCOUNT_POSITIONS: Position[] = [
@@ -38,7 +41,8 @@ export const ACCOUNT_POSITIONS: Position[] = [
     collateral: "RETH",
     deposit: dn.from(5.5, 18),
     interestRate: dn.from(0.067, 18),
-    troveId: 1n,
+    troveId: "0x01",
+    collIndex: 1,
   },
   {
     type: "leverage",
@@ -46,16 +50,17 @@ export const ACCOUNT_POSITIONS: Position[] = [
     collateral: "ETH",
     deposit: dn.from(19.20, 18), // 8 ETH @ 2.4 leverage
     interestRate: dn.from(0.045, 18),
-    troveId: 2n,
+    troveId: "0x02",
+    collIndex: 0,
   },
   {
     type: "earn",
     apr: dn.from(0.078, 18),
-    collateral: "STETH",
     deposit: dn.from(5_000, 18),
+    collIndex: 0,
     rewards: {
       bold: dn.from(789.438, 18),
-      eth: dn.from(0.943, 18),
+      coll: dn.from(0.943, 18),
     },
   },
   {

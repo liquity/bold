@@ -271,16 +271,13 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         _updateDepositAndSnapshots(msg.sender, newDeposit, newStashedColl);
         boldToken.sendToPool(msg.sender, address(this), _topUp);
-        uint256 totalBoldDepositsCached = _updateTotalBoldDeposits(_topUp + keptYieldGain, 0);
+        _updateTotalBoldDeposits(_topUp + keptYieldGain, 0);
         _decreaseYieldGainsOwed(currentYieldGain);
         _sendBoldtoDepositor(msg.sender, yieldGainToSend);
         _sendCollGainToDepositor(collToSend);
 
         // If there were pending yields and with the new deposit we are reaching the threshold, let’s move the yield to owed
-        uint256 yieldGainsPendingCached = yieldGainsPending;
-        if (yieldGainsPendingCached > 0 && totalBoldDepositsCached >= DECIMAL_PRECISION) {
-            _updateYieldRewardsSum(yieldGainsPendingCached, totalBoldDepositsCached);
-        }
+        _updateYieldRewardsSum(0);
     }
 
     function _getYieldToKeepOrSend(uint256 _currentYieldGain, bool _doClaim) internal pure returns (uint256, uint256) {
@@ -333,15 +330,13 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         _updateDepositAndSnapshots(msg.sender, newDeposit, newStashedColl);
         _decreaseYieldGainsOwed(currentYieldGain);
-        uint256 totalBoldDepositsCached = _updateTotalBoldDeposits(keptYieldGain, boldToWithdraw);
+        _updateTotalBoldDeposits(keptYieldGain, boldToWithdraw);
         _sendBoldtoDepositor(msg.sender, boldToWithdraw + yieldGainToSend);
         _sendCollGainToDepositor(collToSend);
 
         // If there were pending yields and with the new deposit we are reaching the threshold, let’s move the yield to owed
-        uint256 yieldGainsPendingCached = yieldGainsPending;
-        if (yieldGainsPendingCached > 0 && totalBoldDepositsCached >= DECIMAL_PRECISION) {
-            _updateYieldRewardsSum(yieldGainsPendingCached, totalBoldDepositsCached);
-        }
+        // (it may happen if the user is not claiming)
+        _updateYieldRewardsSum(0);
     }
 
     function _getNewStashedCollAndCollToSend(address _depositor, uint256 _currentCollGain, bool _doClaim)
@@ -380,22 +375,22 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         _requireCallerIsActivePool();
         assert(_boldYield > 0); // TODO: remove before deploying
 
-        uint256 totalBoldDepositsCached = totalBoldDeposits; // cached to save an SLOAD
+        _updateYieldRewardsSum(_boldYield);
+    }
+
+    function _updateYieldRewardsSum(uint256 _newYield) internal {
+        uint256 accumulatedYieldGains = yieldGainsPending + _newYield;
+        if (accumulatedYieldGains == 0) return;
 
         // When total deposits is very small, B is not updated. In this case, the BOLD issued is hold
         // until the total deposits reach 1 BOLD (remains in the balance of the SP).
+        uint256 totalBoldDepositsCached = totalBoldDeposits; // cached to save an SLOAD
         if (totalBoldDepositsCached < DECIMAL_PRECISION) {
-            yieldGainsPending += _boldYield;
+            yieldGainsPending = accumulatedYieldGains;
             return;
         }
 
-        _updateYieldRewardsSum(yieldGainsPending + _boldYield, totalBoldDepositsCached);
-    }
-
-    function _updateYieldRewardsSum(uint256 _accumulatedYield, uint256 _totalBoldDeposits) internal {
-        assert(_accumulatedYield > 0); // TODO: remove before deploying
-
-        yieldGainsOwed += _accumulatedYield;
+        yieldGainsOwed += accumulatedYieldGains;
         yieldGainsPending = 0;
 
         /*
@@ -409,10 +404,10 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
          * 4) Store this error for use in the next correction when this function is called.
          * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
          */
-        uint256 yieldNumerator = _accumulatedYield * DECIMAL_PRECISION + lastYieldError;
-        uint256 yieldPerUnitStaked = yieldNumerator / _totalBoldDeposits;
+        uint256 yieldNumerator = accumulatedYieldGains * DECIMAL_PRECISION + lastYieldError;
 
-        lastYieldError = yieldNumerator - yieldPerUnitStaked * _totalBoldDeposits;
+        uint256 yieldPerUnitStaked = yieldNumerator / totalBoldDepositsCached;
+        lastYieldError = yieldNumerator - yieldPerUnitStaked * totalBoldDepositsCached;
 
         uint256 marginalYieldGain = yieldPerUnitStaked * (P - 1);
         epochToScaleToB[currentEpoch][currentScale] = epochToScaleToB[currentEpoch][currentScale] + marginalYieldGain;
@@ -565,13 +560,11 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         emit StabilityPoolCollBalanceUpdated(newCollBalance);
     }
 
-    function _updateTotalBoldDeposits(uint256 _depositIncrease, uint256 _depositDecrease) internal returns (uint256) {
-        if (_depositIncrease == 0 && _depositDecrease == 0) return totalBoldDeposits;
+    function _updateTotalBoldDeposits(uint256 _depositIncrease, uint256 _depositDecrease) internal {
+        if (_depositIncrease == 0 && _depositDecrease == 0) return;
         uint256 newTotalBoldDeposits = totalBoldDeposits + _depositIncrease - _depositDecrease;
         totalBoldDeposits = newTotalBoldDeposits;
         emit StabilityPoolBoldBalanceUpdated(newTotalBoldDeposits);
-
-        return newTotalBoldDeposits;
     }
 
     function _decreaseYieldGainsOwed(uint256 _amount) internal {

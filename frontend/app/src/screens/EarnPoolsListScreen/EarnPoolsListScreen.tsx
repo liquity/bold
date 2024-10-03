@@ -1,35 +1,24 @@
 "use client";
 
-import type { Entries, PositionEarn } from "@/src/types";
 import type { CollateralSymbol } from "@liquity2/uikit";
+import type { ReactNode } from "react";
 
+import { Amount } from "@/src/comps/Amount/Amount";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { ACCOUNT_POSITIONS, EARN_POOLS, useDemoMode } from "@/src/demo-mode";
-import { formatAmountCompact } from "@/src/dnum-utils";
+import { useCollateralContracts } from "@/src/contracts";
+import { useCollateral, useCollIndexFromSymbol } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
-import { css, cx } from "@/styled-system/css";
-import { IconArrowRight, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import { useEarnPosition, useStabilityPool } from "@/src/subgraph-hooks";
+import { css } from "@/styled-system/css";
+import { HFlex, IconArrowRight, IconPlus, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 
 export function EarnPoolsListScreen() {
-  const demoMode = useDemoMode();
-  const account = useAccount();
-
-  const earnPositions = new Map<CollateralSymbol, PositionEarn>();
-
-  if (account.isConnected && demoMode.enabled) {
-    for (const position of ACCOUNT_POSITIONS) {
-      if (position.type === "earn") {
-        earnPositions.set(position.collateral, position);
-      }
-    }
-  }
-
+  const collSymbols = useCollateralContracts().map((coll) => coll.symbol);
   return (
     <Screen
-      subtitle={content.earnHome.subheading}
       title={
         <div
           className={css({
@@ -41,10 +30,7 @@ export function EarnPoolsListScreen() {
         >
           {content.earnHome.headline(
             <TokenIcon.Group>
-              {[
-                "BOLD" as const,
-                ...Object.keys(EARN_POOLS) as (keyof typeof EARN_POOLS)[],
-              ].map((symbol) => (
+              {["BOLD" as const, ...collSymbols].map((symbol) => (
                 <TokenIcon
                   key={symbol}
                   symbol={symbol}
@@ -55,221 +41,297 @@ export function EarnPoolsListScreen() {
           )}
         </div>
       }
-      width={720}
+      subtitle={content.earnHome.subheading}
+      width={67 * 8}
+      gap={16}
     >
-      <table
+      {collSymbols.map((symbol) => (
+        <Pool
+          key={symbol}
+          collSymbol={symbol}
+        />
+      ))}
+    </Screen>
+  );
+}
+
+function Pool({
+  collSymbol,
+  title,
+}: {
+  collSymbol: CollateralSymbol;
+  title?: ReactNode;
+}) {
+  const account = useAccount();
+  const collIndex = useCollIndexFromSymbol(collSymbol);
+  const collateral = useCollateral(collIndex);
+
+  const earnPosition = useEarnPosition(account.address, collIndex ?? undefined);
+  const stabilityPool = useStabilityPool(collIndex ?? 0);
+
+  const share = earnPosition.data && stabilityPool.data && dn.gt(stabilityPool.data.totalDeposited, 0)
+    ? dn.div(earnPosition.data.deposit, stabilityPool.data.totalDeposited)
+    : dn.from(0, 18);
+
+  const active = Boolean(earnPosition.data?.deposit && dn.gt(earnPosition.data.deposit, 0));
+
+  return collateral && (
+    <div
+      className={css({
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+        padding: 16,
+        borderRadius: 8,
+        "--fg-primary-active": "token(colors.strongSurfaceContent)",
+        "--fg-primary-inactive": "token(colors.content)",
+
+        "--fg-secondary-active": "token(colors.strongSurfaceContentAlt)",
+        "--fg-secondary-inactive": "token(colors.contentAlt)",
+
+        "--border-active": "color-mix(in srgb, token(colors.secondary) 15%, transparent)",
+        "--border-inactive": "token(colors.infoSurfaceBorder)",
+
+        "--bg-active": "token(colors.strongSurface)",
+        "--bg-inactive": "token(colors.infoSurface)",
+      })}
+      style={{
+        color: `var(--fg-primary-${active ? "active" : "inactive"})`,
+        background: `var(--bg-${active ? "active" : "inactive"})`,
+        border: active ? 0 : "1px solid var(--border-inactive)",
+      }}
+    >
+      <div
         className={css({
-          borderCollapse: "separate",
-          borderSpacing: 0,
-          width: 720,
-          background: "surface",
-          border: "1px solid token(colors.border)",
-          borderRadius: 8,
-          "& th": {
-            padding: 24,
-            textAlign: "left",
-            textTransform: "uppercase",
-            fontSize: 12,
-            fontWeight: 500,
-            color: "contentAlt",
-          },
-          "& td": {
-            verticalAlign: "top",
-            borderTop: "1px solid token(colors.border)",
-          },
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          paddingBottom: 16,
+        })}
+        style={{
+          borderBottom: `1px solid var(--border-${active ? "active" : "inactive"})`,
+        }}
+      >
+        <div
+          className={css({
+            flexGrow: 0,
+            flexShrink: 0,
+            display: "flex",
+          })}
+        >
+          <TokenIcon
+            symbol={collateral.symbol}
+            size={34}
+          />
+        </div>
+        <div
+          className={css({
+            flexGrow: 1,
+            display: "flex",
+            justifyContent: "space-between",
+          })}
+        >
+          <div
+            className={css({
+              display: "flex",
+              flexDirection: "column",
+            })}
+          >
+            <div>
+              {title ?? `BOLD • ${collateral.name} stability pool`}
+            </div>
+            <div
+              className={css({
+                display: "flex",
+                gap: 4,
+                fontSize: 14,
+              })}
+              style={{
+                color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
+              }}
+            >
+              <div>TVL</div>
+              <div>
+                <Amount
+                  format="compact"
+                  prefix="$"
+                  value={stabilityPool.data?.totalDeposited}
+                />
+              </div>
+              <InfoTooltip heading="Total Value Locked">
+                Total amount of BOLD deposited in the stability pool.
+              </InfoTooltip>
+            </div>
+          </div>
+          <div
+            className={css({
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-end",
+            })}
+          >
+            <div>
+              <Amount
+                value={stabilityPool.data?.apr}
+                format="1z"
+                percentage
+              />
+            </div>
+            <div
+              className={css({
+                display: "flex",
+                gap: 4,
+                fontSize: 14,
+              })}
+              style={{
+                color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
+              }}
+            >
+              <div>Current APR</div>
+              <InfoTooltip heading="APR">
+                Annual percentage rate being earned by the {collateral.name} stability pool’s deposits over the past 7 days.
+              </InfoTooltip>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        className={css({
+          position: "relative",
+          display: "flex",
+          alignItems: "flex-end",
+          gap: 32,
+          justifyContent: "space-between",
         })}
       >
-        <thead>
-          <tr>
-            <th>Pool</th>
-            <th>APR</th>
-            <th
-              className={css({
-                paddingRight: "88px!",
-                textAlign: "right!",
-              })}
-            >
-              {content.earnHome.poolsColumns.myDepositAndRewards}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {(Object.entries(EARN_POOLS) as Entries<typeof EARN_POOLS>).map(
-            ([symbol, { boldQty, apr }]) => {
-              const token = TOKENS_BY_SYMBOL[symbol];
-
-              const earnPosition = earnPositions.get(symbol);
-
-              // const rewards: null | {
-              //   bold: string;
-              //   eth: string;
-              // } = null;
-
-              // const deposit: null | {
-              //   bold: string;
-              //   eth: string;
-              // } = null;
-
-              return (
-                <tr key={symbol}>
-                  <td
-                    className={css({
-                      padding: "24px 48px 24px 24px",
-                    })}
-                  >
-                    <div
-                      className={css({
-                        display: "flex",
-                        gap: 24,
-                      })}
-                    >
-                      <div
-                        className={css({
-                          display: "flex",
-                          alignItems: "center",
-                          flexShrink: 0,
-                        })}
-                      >
-                        <TokenIcon.Group size="large">
-                          <TokenIcon symbol="BOLD" />
-                          <TokenIcon symbol={symbol} />
-                        </TokenIcon.Group>
-                      </div>
-                      <div
-                        className={css({
-                          display: "flex",
-                          flexDirection: "column",
-                          justifyContent: "center",
-                        })}
-                      >
-                        <div>{token.name}</div>
-                        <div
-                          className={css({
-                            color: "contentAlt",
-                            whiteSpace: "nowrap",
-                          })}
-                        >
-                          {formatAmountCompact(boldQty)} BOLD
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td
-                    className={css({
-                      padding: 24,
-                    })}
-                  >
-                    <div
-                      className={css({
-                        display: "flex",
-                        height: "100%",
-                      })}
-                    >
-                      {dn.format(dn.mul(apr, 100), 2)}%
-                    </div>
-                  </td>
-                  <td>
-                    <Link
-                      href={`/earn/${symbol.toLowerCase()}`}
-                      passHref
-                      legacyBehavior
-                    >
-                      <a
-                        className={cx(
-                          "group",
-                          css({
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            alignItems: "center",
-                            height: 102,
-                            padding: "24px 0 24px 24px",
-                            textAlign: "right",
-                            _focusVisible: {
-                              outline: "2px solid token(colors.focused)",
-                              borderRadius: 4,
-                            },
-                            _active: {
-                              background: "backgroundActive",
-                            },
-                          }),
-                        )}
-                      >
-                        <div
-                          className={css({
-                            display: "flex",
-                            alignItems: "flex-end",
-                            flexDirection: "column",
-                            gap: 8,
-                          })}
-                        >
-                          {earnPosition
-                            ? (
-                              <div>
-                                {dn.format(earnPosition.deposit, 2)} BOLD
-                              </div>
-                            )
-                            : (
-                              <div
-                                className={css({
-                                  color: "contentAlt",
-                                })}
-                              >
-                                −
-                              </div>
-                            )}
-                          {earnPosition && (
-                            <div
-                              className={css({
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 8,
-                                fontSize: 14,
-                                color: "positive",
-                              })}
-                            >
-                              {dn.format(earnPosition.rewards.bold, 2)} BOLD
-                              <div
-                                className={css({
-                                  display: "flex",
-                                  width: 4,
-                                  height: 4,
-                                  borderRadius: "50%",
-                                  backgroundColor: "dimmed",
-                                })}
-                              />
-                              {dn.format(earnPosition.rewards.eth, 2)} ETH
-                            </div>
-                          )}
-                        </div>
-                        <div
-                          className={css({
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "flex-end",
-                            height: "100%",
-                            color: "accent",
-                            width: "88px!",
-                            paddingRight: 28,
-                            transition: "transform 100ms",
-                            _groupHover: {
-                              transform: "translate3d(4px, 0, 0)",
-                            },
-                            _groupFocus: {
-                              transform: "translate3d(4px, 0, 0)",
-                            },
-                          })}
-                        >
-                          <IconArrowRight />
-                        </div>
-                      </a>
-                    </Link>
-                  </td>
-                </tr>
-              );
-            },
+        <div
+          className={css({
+            display: "flex",
+            gap: 32,
+            fontSize: 14,
+          })}
+        >
+          {active && (
+            <div>
+              <div
+                style={{
+                  color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
+                }}
+              >
+                Deposit
+              </div>
+              <HFlex gap={4}>
+                <Amount value={earnPosition.data?.deposit} />
+                <TokenIcon symbol="BOLD" size="mini" />
+              </HFlex>
+            </div>
           )}
-        </tbody>
-      </table>
-    </Screen>
+          <div
+            className={css({
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+            })}
+          >
+            <div
+              style={{
+                color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
+              }}
+            >
+              Rewards
+            </div>
+            {active
+              ? (
+                <HFlex>
+                  <HFlex gap={4}>
+                    <Amount value={earnPosition.data?.rewards.bold} />
+                    <TokenIcon symbol="BOLD" size="mini" />
+                  </HFlex>
+                  <HFlex gap={4}>
+                    <Amount value={earnPosition.data?.rewards.coll} />
+                    <TokenIcon symbol={collateral.symbol} size="mini" />
+                  </HFlex>
+                </HFlex>
+              )
+              : (
+                <TokenIcon.Group size="mini">
+                  <TokenIcon symbol="BOLD" />
+                  <TokenIcon symbol={collateral.symbol} />
+                </TokenIcon.Group>
+              )}
+          </div>
+          {active && (
+            <div>
+              <div
+                style={{
+                  color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
+                }}
+              >
+                Pool share
+              </div>
+              <div>
+                <Amount percentage value={share} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <PoolLink
+          active={active}
+          path={`/earn/${collateral?.symbol.toLowerCase()}`}
+          title={`${active ? "Manage" : "Join"} ${collateral.name} pool`}
+        />
+      </div>
+    </div>
+  );
+}
+
+function PoolLink({
+  active,
+  path,
+  title,
+}: {
+  active: boolean;
+  path: string;
+  title: string;
+}) {
+  return (
+    <Link
+      title={title}
+      href={path}
+      className={css({
+        position: "absolute",
+        inset: "-16px -16px -16px auto",
+        display: "grid",
+        placeItems: "center",
+        padding: "0 16px",
+        borderRadius: 8,
+        transition: "scale 80ms",
+        _focusVisible: {
+          outline: "2px solid token(colors.focused)",
+          outlineOffset: -2,
+        },
+        _active: {
+          translate: "0 1px",
+        },
+        _hover: {
+          scale: 1.05,
+        },
+      })}
+    >
+      <div
+        className={css({
+          display: "grid",
+          placeItems: "center",
+          width: 34,
+          height: 34,
+          color: "accentContent",
+          background: "accent",
+          borderRadius: "50%",
+        })}
+      >
+        {active ? <IconArrowRight size={24} /> : <IconPlus size={24} />}
+      </div>
+    </Link>
   );
 }

@@ -7,7 +7,7 @@ type HomeTableProps<Cols extends readonly ReactNode[]> = {
   subtitle: ReactNode;
   icon: ReactNode;
   columns: Cols;
-  rows: Array<{ [K in keyof Cols]: ReactNode }>;
+  rows: Array<ReactNode | { [K in keyof Cols]: ReactNode }>;
 };
 
 export function HomeTable<Cols extends readonly ReactNode[]>({
@@ -93,9 +93,11 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
         </thead>
         <tbody>
           {rows.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              {row.map((cell, colIndex) => <td key={colIndex}>{cell}</td>)}
-            </tr>
+            !Array.isArray(row) ? row : (
+              <tr key={rowIndex}>
+                {row.map((cell, colIndex) => <td key={colIndex}>{cell}</td>)}
+              </tr>
+            )
           ))}
         </tbody>
       </table>
