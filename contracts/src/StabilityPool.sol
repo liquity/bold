@@ -704,9 +704,9 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         * at least 1e-9 -- so return 0.
         */
         if (scaleDiff == 0) {
-            compoundedStake = initialStake * P / snapshot_P;
+            compoundedStake = initialStake * (P - 1) / snapshot_P;
         } else if (scaleDiff == 1) {
-            compoundedStake = initialStake * P / snapshot_P / SCALE_FACTOR;
+            compoundedStake = initialStake * (P - 1) / snapshot_P / SCALE_FACTOR;
         } else {
             // if scaleDiff >= 2
             compoundedStake = 0;
