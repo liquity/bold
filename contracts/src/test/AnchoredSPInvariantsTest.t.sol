@@ -322,6 +322,214 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
         invariant_allFundsClaimable();
     }
 
+    function testUnclaimableDeposit2() external {
+        // coll = 735.140965662413210774 ether, debt = 98_018.795421655094769748 ether
+        vm.prank(dana);
+        handler.openTrove(98_009.397260273972607992 ether);
+
+        // pulling `deposited` from fixture
+        vm.prank(adam);
+        handler.provideToSp(9.398161381122161756 ether, false);
+
+        // totalBoldDeposits = 9.398161381122161756 ether
+
+        // coll = 735.070479452054794705 ether, debt = 98_009.39726027397262726 ether
+        vm.prank(eric);
+        handler.openTrove(98_000.000000000000024518 ether);
+
+        // pulling `deposited` from fixture
+        vm.prank(gabe);
+        handler.provideToSp(98_009.39726027397262726 ether, false);
+
+        // totalBoldDeposits = 98_018.795421655094789016 ether
+
+        vm.prank(hope);
+        handler.provideToSp(89_926.427447073294525543 ether, false);
+
+        // totalBoldDeposits = 187_945.222868728389314559 ether
+
+        // coll = 695.649439428737938566 ether, debt = 92_753.258590498391808747 ether
+        vm.prank(gabe);
+        handler.openTrove(92_744.365295196112729445 ether);
+
+        vm.prank(dana);
+        handler.provideToSp(12_389.101939905632219407 ether, false);
+
+        // totalBoldDeposits = 200_334.324808634021533966 ether
+
+        // pulling `deposited` from fixture
+        vm.prank(dana);
+        handler.provideToSp(9_589.959513437908897281 ether, false);
+
+        // totalBoldDeposits = 209_924.284322071930431247 ether
+
+        // coll = 358.727589004694716678 ether, debt = 47_830.345200625962223645 ether
+        vm.prank(hope);
+        handler.openTrove(47_825.759168924832445192 ether);
+
+        // coll = 387.627141578823956719 ether, debt = 51_683.618877176527562444 ether
+        vm.prank(barb);
+        handler.openTrove(51_678.663388906358459579 ether);
+
+        vm.prank(barb);
+        handler.liquidateMe();
+
+        // totalBoldDeposits = 158_240.665444895402868803 ether
+        // P = 0.753798761091013085 ether
+
+        vm.prank(barb);
+        handler.provideToSp(0.000000000000008548 ether, false);
+
+        // totalBoldDeposits = 158_240.665444895402877351 ether
+
+        vm.prank(carl);
+        handler.provideToSp(4_591.158415534017479187 ether, false);
+
+        // totalBoldDeposits = 162_831.823860429420356538 ether
+
+        vm.prank(dana);
+        handler.provideToSp(86_019.232581553804992428 ether, false);
+
+        // totalBoldDeposits = 248_851.056441983225348966 ether
+
+        vm.prank(gabe);
+        handler.provideToSp(83_736.829497136058174833 ether, false);
+
+        // totalBoldDeposits = 332_587.885939119283523799 ether
+
+        // coll = 735.082255482320817013 ether, debt = 98_010.967397642775601628 ether
+        vm.prank(carl);
+        handler.openTrove(98_001.569986822121425601 ether);
+
+        vm.prank(gabe);
+        handler.liquidateMe();
+
+        // totalBoldDeposits = 239_834.627348620891715052 ether
+        // P = 0.543576758520929938 ether
+
+        // pulling `deposited` from fixture
+        vm.prank(barb);
+        handler.provideToSp(47_830.345200625962271476 ether, false);
+
+        // totalBoldDeposits = 287_664.972549246853986528 ether
+
+        // coll = 735.070479452054794659 ether, debt = 98_009.397260273972621122 ether
+        vm.prank(fran);
+        handler.openTrove(98_000.000000000000018381 ether);
+
+        // coll = 735.070479452054794701 ether, debt = 98_009.397260273972626757 ether
+        vm.prank(barb);
+        handler.openTrove(98_000.000000000000024015 ether);
+
+        vm.prank(barb);
+        handler.liquidateMe();
+
+        // totalBoldDeposits = 189_655.575288972881359771 ether
+        // P = 0.358376488932287869 ether
+
+        // coll = 482.348723040733119578 ether, debt = 64_313.163072097749277015 ether
+        vm.prank(gabe);
+        handler.openTrove(64_306.996647761662542251 ether);
+
+        vm.prank(eric);
+        handler.liquidateMe();
+
+        // totalBoldDeposits = 91_646.178028698908732511 ether
+        // P = 0.173176219343645801 ether
+
+        vm.prank(hope);
+        handler.liquidateMe();
+
+        // totalBoldDeposits = 43_815.832828072946508866 ether
+        // P = 0.082795163309295299 ether
+
+        vm.prank(adam);
+        handler.provideToSp(156_013.932831544173758454 ether, false);
+
+        // totalBoldDeposits = 199_829.76565961712026732 ether
+
+        vm.prank(barb);
+        handler.provideToSp(149_177.525713798558063626 ether, false);
+
+        // totalBoldDeposits = 349_007.291373415678330946 ether
+
+        // coll = 212.375283704302188719 ether, debt = 28_316.704493906958495745 ether
+        vm.prank(barb);
+        handler.openTrove(28_313.989453822345394132 ether);
+
+        vm.prank(fran);
+        handler.liquidateMe();
+
+        // totalBoldDeposits = 250_997.894113141705709824 ether
+        // P = 0.059544348061060947 ether
+
+        // pulling `deposited` from fixture
+        vm.prank(dana);
+        handler.provideToSp(22_796.354529886855570135 ether, false);
+
+        // totalBoldDeposits = 273_794.248643028561279959 ether
+
+        // pulling `deposited` from fixture
+        vm.prank(fran);
+        handler.provideToSp(3_365.431868318464668052 ether, false);
+
+        // totalBoldDeposits = 277_159.680511347025948011 ether
+
+        // pulling `deposited` from fixture
+        vm.prank(eric);
+        handler.provideToSp(6_369.148148716152063935 ether, false);
+
+        // totalBoldDeposits = 283_528.828660063178011946 ether
+
+        // coll = 56.130386313173824619 ether, debt = 7_484.051508423176615827 ether
+        vm.prank(hope);
+        handler.openTrove(7_483.333928457434122145 ether);
+
+        // coll = 409.098077325686901872 ether, debt = 54_546.41031009158691615 ether
+        vm.prank(fran);
+        handler.openTrove(54_541.180333895186007903 ether);
+
+        // coll = 549.477014983678353472 ether, debt = 73_263.601997823780462917 ether
+        vm.prank(adam);
+        handler.openTrove(73_256.577394511977944484 ether);
+
+        // pulling `deposited` from fixture
+        vm.prank(fran);
+        handler.provideToSp(98_010.967397642775601628 ether, false);
+
+        // totalBoldDeposits = 381_539.796057705953613574 ether
+
+        vm.prank(dana);
+        handler.provideToSp(13_294.811494145641399612 ether, false);
+
+        // totalBoldDeposits = 394_834.607551851595013186 ether
+
+        vm.prank(adam);
+        handler.liquidateMe();
+
+        // totalBoldDeposits = 321_571.005554027814550269 ether
+        // P = 0.048495586543891854 ether
+
+        vm.prank(gabe);
+        handler.liquidateMe();
+
+        // totalBoldDeposits = 257_257.842481930065273254 ether
+        // P = 0.038796625779998194 ether
+
+        vm.prank(gabe);
+        handler.provideToSp(2_881.242711585620903523 ether, false);
+
+        // totalBoldDeposits = 260_139.085193515686176777 ether
+
+        vm.prank(barb);
+        handler.liquidateMe();
+
+        // totalBoldDeposits = 231_822.380699608727681032 ether
+        // P = 0.034573528790341043 ether
+
+        invariant_allFundsClaimable();
+    }
+
     function testUnderflow() external {
         // coll = 735.070479452054794521 ether, debt = 98_009.39726027397260276 ether
         vm.prank(gabe);
