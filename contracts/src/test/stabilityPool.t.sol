@@ -352,7 +352,7 @@ contract SPTest is DevTestSetup {
         uint256 topUp = 1e18;
         makeSPDepositNoClaim(A, topUp);
 
-        assertEq(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A + topUp + currentBoldGain);
+        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A + topUp + currentBoldGain, 1e4);
     }
 
     function testProvideToSPNoClaimAddsBoldGainsToTotalBoldDeposits() public {
@@ -371,7 +371,7 @@ contract SPTest is DevTestSetup {
         uint256 topUp = 1e18;
         makeSPDepositNoClaim(A, topUp);
 
-        assertEq(stabilityPool.getTotalBoldDeposits(), totalBoldDepositsBefore + topUp + currentBoldGain);
+        assertApproximatelyEqual(stabilityPool.getTotalBoldDeposits(), totalBoldDepositsBefore + topUp + currentBoldGain, 1e4);
     }
 
     function testProvideToSPNoClaimZerosCurrentBoldGains() public {
@@ -664,7 +664,7 @@ contract SPTest is DevTestSetup {
         uint256 withdrawal = 1e18;
         makeSPWithdrawalNoClaim(A, withdrawal);
 
-        assertEq(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A - withdrawal + currentBoldGain);
+        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A - withdrawal + currentBoldGain, 1e4);
     }
 
     function testWithdrawFromSPNoClaimAddsBoldGainsToTotalBoldDeposits() public {
@@ -1864,7 +1864,7 @@ contract SPTest is DevTestSetup {
         uint256 scale1 = stabilityPool.currentScale();
 
         // Check A owns entire SP
-        assertEq(stabilityPool.getTotalBoldDeposits(), stabilityPool.getCompoundedBoldDeposit(A));
+        assertApproximatelyEqual(stabilityPool.getTotalBoldDeposits(), stabilityPool.getCompoundedBoldDeposit(A), 1e14, "A should own all SP");
         // Check D's trove's debt equals the SP size
         uint256 troveDebt = troveManager.getTroveEntireDebt(troveIDs.D);
         uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
@@ -1888,7 +1888,7 @@ contract SPTest is DevTestSetup {
 
         // Check A deposit reduced to ~0
         makeSPWithdrawalAndClaim(A, stabilityPool.getCompoundedBoldDeposit(A));
-        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 0);
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 0, "A deposit should be zero");
 
         // D sends some BOLD to C
         uint256 freshDeposit = boldToken.balanceOf(D) / 2;

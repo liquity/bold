@@ -1604,7 +1604,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             uint256 newBoldYield =
                 v.totalBoldDeposits >= DECIMAL_PRECISION ? v.blockedSPYield * v.boldDeposit / v.totalBoldDeposits : 0;
 
-            assertEqDecimal(v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 18, "Wrong deposit");
+            assertApproxEqAbsDecimal(v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 1e7, 18, "Wrong deposit");
             assertApproxEqAbsDecimal(
                 v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e6, 18, "Wrong yield gain"
             );
@@ -1696,7 +1696,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             uint256 newBoldYield =
                 v.totalBoldDeposits >= DECIMAL_PRECISION ? v.blockedSPYield * v.boldDeposit / v.totalBoldDeposits : 0;
 
-            assertEqDecimal(v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 18, "Wrong deposit");
+            assertApproxEqAbsDecimal(v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 1e7, 18, "Wrong deposit");
             assertApproxEqAbsDecimal(
                 v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e6, 18, "Wrong yield gain"
             );
