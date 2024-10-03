@@ -231,44 +231,183 @@ contract troveNFTTest is DevTestSetup {
 
     function test_toLocaleString() public {
         string memory result = numUtils.toLocaleString(123456789, 0, 2);
-        console.log(result);
         assertEq(result, "123,456,789.00");
 
         result = numUtils.toLocaleString(123456789, 1, 2);
-        console.log(result);
         assertEq(result, "12,345,678.90");
 
         result = numUtils.toLocaleString(123456789, 1, 3);
-        console.log(result);
         assertEq(result, "12,345,678.900");
 
         result = numUtils.toLocaleString(123456789, 1, 0);
-        console.log(result);
         assertEq(result, "12,345,678");
 
+        result = numUtils.toLocaleString(123456789, 2, 0);
+        assertEq(result, "1,234,567");
+
+        result = numUtils.toLocaleString(123456789, 3, 0);
+        assertEq(result, "123,456");
+
+        result = numUtils.toLocaleString(123456789, 4, 0);
+        assertEq(result, "12,345");
+
+        result = numUtils.toLocaleString(123456789, 5, 0);
+        assertEq(result, "1,234");
+
+        result = numUtils.toLocaleString(123456789, 6, 0);
+        assertEq(result, "123");
+
+        result = numUtils.toLocaleString(123456789, 7, 0);
+        assertEq(result, "12");
+
+        result = numUtils.toLocaleString(123456789, 8, 0);
+        assertEq(result, "1");
+
+        result = numUtils.toLocaleString(123456789, 9, 0);
+        assertEq(result, "0");
+
         result = numUtils.toLocaleString(123456789, 10, 0);
-        console.log(result);
         assertEq(result, "0");
 
         result = numUtils.toLocaleString(123456789, 10, 1);
-        console.log(result);
         assertEq(result, "0.1");
 
         result = numUtils.toLocaleString(123456789, 10, 2);
-        console.log(result);
         assertEq(result, "0.12");
 
         result = numUtils.toLocaleString(123456789, 10, 3);
-        console.log(result);
         assertEq(result, "0.123");
 
         result = numUtils.toLocaleString(123456789, 10, 4);
-        console.log(result);
         assertEq(result, "0.1234");
 
-        result = numUtils.toLocaleString(123456789, 10, 10);
-        console.log(result);
-        assertEq(result, "0.1234567890", "10");
-    }
+        result = numUtils.toLocaleString(123456789, 12, 3);
+        assertEq(result, "0.001", "12, 3");
 
+        result = numUtils.toLocaleString(123456789, 3, 3);
+        assertEq(result, "123,456.789", "3");
+
+        result = numUtils.toLocaleString(123456789, 10, 10);
+        assertEq(result, "0.1234567890", "10");
+
+        result = numUtils.toLocaleString(123456789, 10, 11);
+        assertEq(result, "0.12345678900", "10,11");
+
+        result = numUtils.toLocaleString(123456789, 11, 11);
+        assertEq(result, "0.01234567890", "11, 11");
+
+        result = numUtils.toLocaleString(123456789, 11, 12);
+        assertEq(result, "0.012345678900", "11, 12");
+
+        result = numUtils.toLocaleString(123456789, 11, 13);
+        assertEq(result, "0.0123456789000", "11, 13");
+
+        result = numUtils.toLocaleString(123456789, 10, 18);
+        assertEq(result, "0.123456789000000000", "11, 18");
+
+        result = numUtils.toLocaleString(123456789, 1, 9);
+        assertEq(result, "12,345,678.900000000");
+
+        result = numUtils.toLocaleString(1234567890, 2, 1);
+        assertEq(result, "12,345,678.9");
+
+        result = numUtils.toLocaleString(12345678900, 3, 1);
+        assertEq(result, "12,345,678.9");
+
+        result = numUtils.toLocaleString(123456789000, 4, 1);
+        assertEq(result, "12,345,678.9");
+
+        result = numUtils.toLocaleString(1234567890000, 5, 1);
+        assertEq(result, "12,345,678.9");
+
+        result = numUtils.toLocaleString(12345678900000, 6, 1);
+        assertEq(result, "12,345,678.9");
+
+        result = numUtils.toLocaleString(123456789000000, 7, 1);
+        assertEq(result, "12,345,678.9");
+
+        result = numUtils.toLocaleString(1234567890000000, 8, 1);
+        assertEq(result, "12,345,678.9");
+
+        result = numUtils.toLocaleString(12345678900000000, 9, 1);
+        assertEq(result, "12,345,678.9");
+
+        result = numUtils.toLocaleString(123456789000000000, 10, 1);
+        assertEq(result, "12,345,678.9");
+
+        result = numUtils.toLocaleString(123456789000000001, 10, 1);
+        assertEq(result, "12,345,678.9");
+
+        result = numUtils.toLocaleString(123456789000000001, 10, 2);
+        assertEq(result, "12,345,678.90");
+
+        result = numUtils.toLocaleString(123456789000000001, 10, 3);
+        assertEq(result, "12,345,678.900");
+
+        result = numUtils.toLocaleString(123456789000000001, 10, 4);
+        assertEq(result, "12,345,678.9000");
+
+        result = numUtils.toLocaleString(123456789000000001, 10, 5);
+        assertEq(result, "12,345,678.90000");
+
+        result = numUtils.toLocaleString(123456789000000001, 10, 6);
+        assertEq(result, "12,345,678.900000");
+
+        result = numUtils.toLocaleString(123456789000000001, 10, 7);
+        assertEq(result, "12,345,678.9000000");
+
+        result = numUtils.toLocaleString(123456789000000001, 10, 8);
+        assertEq(result, "12,345,678.90000000");
+
+        result = numUtils.toLocaleString(123456789000000001, 10, 9);
+        assertEq(result, "12,345,678.900000000");
+
+        result = numUtils.toLocaleString(123456789000000001, 10, 10);
+        assertEq(result, "12,345,678.9000000001");
+
+        result = numUtils.toLocaleString(123456789000000001, 10, 11);
+        assertEq(result, "12,345,678.90000000010");
+
+        result = numUtils.toLocaleString(10, 0, 0);
+        assertEq(result, "10");
+
+        result = numUtils.toLocaleString(10, 1, 0);
+        assertEq(result, "1");
+
+        result = numUtils.toLocaleString(10, 2, 1);
+        assertEq(result, "0.1");
+
+        result = numUtils.toLocaleString(1, 0, 0);
+        assertEq(result, "1");
+
+        result = numUtils.toLocaleString(1, 1, 1);
+        assertEq(result, "0.1");
+
+        result = numUtils.toLocaleString(1, 2, 2);
+        assertEq(result, "0.01");
+
+        result = numUtils.toLocaleString(1, 3, 3);
+        assertEq(result, "0.001", "here");
+
+        result = numUtils.toLocaleString(1, 4, 4);
+        assertEq(result, "0.0001");
+
+        result = numUtils.toLocaleString(1, 5, 5);
+        assertEq(result, "0.00001");
+
+        result = numUtils.toLocaleString(1, 6, 6);
+        assertEq(result, "0.000001");
+
+        result = numUtils.toLocaleString(1, 7, 7);
+        assertEq(result, "0.0000001");
+
+        result = numUtils.toLocaleString(1, 8, 8);
+        assertEq(result, "0.00000001");
+
+        result = numUtils.toLocaleString(1, 9, 9);
+        assertEq(result, "0.000000001");
+
+        result = numUtils.toLocaleString(1, 10, 10);
+        assertEq(result, "0.0000000001");
+    }
 }

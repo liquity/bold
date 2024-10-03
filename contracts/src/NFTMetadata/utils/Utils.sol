@@ -28,6 +28,7 @@ library numUtils {
         return string(result);
     }
 
+    // returns a string representation of a number with commas, where result = _value / 10 ** _divisor
     function toLocaleString(uint256 _value, uint8 _divisor, uint8 _precision) internal pure returns (string memory) {
         uint256 whole;
         uint256 fraction;
@@ -35,20 +36,21 @@ library numUtils {
         if (_divisor > 0) {
             whole = _value / 10 ** _divisor;
             // check if the divisor is less than the precision
-            if (_divisor < _precision) {
+            if (_divisor <= _precision) {
                 fraction = (_value % 10 ** _divisor);
                 // adjust fraction to be the same as the precision
                 fraction = fraction * 10 ** (_precision - _divisor);
-            } else if (_divisor > _precision) {
-                fraction = (_value % 10 ** _divisor) / 10 ** (_divisor - _precision - 1);
+
+                // if whole is zero, then add another zero to the fraction, special case if the value is 1
+                fraction = (whole == 0 && _value != 1) ? fraction * 10 : fraction;
             } else {
-                fraction = (_value % 10 ** _divisor) * 10;
+                fraction = (_value % 10 ** _divisor) / 10 ** (_divisor - _precision - 1);
             }
         } else {
             whole = _value;
         }
 
-        string memory wholeStr = numUtils.toLocale(LibString.toString(whole));
+        string memory wholeStr = toLocale(LibString.toString(whole));
 
         if (fraction == 0) {
             if (whole > 0 && _precision > 0) wholeStr = string.concat(wholeStr, ".");
@@ -60,6 +62,18 @@ library numUtils {
         }
 
         string memory fractionStr = LibString.slice(LibString.toString(fraction), 0, _precision);
+
+        // pad with leading zeros
+        if (_precision > bytes(fractionStr).length) {
+            uint256 len = _precision - bytes(fractionStr).length;
+            string memory zeroStr = "";
+
+            for (uint8 i = 0; i < len; i++) {
+                zeroStr = string.concat(zeroStr, "0");
+            }
+
+            fractionStr = string.concat(zeroStr, fractionStr);
+        }
 
         return string.concat(wholeStr, _precision > 0 ? "." : "", fractionStr);
     }
