@@ -38,6 +38,7 @@ export const TestResultsJson = z.record(z.object({
 }));
 
 export interface ReproducibleCounterexampleJson {
+  reason: string;
   solPath: string;
   contract: string;
   test: string;

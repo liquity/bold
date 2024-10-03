@@ -123,6 +123,7 @@ const main = async () => {
           for (const failure of failures) {
             if (failure.counterexample != null) {
               const counterexample: ReproducibleCounterexampleJson = {
+                reason: failure.reason,
                 solPath,
                 contract,
                 test,
