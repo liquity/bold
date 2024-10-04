@@ -963,8 +963,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         if (totalDebtShares > 0) {
             _latestTroveData.recordedDebt = _latestBatchData.recordedDebt * batchDebtShares / totalDebtShares;
-            _latestTroveData.weightedRecordedDebt =
-                _latestBatchData.weightedRecordedDebt * batchDebtShares / totalDebtShares;
+            _latestTroveData.weightedRecordedDebt = _latestTroveData.recordedDebt * _latestBatchData.annualInterestRate;
             _latestTroveData.accruedInterest = _latestBatchData.accruedInterest * batchDebtShares / totalDebtShares;
             _latestTroveData.accruedBatchManagementFee =
                 _latestBatchData.accruedManagementFee * batchDebtShares / totalDebtShares;
