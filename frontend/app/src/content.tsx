@@ -216,13 +216,13 @@ export default {
       shareLabel: "Pool share",
       claimCheckbox: "Claim rewards",
       action: "Next: Summary",
-      actionClaim: "Add deposit and claim rewards",
+      actionClaim: "Next: Summary",
     },
     withdrawPanel: {
       label: "Withdraw",
       claimCheckbox: "Claim rewards",
       action: "Next: Summary",
-      actionClaim: "Withdraw and claim rewards",
+      actionClaim: "Next: Summary",
     },
     rewardsPanel: {
       label: "Available rewards",
