@@ -4,29 +4,29 @@ import type { Dnum } from "dnum";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import content from "@/src/content";
-import { DNUM_0 } from "@/src/dnum-utils";
-// import { useInputFieldValue } from "@/src/form-utils";
+import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { useCollateral } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { Button, Checkbox, HFlex, InfoTooltip, InputField, TextButton, TokenIcon } from "@liquity2/uikit";
+import { Button, Checkbox, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function DepositPanel({
-  accountBoldBalance,
-  boldQty,
+type ValueUpdateMode = "add" | "remove";
+
+export function PanelUpdateDeposit({
+  deposited,
   collIndex,
   position,
 }: {
-  accountBoldBalance?: Dnum;
-  boldQty: Dnum;
+  deposited: Dnum;
   collIndex: null | CollIndex;
   position?: PositionEarn;
 }) {
@@ -34,12 +34,7 @@ export function DepositPanel({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const hasDeposit = position?.deposit && dn.gt(position.deposit, 0);
-
-  // // deposit change
-  // const [depositMode, setDepositMode] = useState<ValueUpdateMode>("add");
-  // const depositChange = useInputFieldValue((value) => dn.format(value));
-
+  const [mode, setMode] = useState<ValueUpdateMode>("add");
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const [claimRewards, setClaimRewards] = useState(false);
@@ -48,14 +43,16 @@ export function DepositPanel({
 
   const value_ = (focused || !parsedValue || dn.lte(parsedValue, 0)) ? value : `${fmtnum(parsedValue, "full")}`;
 
-  const depositDifference = parsedValue ?? dn.from(0, 18);
+  const depositDifference = mode === "remove" ? dn.mul(parsedValue ?? DNUM_0, -1) : (parsedValue ?? DNUM_0);
 
-  const updatedDeposit = dn.add(
-    position?.deposit ?? dn.from(0, 18),
-    depositDifference,
+  const updatedDeposit = dnumMax(
+    dn.add(position?.deposit ?? DNUM_0, depositDifference),
+    DNUM_0,
   );
 
-  const updatedBoldQty = dn.add(boldQty, depositDifference);
+  const boldBalance = useBalance(account.address, "BOLD");
+
+  const updatedBoldQty = dn.add(deposited, depositDifference);
 
   const updatedPoolShare = depositDifference && dn.gt(updatedBoldQty, 0)
     ? dn.div(updatedDeposit, updatedBoldQty)
@@ -64,6 +61,8 @@ export function DepositPanel({
   const collateral = useCollateral(collIndex);
 
   const allowSubmit = account.isConnected && parsedValue;
+
+  const hasDeposit = position?.deposit && dn.gt(position.deposit, 0);
 
   return (
     <div
@@ -79,31 +78,36 @@ export function DepositPanel({
         field={
           <InputField
             contextual={
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  height: 40,
-                  padding: "0 16px",
-                  paddingLeft: 8,
-                  background: "#FFF",
-                  borderRadius: 20,
-                  userSelect: "none",
-                }}
-              >
-                <TokenIcon symbol="BOLD" />
-                <div
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 500,
-                  }}
-                >
-                  BOLD
-                </div>
-              </div>
+              <InputTokenBadge
+                background={false}
+                icon={<TokenIcon symbol="BOLD" />}
+                label="BOLD"
+              />
             }
-            label={content.earnScreen.depositPanel.label}
+            label={{
+              start: mode === "remove"
+                ? content.earnScreen.withdrawPanel.label
+                : content.earnScreen.depositPanel.label,
+              end: (
+                <Tabs
+                  compact
+                  items={[
+                    { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
+                    { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
+                  ]}
+                  onSelect={(index, { origin, event }) => {
+                    setMode(index === 1 ? "remove" : "add");
+                    setValue("");
+                    if (origin !== "keyboard") {
+                      event.preventDefault();
+                      (event.target as HTMLElement).focus();
+                    }
+                  }}
+                  selected={mode === "remove" ? 1 : 0}
+                />
+              ),
+            }}
+            labelHeight={32}
             onFocus={() => setFocused(true)}
             onChange={setValue}
             onBlur={() => setFocused(false)}
@@ -112,9 +116,7 @@ export function DepositPanel({
             secondary={{
               start: (
                 <HFlex gap={4}>
-                  <div>
-                    {content.earnScreen.depositPanel.shareLabel}
-                  </div>
+                  <div>{content.earnScreen.depositPanel.shareLabel}</div>
                   <div>
                     <Amount
                       format={2}
@@ -125,12 +127,22 @@ export function DepositPanel({
                   <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.depositPoolShare)} />
                 </HFlex>
               ),
-              end: accountBoldBalance && (
-                <TextButton
-                  label={`Max ${fmtnum(accountBoldBalance, 2)} BOLD`}
-                  onClick={() => setValue(dn.toString(accountBoldBalance))}
-                />
-              ),
+              end: mode === "add"
+                ? (boldBalance.data && (
+                  <TextButton
+                    label={`Max ${fmtnum(boldBalance.data, 2)} BOLD`}
+                    onClick={() => setValue(dn.toString(boldBalance.data))}
+                  />
+                ))
+                : (position?.deposit && dn.gt(position.deposit, 0) && (
+                  <TextButton
+                    label={`Max ${fmtnum(position.deposit, 2)} BOLD`}
+                    onClick={() => {
+                      setValue(dn.toString(position.deposit));
+                      setClaimRewards(true);
+                    }}
+                  />
+                )),
             }}
           />
         }
@@ -169,7 +181,13 @@ export function DepositPanel({
                 />
                 {content.earnScreen.depositPanel.claimCheckbox}
               </label>
-              <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.alsoClaimRewardsDeposit)} />
+              <InfoTooltip
+                {...infoTooltipProps(
+                  mode === "remove"
+                    ? content.earnScreen.infoTooltips.alsoClaimRewardsWithdraw
+                    : content.earnScreen.infoTooltips.alsoClaimRewardsDeposit,
+                )}
+              />
             </div>
             {position && (
               <div
@@ -207,23 +225,31 @@ export function DepositPanel({
         <ConnectWarningBox />
         <Button
           disabled={!allowSubmit}
-          label={claimRewards ? content.earnScreen.depositPanel.actionClaim : content.earnScreen.depositPanel.action}
+          label={claimRewards
+            ? (mode === "remove"
+              ? content.earnScreen.withdrawPanel.actionClaim
+              : content.earnScreen.depositPanel.actionClaim)
+            : (mode === "remove"
+              ? content.earnScreen.withdrawPanel.action
+              : content.earnScreen.depositPanel.action)}
           mode="primary"
           size="large"
           wide
           onClick={() => {
             if (collateral && account.address && collIndex !== null) {
               txFlow.start({
-                flowId: "earnDeposit",
+                flowId: mode === "remove" ? "earnWithdraw" : "earnDeposit",
                 backLink: [
                   `/earn/${collateral.name.toLowerCase()}`,
                   "Back to editing",
                 ],
                 successLink: ["/", "Go to the Dashboard"],
-                successMessage: "The earn position has been created successfully.",
+                successMessage: mode === "remove"
+                  ? "The withdrawal has been processed successfully."
+                  : "The deposit has been processed successfully.",
 
                 depositor: account.address,
-                boldAmount: depositDifference,
+                boldAmount: dn.abs(depositDifference),
                 claim: claimRewards,
                 collIndex,
               });

@@ -4,19 +4,17 @@ import { EarnPosition } from "@/src/comps/EarnPosition/EarnPosition";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { useCollIndexFromSymbol } from "@/src/liquity-utils";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
+import { useAccount } from "@/src/services/Ethereum";
 import { useEarnPosition, useStabilityPool } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { isCollateralSymbol, Tabs } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { DepositPanel } from "./DepositPanel";
-import { RewardsPanel } from "./RewardsPanel";
-import { WithdrawPanel } from "./WithdrawPanel";
+import { PanelUpdateDeposit } from "./PanelUpdateDeposit";
+import { RewardsPanel as PanelRewards } from "./RewardsPanel";
 
 const TABS = [
   { action: "deposit", label: content.earnScreen.tabs.deposit },
-  { action: "withdraw", label: content.earnScreen.tabs.withdraw },
   { action: "claim", label: content.earnScreen.tabs.claim },
 ] as const;
 
@@ -25,7 +23,6 @@ export function EarnPoolScreen() {
   const params = useParams();
 
   const account = useAccount();
-  const boldBalance = useBalance(account.address, "BOLD");
 
   const collateralSymbol = String(params.pool).toUpperCase();
   const isCollSymbolOk = isCollateralSymbol(collateralSymbol);
@@ -90,22 +87,14 @@ export function EarnPoolScreen() {
             </h1>
           )}
         {tab.action === "deposit" && (
-          <DepositPanel
-            accountBoldBalance={boldBalance.data}
+          <PanelUpdateDeposit
             collIndex={collIndex}
-            boldQty={stabilityPool.data.totalDeposited ?? dn.from(0, 18)}
-            position={earnPosition.data ?? undefined}
-          />
-        )}
-        {tab.action === "withdraw" && (
-          <WithdrawPanel
-            collIndex={collIndex}
-            boldQty={stabilityPool.data.totalDeposited ?? dn.from(0, 18)}
+            deposited={stabilityPool.data.totalDeposited ?? dn.from(0, 18)}
             position={earnPosition.data ?? undefined}
           />
         )}
         {tab.action === "claim" && (
-          <RewardsPanel
+          <PanelRewards
             collIndex={collIndex}
             position={earnPosition.data ?? undefined}
           />
