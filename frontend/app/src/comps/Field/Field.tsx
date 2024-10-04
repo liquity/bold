@@ -162,8 +162,10 @@ function FooterInfoWarnLevel({
           <StatusDot
             mode={riskLevelToStatusMode(level)}
           />
-          {label}
-          {help}
+          <HFlex gap={4} alignItems="center">
+            {label}
+            {help}
+          </HFlex>
         </div>
       }
     />

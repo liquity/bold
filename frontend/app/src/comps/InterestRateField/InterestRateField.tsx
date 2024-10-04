@@ -38,19 +38,41 @@ import { match } from "ts-pattern";
 
 import icLogo from "./ic-logo.svg";
 
-const MODES = [{
-  label: "Manually",
-  secondary: "Set your interest rate manually and update it anytime.",
-}, {
-  label: "By Internet Computer (ICP) strategy",
-  secondary: "Choose a smart contract strategy on the decentralized Internet Computer (ICP) network.",
-}, {
-  label: "By Delegation",
-  secondary: `
-    Delegates manage your interest rate, optimizing costs and preventing redemption.
-    They charge a fee for this.
-  `,
-}] as const;
+const MODES = [
+  {
+    label: "Manual",
+    secondary: "The interest rate is set manually and can be updated at any time.",
+  },
+  {
+    label: "Automated (ICP)",
+    secondary:
+      "The interest rate is set and updated by an automated strategy running on the decentralized Internet Computer (ICP) network."
+      + " There is a small additional fee for these strategies.",
+  },
+  {
+    label: "Delegated",
+    secondary: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
+  },
+] as const;
+
+const IC_STRATEGY_MODAL = {
+  title: (
+    <>
+      Automated Strategies (<abbr title="Internet Computer">ICP</abbr>)
+    </>
+  ),
+  intro: (
+    <>
+      These strategies are run on the Internet Computer (ICP). They are automated and decentralized. More strategies
+      will be added over time.
+    </>
+  ),
+};
+
+const DELEGATES_MODAL = {
+  title: "Set a delegate",
+  intro: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
+};
 
 export function InterestRateField({
   debt,
@@ -100,6 +122,7 @@ export function InterestRateField({
       <InputField
         labelHeight={32}
         labelSpacing={24}
+        disabled={selectedMode !== 0}
         contextual={match(selectedMode)
           .with(0, () => (
             <div
@@ -153,7 +176,7 @@ export function InterestRateField({
           ))
           .exhaustive()}
         label={{
-          start: "Set interest rate",
+          start: "Interest rate",
           end: (
             <div>
               <Dropdown
@@ -176,16 +199,18 @@ export function InterestRateField({
           start: (
             <HFlex gap={4}>
               <div>
-                {boldInterestPerYear
+                {boldInterestPerYear && selectedMode === 0
+                    || (selectedMode === 1 && delegate)
+                    || (selectedMode === 2 && delegate)
                   ? fmtnum(boldInterestPerYear, 2)
                   : "−"} BOLD / year
               </div>
-              <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
+              <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
             </HFlex>
           ),
           end: (
             <span>
-              <span>{"Before you "}</span>
+              <span>{"Redeemable before you: "}</span>
               <span
                 className={css({
                   color: "content",
@@ -196,9 +221,13 @@ export function InterestRateField({
                     fontVariantNumeric: "tabular-nums",
                   })}
                 >
-                  {fmtnum(boldRedeemableInFront, "compact")}
+                  {selectedMode === 0
+                      || (selectedMode === 1 && delegate !== null)
+                      || (selectedMode === 2 && delegate !== null)
+                    ? fmtnum(boldRedeemableInFront, "compact")
+                    : "−"}
                 </span>
-                <span>{" BOLD to redeem"}</span>
+                <span>{" BOLD"}</span>
               </span>
             </span>
           ),
@@ -250,14 +279,15 @@ export function InterestRateField({
         }}
         title={
           <div
-            title="Internet Computer Strategies"
             className={css({
               display: "flex",
               alignItems: "center",
               gap: 10,
             })}
           >
-            <div>IC Strategies</div>
+            <div>
+              {IC_STRATEGY_MODAL.title}
+            </div>
             <Image
               alt=""
               src={icLogo}
@@ -271,7 +301,7 @@ export function InterestRateField({
         <DelegatesModalContent
           chooseLabel="Choose"
           delegates={IC_STRATEGIES}
-          intro="It’s an automated strategy developed by ICP that helps avoid redemption and reduce costs. More strategies soon."
+          intro={IC_STRATEGY_MODAL.intro}
           onSelectDelegate={onSelectDelegate}
         />
       </Modal>
@@ -279,13 +309,13 @@ export function InterestRateField({
         onClose={() => {
           setDelegatePicker(null);
         }}
-        title={`${DELEGATES.length} delegates`}
+        title={DELEGATES_MODAL.title}
         visible={delegatePicker === "delegate"}
       >
         <DelegatesModalContent
           chooseLabel="Choose delegate"
           delegates={DELEGATES}
-          intro="Delegates manage your interest rate, optimizing costs and preventing redemption. They charge a fee for this."
+          intro={DELEGATES_MODAL.intro}
           onSelectDelegate={onSelectDelegate}
         />
       </Modal>
@@ -446,9 +476,11 @@ function DelegatesModalContent({
                       color: "content",
                     })}
                   >
-                    <div>Interest rate change</div>
+                    <div>Interest rate range</div>
                     <div>
-                      {fmtnum(delegate.interestRateChange[0], 2, 100)}…{fmtnum(delegate.interestRateChange[1], 2, 100)}%
+                      {fmtnum(delegate.interestRateChange[0], 2, 100)}
+                      <span>-</span>
+                      {fmtnum(delegate.interestRateChange[1], 2, 100)}%
                     </div>
                   </div>
                   {delegate.fee && (
@@ -461,7 +493,9 @@ function DelegatesModalContent({
                         color: "content",
                       })}
                     >
-                      <div>Fees</div>
+                      <div>
+                        Fees <abbr title="per annum">p.a.</abbr>
+                      </div>
                       <div title={`${fmtnum(delegate.fee, 18, 100)}%`}>
                         {fmtnum(delegate.fee, 4, 100)}%
                       </div>

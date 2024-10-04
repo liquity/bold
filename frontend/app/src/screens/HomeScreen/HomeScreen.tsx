@@ -44,7 +44,7 @@ export function HomeScreen() {
           rows={collSymbols.map((symbol) => <BorrowingRow symbol={symbol} />)}
         />
         <HomeTable
-          title="Earn Rewards with BOLD"
+          title="Earn rewards with BOLD"
           subtitle="Earn BOLD & (staked) ETH rewards by putting your BOLD in a stability pool"
           icon={<IconEarn />}
           columns={["Pool", "Current APR", "Pool size", null] as const}

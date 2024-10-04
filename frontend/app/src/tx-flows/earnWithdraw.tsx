@@ -40,7 +40,6 @@ const stepNames: Record<Step, string> = {
 
 export const earnWithdraw: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
-  subtitle: "Please review your borrow position before confirming",
 
   Summary() {
     // const { symbol } = useCollateral(flow.request.collIndex);

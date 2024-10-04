@@ -93,6 +93,7 @@ function ButtonConnected({ button }: { button: ButtonData }) {
         display: "flex",
         height: "100%",
         padding: 0,
+        whiteSpace: "nowrap",
         _active: {
           translate: "0 1px",
         },

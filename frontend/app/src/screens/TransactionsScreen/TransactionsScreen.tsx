@@ -40,8 +40,29 @@ export function TransactionsScreen() {
   );
 
   return (
-    <Screen title={fd.title} subtitle={fd.subtitle}>
+    <Screen>
       <fd.Summary flow={flow} />
+
+      <header
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 12,
+        })}
+      >
+        <h1
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 28,
+          })}
+        >
+          {fd.title}
+        </h1>
+      </header>
 
       <VFlex gap={32}>
         <fd.Details flow={flow} />

@@ -2,6 +2,7 @@ import type { Address, PositionEarn, PositionLoan, PositionStake } from "@/src/t
 import type { ReactNode } from "react";
 
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
+import { Amount } from "@/src/comps/Amount/Amount";
 import { LQTY_SUPPLY } from "@/src/constants";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
@@ -638,20 +639,14 @@ function PositionEarn({
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-              +{dn.format(rewards.bold, 2)}
-              <TokenIcon
-                size={24}
-                symbol="BOLD"
-              />
+              {fmtnum(rewards.bold, "2diff")}
+              <TokenIcon size="medium" symbol="BOLD" />
             </HFlex>
           ),
           label: (
             <HFlex gap={4} justifyContent="flex-start">
-              <span>+{dn.format(rewards.coll, 4)}</span>
-              <TokenIcon
-                size="small"
-                symbol={token.symbol}
-              />
+              <Amount value={rewards.coll} format="4diff" />
+              <TokenIcon size="small" symbol={token.symbol} />
             </HFlex>
           ),
         }}

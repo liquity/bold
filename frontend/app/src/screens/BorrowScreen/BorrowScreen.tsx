@@ -168,7 +168,7 @@ export function BorrowScreen() {
                   selected={collIndex}
                 />
               }
-              label={content.borrowScreen.depositField.label}
+              label="Collateral"
               placeholder="0.00"
               secondary={{
                 start: `$${
@@ -211,7 +211,7 @@ export function BorrowScreen() {
                   label="BOLD"
                 />
               }
-              label={content.borrowScreen.borrowField.label}
+              label="Loan"
               placeholder="0.00"
               secondary={{
                 start: `$${
@@ -281,10 +281,12 @@ export function BorrowScreen() {
                   alignItems: "center",
                   gap: 4,
                   color: "contentAlt",
+                  fontSize: 14,
                 })}
               >
                 <IconSuggestion size={16} />
-                <span>You can adjust interest rate later</span>
+                <>The interest rate can be adjusted</>
+                <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateAdjustment)} />
               </span>,
             ],
           ]}

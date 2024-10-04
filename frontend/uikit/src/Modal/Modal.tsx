@@ -105,6 +105,7 @@ export function Modal({
                       padding: 24,
                       outline: "2px solid accent",
                       background: "background",
+                      borderRadius: 8,
                     })}
                     style={{
                       opacity,

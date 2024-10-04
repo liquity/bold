@@ -89,7 +89,6 @@ function getFinalStep(request: Request): FinalStep {
 
 export const updateLoanPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
-  subtitle: "Please review the changes of your borrow position before confirming",
   Summary({ flow }) {
     const collateral = useCollateral(flow.request.collIndex);
     const loan = useLoanById(flow.request.prefixedTroveId);

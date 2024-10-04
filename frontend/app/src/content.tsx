@@ -3,7 +3,7 @@ import type { ReactNode as N } from "react";
 // eslint-disable-next-line import/no-anonymous-default-export
 export default {
   // Used in the top bar and other places
-  appName: "Liquity v2",
+  appName: "Liquity V2",
 
   // Menu bar
   menu: {
@@ -22,37 +22,40 @@ export default {
   generalInfotooltips: {
     loanLiquidationRisk: [
       "Liquidation risk",
-      "If your collateral becomes undercollateralized, it can be liquidated. Your debt is paid off but you lose most of your collateral. Increase your deposit or decrease your loan to lower the risk.",
+      "If the LTV of a loan falls below the max LTV, it becomes undercollateralized and be liquidated. In that case, the borrower's debt is paid off but they lose most of their collateral. In order to avoid liquidation, one can increase the deposit or reduce the debt.",
     ],
     loanRedemptionRisk: [
       "Redemption risk",
       <>
-        If BOLD trades below $1, your collateral may be{" "}
-        <a
-          href="https://docs.liquity.org/faq/lusd-redemptions"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          redeemed
-        </a>. Redemptions start from the lowest interest rate loans. Raise the interest rate on your loan to reduce the
-        risk.
+        If the price of BOLD is lower than $1,{" "}
+        <Link href="https://github.com/liquity/bold#bold-redemptions">redemptions are enabled</Link>{" "}
+        and help bring the value of BOLD back to $1. Redemptions first affect loans with the lowest interest rate.
+        Raising the interest rate reduces the redemption risk.
       </>,
     ],
     loanLtv: [
       "Loan-to-value ratio",
-      "The ratio between your deposited collateral and the amount of BOLD you have chosen to borrow.",
+      "The ratio between the amount of BOLD borrowed and the deposited collateral (in USD).",
     ],
     loanMaxLtv: [
-      "Maximum loan-to-value ratio",
-      "The maximum ratio between your collateral and the BOLD that you mint allowed at origination.",
+      "Maximum Loan-To-Value (LTV) Ratio",
+      "The maximum ratio between the USD value of a loan (in BOLD) and the connected collateral. As long as a loan remains under the maximum LTV, a loan won't get liquidated. Keep in mind that the LTV will fluctuate as the prices of underlying assets changes.",
     ],
     loanLiquidationPrice: [
       "Liquidation price",
-      "The collateral price at which your position would be liquidated.",
+      "The collateral price at which a loan can be liquidated.",
     ],
     ethPrice: [
-      "ETH price",
-      "The current price of ETH in USD, as reported by the oracle. This is used to determine the loan-to-value ratio of your loan.",
+      "ETH Price",
+      "The current price of ETH, as reported by the oracle. The ETH price is used to calculate the Loan-To-Value (LTV) ratio of a loan.",
+    ],
+    interestRateBoldPerYear: [
+      "Interest rate",
+      "The annualized interest amount in BOLD for the selected interest rate. The accumulated interest is added to the loan.",
+    ],
+    interestRateAdjustment: [
+      "Interest rate adjustment",
+      "The interest rate can be adjusted at any time. If it is adjusted within less than seven days of the last adjustment, there is a fee.",
     ],
   },
 
@@ -119,13 +122,10 @@ export default {
     interestRateField: {
       label: "Interest rate",
     },
-    action: "Open loan",
+    action: "Next: Summary",
     infoTooltips: {
       interestRateSuggestions: [
         "Positions with lower interest rates are the first to be redeemed by BOLD holders.",
-      ],
-      interestRateBoldPerYear: [
-        "Your annualized interest burden at your selected position rate.",
       ],
     },
   },
@@ -146,7 +146,7 @@ export default {
     interestRateField: {
       label: "Interest rate",
     },
-    action: "Open leveraged loan",
+    action: "Next: Summary",
     infoTooltips: {
       leverageLevel: [
         "Leverage level",
@@ -154,9 +154,6 @@ export default {
       ],
       interestRateSuggestions: [
         "Positions with lower interest rates are the first to be redeemed by BOLD holders.",
-      ],
-      interestRateBoldPerYear: [
-        "Your annualized interest burden at your selected position rate.",
       ],
       exposure: [
         "Exposure",
@@ -169,10 +166,15 @@ export default {
   earnHome: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Earn {tokensIcons} with {boldIcon} BOLD
+        Deposit {boldIcon} BOLD to earn rewards {tokensIcons}
       </>
     ),
-    subheading: "Get BOLD and extra ETH rewards from liquidations",
+    subheading: (
+      <>
+        A BOLD deposit in a stability pool earns rewards from the fees that users pay on their loans. Also, in case the
+        system needs to liquidate positions, the BOLD may be swapped to collateral.
+      </>
+    ),
     poolsColumns: {
       pool: "Pool",
       apr: "APR",
@@ -210,36 +212,44 @@ export default {
       claim: "Claim rewards",
     },
     depositPanel: {
-      label: "You deposit",
-      shareLabel: "New pool share",
-      claimCheckbox: "Also claim rewards",
-      action: "Add deposit",
+      label: "Deposit",
+      shareLabel: "Pool share",
+      claimCheckbox: "Claim rewards",
+      action: "Next: Summary",
       actionClaim: "Add deposit and claim rewards",
     },
     withdrawPanel: {
-      label: "You withdraw",
-      claimCheckbox: "Also claim rewards",
-      action: "Withdraw",
+      label: "Withdraw",
+      claimCheckbox: "Claim rewards",
+      action: "Next: Summary",
       actionClaim: "Withdraw and claim rewards",
     },
     rewardsPanel: {
-      label: "You claim",
+      label: "Available rewards",
       details: (usdAmount: N, fee: N) => (
         <>
           ~${usdAmount} • Expected gas fee ~${fee}
         </>
       ),
-      action: "Claim rewards",
+      action: "Next: Summary",
     },
     infoTooltips: {
       tvl: (collateral: N) => [
         <>Total BOLD covering {collateral}-backed position liquidations.</>,
       ],
       depositPoolShare: [
-        "Ratio of your BOLD deposits versus the total stability pool.",
+        "Percentage of your BOLD deposit compared to the total deposited in this stability pool.",
       ],
-      alsoClaimRewardsCheckbox: [
-        "Trigger a payout of your accrued BOLD and ETH rewards.",
+      alsoClaimRewardsDeposit: [
+        <>
+          If checked, rewards are paid out as part of the update transaction.
+        </>,
+      ],
+      alsoClaimRewardsWithdraw: [
+        <>
+          If checked, rewards are paid out as part of the update transaction.<br />
+          Note: This needs to be checked to fully withdraw from the Stability Pool.
+        </>,
       ],
       currentApr: [
         "Average annualized return for BOLD deposits over the past 7 days.",
@@ -280,15 +290,15 @@ export default {
       claim: "Claim rewards",
     },
     depositPanel: {
-      label: "You deposit",
-      shareLabel: "New pool share",
-      claimCheckbox: "Also claim rewards",
-      action: "Add deposit",
+      label: "Deposit",
+      shareLabel: "Pool share",
+      claimCheckbox: "Claim rewards",
+      action: "Next: Summary",
     },
     withdrawPanel: {
-      label: "You withdraw",
-      claimCheckbox: "Also claim rewards",
-      action: "Withdraw",
+      label: "Withdraw",
+      claimCheckbox: "Claim rewards",
+      action: "Next: Summary",
     },
     rewardsPanel: {
       label: "You claim",
@@ -297,7 +307,25 @@ export default {
           ~${usdAmount} • Expected gas fee ~${fee}
         </>
       ),
-      action: "Claim rewards",
+      action: "Next: Summary",
     },
   },
 };
+
+function Link({
+  href,
+  children,
+}: {
+  href: string;
+  children: N;
+}) {
+  const props = !href.startsWith("http") ? {} : {
+    target: "_blank",
+    rel: "noopener noreferrer",
+  };
+  return (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  );
+}

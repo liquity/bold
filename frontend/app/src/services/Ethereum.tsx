@@ -126,6 +126,10 @@ export function useBalance(
     },
   });
 
+  if (token === "LQTY") {
+    return { data: dnum18(0), isLoading: false };
+  }
+
   return demoMode.enabled && token
     ? { data: ACCOUNT_BALANCES[token], isLoading: false }
     : (token === "ETH" ? ethBalance : tokenBalance);
@@ -154,7 +158,7 @@ export function useWagmiConfig() {
       contractMulticall: CHAIN_CONTRACT_MULTICALL,
     });
     return getDefaultConfig({
-      appName: "Liquity v2",
+      appName: "Liquity V2",
       projectId: WALLET_CONNECT_PROJECT_ID,
       chains: [chain],
       transports: {

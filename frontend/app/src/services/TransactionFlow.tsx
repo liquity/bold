@@ -14,6 +14,7 @@ import type { Contracts } from "@/src/contracts";
 import type { Request as CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
 import type { Request as EarnDepositRequest } from "@/src/tx-flows/earnDeposit";
 import type { Request as EarnWithdrawRequest } from "@/src/tx-flows/earnWithdraw";
+import type { Request as OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
 import type { Request as OpenLoanPositionRequest } from "@/src/tx-flows/openLoanPosition";
 import type { Request as UpdateLoanInterestRateRequest } from "@/src/tx-flows/updateLoanInterestRate";
 import type { Request as UpdateLoanPositionRequest } from "@/src/tx-flows/updateLoanPosition";
@@ -28,6 +29,7 @@ import { useAccount, useWagmiConfig } from "@/src/services/Ethereum";
 import { closeLoanPosition } from "@/src/tx-flows/closeLoanPosition";
 import { earnDeposit } from "@/src/tx-flows/earnDeposit";
 import { earnWithdraw } from "@/src/tx-flows/earnWithdraw";
+import { openLeveragePosition } from "@/src/tx-flows/openLeveragePosition";
 import { openLoanPosition } from "@/src/tx-flows/openLoanPosition";
 import { updateLoanInterestRate } from "@/src/tx-flows/updateLoanInterestRate";
 import { updateLoanPosition } from "@/src/tx-flows/updateLoanPosition";
@@ -44,6 +46,7 @@ export type FlowRequest =
   | CloseLoanPositionRequest
   | EarnDepositRequest
   | EarnWithdrawRequest
+  | OpenLeveragePositionRequest
   | OpenLoanPositionRequest
   | UpdateLoanInterestRateRequest
   | UpdateLoanPositionRequest;
@@ -57,6 +60,7 @@ const flowDeclarations: {
   closeLoanPosition,
   earnDeposit,
   earnWithdraw,
+  openLeveragePosition,
   openLoanPosition,
   updateLoanInterestRate,
   updateLoanPosition,
@@ -66,6 +70,7 @@ const FlowIdSchema = v.union([
   v.literal("closeLoanPosition"),
   v.literal("earnDeposit"),
   v.literal("earnWithdraw"),
+  v.literal("openLeveragePosition"),
   v.literal("openLoanPosition"),
   v.literal("updateLoanInterestRate"),
   v.literal("updateLoanPosition"),
@@ -179,7 +184,6 @@ export type FlowDeclaration<
   StepId extends string = string,
 > = {
   title: ReactNode;
-  subtitle: ReactNode;
   Summary: ComponentType<{ flow: FlowContext<FR> }>;
   Details: ComponentType<{ flow: FlowContext<FR> }>;
   getSteps: GetStepsFn<FR, StepId>;

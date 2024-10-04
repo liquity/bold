@@ -37,7 +37,7 @@ export function WithdrawPanel({
 
   const parsedValue = parseInputFloat(value);
 
-  const value_ = (focused || !parsedValue) ? value : `${fmtnum(parsedValue, "full")} BOLD`;
+  const value_ = (focused || !parsedValue || dn.lte(parsedValue, 0)) ? value : `${fmtnum(parsedValue, "full")}`;
 
   const depositDifference = dn.mul(parsedValue ?? DNUM_0, -1);
 
@@ -118,6 +118,9 @@ export function WithdrawPanel({
                   label={`Max ${fmtnum(position.deposit, 2)} BOLD`}
                   onClick={() => {
                     setValue(dn.toString(position.deposit));
+
+                    // the intention is to empty
+                    setClaimRewards(true);
                   }}
                 />
               )),
@@ -135,22 +138,30 @@ export function WithdrawPanel({
         }}
       >
         <HFlex justifyContent="space-between">
-          <label
+          <div
             className={css({
               display: "flex",
               alignItems: "center",
               gap: 8,
-              cursor: "pointer",
-              userSelect: "none",
             })}
           >
-            <Checkbox
-              checked={claimRewards}
-              onChange={setClaimRewards}
-            />
-            {content.earnScreen.depositPanel.claimCheckbox}
-            <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.alsoClaimRewardsCheckbox)} />
-          </label>
+            <label
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                cursor: "pointer",
+                userSelect: "none",
+              })}
+            >
+              <Checkbox
+                checked={claimRewards}
+                onChange={setClaimRewards}
+              />
+              {content.earnScreen.depositPanel.claimCheckbox}
+            </label>
+            <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.alsoClaimRewardsWithdraw)} />
+          </div>
           {position && (
             <div
               className={css({
@@ -159,7 +170,7 @@ export function WithdrawPanel({
               })}
             >
               <div>
-                {fmtnum(position.rewards.bold)}{" "}
+                <Amount value={position.rewards.bold} />{" "}
                 <span
                   className={css({
                     color: "contentAlt",
@@ -168,16 +179,18 @@ export function WithdrawPanel({
                   BOLD
                 </span>
               </div>
-              <div>
-                {fmtnum(position.rewards.coll)}{" "}
-                <span
-                  className={css({
-                    color: "contentAlt",
-                  })}
-                >
-                  ETH
-                </span>
-              </div>
+              {collateral && (
+                <div>
+                  <Amount value={position.rewards.coll} />{" "}
+                  <span
+                    className={css({
+                      color: "contentAlt",
+                    })}
+                  >
+                    {collateral.name}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </HFlex>

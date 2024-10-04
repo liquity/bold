@@ -6,6 +6,7 @@ import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningB
 import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
+// import { useInputFieldValue } from "@/src/form-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { useCollateral } from "@/src/liquity-utils";
@@ -33,13 +34,19 @@ export function DepositPanel({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
+  const hasDeposit = position?.deposit && dn.gt(position.deposit, 0);
+
+  // // deposit change
+  // const [depositMode, setDepositMode] = useState<ValueUpdateMode>("add");
+  // const depositChange = useInputFieldValue((value) => dn.format(value));
+
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const [claimRewards, setClaimRewards] = useState(false);
 
   const parsedValue = parseInputFloat(value);
 
-  const value_ = (focused || !parsedValue) ? value : `${fmtnum(parsedValue, "full")} BOLD`;
+  const value_ = (focused || !parsedValue || dn.lte(parsedValue, 0)) ? value : `${fmtnum(parsedValue, "full")}`;
 
   const depositDifference = parsedValue ?? dn.from(0, 18);
 
@@ -138,61 +145,65 @@ export function DepositPanel({
           width: "100%",
         }}
       >
-        <HFlex justifyContent="space-between">
-          <label
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              cursor: "pointer",
-              userSelect: "none",
-            })}
-          >
-            <Checkbox
-              checked={claimRewards}
-              onChange={setClaimRewards}
-            />
-            {content.earnScreen.depositPanel.claimCheckbox}
-            <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.alsoClaimRewardsCheckbox)} />
-          </label>
-          {position && (
+        {hasDeposit && (
+          <HFlex justifyContent="space-between">
             <div
               className={css({
                 display: "flex",
-                gap: 24,
+                alignItems: "center",
+                gap: 8,
               })}
             >
-              <div>
-                <Amount
-                  format={2}
-                  value={position.rewards.bold}
+              <label
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  cursor: "pointer",
+                  userSelect: "none",
+                })}
+              >
+                <Checkbox
+                  checked={claimRewards}
+                  onChange={setClaimRewards}
                 />
-                <span
-                  className={css({
-                    color: "contentAlt",
-                  })}
-                >
-                  BOLD
-                </span>
-              </div>
-              {collateral && (
+                {content.earnScreen.depositPanel.claimCheckbox}
+              </label>
+              <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.alsoClaimRewardsDeposit)} />
+            </div>
+            {position && (
+              <div
+                className={css({
+                  display: "flex",
+                  gap: 24,
+                })}
+              >
                 <div>
-                  <Amount
-                    format={2}
-                    value={position.rewards.coll}
-                  />{" "}
+                  <Amount value={position.rewards.bold} />{" "}
                   <span
                     className={css({
                       color: "contentAlt",
                     })}
                   >
-                    {collateral.name}
+                    BOLD
                   </span>
                 </div>
-              )}
-            </div>
-          )}
-        </HFlex>
+                {collateral && (
+                  <div>
+                    <Amount value={position.rewards.coll} />{" "}
+                    <span
+                      className={css({
+                        color: "contentAlt",
+                      })}
+                    >
+                      {collateral.name}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </HFlex>
+        )}
         <ConnectWarningBox />
         <Button
           disabled={!allowSubmit}

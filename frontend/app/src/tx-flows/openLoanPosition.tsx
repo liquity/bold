@@ -9,6 +9,7 @@ import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
 import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
+import { css } from "@/styled-system/css";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { readContract } from "wagmi/actions";
@@ -56,25 +57,32 @@ const stepNames: Record<Step, string> = {
 
 export const openLoanPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
-  subtitle: "Please review your borrow position before confirming",
 
   Summary({ flow }) {
     const collateral = useCollateral(flow.request.collIndex);
     return collateral && (
-      <LoanCard
-        leverageMode={false}
-        loadingState="success"
-        loan={{
-          troveId: "0x",
-          borrowed: flow.request.boldAmount,
-          collIndex: flow.request.collIndex,
-          collateral: collateral.symbol,
-          deposit: flow.request.collAmount,
-          interestRate: flow.request.annualInterestRate,
-          type: "borrow",
-        }}
-        onRetry={() => {}}
-      />
+      <div
+        className={css({
+          width: "100%",
+          border: "2px solid token(colors.warning)",
+          borderRadius: 10,
+        })}
+      >
+        <LoanCard
+          leverageMode={false}
+          loadingState="success"
+          loan={{
+            troveId: "0x",
+            borrowed: flow.request.boldAmount,
+            collIndex: flow.request.collIndex,
+            collateral: collateral.symbol,
+            deposit: flow.request.collAmount,
+            interestRate: flow.request.annualInterestRate,
+            type: "borrow",
+          }}
+          onRetry={() => {}}
+        />
+      </div>
     );
   },
 
@@ -86,14 +94,14 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
     return collateral && (
       <>
         <TransactionDetailsRow
-          label="You deposit"
+          label="Collateral"
           value={[
             `${fmtnum(request.collAmount)} ${collateral.name}`,
             collPrice && `$${fmtnum(dn.mul(request.collAmount, collPrice))}`,
           ]}
         />
         <TransactionDetailsRow
-          label="You borrow"
+          label="Loan"
           value={[
             `${fmtnum(request.boldAmount)} BOLD`,
             boldPrice && `$${fmtnum(dn.mul(request.boldAmount, boldPrice))}`,
