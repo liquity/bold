@@ -5,7 +5,6 @@ import type { RiskLevel } from "@/src/types";
 import { norm } from "@liquity2/uikit";
 import * as dn from "dnum";
 
-export const APP_TITLE = "Liquity v2";
 export const LOCAL_STORAGE_PREFIX = "liquity2:";
 
 export const LEVERAGE_FACTOR_MIN = 1.1;

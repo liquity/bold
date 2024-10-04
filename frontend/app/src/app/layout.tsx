@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 import { AboutModal } from "@/src/comps/AboutModal/AboutModal";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
-import { APP_TITLE } from "@/src/constants";
+import content from "@/src/content";
 import { DemoMode } from "@/src/demo-mode";
 import { Ethereum } from "@/src/services/Ethereum";
 import { Prices } from "@/src/services/Prices";
@@ -15,7 +15,7 @@ import { UiKit } from "@liquity2/uikit";
 import { GeistSans } from "geist/font/sans";
 
 export const metadata: Metadata = {
-  title: APP_TITLE,
+  title: content.appName,
   icons: "/favicon.svg",
 };
 

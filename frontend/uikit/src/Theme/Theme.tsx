@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { createContext, useContext, useState } from "react";
 
-// The Liquity v2 base color palette, meant
+// The Liquity V2 base color palette, meant
 // to be used by themes rather than directly.
 export const colors = {
   // Blue
