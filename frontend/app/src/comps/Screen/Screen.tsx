@@ -39,90 +39,111 @@ export function Screen({
       friction: 100,
     },
   });
+
+  const screenTransitions = useTransition(true, {
+    initial: { opacity: 0, transform: "scale3d(0.97, 0.97, 1) translate3d(0, 4px, 0)" },
+    from: { opacity: 0, transform: "scale3d(0.97, 0.97, 1) translate3d(0, 4px, 0)" },
+    enter: { opacity: 1, transform: "scale3d(1, 1, 1) translate3d(0, 0, 0)" },
+    leave: { display: "none", immediate: true },
+    config: {
+      mass: 2,
+      tension: 1100,
+      friction: 80,
+    },
+    immediate: true,
+  });
+
   return (
-    <div
-      className={cx(
-        css({
-          flexGrow: 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          width: "100%",
-          padding: "24px 24px 64px",
-          gap: 56,
-        }),
-        className,
-      )}
-    >
-      {title && (
-        <header
-          className={css({
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 12,
-          })}
+    screenTransitions((style, ready) =>
+      ready && (
+        <a.div
+          className={cx(
+            css({
+              flexGrow: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              width: "100%",
+              padding: "24px 24px 64px",
+              gap: 56,
+              transformOrigin: "50% 0",
+            }),
+            className,
+          )}
+          style={{
+            ...style,
+            opacity: style.opacity.to([0, 0.5, 1], [0, 1, 1]),
+          }}
         >
-          <h1
+          <header
             className={css({
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 28,
+              gap: 12,
             })}
           >
-            {title}
-          </h1>
-          {subtitle && (
-            <p
+            <h1
               className={css({
-                maxWidth: 540,
-                textAlign: "center",
-                color: "contentAlt",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 28,
               })}
             >
-              {subtitle}
-            </p>
-          )}
-        </header>
-      )}
-      <div
-        className={css({
-          display: "flex",
-          flexDirection: "column",
-          position: "relative",
-        })}
-        style={{
-          gap,
-          width,
-        }}
-      >
-        {backTransition((style, back) => (
-          back && (
-            <a.div
-              className={css({
-                position: {
-                  base: "static",
-                  large: "absolute",
-                },
-                right: `${654}px`,
-              })}
-              style={{
-                opacity: style.opacity.to([0, 0.5, 1], [0, 1, 1]),
-                transform: style.transform,
-              }}
-            >
-              <BackButton
-                href={back.href}
-                label={back.label}
-              />
-            </a.div>
-          )
-        ))}
-        {children}
-      </div>
-    </div>
+              {title}
+            </h1>
+            {subtitle && (
+              <p
+                className={css({
+                  maxWidth: 540,
+                  textAlign: "center",
+                  color: "contentAlt",
+                })}
+              >
+                {subtitle}
+              </p>
+            )}
+          </header>
+          <div
+            className={css({
+              display: "flex",
+              flexDirection: "column",
+              position: "relative",
+            })}
+            style={{
+              gap,
+              width,
+            }}
+          >
+            {backTransition((style, back) => (
+              back && (
+                <a.div
+                  className={css({
+                    position: {
+                      base: "static",
+                      large: "absolute",
+                    },
+                    right: `${654}px`,
+                  })}
+                  style={{
+                    opacity: style.opacity.to([0, 0.5, 1], [0, 1, 1]),
+                    transform: style.transform,
+                  }}
+                >
+                  <BackButton
+                    href={back.href}
+                    label={back.label}
+                  />
+                </a.div>
+              )
+            ))}
+            {children}
+          </div>
+        </a.div>
+      )
+    )
   );
 }
 
