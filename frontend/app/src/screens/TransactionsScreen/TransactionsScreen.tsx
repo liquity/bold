@@ -1,8 +1,9 @@
 "use client";
 
 import type { FlowStepStatus } from "@/src/services/TransactionFlow";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
+import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -10,6 +11,7 @@ import { css } from "@/styled-system/css";
 import { AnchorButton, AnchorTextButton, Button, HFlex, IconCross, VFlex } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import Link from "next/link";
+import { Fragment, useState } from "react";
 import { match, P } from "ts-pattern";
 
 export type LoadingState =
@@ -69,12 +71,6 @@ export function TransactionsScreen() {
       </VFlex>
 
       <VFlex gap={32}>
-        {currentStep.error && (
-          <div>
-            <pre>{currentStep.error}</pre>
-          </div>
-        )}
-
         {currentStep.txStatus === "confirmed" && (
           <div
             className={css({
@@ -85,6 +81,19 @@ export function TransactionsScreen() {
             {flow.request.successMessage}
           </div>
         )}
+
+        <FlowSteps
+          currentStep={currentStepIndex}
+          steps={flow.steps.map((step) => ({
+            error: step.error,
+            id: step.id,
+            label: fd.getStepName(step.id, {
+              contracts,
+              request: flow.request,
+            }),
+            txStatus: step.txStatus,
+          }))}
+        />
 
         <div
           style={{
@@ -102,7 +111,7 @@ export function TransactionsScreen() {
               >
                 <AnchorButton
                   label={flow.request.successLink[1]}
-                  mode="primary"
+                  mode="positive"
                   size="large"
                   wide
                 />
@@ -110,9 +119,13 @@ export function TransactionsScreen() {
             )
             : (
               <Button
-                label={currentStep.txStatus === "error"
-                  ? "Retry"
-                  : "Confirm"}
+                disabled={currentStep.txStatus === "awaiting-confirmation"}
+                label={(
+                  currentStep.txStatus === "error" ? "Retry " : ""
+                ) + fd.getStepName(
+                  currentStep.id,
+                  { contracts, request: flow.request },
+                )}
                 mode="primary"
                 onClick={signAndSend}
                 size="large"
@@ -120,28 +133,19 @@ export function TransactionsScreen() {
               />
             )}
         </div>
-        {currentStepIndex > -1 && (
+
+        {currentStep.error && (
           <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: 24,
-              width: "100%",
-            }}
+            className={css({
+              marginTop: -8,
+            })}
           >
-            {flow.steps.map((step, index) => (
-              <FlowStep
-                key={index}
-                isCurrent={index === currentStepIndex}
-                label={fd.getStepName(step.id, {
-                  contracts,
-                  request: flow.request,
-                })}
-                status={step.txStatus}
-              />
-            ))}
+            <ErrorBox title="Error">
+              {currentStep.error}
+            </ErrorBox>
           </div>
         )}
+
         {showBackLink && flow.request.backLink && (
           <div
             style={{
@@ -253,6 +257,247 @@ export function TransactionDetailsRow({
   );
 }
 
+function FlowSteps({
+  currentStep,
+  steps,
+}: {
+  currentStep: number;
+  steps: Array<{
+    error: string | null;
+    id: string;
+    label: string;
+    txStatus: FlowStepStatus;
+  }>;
+}) {
+  return steps.length === 1 ? null : (
+    <div
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 4,
+      })}
+    >
+      {steps.map((step, index) => (
+        <Fragment key={index}>
+          {index > 0 && (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={index}
+                className={css({
+                  width: 2,
+                  height: 2,
+                  backgroundColor: "contentAlt",
+                })}
+              />
+            ))
+          )}
+          <StepDisc
+            index={index}
+            label={`${step.label}${(
+              index < currentStep ? "" : match(step.txStatus)
+                .with("error", () => ": error")
+                .with("awaiting-signature", () => ": awaiting signature…")
+                .with("awaiting-confirmation", () => ": awaiting chain confirmation…")
+                .with("confirmed", () => ": confirmed")
+                .otherwise(() => "")
+            )}`}
+            mode={match(step.txStatus)
+              .returnType<ComponentProps<typeof StepDisc>["mode"]>()
+              .with(P.union("awaiting-signature", "awaiting-confirmation"), () => "loading")
+              .with("confirmed", () => "success")
+              .with("error", () => "error")
+              .otherwise(() => index === currentStep ? "ready" : "upcoming")}
+          />
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
+type StepDiscMode = "upcoming" | "ready" | "loading" | "success" | "error";
+
+function StepDisc({
+  index,
+  label,
+  mode,
+}: {
+  index: number;
+  label: string;
+  mode: StepDiscMode;
+}) {
+  const [forcedMode, setForcedMode] = useState<StepDiscMode>(mode);
+  const [showLabel, setShowLabel] = useState(false);
+
+  const modeTransition = useTransition(mode, {
+    initial: { transform: "scale(1)" },
+    from: { transform: "scale(1.4)" },
+    enter: { transform: "scale(1)" },
+    leave: { immediate: true },
+    config: {
+      mass: 1,
+      tension: 2000,
+      friction: 180,
+    },
+  });
+
+  const labelTransition = useTransition(showLabel, {
+    from: { opacity: 1, transform: "translateY(0) scale(0.97)" },
+    enter: { opacity: 1, transform: "translateY(0) scale(1)" },
+    leave: { opacity: 0, transform: "translateY(0) scale(1)" },
+    config: {
+      mass: 1,
+      tension: 2000,
+      friction: 60,
+    },
+  });
+
+  return (
+    <div
+      title={label}
+      onClick={() => {
+        const forcedStatuses: StepDiscMode[] = [
+          "upcoming",
+          "ready",
+          "loading",
+          "success",
+          "error",
+        ];
+        setForcedMode(
+          forcedStatuses[
+            (forcedStatuses.indexOf(forcedMode) + 1) % forcedStatuses.length
+          ],
+        );
+      }}
+      onMouseEnter={() => setShowLabel(true)}
+      onMouseLeave={() => setShowLabel(false)}
+      className={css({
+        position: "relative",
+        width: 32,
+        height: 32,
+        fontSize: 16,
+        userSelect: "none",
+
+        "--base-color": "token(colors.content)",
+        "--base-background": "token(colors.surface)",
+        "--base-border-color": "token(colors.border)",
+
+        "--active-color": "token(colors.strongSurfaceContent)",
+        "--active-background": "token(colors.strongSurface)",
+        "--active-border-color": "var(--active-color)",
+
+        "--error-color": "token(colors.negativeContent)",
+        "--error-background": "token(colors.negative)",
+        "--error-border-color": "var(--error-color)",
+
+        "--success-color": "token(colors.positive)",
+        "--success-background": "var(--base-background)",
+        "--success-border-color": "var(--success-color)",
+      })}
+    >
+      {modeTransition((style, mode) => (
+        <a.div
+          className={css({
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "50%",
+            borderWidth: 1,
+            borderStyle: "solid",
+          })}
+          style={{
+            ...match(mode)
+              .with("upcoming", () => ({
+                color: "var(--base-color)",
+                background: "var(--base-background)",
+                borderColor: "var(--base-border-color)",
+              }))
+              .with("error", () => ({
+                color: "var(--error-color)",
+                background: "var(--error-background)",
+                borderColor: "var(--error-border-color)",
+              }))
+              .with("success", () => ({
+                color: "var(--success-color)",
+                background: "var(--success-background)",
+                borderColor: "var(--success-border-color)",
+              }))
+              .otherwise(() => ({
+                color: "var(--active-color)",
+                background: "var(--active-background)",
+                borderColor: "var(--active-border-color)",
+              })),
+            ...style,
+          }}
+        >
+          {match(mode)
+            .with("error", () => <IconCross size={24} />)
+            .with("loading", () => <Spinner size={20} />)
+            .with("success", () => <Tick />)
+            .otherwise(() => index + 1)}
+        </a.div>
+      ))}
+
+      {labelTransition((style, show) => (
+        show && (
+          <a.div
+            className={css({
+              position: "absolute",
+              bottom: `calc(100% + 16px)`,
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 0,
+              pointerEvents: "none",
+            })}
+            style={style}
+          >
+            <a.div
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: 300,
+                height: 40,
+                whiteSpace: "nowrap",
+                color: "content",
+                background: "surface",
+                border: "1px solid token(colors.border)",
+                borderRadius: 4,
+                boxShadow: "0 15px 35px rgba(60, 66, 87, 0.12), 0 5px 15px rgba(0, 0, 0, 0.08)",
+                pointerEvents: "none",
+              })}
+              style={style}
+            >
+              {label}
+            </a.div>
+          </a.div>
+        )
+      ))}
+    </div>
+  );
+}
+
+function Tick() {
+  return (
+    <svg
+      width={12 * 1.2}
+      height={10 * 1.2}
+      viewBox="0 0 12 10"
+      fill="none"
+    >
+      <path
+        fill="currentColor"
+        d="M4 7.78 1.22 5l-.947.94L4 9.667l8-8-.94-.94L4 7.78Z"
+      />
+    </svg>
+  );
+}
+
 function NoTransactionsScreen() {
   return (
     <div
@@ -279,126 +524,5 @@ function NoTransactionsScreen() {
         </Link>
       </div>
     </div>
-  );
-}
-
-function FlowStep({
-  isCurrent,
-  label,
-  status,
-}: {
-  isCurrent: boolean;
-  label: string;
-  status: FlowStepStatus;
-}) {
-  const iconTransition = useTransition(status, {
-    from: {
-      opacity: 0,
-      width: 0,
-      transform: "scale(0)",
-    },
-    enter: {
-      opacity: 1,
-      width: 16 + 8,
-      transform: "scale(1)",
-    },
-    leave: {
-      opacity: 0,
-      width: 0,
-      transform: "scale(0)",
-      immediate: true,
-    },
-    config: {
-      mass: 2,
-      tension: 1200,
-      friction: 80,
-    },
-  });
-
-  return (
-    <div
-      className={css({
-        display: "flex",
-        alignItems: "center",
-        gap: 0,
-        userSelect: "none",
-        color: "primary",
-        "--color-alt": "colors.contentAlt",
-        "--color-success": "colors.positive",
-      })}
-      style={{
-        color: status === "idle" && !isCurrent
-          ? "var(--color-alt)"
-          : status === "confirmed"
-          ? "var(--color-success)"
-          : undefined,
-      }}
-    >
-      <div>{label}</div>
-      {iconTransition((style, status) =>
-        match(status)
-          .with(
-            P.union(
-              "awaiting-signature",
-              "awaiting-confirmation",
-              "confirmed",
-              "error",
-            ),
-            (status) => (
-              <a.div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "flex-end",
-                })}
-                style={{
-                  opacity: style.opacity.to([0, 0.5, 1], [0, 0, 1]),
-                  width: style.width,
-                }}
-              >
-                <a.div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 16,
-                    flexShrink: 0,
-                    "--color-error": "colors.negative",
-                    "--color-success": "colors.positive",
-                  })}
-                  style={{
-                    transform: style.transform,
-                    color: match(status)
-                      .with("error", () => "var(--color-error)")
-                      .with("confirmed", () => "var(--color-success)")
-                      .otherwise(() => undefined),
-                  }}
-                >
-                  {match(status)
-                    .with("error", () => <IconCross size={16} />)
-                    .with("confirmed", () => <Tick />)
-                    .otherwise(() => <Spinner size={16} />)}
-                </a.div>
-              </a.div>
-            ),
-          )
-          .otherwise(() => null)
-      )}
-    </div>
-  );
-}
-
-function Tick() {
-  return (
-    <svg
-      width="12"
-      height="10"
-      fill="none"
-    >
-      <path
-        fill="currentColor"
-        d="M4 7.78 1.22 5l-.947.94L4 9.667l8-8-.94-.94L4 7.78Z"
-      />
-    </svg>
   );
 }
