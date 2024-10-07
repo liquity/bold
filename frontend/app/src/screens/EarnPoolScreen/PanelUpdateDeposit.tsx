@@ -60,7 +60,7 @@ export function PanelUpdateDeposit({
 
   const collateral = useCollateral(collIndex);
 
-  const allowSubmit = account.isConnected && parsedValue;
+  const allowSubmit = account.isConnected && parsedValue && dn.gt(parsedValue, 0);
 
   const hasDeposit = position?.deposit && dn.gt(position.deposit, 0);
 
@@ -225,13 +225,7 @@ export function PanelUpdateDeposit({
         <ConnectWarningBox />
         <Button
           disabled={!allowSubmit}
-          label={claimRewards
-            ? (mode === "remove"
-              ? content.earnScreen.withdrawPanel.actionClaim
-              : content.earnScreen.depositPanel.actionClaim)
-            : (mode === "remove"
-              ? content.earnScreen.withdrawPanel.action
-              : content.earnScreen.depositPanel.action)}
+          label={content.earnScreen.depositPanel.action}
           mode="primary"
           size="large"
           wide

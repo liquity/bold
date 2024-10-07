@@ -1,6 +1,6 @@
 "use client";
 
-import { EarnPosition } from "@/src/comps/EarnPosition/EarnPosition";
+import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { useCollIndexFromSymbol } from "@/src/liquity-utils";
@@ -10,8 +10,8 @@ import { css } from "@/styled-system/css";
 import { isCollateralSymbol, Tabs } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
+import { PanelClaimRewards } from "./PanelClaimRewards";
 import { PanelUpdateDeposit } from "./PanelUpdateDeposit";
-import { RewardsPanel as PanelRewards } from "./RewardsPanel";
 
 const TABS = [
   { action: "deposit", label: content.earnScreen.tabs.deposit },
@@ -49,7 +49,7 @@ export function EarnPoolScreen() {
         position: "relative",
       })}
     >
-      <EarnPosition
+      <EarnPositionSummary
         address={account.address}
         collSymbol={collateralSymbol}
       />
@@ -94,7 +94,7 @@ export function EarnPoolScreen() {
           />
         )}
         {tab.action === "claim" && (
-          <PanelRewards
+          <PanelClaimRewards
             collIndex={collIndex}
             position={earnPosition.data ?? undefined}
           />

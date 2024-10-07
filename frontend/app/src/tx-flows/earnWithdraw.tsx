@@ -1,6 +1,8 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
+import { useCollateral } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
 import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
@@ -41,10 +43,14 @@ const stepNames: Record<Step, string> = {
 export const earnWithdraw: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
 
-  Summary() {
-    // const { symbol } = useCollateral(flow.request.collIndex);
-    return (
-      null
+  Summary({ flow }) {
+    const collateral = useCollateral(flow.request.collIndex);
+    const symbol = collateral?.symbol;
+    return symbol && (
+      <EarnPositionSummary
+        address={flow.request.depositor}
+        collSymbol={symbol}
+      />
     );
   },
 

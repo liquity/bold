@@ -12,6 +12,7 @@
 
 import type { Contracts } from "@/src/contracts";
 import type { Request as CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
+import type { Request as EarnClaimRewardsRequest } from "@/src/tx-flows/earnClaimRewards";
 import type { Request as EarnDepositRequest } from "@/src/tx-flows/earnDeposit";
 import type { Request as EarnWithdrawRequest } from "@/src/tx-flows/earnWithdraw";
 import type { Request as OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
@@ -27,6 +28,7 @@ import { useContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useAccount, useWagmiConfig } from "@/src/services/Ethereum";
 import { closeLoanPosition } from "@/src/tx-flows/closeLoanPosition";
+import { earnClaimRewards } from "@/src/tx-flows/earnClaimRewards";
 import { earnDeposit } from "@/src/tx-flows/earnDeposit";
 import { earnWithdraw } from "@/src/tx-flows/earnWithdraw";
 import { openLeveragePosition } from "@/src/tx-flows/openLeveragePosition";
@@ -44,6 +46,7 @@ const TRANSACTION_FLOW_KEY = `${LOCAL_STORAGE_PREFIX}transaction_flow`;
 
 export type FlowRequest =
   | CloseLoanPositionRequest
+  | EarnClaimRewardsRequest
   | EarnDepositRequest
   | EarnWithdrawRequest
   | OpenLeveragePositionRequest
@@ -58,6 +61,7 @@ const flowDeclarations: {
   >;
 } = {
   closeLoanPosition,
+  earnClaimRewards,
   earnDeposit,
   earnWithdraw,
   openLeveragePosition,
@@ -68,6 +72,7 @@ const flowDeclarations: {
 
 const FlowIdSchema = v.union([
   v.literal("closeLoanPosition"),
+  v.literal("earnClaimRewards"),
   v.literal("earnDeposit"),
   v.literal("earnWithdraw"),
   v.literal("openLeveragePosition"),

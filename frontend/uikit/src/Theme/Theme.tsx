@@ -150,6 +150,7 @@ export const lightTheme = {
     secondaryContent: "blue:500",
     secondaryHint: "blue:100",
     selected: "blue:500",
+    separator: "gray:50",
     surface: "white",
     tableBorder: "gray:100",
     warning: "yellow:400",

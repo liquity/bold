@@ -208,7 +208,6 @@ export default {
     },
     tabs: {
       deposit: "Deposit",
-      withdraw: "Withdraw",
       claim: "Claim rewards",
     },
     depositPanel: {
@@ -216,21 +215,17 @@ export default {
       shareLabel: "Pool share",
       claimCheckbox: "Claim rewards",
       action: "Next: Summary",
-      actionClaim: "Next: Summary",
     },
     withdrawPanel: {
       label: "Withdraw",
       claimCheckbox: "Claim rewards",
       action: "Next: Summary",
-      actionClaim: "Next: Summary",
     },
     rewardsPanel: {
-      label: "Available rewards",
-      details: (usdAmount: N, fee: N) => (
-        <>
-          ~${usdAmount} • Expected gas fee ~${fee}
-        </>
-      ),
+      boldRewardsLabel: "Your earnings from protocol revenue distributions to this stability pool",
+      collRewardsLabel: "Your proceeds from liquidations conducted by this stability pool",
+      totalUsdLabel: "Total in USD",
+      expectedGasFeeLabel: "Expected gas fee",
       action: "Next: Summary",
     },
     infoTooltips: {
@@ -287,7 +282,7 @@ export default {
     tabs: {
       deposit: "Deposit",
       withdraw: "Withdraw",
-      claim: "Claim rewards",
+      claim: "Rewards",
     },
     depositPanel: {
       label: "Deposit",

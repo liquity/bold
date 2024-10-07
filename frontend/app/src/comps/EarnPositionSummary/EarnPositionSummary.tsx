@@ -9,7 +9,7 @@ import { HFlex, IconArrowRight, IconPlus, InfoTooltip, TokenIcon } from "@liquit
 import * as dn from "dnum";
 import Link from "next/link";
 
-export function EarnPosition({
+export function EarnPositionSummary({
   address,
   collSymbol,
   linkToScreen,

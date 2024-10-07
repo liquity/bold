@@ -1,6 +1,6 @@
 "use client";
 
-import { EarnPosition } from "@/src/comps/EarnPosition/EarnPosition";
+import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { useCollateralContracts } from "@/src/contracts";
@@ -40,7 +40,7 @@ export function EarnPoolsListScreen() {
       gap={16}
     >
       {collSymbols.map((symbol) => (
-        <EarnPosition
+        <EarnPositionSummary
           key={symbol}
           address={account?.address}
           collSymbol={symbol}

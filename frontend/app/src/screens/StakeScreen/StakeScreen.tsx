@@ -320,7 +320,7 @@ export function StakeScreen() {
                     borderTop: "1px solid token(colors.border)",
                   })}
                 >
-                  {content.earnScreen.rewardsPanel.details(
+                  {content.stakeScreen.rewardsPanel.details(
                     dn.format(
                       dn.add(
                         ACCOUNT_STAKED_LQTY.rewardLusd,

@@ -1,7 +1,6 @@
 import type { PositionEarn } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { fmtnum } from "@/src/formatting";
 import { useCollateral } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, StrongCard, TokenIcon } from "@liquity2/uikit";

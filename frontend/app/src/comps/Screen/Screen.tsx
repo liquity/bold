@@ -50,7 +50,6 @@ export function Screen({
       tension: 1100,
       friction: 80,
     },
-    immediate: true,
   });
 
   return (
