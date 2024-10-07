@@ -1,20 +1,22 @@
 import { fmtnum } from "@/src/formatting";
 
 export function Amount({
-  value,
+  fallback,
   format,
   percentage = false,
   prefix = "",
   suffix = "",
+  value,
 }: {
-  value: Parameters<typeof fmtnum>[0];
+  fallback?: string;
   format?: Parameters<typeof fmtnum>[1];
   percentage?: boolean;
   prefix?: string;
   suffix?: string;
+  value: Parameters<typeof fmtnum>[0];
 }) {
   if (!value) {
-    return null;
+    return fallback ?? null;
   }
   if (percentage && !suffix) {
     suffix = "%";
