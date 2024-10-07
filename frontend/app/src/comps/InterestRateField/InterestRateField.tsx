@@ -182,6 +182,7 @@ export function InterestRateField({
               <Dropdown
                 items={MODES}
                 menuWidth={300}
+                menuPlacement="end"
                 onSelect={(mode) => {
                   if (mode === 0 || mode === 1 || mode === 2) {
                     setSelectedMode(mode);
