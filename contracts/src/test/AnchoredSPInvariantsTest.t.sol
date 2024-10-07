@@ -89,7 +89,6 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
         assertApproxEqAbsDecimal(stabilityPoolBold, claimableBold, 0.001 ether, 18, "SP BOLD !~ claimable BOLD");
         assertApproxEqAbsDecimal(yieldGainsOwed, sumYieldGains, 0.001 ether, 18, "SP yieldGainsOwed !~= sum(yieldGain)");
 
-
         assertGe(stabilityPoolBold, claimableBold, "Not enough deposits for all depositors");
         assertGe(stabilityPoolColl, claimableColl, "Not enough collateral for all depositors");
         assertGe(yieldGainsOwed, sumYieldGains, "Not enough yield gains for all depositors");
