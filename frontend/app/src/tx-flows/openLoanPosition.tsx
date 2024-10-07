@@ -10,6 +10,7 @@ import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/Transact
 import { usePrice } from "@/src/services/Prices";
 import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
+import { COLLATERALS as KNOWN_COLLATERALS } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { readContract } from "wagmi/actions";
@@ -48,12 +49,6 @@ type Step =
   | "approveLst"
   | "openTroveEth"
   | "openTroveLst";
-
-const stepNames: Record<Step, string> = {
-  approveLst: "Approve",
-  openTroveEth: "Open Position",
-  openTroveLst: "Open Position",
-};
 
 export const openLoanPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
@@ -161,8 +156,13 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
     return [...steps, "openTroveLst"];
   },
 
-  getStepName(stepId) {
-    return stepNames[stepId];
+  getStepName(stepId, { contracts, request }) {
+    const { symbol } = contracts.collaterals[request.collIndex];
+    const collateral = KNOWN_COLLATERALS.find((c) => c.symbol === symbol);
+    if (stepId === "approveLst") {
+      return `Approve ${collateral?.name ?? ""}`;
+    }
+    return `Open loan position`;
   },
 
   parseRequest(request) {
