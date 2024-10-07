@@ -113,6 +113,7 @@ export function EarnPosition({
               <div>TVL</div>
               <div>
                 <Amount
+                  fallback="-"
                   format="compact"
                   prefix="$"
                   value={stabilityPool.data?.totalDeposited}
@@ -132,9 +133,10 @@ export function EarnPosition({
           >
             <div>
               <Amount
-                value={stabilityPool.data?.apr}
+                fallback="-%"
                 format="1z"
                 percentage
+                value={stabilityPool.data?.apr}
               />
             </div>
             <div
