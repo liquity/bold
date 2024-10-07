@@ -383,19 +383,29 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
     if (txReceipt.status !== "pending") {
       contractWrite.reset();
     }
-    if (txReceipt.status === "success") {
-      updateStep(currentStepIndex, {
-        error: null,
-        txHash: txReceipt.data.transactionHash,
-        txStatus: "confirmed",
-      });
-    }
     if (txReceipt.status === "error") {
       updateStep(currentStepIndex, {
         error: txReceipt.error.message,
         txHash: null,
         txStatus: "error",
       });
+      return;
+    }
+    if (txReceipt.data?.status === "reverted") {
+      updateStep(currentStepIndex, {
+        error: "Transaction reverted.",
+        txHash: txReceipt.data.transactionHash,
+        txStatus: "error",
+      });
+      return;
+    }
+    if (txReceipt.status === "success") {
+      updateStep(currentStepIndex, {
+        error: null,
+        txHash: txReceipt.data.transactionHash,
+        txStatus: "confirmed",
+      });
+      return;
     }
   }, [
     contractWrite,
