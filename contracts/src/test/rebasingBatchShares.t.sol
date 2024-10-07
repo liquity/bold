@@ -98,8 +98,11 @@ contract RebasingBatchShares is DevTestSetup {
 
         // === 4: Free Loans === //
         uint256 debtB4 = borrowerOperations.getEntireSystemDebt();
-        // We can now open a new Trove
-        uint256 anotherATroveId = openTroveAndJoinBatchManager(A, 100 ether, MIN_DEBT, B, MIN_ANNUAL_INTEREST_RATE);
+        // We shouldn’t be able to open a new Trove now
+        uint256 anotherATroveId = openTroveExpectRevert(A, 100 ether, MIN_DEBT, B);
+        assertEq(anotherATroveId, 0);
+
+        /*
         LatestTroveData memory anotherATrove = troveManager.getLatestTroveData(anotherATroveId);
         uint256 aDebt = anotherATrove.entireDebt;
 
@@ -115,6 +118,7 @@ contract RebasingBatchShares is DevTestSetup {
 
         assertGt(debtAfter, debtB4, "Debt should have increased");
         assertLt(balB4, balAfter, "Something should have benn paid");
+        */
     }
 
     uint128 subTractor = 1;
@@ -140,6 +144,7 @@ contract RebasingBatchShares is DevTestSetup {
         // Log ratio
         uint256 batchSharesRatio = batchShares * DECIMAL_PRECISION / batchDebt;
         console2.log("shares / batch ratio: ", batchSharesRatio);
+        console2.log("Ratio too low?        ", batchSharesRatio < MIN_BATCH_SHARES_RATIO);
 
         // Trove
         /*
@@ -149,6 +154,7 @@ contract RebasingBatchShares is DevTestSetup {
         console2.log("Trove Shares:         ", troveBatchShares);
         uint256 troveSharesRatio = troveBatchShares * DECIMAL_PRECISION / troveData.entireDebt;
         console2.log("Trove ratio:          ", troveSharesRatio);
+        console2.log("Ratio too low?        ", troveSharesRatio < MIN_BATCH_SHARES_RATIO);
         */
     }
 
@@ -197,5 +203,31 @@ contract RebasingBatchShares is DevTestSetup {
         (,,,,,,, uint256 allBatchDebtShares) = troveManager.getBatch(batch);
 
         return allBatchDebtShares;
+    }
+
+    function openTroveExpectRevert(address _troveOwner, uint256 _coll, uint256 _debt, address _batchAddress)
+        internal
+        returns (uint256)
+    {
+        IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams memory params = IBorrowerOperations
+            .OpenTroveAndJoinInterestBatchManagerParams({
+            owner: _troveOwner,
+            ownerIndex: 0,
+            collAmount: _coll,
+            boldAmount: _debt,
+            upperHint: 0,
+            lowerHint: 0,
+            interestBatchManager: _batchAddress,
+            maxUpfrontFee: 1e24,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(_troveOwner);
+        vm.expectRevert(TroveManager.BatchSharesRatioTooLow.selector);
+        uint256 troveId = borrowerOperations.openTroveAndJoinInterestBatchManager(params);
+        vm.stopPrank();
+
+        return troveId;
     }
 }

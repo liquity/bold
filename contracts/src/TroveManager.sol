@@ -166,6 +166,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     error NotShutDown();
     error NotEnoughBoldBalance();
     error MinCollNotReached(uint256 _coll);
+    error BatchSharesRatioTooLow();
 
     // --- Events ---
 
@@ -1784,6 +1785,12 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 if (_batchDebt == 0) {
                     batchDebtSharesDelta = debtIncrease;
                 } else {
+                    // For the shares ratio to decrease 1e9 (1e18/MIN_BATCH_SHARES_RATIO),
+                    // at an average annual rate of 10%, it would take more than 217 years (log(1e9)/log(1.1))
+                    // at an average annual rate of 50%, it would take more than 51 years (log(1e9)/log(1.5))
+                    // When that happens, no more debt can be manually added to the batch, so batch should be migrated to a new one
+                    _requireAtLeastMinSharesRatio(currentBatchDebtShares, _batchDebt);
+
                     batchDebtSharesDelta = currentBatchDebtShares * debtIncrease / _batchDebt;
                 }
 
@@ -1822,6 +1829,12 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 // Subtract coll
                 batches[_batchAddress].coll = _batchColl - collDecrease;
             }
+        }
+    }
+
+    function _requireAtLeastMinSharesRatio(uint256 _currentBatchDebtShares, uint256 _batchDebt) internal pure {
+        if (_currentBatchDebtShares * DECIMAL_PRECISION / _batchDebt < MIN_BATCH_SHARES_RATIO) {
+            revert BatchSharesRatioTooLow();
         }
     }
 
