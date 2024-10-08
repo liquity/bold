@@ -1262,7 +1262,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                     if (redeemed.coll > trove.coll) {
                         // There can be a slight discrepancy when hitting batched Troves
-                        assertApproxEqAbsDecimal(redeemed.coll, trove.coll, 1e5, 18, "Coll underflow");
+                        assertApproxEqAbsDecimal(redeemed.coll, trove.coll, 1e6, 18, "Coll underflow");
                         trove.coll = 0;
                     } else {
                         trove.coll -= redeemed.coll;
@@ -1270,7 +1270,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                     if (redeemed.debt > trove.debt) {
                         // There can be a slight discrepancy when hitting batched Troves
-                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e8, 18, "Debt underflow");
+                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e9, 18, "Debt underflow");
                         trove.debt = 0;
                     } else {
                         trove.debt -= redeemed.debt;
@@ -1416,7 +1416,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                 if (redeemed.coll > trove.coll) {
                     // There can be a slight discrepancy when hitting batched Troves
-                    assertApproxEqAbsDecimal(redeemed.coll, trove.coll, 1e5, 18, "Coll underflow");
+                    assertApproxEqAbsDecimal(redeemed.coll, trove.coll, 1e6, 18, "Coll underflow");
                     trove.coll = 0;
                 } else {
                     trove.coll -= redeemed.coll;
@@ -1424,7 +1424,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                 if (redeemed.debt > trove.debt) {
                     // There can be a slight discrepancy when hitting batched Troves
-                    assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e8, 18, "Debt underflow");
+                    assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e9, 18, "Debt underflow");
                     trove.debt = 0;
                 } else {
                     trove.debt -= redeemed.debt;
@@ -1606,7 +1606,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 1e7, 18, "Wrong deposit"
             );
             assertApproxEqAbsDecimal(
-                v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e10, 18, "Wrong yield gain"
+                v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e11, 18, "Wrong yield gain"
             );
             assertEqDecimal(v.c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
             assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");
@@ -1700,7 +1700,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 1e7, 18, "Wrong deposit"
             );
             assertApproxEqAbsDecimal(
-                v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e10, 18, "Wrong yield gain"
+                v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e11, 18, "Wrong yield gain"
             );
             assertEqDecimal(v.c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
             assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");

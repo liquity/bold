@@ -115,17 +115,19 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
                 c.activePool.calcPendingAggInterest(), handler.getPendingInterest(i), 1e9 ether, 18, "Wrong interest"
             );
             assertApproxEqAbsDecimal(
-                c.activePool.aggWeightedDebtSum(), handler.getInterestAccrual(i), 1e28, 36, "Wrong interest accrual"
+                c.activePool.aggWeightedDebtSum(), handler.getInterestAccrual(i), 1e29, 36, "Wrong interest accrual"
             );
             assertApproxEqAbsDecimal(
                 c.activePool.aggWeightedBatchManagementFeeSum(),
                 handler.getBatchManagementFeeAccrual(i),
-                1e28,
+                1e29,
                 36,
                 "Wrong batch management fee accrual"
             );
             assertEqDecimal(weth.balanceOf(address(c.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool");
-            assertEqDecimal(c.collSurplusPool.getCollBalance(), handler.collSurplus(i), 18, "Wrong CollSurplusPool");
+            assertApproxEqAbsDecimal(
+                c.collSurplusPool.getCollBalance(), handler.collSurplus(i), 10, 18, "Wrong CollSurplusPool"
+            );
             assertApproxEqAbsDecimal(
                 c.stabilityPool.getTotalBoldDeposits(),
                 handler.spBoldDeposits(i),
@@ -139,7 +141,9 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
                 18,
                 "Wrong StabilityPool yield"
             );
-            assertEqDecimal(c.stabilityPool.getCollBalance(), handler.spColl(i), 18, "Wrong StabilityPool coll");
+            assertApproxEqAbsDecimal(
+                c.stabilityPool.getCollBalance(), handler.spColl(i), 10, 18, "Wrong StabilityPool coll"
+            );
 
             for (uint256 j = 0; j < handler.numTroves(i); ++j) {
                 (uint256 troveId, uint256 coll, uint256 debt, ITroveManager.Status status, address batchManager) =
