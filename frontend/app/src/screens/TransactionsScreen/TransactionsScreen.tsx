@@ -294,14 +294,13 @@ function FlowSteps({
           )}
           <StepDisc
             index={index}
-            label={`${step.label}${(
-              index < currentStep ? "" : match(step.txStatus)
-                .with("error", () => ": error")
-                .with("awaiting-signature", () => ": awaiting signature…")
-                .with("awaiting-confirmation", () => ": awaiting chain confirmation…")
-                .with("confirmed", () => ": confirmed")
-                .otherwise(() => "")
-            )}`}
+            label={step.label}
+            secondary={index < currentStep ? "Confirmed" : match(step.txStatus)
+              .with("error", () => "Error")
+              .with("awaiting-signature", () => "Awaiting signature…")
+              .with("awaiting-confirmation", () => "Awaiting confirmation…")
+              .with("confirmed", () => "Confirmed")
+              .otherwise(() => "Ready")}
             mode={match(step.txStatus)
               .returnType<ComponentProps<typeof StepDisc>["mode"]>()
               .with(P.union("awaiting-signature", "awaiting-confirmation"), () => "loading")
@@ -321,10 +320,12 @@ function StepDisc({
   index,
   label,
   mode,
+  secondary,
 }: {
   index: number;
   label: string;
   mode: StepDiscMode;
+  secondary: string;
 }) {
   const [forcedMode, setForcedMode] = useState<StepDiscMode>(mode);
   const [showLabel, setShowLabel] = useState(false);
@@ -461,8 +462,10 @@ function StepDisc({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                flexDirection: "column",
+                gap: 4,
                 minWidth: 300,
-                height: 40,
+                padding: "12px 0",
                 whiteSpace: "nowrap",
                 color: "content",
                 background: "surface",
@@ -473,7 +476,17 @@ function StepDisc({
               })}
               style={style}
             >
-              {label}
+              <div>{label}</div>
+              {secondary && (
+                <div
+                  className={css({
+                    color: "contentAlt",
+                    fontSize: 14,
+                  })}
+                >
+                  {secondary}
+                </div>
+              )}
             </a.div>
           </a.div>
         )
