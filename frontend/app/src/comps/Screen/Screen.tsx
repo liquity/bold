@@ -18,7 +18,7 @@ export function Screen({
   back?: {
     href: string;
     label: ReactNode;
-  };
+  } | null;
   children: ReactNode;
   className?: string;
   gap?: number;

@@ -6,6 +6,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
+import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
 import { AnchorButton, AnchorTextButton, Button, HFlex, IconCross, VFlex } from "@liquity2/uikit";
@@ -42,7 +43,12 @@ export function TransactionsScreen() {
   );
 
   return (
-    <Screen>
+    <Screen
+      back={!showBackLink || !flow.request.backLink ? null : {
+        href: flow.request.backLink[0],
+        label: "Back",
+      }}
+    >
       <fd.Summary flow={flow} />
 
       <header
@@ -99,6 +105,8 @@ export function TransactionsScreen() {
           style={{
             display: "flex",
             justifyContent: "center",
+            flexDirection: "column",
+            gap: 16,
             width: "100%",
           }}
         >
@@ -121,7 +129,7 @@ export function TransactionsScreen() {
               <Button
                 disabled={currentStep.txStatus === "awaiting-confirmation"}
                 label={(
-                  currentStep.txStatus === "error" ? "Retry " : ""
+                  currentStep.txStatus === "error" ? "Retry: " : ""
                 ) + fd.getStepName(
                   currentStep.id,
                   { contracts, request: flow.request },
@@ -132,6 +140,40 @@ export function TransactionsScreen() {
                 wide
               />
             )}
+          <div
+            className={css({
+              textAlign: "center",
+              color: "contentAlt",
+            })}
+          >
+            {match(currentStep.txStatus)
+              .with("idle", () => "This action will open your wallet to sign the transaction.")
+              .with("error", () => "An error occurred. Please try again.")
+              .with("awaiting-signature", () => "Please sign the transaction in your wallet.")
+              .with("awaiting-confirmation", () => (
+                <>
+                  Waiting for the{" "}
+                  <AnchorTextButton
+                    label="transaction"
+                    href={`${CHAIN_BLOCK_EXPLORER?.url}tx/${currentStep.txHash}`}
+                    external
+                  />{" "}
+                  to be confirmed…
+                </>
+              ))
+              .with("confirmed", () => (
+                <>
+                  The{" "}
+                  <AnchorTextButton
+                    label="transaction"
+                    href={`${CHAIN_BLOCK_EXPLORER?.url}tx/${currentStep.txHash}`}
+                    external
+                  />{"  "}
+                  has been confirmed.
+                </>
+              ))
+              .exhaustive()}
+          </div>
         </div>
 
         {currentStep.error && (
@@ -143,26 +185,6 @@ export function TransactionsScreen() {
             <ErrorBox title="Error">
               {currentStep.error}
             </ErrorBox>
-          </div>
-        )}
-
-        {showBackLink && flow.request.backLink && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              width: "100%",
-            }}
-          >
-            <Link
-              href={flow.request.backLink[0]}
-              legacyBehavior
-              passHref
-            >
-              <AnchorTextButton
-                label={flow.request.backLink[1]}
-              />
-            </Link>
           </div>
         )}
       </VFlex>
