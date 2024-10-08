@@ -97,7 +97,7 @@ contract RebasingBatchShares is DevTestSetup {
         _logTrovesAndBatch(B, BTroveId);
 
         // === 4: Free Loans === //
-        uint256 debtB4 = borrowerOperations.getEntireSystemDebt();
+        // uint256 debtB4 = borrowerOperations.getEntireSystemDebt();
         // We shouldn’t be able to open a new Trove now
         uint256 anotherATroveId = openTroveExpectRevert(A, 100 ether, MIN_DEBT, B);
         assertEq(anotherATroveId, 0);
