@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 
 import { css } from "@/styled-system/css";
-import { IconChevronDown } from "@liquity2/uikit";
-import { useState } from "react";
+import { IconChevronDown, useElementSize } from "@liquity2/uikit";
+import { a, useSpring } from "@react-spring/web";
+import { useRef, useState } from "react";
 
 export function ErrorBox({
   children,
@@ -12,6 +13,21 @@ export function ErrorBox({
   title: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { size } = useElementSize(contentRef);
+
+  const contentStyles = useSpring({
+    opacity: 1,
+    height: expanded ? (size?.blockSize ?? 0) + 32 : 0,
+    config: {
+      mass: 1,
+      tension: 1800,
+      friction: 80,
+      clamp: true,
+    },
+  });
+
   return (
     <section
       className={css({
@@ -22,36 +38,45 @@ export function ErrorBox({
         borderRadius: 8,
       })}
     >
-      <div
+      <button
+        onClick={() => setExpanded(!expanded)}
         className={css({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          width: "100%",
           height: 48,
           padding: "0 0 0 24px",
+          cursor: "pointer",
+          borderRadius: 8,
+          _focusVisible: {
+            outline: "2px solid token(colors.focused)",
+          },
         })}
       >
         <h1>{title}</h1>
-        <button
-          onClick={() => setExpanded(!expanded)}
+        <div
           className={css({
             display: "flex",
             alignItems: "center",
             height: "100%",
             padding: "0 32px 0 8px",
             gap: 4,
-            cursor: "pointer",
-            _focusVisible: {
-              outline: "2px solid token(colors.focused)",
-            },
           })}
         >
           {expanded ? "Less" : "More"} details
           <IconChevronDown size={16} />
-        </button>
-      </div>
-      {expanded && (
+        </div>
+      </button>
+      <a.div
+        style={{
+          overflow: "hidden",
+          willChange: "height",
+          ...contentStyles,
+        }}
+      >
         <div
+          ref={contentRef}
           className={css({
             padding: "8px 24px 24px",
             color: "negativeSurfaceContent",
@@ -63,7 +88,7 @@ export function ErrorBox({
         >
           {children}
         </div>
-      )}
+      </a.div>
     </section>
   );
 }
