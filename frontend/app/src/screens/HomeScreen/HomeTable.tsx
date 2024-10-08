@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { css } from "@/styled-system/css";
+import { Fragment } from "react";
 
 type HomeTableProps<Cols extends readonly ReactNode[]> = {
   title: ReactNode;
@@ -84,8 +85,8 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
       >
         <thead>
           <tr>
-            {columns.map((col, i) => (
-              <th key={i}>
+            {columns.map((col, index) => (
+              <th key={index}>
                 {col}
               </th>
             ))}
@@ -93,11 +94,17 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
         </thead>
         <tbody>
           {rows.map((row, rowIndex) => (
-            !Array.isArray(row) ? row : (
-              <tr key={rowIndex}>
-                {row.map((cell, colIndex) => <td key={colIndex}>{cell}</td>)}
-              </tr>
-            )
+            <Fragment key={rowIndex}>
+              {!Array.isArray(row) ? row : (
+                <tr>
+                  {row.map((cell, colIndex) => (
+                    <td key={colIndex}>
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              )}
+            </Fragment>
           ))}
         </tbody>
       </table>
