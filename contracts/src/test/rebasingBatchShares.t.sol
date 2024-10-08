@@ -142,9 +142,9 @@ contract RebasingBatchShares is DevTestSetup {
         uint256 batchShares = _getTotalBatchDebtShares(batch);
         console2.log("Batch Shares:         ", batchShares);
         // Log ratio
-        uint256 batchSharesRatio = batchShares * DECIMAL_PRECISION / batchDebt;
-        console2.log("shares / batch ratio: ", batchSharesRatio);
-        console2.log("Ratio too low?        ", batchSharesRatio < MIN_BATCH_SHARES_RATIO);
+        uint256 batchSharesRatio = batchDebt / batchShares;
+        console2.log("debt / shares ratio:  ", batchSharesRatio);
+        console2.log("Ratio too high?       ", batchSharesRatio > MAX_BATCH_SHARES_RATIO);
 
         // Trove
         /*
@@ -152,9 +152,9 @@ contract RebasingBatchShares is DevTestSetup {
         console2.log("Trove Debt:           ", troveData.entireDebt);
         uint256 troveBatchShares = _getBatchDebtShares(troveId);
         console2.log("Trove Shares:         ", troveBatchShares);
-        uint256 troveSharesRatio = troveBatchShares * DECIMAL_PRECISION / troveData.entireDebt;
+        uint256 troveSharesRatio = troveData.entireDebt / troveBatchShares;
         console2.log("Trove ratio:          ", troveSharesRatio);
-        console2.log("Ratio too low?        ", troveSharesRatio < MIN_BATCH_SHARES_RATIO);
+        console2.log("Ratio too high?       ", troveSharesRatio > MAX_BATCH_SHARES_RATIO);
         */
     }
 
@@ -224,7 +224,7 @@ contract RebasingBatchShares is DevTestSetup {
             receiver: address(0)
         });
         vm.startPrank(_troveOwner);
-        vm.expectRevert(TroveManager.BatchSharesRatioTooLow.selector);
+        vm.expectRevert(TroveManager.BatchSharesRatioTooHigh.selector);
         uint256 troveId = borrowerOperations.openTroveAndJoinInterestBatchManager(params);
         vm.stopPrank();
 

@@ -166,7 +166,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     error NotShutDown();
     error NotEnoughBoldBalance();
     error MinCollNotReached(uint256 _coll);
-    error BatchSharesRatioTooLow();
+    error BatchSharesRatioTooHigh();
 
     // --- Events ---
 
@@ -1757,6 +1757,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         });
     }
 
+    // This function will revert if there’s a total debt increase and the ratio debt / shares has exceeded the max
     function _updateBatchShares(
         uint256 _troveId,
         address _batchAddress,
@@ -1785,11 +1786,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 if (_batchDebt == 0) {
                     batchDebtSharesDelta = debtIncrease;
                 } else {
-                    // For the shares ratio to decrease 1e9 (1e18/MIN_BATCH_SHARES_RATIO),
-                    // at an average annual rate of 10%, it would take more than 217 years (log(1e9)/log(1.1))
-                    // at an average annual rate of 50%, it would take more than 51 years (log(1e9)/log(1.5))
-                    // When that happens, no more debt can be manually added to the batch, so batch should be migrated to a new one
-                    _requireAtLeastMinSharesRatio(currentBatchDebtShares, _batchDebt);
+                    // To avoid rebasing issues, let’s make sure the ratio debt / shares is not too high
+                    _requireBelowMaxSharesRatio(currentBatchDebtShares, _batchDebt);
 
                     batchDebtSharesDelta = currentBatchDebtShares * debtIncrease / _batchDebt;
                 }
@@ -1832,9 +1830,14 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         }
     }
 
-    function _requireAtLeastMinSharesRatio(uint256 _currentBatchDebtShares, uint256 _batchDebt) internal pure {
-        if (_currentBatchDebtShares * DECIMAL_PRECISION / _batchDebt < MIN_BATCH_SHARES_RATIO) {
-            revert BatchSharesRatioTooLow();
+    // For the debt / shares ratio to increase by a factor 1e9
+    // at a average annual debt increase (compounded interest + fees) of 10%, it would take more than 217 years (log(1e9)/log(1.1))
+    // at a average annual debt increase (compounded interest + fees) of 50%, it would take more than 51 years (log(1e9)/log(1.5))
+    // When that happens, no more debt can be manually added to the batch, so batch should be migrated to a new one
+    function _requireBelowMaxSharesRatio(uint256 _currentBatchDebtShares, uint256 _batchDebt) internal pure {
+        // debt / shares should be below MAX_BATCH_SHARES_RATIO
+        if (_currentBatchDebtShares * MAX_BATCH_SHARES_RATIO < _batchDebt) {
+            revert BatchSharesRatioTooHigh();
         }
     }
 
