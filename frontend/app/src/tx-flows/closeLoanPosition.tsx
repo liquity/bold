@@ -41,7 +41,7 @@ type Step = "closeLoanPosition" | "approveBold";
 
 const stepNames: Record<Step, string> = {
   approveBold: "Approve BOLD",
-  closeLoanPosition: "Close Position",
+  closeLoanPosition: "Close loan",
 };
 
 export const closeLoanPosition: FlowDeclaration<Request, Step> = {
