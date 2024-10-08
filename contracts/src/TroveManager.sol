@@ -683,9 +683,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 // Reset last zombie trove pointer if the previous one was fully redeemed now
                 lastZombieTroveId = 0;
             }
-        } else {
-            // Reset last zombie trove pointer if the previous one ended up above min debt
-            lastZombieTroveId = 0;
         }
     }
 
