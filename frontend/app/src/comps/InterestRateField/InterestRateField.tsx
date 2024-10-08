@@ -15,6 +15,7 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRedemptionRisk } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
+import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
@@ -38,21 +39,29 @@ import { match } from "ts-pattern";
 
 import icLogo from "./ic-logo.svg";
 
-const MODES = [
+export type DelegateMode = "manual" | "strategy" | "delegate";
+
+const DELEGATE_MODES: Array<{
+  label: string;
+  secondary: string;
+  type: DelegateMode;
+}> = [
   {
     label: "Manual",
     secondary: "The interest rate is set manually and can be updated at any time.",
+    type: "manual",
   },
   {
     label: "Automated (ICP)",
     secondary:
       "The interest rate is set and updated by an automated strategy running on the decentralized Internet Computer (ICP) network."
       + " There is a small additional fee for these strategies.",
+    type: "strategy",
   },
-  {
-    label: "Delegated",
-    secondary: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
-  },
+  // {
+  //   label: "Delegated",
+  //   secondary: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
+  // },
 ] as const;
 
 const IC_STRATEGY_MODAL = {
@@ -78,16 +87,21 @@ export function InterestRateField({
   debt,
   interestRate,
   onChange,
+  onModeChange = noop,
 }: {
   debt: Dnum | null;
   interestRate: Dnum | null;
   onChange: (interestRate: Dnum) => void;
+  onModeChange?: (mode: DelegateMode) => void;
 }) {
-  // 0: manually, 1: by strategy, 2: by delegation
-  const [selectedMode, setSelectedMode] = useState<0 | 1 | 2>(0);
-
   const [delegate, setDelegate] = useState<null | { id: string }>(null);
-  const [delegatePicker, setDelegatePicker] = useState<null | "strategy" | "delegate">(null);
+  const [delegatePicker, setDelegatePicker] = useState<"strategy" | "delegate" | null>(null);
+
+  const [mode, setMode_] = useState<DelegateMode>("manual");
+  const setMode = (value: DelegateMode) => {
+    setMode_(value);
+    onModeChange(value);
+  };
 
   const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
     defaultValue: interestRate
@@ -122,9 +136,9 @@ export function InterestRateField({
       <InputField
         labelHeight={32}
         labelSpacing={24}
-        disabled={selectedMode !== 0}
-        contextual={match(selectedMode)
-          .with(0, () => (
+        disabled={mode !== "manual"}
+        contextual={match(mode)
+          .with("manual", () => (
             <div
               style={{
                 display: "flex",
@@ -156,7 +170,7 @@ export function InterestRateField({
               />
             </div>
           ))
-          .with(1, () => (
+          .with("strategy", () => (
             <TextButton
               size="large"
               label={delegate ? IC_STRATEGIES.find(({ id }) => id === delegate.id)?.name : "Choose strategy"}
@@ -165,7 +179,7 @@ export function InterestRateField({
               }}
             />
           ))
-          .with(2, () => (
+          .with("delegate", () => (
             <TextButton
               size="large"
               label={delegate ? DELEGATES.find(({ id }) => id === delegate.id)?.name : "Choose delegate"}
@@ -180,16 +194,14 @@ export function InterestRateField({
           end: (
             <div>
               <Dropdown
-                items={MODES}
+                items={DELEGATE_MODES}
                 menuWidth={300}
                 menuPlacement="end"
-                onSelect={(mode) => {
-                  if (mode === 0 || mode === 1 || mode === 2) {
-                    setSelectedMode(mode);
-                    setDelegate(null);
-                  }
+                onSelect={(index) => {
+                  setMode(DELEGATE_MODES[index].type);
+                  setDelegate(null);
                 }}
-                selected={selectedMode}
+                selected={DELEGATE_MODES.findIndex(({ type }) => type === mode)}
                 size="small"
               />
             </div>
@@ -200,9 +212,9 @@ export function InterestRateField({
           start: (
             <HFlex gap={4}>
               <div>
-                {boldInterestPerYear && selectedMode === 0
-                    || (selectedMode === 1 && delegate)
-                    || (selectedMode === 2 && delegate)
+                {boldInterestPerYear && mode === "manual"
+                    || (mode === "strategy" && delegate)
+                  // || (mode === 'delegate' && delegate)
                   ? fmtnum(boldInterestPerYear, 2)
                   : "−"} BOLD / year
               </div>
@@ -222,9 +234,9 @@ export function InterestRateField({
                     fontVariantNumeric: "tabular-nums",
                   })}
                 >
-                  {selectedMode === 0
-                      || (selectedMode === 1 && delegate !== null)
-                      || (selectedMode === 2 && delegate !== null)
+                  {mode === "manual"
+                      || (mode === "strategy" && delegate !== null)
+                    // || (mode === "delegate" && delegate !== null)
                     ? fmtnum(boldRedeemableInFront, "compact")
                     : "−"}
                 </span>
@@ -236,13 +248,19 @@ export function InterestRateField({
         {...fieldValue.inputFieldProps}
         value={
           // no delegate selected yet
-          (selectedMode === 1 || selectedMode === 2) && delegate === null
+          (
+              mode === "strategy"
+              // || mode === "delegate"
+            ) && delegate === null
             ? ""
             : fieldValue.value
         }
         valueUnfocused={
           // no delegate selected yet
-          (selectedMode === 1 || selectedMode === 2) && delegate === null
+          (
+              mode === "strategy"
+              // || mode === "delegate"
+            ) && delegate === null
             ? null
             : (!fieldValue.isEmpty && fieldValue.parsed && interestRate)
             ? (
@@ -314,7 +332,7 @@ export function InterestRateField({
         visible={delegatePicker === "delegate"}
       >
         <DelegatesModalContent
-          chooseLabel="Choose delegate"
+          chooseLabel="Set delegate"
           delegates={DELEGATES}
           intro={DELEGATES_MODAL.intro}
           onSelectDelegate={onSelectDelegate}

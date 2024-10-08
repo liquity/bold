@@ -1,11 +1,18 @@
 "use client";
 
+import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
+
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { DEBT_SUGGESTIONS, INTEREST_RATE_DEFAULT } from "@/src/constants";
+import {
+  DEBT_SUGGESTIONS,
+  INTEREST_RATE_DEFAULT,
+  MAX_ANNUAL_INTEREST_RATE,
+  MIN_ANNUAL_INTEREST_RATE,
+} from "@/src/constants";
 import content from "@/src/content";
 import { useCollateralContracts } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
@@ -71,6 +78,7 @@ export function BorrowScreen() {
   const deposit = useInputFieldValue((value) => `${fmtnum(value)} ${collateral.name}`);
   const debt = useInputFieldValue((value) => `${fmtnum(value)} BOLD`);
   const [interestRate, setInterestRate] = useState(dn.div(dn.from(INTEREST_RATE_DEFAULT, 18), 100));
+  const [interestRateMode, setInterestRateMode] = useState<DelegateMode>("manual");
 
   const collPrice = usePrice(collateral.symbol);
 
@@ -236,7 +244,11 @@ export function BorrowScreen() {
                       )
                     ))}
                     {debtSuggestions.length > 0 && (
-                      <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
+                      <InfoTooltip
+                        {...infoTooltipProps(
+                          content.borrowScreen.infoTooltips.interestRateSuggestions,
+                        )}
+                      />
                     )}
                   </HFlex>
                 ),
@@ -270,6 +282,7 @@ export function BorrowScreen() {
               debt={debt.parsed}
               interestRate={interestRate}
               onChange={setInterestRate}
+              onModeChange={setInterestRateMode}
             />
           }
           footer={[
@@ -327,6 +340,11 @@ export function BorrowScreen() {
                   lowerHint: dnum18(0),
                   annualInterestRate: interestRate,
                   maxUpfrontFee: dnum18(maxUint256),
+                  interestRateDelegate: interestRateMode !== "strategy" ? null : [
+                    "0x0000000000000000000000000000000000000000",
+                    MIN_ANNUAL_INTEREST_RATE,
+                    MAX_ANNUAL_INTEREST_RATE,
+                  ],
                 });
                 router.push("/transactions");
               }

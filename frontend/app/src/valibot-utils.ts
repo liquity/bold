@@ -10,6 +10,13 @@ export function vAddress() {
   return v.custom<Address>(isAddress, "not a valid Ethereum address");
 }
 
+export function vHash() {
+  return v.custom<`0x${string}`>(
+    (value) => typeof value === "string" && value.startsWith("0x"),
+    "not a valid transaction hash",
+  );
+}
+
 export function vDnum() {
   return v.custom<Dnum>(isDnum, "not a Dnum");
 }
