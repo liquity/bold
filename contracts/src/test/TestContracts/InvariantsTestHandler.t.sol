@@ -2477,17 +2477,16 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         }
     }
 
-    // function _dumpSortedTroves(uint256 i) internal {
-    //     ISortedTroves sortedTroves = branches[i].sortedTroves;
-    //     ITroveManager troveManager = branches[i].troveManager;
+    // function dumpSortedTroves(uint256 i) public view {
+    //     TestDeployer.LiquityContractsDev memory c = branches[i];
 
     //     info("SortedTroves: [");
-    //     for (uint256 curr = sortedTroves.getFirst(); curr != 0; curr = sortedTroves.getNext(curr)) {
+    //     for (uint256 curr = c.sortedTroves.getFirst(); curr != 0; curr = c.sortedTroves.getNext(curr)) {
     //         info(
     //             "  Trove({owner: ",
-    //             vm.getLabel(troveManager.ownerOf(curr)),
+    //             vm.getLabel(c.troveNFT.ownerOf(curr)),
     //             ", annualInterestRate: ",
-    //             troveManager.getTroveAnnualInterestRate(curr).decimal(),
+    //             c.troveManager.getTroveAnnualInterestRate(curr).decimal(),
     //             "}),"
     //         );
     //     }
@@ -2662,7 +2661,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         if (batchManager != address(0)) r[i].batchManagers.add(batchManager);
 
         uint256 newDebt = trove.entireDebt - debtRedeemed;
-        r[i].newDesignatedVictimId = 0 < newDebt && newDebt < MIN_DEBT ? troveId : 0;
+        if (troveId == designatedVictimId[i] && newDebt == 0) r[i].newDesignatedVictimId = 0;
+        if (0 < newDebt && newDebt < MIN_DEBT) r[i].newDesignatedVictimId = troveId;
     }
 
     function _planRedemption(uint256 amount, uint256 maxIterationsPerCollateral, uint256 feePct)
