@@ -67,21 +67,21 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
         return amountIn;
     }
 
-    function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount, address _zapper) external returns (uint256) {
+    function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount) external returns (uint256) {
         ISwapRouter uniV3RouterCached = uniV3Router;
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
         _setInitialBalances(collToken, boldToken, initialBalances);
 
-        boldToken.transferFrom(_zapper, address(this), _boldAmount);
+        boldToken.transferFrom(msg.sender, address(this), _boldAmount);
         boldToken.approve(address(uniV3RouterCached), _boldAmount);
 
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams({
             tokenIn: address(boldToken),
             tokenOut: address(collToken),
             fee: fee,
-            recipient: _zapper,
+            recipient: msg.sender,
             deadline: block.timestamp,
             amountOut: _minCollAmount,
             amountInMaximum: _boldAmount,
@@ -96,21 +96,21 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
         return amountIn;
     }
 
-    function swapToBold(uint256 _collAmount, uint256 _minBoldAmount, address _zapper) external returns (uint256) {
+    function swapToBold(uint256 _collAmount, uint256 _minBoldAmount) external returns (uint256) {
         ISwapRouter uniV3RouterCached = uniV3Router;
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
         _setInitialBalances(collToken, boldToken, initialBalances);
 
-        collToken.safeTransferFrom(_zapper, address(this), _collAmount);
+        collToken.safeTransferFrom(msg.sender, address(this), _collAmount);
         collToken.approve(address(uniV3RouterCached), _collAmount);
 
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: address(collToken),
             tokenOut: address(boldToken),
             fee: fee,
-            recipient: _zapper,
+            recipient: msg.sender,
             deadline: block.timestamp,
             amountIn: _collAmount,
             amountOutMinimum: _minBoldAmount,
