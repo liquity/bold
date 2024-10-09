@@ -69,7 +69,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 ethBalanceBefore = A.balance;
         uint256 collBalanceBefore = collToken.balanceOf(A);
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount,
@@ -100,7 +100,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 boldAmount = 10000e18;
         uint256 collAmount2 = 5 ether;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount1,
@@ -133,7 +133,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 boldAmount = 10000e18;
         uint256 collAmount2 = 1 ether;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount1,
@@ -166,7 +166,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount,
@@ -215,7 +215,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount,
@@ -264,7 +264,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount1,
@@ -313,7 +313,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount1,
@@ -367,7 +367,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 ethBalanceBefore = A.balance;
         uint256 collBalanceBefore = collToken.balanceOf(A);
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount,
@@ -422,7 +422,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 collAmount = 10 ether;
         uint256 boldAmount = 10000e18;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount,
@@ -461,7 +461,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 collAmount = 10 ether;
         uint256 boldAmount = 10000e18;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount,

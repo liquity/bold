@@ -731,7 +731,7 @@ contract TestDeployer is MetadataDeployment {
         IBoldToken _boldToken,
         IWETH _weth,
         IPriceFeed _priceFeed,
-        bool mainnet
+        bool _mainnet
     )
         internal
         returns (
@@ -741,46 +741,32 @@ contract TestDeployer is MetadataDeployment {
             ILeverageZapper leverageZapperUniV3
         )
     {
+        IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
+        IExchange curveExchange = _deployCurveExchange(_collToken, _boldToken, _priceFeed, _mainnet);
+
+        // TODO: Deploy base zappers versions with Uni V3 exchange
         bool lst = _collToken != _weth;
         if (lst) {
-            gasCompZapper = new GasCompZapper(_addressesRegistry);
+            gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, curveExchange);
         } else {
-            wethZapper = new WETHZapper(_addressesRegistry);
+            wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, curveExchange);
         }
 
-        if (mainnet) {
-            (leverageZapperCurve, leverageZapperUniV3) =
-                _deployLeverageZappers(_addressesRegistry, _collToken, _boldToken, _priceFeed, lst);
+        if (_mainnet) {
+            (leverageZapperCurve, leverageZapperUniV3) = _deployLeverageZappers(
+                _addressesRegistry, _collToken, _boldToken, _priceFeed, flashLoanProvider, curveExchange, lst
+            );
         }
 
         return (gasCompZapper, wethZapper, leverageZapperCurve, leverageZapperUniV3);
     }
 
-    function _deployLeverageZappers(
-        IAddressesRegistry _addressesRegistry,
-        IERC20 _collToken,
-        IBoldToken _boldToken,
-        IPriceFeed _priceFeed,
-        bool _lst
-    ) internal returns (ILeverageZapper, ILeverageZapper) {
-        IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
+    function _deployCurveExchange(IERC20 _collToken, IBoldToken _boldToken, IPriceFeed _priceFeed, bool _mainnet)
+        internal
+        returns (IExchange)
+    {
+        if (!_mainnet) return new CurveExchange(_collToken, _boldToken, ICurvePool(address(0)), 1, 0);
 
-        ILeverageZapper leverageZapperCurve =
-            _deployCurveLeverageZapper(_addressesRegistry, _collToken, _boldToken, _priceFeed, flashLoanProvider, _lst);
-        ILeverageZapper leverageZapperUniV3 =
-            _deployUniV3LeverageZapper(_addressesRegistry, _collToken, _boldToken, _priceFeed, flashLoanProvider, _lst);
-
-        return (leverageZapperCurve, leverageZapperUniV3);
-    }
-
-    function _deployCurveLeverageZapper(
-        IAddressesRegistry _addressesRegistry,
-        IERC20 _collToken,
-        IBoldToken _boldToken,
-        IPriceFeed _priceFeed,
-        IFlashLoanProvider _flashLoanProvider,
-        bool _lst
-    ) internal returns (ILeverageZapper) {
         (uint256 price,) = _priceFeed.fetchPrice();
 
         // deploy Curve Twocrypto NG pool
@@ -804,11 +790,38 @@ contract TestDeployer is MetadataDeployment {
         );
 
         IExchange curveExchange = new CurveExchange(_collToken, _boldToken, curvePool, 1, 0);
+
+        return curveExchange;
+    }
+
+    function _deployLeverageZappers(
+        IAddressesRegistry _addressesRegistry,
+        IERC20 _collToken,
+        IBoldToken _boldToken,
+        IPriceFeed _priceFeed,
+        IFlashLoanProvider _flashLoanProvider,
+        IExchange _curveExchange,
+        bool _lst
+    ) internal returns (ILeverageZapper, ILeverageZapper) {
+        ILeverageZapper leverageZapperCurve =
+            _deployCurveLeverageZapper(_addressesRegistry, _flashLoanProvider, _curveExchange, _lst);
+        ILeverageZapper leverageZapperUniV3 =
+            _deployUniV3LeverageZapper(_addressesRegistry, _collToken, _boldToken, _priceFeed, _flashLoanProvider, _lst);
+
+        return (leverageZapperCurve, leverageZapperUniV3);
+    }
+
+    function _deployCurveLeverageZapper(
+        IAddressesRegistry _addressesRegistry,
+        IFlashLoanProvider _flashLoanProvider,
+        IExchange _curveExchange,
+        bool _lst
+    ) internal returns (ILeverageZapper) {
         ILeverageZapper leverageZapperCurve;
         if (_lst) {
-            leverageZapperCurve = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
+            leverageZapperCurve = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, _curveExchange);
         } else {
-            leverageZapperCurve = new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, curveExchange);
+            leverageZapperCurve = new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, _curveExchange);
         }
 
         return leverageZapperCurve;

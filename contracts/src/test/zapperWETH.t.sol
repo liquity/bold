@@ -61,9 +61,10 @@ contract ZapperWETHTest is DevTestSetup {
 
         uint256 ethBalanceBefore = A.balance;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
@@ -90,9 +91,10 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount = 10000e18;
         uint256 ethAmount2 = 5 ether;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
@@ -122,9 +124,10 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount = 10000e18;
         uint256 ethAmount2 = 1 ether;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
@@ -154,9 +157,10 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
@@ -202,9 +206,10 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
@@ -250,9 +255,10 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
@@ -297,9 +303,10 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
@@ -348,9 +355,10 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
@@ -398,9 +406,10 @@ contract ZapperWETHTest is DevTestSetup {
 
         uint256 ethBalanceBefore = A.balance;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
@@ -449,9 +458,10 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 ethAmount = 10 ether;
         uint256 boldAmount = 10000e18;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
@@ -487,9 +497,10 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 ethAmount = 10 ether;
         uint256 boldAmount = 10000e18;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,

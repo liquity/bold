@@ -7,35 +7,23 @@ import "../Interfaces/IWETH.sol";
 import "./WETHZapper.sol";
 import "../Dependencies/AddRemoveManagers.sol";
 import "../Dependencies/Constants.sol";
-import "./Interfaces/IFlashLoanProvider.sol";
-import "./Interfaces/IFlashLoanReceiver.sol";
-import "./Interfaces/IExchange.sol";
 import "./Interfaces/ILeverageZapper.sol";
 
 // import "forge-std/console2.sol";
 
-contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
+contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
     IPriceFeed public immutable priceFeed;
-    IFlashLoanProvider public immutable flashLoanProvider;
-    IExchange public immutable exchange;
 
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
-        WETHZapper(_addressesRegistry)
+        WETHZapper(_addressesRegistry, _flashLoanProvider, _exchange)
     {
         // Cache contracts
         IBorrowerOperations _borrowerOperations = borrowerOperations;
-        IWETH _WETH = WETH;
 
         priceFeed = _addressesRegistry.priceFeed();
 
-        flashLoanProvider = _flashLoanProvider;
-        exchange = _exchange;
-
-        // Approve Coll and Bold to exchange module
-        _WETH.approve(address(_exchange), type(uint256).max);
-        boldToken.approve(address(_exchange), type(uint256).max);
         // Approve coll to BorrowerOperations
-        _WETH.approve(address(_borrowerOperations), type(uint256).max);
+        WETH.approve(address(_borrowerOperations), type(uint256).max);
     }
 
     struct OpenLeveragedTroveVars {
@@ -69,7 +57,7 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
     function receiveFlashLoanOnOpenLeveragedTrove(
         OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
-    ) external {
+    ) external override {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 
         OpenLeveragedTroveVars memory vars;
@@ -129,6 +117,7 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
     // Callback from the flash loan provider
     function receiveFlashLoanOnLeverUpTrove(LeverUpTroveParams calldata _params, uint256 _effectiveFlashLoanAmount)
         external
+        override
     {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 
@@ -173,6 +162,7 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
     // Callback from the flash loan provider
     function receiveFlashLoanOnLeverDownTrove(LeverDownTroveParams calldata _params, uint256 _effectiveFlashLoanAmount)
         external
+        override
     {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 

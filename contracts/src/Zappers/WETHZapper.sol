@@ -10,32 +10,35 @@ import "../Interfaces/IWETH.sol";
 import "../Dependencies/AddRemoveManagers.sol";
 import "./LeftoversSweep.sol";
 import "../Dependencies/Constants.sol";
+import "./Interfaces/IFlashLoanProvider.sol";
+import "./Interfaces/IFlashLoanReceiver.sol";
+import "./Interfaces/IExchange.sol";
+import "./Interfaces/IZapper.sol";
 
-contract WETHZapper is AddRemoveManagers, LeftoversSweep {
+contract WETHZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanReceiver, IZapper {
     IBorrowerOperations public immutable borrowerOperations; // First branch (i.e., using WETH as collateral)
     ITroveManager public immutable troveManager;
     IWETH public immutable WETH;
     IBoldToken public immutable boldToken;
+    IFlashLoanProvider public immutable flashLoanProvider;
+    IExchange public immutable exchange;
 
-    constructor(IAddressesRegistry _addressesRegistry) AddRemoveManagers(_addressesRegistry) {
+    constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
+        AddRemoveManagers(_addressesRegistry)
+    {
         borrowerOperations = _addressesRegistry.borrowerOperations();
         troveManager = _addressesRegistry.troveManager();
         boldToken = _addressesRegistry.boldToken();
         WETH = _addressesRegistry.WETH();
-        require(address(WETH) == address(_addressesRegistry.collToken()), "WZ: Wrong coll branch");
-    }
 
-    struct OpenTroveParams {
-        address owner;
-        uint256 ownerIndex;
-        uint256 boldAmount;
-        uint256 upperHint;
-        uint256 lowerHint;
-        uint256 annualInterestRate;
-        uint256 maxUpfrontFee;
-        address addManager;
-        address removeManager;
-        address receiver;
+        require(address(WETH) == address(_addressesRegistry.collToken()), "WZ: Wrong coll branch");
+
+        flashLoanProvider = _flashLoanProvider;
+        exchange = _exchange;
+
+        // Approve Coll and Bold to exchange module
+        WETH.approve(address(_exchange), type(uint256).max);
+        boldToken.approve(address(_exchange), type(uint256).max);
     }
 
     struct OpenTroveVars {
@@ -254,5 +257,65 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep {
         require(success, "WZ: Sending ETH failed");
     }
 
+    function closeTroveFromCollateral(CloseTroveParams memory _params) external override {
+        address owner = troveNFT.ownerOf(_params.troveId);
+        address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner));
+        _params.receiver = receiver;
+
+        // Set initial balances to make sure there are not lefovers
+        InitialBalances memory initialBalances;
+        _setInitialBalances(WETH, boldToken, initialBalances);
+
+        // Flash loan coll
+        flashLoanProvider.makeFlashLoan(
+            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.CloseTrove, abi.encode(_params)
+        );
+
+        // return leftovers to user
+        _returnLeftovers(WETH, boldToken, initialBalances);
+    }
+
+    function receiveFlashLoanOnCloseTroveFromCollateral(
+        CloseTroveParams calldata _params,
+        uint256 _effectiveFlashLoanAmount
+    ) external {
+        require(msg.sender == address(flashLoanProvider), "WZ: Caller not FlashLoan provider");
+
+        LatestTroveData memory trove = troveManager.getLatestTroveData(_params.troveId);
+
+        // Swap Coll from flash loan to Bold, so we can repay and close trove
+        // We swap the flash loan minus the flash loan fee
+        exchange.swapToBold(_effectiveFlashLoanAmount, trove.entireDebt);
+
+        // We asked for a min of entireDebt in swapToBold call above, so we don’t check again here:
+        // uint256 receivedBoldAmount = exchange.swapToBold(_effectiveFlashLoanAmount, trove.entireDebt);
+        //require(receivedBoldAmount >= trove.entireDebt, "WZ: Not enough BOLD obtained to repay");
+
+        borrowerOperations.closeTrove(_params.troveId);
+
+        // Send coll back to return flash loan
+        WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
+
+        // Send coll left and gas compensation
+        uint256 collLeft = trove.entireColl + ETH_GAS_COMPENSATION - _params.flashLoanAmount;
+        WETH.withdraw(collLeft);
+        (bool success,) = _params.receiver.call{value: collLeft}("");
+        require(success, "WZ: Sending ETH failed");
+    }
+
     receive() external payable {}
+
+    // Unimplemented flash loan receive functions for leverage
+    function receiveFlashLoanOnOpenLeveragedTrove(
+        ILeverageZapper.OpenLeveragedTroveParams calldata _params,
+        uint256 _effectiveFlashLoanAmount
+    ) external virtual override {}
+    function receiveFlashLoanOnLeverUpTrove(
+        ILeverageZapper.LeverUpTroveParams calldata _params,
+        uint256 _effectiveFlashLoanAmount
+    ) external virtual override {}
+    function receiveFlashLoanOnLeverDownTrove(
+        ILeverageZapper.LeverDownTroveParams calldata _params,
+        uint256 _effectiveFlashLoanAmount
+    ) external virtual override {}
 }
