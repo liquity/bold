@@ -6,7 +6,6 @@ import "../Interfaces/IBorrowerOperations.sol";
 import "../Interfaces/IWETH.sol";
 import "./WETHZapper.sol";
 import "../Dependencies/AddRemoveManagers.sol";
-import "./LeftoversSweep.sol";
 import "../Dependencies/Constants.sol";
 import "./Interfaces/IFlashLoanProvider.sol";
 import "./Interfaces/IFlashLoanReceiver.sol";
@@ -15,7 +14,7 @@ import "./Interfaces/ILeverageZapper.sol";
 
 // import "forge-std/console2.sol";
 
-contract LeverageWETHZapper is WETHZapper, LeftoversSweep, IFlashLoanReceiver, ILeverageZapper {
+contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
     IPriceFeed public immutable priceFeed;
     IFlashLoanProvider public immutable flashLoanProvider;
     IExchange public immutable exchange;

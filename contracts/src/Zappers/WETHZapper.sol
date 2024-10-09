@@ -8,9 +8,10 @@ import "../Interfaces/ITroveManager.sol";
 import "../Interfaces/ITroveNFT.sol";
 import "../Interfaces/IWETH.sol";
 import "../Dependencies/AddRemoveManagers.sol";
+import "./LeftoversSweep.sol";
 import "../Dependencies/Constants.sol";
 
-contract WETHZapper is AddRemoveManagers {
+contract WETHZapper is AddRemoveManagers, LeftoversSweep {
     IBorrowerOperations public immutable borrowerOperations; // First branch (i.e., using WETH as collateral)
     ITroveManager public immutable troveManager;
     IWETH public immutable WETH;
@@ -122,10 +123,20 @@ contract WETHZapper is AddRemoveManagers {
         address owner = troveNFT.ownerOf(_troveId);
         _requireSenderIsOwnerOrAddManager(_troveId, owner);
 
+        IWETH WETHCached = WETH;
+        IBoldToken boldTokenCached = boldToken;
+
+        // Set initial balances to make sure there are not lefovers
+        InitialBalances memory initialBalances;
+        _setInitialBalances(WETHCached, boldTokenCached, initialBalances);
+
         // Pull Bold
-        boldToken.transferFrom(msg.sender, address(this), _boldAmount);
+        boldTokenCached.transferFrom(msg.sender, address(this), _boldAmount);
 
         borrowerOperations.repayBold(_troveId, _boldAmount);
+
+        // return leftovers to user
+        _returnLeftovers(WETHCached, boldTokenCached, initialBalances);
     }
 
     function adjustTroveWithRawETH(
@@ -136,11 +147,12 @@ contract WETHZapper is AddRemoveManagers {
         bool _isDebtIncrease,
         uint256 _maxUpfrontFee
     ) external payable {
-        address payable receiver = _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
+        InitialBalances memory initialBalances;
+        address payable receiver = _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, initialBalances);
         borrowerOperations.adjustTrove(
             _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxUpfrontFee
         );
-        _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver);
+        _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances);
     }
 
     function adjustUnredeemableTroveWithRawETH(
@@ -153,11 +165,12 @@ contract WETHZapper is AddRemoveManagers {
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) external {
-        address payable receiver = _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
+        InitialBalances memory initialBalances;
+        address payable receiver = _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, initialBalances);
         borrowerOperations.adjustUnredeemableTrove(
             _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _upperHint, _lowerHint, _maxUpfrontFee
         );
-        _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver);
+        _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances);
     }
 
     function _adjustTrovePre(
@@ -165,7 +178,8 @@ contract WETHZapper is AddRemoveManagers {
         uint256 _collChange,
         bool _isCollIncrease,
         uint256 _boldChange,
-        bool _isDebtIncrease
+        bool _isDebtIncrease,
+        InitialBalances memory _initialBalances
     ) internal returns (address payable) {
         if (_isCollIncrease) {
             require(_collChange == msg.value, "WZ: Wrong coll amount");
@@ -173,6 +187,9 @@ contract WETHZapper is AddRemoveManagers {
             require(msg.value == 0, "WZ: Withdrawing coll, no ETH should be received");
         }
         require(!_isDebtIncrease || _boldChange > 0, "WZ: Increase bold amount should not be zero");
+
+        IWETH WETHCached = WETH;
+        IBoldToken boldTokenCached = boldToken;
 
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(owner);
@@ -185,9 +202,11 @@ contract WETHZapper is AddRemoveManagers {
             _requireSenderIsOwnerOrAddManager(_troveId, owner);
         }
 
+        // Set initial balances to make sure there are not lefovers
+        _setInitialBalances(WETHCached, boldTokenCached, _initialBalances);
+
         // ETH -> WETH
         if (_isCollIncrease) {
-            IWETH WETHCached = WETH;
             WETHCached.deposit{value: _collChange}();
             WETHCached.approve(address(borrowerOperations), _collChange);
         }
@@ -195,7 +214,7 @@ contract WETHZapper is AddRemoveManagers {
         // TODO: version with Permit
         // Pull Bold
         if (!_isDebtIncrease) {
-            boldToken.transferFrom(msg.sender, address(this), _boldChange);
+            boldTokenCached.transferFrom(msg.sender, address(this), _boldChange);
         }
 
         return receiver;
@@ -206,18 +225,25 @@ contract WETHZapper is AddRemoveManagers {
         bool _isCollIncrease,
         uint256 _boldChange,
         bool _isDebtIncrease,
-        address payable _receiver
+        address payable _receiver,
+        InitialBalances memory _initialBalances
     ) internal {
+        IWETH WETHCached = WETH;
+        IBoldToken boldTokenCached = boldToken;
+
         // WETH -> ETH
         if (!_isCollIncrease) {
-            WETH.withdraw(_collChange);
+            WETHCached.withdraw(_collChange);
             (bool success,) = _receiver.call{value: _collChange}("");
             require(success, "WZ: Sending ETH failed");
         }
         // Send Bold
         if (_isDebtIncrease) {
-            boldToken.transfer(_receiver, _boldChange);
+            boldTokenCached.transfer(_receiver, _boldChange);
         }
+
+        // return leftovers to user
+        _returnLeftovers(WETHCached, boldTokenCached, _initialBalances);
     }
 
     function closeTroveToRawETH(uint256 _troveId) external {

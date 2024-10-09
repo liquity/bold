@@ -8,7 +8,6 @@ import "../Interfaces/IBorrowerOperations.sol";
 import "../Interfaces/IWETH.sol";
 import "./GasCompZapper.sol";
 import "../Dependencies/AddRemoveManagers.sol";
-import "./LeftoversSweep.sol";
 import "../Dependencies/Constants.sol";
 import "./Interfaces/IFlashLoanProvider.sol";
 import "./Interfaces/IFlashLoanReceiver.sol";
@@ -17,7 +16,7 @@ import "./Interfaces/ILeverageZapper.sol";
 
 // import "forge-std/console2.sol";
 
-contract LeverageLSTZapper is GasCompZapper, LeftoversSweep, IFlashLoanReceiver, ILeverageZapper {
+contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper {
     using SafeERC20 for IERC20;
 
     IPriceFeed public immutable priceFeed;
