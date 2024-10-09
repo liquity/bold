@@ -32,3 +32,5 @@ testMatrix.json
 
 # Invariant test counterexamples
 /counterexamples
+/counterexamples-fixed
+/counterexamples-assume
