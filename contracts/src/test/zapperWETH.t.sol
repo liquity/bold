@@ -460,7 +460,7 @@ contract ZapperWETHTest is DevTestSetup {
             addManager: address(0),
             removeManager: address(0),
             receiver: address(0)
-            });
+        });
         vm.startPrank(A);
         uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
@@ -498,7 +498,7 @@ contract ZapperWETHTest is DevTestSetup {
             addManager: address(0),
             removeManager: address(0),
             receiver: address(0)
-            });
+        });
         vm.startPrank(A);
         uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();

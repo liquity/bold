@@ -13,13 +13,18 @@ contract LeftoversSweep {
         address sender;
     }
 
-    function _setInitialBalances(IERC20 _collToken, IBoldToken _boldToken, InitialBalances memory initialBalances) internal view {
+    function _setInitialBalances(IERC20 _collToken, IBoldToken _boldToken, InitialBalances memory initialBalances)
+        internal
+        view
+    {
         initialBalances.boldBalance = _boldToken.balanceOf(address(this));
         initialBalances.collBalance = _collToken.balanceOf(address(this));
         initialBalances.sender = msg.sender;
     }
 
-    function _returnLeftovers(IERC20 _collToken, IBoldToken _boldToken, InitialBalances memory initialBalances) internal {
+    function _returnLeftovers(IERC20 _collToken, IBoldToken _boldToken, InitialBalances memory initialBalances)
+        internal
+    {
         uint256 currentCollBalance = _collToken.balanceOf(address(this));
         if (currentCollBalance > initialBalances.collBalance) {
             _collToken.transfer(initialBalances.sender, currentCollBalance - initialBalances.collBalance);

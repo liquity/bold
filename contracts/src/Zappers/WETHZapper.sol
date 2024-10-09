@@ -145,7 +145,8 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep {
         uint256 _maxUpfrontFee
     ) external payable {
         InitialBalances memory initialBalances;
-        address payable receiver = _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, initialBalances);
+        address payable receiver =
+            _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, initialBalances);
         borrowerOperations.adjustTrove(
             _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxUpfrontFee
         );
@@ -163,7 +164,8 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep {
         uint256 _maxUpfrontFee
     ) external {
         InitialBalances memory initialBalances;
-        address payable receiver = _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, initialBalances);
+        address payable receiver =
+            _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, initialBalances);
         borrowerOperations.adjustUnredeemableTrove(
             _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _upperHint, _lowerHint, _maxUpfrontFee
         );
