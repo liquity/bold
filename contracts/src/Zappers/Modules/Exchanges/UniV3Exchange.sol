@@ -69,18 +69,16 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
 
     function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount, address _zapper) external returns (uint256) {
         ISwapRouter uniV3RouterCached = uniV3Router;
-        IBoldToken boldTokenCached = boldToken;
-        IERC20 collTokenCached = collToken;
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collTokenCached, boldTokenCached, initialBalances);
+        _setInitialBalances(collToken, boldToken, initialBalances);
 
-        boldTokenCached.transferFrom(_zapper, address(this), _boldAmount);
-        boldTokenCached.approve(address(uniV3RouterCached), _boldAmount);
+        boldToken.transferFrom(_zapper, address(this), _boldAmount);
+        boldToken.approve(address(uniV3RouterCached), _boldAmount);
 
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams({
-            tokenIn: address(boldTokenCached),
+            tokenIn: address(boldToken),
             tokenOut: address(collToken),
             fee: fee,
             recipient: _zapper,
@@ -93,25 +91,23 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
         uint256 amountIn = uniV3RouterCached.exactOutputSingle(params);
 
         // return leftovers to user
-        _returnLeftovers(collTokenCached, boldTokenCached, initialBalances);
+        _returnLeftovers(collToken, boldToken, initialBalances);
 
         return amountIn;
     }
 
     function swapToBold(uint256 _collAmount, uint256 _minBoldAmount, address _zapper) external returns (uint256) {
         ISwapRouter uniV3RouterCached = uniV3Router;
-        IBoldToken boldTokenCached = boldToken;
-        IERC20 collTokenCached = collToken;
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collTokenCached, boldTokenCached, initialBalances);
+        _setInitialBalances(collToken, boldToken, initialBalances);
 
-        collTokenCached.safeTransferFrom(_zapper, address(this), _collAmount);
-        collTokenCached.approve(address(uniV3RouterCached), _collAmount);
+        collToken.safeTransferFrom(_zapper, address(this), _collAmount);
+        collToken.approve(address(uniV3RouterCached), _collAmount);
 
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-            tokenIn: address(collTokenCached),
+            tokenIn: address(collToken),
             tokenOut: address(boldToken),
             fee: fee,
             recipient: _zapper,
@@ -124,7 +120,7 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
         uint256 amountOut = uniV3RouterCached.exactInputSingle(params);
 
         // return leftovers to user
-        _returnLeftovers(collTokenCached, boldTokenCached, initialBalances);
+        _returnLeftovers(collToken, boldToken, initialBalances);
 
         return amountOut;
     }
@@ -132,16 +128,14 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {
         _requireCallerIsUniV3Router();
 
-        IBoldToken boldTokenCached = boldToken;
-        IERC20 collTokenCached = collToken;
         IERC20 token0;
         IERC20 token1;
-        if (_zeroForOne(boldTokenCached, collTokenCached)) {
-            token0 = boldTokenCached;
-            token1 = collTokenCached;
+        if (_zeroForOne(boldToken, collToken)) {
+            token0 = boldToken;
+            token1 = collToken;
         } else {
-            token0 = collTokenCached;
-            token1 = boldTokenCached;
+            token0 = collToken;
+            token1 = boldToken;
         }
 
         if (amount0Delta > 0) {

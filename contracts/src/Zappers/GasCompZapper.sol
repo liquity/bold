@@ -104,9 +104,8 @@ contract GasCompZapper is AddRemoveManagers, LeftoversSweep {
         IBorrowerOperations borrowerOperationsCached = borrowerOperations;
 
         // Pull and approve coll
-        IERC20 collTokenCached = collToken;
-        collTokenCached.safeTransferFrom(msg.sender, address(this), _amount);
-        collTokenCached.approve(address(borrowerOperationsCached), _amount);
+        collToken.safeTransferFrom(msg.sender, address(this), _amount);
+        collToken.approve(address(borrowerOperationsCached), _amount);
 
         borrowerOperationsCached.addColl(_troveId, _amount);
     }
@@ -135,20 +134,17 @@ contract GasCompZapper is AddRemoveManagers, LeftoversSweep {
         address owner = troveNFT.ownerOf(_troveId);
         _requireSenderIsOwnerOrAddManager(_troveId, owner);
 
-        IERC20 collTokenCached = collToken;
-        IBoldToken boldTokenCached = boldToken;
-
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collTokenCached, boldTokenCached, initialBalances);
+        _setInitialBalances(collToken, boldToken, initialBalances);
 
         // Pull Bold
-        boldTokenCached.transferFrom(msg.sender, address(this), _boldAmount);
+        boldToken.transferFrom(msg.sender, address(this), _boldAmount);
 
         borrowerOperations.repayBold(_troveId, _boldAmount);
 
         // return leftovers to user
-        _returnLeftovers(collTokenCached, boldTokenCached, initialBalances);
+        _returnLeftovers(collToken, boldToken, initialBalances);
     }
 
     function adjustTroveWithRawETH(
@@ -193,9 +189,6 @@ contract GasCompZapper is AddRemoveManagers, LeftoversSweep {
         bool _isDebtIncrease,
         InitialBalances memory _initialBalances
     ) internal returns (address) {
-        IERC20 collTokenCached = collToken;
-        IBoldToken boldTokenCached = boldToken;
-
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = owner;
 
@@ -208,18 +201,18 @@ contract GasCompZapper is AddRemoveManagers, LeftoversSweep {
         }
 
         // Set initial balances to make sure there are not lefovers
-        _setInitialBalances(collTokenCached, boldTokenCached, _initialBalances);
+        _setInitialBalances(collToken, boldToken, _initialBalances);
 
         // Pull and approve coll
         if (_isCollIncrease) {
-            collTokenCached.safeTransferFrom(msg.sender, address(this), _collChange);
-            collTokenCached.approve(address(borrowerOperations), _collChange);
+            collToken.safeTransferFrom(msg.sender, address(this), _collChange);
+            collToken.approve(address(borrowerOperations), _collChange);
         }
 
         // TODO: version with Permit
         // Pull Bold
         if (!_isDebtIncrease) {
-            boldTokenCached.transferFrom(msg.sender, address(this), _boldChange);
+            boldToken.transferFrom(msg.sender, address(this), _boldChange);
         }
 
         return receiver;
@@ -233,21 +226,18 @@ contract GasCompZapper is AddRemoveManagers, LeftoversSweep {
         address _receiver,
         InitialBalances memory _initialBalances
     ) internal {
-        IERC20 collTokenCached = collToken;
-        IBoldToken boldTokenCached = boldToken;
-
         // Send coll left
         if (!_isCollIncrease) {
-            collTokenCached.safeTransfer(_receiver, _collChange);
+            collToken.safeTransfer(_receiver, _collChange);
         }
 
         // Send Bold
         if (_isDebtIncrease) {
-            boldTokenCached.transfer(_receiver, _boldChange);
+            boldToken.transfer(_receiver, _boldChange);
         }
 
         // return leftovers to user
-        _returnLeftovers(collTokenCached, boldTokenCached, _initialBalances);
+        _returnLeftovers(collToken, boldToken, _initialBalances);
     }
 
     function closeTroveToRawETH(uint256 _troveId) external {

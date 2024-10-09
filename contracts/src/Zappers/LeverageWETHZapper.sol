@@ -49,23 +49,20 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
     function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable {
         require(msg.value == ETH_GAS_COMPENSATION + _params.collAmount, "LZ: Wrong amount of ETH");
 
-        IWETH WETHCached = WETH;
-        IBoldToken boldTokenCached = boldToken;
-
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(WETHCached, boldTokenCached, initialBalances);
+        _setInitialBalances(WETH, boldToken, initialBalances);
 
         // Convert ETH to WETH
         WETH.deposit{value: msg.value}();
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            WETHCached, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(_params)
+            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(_params)
         );
 
         // return leftovers to user
-        _returnLeftovers(WETHCached, boldTokenCached, initialBalances);
+        _returnLeftovers(WETH, boldToken, initialBalances);
     }
 
     // Callback from the flash loan provider
@@ -116,20 +113,17 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
         address owner = troveNFT.ownerOf(_params.troveId);
         _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
 
-        IWETH WETHCached = WETH;
-        IBoldToken boldTokenCached = boldToken;
-
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(WETHCached, boldTokenCached, initialBalances);
+        _setInitialBalances(WETH, boldToken, initialBalances);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            WETHCached, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverUpTrove, abi.encode(_params)
+            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverUpTrove, abi.encode(_params)
         );
 
         // return leftovers to user
-        _returnLeftovers(WETHCached, boldTokenCached, initialBalances);
+        _returnLeftovers(WETH, boldToken, initialBalances);
     }
 
     // Callback from the flash loan provider
@@ -155,30 +149,25 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
         // The frontend should calculate in advance the `_params.boldAmount` needed for this to work
         exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount, address(this));
 
-        IWETH WETHCached = WETH;
-
         // Send coll back to return flash loan
-        WETHCached.transfer(address(flashLoanProvider), _params.flashLoanAmount);
+        WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
     }
 
     function leverDownTrove(LeverDownTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
         _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
 
-        IWETH WETHCached = WETH;
-        IBoldToken boldTokenCached = boldToken;
-
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(WETHCached, boldTokenCached, initialBalances);
+        _setInitialBalances(WETH, boldToken, initialBalances);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            WETHCached, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverDownTrove, abi.encode(_params)
+            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverDownTrove, abi.encode(_params)
         );
 
         // return leftovers to user
-        _returnLeftovers(WETHCached, boldTokenCached, initialBalances);
+        _returnLeftovers(WETH, boldToken, initialBalances);
     }
 
     // Callback from the flash loan provider
@@ -204,10 +193,8 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
             0
         );
 
-        IWETH WETHCached = WETH;
-
         // Send coll back to return flash loan
-        WETHCached.transfer(address(flashLoanProvider), _params.flashLoanAmount);
+        WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
     }
 
     // As formulas are symmetrical, it can be used in both ways

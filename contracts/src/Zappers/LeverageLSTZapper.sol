@@ -55,26 +55,23 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
     function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable {
         require(msg.value == ETH_GAS_COMPENSATION, "LZ: Wrong ETH");
 
-        IERC20 collTokenCached = collToken;
-        IBoldToken boldTokenCached = boldToken;
-
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collTokenCached, boldTokenCached, initialBalances);
+        _setInitialBalances(collToken, boldToken, initialBalances);
 
         // Convert ETH to WETH
         WETH.deposit{value: msg.value}();
 
         // Pull own coll
-        collTokenCached.safeTransferFrom(msg.sender, address(this), _params.collAmount);
+        collToken.safeTransferFrom(msg.sender, address(this), _params.collAmount);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            collTokenCached, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(_params)
+            collToken, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(_params)
         );
 
         // return leftovers to user
-        _returnLeftovers(collTokenCached, boldTokenCached, initialBalances);
+        _returnLeftovers(collToken, boldToken, initialBalances);
     }
 
     // Callback from the flash loan provider
@@ -123,20 +120,17 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         address owner = troveNFT.ownerOf(_params.troveId);
         _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
 
-        IERC20 collTokenCached = collToken;
-        IBoldToken boldTokenCached = boldToken;
-
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collTokenCached, boldTokenCached, initialBalances);
+        _setInitialBalances(collToken, boldToken, initialBalances);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            collTokenCached, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverUpTrove, abi.encode(_params)
+            collToken, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverUpTrove, abi.encode(_params)
         );
 
         // return leftovers to user
-        _returnLeftovers(collTokenCached, boldTokenCached, initialBalances);
+        _returnLeftovers(collToken, boldToken, initialBalances);
     }
 
     // Callback from the flash loan provider
@@ -144,8 +138,6 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         external
     {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
-
-        IERC20 collTokenCached = collToken;
 
         // Adjust trove
         // With the received coll from flash loan, we increase both the trove coll and debt
@@ -165,27 +157,24 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount, address(this));
 
         // Send coll back to return flash loan
-        collTokenCached.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
+        collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
     }
 
     function leverDownTrove(LeverDownTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
         _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
 
-        IERC20 collTokenCached = collToken;
-        IBoldToken boldTokenCached = boldToken;
-
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collTokenCached, boldTokenCached, initialBalances);
+        _setInitialBalances(collToken, boldToken, initialBalances);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            collTokenCached, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverDownTrove, abi.encode(_params)
+            collToken, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverDownTrove, abi.encode(_params)
         );
 
         // return leftovers to user
-        _returnLeftovers(collTokenCached, boldTokenCached, initialBalances);
+        _returnLeftovers(collToken, boldToken, initialBalances);
     }
 
     // Callback from the flash loan provider
@@ -193,8 +182,6 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         external
     {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
-
-        IERC20 collTokenCached = collToken;
 
         // Swap Coll from flash loan to Bold, so we can repay and downsize trove
         // We swap the flash loan minus the flash loan fee
@@ -214,7 +201,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         );
 
         // Send coll back to return flash loan
-        collTokenCached.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
+        collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
     }
 
     // As formulas are symmetrical, it can be used in both ways
