@@ -28,6 +28,5 @@ contract LeftoversSweep {
         if (currentBoldBalance > initialBalances.boldBalance) {
             _boldToken.transfer(initialBalances.sender, currentBoldBalance - initialBalances.boldBalance);
         }
-        initialBalances.sender = address(0);
     }
 }
