@@ -5,6 +5,7 @@ pragma solidity ^0.8.18;
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
+import "../../LeftoversSweep.sol";
 import "../../../Interfaces/IBoldToken.sol";
 import "./UniswapV3/ISwapRouter.sol";
 import "./UniswapV3/IQuoterV2.sol";
@@ -14,7 +15,7 @@ import {DECIMAL_PRECISION} from "../../../Dependencies/Constants.sol";
 
 // import "forge-std/console2.sol";
 
-contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
+contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable collToken;
@@ -22,10 +23,6 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
     uint24 public immutable fee;
     ISwapRouter public immutable uniV3Router;
     IQuoterV2 public immutable uniV3Quoter;
-
-    uint256 private initialBoldBalance;
-    uint256 private initialCollBalance;
-    address private initialSender;
 
     // From library TickMath
     /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
@@ -76,7 +73,8 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
         IERC20 collTokenCached = collToken;
 
         // Set initial balances to make sure there are not lefovers
-        _setInitialBalances(collTokenCached, boldTokenCached);
+        InitialBalances memory initialBalances;
+        _setInitialBalances(collTokenCached, boldTokenCached, initialBalances);
 
         boldTokenCached.transferFrom(_zapper, address(this), _boldAmount);
         boldTokenCached.approve(address(uniV3RouterCached), _boldAmount);
@@ -92,7 +90,12 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
             sqrtPriceLimitX96: 0 // See: https://ethereum.stackexchange.com/a/156018/9205
         });
 
-        return uniV3RouterCached.exactOutputSingle(params);
+        uint256 amountIn = uniV3RouterCached.exactOutputSingle(params);
+
+        // return leftovers to user
+        _returnLeftovers(collTokenCached, boldTokenCached, initialBalances);
+
+        return amountIn;
     }
 
     function swapToBold(uint256 _collAmount, uint256 _minBoldAmount, address _zapper) external returns (uint256) {
@@ -101,7 +104,8 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
         IERC20 collTokenCached = collToken;
 
         // Set initial balances to make sure there are not lefovers
-        _setInitialBalances(collTokenCached, boldTokenCached);
+        InitialBalances memory initialBalances;
+        _setInitialBalances(collTokenCached, boldTokenCached, initialBalances);
 
         collTokenCached.safeTransferFrom(_zapper, address(this), _collAmount);
         collTokenCached.approve(address(uniV3RouterCached), _collAmount);
@@ -117,7 +121,12 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
             sqrtPriceLimitX96: 0 // See: https://ethereum.stackexchange.com/a/156018/9205
         });
 
-        return uniV3RouterCached.exactInputSingle(params);
+        uint256 amountOut = uniV3RouterCached.exactInputSingle(params);
+
+        // return leftovers to user
+        _returnLeftovers(collTokenCached, boldTokenCached, initialBalances);
+
+        return amountOut;
     }
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {
@@ -141,23 +150,6 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
         if (amount1Delta > 0) {
             token1.transfer(msg.sender, uint256(amount1Delta));
         }
-
-        // return leftovers
-        uint256 currentCollBalance = collTokenCached.balanceOf(address(this));
-        if (currentCollBalance > initialCollBalance) {
-            collTokenCached.transfer(initialSender, currentCollBalance - initialCollBalance);
-        }
-        uint256 currentBoldBalance = boldTokenCached.balanceOf(address(this));
-        if (currentBoldBalance > initialBoldBalance) {
-            boldTokenCached.transfer(initialSender, currentBoldBalance - initialBoldBalance);
-        }
-        initialSender = address(0);
-    }
-
-    function _setInitialBalances(IERC20 _collToken, IBoldToken _boldToken) internal {
-        initialBoldBalance = _boldToken.balanceOf(address(this));
-        initialCollBalance = _collToken.balanceOf(address(this));
-        initialSender = msg.sender;
     }
 
     function priceToSqrtPrice(IBoldToken _boldToken, IERC20 _collToken, uint256 _price) public pure returns (uint160) {
