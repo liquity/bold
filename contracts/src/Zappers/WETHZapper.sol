@@ -251,6 +251,9 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep {
             (bool success,) = _receiver.call{value: ethToSend}("");
             require(success, "WZ: Sending ETH failed");
         }
+        // TODO: remove before deployment!!
+        assert(address(this).balance == 0);
+        assert(WETH.balanceOf(address(this)) == 0);
     }
 
     function closeTroveToRawETH(uint256 _troveId) external {
