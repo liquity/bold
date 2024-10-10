@@ -191,6 +191,8 @@ contract GasCompZapper is AddRemoveManagers, LeftoversSweep {
         bool _isDebtIncrease,
         InitialBalances memory _initialBalances
     ) internal returns (address) {
+        require(!_isDebtIncrease || _boldChange > 0, "GCZ: Increase bold amount should not be zero");
+
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = owner;
 
