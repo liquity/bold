@@ -9,13 +9,12 @@ import "../../LeftoversSweep.sol";
 import "../../../Interfaces/IBoldToken.sol";
 import "./UniswapV3/ISwapRouter.sol";
 import "./UniswapV3/IQuoterV2.sol";
-import "./UniswapV3/IUniswapV3SwapCallback.sol";
 import "../../Interfaces/IExchange.sol";
 import {DECIMAL_PRECISION} from "../../../Dependencies/Constants.sol";
 
 // import "forge-std/console2.sol";
 
-contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
+contract UniV3Exchange is LeftoversSweep, IExchange {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable collToken;
@@ -125,27 +124,6 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
         return amountOut;
     }
 
-    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {
-        _requireCallerIsUniV3Router();
-
-        IERC20 token0;
-        IERC20 token1;
-        if (_zeroForOne(boldToken, collToken)) {
-            token0 = boldToken;
-            token1 = collToken;
-        } else {
-            token0 = collToken;
-            token1 = boldToken;
-        }
-
-        if (amount0Delta > 0) {
-            token0.transfer(msg.sender, uint256(amount0Delta));
-        }
-        if (amount1Delta > 0) {
-            token1.transfer(msg.sender, uint256(amount1Delta));
-        }
-    }
-
     function priceToSqrtPrice(IBoldToken _boldToken, IERC20 _collToken, uint256 _price) public pure returns (uint160) {
         // inverse price if Bold goes first
         uint256 price = _zeroForOne(_boldToken, _collToken) ? DECIMAL_PRECISION * DECIMAL_PRECISION / _price : _price;
@@ -155,9 +133,5 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
     // See: https://github.com/Uniswap/v3-periphery/blob/main/contracts/lens/QuoterV2.sol#L207C9-L207C60
     function _zeroForOne(IBoldToken _boldToken, IERC20 _collToken) internal pure returns (bool) {
         return address(_boldToken) < address(_collToken);
-    }
-
-    function _requireCallerIsUniV3Router() internal view {
-        require(msg.sender == address(uniV3Router), "Not UniV3Router");
     }
 }
