@@ -21,8 +21,8 @@ import {
   CHAIN_NAME,
   CHAIN_RPC_URL,
   CONTRACT_BOLD_TOKEN,
-  LQTY_TOKEN,
-  LUSD_TOKEN,
+  CONTRACT_LQTY_TOKEN,
+  CONTRACT_LUSD_TOKEN,
   WALLET_CONNECT_PROJECT_ID,
 } from "@/src/env";
 import { noop } from "@/src/utils";
@@ -103,8 +103,8 @@ export function useBalance(
       },
     )
     .with("BOLD", () => CONTRACT_BOLD_TOKEN)
-    .with("LQTY", () => LQTY_TOKEN)
-    .with("LUSD", () => LUSD_TOKEN)
+    .with("LQTY", () => CONTRACT_LQTY_TOKEN)
+    .with("LUSD", () => CONTRACT_LUSD_TOKEN)
     .otherwise(() => null);
 
   const tokenBalance = useReadContract({
@@ -154,7 +154,7 @@ export function useWagmiConfig() {
       contractMulticall: CHAIN_CONTRACT_MULTICALL,
     });
     return getDefaultConfig({
-      appName: "Liquity v2",
+      appName: "Liquity V2",
       projectId: WALLET_CONNECT_PROJECT_ID,
       chains: [chain],
       transports: {

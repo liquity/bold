@@ -41,21 +41,11 @@ type Step = "closeLoanPosition" | "approveBold";
 
 const stepNames: Record<Step, string> = {
   approveBold: "Approve BOLD",
-  closeLoanPosition: "Close Position",
+  closeLoanPosition: "Close loan",
 };
 
 export const closeLoanPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
-  subtitle: (
-    <div
-      style={{
-        textAlign: "center",
-      }}
-    >
-      You are repaying your debt and closing this position.<br />
-      The deposit will be returned to your wallet
-    </div>
-  ),
 
   Summary({ flow }) {
     const loan = useLoanById(flow.request.prefixedTroveId);

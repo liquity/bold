@@ -16,10 +16,10 @@ export const StrongCard = forwardRef<
   HTMLAnchorElement,
   {
     contextual?: ReactNode;
-    heading: ElementOrString | ElementOrString[];
+    heading?: ElementOrString | ElementOrString[];
     loading?: boolean;
     main?: Cell;
-    secondary: ReactNode;
+    secondary?: ReactNode;
   } & HTMLAttributes<HTMLAnchorElement>
 >(function StrongCard({
   contextual,

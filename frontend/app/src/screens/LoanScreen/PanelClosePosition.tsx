@@ -157,7 +157,15 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
           label="You reclaim"
           footer={[[
             <Field.FooterInfo
-              label={`$${fmtnum(dn.mul(loan.deposit, collPrice), 2)}`}
+              label={`$${
+                fmtnum(
+                  dn.mul(
+                    collToReclaim,
+                    collPrice,
+                  ),
+                  2,
+                )
+              }`}
               value={null}
             />,
             null,

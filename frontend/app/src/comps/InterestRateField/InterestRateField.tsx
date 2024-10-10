@@ -15,6 +15,7 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRedemptionRisk } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
+import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
@@ -38,34 +39,69 @@ import { match } from "ts-pattern";
 
 import icLogo from "./ic-logo.svg";
 
-const MODES = [{
-  label: "Manually",
-  secondary: "Set your interest rate manually and update it anytime.",
-}, {
-  label: "By Internet Computer (ICP) strategy",
-  secondary: "Choose a smart contract strategy on the decentralized Internet Computer (ICP) network.",
-}, {
-  label: "By Delegation",
-  secondary: `
-    Delegates manage your interest rate, optimizing costs and preventing redemption.
-    They charge a fee for this.
-  `,
-}] as const;
+export type DelegateMode = "manual" | "strategy" | "delegate";
+
+const DELEGATE_MODES: Array<{
+  label: string;
+  secondary: string;
+  type: DelegateMode;
+}> = [
+  {
+    label: "Manual",
+    secondary: "The interest rate is set manually and can be updated at any time.",
+    type: "manual",
+  },
+  {
+    label: "Automated (ICP)",
+    secondary:
+      "The interest rate is set and updated by an automated strategy running on the decentralized Internet Computer (ICP) network."
+      + " There is a small additional fee for these strategies.",
+    type: "strategy",
+  },
+  // {
+  //   label: "Delegated",
+  //   secondary: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
+  // },
+] as const;
+
+const IC_STRATEGY_MODAL = {
+  title: (
+    <>
+      Automated Strategies (<abbr title="Internet Computer">ICP</abbr>)
+    </>
+  ),
+  intro: (
+    <>
+      These strategies are run on the Internet Computer (ICP). They are automated and decentralized. More strategies
+      will be added over time.
+    </>
+  ),
+};
+
+const DELEGATES_MODAL = {
+  title: "Set a delegate",
+  intro: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
+};
 
 export function InterestRateField({
   debt,
   interestRate,
   onChange,
+  onModeChange = noop,
 }: {
   debt: Dnum | null;
   interestRate: Dnum | null;
   onChange: (interestRate: Dnum) => void;
+  onModeChange?: (mode: DelegateMode) => void;
 }) {
-  // 0: manually, 1: by strategy, 2: by delegation
-  const [selectedMode, setSelectedMode] = useState<0 | 1 | 2>(0);
-
   const [delegate, setDelegate] = useState<null | { id: string }>(null);
-  const [delegatePicker, setDelegatePicker] = useState<null | "strategy" | "delegate">(null);
+  const [delegatePicker, setDelegatePicker] = useState<"strategy" | "delegate" | null>(null);
+
+  const [mode, setMode_] = useState<DelegateMode>("manual");
+  const setMode = (value: DelegateMode) => {
+    setMode_(value);
+    onModeChange(value);
+  };
 
   const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
     defaultValue: interestRate
@@ -100,8 +136,9 @@ export function InterestRateField({
       <InputField
         labelHeight={32}
         labelSpacing={24}
-        contextual={match(selectedMode)
-          .with(0, () => (
+        disabled={mode !== "manual"}
+        contextual={match(mode)
+          .with("manual", () => (
             <div
               style={{
                 display: "flex",
@@ -133,7 +170,7 @@ export function InterestRateField({
               />
             </div>
           ))
-          .with(1, () => (
+          .with("strategy", () => (
             <TextButton
               size="large"
               label={delegate ? IC_STRATEGIES.find(({ id }) => id === delegate.id)?.name : "Choose strategy"}
@@ -142,7 +179,7 @@ export function InterestRateField({
               }}
             />
           ))
-          .with(2, () => (
+          .with("delegate", () => (
             <TextButton
               size="large"
               label={delegate ? DELEGATES.find(({ id }) => id === delegate.id)?.name : "Choose delegate"}
@@ -153,19 +190,18 @@ export function InterestRateField({
           ))
           .exhaustive()}
         label={{
-          start: "Set interest rate",
+          start: "Interest rate",
           end: (
             <div>
               <Dropdown
-                items={MODES}
+                items={DELEGATE_MODES}
                 menuWidth={300}
-                onSelect={(mode) => {
-                  if (mode === 0 || mode === 1 || mode === 2) {
-                    setSelectedMode(mode);
-                    setDelegate(null);
-                  }
+                menuPlacement="end"
+                onSelect={(index) => {
+                  setMode(DELEGATE_MODES[index].type);
+                  setDelegate(null);
                 }}
-                selected={selectedMode}
+                selected={DELEGATE_MODES.findIndex(({ type }) => type === mode)}
                 size="small"
               />
             </div>
@@ -176,16 +212,18 @@ export function InterestRateField({
           start: (
             <HFlex gap={4}>
               <div>
-                {boldInterestPerYear
+                {boldInterestPerYear && mode === "manual"
+                    || (mode === "strategy" && delegate)
+                  // || (mode === 'delegate' && delegate)
                   ? fmtnum(boldInterestPerYear, 2)
                   : "−"} BOLD / year
               </div>
-              <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateBoldPerYear)} />
+              <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
             </HFlex>
           ),
           end: (
             <span>
-              <span>{"Before you "}</span>
+              <span>{"Redeemable before you: "}</span>
               <span
                 className={css({
                   color: "content",
@@ -196,9 +234,13 @@ export function InterestRateField({
                     fontVariantNumeric: "tabular-nums",
                   })}
                 >
-                  {fmtnum(boldRedeemableInFront, "compact")}
+                  {mode === "manual"
+                      || (mode === "strategy" && delegate !== null)
+                    // || (mode === "delegate" && delegate !== null)
+                    ? fmtnum(boldRedeemableInFront, "compact")
+                    : "−"}
                 </span>
-                <span>{" BOLD to redeem"}</span>
+                <span>{" BOLD"}</span>
               </span>
             </span>
           ),
@@ -206,13 +248,19 @@ export function InterestRateField({
         {...fieldValue.inputFieldProps}
         value={
           // no delegate selected yet
-          (selectedMode === 1 || selectedMode === 2) && delegate === null
+          (
+              mode === "strategy"
+              // || mode === "delegate"
+            ) && delegate === null
             ? ""
             : fieldValue.value
         }
         valueUnfocused={
           // no delegate selected yet
-          (selectedMode === 1 || selectedMode === 2) && delegate === null
+          (
+              mode === "strategy"
+              // || mode === "delegate"
+            ) && delegate === null
             ? null
             : (!fieldValue.isEmpty && fieldValue.parsed && interestRate)
             ? (
@@ -250,14 +298,15 @@ export function InterestRateField({
         }}
         title={
           <div
-            title="Internet Computer Strategies"
             className={css({
               display: "flex",
               alignItems: "center",
               gap: 10,
             })}
           >
-            <div>IC Strategies</div>
+            <div>
+              {IC_STRATEGY_MODAL.title}
+            </div>
             <Image
               alt=""
               src={icLogo}
@@ -271,7 +320,7 @@ export function InterestRateField({
         <DelegatesModalContent
           chooseLabel="Choose"
           delegates={IC_STRATEGIES}
-          intro="It’s an automated strategy developed by ICP that helps avoid redemption and reduce costs. More strategies soon."
+          intro={IC_STRATEGY_MODAL.intro}
           onSelectDelegate={onSelectDelegate}
         />
       </Modal>
@@ -279,13 +328,13 @@ export function InterestRateField({
         onClose={() => {
           setDelegatePicker(null);
         }}
-        title={`${DELEGATES.length} delegates`}
+        title={DELEGATES_MODAL.title}
         visible={delegatePicker === "delegate"}
       >
         <DelegatesModalContent
-          chooseLabel="Choose delegate"
+          chooseLabel="Set delegate"
           delegates={DELEGATES}
-          intro="Delegates manage your interest rate, optimizing costs and preventing redemption. They charge a fee for this."
+          intro={DELEGATES_MODAL.intro}
           onSelectDelegate={onSelectDelegate}
         />
       </Modal>
@@ -446,9 +495,11 @@ function DelegatesModalContent({
                       color: "content",
                     })}
                   >
-                    <div>Interest rate change</div>
+                    <div>Interest rate range</div>
                     <div>
-                      {fmtnum(delegate.interestRateChange[0], 2, 100)}…{fmtnum(delegate.interestRateChange[1], 2, 100)}%
+                      {fmtnum(delegate.interestRateChange[0], 2, 100)}
+                      <span>-</span>
+                      {fmtnum(delegate.interestRateChange[1], 2, 100)}%
                     </div>
                   </div>
                   {delegate.fee && (
@@ -461,7 +512,9 @@ function DelegatesModalContent({
                         color: "content",
                       })}
                     >
-                      <div>Fees</div>
+                      <div>
+                        Fees <abbr title="per annum">p.a.</abbr>
+                      </div>
                       <div title={`${fmtnum(delegate.fee, 18, 100)}%`}>
                         {fmtnum(delegate.fee, 4, 100)}%
                       </div>

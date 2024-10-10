@@ -3,6 +3,7 @@
 import type { PositionLoan } from "@/src/types";
 
 import { ARROW_RIGHT } from "@/src/characters";
+import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import { InfoBox } from "@/src/comps/InfoBox/InfoBox";
@@ -127,8 +128,8 @@ export function PanelUpdateBorrowPosition({
               }
               label={{
                 start: depositMode === "remove"
-                  ? "Decrease your collateral"
-                  : "Increase your collateral",
+                  ? "Decrease collateral"
+                  : "Increase collateral",
                 end: (
                   <Tabs
                     compact
@@ -166,21 +167,63 @@ export function PanelUpdateBorrowPosition({
             />
           }
           footer={[[
-            <Field.FooterInfo label="Collateral after" />,
+            null,
             loanDetails.deposit && newLoanDetails.deposit && (
               <Field.FooterInfo
                 label={
                   <HFlex alignItems="center" gap={8}>
-                    <div>{fmtnum(loanDetails.deposit, 2)}</div>
+                    <Amount
+                      format={2}
+                      value={loanDetails.deposit}
+                    />
                     <div>{ARROW_RIGHT}</div>
                   </HFlex>
                 }
                 value={
                   <HFlex alignItems="center" gap={8}>
-                    <div>
-                      {fmtnum(newLoanDetails.deposit, 2)} {TOKENS_BY_SYMBOL[collateral.symbol].name}
-                    </div>
-                    <InfoTooltip heading="Collateral update" />
+                    <Amount
+                      format={2}
+                      suffix={` ${collateral.symbol}`}
+                      value={newLoanDetails.deposit}
+                    />
+                    <InfoTooltip heading="Collateral update">
+                      <div>
+                        Current:{" "}
+                        <Amount
+                          format={2}
+                          suffix={` ${collateral.symbol}`}
+                          value={loanDetails.deposit}
+                        />
+                        {collPrice && (
+                          <>
+                            {" / "}
+                            <Amount
+                              format={2}
+                              prefix="$"
+                              value={dn.mul(loanDetails.deposit, collPrice)}
+                            />
+                          </>
+                        )}
+                      </div>
+                      <div>
+                        Update:{" "}
+                        <Amount
+                          format={2}
+                          suffix={` ${collateral.symbol}`}
+                          value={newLoanDetails.deposit}
+                        />
+                        {collPrice && (
+                          <>
+                            {" / "}
+                            <Amount
+                              format={2}
+                              prefix="$"
+                              value={dn.mul(newLoanDetails.deposit, collPrice)}
+                            />
+                          </>
+                        )}
+                      </div>
+                    </InfoTooltip>
                   </HFlex>
                 }
               />
@@ -201,8 +244,8 @@ export function PanelUpdateBorrowPosition({
               }
               label={{
                 start: debtMode === "remove"
-                  ? "Decrease your debt"
-                  : "Increase your debt",
+                  ? "Decrease loan"
+                  : "Increase loan",
                 end: (
                   <Tabs
                     compact
@@ -243,7 +286,7 @@ export function PanelUpdateBorrowPosition({
           }
           footer={[
             [
-              <Field.FooterInfo label="Debt after" />,
+              null,
               loanDetails.debt && newLoanDetails.debt && (
                 <Field.FooterInfo
                   label={

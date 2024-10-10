@@ -1,10 +1,13 @@
 import type { PositionLoan } from "@/src/types";
 
+import { ARROW_RIGHT } from "@/src/characters";
+import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import { InfoBox } from "@/src/comps/InfoBox/InfoBox";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
+import content from "@/src/content";
 import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
@@ -13,6 +16,7 @@ import { getPrefixedTroveId } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
+import { infoTooltipProps } from "@/src/uikit-utils";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { Button, HFlex, InfoTooltip, StatusDot, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
@@ -21,7 +25,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { maxUint256 } from "viem";
 
-export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
+export function PanelUpdateRate({
+  loan,
+}: {
+  loan: PositionLoan;
+}) {
   const router = useRouter();
   const account = useAccount();
   const txFlow = useTransactionFlow();
@@ -41,7 +49,7 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
   const loanDetails = getLoanDetails(
     loan.deposit,
     loan.borrowed,
-    dn.div(loan.interestRate, 100),
+    loan.interestRate,
     collateral.collateralRatio,
     collPrice,
   );
@@ -57,6 +65,10 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
   const boldInterestPerYear = interestRate
     && debt.parsed
     && dn.mul(debt.parsed, interestRate);
+
+  const boldInterestPerYearPrev = loan.interestRate
+    && loan.borrowed
+    && dn.mul(loan.borrowed, loan.interestRate);
 
   const allowSubmit = account.isConnected
     && deposit.parsed
@@ -77,6 +89,30 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
             onChange={setInterestRate}
           />
         }
+        footer={[
+          [
+            null,
+            <Field.FooterInfo
+              label={
+                <HFlex alignItems="center" gap={8}>
+                  <Amount
+                    value={loanDetails.interestRate}
+                    percentage
+                  />
+                  <div>{ARROW_RIGHT}</div>
+                </HFlex>
+              }
+              value={
+                <HFlex alignItems="center" gap={8}>
+                  <Amount
+                    value={newLoanDetails.interestRate}
+                    percentage
+                  />
+                </HFlex>
+              }
+            />,
+          ],
+        ]}
       />
 
       <div
@@ -104,31 +140,33 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
           </HFlex>
           <HFlex justifyContent="space-between" gap={16}>
             <HFlex gap={4}>
-              <div>Interest rate / day</div>
-              <InfoTooltip heading="Interest rate / day" />
+              <div>BOLD interest per year</div>
+              <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
             </HFlex>
             {boldInterestPerYear && (
-              <HFlex
-                gap={8}
-                className={css({
-                  fontVariantNumeric: "tabular-nums",
-                })}
-              >
-                ~{fmtnum(dn.div(boldInterestPerYear, 365))} BOLD
-              </HFlex>
+              <ValueUpdate
+                before={
+                  <HFlex
+                    gap={8}
+                    className={css({
+                      fontVariantNumeric: "tabular-nums",
+                    })}
+                  >
+                    {fmtnum(boldInterestPerYearPrev)} BOLD
+                  </HFlex>
+                }
+                after={
+                  <HFlex
+                    gap={8}
+                    className={css({
+                      fontVariantNumeric: "tabular-nums",
+                    })}
+                  >
+                    {fmtnum(boldInterestPerYear)} BOLD
+                  </HFlex>
+                }
+              />
             )}
-          </HFlex>
-          <HFlex
-            justifyContent="space-between"
-            gap={16}
-            className={css({
-              marginTop: -12,
-              fontSize: 14,
-              color: "contentAlt",
-            })}
-          >
-            <div>Annual interest rate is charged daily on the debt</div>
-            <div>per day</div>
           </HFlex>
         </InfoBox>
       </div>

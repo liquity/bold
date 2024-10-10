@@ -6,7 +6,7 @@ import { getPrefixedTroveId, parsePrefixedTroveId } from "@/src/liquity-utils";
 import { useLoanById } from "@/src/subgraph-hooks";
 import { isPrefixedtroveId } from "@/src/types";
 import { css } from "@/styled-system/css";
-import { Button, IconSettings, Tabs, VFlex } from "@liquity2/uikit";
+import { Button, Tabs, VFlex } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
 import { useState } from "react";
@@ -18,9 +18,9 @@ import { PanelUpdateLeveragePosition } from "./PanelUpdateLeveragePosition";
 import { PanelUpdateRate } from "./PanelUpdateRate";
 
 const TABS = [
-  { label: "Collateral & Debt", id: "colldebt" },
+  { label: "Update Loan", id: "colldebt" },
   { label: "Interest rate", id: "rate" },
-  { label: "Close position", id: "close" },
+  { label: "Close loan", id: "close" },
 ];
 
 export type LoanLoadingState =
@@ -80,7 +80,13 @@ export function LoanScreen() {
   });
 
   return (
-    <Screen>
+    <Screen
+      ready={loadingState === "success"}
+      back={{
+        href: "/",
+        label: "Back",
+      }}
+    >
       {LOAN_SCREEN_MANUAL_LOADING_STATE && (
         <div
           className={css({
@@ -133,26 +139,10 @@ export function LoanScreen() {
             >
               <div
                 className={css({
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 16,
-                  height: 48 + 24 + 24,
-                  paddingTop: 48,
-                  paddingBottom: 24,
-                  fontSize: 20,
+                  width: "100%",
+                  height: 48,
                 })}
-              >
-                <div>Manage your position</div>
-                <div
-                  className={css({
-                    color: "contentAlt",
-                    cursor: "pointer",
-                  })}
-                >
-                  <IconSettings />
-                </div>
-              </div>
+              />
               <VFlex gap={32}>
                 <Tabs
                   items={TABS.map(({ label, id }) => ({
