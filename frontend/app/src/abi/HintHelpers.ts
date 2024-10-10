@@ -18,6 +18,26 @@ export const HintHelpers = [{
   "stateMutability": "view",
 }, {
   "type": "function",
+  "name": "forcePredictAdjustInterestRateUpfrontFee",
+  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+    "name": "_troveId",
+    "type": "uint256",
+    "internalType": "uint256",
+  }, { "name": "_newInterestRate", "type": "uint256", "internalType": "uint256" }],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "forcePredictJoinBatchInterestRateUpfrontFee",
+  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+    "name": "_troveId",
+    "type": "uint256",
+    "internalType": "uint256",
+  }, { "name": "_batchAddress", "type": "address", "internalType": "address" }],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
   "name": "getApproxHint",
   "inputs": [
     { "name": "_collIndex", "type": "uint256", "internalType": "uint256" },
@@ -30,6 +50,16 @@ export const HintHelpers = [{
     "type": "uint256",
     "internalType": "uint256",
   }, { "name": "latestRandomSeed", "type": "uint256", "internalType": "uint256" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "predictAdjustBatchInterestRateUpfrontFee",
+  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+    "name": "_batchAddress",
+    "type": "address",
+    "internalType": "address",
+  }, { "name": "_newInterestRate", "type": "uint256", "internalType": "uint256" }],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
   "stateMutability": "view",
 }, {
   "type": "function",
@@ -53,12 +83,42 @@ export const HintHelpers = [{
   "stateMutability": "view",
 }, {
   "type": "function",
+  "name": "predictJoinBatchInterestRateUpfrontFee",
+  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+    "name": "_troveId",
+    "type": "uint256",
+    "internalType": "uint256",
+  }, { "name": "_batchAddress", "type": "address", "internalType": "address" }],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "predictOpenTroveAndJoinBatchUpfrontFee",
+  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+    "name": "_borrowedAmount",
+    "type": "uint256",
+    "internalType": "uint256",
+  }, { "name": "_batchAddress", "type": "address", "internalType": "address" }],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
   "name": "predictOpenTroveUpfrontFee",
   "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
     "name": "_borrowedAmount",
     "type": "uint256",
     "internalType": "uint256",
   }, { "name": "_interestRate", "type": "uint256", "internalType": "uint256" }],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "predictRemoveFromBatchUpfrontFee",
+  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+    "name": "_troveId",
+    "type": "uint256",
+    "internalType": "uint256",
+  }, { "name": "_newInterestRate", "type": "uint256", "internalType": "uint256" }],
   "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
   "stateMutability": "view",
 }] as const;

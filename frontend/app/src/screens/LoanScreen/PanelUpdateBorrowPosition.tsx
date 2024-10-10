@@ -9,12 +9,14 @@ import { InfoBox } from "@/src/comps/InfoBox/InfoBox";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
 import { ETH_MAX_RESERVE } from "@/src/constants";
-import { ACCOUNT_BALANCES } from "@/src/demo-mode";
+import { dnum18, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { useAccount } from "@/src/services/Ethereum";
+import { getPrefixedTroveId } from "@/src/liquity-utils";
+import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
+import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
@@ -29,6 +31,7 @@ import {
   TOKENS_BY_SYMBOL,
   VFlex,
 } from "@liquity2/uikit";
+import { maxUint256 } from "viem";
 
 import * as dn from "dnum";
 import { useRouter } from "next/navigation";
@@ -36,13 +39,18 @@ import { useState } from "react";
 
 type ValueUpdateMode = "add" | "remove";
 
-export function PanelUpdateBorrowPosition({ loan }: { loan: PositionLoan }) {
+export function PanelUpdateBorrowPosition({
+  loan,
+}: {
+  loan: PositionLoan;
+}) {
   const router = useRouter();
   const account = useAccount();
+  const txFlow = useTransactionFlow();
 
   const collateral = TOKENS_BY_SYMBOL[loan.collateral];
   const collPrice = usePrice(collateral.symbol);
-  const boldPriceUsd = usePrice("BOLD") ?? dn.from(0, 18);
+  const boldPriceUsd = usePrice("BOLD") ?? dnum18(0);
 
   // deposit change
   const [depositMode, setDepositMode] = useState<ValueUpdateMode>("add");
@@ -53,11 +61,6 @@ export function PanelUpdateBorrowPosition({ loan }: { loan: PositionLoan }) {
     depositMode === "remove"
       ? dn.sub(loan.deposit, depositChange.parsed)
       : dn.add(loan.deposit, depositChange.parsed)
-  );
-
-  const collMax = depositMode === "remove" ? loan.deposit : dn.sub(
-    ACCOUNT_BALANCES[collateral.symbol],
-    ETH_MAX_RESERVE,
   );
 
   // debt change
@@ -71,7 +74,21 @@ export function PanelUpdateBorrowPosition({ loan }: { loan: PositionLoan }) {
       : dn.add(loan.borrowed, debtChange.parsed)
   );
 
-  const boldMax = debtMode === "remove" ? ACCOUNT_BALANCES["BOLD"] : null;
+  const collBalance = useBalance(account.address, collateral.symbol);
+  const boldBalance = useBalance(account.address, "BOLD");
+
+  const collMax = depositMode === "remove" ? loan.deposit : (
+    collBalance.data
+      ? dn.sub(collBalance.data, ETH_MAX_RESERVE)
+      : dnum18(0)
+  );
+
+  const boldMax = debtMode === "remove" && boldBalance.data
+    ? dnumMin(
+      boldBalance.data,
+      loan.borrowed,
+    )
+    : null;
 
   const loanDetails = getLoanDetails(
     loan.deposit,
@@ -90,8 +107,8 @@ export function PanelUpdateBorrowPosition({ loan }: { loan: PositionLoan }) {
   );
 
   const allowSubmit = account.isConnected && (
-    !dn.eq(loanDetails.deposit ?? dn.from(0, 18), newLoanDetails.deposit ?? dn.from(0, 18))
-    || !dn.eq(loanDetails.debt ?? dn.from(0, 18), newLoanDetails.debt ?? dn.from(0, 18))
+    !dn.eq(loanDetails.deposit ?? dnum18(0), newLoanDetails.deposit ?? dnum18(0))
+    || !dn.eq(loanDetails.debt ?? dnum18(0), newLoanDetails.debt ?? dnum18(0))
   );
 
   return (
@@ -119,9 +136,13 @@ export function PanelUpdateBorrowPosition({ loan }: { loan: PositionLoan }) {
                       { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
                       { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
                     ]}
-                    onSelect={(index) => {
+                    onSelect={(index, { origin, event }) => {
                       setDepositMode(index === 1 ? "remove" : "add");
-                      depositChange.setValue("0");
+                      depositChange.setValue("");
+                      if (origin !== "keyboard") {
+                        event.preventDefault();
+                        depositChange.focus();
+                      }
                     }}
                     selected={depositMode === "remove" ? 1 : 0}
                   />
@@ -189,9 +210,13 @@ export function PanelUpdateBorrowPosition({ loan }: { loan: PositionLoan }) {
                       { label: "Borrow", panelId: "panel-borrow", tabId: "tab-borrow" },
                       { label: "Repay", panelId: "panel-repay", tabId: "tab-repay" },
                     ]}
-                    onSelect={(index) => {
+                    onSelect={(index, { origin, event }) => {
                       setDebtMode(index === 1 ? "remove" : "add");
-                      debtChange.setValue("0");
+                      debtChange.setValue("");
+                      if (origin !== "keyboard") {
+                        event.preventDefault();
+                        debtChange.focus();
+                      }
                     }}
                     selected={debtMode === "remove" ? 1 : 0}
                   />
@@ -348,7 +373,22 @@ export function PanelUpdateBorrowPosition({ loan }: { loan: PositionLoan }) {
           size="large"
           wide
           onClick={() => {
-            router.push("/transactions/update-loan");
+            if (account.address) {
+              txFlow.start({
+                flowId: "updateLoanPosition",
+                backLink: [`/loan?id=${loan.collIndex}:${loan.troveId}`, "Back to editing"],
+                successLink: ["/", "Go to the dashboard"],
+                successMessage: "The position has been updated successfully.",
+
+                collIndex: loan.collIndex,
+                prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
+                owner: account.address,
+                collChange: dn.sub(newDeposit ?? dnum18(0), loan.deposit),
+                debtChange: dn.sub(newDebt ?? dnum18(0), loan.borrowed),
+                maxUpfrontFee: dnum18(maxUint256),
+              });
+              router.push("/transactions");
+            }
           }}
         />
       </div>

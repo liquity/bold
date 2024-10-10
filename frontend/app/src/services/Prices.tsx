@@ -15,9 +15,11 @@ import {
   RETH_PRICE as DEMO_RETH_PRICE,
   STETH_PRICE as DEMO_STETH_PRICE,
 } from "@/src/demo-mode";
+import { dnum18, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { DEMO_MODE } from "@/src/env";
 import * as dn from "dnum";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useRef } from "react";
 import { useReadContract } from "wagmi";
 
 type PriceToken = "LQTY" | "BOLD" | CollateralSymbol;
@@ -36,12 +38,14 @@ const initialPrices: Prices = {
 
 function useWatchCollateralPrice(collateral: CollateralSymbol) {
   const PriceFeed = useCollateralContract(collateral, "PriceFeed");
-  const price = useReadContract(
-    PriceFeed
-      ? { ...PriceFeed, functionName: "lastGoodPrice" }
-      : {},
-  );
-  return PriceFeed && price.data ? price : { data: null, loading: false };
+  return useReadContract({
+    ...(PriceFeed as NonNullable<typeof PriceFeed>),
+    functionName: "lastGoodPrice",
+    query: {
+      enabled: PriceFeed !== null,
+      refetchInterval: 10_000,
+    },
+  });
 }
 
 let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void): void {
@@ -49,14 +53,31 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
   const rethPrice = useWatchCollateralPrice("RETH");
   const stethPrice = useWatchCollateralPrice("STETH");
 
+  const prevPrices = useRef<Prices>({
+    BOLD: null,
+    LQTY: null,
+    ETH: null,
+    RETH: null,
+    STETH: null,
+  });
+
   useEffect(() => {
-    callback({
-      // TODO: fetch prices for LQTY & BOLD
-      ...initialPrices,
-      ETH: ethPrice.data ? [ethPrice.data, 18] : null,
-      RETH: rethPrice.data ? [rethPrice.data, 18] : null,
-      STETH: stethPrice.data ? [stethPrice.data, 18] : null,
-    });
+    const newPrices = {
+      // TODO: check BOLD and LQTY prices
+      BOLD: dn.from(1, 18),
+      LQTY: dn.from(1, 18),
+
+      ETH: ethPrice.data ? dnum18(ethPrice.data) : null,
+      RETH: rethPrice.data ? dnum18(rethPrice.data) : null,
+      STETH: stethPrice.data ? dnum18(stethPrice.data) : null,
+    };
+
+    const hasChanged = jsonStringifyWithDnum(newPrices) !== jsonStringifyWithDnum(prevPrices.current);
+
+    if (hasChanged) {
+      callback(newPrices);
+      prevPrices.current = newPrices;
+    }
   }, [
     callback,
     ethPrice,
@@ -65,8 +86,8 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
   ]);
 };
 
+// in demo mode, simulate a variation of the prices
 if (DEMO_MODE) {
-  // in demo mode, simulate a variation of the prices
   useWatchPrices = (callback) => {
     useEffect(() => {
       const update = () => {

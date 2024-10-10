@@ -7,6 +7,8 @@ import "./FixedAssets.sol";
 
 library baseSVG {
     string constant GEIST = 'style="font-family: Geist" ';
+    string constant DARK_BLUE = "#121B44";
+    string constant STOIC_WHITE = "#DEE4FB";
 
     function _svgProps() internal pure returns (string memory) {
         return string.concat(
@@ -21,7 +23,7 @@ library baseSVG {
         return string.concat(
             svg.rect(
                 string.concat(
-                    svg.prop("fill", "#1C1D4F"),
+                    svg.prop("fill", DARK_BLUE),
                     svg.prop("rx", "8"),
                     svg.prop("width", "300"),
                     svg.prop("height", "484")
@@ -49,12 +51,12 @@ library baseSVG {
     function _leverageLogo() internal pure returns (string memory) {
         return string.concat(
             svg.path(
-                "M22.2 30.2C21.1 31.4 19.6 32 18 32L18 20C19.6 20 21.1 20.6 22.2 21.7C23.4 22.9 24 24.4 24 26C24 27.6 23.4 29.1 22.2 30.2Z",
-                svg.prop("fill", "#DEE4FB")
+                "M20.2 31.2C19.1 32.4 17.6 33 16 33L16 21C17.6 21 19.1 21.6 20.2 22.7C21.4 23.9 22 25.4 22 27C22 28.6 21.4 30.1 20.2 31.2Z",
+                svg.prop("fill", STOIC_WHITE)
             ),
             svg.path(
-                "M24 26C24 24.4 24.6 22.9 25.8 21.7C27 20.6 28.4 20 30 20V32C28.4 32 27 31.4 26 30.2C24.6 29.1 24 27.6 24 26Z",
-                svg.prop("fill", "#DEE4FB")
+                "M22 27C22 25.4 22.6 23.9 23.8 22.7C25 21.6 26.4 21 28 21V33C26.4 33 25 32.4 24 31.2C22.6 30.1 22 28.6 22 27Z",
+                svg.prop("fill", STOIC_WHITE)
             )
         );
     }
@@ -64,7 +66,7 @@ library baseSVG {
             "image",
             string.concat(
                 svg.prop("x", "264"),
-                svg.prop("y", "374.5"),
+                svg.prop("y", "373.5"),
                 svg.prop("width", "20"),
                 svg.prop("height", "20"),
                 svg.prop(
@@ -91,7 +93,7 @@ library baseSVG {
                 string.concat(
                     GEIST,
                     svg.prop("x", "16"),
-                    svg.prop("y", "390"),
+                    svg.prop("y", "389"),
                     svg.prop("font-size", "14"),
                     svg.prop("fill", "white")
                 ),
@@ -101,7 +103,7 @@ library baseSVG {
                 string.concat(
                     GEIST,
                     svg.prop("x", "16"),
-                    svg.prop("y", "418"),
+                    svg.prop("y", "420"),
                     svg.prop("font-size", "14"),
                     svg.prop("fill", "white")
                 ),
@@ -110,8 +112,8 @@ library baseSVG {
             svg.text(
                 string.concat(
                     GEIST,
-                    svg.prop("x", "264"),
-                    svg.prop("y", "418"),
+                    svg.prop("x", "265"),
+                    svg.prop("y", "422"),
                     svg.prop("font-size", "20"),
                     svg.prop("fill", "white")
                 ),
@@ -149,8 +151,8 @@ library baseSVG {
             string.concat(
                 GEIST,
                 svg.prop("text-anchor", "end"),
-                svg.prop("x", "283"),
-                svg.prop("y", "31"),
+                svg.prop("x", "284"),
+                svg.prop("y", "33"),
                 svg.prop("font-size", "14"),
                 svg.prop("fill", "white")
             ),
@@ -162,7 +164,8 @@ library baseSVG {
         return svg.text(
             string.concat(
                 GEIST,
-                svg.prop("x", "196"),
+                svg.prop("text-anchor", "end"),
+                svg.prop("x", "284"),
                 svg.prop("y", "462"),
                 svg.prop("font-size", "14"),
                 svg.prop("fill", "white")
@@ -180,7 +183,7 @@ library baseSVG {
             "image",
             string.concat(
                 svg.prop("x", "264"),
-                svg.prop("y", "343.5"),
+                svg.prop("y", "342.5"),
                 svg.prop("width", "20"),
                 svg.prop("height", "20"),
                 svg.prop(
@@ -202,15 +205,15 @@ library baseSVG {
         );
     }
 
-    function _dynamicTextEls(uint256, /*_debt*/ uint256 _coll, uint256 _annualInterestRate)
+    function _dynamicTextEls(uint256 _debt, uint256 _coll, uint256 _annualInterestRate)
         internal
         pure
         returns (string memory)
     {
         return string.concat(
-            _formattedDynamicEl(numUtils.toLocaleString(_coll, 18, 3), 256, 360),
-            _formattedDynamicEl(numUtils.toLocaleString(_coll, 18, 3), 256, 392),
-            _formattedDynamicEl(numUtils.toLocaleString(_annualInterestRate, 16, 2), 256, 420)
+            _formattedDynamicEl(numUtils.toLocaleString(_coll, 18, 4), 256, 360),
+            _formattedDynamicEl(numUtils.toLocaleString(_debt, 18, 2), 256, 391),
+            _formattedDynamicEl(numUtils.toLocaleString(_annualInterestRate, 16, 2), 256, 422)
         );
     }
 }

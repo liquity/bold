@@ -1,0 +1,8 @@
+#!/usr/bin/env -S pnpm exec tsx
+
+require("./cli/start-graph").main().catch(({ message }) => {
+  console.error("");
+  console.error(`  Error: ${message}`);
+  console.error("");
+  process.exit(1);
+});

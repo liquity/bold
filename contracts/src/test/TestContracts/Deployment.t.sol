@@ -246,6 +246,18 @@ contract TestDeployer is MetadataDeployment {
             deployAndConnectContracts(troveManagerParamsArray, WETH);
     }
 
+    function _nameToken(uint256 _index) internal pure returns (string memory) {
+        if (_index == 1) return "Wrapped Staked Ether";
+        if (_index == 2) return "Rocket Pool ETH";
+        return "LST Tester";
+    }
+
+    function _symboltoken(uint256 _index) internal pure returns (string memory) {
+        if (_index == 1) return "wstETH";
+        if (_index == 2) return "rETH";
+        return "LST";
+    }
+
     function deployAndConnectContracts(TroveManagerParams[] memory troveManagerParamsArray, IWETH _WETH)
         public
         returns (
@@ -279,8 +291,8 @@ contract TestDeployer is MetadataDeployment {
         vars.troveManagers[0] = ITroveManager(troveManagerAddress);
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
             IERC20Metadata collToken = new ERC20Faucet(
-                string.concat("Staked ETH", string(abi.encode(vars.i))), // _name
-                string.concat("stETH", string(abi.encode(vars.i))), // _symbol
+                _nameToken(vars.i), // _name
+                _symboltoken(vars.i), // _symbol
                 100 ether, //     _tapAmount
                 1 days //         _tapPeriod
             );

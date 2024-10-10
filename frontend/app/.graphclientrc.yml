@@ -1,0 +1,21 @@
+sources:
+  - name: liquity2
+    handler:
+      graphql:
+        # endpoint: http://localhost:8000/subgraphs/name/liquity2/liquity2
+        endpoint: https://api.studio.thegraph.com/query/42403/liquity2/version/latest
+
+codegen:
+  strictScalars: true
+  immutableTypes: true
+  useTypeImports: false # import name conflict if set to true
+  dedupeFragments: true
+  scalars:
+    BigDecimal: bigint
+    BigInt: bigint
+    Bytes: string
+    Int8: number
+    Timestamp: string
+
+documents:
+  - ./src/subgraph-queries.graphql

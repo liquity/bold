@@ -1,0 +1,79 @@
+specVersion: 1.2.0
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: BoldToken
+    source:
+      abi: BoldToken
+      address: "0x21a6370b245c05fade18c601f5efa23e1a3c9833"
+      startBlock: 6684588
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - Collateral
+        - CollateralAddresses
+        - Token
+      abis:
+        - name: BorrowerOperations
+          file: ../contracts/out/BorrowerOperations.sol/BorrowerOperations.json
+        - name: BoldToken
+          file: ../contracts/out/BoldToken.sol/BoldToken.json
+        - name: CollateralRegistry
+          file: ../contracts/out/CollateralRegistry.sol/CollateralRegistry.json
+        - name: ERC20
+          file: ../contracts/out/ERC20.sol/ERC20.json
+        - name: TroveManager
+          file: ../contracts/out/TroveManager.sol/TroveManager.json
+      eventHandlers:
+        - event: CollateralRegistryAddressChanged(address)
+          handler: handleCollateralRegistryAddressChanged
+      file: ./src/BoldToken.mapping.ts
+    network: sepolia
+templates:
+  - name: TroveManager
+    kind: ethereum/contract
+    network: sepolia
+    source:
+      abi: TroveManager
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/TroveManager.mapping.ts
+      entities:
+        - Trove
+      abis:
+        - name: TroveManager
+          file: ../contracts/out/TroveManager.sol/TroveManager.json
+        - name: TroveNFT
+          file: ../contracts/out/TroveNFT.sol/TroveNFT.json
+      eventHandlers:
+        - event: TroveOperation(indexed
+            uint256,uint8,uint256,uint256,uint256,int256,uint256,int256)
+          handler: handleTroveOperation
+        - event: TroveUpdated(indexed
+            uint256,uint256,uint256,uint256,uint256,uint256,uint256)
+          handler: handleTroveUpdated
+  - name: StabilityPool
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: StabilityPool
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/StabilityPool.mapping.ts
+      entities:
+        - StabilityPool
+        - StabilityPoolDeposit
+      abis:
+        - name: StabilityPool
+          file: ../contracts/out/StabilityPool.sol/StabilityPool.json
+      eventHandlers:
+        - event: DepositUpdated(indexed
+            address,uint256,uint256,uint256,uint256,uint256,uint256,uint256)
+          handler: handleDepositUpdated

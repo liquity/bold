@@ -313,7 +313,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
 
 -  `setRemoveManager(uint256 _troveId, address _manager)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove.
 
-- `setRemoveManager(uint256 _troveId, address _manager, address _receiver)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove to the provided `_receiver` address.
+- `setRemoveManagerWithReceiver(uint256 _troveId, address _manager, address _receiver)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove to the provided `_receiver` address.
 
 - `setInterestIndividualDelegate(
         uint256 _troveId,
@@ -363,8 +363,6 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
         uint256 _maxUpfrontFee
     )`: revokes the batch manager’s permission to manage the caller’s Trove. Sets a new owner-chosen annual interest rate, and removes it from the batch. Since this action very likely changes the Trove’s interest rate, it’s subject to a premature adjustment fee as per regular adjustments.
 
-- `applyBatchInterestAndFeePermissionless(address _batchAddress)`:  Applies the batch’s accrued interest and management fee to the batch.
-
 ### TroveManager
 
 - `liquidate(uint256 _troveId)`: attempts to liquidate the specified Trove. Executes successfully if the Trove meets the conditions for liquidation, i.e. ICR < MCR. Permissionless.
@@ -394,9 +392,11 @@ Standard ERC20 and EIP2612 (`permit()` ) functionality.
 
 
 
-## Borrowing and interest rates
+## Borrowing, fees and interest rates
 
 When a Trove is opened, borrowers commit an amount of their chosen LST token as collateral, select their BOLD debt, and select an interest rate in range `[INTEREST_RATE_MIN, INTEREST_RATE_MAX]`.
+
+### Interest on Trove debt
 
 Interest in Liquity v2 is **simple** interest and non-compounding - that is, for a given Trove debt, interest accrues linearly over time and proportional to its recorded debt as long as the Trove isn’t altered.
 
@@ -484,20 +484,34 @@ It can be shown mathematically that this holds (TBD).
 
 ### Applying and minting pending aggregate interest 
 
-
 Pending aggregate interest is “applied” upon most system actions. That is:
 
 - The  `aggRecordedDebt` is updated - the pending aggregate interest is calculated and added to `aggRecordedDebt`, and the `lastDebtUpdateTime` is updated to now.
 
-- The pending aggregate interest is minted by the ActivePool as fresh BOLD. This is considered system “yield”.  A fixed part (75%) of it is immediately sent to the branch’s SP and split proportionally between depositors, and the remainder is sent to a router to be used as LP incentives on DEXes (determined by governance).
+- The pending aggregate interest is minted by the ActivePool as fresh BOLD. This is considered system “yield”.  A fixed part (72%, final value TBD) of it is immediately sent to the branch’s SP and split proportionally between depositors, and the remainder is sent to a router to be used as LP incentives on DEXes (determined by governance).
 
-This is the only way BOLD is ever minted as interest. Applying individual interest to a Trove updates its recorded debt, but does not actually mint new BOLD tokens.
+This is the only way BOLD is ever minted as interest. Applying individual interest to a Trove updates its recorded debt, but interest is always minted in aggregate.
 
-### Interest rate adjustments, redemption evasion mitigation 
 
-A borrower may adjust their Trove’s interest rate at any time.
+### Redemption evasion mitigation
 
-Since redemptions are performed in order of Troves’ user-set interest rates, a “premature adjustment fee” mechanism exists to prevent redemption evasion. Without it, low-interest rate borrowers could evade redemptions by sandwiching a redemption transaction with both an upward and downward interest rate adjustment, which in turn would unduly direct the redemption against higher-interest borrowers.
+In healthy system states (TCR > CCR) a borrower may adjust their Trove’s interest rate or debt at any time, as well as close their Trove. As such, a borrower may evade a redemption transaction by either frontrunning it with an interest rate adjustment, or closing and reopening their Trove. Both "hard" and "soft" frontrunning are viable: savvy borrowers may watch the mempool for redemption transactions, or simply watch the BOLD peg, and take evasive action when it is below $1 and redemptions are likely imminent.
+
+To disincentivize redemption evasion, two upfront fees are implemented: a borrowing fee, as well as a premature interest rate adjustment fee.
+
+### Upfront borrowing fees
+
+An upfront borrowing fee is applied when a borrower:
+- Opens a Trove
+- Increases the debt of their Trove
+
+The creates a cost for the borrower seeking to evade a redemption by closing and reopening their trove.
+
+The upfront borrowing fee is equal to 7 days of average interest on the respective collateral branch. It is charged in BOLD and is added to the Trove's debt.
+
+### Premature adjustment fees
+
+Since redemptions are performed in order of Troves’ user-set interest rates, a “premature adjustment fee” mechanism is in place. Without it, low-interest rate borrowers could evade redemptions by sandwiching a redemption transaction with both an upward and downward interest rate adjustment, which in turn would unduly direct the redemption against higher-interest borrowers.
 
 The premature adjustment fee works as so:
 
@@ -505,16 +519,16 @@ The premature adjustment fee works as so:
 - When a borrower adjusts their interest rate via `adjustTroveInterestRate` the system checks that the cooldown period has passed since their last interest rate adjustment 
 - If the adjustment is sooner it incurs an upfront fee (equal to 7 days of average interest of the respective branch) which is added to their debt.
 
-#### Batches and upfront fee
+#### Batches and premature adjustment fees
 
 ##### Joining a batch
-When a trove joins a batch, it pays upfront fee if the last trove adjustment was done more than the cool period ago. It does’t matter if trove and batch have the same interest rate, or when was the last adjustment by the batch.
+When a trove joins a batch, it pays an upfront fee if the last trove adjustment was done more than the cool period ago. It does’t matter if the Trove and batch have the same interest rate, or when was the last adjustment by the batch.
 
 The last interest rate timestamp will be updated to the time of joining.
 
 Batch interest rate changes only take into account global batch timestamps, so when the new batch manager changes the interest rate less than the cooldown period after the borrower moved to the new batch, but more than the cooldown period after its last adjustment, the newly joined borrower wouldn't pay the upfront fee despite the fact that his last interest rate change happened less than the cooldown period ago.
 
-That’s why troves pay upfront fee when joining even if the interest is the same. Otherwise a trove may game it by having a batch created in advance (with no recent changens), joining it and the changing the rate of the batch.
+That’s why Troves pay upfront fee when joining even if the interest is the same. Otherwise a trove may game it by having a batch created in advance (with no recent changens), joining it and the changing the rate of the batch.
 
 ##### Leaving a batch
 When a trove leaves a batch, the user's timestamp is again reset to the current time.
@@ -1340,7 +1354,13 @@ Various solutions have been fielded. Generally, any solution which appears to cr
 
 4. **New multi-collateral Stability Pool.** This pool would absorb some fraction of liquidations from all branches, including shut down branches. 
 
-5. **Governance can direct BOLD interest to pay down bad debt**. BOLD interest could be voted to be redirected to paying down the bad debt over time. 
+5. **Governance can direct BOLD interest to pay down bad debt**. BOLD interest could be voted to be redirected to paying down the bad debt over time.  Although this would not directly clear the bad debt, economically, it should have the same impact  - since ultimately, it is the redeemability of _circulating_ BOLD that determines the peg.  When an amount equal to the bad debt has been burned, then all circulating BOLD is fully redeemable. See this example:
+
+<img width="537" alt="image" src="https://github.com/user-attachments/assets/3045cba9-45a3-46b4-a5d0-58bed7f38a04">
+
+This provides a credible way of eventually "filling the hole" created by bad debt (unlike other approaches such as the SP haircut, which depends on SP funds). No additional core system code nor additional governance features are required. Governance may simply propose to redirect BOLD interest to a burn address. 
+
+If there is remaining collateral in the shutdown branch (albeit perhaps at zero USD value) and there are liquidateable Troves, Governance could alternatively vote to direct fees to a permissionless contract that deposits the BOLD to the SP of the shutdown branch and liquidates the Troves against those funds. The resulting collateral gains could, if they have non-zero value, be swapped on a DEX, e.g. for BOLD which could be then directed to LP incentives. All deposits and swaps could be handled permissionlessly by this governance-deployed contract.
 
 And some additional solutions that may help reduce the chance of bad debt occurring in the first place:
 
@@ -1348,22 +1368,9 @@ And some additional solutions that may help reduce the chance of bad debt occurr
 
 7. **Pro-rata redemptions at TCR < 100% (branch specific, not routed)**. Urgent redemptions are helpful for shrinking the debt of a shut down branch when it is at `TCR > 100%`. However, at `TCR < 100%`, urgent redemptions do not help clear the bad debt. They simply remove all collateral and push it into its final state faster (and in fact, make it slightly worse since they pay a slight collateral bonus).  At `TCR < 100%`, we could offer special pro-rata redemptions only on the shut down branch - e.g. at `TCR = 80%`, users may redeem 1 BOLD for $0.80 worth of collateral. This would (in principle) allow someone to completely clear the bad debt via redemption. At first glance it seems unprofitable, but if the redeemer has reason to believe the collateral is underpriced and the price may rebound at some point in future, they may believe it to be profitable to redeem pro-rata.
 
-**Chosen solution**
+**Conclusion**
 
-Solution 5 is chosen. Governance can vote to burn the interest under its control by sending the minted BOLD to a burn address. Although this does not directly clear the bad debt, economically, it should have the same impact  - since ultimately, it is the redeemability of _circulating_ BOLD that determines the peg.  When an amount equal to the bad debt has been burned, then all circulating BOLD is fully redeemable. 
-
-See this example:
-
-<img width="537" alt="image" src="https://github.com/user-attachments/assets/3045cba9-45a3-46b4-a5d0-58bed7f38a04">
-
-This was chosen over other approaches because:
-
-- It provides a credible way of eventually "filling the hole" created by bad debt (unlike other approaches such as the SP haircut, which depends on SP funds)
-- No additional core system code nor additional governance features are required. Governance can simply propose to redirect BOLD interest to a burn address.
-
-**Extension: governance can liquidate and swap collateral gains**
-
-If there is remaining collateral in the shutdown branch (albeit perhaps at zero USD value) and there are liquidateable Troves, Governance could alternatively vote to direct fees to a permissionless contract that deposits the BOLD to the SP of the shutdown branch and liquidates the Troves against those funds. The resulting collateral gains could, if they have non-zero value, be swapped on a DEX, e.g. for BOLD which could be then directed to LP incentives. All deposits and swaps could be handled permissionlessly by this governance-deployed contract.
+Ultimately, no measures have been implemented in the protocol directly, so the protocol may end up with some bad debt in the case of a branch shut down.  Here there is a theoretical possibility that the BOLD supply may be reduced by either users accidentally burning BOLD, or that borrower's interest could be directed by governance to burn BOLD, which would restore its backing over time.
 
 ### 11 - ## Inaccurate calculation of average branch interest rate
 

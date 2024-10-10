@@ -1,0 +1,15 @@
+{
+  "name": "@liquity2/subgraph",
+  "version": "1.0.0",
+  "scripts": {
+    "codegen": "pnpm graph codegen"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "^0.80.0"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-ts": "^0.35.1",
+    "tsx": "^4.16.5",
+    "zx": "^8.1.4"
+  }
+}

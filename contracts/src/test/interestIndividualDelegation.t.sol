@@ -102,6 +102,156 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         vm.stopPrank();
     }
 
+    function testOwnerCanSetInterestBelowMin() public {
+        uint256 troveId = openTroveAndSetIndividualDelegate();
+
+        vm.startPrank(A);
+        borrowerOperations.adjustTroveInterestRate(troveId, MIN_ANNUAL_INTEREST_RATE, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
+    function testOwnerCanSetInterestAboveMax() public {
+        uint256 troveId = openTroveAndSetIndividualDelegate();
+
+        vm.startPrank(A);
+        borrowerOperations.adjustTroveInterestRate(troveId, 50e16, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
+    function testSetDelegateRevertsIfTroveIsClosed() public {
+        vm.startPrank(B);
+        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        vm.stopPrank();
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        // Open a second one, so it’s not the last one and to have BOLD for interest
+        openTroveNoHints100pctWithIndex(A, 1, 100e18, 5000e18, 5e16);
+        // Close trove
+        closeTrove(A, troveId);
+
+        // Set batch manager (B)
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
+        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, 0, 0, 0, 10000e18);
+        vm.stopPrank();
+    }
+
+    function testSetDelegateRevertsIfTroveIsZombie() public {
+        vm.startPrank(B);
+        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        vm.stopPrank();
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        // Make trove zombie
+        redeem(A, 4000e18);
+        // Check A’s trove is zombie
+        assertEq(troveManager.checkTroveIsZombie(troveId), true, "A trove should be zombie");
+
+        // Set batch manager (B)
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.TroveNotActive.selector);
+        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, 0, 0, 0, 10000e18);
+        vm.stopPrank();
+    }
+
+    function testSetDelegateRevertsIfMinTooLow() public {
+        vm.startPrank(B);
+        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        vm.stopPrank();
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        // Set batch manager (B)
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.InterestRateTooLow.selector);
+        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e14, 20e16, 0, 0, 0, 10000e18);
+        vm.stopPrank();
+    }
+
+    function testSetDelegateRevertsIfMaxTooHigh() public {
+        vm.startPrank(B);
+        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        vm.stopPrank();
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        // Set batch manager (B)
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.InterestRateTooHigh.selector);
+        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 101e16, 0, 0, 0, 10000e18);
+        vm.stopPrank();
+    }
+
+    function testSetDelegateRevertsIfMinEqMax() public {
+        vm.startPrank(B);
+        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        vm.stopPrank();
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        // Set batch manager (B)
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.MinGeMax.selector);
+        borrowerOperations.setInterestIndividualDelegate(troveId, C, 20e16, 20e16, 0, 0, 0, 10000e18);
+        vm.stopPrank();
+    }
+
+    function testSetDelegateRevertsIfMinGtMax() public {
+        vm.startPrank(B);
+        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        vm.stopPrank();
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        // Set batch manager (B)
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.MinGeMax.selector);
+        borrowerOperations.setInterestIndividualDelegate(troveId, C, 21e16, 20e16, 0, 0, 0, 10000e18);
+        vm.stopPrank();
+    }
+
+    function testSetDelegateRevertsIfNewInterestRateNotInRangeBelow() public {
+        vm.startPrank(B);
+        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        vm.stopPrank();
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        // Set batch manager (B)
+        vm.startPrank(A);
+        borrowerOperations.setInterestBatchManager(troveId, B, 0, 0, 1e24);
+        vm.stopPrank();
+
+        // Try to switch to individual delegate (C) along with new interest
+        uint256 newAnnualInterestRate = 1e14;
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.InterestRateTooLow.selector);
+        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, newAnnualInterestRate, 0, 0, 10000e18);
+        vm.stopPrank();
+    }
+
+    function testSetDelegateRevertsIfNewInterestRateNotInRangeAbove() public {
+        vm.startPrank(B);
+        borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);
+        vm.stopPrank();
+
+        // Open trove
+        uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
+        // Set batch manager (B)
+        vm.startPrank(A);
+        borrowerOperations.setInterestBatchManager(troveId, B, 0, 0, 1e24);
+        vm.stopPrank();
+
+        // Try to switch to individual delegate (C) along with new interest
+        uint256 newAnnualInterestRate = 101e16;
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.InterestRateTooHigh.selector);
+        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, newAnnualInterestRate, 0, 0, 10000e18);
+        vm.stopPrank();
+    }
+
     function testSetDelegateRemovesBatchManager() public {
         vm.startPrank(B);
         borrowerOperations.registerBatchManager(1e16, 20e16, 5e16, 25e14, MIN_INTEREST_RATE_CHANGE_PERIOD);

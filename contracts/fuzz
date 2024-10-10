@@ -1,0 +1,22 @@
+#!/bin/bash
+
+pnpm=(pnpm -s)
+
+if [ $# -eq 0 ]; then
+    export DEBUG=1
+    exec "${pnpm[@]}" fuzz
+fi
+
+cmd=$1
+shift
+
+case $cmd in
+start | stop | monit | logs | repro)
+    exec "${pnpm[@]}" fuzz-"$cmd" "$@"
+    ;;
+*)
+    echo Bad command "'$cmd'".
+    echo Valid commands: start, stop, monit, logs, repro.
+    exit 1
+    ;;
+esac

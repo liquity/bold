@@ -44,7 +44,7 @@ export function UpdatePrices() {
             color: "contentAlt",
           })}
         >
-          Simulate prices
+          simulate prices
         </div>{" "}
         <div
           className={css({

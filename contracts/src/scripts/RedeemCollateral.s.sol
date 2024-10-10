@@ -16,8 +16,19 @@ contract RedeemCollateral is Script {
     function run() external {
         vm.startBroadcast();
 
-        ICollateralRegistry collateralRegistry = ICollateralRegistry(vm.envAddress("COLLATERAL_REGISTRY"));
+        string memory manifestJson;
+        try vm.readFile("deployment-manifest.json") returns (string memory content) {
+            manifestJson = content;
+        } catch {}
+
+        ICollateralRegistry collateralRegistry;
+        try vm.envAddress("COLLATERAL_REGISTRY") returns (address value) {
+            collateralRegistry = ICollateralRegistry(value);
+        } catch {
+            collateralRegistry = ICollateralRegistry(vm.parseJsonAddress(manifestJson, ".collateralRegistry"));
+        }
         vm.label(address(collateralRegistry), "CollateralRegistry");
+
         IBoldToken boldToken = IBoldToken(collateralRegistry.boldToken());
         vm.label(address(boldToken), "BoldToken");
 
