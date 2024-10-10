@@ -77,8 +77,7 @@ export function PanelClaimRewards({
           <HFlex justifyContent="space-between" gap={24}>
             <div>{content.earnScreen.rewardsPanel.expectedGasFeeLabel}</div>
             <Amount
-              prefix="~"
-              suffix=" USD"
+              prefix="~$"
               value={gasFeeUsd}
               format={2}
             />

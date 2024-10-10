@@ -39,6 +39,8 @@ export function PanelUpdateDeposit({
   const [focused, setFocused] = useState(false);
   const [claimRewards, setClaimRewards] = useState(false);
 
+  const hasDeposit = position?.deposit && dn.gt(position.deposit, 0);
+
   const parsedValue = parseInputFloat(value);
 
   const value_ = (focused || !parsedValue || dn.lte(parsedValue, 0)) ? value : `${fmtnum(parsedValue, "full")}`;
@@ -60,9 +62,9 @@ export function PanelUpdateDeposit({
 
   const collateral = useCollateral(collIndex);
 
-  const allowSubmit = account.isConnected && parsedValue && dn.gt(parsedValue, 0);
-
-  const hasDeposit = position?.deposit && dn.gt(position.deposit, 0);
+  const allowSubmit = account.isConnected
+    && parsedValue
+    && dn.gt(parsedValue, 0);
 
   return (
     <div
