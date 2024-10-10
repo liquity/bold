@@ -147,7 +147,7 @@ contract GasCompZapper is AddRemoveManagers, LeftoversSweep {
         _returnLeftovers(collToken, boldToken, initialBalances);
     }
 
-    function adjustTroveWithRawETH(
+    function adjustTrove(
         uint256 _troveId,
         uint256 _collChange,
         bool _isCollIncrease,
@@ -164,7 +164,7 @@ contract GasCompZapper is AddRemoveManagers, LeftoversSweep {
         _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances);
     }
 
-    function adjustUnredeemableTroveWithRawETH(
+    function adjustUnredeemableTrove(
         uint256 _troveId,
         uint256 _collChange,
         bool _isCollIncrease,
