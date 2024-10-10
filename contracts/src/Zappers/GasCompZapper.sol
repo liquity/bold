@@ -8,11 +8,12 @@ import "../Interfaces/IAddressesRegistry.sol";
 import "../Interfaces/IBorrowerOperations.sol";
 import "../Interfaces/IWETH.sol";
 import "../Dependencies/AddRemoveManagers.sol";
+import "./LeftoversSweep.sol";
 import "../Dependencies/Constants.sol";
 
 // import "forge-std/console2.sol";
 
-contract GasCompZapper is AddRemoveManagers {
+contract GasCompZapper is AddRemoveManagers, LeftoversSweep {
     using SafeERC20 for IERC20;
 
     IBorrowerOperations public immutable borrowerOperations; // LST branch (i.e., not WETH as collateral)
@@ -103,9 +104,8 @@ contract GasCompZapper is AddRemoveManagers {
         IBorrowerOperations borrowerOperationsCached = borrowerOperations;
 
         // Pull and approve coll
-        IERC20 collTokenCached = collToken;
-        collTokenCached.safeTransferFrom(msg.sender, address(this), _amount);
-        collTokenCached.approve(address(borrowerOperationsCached), _amount);
+        collToken.safeTransferFrom(msg.sender, address(this), _amount);
+        collToken.approve(address(borrowerOperationsCached), _amount);
 
         borrowerOperationsCached.addColl(_troveId, _amount);
     }
@@ -134,10 +134,17 @@ contract GasCompZapper is AddRemoveManagers {
         address owner = troveNFT.ownerOf(_troveId);
         _requireSenderIsOwnerOrAddManager(_troveId, owner);
 
+        // Set initial balances to make sure there are not lefovers
+        InitialBalances memory initialBalances;
+        _setInitialBalances(collToken, boldToken, initialBalances);
+
         // Pull Bold
         boldToken.transferFrom(msg.sender, address(this), _boldAmount);
 
         borrowerOperations.repayBold(_troveId, _boldAmount);
+
+        // return leftovers to user
+        _returnLeftovers(collToken, boldToken, initialBalances);
     }
 
     function adjustTroveWithRawETH(
@@ -148,11 +155,13 @@ contract GasCompZapper is AddRemoveManagers {
         bool _isDebtIncrease,
         uint256 _maxUpfrontFee
     ) external {
-        address receiver = _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
+        InitialBalances memory initialBalances;
+        address receiver =
+            _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, initialBalances);
         borrowerOperations.adjustTrove(
             _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxUpfrontFee
         );
-        _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver);
+        _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances);
     }
 
     function adjustZombieTroveWithRawETH(
@@ -165,11 +174,13 @@ contract GasCompZapper is AddRemoveManagers {
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) external {
-        address receiver = _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
+        InitialBalances memory initialBalances;
+        address receiver =
+            _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, initialBalances);
         borrowerOperations.adjustZombieTrove(
             _troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, _upperHint, _lowerHint, _maxUpfrontFee
         );
-        _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver);
+        _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances);
     }
 
     function _adjustTrovePre(
@@ -177,7 +188,8 @@ contract GasCompZapper is AddRemoveManagers {
         uint256 _collChange,
         bool _isCollIncrease,
         uint256 _boldChange,
-        bool _isDebtIncrease
+        bool _isDebtIncrease,
+        InitialBalances memory _initialBalances
     ) internal returns (address) {
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = owner;
@@ -190,11 +202,13 @@ contract GasCompZapper is AddRemoveManagers {
             _requireSenderIsOwnerOrAddManager(_troveId, owner);
         }
 
+        // Set initial balances to make sure there are not lefovers
+        _setInitialBalances(collToken, boldToken, _initialBalances);
+
         // Pull and approve coll
         if (_isCollIncrease) {
-            IERC20 collTokenCached = collToken;
-            collTokenCached.safeTransferFrom(msg.sender, address(this), _collChange);
-            collTokenCached.approve(address(borrowerOperations), _collChange);
+            collToken.safeTransferFrom(msg.sender, address(this), _collChange);
+            collToken.approve(address(borrowerOperations), _collChange);
         }
 
         // TODO: version with Permit
@@ -211,7 +225,8 @@ contract GasCompZapper is AddRemoveManagers {
         bool _isCollIncrease,
         uint256 _boldChange,
         bool _isDebtIncrease,
-        address _receiver
+        address _receiver,
+        InitialBalances memory _initialBalances
     ) internal {
         // Send coll left
         if (!_isCollIncrease) {
@@ -222,6 +237,9 @@ contract GasCompZapper is AddRemoveManagers {
         if (_isDebtIncrease) {
             boldToken.transfer(_receiver, _boldChange);
         }
+
+        // return leftovers to user
+        _returnLeftovers(collToken, boldToken, _initialBalances);
     }
 
     function closeTroveToRawETH(uint256 _troveId) external {

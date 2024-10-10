@@ -5,6 +5,7 @@ pragma solidity ^0.8.18;
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
+import "../../LeftoversSweep.sol";
 import "../../../Interfaces/IBoldToken.sol";
 import "./UniswapV3/ISwapRouter.sol";
 import "./UniswapV3/IQuoterV2.sol";
@@ -14,7 +15,7 @@ import {DECIMAL_PRECISION} from "../../../Dependencies/Constants.sol";
 
 // import "forge-std/console2.sol";
 
-contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
+contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable collToken;
@@ -68,12 +69,16 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
 
     function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount, address _zapper) external returns (uint256) {
         ISwapRouter uniV3RouterCached = uniV3Router;
-        IBoldToken boldTokenCached = boldToken;
-        boldTokenCached.transferFrom(_zapper, address(this), _boldAmount);
-        boldTokenCached.approve(address(uniV3RouterCached), _boldAmount);
+
+        // Set initial balances to make sure there are not lefovers
+        InitialBalances memory initialBalances;
+        _setInitialBalances(collToken, boldToken, initialBalances);
+
+        boldToken.transferFrom(_zapper, address(this), _boldAmount);
+        boldToken.approve(address(uniV3RouterCached), _boldAmount);
 
         ISwapRouter.ExactOutputSingleParams memory params = ISwapRouter.ExactOutputSingleParams({
-            tokenIn: address(boldTokenCached),
+            tokenIn: address(boldToken),
             tokenOut: address(collToken),
             fee: fee,
             recipient: _zapper,
@@ -83,17 +88,26 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
             sqrtPriceLimitX96: 0 // See: https://ethereum.stackexchange.com/a/156018/9205
         });
 
-        return uniV3RouterCached.exactOutputSingle(params);
+        uint256 amountIn = uniV3RouterCached.exactOutputSingle(params);
+
+        // return leftovers to user
+        _returnLeftovers(collToken, boldToken, initialBalances);
+
+        return amountIn;
     }
 
     function swapToBold(uint256 _collAmount, uint256 _minBoldAmount, address _zapper) external returns (uint256) {
         ISwapRouter uniV3RouterCached = uniV3Router;
-        IERC20 collTokenCached = collToken;
-        collTokenCached.safeTransferFrom(_zapper, address(this), _collAmount);
-        collTokenCached.approve(address(uniV3RouterCached), _collAmount);
+
+        // Set initial balances to make sure there are not lefovers
+        InitialBalances memory initialBalances;
+        _setInitialBalances(collToken, boldToken, initialBalances);
+
+        collToken.safeTransferFrom(_zapper, address(this), _collAmount);
+        collToken.approve(address(uniV3RouterCached), _collAmount);
 
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-            tokenIn: address(collTokenCached),
+            tokenIn: address(collToken),
             tokenOut: address(boldToken),
             fee: fee,
             recipient: _zapper,
@@ -103,21 +117,25 @@ contract UniV3Exchange is IExchange, IUniswapV3SwapCallback {
             sqrtPriceLimitX96: 0 // See: https://ethereum.stackexchange.com/a/156018/9205
         });
 
-        return uniV3RouterCached.exactInputSingle(params);
+        uint256 amountOut = uniV3RouterCached.exactInputSingle(params);
+
+        // return leftovers to user
+        _returnLeftovers(collToken, boldToken, initialBalances);
+
+        return amountOut;
     }
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {
-        //_requireCallerIsUniV3Router();
-        IBoldToken boldTokenCached = boldToken;
-        IERC20 collTokenCached = collToken;
+        _requireCallerIsUniV3Router();
+
         IERC20 token0;
         IERC20 token1;
-        if (_zeroForOne(boldTokenCached, collTokenCached)) {
-            token0 = boldTokenCached;
-            token1 = collTokenCached;
+        if (_zeroForOne(boldToken, collToken)) {
+            token0 = boldToken;
+            token1 = collToken;
         } else {
-            token0 = collTokenCached;
-            token1 = boldTokenCached;
+            token0 = collToken;
+            token1 = boldToken;
         }
 
         if (amount0Delta > 0) {

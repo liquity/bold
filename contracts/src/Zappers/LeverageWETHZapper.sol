@@ -42,21 +42,27 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
         uint256 troveId;
         IBorrowerOperations borrowerOperations;
         IWETH WETH;
+        IBoldToken boldToken;
         uint256 boldAmount;
     }
 
     function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable {
         require(msg.value == ETH_GAS_COMPENSATION + _params.collAmount, "LZ: Wrong amount of ETH");
 
-        IWETH WETHCached = WETH;
+        // Set initial balances to make sure there are not lefovers
+        InitialBalances memory initialBalances;
+        _setInitialBalances(WETH, boldToken, initialBalances);
 
         // Convert ETH to WETH
         WETH.deposit{value: msg.value}();
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            WETHCached, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(_params)
+            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(_params)
         );
+
+        // return leftovers to user
+        _returnLeftovers(WETH, boldToken, initialBalances);
     }
 
     // Callback from the flash loan provider
@@ -69,6 +75,7 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
         OpenLeveragedTroveVars memory vars;
         vars.borrowerOperations = borrowerOperations;
         vars.WETH = WETH;
+        vars.boldToken = boldToken;
 
         uint256 totalCollAmount = _params.collAmount + _effectiveFlashLoanAmount;
         // We compute boldAmount off-chain for efficiency
@@ -106,10 +113,17 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
         address owner = troveNFT.ownerOf(_params.troveId);
         _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
 
+        // Set initial balances to make sure there are not lefovers
+        InitialBalances memory initialBalances;
+        _setInitialBalances(WETH, boldToken, initialBalances);
+
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
             WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverUpTrove, abi.encode(_params)
         );
+
+        // return leftovers to user
+        _returnLeftovers(WETH, boldToken, initialBalances);
     }
 
     // Callback from the flash loan provider
@@ -143,10 +157,17 @@ contract LeverageWETHZapper is WETHZapper, IFlashLoanReceiver, ILeverageZapper {
         address owner = troveNFT.ownerOf(_params.troveId);
         _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
 
+        // Set initial balances to make sure there are not lefovers
+        InitialBalances memory initialBalances;
+        _setInitialBalances(WETH, boldToken, initialBalances);
+
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
             WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.LeverDownTrove, abi.encode(_params)
         );
+
+        // return leftovers to user
+        _returnLeftovers(WETH, boldToken, initialBalances);
     }
 
     // Callback from the flash loan provider
