@@ -15,7 +15,7 @@ export function Amount({
   suffix?: string;
   value: Parameters<typeof fmtnum>[0];
 }) {
-  if (!value) {
+  if (value === null || value === undefined) {
     return fallback ?? null;
   }
   if (percentage && !suffix) {
