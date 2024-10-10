@@ -14,6 +14,7 @@ interface ILeverageZapper is IZapper {
         uint256 upperHint;
         uint256 lowerHint;
         uint256 annualInterestRate;
+        address batchManager;
         uint256 maxUpfrontFee;
         address addManager;
         address removeManager;

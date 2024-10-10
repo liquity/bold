@@ -49,6 +49,10 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanReceiver, IZ
 
     function openTroveWithRawETH(OpenTroveParams calldata _params) external payable returns (uint256) {
         require(msg.value > ETH_GAS_COMPENSATION, "WZ: Insufficient ETH");
+        require(
+            _params.batchManager == address(0) || _params.annualInterestRate == 0,
+            "WZ: Cannot choose interest if joining a batch"
+        );
 
         OpenTroveVars memory vars;
         vars.borrowerOperations = borrowerOperations;
@@ -60,21 +64,43 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanReceiver, IZ
         // Approve WETH to BorrowerOperations
         vars.WETH.approve(address(vars.borrowerOperations), msg.value);
 
-        vars.troveId = vars.borrowerOperations.openTrove(
-            _params.owner,
-            _params.ownerIndex,
-            msg.value - ETH_GAS_COMPENSATION,
-            _params.boldAmount,
-            _params.upperHint,
-            _params.lowerHint,
-            _params.annualInterestRate,
-            _params.maxUpfrontFee,
-            // Add this contract as add/receive manager to be able to fully adjust trove,
-            // while keeping the same management functionality
-            address(this), // add manager
-            address(this), // remove manager
-            address(this) // receiver for remove manager
-        );
+        if (_params.batchManager == address(0)) {
+            vars.troveId = vars.borrowerOperations.openTrove(
+                _params.owner,
+                _params.ownerIndex,
+                msg.value - ETH_GAS_COMPENSATION,
+                _params.boldAmount,
+                _params.upperHint,
+                _params.lowerHint,
+                _params.annualInterestRate,
+                _params.maxUpfrontFee,
+                // Add this contract as add/receive manager to be able to fully adjust trove,
+                // while keeping the same management functionality
+                address(this), // add manager
+                address(this), // remove manager
+                address(this) // receiver for remove manager
+            );
+        } else {
+            IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams memory
+                openTroveAndJoinInterestBatchManagerParams = IBorrowerOperations
+                    .OpenTroveAndJoinInterestBatchManagerParams({
+                    owner: _params.owner,
+                    ownerIndex: _params.ownerIndex,
+                    collAmount: msg.value - ETH_GAS_COMPENSATION,
+                    boldAmount: _params.boldAmount,
+                    upperHint: _params.upperHint,
+                    lowerHint: _params.lowerHint,
+                    interestBatchManager: _params.batchManager,
+                    maxUpfrontFee: _params.maxUpfrontFee,
+                    // Add this contract as add/receive manager to be able to fully adjust trove,
+                    // while keeping the same management functionality
+                    addManager: address(this), // add manager
+                    removeManager: address(this), // remove manager
+                    receiver: address(this) // receiver for remove manager
+                });
+            vars.troveId =
+                vars.borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
+        }
 
         boldToken.transfer(msg.sender, _params.boldAmount);
 
@@ -84,8 +110,6 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanReceiver, IZ
 
         return vars.troveId;
     }
-
-    // TODO: open trove and join batch
 
     function addCollWithRawETH(uint256 _troveId) external payable {
         address owner = troveNFT.ownerOf(_troveId);
