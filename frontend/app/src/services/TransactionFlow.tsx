@@ -17,6 +17,8 @@ import type { Request as EarnDepositRequest } from "@/src/tx-flows/earnDeposit";
 import type { Request as EarnWithdrawRequest } from "@/src/tx-flows/earnWithdraw";
 import type { Request as OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
 import type { Request as OpenLoanPositionRequest } from "@/src/tx-flows/openLoanPosition";
+import type { Request as StakeDepositRequest } from "@/src/tx-flows/stakeDeposit";
+import type { Request as UnstakeDepositRequest } from "@/src/tx-flows/unstakeDeposit";
 import type { Request as UpdateLoanInterestRateRequest } from "@/src/tx-flows/updateLoanInterestRate";
 import type { Request as UpdateLoanPositionRequest } from "@/src/tx-flows/updateLoanPosition";
 import type { Address } from "@/src/types";
@@ -33,6 +35,8 @@ import { earnDeposit } from "@/src/tx-flows/earnDeposit";
 import { earnWithdraw } from "@/src/tx-flows/earnWithdraw";
 import { openLeveragePosition } from "@/src/tx-flows/openLeveragePosition";
 import { openLoanPosition } from "@/src/tx-flows/openLoanPosition";
+import { stakeDeposit } from "@/src/tx-flows/stakeDeposit";
+import { unstakeDeposit } from "@/src/tx-flows/unstakeDeposit";
 import { updateLoanInterestRate } from "@/src/tx-flows/updateLoanInterestRate";
 import { updateLoanPosition } from "@/src/tx-flows/updateLoanPosition";
 import { noop } from "@/src/utils";
@@ -51,6 +55,8 @@ export type FlowRequest =
   | EarnWithdrawRequest
   | OpenLeveragePositionRequest
   | OpenLoanPositionRequest
+  | StakeDepositRequest
+  | UnstakeDepositRequest
   | UpdateLoanInterestRateRequest
   | UpdateLoanPositionRequest;
 
@@ -66,6 +72,8 @@ const flowDeclarations: {
   earnWithdraw,
   openLeveragePosition,
   openLoanPosition,
+  stakeDeposit,
+  unstakeDeposit,
   updateLoanInterestRate,
   updateLoanPosition,
 };
@@ -77,6 +85,8 @@ const FlowIdSchema = v.union([
   v.literal("earnWithdraw"),
   v.literal("openLeveragePosition"),
   v.literal("openLoanPosition"),
+  v.literal("stakeDeposit"),
+  v.literal("unstakeDeposit"),
   v.literal("updateLoanInterestRate"),
   v.literal("updateLoanPosition"),
 ]);

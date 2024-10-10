@@ -262,13 +262,19 @@ export default {
 
   // Stake screen
   stakeScreen: {
-    header: (lqtyIcon: N, lusdEthIcons: N) => (
+    headline: (lqtyIcon: N, lusdEthIcons: N) => (
       <>
         <span>Stake</span>
         {lqtyIcon} <span>LQTY & get</span>
         {lusdEthIcons} <span>LUSD + ETH</span>
       </>
     ),
+    subheading: (
+      <>
+        Staking LQTY tokens, you earn a share of borrowing and redemption fees in the Liquity V1 protocol.
+      </>
+    ),
+    learnMore: ["https://docs.liquity.org/faq/staking", "Learn more"],
     accountDetails: {
       myDeposit: "My deposit",
       votingPower: "Voting power",
@@ -280,9 +286,9 @@ export default {
       unclaimed: "Unclaimed rewards",
     },
     tabs: {
-      deposit: "Deposit",
-      withdraw: "Withdraw",
-      claim: "Rewards",
+      deposit: "Staking",
+      rewards: "Rewards",
+      voting: "Voting",
     },
     depositPanel: {
       label: "Deposit",

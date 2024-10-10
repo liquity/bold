@@ -1,406 +1,432 @@
 "use client";
 
+import type { Address, TokenSymbol } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
-import { Details } from "@/src/comps/Details/Details";
+import { Amount } from "@/src/comps/Amount/Amount";
+import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import { Screen } from "@/src/comps/Screen/Screen";
+import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import content from "@/src/content";
-import { ACCOUNT_BALANCES, ACCOUNT_STAKED_LQTY, ETH_PRICE, STAKED_LQTY_TOTAL } from "@/src/demo-mode";
-import { useInputFieldValue } from "@/src/form-utils";
-import { formatPercentage } from "@/src/formatting";
+import { useProtocolContract } from "@/src/contracts";
+import { useDemoMode } from "@/src/demo-mode";
+import { ACCOUNT_STAKED_LQTY, STAKED_LQTY_TOTAL } from "@/src/demo-mode";
+import { dnum18, dnumMax } from "@/src/dnum-utils";
+import { parseInputFloat } from "@/src/form-utils";
+import { fmtnum } from "@/src/formatting";
+import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
+import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon, VFlex } from "@liquity2/uikit";
+import {
+  AnchorTextButton,
+  Button,
+  HFlex,
+  InfoTooltip,
+  InputField,
+  Tabs,
+  TextButton,
+  TokenIcon,
+  VFlex,
+} from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { useReadContracts } from "wagmi";
 
 const TABS = [
   { label: content.stakeScreen.tabs.deposit, id: "deposit" },
-  { label: content.stakeScreen.tabs.withdraw, id: "withdraw" },
-  { label: content.stakeScreen.tabs.claim, id: "claim" },
+  { label: content.stakeScreen.tabs.rewards, id: "rewards" },
+  // { label: content.stakeScreen.tabs.voting, id: "voting" },
 ];
 
 export function StakeScreen() {
   const router = useRouter();
   const { action = "deposit" } = useParams();
 
+  const account = useAccount();
   const lqtyPrice = usePrice("LQTY");
 
-  const tab = TABS.findIndex(({ id }) => id === action);
-
-  const deposit = useInputFieldValue((value) => `${dn.format(value)} LQTY`);
-  const withdraw = useInputFieldValue((value) => `${dn.format(value)} LQTY`);
-
-  if (!lqtyPrice) {
-    return null;
-  }
-
-  return (
+  return !lqtyPrice ? null : (
     <Screen
       title={
         <HFlex>
-          <span>Stake</span>
-          <TokenIcon size={24} symbol="LQTY" />
-          <span>LQTY & get</span>
-          <TokenIcon.Group>
-            <TokenIcon symbol="LUSD" />
-            <TokenIcon symbol="ETH" />
-          </TokenIcon.Group>
-          <span>LUSD + ETH</span>
+          {content.stakeScreen.headline(
+            <TokenIcon size={24} symbol="LQTY" />,
+            <TokenIcon.Group>
+              <TokenIcon symbol="LUSD" />
+              <TokenIcon symbol="ETH" />
+            </TokenIcon.Group>,
+          )}
         </HFlex>
       }
-    >
-      <VFlex gap={32}>
-        <Details
-          items={[
-            {
-              label: content.stakeScreen.accountDetails.myDeposit,
-              value: `${dn.format(ACCOUNT_STAKED_LQTY.deposit)} LQTY`,
-            },
-            {
-              label: content.stakeScreen.accountDetails.votingPower,
-              value: (
-                <HFlex justifyContent="flex-start" gap={4}>
-                  <div>{depositShare(ACCOUNT_STAKED_LQTY.deposit, 4)}</div>
-                  <InfoTooltip>
-                    {content.stakeScreen.accountDetails.votingPowerHelp}
-                  </InfoTooltip>
-                </HFlex>
-              ),
-            },
-            {
-              label: content.stakeScreen.accountDetails.unclaimed,
-              value: (
-                <HFlex
-                  gap={8}
-                  justifyContent="flex-start"
-                  className={css({
-                    fontSize: 14,
-                    color: "positive",
-                    whiteSpace: "nowrap",
-                  })}
-                >
-                  {dn.format(ACCOUNT_STAKED_LQTY.rewardLusd)} LUSD
-                  <div
-                    className={css({
-                      display: "flex",
-                      width: 4,
-                      height: 4,
-                      borderRadius: "50%",
-                      backgroundColor: "dimmed",
-                    })}
-                  />
-                  {dn.format(ACCOUNT_STAKED_LQTY.rewardEth)} ETH
-                </HFlex>
-              ),
-            },
-          ]}
-        />
-        <VFlex gap={24}>
-          <Tabs
-            items={TABS.map(({ label, id }) => ({
-              label,
-              panelId: `p-${id}`,
-              tabId: `t-${id}`,
-            }))}
-            selected={tab}
-            onSelect={(index) => {
-              router.push(`/stake/${TABS[index].id}`);
-            }}
+      subtitle={
+        <>
+          {content.stakeScreen.subheading}{" "}
+          <AnchorTextButton
+            label={content.stakeScreen.learnMore[1]}
+            href={content.stakeScreen.learnMore[0]}
+            external
           />
-          {action === "deposit" && (
-            <>
-              <Field
-                field={
-                  <InputField
-                    contextual={
-                      <InputField.Badge
-                        icon={<TokenIcon symbol="LQTY" />}
-                        label="LQTY"
-                      />
-                    }
-                    label="You deposit"
-                    placeholder="0.00"
-                    secondary={{
-                      start: deposit.parsed && `$${dn.format(dn.mul(deposit.parsed, lqtyPrice), 2)}`,
-                      end: (
-                        <TextButton
-                          label={`Max. ${dn.format(ACCOUNT_BALANCES.LQTY, 2)} LQTY`}
-                          onClick={() => {
-                            deposit.setValue(
-                              dn.toString(ACCOUNT_BALANCES.LQTY),
-                            );
-                          }}
-                        />
-                      ),
-                    }}
-                    {...deposit.inputFieldProps}
-                  />
-                }
-                footerStart={
-                  <Field.FooterInfo
-                    label="New voting power"
-                    value={
-                      <HFlex>
-                        <div>
-                          {depositShare(deposit.parsed && dn.add(ACCOUNT_STAKED_LQTY.deposit, deposit.parsed), 4)}
-                        </div>
-                        <InfoTooltip>
-                          Voting power is the percentage of the total staked LQTY that you own.
-                        </InfoTooltip>
-                      </HFlex>
-                    }
-                  />
-                }
-              />
-              <div
-                className={css({
-                  paddingTop: 16,
-                })}
-              >
-                <div
-                  className={css({
-                    padding: "20px 24px",
-                    textAlign: "center",
-                    background: "secondary",
-                    borderRadius: 8,
-                  })}
-                >
-                  LQTY will be staked into Liquity V1 and you will receive any rewards attributable there.
-                </div>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  width: "100%",
-                  paddingTop: 16,
-                }}
-              >
-                <Button
-                  disabled={!(deposit.parsed && dn.gt(deposit.parsed, 0))}
-                  label="Stake"
-                  mode="primary"
-                  size="large"
-                  wide
-                />
-              </div>
-            </>
-          )}
-          {action === "withdraw" && (
-            <>
-              <Field
-                field={
-                  <InputField
-                    contextual={
-                      <InputField.Badge
-                        icon={<TokenIcon symbol="LQTY" />}
-                        label="LQTY"
-                      />
-                    }
-                    label="You withdraw"
-                    placeholder="0.00"
-                    secondary={{
-                      start: withdraw.parsed && `$${dn.format(dn.mul(withdraw.parsed, lqtyPrice), 2)}`,
-                      end: (
-                        <TextButton
-                          label={`Max. ${dn.format(ACCOUNT_STAKED_LQTY.deposit, 2)} LQTY`}
-                          onClick={() => {
-                            withdraw.setValue(
-                              dn.toString(ACCOUNT_STAKED_LQTY.deposit),
-                            );
-                          }}
-                        />
-                      ),
-                    }}
-                    {...withdraw.inputFieldProps}
-                  />
-                }
-                footerStart={
-                  <Field.FooterInfo
-                    label="New voting power"
-                    value={
-                      <HFlex>
-                        <div>
-                          {depositShare(withdraw.parsed && dn.sub(ACCOUNT_STAKED_LQTY.deposit, withdraw.parsed), 4)}
-                        </div>
-                        <InfoTooltip>
-                          Voting power is the percentage of the total staked LQTY that you own.
-                        </InfoTooltip>
-                      </HFlex>
-                    }
-                  />
-                }
-              />
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  width: "100%",
-                  paddingTop: 16,
-                }}
-              >
-                <Button
-                  disabled={!(deposit.parsed && dn.gt(deposit.parsed, 0))}
-                  label="Unstake"
-                  mode="primary"
-                  size="large"
-                  wide
-                />
-              </div>
-            </>
-          )}
-          {action === "claim" && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                width: "100%",
-                gap: 58,
-              }}
-            >
-              <div
-                className={css({
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 12,
-                  padding: "0 16px",
-                  background: "surface",
-                  border: "1px solid token(colors.border)",
-                  borderRadius: 8,
-                })}
-              >
-                <div
-                  className={css({
-                    paddingTop: 8,
-                    fontSize: 16,
-                    fontWeight: 500,
-                    color: "contentAlt",
-                  })}
-                >
-                  You claim
-                </div>
+        </>
+      }
+      gap={48}
+    >
+      <StakePositionSummary address={account.address} />
+      <VFlex gap={24}>
+        <Tabs
+          items={TABS.map(({ label, id }) => ({
+            label,
+            panelId: `p-${id}`,
+            tabId: `t-${id}`,
+          }))}
+          selected={TABS.findIndex(({ id }) => id === action)}
+          onSelect={(index) => {
+            router.push(`/stake/${TABS[index].id}`);
+          }}
+        />
 
-                <div
-                  className={css({
-                    display: "flex",
-                    gap: 32,
-                  })}
-                >
-                  <RewardAmount
-                    value={ACCOUNT_STAKED_LQTY.rewardLusd}
-                    symbol="LUSD"
-                    help={
-                      <InfoTooltip heading="LUSD rewards">
-                        −
-                      </InfoTooltip>
-                    }
-                  />
-                  <RewardAmount
-                    value={ACCOUNT_STAKED_LQTY.rewardEth}
-                    symbol="ETH"
-                    help={
-                      <InfoTooltip heading="ETH rewards">
-                        −
-                      </InfoTooltip>
-                    }
-                  />
-                </div>
-
-                <div
-                  className={css({
-                    display: "flex",
-                    gap: 16,
-                    marginTop: -1,
-                    padding: "20px 0",
-                    color: "contentAlt",
-                    borderTop: "1px solid token(colors.border)",
-                  })}
-                >
-                  {content.stakeScreen.rewardsPanel.details(
-                    dn.format(
-                      dn.add(
-                        ACCOUNT_STAKED_LQTY.rewardLusd,
-                        dn.mul(ACCOUNT_STAKED_LQTY.rewardEth, ETH_PRICE),
-                      ),
-                      2,
-                    ),
-                    "9.78",
-                  )}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "center",
-                  width: "100%",
-                }}
-              >
-                <Button
-                  label={content.earnScreen.rewardsPanel.action}
-                  mode="primary"
-                  size="large"
-                  wide
-                />
-              </div>
-            </div>
-          )}
-        </VFlex>
+        {action === "deposit" && <PanelUpdateStake lqtyPrice={lqtyPrice} />}
+        {action === "withdraw" && null}
+        {action === "rewards" && <PanelClaimRewards />}
       </VFlex>
     </Screen>
   );
 }
 
-function depositShare(deposit?: Dnum | null, digits?: number) {
-  return formatPercentage(deposit && dn.div(deposit, STAKED_LQTY_TOTAL), { digits });
+function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
+  const router = useRouter();
+  const account = useAccount();
+  const txFlow = useTransactionFlow();
+
+  const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
+  const [value, setValue] = useState("");
+  const [focused, setFocused] = useState(false);
+
+  const stakePosition = useStakePosition(account.address);
+
+  const parsedValue = parseInputFloat(value);
+
+  const value_ = (focused || !parsedValue || dn.lte(parsedValue, 0))
+    ? value
+    : `${dn.format(parsedValue)}`;
+
+  const depositDifference = mode === "withdraw"
+    ? dn.mul(parsedValue ?? dn.from(0, 18), -1)
+    : (parsedValue ?? dn.from(0, 18));
+
+  const updatedDeposit = dnumMax(
+    dn.add(stakePosition.stake, depositDifference),
+    dn.from(0, 18),
+  );
+
+  const updatedShare = dn.gt(stakePosition.totalStaked, 0)
+    ? dn.div(updatedDeposit, dn.add(stakePosition.totalStaked, depositDifference))
+    : dn.from(0, 18);
+
+  const lqtyBalance = useBalance(account.address, "LQTY");
+
+  const allowSubmit = Boolean(account.isConnected && parsedValue && dn.gt(parsedValue, 0));
+
+  return (
+    <>
+      <Field
+        field={
+          <InputField
+            contextual={
+              <InputTokenBadge
+                background={false}
+                icon={<TokenIcon symbol="LQTY" />}
+                label="LQTY"
+              />
+            }
+            label={{
+              start: mode === "withdraw" ? "You withdraw" : "You deposit",
+              end: (
+                <Tabs
+                  compact
+                  items={[
+                    { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
+                    { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
+                  ]}
+                  onSelect={(index, { origin, event }) => {
+                    setMode(index === 1 ? "withdraw" : "deposit");
+                    setValue("");
+                    if (origin !== "keyboard") {
+                      event.preventDefault();
+                      (event.target as HTMLElement).focus();
+                    }
+                  }}
+                  selected={mode === "withdraw" ? 1 : 0}
+                />
+              ),
+            }}
+            labelHeight={32}
+            onFocus={() => setFocused(true)}
+            onChange={setValue}
+            onBlur={() => setFocused(false)}
+            value={value_}
+            placeholder="0.00"
+            secondary={{
+              start: parsedValue && `$${dn.format(dn.mul(parsedValue, lqtyPrice), 2)}`,
+              end: mode === "deposit"
+                ? (
+                  <TextButton
+                    label={`Max. ${(fmtnum(lqtyBalance.data ?? 0))} LQTY`}
+                    onClick={() => {
+                      setValue(dn.toString(lqtyBalance.data ?? dn.from(0, 18)));
+                    }}
+                  />
+                )
+                : (
+                  <TextButton
+                    label={`Max. ${fmtnum(stakePosition.stake, 2)} LQTY`}
+                    onClick={() => {
+                      setValue(dn.toString(stakePosition.stake));
+                    }}
+                  />
+                ),
+            }}
+          />
+        }
+        footerStart={
+          <Field.FooterInfo
+            label="New voting power"
+            value={
+              <HFlex>
+                <div>
+                  <Amount value={updatedShare} percentage suffix="%" />
+                </div>
+                <InfoTooltip>
+                  Voting power is the percentage of the total staked LQTY that you own.
+                </InfoTooltip>
+              </HFlex>
+            }
+          />
+        }
+      />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          width: "100%",
+          paddingTop: 16,
+        }}
+      >
+        <Button
+          disabled={!allowSubmit}
+          label="Next: Summary"
+          mode="primary"
+          size="large"
+          wide
+          onClick={() => {
+            if (account.address) {
+              txFlow.start({
+                flowId: mode === "deposit" ? "stakeDeposit" : "unstakeDeposit",
+                backLink: [`/stake`, "Back to stake position"],
+                successLink: ["/", "Go to the Dashboard"],
+                successMessage: "The stake position has been updated successfully.",
+                lqtyAmount: dn.abs(depositDifference),
+              });
+            }
+            router.push("/transactions");
+          }}
+        />
+      </div>
+    </>
+  );
 }
 
-function RewardAmount({
+function PanelClaimRewards() {
+  const router = useRouter();
+  const account = useAccount();
+  // const txFlow = useTransactionFlow();
+  const demoMode = useDemoMode();
+
+  const ethPrice = usePrice("ETH");
+
+  if (!ethPrice) {
+    return null;
+  }
+
+  const rewardsLusd = demoMode.enabled ? ACCOUNT_STAKED_LQTY.rewardLusd : dn.from(0, 18);
+  const rewardsEth = demoMode.enabled ? ACCOUNT_STAKED_LQTY.rewardEth : dn.from(0, 18);
+
+  const totalRewards = dn.add(
+    rewardsLusd,
+    dn.mul(rewardsEth, ethPrice),
+  );
+
+  const gasFeeUsd = dn.from(0.0015, 18); // Estimated gas fee
+
+  const allowSubmit = account.isConnected && dn.gt(totalRewards, 0);
+
+  return (
+    <VFlex gap={48}>
+      <VFlex gap={0}>
+        <Rewards
+          amount={rewardsLusd}
+          label="Issuance gain"
+          symbol="LUSD"
+        />
+        <Rewards
+          amount={rewardsEth}
+          label="Redemption gain"
+          symbol="ETH"
+        />
+
+        <div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            padding: "24px 0",
+            color: "contentAlt",
+          })}
+        >
+          <HFlex justifyContent="space-between" gap={24}>
+            <div>Total in USD</div>
+            <Amount
+              format="2z"
+              prefix="$"
+              value={totalRewards}
+            />
+          </HFlex>
+          <HFlex justifyContent="space-between" gap={24}>
+            <div>Expected Gas Fee</div>
+            <Amount
+              format="2z"
+              prefix="~$"
+              value={gasFeeUsd}
+            />
+          </HFlex>
+        </div>
+      </VFlex>
+
+      <ConnectWarningBox />
+
+      <Button
+        disabled={!allowSubmit}
+        label="Next: Summary"
+        mode="primary"
+        size="large"
+        wide
+        onClick={() => {
+          if (account.address) {
+            // txFlow.start({
+            //   flowId: "stakeClaimRewards",
+            //   backLink: [
+            //     `/stake`,
+            //     "Back to stake position",
+            //   ],
+            //   successLink: ["/", "Go to the Dashboard"],
+            //   successMessage: "The rewards have been claimed successfully.",
+            //   staker: account.address,
+            // });
+            router.push("/transactions");
+          }
+        }}
+      />
+    </VFlex>
+  );
+}
+
+function Rewards({
+  amount,
+  label,
   symbol,
-  value,
-  help,
 }: {
-  symbol: string;
-  value: Dnum;
-  help?: ReactNode;
+  amount: Dnum;
+  label: ReactNode;
+  symbol: TokenSymbol;
 }) {
   return (
     <div
       className={css({
-        display: "flex",
-        alignItems: "flex-end",
+        display: "grid",
+        gap: 24,
+        gridTemplateColumns: "1.2fr 1fr",
+        alignItems: "start",
+        padding: "24px 0",
+        borderBottom: "1px solid token(colors.separator)",
       })}
     >
       <div
         className={css({
-          fontSize: 24,
+          paddingTop: 4,
         })}
       >
-        {dn.format(value)}
+        {label}
       </div>
       <div
         className={css({
-          paddingLeft: 8,
-          paddingBottom: 3,
-          fontSize: 16,
-          color: "contentAlt",
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          gap: 8,
+          fontSize: 28,
         })}
       >
-        {symbol}
+        <Amount value={amount} />
+        <TokenIcon symbol={symbol} size={24} />
       </div>
-      {help && (
-        <div
-          className={css({
-            paddingLeft: 4,
-          })}
-        >
-          {help}
-        </div>
-      )}
     </div>
   );
+}
+
+function useStakePosition(address?: Address) {
+  const demoMode = useDemoMode();
+
+  const LqtyStaking = useProtocolContract("LqtyStaking");
+
+  let {
+    data: {
+      stake,
+      totalStaked,
+    } = {
+      stake: dn.from(0),
+      totalStaked: dn.from(0),
+    },
+  } = useReadContracts({
+    contracts: [
+      {
+        abi: LqtyStaking.abi,
+        address: LqtyStaking.address,
+        functionName: "stakes",
+        args: [address ?? "0x"],
+      },
+      {
+        abi: LqtyStaking.abi,
+        address: LqtyStaking.address,
+        functionName: "totalLQTYStaked",
+      },
+    ],
+    query: {
+      enabled: !demoMode.enabled,
+      refetchInterval: 10_000,
+      select: ([stake, totalStaked]) => ({
+        stake: dnum18(stake),
+        totalStaked: dnum18(totalStaked),
+      }),
+    },
+    allowFailure: false,
+  });
+
+  if (demoMode.enabled) {
+    stake = ACCOUNT_STAKED_LQTY.deposit;
+    totalStaked = STAKED_LQTY_TOTAL;
+  }
+
+  const share = dn.gt(totalStaked, 0)
+    ? dn.div(stake, totalStaked)
+    : dn.from(0);
+
+  return {
+    share,
+    stake,
+    totalStaked,
+  };
 }
