@@ -4,15 +4,16 @@ pragma solidity 0.8.18;
 
 import "../Dependencies/Ownable.sol";
 import "../Dependencies/AggregatorV3Interface.sol";
-import "../Interfaces/IPriceFeed.sol";
+import "../Interfaces/IMainnetPriceFeed.sol";
 import "../BorrowerOperations.sol";
 
 // import "forge-std/console2.sol";
 
-abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
+abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
     // Dummy flag raised when the collateral branch gets shut down.
     // Should be removed after actual shutdown logic is implemented.
-    bool priceFeedDisabled;
+
+    PriceSource public priceSource;
 
     // Last good price tracker for the derived USD price
     uint256 public lastGoodPrice;
@@ -30,9 +31,20 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
         bool success;
     }
 
+    event ShutDownFromOracleFailure(address _failedOracleAddr);
+
+    Oracle public ethUsdOracle;
+
     IBorrowerOperations borrowerOperations;
 
-    constructor(address _owner) Ownable(_owner) {}
+    constructor(address _owner, address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold) Ownable(_owner) {
+        // Store ETH-USD oracle
+        ethUsdOracle.aggregator = AggregatorV3Interface(_ethUsdOracleAddress);
+        ethUsdOracle.stalenessThreshold = _ethUsdStalenessThreshold;
+        ethUsdOracle.decimals = ethUsdOracle.aggregator.decimals();
+
+        assert(ethUsdOracle.decimals == 8);
+    }
 
     // TODO: remove this and set address in constructor, since we'll use CREATE2
     function setAddresses(address _borrowOperationsAddress) external onlyOwner {
@@ -41,19 +53,10 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
         _renounceOwnership();
     }
 
-    // fetchPrice returns:
+    // An individual Pricefeed instance implements _fetchPricePrimary according to the data sources it uses. Returns:
     // - The price
-    // - A bool indicating whether a new oracle failure was detected in the call
-    function fetchPrice() public returns (uint256, bool) {
-        if (priceFeedDisabled) return (lastGoodPrice, false);
-
-        return _fetchPrice();
-    }
-
-    // An individual Pricefeed instance implements _fetchPrice according to the data sources it uses. Returns:
-    // - The price
-    // - A bool indicating whether a new oracle failure was detected in the call
-    function _fetchPrice() internal virtual returns (uint256, bool) {}
+    // - A bool indicating whether a new oracle failure or exchange rate failure was detected in the call
+    function _fetchPricePrimary() internal virtual returns (uint256, bool) {}
 
     function _getOracleAnswer(Oracle memory _oracle) internal view returns (uint256, bool) {
         ChainlinkResponse memory chainlinkResponse = _getCurrentChainlinkResponse(_oracle.aggregator);
@@ -70,11 +73,13 @@ abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
         return (scaledPrice, oracleIsDown);
     }
 
-    function _disableFeedAndShutDown(address _failedOracleAddr) internal returns (uint256) {
+    function _shutDownAndSwitchToLastGoodPrice(address _failedOracleAddr) internal returns (uint256) {
         // Shut down the branch
-        borrowerOperations.shutdownFromOracleFailure(_failedOracleAddr);
+        borrowerOperations.shutdownFromOracleFailure();
+       
+        priceSource = PriceSource.lastGoodPrice;
 
-        priceFeedDisabled = true;
+        emit ShutDownFromOracleFailure(_failedOracleAddr);
         return lastGoodPrice;
     }
 

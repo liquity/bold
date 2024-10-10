@@ -94,7 +94,7 @@ interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
 
     function hasBeenShutDown() external view returns (bool);
     function shutdown() external;
-    function shutdownFromOracleFailure(address _failedOracleAddr) external;
+    function shutdownFromOracleFailure() external;
 
     function checkBatchManagerExists(address _batchMananger) external view returns (bool);
 
