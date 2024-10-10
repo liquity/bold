@@ -21,8 +21,8 @@ import {
   CHAIN_NAME,
   CHAIN_RPC_URL,
   CONTRACT_BOLD_TOKEN,
-  LQTY_TOKEN,
-  LUSD_TOKEN,
+  CONTRACT_LQTY_TOKEN,
+  CONTRACT_LUSD_TOKEN,
   WALLET_CONNECT_PROJECT_ID,
 } from "@/src/env";
 import { noop } from "@/src/utils";
@@ -103,8 +103,8 @@ export function useBalance(
       },
     )
     .with("BOLD", () => CONTRACT_BOLD_TOKEN)
-    .with("LQTY", () => LQTY_TOKEN)
-    .with("LUSD", () => LUSD_TOKEN)
+    .with("LQTY", () => CONTRACT_LQTY_TOKEN)
+    .with("LUSD", () => CONTRACT_LUSD_TOKEN)
     .otherwise(() => null);
 
   const tokenBalance = useReadContract({
@@ -125,10 +125,6 @@ export function useBalance(
       enabled: Boolean(!demoMode.enabled && address && token === "ETH"),
     },
   });
-
-  if (token === "LQTY") {
-    return { data: dnum18(0), isLoading: false };
-  }
 
   return demoMode.enabled && token
     ? { data: ACCOUNT_BALANCES[token], isLoading: false }
