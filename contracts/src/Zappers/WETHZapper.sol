@@ -224,19 +224,33 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep {
         address payable _receiver,
         InitialBalances memory _initialBalances
     ) internal {
-        // WETH -> ETH
-        if (!_isCollIncrease) {
-            WETH.withdraw(_collChange);
-            (bool success,) = _receiver.call{value: _collChange}("");
-            require(success, "WZ: Sending ETH failed");
-        }
         // Send Bold
         if (_isDebtIncrease) {
             boldToken.transfer(_receiver, _boldChange);
         }
 
+        // WETH -> ETH
+        uint256 ethToSend;
+        if (!_isCollIncrease) {
+            ethToSend = _collChange;
+        }
+
         // return leftovers to user
-        _returnLeftovers(WETH, boldToken, _initialBalances);
+        uint256 currentBoldBalance = boldToken.balanceOf(address(this));
+        if (currentBoldBalance > _initialBalances.boldBalance) {
+            boldToken.transfer(_initialBalances.sender, currentBoldBalance - _initialBalances.boldBalance);
+        }
+
+        uint256 currentCollBalance = WETH.balanceOf(address(this));
+        if (currentCollBalance > ethToSend + _initialBalances.collBalance) {
+            ethToSend = ethToSend + currentCollBalance - ethToSend - _initialBalances.collBalance;
+        }
+
+        if (ethToSend > 0) {
+            WETH.withdraw(ethToSend);
+            (bool success,) = _receiver.call{value: ethToSend}("");
+            require(success, "WZ: Sending ETH failed");
+        }
     }
 
     function closeTroveToRawETH(uint256 _troveId) external {
