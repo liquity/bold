@@ -26,9 +26,9 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
 
     // From library TickMath
     /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
-    //uint160 internal constant MIN_SQRT_RATIO = 4295128739;
+    uint160 internal constant MIN_SQRT_RATIO = 4295128739;
     /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
-    //uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
+    uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
 
     constructor(
         IERC20 _collToken,
@@ -52,9 +52,7 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
         returns (uint256)
     {
         // See: https://github.com/Uniswap/v3-core/blob/d8b1c635c275d2a9450bd6a78f3fa2484fef73eb/contracts/UniswapV3Pool.sol#L608
-        //uint160 sqrtPriceLimitX96 = _zeroForOne(boldToken, collToken) ? MIN_SQRT_RATIO + 1: MAX_SQRT_RATIO - 1;
-        uint256 maxPrice = _maxBoldAmount * DECIMAL_PRECISION / _minCollAmount;
-        uint160 sqrtPriceLimitX96 = priceToSqrtPrice(boldToken, collToken, maxPrice);
+        uint160 sqrtPriceLimitX96 = _zeroForOne(boldToken, collToken) ? MIN_SQRT_RATIO + 1: MAX_SQRT_RATIO - 1;
         IQuoterV2.QuoteExactOutputSingleParams memory params = IQuoterV2.QuoteExactOutputSingleParams({
             tokenIn: address(boldToken),
             tokenOut: address(collToken),
@@ -63,6 +61,7 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
             sqrtPriceLimitX96: sqrtPriceLimitX96
         });
         (uint256 amountIn,,,) = uniV3Quoter.quoteExactOutputSingle(params);
+        require(amountIn <= _maxBoldAmount, "Price too high");
 
         return amountIn;
     }
@@ -146,7 +145,7 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
         }
     }
 
-    function priceToSqrtPrice(IBoldToken _boldToken, IERC20 _collToken, uint256 _price) public pure returns (uint160) {
+    function priceToSqrtPrice(IBoldToken _boldToken, IERC20 _collToken, uint256 _price) external pure returns (uint160) {
         // inverse price if Bold goes first
         uint256 price = _zeroForOne(_boldToken, _collToken) ? DECIMAL_PRECISION * DECIMAL_PRECISION / _price : _price;
         return uint160(Math.sqrt((price << 192) / DECIMAL_PRECISION));
