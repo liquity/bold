@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.0;
 
+import "./IZapper.sol";
 import "./ILeverageZapper.sol";
 
 interface IFlashLoanReceiver {
@@ -15,6 +16,10 @@ interface IFlashLoanReceiver {
     ) external;
     function receiveFlashLoanOnLeverDownTrove(
         ILeverageZapper.LeverDownTroveParams calldata _params,
+        uint256 _effectiveFlashLoanAmount
+    ) external;
+    function receiveFlashLoanOnCloseTroveFromCollateral(
+        IZapper.CloseTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
     ) external;
 }
