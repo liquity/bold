@@ -6,12 +6,12 @@ import type { ReactNode } from "react";
 import { ERC20Faucet } from "@/src/abi/ERC20Faucet";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { useCollateralContracts } from "@/src/contracts";
+import { useCollateralContract, useCollateralContracts, useProtocolContract } from "@/src/contracts";
 import { shortenAddress } from "@/src/eth-utils";
 import { fmtnum } from "@/src/formatting";
 import { useBalance } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
-import { Button, IconAccount, TokenIcon, VFlex } from "@liquity2/uikit";
+import { Button, IconAccount, isCollateralSymbol, TokenIcon, VFlex } from "@liquity2/uikit";
 import { blo } from "blo";
 import { useWriteContract } from "wagmi";
 
@@ -102,6 +102,7 @@ export function AccountScreen({
               <Balance
                 address={address}
                 tokenSymbol="LQTY"
+                tapButton
               />
             </GridItem>
             {collSymbols.map((symbol) => (
@@ -140,9 +141,11 @@ function Balance({
 }) {
   const balance = useBalance(address, tokenSymbol);
 
-  const CollToken = useCollateralContracts()
-    .find((coll) => coll.symbol === tokenSymbol)
-    ?.contracts.CollToken;
+  const LqtyToken = useProtocolContract("LqtyToken");
+  const CollToken = useCollateralContract(
+    isCollateralSymbol(tokenSymbol) ? tokenSymbol : null,
+    "CollToken",
+  );
 
   const { writeContract } = useWriteContract();
 
@@ -171,20 +174,33 @@ function Balance({
           size="mini"
           label="tap"
           onClick={() => {
-            if (!CollToken) {
+            if ((tokenSymbol === "STETH" || tokenSymbol === "RETH") && CollToken) {
+              writeContract({
+                abi: ERC20Faucet,
+                address: CollToken.address,
+                functionName: "tap",
+                args: [],
+              }, {
+                onError: (error) => {
+                  alert(error.message);
+                },
+              });
               return;
             }
 
-            writeContract({
-              abi: ERC20Faucet,
-              address: CollToken.address,
-              functionName: "tap",
-              args: [],
-            }, {
-              onError: (error) => {
-                alert(error.message);
-              },
-            });
+            if (tokenSymbol === "LQTY") {
+              writeContract({
+                abi: LqtyToken.abi,
+                address: LqtyToken.address,
+                functionName: "mint",
+                args: [100n * 10n ** 18n],
+              }, {
+                onError: (error) => {
+                  alert(error.message);
+                },
+              });
+              return;
+            }
           }}
           style={{
             padding: "0 6px",
