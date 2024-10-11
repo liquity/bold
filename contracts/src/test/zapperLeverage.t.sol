@@ -1071,29 +1071,28 @@ contract ZapperLeverageMainnet is DevTestSetup {
         }
     }
 
-    function _getCloseFlashLoanAndBoldAmount(uint256 _troveId, ITroveManager _troveManager, IPriceFeed _priceFeed)
+    function _getCloseFlashLoanAmount(uint256 _troveId, ITroveManager _troveManager, IPriceFeed _priceFeed)
         internal
-        returns (uint256, uint256)
+        returns (uint256)
     {
         (uint256 price,) = _priceFeed.fetchPrice();
 
         uint256 currentDebt = getTroveEntireDebt(_troveManager, _troveId);
         uint256 flashLoanAmount = currentDebt * DECIMAL_PRECISION / price * 105 / 100; // slippage
 
-        return (flashLoanAmount, currentDebt);
+        return flashLoanAmount;
     }
 
     function closeTrove(IZapper _zapper, uint256 _troveId, ITroveManager _troveManager, IPriceFeed _priceFeed)
         internal
     {
         // This should be done in the frontend
-        (uint256 flashLoanAmount, uint256 currentDebt) =
-            _getCloseFlashLoanAndBoldAmount(_troveId, _troveManager, _priceFeed);
+        uint256 flashLoanAmount =
+            _getCloseFlashLoanAmount(_troveId, _troveManager, _priceFeed);
 
         IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
             troveId: _troveId,
             flashLoanAmount: flashLoanAmount,
-            minBoldAmount: currentDebt,
             receiver: address(0) // Set later
         });
         vm.startPrank(A);
@@ -1191,7 +1190,6 @@ contract ZapperLeverageMainnet is DevTestSetup {
         IZapper.CloseTroveParams memory params = IZapper.CloseTroveParams({
             troveId: addressToTroveId(A),
             flashLoanAmount: 10 ether,
-            minBoldAmount: 10000e18,
             receiver: address(0) // Set later
         });
 
@@ -1230,14 +1228,13 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
 
         // B tries to close A’s trove
-        (uint256 flashLoanAmount, uint256 currentDebt) = _getCloseFlashLoanAndBoldAmount(
+        uint256 flashLoanAmount = _getCloseFlashLoanAmount(
             troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed
         );
 
         IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
             troveId: troveId,
             flashLoanAmount: flashLoanAmount,
-            minBoldAmount: currentDebt,
             receiver: address(0) // Set later
         });
         vm.startPrank(B);
@@ -1276,14 +1273,13 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
 
         // B tries to close A’s trove calling our flash loan provider module
-        (uint256 flashLoanAmount, uint256 currentDebt) = _getCloseFlashLoanAndBoldAmount(
+        uint256 flashLoanAmount = _getCloseFlashLoanAmount(
             troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed
         );
 
         IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
             troveId: troveId,
             flashLoanAmount: flashLoanAmount,
-            minBoldAmount: currentDebt,
             receiver: address(0) // Set later
         });
         IFlashLoanProvider flashLoanProvider = _zapper.flashLoanProvider();
@@ -1328,14 +1324,13 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
 
         // B tries to close A’s trove calling Balancer Vault directly
-        (uint256 flashLoanAmount, uint256 currentDebt) = _getCloseFlashLoanAndBoldAmount(
+        uint256 flashLoanAmount = _getCloseFlashLoanAmount(
             troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed
         );
 
         IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
             troveId: troveId,
             flashLoanAmount: flashLoanAmount,
-            minBoldAmount: currentDebt,
             receiver: address(0) // Set later
         });
         IFlashLoanProvider flashLoanProvider = _zapper.flashLoanProvider();

@@ -23,7 +23,6 @@ interface IZapper {
     struct CloseTroveParams {
         uint256 troveId;
         uint256 flashLoanAmount;
-        uint256 minBoldAmount;
         address receiver;
     }
 
