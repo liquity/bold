@@ -95,7 +95,7 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
                   icon: <TokenIcon symbol={symbol} />,
                   label: (
                     <>
-                      {collateral.name} {symbol === "BOLD" ? "(account balance)" : "(loan collateral)"}
+                      {TOKENS_BY_SYMBOL[symbol].name} {symbol === "BOLD" ? "(account balance)" : "(loan collateral)"}
                     </>
                   ),
                 }))}

@@ -432,6 +432,10 @@ export type Query = {
   readonly stabilityPools: ReadonlyArray<StabilityPool>;
   readonly stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
   readonly stabilityPoolDeposits: ReadonlyArray<StabilityPoolDeposit>;
+  readonly stabilityPoolDepositSnapshot?: Maybe<StabilityPoolDepositSnapshot>;
+  readonly stabilityPoolDepositSnapshots: ReadonlyArray<StabilityPoolDepositSnapshot>;
+  readonly stabilityPoolEpochScale?: Maybe<StabilityPoolEpochScale>;
+  readonly stabilityPoolEpochScales: ReadonlyArray<StabilityPoolEpochScale>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -581,6 +585,42 @@ export type QuerystabilityPoolDepositsArgs = {
 };
 
 
+export type QuerystabilityPoolDepositSnapshotArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QuerystabilityPoolDepositSnapshotsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPoolDepositSnapshot_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPoolDepositSnapshot_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QuerystabilityPoolEpochScaleArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QuerystabilityPoolEpochScalesArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPoolEpochScale_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPoolEpochScale_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
 export type Query_metaArgs = {
   block?: InputMaybe<Block_height>;
 };
@@ -597,7 +637,88 @@ export type StabilityPoolDeposit = {
   readonly collateral: Collateral;
   readonly deposit: Scalars['BigInt']['output'];
   readonly depositor: Scalars['Bytes']['output'];
+  readonly snapshot: StabilityPoolDepositSnapshot;
 };
+
+export type StabilityPoolDepositSnapshot = {
+  readonly id: Scalars['ID']['output'];
+  readonly B: Scalars['BigInt']['output'];
+  readonly P: Scalars['BigInt']['output'];
+  readonly S: Scalars['BigInt']['output'];
+  readonly epoch: Scalars['BigInt']['output'];
+  readonly scale: Scalars['BigInt']['output'];
+  readonly deposit: StabilityPoolDeposit;
+};
+
+export type StabilityPoolDepositSnapshot_filter = {
+  readonly id?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_not?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly B?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly B_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly P?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly P_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly P_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly P_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly P_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly P_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly P_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly P_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly S?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly S_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly epoch?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly epoch_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly epoch_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly epoch_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly epoch_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly epoch_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly epoch_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly epoch_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly scale?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly scale_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly scale_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly scale_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly scale_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly scale_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly scale_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly scale_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly deposit_?: InputMaybe<StabilityPoolDeposit_filter>;
+  /** Filter for the block changed event. */
+  readonly _change_block?: InputMaybe<BlockChangedFilter>;
+  readonly and?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPoolDepositSnapshot_filter>>>;
+  readonly or?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPoolDepositSnapshot_filter>>>;
+};
+
+export type StabilityPoolDepositSnapshot_orderBy =
+  | 'id'
+  | 'B'
+  | 'P'
+  | 'S'
+  | 'epoch'
+  | 'scale'
+  | 'deposit'
+  | 'deposit__id'
+  | 'deposit__boldGain'
+  | 'deposit__collGain'
+  | 'deposit__deposit'
+  | 'deposit__depositor';
 
 export type StabilityPoolDeposit_filter = {
   readonly id?: InputMaybe<Scalars['ID']['input']>;
@@ -663,6 +784,27 @@ export type StabilityPoolDeposit_filter = {
   readonly depositor_not_in?: InputMaybe<ReadonlyArray<Scalars['Bytes']['input']>>;
   readonly depositor_contains?: InputMaybe<Scalars['Bytes']['input']>;
   readonly depositor_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly snapshot?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly snapshot_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly snapshot_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_?: InputMaybe<StabilityPoolDepositSnapshot_filter>;
   /** Filter for the block changed event. */
   readonly _change_block?: InputMaybe<BlockChangedFilter>;
   readonly and?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPoolDeposit_filter>>>;
@@ -681,7 +823,56 @@ export type StabilityPoolDeposit_orderBy =
   | 'collateral__totalDebt'
   | 'collateral__price'
   | 'deposit'
-  | 'depositor';
+  | 'depositor'
+  | 'snapshot'
+  | 'snapshot__id'
+  | 'snapshot__B'
+  | 'snapshot__P'
+  | 'snapshot__S'
+  | 'snapshot__epoch'
+  | 'snapshot__scale';
+
+export type StabilityPoolEpochScale = {
+  readonly id: Scalars['ID']['output'];
+  readonly S: Scalars['BigInt']['output'];
+  readonly B: Scalars['BigInt']['output'];
+};
+
+export type StabilityPoolEpochScale_filter = {
+  readonly id?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_not?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly S?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly S_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly B?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly B_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  /** Filter for the block changed event. */
+  readonly _change_block?: InputMaybe<BlockChangedFilter>;
+  readonly and?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPoolEpochScale_filter>>>;
+  readonly or?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPoolEpochScale_filter>>>;
+};
+
+export type StabilityPoolEpochScale_orderBy =
+  | 'id'
+  | 'S'
+  | 'B';
 
 export type StabilityPool_filter = {
   readonly id?: InputMaybe<Scalars['ID']['input']>;
@@ -727,6 +918,10 @@ export type Subscription = {
   readonly stabilityPools: ReadonlyArray<StabilityPool>;
   readonly stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
   readonly stabilityPoolDeposits: ReadonlyArray<StabilityPoolDeposit>;
+  readonly stabilityPoolDepositSnapshot?: Maybe<StabilityPoolDepositSnapshot>;
+  readonly stabilityPoolDepositSnapshots: ReadonlyArray<StabilityPoolDepositSnapshot>;
+  readonly stabilityPoolEpochScale?: Maybe<StabilityPoolEpochScale>;
+  readonly stabilityPoolEpochScales: ReadonlyArray<StabilityPoolEpochScale>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -871,6 +1066,42 @@ export type SubscriptionstabilityPoolDepositsArgs = {
   orderBy?: InputMaybe<StabilityPoolDeposit_orderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   where?: InputMaybe<StabilityPoolDeposit_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolDepositSnapshotArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolDepositSnapshotsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPoolDepositSnapshot_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPoolDepositSnapshot_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolEpochScaleArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolEpochScalesArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPoolEpochScale_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPoolEpochScale_filter>;
   block?: InputMaybe<Block_height>;
   subgraphError?: _SubgraphErrorPolicy_;
 };
@@ -1276,8 +1507,14 @@ export type ResolversTypes = ResolversObject<{
   Query: ResolverTypeWrapper<{}>;
   StabilityPool: ResolverTypeWrapper<StabilityPool>;
   StabilityPoolDeposit: ResolverTypeWrapper<StabilityPoolDeposit>;
+  StabilityPoolDepositSnapshot: ResolverTypeWrapper<StabilityPoolDepositSnapshot>;
+  StabilityPoolDepositSnapshot_filter: StabilityPoolDepositSnapshot_filter;
+  StabilityPoolDepositSnapshot_orderBy: StabilityPoolDepositSnapshot_orderBy;
   StabilityPoolDeposit_filter: StabilityPoolDeposit_filter;
   StabilityPoolDeposit_orderBy: StabilityPoolDeposit_orderBy;
+  StabilityPoolEpochScale: ResolverTypeWrapper<StabilityPoolEpochScale>;
+  StabilityPoolEpochScale_filter: StabilityPoolEpochScale_filter;
+  StabilityPoolEpochScale_orderBy: StabilityPoolEpochScale_orderBy;
   StabilityPool_filter: StabilityPool_filter;
   StabilityPool_orderBy: StabilityPool_orderBy;
   String: ResolverTypeWrapper<Scalars['String']['output']>;
@@ -1317,7 +1554,11 @@ export type ResolversParentTypes = ResolversObject<{
   Query: {};
   StabilityPool: StabilityPool;
   StabilityPoolDeposit: StabilityPoolDeposit;
+  StabilityPoolDepositSnapshot: StabilityPoolDepositSnapshot;
+  StabilityPoolDepositSnapshot_filter: StabilityPoolDepositSnapshot_filter;
   StabilityPoolDeposit_filter: StabilityPoolDeposit_filter;
+  StabilityPoolEpochScale: StabilityPoolEpochScale;
+  StabilityPoolEpochScale_filter: StabilityPoolEpochScale_filter;
   StabilityPool_filter: StabilityPool_filter;
   String: Scalars['String']['output'];
   Subscription: {};
@@ -1420,6 +1661,10 @@ export type QueryResolvers<ContextType = MeshContext, ParentType extends Resolve
   stabilityPools?: Resolver<ReadonlyArray<ResolversTypes['StabilityPool']>, ParentType, ContextType, RequireFields<QuerystabilityPoolsArgs, 'skip' | 'first' | 'subgraphError'>>;
   stabilityPoolDeposit?: Resolver<Maybe<ResolversTypes['StabilityPoolDeposit']>, ParentType, ContextType, RequireFields<QuerystabilityPoolDepositArgs, 'id' | 'subgraphError'>>;
   stabilityPoolDeposits?: Resolver<ReadonlyArray<ResolversTypes['StabilityPoolDeposit']>, ParentType, ContextType, RequireFields<QuerystabilityPoolDepositsArgs, 'skip' | 'first' | 'subgraphError'>>;
+  stabilityPoolDepositSnapshot?: Resolver<Maybe<ResolversTypes['StabilityPoolDepositSnapshot']>, ParentType, ContextType, RequireFields<QuerystabilityPoolDepositSnapshotArgs, 'id' | 'subgraphError'>>;
+  stabilityPoolDepositSnapshots?: Resolver<ReadonlyArray<ResolversTypes['StabilityPoolDepositSnapshot']>, ParentType, ContextType, RequireFields<QuerystabilityPoolDepositSnapshotsArgs, 'skip' | 'first' | 'subgraphError'>>;
+  stabilityPoolEpochScale?: Resolver<Maybe<ResolversTypes['StabilityPoolEpochScale']>, ParentType, ContextType, RequireFields<QuerystabilityPoolEpochScaleArgs, 'id' | 'subgraphError'>>;
+  stabilityPoolEpochScales?: Resolver<ReadonlyArray<ResolversTypes['StabilityPoolEpochScale']>, ParentType, ContextType, RequireFields<QuerystabilityPoolEpochScalesArgs, 'skip' | 'first' | 'subgraphError'>>;
   _meta?: Resolver<Maybe<ResolversTypes['_Meta_']>, ParentType, ContextType, Partial<Query_metaArgs>>;
 }>;
 
@@ -1436,6 +1681,25 @@ export type StabilityPoolDepositResolvers<ContextType = MeshContext, ParentType 
   collateral?: Resolver<ResolversTypes['Collateral'], ParentType, ContextType>;
   deposit?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   depositor?: Resolver<ResolversTypes['Bytes'], ParentType, ContextType>;
+  snapshot?: Resolver<ResolversTypes['StabilityPoolDepositSnapshot'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type StabilityPoolDepositSnapshotResolvers<ContextType = MeshContext, ParentType extends ResolversParentTypes['StabilityPoolDepositSnapshot'] = ResolversParentTypes['StabilityPoolDepositSnapshot']> = ResolversObject<{
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  B?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  P?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  S?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  epoch?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  scale?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  deposit?: Resolver<ResolversTypes['StabilityPoolDeposit'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+}>;
+
+export type StabilityPoolEpochScaleResolvers<ContextType = MeshContext, ParentType extends ResolversParentTypes['StabilityPoolEpochScale'] = ResolversParentTypes['StabilityPoolEpochScale']> = ResolversObject<{
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  S?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  B?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -1456,6 +1720,10 @@ export type SubscriptionResolvers<ContextType = MeshContext, ParentType extends 
   stabilityPools?: SubscriptionResolver<ReadonlyArray<ResolversTypes['StabilityPool']>, "stabilityPools", ParentType, ContextType, RequireFields<SubscriptionstabilityPoolsArgs, 'skip' | 'first' | 'subgraphError'>>;
   stabilityPoolDeposit?: SubscriptionResolver<Maybe<ResolversTypes['StabilityPoolDeposit']>, "stabilityPoolDeposit", ParentType, ContextType, RequireFields<SubscriptionstabilityPoolDepositArgs, 'id' | 'subgraphError'>>;
   stabilityPoolDeposits?: SubscriptionResolver<ReadonlyArray<ResolversTypes['StabilityPoolDeposit']>, "stabilityPoolDeposits", ParentType, ContextType, RequireFields<SubscriptionstabilityPoolDepositsArgs, 'skip' | 'first' | 'subgraphError'>>;
+  stabilityPoolDepositSnapshot?: SubscriptionResolver<Maybe<ResolversTypes['StabilityPoolDepositSnapshot']>, "stabilityPoolDepositSnapshot", ParentType, ContextType, RequireFields<SubscriptionstabilityPoolDepositSnapshotArgs, 'id' | 'subgraphError'>>;
+  stabilityPoolDepositSnapshots?: SubscriptionResolver<ReadonlyArray<ResolversTypes['StabilityPoolDepositSnapshot']>, "stabilityPoolDepositSnapshots", ParentType, ContextType, RequireFields<SubscriptionstabilityPoolDepositSnapshotsArgs, 'skip' | 'first' | 'subgraphError'>>;
+  stabilityPoolEpochScale?: SubscriptionResolver<Maybe<ResolversTypes['StabilityPoolEpochScale']>, "stabilityPoolEpochScale", ParentType, ContextType, RequireFields<SubscriptionstabilityPoolEpochScaleArgs, 'id' | 'subgraphError'>>;
+  stabilityPoolEpochScales?: SubscriptionResolver<ReadonlyArray<ResolversTypes['StabilityPoolEpochScale']>, "stabilityPoolEpochScales", ParentType, ContextType, RequireFields<SubscriptionstabilityPoolEpochScalesArgs, 'skip' | 'first' | 'subgraphError'>>;
   _meta?: SubscriptionResolver<Maybe<ResolversTypes['_Meta_']>, "_meta", ParentType, ContextType, Partial<Subscription_metaArgs>>;
 }>;
 
@@ -1513,6 +1781,8 @@ export type Resolvers<ContextType = MeshContext> = ResolversObject<{
   Query?: QueryResolvers<ContextType>;
   StabilityPool?: StabilityPoolResolvers<ContextType>;
   StabilityPoolDeposit?: StabilityPoolDepositResolvers<ContextType>;
+  StabilityPoolDepositSnapshot?: StabilityPoolDepositSnapshotResolvers<ContextType>;
+  StabilityPoolEpochScale?: StabilityPoolEpochScaleResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
   Timestamp?: GraphQLScalarType;
   Token?: TokenResolvers<ContextType>;
@@ -1573,7 +1843,7 @@ const liquity2Transforms = [];
 const additionalTypeDefs = [] as any[];
 const liquity2Handler = new GraphqlHandler({
               name: "liquity2",
-              config: {"endpoint":"https://api.studio.thegraph.com/query/42403/liquity2/version/latest"},
+              config: {"endpoint":"http://localhost:8000/subgraphs/name/liquity2"},
               baseDir,
               cache,
               pubsub,
@@ -1594,12 +1864,13 @@ const merger = new(BareMerger as any)({
         store: rootStore.child('bareMerger')
       })
 const documentHashMap = {
-        "6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d": TrovesByAccountDocument,
-"6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d": TrovesCountDocument,
-"6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d": TroveByIdDocument,
-"6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d": StabilityPoolDepositsByAccountDocument,
-"6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d": StabilityPoolDepositDocument,
-"6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d": StabilityPoolDocument
+        "6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19": TrovesByAccountDocument,
+"6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19": TrovesCountDocument,
+"6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19": TroveByIdDocument,
+"6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19": StabilityPoolDocument,
+"6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19": StabilityPoolDepositsByAccountDocument,
+"6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19": StabilityPoolDepositDocument,
+"6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19": StabilityPoolEpochScaleDocument
       }
 additionalEnvelopPlugins.push(usePersistedOperations({
         getPersistedOperation(key) {
@@ -1626,42 +1897,49 @@ additionalEnvelopPlugins.push(usePersistedOperations({
           return printWithCache(TrovesByAccountDocument);
         },
         location: 'TrovesByAccountDocument.graphql',
-        sha256Hash: '6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d'
+        sha256Hash: '6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19'
       },{
         document: TrovesCountDocument,
         get rawSDL() {
           return printWithCache(TrovesCountDocument);
         },
         location: 'TrovesCountDocument.graphql',
-        sha256Hash: '6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d'
+        sha256Hash: '6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19'
       },{
         document: TroveByIdDocument,
         get rawSDL() {
           return printWithCache(TroveByIdDocument);
         },
         location: 'TroveByIdDocument.graphql',
-        sha256Hash: '6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d'
-      },{
-        document: StabilityPoolDepositsByAccountDocument,
-        get rawSDL() {
-          return printWithCache(StabilityPoolDepositsByAccountDocument);
-        },
-        location: 'StabilityPoolDepositsByAccountDocument.graphql',
-        sha256Hash: '6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d'
-      },{
-        document: StabilityPoolDepositDocument,
-        get rawSDL() {
-          return printWithCache(StabilityPoolDepositDocument);
-        },
-        location: 'StabilityPoolDepositDocument.graphql',
-        sha256Hash: '6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d'
+        sha256Hash: '6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19'
       },{
         document: StabilityPoolDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDocument);
         },
         location: 'StabilityPoolDocument.graphql',
-        sha256Hash: '6c400d0d0083d93b7163800dcabfb47af188c4b489df5cebc94c1e040c7eba8d'
+        sha256Hash: '6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19'
+      },{
+        document: StabilityPoolDepositsByAccountDocument,
+        get rawSDL() {
+          return printWithCache(StabilityPoolDepositsByAccountDocument);
+        },
+        location: 'StabilityPoolDepositsByAccountDocument.graphql',
+        sha256Hash: '6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19'
+      },{
+        document: StabilityPoolDepositDocument,
+        get rawSDL() {
+          return printWithCache(StabilityPoolDepositDocument);
+        },
+        location: 'StabilityPoolDepositDocument.graphql',
+        sha256Hash: '6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19'
+      },{
+        document: StabilityPoolEpochScaleDocument,
+        get rawSDL() {
+          return printWithCache(StabilityPoolEpochScaleDocument);
+        },
+        location: 'StabilityPoolEpochScaleDocument.graphql',
+        sha256Hash: '6808573cbd5951e2de4ce5ab892eb0cb00a4b6be1d6072ec85dce6e24d16be19'
       }
     ];
     },
@@ -1749,14 +2027,21 @@ export type TroveByIdQuery = { readonly trove?: Maybe<(
     ) }
   )> };
 
+export type StabilityPoolQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type StabilityPoolQuery = { readonly stabilityPool?: Maybe<Pick<StabilityPool, 'id' | 'totalDeposited'>> };
+
 export type StabilityPoolDepositsByAccountQueryVariables = Exact<{
   account: Scalars['Bytes']['input'];
 }>;
 
 
 export type StabilityPoolDepositsByAccountQuery = { readonly stabilityPoolDeposits: ReadonlyArray<(
-    Pick<StabilityPoolDeposit, 'id' | 'boldGain' | 'collGain' | 'deposit'>
-    & { readonly collateral: Pick<Collateral, 'collIndex'> }
+    Pick<StabilityPoolDeposit, 'id' | 'deposit' | 'depositor'>
+    & { readonly collateral: Pick<Collateral, 'collIndex'>, readonly snapshot: Pick<StabilityPoolDepositSnapshot, 'B' | 'P' | 'S' | 'epoch' | 'scale'> }
   )> };
 
 export type StabilityPoolDepositQueryVariables = Exact<{
@@ -1765,16 +2050,16 @@ export type StabilityPoolDepositQueryVariables = Exact<{
 
 
 export type StabilityPoolDepositQuery = { readonly stabilityPoolDeposit?: Maybe<(
-    Pick<StabilityPoolDeposit, 'id' | 'boldGain' | 'collGain' | 'deposit' | 'depositor'>
-    & { readonly collateral: Pick<Collateral, 'collIndex'> }
+    Pick<StabilityPoolDeposit, 'id' | 'deposit' | 'depositor'>
+    & { readonly collateral: Pick<Collateral, 'collIndex'>, readonly snapshot: Pick<StabilityPoolDepositSnapshot, 'B' | 'P' | 'S' | 'epoch' | 'scale'> }
   )> };
 
-export type StabilityPoolQueryVariables = Exact<{
+export type StabilityPoolEpochScaleQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type StabilityPoolQuery = { readonly stabilityPool?: Maybe<Pick<StabilityPool, 'id' | 'totalDeposited'>> };
+export type StabilityPoolEpochScaleQuery = { readonly stabilityPoolEpochScale?: Maybe<Pick<StabilityPoolEpochScale, 'id' | 'B' | 'S'>> };
 
 
 export const TrovesByAccountDocument = gql`
@@ -1833,33 +2118,6 @@ export const TroveByIdDocument = gql`
   }
 }
     ` as unknown as DocumentNode<TroveByIdQuery, TroveByIdQueryVariables>;
-export const StabilityPoolDepositsByAccountDocument = gql`
-    query StabilityPoolDepositsByAccount($account: Bytes!) {
-  stabilityPoolDeposits(where: {depositor: $account, deposit_gt: 0}) {
-    id
-    boldGain
-    collGain
-    deposit
-    collateral {
-      collIndex
-    }
-  }
-}
-    ` as unknown as DocumentNode<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>;
-export const StabilityPoolDepositDocument = gql`
-    query StabilityPoolDeposit($id: ID!) {
-  stabilityPoolDeposit(id: $id) {
-    id
-    boldGain
-    collGain
-    deposit
-    depositor
-    collateral {
-      collIndex
-    }
-  }
-}
-    ` as unknown as DocumentNode<StabilityPoolDepositQuery, StabilityPoolDepositQueryVariables>;
 export const StabilityPoolDocument = gql`
     query StabilityPool($id: ID!) {
   stabilityPool(id: $id) {
@@ -1868,6 +2126,54 @@ export const StabilityPoolDocument = gql`
   }
 }
     ` as unknown as DocumentNode<StabilityPoolQuery, StabilityPoolQueryVariables>;
+export const StabilityPoolDepositsByAccountDocument = gql`
+    query StabilityPoolDepositsByAccount($account: Bytes!) {
+  stabilityPoolDeposits(where: {depositor: $account, deposit_gt: 0}) {
+    id
+    collateral {
+      collIndex
+    }
+    deposit
+    depositor
+    snapshot {
+      B
+      P
+      S
+      epoch
+      scale
+    }
+  }
+}
+    ` as unknown as DocumentNode<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>;
+export const StabilityPoolDepositDocument = gql`
+    query StabilityPoolDeposit($id: ID!) {
+  stabilityPoolDeposit(id: $id) {
+    id
+    collateral {
+      collIndex
+    }
+    deposit
+    depositor
+    snapshot {
+      B
+      P
+      S
+      epoch
+      scale
+    }
+  }
+}
+    ` as unknown as DocumentNode<StabilityPoolDepositQuery, StabilityPoolDepositQueryVariables>;
+export const StabilityPoolEpochScaleDocument = gql`
+    query StabilityPoolEpochScale($id: ID!) {
+  stabilityPoolEpochScale(id: $id) {
+    id
+    B
+    S
+  }
+}
+    ` as unknown as DocumentNode<StabilityPoolEpochScaleQuery, StabilityPoolEpochScaleQueryVariables>;
+
 
 
 
@@ -1887,14 +2193,17 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     TroveById(variables: TroveByIdQueryVariables, options?: C): Promise<TroveByIdQuery> {
       return requester<TroveByIdQuery, TroveByIdQueryVariables>(TroveByIdDocument, variables, options) as Promise<TroveByIdQuery>;
     },
+    StabilityPool(variables: StabilityPoolQueryVariables, options?: C): Promise<StabilityPoolQuery> {
+      return requester<StabilityPoolQuery, StabilityPoolQueryVariables>(StabilityPoolDocument, variables, options) as Promise<StabilityPoolQuery>;
+    },
     StabilityPoolDepositsByAccount(variables: StabilityPoolDepositsByAccountQueryVariables, options?: C): Promise<StabilityPoolDepositsByAccountQuery> {
       return requester<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>(StabilityPoolDepositsByAccountDocument, variables, options) as Promise<StabilityPoolDepositsByAccountQuery>;
     },
     StabilityPoolDeposit(variables: StabilityPoolDepositQueryVariables, options?: C): Promise<StabilityPoolDepositQuery> {
       return requester<StabilityPoolDepositQuery, StabilityPoolDepositQueryVariables>(StabilityPoolDepositDocument, variables, options) as Promise<StabilityPoolDepositQuery>;
     },
-    StabilityPool(variables: StabilityPoolQueryVariables, options?: C): Promise<StabilityPoolQuery> {
-      return requester<StabilityPoolQuery, StabilityPoolQueryVariables>(StabilityPoolDocument, variables, options) as Promise<StabilityPoolQuery>;
+    StabilityPoolEpochScale(variables: StabilityPoolEpochScaleQueryVariables, options?: C): Promise<StabilityPoolEpochScaleQuery> {
+      return requester<StabilityPoolEpochScaleQuery, StabilityPoolEpochScaleQueryVariables>(StabilityPoolEpochScaleDocument, variables, options) as Promise<StabilityPoolEpochScaleQuery>;
     }
   };
 }

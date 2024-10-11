@@ -409,6 +409,10 @@ export type Query = {
   readonly stabilityPools: ReadonlyArray<StabilityPool>;
   readonly stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
   readonly stabilityPoolDeposits: ReadonlyArray<StabilityPoolDeposit>;
+  readonly stabilityPoolDepositSnapshot?: Maybe<StabilityPoolDepositSnapshot>;
+  readonly stabilityPoolDepositSnapshots: ReadonlyArray<StabilityPoolDepositSnapshot>;
+  readonly stabilityPoolEpochScale?: Maybe<StabilityPoolEpochScale>;
+  readonly stabilityPoolEpochScales: ReadonlyArray<StabilityPoolEpochScale>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -558,6 +562,42 @@ export type QuerystabilityPoolDepositsArgs = {
 };
 
 
+export type QuerystabilityPoolDepositSnapshotArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QuerystabilityPoolDepositSnapshotsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPoolDepositSnapshot_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPoolDepositSnapshot_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QuerystabilityPoolEpochScaleArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QuerystabilityPoolEpochScalesArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPoolEpochScale_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPoolEpochScale_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
 export type Query_metaArgs = {
   block?: InputMaybe<Block_height>;
 };
@@ -574,7 +614,88 @@ export type StabilityPoolDeposit = {
   readonly collateral: Collateral;
   readonly deposit: Scalars['BigInt']['output'];
   readonly depositor: Scalars['Bytes']['output'];
+  readonly snapshot: StabilityPoolDepositSnapshot;
 };
+
+export type StabilityPoolDepositSnapshot = {
+  readonly id: Scalars['ID']['output'];
+  readonly B: Scalars['BigInt']['output'];
+  readonly P: Scalars['BigInt']['output'];
+  readonly S: Scalars['BigInt']['output'];
+  readonly epoch: Scalars['BigInt']['output'];
+  readonly scale: Scalars['BigInt']['output'];
+  readonly deposit: StabilityPoolDeposit;
+};
+
+export type StabilityPoolDepositSnapshot_filter = {
+  readonly id?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_not?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly B?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly B_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly P?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly P_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly P_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly P_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly P_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly P_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly P_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly P_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly S?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly S_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly epoch?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly epoch_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly epoch_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly epoch_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly epoch_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly epoch_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly epoch_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly epoch_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly scale?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly scale_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly scale_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly scale_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly scale_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly scale_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly scale_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly scale_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly deposit_?: InputMaybe<StabilityPoolDeposit_filter>;
+  /** Filter for the block changed event. */
+  readonly _change_block?: InputMaybe<BlockChangedFilter>;
+  readonly and?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPoolDepositSnapshot_filter>>>;
+  readonly or?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPoolDepositSnapshot_filter>>>;
+};
+
+export type StabilityPoolDepositSnapshot_orderBy =
+  | 'id'
+  | 'B'
+  | 'P'
+  | 'S'
+  | 'epoch'
+  | 'scale'
+  | 'deposit'
+  | 'deposit__id'
+  | 'deposit__boldGain'
+  | 'deposit__collGain'
+  | 'deposit__deposit'
+  | 'deposit__depositor';
 
 export type StabilityPoolDeposit_filter = {
   readonly id?: InputMaybe<Scalars['ID']['input']>;
@@ -640,6 +761,27 @@ export type StabilityPoolDeposit_filter = {
   readonly depositor_not_in?: InputMaybe<ReadonlyArray<Scalars['Bytes']['input']>>;
   readonly depositor_contains?: InputMaybe<Scalars['Bytes']['input']>;
   readonly depositor_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly snapshot?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly snapshot_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly snapshot_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly snapshot_?: InputMaybe<StabilityPoolDepositSnapshot_filter>;
   /** Filter for the block changed event. */
   readonly _change_block?: InputMaybe<BlockChangedFilter>;
   readonly and?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPoolDeposit_filter>>>;
@@ -658,7 +800,56 @@ export type StabilityPoolDeposit_orderBy =
   | 'collateral__totalDebt'
   | 'collateral__price'
   | 'deposit'
-  | 'depositor';
+  | 'depositor'
+  | 'snapshot'
+  | 'snapshot__id'
+  | 'snapshot__B'
+  | 'snapshot__P'
+  | 'snapshot__S'
+  | 'snapshot__epoch'
+  | 'snapshot__scale';
+
+export type StabilityPoolEpochScale = {
+  readonly id: Scalars['ID']['output'];
+  readonly S: Scalars['BigInt']['output'];
+  readonly B: Scalars['BigInt']['output'];
+};
+
+export type StabilityPoolEpochScale_filter = {
+  readonly id?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_not?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly S?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly S_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly S_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly B?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly B_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly B_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  /** Filter for the block changed event. */
+  readonly _change_block?: InputMaybe<BlockChangedFilter>;
+  readonly and?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPoolEpochScale_filter>>>;
+  readonly or?: InputMaybe<ReadonlyArray<InputMaybe<StabilityPoolEpochScale_filter>>>;
+};
+
+export type StabilityPoolEpochScale_orderBy =
+  | 'id'
+  | 'S'
+  | 'B';
 
 export type StabilityPool_filter = {
   readonly id?: InputMaybe<Scalars['ID']['input']>;
@@ -704,6 +895,10 @@ export type Subscription = {
   readonly stabilityPools: ReadonlyArray<StabilityPool>;
   readonly stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
   readonly stabilityPoolDeposits: ReadonlyArray<StabilityPoolDeposit>;
+  readonly stabilityPoolDepositSnapshot?: Maybe<StabilityPoolDepositSnapshot>;
+  readonly stabilityPoolDepositSnapshots: ReadonlyArray<StabilityPoolDepositSnapshot>;
+  readonly stabilityPoolEpochScale?: Maybe<StabilityPoolEpochScale>;
+  readonly stabilityPoolEpochScales: ReadonlyArray<StabilityPoolEpochScale>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -848,6 +1043,42 @@ export type SubscriptionstabilityPoolDepositsArgs = {
   orderBy?: InputMaybe<StabilityPoolDeposit_orderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   where?: InputMaybe<StabilityPoolDeposit_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolDepositSnapshotArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolDepositSnapshotsArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPoolDepositSnapshot_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPoolDepositSnapshot_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolEpochScaleArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionstabilityPoolEpochScalesArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<StabilityPoolEpochScale_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<StabilityPoolEpochScale_filter>;
   block?: InputMaybe<Block_height>;
   subgraphError?: _SubgraphErrorPolicy_;
 };
@@ -1173,6 +1404,14 @@ export type _SubgraphErrorPolicy_ =
   stabilityPoolDeposit: InContextSdkMethod<Query['stabilityPoolDeposit'], QuerystabilityPoolDepositArgs, MeshContext>,
   /** null **/
   stabilityPoolDeposits: InContextSdkMethod<Query['stabilityPoolDeposits'], QuerystabilityPoolDepositsArgs, MeshContext>,
+  /** null **/
+  stabilityPoolDepositSnapshot: InContextSdkMethod<Query['stabilityPoolDepositSnapshot'], QuerystabilityPoolDepositSnapshotArgs, MeshContext>,
+  /** null **/
+  stabilityPoolDepositSnapshots: InContextSdkMethod<Query['stabilityPoolDepositSnapshots'], QuerystabilityPoolDepositSnapshotsArgs, MeshContext>,
+  /** null **/
+  stabilityPoolEpochScale: InContextSdkMethod<Query['stabilityPoolEpochScale'], QuerystabilityPoolEpochScaleArgs, MeshContext>,
+  /** null **/
+  stabilityPoolEpochScales: InContextSdkMethod<Query['stabilityPoolEpochScales'], QuerystabilityPoolEpochScalesArgs, MeshContext>,
   /** Access to subgraph metadata **/
   _meta: InContextSdkMethod<Query['_meta'], Query_metaArgs, MeshContext>
   };
@@ -1214,6 +1453,14 @@ export type _SubgraphErrorPolicy_ =
   stabilityPoolDeposit: InContextSdkMethod<Subscription['stabilityPoolDeposit'], SubscriptionstabilityPoolDepositArgs, MeshContext>,
   /** null **/
   stabilityPoolDeposits: InContextSdkMethod<Subscription['stabilityPoolDeposits'], SubscriptionstabilityPoolDepositsArgs, MeshContext>,
+  /** null **/
+  stabilityPoolDepositSnapshot: InContextSdkMethod<Subscription['stabilityPoolDepositSnapshot'], SubscriptionstabilityPoolDepositSnapshotArgs, MeshContext>,
+  /** null **/
+  stabilityPoolDepositSnapshots: InContextSdkMethod<Subscription['stabilityPoolDepositSnapshots'], SubscriptionstabilityPoolDepositSnapshotsArgs, MeshContext>,
+  /** null **/
+  stabilityPoolEpochScale: InContextSdkMethod<Subscription['stabilityPoolEpochScale'], SubscriptionstabilityPoolEpochScaleArgs, MeshContext>,
+  /** null **/
+  stabilityPoolEpochScales: InContextSdkMethod<Subscription['stabilityPoolEpochScales'], SubscriptionstabilityPoolEpochScalesArgs, MeshContext>,
   /** Access to subgraph metadata **/
   _meta: InContextSdkMethod<Subscription['_meta'], Subscription_metaArgs, MeshContext>
   };

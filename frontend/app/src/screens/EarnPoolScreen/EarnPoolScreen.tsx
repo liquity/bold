@@ -3,9 +3,9 @@
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { useCollIndexFromSymbol } from "@/src/liquity-utils";
+import { useCollIndexFromSymbol, useEarnPosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
-import { useEarnPosition, useStabilityPool } from "@/src/subgraph-hooks";
+import { useStabilityPool } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { isCollateralSymbol, Tabs } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -28,7 +28,7 @@ export function EarnPoolScreen() {
   const isCollSymbolOk = isCollateralSymbol(collateralSymbol);
   const collIndex = useCollIndexFromSymbol(isCollSymbolOk ? collateralSymbol : null);
 
-  const earnPosition = useEarnPosition(account.address, collIndex ?? undefined);
+  const earnPosition = useEarnPosition(collIndex, account.address ?? null);
   const stabilityPool = useStabilityPool(collIndex ?? undefined);
 
   if (!collIndex === null || !isCollSymbolOk) {

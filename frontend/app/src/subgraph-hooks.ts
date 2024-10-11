@@ -13,15 +13,29 @@ const REFETCH_INTERVAL = 10_000;
 
 const graph = getBuiltGraphSDK();
 
-type GraphTrove = Awaited<
+export type GraphTrove = Awaited<
   ReturnType<typeof graph.TrovesByAccount>
 >["troves"][number];
 
-type GraphStabilityPoolDeposit = Awaited<
-  ReturnType<typeof graph.StabilityPoolDepositsByAccount>
->["stabilityPoolDeposits"][number];
+export type GraphStabilityPoolDeposit = NonNullable<
+  Awaited<
+    ReturnType<typeof graph.StabilityPoolDeposit>
+  >["stabilityPoolDeposit"]
+>;
 
-export function useTroveCount(account?: Address, collIndex?: number) {
+type SubgraphHookOptions = {
+  refetchInterval?: number;
+};
+
+function prepareOptions(options?: SubgraphHookOptions) {
+  return {
+    refetchInterval: REFETCH_INTERVAL,
+    ...options,
+  };
+}
+
+export function useTroveCount(account?: Address, collIndex?: number, options?: SubgraphHookOptions) {
+  const { refetchInterval } = prepareOptions(options);
   return useQuery({
     queryKey: ["TrovesCount", account, collIndex],
     queryFn: DEMO_MODE
@@ -42,11 +56,12 @@ export function useTroveCount(account?: Address, collIndex?: number) {
           ? borrowerInfo?.troves ?? 0
           : borrowerInfo?.trovesByCollateral[collIndex] ?? null;
       },
-    refetchInterval: REFETCH_INTERVAL,
+    refetchInterval,
   });
 }
 
-export function useLoansByAccount(account?: Address | null) {
+export function useLoansByAccount(account?: Address | null, options?: SubgraphHookOptions) {
+  const { refetchInterval } = prepareOptions(options);
   return useQuery({
     queryKey: ["TrovesByAccount", account],
     queryFn: DEMO_MODE
@@ -58,11 +73,12 @@ export function useLoansByAccount(account?: Address | null) {
         const { troves } = await graph.TrovesByAccount({ account });
         return troves.map(subgraphTroveToLoan);
       },
-    refetchInterval: REFETCH_INTERVAL,
+    refetchInterval,
   });
 }
 
-export function useLoanById(id?: null | PrefixedTroveId) {
+export function useLoanById(id?: null | PrefixedTroveId, options?: SubgraphHookOptions) {
+  const { refetchInterval } = prepareOptions(options);
   return useQuery({
     queryKey: ["TroveById", id],
     queryFn: DEMO_MODE
@@ -88,54 +104,103 @@ export function useLoanById(id?: null | PrefixedTroveId) {
         const { trove } = await graph.TroveById({ id });
         return trove ? subgraphTroveToLoan(trove) : null;
       },
-    refetchInterval: REFETCH_INTERVAL,
+    refetchInterval,
   });
 }
 
-export function useEarnPositionsByAccount(account?: null | Address) {
-  return useQuery({
+export function useStabilityPoolDeposits(account: null | Address, options?: SubgraphHookOptions) {
+  const { refetchInterval } = prepareOptions(options);
+  return useQuery<GraphStabilityPoolDeposit[]>({
     queryKey: ["StabilityPoolDepositsByAccount", account],
     queryFn: DEMO_MODE
-      ? () => account ? ACCOUNT_POSITIONS.filter((position) => position.type === "earn") : []
+      ? async () => {
+        if (!account) {
+          return [];
+        }
+        return ACCOUNT_POSITIONS
+          .filter((position) => position.type === "earn")
+          .map((position) => ({
+            id: `${position.collIndex}:${account}`.toLowerCase(),
+            collateral: { collIndex: position.collIndex },
+            deposit: position.deposit[0],
+            depositor: account,
+            snapshot: { B: 0n, P: 0n, S: 0n, epoch: 0n, scale: 0n },
+          }));
+      }
       : async () => {
         if (!account) {
-          return null;
+          return [];
         }
         const { stabilityPoolDeposits } = await graph.StabilityPoolDepositsByAccount({ account });
-        return stabilityPoolDeposits.map(subgraphStabilityPoolDepositToEarnPosition);
+        return stabilityPoolDeposits.map((deposit) => ({
+          id: `${deposit.collateral.collIndex}:${account}`.toLowerCase(),
+          collateral: deposit.collateral,
+          deposit: BigInt(deposit.deposit),
+          depositor: account,
+          snapshot: {
+            B: BigInt(deposit.snapshot.B),
+            P: BigInt(deposit.snapshot.P),
+            S: BigInt(deposit.snapshot.S),
+            epoch: BigInt(deposit.snapshot.epoch),
+            scale: BigInt(deposit.snapshot.scale),
+          },
+        }));
       },
-    refetchInterval: REFETCH_INTERVAL,
+    refetchInterval,
   });
 }
 
-export function useEarnPosition(account?: Address, collIndex?: number) {
-  return useQuery({
+export function useStabilityPoolDeposit(
+  collIndex: null | number,
+  account: null | Address,
+  options?: SubgraphHookOptions,
+) {
+  const { refetchInterval } = prepareOptions(options);
+  return useQuery<GraphStabilityPoolDeposit | null>({
     queryKey: ["StabilityPoolDeposit", account, collIndex],
     queryFn: DEMO_MODE
       ? async () => {
-        if (!account || collIndex === undefined) {
+        if (account === null || collIndex === null) {
           return null;
         }
-        return ACCOUNT_POSITIONS.find((position): position is PositionEarn => (
+        const position = ACCOUNT_POSITIONS.find((position): position is PositionEarn => (
           position.type === "earn" && position.collIndex === collIndex
-        )) ?? null;
+        ));
+        return !position ? null : {
+          id: `${collIndex}:${account}`.toLowerCase(),
+          collateral: { collIndex },
+          deposit: position.deposit[0],
+          depositor: account,
+          snapshot: { B: 0n, P: 0n, S: 0n, epoch: 0n, scale: 0n },
+        };
       }
       : async () => {
-        if (!account || collIndex === undefined) {
+        if (account === null || collIndex === null) {
           return null;
         }
         const { stabilityPoolDeposit } = await graph.StabilityPoolDeposit({
           id: `${collIndex}:${account}`.toLowerCase(),
         });
-        return stabilityPoolDeposit
-          ? subgraphStabilityPoolDepositToEarnPosition(stabilityPoolDeposit)
-          : null;
+        return !stabilityPoolDeposit ? null : {
+          id: `${collIndex}:${account}`.toLowerCase(),
+          collateral: { collIndex },
+          deposit: BigInt(stabilityPoolDeposit.deposit),
+          depositor: account,
+          snapshot: {
+            B: BigInt(stabilityPoolDeposit.snapshot.B),
+            P: BigInt(stabilityPoolDeposit.snapshot.P),
+            S: BigInt(stabilityPoolDeposit.snapshot.S),
+            epoch: BigInt(stabilityPoolDeposit.snapshot.epoch),
+            scale: BigInt(stabilityPoolDeposit.snapshot.scale),
+          },
+        };
       },
-    refetchInterval: REFETCH_INTERVAL,
+    refetchInterval,
   });
 }
 
-export function useStabilityPool(collIndex?: number) {
+export function useStabilityPool(collIndex?: number, options?: SubgraphHookOptions) {
+  const { refetchInterval } = prepareOptions(options);
   return useQuery({
     queryKey: ["StabilityPool", collIndex],
     queryFn: DEMO_MODE
@@ -152,7 +217,31 @@ export function useStabilityPool(collIndex?: number) {
           totalDeposited: dnum18(stabilityPool?.totalDeposited ?? 0),
         };
       },
-    refetchInterval: REFETCH_INTERVAL,
+    refetchInterval,
+  });
+}
+
+export function useStabilityPoolEpochScale(
+  collIndex: null | number,
+  epoch: null | bigint,
+  scale: null | bigint,
+  options?: SubgraphHookOptions,
+) {
+  const { refetchInterval } = prepareOptions(options);
+  return useQuery<{ B: bigint; S: bigint }>({
+    queryKey: ["StabilityPoolEpochScale", collIndex, String(epoch), String(scale)],
+    queryFn: DEMO_MODE
+      ? async () => ({ B: 0n, S: 0n })
+      : async () => {
+        const { stabilityPoolEpochScale } = await graph.StabilityPoolEpochScale({
+          id: `${collIndex}:${epoch}:${scale}`,
+        });
+        return {
+          B: BigInt(stabilityPoolEpochScale?.B ?? 0n),
+          S: BigInt(stabilityPoolEpochScale?.S ?? 0n),
+        };
+      },
+    refetchInterval,
   });
 }
 
@@ -184,15 +273,32 @@ function subgraphStabilityPoolDepositToEarnPosition(spDeposit: GraphStabilityPoo
   if (!isCollIndex(collIndex)) {
     throw new Error(`Invalid collateral index: ${collIndex}`);
   }
-
   return {
     type: "earn",
     apr: dnum18(0),
     deposit: dnum18(spDeposit.deposit),
     collIndex,
     rewards: {
-      bold: dnum18(spDeposit.boldGain),
-      coll: dnum18(spDeposit.collGain),
+      bold: dnum18(0),
+      coll: dnum18(0),
     },
   };
+}
+
+// TODO: remove this function
+export function useEarnPositionsByAccount(account?: null | Address, options?: SubgraphHookOptions) {
+  const { refetchInterval } = prepareOptions(options);
+  return useQuery({
+    queryKey: ["StabilityPoolDepositsByAccount", account],
+    queryFn: DEMO_MODE
+      ? () => account ? ACCOUNT_POSITIONS.filter((position) => position.type === "earn") : []
+      : async () => {
+        if (!account) {
+          return null;
+        }
+        const { stabilityPoolDeposits } = await graph.StabilityPoolDepositsByAccount({ account });
+        return stabilityPoolDeposits.map(subgraphStabilityPoolDepositToEarnPosition);
+      },
+    refetchInterval,
+  });
 }

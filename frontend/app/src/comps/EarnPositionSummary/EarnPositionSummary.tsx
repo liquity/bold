@@ -2,8 +2,8 @@ import type { Address, CollateralSymbol } from "@liquity2/uikit";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { useCollateral, useCollIndexFromSymbol } from "@/src/liquity-utils";
-import { useEarnPosition, useStabilityPool } from "@/src/subgraph-hooks";
+import { useCollateral, useCollIndexFromSymbol, useEarnPosition } from "@/src/liquity-utils";
+import { useStabilityPool } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { HFlex, IconArrowRight, IconPlus, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -23,7 +23,7 @@ export function EarnPositionSummary({
   const collIndex = useCollIndexFromSymbol(collSymbol);
   const collateral = useCollateral(collIndex);
 
-  const earnPosition = useEarnPosition(address, collIndex ?? undefined);
+  const earnPosition = useEarnPosition(collIndex, address ?? null);
   const stabilityPool = useStabilityPool(collIndex ?? 0);
 
   const share = (

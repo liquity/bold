@@ -10,6 +10,6 @@
   "dependencies": {
     "@graphprotocol/graph-ts": "^0.35.1",
     "tsx": "^4.16.5",
-    "zx": "^8.1.4"
+    "zx": "^8.1.9"
   }
 }

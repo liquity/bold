@@ -51,14 +51,27 @@ query TroveById($id: ID!) {
   }
 }
 
+query StabilityPool($id: ID!) {
+  stabilityPool(id: $id) {
+    id
+    totalDeposited
+  }
+}
+
 query StabilityPoolDepositsByAccount($account: Bytes!) {
   stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {
     id
-    boldGain
-    collGain
-    deposit
     collateral {
       collIndex
+    }
+    deposit
+    depositor
+    snapshot {
+      B
+      P
+      S
+      epoch
+      scale
     }
   }
 }
@@ -66,19 +79,25 @@ query StabilityPoolDepositsByAccount($account: Bytes!) {
 query StabilityPoolDeposit($id: ID!) {
   stabilityPoolDeposit(id: $id) {
     id
-    boldGain
-    collGain
-    deposit
-    depositor
     collateral {
       collIndex
+    }
+    deposit
+    depositor
+    snapshot {
+      B
+      P
+      S
+      epoch
+      scale
     }
   }
 }
 
-query StabilityPool($id: ID!) {
-  stabilityPool(id: $id) {
+query StabilityPoolEpochScale($id: ID!) {
+  stabilityPoolEpochScale(id: $id) {
     id
-    totalDeposited
+    B
+    S
   }
 }
