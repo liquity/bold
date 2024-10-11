@@ -683,10 +683,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 // Reset last zombie trove pointer if the previous one was fully redeemed now
                 lastZombieTroveId = 0;
             }
-        } else {
-            // Reset last zombie trove pointer if the previous one ended up above min debt
-            lastZombieTroveId = 0;
         }
+        // Note: technically, it could happen that the Trove pointed to by `lastZombieTroveId` ends up with
+        // newDebt >= MIN_DEBT thanks to BOLD debt redistribution, which means it _could_ be made active again,
+        // however we don't do that here, as it would require hints for re-insertion into `SortedTroves`.
     }
 
     function _updateBatchInterestPriorToRedemption(IActivePool _activePool, address _batchAddress) internal {
