@@ -80,7 +80,7 @@
   - [10 - Branch shutdown and bad debt](#10---branch-shutdown-and-bad-debt)
   - [11 - Inaccurate calculation of average branch interest rate](#11---)
   - [12 - TroveManager can make troves liquidatable by changing the batch interest rate](#12---)
-  - [13 - Trove Adjustments may be griefed by sandwhich raising the average interest rate](#13---)
+  - [13 - Trove Adjustments may be griefed by sandwich raising the average interest rate](#13---)
   - [14 - Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards](#14---)
   - [15 - Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1](#15---)
 
@@ -1445,7 +1445,7 @@ This change cannot result in triggering the critical threshold, however it can m
 
 Thus BatchManagers should be considered benign trusted actors
 
-### 13. Trove Adjustments may be griefed by sandwhich raising the average interest rate
+### 13. Trove Adjustments may be griefed by sandwich raising the average interest rate
 
 Borrowing requires accepting an upfront fee. This is effectively a percentage of the debt change (not necessarily of TCR due to price changes). Due to this, it is possible for other ordinary operations to grief a Trove adjustments by changing the `avgInterestRate`.
 
