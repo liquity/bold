@@ -24,6 +24,9 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
 
         // Approve coll to BorrowerOperations
         WETH.approve(address(_borrowerOperations), type(uint256).max);
+
+        // Approve Bold to exchange module (Coll is approved in parent WETHZapper)
+        boldToken.approve(address(_exchange), type(uint256).max);
     }
 
     struct OpenLeveragedTroveVars {

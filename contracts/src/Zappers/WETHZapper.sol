@@ -36,9 +36,8 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanReceiver, IZ
         flashLoanProvider = _flashLoanProvider;
         exchange = _exchange;
 
-        // Approve Coll and Bold to exchange module
+        // Approve Coll to exchange module (for closeTroveFromCollateral)
         WETH.approve(address(_exchange), type(uint256).max);
-        boldToken.approve(address(_exchange), type(uint256).max);
     }
 
     struct OpenTroveVars {

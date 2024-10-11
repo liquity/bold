@@ -29,6 +29,9 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
         WETH.approve(address(_borrowerOperations), type(uint256).max);
         // Approve coll to BorrowerOperations
         collToken.approve(address(_borrowerOperations), type(uint256).max);
+
+        // Approve Bold to exchange module (Coll is approved in parent GasCompZapper)
+        boldToken.approve(address(_exchange), type(uint256).max);
     }
 
     struct OpenLeveragedTroveVars {
