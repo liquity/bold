@@ -7,21 +7,12 @@ import "../Interfaces/IBorrowerOperations.sol";
 import "../Interfaces/ITroveManager.sol";
 import "../Interfaces/ITroveNFT.sol";
 import "../Interfaces/IWETH.sol";
-import "../Dependencies/AddRemoveManagers.sol";
 import "./LeftoversSweep.sol";
+import "./BaseZapper.sol";
 import "../Dependencies/Constants.sol";
 
-contract WETHZapper is AddRemoveManagers, LeftoversSweep {
-    IBorrowerOperations public immutable borrowerOperations; // First branch (i.e., using WETH as collateral)
-    ITroveManager public immutable troveManager;
-    IWETH public immutable WETH;
-    IBoldToken public immutable boldToken;
-
-    constructor(IAddressesRegistry _addressesRegistry) AddRemoveManagers(_addressesRegistry) {
-        borrowerOperations = _addressesRegistry.borrowerOperations();
-        troveManager = _addressesRegistry.troveManager();
-        boldToken = _addressesRegistry.boldToken();
-        WETH = _addressesRegistry.WETH();
+contract WETHZapper is LeftoversSweep, BaseZapper {
+    constructor(IAddressesRegistry _addressesRegistry) BaseZapper(_addressesRegistry) {
         require(address(WETH) == address(_addressesRegistry.collToken()), "WZ: Wrong coll branch");
     }
 
@@ -183,20 +174,10 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep {
         if (_isCollIncrease) {
             require(_collChange == msg.value, "WZ: Wrong coll amount");
         } else {
-            require(msg.value == 0, "WZ: Withdrawing coll, no ETH should be received");
-        }
-        require(!_isDebtIncrease || _boldChange > 0, "WZ: Increase bold amount should not be zero");
-
-        address owner = troveNFT.ownerOf(_troveId);
-        address payable receiver = payable(owner);
-
-        if (!_isCollIncrease || _isDebtIncrease) {
-            receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+            require(msg.value == 0, "WZ: Not adding coll, no ETH should be received");
         }
 
-        if (_isCollIncrease || (!_isDebtIncrease && _boldChange > 0)) {
-            _requireSenderIsOwnerOrAddManager(_troveId, owner);
-        }
+        address payable receiver = payable(_checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease));
 
         // Set initial balances to make sure there are not lefovers
         _setInitialBalances(WETH, boldToken, _initialBalances);

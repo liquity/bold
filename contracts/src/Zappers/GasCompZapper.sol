@@ -7,27 +7,19 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../Interfaces/IAddressesRegistry.sol";
 import "../Interfaces/IBorrowerOperations.sol";
 import "../Interfaces/IWETH.sol";
-import "../Dependencies/AddRemoveManagers.sol";
 import "./LeftoversSweep.sol";
+import "./BaseZapper.sol";
 import "../Dependencies/Constants.sol";
 
 // import "forge-std/console2.sol";
 
-contract GasCompZapper is AddRemoveManagers, LeftoversSweep {
+contract GasCompZapper is LeftoversSweep, BaseZapper {
     using SafeERC20 for IERC20;
 
-    IBorrowerOperations public immutable borrowerOperations; // LST branch (i.e., not WETH as collateral)
-    ITroveManager public immutable troveManager;
-    IWETH public immutable WETH;
     IERC20 public immutable collToken;
-    IBoldToken public immutable boldToken;
 
-    constructor(IAddressesRegistry _addressesRegistry) AddRemoveManagers(_addressesRegistry) {
-        borrowerOperations = _addressesRegistry.borrowerOperations();
-        troveManager = _addressesRegistry.troveManager();
+    constructor(IAddressesRegistry _addressesRegistry) BaseZapper(_addressesRegistry) {
         collToken = _addressesRegistry.collToken();
-        boldToken = _addressesRegistry.boldToken();
-        WETH = _addressesRegistry.WETH();
         require(address(WETH) != address(collToken), "GCZ: Wrong coll branch");
     }
 
@@ -191,18 +183,7 @@ contract GasCompZapper is AddRemoveManagers, LeftoversSweep {
         bool _isDebtIncrease,
         InitialBalances memory _initialBalances
     ) internal returns (address) {
-        require(!_isDebtIncrease || _boldChange > 0, "GCZ: Increase bold amount should not be zero");
-
-        address owner = troveNFT.ownerOf(_troveId);
-        address receiver = owner;
-
-        if (!_isCollIncrease || _isDebtIncrease) {
-            receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
-        }
-
-        if (_isCollIncrease || (!_isDebtIncrease && _boldChange > 0)) {
-            _requireSenderIsOwnerOrAddManager(_troveId, owner);
-        }
+        address receiver = _checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
 
         // Set initial balances to make sure there are not lefovers
         _setInitialBalances(collToken, boldToken, _initialBalances);

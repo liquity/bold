@@ -491,4 +491,6 @@ contract ZapperGasCompTest is DevTestSetup {
         assertEq(collToken.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
         assertEq(collToken.balanceOf(address(gasCompZapper)), 0, "Zapper Coll bal should be zero");
     }
+
+    // TODO: tests for add/remove managers of zapper contract
 }
