@@ -269,7 +269,7 @@ contract GasCompZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanReceiver,
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collToken, boldToken, initialBalances);
+        _setInitialBalancesAndReceiver(collToken, boldToken, initialBalances, receiver);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(

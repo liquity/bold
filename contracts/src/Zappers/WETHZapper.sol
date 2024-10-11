@@ -264,7 +264,7 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanReceiver, IZ
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(WETH, boldToken, initialBalances);
+        _setInitialBalancesAndReceiver(WETH, boldToken, initialBalances, receiver);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
