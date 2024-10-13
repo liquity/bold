@@ -31,6 +31,8 @@ uint256 constant REDEMPTION_FEE_FLOOR = _1pct / 2; // 0.5%
 // For the debt / shares ratio to increase by a factor 1e9
 // at a average annual debt increase (compounded interest + fees) of 10%, it would take more than 217 years (log(1e9)/log(1.1))
 // at a average annual debt increase (compounded interest + fees) of 50%, it would take more than 51 years (log(1e9)/log(1.5))
+// The increase pace could be forced to be higher through an inflation attack,
+// but precisely the fact that we have this max value now prevents the attack
 uint256 constant MAX_BATCH_SHARES_RATIO = 1e9;
 
 // Half-life of 12h. 12h = 720 min
