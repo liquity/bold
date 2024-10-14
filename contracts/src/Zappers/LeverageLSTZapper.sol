@@ -9,40 +9,29 @@ import "../Interfaces/IWETH.sol";
 import "./GasCompZapper.sol";
 import "../Dependencies/AddRemoveManagers.sol";
 import "../Dependencies/Constants.sol";
-import "./Interfaces/IFlashLoanProvider.sol";
-import "./Interfaces/IFlashLoanReceiver.sol";
-import "./Interfaces/IExchange.sol";
-import "./Interfaces/ILeverageZapper.sol";
 
 // import "forge-std/console2.sol";
 
-contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper {
+contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
     using SafeERC20 for IERC20;
 
     IPriceFeed public immutable priceFeed;
-    IFlashLoanProvider public immutable flashLoanProvider;
-    IExchange public immutable exchange;
 
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
-        GasCompZapper(_addressesRegistry)
+        GasCompZapper(_addressesRegistry, _flashLoanProvider, _exchange)
     {
         // Cache contracts
         IBorrowerOperations _borrowerOperations = borrowerOperations;
-        IERC20 _collToken = collToken;
-        IWETH _WETH = WETH;
 
         priceFeed = _addressesRegistry.priceFeed();
 
-        flashLoanProvider = _flashLoanProvider;
-        exchange = _exchange;
-
-        // Approve Coll and Bold to exchange module
-        _collToken.approve(address(_exchange), type(uint256).max);
-        boldToken.approve(address(_exchange), type(uint256).max);
         // Approve WETH to BorrowerOperations
-        _WETH.approve(address(_borrowerOperations), type(uint256).max);
+        WETH.approve(address(_borrowerOperations), type(uint256).max);
         // Approve coll to BorrowerOperations
-        _collToken.approve(address(_borrowerOperations), type(uint256).max);
+        collToken.approve(address(_borrowerOperations), type(uint256).max);
+
+        // Approve Bold to exchange module (Coll is approved in parent GasCompZapper)
+        boldToken.approve(address(_exchange), type(uint256).max);
     }
 
     struct OpenLeveragedTroveVars {
@@ -78,7 +67,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
     function receiveFlashLoanOnOpenLeveragedTrove(
         OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
-    ) external {
+    ) external override {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 
         OpenLeveragedTroveVars memory vars;
@@ -136,6 +125,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
     // Callback from the flash loan provider
     function receiveFlashLoanOnLeverUpTrove(LeverUpTroveParams calldata _params, uint256 _effectiveFlashLoanAmount)
         external
+        override
     {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 
@@ -180,6 +170,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
     // Callback from the flash loan provider
     function receiveFlashLoanOnLeverDownTrove(LeverDownTroveParams calldata _params, uint256 _effectiveFlashLoanAmount)
         external
+        override
     {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 

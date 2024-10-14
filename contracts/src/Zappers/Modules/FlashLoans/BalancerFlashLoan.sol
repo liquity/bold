@@ -38,6 +38,9 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
             ILeverageZapper.LeverDownTroveParams memory leverDownTroveParams =
                 abi.decode(_params, (ILeverageZapper.LeverDownTroveParams));
             userData = abi.encode(_operation, leverDownTroveParams);
+        } else if (_operation == Operation.CloseTrove) {
+            IZapper.CloseTroveParams memory closeTroveParams = abi.decode(_params, (IZapper.CloseTroveParams));
+            userData = abi.encode(_operation, closeTroveParams);
         } else {
             revert("LZ: Wrong Operation");
         }
@@ -96,6 +99,16 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
             tokens[0].safeTransfer(address(receiver), effectiveFlashLoanAmount);
             // Zapper callback
             receiver.receiveFlashLoanOnLeverDownTrove(leverDownTroveParams, effectiveFlashLoanAmount);
+        } else if (operation == Operation.CloseTrove) {
+            // Close trove
+            // decode params
+            IZapper.CloseTroveParams memory closeTroveParams = abi.decode(userData[32:], (IZapper.CloseTroveParams));
+            // Flash loan minus fees
+            uint256 effectiveFlashLoanAmount = amounts[0] - feeAmounts[0];
+            // We send only effective flash loan, keeping fees here
+            tokens[0].safeTransfer(address(receiver), effectiveFlashLoanAmount);
+            // Zapper callback
+            receiver.receiveFlashLoanOnCloseTroveFromCollateral(closeTroveParams, effectiveFlashLoanAmount);
         } else {
             revert("LZ: Wrong Operation");
         }
