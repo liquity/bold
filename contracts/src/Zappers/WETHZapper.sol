@@ -210,26 +210,17 @@ contract WETHZapper is LeftoversSweep, BaseZapper {
             boldToken.transfer(_receiver, _boldChange);
         }
 
-        // WETH -> ETH
-        uint256 ethToSend;
-        if (!_isCollIncrease) {
-            ethToSend = _collChange;
-        }
-
-        // return leftovers to user
+        // return BOLD leftovers to user (trying to repay more than possible)
         uint256 currentBoldBalance = boldToken.balanceOf(address(this));
         if (currentBoldBalance > _initialBalances.boldBalance) {
             boldToken.transfer(_initialBalances.sender, currentBoldBalance - _initialBalances.boldBalance);
         }
+        // There shouldn’t be Collateral leftovers, everything sent should end up in the trove
 
-        uint256 currentCollBalance = WETH.balanceOf(address(this));
-        if (currentCollBalance > ethToSend + _initialBalances.collBalance) {
-            ethToSend = ethToSend + currentCollBalance - ethToSend - _initialBalances.collBalance;
-        }
-
-        if (ethToSend > 0) {
-            WETH.withdraw(ethToSend);
-            (bool success,) = _receiver.call{value: ethToSend}("");
+        // WETH -> ETH
+        if (!_isCollIncrease && _collChange > 0) {
+            WETH.withdraw(_collChange);
+            (bool success,) = _receiver.call{value: _collChange}("");
             require(success, "WZ: Sending ETH failed");
         }
         // TODO: remove before deployment!!
