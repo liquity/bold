@@ -166,6 +166,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     error NotShutDown();
     error NotEnoughBoldBalance();
     error MinCollNotReached(uint256 _coll);
+    error BatchSharesRatioTooHigh();
 
     // --- Events ---
 
@@ -571,12 +572,15 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
             Troves[_singleRedemption.troveId].coll = newColl;
             // interest and fee were updated in the outer function
+            // This call could revert due to BatchSharesRatioTooHigh if trove.redistCollGain > boldLot
+            // so we skip that check to avoid blocking redemptions
             _updateBatchShares(
                 _singleRedemption.troveId,
                 _singleRedemption.batchAddress,
                 troveChange,
                 _singleRedemption.batch.entireCollWithoutRedistribution,
-                _singleRedemption.batch.entireDebtWithoutRedistribution
+                _singleRedemption.batch.entireDebtWithoutRedistribution,
+                false // _checkBatchSharesRatio
             );
         } else {
             _singleRedemption.oldWeightedRecordedDebt = _singleRedemption.trove.weightedRecordedDebt;
@@ -1266,7 +1270,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // Push the trove's id to the Trove list
         TroveIds.push(_troveId);
 
-        _updateBatchShares(_troveId, _batchAddress, _troveChange, _batchColl, _batchDebt);
+        _updateBatchShares(_troveId, _batchAddress, _troveChange, _batchColl, _batchDebt, true);
 
         uint256 newTotalStakes = totalStakes + newStake;
         totalStakes = newTotalStakes;
@@ -1518,7 +1522,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 newStake = _updateStakeAndTotalStakes(_troveId, _newTroveColl);
 
         // Batch
-        _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt);
+        _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt, true);
 
         _movePendingTroveRewardsToActivePool(
             defaultPool, _troveChange.appliedRedistBoldDebtGain, _troveChange.appliedRedistCollGain
@@ -1573,7 +1577,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         Troves[_troveId].coll = _newTroveColl;
 
         if (_batchAddress != address(0)) {
-            _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt);
+            _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt, true);
 
             emit BatchUpdated({
                 _interestBatchManager: _batchAddress,
@@ -1714,7 +1718,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         _troveChange.collIncrease = _params.troveColl - _troveChange.appliedRedistCollGain;
         _troveChange.debtIncrease = _params.troveDebt - _troveChange.appliedRedistBoldDebtGain - _troveChange.upfrontFee;
         _updateBatchShares(
-            _params.troveId, _params.newBatchAddress, _troveChange, _params.newBatchColl, _params.newBatchDebt
+            _params.troveId, _params.newBatchAddress, _troveChange, _params.newBatchColl, _params.newBatchDebt, true
         );
 
         _movePendingTroveRewardsToActivePool(
@@ -1756,12 +1760,14 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         });
     }
 
+    // This function will revert if there’s a total debt increase and the ratio debt / shares has exceeded the max
     function _updateBatchShares(
         uint256 _troveId,
         address _batchAddress,
         TroveChange memory _troveChange,
         uint256 _batchColl, // without trove change
-        uint256 _batchDebt // entire (with interest, batch fee), but without trove change, nor upfront fee nor redist
+        uint256 _batchDebt, // entire (with interest, batch fee), but without trove change, nor upfront fee nor redist
+        bool _checkBatchSharesRatio // whether we do the check on the resulting ratio inside the func call
     ) internal {
         // Debt
         uint256 currentBatchDebtShares = batches[_batchAddress].totalDebtShares;
@@ -1784,6 +1790,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 if (_batchDebt == 0) {
                     batchDebtSharesDelta = debtIncrease;
                 } else {
+                    // To avoid rebasing issues, let’s make sure the ratio debt / shares is not too high
+                    _requireBelowMaxSharesRatio(currentBatchDebtShares, _batchDebt, _checkBatchSharesRatio);
+
                     batchDebtSharesDelta = currentBatchDebtShares * debtIncrease / _batchDebt;
                 }
 
@@ -1822,6 +1831,17 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 // Subtract coll
                 batches[_batchAddress].coll = _batchColl - collDecrease;
             }
+        }
+    }
+
+    // For the debt / shares ratio to increase by a factor 1e9
+    // at a average annual debt increase (compounded interest + fees) of 10%, it would take more than 217 years (log(1e9)/log(1.1))
+    // at a average annual debt increase (compounded interest + fees) of 50%, it would take more than 51 years (log(1e9)/log(1.5))
+    // When that happens, no more debt can be manually added to the batch, so batch should be migrated to a new one
+    function _requireBelowMaxSharesRatio(uint256 _currentBatchDebtShares, uint256 _batchDebt, bool _checkBatchSharesRatio) internal pure {
+        // debt / shares should be below MAX_BATCH_SHARES_RATIO
+        if (_currentBatchDebtShares * MAX_BATCH_SHARES_RATIO < _batchDebt && _checkBatchSharesRatio) {
+            revert BatchSharesRatioTooHigh();
         }
     }
 
