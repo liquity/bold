@@ -20,10 +20,12 @@ contract LeftoversSweep {
         _setInitialBalancesAndReceiver(_collToken, _boldToken, _initialBalances, msg.sender);
     }
 
-    function _setInitialBalancesAndReceiver(IERC20 _collToken, IBoldToken _boldToken, InitialBalances memory _initialBalances, address _receiver)
-        internal
-        view
-    {
+    function _setInitialBalancesAndReceiver(
+        IERC20 _collToken,
+        IBoldToken _boldToken,
+        InitialBalances memory _initialBalances,
+        address _receiver
+    ) internal view {
         _initialBalances.boldBalance = _boldToken.balanceOf(address(this));
         _initialBalances.collBalance = _collToken.balanceOf(address(this));
         _initialBalances.receiver = _receiver;

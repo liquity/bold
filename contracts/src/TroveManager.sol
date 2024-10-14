@@ -1838,7 +1838,11 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // at a average annual debt increase (compounded interest + fees) of 10%, it would take more than 217 years (log(1e9)/log(1.1))
     // at a average annual debt increase (compounded interest + fees) of 50%, it would take more than 51 years (log(1e9)/log(1.5))
     // When that happens, no more debt can be manually added to the batch, so batch should be migrated to a new one
-    function _requireBelowMaxSharesRatio(uint256 _currentBatchDebtShares, uint256 _batchDebt, bool _checkBatchSharesRatio) internal pure {
+    function _requireBelowMaxSharesRatio(
+        uint256 _currentBatchDebtShares,
+        uint256 _batchDebt,
+        bool _checkBatchSharesRatio
+    ) internal pure {
         // debt / shares should be below MAX_BATCH_SHARES_RATIO
         if (_currentBatchDebtShares * MAX_BATCH_SHARES_RATIO < _batchDebt && _checkBatchSharesRatio) {
             revert BatchSharesRatioTooHigh();

@@ -1144,8 +1144,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         internal
     {
         // This should be done in the frontend
-        uint256 flashLoanAmount =
-            _getCloseFlashLoanAmount(_troveId, _troveManager, _priceFeed);
+        uint256 flashLoanAmount = _getCloseFlashLoanAmount(_troveId, _troveManager, _priceFeed);
 
         IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
             troveId: _troveId,
@@ -1286,9 +1285,8 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
 
         // B tries to close A’s trove
-        uint256 flashLoanAmount = _getCloseFlashLoanAmount(
-            troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed
-        );
+        uint256 flashLoanAmount =
+            _getCloseFlashLoanAmount(troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
 
         IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
             troveId: troveId,
@@ -1331,9 +1329,8 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
 
         // B tries to close A’s trove calling our flash loan provider module
-        uint256 flashLoanAmount = _getCloseFlashLoanAmount(
-            troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed
-        );
+        uint256 flashLoanAmount =
+            _getCloseFlashLoanAmount(troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
 
         IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
             troveId: troveId,
@@ -1382,9 +1379,8 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
 
         // B tries to close A’s trove calling Balancer Vault directly
-        uint256 flashLoanAmount = _getCloseFlashLoanAmount(
-            troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed
-        );
+        uint256 flashLoanAmount =
+            _getCloseFlashLoanAmount(troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
 
         IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
             troveId: troveId,
