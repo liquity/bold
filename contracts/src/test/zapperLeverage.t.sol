@@ -239,7 +239,21 @@ contract ZapperLeverageMainnet is DevTestSetup {
         IPriceFeed _priceFeed,
         bool _lst
     ) internal returns (uint256) {
-        return openLeveragedTroveWithIndex(_leverageZapper, 0, _collAmount, _leverageRatio, _priceFeed, _lst);
+        return
+            openLeveragedTroveWithIndex(_leverageZapper, 0, _collAmount, _leverageRatio, _priceFeed, _lst, address(0));
+    }
+
+    function openLeveragedTrove(
+        ILeverageZapper _leverageZapper,
+        uint256 _collAmount,
+        uint256 _leverageRatio,
+        IPriceFeed _priceFeed,
+        bool _lst,
+        address _batchManager
+    ) internal returns (uint256) {
+        return openLeveragedTroveWithIndex(
+            _leverageZapper, 0, _collAmount, _leverageRatio, _priceFeed, _lst, _batchManager
+        );
     }
 
     function openLeveragedTroveWithIndex(
@@ -249,6 +263,20 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 _leverageRatio,
         IPriceFeed _priceFeed,
         bool _lst
+    ) internal returns (uint256) {
+        return openLeveragedTroveWithIndex(
+            _leverageZapper, _index, _collAmount, _leverageRatio, _priceFeed, _lst, address(0)
+        );
+    }
+
+    function openLeveragedTroveWithIndex(
+        ILeverageZapper _leverageZapper,
+        uint256 _index,
+        uint256 _collAmount,
+        uint256 _leverageRatio,
+        IPriceFeed _priceFeed,
+        bool _lst,
+        address _batchManager
     ) internal returns (uint256) {
         OpenTroveVars memory vars;
         (vars.price,) = _priceFeed.fetchPrice();
@@ -269,7 +297,8 @@ contract ZapperLeverageMainnet is DevTestSetup {
             boldAmount: vars.effectiveBoldAmount,
             upperHint: 0,
             lowerHint: 0,
-            annualInterestRate: 5e16,
+            annualInterestRate: _batchManager == address(0) ? 5e16 : 0,
+            batchManager: _batchManager,
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -302,18 +331,41 @@ contract ZapperLeverageMainnet is DevTestSetup {
 
     function testCanOpenTroveWithCurve() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
-            _testCanOpenTrove(leverageZapperCurveArray[i], i);
+            _testCanOpenTrove(leverageZapperCurveArray[i], i, address(0));
         }
     }
 
     function testCanOpenTroveWithUniV3() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             if (i == 2) continue; // TODO!!
-            _testCanOpenTrove(leverageZapperUniV3Array[i], i);
+            _testCanOpenTrove(leverageZapperUniV3Array[i], i, address(0));
         }
     }
 
-    function _testCanOpenTrove(ILeverageZapper _leverageZapper, uint256 _branch) internal {
+    function testCanOpenTroveAndJoinBatchWithCurve() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _registerBatchManager(B, i);
+            _testCanOpenTrove(leverageZapperCurveArray[i], i, B);
+        }
+    }
+
+    function testCanOpenTroveAndJoinBatchWithUniV3() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            if (i == 2) continue; // TODO!!
+            _registerBatchManager(B, i);
+            _testCanOpenTrove(leverageZapperUniV3Array[i], i, B);
+        }
+    }
+
+    function _registerBatchManager(address _account, uint256 _branch) internal {
+        vm.startPrank(_account);
+        contractsArray[_branch].borrowerOperations.registerBatchManager(
+            uint128(1e16), uint128(20e16), uint128(5e16), uint128(25e14), MIN_INTEREST_RATE_CHANGE_PERIOD
+        );
+        vm.stopPrank();
+    }
+
+    function _testCanOpenTrove(ILeverageZapper _leverageZapper, uint256 _branch, address _batchManager) internal {
         TestVars memory vars;
         vars.collAmount = 10 ether;
         vars.newLeverageRatio = 2e18;
@@ -323,7 +375,12 @@ contract ZapperLeverageMainnet is DevTestSetup {
 
         bool lst = _branch > 0;
         vars.troveId = openLeveragedTrove(
-            _leverageZapper, vars.collAmount, vars.newLeverageRatio, contractsArray[_branch].priceFeed, lst
+            _leverageZapper,
+            vars.collAmount,
+            vars.newLeverageRatio,
+            contractsArray[_branch].priceFeed,
+            lst,
+            _batchManager
         );
 
         // Checks
@@ -411,6 +468,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: 5e16,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -607,9 +665,8 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 collAmount = 10 ether;
         uint256 leverageRatio = 2e18;
         bool lst = _branch > 0;
-        uint256 troveId = openLeveragedTroveWithIndex(
-            _leverageZapper, 0, collAmount, leverageRatio, contractsArray[_branch].priceFeed, lst
-        );
+        uint256 troveId =
+            openLeveragedTrove(_leverageZapper, collAmount, leverageRatio, contractsArray[_branch].priceFeed, lst);
 
         (uint256 flashLoanAmount, uint256 effectiveBoldAmount) = _getLeverUpFlashLoanAndBoldAmount(
             _leverageZapper,
@@ -1112,6 +1169,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
