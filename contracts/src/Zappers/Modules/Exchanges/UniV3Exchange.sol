@@ -24,12 +24,6 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
     ISwapRouter public immutable uniV3Router;
     IQuoterV2 public immutable uniV3Quoter;
 
-    // From library TickMath
-    /// @dev The minimum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MIN_TICK)
-    uint160 internal constant MIN_SQRT_RATIO = 4295128739;
-    /// @dev The maximum value that can be returned from #getSqrtRatioAtTick. Equivalent to getSqrtRatioAtTick(MAX_TICK)
-    uint160 internal constant MAX_SQRT_RATIO = 1461446703485210103287273052203988822378723970342;
-
     constructor(
         IERC20 _collToken,
         IBoldToken _boldToken,
@@ -51,14 +45,12 @@ contract UniV3Exchange is LeftoversSweep, IExchange, IUniswapV3SwapCallback {
         external /* view */
         returns (uint256)
     {
-        // See: https://github.com/Uniswap/v3-core/blob/d8b1c635c275d2a9450bd6a78f3fa2484fef73eb/contracts/UniswapV3Pool.sol#L608
-        uint160 sqrtPriceLimitX96 = _zeroForOne(boldToken, collToken) ? MIN_SQRT_RATIO + 1: MAX_SQRT_RATIO - 1;
         IQuoterV2.QuoteExactOutputSingleParams memory params = IQuoterV2.QuoteExactOutputSingleParams({
             tokenIn: address(boldToken),
             tokenOut: address(collToken),
             amount: _minCollAmount,
             fee: fee,
-            sqrtPriceLimitX96: sqrtPriceLimitX96
+            sqrtPriceLimitX96: 0
         });
         (uint256 amountIn,,,) = uniV3Quoter.quoteExactOutputSingle(params);
         require(amountIn <= _maxBoldAmount, "Price too high");
