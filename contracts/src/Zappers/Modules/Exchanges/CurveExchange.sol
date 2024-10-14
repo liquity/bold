@@ -55,38 +55,38 @@ contract CurveExchange is IExchange {
         return boldAmountToSwap;
     }
 
-    function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount, address _zapper) external returns (uint256) {
+    function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount) external returns (uint256) {
         ICurvePool curvePoolCached = curvePool;
         uint256 initialBoldBalance = boldToken.balanceOf(address(this));
-        boldToken.transferFrom(_zapper, address(this), _boldAmount);
+        boldToken.transferFrom(msg.sender, address(this), _boldAmount);
         boldToken.approve(address(curvePoolCached), _boldAmount);
 
         // TODO: make this work
-        //return curvePoolCached.exchange(BOLD_TOKEN_INDEX, COLL_TOKEN_INDEX, _boldAmount, _minCollAmount, false, _zapper);
+        //return curvePoolCached.exchange(BOLD_TOKEN_INDEX, COLL_TOKEN_INDEX, _boldAmount, _minCollAmount, false, msg.sender);
         uint256 output = curvePoolCached.exchange(BOLD_TOKEN_INDEX, COLL_TOKEN_INDEX, _boldAmount, _minCollAmount);
-        collToken.safeTransfer(_zapper, output);
+        collToken.safeTransfer(msg.sender, output);
 
         uint256 currentBoldBalance = boldToken.balanceOf(address(this));
         if (currentBoldBalance > initialBoldBalance) {
-            boldToken.transfer(_zapper, currentBoldBalance - initialBoldBalance);
+            boldToken.transfer(msg.sender, currentBoldBalance - initialBoldBalance);
         }
 
         return output;
     }
 
-    function swapToBold(uint256 _collAmount, uint256 _minBoldAmount, address _zapper) external returns (uint256) {
+    function swapToBold(uint256 _collAmount, uint256 _minBoldAmount) external returns (uint256) {
         ICurvePool curvePoolCached = curvePool;
         uint256 initialCollBalance = collToken.balanceOf(address(this));
-        collToken.safeTransferFrom(_zapper, address(this), _collAmount);
+        collToken.safeTransferFrom(msg.sender, address(this), _collAmount);
         collToken.approve(address(curvePoolCached), _collAmount);
 
-        //return curvePoolCached.exchange(COLL_TOKEN_INDEX, BOLD_TOKEN_INDEX, _collAmount, _minBoldAmount, false, _zapper);
+        //return curvePoolCached.exchange(COLL_TOKEN_INDEX, BOLD_TOKEN_INDEX, _collAmount, _minBoldAmount, false, msg.sender);
         uint256 output = curvePoolCached.exchange(COLL_TOKEN_INDEX, BOLD_TOKEN_INDEX, _collAmount, _minBoldAmount);
-        boldToken.transfer(_zapper, output);
+        boldToken.transfer(msg.sender, output);
 
         uint256 currentCollBalance = collToken.balanceOf(address(this));
         if (currentCollBalance > initialCollBalance) {
-            collToken.transfer(_zapper, currentCollBalance - initialCollBalance);
+            collToken.transfer(msg.sender, currentCollBalance - initialCollBalance);
         }
 
         return output;

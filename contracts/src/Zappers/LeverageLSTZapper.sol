@@ -110,7 +110,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         _setRemoveManagerAndReceiver(vars.troveId, _params.removeManager, _params.receiver);
 
         // Swap Bold to Coll
-        exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount, address(this));
+        exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount);
 
         // Send coll back to return flash loan
         vars.collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
@@ -154,7 +154,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         // No need to use a min: if the obtained amount is not enough, the flash loan return below won’t be enough
         // And the flash loan provider will revert after this function exits
         // The frontend should calculate in advance the `_params.boldAmount` needed for this to work
-        exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount, address(this));
+        exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount);
 
         // Send coll back to return flash loan
         collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
@@ -187,8 +187,7 @@ contract LeverageLSTZapper is GasCompZapper, IFlashLoanReceiver, ILeverageZapper
         // We swap the flash loan minus the flash loan fee
         // The frontend should calculate in advance the `_params.minBoldAmount` to achieve the desired leverage ratio
         // (with some slippage tolerance)
-        uint256 receivedBoldAmount =
-            exchange.swapToBold(_effectiveFlashLoanAmount, _params.minBoldAmount, address(this));
+        uint256 receivedBoldAmount = exchange.swapToBold(_effectiveFlashLoanAmount, _params.minBoldAmount);
 
         // Adjust trove
         borrowerOperations.adjustTrove(
