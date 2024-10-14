@@ -1032,7 +1032,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
     }
 
-    function testSwitchBatchBatchManagerChargesUpfrontFeeIfJoinedOldLessThanCooldownAgo() public {
+    function testSwitchBatchManagerChargesUpfrontFeeIfJoinedOldLessThanCooldownAgo() public {
         // C registers as batch manager
         registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
         // A opens trove and joins batch manager B (which has the same interest)
@@ -1057,7 +1057,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
     }
 
-    function testSwitchBatchBatchManagerChargesUpfrontFeeIfJoinedOldMoreThanCooldownAgo() public {
+    function testSwitchBatchManagerChargesUpfrontFeeIfJoinedOldMoreThanCooldownAgo() public {
         // C registers as batch manager
         registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
         // A opens trove and joins batch manager B (which has the same interest)
@@ -1082,7 +1082,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
     }
 
-    function testSwitchBatchBatchManagerChargesUpfrontFeeIfOldBatchChangedFeeLessThanCooldownAgo() public {
+    function testSwitchBatchManagerChargesUpfrontFeeIfOldBatchChangedFeeLessThanCooldownAgo() public {
         // C registers as batch manager
         registerBatchManager(C, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
         // A opens trove and joins batch manager B
@@ -1110,7 +1110,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A");
     }
 
-    function testSwitchBatchBatchManagerDoesNotChargeTroveUpfrontFeeIfBatchChangesRateWithoutUpfrontFee() public {
+    function testSwitchBatchManagerDoesNotChargeTroveUpfrontFeeIfBatchChangesRateWithoutUpfrontFee() public {
         // B registers as batch manager
         registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
 
