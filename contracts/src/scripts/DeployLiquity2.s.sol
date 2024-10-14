@@ -30,6 +30,8 @@ import "../test/TestContracts/PriceFeedTestnet.sol";
 import "../test/TestContracts/MetadataDeployment.sol";
 import "../Zappers/WETHZapper.sol";
 import "../Zappers/GasCompZapper.sol";
+import "../Zappers/Modules/FlashLoans/BalancerFlashLoan.sol";
+import "../Zappers/Modules/Exchanges/CurveExchange.sol";
 import {WETHTester} from "../test/TestContracts/WETHTester.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "forge-std/console.sol";
@@ -478,21 +480,64 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
 
         // deploy zappers
         (contracts.gasCompZapper, contracts.wethZapper) =
-            _deployZappers(contracts.addressesRegistry, contracts.collToken, _weth);
+            _deployZappers(contracts.addressesRegistry, contracts.collToken, _boldToken, _weth, contracts.priceFeed);
     }
 
-    function _deployZappers(IAddressesRegistry _addressesRegistry, IERC20 _collToken, IWETH _weth)
-        internal
-        returns (GasCompZapper gasCompZapper, WETHZapper wethZapper)
-    {
+    function _deployZappers(
+        IAddressesRegistry _addressesRegistry,
+        IERC20 _collToken,
+        IBoldToken _boldToken,
+        IWETH _weth,
+        IPriceFeed _priceFeed
+    ) internal returns (GasCompZapper gasCompZapper, WETHZapper wethZapper) {
+        IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
+        IExchange curveExchange = _deployCurveExchange(_collToken, _boldToken, _priceFeed, false);
+        // TODO: Deploy base zappers versions with Uni V3 exchange
+
         bool lst = _collToken != _weth;
         if (lst) {
-            gasCompZapper = new GasCompZapper(_addressesRegistry);
+            gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, curveExchange);
         } else {
-            wethZapper = new WETHZapper(_addressesRegistry);
+            wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, curveExchange);
         }
 
         return (gasCompZapper, wethZapper);
+    }
+
+    function _deployCurveExchange(IERC20 _collToken, IBoldToken _boldToken, IPriceFeed _priceFeed, bool _mainnet)
+        internal
+        returns (IExchange)
+    {
+        if (!_mainnet) return new CurveExchange(_collToken, _boldToken, ICurvePool(address(0)), 1, 0);
+
+        // TODO: unsued for now
+        /*
+        (uint256 price,) = _priceFeed.fetchPrice();
+
+        // deploy Curve Twocrypto NG pool
+        address[2] memory coins;
+        coins[0] = address(_boldToken);
+        coins[1] = address(_collToken);
+        ICurvePool curvePool = curveFactory.deploy_pool(
+            "LST-Bold pool",
+            "LBLD",
+            coins,
+            0, // implementation id
+            400000, // A
+            145000000000000, // gamma
+            26000000, // mid_fee
+            45000000, // out_fee
+            230000000000000, // fee_gamma
+            2000000000000, // allowed_extra_profit
+            146000000000000, // adjustment_step
+            600, // ma_exp_time
+            price // initial_price
+        );
+
+        IExchange curveExchange = new CurveExchange(_collToken, _boldToken, curvePool, 1, 0);
+
+        return curveExchange;
+        */
     }
 
     function formatAmount(uint256 amount, uint256 decimals, uint256 digits) internal pure returns (string memory) {
