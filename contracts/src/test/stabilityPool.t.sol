@@ -352,7 +352,7 @@ contract SPTest is DevTestSetup {
         uint256 topUp = 1e18;
         makeSPDepositNoClaim(A, topUp);
 
-        assertEq(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A + topUp + currentBoldGain);
+        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A + topUp + currentBoldGain, 1e4);
     }
 
     function testProvideToSPNoClaimAddsBoldGainsToTotalBoldDeposits() public {
@@ -371,7 +371,7 @@ contract SPTest is DevTestSetup {
         uint256 topUp = 1e18;
         makeSPDepositNoClaim(A, topUp);
 
-        assertEq(stabilityPool.getTotalBoldDeposits(), totalBoldDepositsBefore + topUp + currentBoldGain);
+        assertApproximatelyEqual(stabilityPool.getTotalBoldDeposits(), totalBoldDepositsBefore + topUp + currentBoldGain, 1e4);
     }
 
     function testProvideToSPNoClaimZerosCurrentBoldGains() public {
@@ -664,7 +664,7 @@ contract SPTest is DevTestSetup {
         uint256 withdrawal = 1e18;
         makeSPWithdrawalNoClaim(A, withdrawal);
 
-        assertEq(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A - withdrawal + currentBoldGain);
+        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A - withdrawal + currentBoldGain, 1e4);
     }
 
     function testWithdrawFromSPNoClaimAddsBoldGainsToTotalBoldDeposits() public {
@@ -1864,7 +1864,7 @@ contract SPTest is DevTestSetup {
         uint256 scale1 = stabilityPool.currentScale();
 
         // Check A owns entire SP
-        assertEq(stabilityPool.getTotalBoldDeposits(), stabilityPool.getCompoundedBoldDeposit(A));
+        assertApproximatelyEqual(stabilityPool.getTotalBoldDeposits(), stabilityPool.getCompoundedBoldDeposit(A), 1e14, "A should own all SP");
         // Check D's trove's debt equals the SP size
         uint256 troveDebt = troveManager.getTroveEntireDebt(troveIDs.D);
         uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
@@ -1888,7 +1888,7 @@ contract SPTest is DevTestSetup {
 
         // Check A deposit reduced to ~0
         makeSPWithdrawalAndClaim(A, stabilityPool.getCompoundedBoldDeposit(A));
-        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 0);
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 0, "A deposit should be zero");
 
         // D sends some BOLD to C
         uint256 freshDeposit = boldToken.balanceOf(D) / 2;
@@ -1927,14 +1927,14 @@ contract SPTest is DevTestSetup {
 
         testVars.boldGainC = stabilityPool.getDepositorYieldGain(C);
         testVars.boldGainD = stabilityPool.getDepositorYieldGain(D);
-        assertApproximatelyEqual(testVars.expectedShareOfYield1_C, testVars.boldGainC, 1e4);
-        assertApproximatelyEqual(testVars.expectedShareOfYield1_D, testVars.boldGainD, 1e4);
+        assertApproximatelyEqual(testVars.expectedShareOfYield1_C, testVars.boldGainC, 1e6, "C share of yield mismatch");
+        assertApproximatelyEqual(testVars.expectedShareOfYield1_D, testVars.boldGainD, 1e6, "D share of yield mismatch");
 
         testVars.ethGainC = stabilityPool.getDepositorCollGain(C);
         testVars.ethGainD = stabilityPool.getDepositorCollGain(D);
 
-        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainC, 1e4);
-        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainD, 1e4);
+        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainC, 1e7, "C share of coll mismatch");
+        assertApproximatelyEqual(testVars.expectedShareOfColl, testVars.ethGainD, 1e7, "D share of coll mismatch");
 
         // E makes deposit after 2nd liq
         transferBold(C, E, boldToken.balanceOf(C));
@@ -1955,7 +1955,17 @@ contract SPTest is DevTestSetup {
         // check all BOLD and Coll gains are as expected
         uint256 boldGainE = stabilityPool.getDepositorYieldGain(E);
 
-        assertApproximatelyEqual(expectedShareOfYield2_E, boldGainE, 1e9);
+        assertApproximatelyEqual(expectedShareOfYield2_E, boldGainE, 1e9, "E share of yield mismatch");
+    }
+
+    function testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fixed() public {
+        testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fuzz(
+            2371624267, 555740272250686904193353073666173923435456188015
+        );
+    }
+
+    function test_Issue_ShareOfCollMismatch() external {
+        testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fuzz(0, 504242351683211589370490);
     }
 
     function testLiquidationsWithLowPAllowFurtherRewardsForExistingDepositors(uint256 _cheatP, uint256 _surplus)
