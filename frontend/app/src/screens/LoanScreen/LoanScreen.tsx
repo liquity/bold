@@ -58,9 +58,9 @@ export function LoanScreen() {
   const tab = TABS.findIndex(({ id }) => id === action);
   const [leverageMode, setLeverageMode] = useState(false);
 
-  const [forcedLoadingState, setForcedLoadingState] = useState<LoanLoadingState | null>(null);
+  const forcedLoadingState = useForcedLoadingState();
 
-  const loadingState = forcedLoadingState ?? match(loan)
+  const loadingState = forcedLoadingState.forced ?? match(loan)
     .returnType<LoanLoadingState>()
     .with({ status: "error" }, () => "error")
     .with({ status: "pending" }, () => "loading")
@@ -87,38 +87,7 @@ export function LoanScreen() {
         label: "Back",
       }}
     >
-      {LOAN_SCREEN_MANUAL_LOADING_STATE && (
-        <div
-          className={css({
-            position: "fixed",
-            zIndex: 2,
-            // bottom: 39,
-            bottom: 0,
-            left: 0,
-            right: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            height: 48,
-            padding: "12px 32px",
-            fontSize: 14,
-            color: "contentAlt",
-            background: "background",
-            border: "1px solid token(colors.border)",
-          })}
-        >
-          loan state: {LOAN_STATES.map((s) => (
-            <Button
-              key={s}
-              label={s}
-              size="mini"
-              onClick={() => {
-                setForcedLoadingState(s);
-              }}
-            />
-          ))}
-        </div>
-      )}
+      {forcedLoadingState.bar}
       <VFlex gap={0}>
         <LoanCard
           leverageMode={leverageMode}
@@ -176,4 +145,47 @@ export function LoanScreen() {
       </VFlex>
     </Screen>
   );
+}
+
+function useForcedLoadingState() {
+  const [forcedLoadingState, setForcedLoadingState] = useState<LoanLoadingState | null>(null);
+
+  const bar = LOAN_SCREEN_MANUAL_LOADING_STATE && (
+    <div
+      className={css({
+        position: "fixed",
+        zIndex: 2,
+        // bottom: 39,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        height: 48,
+        padding: "12px 32px",
+        fontSize: 14,
+        color: "contentAlt",
+        background: "background",
+        border: "1px solid token(colors.border)",
+      })}
+    >
+      loan state: {LOAN_STATES.map((s) => (
+        <Button
+          key={s}
+          label={s}
+          size="mini"
+          onClick={() => {
+            setForcedLoadingState(s);
+          }}
+        />
+      ))}
+    </div>
+  );
+
+  return {
+    bar,
+    forced: forcedLoadingState,
+    setForcedLoadingState,
+  };
 }
