@@ -19,7 +19,9 @@ contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
     IFlashLoanProvider public immutable flashLoanProvider;
     IExchange public immutable exchange;
 
-    constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange) BaseZapper(_addressesRegistry) {
+    constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
+        BaseZapper(_addressesRegistry)
+    {
         require(address(WETH) == address(_addressesRegistry.collToken()), "WZ: Wrong coll branch");
 
         flashLoanProvider = _flashLoanProvider;
@@ -201,7 +203,8 @@ contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
             require(msg.value == 0, "WZ: Not adding coll, no ETH should be received");
         }
 
-        address payable receiver = payable(_checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease));
+        address payable receiver =
+            payable(_checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease));
 
         // Set initial balances to make sure there are not lefovers
         _setInitialBalances(WETH, boldToken, _initialBalances);
