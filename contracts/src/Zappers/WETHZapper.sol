@@ -237,7 +237,7 @@ contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
         // return BOLD leftovers to user (trying to repay more than possible)
         uint256 currentBoldBalance = boldToken.balanceOf(address(this));
         if (currentBoldBalance > _initialBalances.boldBalance) {
-            boldToken.transfer(_initialBalances.sender, currentBoldBalance - _initialBalances.boldBalance);
+            boldToken.transfer(_initialBalances.receiver, currentBoldBalance - _initialBalances.boldBalance);
         }
         // There shouldn’t be Collateral leftovers, everything sent should end up in the trove
 

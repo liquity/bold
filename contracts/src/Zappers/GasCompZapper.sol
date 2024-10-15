@@ -21,7 +21,6 @@ contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZappe
     using SafeERC20 for IERC20;
 
     IERC20 public immutable collToken;
-    IBoldToken public immutable boldToken;
     IFlashLoanProvider public immutable flashLoanProvider;
     IExchange public immutable exchange;
 
