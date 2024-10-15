@@ -1,4 +1,4 @@
-import type { Address } from "@/src/types";
+import type { Address, Position } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
@@ -9,8 +9,9 @@ import { useEarnPositionsByAccount, useLoansByAccount } from "@/src/subgraph-hoo
 import { sleep } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import { StrongCard } from "@liquity2/uikit";
-import { a, useTransition } from "@react-spring/web";
+import { a, useSpring, useTransition } from "@react-spring/web";
 import { useQuery } from "@tanstack/react-query";
+import { useRef } from "react";
 import { match } from "ts-pattern";
 import { NewPositionCard } from "./NewPositionCard";
 import { PositionCardBorrow } from "./PositionCardBorrow";
@@ -65,10 +66,38 @@ export function Positions({
     ? "loading"
     : "actions";
 
+  return (
+    <PositionsGroup
+      columns={columns}
+      mode={mode}
+      positions={positions.data ?? []}
+      showNewPositionCard={showNewPositionCard}
+      title={title}
+    />
+  );
+}
+
+function PositionsGroup({
+  columns = 3,
+  mode,
+  onTitleClick,
+  positions,
+  title,
+  showNewPositionCard,
+}: {
+  columns?: number;
+  mode: Mode;
+  onTitleClick?: () => void;
+  positions: Position[];
+  title: (mode: Mode) => ReactNode;
+  showNewPositionCard: boolean;
+}) {
+  const title_ = title(mode);
+
   const cards = match(mode)
     .returnType<Array<[number, ReactNode]>>()
     .with("positions", () => {
-      const cards = positions.data?.map((position, index) => (
+      const cards = positions.map((position, index) => (
         match(position)
           .returnType<[number, ReactNode]>()
           .with({ type: "borrow" }, (p) => [index, <PositionCardBorrow {...p} />])
@@ -78,7 +107,7 @@ export function Positions({
           .exhaustive()
       )) ?? [];
       if (showNewPositionCard) {
-        cards.push([positions.data?.length ?? -1, <NewPositionCard />]);
+        cards.push([positions.length ?? -1, <NewPositionCard />]);
       }
       return cards;
     })
@@ -95,11 +124,27 @@ export function Positions({
     ])
     .exhaustive();
 
+  if (mode === "actions") {
+    columns = 4;
+  }
+
+  const cardHeight = mode === "actions" ? 144 : 188;
+  const containerHeight = cardHeight * Math.ceil(cards.length / columns);
+
   const positionTransitions = useTransition(cards, {
     keys: ([index]) => `${mode}${index}`,
-    from: { opacity: 0, transform: "scale3d(0.97, 0.97, 1)" },
-    enter: { opacity: 1, transform: "scale3d(1, 1, 1)" },
-    leave: { display: "none", immediate: true },
+    from: {
+      opacity: 0,
+      transform: "scale3d(0.97, 0.97, 1)",
+    },
+    enter: {
+      opacity: 1,
+      transform: "scale3d(1, 1, 1)",
+    },
+    leave: {
+      display: "none",
+      immediate: true,
+    },
     config: {
       mass: 2,
       tension: 1800,
@@ -107,44 +152,22 @@ export function Positions({
     },
   });
 
-  return (
-    <PositionsGroup
-      columns={columns}
-      mode={mode}
-      title={title}
-    >
-      {positionTransitions((style, [_, card]) => (
-        <a.div
-          className={css({
-            display: "grid",
-            height: "100%",
-            willChange: "transform, opacity",
-          })}
-          style={style}
-        >
-          {card}
-        </a.div>
-      ))}
-    </PositionsGroup>
-  );
-}
+  const animateHeight = useRef(false);
+  if (mode === "loading") {
+    animateHeight.current = true;
+  }
 
-function PositionsGroup({
-  children,
-  columns = 3,
-  mode,
-  onTitleClick,
-  title,
-}: {
-  children: ReactNode;
-  columns?: number;
-  mode: Mode;
-  onTitleClick?: () => void;
-  title: (mode: Mode) => ReactNode;
-}) {
-  const paddingBottom = mode === "actions" ? 48 : 32;
-  const cardsHeight = mode === "actions" ? undefined : 185;
-  const title_ = title(mode);
+  const containerSpring = useSpring({
+    initial: { height: cardHeight },
+    from: { height: cardHeight },
+    to: { height: containerHeight },
+    immediate: !animateHeight.current || mode === "loading",
+    config: {
+      mass: 1,
+      tension: 2400,
+      friction: 100,
+    },
+  });
 
   return (
     <div>
@@ -156,34 +179,45 @@ function PositionsGroup({
             userSelect: "none",
           })}
           style={{
-            paddingBottom,
+            paddingBottom: mode === "actions" ? 48 : 32,
           }}
           onClick={onTitleClick}
         >
           {title_}
         </h1>
       )}
-      <div
+      <a.div
         className={css({
           position: "relative",
         })}
         style={{
-          minHeight: cardsHeight,
+          ...containerSpring,
         }}
       >
-        <div
+        <a.div
           className={css({
             display: "grid",
             gap: 24,
           })}
           style={{
-            gridTemplateColumns: `repeat(${mode === "actions" ? 4 : columns}, 1fr)`,
-            gridAutoRows: cardsHeight,
+            gridTemplateColumns: `repeat(${columns}, 1fr)`,
+            gridAutoRows: cardHeight,
           }}
         >
-          {children}
-        </div>
-      </div>
+          {positionTransitions((style, [_, card]) => (
+            <a.div
+              className={css({
+                display: "grid",
+                height: "100%",
+                willChange: "transform, opacity",
+              })}
+              style={style}
+            >
+              {card}
+            </a.div>
+          ))}
+        </a.div>
+      </a.div>
     </div>
   );
 }

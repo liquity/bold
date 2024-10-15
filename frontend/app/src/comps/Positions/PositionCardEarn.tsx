@@ -5,7 +5,6 @@ import { useCollateral } from "@/src/liquity-utils";
 import { useEarnPool } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, StrongCard, TokenIcon } from "@liquity2/uikit";
-import * as dn from "dnum";
 import Link from "next/link";
 import { CardRow, CardRows, EditSquare } from "./shared";
 
@@ -21,9 +20,10 @@ export function PositionCardEarn({
 >) {
   const token = useCollateral(collIndex);
   const earnPool = useEarnPool(collIndex);
-  return token && (
+
+  return (
     <Link
-      href={`/earn/${token.symbol.toLowerCase()}`}
+      href={token ? `/earn/${token.symbol.toLowerCase()}` : ""}
       legacyBehavior
       passHref
     >
@@ -56,7 +56,7 @@ export function PositionCardEarn({
               <TokenIcon size="medium" symbol="BOLD" />
             </HFlex>
           ),
-          label: (
+          label: token && (
             <HFlex gap={4} justifyContent="flex-start">
               In the {token.name} stability pool
             </HFlex>
@@ -131,7 +131,7 @@ export function PositionCardEarn({
                     })}
                   >
                     <Amount value={rewards.coll} format={2} />
-                    <TokenIcon size="mini" symbol={token.symbol} />
+                    {token && <TokenIcon size="mini" symbol={token.symbol} />}
                   </div>
                 </div>
               }

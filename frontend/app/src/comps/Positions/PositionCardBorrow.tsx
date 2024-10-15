@@ -30,11 +30,7 @@ export function PositionCardBorrow({
   const token = TOKENS_BY_SYMBOL[collateral];
   const collateralPriceUsd = usePrice(token.symbol);
 
-  if (!collateralPriceUsd) {
-    return null;
-  }
-
-  const ltv = getLtv(deposit, borrowed, collateralPriceUsd);
+  const ltv = collateralPriceUsd && getLtv(deposit, borrowed, collateralPriceUsd);
   const redemptionRisk = getRedemptionRisk(interestRate);
 
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
