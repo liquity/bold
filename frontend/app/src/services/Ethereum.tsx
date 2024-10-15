@@ -151,7 +151,7 @@ export function useWagmiConfig() {
       blockExplorer: CHAIN_BLOCK_EXPLORER,
       contractEnsRegistry: CHAIN_CONTRACT_ENS_REGISTRY,
       contractEnsResolver: CHAIN_CONTRACT_ENS_RESOLVER,
-      contractMulticall: CHAIN_CONTRACT_MULTICALL,
+      contractMulticall: { address: CHAIN_CONTRACT_MULTICALL },
     });
     return getDefaultConfig({
       appName: "Liquity V2",
