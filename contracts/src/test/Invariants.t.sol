@@ -13,6 +13,7 @@ import {BatchIdSet} from "./Utils/BatchIdSet.sol";
 import {Logging} from "./Utils/Logging.sol";
 import {StringFormatting} from "./Utils/StringFormatting.sol";
 import {ITroveManagerTester} from "./TestContracts/Interfaces/ITroveManagerTester.sol";
+import {Assertions} from "./TestContracts/Assertions.sol";
 import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
 import {BaseMultiCollateralTest} from "./TestContracts/BaseMultiCollateralTest.sol";
 import {TestDeployer} from "./TestContracts/Deployment.t.sol";
@@ -47,7 +48,7 @@ function getBatchManager(ITroveManager troveManager, uint256 troveId) view retur
     (,,,,,,,, batchManager,) = troveManager.Troves(troveId);
 }
 
-contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
+contract InvariantsTest is Assertions, Logging, BaseInvariantTest, BaseMultiCollateralTest {
     using Strings for uint256;
     using StringFormatting for uint256;
     using SortedTrovesHelpers for ISortedTroves;
@@ -111,17 +112,14 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
             assertEq(c.troveManager.getTroveIdsCount(), handler.numTroves(i), "Wrong number of Troves");
             assertEq(c.troveManager.lastZombieTroveId(), handler.designatedVictimId(i), "Wrong designated victim");
             assertEq(c.sortedTroves.getSize(), handler.numTroves(i) - handler.numZombies(i), "Wrong SortedTroves size");
-            assertApproxEqAbsDecimal(
-                c.activePool.calcPendingAggInterest(), handler.getPendingInterest(i), 1e9 ether, 18, "Wrong interest"
+            assertApproxEq(c.activePool.calcPendingAggInterest(), handler.getPendingInterest(i), 1e6, "Wrong interest");
+            assertApproxEq36(
+                c.activePool.aggWeightedDebtSum(), handler.getInterestAccrual(i), 1e6, "Wrong interest accrual"
             );
-            assertApproxEqAbsDecimal(
-                c.activePool.aggWeightedDebtSum(), handler.getInterestAccrual(i), 1e29, 36, "Wrong interest accrual"
-            );
-            assertApproxEqAbsDecimal(
+            assertApproxEq36(
                 c.activePool.aggWeightedBatchManagementFeeSum(),
                 handler.getBatchManagementFeeAccrual(i),
-                1e29,
-                36,
+                1e6,
                 "Wrong batch management fee accrual"
             );
             assertEqDecimal(weth.balanceOf(address(c.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool");
@@ -150,8 +148,8 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
                     handler.getTrove(i, j);
 
                 LatestTroveData memory t = c.troveManager.getLatestTroveData(troveId);
-                assertApproxEqAbsDecimal(t.entireColl, coll, 1e9 ether, 18, "Wrong Trove coll");
-                assertApproxEqAbsDecimal(t.entireDebt, debt, 1e9 ether, 18, "Wrong Trove debt");
+                assertApproxEq(t.entireColl, coll, 1e6, "Wrong Trove coll");
+                assertApproxEq(t.entireDebt, debt, 1e6, "Wrong Trove debt");
                 assertEq(c.troveManager.getTroveStatus(troveId).toString(), status.toString(), "Wrong Trove status");
                 assertEq(c.troveManager.getBatchManager(troveId), batchManager, "Wrong batch manager (TM)");
                 assertEq(c.borrowerOperations.interestBatchManagerOf(troveId), batchManager, "Wrong batch manager (BO)");
@@ -166,11 +164,10 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
             for (uint256 j = 0; j < actors.length; ++j) {
                 LatestBatchData memory b = c.troveManager.getLatestBatchData(actors[j].account);
 
-                assertApproxEqAbsDecimal(
+                assertApproxEq(
                     b.accruedManagementFee,
                     handler.getPendingBatchManagementFee(i, actors[j].account),
-                    1e-10 ether,
-                    18,
+                    1e6,
                     "Wrong batch management fee"
                 );
             }

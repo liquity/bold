@@ -19,6 +19,7 @@ import {pow} from "../Utils/Math.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
 import {Trove} from "../Utils/Trove.sol";
 import {ITroveManagerTester} from "./Interfaces/ITroveManagerTester.sol";
+import {Assertions} from "./Assertions.sol";
 import {BaseHandler} from "./BaseHandler.sol";
 import {BaseMultiCollateralTest} from "./BaseMultiCollateralTest.sol";
 import {TestDeployer} from "./Deployment.t.sol";
@@ -99,7 +100,7 @@ contract FunctionCaller is Test {
     }
 }
 
-contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
+contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTest {
     using Strings for *;
     using StringFormatting for *;
     using ToStringFunctions for *;
@@ -1262,7 +1263,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                     if (redeemed.coll > trove.coll) {
                         // There can be a slight discrepancy when hitting batched Troves
-                        assertApproxEqAbsDecimal(redeemed.coll, trove.coll, 1e6, 18, "Coll underflow");
+                        assertApproxEq(redeemed.coll, trove.coll, 1e6, "Coll underflow");
                         trove.coll = 0;
                     } else {
                         trove.coll -= redeemed.coll;
@@ -1270,7 +1271,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                     if (redeemed.debt > trove.debt) {
                         // There can be a slight discrepancy when hitting batched Troves
-                        assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e9, 18, "Debt underflow");
+                        assertApproxEq(redeemed.debt, trove.debt, 1e6, "Debt underflow");
                         trove.debt = 0;
                     } else {
                         trove.debt -= redeemed.debt;
@@ -1416,7 +1417,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                 if (redeemed.coll > trove.coll) {
                     // There can be a slight discrepancy when hitting batched Troves
-                    assertApproxEqAbsDecimal(redeemed.coll, trove.coll, 1e6, 18, "Coll underflow");
+                    assertApproxEq(redeemed.coll, trove.coll, 1e6, "Coll underflow");
                     trove.coll = 0;
                 } else {
                     trove.coll -= redeemed.coll;
@@ -1424,7 +1425,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
                 if (redeemed.debt > trove.debt) {
                     // There can be a slight discrepancy when hitting batched Troves
-                    assertApproxEqAbsDecimal(redeemed.debt, trove.debt, 1e9, 18, "Debt underflow");
+                    assertApproxEq(redeemed.debt, trove.debt, 1e6, "Debt underflow");
                     trove.debt = 0;
                 } else {
                     trove.debt -= redeemed.debt;
