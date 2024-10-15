@@ -111,6 +111,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // Array of all batch managers - used to fetch them off-chain
     address[] public batchIds;
 
+    uint256 public lastZombieTroveId;
+
     // Error trackers for the trove redistribution calculation
     uint256 internal lastCollError_Redistribution;
     uint256 internal lastBoldDebtError_Redistribution;
@@ -149,6 +151,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 oldWeightedRecordedDebt;
         uint256 newWeightedRecordedDebt;
         uint256 newStake;
+        bool isZombieTrove;
         LatestTroveData trove;
         LatestBatchData batch;
     }
@@ -163,6 +166,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     error NotShutDown();
     error NotEnoughBoldBalance();
     error MinCollNotReached(uint256 _coll);
+    error BatchSharesRatioTooHigh();
 
     // --- Events ---
 
@@ -304,15 +308,18 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _collChangeFromOperation: -int256(trove.entireColl)
         });
 
-        emit BatchUpdated({
-            _interestBatchManager: batchAddress,
-            _operation: BatchOperation.exitBatch,
-            _debt: batches[batchAddress].debt,
-            _coll: batches[batchAddress].coll,
-            _annualInterestRate: batch.annualInterestRate,
-            _annualManagementFee: batch.annualManagementFee,
-            _totalDebtShares: batches[batchAddress].totalDebtShares
-        });
+        if (isTroveInBatch) {
+            emit BatchUpdated({
+                _interestBatchManager: batchAddress,
+                _operation: BatchOperation.exitBatch,
+                _debt: batches[batchAddress].debt,
+                _coll: batches[batchAddress].coll,
+                _annualInterestRate: batch.annualInterestRate,
+                _annualManagementFee: batch.annualManagementFee,
+                _totalDebtShares: batches[batchAddress].totalDebtShares,
+                _debtIncreaseFromUpfrontFee: 0
+            });
+        }
     }
 
     // Return the amount of Coll to be drawn from a trove's collateral and sent as gas compensation.
@@ -449,7 +456,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     }
 
     function _isLiquidatableStatus(Status _status) internal pure returns (bool) {
-        return _status == Status.active || _status == Status.unredeemable;
+        return _status == Status.active || _status == Status.zombie;
     }
 
     function _batchLiquidateTroves(
@@ -565,12 +572,15 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
             Troves[_singleRedemption.troveId].coll = newColl;
             // interest and fee were updated in the outer function
+            // This call could revert due to BatchSharesRatioTooHigh if trove.redistCollGain > boldLot
+            // so we skip that check to avoid blocking redemptions
             _updateBatchShares(
                 _singleRedemption.troveId,
                 _singleRedemption.batchAddress,
                 troveChange,
                 _singleRedemption.batch.entireCollWithoutRedistribution,
-                _singleRedemption.batch.entireDebtWithoutRedistribution
+                _singleRedemption.batch.entireDebtWithoutRedistribution,
+                false // _checkBatchSharesRatio
             );
         } else {
             _singleRedemption.oldWeightedRecordedDebt = _singleRedemption.trove.weightedRecordedDebt;
@@ -619,6 +629,19 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _collChangeFromOperation: -int256(_singleRedemption.collLot)
         });
 
+        if (_isTroveInBatch) {
+            emit BatchUpdated({
+                _interestBatchManager: _singleRedemption.batchAddress,
+                _operation: BatchOperation.troveChange,
+                _debt: batches[_singleRedemption.batchAddress].debt,
+                _coll: batches[_singleRedemption.batchAddress].coll,
+                _annualInterestRate: _singleRedemption.batch.annualInterestRate,
+                _annualManagementFee: _singleRedemption.batch.annualManagementFee,
+                _totalDebtShares: batches[_singleRedemption.batchAddress].totalDebtShares,
+                _debtIncreaseFromUpfrontFee: 0
+            });
+        }
+
         emit RedemptionFeePaidToTrove(_singleRedemption.troveId, _singleRedemption.collFee);
 
         return newDebt;
@@ -647,15 +670,27 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         bool isTroveInBatch = _singleRedemption.batchAddress != address(0);
         uint256 newDebt = _applySingleRedemption(_defaultPool, _singleRedemption, isTroveInBatch);
 
-        // Make Trove unredeemable if it's tiny, in order to prevent griefing future (normal, sequential) redemptions
+        // Make Trove zombie if it's tiny (and it wasn’t already), in order to prevent griefing future (normal, sequential) redemptions
         if (newDebt < MIN_DEBT) {
-            Troves[_singleRedemption.troveId].status = Status.unredeemable;
-            if (isTroveInBatch) {
-                sortedTroves.removeFromBatch(_singleRedemption.troveId);
-            } else {
-                sortedTroves.remove(_singleRedemption.troveId);
+            if (!_singleRedemption.isZombieTrove) {
+                Troves[_singleRedemption.troveId].status = Status.zombie;
+                if (isTroveInBatch) {
+                    sortedTroves.removeFromBatch(_singleRedemption.troveId);
+                } else {
+                    sortedTroves.remove(_singleRedemption.troveId);
+                }
+                // If it’s a partial redemption, let’s store a pointer to it so it’s used first in the next one
+                if (newDebt > 0) {
+                    lastZombieTroveId = _singleRedemption.troveId;
+                }
+            } else if (newDebt == 0) {
+                // Reset last zombie trove pointer if the previous one was fully redeemed now
+                lastZombieTroveId = 0;
             }
         }
+        // Note: technically, it could happen that the Trove pointed to by `lastZombieTroveId` ends up with
+        // newDebt >= MIN_DEBT thanks to BOLD debt redistribution, which means it _could_ be made active again,
+        // however we don't do that here, as it would require hints for re-insertion into `SortedTroves`.
     }
 
     function _updateBatchInterestPriorToRedemption(IActivePool _activePool, address _batchAddress) internal {
@@ -673,16 +708,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
 
         _activePool.mintAggInterestAndAccountForTroveChange(batchTroveChange, _batchAddress);
-
-        emit BatchUpdated({
-            _interestBatchManager: _batchAddress,
-            _operation: BatchOperation.troveChange,
-            _debt: batch.entireDebtWithoutRedistribution,
-            _coll: batch.entireCollWithoutRedistribution,
-            _annualInterestRate: batch.annualInterestRate,
-            _annualManagementFee: batch.annualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares
-        });
     }
 
     /* Send _boldamount Bold to the system and redeem the corresponding amount of collateral from as many Troves as are needed to fill the redemption
@@ -724,7 +749,13 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 remainingBold = _boldamount;
 
         SingleRedemptionValues memory singleRedemption;
-        singleRedemption.troveId = sortedTrovesCached.getLast();
+        // Let’s check if there’s a pending zombie trove from previous redemption
+        if (lastZombieTroveId != 0) {
+            singleRedemption.troveId = lastZombieTroveId;
+            singleRedemption.isZombieTrove = true;
+        } else {
+            singleRedemption.troveId = sortedTrovesCached.getLast();
+        }
         address lastBatchUpdatedInterest = address(0);
 
         // Loop through the Troves starting from the one with lowest collateral ratio until _amount of Bold is exchanged for collateral
@@ -732,10 +763,17 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         while (singleRedemption.troveId != 0 && remainingBold > 0 && _maxIterations > 0) {
             _maxIterations--;
             // Save the uint256 of the Trove preceding the current one
-            uint256 nextUserToCheck = sortedTrovesCached.getPrev(singleRedemption.troveId);
+            uint256 nextUserToCheck;
+            if (singleRedemption.isZombieTrove) {
+                nextUserToCheck = sortedTrovesCached.getLast();
+            } else {
+                nextUserToCheck = sortedTrovesCached.getPrev(singleRedemption.troveId);
+            }
+
             // Skip if ICR < 100%, to make sure that redemptions always improve the CR of hit Troves
             if (getCurrentICR(singleRedemption.troveId, _price) < _100pct) {
                 singleRedemption.troveId = nextUserToCheck;
+                singleRedemption.isZombieTrove = false;
                 continue;
             }
 
@@ -763,6 +801,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
             remainingBold -= singleRedemption.boldLot;
             singleRedemption.troveId = nextUserToCheck;
+            singleRedemption.isZombieTrove = false;
         }
 
         // We are removing this condition to prevent blocking redemptions
@@ -805,7 +844,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         bool isTroveInBatch = _singleRedemption.batchAddress != address(0);
         _applySingleRedemption(_defaultPool, _singleRedemption, isTroveInBatch);
 
-        // No need to make this Trove unredeemable if it has tiny debt, since:
+        // No need to make this Trove zombie if it has tiny debt, since:
         // - This collateral branch has shut down and urgent redemptions are enabled
         // - Urgent redemptions aren't sequential, so they can't be griefed by tiny Troves.
     }
@@ -928,8 +967,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         if (totalDebtShares > 0) {
             _latestTroveData.recordedDebt = _latestBatchData.recordedDebt * batchDebtShares / totalDebtShares;
-            _latestTroveData.weightedRecordedDebt =
-                _latestBatchData.weightedRecordedDebt * batchDebtShares / totalDebtShares;
+            _latestTroveData.weightedRecordedDebt = _latestTroveData.recordedDebt * _latestBatchData.annualInterestRate;
             _latestTroveData.accruedInterest = _latestBatchData.accruedInterest * batchDebtShares / totalDebtShares;
             _latestTroveData.accruedBatchManagementFee =
                 _latestBatchData.accruedManagementFee * batchDebtShares / totalDebtShares;
@@ -1232,7 +1270,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // Push the trove's id to the Trove list
         TroveIds.push(_troveId);
 
-        _updateBatchShares(_troveId, _batchAddress, _troveChange, _batchColl, _batchDebt);
+        _updateBatchShares(_troveId, _batchAddress, _troveChange, _batchColl, _batchDebt, true);
 
         uint256 newTotalStakes = totalStakes + newStake;
         totalStakes = newTotalStakes;
@@ -1268,13 +1306,19 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: batches[_batchAddress].coll,
             _annualInterestRate: batches[_batchAddress].annualInterestRate,
             _annualManagementFee: batches[_batchAddress].annualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares
+            _totalDebtShares: batches[_batchAddress].totalDebtShares,
+            // Although the Trove joining the batch pays an upfront fee,
+            // it is an individual fee, so we don't include it here
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 
     function setTroveStatusToActive(uint256 _troveId) external {
         _requireCallerIsBorrowerOperations();
         Troves[_troveId].status = Status.active;
+        if (lastZombieTroveId == _troveId) {
+            lastZombieTroveId = 0;
+        }
     }
 
     function onAdjustTroveInterestRate(
@@ -1400,7 +1444,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 _coll: batches[_batchAddress].coll,
                 _annualInterestRate: batches[_batchAddress].annualInterestRate,
                 _annualManagementFee: batches[_batchAddress].annualManagementFee,
-                _totalDebtShares: batches[_batchAddress].totalDebtShares
+                _totalDebtShares: batches[_batchAddress].totalDebtShares,
+                _debtIncreaseFromUpfrontFee: 0
             });
         }
     }
@@ -1426,6 +1471,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         if (_batchAddress != address(0)) {
             if (trove.status == Status.active) {
                 sortedTroves.removeFromBatch(_troveId);
+            } else if (trove.status == Status.zombie && lastZombieTroveId == _troveId) {
+                lastZombieTroveId = 0;
             }
 
             _removeTroveSharesFromBatch(
@@ -1440,6 +1487,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         } else {
             if (trove.status == Status.active) {
                 sortedTroves.remove(_troveId);
+            } else if (trove.status == Status.zombie && lastZombieTroveId == _troveId) {
+                lastZombieTroveId = 0;
             }
         }
 
@@ -1473,7 +1522,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 newStake = _updateStakeAndTotalStakes(_troveId, _newTroveColl);
 
         // Batch
-        _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt);
+        _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt, true);
 
         _movePendingTroveRewardsToActivePool(
             defaultPool, _troveChange.appliedRedistBoldDebtGain, _troveChange.appliedRedistCollGain
@@ -1507,7 +1556,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: batches[_batchAddress].coll,
             _annualInterestRate: batches[_batchAddress].annualInterestRate,
             _annualManagementFee: batches[_batchAddress].annualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares
+            _totalDebtShares: batches[_batchAddress].totalDebtShares,
+            // Although the Trove being adjusted may pay an upfront fee,
+            // it is an individual fee, so we don't include it here
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 
@@ -1525,7 +1577,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         Troves[_troveId].coll = _newTroveColl;
 
         if (_batchAddress != address(0)) {
-            _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt);
+            _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt, true);
 
             emit BatchUpdated({
                 _interestBatchManager: _batchAddress,
@@ -1534,7 +1586,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 _coll: _newBatchColl,
                 _annualInterestRate: batches[_batchAddress].annualInterestRate,
                 _annualManagementFee: batches[_batchAddress].annualManagementFee,
-                _totalDebtShares: batches[_batchAddress].totalDebtShares
+                _totalDebtShares: batches[_batchAddress].totalDebtShares,
+                _debtIncreaseFromUpfrontFee: 0
             });
         } else {
             Troves[_troveId].debt = _newTroveDebt;
@@ -1588,7 +1641,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: 0,
             _annualInterestRate: _annualInterestRate,
             _annualManagementFee: _annualManagementFee,
-            _totalDebtShares: 0
+            _totalDebtShares: 0,
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 
@@ -1612,7 +1666,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: _newColl,
             _annualInterestRate: batches[_batchAddress].annualInterestRate,
             _annualManagementFee: _newAnnualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares
+            _totalDebtShares: batches[_batchAddress].totalDebtShares,
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 
@@ -1620,7 +1675,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         address _batchAddress,
         uint256 _newColl,
         uint256 _newDebt,
-        uint256 _newAnnualInterestRate
+        uint256 _newAnnualInterestRate,
+        uint256 _upfrontFee
     ) external {
         _requireCallerIsBorrowerOperations();
 
@@ -1637,7 +1693,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: _newColl,
             _annualInterestRate: _newAnnualInterestRate,
             _annualManagementFee: batches[_batchAddress].annualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares
+            _totalDebtShares: batches[_batchAddress].totalDebtShares,
+            _debtIncreaseFromUpfrontFee: _upfrontFee
         });
     }
 
@@ -1661,7 +1718,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         _troveChange.collIncrease = _params.troveColl - _troveChange.appliedRedistCollGain;
         _troveChange.debtIncrease = _params.troveDebt - _troveChange.appliedRedistBoldDebtGain - _troveChange.upfrontFee;
         _updateBatchShares(
-            _params.troveId, _params.newBatchAddress, _troveChange, _params.newBatchColl, _params.newBatchDebt
+            _params.troveId, _params.newBatchAddress, _troveChange, _params.newBatchColl, _params.newBatchDebt, true
         );
 
         _movePendingTroveRewardsToActivePool(
@@ -1696,16 +1753,21 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: batches[_params.newBatchAddress].coll,
             _annualInterestRate: batches[_params.newBatchAddress].annualInterestRate,
             _annualManagementFee: batches[_params.newBatchAddress].annualManagementFee,
-            _totalDebtShares: batches[_params.newBatchAddress].totalDebtShares
+            _totalDebtShares: batches[_params.newBatchAddress].totalDebtShares,
+            // Although the Trove joining the batch may pay an upfront fee,
+            // it is an individual fee, so we don't include it here
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 
+    // This function will revert if there’s a total debt increase and the ratio debt / shares has exceeded the max
     function _updateBatchShares(
         uint256 _troveId,
         address _batchAddress,
         TroveChange memory _troveChange,
         uint256 _batchColl, // without trove change
-        uint256 _batchDebt // entire (with interest, batch fee), but without trove change, nor upfront fee nor redist
+        uint256 _batchDebt, // entire (with interest, batch fee), but without trove change, nor upfront fee nor redist
+        bool _checkBatchSharesRatio // whether we do the check on the resulting ratio inside the func call
     ) internal {
         // Debt
         uint256 currentBatchDebtShares = batches[_batchAddress].totalDebtShares;
@@ -1728,6 +1790,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 if (_batchDebt == 0) {
                     batchDebtSharesDelta = debtIncrease;
                 } else {
+                    // To avoid rebasing issues, let’s make sure the ratio debt / shares is not too high
+                    _requireBelowMaxSharesRatio(currentBatchDebtShares, _batchDebt, _checkBatchSharesRatio);
+
                     batchDebtSharesDelta = currentBatchDebtShares * debtIncrease / _batchDebt;
                 }
 
@@ -1766,6 +1831,21 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 // Subtract coll
                 batches[_batchAddress].coll = _batchColl - collDecrease;
             }
+        }
+    }
+
+    // For the debt / shares ratio to increase by a factor 1e9
+    // at a average annual debt increase (compounded interest + fees) of 10%, it would take more than 217 years (log(1e9)/log(1.1))
+    // at a average annual debt increase (compounded interest + fees) of 50%, it would take more than 51 years (log(1e9)/log(1.5))
+    // When that happens, no more debt can be manually added to the batch, so batch should be migrated to a new one
+    function _requireBelowMaxSharesRatio(
+        uint256 _currentBatchDebtShares,
+        uint256 _batchDebt,
+        bool _checkBatchSharesRatio
+    ) internal pure {
+        // debt / shares should be below MAX_BATCH_SHARES_RATIO
+        if (_currentBatchDebtShares * MAX_BATCH_SHARES_RATIO < _batchDebt && _checkBatchSharesRatio) {
+            revert BatchSharesRatioTooHigh();
         }
     }
 
@@ -1827,7 +1907,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             _coll: batches[_batchAddress].coll,
             _annualInterestRate: batches[_batchAddress].annualInterestRate,
             _annualManagementFee: batches[_batchAddress].annualManagementFee,
-            _totalDebtShares: batches[_batchAddress].totalDebtShares
+            _totalDebtShares: batches[_batchAddress].totalDebtShares,
+            // Although the Trove leaving the batch may pay an upfront fee,
+            // it is an individual fee, so we don't include it here
+            _debtIncreaseFromUpfrontFee: 0
         });
     }
 

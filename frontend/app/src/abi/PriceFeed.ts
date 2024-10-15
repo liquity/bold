@@ -4,14 +4,18 @@ export const PriceFeed = [{
   "type": "function",
   "name": "fetchPrice",
   "inputs": [],
-  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }, {
+    "name": "",
+    "type": "bool",
+    "internalType": "bool",
+  }],
   "stateMutability": "view",
 }, {
   "type": "function",
   "name": "getEthUsdStalenessThreshold",
   "inputs": [],
   "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
-  "stateMutability": "view",
+  "stateMutability": "pure",
 }, {
   "type": "function",
   "name": "getPrice",

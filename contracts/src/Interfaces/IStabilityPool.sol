@@ -76,6 +76,7 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     function getTotalBoldDeposits() external view returns (uint256);
 
     function getYieldGainsOwed() external view returns (uint256);
+    function getYieldGainsPending() external view returns (uint256);
 
     /*
      * Calculates the Coll gain earned by the deposit since its last snapshots were taken.

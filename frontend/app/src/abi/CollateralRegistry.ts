@@ -5,15 +5,9 @@ export const CollateralRegistry = [{
   "inputs": [{ "name": "_boldToken", "type": "address", "internalType": "contract IBoldToken" }, {
     "name": "_tokens",
     "type": "address[]",
-    "internalType": "contract IERC20[]",
+    "internalType": "contract IERC20Metadata[]",
   }, { "name": "_troveManagers", "type": "address[]", "internalType": "contract ITroveManager[]" }],
   "stateMutability": "nonpayable",
-}, {
-  "type": "function",
-  "name": "activePool",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "address", "internalType": "contract IActivePool" }],
-  "stateMutability": "view",
 }, {
   "type": "function",
   "name": "baseRate",
@@ -28,27 +22,9 @@ export const CollateralRegistry = [{
   "stateMutability": "view",
 }, {
   "type": "function",
-  "name": "defaultPool",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "address", "internalType": "contract IDefaultPool" }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
   "name": "getEffectiveRedemptionFeeInBold",
   "inputs": [{ "name": "_redeemAmount", "type": "uint256", "internalType": "uint256" }],
   "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
-  "name": "getEntireSystemColl",
-  "inputs": [],
-  "outputs": [{ "name": "entireSystemColl", "type": "uint256", "internalType": "uint256" }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
-  "name": "getEntireSystemDebt",
-  "inputs": [],
-  "outputs": [{ "name": "entireSystemDebt", "type": "uint256", "internalType": "uint256" }],
   "stateMutability": "view",
 }, {
   "type": "function",
@@ -78,7 +54,7 @@ export const CollateralRegistry = [{
   "type": "function",
   "name": "getToken",
   "inputs": [{ "name": "_index", "type": "uint256", "internalType": "uint256" }],
-  "outputs": [{ "name": "", "type": "address", "internalType": "contract IERC20" }],
+  "outputs": [{ "name": "", "type": "address", "internalType": "contract IERC20Metadata" }],
   "stateMutability": "view",
 }, {
   "type": "function",
@@ -91,12 +67,6 @@ export const CollateralRegistry = [{
   "name": "lastFeeOperationTime",
   "inputs": [],
   "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
-  "name": "priceFeed",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "address", "internalType": "contract IPriceFeed" }],
   "stateMutability": "view",
 }, {
   "type": "function",

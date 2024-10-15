@@ -4,7 +4,6 @@ pragma solidity ^0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 import "./TestContracts/WETH.sol";
-import "../Zappers/LeverageLSTZapper.sol";
 import "../Zappers/Modules/Exchanges/Curve/ICurvePool.sol";
 import "../Zappers/Modules/Exchanges/CurveExchange.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Pool.sol";
@@ -15,7 +14,7 @@ import "../Zappers/Interfaces/IFlashLoanProvider.sol";
 import "../Zappers/Modules/FlashLoans/Balancer/vault/IVault.sol";
 import "./Utils/UniPriceConverter.sol";
 
-contract ZapperLeverageLSTMainnet is DevTestSetup {
+contract ZapperLeverageMainnet is DevTestSetup {
     using StringFormatting for uint256;
 
     INonfungiblePositionManager constant uniV3PositionManager =
@@ -25,6 +24,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
 
     uint256 constant NUM_COLLATERALS = 5;
 
+    IZapper[] baseZapperArray;
     ILeverageZapper[] leverageZapperCurveArray;
     ILeverageZapper[] leverageZapperUniV3Array;
 
@@ -105,6 +105,10 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         //collateralRegistry = result.collateralRegistry;
         boldToken = result.boldToken;
         // Record contracts
+        baseZapperArray.push(result.zappersArray[0].wethZapper);
+        for (uint256 c = 1; c < NUM_COLLATERALS; c++) {
+            baseZapperArray.push(result.zappersArray[c].gasCompZapper);
+        }
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
             contractsArray.push(result.contractsArray[c]);
             leverageZapperCurveArray.push(result.zappersArray[c].leverageZapperCurve);
@@ -128,6 +132,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
                 // Give and approve some coll token to test accounts
                 deal(address(contractsArray[c].collToken), accountsList[i], initialCollateralAmount);
                 vm.startPrank(accountsList[i]);
+                contractsArray[c].collToken.approve(address(baseZapperArray[c]), initialCollateralAmount);
                 contractsArray[c].collToken.approve(address(leverageZapperCurveArray[c]), initialCollateralAmount);
                 contractsArray[c].collToken.approve(address(leverageZapperUniV3Array[c]), initialCollateralAmount);
                 vm.stopPrank();
@@ -234,7 +239,21 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         IPriceFeed _priceFeed,
         bool _lst
     ) internal returns (uint256) {
-        return openLeveragedTroveWithIndex(_leverageZapper, 0, _collAmount, _leverageRatio, _priceFeed, _lst);
+        return
+            openLeveragedTroveWithIndex(_leverageZapper, 0, _collAmount, _leverageRatio, _priceFeed, _lst, address(0));
+    }
+
+    function openLeveragedTrove(
+        ILeverageZapper _leverageZapper,
+        uint256 _collAmount,
+        uint256 _leverageRatio,
+        IPriceFeed _priceFeed,
+        bool _lst,
+        address _batchManager
+    ) internal returns (uint256) {
+        return openLeveragedTroveWithIndex(
+            _leverageZapper, 0, _collAmount, _leverageRatio, _priceFeed, _lst, _batchManager
+        );
     }
 
     function openLeveragedTroveWithIndex(
@@ -244,6 +263,20 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         uint256 _leverageRatio,
         IPriceFeed _priceFeed,
         bool _lst
+    ) internal returns (uint256) {
+        return openLeveragedTroveWithIndex(
+            _leverageZapper, _index, _collAmount, _leverageRatio, _priceFeed, _lst, address(0)
+        );
+    }
+
+    function openLeveragedTroveWithIndex(
+        ILeverageZapper _leverageZapper,
+        uint256 _index,
+        uint256 _collAmount,
+        uint256 _leverageRatio,
+        IPriceFeed _priceFeed,
+        bool _lst,
+        address _batchManager
     ) internal returns (uint256) {
         OpenTroveVars memory vars;
         (vars.price,) = _priceFeed.fetchPrice();
@@ -264,7 +297,8 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             boldAmount: vars.effectiveBoldAmount,
             upperHint: 0,
             lowerHint: 0,
-            annualInterestRate: 5e16,
+            annualInterestRate: _batchManager == address(0) ? 5e16 : 0,
+            batchManager: _batchManager,
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -297,18 +331,41 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
 
     function testCanOpenTroveWithCurve() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
-            _testCanOpenTrove(leverageZapperCurveArray[i], i);
+            _testCanOpenTrove(leverageZapperCurveArray[i], i, address(0));
         }
     }
 
     function testCanOpenTroveWithUniV3() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             if (i == 2) continue; // TODO!!
-            _testCanOpenTrove(leverageZapperUniV3Array[i], i);
+            _testCanOpenTrove(leverageZapperUniV3Array[i], i, address(0));
         }
     }
 
-    function _testCanOpenTrove(ILeverageZapper _leverageZapper, uint256 _branch) internal {
+    function testCanOpenTroveAndJoinBatchWithCurve() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _registerBatchManager(B, i);
+            _testCanOpenTrove(leverageZapperCurveArray[i], i, B);
+        }
+    }
+
+    function testCanOpenTroveAndJoinBatchWithUniV3() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            if (i == 2) continue; // TODO!!
+            _registerBatchManager(B, i);
+            _testCanOpenTrove(leverageZapperUniV3Array[i], i, B);
+        }
+    }
+
+    function _registerBatchManager(address _account, uint256 _branch) internal {
+        vm.startPrank(_account);
+        contractsArray[_branch].borrowerOperations.registerBatchManager(
+            uint128(1e16), uint128(20e16), uint128(5e16), uint128(25e14), MIN_INTEREST_RATE_CHANGE_PERIOD
+        );
+        vm.stopPrank();
+    }
+
+    function _testCanOpenTrove(ILeverageZapper _leverageZapper, uint256 _branch, address _batchManager) internal {
         TestVars memory vars;
         vars.collAmount = 10 ether;
         vars.newLeverageRatio = 2e18;
@@ -318,7 +375,12 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
 
         bool lst = _branch > 0;
         vars.troveId = openLeveragedTrove(
-            _leverageZapper, vars.collAmount, vars.newLeverageRatio, contractsArray[_branch].priceFeed, lst
+            _leverageZapper,
+            vars.collAmount,
+            vars.newLeverageRatio,
+            contractsArray[_branch].priceFeed,
+            lst,
+            _batchManager
         );
 
         // Checks
@@ -406,6 +468,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: 5e16,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -602,9 +665,8 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         uint256 collAmount = 10 ether;
         uint256 leverageRatio = 2e18;
         bool lst = _branch > 0;
-        uint256 troveId = openLeveragedTroveWithIndex(
-            _leverageZapper, 0, collAmount, leverageRatio, contractsArray[_branch].priceFeed, lst
-        );
+        uint256 troveId =
+            openLeveragedTrove(_leverageZapper, collAmount, leverageRatio, contractsArray[_branch].priceFeed, lst);
 
         (uint256 flashLoanAmount, uint256 effectiveBoldAmount) = _getLeverUpFlashLoanAndBoldAmount(
             _leverageZapper,
@@ -963,7 +1025,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             _leverageZapper, 1, collAmount, leverageRatio, contractsArray[_branch].priceFeed, lst
         );
 
-        // B tries to lever up A’s trove calling our flash loan provider module
+        // B tries to lever down A’s trove calling our flash loan provider module
         (uint256 flashLoanAmount, uint256 minBoldDebt) = _getLeverDownFlashLoanAndBoldAmount(
             _leverageZapper,
             troveId,
@@ -1015,7 +1077,7 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
             _leverageZapper, 2, collAmount, leverageRatio, contractsArray[_branch].priceFeed, lst
         );
 
-        // B tries to lever up A’s trove calling Balancer Vault directly
+        // B tries to lever down A’s trove calling Balancer Vault directly
         (uint256 flashLoanAmount, uint256 minBoldDebt) = _getLeverDownFlashLoanAndBoldAmount(
             _leverageZapper,
             troveId,
@@ -1036,6 +1098,301 @@ contract ZapperLeverageLSTMainnet is DevTestSetup {
         amounts[0] = flashLoanAmount;
         bytes memory userData =
             abi.encode(address(_leverageZapper), IFlashLoanProvider.Operation.LeverDownTrove, params);
+        IVault vault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
+        vm.startPrank(B);
+        vm.expectRevert("Flash loan not properly initiated");
+        vault.flashLoan(IFlashLoanRecipient(address(flashLoanProvider)), tokens, amounts, userData);
+        vm.stopPrank();
+
+        // Check receiver is back to zero
+        assertEq(address(flashLoanProvider.receiver()), address(0), "Receiver should be zero");
+    }
+
+    // Close trove
+
+    function testCanCloseTroveWithBaseZapper() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testCanCloseTrove(baseZapperArray[i], i);
+        }
+    }
+
+    function testCanCloseTroveWithLeverageCurve() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testCanCloseTrove(IZapper(leverageZapperCurveArray[i]), i);
+        }
+    }
+
+    function testCanCloseTroveWithLeverageUniV3() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testCanCloseTrove(IZapper(leverageZapperUniV3Array[i]), i);
+        }
+    }
+
+    function _getCloseFlashLoanAmount(uint256 _troveId, ITroveManager _troveManager, IPriceFeed _priceFeed)
+        internal
+        returns (uint256)
+    {
+        (uint256 price,) = _priceFeed.fetchPrice();
+
+        uint256 currentDebt = getTroveEntireDebt(_troveManager, _troveId);
+        uint256 flashLoanAmount = currentDebt * DECIMAL_PRECISION / price * 105 / 100; // slippage
+
+        return flashLoanAmount;
+    }
+
+    function closeTrove(IZapper _zapper, uint256 _troveId, ITroveManager _troveManager, IPriceFeed _priceFeed)
+        internal
+    {
+        // This should be done in the frontend
+        uint256 flashLoanAmount = _getCloseFlashLoanAmount(_troveId, _troveManager, _priceFeed);
+
+        IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
+            troveId: _troveId,
+            flashLoanAmount: flashLoanAmount,
+            receiver: address(0) // Set later
+        });
+        vm.startPrank(A);
+        _zapper.closeTroveFromCollateral(closeParams);
+        vm.stopPrank();
+    }
+
+    function openTrove(IZapper _zapper, address _account, uint256 _collAmount, uint256 _boldAmount, bool _lst)
+        internal
+        returns (uint256)
+    {
+        IZapper.OpenTroveParams memory openParams = IZapper.OpenTroveParams({
+            owner: _account,
+            ownerIndex: 0,
+            collAmount: _collAmount,
+            boldAmount: _boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+
+        vm.startPrank(_account);
+        uint256 value = _lst ? ETH_GAS_COMPENSATION : _collAmount + ETH_GAS_COMPENSATION;
+        uint256 troveId = _zapper.openTroveWithRawETH{value: value}(openParams);
+        vm.stopPrank();
+
+        return troveId;
+    }
+
+    function _testCanCloseTrove(IZapper _zapper, uint256 _branch) internal {
+        uint256 collAmount = 10 ether;
+        uint256 boldAmount = 10000e18;
+
+        bool lst = _branch > 0;
+        uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
+
+        // open a 2nd trove so we can close the 1st one
+        openTrove(_zapper, B, 100 ether, 10000e18, lst);
+
+        uint256 boldBalanceBefore = boldToken.balanceOf(A);
+        uint256 collBalanceBefore = contractsArray[_branch].collToken.balanceOf(A);
+        uint256 ethBalanceBefore = A.balance;
+        (uint256 price,) = contractsArray[_branch].priceFeed.fetchPrice();
+        uint256 debtInColl =
+            getTroveEntireDebt(contractsArray[_branch].troveManager, troveId) * DECIMAL_PRECISION / price;
+
+        // Close trove
+        closeTrove(_zapper, troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
+
+        assertEq(getTroveEntireColl(contractsArray[_branch].troveManager, troveId), 0, "Coll mismatch");
+        assertEq(getTroveEntireDebt(contractsArray[_branch].troveManager, troveId), 0, "Debt mismatch");
+        assertGe(boldToken.balanceOf(A), boldBalanceBefore, "BOLD bal should not decrease");
+        assertLe(boldToken.balanceOf(A), boldBalanceBefore * 105 / 100, "BOLD bal can only increase by slippage margin");
+        if (lst) {
+            assertGe(contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore, "Coll bal should not decrease");
+            assertApproxEqAbs(
+                contractsArray[_branch].collToken.balanceOf(A),
+                collBalanceBefore + collAmount - debtInColl,
+                3e17,
+                "Coll bal mismatch"
+            );
+            assertEq(A.balance, ethBalanceBefore + ETH_GAS_COMPENSATION, "ETH bal mismatch");
+        } else {
+            assertEq(contractsArray[_branch].collToken.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
+            assertGe(A.balance, ethBalanceBefore, "ETH bal should not decrease");
+            assertApproxEqAbs(
+                A.balance, ethBalanceBefore + collAmount + ETH_GAS_COMPENSATION - debtInColl, 3e17, "ETH bal mismatch"
+            );
+        }
+    }
+
+    function testOnlyFlashLoanProviderCanCallCloseTroveCallbackWithBaseZapper() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testOnlyFlashLoanProviderCanCallCloseTroveCallback(baseZapperArray[i], i);
+        }
+    }
+
+    function testOnlyFlashLoanProviderCanCallCloseTroveCallbackWithCurve() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testOnlyFlashLoanProviderCanCallCloseTroveCallback(leverageZapperCurveArray[i], i);
+        }
+    }
+
+    function testOnlyFlashLoanProviderCanCallCloseTroveCallbackWithUni() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testOnlyFlashLoanProviderCanCallCloseTroveCallback(leverageZapperUniV3Array[i], i);
+        }
+    }
+
+    function _testOnlyFlashLoanProviderCanCallCloseTroveCallback(IZapper _zapper, uint256 _branch) internal {
+        IZapper.CloseTroveParams memory params = IZapper.CloseTroveParams({
+            troveId: addressToTroveId(A),
+            flashLoanAmount: 10 ether,
+            receiver: address(0) // Set later
+        });
+
+        bool lst = _branch > 0;
+        string memory revertReason = lst ? "GCZ: Caller not FlashLoan provider" : "WZ: Caller not FlashLoan provider";
+        vm.startPrank(A);
+        vm.expectRevert(bytes(revertReason));
+        IFlashLoanReceiver(address(_zapper)).receiveFlashLoanOnCloseTroveFromCollateral(params, 10 ether);
+        vm.stopPrank();
+    }
+
+    function testOnlyOwnerOrManagerCanCloseTroveWithBaseZapperFromZapper() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testOnlyOwnerOrManagerCanCloseTroveFromZapper(baseZapperArray[i], i);
+        }
+    }
+
+    function testOnlyOwnerOrManagerCanCloseTroveWithCurveFromZapper() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testOnlyOwnerOrManagerCanCloseTroveFromZapper(leverageZapperCurveArray[i], i);
+        }
+    }
+
+    function testOnlyOwnerOrManagerCanCloseTroveWithUnFromZapperi() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testOnlyOwnerOrManagerCanCloseTroveFromZapper(leverageZapperUniV3Array[i], i);
+        }
+    }
+
+    function _testOnlyOwnerOrManagerCanCloseTroveFromZapper(IZapper _zapper, uint256 _branch) internal {
+        // Open trove
+        uint256 collAmount = 10 ether;
+        uint256 boldAmount = 10000e18;
+
+        bool lst = _branch > 0;
+        uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
+
+        // B tries to close A’s trove
+        uint256 flashLoanAmount =
+            _getCloseFlashLoanAmount(troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
+
+        IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
+            troveId: troveId,
+            flashLoanAmount: flashLoanAmount,
+            receiver: address(0) // Set later
+        });
+        vm.startPrank(B);
+        vm.expectRevert(AddRemoveManagers.NotOwnerNorRemoveManager.selector);
+        _zapper.closeTroveFromCollateral(closeParams);
+        vm.stopPrank();
+
+        // Check receiver is back to zero
+        assertEq(address(_zapper.flashLoanProvider().receiver()), address(0), "Receiver should be zero");
+    }
+
+    function testOnlyOwnerOrManagerCanCloseTroveWithBaseZapperFromBalancerFLProvider() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testOnlyOwnerOrManagerCanCloseTroveFromBalancerFLProvider(baseZapperArray[i], i);
+        }
+    }
+
+    function testOnlyOwnerOrManagerCanCloseTroveWithCurveFromBalancerFLProvider() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testOnlyOwnerOrManagerCanCloseTroveFromBalancerFLProvider(leverageZapperCurveArray[i], i);
+        }
+    }
+
+    function testOnlyOwnerOrManagerCanCloseTroveWithUniFromBalancerFLProvider() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testOnlyOwnerOrManagerCanCloseTroveFromBalancerFLProvider(leverageZapperUniV3Array[i], i);
+        }
+    }
+
+    function _testOnlyOwnerOrManagerCanCloseTroveFromBalancerFLProvider(IZapper _zapper, uint256 _branch) internal {
+        // Open trove
+        uint256 collAmount = 10 ether;
+        uint256 boldAmount = 10000e18;
+
+        bool lst = _branch > 0;
+        uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
+
+        // B tries to close A’s trove calling our flash loan provider module
+        uint256 flashLoanAmount =
+            _getCloseFlashLoanAmount(troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
+
+        IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
+            troveId: troveId,
+            flashLoanAmount: flashLoanAmount,
+            receiver: address(0) // Set later
+        });
+        IFlashLoanProvider flashLoanProvider = _zapper.flashLoanProvider();
+        vm.startPrank(B);
+        vm.expectRevert(); // reverts without data because it calls back B
+        flashLoanProvider.makeFlashLoan(
+            contractsArray[_branch].collToken,
+            flashLoanAmount,
+            IFlashLoanProvider.Operation.CloseTrove,
+            abi.encode(closeParams)
+        );
+        vm.stopPrank();
+
+        // Check receiver is back to zero
+        assertEq(address(flashLoanProvider.receiver()), address(0), "Receiver should be zero");
+    }
+
+    function testOnlyOwnerOrManagerCanCloseTroveWithBaseZapperFromBalancerVault() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testOnlyOwnerOrManagerCanCloseTroveFromBalancerVault(baseZapperArray[i], i);
+        }
+    }
+
+    function testOnlyOwnerOrManagerCanCloseTroveWithCurveFromBalancerVault() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testOnlyOwnerOrManagerCanCloseTroveFromBalancerVault(leverageZapperCurveArray[i], i);
+        }
+    }
+
+    function testOnlyOwnerOrManagerCanCloseTroveWithUniFromBalancerVault() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testOnlyOwnerOrManagerCanCloseTroveFromBalancerVault(leverageZapperUniV3Array[i], i);
+        }
+    }
+
+    function _testOnlyOwnerOrManagerCanCloseTroveFromBalancerVault(IZapper _zapper, uint256 _branch) internal {
+        // Open trove
+        uint256 collAmount = 10 ether;
+        uint256 boldAmount = 10000e18;
+
+        bool lst = _branch > 0;
+        uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
+
+        // B tries to close A’s trove calling Balancer Vault directly
+        uint256 flashLoanAmount =
+            _getCloseFlashLoanAmount(troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
+
+        IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
+            troveId: troveId,
+            flashLoanAmount: flashLoanAmount,
+            receiver: address(0) // Set later
+        });
+        IFlashLoanProvider flashLoanProvider = _zapper.flashLoanProvider();
+        IERC20[] memory tokens = new IERC20[](1);
+        tokens[0] = contractsArray[_branch].collToken;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = flashLoanAmount;
+        bytes memory userData = abi.encode(address(_zapper), IFlashLoanProvider.Operation.CloseTrove, closeParams);
         IVault vault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
         vm.startPrank(B);
         vm.expectRevert("Flash loan not properly initiated");

@@ -152,7 +152,7 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
 
     function checkTroveIsOpen(uint256 _troveId) public view returns (bool) {
         Status status = Troves[_troveId].status;
-        return status == Status.active || status == Status.unredeemable;
+        return status == Status.active || status == Status.zombie;
     }
 
     function checkTroveIsActive(uint256 _troveId) external view returns (bool) {
@@ -160,9 +160,9 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         return status == Status.active;
     }
 
-    function checkTroveIsUnredeemable(uint256 _troveId) external view returns (bool) {
+    function checkTroveIsZombie(uint256 _troveId) external view returns (bool) {
         Status status = Troves[_troveId].status;
-        return status == Status.unredeemable;
+        return status == Status.zombie;
     }
 
     function hasRedistributionGains(uint256 _troveId) external view override returns (bool) {

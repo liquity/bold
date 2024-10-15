@@ -172,6 +172,9 @@ export const lightTheme = {
     riskGradient4: "#FFA12B",
     riskGradient5: "red:500",
 
+    loadingGradient1: "blue:50",
+    loadingGradient2: "blue:100",
+
     // not used yet
     brandCyan: "brand:cyan",
     brandCoral: "brand:coral",

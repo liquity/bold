@@ -2,53 +2,8 @@ import type { Dnum } from "dnum";
 
 import * as dn from "dnum";
 
-export function formatAmountCompact(value: Dnum, digits: number = 2) {
-  const valueAbs = dn.abs(value);
-  if (dn.eq(valueAbs, 1e9) || dn.gt(valueAbs, 1e9)) {
-    return dn.format(dn.div(value, 1e9, 18), digits) + "B";
-  }
-  if (dn.eq(valueAbs, 1e6) || dn.gt(valueAbs, 1e6)) {
-    return dn.format(dn.div(value, 1e6, 18), digits) + "M";
-  }
-  if (dn.eq(valueAbs, 1e3) || dn.gt(valueAbs, 1e3)) {
-    return dn.format(dn.div(value, 1e3, 18), digits) + "K";
-  }
-  return dn.format(value, digits);
-}
-
-export function formatPercentage(
-  value?: Dnum | number | null,
-  {
-    clamp = false,
-    digits = 2,
-    trailingZeros = true,
-  }: {
-    clamp?: boolean | [Dnum, Dnum];
-    digits?: number;
-    trailingZeros?: boolean;
-  } = {},
-) {
-  if (typeof value === "number") {
-    value = dn.from(value, 18);
-  }
-  if (!value) {
-    return "−";
-  }
-  if (clamp === true) {
-    clamp = [DNUM_0, DNUM_1];
-  }
-  if (clamp && dnumLte(value, clamp[0])) {
-    return "0%";
-  }
-  if (clamp && dnumGte(value, clamp[1])) {
-    return "100%";
-  }
-  return `${
-    dn.format(dn.mul(value, 100), {
-      digits,
-      trailingZeros,
-    })
-  }%`;
+export function dnum18(value: string | bigint | number): Dnum {
+  return [BigInt(value), 18];
 }
 
 export function dnumMax(a: Dnum, ...rest: Dnum[]) {
@@ -57,14 +12,6 @@ export function dnumMax(a: Dnum, ...rest: Dnum[]) {
 
 export function dnumMin(a: Dnum, ...rest: Dnum[]) {
   return rest.reduce((min, value) => dn.lt(value, min) ? value : min, a);
-}
-
-export function dnumGte(a: Dnum, b: Dnum) {
-  return dn.gt(a, b) || dn.eq(a, b);
-}
-
-export function dnumLte(a: Dnum, b: Dnum) {
-  return dn.lt(a, b) || dn.eq(a, b);
 }
 
 export const DNUM_0 = dn.from(0, 18);

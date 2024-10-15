@@ -219,11 +219,11 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
     }
 
-    function testCannotAdjustUnredeemableTroveAfterShutdown() public {
+    function testCannotAdjustZombieTroveAfterShutdown() public {
         uint256 troveId = openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 10000e18, 5e16);
         openMulticollateralTroveNoHints100pctWithIndex(0, B, 0, 22e18, 20000e18, 6e16);
 
-        // B redeems from A’s trove, to make it unredeemable
+        // B redeems from A’s trove, to make it zombie
         //deal(address(boldToken), B, 20000e18);
         vm.startPrank(B);
         collateralRegistry.redeemCollateral(10000e18, 0, 1e18);
@@ -234,12 +234,12 @@ contract ShutdownTest is DevTestSetup {
         contractsArray[0].priceFeed.setPrice(500e18);
         contractsArray[0].borrowerOperations.shutdown();
 
-        // Check A’s trove is unredeemable
-        assertEq(troveManager.checkTroveIsUnredeemable(troveId), true, "A trove should be unredeemable");
+        // Check A’s trove is zombie
+        assertEq(troveManager.checkTroveIsZombie(troveId), true, "A trove should be zombie");
 
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);
-        borrowerOperations.adjustUnredeemableTrove(troveId, 1e18, true, 0, false, 0, 0, 1000e18);
+        borrowerOperations.adjustZombieTrove(troveId, 1e18, true, 0, false, 0, 0, 1000e18);
         vm.stopPrank();
     }
 

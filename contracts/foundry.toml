@@ -6,7 +6,8 @@ evm_version = 'shanghai'
 ignored_error_codes = [5574] # contract-size
 fs_permissions = [
     { access = "read", path = "./utils/assets/" },
-    { access = "write", path = "./deployment-manifest.json" }
+    { access = "read-write", path = "./utils/assets/test_output" },
+    { access = "read-write", path = "./deployment-manifest.json" }
 ]
 
 [invariant]
@@ -14,7 +15,7 @@ call_override = false
 fail_on_revert = true
 runs = 500
 depth = 50
-failure_persist_dir = "/dev/null" # XXX circumvent this half-baked Foundry feature
+# failure_persist_dir = "/dev/null" # XXX circumvent this half-baked Foundry feature
 shrink_run_limit = 0 # XXX shrinking is super broken, results in completely wrong repro sequence
 
 [profile.ci.invariant]

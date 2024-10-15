@@ -476,6 +476,8 @@ contract InterestRateAggregate is DevTestSetup {
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
         makeSPDepositAndClaim(A, sPdeposit);
+        // claim gains from first trove
+        makeSPWithdrawalAndClaim(A, 0);
 
         // fast-forward time
         vm.warp(block.timestamp + 1 days);
@@ -2148,7 +2150,7 @@ contract InterestRateAggregate is DevTestSetup {
     // --- claimALLCollGains ---
 
     function testClaimAllCollGainsIncreasesAggRecordedDebtByPendingAggInterest() public {
-        _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustmentsWithoutOwedYieldRewards();
 
         // A withdraws depsoiit and stashes gain
         uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
@@ -2171,7 +2173,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testClaimAllCollGainsReducesPendingAggInterestTo0() public {
-        _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustmentsWithoutOwedYieldRewards();
 
         // A withdraws depsoiit and stashes gain
         uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
@@ -2192,7 +2194,7 @@ contract InterestRateAggregate is DevTestSetup {
 
     // // Update last agg. update time to now
     function testClaimAllCollGainsUpdatesLastAggUpdateTimeToNow() public {
-        _setupForSPDepositAdjustments();
+        _setupForSPDepositAdjustmentsWithoutOwedYieldRewards();
 
         // A withdraws deposit and stashes gain
         uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);
@@ -2216,7 +2218,7 @@ contract InterestRateAggregate is DevTestSetup {
     // mints interest to SP
     function testClaimAllCollGainsMintsAggInterestToSP() public {
         ABCDEF memory troveIDs;
-        troveIDs = _setupForSPDepositAdjustments();
+        troveIDs = _setupForSPDepositAdjustmentsWithoutOwedYieldRewards();
 
         // A withdraws depsoiit and stashes gain
         uint256 deposit_A = stabilityPool.getCompoundedBoldDeposit(A);

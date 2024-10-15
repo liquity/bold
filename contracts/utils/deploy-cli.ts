@@ -202,28 +202,44 @@ Deploying Liquity contracts with the following settings:
   await $`forge ${forgeArgs}`;
 
   const deploymentManifestJson = fs.readFileSync("deployment-manifest.json", "utf-8");
-  const deploymentManifest = JSON.parse(deploymentManifestJson);
+  const deploymentManifest = JSON.parse(deploymentManifestJson) as {
+    boldToken: string;
+    branches: Record<string, string>[];
+    collateralRegistry: string;
+    hintHelpers: string;
+    multiTroveGetter: string;
+  };
+
+  const protocolContracts = {
+    BoldToken: deploymentManifest.boldToken,
+    CollateralRegistry: deploymentManifest.collateralRegistry,
+    HintHelpers: deploymentManifest.hintHelpers,
+    MultiTroveGetter: deploymentManifest.multiTroveGetter,
+    WETHTester: deploymentManifest.branches[0].collToken,
+  };
+
+  const collateralContracts = deploymentManifest.branches.map((branch) => ({
+    activePool: branch.activePool,
+    addressesRegistry: branch.addressesRegistry,
+    borrowerOperations: branch.borrowerOperations,
+    collSurplusPool: branch.collSurplusPool,
+    collToken: branch.collToken,
+    defaultPool: branch.defaultPool,
+    gasCompZapper: branch.gasCompZapper,
+    gasPool: branch.gasPool,
+    interestRouter: branch.interestRouter,
+    metadataNFT: branch.metadataNFT,
+    priceFeed: branch.priceFeed,
+    sortedTroves: branch.sortedTroves,
+    stabilityPool: branch.stabilityPool,
+    troveManager: branch.troveManager,
+    troveNFT: branch.troveNFT,
+    wethZapper: branch.wethZapper,
+  }));
 
   // XXX hotfix: we were leaking Github secrets in "deployer"
   // TODO: check if "deployer" is a private key, and calculate its address and use it instead?
   const { deployer, ...safeOptions } = options;
-
-  const protocolContracts = {
-    WETHTester: deploymentManifest.branches[0].collToken as string,
-    BoldToken: deploymentManifest.boldToken as string,
-    CollateralRegistry: deploymentManifest.collateralRegistry as string,
-    HintHelpers: deploymentManifest.hintHelpers as string,
-    MultiTroveGetter: deploymentManifest.multiTroveGetter as string,
-  };
-
-  const collateralContracts = (deploymentManifest.branches as any[]).map((branch) => ({
-    activePool: branch.activePool as string,
-    borrowerOperations: branch.borrowerOperations as string,
-    sortedTroves: branch.sortedTroves as string,
-    stabilityPool: branch.stabilityPool as string,
-    token: branch.collToken as string,
-    troveManager: branch.troveManager as string,
-  }));
 
   // write env file
   await fs.writeJson("deployment-context-latest.json", {

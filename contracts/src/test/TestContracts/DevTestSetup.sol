@@ -161,6 +161,22 @@ contract DevTestSetup is BaseTest {
         assertEq(uint8(troveManager.getTroveStatus(troveIDs.C)), uint8(ITroveManager.Status.closedByLiquidation));
     }
 
+    function _setupForSPDepositAdjustmentsWithoutOwedYieldRewards() internal returns (ABCDEF memory troveIDs) {
+        (troveIDs.A, troveIDs.B, troveIDs.C, troveIDs.D) = _setupForBatchLiquidateTrovesPureOffset();
+
+        // A claims yield rewards
+        makeSPWithdrawalAndClaim(A, 0);
+
+        // A liquidates C
+        liquidate(A, troveIDs.C);
+
+        // D sends BOLD to A and B so they have some to use in tests
+        transferBold(D, A, boldToken.balanceOf(D) / 2);
+        transferBold(D, B, boldToken.balanceOf(D));
+
+        assertEq(uint8(troveManager.getTroveStatus(troveIDs.C)), uint8(ITroveManager.Status.closedByLiquidation));
+    }
+
     function _setupForPTests() internal returns (ABCDEF memory) {
         ABCDEF memory troveIDs;
         (troveIDs.A, troveIDs.B, troveIDs.C, troveIDs.D) = _setupForBatchLiquidateTrovesPureOffset();
@@ -242,8 +258,26 @@ contract DevTestSetup is BaseTest {
         assertLt(troveManager.getTroveEntireDebt(_troveIDs.B), MIN_DEBT);
 
         // Check A and B tagged as Zombie troves
-        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.unredeemable));
-        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.zombie));
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.zombie));
+    }
+
+    function _redeemAndCreateEmptyZombieTrovesAAndB(ABCDEF memory _troveIDs) internal {
+        // Redeem enough to leave A with 0 debt and B with debt < MIN_DEBT
+        uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A);
+        uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B);
+        uint256 redeemAmount = redeemFromA + redeemFromB;
+
+        // Fully redeem A and B
+        redeem(E, redeemAmount);
+
+        // Check A, B has debt == 0
+        assertEq(troveManager.getTroveEntireDebt(_troveIDs.A), 0);
+        assertEq(troveManager.getTroveEntireDebt(_troveIDs.B), 0);
+
+        // Check A and B tagged as Zombie troves
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.zombie));
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.zombie));
     }
 
     function _redeemAndCreateZombieTroveAAndHitB(ABCDEF memory _troveIDs) internal {
@@ -260,7 +294,7 @@ contract DevTestSetup is BaseTest {
         assertGt(troveManager.getTroveEntireDebt(_troveIDs.B), MIN_DEBT);
 
         // // Check A is zombie Trove but B is not
-        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.unredeemable));
+        assertEq(uint8(troveManager.getTroveStatus(_troveIDs.A)), uint8(ITroveManager.Status.zombie));
         assertEq(uint8(troveManager.getTroveStatus(_troveIDs.B)), uint8(ITroveManager.Status.active));
     }
 

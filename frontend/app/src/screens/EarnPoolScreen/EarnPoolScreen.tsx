@@ -1,17 +1,27 @@
 "use client";
 
-import type { PositionEarn } from "@/src/types";
+import type { CollateralSymbol } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 
+import { Amount } from "@/src/comps/Amount/Amount";
 import { BackButton } from "@/src/comps/BackButton/BackButton";
 import { Details } from "@/src/comps/Details/Details";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { ACCOUNT_BALANCES, ACCOUNT_POSITIONS, EARN_POOLS } from "@/src/demo-mode";
-import { useAccount } from "@/src/services/Ethereum";
+import { useCollIndexFromSymbol } from "@/src/liquity-utils";
+import { useAccount, useBalance } from "@/src/services/Ethereum";
+import { useEarnPosition, useStabilityPool } from "@/src/subgraph-hooks";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { COLLATERALS, HFlex, InfoTooltip, Tabs, TokenIcon, TokenIconGroup, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import {
+  HFlex,
+  InfoTooltip,
+  isCollateralSymbol,
+  Tabs,
+  TokenIcon,
+  TokenIconGroup,
+  TOKENS_BY_SYMBOL,
+} from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { DepositPanel } from "./DepositPanel";
@@ -24,62 +34,54 @@ const TABS = [
   { action: "claim", label: content.earnScreen.tabs.claim },
 ] as const;
 
-const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
-function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[number] {
-  console.log(symbol, collateralSymbols);
-  const c: string[] = collateralSymbols;
-  return c.includes(symbol);
-}
-
 export function EarnPoolScreen() {
-  const account = useAccount();
   const router = useRouter();
   const params = useParams();
 
-  const collateralSymbol = String(params.pool).toUpperCase();
+  const account = useAccount();
+  const boldBalance = useBalance(account.address, "BOLD");
 
-  if (!isCollateralSymbol(collateralSymbol)) {
+  const collateralSymbol = String(params.pool).toUpperCase();
+  const isCollSymbolOk = isCollateralSymbol(collateralSymbol);
+  const collIndex = useCollIndexFromSymbol(isCollSymbolOk ? collateralSymbol : null);
+
+  const earnPosition = useEarnPosition(account.address, collIndex ?? undefined);
+  const stabilityPool = useStabilityPool(collIndex ?? undefined);
+
+  if (!collIndex === null || !isCollSymbolOk) {
     return null;
   }
 
-  const pool = EARN_POOLS[collateralSymbol];
-
-  const position: PositionEarn | undefined = ACCOUNT_POSITIONS.find((position) => (
-    position.type === "earn" && position.collateral === collateralSymbol
-  )) as PositionEarn | undefined;
-
-  const accountBoldBalance = account.isConnected ? ACCOUNT_BALANCES.BOLD : undefined;
-
   const tab = TABS.find((tab) => tab.action === params.action) ?? TABS[0];
 
-  const poolSharePercentage = position && dn.mul(dn.div(position.deposit, pool.boldQty), 100);
+  const share = earnPosition.data && stabilityPool.data && dn.gt(stabilityPool.data.totalDeposited, 0)
+    ? dn.div(earnPosition.data.deposit, stabilityPool.data.totalDeposited)
+    : dn.from(0, 18);
 
-  return pool && tab && (
+  const poolToken = TOKENS_BY_SYMBOL[collateralSymbol];
+
+  return stabilityPool.data && tab && (
     <Screen>
       <BackButton href="/earn" label={content.earnScreen.backButton} />
       <PoolSummary
-        apr={pool.apr}
-        boldQty={pool.boldQty}
+        apr={stabilityPool.data.apr}
+        boldQty={stabilityPool.data.totalDeposited}
         symbol={collateralSymbol}
       />
-      {position && (
+      {earnPosition.data && (
         <Details
           items={[
             {
               label: content.earnScreen.accountPosition.depositLabel,
-              value: `${dn.format(position.deposit, { digits: 2, trailingZeros: true })} BOLD`,
+              value: <Amount value={earnPosition.data.deposit} suffix=" BOLD" />,
             },
             {
               label: content.earnScreen.accountPosition.shareLabel,
-              value: poolSharePercentage && (
-                <span title={`${dn.format(poolSharePercentage)}%`}>
-                  {`${dn.format(poolSharePercentage, { digits: 2, trailingZeros: true })}%`}
-                </span>
-              ),
+              value: <Amount percentage value={share} />,
             },
             {
               label: content.earnScreen.accountPosition.rewardsLabel,
-              value: position.rewards && (
+              value: earnPosition.data.rewards && (
                 <HFlex
                   gap={8}
                   justifyContent="flex-start"
@@ -89,7 +91,7 @@ export function EarnPoolScreen() {
                     whiteSpace: "nowrap",
                   })}
                 >
-                  {dn.format(position.rewards.bold, 2)} BOLD
+                  <Amount value={earnPosition.data.rewards.bold} suffix=" BOLD" />
                   <div
                     className={css({
                       display: "flex",
@@ -99,7 +101,7 @@ export function EarnPoolScreen() {
                       backgroundColor: "dimmed",
                     })}
                   />
-                  {dn.format(position.rewards.eth, 2)} ETH
+                  <Amount value={earnPosition.data.rewards.coll} suffix={` ${poolToken.name}`} />
                 </HFlex>
               ),
             },
@@ -129,18 +131,25 @@ export function EarnPoolScreen() {
         />
         {tab.action === "deposit" && (
           <DepositPanel
-            accountBoldBalance={accountBoldBalance}
-            boldQty={pool.boldQty}
-            position={position}
+            accountBoldBalance={boldBalance.data}
+            collIndex={collIndex}
+            boldQty={stabilityPool.data.totalDeposited ?? dn.from(0, 18)}
+            position={earnPosition.data ?? undefined}
           />
         )}
         {tab.action === "withdraw" && (
           <WithdrawPanel
-            boldQty={pool.boldQty}
-            position={position}
+            collIndex={collIndex}
+            boldQty={stabilityPool.data.totalDeposited ?? dn.from(0, 18)}
+            position={earnPosition.data ?? undefined}
           />
         )}
-        {tab.action === "claim" && <RewardsPanel position={position} />}
+        {tab.action === "claim" && (
+          <RewardsPanel
+            collIndex={collIndex}
+            position={earnPosition.data ?? undefined}
+          />
+        )}
       </div>
     </Screen>
   );
@@ -153,7 +162,7 @@ function PoolSummary({
 }: {
   apr: Dnum;
   boldQty: Dnum;
-  symbol: keyof typeof EARN_POOLS;
+  symbol: CollateralSymbol;
 }) {
   const poolToken = TOKENS_BY_SYMBOL[symbol];
   return (
@@ -208,7 +217,13 @@ function PoolSummary({
             })}
           >
             <div>
-              {content.earnScreen.headerTvl(`${dn.format(boldQty, { compact: true })} BOLD`)}
+              {content.earnScreen.headerTvl(
+                <Amount
+                  format="compact"
+                  suffix=" BOLD"
+                  value={boldQty}
+                />,
+              )}
             </div>
             <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.tvl(poolToken.name))} />
           </div>
@@ -227,7 +242,11 @@ function PoolSummary({
             fontSize: 24,
           })}
         >
-          {dn.format(dn.mul(apr, 100), 2)}%
+          <Amount
+            format={2}
+            percentage
+            value={apr}
+          />
         </div>
         <div
           className={css({

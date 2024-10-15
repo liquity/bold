@@ -1,0 +1,84 @@
+query TrovesByAccount($account: Bytes!) {
+  troves(where: { borrower: $account, closedAt: null }) {
+    id
+    troveId
+    borrower
+    debt
+    deposit
+    stake
+    interestRate
+    createdAt
+    closedAt
+    collateral {
+      id
+      token {
+        symbol
+        name
+      }
+      minCollRatio
+      collIndex
+    }
+  }
+}
+
+query TrovesCount($id: ID!) {
+  borrowerInfo(id: $id) {
+    troves
+    trovesByCollateral
+  }
+}
+
+query TroveById($id: ID!) {
+  trove(id: $id) {
+    id
+    troveId
+    borrower
+    debt
+    deposit
+    stake
+    interestRate
+    createdAt
+    closedAt
+    collateral {
+      id
+      token {
+        symbol
+        name
+      }
+      minCollRatio
+      collIndex
+    }
+  }
+}
+
+query StabilityPoolDepositsByAccount($account: Bytes!) {
+  stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {
+    id
+    boldGain
+    collGain
+    deposit
+    collateral {
+      collIndex
+    }
+  }
+}
+
+query StabilityPoolDeposit($id: ID!) {
+  stabilityPoolDeposit(id: $id) {
+    id
+    boldGain
+    collGain
+    deposit
+    depositor
+    collateral {
+      collIndex
+    }
+  }
+}
+
+query StabilityPool($id: ID!) {
+  stabilityPool(id: $id) {
+    id
+    totalDeposited
+  }
+}

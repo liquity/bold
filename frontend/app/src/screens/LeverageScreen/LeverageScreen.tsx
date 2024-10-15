@@ -23,6 +23,7 @@ import {
   IconSuggestion,
   InfoTooltip,
   InputField,
+  isCollateralSymbol,
   TextButton,
   TokenIcon,
   VFlex,
@@ -32,11 +33,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
-
-function isCollateralSymbol(symbol: string): symbol is typeof collateralSymbols[number] {
-  const c: string[] = collateralSymbols;
-  return c.includes(symbol);
-}
 
 export function LeverageScreen() {
   const account = useAccount();
@@ -72,7 +68,8 @@ export function LeverageScreen() {
     && depositPreLeverage.parsed
     && dn.gt(depositPreLeverage.parsed, 0)
     && interestRate
-    && dn.gt(interestRate, 0);
+    && dn.gt(interestRate, 0)
+    && false;
 
   return (
     <Screen

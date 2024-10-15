@@ -1,15 +1,19 @@
-import type { PositionEarn, PositionLoan, PositionStake } from "@/src/types";
+import type { Address, PositionEarn, PositionLoan, PositionStake } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import { LQTY_SUPPLY } from "@/src/constants";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
+import { DEMO_MODE } from "@/src/env";
 import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
+import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
-import { useAccount } from "@/src/services/Ethereum";
+import { useCollateral } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
+import { useEarnPositionsByAccount, useLoansByAccount } from "@/src/subgraph-hooks";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
+import { sleep } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import {
   HFlex,
@@ -24,77 +28,176 @@ import {
   TOKENS_BY_SYMBOL,
 } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
+import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import Link from "next/link";
 import { match } from "ts-pattern";
+import { NewPositionCard } from "./NewPositionCard";
 
-export function Positions() {
-  const account = useAccount();
+type Mode = "positions" | "loading" | "actions";
 
-  const positionCards = ACCOUNT_POSITIONS.map((position, index) => (
-    match(position)
-      .with({ type: "borrow" }, ({ type, ...props }) => [index, <PositionBorrow {...props} />])
-      .with({ type: "earn" }, ({ type, ...props }) => [index, <PositionEarn {...props} />])
-      .with({ type: "leverage" }, ({ type, ...props }) => [index, <PositionLeverage {...props} />])
-      .with({ type: "stake" }, ({ type, ...props }) => [index, <PositionStake {...props} />])
-      .exhaustive()
-  ));
+export function Positions({
+  address,
+  columns,
+  showNewPositionCard = true,
+  title = (mode) => (
+    mode === "actions"
+      ? content.home.openPositionTitle
+      : content.home.myPositionsTitle
+  ),
+}: {
+  address: null | Address;
+  columns?: number;
+  showNewPositionCard?: boolean;
+  title?: (mode: Mode) => ReactNode;
+}) {
+  const loans = useLoansByAccount(address);
+  const earnPositions = useEarnPositionsByAccount(address);
 
-  const mode = account.isConnected && positionCards.length > 0 ? "positions" : "actions";
+  const positions = useQuery({
+    enabled: Boolean(address && !loans.isPending && !earnPositions.isPending),
+    queryKey: ["CombinedPositions", address],
+    queryFn: async () => {
+      await sleep(300);
+      if (DEMO_MODE) {
+        return ACCOUNT_POSITIONS;
+      }
+      return [
+        ...loans.data ?? [],
+        ...earnPositions.data ?? [],
+      ];
+    },
+  });
 
-  const actionCards = [
-    <ActionCard type="borrow" />,
-    <ActionCard type="leverage" />,
-    <ActionCard type="earn" />,
-    <ActionCard type="stake" />,
-  ].map((card, index) => [index, card]);
+  const positionsPending = Boolean(
+    address && (
+      loans.isPending || earnPositions.isPending || positions.isPending
+    ),
+  );
 
-  const positionTransitions = useTransition(mode === "positions" ? positionCards : actionCards, {
-    keys: ([index]) => `${index}${mode}`,
-    from: { opacity: 0, transform: "scale3d(0.95, 0.95, 1)" },
+  let mode: Mode = address && positions.data && positions.data.length > 0
+    ? "positions"
+    : positionsPending
+    ? "loading"
+    : "actions";
+
+  const cards = match(mode)
+    .returnType<Array<[number, ReactNode]>>()
+    .with("positions", () => {
+      const cards = positions.data?.map((position, index) => (
+        match(position)
+          .returnType<[number, ReactNode]>()
+          .with({ type: "borrow" }, (props) => [index, <PositionBorrow {...props} />])
+          .with({ type: "earn" }, (props) => [index, <PositionEarn {...props} />])
+          .with({ type: "leverage" }, (props) => [index, <PositionLeverage {...props} />])
+          .with({ type: "stake" }, (props) => [index, <PositionStake {...props} />])
+          .exhaustive()
+      )) ?? [];
+      if (showNewPositionCard) {
+        cards.push([positions.data?.length ?? -1, <NewPositionCard />]);
+      }
+      return cards;
+    })
+    .with("loading", () => [
+      [0, <LoadingCard />],
+      [1, <LoadingCard />],
+      [2, <LoadingCard />],
+    ])
+    .otherwise(() => [
+      [0, <ActionCard type="borrow" />],
+      [1, <ActionCard type="leverage" />],
+      [2, <ActionCard type="earn" />],
+      [3, <ActionCard type="stake" />],
+    ]);
+
+  const positionTransitions = useTransition(cards, {
+    keys: ([index]) => `${mode}${index}`,
+    from: { opacity: 0, transform: "scale3d(0.97, 0.97, 1)" },
     enter: { opacity: 1, transform: "scale3d(1, 1, 1)" },
     leave: { display: "none", immediate: true },
-    trail: 10,
     config: {
-      mass: 1,
-      tension: 2800,
+      mass: 2,
+      tension: 1800,
       friction: 80,
     },
   });
 
   return (
+    <PositionsGroup
+      columns={columns}
+      mode={mode}
+      title={title}
+    >
+      {positionTransitions((style, [_, card]) => (
+        <a.div
+          className={css({
+            display: "grid",
+            height: "100%",
+            willChange: "transform, opacity",
+          })}
+          style={style}
+        >
+          {card}
+        </a.div>
+      ))}
+    </PositionsGroup>
+  );
+}
+
+function PositionsGroup({
+  children,
+  columns = 3,
+  mode,
+  onTitleClick,
+  title,
+}: {
+  children: ReactNode;
+  columns?: number;
+  mode: Mode;
+  onTitleClick?: () => void;
+  title: (mode: Mode) => ReactNode;
+}) {
+  const paddingBottom = mode === "actions" ? 48 : 32;
+  const cardsHeight = mode === "actions" ? undefined : 185;
+  const title_ = title(mode);
+
+  return (
     <div>
-      <h1
-        className={css({
-          fontSize: 32,
-          color: "content",
-        })}
-        style={{
-          paddingBottom: mode === "positions" ? 32 : 48,
-        }}
-      >
-        {mode === "positions" ? content.home.myPositionsTitle : content.home.openPositionTitle}
-      </h1>
+      {title_ && (
+        <h1
+          className={css({
+            fontSize: 32,
+            color: "content",
+            userSelect: "none",
+          })}
+          style={{
+            paddingBottom,
+          }}
+          onClick={onTitleClick}
+        >
+          {title_}
+        </h1>
+      )}
       <div
         className={css({
-          display: "grid",
-          gap: 24,
+          position: "relative",
         })}
         style={{
-          gridTemplateColumns: `repeat(${mode === "positions" ? 3 : 4}, 1fr)`,
+          minHeight: cardsHeight,
         }}
       >
-        {positionTransitions((style, [_, card]) => (
-          <a.div
-            className={css({
-              display: "grid",
-              height: "100%",
-            })}
-            style={style}
-          >
-            {card}
-          </a.div>
-        ))}
+        <div
+          className={css({
+            display: "grid",
+            gap: 24,
+          })}
+          style={{
+            gridTemplateColumns: `repeat(${mode === "actions" ? 4 : columns}, 1fr)`,
+            gridAutoRows: cardsHeight,
+          }}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -102,6 +205,7 @@ export function Positions() {
 
 function PositionBorrow({
   borrowed,
+  collIndex,
   collateral,
   deposit,
   interestRate,
@@ -109,6 +213,7 @@ function PositionBorrow({
 }: Pick<
   PositionLoan,
   | "borrowed"
+  | "collIndex"
   | "collateral"
   | "deposit"
   | "interestRate"
@@ -127,17 +232,21 @@ function PositionBorrow({
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
   const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
 
+  const title = [
+    `Loan ID: ${troveId}`,
+    `Borrowed: ${fmtnum(borrowed, "full")} BOLD`,
+    `Collateral: ${fmtnum(deposit, "full")} ${token.name}`,
+    `Interest rate: ${fmtnum(interestRate, "full", 100)}%`,
+  ];
+
   return (
     <Link
-      href={{
-        pathname: "/loan",
-        query: { id: String(troveId) },
-      }}
+      href={`/loan?id=${collIndex}:${troveId}`}
       legacyBehavior
       passHref
     >
       <StrongCard
-        title={`Loan #${troveId}`}
+        title={title.join("\n")}
         heading={
           <div
             className={css({
@@ -162,14 +271,26 @@ function PositionBorrow({
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-              {dn.format(dn.add(deposit, borrowed), 4)}
+              {fmtnum(borrowed)}
               <TokenIcon
                 size={24}
                 symbol="BOLD"
               />
             </HFlex>
           ),
-          label: "Total debt",
+          // label: "Total debt",
+          label: (
+            <div
+              className={css({
+                display: "flex",
+                gap: 8,
+                alignItems: "cente",
+              })}
+            >
+              Backed by {deposit ? dn.format(deposit, 2) : "−"} {token.name}
+              <TokenIcon size="small" symbol={token.symbol} />
+            </div>
+          ),
         }}
         secondary={
           <CardRows>
@@ -289,6 +410,7 @@ function PositionBorrow({
 
 function PositionLeverage({
   borrowed,
+  collIndex,
   collateral,
   deposit,
   interestRate,
@@ -296,6 +418,7 @@ function PositionLeverage({
 }: Pick<
   PositionLoan,
   | "borrowed"
+  | "collIndex"
   | "collateral"
   | "deposit"
   | "interestRate"
@@ -312,12 +435,11 @@ function PositionLeverage({
   const redemptionRisk = getRedemptionRisk(interestRate);
 
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
-
   const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
 
   return (
     <Link
-      href={`/loan?id=${troveId}`}
+      href={`/loan?id=${collIndex}:${troveId}`}
       legacyBehavior
       passHref
     >
@@ -474,18 +596,18 @@ function PositionLeverage({
 
 function PositionEarn({
   apr,
-  collateral,
+  collIndex,
   deposit,
   rewards,
 }: Pick<
   PositionEarn,
   | "apr"
-  | "collateral"
+  | "collIndex"
   | "deposit"
   | "rewards"
 >) {
-  const token = TOKENS_BY_SYMBOL[collateral];
-  return (
+  const token = useCollateral(collIndex);
+  return token && (
     <Link
       href={`/earn/${token.symbol.toLowerCase()}`}
       legacyBehavior
@@ -525,7 +647,7 @@ function PositionEarn({
           ),
           label: (
             <HFlex gap={4} justifyContent="flex-start">
-              <span>+{dn.format(rewards.eth, 4)}</span>
+              <span>+{dn.format(rewards.coll, 4)}</span>
               <TokenIcon
                 size="small"
                 symbol={token.symbol}
@@ -709,6 +831,17 @@ function PositionStake({
         }
       />
     </Link>
+  );
+}
+
+function LoadingCard() {
+  return (
+    <StrongCard
+      loading={true}
+      heading=""
+      contextual=""
+      secondary=""
+    />
   );
 }
 
