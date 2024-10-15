@@ -23,7 +23,7 @@
     "react-cosmos-core": "^6.1.2-canary.71267f3.0",
     "react-cosmos-plugin-boolean-input": "^6.1.2-canary.71267f3.0",
     "react-dom": "^18",
-    "ts-pattern": "^5.4.0"
+    "ts-pattern": "^5.5.0"
   },
   "devDependencies": {
     "@pandacss/dev": "^0.46.1",
