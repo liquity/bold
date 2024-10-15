@@ -88,7 +88,7 @@ export function EarnPoolScreen() {
         {tab.action === "deposit" && (
           <PanelUpdateDeposit
             collIndex={collIndex}
-            deposited={stabilityPool.data.totalDeposited ?? dn.from(0, 18)}
+            deposited={earnPool.data.totalDeposited ?? dn.from(0, 18)}
             position={earnPosition.data ?? undefined}
           />
         )}

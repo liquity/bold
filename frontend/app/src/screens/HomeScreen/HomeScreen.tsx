@@ -4,11 +4,10 @@ import type { CollateralSymbol } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Positions } from "@/src/comps/Positions/Positions";
-import { useCollateralContracts } from "@/src/contracts";
+import { useAllCollateralContracts } from "@/src/contracts";
 import { DNUM_1 } from "@/src/dnum-utils";
-import { useCollateral, useCollIndexFromSymbol } from "@/src/liquity-utils";
+import { useCollateral, useCollIndexFromSymbol, useEarnPool } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
-import { useStabilityPool } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -16,7 +15,7 @@ import Link from "next/link";
 import { HomeTable } from "./HomeTable";
 
 export function HomeScreen() {
-  const collSymbols = useCollateralContracts().map((coll) => coll.symbol);
+  const collSymbols = useAllCollateralContracts().map((coll) => coll.symbol);
   const account = useAccount();
   return (
     <div
@@ -153,7 +152,7 @@ function EarnRewardsRow({
 }) {
   const collIndex = useCollIndexFromSymbol(symbol);
   const collateral = useCollateral(collIndex);
-  const earnPool = useStabilityPool(collIndex ?? undefined);
+  const earnPool = useEarnPool(collIndex);
 
   return (
     <tr>

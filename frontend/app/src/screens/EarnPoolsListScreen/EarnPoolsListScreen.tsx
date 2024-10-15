@@ -3,14 +3,14 @@
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { useCollateralContracts } from "@/src/contracts";
+import { useAllCollateralContracts } from "@/src/contracts";
 import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
 import { TokenIcon } from "@liquity2/uikit";
 
 export function EarnPoolsListScreen() {
   const account = useAccount();
-  const collSymbols = useCollateralContracts().map((coll) => coll.symbol);
+  const collSymbols = useAllCollateralContracts().map((coll) => coll.symbol);
   return (
     <Screen
       title={
