@@ -632,8 +632,6 @@ export type StabilityPool = {
 
 export type StabilityPoolDeposit = {
   readonly id: Scalars['ID']['output'];
-  readonly boldGain: Scalars['BigInt']['output'];
-  readonly collGain: Scalars['BigInt']['output'];
   readonly collateral: Collateral;
   readonly deposit: Scalars['BigInt']['output'];
   readonly depositor: Scalars['Bytes']['output'];
@@ -715,8 +713,6 @@ export type StabilityPoolDepositSnapshot_orderBy =
   | 'scale'
   | 'deposit'
   | 'deposit__id'
-  | 'deposit__boldGain'
-  | 'deposit__collGain'
   | 'deposit__deposit'
   | 'deposit__depositor';
 
@@ -729,22 +725,6 @@ export type StabilityPoolDeposit_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
-  readonly boldGain?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly boldGain_not?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly boldGain_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly boldGain_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly boldGain_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly boldGain_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly boldGain_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly boldGain_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly collGain?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly collGain_not?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly collGain_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly collGain_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly collGain_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly collGain_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly collGain_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly collGain_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
   readonly collateral?: InputMaybe<Scalars['String']['input']>;
   readonly collateral_not?: InputMaybe<Scalars['String']['input']>;
   readonly collateral_gt?: InputMaybe<Scalars['String']['input']>;
@@ -813,8 +793,6 @@ export type StabilityPoolDeposit_filter = {
 
 export type StabilityPoolDeposit_orderBy =
   | 'id'
-  | 'boldGain'
-  | 'collGain'
   | 'collateral'
   | 'collateral__id'
   | 'collateral__collIndex'
@@ -1676,8 +1654,6 @@ export type StabilityPoolResolvers<ContextType = MeshContext, ParentType extends
 
 export type StabilityPoolDepositResolvers<ContextType = MeshContext, ParentType extends ResolversParentTypes['StabilityPoolDeposit'] = ResolversParentTypes['StabilityPoolDeposit']> = ResolversObject<{
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  boldGain?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
-  collGain?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   collateral?: Resolver<ResolversTypes['Collateral'], ParentType, ContextType>;
   deposit?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   depositor?: Resolver<ResolversTypes['Bytes'], ParentType, ContextType>;
@@ -1843,7 +1819,7 @@ const liquity2Transforms = [];
 const additionalTypeDefs = [] as any[];
 const liquity2Handler = new GraphqlHandler({
               name: "liquity2",
-              config: {"endpoint":"http://localhost:8000/subgraphs/name/liquity2"},
+              config: {"endpoint":"https://api.studio.thegraph.com/query/42403/liquity2/version/latest"},
               baseDir,
               cache,
               pubsub,

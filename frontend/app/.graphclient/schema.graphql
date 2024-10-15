@@ -655,8 +655,6 @@ type StabilityPool {
 
 type StabilityPoolDeposit {
   id: ID!
-  boldGain: BigInt!
-  collGain: BigInt!
   collateral: Collateral!
   deposit: BigInt!
   depositor: Bytes!
@@ -738,8 +736,6 @@ enum StabilityPoolDepositSnapshot_orderBy {
   scale
   deposit
   deposit__id
-  deposit__boldGain
-  deposit__collGain
   deposit__deposit
   deposit__depositor
 }
@@ -753,22 +749,6 @@ input StabilityPoolDeposit_filter {
   id_lte: ID
   id_in: [ID!]
   id_not_in: [ID!]
-  boldGain: BigInt
-  boldGain_not: BigInt
-  boldGain_gt: BigInt
-  boldGain_lt: BigInt
-  boldGain_gte: BigInt
-  boldGain_lte: BigInt
-  boldGain_in: [BigInt!]
-  boldGain_not_in: [BigInt!]
-  collGain: BigInt
-  collGain_not: BigInt
-  collGain_gt: BigInt
-  collGain_lt: BigInt
-  collGain_gte: BigInt
-  collGain_lte: BigInt
-  collGain_in: [BigInt!]
-  collGain_not_in: [BigInt!]
   collateral: String
   collateral_not: String
   collateral_gt: String
@@ -837,8 +817,6 @@ input StabilityPoolDeposit_filter {
 
 enum StabilityPoolDeposit_orderBy {
   id
-  boldGain
-  collGain
   collateral
   collateral__id
   collateral__collIndex

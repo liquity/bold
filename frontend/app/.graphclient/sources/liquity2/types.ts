@@ -609,8 +609,6 @@ export type StabilityPool = {
 
 export type StabilityPoolDeposit = {
   readonly id: Scalars['ID']['output'];
-  readonly boldGain: Scalars['BigInt']['output'];
-  readonly collGain: Scalars['BigInt']['output'];
   readonly collateral: Collateral;
   readonly deposit: Scalars['BigInt']['output'];
   readonly depositor: Scalars['Bytes']['output'];
@@ -692,8 +690,6 @@ export type StabilityPoolDepositSnapshot_orderBy =
   | 'scale'
   | 'deposit'
   | 'deposit__id'
-  | 'deposit__boldGain'
-  | 'deposit__collGain'
   | 'deposit__deposit'
   | 'deposit__depositor';
 
@@ -706,22 +702,6 @@ export type StabilityPoolDeposit_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
-  readonly boldGain?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly boldGain_not?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly boldGain_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly boldGain_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly boldGain_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly boldGain_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly boldGain_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly boldGain_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly collGain?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly collGain_not?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly collGain_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly collGain_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly collGain_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly collGain_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly collGain_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly collGain_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
   readonly collateral?: InputMaybe<Scalars['String']['input']>;
   readonly collateral_not?: InputMaybe<Scalars['String']['input']>;
   readonly collateral_gt?: InputMaybe<Scalars['String']['input']>;
@@ -790,8 +770,6 @@ export type StabilityPoolDeposit_filter = {
 
 export type StabilityPoolDeposit_orderBy =
   | 'id'
-  | 'boldGain'
-  | 'collGain'
   | 'collateral'
   | 'collateral__id'
   | 'collateral__collIndex'
