@@ -69,7 +69,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 ethBalanceBefore = A.balance;
         uint256 collBalanceBefore = collToken.balanceOf(A);
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount,
@@ -77,6 +77,7 @@ contract ZapperGasCompTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: 5e16,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -100,7 +101,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 boldAmount = 10000e18;
         uint256 collAmount2 = 5 ether;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount1,
@@ -108,6 +109,7 @@ contract ZapperGasCompTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: 5e16,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -133,7 +135,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 boldAmount = 10000e18;
         uint256 collAmount2 = 1 ether;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount1,
@@ -141,6 +143,7 @@ contract ZapperGasCompTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: 5e16,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -166,7 +169,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount,
@@ -174,6 +177,7 @@ contract ZapperGasCompTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -215,7 +219,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount,
@@ -223,6 +227,7 @@ contract ZapperGasCompTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -264,7 +269,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount1,
@@ -272,6 +277,7 @@ contract ZapperGasCompTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -293,7 +299,7 @@ contract ZapperGasCompTest is DevTestSetup {
 
         // Adjust (withdraw coll and Bold)
         vm.startPrank(B);
-        gasCompZapper.adjustTroveWithRawETH(troveId, collAmount2, false, boldAmount2, true, boldAmount2);
+        gasCompZapper.adjustTrove(troveId, collAmount2, false, boldAmount2, true, boldAmount2);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveEntireColl(troveId), collAmount1 - collAmount2, "Trove coll mismatch");
@@ -313,7 +319,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount1,
@@ -321,6 +327,7 @@ contract ZapperGasCompTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -347,7 +354,7 @@ contract ZapperGasCompTest is DevTestSetup {
 
         // Adjust (withdraw coll and Bold)
         vm.startPrank(B);
-        gasCompZapper.adjustZombieTroveWithRawETH(troveId, collAmount2, false, boldAmount2, true, 0, 0, boldAmount2);
+        gasCompZapper.adjustUnredeemableTrove(troveId, collAmount2, false, boldAmount2, true, 0, 0, boldAmount2);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveEntireColl(troveId), troveCollBefore - collAmount2, "Trove coll mismatch");
@@ -365,7 +372,7 @@ contract ZapperGasCompTest is DevTestSetup {
         uint256 ethBalanceBefore = A.balance;
         uint256 collBalanceBefore = collToken.balanceOf(A);
 
-        GasCompZapper.OpenTroveParams memory params = GasCompZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
             collAmount: collAmount,
@@ -373,6 +380,7 @@ contract ZapperGasCompTest is DevTestSetup {
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -415,4 +423,84 @@ contract ZapperGasCompTest is DevTestSetup {
         assertEq(A.balance, ethBalanceBefore, "ETH bal mismatch");
         assertEq(collToken.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
     }
+
+    function testExcessRepaymentByAdjustGoesBackToUser() external {
+        uint256 collAmount = 10 ether;
+        uint256 boldAmount = 10000e18;
+
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: collAmount,
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = gasCompZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        uint256 ethBalanceBefore = A.balance;
+        uint256 collBalanceBefore = collToken.balanceOf(A);
+        uint256 boldDebtBefore = troveManager.getTroveEntireDebt(troveId);
+
+        // Adjust trove: remove 1 ETH and try to repay 9k (only will repay ~8k, up to MIN_DEBT)
+        vm.startPrank(A);
+        boldToken.approve(address(gasCompZapper), type(uint256).max);
+        gasCompZapper.adjustTrove(troveId, 1 ether, false, 9000e18, false, 0);
+        vm.stopPrank();
+
+        assertEq(boldToken.balanceOf(A), boldAmount + MIN_DEBT - boldDebtBefore, "BOLD bal mismatch");
+        assertEq(boldToken.balanceOf(address(gasCompZapper)), 0, "Zapper BOLD bal should be zero");
+        assertEq(A.balance, ethBalanceBefore, "ETH bal mismatch");
+        assertEq(address(gasCompZapper).balance, 0, "Zapper ETH bal should be zero");
+        assertEq(collToken.balanceOf(A), collBalanceBefore + 1 ether, "Coll bal mismatch");
+        assertEq(collToken.balanceOf(address(gasCompZapper)), 0, "Zapper Coll bal should be zero");
+    }
+
+    function testExcessRepaymentByRepayGoesBackToUser() external {
+        uint256 collAmount = 10 ether;
+        uint256 boldAmount = 10000e18;
+
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: collAmount,
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = gasCompZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        uint256 boldDebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 collBalanceBefore = collToken.balanceOf(A);
+
+        // Adjust trove: try to repay 9k (only will repay ~8k, up to MIN_DEBT)
+        vm.startPrank(A);
+        boldToken.approve(address(gasCompZapper), type(uint256).max);
+        gasCompZapper.repayBold(troveId, 9000e18);
+        vm.stopPrank();
+
+        assertEq(boldToken.balanceOf(A), boldAmount + MIN_DEBT - boldDebtBefore, "BOLD bal mismatch");
+        assertEq(boldToken.balanceOf(address(gasCompZapper)), 0, "Zapper BOLD bal should be zero");
+        assertEq(address(gasCompZapper).balance, 0, "Zapper ETH bal should be zero");
+        assertEq(collToken.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
+        assertEq(collToken.balanceOf(address(gasCompZapper)), 0, "Zapper Coll bal should be zero");
+    }
+
+    // TODO: tests for add/remove managers of zapper contract
 }

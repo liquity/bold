@@ -3,8 +3,9 @@ pragma solidity ^0.8.18;
 
 import {utils, LibString} from "./Utils.sol";
 
-// Core SVG utility library which helps us construct
-// onchain SVG's with a simple, web-like API.
+/// @notice Core SVG utility library which helps us construct onchain SVG's with a simple, web-like API.
+/// @author Modified from (https://github.com/w1nt3r-eth/hot-chain-svg/blob/main/contracts/SVG.sol) by w1nt3r-eth.
+
 library svg {
     /* GLOBAL CONSTANTS */
     string internal constant _SVG = 'xmlns="http://www.w3.org/2000/svg"';

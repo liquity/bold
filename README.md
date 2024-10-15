@@ -78,6 +78,12 @@
   - [8 - Discrepancy between `yieldGainsOwed` and sum of individual yield gains in StabilityPool](#8---discrepancy-between-yieldgainsowed-and-sum-of-individual-yield-gains-in-stabilitypool)
   - [9 - LST oracle risks](#9---lst-oracle-risks)
   - [10 - Branch shutdown and bad debt](#10---branch-shutdown-and-bad-debt)
+  - [11 - Inaccurate calculation of average branch interest rate](#11---)
+  - [12 - TroveManager can make troves liquidatable by changing the batch interest rate](#12---)
+  - [13 - Trove Adjustments may be griefed by sandwich raising the average interest rate](#13---)
+  - [14 - Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards](#14---)
+  - [15 - Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1](#15---)
+
 - [Requirements](#requirements)
 - [Setup](#setup)
 - [How to develop](#how-to-develop)
@@ -1372,7 +1378,7 @@ And some additional solutions that may help reduce the chance of bad debt occurr
 
 Ultimately, no measures have been implemented in the protocol directly, so the protocol may end up with some bad debt in the case of a branch shut down.  Here there is a theoretical possibility that the BOLD supply may be reduced by either users accidentally burning BOLD, or that borrower's interest could be directed by governance to burn BOLD, which would restore its backing over time.
 
-### 11 - ## Inaccurate calculation of average branch interest rate
+### 11 - Inaccurate calculation of average branch interest rate
 
 `getNewApproxAvgInterestRateFromTroveChange` does not actually calculate the correct average interest rate for a collateral branch. Ideally, we would like to calculate the debt-weighted average interest of all Troves within the branch, upon which our calculation of the upfront fee is based. The desired formula would be:
 
@@ -1432,6 +1438,42 @@ sum(debt_i)
 
 While this wouldn't result in the most accurate estimation of the average interest rate either — considering we'd be using outdated debt values sampled at different times for each Trove as weights — at least we would have consistent weights in the numerator and denominator of our weighted average. To implement this though, we'd have to keep track of this modified sum (i.e. the sum of recorded Trove debts) in `ActivePool`, which we currently don't do.
 
+### 12. TroveManager can make troves liquidatable by changing the batch interest rate
+Users that add their Trove to a Batch are allowing the BatchManager to charge a lot of fees by simply adjusting the interest rate as soon as they can via `setBatchManagerAnnualInterestRate`.
+
+This change cannot result in triggering the critical threshold, however it can make any trove in the batch liquidatable
+
+Thus BatchManagers should be considered benign trusted actors
+
+### 13. Trove Adjustments may be griefed by sandwich raising the average interest rate
+
+Borrowing requires accepting an upfront fee. This is effectively a percentage of the debt change (not necessarily of TCR due to price changes). Due to this, it is possible for other ordinary operations to grief a Trove adjustments by changing the `avgInterestRate`.
+
+To mitigate this, users should use tight but not exact checks for the `_maxUpfrontFee`.
+
+### 14. Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards
+The StabilityPool doesn't automatically compound Bold yield gains to depositors
+
+All deposits are added to `totalBoldDeposits`.
+
+Claimable yields are not part of `totalBoldDeposits`.
+
+Claiming bold allows to receive the corresponding yield and it does increase `totalBoldDeposits`.
+
+If we compare a deposit that never claims, against one that compound their claims.
+
+The depositor compounding their claims will technically receive the rewards that could have been received by the passive depositor.
+
+Meaning that claiming frequently is the preferred strategy.
+
+### 15. Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1
+If ICR is less than 101% , urgent redemptions with 1% premium reduce the ICR of a Trove.
+
+This may be used to lock in a bit more bad debt.
+
+Liquidations already carry a collateral premium to the caller and to the liquidators.
+
+Redemptions at this CR may allow for a bit more bad debt to be redistributed which could cause a liquidation cascade, however the difference doesn't seem particularly meaningful when compared to how high the Liquidation Premium tends to be for liquidations.
 
 ## Requirements
 

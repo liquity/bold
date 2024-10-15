@@ -518,9 +518,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         _requireValidAnnualInterestRate(_newAnnualInterestRate);
         _requireIsNotInBatch(_troveId);
-        address owner = troveNFT.ownerOf(_troveId);
-        _requireSenderIsOwnerOrInterestManager(_troveId, owner);
-        _requireInterestRateInDelegateRange(_troveId, _newAnnualInterestRate, owner);
+        _requireSenderIsOwnerOrInterestManager(_troveId);
+        _requireInterestRateInDelegateRange(_troveId, _newAnnualInterestRate);
         _requireTroveIsActive(troveManagerCached, _troveId);
 
         LatestTroveData memory trove = troveManagerCached.getLatestTroveData(_troveId);
@@ -1281,13 +1280,14 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
     }
 
-    function _requireSenderIsOwnerOrInterestManager(uint256 _troveId, address _owner) internal view {
-        if (msg.sender != _owner && msg.sender != interestIndividualDelegateOf[_troveId].account) {
+    function _requireSenderIsOwnerOrInterestManager(uint256 _troveId) internal view {
+        address owner = troveNFT.ownerOf(_troveId);
+        if (msg.sender != owner && msg.sender != interestIndividualDelegateOf[_troveId].account) {
             revert NotOwnerNorInterestManager();
         }
     }
 
-    function _requireInterestRateInDelegateRange(uint256 _troveId, uint256 _annualInterestRate, address _owner) internal view {
+    function _requireInterestRateInDelegateRange(uint256 _troveId, uint256 _annualInterestRate) internal view {
         InterestIndividualDelegate memory individualDelegate = interestIndividualDelegateOf[_troveId];
         // We have previously checked that sender is either owner or delegate
         // If it’s owner, this restriction doesn’t apply

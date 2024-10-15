@@ -6,6 +6,7 @@ evm_version = 'shanghai'
 ignored_error_codes = [5574] # contract-size
 fs_permissions = [
     { access = "read", path = "./utils/assets/" },
+    { access = "read-write", path = "./utils/assets/test_output" },
     { access = "read-write", path = "./deployment-manifest.json" }
 ]
 

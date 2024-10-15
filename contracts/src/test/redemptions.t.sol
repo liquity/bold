@@ -489,6 +489,27 @@ contract Redemptions is DevTestSetup {
         assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer after");
     }
 
+    function testZombieTrovePointerIsPreservedIfItIsSkippedAndNoNewZombieIsProduced() external {
+        // Trove to keep TCR high
+        openTroveWithExactICRAndDebt(B, 0, 10 ether, 10_000 ether, 0.1 ether);
+
+        (uint256 trove1,) = openTroveWithExactICRAndDebt(A, 0, 1.1 ether, 2_000 ether, 0.01 ether); // ICR 110%
+        openTroveWithExactICRAndDebt(A, 1, 1.5 ether, 4_000 ether, 0.02 ether); // ICR 150%
+
+        redeem(A, 100 ether);
+        assertEq(troveManager.lastZombieTroveId(), trove1, "trove1 should have become lastZombieTroveId");
+
+        // Drop price by 20%, so that trove1's ICR < 100%
+        priceFeed.setPrice(priceFeed.getPrice() * 80 / 100);
+        assertLtDecimal(troveManager.getCurrentICR(trove1, priceFeed.getPrice()), 1 ether, 18, "ICR should be < 100%");
+
+        uint256 trove1Debt = troveManager.getTroveEntireDebt(trove1);
+        redeem(A, 100 ether);
+        assertEqDecimal(trove1Debt, troveManager.getTroveEntireDebt(trove1), 18, "trove1 shouldn't have been touched");
+
+        assertEq(troveManager.lastZombieTroveId(), trove1, "lastZombieTroveId should have been preserved");
+    }
+
     function testZombieTrovesCanReceiveRedistGains() public {
         uint256 interestRate_E = 5e16; // 5%
         uint256 troveDebtRequest_E = 2450e18;

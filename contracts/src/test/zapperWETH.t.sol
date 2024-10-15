@@ -61,13 +61,15 @@ contract ZapperWETHTest is DevTestSetup {
 
         uint256 ethBalanceBefore = A.balance;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: 5e16,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -90,13 +92,15 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount = 10000e18;
         uint256 ethAmount2 = 5 ether;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: 5e16,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -122,13 +126,15 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount = 10000e18;
         uint256 ethAmount2 = 1 ether;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: 5e16,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -154,13 +160,15 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -202,13 +210,15 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -250,13 +260,15 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -297,13 +309,15 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -348,13 +362,15 @@ contract ZapperWETHTest is DevTestSetup {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -398,13 +414,15 @@ contract ZapperWETHTest is DevTestSetup {
 
         uint256 ethBalanceBefore = A.balance;
 
-        WETHZapper.OpenTroveParams memory params = WETHZapper.OpenTroveParams({
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
+            collAmount: 0, // not needed
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
             annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
             removeManager: address(0),
@@ -444,4 +462,84 @@ contract ZapperWETHTest is DevTestSetup {
         assertEq(boldToken.balanceOf(A), 0, "BOLD bal mismatch");
         assertEq(A.balance, ethBalanceBefore, "ETH bal mismatch");
     }
+
+    function testExcessRepaymentByAdjustGoesBackToUser() external {
+        uint256 ethAmount = 10 ether;
+        uint256 boldAmount = 10000e18;
+
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 0, // not needed
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        uint256 ethBalanceBefore = A.balance;
+        uint256 collBalanceBefore = WETH.balanceOf(A);
+        uint256 boldDebtBefore = troveManager.getTroveEntireDebt(troveId);
+
+        // Adjust trove: remove 1 ETH and try to repay 9k (only will repay ~8k, up to MIN_DEBT)
+        vm.startPrank(A);
+        boldToken.approve(address(wethZapper), type(uint256).max);
+        wethZapper.adjustTroveWithRawETH(troveId, 1 ether, false, 9000e18, false, 0);
+        vm.stopPrank();
+
+        assertEq(boldToken.balanceOf(A), boldAmount + MIN_DEBT - boldDebtBefore, "BOLD bal mismatch");
+        assertEq(boldToken.balanceOf(address(wethZapper)), 0, "Zapper BOLD bal should be zero");
+        assertEq(A.balance, ethBalanceBefore + 1 ether, "ETH bal mismatch");
+        assertEq(address(wethZapper).balance, 0, "Zapper ETH bal should be zero");
+        assertEq(WETH.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
+        assertEq(WETH.balanceOf(address(wethZapper)), 0, "Zapper Coll bal should be zero");
+    }
+
+    function testExcessRepaymentByRepayGoesBackToUser() external {
+        uint256 ethAmount = 10 ether;
+        uint256 boldAmount = 10000e18;
+
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 0, // not needed
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        uint256 boldDebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 collBalanceBefore = WETH.balanceOf(A);
+
+        // Adjust trove: try to repay 9k (only will repay ~8k, up to MIN_DEBT)
+        vm.startPrank(A);
+        boldToken.approve(address(wethZapper), type(uint256).max);
+        wethZapper.repayBold(troveId, 9000e18);
+        vm.stopPrank();
+
+        assertEq(boldToken.balanceOf(A), boldAmount + MIN_DEBT - boldDebtBefore, "BOLD bal mismatch");
+        assertEq(boldToken.balanceOf(address(wethZapper)), 0, "Zapper BOLD bal should be zero");
+        assertEq(address(wethZapper).balance, 0, "Zapper ETH bal should be zero");
+        assertEq(WETH.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
+        assertEq(WETH.balanceOf(address(wethZapper)), 0, "Zapper Coll bal should be zero");
+    }
+
+    // TODO: tests for add/remove managers of zapper contract
 }
