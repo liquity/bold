@@ -494,7 +494,7 @@ contract Redemptions is DevTestSetup {
         openTroveWithExactICRAndDebt(B, 0, 10 ether, 10_000 ether, 0.1 ether);
 
         (uint256 trove1,) = openTroveWithExactICRAndDebt(A, 0, 1.1 ether, 2_000 ether, 0.01 ether); // ICR 110%
-        (uint256 trove2,) = openTroveWithExactICRAndDebt(A, 1, 1.5 ether, 4_000 ether, 0.02 ether); // ICR 150%
+        openTroveWithExactICRAndDebt(A, 1, 1.5 ether, 4_000 ether, 0.02 ether); // ICR 150%
 
         redeem(A, 100 ether);
         assertEq(troveManager.lastZombieTroveId(), trove1, "trove1 should have become lastZombieTroveId");

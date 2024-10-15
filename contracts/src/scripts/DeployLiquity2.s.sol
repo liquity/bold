@@ -504,14 +504,18 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         return (gasCompZapper, wethZapper);
     }
 
-    function _deployCurveExchange(IERC20 _collToken, IBoldToken _boldToken, IPriceFeed _priceFeed, bool _mainnet)
-        internal
-        returns (IExchange)
-    {
-        if (!_mainnet) return new CurveExchange(_collToken, _boldToken, ICurvePool(address(0)), 1, 0);
+    function _deployCurveExchange(
+        IERC20 _collToken,
+        IBoldToken _boldToken,
+        IPriceFeed, /*_priceFeed*/
+        bool /*_mainnet*/
+    ) internal returns (IExchange) {
+        return new CurveExchange(_collToken, _boldToken, ICurvePool(address(0)), 1, 0);
 
         // TODO: unsued for now
         /*
+        if (!_mainnet) return new CurveExchange(_collToken, _boldToken, ICurvePool(address(0)), 1, 0);
+
         (uint256 price,) = _priceFeed.fetchPrice();
 
         // deploy Curve Twocrypto NG pool

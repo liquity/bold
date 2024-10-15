@@ -223,13 +223,13 @@ contract troveNFTTest is DevTestSetup {
         assertTrue(LibString.contains(decodedUri, '"value": "Active"'), "Incorrect Status value");
     }
 
-    function test_toLocale() public {
+    function test_toLocale() public view {
         string memory result = numUtils.toLocale("123456789");
         console.log(result);
         assertEq(result, "123,456,789");
     }
 
-    function test_toLocaleString() public {
+    function test_toLocaleString() public pure {
         string memory result = numUtils.toLocaleString(123456789, 0, 2);
         assertEq(result, "123,456,789.00");
 
