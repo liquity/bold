@@ -7,30 +7,21 @@ import "../Interfaces/IBorrowerOperations.sol";
 import "../Interfaces/ITroveManager.sol";
 import "../Interfaces/ITroveNFT.sol";
 import "../Interfaces/IWETH.sol";
-import "../Dependencies/AddRemoveManagers.sol";
 import "./LeftoversSweep.sol";
+import "./BaseZapper.sol";
 import "../Dependencies/Constants.sol";
 import "./Interfaces/IFlashLoanProvider.sol";
 import "./Interfaces/IFlashLoanReceiver.sol";
 import "./Interfaces/IExchange.sol";
 import "./Interfaces/IZapper.sol";
 
-contract WETHZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanReceiver, IZapper {
-    IBorrowerOperations public immutable borrowerOperations; // First branch (i.e., using WETH as collateral)
-    ITroveManager public immutable troveManager;
-    IWETH public immutable WETH;
-    IBoldToken public immutable boldToken;
+contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
     IFlashLoanProvider public immutable flashLoanProvider;
     IExchange public immutable exchange;
 
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
-        AddRemoveManagers(_addressesRegistry)
+        BaseZapper(_addressesRegistry)
     {
-        borrowerOperations = _addressesRegistry.borrowerOperations();
-        troveManager = _addressesRegistry.troveManager();
-        boldToken = _addressesRegistry.boldToken();
-        WETH = _addressesRegistry.WETH();
-
         require(address(WETH) == address(_addressesRegistry.collToken()), "WZ: Wrong coll branch");
 
         flashLoanProvider = _flashLoanProvider;
@@ -209,20 +200,11 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanReceiver, IZ
         if (_isCollIncrease) {
             require(_collChange == msg.value, "WZ: Wrong coll amount");
         } else {
-            require(msg.value == 0, "WZ: Withdrawing coll, no ETH should be received");
-        }
-        require(!_isDebtIncrease || _boldChange > 0, "WZ: Increase bold amount should not be zero");
-
-        address owner = troveNFT.ownerOf(_troveId);
-        address payable receiver = payable(owner);
-
-        if (!_isCollIncrease || _isDebtIncrease) {
-            receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+            require(msg.value == 0, "WZ: Not adding coll, no ETH should be received");
         }
 
-        if (_isCollIncrease || (!_isDebtIncrease && _boldChange > 0)) {
-            _requireSenderIsOwnerOrAddManager(_troveId, owner);
-        }
+        address payable receiver =
+            payable(_checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease));
 
         // Set initial balances to make sure there are not lefovers
         _setInitialBalances(WETH, boldToken, _initialBalances);
@@ -250,19 +232,27 @@ contract WETHZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanReceiver, IZ
         address payable _receiver,
         InitialBalances memory _initialBalances
     ) internal {
-        // WETH -> ETH
-        if (!_isCollIncrease) {
-            WETH.withdraw(_collChange);
-            (bool success,) = _receiver.call{value: _collChange}("");
-            require(success, "WZ: Sending ETH failed");
-        }
         // Send Bold
         if (_isDebtIncrease) {
             boldToken.transfer(_receiver, _boldChange);
         }
 
-        // return leftovers to user
-        _returnLeftovers(WETH, boldToken, _initialBalances);
+        // return BOLD leftovers to user (trying to repay more than possible)
+        uint256 currentBoldBalance = boldToken.balanceOf(address(this));
+        if (currentBoldBalance > _initialBalances.boldBalance) {
+            boldToken.transfer(_initialBalances.receiver, currentBoldBalance - _initialBalances.boldBalance);
+        }
+        // There shouldn’t be Collateral leftovers, everything sent should end up in the trove
+
+        // WETH -> ETH
+        if (!_isCollIncrease && _collChange > 0) {
+            WETH.withdraw(_collChange);
+            (bool success,) = _receiver.call{value: _collChange}("");
+            require(success, "WZ: Sending ETH failed");
+        }
+        // TODO: remove before deployment!!
+        assert(address(this).balance == 0);
+        assert(WETH.balanceOf(address(this)) == 0);
     }
 
     function closeTroveToRawETH(uint256 _troveId) external {

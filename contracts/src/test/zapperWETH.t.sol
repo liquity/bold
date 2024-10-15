@@ -540,4 +540,6 @@ contract ZapperWETHTest is DevTestSetup {
         assertEq(WETH.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
         assertEq(WETH.balanceOf(address(wethZapper)), 0, "Zapper Coll bal should be zero");
     }
+
+    // TODO: tests for add/remove managers of zapper contract
 }
