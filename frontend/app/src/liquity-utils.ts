@@ -126,6 +126,7 @@ export function useEarnPool(collIndex: null | CollIndex) {
     ...pool,
     data: {
       apr: apr ?? null,
+      collateral,
       totalDeposited: pool.data?.totalDeposited ?? null,
     },
   };
