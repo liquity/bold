@@ -2,6 +2,7 @@ import type { PositionEarn } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { useCollateral } from "@/src/liquity-utils";
+import { useEarnPool } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, StrongCard, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -9,18 +10,17 @@ import Link from "next/link";
 import { CardRow, CardRows, EditSquare } from "./shared";
 
 export function PositionCardEarn({
-  apr,
   collIndex,
   deposit,
   rewards,
 }: Pick<
   PositionEarn,
-  | "apr"
   | "collIndex"
   | "deposit"
   | "rewards"
 >) {
   const token = useCollateral(collIndex);
+  const earnPool = useEarnPool(collIndex);
   return token && (
     <Link
       href={`/earn/${token.symbol.toLowerCase()}`}
@@ -85,7 +85,11 @@ export function PositionCardEarn({
                       color: "strongSurfaceContent",
                     })}
                   >
-                    {dn.format(dn.mul(apr, 100), 2)}%
+                    <Amount
+                      fallback="−"
+                      percentage
+                      value={earnPool.data.apr}
+                    />
                   </div>
                 </div>
               }

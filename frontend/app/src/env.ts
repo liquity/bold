@@ -28,7 +28,7 @@ export const EnvSchema = v.pipe(
     CHAIN_BLOCK_EXPLORER: v.optional(vEnvLink()),
     CHAIN_CONTRACT_ENS_REGISTRY: v.optional(vEnvAddressAndBlock()),
     CHAIN_CONTRACT_ENS_RESOLVER: v.optional(vEnvAddressAndBlock()),
-    CHAIN_CONTRACT_MULTICALL: v.optional(vEnvAddressAndBlock()),
+    CHAIN_CONTRACT_MULTICALL: vAddress(),
     COMMIT_HASH: v.string(),
 
     DELEGATE_AUTO: vAddress(),

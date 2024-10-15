@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { ERC20Faucet } from "@/src/abi/ERC20Faucet";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { useCollateralContract, useCollateralContracts, useProtocolContract } from "@/src/contracts";
+import { useCollateralContract, useAllCollateralContracts, useProtocolContract } from "@/src/contracts";
 import { shortenAddress } from "@/src/eth-utils";
 import { fmtnum } from "@/src/formatting";
 import { useBalance } from "@/src/services/Ethereum";
@@ -20,7 +20,7 @@ export function AccountScreen({
 }: {
   address: Address;
 }) {
-  const collSymbols = useCollateralContracts().map((coll) => coll.symbol);
+  const collSymbols = useAllCollateralContracts().map((coll) => coll.symbol);
   return (
     <Screen>
       <VFlex gap={32}>

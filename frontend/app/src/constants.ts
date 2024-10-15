@@ -22,6 +22,10 @@ export const INTEREST_RATE_MAX = 8;
 export const INTEREST_RATE_DEFAULT = 4;
 export const INTEREST_RATE_INCREMENT = 0.1;
 
+export const SP_YIELD_SPLIT = 72n * 10n ** 16n; // 72%
+
+export const DATA_REFRESH_INTERVAL = 10_000; // 10 seconds
+
 // LTV factor suggestions, as ratios of the leverage factor range
 export const LEVERAGE_FACTOR_SUGGESTIONS = [
   norm(1.5, 1.1, 11), // 1.5x leverage with a 1.1x => 11x range

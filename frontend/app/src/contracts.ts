@@ -1,4 +1,4 @@
-import type { CollateralSymbol } from "@/src/types";
+import type { CollateralSymbol, CollIndex } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 
 import { ActivePool } from "@/src/abi/ActivePool";
@@ -124,7 +124,7 @@ export function useContracts(): Contracts {
   }, []);
 }
 
-export function useCollateralContracts() {
+export function useAllCollateralContracts() {
   return useContracts().collaterals;
 }
 
@@ -135,13 +135,24 @@ export function useProtocolContract<CN extends ProtocolContractName>(
   return contracts[name];
 }
 
-export function useCollateralContract<CN extends CollateralContractName>(
-  symbol: CollateralSymbol | null,
-  name: CN,
-): Contract<CN> | null {
+export function useCollateralContracts(
+  collIndexOrSymbol: CollateralSymbol | CollIndex | null,
+): CollateralContracts | null {
   const { collaterals } = useContracts();
-  const contracts = symbol && getCollateralContracts(symbol, collaterals);
-  return contracts?.[name] ?? null;
+
+  const symbol = typeof collIndexOrSymbol === "number"
+    ? collaterals[collIndexOrSymbol].symbol
+    : collIndexOrSymbol;
+
+  return symbol && getCollateralContracts(symbol, collaterals);
+}
+
+export function useCollateralContract<CN extends CollateralContractName>(
+  collIndexOrSymbol: CollateralSymbol | CollIndex | null,
+  contractName: CN,
+): Contract<CN> | null {
+  const contracts = useCollateralContracts(collIndexOrSymbol);
+  return contracts?.[contractName] ?? null;
 }
 
 export function getCollateralContracts(

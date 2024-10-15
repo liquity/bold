@@ -3,9 +3,8 @@
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { useCollIndexFromSymbol, useEarnPosition } from "@/src/liquity-utils";
+import { useCollIndexFromSymbol, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
-import { useStabilityPool } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { isCollateralSymbol, Tabs } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -29,7 +28,7 @@ export function EarnPoolScreen() {
   const collIndex = useCollIndexFromSymbol(isCollSymbolOk ? collateralSymbol : null);
 
   const earnPosition = useEarnPosition(collIndex, account.address ?? null);
-  const stabilityPool = useStabilityPool(collIndex ?? undefined);
+  const earnPool = useEarnPool(collIndex);
 
   if (!collIndex === null || !isCollSymbolOk) {
     return null;
@@ -39,7 +38,7 @@ export function EarnPoolScreen() {
 
   const tab = TABS.find((tab) => tab.action === params.action) ?? TABS[0];
 
-  return stabilityPool.data && tab && (
+  return earnPool.data && tab && (
     <Screen
       back={{
         href: "/earn",

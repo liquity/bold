@@ -14,7 +14,7 @@ import {
   MIN_ANNUAL_INTEREST_RATE,
 } from "@/src/constants";
 import content from "@/src/content";
-import { useCollateralContracts } from "@/src/contracts";
+import { useAllCollateralContracts } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
@@ -51,7 +51,7 @@ export function BorrowScreen() {
 
   const account = useAccount();
   const txFlow = useTransactionFlow();
-  const allCollContracts = useCollateralContracts();
+  const allCollContracts = useAllCollateralContracts();
 
   // useParams() can return an array but not with the current
   // routing setup, so we can safely cast it to a string

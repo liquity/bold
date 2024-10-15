@@ -2,8 +2,8 @@ import type { Address, CollateralSymbol } from "@liquity2/uikit";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { useCollateral, useCollIndexFromSymbol, useEarnPosition } from "@/src/liquity-utils";
-import { useStabilityPool } from "@/src/subgraph-hooks";
+import { fmtnum } from "@/src/formatting";
+import { useCollateral, useCollIndexFromSymbol, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconArrowRight, IconPlus, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -24,14 +24,14 @@ export function EarnPositionSummary({
   const collateral = useCollateral(collIndex);
 
   const earnPosition = useEarnPosition(collIndex, address ?? null);
-  const stabilityPool = useStabilityPool(collIndex ?? 0);
+  const earnPool = useEarnPool(collIndex ?? 0);
 
   const share = (
       earnPosition.data
-      && stabilityPool.data
-      && dn.gt(stabilityPool.data.totalDeposited, 0)
+      && earnPool.data.totalDeposited
+      && dn.gt(earnPool.data.totalDeposited, 0)
     )
-    ? dn.div(earnPosition.data.deposit, stabilityPool.data.totalDeposited)
+    ? dn.div(earnPosition.data.deposit, earnPool.data.totalDeposited)
     : dn.from(0, 18);
 
   const active = Boolean(earnPosition.data?.deposit && dn.gt(earnPosition.data.deposit, 0));
@@ -43,6 +43,9 @@ export function EarnPositionSummary({
         flexDirection: "column",
         padding: "12px 16px",
         borderRadius: 8,
+        borderWidth: 1,
+        borderStyle: "solid",
+
         "--fg-primary-active": "token(colors.strongSurfaceContent)",
         "--fg-primary-inactive": "token(colors.content)",
 
@@ -58,7 +61,7 @@ export function EarnPositionSummary({
       style={{
         color: `var(--fg-primary-${active ? "active" : "inactive"})`,
         background: `var(--bg-${active ? "active" : "inactive"})`,
-        border: active ? 0 : "1px solid var(--border-inactive)",
+        borderColor: active ? "transparent" : "var(--border-inactive)",
       }}
     >
       <div
@@ -116,7 +119,7 @@ export function EarnPositionSummary({
                   fallback="-"
                   format="compact"
                   prefix="$"
-                  value={stabilityPool.data?.totalDeposited}
+                  value={earnPool.data?.totalDeposited}
                 />
               </div>
               <InfoTooltip heading="Total Value Locked (TVL)">
@@ -136,7 +139,7 @@ export function EarnPositionSummary({
                 fallback="-%"
                 format="1z"
                 percentage
-                value={stabilityPool.data?.apr}
+                value={earnPool.data?.apr}
               />
             </div>
             <div
@@ -161,81 +164,118 @@ export function EarnPositionSummary({
         className={css({
           position: "relative",
           display: "flex",
-          alignItems: "flex-end",
-          paddingTop: 12,
           gap: 32,
+          alignItems: "center",
           justifyContent: "space-between",
+          paddingTop: 12,
+          height: 56,
+          fontSize: 14,
         })}
       >
-        <div
-          className={css({
-            display: "flex",
-            gap: 32,
-            fontSize: 14,
-          })}
-        >
-          <div>
+        {earnPosition.isLoading
+          ? (
             <div
-              style={{
-                color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
-              }}
+              className={css({
+                color: "var(--fg-secondary-inactive)",
+              })}
             >
-              Deposit
+              Fetching position…
             </div>
-            <HFlex gap={4} justifyContent="flex-start">
-              {active && <Amount value={earnPosition.data?.deposit} />}
-              <TokenIcon symbol="BOLD" size="mini" />
-            </HFlex>
-          </div>
-          <div
-            className={css({
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-            })}
-          >
+          )
+          : (
             <div
-              style={{
-                color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
-              }}
+              className={css({
+                display: "flex",
+                gap: 32,
+              })}
             >
-              Rewards
-            </div>
-            {active
-              ? (
-                <HFlex>
-                  <HFlex gap={4}>
-                    <Amount value={earnPosition.data?.rewards.bold} />
-                    <TokenIcon symbol="BOLD" size="mini" />
-                  </HFlex>
-                  <HFlex gap={4}>
-                    <Amount value={earnPosition.data?.rewards.coll} />
-                    <TokenIcon symbol={collateral.symbol} size="mini" />
-                  </HFlex>
-                </HFlex>
-              )
-              : (
-                <TokenIcon.Group size="mini">
-                  <TokenIcon symbol="BOLD" />
-                  <TokenIcon symbol={collateral.symbol} />
-                </TokenIcon.Group>
-              )}
-          </div>
-          {active && (
-            <div>
-              <div
-                style={{
-                  color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
-                }}
-              >
-                Pool share
-              </div>
               <div>
-                <Amount percentage value={share} />
+                <div
+                  style={{
+                    color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
+                  }}
+                >
+                  Deposit
+                </div>
+                <div
+                  className={css({
+                    display: "flex",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    gap: 4,
+                    height: 24,
+                  })}
+                >
+                  {active && <Amount value={earnPosition.data?.deposit} />}
+                  <TokenIcon symbol="BOLD" size="mini" />
+                </div>
               </div>
+              <div
+                className={css({
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                })}
+              >
+                <div
+                  style={{
+                    color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
+                  }}
+                >
+                  Rewards
+                </div>
+                <div
+                  className={css({
+                    display: "flex",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    gap: 8,
+                    height: 24,
+                  })}
+                >
+                  {active
+                    ? (
+                      <>
+                        <HFlex
+                          gap={4}
+                          title={`${fmtnum(earnPosition.data?.rewards.bold, "full")} BOLD`}
+                          className={css({
+                            fontVariantNumeric: "tabular-nums",
+                          })}
+                        >
+                          {fmtnum(earnPosition.data?.rewards.bold)}
+                          <TokenIcon symbol="BOLD" size="mini" title={null} />
+                        </HFlex>
+                        <HFlex gap={4}>
+                          <Amount value={earnPosition.data?.rewards.coll} />
+                          <TokenIcon symbol={collateral.symbol} size="mini" />
+                        </HFlex>
+                      </>
+                    )
+                    : (
+                      <TokenIcon.Group size="mini">
+                        <TokenIcon symbol="BOLD" />
+                        <TokenIcon symbol={collateral.symbol} />
+                      </TokenIcon.Group>
+                    )}
+                </div>
+              </div>
+              {active && (
+                <div>
+                  <div
+                    style={{
+                      color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
+                    }}
+                  >
+                    Pool share
+                  </div>
+                  <div>
+                    <Amount percentage value={share} />
+                  </div>
+                </div>
+              )}
             </div>
           )}
-        </div>
 
         {linkToScreen && (
           <OpenLink
