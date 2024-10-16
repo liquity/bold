@@ -36,7 +36,7 @@ contract ActivePool is IActivePool {
     IInterestRouter public interestRouter;
     IBoldRewardsReceiver public stabilityPool;
 
-    uint256 internal collBalance; // deposited ether tracker
+    uint256 internal collBalance; // deposited coll tracker
 
     // Aggregate recorded debt tracker. Updated whenever a Trove's debt is touched AND whenever the aggregate pending interest is minted.
     // "D" in the spec.

@@ -137,7 +137,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     ITroveManager public immutable troveManager;
     IBoldToken public immutable boldToken;
 
-    uint256 internal collBalance; // deposited ether tracker
+    uint256 internal collBalance; // deposited coll tracker
 
     // Tracker for Bold held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
     uint256 internal totalBoldDeposits;

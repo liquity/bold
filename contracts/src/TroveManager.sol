@@ -721,15 +721,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     * of the trove list. It also avoids the need to set the cap in stone in the contract, nor doing gas calculations, as both gas price and opcode
     * costs can vary.
     *
-    * All Troves that are redeemed from -- with the likely exception of the last one -- will end up with no debt left, therefore they will be closed.
-    * If the last Trove does have some remaining debt, it has a finite ICR, and the reinsertion could be anywhere in the list, therefore it requires a hint.
-    * A frontend should use getRedemptionHints() to calculate what the ICR of this Trove will be after redemption, and pass a hint for its position
-    * in the sortedTroves list along with the ICR value that the hint was found for.
-    *
-    * If another transaction modifies the list between calling getRedemptionHints() and passing the hints to redeemCollateral(), it
-    * is very likely that the last (partially) redeemed Trove would end up with a different ICR than what the hint is for. In this case the
-    * redemption will stop after the last completely redeemed Trove and the sender will keep the remaining Bold amount, which they can attempt
-    * to redeem later.
+    * All Troves that are redeemed from -- with the likely exception of the last one -- will end up with no debt left, and therefore in “zombie” state
     */
     function redeemCollateral(
         address _redeemer,
