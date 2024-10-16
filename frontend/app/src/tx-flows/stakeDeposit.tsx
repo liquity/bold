@@ -1,7 +1,10 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
+import type { PositionStake } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import { dnum18 } from "@/src/dnum-utils";
+import { useStakePosition } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
 import { vDnum } from "@/src/valibot-utils";
@@ -26,6 +29,7 @@ const RequestSchema = v.object({
   ]),
   successMessage: v.string(),
 
+  claimRewards: v.boolean(),
   lqtyAmount: vDnum(),
 });
 
@@ -42,8 +46,33 @@ export const stakeDeposit: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
 
   Summary({ flow }) {
-    console.log(flow);
-    return null;
+    const prevStakePosition = useStakePosition(flow.account);
+
+    const stakePosition: null | PositionStake = prevStakePosition.data
+      ? { ...prevStakePosition.data }
+      : null;
+
+    if (stakePosition && prevStakePosition.data) {
+      stakePosition.deposit = dn.add(
+        prevStakePosition.data.deposit,
+        flow.request.lqtyAmount,
+      );
+      stakePosition.totalStaked = dn.add(
+        prevStakePosition.data.totalStaked,
+        flow.request.lqtyAmount,
+      );
+      stakePosition.share = dn.div(
+        stakePosition.deposit,
+        stakePosition.totalStaked,
+      );
+    }
+
+    return stakePosition && (
+      <StakePositionSummary
+        stakePosition={stakePosition}
+        prevStakePosition={prevStakePosition.data}
+      />
+    );
   },
 
   Details({ flow }) {
@@ -55,9 +84,18 @@ export const stakeDeposit: FlowDeclaration<Request, Step> = {
           label="You deposit"
           value={[
             <Amount value={request.lqtyAmount} suffix=" LQTY" />,
-            <Amount value={lqtyPrice && dn.mul(request.lqtyAmount, lqtyPrice)} prefix="$" />,
+            <Amount
+              value={lqtyPrice && dn.mul(request.lqtyAmount, lqtyPrice)}
+              prefix="$"
+            />,
           ]}
         />
+        {request.claimRewards && (
+          <TransactionDetailsRow
+            label="Claiming rewards"
+            value="Yes"
+          />
+        )}
       </>
     );
   },

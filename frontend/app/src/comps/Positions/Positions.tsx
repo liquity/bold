@@ -5,12 +5,14 @@ import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
+import { useStakePosition } from "@/src/liquity-utils";
 import { useEarnPositionsByAccount, useLoansByAccount } from "@/src/subgraph-hooks";
 import { sleep } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import { StrongCard } from "@liquity2/uikit";
 import { a, useSpring, useTransition } from "@react-spring/web";
 import { useQuery } from "@tanstack/react-query";
+import * as dn from "dnum";
 import { useRef } from "react";
 import { match } from "ts-pattern";
 import { NewPositionCard } from "./NewPositionCard";
@@ -38,9 +40,15 @@ export function Positions({
 }) {
   const loans = useLoansByAccount(address);
   const earnPositions = useEarnPositionsByAccount(address);
+  const stakePosition = useStakePosition(address);
 
   const positions = useQuery({
-    enabled: Boolean(address && !loans.isPending && !earnPositions.isPending),
+    enabled: Boolean(
+      address
+        && !loans.isPending
+        && !earnPositions.isPending
+        && !stakePosition.isPending,
+    ),
     queryKey: ["CombinedPositions", address],
     queryFn: async () => {
       await sleep(300);
@@ -50,6 +58,7 @@ export function Positions({
       return [
         ...loans.data ?? [],
         ...earnPositions.data ?? [],
+        ...stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : [],
       ];
     },
   });
@@ -129,7 +138,8 @@ function PositionsGroup({
   }
 
   const cardHeight = mode === "actions" ? 144 : 188;
-  const containerHeight = cardHeight * Math.ceil(cards.length / columns);
+  const rows = Math.ceil(cards.length / columns);
+  const containerHeight = cardHeight * rows + 24 * (rows - 1);
 
   const positionTransitions = useTransition(cards, {
     keys: ([index]) => `${mode}${index}`,

@@ -4,7 +4,6 @@ import type { LoanLoadingState } from "./LoanScreen";
 
 import { INFINITY } from "@/src/characters";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
-import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { Value } from "@/src/comps/Value/Value";
 import { formatRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
@@ -70,71 +69,91 @@ export function LoanCard({
 
   return (
     <ScreenCard
-      heading={
-        <div
-          title={loan ? `${title}: ${troveId}` : undefined}
-          className={css({
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            color: "strongSurfaceContent",
-            fontSize: 12,
-            textTransform: "uppercase",
-            userSelect: "none",
-          })}
-        >
-          <div
-            className={css({
-              display: "flex",
-              color: "strongSurfaceContentAlt2",
-            })}
-          >
-            {leverageMode
-              ? <IconLeverage size={16} />
-              : <IconBorrow size={16} />}
-          </div>
-          {title}
-        </div>
-      }
-      ready={loadingState === "success"}
+      mode={match(loadingState)
+        .returnType<"ready" | "loading" | "error">()
+        .with(P.union("loading", "awaiting-confirmation"), () => "loading")
+        .with(P.union("error", "not-found"), () => "error")
+        .otherwise(() => "ready")}
     >
       {match(loadingState)
         .with(
-          P.union(
-            "loading",
-            "awaiting-confirmation",
-          ),
+          P.union("loading", "awaiting-confirmation"),
           () => (
-            <HFlex gap={8}>
-              Fetching loan
-              <span title={`Loan ${troveId}`}>
-                {shortenTroveId(troveId)}…
-              </span>
-              <Spinner size={18} />
-            </HFlex>
+            <div
+              className={css({
+                display: "grid",
+                placeItems: "center",
+                height: "100%",
+              })}
+            >
+              <div
+                className={css({
+                  position: "absolute",
+                  top: 16,
+                  left: 16,
+                })}
+              >
+                <LoanCardHeading
+                  leverageMode={leverageMode}
+                  title={title}
+                  titleFull={`${title}: ${troveId}`}
+                  inheritColor={true}
+                />
+              </div>
+              <HFlex gap={8}>
+                Fetching loan
+                <span title={`Loan ${troveId}`}>
+                  {shortenTroveId(troveId)}
+                </span>
+              </HFlex>
+            </div>
           ),
         )
         .with("not-found", () => (
-          <VFlex
-            gap={16}
+          <div
             className={css({
-              padding: 16,
+              display: "grid",
+              placeItems: "center",
+              height: "100%",
             })}
           >
-            <div>
-              Loan{" "}
-              <span title={`Loan ${troveId}`}>
-                {shortenTroveId(troveId)}
-              </span>{" "}
-              not found.
+            <div
+              className={css({
+                position: "absolute",
+                top: 16,
+                left: 16,
+              })}
+            >
+              <LoanCardHeading
+                leverageMode={leverageMode}
+                title={title}
+                titleFull={`${title}: ${troveId}`}
+                inheritColor={true}
+              />
             </div>
-            <Button
-              mode="primary"
-              label="Try again"
-              size="small"
-              onClick={onRetry}
-            />
-          </VFlex>
+            <VFlex
+              alignItems="center"
+              justifyContent="center"
+              gap={16}
+              className={css({
+                padding: 16,
+              })}
+            >
+              <div>
+                Loan{" "}
+                <span title={`Loan ${troveId}`}>
+                  {shortenTroveId(troveId)}
+                </span>{" "}
+                not found.
+              </div>
+              <Button
+                mode="negative"
+                label="Try again"
+                size="small"
+                onClick={onRetry}
+              />
+            </VFlex>
+          </div>
         ))
         .with("error", () => (
           <HFlex gap={8}>
@@ -159,7 +178,34 @@ export function LoanCard({
           && maxLtv
           && liquidationRisk
           && (
-            <>
+            <section
+              className={css({
+                position: "relative",
+                overflow: "hidden",
+                height: "100%",
+                width: "100%",
+                background: "strongSurface",
+                color: "strongSurfaceContent",
+                borderRadius: 8,
+                userSelect: "none",
+                padding: "16px 16px 24px",
+              })}
+            >
+              <h1
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  paddingBottom: 12,
+                })}
+              >
+                <LoanCardHeading
+                  leverageMode={leverageMode}
+                  title={title}
+                  titleFull={`${title}: ${troveId}`}
+                  inheritColor={false}
+                />
+              </h1>
               <div
                 className={css({
                   display: "flex",
@@ -313,10 +359,56 @@ export function LoanCard({
                   </GridItem>
                 )}
               </div>
-            </>
+            </section>
           )
         ))}
     </ScreenCard>
+  );
+}
+
+function LoanCardHeading({
+  leverageMode,
+  title,
+  titleFull,
+  inheritColor,
+}: {
+  leverageMode: boolean;
+  title: string;
+  titleFull?: string;
+  inheritColor?: boolean;
+}) {
+  return (
+    <div
+      title={titleFull}
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        textTransform: "uppercase",
+        userSelect: "none",
+        fontSize: 12,
+
+        "--color-base": "token(colors.strongSurfaceContent)",
+        "--color-alt": "token(colors.strongSurfaceContentAlt2)",
+      })}
+      style={{
+        color: inheritColor ? "inherit" : "var(--color-base)",
+      }}
+    >
+      <div
+        className={css({
+          display: "flex",
+        })}
+        style={{
+          color: inheritColor ? "inherit" : "var(--color-alt)",
+        }}
+      >
+        {leverageMode
+          ? <IconLeverage size={16} />
+          : <IconBorrow size={16} />}
+      </div>
+      {title}
+    </div>
   );
 }
 

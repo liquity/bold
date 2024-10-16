@@ -73,20 +73,22 @@ export function LeverageScreen() {
 
   return (
     <Screen
-      title={
-        <HFlex>
-          {content.leverageScreen.headline(
-            <TokenIcon.Group>
-              {COLLATERALS.map(({ symbol }) => (
-                <TokenIcon
-                  key={symbol}
-                  symbol={symbol}
-                />
-              ))}
-            </TokenIcon.Group>,
-          )}
-        </HFlex>
-      }
+      heading={{
+        title: (
+          <HFlex>
+            {content.leverageScreen.headline(
+              <TokenIcon.Group>
+                {COLLATERALS.map(({ symbol }) => (
+                  <TokenIcon
+                    key={symbol}
+                    symbol={symbol}
+                  />
+                ))}
+              </TokenIcon.Group>,
+            )}
+          </HFlex>
+        ),
+      }}
     >
       <div
         className={css({

@@ -13,29 +13,31 @@ export function EarnPoolsListScreen() {
   const collSymbols = useAllCollateralContracts().map((coll) => coll.symbol);
   return (
     <Screen
-      title={
-        <div
-          className={css({
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-          })}
-        >
-          {content.earnHome.headline(
-            <TokenIcon.Group>
-              {["BOLD" as const, ...collSymbols].map((symbol) => (
-                <TokenIcon
-                  key={symbol}
-                  symbol={symbol}
-                />
-              ))}
-            </TokenIcon.Group>,
-            <TokenIcon symbol="BOLD" />,
-          )}
-        </div>
-      }
-      subtitle={content.earnHome.subheading}
+      heading={{
+        title: (
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+            })}
+          >
+            {content.earnHome.headline(
+              <TokenIcon.Group>
+                {["BOLD" as const, ...collSymbols].map((symbol) => (
+                  <TokenIcon
+                    key={symbol}
+                    symbol={symbol}
+                  />
+                ))}
+              </TokenIcon.Group>,
+              <TokenIcon symbol="BOLD" />,
+            )}
+          </div>
+        ),
+        subtitle: content.earnHome.subheading,
+      }}
       width={67 * 8}
       gap={16}
     >

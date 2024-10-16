@@ -126,21 +126,23 @@ export function BorrowScreen() {
 
   return (
     <Screen
-      title={
-        <HFlex>
-          {content.borrowScreen.headline(
-            <TokenIcon.Group>
-              {allCollContracts.map(({ symbol }) => (
-                <TokenIcon
-                  key={symbol}
-                  symbol={symbol}
-                />
-              ))}
-            </TokenIcon.Group>,
-            <TokenIcon symbol="BOLD" />,
-          )}
-        </HFlex>
-      }
+      heading={{
+        title: (
+          <HFlex>
+            {content.borrowScreen.headline(
+              <TokenIcon.Group>
+                {allCollContracts.map(({ symbol }) => (
+                  <TokenIcon
+                    key={symbol}
+                    symbol={symbol}
+                  />
+                ))}
+              </TokenIcon.Group>,
+              <TokenIcon symbol="BOLD" />,
+            )}
+          </HFlex>
+        ),
+      }}
     >
       <div
         className={css({

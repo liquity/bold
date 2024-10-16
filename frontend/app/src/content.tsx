@@ -310,6 +310,13 @@ export default {
       ),
       action: "Next: Summary",
     },
+    infoTooltips: {
+      alsoClaimRewardsDeposit: [
+        <>
+          If checked, rewards are paid out as part of the update transaction.
+        </>,
+      ],
+    },
   },
 };
 

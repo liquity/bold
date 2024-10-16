@@ -1,21 +1,21 @@
 import type { PositionStake } from "@/src/types";
 
-import { LQTY_SUPPLY } from "@/src/constants";
+import { Amount } from "@/src/comps/Amount/Amount";
 import { css } from "@/styled-system/css";
 import { HFlex, IconStake, StrongCard, TokenIcon } from "@liquity2/uikit";
-import * as dn from "dnum";
 import Link from "next/link";
 import { CardRow, CardRows, EditSquare } from "./shared";
 
 export function PositionCardStake({
   deposit,
   rewards,
+  share,
 }: Pick<
   PositionStake,
   | "deposit"
   | "rewards"
+  | "share"
 >) {
-  const votingPower = dn.div(rewards.lusd, LQTY_SUPPLY);
   return (
     <Link
       href="/stake"
@@ -47,7 +47,10 @@ export function PositionCardStake({
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-              +{dn.format(rewards.lusd, 2)}
+              <Amount
+                value={rewards.lusd}
+                format="2diff"
+              />
               <TokenIcon
                 size={24}
                 symbol="LUSD"
@@ -56,7 +59,7 @@ export function PositionCardStake({
           ),
           label: (
             <HFlex gap={4} justifyContent="flex-start">
-              <span>+{dn.format(rewards.eth, 4)}</span>
+              <Amount value={rewards.eth} format="4diff" />
               <TokenIcon
                 size="small"
                 symbol="ETH"
@@ -87,7 +90,10 @@ export function PositionCardStake({
                       color: "strongSurfaceContent",
                     })}
                   >
-                    {dn.format(dn.mul(votingPower, 100), 4)}%
+                    <Amount
+                      value={share}
+                      percentage
+                    />
                   </div>
                 </div>
               }
@@ -113,7 +119,10 @@ export function PositionCardStake({
                       color: "strongSurfaceContent",
                     })}
                   >
-                    {dn.format(deposit, 2)} LQTY
+                    <Amount
+                      value={deposit}
+                      suffix=" LQTY"
+                    />
                   </div>
                 </div>
               }

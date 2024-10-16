@@ -1,56 +1,19 @@
-import type { Address } from "@liquity2/uikit";
+import type { PositionStake } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { useProtocolContract } from "@/src/contracts";
-import { dnum18 } from "@/src/dnum-utils";
+import { fmtnum } from "@/src/formatting";
 import { css } from "@/styled-system/css";
 import { HFlex, IconStake, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useReadContracts } from "wagmi";
 
 export function StakePositionSummary({
-  address,
+  stakePosition,
+  prevStakePosition,
 }: {
-  address?: Address;
+  stakePosition: null | PositionStake;
+  prevStakePosition?: null | PositionStake;
 }) {
   const active = true;
-  const LqtyStaking = useProtocolContract("LqtyStaking");
-
-  const {
-    data: {
-      stake,
-      totalStaked,
-    } = {
-      stake: dn.from(0),
-      totalStaked: dn.from(0),
-    },
-  } = useReadContracts({
-    contracts: [
-      {
-        abi: LqtyStaking.abi,
-        address: LqtyStaking.address,
-        functionName: "stakes",
-        args: [address ?? "0x"],
-      },
-      {
-        abi: LqtyStaking.abi,
-        address: LqtyStaking.address,
-        functionName: "totalLQTYStaked",
-      },
-    ],
-    query: {
-      refetchInterval: 10_000,
-      select: ([stake, totalStaked]) => ({
-        stake: dnum18(stake),
-        totalStaked: dnum18(totalStaked),
-      }),
-    },
-    allowFailure: false,
-  });
-
-  const share = dn.gt(totalStaked, 0)
-    ? dn.div(stake, totalStaked)
-    : dn.from(0);
 
   return (
     <div
@@ -150,8 +113,21 @@ export function StakePositionSummary({
                 userSelect: "none",
               })}
             >
-              <Amount value={stake} />
+              <Amount
+                value={stakePosition?.deposit ?? 0}
+              />
               <TokenIcon symbol="LQTY" size={32} />
+              {prevStakePosition && stakePosition && !dn.eq(prevStakePosition.deposit, stakePosition.deposit) && (
+                <div
+                  title={`${fmtnum(prevStakePosition.deposit, "full")} LQTY`}
+                  className={css({
+                    color: "contentAlt",
+                    textDecoration: "line-through",
+                  })}
+                >
+                  {fmtnum(prevStakePosition.deposit)}
+                </div>
+              )}
             </div>
           </div>
           <div
@@ -201,14 +177,14 @@ export function StakePositionSummary({
                   <HFlex gap={4}>
                     <Amount
                       format="2diff"
-                      value={0}
+                      value={stakePosition?.rewards.lusd ?? 0}
                     />
                     <TokenIcon symbol="LUSD" size="mini" />
                   </HFlex>
                   <HFlex gap={4}>
                     <Amount
                       format="2diff"
-                      value={0}
+                      value={stakePosition?.rewards.eth ?? 0}
                     />
                     <TokenIcon symbol="ETH" size="mini" />
                   </HFlex>
@@ -237,7 +213,25 @@ export function StakePositionSummary({
                   gap: 4,
                 })}
               >
-                <Amount percentage value={share} /> of pool
+                <Amount
+                  percentage
+                  value={stakePosition?.share ?? 0}
+                />
+                {prevStakePosition && stakePosition && !dn.eq(prevStakePosition.share, stakePosition.share)
+                  ? (
+                    <div
+                      className={css({
+                        color: "contentAlt",
+                        textDecoration: "line-through",
+                      })}
+                    >
+                      <Amount
+                        percentage
+                        value={prevStakePosition?.share ?? 0}
+                      />
+                    </div>
+                  )
+                  : " of pool"}
                 <InfoTooltip>
                   Voting power is the percentage of the total staked LQTY that you own.
                 </InfoTooltip>

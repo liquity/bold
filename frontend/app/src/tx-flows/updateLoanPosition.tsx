@@ -93,6 +93,7 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
     const collateral = useCollateral(flow.request.collIndex);
     const loan = useLoanById(flow.request.prefixedTroveId);
     const { troveId } = parsePrefixedTroveId(flow.request.prefixedTroveId);
+
     const loadingState = match(loan)
       .returnType<LoadingState>()
       .with({ status: "error" }, () => "error")

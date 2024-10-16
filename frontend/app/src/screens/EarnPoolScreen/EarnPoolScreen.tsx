@@ -8,10 +8,11 @@ import content from "@/src/content";
 import { useCollIndexFromSymbol, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
-import { HFlex, isCollateralSymbol, Tabs } from "@liquity2/uikit";
+import { HFlex, IconEarn, isCollateralSymbol, Tabs } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
+import { match } from "ts-pattern";
 import { PanelClaimRewards } from "./PanelClaimRewards";
 import { PanelUpdateDeposit } from "./PanelUpdateDeposit";
 
@@ -61,30 +62,60 @@ export function EarnPoolScreen() {
         href: "/earn",
         label: content.earnScreen.backButton,
       }}
+      heading={
+        <ScreenCard
+          mode={match(loadingState)
+            .returnType<"ready" | "loading">()
+            .with("success", () => "ready")
+            .with("loading", () => "loading")
+            .exhaustive()}
+          finalHeight={140}
+        >
+          {loadingState === "success"
+            ? (
+              <EarnPositionSummary
+                address={account.address}
+                collSymbol={collateralSymbol}
+              />
+            )
+            : (
+              <>
+                <div
+                  className={css({
+                    position: "absolute",
+                    top: 16,
+                    left: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    textTransform: "uppercase",
+                    userSelect: "none",
+                    fontSize: 12,
+                  })}
+                >
+                  <div
+                    className={css({
+                      display: "flex",
+                    })}
+                  >
+                    <IconEarn size={16} />
+                  </div>
+                  <div>
+                    Earn Pool
+                  </div>
+                </div>
+                <HFlex gap={8}>
+                  Fetching {earnPool.data.collateral?.name} Stability Pool…
+                  <Spinner size={18} />
+                </HFlex>
+              </>
+            )}
+        </ScreenCard>
+      }
       className={css({
         position: "relative",
       })}
     >
-      <ScreenCard
-        ready={loadingState === "success"}
-        heading={null}
-        cardHeight={114 + 12 * 2 + 2}
-        padding={0}
-      >
-        {loadingState === "success"
-          ? (
-            <EarnPositionSummary
-              address={account.address}
-              collSymbol={collateralSymbol}
-            />
-          )
-          : (
-            <HFlex gap={8}>
-              Fetching {earnPool.data.collateral?.name} Stability Pool data…
-              <Spinner size={18} />
-            </HFlex>
-          )}
-      </ScreenCard>
       {tabsTransition((style, item) => (
         item === "success" && (
           <a.div

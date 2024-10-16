@@ -15,8 +15,6 @@ export const ETH_GAS_COMPENSATION = dn.from(0.0375, 18); // see contracts/src/De
 export const MIN_ANNUAL_INTEREST_RATE = dn.from(0.005, 18); // 0.5%
 export const MAX_ANNUAL_INTEREST_RATE = dn.from(1, 18); // 100%
 
-export const LQTY_SUPPLY = dn.from(100_000_000, 18);
-
 export const INTEREST_RATE_MIN = 1;
 export const INTEREST_RATE_MAX = 8;
 export const INTEREST_RATE_DEFAULT = 4;

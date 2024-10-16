@@ -1,38 +1,32 @@
 import type { ReactNode } from "react";
 
 import { css } from "@/styled-system/css";
-import { token } from "@/styled-system/tokens";
+import { LoadingSurface } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
+import { match } from "ts-pattern";
 
-const LOAN_CARD_HEIGHT = 246;
+const LOADING_CARD_WIDTH = 468;
+const FINAL_CARD_WIDTH = 534;
 
 export function ScreenCard({
-  // cardHeight: s === "error" ? 180 : 120,
-  baseCardHeight = 180,
-  cardHeight = LOAN_CARD_HEIGHT,
   children,
-  heading,
-  padding = "16px 16px 24px",
-  ready,
+  finalHeight = 252,
+  mode,
 }: {
-  baseCardHeight?: number;
-  cardHeight?: number;
   children: ReactNode;
-  heading: ReactNode;
-  padding?: string | number;
-  ready: boolean;
+  finalHeight?: number;
+  mode: "ready" | "loading" | "error";
 }) {
+  const scaleRatio = LOADING_CARD_WIDTH / FINAL_CARD_WIDTH;
+
   const spring = useSpring({
-    to: ready
+    to: mode === "ready"
       ? {
         cardtransform: "scale3d(1, 1, 1)",
-        containerHeight: cardHeight,
-        cardHeight: cardHeight,
-        cardBackground: token("colors.blue:950"),
-        cardColor: token("colors.white"),
+        containerHeight: finalHeight,
       }
       : {
-        cardtransform: "scale3d(0.95, 0.95, 1)",
+        cardtransform: `scale3d(${scaleRatio}, ${scaleRatio}, 1)`,
         containerHeight: (
           window.innerHeight
           - 120 // top bar
@@ -40,9 +34,6 @@ export function ScreenCard({
           - 48 // bottom bar 1
           - 40
         ),
-        cardHeight: baseCardHeight,
-        cardBackground: token("colors.blue:50"),
-        cardColor: token("colors.blue:950"),
       },
     config: {
       mass: 1,
@@ -59,57 +50,82 @@ export function ScreenCard({
         flexDirection: "column",
       })}
       style={{
+        width: FINAL_CARD_WIDTH,
         height: spring.containerHeight,
       }}
     >
-      <a.section
+      <a.div
         className={css({
+          position: "relative",
           overflow: "hidden",
           width: "100%",
-          borderRadius: 8,
           userSelect: "none",
         })}
         style={{
-          background: spring.cardBackground,
-          color: spring.cardColor,
-          height: ready ? cardHeight : spring.cardHeight,
-          padding,
+          height: finalHeight,
           transform: spring.cardtransform,
           willChange: "transform",
         }}
       >
-        {heading && (
-          <h1
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              paddingBottom: 12,
-            })}
-            style={{
-              opacity: Number(ready),
-              pointerEvents: ready ? "auto" : "none",
-            }}
-          >
-            {heading}
-          </h1>
-        )}
-        {ready
-          ? <div>{children}</div>
-          : (
+        {match(mode)
+          .with("ready", () => <div>{children}</div>)
+          .with("loading", () => (
             <div
               className={css({
+                overflow: "hidden",
                 position: "absolute",
                 inset: 0,
-                display: "grid",
-                placeItems: "center",
-                fontSize: 18,
+                color: "loadingGradientContent",
+                background: "loadingGradient1",
+                borderRadius: 8,
               })}
+              style={{
+                fontSize: 14 * (1 / scaleRatio),
+              }}
             >
-              {children}
+              <LoadingSurface />
+              <div
+                className={css({
+                  position: "absolute",
+                  zIndex: 2,
+                  inset: 0,
+                  display: "grid",
+                  placeItems: "center",
+                })}
+              >
+                {children}
+              </div>
             </div>
-          )}
-      </a.section>
+          ))
+          .with("error", () => (
+            <div
+              className={css({
+                overflow: "hidden",
+                position: "absolute",
+                inset: 0,
+                color: "negativeSurfaceContentAlt",
+                background: "negativeSurface",
+                borderRadius: 8,
+              })}
+              style={{
+                fontSize: 14 * (1 / scaleRatio),
+              }}
+            >
+              <div
+                className={css({
+                  position: "absolute",
+                  zIndex: 2,
+                  inset: 0,
+                  display: "grid",
+                  placeItems: "center",
+                })}
+              >
+                {children}
+              </div>
+            </div>
+          ))
+          .exhaustive()}
+      </a.div>
     </a.div>
   );
 }

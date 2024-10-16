@@ -1,12 +1,11 @@
 "use client";
 
 import { Screen } from "@/src/comps/Screen/Screen";
-import { LOAN_SCREEN_MANUAL_LOADING_STATE } from "@/src/demo-mode/demo-data";
 import { getPrefixedTroveId, parsePrefixedTroveId } from "@/src/liquity-utils";
 import { useLoanById } from "@/src/subgraph-hooks";
 import { isPrefixedtroveId } from "@/src/types";
 import { css } from "@/styled-system/css";
-import { Button, Tabs, VFlex } from "@liquity2/uikit";
+import { Tabs } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
 import { useState } from "react";
@@ -51,19 +50,23 @@ export function LoanScreen() {
   const { troveId } = parsePrefixedTroveId(paramPrefixedId);
   const loan = useLoanById(paramPrefixedId);
 
-  if (loan.isLoadingError || !paramPrefixedId) {
-    notFound();
-  }
+  // if (loan.isLoadingError || !paramPrefixedId) {
+  //   notFound();
+  // }
 
   const tab = TABS.findIndex(({ id }) => id === action);
   const [leverageMode, setLeverageMode] = useState(false);
 
-  const forcedLoadingState = useForcedLoadingState();
-
-  const loadingState = forcedLoadingState.forced ?? match(loan)
+  const loadingState = match(loan)
     .returnType<LoanLoadingState>()
     .with({ status: "error" }, () => "error")
-    .with({ status: "pending" }, () => "loading")
+    .with(
+      P.union(
+        { status: "pending" },
+        { fetchStatus: "fetching", data: null },
+      ),
+      () => "loading",
+    )
     .with({ data: null }, () => "not-found")
     .with({ data: P.nonNullable }, () => "success")
     .otherwise(() => "error");
@@ -86,9 +89,7 @@ export function LoanScreen() {
         href: "/",
         label: "Back",
       }}
-    >
-      {forcedLoadingState.bar}
-      <VFlex gap={0}>
+      heading={
         <LoanCard
           leverageMode={leverageMode}
           loadingState={loadingState}
@@ -99,93 +100,48 @@ export function LoanScreen() {
           }}
           troveId={troveId}
         />
-        {tabsTransition((style, item) => (
-          item === "success" && loan.data && (
-            <a.div
-              style={{
-                opacity: style.opacity,
+      }
+    >
+      {tabsTransition((style, item) => (
+        item === "success" && loan.data && (
+          <a.div
+            className={css({
+              display: "flex",
+              flexDirection: "column",
+              gap: 32,
+            })}
+            style={{
+              opacity: style.opacity,
+            }}
+          >
+            <Tabs
+              items={TABS.map(({ label, id }) => ({
+                label,
+                panelId: `p-${id}`,
+                tabId: `t-${id}`,
+              }))}
+              selected={tab}
+              onSelect={(index) => {
+                if (!loan.data) {
+                  return;
+                }
+                const id = getPrefixedTroveId(loan.data.collIndex, loan.data.troveId);
+                router.push(
+                  `/loan/${TABS[index].id}?id=${id}`,
+                  { scroll: false },
+                );
               }}
-            >
-              <div
-                className={css({
-                  width: "100%",
-                  height: 48,
-                })}
-              />
-              <VFlex gap={32}>
-                <Tabs
-                  items={TABS.map(({ label, id }) => ({
-                    label,
-                    panelId: `p-${id}`,
-                    tabId: `t-${id}`,
-                  }))}
-                  selected={tab}
-                  onSelect={(index) => {
-                    if (!loan.data) {
-                      return;
-                    }
-                    const id = getPrefixedTroveId(loan.data.collIndex, loan.data.troveId);
-                    router.push(
-                      `/loan/${TABS[index].id}?id=${id}`,
-                      { scroll: false },
-                    );
-                  }}
-                />
-                {action === "colldebt" && (
-                  leverageMode
-                    ? <PanelUpdateLeveragePosition loan={loan.data} />
-                    : <PanelUpdateBorrowPosition loan={loan.data} />
-                )}
-                {action === "rate" && <PanelUpdateRate loan={loan.data} />}
-                {action === "close" && <PanelClosePosition loan={loan.data} />}
-              </VFlex>
-            </a.div>
-          )
-        ))}
-      </VFlex>
+            />
+            {action === "colldebt" && (
+              leverageMode
+                ? <PanelUpdateLeveragePosition loan={loan.data} />
+                : <PanelUpdateBorrowPosition loan={loan.data} />
+            )}
+            {action === "rate" && <PanelUpdateRate loan={loan.data} />}
+            {action === "close" && <PanelClosePosition loan={loan.data} />}
+          </a.div>
+        )
+      ))}
     </Screen>
   );
-}
-
-function useForcedLoadingState() {
-  const [forcedLoadingState, setForcedLoadingState] = useState<LoanLoadingState | null>(null);
-
-  const bar = LOAN_SCREEN_MANUAL_LOADING_STATE && (
-    <div
-      className={css({
-        position: "fixed",
-        zIndex: 2,
-        // bottom: 39,
-        bottom: 0,
-        left: 0,
-        right: 0,
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        height: 48,
-        padding: "12px 32px",
-        fontSize: 14,
-        color: "contentAlt",
-        background: "background",
-        border: "1px solid token(colors.border)",
-      })}
-    >
-      loan state: {LOAN_STATES.map((s) => (
-        <Button
-          key={s}
-          label={s}
-          size="mini"
-          onClick={() => {
-            setForcedLoadingState(s);
-          }}
-        />
-      ))}
-    </div>
-  );
-
-  return {
-    bar,
-    forced: forcedLoadingState,
-    setForcedLoadingState,
-  };
 }

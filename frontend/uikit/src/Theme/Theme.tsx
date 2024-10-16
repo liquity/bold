@@ -140,6 +140,7 @@ export const lightTheme = {
     negativeSurface: "red:50",
     negativeSurfaceBorder: "red:100",
     negativeSurfaceContent: "red:900",
+    negativeSurfaceContentAlt: "red:400",
     positive: "green:500",
     positiveAlt: "green:400",
     positiveActive: "green:600",
@@ -178,6 +179,7 @@ export const lightTheme = {
 
     loadingGradient1: "blue:50",
     loadingGradient2: "blue:100",
+    loadingGradientContent: "blue:400",
 
     // not used yet
     brandCyan: "brand:cyan",

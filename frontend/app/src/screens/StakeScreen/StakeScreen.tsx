@@ -1,6 +1,6 @@
 "use client";
 
-import type { Address, TokenSymbol } from "@liquity2/uikit";
+import type { TokenSymbol } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
@@ -11,19 +11,21 @@ import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import content from "@/src/content";
-import { useProtocolContract } from "@/src/contracts";
 import { useDemoMode } from "@/src/demo-mode";
-import { ACCOUNT_STAKED_LQTY, STAKED_LQTY_TOTAL } from "@/src/demo-mode";
-import { dnum18, dnumMax } from "@/src/dnum-utils";
+import { ACCOUNT_STAKED_LQTY } from "@/src/demo-mode";
+import { dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
+import { useStakePosition } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
+import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
   AnchorTextButton,
   Button,
+  Checkbox,
   HFlex,
   InfoTooltip,
   InputField,
@@ -35,7 +37,6 @@ import {
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { useReadContracts } from "wagmi";
 
 const TABS = [
   { label: content.stakeScreen.tabs.deposit, id: "deposit" },
@@ -50,32 +51,38 @@ export function StakeScreen() {
   const account = useAccount();
   const lqtyPrice = usePrice("LQTY");
 
+  const stakePosition = useStakePosition(account.address ?? null);
+
   return !lqtyPrice ? null : (
     <Screen
-      title={
-        <HFlex>
-          {content.stakeScreen.headline(
-            <TokenIcon size={24} symbol="LQTY" />,
-            <TokenIcon.Group>
-              <TokenIcon symbol="LUSD" />
-              <TokenIcon symbol="ETH" />
-            </TokenIcon.Group>,
-          )}
-        </HFlex>
-      }
-      subtitle={
-        <>
-          {content.stakeScreen.subheading}{" "}
-          <AnchorTextButton
-            label={content.stakeScreen.learnMore[1]}
-            href={content.stakeScreen.learnMore[0]}
-            external
-          />
-        </>
-      }
+      heading={{
+        title: (
+          <HFlex>
+            {content.stakeScreen.headline(
+              <TokenIcon size={24} symbol="LQTY" />,
+              <TokenIcon.Group>
+                <TokenIcon symbol="LUSD" />
+                <TokenIcon symbol="ETH" />
+              </TokenIcon.Group>,
+            )}
+          </HFlex>
+        ),
+        subtitle: (
+          <>
+            {content.stakeScreen.subheading}{" "}
+            <AnchorTextButton
+              label={content.stakeScreen.learnMore[1]}
+              href={content.stakeScreen.learnMore[0]}
+              external
+            />
+          </>
+        ),
+      }}
       gap={48}
     >
-      <StakePositionSummary address={account.address} />
+      <StakePositionSummary
+        stakePosition={stakePosition.data ?? null}
+      />
       <VFlex gap={24}>
         <Tabs
           items={TABS.map(({ label, id }) => ({
@@ -90,7 +97,6 @@ export function StakeScreen() {
         />
 
         {action === "deposit" && <PanelUpdateStake lqtyPrice={lqtyPrice} />}
-        {action === "withdraw" && null}
         {action === "rewards" && <PanelClaimRewards />}
       </VFlex>
     </Screen>
@@ -105,8 +111,9 @@ function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
   const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
+  const [claimRewards, setClaimRewards] = useState(false);
 
-  const stakePosition = useStakePosition(account.address);
+  const stakePosition = useStakePosition(account.address ?? null);
 
   const parsedValue = parseInputFloat(value);
 
@@ -118,18 +125,25 @@ function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
     ? dn.mul(parsedValue ?? dn.from(0, 18), -1)
     : (parsedValue ?? dn.from(0, 18));
 
-  const updatedDeposit = dnumMax(
-    dn.add(stakePosition.stake, depositDifference),
-    dn.from(0, 18),
-  );
+  const updatedDeposit = stakePosition.data?.deposit
+    ? dnumMax(
+      dn.add(stakePosition.data?.deposit, depositDifference),
+      dn.from(0, 18),
+    )
+    : dn.from(0, 18);
 
-  const updatedShare = dn.gt(stakePosition.totalStaked, 0)
-    ? dn.div(updatedDeposit, dn.add(stakePosition.totalStaked, depositDifference))
+  const hasDeposit = stakePosition.data?.deposit && dn.gt(stakePosition.data?.deposit, 0);
+
+  const updatedShare = stakePosition.data?.totalStaked && dn.gt(stakePosition.data?.totalStaked, 0)
+    ? dn.div(updatedDeposit, dn.add(stakePosition.data.totalStaked, depositDifference))
     : dn.from(0, 18);
 
   const lqtyBalance = useBalance(account.address, "LQTY");
 
   const allowSubmit = Boolean(account.isConnected && parsedValue && dn.gt(parsedValue, 0));
+
+  const rewardsLusd = dn.from(0, 18);
+  const rewardsEth = dn.from(0, 18);
 
   return (
     <>
@@ -182,12 +196,14 @@ function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
                   />
                 )
                 : (
-                  <TextButton
-                    label={`Max. ${fmtnum(stakePosition.stake, 2)} LQTY`}
-                    onClick={() => {
-                      setValue(dn.toString(stakePosition.stake));
-                    }}
-                  />
+                  stakePosition.data?.deposit && (
+                    <TextButton
+                      label={`Max. ${fmtnum(stakePosition.data.deposit, 2)} LQTY`}
+                      onClick={() => {
+                        setValue(dn.toString(stakePosition.data.deposit));
+                      }}
+                    />
+                  )
                 ),
             }}
           />
@@ -212,10 +228,69 @@ function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
         style={{
           display: "flex",
           justifyContent: "center",
+          flexDirection: "column",
+          gap: 24,
           width: "100%",
           paddingTop: 16,
         }}
       >
+        {hasDeposit && (
+          <HFlex justifyContent="space-between">
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              })}
+            >
+              <label
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  cursor: "pointer",
+                  userSelect: "none",
+                })}
+              >
+                <Checkbox
+                  checked={claimRewards}
+                  onChange={setClaimRewards}
+                />
+                {content.stakeScreen.depositPanel.claimCheckbox}
+              </label>
+              <InfoTooltip
+                {...infoTooltipProps(content.stakeScreen.infoTooltips.alsoClaimRewardsDeposit)}
+              />
+            </div>
+            <div
+              className={css({
+                display: "flex",
+                gap: 24,
+              })}
+            >
+              <div>
+                <Amount value={rewardsLusd} />{" "}
+                <span
+                  className={css({
+                    color: "contentAlt",
+                  })}
+                >
+                  LUSD
+                </span>
+              </div>
+              <div>
+                <Amount value={rewardsEth} />{" "}
+                <span
+                  className={css({
+                    color: "contentAlt",
+                  })}
+                >
+                  ETH
+                </span>
+              </div>
+            </div>
+          </HFlex>
+        )}
         <Button
           disabled={!allowSubmit}
           label="Next: Summary"
@@ -229,6 +304,7 @@ function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
                 backLink: [`/stake`, "Back to stake position"],
                 successLink: ["/", "Go to the Dashboard"],
                 successMessage: "The stake position has been updated successfully.",
+                claimRewards,
                 lqtyAmount: dn.abs(depositDifference),
               });
             }
@@ -375,58 +451,4 @@ function Rewards({
       </div>
     </div>
   );
-}
-
-function useStakePosition(address?: Address) {
-  const demoMode = useDemoMode();
-
-  const LqtyStaking = useProtocolContract("LqtyStaking");
-
-  let {
-    data: {
-      stake,
-      totalStaked,
-    } = {
-      stake: dn.from(0),
-      totalStaked: dn.from(0),
-    },
-  } = useReadContracts({
-    contracts: [
-      {
-        abi: LqtyStaking.abi,
-        address: LqtyStaking.address,
-        functionName: "stakes",
-        args: [address ?? "0x"],
-      },
-      {
-        abi: LqtyStaking.abi,
-        address: LqtyStaking.address,
-        functionName: "totalLQTYStaked",
-      },
-    ],
-    query: {
-      enabled: !demoMode.enabled,
-      refetchInterval: 10_000,
-      select: ([stake, totalStaked]) => ({
-        stake: dnum18(stake),
-        totalStaked: dnum18(totalStaked),
-      }),
-    },
-    allowFailure: false,
-  });
-
-  if (demoMode.enabled) {
-    stake = ACCOUNT_STAKED_LQTY.deposit;
-    totalStaked = STAKED_LQTY_TOTAL;
-  }
-
-  const share = dn.gt(totalStaked, 0)
-    ? dn.div(stake, totalStaked)
-    : dn.from(0);
-
-  return {
-    share,
-    stake,
-    totalStaked,
-  };
 }

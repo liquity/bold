@@ -19,6 +19,7 @@ export { VFlex } from "./Flex/VFlex";
 export { FormField } from "./FormField/FormField";
 export { TextInput } from "./Input/TextInput";
 export { InputField } from "./InputField/InputField";
+export { LoadingSurface } from "./LoadingSurface/LoadingSurface";
 export { Modal } from "./Modal/Modal";
 export { PillButton } from "./PillButton/PillButton";
 export { Radio } from "./Radio/Radio";
