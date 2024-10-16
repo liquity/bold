@@ -9,7 +9,7 @@ export function IconEdit({
   return (
     <svg fill="none" viewBox="0 0 24 24" width={size} height={size}>
       <path
-        fill="#F0F3FE"
+        fill="currentColor"
         d="m16.827 3.986 2.968 2.968-2.375 2.375-2.967-2.968zM13.484 7.548l2.968 2.968-7.716 7.717-3.265.296.297-3.264 7.716-7.717Z"
       />
     </svg>
