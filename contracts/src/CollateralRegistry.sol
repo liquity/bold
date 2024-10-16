@@ -14,6 +14,7 @@ import "./Interfaces/ICollateralRegistry.sol";
 // import "forge-std/console2.sol";
 
 contract CollateralRegistry is ICollateralRegistry {
+    // See: https://github.com/ethereum/solidity/issues/12587
     uint256 public immutable totalCollaterals;
 
     IERC20Metadata internal immutable token0;
