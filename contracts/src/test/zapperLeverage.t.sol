@@ -10,12 +10,17 @@ import "../Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Pool.sol";
 import "../Zappers/Modules/Exchanges/UniV3Exchange.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/INonfungiblePositionManager.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Factory.sol";
+import "../Zappers/Modules/Exchanges/HybridCurveUniV3Exchange.sol";
 import "../Zappers/Interfaces/IFlashLoanProvider.sol";
 import "../Zappers/Modules/FlashLoans/Balancer/vault/IVault.sol";
 import "./Utils/UniPriceConverter.sol";
 
+import "../Zappers/Modules/Exchanges/Curve/ICurveStableswapNGFactory.sol";
+
 contract ZapperLeverageMainnet is DevTestSetup {
     using StringFormatting for uint256;
+
+    IERC20 constant USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 
     INonfungiblePositionManager constant uniV3PositionManager =
         INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
@@ -27,6 +32,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
     IZapper[] baseZapperArray;
     ILeverageZapper[] leverageZapperCurveArray;
     ILeverageZapper[] leverageZapperUniV3Array;
+    ILeverageZapper[] leverageZapperHybridArray;
 
     TestDeployer.LiquityContracts[] contractsArray;
 
@@ -113,6 +119,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
             contractsArray.push(result.contractsArray[c]);
             leverageZapperCurveArray.push(result.zappersArray[c].leverageZapperCurve);
             leverageZapperUniV3Array.push(result.zappersArray[c].leverageZapperUniV3);
+            leverageZapperHybridArray.push(result.zappersArray[c].leverageZapperHybrid);
         }
 
         // Bootstrap Curve pools
@@ -135,6 +142,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
                 contractsArray[c].collToken.approve(address(baseZapperArray[c]), initialCollateralAmount);
                 contractsArray[c].collToken.approve(address(leverageZapperCurveArray[c]), initialCollateralAmount);
                 contractsArray[c].collToken.approve(address(leverageZapperUniV3Array[c]), initialCollateralAmount);
+                contractsArray[c].collToken.approve(address(leverageZapperHybridArray[c]), initialCollateralAmount);
                 vm.stopPrank();
             }
         }
@@ -144,13 +152,14 @@ contract ZapperLeverageMainnet is DevTestSetup {
         TestDeployer.LiquityContracts[] memory _contractsArray,
         TestDeployer.Zappers[] memory _zappersArray
     ) internal {
+        uint256 boldAmount;
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             (uint256 price,) = _contractsArray[i].priceFeed.fetchPrice();
             ICurvePool curvePool = CurveExchange(address(_zappersArray[i].leverageZapperCurve.exchange())).curvePool();
 
             // Add liquidity
             uint256 collAmount = 1000 ether;
-            uint256 boldAmount = collAmount * price / DECIMAL_PRECISION;
+            boldAmount = collAmount * price / DECIMAL_PRECISION;
             deal(address(_contractsArray[i].collToken), A, collAmount);
             deal(address(boldToken), A, boldAmount);
             vm.startPrank(A);
@@ -163,6 +172,24 @@ contract ZapperLeverageMainnet is DevTestSetup {
             curvePool.add_liquidity(amounts, 0);
             vm.stopPrank();
         }
+
+        // Add liquidity to USDC-BOLD
+        ICurveStableswapNGPool usdcCurvePool =
+            HybridCurveUniV3Exchange(address(_zappersArray[0].leverageZapperHybrid.exchange())).curvePool();
+        uint256 usdcAmount = 1e15; // 1B with 6 decimals
+        boldAmount = usdcAmount * 1e12; // from 6 to 18 decimals
+        deal(address(USDC), A, usdcAmount);
+        deal(address(boldToken), A, boldAmount);
+        vm.startPrank(A);
+        // approve
+        USDC.approve(address(usdcCurvePool), usdcAmount);
+        boldToken.approve(address(usdcCurvePool), boldAmount);
+        uint256[] memory amountsDynamic = new uint256[](2);
+        amountsDynamic[0] = boldAmount;
+        amountsDynamic[1] = usdcAmount;
+        // add liquidity
+        usdcCurvePool.add_liquidity(amountsDynamic, 0);
+        vm.stopPrank();
     }
 
     function fundUniV3Pools(TestDeployer.LiquityContracts[] memory _contractsArray) internal {
@@ -342,6 +369,13 @@ contract ZapperLeverageMainnet is DevTestSetup {
         }
     }
 
+    function testCanOpenTroveWithHybrid() external {
+        // Not enough liquidity for ETHx
+        for (uint256 i = 0; i < 3; i++) {
+            _testCanOpenTrove(leverageZapperHybridArray[i], i, address(0));
+        }
+    }
+
     function testCanOpenTroveAndJoinBatchWithCurve() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             _registerBatchManager(B, i);
@@ -354,6 +388,14 @@ contract ZapperLeverageMainnet is DevTestSetup {
             if (i == 2) continue; // TODO!!
             _registerBatchManager(B, i);
             _testCanOpenTrove(leverageZapperUniV3Array[i], i, B);
+        }
+    }
+
+    function testCanOpenTroveAndJoinBatchWithHybrid() external {
+        // Not enough liquidity for ETHx
+        for (uint256 i = 0; i < 3; i++) {
+            _registerBatchManager(B, i);
+            _testCanOpenTrove(leverageZapperHybridArray[i], i, B);
         }
     }
 

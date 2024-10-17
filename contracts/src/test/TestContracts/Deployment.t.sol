@@ -29,12 +29,15 @@ import "../../Zappers/Modules/FlashLoans/BalancerFlashLoan.sol";
 import "../../Zappers/Interfaces/IFlashLoanProvider.sol";
 import "../../Zappers/Interfaces/IExchange.sol";
 import "../../Zappers/Modules/Exchanges/Curve/ICurveFactory.sol";
+import "../../Zappers/Modules/Exchanges/Curve/ICurveStableswapNGFactory.sol";
 import "../../Zappers/Modules/Exchanges/Curve/ICurvePool.sol";
+import "../../Zappers/Modules/Exchanges/Curve/ICurveStableswapNGPool.sol";
 import "../../Zappers/Modules/Exchanges/CurveExchange.sol";
 import "../../Zappers/Modules/Exchanges/UniswapV3/ISwapRouter.sol";
 import "../../Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
 import "../../Zappers/Modules/Exchanges/UniV3Exchange.sol";
 import "../../Zappers/Modules/Exchanges/UniswapV3/INonfungiblePositionManager.sol";
+import "../../Zappers/Modules/Exchanges/HybridCurveUniV3Exchange.sol";
 import {WETHTester} from "./WETHTester.sol";
 import {ERC20Faucet} from "./ERC20Faucet.sol";
 
@@ -51,12 +54,20 @@ uint256 constant _48_HOURS = 172800;
 
 // TODO: Split dev and mainnet
 contract TestDeployer is MetadataDeployment {
+    IERC20 constant USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+    IWETH constant WETH_MAINNET = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+
     ICurveFactory constant curveFactory = ICurveFactory(0x98EE851a00abeE0d95D08cF4CA2BdCE32aeaAF7F);
+    ICurveStableswapNGFactory constant curveStableswapFactory =
+        ICurveStableswapNGFactory(0x6A8cbed756804B16E05E741eDaBd5cB544AE21bf);
     ISwapRouter constant uniV3Router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+
     IQuoterV2 constant uniV3Quoter = IQuoterV2(0x61fFE014bA17989E743c5F6cB21bF9697530B21e);
     INonfungiblePositionManager constant uniV3PositionManager =
         INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
     uint24 constant UNIV3_FEE = 3000; // 0.3%
+    uint24 constant UNIV3_FEE_USDC_WETH = 500; // 0.05%
+    uint24 constant UNIV3_FEE_WETH_COLL = 100; // 0.01%
 
     bytes32 constant SALT = keccak256("LiquityV2");
 
@@ -97,6 +108,7 @@ contract TestDeployer is MetadataDeployment {
         GasCompZapper gasCompZapper;
         ILeverageZapper leverageZapperCurve;
         ILeverageZapper leverageZapperUniV3;
+        ILeverageZapper leverageZapperHybrid;
     }
 
     struct LiquityContractAddresses {
@@ -152,6 +164,19 @@ contract TestDeployer is MetadataDeployment {
         bytes bytecode;
         address boldTokenAddress;
         uint256 i;
+    }
+
+    struct DeploymentParamsMainnet {
+        IERC20Metadata collToken;
+        IPriceFeed priceFeed;
+        IBoldToken boldToken;
+        ICollateralRegistry collateralRegistry;
+        IWETH weth;
+        IAddressesRegistry addressesRegistry;
+        address troveManagerAddress;
+        IHintHelpers hintHelpers;
+        IMultiTroveGetter multiTroveGetter;
+        ICurveStableswapNGPool usdcCurvePool;
     }
 
     struct ExternalAddresses {
@@ -460,8 +485,16 @@ contract TestDeployer is MetadataDeployment {
         );
 
         // deploy zappers
-        (zappers.gasCompZapper, zappers.wethZapper, zappers.leverageZapperCurve, zappers.leverageZapperUniV3) =
-        _deployZappers(contracts.addressesRegistry, contracts.collToken, _boldToken, _weth, contracts.priceFeed, false);
+        _deployZappers(
+            contracts.addressesRegistry,
+            contracts.collToken,
+            _boldToken,
+            _weth,
+            contracts.priceFeed,
+            ICurveStableswapNGPool(address(0)),
+            false,
+            zappers
+        );
     }
 
     // Creates individual PriceFeed contracts based on oracle addresses.
@@ -588,19 +621,23 @@ contract TestDeployer is MetadataDeployment {
         result.hintHelpers = new HintHelpers(result.collateralRegistry);
         result.multiTroveGetter = new MultiTroveGetter(result.collateralRegistry);
 
+        ICurveStableswapNGPool usdcCurvePool = _deployCurveBoldUsdcPool(result.boldToken, true);
+
         // Deploy each set of core contracts
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
-            (result.contractsArray[vars.i], result.zappersArray[vars.i]) = _deployAndConnectCollateralContractsMainnet(
-                vars.collaterals[vars.i],
-                vars.priceFeeds[vars.i],
-                result.boldToken,
-                result.collateralRegistry,
-                WETH,
-                vars.addressesRegistries[vars.i],
-                address(vars.troveManagers[vars.i]),
-                result.hintHelpers,
-                result.multiTroveGetter
-            );
+            DeploymentParamsMainnet memory params;
+            params.collToken = vars.collaterals[vars.i];
+            params.priceFeed = vars.priceFeeds[vars.i];
+            params.boldToken = result.boldToken;
+            params.collateralRegistry = result.collateralRegistry;
+            params.weth = WETH;
+            params.addressesRegistry = vars.addressesRegistries[vars.i];
+            params.troveManagerAddress = address(vars.troveManagers[vars.i]);
+            params.hintHelpers = result.hintHelpers;
+            params.multiTroveGetter = result.multiTroveGetter;
+            params.usdcCurvePool = usdcCurvePool;
+            (result.contractsArray[vars.i], result.zappersArray[vars.i]) =
+                _deployAndConnectCollateralContractsMainnet(params);
         }
 
         result.boldToken.setCollateralRegistry(address(result.collateralRegistry));
@@ -624,23 +661,16 @@ contract TestDeployer is MetadataDeployment {
         return (addressesRegistry, troveManagerAddress);
     }
 
-    function _deployAndConnectCollateralContractsMainnet(
-        IERC20Metadata _collToken,
-        IPriceFeed _priceFeed,
-        IBoldToken _boldToken,
-        ICollateralRegistry _collateralRegistry,
-        IWETH _weth,
-        IAddressesRegistry _addressesRegistry,
-        address _troveManagerAddress,
-        IHintHelpers _hintHelpers,
-        IMultiTroveGetter _multiTroveGetter
-    ) internal returns (LiquityContracts memory contracts, Zappers memory zappers) {
+    function _deployAndConnectCollateralContractsMainnet(DeploymentParamsMainnet memory _params)
+        internal
+        returns (LiquityContracts memory contracts, Zappers memory zappers)
+    {
         LiquityContractAddresses memory addresses;
-        contracts.collToken = _collToken;
-        contracts.priceFeed = _priceFeed;
+        contracts.collToken = _params.collToken;
+        contracts.priceFeed = _params.priceFeed;
         contracts.interestRouter = new MockInterestRouter();
 
-        contracts.addressesRegistry = _addressesRegistry;
+        contracts.addressesRegistry = _params.addressesRegistry;
 
         // Deploy Metadata
         MetadataNFT metadataNFT = deployMetadata(SALT);
@@ -655,7 +685,7 @@ contract TestDeployer is MetadataDeployment {
             getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry)),
             SALT
         );
-        addresses.troveManager = _troveManagerAddress;
+        addresses.troveManager = _params.troveManagerAddress;
         addresses.troveNFT = getAddress(
             address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)), SALT
         );
@@ -680,7 +710,7 @@ contract TestDeployer is MetadataDeployment {
 
         // Deploy contracts
         IAddressesRegistry.AddressVars memory addressVars = IAddressesRegistry.AddressVars({
-            collToken: _collToken,
+            collToken: _params.collToken,
             borrowerOperations: IBorrowerOperations(addresses.borrowerOperations),
             troveManager: ITroveManager(addresses.troveManager),
             troveNFT: ITroveNFT(addresses.troveNFT),
@@ -693,11 +723,11 @@ contract TestDeployer is MetadataDeployment {
             collSurplusPool: ICollSurplusPool(addresses.collSurplusPool),
             sortedTroves: ISortedTroves(addresses.sortedTroves),
             interestRouter: contracts.interestRouter,
-            hintHelpers: _hintHelpers,
-            multiTroveGetter: _multiTroveGetter,
-            collateralRegistry: _collateralRegistry,
-            boldToken: _boldToken,
-            WETH: _weth
+            hintHelpers: _params.hintHelpers,
+            multiTroveGetter: _params.multiTroveGetter,
+            collateralRegistry: _params.collateralRegistry,
+            boldToken: _params.boldToken,
+            WETH: _params.weth
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 
@@ -722,7 +752,7 @@ contract TestDeployer is MetadataDeployment {
         assert(address(contracts.sortedTroves) == addresses.sortedTroves);
 
         // Connect contracts
-        _boldToken.setBranchAddresses(
+        _params.boldToken.setBranchAddresses(
             address(contracts.troveManager),
             address(contracts.stabilityPool),
             address(contracts.borrowerOperations),
@@ -730,11 +760,19 @@ contract TestDeployer is MetadataDeployment {
         );
 
         // TODO: remove this and set address in constructor as per the CREATE2 approach above
-        _priceFeed.setAddresses(addresses.borrowerOperations);
+        _params.priceFeed.setAddresses(addresses.borrowerOperations);
 
         // deploy zappers
-        (zappers.gasCompZapper, zappers.wethZapper, zappers.leverageZapperCurve, zappers.leverageZapperUniV3) =
-        _deployZappers(contracts.addressesRegistry, contracts.collToken, _boldToken, _weth, contracts.priceFeed, true);
+        _deployZappers(
+            contracts.addressesRegistry,
+            contracts.collToken,
+            _params.boldToken,
+            _params.weth,
+            contracts.priceFeed,
+            _params.usdcCurvePool,
+            true,
+            zappers
+        );
     }
 
     function _deployZappers(
@@ -743,34 +781,34 @@ contract TestDeployer is MetadataDeployment {
         IBoldToken _boldToken,
         IWETH _weth,
         IPriceFeed _priceFeed,
-        bool _mainnet
-    )
-        internal
-        returns (
-            GasCompZapper gasCompZapper,
-            WETHZapper wethZapper,
-            ILeverageZapper leverageZapperCurve,
-            ILeverageZapper leverageZapperUniV3
-        )
-    {
+        ICurveStableswapNGPool _usdcCurvePool,
+        bool _mainnet,
+        Zappers memory zappers // result
+    ) internal {
         IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
         IExchange curveExchange = _deployCurveExchange(_collToken, _boldToken, _priceFeed, _mainnet);
 
         // TODO: Deploy base zappers versions with Uni V3 exchange
         bool lst = _collToken != _weth;
         if (lst) {
-            gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, curveExchange);
+            zappers.gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, curveExchange);
         } else {
-            wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, curveExchange);
+            zappers.wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, curveExchange);
         }
 
         if (_mainnet) {
-            (leverageZapperCurve, leverageZapperUniV3) = _deployLeverageZappers(
-                _addressesRegistry, _collToken, _boldToken, _priceFeed, flashLoanProvider, curveExchange, lst
+            _deployLeverageZappers(
+                _addressesRegistry,
+                _collToken,
+                _boldToken,
+                _priceFeed,
+                flashLoanProvider,
+                curveExchange,
+                _usdcCurvePool,
+                lst,
+                zappers
             );
         }
-
-        return (gasCompZapper, wethZapper, leverageZapperCurve, leverageZapperUniV3);
     }
 
     function _deployCurveExchange(IERC20 _collToken, IBoldToken _boldToken, IPriceFeed _priceFeed, bool _mainnet)
@@ -813,14 +851,17 @@ contract TestDeployer is MetadataDeployment {
         IPriceFeed _priceFeed,
         IFlashLoanProvider _flashLoanProvider,
         IExchange _curveExchange,
-        bool _lst
-    ) internal returns (ILeverageZapper, ILeverageZapper) {
-        ILeverageZapper leverageZapperCurve =
+        ICurveStableswapNGPool _usdcCurvePool,
+        bool _lst,
+        Zappers memory zappers // result
+    ) internal {
+        zappers.leverageZapperCurve =
             _deployCurveLeverageZapper(_addressesRegistry, _flashLoanProvider, _curveExchange, _lst);
-        ILeverageZapper leverageZapperUniV3 =
+        zappers.leverageZapperUniV3 =
             _deployUniV3LeverageZapper(_addressesRegistry, _collToken, _boldToken, _priceFeed, _flashLoanProvider, _lst);
-
-        return (leverageZapperCurve, leverageZapperUniV3);
+        zappers.leverageZapperHybrid = _deployHybridLeverageZapper(
+            _addressesRegistry, _collToken, _boldToken, _flashLoanProvider, _usdcCurvePool, _lst
+        );
     }
 
     function _deployCurveLeverageZapper(
@@ -881,5 +922,79 @@ contract TestDeployer is MetadataDeployment {
         );
 
         return leverageZapperUniV3;
+    }
+
+    function _deployHybridLeverageZapper(
+        IAddressesRegistry _addressesRegistry,
+        IERC20 _collToken,
+        IBoldToken _boldToken,
+        IFlashLoanProvider _flashLoanProvider,
+        ICurveStableswapNGPool _usdcCurvePool,
+        bool _lst
+    ) internal returns (ILeverageZapper) {
+        IExchange hybridExchange = new HybridCurveUniV3Exchange(
+            _collToken,
+            _boldToken,
+            USDC,
+            WETH_MAINNET,
+            _usdcCurvePool,
+            1, // USDC Curve pool index
+            0, // BOLD Curve pool index
+            UNIV3_FEE_USDC_WETH,
+            UNIV3_FEE_WETH_COLL,
+            uniV3Router,
+            uniV3Quoter
+        );
+
+        ILeverageZapper leverageZapperHybrid;
+        if (_lst) {
+            leverageZapperHybrid = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, hybridExchange);
+        } else {
+            leverageZapperHybrid = new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, hybridExchange);
+        }
+
+        return leverageZapperHybrid;
+    }
+
+    function _deployCurveBoldUsdcPool(IBoldToken _boldToken, bool _mainnet) internal returns (ICurveStableswapNGPool) {
+        if (!_mainnet) return ICurveStableswapNGPool(address(0));
+
+        // deploy Curve Stableswap pool
+        /*
+        address[2] memory coins;
+        coins[0] = address(_boldToken);
+        coins[1] = address(USDC);
+        ICurvePool curvePool = curveStableswapFactory.deploy_plain_pool(
+            "USDC-Bold pool",
+            "USDCBOLD",
+            coins,
+            4000, // A
+            0, // asset type: USD
+            1000000, // fee
+            0 // implementation id
+        );
+        */
+        // deploy Curve StableswapNG pool
+        address[] memory coins = new address[](2);
+        coins[0] = address(_boldToken);
+        coins[1] = address(USDC);
+        uint8[] memory assetTypes = new uint8[](2); // 0: standard
+        bytes4[] memory methodIds = new bytes4[](2);
+        address[] memory oracles = new address[](2);
+        ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool(
+            "USDC-BOLD",
+            "USDCBOLD",
+            coins,
+            4000, // A
+            1000000, // fee
+            20000000000, // _offpeg_fee_multiplier
+            865, // _ma_exp_time
+            0, // implementation id
+            assetTypes,
+            methodIds,
+            oracles
+        );
+
+        return curvePool;
     }
 }
