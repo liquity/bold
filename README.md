@@ -538,7 +538,7 @@ That’s why Troves pay upfront fee when joining even if the interest is the sam
 
 ##### Leaving a batch
 When a trove leaves a batch, the user's timestamp is again reset to the current time.
-No upfront fee is charged, unless the interest rate is changed in the same transaction and the batch changed the interest rate less than the cooldown period ago.
+No upfront fee is charged, unless the interest rate is changed in the same transaction and either the batch changed the interest rate, or the trove joined the batch, less than the cooldown period ago.
 
 ##### Switching batches
 As the function to switch batches is just a wrapper that calls the functions for leaving and joining a batch, this means that switching batches always incurs in upfront fee now (unless user doesn’t use the wrapper and waits for 1 week between leaving and joining).
