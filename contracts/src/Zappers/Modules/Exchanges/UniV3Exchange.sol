@@ -81,7 +81,7 @@ contract UniV3Exchange is LeftoversSweep, IExchange {
         uint256 amountIn = uniV3RouterCached.exactOutputSingle(params);
 
         // return leftovers to user
-        _returnLeftovers(collToken, boldToken, initialBalances);
+        _returnLeftovers(initialBalances);
 
         return amountIn;
     }
@@ -110,7 +110,7 @@ contract UniV3Exchange is LeftoversSweep, IExchange {
         uint256 amountOut = uniV3RouterCached.exactInputSingle(params);
 
         // return leftovers to user
-        _returnLeftovers(collToken, boldToken, initialBalances);
+        _returnLeftovers(initialBalances);
 
         return amountOut;
     }
