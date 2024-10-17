@@ -126,9 +126,10 @@ export function Screen({
                     base: "static",
                     large: "absolute",
                   },
+                  left: 100,
                 })}
                 style={{
-                  right: width + 400,
+                  width,
                   transform: style.transform,
                   opacity: style.progress.to([0, 0.5, 1], [0, 1, 1]),
                 }}

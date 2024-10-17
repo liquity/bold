@@ -44,6 +44,7 @@ export const earnClaimRewards: FlowDeclaration<Request, Step> = {
       <EarnPositionSummary
         address={flow.request.depositor}
         collSymbol={symbol}
+        txPreviewMode
       />
     );
   },

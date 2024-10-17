@@ -13,7 +13,6 @@ import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
 import { Button, HFlex, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useRouter } from "next/navigation";
 
 export function PanelClaimRewards({
   collIndex,
@@ -22,7 +21,6 @@ export function PanelClaimRewards({
   collIndex: null | CollIndex;
   position?: PositionEarn;
 }) {
-  const router = useRouter();
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
@@ -107,7 +105,6 @@ export function PanelClaimRewards({
               depositor: account.address,
               collIndex,
             });
-            router.push("/transactions");
           }
         }}
       />

@@ -9,6 +9,7 @@ import {
   BOLD_PRICE as DEMO_BOLD_PRICE,
   ETH_PRICE as DEMO_ETH_PRICE,
   LQTY_PRICE as DEMO_LQTY_PRICE,
+  LUSD_PRICE as DEMO_LUSD_PRICE,
   PRICE_UPDATE_INTERVAL as DEMO_PRICE_UPDATE_INTERVAL,
   PRICE_UPDATE_MANUAL as DEMO_PRICE_UPDATE_MANUAL,
   PRICE_UPDATE_VARIATION as DEMO_PRICE_UPDATE_VARIATION,
@@ -22,13 +23,14 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useRef } from "react";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "LQTY" | "BOLD" | CollateralSymbol;
+type PriceToken = "LQTY" | "BOLD" | "LUSD" | CollateralSymbol;
 
 type Prices = Record<PriceToken, Dnum | null>;
 
 const initialPrices: Prices = {
   BOLD: dn.from(1, 18),
   LQTY: null,
+  LUSD: dn.from(1, 18),
 
   // collaterals
   ETH: null,
@@ -56,6 +58,7 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
   const prevPrices = useRef<Prices>({
     BOLD: null,
     LQTY: null,
+    LUSD: null,
     ETH: null,
     RETH: null,
     STETH: null,
@@ -63,9 +66,10 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
 
   useEffect(() => {
     const newPrices = {
-      // TODO: check BOLD and LQTY prices
+      // TODO: check BOLD, LUSD and LQTY prices
       BOLD: dn.from(1, 18),
       LQTY: dn.from(1, 18),
+      LUSD: dn.from(1, 18),
 
       ETH: ethPrice.data ? dnum18(ethPrice.data) : null,
       RETH: rethPrice.data ? dnum18(rethPrice.data) : null,
@@ -94,8 +98,9 @@ if (DEMO_MODE) {
         const variation = () => dn.from((Math.random() - 0.5) * DEMO_PRICE_UPDATE_VARIATION, 18);
         callback({
           BOLD: dn.add(DEMO_BOLD_PRICE, dn.mul(DEMO_BOLD_PRICE, variation())),
-          ETH: dn.add(DEMO_ETH_PRICE, dn.mul(DEMO_ETH_PRICE, variation())),
           LQTY: dn.add(DEMO_LQTY_PRICE, dn.mul(DEMO_LQTY_PRICE, variation())),
+          LUSD: dn.add(DEMO_LUSD_PRICE, dn.mul(DEMO_LUSD_PRICE, variation())),
+          ETH: dn.add(DEMO_ETH_PRICE, dn.mul(DEMO_ETH_PRICE, variation())),
           RETH: dn.add(DEMO_RETH_PRICE, dn.mul(DEMO_RETH_PRICE, variation())),
           STETH: dn.add(DEMO_STETH_PRICE, dn.mul(DEMO_STETH_PRICE, variation())),
         });

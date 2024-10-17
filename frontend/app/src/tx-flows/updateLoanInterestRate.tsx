@@ -69,6 +69,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
         }}
         prevLoan={loan.data}
         onRetry={() => {}}
+        txPreviewMode
       />
     );
   },

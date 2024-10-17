@@ -1,9 +1,10 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
-import { vDnum } from "@/src/valibot-utils";
+import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 
@@ -25,6 +26,8 @@ const RequestSchema = v.object({
   successMessage: v.string(),
 
   lqtyAmount: vDnum(),
+  stakePosition: vPositionStake(),
+  prevStakePosition: v.union([v.null(), vPositionStake()]),
 });
 
 export type Request = v.InferOutput<typeof RequestSchema>;
@@ -39,20 +42,53 @@ export const unstakeDeposit: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
 
   Summary({ flow }) {
-    console.log(flow);
-    return null;
+    return (
+      <StakePositionSummary
+        prevStakePosition={flow.request.prevStakePosition}
+        stakePosition={flow.request.stakePosition}
+        txPreviewMode
+      />
+    );
   },
 
   Details({ flow }) {
     const { request } = flow;
+    const { rewards } = request.stakePosition;
+
     const lqtyPrice = usePrice("LQTY");
+    const lusdPrice = usePrice("LUSD");
+    const ethPrice = usePrice("ETH");
+
+    const rewardsLusdInUsd = lusdPrice && dn.mul(rewards.lusd, lusdPrice);
+    const rewardsEthInUsd = ethPrice && dn.mul(rewards.eth, ethPrice);
+
     return (
       <>
         <TransactionDetailsRow
           label="You withdraw"
           value={[
-            <Amount value={request.lqtyAmount} suffix=" LQTY" />,
-            <Amount value={lqtyPrice && dn.mul(request.lqtyAmount, lqtyPrice)} prefix="$" />,
+            <Amount
+              suffix=" LQTY"
+              value={request.lqtyAmount}
+            />,
+            <Amount
+              prefix="$"
+              value={lqtyPrice && dn.mul(request.lqtyAmount, lqtyPrice)}
+            />,
+          ]}
+        />
+        <TransactionDetailsRow
+          label="Claiming LUSD rewards"
+          value={[
+            <Amount value={rewards.lusd} suffix=" LUSD" />,
+            <Amount value={rewardsLusdInUsd} prefix="$" />,
+          ]}
+        />
+        <TransactionDetailsRow
+          label="Claiming ETH rewards"
+          value={[
+            <Amount value={rewards.eth} suffix=" ETH" />,
+            <Amount value={rewardsEthInUsd} prefix="$" />,
           ]}
         />
       </>

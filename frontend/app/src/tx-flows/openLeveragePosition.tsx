@@ -64,6 +64,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
           type: "borrow",
         }}
         onRetry={() => {}}
+        txPreviewMode
       />
     );
   },

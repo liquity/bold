@@ -11,11 +11,9 @@ import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
 import { Button, Dropdown, TokenIcon, TOKENS_BY_SYMBOL, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
-  const router = useRouter();
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
@@ -174,15 +172,19 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
       </VFlex>
       <div
         className={css({
-          padding: 20,
-          textAlign: "center",
-          background: "yellow:200",
+          display: "flex",
+          flexDirection: "column",
+          gap: 32,
+          padding: 16,
+          color: "content",
+          background: "fieldSurface",
+          border: "1px solid token(colors.border)",
           borderRadius: 8,
         })}
       >
-        You are repaying your debt and closing the position. {repayWith === "BOLD"
-          ? `The deposit will be returned to your wallet.`
-          : `To close yor position, a part of your collateral will be sold to pay back the debt. The rest of your collateral will be returned to your wallet.`}
+        {repayWith === "BOLD"
+          ? `You are repaying your debt and closing the position. The deposit will be returned to your wallet.`
+          : `To close your position, a part of your collateral will be sold to pay back the debt. The rest of your collateral will be returned to your wallet.`}
       </div>
       <div
         style={{
@@ -214,7 +216,6 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
                 collIndex: loan.collIndex,
                 prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
               });
-              router.push("/transactions");
             }
           }}
         />

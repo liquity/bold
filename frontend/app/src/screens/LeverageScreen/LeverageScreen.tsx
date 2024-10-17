@@ -2,6 +2,7 @@
 
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { GasCompensationInfo } from "@/src/comps/GasCompensationInfo/GasCompensationInfo";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
@@ -220,6 +221,7 @@ export function LeverageScreen() {
         </VFlex>
 
         <RedemptionInfo />
+        <GasCompensationInfo />
 
         <div
           style={{

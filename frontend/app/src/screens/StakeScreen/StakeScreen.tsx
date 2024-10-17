@@ -11,8 +11,10 @@ import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import content from "@/src/content";
+import { useProtocolContract } from "@/src/contracts";
 import { useDemoMode } from "@/src/demo-mode";
 import { ACCOUNT_STAKED_LQTY } from "@/src/demo-mode";
+import { dnum18 } from "@/src/dnum-utils";
 import { dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
@@ -25,7 +27,6 @@ import { css } from "@/styled-system/css";
 import {
   AnchorTextButton,
   Button,
-  Checkbox,
   HFlex,
   InfoTooltip,
   InputField,
@@ -37,6 +38,10 @@ import {
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
+import { encodeFunctionData } from "viem";
+import { useEstimateGas, useGasPrice } from "wagmi";
+
+// import { useSimulateContract } from "wagmi";
 
 const TABS = [
   { label: content.stakeScreen.tabs.deposit, id: "deposit" },
@@ -104,14 +109,12 @@ export function StakeScreen() {
 }
 
 function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
-  const router = useRouter();
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
   const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
-  const [claimRewards, setClaimRewards] = useState(false);
 
   const stakePosition = useStakePosition(account.address ?? null);
 
@@ -121,9 +124,10 @@ function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
     ? value
     : `${dn.format(parsedValue)}`;
 
-  const depositDifference = mode === "withdraw"
-    ? dn.mul(parsedValue ?? dn.from(0, 18), -1)
-    : (parsedValue ?? dn.from(0, 18));
+  const depositDifference = dn.mul(
+    parsedValue ?? dn.from(0, 18),
+    mode === "withdraw" ? -1 : 1,
+  );
 
   const updatedDeposit = stakePosition.data?.deposit
     ? dnumMax(
@@ -252,11 +256,7 @@ function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
                   userSelect: "none",
                 })}
               >
-                <Checkbox
-                  checked={claimRewards}
-                  onChange={setClaimRewards}
-                />
-                {content.stakeScreen.depositPanel.claimCheckbox}
+                {content.stakeScreen.depositPanel.rewardsLabel}
               </label>
               <InfoTooltip
                 {...infoTooltipProps(content.stakeScreen.infoTooltips.alsoClaimRewardsDeposit)}
@@ -304,11 +304,27 @@ function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
                 backLink: [`/stake`, "Back to stake position"],
                 successLink: ["/", "Go to the Dashboard"],
                 successMessage: "The stake position has been updated successfully.",
-                claimRewards,
+
                 lqtyAmount: dn.abs(depositDifference),
+                stakePosition: {
+                  type: "stake",
+                  deposit: updatedDeposit,
+                  share: updatedShare,
+                  totalStaked: dn.add(
+                    stakePosition.data?.totalStaked ?? dn.from(0, 18),
+                    depositDifference,
+                  ),
+                  rewards: {
+                    eth: rewardsEth,
+                    lusd: rewardsLusd,
+                  },
+                },
+                prevStakePosition: stakePosition.data
+                    && dn.gt(stakePosition.data.deposit, 0)
+                  ? stakePosition.data
+                  : null,
               });
             }
-            router.push("/transactions");
           }}
         />
       </div>
@@ -317,28 +333,57 @@ function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
 }
 
 function PanelClaimRewards() {
-  const router = useRouter();
   const account = useAccount();
-  // const txFlow = useTransactionFlow();
+  const txFlow = useTransactionFlow();
   const demoMode = useDemoMode();
 
   const ethPrice = usePrice("ETH");
+
+  const stakePosition = useStakePosition(account.address ?? null);
+
+  const LqtyStaking = useProtocolContract("LqtyStaking");
+
+  const gasEstimate = useEstimateGas({
+    account: account.address,
+    data: encodeFunctionData({
+      abi: LqtyStaking.abi,
+      functionName: "unstake",
+      args: [0n],
+    }),
+    to: LqtyStaking.address,
+  });
+
+  const gasPrice = useGasPrice();
 
   if (!ethPrice) {
     return null;
   }
 
-  const rewardsLusd = demoMode.enabled ? ACCOUNT_STAKED_LQTY.rewardLusd : dn.from(0, 18);
-  const rewardsEth = demoMode.enabled ? ACCOUNT_STAKED_LQTY.rewardEth : dn.from(0, 18);
+  const txGasPriceEth = gasEstimate.data && gasPrice.data
+    ? dnum18(gasEstimate.data * gasPrice.data)
+    : null;
 
-  const totalRewards = dn.add(
+  const txGasPriceUsd = txGasPriceEth && dn.mul(txGasPriceEth, ethPrice);
+
+  const rewardsLusd = (
+    demoMode.enabled
+      ? ACCOUNT_STAKED_LQTY.rewardLusd
+      : stakePosition.data?.rewards.lusd
+  ) ?? dn.from(0, 18);
+
+  const rewardsEth = (
+    demoMode.enabled
+      ? ACCOUNT_STAKED_LQTY.rewardEth
+      : stakePosition.data?.rewards.eth
+  ) ?? dn.from(0, 18);
+
+  const totalRewardsUsd = dn.add(
     rewardsLusd,
     dn.mul(rewardsEth, ethPrice),
   );
 
-  const gasFeeUsd = dn.from(0.0015, 18); // Estimated gas fee
-
-  const allowSubmit = account.isConnected && dn.gt(totalRewards, 0);
+  // const allowSubmit = account.isConnected && dn.gt(totalRewardsUsd, 0);
+  const allowSubmit = account.isConnected;
 
   return (
     <VFlex gap={48}>
@@ -368,7 +413,7 @@ function PanelClaimRewards() {
             <Amount
               format="2z"
               prefix="$"
-              value={totalRewards}
+              value={totalRewardsUsd}
             />
           </HFlex>
           <HFlex justifyContent="space-between" gap={24}>
@@ -376,7 +421,7 @@ function PanelClaimRewards() {
             <Amount
               format="2z"
               prefix="~$"
-              value={gasFeeUsd}
+              value={txGasPriceUsd ?? 0}
             />
           </HFlex>
         </div>
@@ -391,18 +436,25 @@ function PanelClaimRewards() {
         size="large"
         wide
         onClick={() => {
-          if (account.address) {
-            // txFlow.start({
-            //   flowId: "stakeClaimRewards",
-            //   backLink: [
-            //     `/stake`,
-            //     "Back to stake position",
-            //   ],
-            //   successLink: ["/", "Go to the Dashboard"],
-            //   successMessage: "The rewards have been claimed successfully.",
-            //   staker: account.address,
-            // });
-            router.push("/transactions");
+          if (account.address && stakePosition.data) {
+            txFlow.start({
+              flowId: "stakeClaimRewards",
+              backLink: [
+                `/stake`,
+                "Back to stake position",
+              ],
+              successLink: ["/", "Go to the Dashboard"],
+              successMessage: "The rewards have been claimed successfully.",
+
+              stakePosition: {
+                ...stakePosition.data,
+                rewards: {
+                  eth: dn.from(0, 18),
+                  lusd: dn.from(0, 18),
+                },
+              },
+              prevStakePosition: stakePosition.data,
+            });
           }
         }}
       />

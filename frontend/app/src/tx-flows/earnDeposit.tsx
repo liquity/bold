@@ -50,6 +50,7 @@ export const earnDeposit: FlowDeclaration<Request, Step> = {
       <EarnPositionSummary
         address={flow.request.depositor}
         collSymbol={symbol}
+        txPreviewMode
       />
     );
   },

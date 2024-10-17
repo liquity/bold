@@ -4,6 +4,7 @@ import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateFie
 
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { GasCompensationInfo } from "@/src/comps/GasCompensationInfo/GasCompensationInfo";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
@@ -308,6 +309,7 @@ export function BorrowScreen() {
         />
 
         <RedemptionInfo />
+        <GasCompensationInfo />
 
         <div
           style={{
@@ -348,7 +350,6 @@ export function BorrowScreen() {
                     MAX_ANNUAL_INTEREST_RATE,
                   ],
                 });
-                router.push("/transactions");
               }
             }}
           />

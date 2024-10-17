@@ -106,18 +106,24 @@ function PositionsGroup({
   const cards = match(mode)
     .returnType<Array<[number, ReactNode]>>()
     .with("positions", () => {
-      const cards = positions.map((position, index) => (
-        match(position)
-          .returnType<[number, ReactNode]>()
-          .with({ type: "borrow" }, (p) => [index, <PositionCardBorrow {...p} />])
-          .with({ type: "earn" }, (p) => [index, <PositionCardEarn {...p} />])
-          .with({ type: "leverage" }, (p) => [index, <PositionCardLeverage {...p} />])
-          .with({ type: "stake" }, (p) => [index, <PositionCardStake {...p} />])
-          .exhaustive()
-      )) ?? [];
+      let cards: Array<[number, ReactNode]> = [];
+
       if (showNewPositionCard) {
         cards.push([positions.length ?? -1, <NewPositionCard />]);
       }
+
+      cards = cards.concat(
+        positions.map((position, index) => (
+          match(position)
+            .returnType<[number, ReactNode]>()
+            .with({ type: "borrow" }, (p) => [index, <PositionCardBorrow {...p} />])
+            .with({ type: "earn" }, (p) => [index, <PositionCardEarn {...p} />])
+            .with({ type: "leverage" }, (p) => [index, <PositionCardLeverage {...p} />])
+            .with({ type: "stake" }, (p) => [index, <PositionCardStake {...p} />])
+            .exhaustive()
+        )) ?? [],
+      );
+
       return cards;
     })
     .with("loading", () => [

@@ -132,6 +132,7 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
         loan={newLoan}
         prevLoan={prevLoan}
         onRetry={() => {}}
+        txPreviewMode
       />
     );
   },

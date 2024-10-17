@@ -1,27 +1,35 @@
 import type { PositionStake } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
 import { css } from "@/styled-system/css";
 import { HFlex, IconStake, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 export function StakePositionSummary({
-  stakePosition,
   prevStakePosition,
+  stakePosition,
+  txPreviewMode = false,
 }: {
-  stakePosition: null | PositionStake;
   prevStakePosition?: null | PositionStake;
+  stakePosition: null | PositionStake;
+  txPreviewMode?: boolean;
 }) {
+  // We might want to use an inactive state like for the Earn positions.
+  // For now, it's always active.
   const active = true;
 
   return (
     <div
       className={css({
+        position: "relative",
         display: "flex",
         flexDirection: "column",
         padding: 16,
         borderRadius: 8,
+        userSelect: "none",
+
         "--fg-primary-active": "token(colors.strongSurfaceContent)",
         "--fg-primary-inactive": "token(colors.content)",
 
@@ -33,6 +41,8 @@ export function StakePositionSummary({
 
         "--bg-active": "token(colors.strongSurface)",
         "--bg-inactive": "token(colors.infoSurface)",
+
+        "--update-color": "token(colors.positiveAlt)",
       })}
       style={{
         color: `var(--fg-primary-${active ? "active" : "inactive"})`,
@@ -40,6 +50,7 @@ export function StakePositionSummary({
         border: active ? 0 : "1px solid var(--border-inactive)",
       }}
     >
+      {txPreviewMode && <TagPreview />}
       <div
         className={css({
           display: "flex",
@@ -68,7 +79,6 @@ export function StakePositionSummary({
               color: "strongSurfaceContent",
               fontSize: 12,
               textTransform: "uppercase",
-              userSelect: "none",
             })}
           >
             <div
@@ -110,24 +120,38 @@ export function StakePositionSummary({
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
-                userSelect: "none",
               })}
             >
-              <Amount
-                value={stakePosition?.deposit ?? 0}
-              />
+              <div
+                style={{
+                  color: txPreviewMode
+                      && prevStakePosition
+                      && stakePosition?.deposit
+                      && !dn.eq(prevStakePosition.deposit, stakePosition.deposit)
+                    ? "var(--update-color)"
+                    : "inherit",
+                }}
+              >
+                <Amount
+                  format={2}
+                  value={stakePosition?.deposit ?? 0}
+                />
+              </div>
               <TokenIcon symbol="LQTY" size={32} />
-              {prevStakePosition && stakePosition && !dn.eq(prevStakePosition.deposit, stakePosition.deposit) && (
-                <div
-                  title={`${fmtnum(prevStakePosition.deposit, "full")} LQTY`}
-                  className={css({
-                    color: "contentAlt",
-                    textDecoration: "line-through",
-                  })}
-                >
-                  {fmtnum(prevStakePosition.deposit)}
-                </div>
-              )}
+              {prevStakePosition
+                && stakePosition
+                && !dn.eq(prevStakePosition.deposit, stakePosition.deposit)
+                && (
+                  <div
+                    title={`${fmtnum(prevStakePosition.deposit, "full")} LQTY`}
+                    className={css({
+                      color: "contentAlt",
+                      textDecoration: "line-through",
+                    })}
+                  >
+                    {fmtnum(prevStakePosition.deposit, 2)}
+                  </div>
+                )}
             </div>
           </div>
           <div
@@ -173,7 +197,12 @@ export function StakePositionSummary({
             </div>
             {active
               ? (
-                <HFlex>
+                <HFlex
+                  gap={8}
+                  className={css({
+                    color: txPreviewMode ? "var(--update-color)" : "inherit",
+                  })}
+                >
                   <HFlex gap={4}>
                     <Amount
                       format="2diff"
@@ -213,10 +242,21 @@ export function StakePositionSummary({
                   gap: 4,
                 })}
               >
-                <Amount
-                  percentage
-                  value={stakePosition?.share ?? 0}
-                />
+                <div
+                  style={{
+                    color: txPreviewMode
+                        && prevStakePosition
+                        && stakePosition?.share
+                        && !dn.eq(prevStakePosition.share, stakePosition.share)
+                      ? "var(--update-color)"
+                      : "inherit",
+                  }}
+                >
+                  <Amount
+                    percentage
+                    value={stakePosition?.share ?? 0}
+                  />
+                </div>
                 {prevStakePosition && stakePosition && !dn.eq(prevStakePosition.share, stakePosition.share)
                   ? (
                     <div

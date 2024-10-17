@@ -293,12 +293,7 @@ export default {
     depositPanel: {
       label: "Deposit",
       shareLabel: "Pool share",
-      claimCheckbox: "Claim rewards",
-      action: "Next: Summary",
-    },
-    withdrawPanel: {
-      label: "Withdraw",
-      claimCheckbox: "Claim rewards",
+      rewardsLabel: "Available rewards",
       action: "Next: Summary",
     },
     rewardsPanel: {
@@ -313,7 +308,7 @@ export default {
     infoTooltips: {
       alsoClaimRewardsDeposit: [
         <>
-          If checked, rewards are paid out as part of the update transaction.
+          Rewards will be paid out as part of the update transaction.
         </>,
       ],
     },

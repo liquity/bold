@@ -16,7 +16,6 @@ import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { Button, Checkbox, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 type ValueUpdateMode = "add" | "remove";
@@ -30,7 +29,6 @@ export function PanelUpdateDeposit({
   collIndex: null | CollIndex;
   position?: PositionEarn;
 }) {
-  const router = useRouter();
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
@@ -249,7 +247,6 @@ export function PanelUpdateDeposit({
                 claim: claimRewards,
                 collIndex,
               });
-              router.push("/transactions");
             }
           }}
         />

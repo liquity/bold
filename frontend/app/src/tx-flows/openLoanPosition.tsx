@@ -86,6 +86,7 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
             type: "borrow",
           }}
           onRetry={() => {}}
+          txPreviewMode
         />
       </div>
     );

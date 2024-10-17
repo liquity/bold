@@ -17,6 +17,7 @@ import type { Request as EarnDepositRequest } from "@/src/tx-flows/earnDeposit";
 import type { Request as EarnWithdrawRequest } from "@/src/tx-flows/earnWithdraw";
 import type { Request as OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
 import type { Request as OpenLoanPositionRequest } from "@/src/tx-flows/openLoanPosition";
+import type { Request as StakeClaimRewardsRequest } from "@/src/tx-flows/stakeClaimRewards";
 import type { Request as StakeDepositRequest } from "@/src/tx-flows/stakeDeposit";
 import type { Request as UnstakeDepositRequest } from "@/src/tx-flows/unstakeDeposit";
 import type { Request as UpdateLoanInterestRateRequest } from "@/src/tx-flows/updateLoanInterestRate";
@@ -35,6 +36,7 @@ import { earnDeposit } from "@/src/tx-flows/earnDeposit";
 import { earnWithdraw } from "@/src/tx-flows/earnWithdraw";
 import { openLeveragePosition } from "@/src/tx-flows/openLeveragePosition";
 import { openLoanPosition } from "@/src/tx-flows/openLoanPosition";
+import { stakeClaimRewards } from "@/src/tx-flows/stakeClaimRewards";
 import { stakeDeposit } from "@/src/tx-flows/stakeDeposit";
 import { unstakeDeposit } from "@/src/tx-flows/unstakeDeposit";
 import { updateLoanInterestRate } from "@/src/tx-flows/updateLoanInterestRate";
@@ -42,6 +44,7 @@ import { updateLoanPosition } from "@/src/tx-flows/updateLoanPosition";
 import { noop } from "@/src/utils";
 import { vAddress, vHash } from "@/src/valibot-utils";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import * as v from "valibot";
 import { useTransactionReceipt, useWriteContract } from "wagmi";
@@ -55,6 +58,7 @@ export type FlowRequest =
   | EarnWithdrawRequest
   | OpenLeveragePositionRequest
   | OpenLoanPositionRequest
+  | StakeClaimRewardsRequest
   | StakeDepositRequest
   | UnstakeDepositRequest
   | UpdateLoanInterestRateRequest
@@ -73,6 +77,7 @@ const flowDeclarations: {
   openLeveragePosition,
   openLoanPosition,
   stakeDeposit,
+  stakeClaimRewards,
   unstakeDeposit,
   updateLoanInterestRate,
   updateLoanPosition,
@@ -86,6 +91,7 @@ const FlowIdSchema = v.union([
   v.literal("openLeveragePosition"),
   v.literal("openLoanPosition"),
   v.literal("stakeDeposit"),
+  v.literal("stakeClaimRewards"),
   v.literal("unstakeDeposit"),
   v.literal("updateLoanInterestRate"),
   v.literal("updateLoanPosition"),
@@ -260,6 +266,7 @@ const TransactionFlowContext = createContext<Context>({
 });
 
 export function TransactionFlow({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const wagmiConfig = useWagmiConfig();
   const account = useAccount();
   const contracts = useContracts();
@@ -288,6 +295,8 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
 
     setFlowAndStatus({ flow: newFlow });
     FlowContextStorage.set(newFlow);
+
+    router.push("/transactions");
   }, [account]);
 
   // discard the current transaction flow (remove it from local storage)

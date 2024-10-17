@@ -91,7 +91,7 @@ export function DropdownFixture({
         items={small ? itemsWithSecondary : [
           tokenItemRow("ETH", "ETH", "10.00"),
           tokenItemRow("RETH", "rETH", "30.00"),
-          tokenItemRow("STETH", "stETH", "40.00"),
+          tokenItemRow("STETH", "wstETH", "40.00"),
         ]}
         menuWidth={300}
         onSelect={setSelected}

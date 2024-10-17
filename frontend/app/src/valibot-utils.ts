@@ -119,3 +119,16 @@ export function vEnvCurrency() {
     }),
   );
 }
+
+export function vPositionStake() {
+  return v.object({
+    type: v.literal("stake"),
+    deposit: vDnum(),
+    share: vDnum(),
+    totalStaked: vDnum(),
+    rewards: v.object({
+      lusd: vDnum(),
+      eth: vDnum(),
+    }),
+  });
+}

@@ -47,23 +47,13 @@ export function PositionCardStake({
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-              <Amount
-                value={rewards.lusd}
-                format="2diff"
-              />
-              <TokenIcon
-                size={24}
-                symbol="LUSD"
-              />
+              <Amount value={deposit} format={2} />
+              <TokenIcon size="medium" symbol="LQTY" />
             </HFlex>
           ),
           label: (
             <HFlex gap={4} justifyContent="flex-start">
-              <Amount value={rewards.eth} format="4diff" />
-              <TokenIcon
-                size="small"
-                symbol="ETH"
-              />
+              Staked LQTY
             </HFlex>
           ),
         }}
@@ -103,6 +93,7 @@ export function PositionCardStake({
                 <div
                   className={css({
                     display: "flex",
+                    alignItems: "center",
                     gap: 8,
                     fontSize: 14,
                   })}
@@ -112,17 +103,29 @@ export function PositionCardStake({
                       color: "strongSurfaceContentAlt",
                     })}
                   >
-                    Deposit
+                    Rewards
                   </div>
                   <div
                     className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
                       color: "strongSurfaceContent",
                     })}
                   >
-                    <Amount
-                      value={deposit}
-                      suffix=" LQTY"
-                    />
+                    <Amount value={rewards.lusd} format="2diff" />
+                    <TokenIcon size="mini" symbol="LUSD" />
+                  </div>
+                  <div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      color: "strongSurfaceContent",
+                    })}
+                  >
+                    <Amount value={rewards.eth} format="4diff" />
+                    <TokenIcon size="mini" symbol="ETH" />
                   </div>
                 </div>
               }

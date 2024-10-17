@@ -2,6 +2,7 @@ import type { Address, CollateralSymbol } from "@liquity2/uikit";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
 import { useCollateral, useCollIndexFromSymbol, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
@@ -14,11 +15,13 @@ export function EarnPositionSummary({
   collSymbol,
   linkToScreen,
   title,
+  txPreviewMode,
 }: {
   address?: Address;
   collSymbol: CollateralSymbol;
   linkToScreen?: boolean;
   title?: ReactNode;
+  txPreviewMode?: boolean;
 }) {
   const collIndex = useCollIndexFromSymbol(collSymbol);
   const collateral = useCollateral(collIndex);
@@ -134,29 +137,33 @@ export function EarnPositionSummary({
               alignItems: "flex-end",
             })}
           >
-            <div>
-              <Amount
-                fallback="-%"
-                format="1z"
-                percentage
-                value={earnPool.data?.apr}
-              />
-            </div>
-            <div
-              className={css({
-                display: "flex",
-                gap: 4,
-                fontSize: 14,
-              })}
-              style={{
-                color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
-              }}
-            >
-              <div>Current APR</div>
-              <InfoTooltip heading="Annual Percentage Rate (APR)">
-                The annualized rate this stability pool’s deposits earned over the past 7 days.
-              </InfoTooltip>
-            </div>
+            {txPreviewMode ? <TagPreview /> : (
+              <>
+                <div>
+                  <Amount
+                    fallback="-%"
+                    format="1z"
+                    percentage
+                    value={earnPool.data?.apr}
+                  />
+                </div>
+                <div
+                  className={css({
+                    display: "flex",
+                    gap: 4,
+                    fontSize: 14,
+                  })}
+                  style={{
+                    color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
+                  }}
+                >
+                  <div>Current APR</div>
+                  <InfoTooltip heading="Annual Percentage Rate (APR)">
+                    The annualized rate this stability pool’s deposits earned over the past 7 days.
+                  </InfoTooltip>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

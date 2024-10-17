@@ -4,6 +4,7 @@ import type { LoadingState } from "./TransactionsScreen";
 
 import { INFINITY } from "@/src/characters";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
+import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { Value } from "@/src/comps/Value/Value";
 import { formatRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
@@ -27,12 +28,14 @@ export function LoanCard({
   loan,
   prevLoan,
   onRetry,
+  txPreviewMode = false,
 }: {
   leverageMode: boolean;
   loadingState: LoadingState;
   loan: PositionLoan | null;
   prevLoan?: PositionLoan | null;
   onRetry: () => void;
+  txPreviewMode?: boolean;
 }) {
   const collateral = (
     loan && TOKENS_BY_SYMBOL[loan.collateral]
@@ -78,6 +81,7 @@ export function LoanCard({
       leverage={leverageMode}
       loadingState={loadingState}
       onRetry={onRetry}
+      txPreviewMode={txPreviewMode}
     >
       {isLoanClosing
         ? (
@@ -478,12 +482,14 @@ function LoadingCard({
   leverage,
   loadingState,
   onRetry,
+  txPreviewMode,
 }: {
   children: ReactNode;
   height: number;
   leverage: boolean;
   loadingState: LoadingState;
   onRetry: () => void;
+  txPreviewMode?: boolean;
 }) {
   const title = leverage ? "Leverage loan" : "BOLD loan";
 
@@ -551,6 +557,7 @@ function LoadingCard({
           willChange: "transform",
         }}
       >
+        {txPreviewMode && loadingState === "success" && <TagPreview />}
         <h1
           className={css({
             display: "flex",

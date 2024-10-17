@@ -4,13 +4,12 @@ import { ARROW_RIGHT } from "@/src/characters";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
-import { InfoBox } from "@/src/comps/InfoBox/InfoBox";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
-import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
+import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import content from "@/src/content";
 import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
-import { fmtnum, formatRisk } from "@/src/formatting";
+import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
 import { getPrefixedTroveId } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
@@ -21,7 +20,6 @@ import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { Button, HFlex, InfoTooltip, StatusDot, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { maxUint256 } from "viem";
 
@@ -30,7 +28,6 @@ export function PanelUpdateRate({
 }: {
   loan: PositionLoan;
 }) {
-  const router = useRouter();
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
@@ -120,55 +117,35 @@ export function PanelUpdateRate({
           padding: "8px 0",
         })}
       >
-        <InfoBox>
-          <HFlex justifyContent="space-between" gap={16}>
-            <div>Redemption risk</div>
-            <ValueUpdate
-              before={loanDetails.redemptionRisk && (
-                <HFlex gap={4} justifyContent="flex-start">
+        <UpdateBox
+          updates={[
+            {
+              label: "Redemption risk",
+              before: loanDetails.redemptionRisk && (
+                <>
                   <StatusDot mode={riskLevelToStatusMode(loanDetails.redemptionRisk)} />
                   {formatRisk(loanDetails.redemptionRisk)}
-                </HFlex>
-              )}
-              after={newLoanDetails.redemptionRisk && (
-                <HFlex gap={4} justifyContent="flex-start">
+                </>
+              ),
+              after: newLoanDetails.redemptionRisk && (
+                <>
                   <StatusDot mode={riskLevelToStatusMode(newLoanDetails.redemptionRisk)} />
                   {formatRisk(newLoanDetails.redemptionRisk)}
-                </HFlex>
-              )}
-            />
-          </HFlex>
-          <HFlex justifyContent="space-between" gap={16}>
-            <HFlex gap={4}>
-              <div>BOLD interest per year</div>
-              <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
-            </HFlex>
-            {boldInterestPerYear && (
-              <ValueUpdate
-                before={
-                  <HFlex
-                    gap={8}
-                    className={css({
-                      fontVariantNumeric: "tabular-nums",
-                    })}
-                  >
-                    {fmtnum(boldInterestPerYearPrev)} BOLD
-                  </HFlex>
-                }
-                after={
-                  <HFlex
-                    gap={8}
-                    className={css({
-                      fontVariantNumeric: "tabular-nums",
-                    })}
-                  >
-                    {fmtnum(boldInterestPerYear)} BOLD
-                  </HFlex>
-                }
-              />
-            )}
-          </HFlex>
-        </InfoBox>
+                </>
+              ),
+            },
+            {
+              label: (
+                <>
+                  <div>BOLD interest per year</div>
+                  <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
+                </>
+              ),
+              before: <Amount value={boldInterestPerYearPrev} suffix="BOLD" />,
+              after: <Amount value={boldInterestPerYear} suffix="BOLD" />,
+            },
+          ]}
+        />
       </div>
 
       <div
@@ -206,7 +183,6 @@ export function PanelUpdateRate({
                 prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
                 upperHint: dnum18(0),
               });
-              router.push("/transactions");
             }
           }}
         />

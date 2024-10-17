@@ -14,6 +14,7 @@ export const ETH_PRICE = dn.from(2_580.293872, 18);
 export const RETH_PRICE = dn.from(2_884.72294, 18);
 export const STETH_PRICE = dn.from(2_579.931, 18);
 export const BOLD_PRICE = dn.from(1.0031, 18);
+export const LUSD_PRICE = dn.from(1.012, 18);
 
 export const STAKED_LQTY_TOTAL = [43_920_716_739_092_664_364_409_174n, 18] as const;
 

@@ -53,7 +53,7 @@ export const RETH: CollateralToken = {
 export const STETH: CollateralToken = {
   collateralRatio: 1.2,
   icon: tokenSteth,
-  name: "stETH",
+  name: "wstETH",
   symbol: "STETH" as const,
 } as const;
 
