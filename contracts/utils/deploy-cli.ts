@@ -228,6 +228,7 @@ Deploying Liquity contracts with the following settings:
     gasCompZapper: branch.gasCompZapper,
     gasPool: branch.gasPool,
     interestRouter: branch.interestRouter,
+    leverageZapper: branch.leverageZapper,
     metadataNFT: branch.metadataNFT,
     priceFeed: branch.priceFeed,
     sortedTroves: branch.sortedTroves,
