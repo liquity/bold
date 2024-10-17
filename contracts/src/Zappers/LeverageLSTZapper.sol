@@ -64,7 +64,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
         );
 
         // return leftovers to user
-        _returnLeftovers(collToken, boldToken, initialBalances);
+        _returnLeftovers(initialBalances);
     }
 
     // Callback from the flash loan provider
@@ -145,7 +145,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
         );
 
         // return leftovers to user
-        _returnLeftovers(collToken, boldToken, initialBalances);
+        _returnLeftovers(initialBalances);
     }
 
     // Callback from the flash loan provider
@@ -190,7 +190,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
         );
 
         // return leftovers to user
-        _returnLeftovers(collToken, boldToken, initialBalances);
+        _returnLeftovers(initialBalances);
     }
 
     // Callback from the flash loan provider
