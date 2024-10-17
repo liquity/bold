@@ -1,1 +1,1 @@
-# Liquity v2 UI kit
+# Liquity V2 UI kit

@@ -59,7 +59,7 @@ templates:
           handler: handleTroveUpdated
   - name: StabilityPool
     kind: ethereum/contract
-    network: mainnet
+    network: sepolia
     source:
       abi: StabilityPool
     mapping:
@@ -77,3 +77,7 @@ templates:
         - event: DepositUpdated(indexed
             address,uint256,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleDepositUpdated
+        - event: S_Updated(uint256,uint128,uint128)
+          handler: handleSUpdated
+        - event: B_Updated(uint256,uint128,uint128)
+          handler: handleBUpdated

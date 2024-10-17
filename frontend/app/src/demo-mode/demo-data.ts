@@ -5,8 +5,6 @@ import type { Dnum } from "dnum";
 import { INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import * as dn from "dnum";
 
-export const LOAN_SCREEN_MANUAL_LOADING_STATE = false;
-
 export const PRICE_UPDATE_INTERVAL = 15_000;
 export const PRICE_UPDATE_VARIATION = 0.003;
 export const PRICE_UPDATE_MANUAL = false;
@@ -16,6 +14,7 @@ export const ETH_PRICE = dn.from(2_580.293872, 18);
 export const RETH_PRICE = dn.from(2_884.72294, 18);
 export const STETH_PRICE = dn.from(2_579.931, 18);
 export const BOLD_PRICE = dn.from(1.0031, 18);
+export const LUSD_PRICE = dn.from(1.012, 18);
 
 export const STAKED_LQTY_TOTAL = [43_920_716_739_092_664_364_409_174n, 18] as const;
 
@@ -66,6 +65,8 @@ export const ACCOUNT_POSITIONS: Position[] = [
   {
     type: "stake",
     deposit: dn.from(3414, 18),
+    share: dn.div(dn.from(3414, 18), STAKED_LQTY_TOTAL),
+    totalStaked: STAKED_LQTY_TOTAL,
     rewards: {
       lusd: dn.from(789.438, 18),
       eth: dn.from(0.943, 18),

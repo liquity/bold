@@ -67,6 +67,8 @@ export type PositionEarn = {
 export type PositionStake = {
   type: "stake";
   deposit: Dnum;
+  share: Dnum;
+  totalStaked: Dnum;
   rewards: {
     lusd: Dnum;
     eth: Dnum;

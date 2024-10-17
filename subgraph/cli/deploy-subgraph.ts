@@ -218,23 +218,3 @@ function getLatestDeploymentContext() {
     return null;
   }
 }
-
-declare module "zx" {
-  type MinimistOptions<B extends string, S extends string> = {
-    string?: readonly S[];
-    boolean?: readonly B[];
-    alias?: { [key: string]: B | S };
-    default?: { [key in B | S]?: boolean | string };
-  };
-
-  type MinimistResult<B extends string, S extends string> =
-    & { _: string[] }
-    & { [K in B]: boolean }
-    & { [K in S]: string | undefined }
-    & { [K in string]: boolean | string | string[] };
-
-  function minimist<B extends string, S extends string>(
-    args: string[],
-    options?: MinimistOptions<B, S>,
-  ): MinimistResult<B, S>;
-}

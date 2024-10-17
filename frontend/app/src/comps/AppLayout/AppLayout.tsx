@@ -6,6 +6,7 @@ import { TopBar } from "@/src/comps/TopBar/TopBar";
 import { css } from "@/styled-system/css";
 
 export const LAYOUT_WIDTH = 1092;
+export const MIN_WIDTH = 960;
 
 export function AppLayout({
   children,
@@ -18,11 +19,15 @@ export function AppLayout({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        width: LAYOUT_WIDTH,
+        width: "100%",
         minHeight: "100vh",
         margin: "0 auto",
         background: "background",
       })}
+      style={{
+        minWidth: `${MIN_WIDTH}px`,
+        maxWidth: `${LAYOUT_WIDTH + 24 * 2}px`,
+      }}
     >
       <div
         className={css({
@@ -36,16 +41,25 @@ export function AppLayout({
       </div>
       <div
         className={css({
-          width: "100%",
           flexGrow: 1,
-          flexShrink: 1,
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
           flexDirection: "column",
         })}
+        style={{
+          width: `${LAYOUT_WIDTH + 24 * 2}px`,
+        }}
       >
-        {children}
+        <div
+          className={css({
+            flexGrow: 1,
+            display: "flex",
+            flexDirection: "column",
+            width: "100%",
+            padding: "0 24px",
+          })}
+        >
+          {children}
+        </div>
         <div
           className={css({
             width: "100%",

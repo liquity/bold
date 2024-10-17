@@ -61,7 +61,6 @@ function loadOrCreateInterestRateBracket(
     rateBracket.rate = rateFloored;
     rateBracket.totalDebt = BigInt.fromI32(0);
     rateBracket.totalTroves = 0;
-    rateBracket.save();
   }
 
   return rateBracket;

@@ -14,6 +14,7 @@ export { IconDashboard } from "./IconDashboard";
 export { IconEarn } from "./IconEarn";
 export { IconEdit } from "./IconEdit";
 export { IconExternal } from "./IconExternal";
+export { IconEye } from "./IconEye";
 export { IconGas } from "./IconGas";
 export { IconInfo } from "./IconInfo";
 export { IconLeverage } from "./IconLeverage";

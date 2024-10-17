@@ -1,13 +1,21 @@
 "use client";
 
+import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
+
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { GasCompensationInfo } from "@/src/comps/GasCompensationInfo/GasCompensationInfo";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { DEBT_SUGGESTIONS, INTEREST_RATE_DEFAULT } from "@/src/constants";
+import {
+  DEBT_SUGGESTIONS,
+  INTEREST_RATE_DEFAULT,
+  MAX_ANNUAL_INTEREST_RATE,
+  MIN_ANNUAL_INTEREST_RATE,
+} from "@/src/constants";
 import content from "@/src/content";
-import { useCollateralContracts } from "@/src/contracts";
+import { useAllCollateralContracts } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
@@ -44,7 +52,7 @@ export function BorrowScreen() {
 
   const account = useAccount();
   const txFlow = useTransactionFlow();
-  const allCollContracts = useCollateralContracts();
+  const allCollContracts = useAllCollateralContracts();
 
   // useParams() can return an array but not with the current
   // routing setup, so we can safely cast it to a string
@@ -71,6 +79,7 @@ export function BorrowScreen() {
   const deposit = useInputFieldValue((value) => `${fmtnum(value)} ${collateral.name}`);
   const debt = useInputFieldValue((value) => `${fmtnum(value)} BOLD`);
   const [interestRate, setInterestRate] = useState(dn.div(dn.from(INTEREST_RATE_DEFAULT, 18), 100));
+  const [interestRateMode, setInterestRateMode] = useState<DelegateMode>("manual");
 
   const collPrice = usePrice(collateral.symbol);
 
@@ -118,21 +127,23 @@ export function BorrowScreen() {
 
   return (
     <Screen
-      title={
-        <HFlex>
-          {content.borrowScreen.headline(
-            <TokenIcon.Group>
-              {allCollContracts.map(({ symbol }) => (
-                <TokenIcon
-                  key={symbol}
-                  symbol={symbol}
-                />
-              ))}
-            </TokenIcon.Group>,
-            <TokenIcon symbol="BOLD" />,
-          )}
-        </HFlex>
-      }
+      heading={{
+        title: (
+          <HFlex>
+            {content.borrowScreen.headline(
+              <TokenIcon.Group>
+                {allCollContracts.map(({ symbol }) => (
+                  <TokenIcon
+                    key={symbol}
+                    symbol={symbol}
+                  />
+                ))}
+              </TokenIcon.Group>,
+              <TokenIcon symbol="BOLD" />,
+            )}
+          </HFlex>
+        ),
+      }}
     >
       <div
         className={css({
@@ -168,7 +179,7 @@ export function BorrowScreen() {
                   selected={collIndex}
                 />
               }
-              label={content.borrowScreen.depositField.label}
+              label="Collateral"
               placeholder="0.00"
               secondary={{
                 start: `$${
@@ -211,7 +222,7 @@ export function BorrowScreen() {
                   label="BOLD"
                 />
               }
-              label={content.borrowScreen.borrowField.label}
+              label="Loan"
               placeholder="0.00"
               secondary={{
                 start: `$${
@@ -236,7 +247,11 @@ export function BorrowScreen() {
                       )
                     ))}
                     {debtSuggestions.length > 0 && (
-                      <InfoTooltip {...infoTooltipProps(content.borrowScreen.infoTooltips.interestRateSuggestions)} />
+                      <InfoTooltip
+                        {...infoTooltipProps(
+                          content.borrowScreen.infoTooltips.interestRateSuggestions,
+                        )}
+                      />
                     )}
                   </HFlex>
                 ),
@@ -270,6 +285,7 @@ export function BorrowScreen() {
               debt={debt.parsed}
               interestRate={interestRate}
               onChange={setInterestRate}
+              onModeChange={setInterestRateMode}
             />
           }
           footer={[
@@ -281,16 +297,19 @@ export function BorrowScreen() {
                   alignItems: "center",
                   gap: 4,
                   color: "contentAlt",
+                  fontSize: 14,
                 })}
               >
                 <IconSuggestion size={16} />
-                <span>You can adjust interest rate later</span>
+                <>The interest rate can be adjusted</>
+                <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateAdjustment)} />
               </span>,
             ],
           ]}
         />
 
         <RedemptionInfo />
+        <GasCompensationInfo />
 
         <div
           style={{
@@ -325,8 +344,12 @@ export function BorrowScreen() {
                   lowerHint: dnum18(0),
                   annualInterestRate: interestRate,
                   maxUpfrontFee: dnum18(maxUint256),
+                  interestRateDelegate: interestRateMode !== "strategy" ? null : [
+                    "0x0000000000000000000000000000000000000000",
+                    MIN_ANNUAL_INTEREST_RATE,
+                    MAX_ANNUAL_INTEREST_RATE,
+                  ],
                 });
-                router.push("/transactions");
               }
             }}
           />

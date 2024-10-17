@@ -2,6 +2,7 @@
 
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { GasCompensationInfo } from "@/src/comps/GasCompensationInfo/GasCompensationInfo";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
@@ -73,20 +74,22 @@ export function LeverageScreen() {
 
   return (
     <Screen
-      title={
-        <HFlex>
-          {content.leverageScreen.headline(
-            <TokenIcon.Group>
-              {COLLATERALS.map(({ symbol }) => (
-                <TokenIcon
-                  key={symbol}
-                  symbol={symbol}
-                />
-              ))}
-            </TokenIcon.Group>,
-          )}
-        </HFlex>
-      }
+      heading={{
+        title: (
+          <HFlex>
+            {content.leverageScreen.headline(
+              <TokenIcon.Group>
+                {COLLATERALS.map(({ symbol }) => (
+                  <TokenIcon
+                    key={symbol}
+                    symbol={symbol}
+                  />
+                ))}
+              </TokenIcon.Group>,
+            )}
+          </HFlex>
+        ),
+      }}
     >
       <div
         className={css({
@@ -218,6 +221,7 @@ export function LeverageScreen() {
         </VFlex>
 
         <RedemptionInfo />
+        <GasCompensationInfo />
 
         <div
           style={{

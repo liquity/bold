@@ -1,7 +1,6 @@
 export function generateStaticParams() {
   return [
     { action: "deposit" },
-    { action: "withdraw" },
     { action: "claim" },
   ];
 }

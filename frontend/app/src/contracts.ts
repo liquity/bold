@@ -1,4 +1,4 @@
-import type { CollateralSymbol } from "@/src/types";
+import type { CollateralSymbol, CollIndex } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 
 import { ActivePool } from "@/src/abi/ActivePool";
@@ -7,6 +7,8 @@ import { CollateralRegistry } from "@/src/abi/CollateralRegistry";
 import { DefaultPool } from "@/src/abi/DefaultPool";
 import { GasCompZapper } from "@/src/abi/GasCompZapper";
 import { HintHelpers } from "@/src/abi/HintHelpers";
+import { LqtyStaking } from "@/src/abi/LqtyStaking";
+import { LqtyToken } from "@/src/abi/LqtyToken";
 import { MultiTroveGetter } from "@/src/abi/MultiTroveGetter";
 import { PriceFeed } from "@/src/abi/PriceFeed";
 import { SortedTroves } from "@/src/abi/SortedTroves";
@@ -19,6 +21,8 @@ import {
   CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
   CONTRACT_HINT_HELPERS,
+  CONTRACT_LQTY_STAKING,
+  CONTRACT_LQTY_TOKEN,
   CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
 } from "@/src/env";
@@ -31,6 +35,8 @@ const protocolAbis = {
   HintHelpers,
   MultiTroveGetter,
   WETH,
+  LqtyToken,
+  LqtyStaking,
 } as const;
 
 const collateralAbis = {
@@ -57,7 +63,11 @@ const abis = {
   ...collateralAbis,
 } as const;
 
-type ProtocolContractName = keyof typeof protocolAbis;
+type ProtocolContractMap = {
+  [K in keyof typeof protocolAbis]: Contract<K>;
+};
+
+type ProtocolContractName = keyof ProtocolContractMap;
 type CollateralContractName = keyof typeof collateralAbis;
 type ContractName = ProtocolContractName | CollateralContractName;
 
@@ -78,10 +88,8 @@ type Collaterals = Array<{
   contracts: CollateralContracts;
 }>;
 
-export type Contracts = {
-  [K in (ProtocolContractName | "collaterals")]: K extends "collaterals" ? Collaterals
-    : K extends ContractName ? Contract<K>
-    : never;
+export type Contracts = ProtocolContractMap & {
+  collaterals: Collaterals;
 };
 
 // Note: even though the contracts related data is coming from the environment,
@@ -94,6 +102,9 @@ export function useContracts(): Contracts {
       HintHelpers: { abi: abis.HintHelpers, address: CONTRACT_HINT_HELPERS },
       MultiTroveGetter: { abi: abis.MultiTroveGetter, address: CONTRACT_MULTI_TROVE_GETTER },
       WETH: { abi: abis.WETH, address: CONTRACT_WETH },
+      LqtyToken: { abi: abis.LqtyToken, address: CONTRACT_LQTY_TOKEN },
+      LqtyStaking: { abi: abis.LqtyStaking, address: CONTRACT_LQTY_STAKING },
+
       collaterals: COLLATERAL_CONTRACTS.map(({ symbol, contracts }) => ({
         symbol,
         contracts: {
@@ -113,26 +124,40 @@ export function useContracts(): Contracts {
   }, []);
 }
 
-export function useCollateralContracts() {
+export function useAllCollateralContracts() {
   return useContracts().collaterals;
 }
 
-export function useProtocolContract(name: ProtocolContractName): Contract<ProtocolContractName> {
-  return useContracts()[name];
+export function useProtocolContract<CN extends ProtocolContractName>(
+  name: CN,
+): ProtocolContractMap[CN] {
+  const contracts = useContracts();
+  return contracts[name];
+}
+
+export function useCollateralContracts(
+  collIndexOrSymbol: CollateralSymbol | CollIndex | null,
+): CollateralContracts | null {
+  const { collaterals } = useContracts();
+
+  const symbol = typeof collIndexOrSymbol === "number"
+    ? collaterals[collIndexOrSymbol].symbol
+    : collIndexOrSymbol;
+
+  return symbol && getCollateralContracts(symbol, collaterals);
 }
 
 export function useCollateralContract<CN extends CollateralContractName>(
-  symbol: CollateralSymbol,
-  name: CN,
+  collIndexOrSymbol: CollateralSymbol | CollIndex | null,
+  contractName: CN,
 ): Contract<CN> | null {
-  const { collaterals } = useContracts();
-  const collateral = collaterals.find((c) => c.symbol === symbol);
-  return collateral?.contracts[name] ?? null;
+  const contracts = useCollateralContracts(collIndexOrSymbol);
+  return contracts?.[contractName] ?? null;
 }
 
 export function getCollateralContracts(
-  symbolOrIndex: CollateralSymbol,
+  symbol: CollateralSymbol,
   collaterals: Collaterals,
 ): CollateralContracts | null {
-  return collaterals.find(({ symbol }) => symbol === symbolOrIndex)?.contracts ?? null;
+  return collaterals.find((c) => c.symbol === symbol)?.contracts ?? null;
 }

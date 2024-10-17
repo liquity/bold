@@ -4,13 +4,17 @@ import { css } from "@/styled-system/css";
 import { AnchorTextButton, IconExternal } from "@liquity2/uikit";
 import { a, useInView, useTransition } from "@react-spring/web";
 
+const TITLE = "Redemptions in a nutshell";
+const SUBTITLE =
+  "Redemptions are different from liquidations. If a loan is (partially) redeemed, the collateral and debt are reduced proportionally. There is no penalty for redemptions.";
+
 const INFO_ITEMS: Array<[
   ComponentType<SVGProps<SVGSVGElement>>,
   string,
 ]> = [
-  [BoldIcon, "BOLD is always redeemable for $1 worth of protocol collateral, minus a fee."],
-  [RedemptionIcon, "Redemptions are processed against the lowest interest rate positions first."],
-  [InterestIcon, "Reduce your chance of redemption by raising your position’s interest rate."],
+  [BoldIcon, "If BOLD goes below $1, redemptions help restore the peg."],
+  [RedemptionIcon, "Redemptions first affect loans with the lowest interest rate."],
+  [InterestIcon, "Raising the interest rate reduces the redemption risk."],
 ];
 
 export function RedemptionInfo() {
@@ -69,7 +73,7 @@ export function RedemptionInfo() {
             fontWeight: 600,
           })}
         >
-          Redemption is not liquidation
+          {TITLE}
         </h1>
         <p
           className={css({
@@ -77,7 +81,7 @@ export function RedemptionInfo() {
             color: "contentAlt",
           })}
         >
-          Your collateral and debt are reduced by the same amount, without penalty.
+          {SUBTITLE}
         </p>
       </header>
 
@@ -121,7 +125,7 @@ export function RedemptionInfo() {
 
       <div>
         <AnchorTextButton
-          href="https://www.liquity.org/"
+          href="https://github.com/liquity/bold#bold-redemptions"
           rel="noopener noreferrer"
           target="_blank"
           label={

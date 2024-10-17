@@ -48,7 +48,6 @@ const stepNames: Record<Step, string> = {
 
 export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
   title: "Review & Confirm",
-  subtitle: "Please review the changes of your borrow position before confirming",
   Summary({ flow }) {
     const loan = useLoanById(flow.request.prefixedTroveId);
 
@@ -70,6 +69,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
         }}
         prevLoan={loan.data}
         onRetry={() => {}}
+        txPreviewMode
       />
     );
   },
