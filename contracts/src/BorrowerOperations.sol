@@ -160,7 +160,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     event BoldTokenAddressChanged(address _boldTokenAddress);
 
     event ShutDown(uint256 _tcr);
-    event ShutDownFromOracleFailure(address _oracleAddress);
 
     constructor(IAddressesRegistry _addressesRegistry)
         AddRemoveManagers(_addressesRegistry)
@@ -1185,7 +1184,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     // Not technically a "Borrower op", but seems best placed here given current shutdown logic.
-    function shutdownFromOracleFailure(address _failedOracleAddr) external {
+    function shutdownFromOracleFailure() external {
         _requireCallerIsPriceFeed();
 
         // No-op rather than revert here, so that the outer function call which fetches the price does not revert
@@ -1193,8 +1192,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         if (hasBeenShutDown) return;
 
         _applyShutdown();
-
-        emit ShutDownFromOracleFailure(_failedOracleAddr);
     }
 
     function _applyShutdown() internal {
