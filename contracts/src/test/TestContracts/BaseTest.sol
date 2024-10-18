@@ -472,6 +472,17 @@ contract BaseTest is TestAccounts, Logging {
         address _batchAddress,
         uint256 _annualInterestRate
     ) internal returns (uint256) {
+        return openTroveAndJoinBatchManagerWithIndex(_troveOwner, 0, _coll, _debt, _batchAddress, _annualInterestRate);
+    }
+
+    function openTroveAndJoinBatchManagerWithIndex(
+        address _troveOwner,
+        uint256 _index,
+        uint256 _coll,
+        uint256 _debt,
+        address _batchAddress,
+        uint256 _annualInterestRate
+    ) internal returns (uint256) {
         if (!borrowerOperations.checkBatchManagerExists(_batchAddress)) {
             registerBatchManager(
                 _batchAddress,
@@ -486,7 +497,7 @@ contract BaseTest is TestAccounts, Logging {
         IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams memory params = IBorrowerOperations
             .OpenTroveAndJoinInterestBatchManagerParams({
             owner: _troveOwner,
-            ownerIndex: 0,
+            ownerIndex: _index,
             collAmount: _coll,
             boldAmount: _debt,
             upperHint: 0,
