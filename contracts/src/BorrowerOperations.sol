@@ -126,6 +126,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error TroveNotInBatch();
     error InterestNotInRange();
     error BatchInterestRateChangePeriodNotPassed();
+    error TroveExists();
     error TroveNotOpen();
     error TroveNotActive();
     error TroveNotZombie();
@@ -322,7 +323,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireNotBelowCriticalThreshold(vars.price);
 
         vars.troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
-        _requireTroveIsNotOpen(vars.troveManager, vars.troveId);
+        _requireTroveDoesNotExists(vars.troveManager, vars.troveId);
 
         _change.collIncrease = _collAmount;
         _change.debtIncrease = _boldAmount;
@@ -1311,6 +1312,13 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
 
         return batchManager;
+    }
+
+    function _requireTroveDoesNotExists(ITroveManager _troveManager, uint256 _troveId) internal view {
+        ITroveManager.Status status = _troveManager.getTroveStatus(_troveId);
+        if (status != ITroveManager.Status.nonExistent) {
+            revert TroveExists();
+        }
     }
 
     function _requireTroveIsOpen(ITroveManager _troveManager, uint256 _troveId) internal view {

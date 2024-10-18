@@ -71,7 +71,7 @@ contract RebasingBatchShares is DevTestSetup {
         uint256 x;
         while (x++ < 100) {
             // Each iteration adds 1 wei of debt to the Batch, while leaving the Shares at 1
-            _openCloseRemainderLoop(1, BTroveId);
+            _openCloseRemainderLoop(1, BTroveId, x);
         }
 
         _logTrovesAndBatch(B, BTroveId);
@@ -99,7 +99,7 @@ contract RebasingBatchShares is DevTestSetup {
         // === 4: Free Loans === //
         // uint256 debtB4 = borrowerOperations.getEntireSystemDebt();
         // We shouldn’t be able to open a new Trove now
-        uint256 anotherATroveId = openTroveExpectRevert(A, 100 ether, MIN_DEBT, B);
+        uint256 anotherATroveId = openTroveExpectRevert(A, x + 1, 100 ether, MIN_DEBT, B);
         assertEq(anotherATroveId, 0);
 
         /*
@@ -158,11 +158,12 @@ contract RebasingBatchShares is DevTestSetup {
         */
     }
 
-    function _openCloseRemainderLoop(uint256 amt, uint256 BTroveId) internal {
+    function _openCloseRemainderLoop(uint256 amt, uint256 BTroveId, uint256 iteration) internal {
         LatestTroveData memory troveBefore = troveManager.getLatestTroveData(BTroveId);
 
         // Open
-        uint256 ATroveId = openTroveAndJoinBatchManager(A, 100 ether, MIN_DEBT, B, MAX_ANNUAL_INTEREST_RATE);
+        uint256 ATroveId =
+            openTroveAndJoinBatchManagerWithIndex(A, iteration + 1, 100 ether, MIN_DEBT, B, MAX_ANNUAL_INTEREST_RATE);
 
         // Add debt that wont' be credited (fibonacci)
         _addDebtAndEnsureItDoesntMintShares(ATroveId, A, amt); // TODO: Needs to be made to scale
@@ -205,14 +206,17 @@ contract RebasingBatchShares is DevTestSetup {
         return allBatchDebtShares;
     }
 
-    function openTroveExpectRevert(address _troveOwner, uint256 _coll, uint256 _debt, address _batchAddress)
-        internal
-        returns (uint256)
-    {
+    function openTroveExpectRevert(
+        address _troveOwner,
+        uint256 _troveIndex,
+        uint256 _coll,
+        uint256 _debt,
+        address _batchAddress
+    ) internal returns (uint256) {
         IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams memory params = IBorrowerOperations
             .OpenTroveAndJoinInterestBatchManagerParams({
             owner: _troveOwner,
-            ownerIndex: 0,
+            ownerIndex: _troveIndex,
             collAmount: _coll,
             boldAmount: _debt,
             upperHint: 0,
