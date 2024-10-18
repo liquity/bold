@@ -1218,6 +1218,49 @@ contract InterestBatchManagementTest is DevTestSetup {
         );
     }
 
+    function testJoinBatchManagerCannotBeUsedToDo2ConsecutiveChangesForFree() public {
+        // B registers as batch manager, with min interest rate
+        registerBatchManager(B, uint128(MIN_ANNUAL_INTEREST_RATE), 1e18, 5e16, 0, MIN_INTEREST_RATE_CHANGE_PERIOD);
+
+        // A opens trove at 5% interest rate
+        uint256 troveId = openTroveNoHints100pct(A, 100 ether, 2000e18, 5e16);
+
+        // Cool down period gone by
+        vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1);
+
+        // A joins batch manager B
+        uint256 ADebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 upfrontFee = predictJoinBatchInterestRateUpfrontFee(troveId, B);
+        setInterestBatchManager(A, troveId, B);
+
+        // It should trigger upfront fee
+        assertGt(upfrontFee, 0, "Upfront fee should be > 0");
+        assertEq(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore + upfrontFee,
+            "A debt should increase by upfrontfee after first switch"
+        );
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(
+            troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A after first switch"
+        );
+
+        // Adjust interest rate of new batch B, to 6%
+        ADebtBefore = troveManager.getTroveEntireDebt(troveId);
+        setBatchInterestRate(B, 6e16);
+
+        // It shouldn’t trigger upfront fee
+        assertEq(
+            troveManager.getTroveEntireDebt(troveId), ADebtBefore, "A debt should not increase after first batch adjust"
+        );
+        troveData = troveManager.getLatestTroveData(troveId);
+        assertEq(
+            troveData.lastInterestRateAdjTime,
+            block.timestamp,
+            "Wrong interest rate adj time for A after first batch adjust"
+        );
+    }
+
     function testAnZombieTroveGoesBackToTheBatch() public {
         // A opens trove and joins batch manager B
         uint256 troveId = openTroveAndJoinBatchManager(A, 100 ether, 2000e18, B, 5e16);
