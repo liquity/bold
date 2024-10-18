@@ -1155,18 +1155,30 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         // It should trigger upfront fee
         assertGt(upfrontFee, 0, "Upfront fee should be > 0");
-        assertEq(troveManager.getTroveEntireDebt(troveId), ADebtBefore + upfrontFee, "A debt should increase by upfrontfee after first switch");
+        assertEq(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore + upfrontFee,
+            "A debt should increase by upfrontfee after first switch"
+        );
         LatestTroveData memory troveData = troveManager.getLatestTroveData(troveId);
-        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A after first switch");
+        assertEq(
+            troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A after first switch"
+        );
 
         // Adjust interest rate of new batch C, to 6%
         ADebtBefore = troveManager.getTroveEntireDebt(troveId);
         setBatchInterestRate(C, 6e16);
 
         // It shouldn’t trigger upfront fee
-        assertEq(troveManager.getTroveEntireDebt(troveId), ADebtBefore, "A debt should not increase after first batch adjust");
+        assertEq(
+            troveManager.getTroveEntireDebt(troveId), ADebtBefore, "A debt should not increase after first batch adjust"
+        );
         troveData = troveManager.getLatestTroveData(troveId);
-        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A after first batch adjust");
+        assertEq(
+            troveData.lastInterestRateAdjTime,
+            block.timestamp,
+            "Wrong interest rate adj time for A after first batch adjust"
+        );
 
         // Cool down period gone by
         vm.warp(block.timestamp + INTEREST_RATE_ADJ_COOLDOWN + 1);
@@ -1178,18 +1190,32 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         // It should trigger upfront fee
         assertGt(upfrontFee, 0, "Upfront fee should be > 0");
-        assertEq(troveManager.getTroveEntireDebt(troveId), ADebtBefore + upfrontFee, "A debt should increase by upfrontfee after second switch");
+        assertEq(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore + upfrontFee,
+            "A debt should increase by upfrontfee after second switch"
+        );
         troveData = troveManager.getLatestTroveData(troveId);
-        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A after second switch");
+        assertEq(
+            troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A after second switch"
+        );
 
         // Adjust interest rate of batch B, to 3%
         ADebtBefore = troveManager.getTroveEntireDebt(troveId);
         setBatchInterestRate(B, 3e16);
 
         // It shouldn’t trigger upfront fee
-        assertEq(troveManager.getTroveEntireDebt(troveId), ADebtBefore, "A debt should not increase after second batch adjust");
+        assertEq(
+            troveManager.getTroveEntireDebt(troveId),
+            ADebtBefore,
+            "A debt should not increase after second batch adjust"
+        );
         troveData = troveManager.getLatestTroveData(troveId);
-        assertEq(troveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for A after second batch adjust");
+        assertEq(
+            troveData.lastInterestRateAdjTime,
+            block.timestamp,
+            "Wrong interest rate adj time for A after second batch adjust"
+        );
     }
 
     function testAnZombieTroveGoesBackToTheBatch() public {

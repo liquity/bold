@@ -352,7 +352,9 @@ contract SPTest is DevTestSetup {
         uint256 topUp = 1e18;
         makeSPDepositNoClaim(A, topUp);
 
-        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A + topUp + currentBoldGain, 1e4);
+        assertApproximatelyEqual(
+            stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A + topUp + currentBoldGain, 1e4
+        );
     }
 
     function testProvideToSPNoClaimAddsBoldGainsToTotalBoldDeposits() public {
@@ -371,7 +373,9 @@ contract SPTest is DevTestSetup {
         uint256 topUp = 1e18;
         makeSPDepositNoClaim(A, topUp);
 
-        assertApproximatelyEqual(stabilityPool.getTotalBoldDeposits(), totalBoldDepositsBefore + topUp + currentBoldGain, 1e4);
+        assertApproximatelyEqual(
+            stabilityPool.getTotalBoldDeposits(), totalBoldDepositsBefore + topUp + currentBoldGain, 1e4
+        );
     }
 
     function testProvideToSPNoClaimZerosCurrentBoldGains() public {
@@ -664,7 +668,9 @@ contract SPTest is DevTestSetup {
         uint256 withdrawal = 1e18;
         makeSPWithdrawalNoClaim(A, withdrawal);
 
-        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A - withdrawal + currentBoldGain, 1e4);
+        assertApproximatelyEqual(
+            stabilityPool.getCompoundedBoldDeposit(A), depositBefore_A - withdrawal + currentBoldGain, 1e4
+        );
     }
 
     function testWithdrawFromSPNoClaimAddsBoldGainsToTotalBoldDeposits() public {
@@ -1864,7 +1870,9 @@ contract SPTest is DevTestSetup {
         uint256 scale1 = stabilityPool.currentScale();
 
         // Check A owns entire SP
-        assertApproximatelyEqual(stabilityPool.getTotalBoldDeposits(), stabilityPool.getCompoundedBoldDeposit(A), 1e14, "A should own all SP");
+        assertApproximatelyEqual(
+            stabilityPool.getTotalBoldDeposits(), stabilityPool.getCompoundedBoldDeposit(A), 1e14, "A should own all SP"
+        );
         // Check D's trove's debt equals the SP size
         uint256 troveDebt = troveManager.getTroveEntireDebt(troveIDs.D);
         uint256 debtDelta = troveDebt - stabilityPool.getTotalBoldDeposits();
