@@ -34,7 +34,6 @@ import "../../Zappers/Modules/Exchanges/Curve/ICurvePool.sol";
 import "../../Zappers/Modules/Exchanges/Curve/ICurveStableswapNGPool.sol";
 import "../../Zappers/Modules/Exchanges/CurveExchange.sol";
 import "../../Zappers/Modules/Exchanges/UniswapV3/ISwapRouter.sol";
-import "../../Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
 import "../../Zappers/Modules/Exchanges/UniV3Exchange.sol";
 import "../../Zappers/Modules/Exchanges/UniswapV3/INonfungiblePositionManager.sol";
 import "../../Zappers/Modules/Exchanges/HybridCurveUniV3Exchange.sol";
@@ -57,12 +56,16 @@ contract TestDeployer is MetadataDeployment {
     IERC20 constant USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
     IWETH constant WETH_MAINNET = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
+    // Curve
     ICurveFactory constant curveFactory = ICurveFactory(0x98EE851a00abeE0d95D08cF4CA2BdCE32aeaAF7F);
     ICurveStableswapNGFactory constant curveStableswapFactory =
         ICurveStableswapNGFactory(0x6A8cbed756804B16E05E741eDaBd5cB544AE21bf);
-    ISwapRouter constant uniV3Router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    uint128 constant BOLD_TOKEN_INDEX = 0;
+    uint256 constant COLL_TOKEN_INDEX = 1;
+    uint128 constant USDC_INDEX = 1;
 
-    IQuoterV2 constant uniV3Quoter = IQuoterV2(0x61fFE014bA17989E743c5F6cB21bF9697530B21e);
+    // UniV3
+    ISwapRouter constant uniV3Router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     INonfungiblePositionManager constant uniV3PositionManager =
         INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
     uint24 constant UNIV3_FEE = 3000; // 0.3%
@@ -821,8 +824,8 @@ contract TestDeployer is MetadataDeployment {
 
         // deploy Curve Twocrypto NG pool
         address[2] memory coins;
-        coins[0] = address(_boldToken);
-        coins[1] = address(_collToken);
+        coins[BOLD_TOKEN_INDEX] = address(_boldToken);
+        coins[COLL_TOKEN_INDEX] = address(_collToken);
         ICurvePool curvePool = curveFactory.deploy_pool(
             "LST-Bold pool",
             "LBLD",
@@ -895,7 +898,7 @@ contract TestDeployer is MetadataDeployment {
         bool _lst
     ) internal returns (ILeverageZapper) {
         UniV3Vars memory vars;
-        vars.uniV3Exchange = new UniV3Exchange(_collToken, _boldToken, UNIV3_FEE, uniV3Router, uniV3Quoter);
+        vars.uniV3Exchange = new UniV3Exchange(_collToken, _boldToken, UNIV3_FEE, uniV3Router);
         ILeverageZapper leverageZapperUniV3;
         if (_lst) {
             leverageZapperUniV3 = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, vars.uniV3Exchange);
@@ -938,12 +941,11 @@ contract TestDeployer is MetadataDeployment {
             USDC,
             WETH_MAINNET,
             _usdcCurvePool,
-            1, // USDC Curve pool index
-            0, // BOLD Curve pool index
+            USDC_INDEX, // USDC Curve pool index
+            BOLD_TOKEN_INDEX, // BOLD Curve pool index
             UNIV3_FEE_USDC_WETH,
             UNIV3_FEE_WETH_COLL,
-            uniV3Router,
-            uniV3Quoter
+            uniV3Router
         );
 
         ILeverageZapper leverageZapperHybrid;
@@ -962,8 +964,8 @@ contract TestDeployer is MetadataDeployment {
         // deploy Curve Stableswap pool
         /*
         address[2] memory coins;
-        coins[0] = address(_boldToken);
-        coins[1] = address(USDC);
+        coins[BOLD_TOKEN_INDEX] = address(_boldToken);
+        coins[USDC_INDEX] = address(USDC);
         ICurvePool curvePool = curveStableswapFactory.deploy_plain_pool(
             "USDC-Bold pool",
             "USDCBOLD",
@@ -976,8 +978,8 @@ contract TestDeployer is MetadataDeployment {
         */
         // deploy Curve StableswapNG pool
         address[] memory coins = new address[](2);
-        coins[0] = address(_boldToken);
-        coins[1] = address(USDC);
+        coins[BOLD_TOKEN_INDEX] = address(_boldToken);
+        coins[USDC_INDEX] = address(USDC);
         uint8[] memory assetTypes = new uint8[](2); // 0: standard
         bytes4[] memory methodIds = new bytes4[](2);
         address[] memory oracles = new address[](2);

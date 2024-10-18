@@ -8,7 +8,6 @@ import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import "../../LeftoversSweep.sol";
 import "../../../Interfaces/IBoldToken.sol";
 import "./UniswapV3/ISwapRouter.sol";
-import "./UniswapV3/IQuoterV2.sol";
 import "../../Interfaces/IExchange.sol";
 import {DECIMAL_PRECISION} from "../../../Dependencies/Constants.sol";
 
@@ -21,40 +20,17 @@ contract UniV3Exchange is LeftoversSweep, IExchange {
     IBoldToken public immutable boldToken;
     uint24 public immutable fee;
     ISwapRouter public immutable uniV3Router;
-    IQuoterV2 public immutable uniV3Quoter;
 
     constructor(
         IERC20 _collToken,
         IBoldToken _boldToken,
         uint24 _fee,
-        ISwapRouter _uniV3Router,
-        IQuoterV2 _uniV3Quoter
+        ISwapRouter _uniV3Router
     ) {
         collToken = _collToken;
         boldToken = _boldToken;
         fee = _fee;
         uniV3Router = _uniV3Router;
-        uniV3Quoter = _uniV3Quoter;
-    }
-
-    // See: https://docs.uniswap.org/contracts/v3/reference/periphery/interfaces/IQuoterV2
-    // These functions are not marked view because they rely on calling non-view functions and reverting to compute the result.
-    // They are also not gas efficient and should not be called on-chain.
-    function getBoldAmountToSwap(uint256, /*_boldAmount*/ uint256 _maxBoldAmount, uint256 _minCollAmount)
-        external /* view */
-        returns (uint256)
-    {
-        IQuoterV2.QuoteExactOutputSingleParams memory params = IQuoterV2.QuoteExactOutputSingleParams({
-            tokenIn: address(boldToken),
-            tokenOut: address(collToken),
-            amount: _minCollAmount,
-            fee: fee,
-            sqrtPriceLimitX96: 0
-        });
-        (uint256 amountIn,,,) = uniV3Quoter.quoteExactOutputSingle(params);
-        require(amountIn <= _maxBoldAmount, "Price too high");
-
-        return amountIn;
     }
 
     function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount) external returns (uint256) {

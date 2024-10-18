@@ -34,7 +34,6 @@ contract HybridCurveUniV3Exchange is LeftoversSweep, IExchange {
     uint24 public immutable feeUsdcWeth;
     uint24 public immutable feeWethColl;
     ISwapRouter public immutable uniV3Router;
-    IQuoterV2 public immutable uniV3Quoter;
 
     constructor(
         IERC20 _collToken,
@@ -48,8 +47,7 @@ contract HybridCurveUniV3Exchange is LeftoversSweep, IExchange {
         // UniV3
         uint24 _feeUsdcWeth,
         uint24 _feeWethColl,
-        ISwapRouter _uniV3Router,
-        IQuoterV2 _uniV3Quoter
+        ISwapRouter _uniV3Router
     ) {
         collToken = _collToken;
         boldToken = _boldToken;
@@ -65,47 +63,6 @@ contract HybridCurveUniV3Exchange is LeftoversSweep, IExchange {
         feeUsdcWeth = _feeUsdcWeth;
         feeWethColl = _feeWethColl;
         uniV3Router = _uniV3Router;
-        uniV3Quoter = _uniV3Quoter;
-    }
-
-    function getBoldAmountToSwap(uint256, /* _boldAmount */ uint256 _maxBoldAmount, uint256 _minCollAmount)
-        external /* view */
-        returns (uint256)
-    {
-        // Uniswap
-        uint256 wethAmount;
-        IQuoterV2.QuoteExactOutputSingleParams memory quoterParams;
-        // Coll <- WETH
-        if (address(WETH) != address(collToken)) {
-            quoterParams = IQuoterV2.QuoteExactOutputSingleParams({
-                tokenIn: address(WETH),
-                tokenOut: address(collToken),
-                amount: _minCollAmount,
-                fee: feeWethColl,
-                sqrtPriceLimitX96: 0
-            });
-            (wethAmount,,,) = uniV3Quoter.quoteExactOutputSingle(quoterParams);
-        } else {
-            wethAmount = _minCollAmount;
-        }
-        // WETH <- USDC
-        quoterParams = IQuoterV2.QuoteExactOutputSingleParams({
-            tokenIn: address(USDC),
-            tokenOut: address(WETH),
-            amount: wethAmount,
-            fee: feeUsdcWeth,
-            sqrtPriceLimitX96: 0
-        });
-        (uint256 usdcAmount,,,) = uniV3Quoter.quoteExactOutputSingle(quoterParams);
-
-        // Curve
-        // USDC <- BOLD
-        uint256 boldAmountToSwap = curvePool.get_dx(int128(BOLD_TOKEN_INDEX), int128(USDC_INDEX), usdcAmount);
-        require(boldAmountToSwap <= _maxBoldAmount, "Bold amount required too high");
-
-        boldAmountToSwap = Math.min(boldAmountToSwap * 101 / 100, _maxBoldAmount); // TODO
-
-        return boldAmountToSwap;
     }
 
     // Bold -> USDC on Curve; then USDC -> WETH, and optionally WETH -> Coll, on UniV3
