@@ -33,36 +33,12 @@ contract CurveExchange is IExchange {
         BOLD_TOKEN_INDEX = _boldIndex;
     }
 
-    // Helper to get the actual bold we need, capped by a max value, to get flash loan amount
-    function getBoldAmountToSwap(uint256 _boldAmount, uint256 _maxBoldAmount, uint256 _minCollAmount)
-        external
-        view
-        returns (uint256)
-    {
-        uint256 step = (_maxBoldAmount - _boldAmount) / 5; // In max 5 iterations we should reach the target, unless price is lower
-        uint256 dy;
-        // TODO: Optimizations: binary search, change the step depending on last dy, ...
-        // Or check if there’s any helper implemented anywhere
-        uint256 lastBoldAmount = _maxBoldAmount + step;
-        do {
-            lastBoldAmount -= step;
-            dy = curvePool.get_dy(BOLD_TOKEN_INDEX, COLL_TOKEN_INDEX, lastBoldAmount);
-        } while (dy > _minCollAmount && lastBoldAmount > step);
-
-        uint256 boldAmountToSwap = dy >= _minCollAmount ? lastBoldAmount : lastBoldAmount + step;
-        require(boldAmountToSwap <= _maxBoldAmount, "Bold amount required too high");
-
-        return boldAmountToSwap;
-    }
-
     function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount) external returns (uint256) {
         ICurvePool curvePoolCached = curvePool;
         uint256 initialBoldBalance = boldToken.balanceOf(address(this));
         boldToken.transferFrom(msg.sender, address(this), _boldAmount);
         boldToken.approve(address(curvePoolCached), _boldAmount);
 
-        // TODO: make this work
-        //return curvePoolCached.exchange(BOLD_TOKEN_INDEX, COLL_TOKEN_INDEX, _boldAmount, _minCollAmount, false, msg.sender);
         uint256 output = curvePoolCached.exchange(BOLD_TOKEN_INDEX, COLL_TOKEN_INDEX, _boldAmount, _minCollAmount);
         collToken.safeTransfer(msg.sender, output);
 
@@ -80,7 +56,6 @@ contract CurveExchange is IExchange {
         collToken.safeTransferFrom(msg.sender, address(this), _collAmount);
         collToken.approve(address(curvePoolCached), _collAmount);
 
-        //return curvePoolCached.exchange(COLL_TOKEN_INDEX, BOLD_TOKEN_INDEX, _collAmount, _minBoldAmount, false, msg.sender);
         uint256 output = curvePoolCached.exchange(COLL_TOKEN_INDEX, BOLD_TOKEN_INDEX, _collAmount, _minBoldAmount);
         boldToken.transfer(msg.sender, output);
 
