@@ -2,30 +2,14 @@
 
 pragma solidity ^0.8.18;
 
-import "../Interfaces/IAddressesRegistry.sol";
-import "../Interfaces/IBorrowerOperations.sol";
-import "../Interfaces/ITroveManager.sol";
-import "../Interfaces/ITroveNFT.sol";
-import "../Interfaces/IWETH.sol";
-import "./LeftoversSweep.sol";
 import "./BaseZapper.sol";
 import "../Dependencies/Constants.sol";
-import "./Interfaces/IFlashLoanProvider.sol";
-import "./Interfaces/IFlashLoanReceiver.sol";
-import "./Interfaces/IExchange.sol";
-import "./Interfaces/IZapper.sol";
 
-contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
-    IFlashLoanProvider public immutable flashLoanProvider;
-    IExchange public immutable exchange;
-
+contract WETHZapper is BaseZapper {
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
-        BaseZapper(_addressesRegistry)
+        BaseZapper(_addressesRegistry, _flashLoanProvider, _exchange)
     {
         require(address(WETH) == address(_addressesRegistry.collToken()), "WZ: Wrong coll branch");
-
-        flashLoanProvider = _flashLoanProvider;
-        exchange = _exchange;
 
         // Approve coll to BorrowerOperations
         WETH.approve(address(borrowerOperations), type(uint256).max);

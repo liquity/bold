@@ -4,34 +4,21 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../Interfaces/IAddressesRegistry.sol";
-import "../Interfaces/IBorrowerOperations.sol";
-import "../Interfaces/IWETH.sol";
-import "./LeftoversSweep.sol";
 import "./BaseZapper.sol";
 import "../Dependencies/Constants.sol";
-import "./Interfaces/IFlashLoanProvider.sol";
-import "./Interfaces/IFlashLoanReceiver.sol";
-import "./Interfaces/IExchange.sol";
-import "./Interfaces/IZapper.sol";
 
 // import "forge-std/console2.sol";
 
-contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
+contract GasCompZapper is BaseZapper {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable collToken;
-    IFlashLoanProvider public immutable flashLoanProvider;
-    IExchange public immutable exchange;
 
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
-        BaseZapper(_addressesRegistry)
+        BaseZapper(_addressesRegistry, _flashLoanProvider, _exchange)
     {
         collToken = _addressesRegistry.collToken();
         require(address(WETH) != address(collToken), "GCZ: Wrong coll branch");
-
-        flashLoanProvider = _flashLoanProvider;
-        exchange = _exchange;
 
         // Approve WETH to BorrowerOperations
         WETH.approve(address(borrowerOperations), type(uint256).max);

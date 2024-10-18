@@ -4,10 +4,7 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../Interfaces/IBorrowerOperations.sol";
-import "../Interfaces/IWETH.sol";
 import "./GasCompZapper.sol";
-import "../Dependencies/AddRemoveManagers.sol";
 import "../Dependencies/Constants.sol";
 
 // import "forge-std/console2.sol";
@@ -15,16 +12,9 @@ import "../Dependencies/Constants.sol";
 contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
     using SafeERC20 for IERC20;
 
-    IPriceFeed public immutable priceFeed;
-
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
         GasCompZapper(_addressesRegistry, _flashLoanProvider, _exchange)
     {
-        // Cache contracts
-        IBorrowerOperations _borrowerOperations = borrowerOperations;
-
-        priceFeed = _addressesRegistry.priceFeed();
-
         // Approval of WETH and Coll to BorrowerOperations is done in parent GasCompZapper
         // Approve Bold to exchange module (Coll is approved in parent GasCompZapper)
         boldToken.approve(address(_exchange), type(uint256).max);

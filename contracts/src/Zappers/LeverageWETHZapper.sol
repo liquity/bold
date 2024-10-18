@@ -2,10 +2,7 @@
 
 pragma solidity ^0.8.18;
 
-import "../Interfaces/IBorrowerOperations.sol";
-import "../Interfaces/IWETH.sol";
 import "./WETHZapper.sol";
-import "../Dependencies/AddRemoveManagers.sol";
 import "../Dependencies/Constants.sol";
 import "./Interfaces/ILeverageZapper.sol";
 
@@ -14,13 +11,10 @@ import "./Interfaces/ILeverageZapper.sol";
 // TODO: unwrap WETH in _returnLeftovers
 
 contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
-    IPriceFeed public immutable priceFeed;
 
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
         WETHZapper(_addressesRegistry, _flashLoanProvider, _exchange)
     {
-        priceFeed = _addressesRegistry.priceFeed();
-
         // Approval of coll (WETH) to BorrowerOperations is done in parent WETHZapper
         // Approve Bold to exchange module (Coll is approved in parent WETHZapper)
         boldToken.approve(address(_exchange), type(uint256).max);
