@@ -25,11 +25,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
 
         priceFeed = _addressesRegistry.priceFeed();
 
-        // Approve WETH to BorrowerOperations
-        WETH.approve(address(_borrowerOperations), type(uint256).max);
-        // Approve coll to BorrowerOperations
-        collToken.approve(address(_borrowerOperations), type(uint256).max);
-
+        // Approval of WETH and Coll to BorrowerOperations is done in parent GasCompZapper
         // Approve Bold to exchange module (Coll is approved in parent GasCompZapper)
         boldToken.approve(address(_exchange), type(uint256).max);
     }

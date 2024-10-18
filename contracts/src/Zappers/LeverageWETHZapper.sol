@@ -19,14 +19,9 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
         WETHZapper(_addressesRegistry, _flashLoanProvider, _exchange)
     {
-        // Cache contracts
-        IBorrowerOperations _borrowerOperations = borrowerOperations;
-
         priceFeed = _addressesRegistry.priceFeed();
 
-        // Approve coll to BorrowerOperations
-        WETH.approve(address(_borrowerOperations), type(uint256).max);
-
+        // Approval of coll (WETH) to BorrowerOperations is done in parent WETHZapper
         // Approve Bold to exchange module (Coll is approved in parent WETHZapper)
         boldToken.approve(address(_exchange), type(uint256).max);
     }

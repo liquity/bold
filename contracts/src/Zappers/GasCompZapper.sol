@@ -33,6 +33,10 @@ contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZappe
         flashLoanProvider = _flashLoanProvider;
         exchange = _exchange;
 
+        // Approve WETH to BorrowerOperations
+        WETH.approve(address(borrowerOperations), type(uint256).max);
+        // Approve coll to BorrowerOperations
+        collToken.approve(address(borrowerOperations), type(uint256).max);
         // Approve Coll to exchange module (for closeTroveFromCollateral)
         collToken.approve(address(_exchange), type(uint256).max);
     }
@@ -59,12 +63,8 @@ contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZappe
         // Convert ETH to WETH
         vars.WETH.deposit{value: msg.value}();
 
-        // Approve WETH to BorrowerOperations
-        vars.WETH.approve(address(vars.borrowerOperations), msg.value);
-
         // Pull and approve coll
         vars.collToken.safeTransferFrom(msg.sender, address(this), _params.collAmount);
-        vars.collToken.approve(address(vars.borrowerOperations), _params.collAmount);
 
         if (_params.batchManager == address(0)) {
             vars.troveId = vars.borrowerOperations.openTrove(
@@ -119,9 +119,8 @@ contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZappe
 
         IBorrowerOperations borrowerOperationsCached = borrowerOperations;
 
-        // Pull and approve coll
+        // Pull coll
         collToken.safeTransferFrom(msg.sender, address(this), _amount);
-        collToken.approve(address(borrowerOperationsCached), _amount);
 
         borrowerOperationsCached.addColl(_troveId, _amount);
     }
@@ -213,10 +212,9 @@ contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZappe
         // Set initial balances to make sure there are not lefovers
         _setInitialBalances(collToken, boldToken, _initialBalances);
 
-        // Pull and approve coll
+        // Pull coll
         if (_isCollIncrease) {
             collToken.safeTransferFrom(msg.sender, address(this), _collChange);
-            collToken.approve(address(borrowerOperations), _collChange);
         }
 
         // TODO: version with Permit

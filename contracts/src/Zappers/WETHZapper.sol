@@ -27,6 +27,8 @@ contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
         flashLoanProvider = _flashLoanProvider;
         exchange = _exchange;
 
+        // Approve coll to BorrowerOperations
+        WETH.approve(address(borrowerOperations), type(uint256).max);
         // Approve Coll to exchange module (for closeTroveFromCollateral)
         WETH.approve(address(_exchange), type(uint256).max);
     }
@@ -50,9 +52,6 @@ contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
 
         // Convert ETH to WETH
         vars.WETH.deposit{value: msg.value}();
-
-        // Approve WETH to BorrowerOperations
-        vars.WETH.approve(address(vars.borrowerOperations), msg.value);
 
         if (_params.batchManager == address(0)) {
             vars.troveId = vars.borrowerOperations.openTrove(
@@ -107,11 +106,7 @@ contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
         // Convert ETH to WETH
         WETH.deposit{value: msg.value}();
 
-        // Approve WETH to BorrowerOperations
-        IBorrowerOperations borrowerOperationsCached = borrowerOperations;
-        WETH.approve(address(borrowerOperationsCached), msg.value);
-
-        borrowerOperationsCached.addColl(_troveId, msg.value);
+        borrowerOperations.addColl(_troveId, msg.value);
     }
 
     function withdrawCollToRawETH(uint256 _troveId, uint256 _amount) external {
@@ -212,7 +207,6 @@ contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
         // ETH -> WETH
         if (_isCollIncrease) {
             WETH.deposit{value: _collChange}();
-            WETH.approve(address(borrowerOperations), _collChange);
         }
 
         // TODO: version with Permit
