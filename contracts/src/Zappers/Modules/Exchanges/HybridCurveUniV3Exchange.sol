@@ -155,7 +155,9 @@ contract HybridCurveUniV3Exchange is LeftoversSweep, IExchange {
         initialBalances.tokens[0] = boldToken;
         initialBalances.tokens[1] = USDC;
         initialBalances.tokens[2] = WETH;
-        initialBalances.tokens[3] = collToken;
+        if (address(WETH) != address(collToken)) {
+            initialBalances.tokens[3] = collToken;
+        }
         _setInitialBalances(initialBalances);
     }
 }
