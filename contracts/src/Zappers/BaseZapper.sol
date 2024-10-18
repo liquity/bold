@@ -2,19 +2,33 @@
 
 pragma solidity ^0.8.18;
 
+import "../Interfaces/IWETH.sol";
+import "../Interfaces/IAddressesRegistry.sol";
+import "../Interfaces/IBorrowerOperations.sol";
 import "../Dependencies/AddRemoveManagers.sol";
+import "./LeftoversSweep.sol";
+import "./Interfaces/IFlashLoanProvider.sol";
+import "./Interfaces/IFlashLoanReceiver.sol";
+import "./Interfaces/IExchange.sol";
+import "./Interfaces/IZapper.sol";
 
-contract BaseZapper is AddRemoveManagers {
+abstract contract BaseZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanReceiver, IZapper {
     IBorrowerOperations public immutable borrowerOperations; // LST branch (i.e., not WETH as collateral)
     ITroveManager public immutable troveManager;
     IWETH public immutable WETH;
     IBoldToken public immutable boldToken;
 
-    constructor(IAddressesRegistry _addressesRegistry) AddRemoveManagers(_addressesRegistry) {
+    IFlashLoanProvider public immutable flashLoanProvider;
+    IExchange public immutable exchange;
+
+    constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange) AddRemoveManagers(_addressesRegistry) {
         borrowerOperations = _addressesRegistry.borrowerOperations();
         troveManager = _addressesRegistry.troveManager();
         boldToken = _addressesRegistry.boldToken();
         WETH = _addressesRegistry.WETH();
+
+        flashLoanProvider = _flashLoanProvider;
+        exchange = _exchange;
     }
 
     function _checkAdjustTroveManagers(
