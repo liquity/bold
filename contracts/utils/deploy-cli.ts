@@ -199,7 +199,7 @@ Deploying Liquity contracts with the following settings:
   }
 
   // deploy
-  await $`forge ${forgeArgs}`;
+  await $(options.debug ? { stdio: "inherit" } : {})`forge ${forgeArgs}`;
 
   const deploymentManifestJson = fs.readFileSync("deployment-manifest.json", "utf-8");
   const deploymentManifest = JSON.parse(deploymentManifestJson) as {
@@ -228,6 +228,7 @@ Deploying Liquity contracts with the following settings:
     gasCompZapper: branch.gasCompZapper,
     gasPool: branch.gasPool,
     interestRouter: branch.interestRouter,
+    leverageZapper: branch.leverageZapper,
     metadataNFT: branch.metadataNFT,
     priceFeed: branch.priceFeed,
     sortedTroves: branch.sortedTroves,
