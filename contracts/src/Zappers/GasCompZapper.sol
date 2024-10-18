@@ -28,13 +28,6 @@ contract GasCompZapper is BaseZapper {
         collToken.approve(address(_exchange), type(uint256).max);
     }
 
-    struct OpenTroveVars {
-        uint256 troveId;
-        IBorrowerOperations borrowerOperations;
-        IWETH WETH;
-        IERC20 collToken;
-    }
-
     function openTroveWithRawETH(OpenTroveParams calldata _params) external payable returns (uint256) {
         require(msg.value == ETH_GAS_COMPENSATION, "GCZ: Wrong ETH");
         require(
@@ -42,19 +35,15 @@ contract GasCompZapper is BaseZapper {
             "GCZ: Cannot choose interest if joining a batch"
         );
 
-        OpenTroveVars memory vars;
-        vars.borrowerOperations = borrowerOperations;
-        vars.WETH = WETH;
-        vars.collToken = collToken;
-
         // Convert ETH to WETH
-        vars.WETH.deposit{value: msg.value}();
+        WETH.deposit{value: msg.value}();
 
         // Pull and approve coll
-        vars.collToken.safeTransferFrom(msg.sender, address(this), _params.collAmount);
+        collToken.safeTransferFrom(msg.sender, address(this), _params.collAmount);
 
+        uint256 troveId;
         if (_params.batchManager == address(0)) {
-            vars.troveId = vars.borrowerOperations.openTrove(
+            troveId = borrowerOperations.openTrove(
                 _params.owner,
                 _params.ownerIndex,
                 _params.collAmount,
@@ -87,17 +76,17 @@ contract GasCompZapper is BaseZapper {
                     removeManager: address(this), // remove manager
                     receiver: address(this) // receiver for remove manager
                 });
-            vars.troveId =
-                vars.borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
+            troveId =
+                borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
         }
 
         boldToken.transfer(msg.sender, _params.boldAmount);
 
         // Set add/remove managers
-        _setAddManager(vars.troveId, _params.addManager);
-        _setRemoveManagerAndReceiver(vars.troveId, _params.removeManager, _params.receiver);
+        _setAddManager(troveId, _params.addManager);
+        _setRemoveManagerAndReceiver(troveId, _params.removeManager, _params.receiver);
 
-        return vars.troveId;
+        return troveId;
     }
 
     function addColl(uint256 _troveId, uint256 _amount) external {

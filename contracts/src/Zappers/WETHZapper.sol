@@ -17,12 +17,6 @@ contract WETHZapper is BaseZapper {
         WETH.approve(address(_exchange), type(uint256).max);
     }
 
-    struct OpenTroveVars {
-        uint256 troveId;
-        IBorrowerOperations borrowerOperations;
-        IWETH WETH;
-    }
-
     function openTroveWithRawETH(OpenTroveParams calldata _params) external payable returns (uint256) {
         require(msg.value > ETH_GAS_COMPENSATION, "WZ: Insufficient ETH");
         require(
@@ -30,15 +24,12 @@ contract WETHZapper is BaseZapper {
             "WZ: Cannot choose interest if joining a batch"
         );
 
-        OpenTroveVars memory vars;
-        vars.borrowerOperations = borrowerOperations;
-        vars.WETH = WETH;
-
         // Convert ETH to WETH
-        vars.WETH.deposit{value: msg.value}();
+        WETH.deposit{value: msg.value}();
 
+        uint256 troveId;
         if (_params.batchManager == address(0)) {
-            vars.troveId = vars.borrowerOperations.openTrove(
+            troveId = borrowerOperations.openTrove(
                 _params.owner,
                 _params.ownerIndex,
                 msg.value - ETH_GAS_COMPENSATION,
@@ -71,17 +62,17 @@ contract WETHZapper is BaseZapper {
                     removeManager: address(this), // remove manager
                     receiver: address(this) // receiver for remove manager
                 });
-            vars.troveId =
-                vars.borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
+            troveId =
+                borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
         }
 
         boldToken.transfer(msg.sender, _params.boldAmount);
 
         // Set add/remove managers
-        _setAddManager(vars.troveId, _params.addManager);
-        _setRemoveManagerAndReceiver(vars.troveId, _params.removeManager, _params.receiver);
+        _setAddManager(troveId, _params.addManager);
+        _setRemoveManagerAndReceiver(troveId, _params.removeManager, _params.receiver);
 
-        return vars.troveId;
+        return troveId;
     }
 
     function addCollWithRawETH(uint256 _troveId) external payable {

@@ -20,13 +20,6 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
         boldToken.approve(address(_exchange), type(uint256).max);
     }
 
-    struct OpenLeveragedTroveVars {
-        uint256 troveId;
-        IBorrowerOperations borrowerOperations;
-        IERC20 collToken;
-        uint256 boldAmount;
-    }
-
     function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable {
         require(msg.value == ETH_GAS_COMPENSATION, "LZ: Wrong ETH");
         require(
@@ -60,16 +53,13 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
     ) external override {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 
-        OpenLeveragedTroveVars memory vars;
-        vars.borrowerOperations = borrowerOperations;
-        vars.collToken = collToken;
-
         uint256 totalCollAmount = _params.collAmount + _effectiveFlashLoanAmount;
         // We compute boldAmount off-chain for efficiency
 
         // Open trove
+        uint256 troveId;
         if (_params.batchManager == address(0)) {
-            vars.troveId = vars.borrowerOperations.openTrove(
+            troveId = borrowerOperations.openTrove(
                 _params.owner,
                 _params.ownerIndex,
                 totalCollAmount,
@@ -102,19 +92,19 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
                     removeManager: address(this), // remove manager
                     receiver: address(this) // receiver for remove manager
                 });
-            vars.troveId =
-                vars.borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
+            troveId =
+                borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
         }
 
         // Set add/remove managers
-        _setAddManager(vars.troveId, _params.addManager);
-        _setRemoveManagerAndReceiver(vars.troveId, _params.removeManager, _params.receiver);
+        _setAddManager(troveId, _params.addManager);
+        _setRemoveManagerAndReceiver(troveId, _params.removeManager, _params.receiver);
 
         // Swap Bold to Coll
         exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount);
 
         // Send coll back to return flash loan
-        vars.collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
+        collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
     }
 
     function leverUpTrove(LeverUpTroveParams calldata _params) external {

@@ -20,14 +20,6 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
         boldToken.approve(address(_exchange), type(uint256).max);
     }
 
-    struct OpenLeveragedTroveVars {
-        uint256 troveId;
-        IBorrowerOperations borrowerOperations;
-        IWETH WETH;
-        IBoldToken boldToken;
-        uint256 boldAmount;
-    }
-
     function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable {
         require(msg.value == ETH_GAS_COMPENSATION + _params.collAmount, "LZ: Wrong amount of ETH");
         require(
@@ -58,17 +50,13 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
     ) external override {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 
-        OpenLeveragedTroveVars memory vars;
-        vars.borrowerOperations = borrowerOperations;
-        vars.WETH = WETH;
-        vars.boldToken = boldToken;
-
         uint256 totalCollAmount = _params.collAmount + _effectiveFlashLoanAmount;
         // We compute boldAmount off-chain for efficiency
 
+        uint256 troveId;
         // Open trove
         if (_params.batchManager == address(0)) {
-            vars.troveId = vars.borrowerOperations.openTrove(
+            troveId = borrowerOperations.openTrove(
                 _params.owner,
                 _params.ownerIndex,
                 totalCollAmount,
@@ -101,19 +89,19 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
                     removeManager: address(this), // remove manager
                     receiver: address(this) // receiver for remove manager
                 });
-            vars.troveId =
-                vars.borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
+            troveId =
+                borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
         }
 
         // Set add/remove managers
-        _setAddManager(vars.troveId, _params.addManager);
-        _setRemoveManagerAndReceiver(vars.troveId, _params.removeManager, _params.receiver);
+        _setAddManager(troveId, _params.addManager);
+        _setRemoveManagerAndReceiver(troveId, _params.removeManager, _params.receiver);
 
         // Swap Bold to Coll
         exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount);
 
         // Send coll back to return flash loan
-        vars.WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
+        WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
         // WETH reverts on failure: https://etherscan.io/token/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2#code
     }
 
