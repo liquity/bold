@@ -130,7 +130,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error TroveNotOpen();
     error TroveNotActive();
     error TroveNotZombie();
-    error TroveOpen();
     error UpfrontFeeTooHigh();
     error BelowCriticalThreshold();
     error BorrowingNotPermittedBelowCT();
@@ -1344,13 +1343,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function _checkTroveIsZombie(ITroveManager _troveManager, uint256 _troveId) internal view returns (bool) {
         ITroveManager.Status status = _troveManager.getTroveStatus(_troveId);
         return status == ITroveManager.Status.zombie;
-    }
-
-    function _requireTroveIsNotOpen(ITroveManager _troveManager, uint256 _troveId) internal view {
-        ITroveManager.Status status = _troveManager.getTroveStatus(_troveId);
-        if (status == ITroveManager.Status.active || status == ITroveManager.Status.zombie) {
-            revert TroveOpen();
-        }
     }
 
     function _requireUserAcceptsUpfrontFee(uint256 _fee, uint256 _maxFee) internal pure {
