@@ -322,8 +322,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         EnumerableSet troves;
     }
 
-    uint256 constant OWNER_INDEX = 0;
-
     // Aliases
     ITroveManager.Status constant NON_EXISTENT = ITroveManager.Status.nonExistent;
     ITroveManager.Status constant ACTIVE = ITroveManager.Status.active;
@@ -363,6 +361,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     mapping(uint256 branchIdx => uint256) _pendingInterest;
 
     // Troves ghost state
+    mapping(uint256 branchIdx => mapping(address owner => uint256)) _troveIndexOf;
     mapping(uint256 branchIdx => EnumerableSet) _troveIds;
     mapping(uint256 branchIdx => EnumerableSet) _zombieTroveIds;
     mapping(uint256 branchIdx => mapping(uint256 troveId => Trove)) _troves;
@@ -577,7 +576,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         if (!v.join) v.upfrontFee = hintHelpers.predictOpenTroveUpfrontFee(v.i, v.borrowed, v.interestRate);
         v.debt = v.borrowed + v.upfrontFee;
         v.coll = v.debt * v.icr / _price[v.i];
-        v.troveId = _troveIdOf(msg.sender);
+        v.troveId = _troveIdOf(v.i, msg.sender);
         v.wasOpen = _isOpen(v.i, v.troveId);
 
         Trove storage trove = _troves[v.i][v.troveId];
@@ -653,7 +652,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 assertGtDecimal(v.interestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Shouldn't have failed as rate <= max");
             } else if (selector == BorrowerOperations.IsShutDown.selector) {
                 assertTrue(isShutdown[v.i], "Shouldn't have failed as branch hadn't been shut down");
-            } else if (selector == BorrowerOperations.TroveOpen.selector) {
+            } else if (selector == BorrowerOperations.TroveExists.selector) {
                 assertTrue(v.wasOpen, "Shouldn't have failed as Trove wasn't open");
             } else if (selector == BorrowerOperations.DebtBelowMin.selector) {
                 assertLtDecimal(v.debt, MIN_DEBT, 18, "Shouldn't have failed as debt >= min");
@@ -711,7 +710,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.c = branches[i];
         v.pendingInterest = v.c.activePool.calcPendingAggInterest();
         v.oldTCR = _TCR(i);
-        v.troveId = _troveIdOf(msg.sender);
+        v.troveId = _troveIdOf(i, msg.sender);
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
         v.batchManager = _batchManagerOf[i][v.troveId];
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
@@ -882,7 +881,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         v.c = branches[i];
         v.pendingInterest = v.c.activePool.calcPendingAggInterest();
-        v.troveId = _troveIdOf(msg.sender);
+        v.troveId = _troveIdOf(i, msg.sender);
         v.batchManager = _batchManagerOf[i][v.troveId];
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
         v.trove = _troves[i][v.troveId];
@@ -992,7 +991,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         v.c = branches[i];
         v.pendingInterest = v.c.activePool.calcPendingAggInterest();
-        v.troveId = _troveIdOf(msg.sender);
+        v.troveId = _troveIdOf(i, msg.sender);
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
         v.batchManager = _batchManagerOf[i][v.troveId];
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
@@ -1016,6 +1015,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             delete _troves[i][v.troveId];
             delete _batchManagerOf[i][v.troveId];
             delete _timeSinceLastTroveInterestRateAdjustment[i][v.troveId];
+            ++_troveIndexOf[i][msg.sender];
             _troveIds[i].remove(v.troveId);
             _zombieTroveIds[i].remove(v.troveId);
             if (designatedVictimId[i] == v.troveId) designatedVictimId[i] = 0;
@@ -1098,7 +1098,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         string memory errorString;
         vm.prank(msg.sender);
 
-        try c.troveManager.batchLiquidateTroves(_troveIdsFrom(l.batch)) {
+        try c.troveManager.batchLiquidateTroves(_troveIdsFrom(i, l.batch)) {
             info("SP BOLD: ", c.stabilityPool.getTotalBoldDeposits().decimal());
             info("P: ", c.stabilityPool.P().decimal());
             _log();
@@ -1110,11 +1110,13 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             // Effects (Troves)
             for (uint256 j = 0; j < l.liquidated.size(); ++j) {
-                uint256 troveId = _troveIdOf(l.liquidated.get(j));
+                address owner = l.liquidated.get(j);
+                uint256 troveId = _troveIdOf(i, owner);
                 address batchManager = _batchManagerOf[i][troveId];
                 delete _troves[i][troveId];
                 delete _batchManagerOf[i][troveId];
                 delete _timeSinceLastTroveInterestRateAdjustment[i][troveId];
+                ++_troveIndexOf[i][owner];
                 _troveIds[i].remove(troveId);
                 _zombieTroveIds[i].remove(troveId);
                 if (designatedVictimId[i] == troveId) designatedVictimId[i] = 0;
@@ -1407,7 +1409,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         string memory errorString;
         vm.prank(msg.sender);
 
-        try c.troveManager.urgentRedemption(amount, _troveIdsFrom(r.batch), r.totalCollRedeemed) {
+        try c.troveManager.urgentRedemption(amount, _troveIdsFrom(i, r.batch), r.totalCollRedeemed) {
             // Preconditions
             assertTrue(isShutdown[i], "Should have failed as branch hadn't been shut down");
 
@@ -1498,7 +1500,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         v.c = branches[i];
         v.pendingInterest = v.c.activePool.calcPendingAggInterest();
-        v.troveId = _troveIdOf(msg.sender);
+        v.troveId = _troveIdOf(i, msg.sender);
         v.batchManager = _batchManagerOf[i][v.troveId];
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
@@ -1976,7 +1978,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         Batch storage batch = _batches[i][v.newBatchManager];
         v.c = branches[i];
         v.pendingInterest = v.c.activePool.calcPendingAggInterest();
-        v.troveId = _troveIdOf(msg.sender);
+        v.troveId = _troveIdOf(i, msg.sender);
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.newBatchManager).accruedManagementFee;
         v.trove = _troves[i][v.troveId];
@@ -2097,7 +2099,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         v.c = branches[i];
         v.pendingInterest = v.c.activePool.calcPendingAggInterest();
-        v.troveId = _troveIdOf(msg.sender);
+        v.troveId = _troveIdOf(i, msg.sender);
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
         v.batchManager = _batchManagerOf[i][v.troveId];
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
@@ -2397,15 +2399,15 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
     // We open at most one Trove per actor per branch, for reasons of simplicity,
     // as Troves aren't enumerable per user, only globally.
-    function _troveIdOf(address owner) internal pure returns (uint256) {
-        return uint256(keccak256(abi.encode(owner, OWNER_INDEX)));
+    function _troveIdOf(uint256 i, address owner) internal view returns (uint256) {
+        return uint256(keccak256(abi.encode(owner, _troveIndexOf[i][owner])));
     }
 
-    function _troveIdsFrom(address[] storage owners) internal view returns (uint256[] memory ret) {
+    function _troveIdsFrom(uint256 i, address[] storage owners) internal view returns (uint256[] memory ret) {
         ret = new uint256[](owners.length);
 
-        for (uint256 i = 0; i < owners.length; ++i) {
-            ret[i] = _troveIdOf(owners[i]);
+        for (uint256 j = 0; j < owners.length; ++j) {
+            ret[j] = _troveIdOf(i, owners[j]);
         }
     }
 
@@ -2624,7 +2626,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         for (uint256 j = 0; j < l.batch.length; ++j) {
             if (l.liquidated.has(l.batch[j])) continue; // skip duplicate entry
 
-            uint256 troveId = _troveIdOf(l.batch[j]);
+            uint256 troveId = _troveIdOf(i, l.batch[j]);
             address batchManager = _batchManagerOf[i][troveId];
 
             LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
@@ -2737,7 +2739,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         r = _urgentRedemption;
 
         for (uint256 j = 0; j < r.batch.length; ++j) {
-            uint256 troveId = _troveIdOf(r.batch[j]);
+            uint256 troveId = _troveIdOf(i, r.batch[j]);
 
             if (r.redeemedIds.has(troveId)) continue; // skip duplicate entry
             r.redeemedIds.add(troveId);
@@ -2777,7 +2779,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 (
                     IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams({
                         owner: msg.sender,
-                        ownerIndex: OWNER_INDEX,
+                        ownerIndex: _troveIndexOf[v.i][msg.sender],
                         collAmount: v.coll,
                         boldAmount: v.borrowed,
                         upperHint: v.upperHint,
@@ -2794,7 +2796,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 IBorrowerOperations.openTrove,
                 (
                     msg.sender,
-                    OWNER_INDEX,
+                    _troveIndexOf[v.i][msg.sender],
                     v.coll,
                     v.borrowed,
                     v.upperHint,
@@ -2968,6 +2970,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 return (selector, "BorrowerOperations.BatchInterestRateChangePeriodNotPassed()");
             }
 
+            if (selector == BorrowerOperations.TroveExists.selector) {
+                return (selector, "BorrowerOperations.TroveExists()");
+            }
+
             if (selector == BorrowerOperations.TroveNotOpen.selector) {
                 return (selector, "BorrowerOperations.TroveNotOpen()");
             }
@@ -2978,10 +2984,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             if (selector == BorrowerOperations.TroveNotZombie.selector) {
                 return (selector, "BorrowerOperations.TroveNotZombie()");
-            }
-
-            if (selector == BorrowerOperations.TroveOpen.selector) {
-                return (selector, "BorrowerOperations.TroveOpen()");
             }
 
             if (selector == BorrowerOperations.UpfrontFeeTooHigh.selector) {
