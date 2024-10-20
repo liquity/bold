@@ -588,7 +588,44 @@ contract ShutdownTest is DevTestSetup {
         troveManager.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
         vm.stopPrank();
 
-        // Check block.timestamp didn't update
+        // Check update time didn't update
+        (,,,,,uint64 lastDebtUpdateTime2,,,,) = troveManager.Troves(troveId);
+        assertEq(lastDebtUpdateTime2, lastDebtUpdateTime1, "2nd update time incorrect");
+    }
+
+    function testUrgentRedeemOfClosedTroveDoesntUpdateTrovesLastUpdateTime() external {
+        uint256 troveId = openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 9000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(0, A, 1, 11e18, 10000e18, 5e16);
+        openMulticollateralTroveNoHints100pctWithIndex(0, A, 2, 11e18, 11000e18, 5e16);
+
+        // Price halves and first branch is shut down
+        uint256 price = 1000e18;
+        contractsArray[0].priceFeed.setPrice(price);
+        contractsArray[0].borrowerOperations.shutdown();
+
+        uint256 boldBalanceBefore = boldToken.balanceOf(A);
+        uint256 collBalanceBefore = contractsArray[0].collToken.balanceOf(A);
+        uint256 redemptionAmount = troveManager.getTroveEntireDebt(troveId);
+
+        // A closes Trove
+        vm.startPrank(A);
+        borrowerOperations.closeTrove(troveId);
+        vm.stopPrank();
+
+        // Check Trove status is closed
+        assertEq(uint256(troveManager.getTroveStatus(troveId)), uint256(ITroveManager.Status.closedByOwner), "Trove not closed");
+
+        // Check update time zero'd
+        (,,,,,uint64 lastDebtUpdateTime1,,,,) = troveManager.Troves(troveId);
+        assertEq(lastDebtUpdateTime1, 0, "first update time incorrect");
+
+        // Urgent-redeem again from the Trove
+        vm.warp(block.timestamp + 1 days);
+        vm.startPrank(A);
+        troveManager.urgentRedemption(redemptionAmount, uintToArray(troveId), 0);
+        vm.stopPrank();
+
+        // Check update time didn't update
         (,,,,,uint64 lastDebtUpdateTime2,,,,) = troveManager.Troves(troveId);
         assertEq(lastDebtUpdateTime2, lastDebtUpdateTime1, "2nd update time incorrect");
     }
