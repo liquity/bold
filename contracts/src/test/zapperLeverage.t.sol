@@ -22,7 +22,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
     IUniswapV3Factory constant uniswapV3Factory = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
     uint24 constant UNIV3_FEE = 3000; // 0.3%
 
-    uint256 constant NUM_COLLATERALS = 5;
+    uint256 constant NUM_COLLATERALS = 3;
 
     IZapper[] baseZapperArray;
     ILeverageZapper[] leverageZapperCurveArray;

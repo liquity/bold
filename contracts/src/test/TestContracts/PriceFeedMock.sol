@@ -19,6 +19,10 @@ contract PriceFeedMock is IPriceFeedMock {
         return (PRICE, false);
     }
 
+    function fetchRedemptionPrice() external view returns (uint256, bool) {
+        return (PRICE, false);
+    }
+
     function lastGoodPrice() external view returns (uint256) {
         return PRICE;
     }
