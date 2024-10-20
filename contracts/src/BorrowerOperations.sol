@@ -132,7 +132,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error TroveNotZombie();
     error UpfrontFeeTooHigh();
     error BelowCriticalThreshold();
-    error BorrowingNotPermittedBelowCT();
     error ICRBelowMCR();
     error RepaymentNotMatchingCollWithdrawal();
     error TCRBelowCCR();
@@ -318,8 +317,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.price = _requireOraclesLive();
 
         // --- Checks ---
-
-        _requireNotBelowCriticalThreshold(vars.price);
 
         vars.troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
         _requireTroveDoesNotExists(vars.troveManager, vars.troveId);
@@ -1350,18 +1347,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
     }
 
-    function _requireNotBelowCriticalThreshold(uint256 _price) internal view {
-        if (_checkBelowCriticalThreshold(_price, CCR)) {
-            revert BelowCriticalThreshold();
-        }
-    }
-
-    function _requireNoBorrowing(uint256 _debtIncrease) internal pure {
-        if (_debtIncrease > 0) {
-            revert BorrowingNotPermittedBelowCT();
-        }
-    }
-
     function _requireValidAdjustmentInCurrentMode(
         TroveChange memory _troveChange,
         LocalVariables_adjustTrove memory _vars
@@ -1369,7 +1354,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         /*
         * Below Critical Threshold, it is not permitted:
         *
-        * - Borrowing
+        * - Borrowing, unless it brings TCR up to CCR again
         * - Collateral withdrawal except accompanied by a debt repayment of at least the same value
         *
         * In Normal Mode, ensure:
@@ -1381,12 +1366,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         */
         _requireICRisAboveMCR(_vars.newICR);
 
+        uint256 newTCR = _getNewTCRFromTroveChange(_troveChange, _vars.price);
         if (_vars.isBelowCriticalThreshold) {
-            _requireNoBorrowing(_troveChange.debtIncrease);
+            _requireNoBorrowingUnlessNewTCRisAboveCCR(_troveChange.debtIncrease, newTCR);
             _requireDebtRepaymentGeCollWithdrawal(_troveChange, _vars.price);
         } else {
             // if Normal Mode
-            uint256 newTCR = _getNewTCRFromTroveChange(_troveChange, _vars.price);
             _requireNewTCRisAboveCCR(newTCR);
         }
     }
@@ -1394,6 +1379,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function _requireICRisAboveMCR(uint256 _newICR) internal view {
         if (_newICR < MCR) {
             revert ICRBelowMCR();
+        }
+    }
+
+    function _requireNoBorrowingUnlessNewTCRisAboveCCR(uint256 _debtIncrease, uint256 _newTCR) internal view {
+        if (_debtIncrease > 0 && _newTCR < CCR) {
+            revert TCRBelowCCR();
         }
     }
 
