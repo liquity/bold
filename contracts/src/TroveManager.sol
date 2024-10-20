@@ -827,7 +827,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 _price,
         SingleRedemptionValues memory _singleRedemption
     ) internal {
-      
         // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove minus the liquidation reserve
         _singleRedemption.boldLot = LiquityMath._min(_maxBoldamount, _singleRedemption.trove.entireDebt);
 
