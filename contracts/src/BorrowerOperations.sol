@@ -1157,8 +1157,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function _wipeTroveMappings(uint256 _troveId) internal {
         delete interestIndividualDelegateOf[_troveId];
         delete interestBatchManagerOf[_troveId];
-        delete addManagerOf[_troveId];
-        delete removeManagerReceiverOf[_troveId];
+        _wipeAddRemoveManagers(_troveId);
     }
 
     /**
