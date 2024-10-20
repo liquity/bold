@@ -653,7 +653,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             } else if (selector == BorrowerOperations.IsShutDown.selector) {
                 assertTrue(isShutdown[v.i], "Shouldn't have failed as branch hadn't been shut down");
             } else if (selector == BorrowerOperations.TroveExists.selector) {
-                assertTrue(v.wasOpen, "Shouldn't have failed as Trove wasn't open");
+                // We increment `_troveIndexOf` whenever a Trove is closed, thus it always points to a Trove that's
+                // either non-existent or open. Thus, not being open implies that the Trove doesn't exist.
+                assertTrue(v.wasOpen, "Shouldn't have failed as Trove didn't exist");
             } else if (selector == BorrowerOperations.DebtBelowMin.selector) {
                 assertLtDecimal(v.debt, MIN_DEBT, 18, "Shouldn't have failed as debt >= min");
             } else if (selector == BorrowerOperations.ICRBelowMCR.selector) {
