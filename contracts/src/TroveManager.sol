@@ -455,7 +455,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         _sendGasCompensation(activePoolCached, msg.sender, totals.ETHGasCompensation, totals.collGasCompensation);
     }
 
-    function _isLiquidatableStatus(Status _status) internal pure returns (bool) {
+    function _isActiveOrZombie(Status _status) internal pure returns (bool) {
         return _status == Status.active || _status == Status.zombie;
     }
 
@@ -473,7 +473,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             uint256 troveId = _troveArray[i];
 
             // Skip non-liquidatable troves
-            if (!_isLiquidatableStatus(Troves[troveId].status)) continue;
+            if (!_isActiveOrZombie(Troves[troveId].status)) continue;
 
             uint256 ICR = getCurrentICR(troveId, _price);
 
@@ -827,8 +827,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 _price,
         SingleRedemptionValues memory _singleRedemption
     ) internal {
-        _getLatestTroveData(_singleRedemption.troveId, _singleRedemption.trove);
-
+      
         // Determine the remaining amount (lot) to be redeemed, capped by the entire debt of the Trove minus the liquidation reserve
         _singleRedemption.boldLot = LiquityMath._min(_maxBoldamount, _singleRedemption.trove.entireDebt);
 
@@ -862,6 +861,11 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         for (uint256 i = 0; i < _troveIds.length; i++) {
             SingleRedemptionValues memory singleRedemption;
             singleRedemption.troveId = _troveIds[i];
+            _getLatestTroveData(singleRedemption.troveId, singleRedemption.trove);
+
+            if (!_isActiveOrZombie(Troves[singleRedemption.troveId].status) || singleRedemption.trove.entireDebt == 0) {
+                continue;
+            }
 
             // If it’s in a batch, we need to update interest first
             // As we don’t have them ordered now, we cannot avoid repeating for each trove in the same batch
