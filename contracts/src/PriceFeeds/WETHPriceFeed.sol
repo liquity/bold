@@ -10,7 +10,7 @@ contract WETHPriceFeed is MainnetPriceFeedBase {
     constructor(address _owner, address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold)
         MainnetPriceFeedBase(_owner, _ethUsdOracleAddress, _ethUsdStalenessThreshold)
     {
-        _fetchPricePrimary();
+        _fetchPricePrimary(false);
 
         // Check the oracle didn't already fail
         assert(priceSource == PriceSource.primary);
@@ -18,14 +18,19 @@ contract WETHPriceFeed is MainnetPriceFeedBase {
 
     function fetchPrice() public returns (uint256, bool) {
         // If branch is live and the primary oracle setup has been working, try to use it
-        if (priceSource == PriceSource.primary) return _fetchPricePrimary();
+        if (priceSource == PriceSource.primary) return _fetchPricePrimary(false);
 
         // Otherwise if branch is shut down and already using the lastGoodPrice, continue with it
         assert(priceSource == PriceSource.lastGoodPrice);
         return (lastGoodPrice, false);
     }
 
-    function _fetchPricePrimary() internal override returns (uint256, bool) {
+    function fetchRedemptionPrice() external returns (uint256, bool) {
+        // Use same price for redemption as all other ops in WETH branch
+        return fetchPrice();
+    }
+
+    function _fetchPricePrimary(bool _isRedemption) internal override returns (uint256, bool) {
         assert(priceSource == PriceSource.primary);
         (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
 

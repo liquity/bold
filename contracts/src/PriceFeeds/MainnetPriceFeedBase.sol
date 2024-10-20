@@ -62,7 +62,7 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
     // An individual Pricefeed instance implements _fetchPricePrimary according to the data sources it uses. Returns:
     // - The price
     // - A bool indicating whether a new oracle failure or exchange rate failure was detected in the call
-    function _fetchPricePrimary() internal virtual returns (uint256, bool) {}
+    function _fetchPricePrimary(bool _isRedemption) internal virtual returns (uint256, bool) {}
 
     function _getOracleAnswer(Oracle memory _oracle) internal view returns (uint256, bool) {
         ChainlinkResponse memory chainlinkResponse = _getCurrentChainlinkResponse(_oracle.aggregator);

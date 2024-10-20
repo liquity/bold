@@ -124,6 +124,12 @@ contract OraclesMainnet is TestAccounts {
         return uint256(answer) * 10 ** (18 - decimals);
     }
 
+    function redeem(address _from, uint256 _boldAmount) public {
+        vm.startPrank(_from);
+        collateralRegistry.redeemCollateral(_boldAmount, MAX_UINT256, 1e18);
+        vm.stopPrank();
+    }
+
     // --- lastGoodPrice set on deployment ---
 
     function testSetLastGoodPriceOnDeploymentWETH() public view {
@@ -273,7 +279,7 @@ contract OraclesMainnet is TestAccounts {
 
     function testOpenTroveWSTETH() public {
         uint256 latestAnswerStethUsd = _getLatestAnswerFromOracle(stethOracle);
-        uint256 wstethStethExchangeRate = wstETH.tokensPerStEth();
+        uint256 wstethStethExchangeRate = wstETH.stEthPerToken();
 
         uint256 calcdWstethUsdPrice = latestAnswerStethUsd * wstethStethExchangeRate / 1e18;
 
@@ -1045,7 +1051,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(wstethPriceFeed.lastGoodPrice(), lastGoodPrice1);
     }
 
-    function testWSTETHPriceSourceIsPrimaryPriceWhenETHUSDOracleFails() public {
+    function testWSTETHPriceSourceIsLastGoodPricePriceWhenETHUSDOracleFails() public {
         // Fetch price
         (uint256 price1,) = wstethPriceFeed.fetchPrice();
         assertGt(price1, 0, "price is 0");
@@ -1062,17 +1068,19 @@ contract OraclesMainnet is TestAccounts {
         // Fetch price again
         (uint256 price2, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
 
-        // Check no oracle failed in this call, since it uses only STETH-USD oracle in the primary calc
-        assertFalse(oracleFailedWhileBranchLive);
+        // Check ncall failed
+        assertTrue(oracleFailedWhileBranchLive);
 
-        // Check using primary
-        assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
+        // Check using lastGoodPrice
+        assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.lastGoodPrice));
     }
 
-    function testWSTETHPriceFeedReturnsPrimaryPriceWhenETHUSDOracleFails() public {
+    function testWSTETHPriceFeedReturnsLastGoodPriceWhenETHUSDOracleFails() public {
         // Fetch price
         (uint256 price1,) = wstethPriceFeed.fetchPrice();
         assertGt(price1, 0, "price is 0");
+
+        uint256 lastGoodPriceBeforeFail = wstethPriceFeed.lastGoodPrice();
 
         // Make the ETH-USD oracle stale
         vm.etch(address(ethOracle), address(mockOracle).code);
@@ -1083,14 +1091,16 @@ contract OraclesMainnet is TestAccounts {
         // Fetch price again
         (uint256 price2, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
 
-        // Check no oracle failed in this call, since it uses only STETH-USD oracle in the primary calc
-        assertFalse(oracleFailedWhileBranchLive);
+        // Check oracle failed in this call
+        assertTrue(oracleFailedWhileBranchLive);
 
-        // Confirm the PriceFeed's returned price equals the previous price
-        assertEq(price2, price1);
+        // Confirm the PriceFeed's returned price equals the stored lastGoodPrice
+        assertEq(price2, lastGoodPriceBeforeFail);
+        // Confirm the stored last good price didn't change
+        assertEq(lastGoodPriceBeforeFail, wstethPriceFeed.lastGoodPrice());
     }
 
-    function testWSTETHPriceDoesNotShutdownWhenETHUSDOracleFails() public {
+    function testWSTETHPriceDoesShutsDownWhenETHUSDOracleFails() public {
         // Fetch price
         (, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
 
@@ -1108,11 +1118,11 @@ contract OraclesMainnet is TestAccounts {
         // Fetch price again
         (, oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
 
-        // Check that again primary calc oracle did not fail
-        assertFalse(oracleFailedWhileBranchLive);
+        // Check that the primary calc did fail
+        assertTrue(oracleFailedWhileBranchLive);
 
-        // Confirm branch is still live, not shut down
-        assertEq(contractsArray[2].troveManager.shutdownTime(), 0);
+        // Confirm branch is shut down
+        assertEq(contractsArray[2].troveManager.shutdownTime(), block.timestamp);
     }
 
     function testWSTETHPriceShutdownWhenSTETHUSDOracleFails() public {
@@ -1462,7 +1472,315 @@ contract OraclesMainnet is TestAccounts {
         assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.lastGoodPrice));
     }
 
+    // --- redemptions ---
+
+    function testNormalWETHRedemptionDoesNotHitShutdownBranch() public {
+        // Fetch price
+        wethPriceFeed.fetchPrice();
+        uint256 lastGoodPrice1 = wethPriceFeed.lastGoodPrice();
+        assertGt(lastGoodPrice1, 0, "lastGoodPrice 0");
+
+        // Check using primary
+        assertEq(uint8(wethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
+
+        uint256 coll = 100 ether;
+        uint256 debtRequest = 3000e18;
+
+        vm.startPrank(A);
+        uint256 troveId = contractsArray[0].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+
+        // Make the ETH-USD oracle stale 
+        vm.etch(address(ethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = ethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        // Fetch price again
+        (uint256 price, bool oracleFailedWhileBranchLive) = wethPriceFeed.fetchPrice();
+        assertTrue(oracleFailedWhileBranchLive);
+        // Confirm branch shutdown
+        assertEq(contractsArray[0].troveManager.shutdownTime(), block.timestamp);
+       
+        uint256 totalBoldRedeemAmount = 100e18;
+        uint256 branch0DebtBefore = contractsArray[0].activePool.getBoldDebt();
+        assertGt(branch0DebtBefore, 0);
+       
+        uint256 boldBalBefore_A = boldToken.balanceOf(A);
+
+        // Redeem
+        redeem(A, totalBoldRedeemAmount);
+        
+        // Confirm A lost no BOLD
+        assertEq( boldToken.balanceOf(A), boldBalBefore_A);
+
+        // Confirm WETH branch did not get redeemed from
+        assertEq(contractsArray[0].activePool.getBoldDebt(), branch0DebtBefore);
+    }
+
+    function testNormalRETHRedemptionDoesNotHitShutdownBranch() public {
+        // Fetch price
+        rethPriceFeed.fetchPrice();
+        uint256 lastGoodPrice1 = rethPriceFeed.lastGoodPrice();
+        assertGt(lastGoodPrice1, 0, "lastGoodPrice 0");
+
+        // Check using primary
+        assertEq(uint8(rethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
+
+        uint256 coll = 100 ether;
+        uint256 debtRequest = 3000e18;
+
+        vm.startPrank(A);
+        uint256 troveId = contractsArray[1].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+
+        // Make the RETH-ETH oracle stale 
+        vm.etch(address(rethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = rethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        // Fetch price again
+        (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
+        assertTrue(oracleFailedWhileBranchLive);
+        // Confirm RETH branch shutdown
+        assertEq(contractsArray[1].troveManager.shutdownTime(), block.timestamp);
+       
+        uint256 totalBoldRedeemAmount = 100e18;
+        uint256 branch1DebtBefore = contractsArray[1].activePool.getBoldDebt();
+        assertGt(branch1DebtBefore, 0);
+       
+        uint256 boldBalBefore_A = boldToken.balanceOf(A);
+
+        // Redeem
+        redeem(A, totalBoldRedeemAmount);
+        
+        // Confirm A lost no BOLD
+        assertEq( boldToken.balanceOf(A), boldBalBefore_A);
+
+        // Confirm RETH branch did not get redeemed from
+        assertEq(contractsArray[1].activePool.getBoldDebt(), branch1DebtBefore);
+    }
+
+    function testNormalWSTETHRedemptionDoesNotHitShutdownBranch() public {
+        // Fetch price
+        wstethPriceFeed.fetchPrice();
+        uint256 lastGoodPrice1 = wstethPriceFeed.lastGoodPrice();
+        assertGt(lastGoodPrice1, 0, "lastGoodPrice 0");
+
+        // Check using primary
+        assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
+
+        uint256 coll = 100 ether;
+        uint256 debtRequest = 3000e18;
+
+        vm.startPrank(A);
+        uint256 troveId = contractsArray[2].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+
+        // Make the STETH-USD oracle stale 
+        vm.etch(address(stethOracle), address(mockOracle).code);
+        (,,,uint256 updatedAt,) = stethOracle.latestRoundData();
+        assertEq(updatedAt, block.timestamp - 7 days);
+
+        // Fetch price again
+        (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+        assertTrue(oracleFailedWhileBranchLive);
+        // Confirm RETH branch shutdown
+        assertEq(contractsArray[2].troveManager.shutdownTime(), block.timestamp);
+       
+        uint256 totalBoldRedeemAmount = 100e18;
+        uint256 branch2DebtBefore = contractsArray[2].activePool.getBoldDebt();
+        assertGt(branch2DebtBefore, 0);
+       
+        uint256 boldBalBefore_A = boldToken.balanceOf(A);
+
+        // Redeem
+        redeem(A, totalBoldRedeemAmount);
+        
+        // Confirm A lost no BOLD
+        assertEq( boldToken.balanceOf(A), boldBalBefore_A);
+
+        // Confirm RETH branch did not get redeemed from
+        assertEq(contractsArray[2].activePool.getBoldDebt(), branch2DebtBefore);
+    }
+
+    function testRedemptionOfWETHUsesETHUSDMarketforPrimaryPrice() public {
+        // Fetch price
+        wethPriceFeed.fetchPrice();
+        uint256 lastGoodPrice1 = wethPriceFeed.lastGoodPrice();
+        assertGt(lastGoodPrice1, 0, "lastGoodPrice 0");
+
+        // Check using primary
+        assertEq(uint8(wethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
+
+        uint256 coll = 100 ether;
+        uint256 debtRequest = 3000e18;
+
+        vm.startPrank(A);
+        uint256 troveId = contractsArray[0].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+
+        // Expected price used for primary calc: ETH-USD market price
+        uint256 expectedPrice = _getLatestAnswerFromOracle(ethOracle);
+        assertGt(expectedPrice, 0);
+
+        // Calc expected fee based on price
+        uint256 totalBoldRedeemAmount = 100e18;
+        uint256 totalCorrespondingColl = totalBoldRedeemAmount * DECIMAL_PRECISION / expectedPrice;
+        assertGt(totalCorrespondingColl, 0);
+
+        uint256 redemptionFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(totalBoldRedeemAmount)
+            * DECIMAL_PRECISION / totalBoldRedeemAmount;
+        assertGt(redemptionFeePct, 0);
+
+        uint256 totalCollFee = totalCorrespondingColl * redemptionFeePct / DECIMAL_PRECISION;
+
+        uint256 expectedCollDelta = totalCorrespondingColl - totalCollFee;
+        assertGt(expectedCollDelta, 0);
+
+        uint256 branch0DebtBefore = contractsArray[0].activePool.getBoldDebt();
+        assertGt(branch0DebtBefore, 0);
+        uint256 A_collBefore = contractsArray[0].collToken.balanceOf(A);
+        assertGt(A_collBefore, 0);
+        // Redeem
+        redeem(A, totalBoldRedeemAmount);
+
+        // Confirm WETH branch got redeemed from
+        assertEq(contractsArray[0].activePool.getBoldDebt(), branch0DebtBefore - totalBoldRedeemAmount);
+
+        // Confirm the received amount coll is the expected amount (i.e. used the expected price)
+        assertEq(contractsArray[0].collToken.balanceOf(A), A_collBefore + expectedCollDelta);
+    }
+
+    function testRedemptionOfWSTETHUsesMaxETHUSDMarketandWSTETHUSDMarketForPrimaryPrice() public {
+        // Fetch price
+        wstethPriceFeed.fetchPrice();
+        uint256 lastGoodPrice1 = wstethPriceFeed.lastGoodPrice();
+        assertGt(lastGoodPrice1, 0, "lastGoodPrice 0");
+
+        // Check using primary
+        assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
+
+        uint256 coll = 100 ether;
+        uint256 debtRequest = 3000e18;
+
+        vm.startPrank(A);
+        uint256 troveId = contractsArray[2].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+
+        // Expected price used for primary calc: ETH-USD market price
+        uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
+        uint256 stethUsdPrice = _getLatestAnswerFromOracle(stethOracle);
+        assertNotEq(ethUsdPrice, stethUsdPrice, "raw prices equal");
+        
+        // USD_per_WSTETH = USD_per_STETH(or_per_ETH) * STETH_per_WSTETH
+        uint256 expectedPrice = LiquityMath._max(ethUsdPrice, stethUsdPrice) * wstETH.stEthPerToken() / 1e18;
+        assertGt(expectedPrice, 0, "expected price not 0");
+
+        // Calc expected fee based on price
+        uint256 totalBoldRedeemAmount = 100e18;
+        uint256 totalCorrespondingColl = totalBoldRedeemAmount * DECIMAL_PRECISION / expectedPrice;
+        assertGt(totalCorrespondingColl, 0, "coll not 0");
+
+        uint256 redemptionFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(totalBoldRedeemAmount)
+            * DECIMAL_PRECISION / totalBoldRedeemAmount;
+        assertGt(redemptionFeePct, 0, "fee not 0");
+
+        uint256 totalCollFee = totalCorrespondingColl * redemptionFeePct / DECIMAL_PRECISION;
+
+        uint256 expectedCollDelta = totalCorrespondingColl - totalCollFee;
+        assertGt(expectedCollDelta, 0, "delta not 0");
+
+        uint256 branch2DebtBefore = contractsArray[2].activePool.getBoldDebt();
+        assertGt(branch2DebtBefore, 0);
+        uint256 A_collBefore = contractsArray[2].collToken.balanceOf(A);
+        assertGt(A_collBefore, 0);
+
+        // Redeem
+        redeem(A, totalBoldRedeemAmount);
+
+        // Confirm WSTETH branch got redeemed from
+        assertEq(contractsArray[2].activePool.getBoldDebt(), branch2DebtBefore - totalBoldRedeemAmount);
+
+        // Confirm the received amount coll is the expected amount (i.e. used the expected price)
+        assertEq(contractsArray[2].collToken.balanceOf(A), A_collBefore + expectedCollDelta);
+    }
+
+    function testRedemptionOfRETHUsesMaxCanonicalAndMarketforPrimaryPriceWhenWithin2pct() public {
+        // Fetch price
+        rethPriceFeed.fetchPrice();
+        uint256 lastGoodPrice1 = rethPriceFeed.lastGoodPrice();
+        assertGt(lastGoodPrice1, 0, "lastGoodPrice 0");
+
+        // Check using primary
+        assertEq(uint8(rethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
+
+        uint256 coll = 100 ether;
+        uint256 debtRequest = 3000e18;
+
+        vm.startPrank(A);
+        uint256 troveId = contractsArray[1].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+
+        // Expected price used for primary calc: ETH-USD market price
+        uint256 canonicalRethRate =  rethToken.getExchangeRate();
+        uint256 marketRethPrice = _getLatestAnswerFromOracle(rethOracle);
+        uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
+        assertNotEq(canonicalRethRate, marketRethPrice, "raw price and rate equal");
+
+        // Check market is within 2pct of max;
+        uint256 max = (1e18 + 2e16) * canonicalRethRate / 1e18;
+        uint256 min = (1e18 - 2e16) * canonicalRethRate / 1e18;
+        assertGe(marketRethPrice, min);
+        assertLe(marketRethPrice, max);
+        
+        // USD_per_WSTETH = USD_per_STETH(or_per_ETH) * STETH_per_WSTETH
+        uint256 expectedPrice = LiquityMath._max(canonicalRethRate, marketRethPrice) * ethUsdPrice / 1e18;
+        assertGt(expectedPrice, 0, "expected price not 0");
+
+        // Calc expected fee based on price
+        uint256 totalBoldRedeemAmount = 100e18;
+        uint256 totalCorrespondingColl = totalBoldRedeemAmount * DECIMAL_PRECISION / expectedPrice;
+        assertGt(totalCorrespondingColl, 0, "coll not 0");
+
+        uint256 redemptionFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(totalBoldRedeemAmount)
+            * DECIMAL_PRECISION / totalBoldRedeemAmount;
+        assertGt(redemptionFeePct, 0, "fee not 0");
+
+        uint256 totalCollFee = totalCorrespondingColl * redemptionFeePct / DECIMAL_PRECISION;
+
+        uint256 expectedCollDelta = totalCorrespondingColl - totalCollFee;
+        assertGt(expectedCollDelta, 0, "delta not 0");
+
+        uint256 branch1DebtBefore = contractsArray[1].activePool.getBoldDebt();
+        assertGt(branch1DebtBefore, 0);
+        uint256 A_collBefore = contractsArray[1].collToken.balanceOf(A);
+        assertGt(A_collBefore, 0);
+
+        // Redeem
+        redeem(A, totalBoldRedeemAmount);
+
+        // Confirm RETH branch got redeemed from
+        assertEq(contractsArray[1].activePool.getBoldDebt(), branch1DebtBefore - totalBoldRedeemAmount);
+
+        // Confirm the received amount coll is the expected amount (i.e. used the expected price)
+        assertEq(contractsArray[1].collToken.balanceOf(A), A_collBefore + expectedCollDelta);
+    }
+
     // TODO:
+
+    // Tests:
+    // , should we just block normal redemptions in shutdown mode?
+    // --- redemptions when branch shutdown use same price as nornmal ops ---
+
+    // - redemptions of WETH use lastGoodPrice when price source switched to lastGoodPrice
+    // - redemptions of ...
+
     // - More basic actions tests (adjust, close, etc)
     // - liq tests (manipulate aggregator stored price)
 }

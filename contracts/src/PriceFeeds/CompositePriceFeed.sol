@@ -38,24 +38,16 @@ contract CompositePriceFeed is MainnetPriceFeedBase {
     // --- b) an oracle or exchange rate contract failed during this call.
     function fetchPrice() public returns (uint256, bool) {
         // If branch is live and the primary oracle setup has been working, try to use it
-        if (priceSource == PriceSource.primary) return _fetchPricePrimary();
+        if (priceSource == PriceSource.primary) return _fetchPricePrimary(false);
 
-        // If branch is already shut down and using ETH-USD * canonical_rate, try to use that
-        if (priceSource == PriceSource.ETHUSDxCanonical) {
-            (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
-            //... but if the ETH-USD oracle *also* fails here, switch to using the lastGoodPrice
-            if (ethUsdOracleDown) {
-                // No need to shut down, since branch already is shut down
-                priceSource = PriceSource.lastGoodPrice;
-                return (lastGoodPrice, false);
-            } else {
-                return (_fetchPriceETHUSDxCanonical(ethUsdPrice), false);
-            }
-        }
+        return _fetchPriceDuringShutdown();
+    }
 
-        // Otherwise if branch is shut down and already using the lastGoodPrice, continue with it
-        assert(priceSource == PriceSource.lastGoodPrice);
-        return (lastGoodPrice, false);
+    function fetchRedemptionPrice() external returns (uint256, bool) {
+        // If branch is live and the primary oracle setup has been working, try to use it
+        if (priceSource == PriceSource.primary) return _fetchPricePrimary(true);
+
+        return _fetchPriceDuringShutdown();
     }
 
     function _shutDownAndSwitchToETHUSDxCanonical(address _failedOracleAddr, uint256 _ethUsdPrice)
@@ -69,6 +61,25 @@ contract CompositePriceFeed is MainnetPriceFeedBase {
 
         emit ShutDownFromOracleFailure(_failedOracleAddr);
         return _fetchPriceETHUSDxCanonical(_ethUsdPrice);
+    }
+
+    function _fetchPriceDuringShutdown() internal returns (uint256, bool) {
+        // When branch is already shut down and using ETH-USD * canonical_rate, try to use that
+        if (priceSource == PriceSource.ETHUSDxCanonical) {
+            (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
+            //... but if the ETH-USD oracle *also* fails here, switch to using the lastGoodPrice
+            if (ethUsdOracleDown) {
+                // No need to shut down, since branch already is shut down
+                priceSource = PriceSource.lastGoodPrice;
+                return (lastGoodPrice, false);
+            } else {
+                return (_fetchPriceETHUSDxCanonical(ethUsdPrice), false);
+            }
+        }   
+
+        // Otherwise when branch is shut down and already using the lastGoodPrice, continue with it
+        assert(priceSource == PriceSource.lastGoodPrice);
+        return (lastGoodPrice, false);
     }
 
     // Only called if the primary LST oracle has failed, branch has shut down,
