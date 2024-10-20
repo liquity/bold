@@ -22,7 +22,7 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
         rEthEthOracle.stalenessThreshold = _rEthEthStalenessThreshold;
         rEthEthOracle.decimals = rEthEthOracle.aggregator.decimals();
 
-        _fetchPricePrimary();
+        _fetchPricePrimary(false);
 
         // Check the oracle didn't already fail
         assert(priceSource == PriceSource.primary);
@@ -30,7 +30,9 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
 
     Oracle public rEthEthOracle;
 
-    function _fetchPricePrimary() internal override returns (uint256, bool) {
+    uint256 constant public _2_PERCENT = 2e16;
+
+    function _fetchPricePrimary(bool _isRedemption) internal override returns (uint256, bool) {
         assert(priceSource == PriceSource.primary);
         (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
         (uint256 rEthEthPrice, bool rEthEthOracleDown) = _getOracleAnswer(rEthEthOracle);
@@ -48,20 +50,36 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
 
         // Otherwise, use the primary price calculation:
 
-        // Calculate the market LST-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
-        uint256 lstUsdMarketPrice = ethUsdPrice * rEthEthPrice / 1e18;
+        // Calculate the market RETH-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
+        uint256 rEthUsdMarketPrice = ethUsdPrice * rEthEthPrice / 1e18;
 
         // Calculate the canonical LST-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
-        uint256 lstUsdCanonicalPrice = ethUsdPrice * rEthPerEth / 1e18;
+        uint256 rEthUsdCanonicalPrice = ethUsdPrice * rEthPerEth / 1e18;
 
-        // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation.
-        // NOTE: only needed
-        uint256 lstUsdPrice = LiquityMath._min(lstUsdMarketPrice, lstUsdCanonicalPrice);
+        uint256 rEthUsdPrice;
 
-        lastGoodPrice = lstUsdPrice;
+        // If it's a redemption and canonical is within 2% of market, use the max to mitigate unwanted redemption oracle arb
+        if (_isRedemption && _within2pct(rEthUsdMarketPrice, rEthUsdCanonicalPrice)) { 
+            rEthUsdPrice = LiquityMath._max(rEthUsdMarketPrice, rEthUsdCanonicalPrice);
+        } else {
+            // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation.
+            // Assumes a deviation between market <> canonical of >2% represents a legitemate market price difference.
+            rEthUsdPrice = LiquityMath._min(rEthUsdMarketPrice, rEthUsdCanonicalPrice);
+        }
 
-        return (lstUsdPrice, false);
+        lastGoodPrice = rEthUsdPrice;
+
+        return (rEthUsdPrice, false);
     }
+
+    function _within2pct(uint256 _rEthUsdMarketPrice, uint256 _rEthUsdCanonicalPrice) internal pure returns (bool) {
+        // Calculate the price deviation of the oracle market price relative to the canonical price
+        uint256 max = _rEthUsdCanonicalPrice * (DECIMAL_PRECISION + _2_PERCENT) / 1e18;
+        uint256 min = _rEthUsdCanonicalPrice * (DECIMAL_PRECISION - _2_PERCENT) / 1e18;
+
+        return _rEthUsdMarketPrice >= min && _rEthUsdCanonicalPrice <= max;
+    }
+
 
     function _getCanonicalRate() internal view override returns (uint256, bool) {
         try IRETHToken(rateProviderAddress).getExchangeRate() returns (uint256 ethPerReth) {

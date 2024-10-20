@@ -21,37 +21,41 @@ contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
         stEthUsdOracle.stalenessThreshold = _stEthUsdStalenessThreshold;
         stEthUsdOracle.decimals = stEthUsdOracle.aggregator.decimals();
 
-        _fetchPricePrimary();
+        _fetchPricePrimary(false);
 
         // Check the oracle didn't already fail
         assert(priceSource == PriceSource.primary);
     }
 
-    function _fetchPricePrimary() internal override returns (uint256, bool) {
+    function _fetchPricePrimary(bool _isRedemption) internal override returns (uint256, bool) {
         assert(priceSource == PriceSource.primary);
         (uint256 stEthUsdPrice, bool stEthUsdOracleDown) = _getOracleAnswer(stEthUsdOracle);
         (uint256 stEthPerWstEth, bool exchangeRateIsDown) = _getCanonicalRate();
+        (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
 
-        // If exchange rate is down, shut down and switch to last good price - since we need this 
-        // rate for all price calcs
-        if (exchangeRateIsDown) {
+        // - If exchange rate or ETH-USD is down, shut down and switch to last good price. Reasoning:
+        // - Exchange rate is used in all price calcs
+        // - ETH-USD is used in the fallback calc, and for redemptions in the primary price calc
+        if (exchangeRateIsDown || ethUsdOracleDown) {
             return (_shutDownAndSwitchToLastGoodPrice(address(stEthUsdOracle.aggregator)), true);
         }
 
         // If the STETH-USD feed is down, shut down and try to substitute it with the ETH-USD price
         if (stEthUsdOracleDown) {
-            (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
-            // If the ETH-USD feed is *also* down, shut down and return the last good price
-            if (ethUsdOracleDown) {
-                return (_shutDownAndSwitchToLastGoodPrice(address(stEthUsdOracle.aggregator)), true);
-            } else {
-                return (_shutDownAndSwitchToETHUSDxCanonical(address(stEthUsdOracle.aggregator), ethUsdPrice), true);
-            }
+            return (_shutDownAndSwitchToETHUSDxCanonical(address(stEthUsdOracle.aggregator), ethUsdPrice), true);
         }
 
-        // Otherwise, use the primary price calculation.   
-        // Calculate WSTETH-USD price USD_per_WSTETH = USD_per_STETH * STETH_per_WSTETH
-        uint256 wstEthUsdPrice = stEthUsdPrice * stEthPerWstEth / 1e18;
+        // Otherwise, use the primary price calculation:
+        uint256 wstEthUsdPrice;
+
+        if (_isRedemption) { 
+            // If it's a redemption, take the max of (STETH-USD, ETH-USD) and convert to WSTETH-USD
+            wstEthUsdPrice = LiquityMath._max(stEthUsdPrice, ethUsdPrice) * stEthPerWstEth / 1e18;
+        } else {
+            // Otherwise, just calculate WSTETH-USD price: USD_per_WSTETH = USD_per_STETH * STETH_per_WSTETH
+            wstEthUsdPrice = stEthUsdPrice * stEthPerWstEth / 1e18;
+        }
+
         lastGoodPrice = wstEthUsdPrice;
 
         return (wstEthUsdPrice, false);
