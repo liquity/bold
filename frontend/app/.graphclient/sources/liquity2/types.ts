@@ -335,6 +335,121 @@ export type Collateral_orderBy =
   | 'totalDebt'
   | 'price';
 
+export type InterestBatch = {
+  readonly id: Scalars['ID']['output'];
+  readonly collateral: Collateral;
+  readonly batchManager: Scalars['Bytes']['output'];
+  readonly debt: Scalars['BigInt']['output'];
+  readonly coll: Scalars['BigInt']['output'];
+  readonly annualInterestRate: Scalars['BigInt']['output'];
+  readonly annualManagementFee: Scalars['BigInt']['output'];
+  readonly troves: ReadonlyArray<Trove>;
+};
+
+
+export type InterestBatchtrovesArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<Trove_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<Trove_filter>;
+};
+
+export type InterestBatch_filter = {
+  readonly id?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_not?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lt?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_gte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
+  readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly collateral?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly collateral_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly collateral_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_?: InputMaybe<Collateral_filter>;
+  readonly batchManager?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly batchManager_not?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly batchManager_gt?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly batchManager_lt?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly batchManager_gte?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly batchManager_lte?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly batchManager_in?: InputMaybe<ReadonlyArray<Scalars['Bytes']['input']>>;
+  readonly batchManager_not_in?: InputMaybe<ReadonlyArray<Scalars['Bytes']['input']>>;
+  readonly batchManager_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly batchManager_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  readonly debt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly debt_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly debt_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly debt_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly debt_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly debt_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly debt_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly debt_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly coll?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly coll_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly coll_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly coll_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly coll_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly coll_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly coll_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly coll_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly annualInterestRate?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly annualInterestRate_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly annualInterestRate_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly annualInterestRate_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly annualInterestRate_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly annualInterestRate_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly annualInterestRate_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly annualInterestRate_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly annualManagementFee?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly annualManagementFee_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly annualManagementFee_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly annualManagementFee_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly annualManagementFee_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly annualManagementFee_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly annualManagementFee_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly annualManagementFee_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly troves_?: InputMaybe<Trove_filter>;
+  /** Filter for the block changed event. */
+  readonly _change_block?: InputMaybe<BlockChangedFilter>;
+  readonly and?: InputMaybe<ReadonlyArray<InputMaybe<InterestBatch_filter>>>;
+  readonly or?: InputMaybe<ReadonlyArray<InputMaybe<InterestBatch_filter>>>;
+};
+
+export type InterestBatch_orderBy =
+  | 'id'
+  | 'collateral'
+  | 'collateral__id'
+  | 'collateral__collIndex'
+  | 'collateral__minCollRatio'
+  | 'collateral__totalDeposited'
+  | 'collateral__totalDebt'
+  | 'collateral__price'
+  | 'batchManager'
+  | 'debt'
+  | 'coll'
+  | 'annualInterestRate'
+  | 'annualManagementFee'
+  | 'troves';
+
 export type InterestRateBracket = {
   readonly id: Scalars['ID']['output'];
   readonly rate: Scalars['BigInt']['output'];
@@ -413,6 +528,8 @@ export type Query = {
   readonly stabilityPoolDepositSnapshots: ReadonlyArray<StabilityPoolDepositSnapshot>;
   readonly stabilityPoolEpochScale?: Maybe<StabilityPoolEpochScale>;
   readonly stabilityPoolEpochScales: ReadonlyArray<StabilityPoolEpochScale>;
+  readonly interestBatch?: Maybe<InterestBatch>;
+  readonly interestBatches: ReadonlyArray<InterestBatch>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -593,6 +710,24 @@ export type QuerystabilityPoolEpochScalesArgs = {
   orderBy?: InputMaybe<StabilityPoolEpochScale_orderBy>;
   orderDirection?: InputMaybe<OrderDirection>;
   where?: InputMaybe<StabilityPoolEpochScale_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryinterestBatchArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryinterestBatchesArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<InterestBatch_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<InterestBatch_filter>;
   block?: InputMaybe<Block_height>;
   subgraphError?: _SubgraphErrorPolicy_;
 };
@@ -877,6 +1012,8 @@ export type Subscription = {
   readonly stabilityPoolDepositSnapshots: ReadonlyArray<StabilityPoolDepositSnapshot>;
   readonly stabilityPoolEpochScale?: Maybe<StabilityPoolEpochScale>;
   readonly stabilityPoolEpochScales: ReadonlyArray<StabilityPoolEpochScale>;
+  readonly interestBatch?: Maybe<InterestBatch>;
+  readonly interestBatches: ReadonlyArray<InterestBatch>;
   /** Access to subgraph metadata */
   readonly _meta?: Maybe<_Meta_>;
 };
@@ -1062,6 +1199,24 @@ export type SubscriptionstabilityPoolEpochScalesArgs = {
 };
 
 
+export type SubscriptioninterestBatchArgs = {
+  id: Scalars['ID']['input'];
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptioninterestBatchesArgs = {
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<InterestBatch_orderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  where?: InputMaybe<InterestBatch_filter>;
+  block?: InputMaybe<Block_height>;
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
 export type Subscription_metaArgs = {
   block?: InputMaybe<Block_height>;
 };
@@ -1173,15 +1328,16 @@ export type Token_orderBy =
 
 export type Trove = {
   readonly id: Scalars['ID']['output'];
-  readonly troveId: Scalars['String']['output'];
+  readonly batch?: Maybe<InterestBatch>;
   readonly borrower: Scalars['Bytes']['output'];
-  readonly debt: Scalars['BigInt']['output'];
-  readonly deposit: Scalars['BigInt']['output'];
-  readonly stake: Scalars['BigInt']['output'];
-  readonly interestRate: Scalars['BigInt']['output'];
-  readonly createdAt: Scalars['BigInt']['output'];
   readonly closedAt?: Maybe<Scalars['BigInt']['output']>;
   readonly collateral: Collateral;
+  readonly createdAt: Scalars['BigInt']['output'];
+  readonly debt: Scalars['BigInt']['output'];
+  readonly deposit: Scalars['BigInt']['output'];
+  readonly interestRate: Scalars['BigInt']['output'];
+  readonly stake: Scalars['BigInt']['output'];
+  readonly troveId: Scalars['String']['output'];
 };
 
 export type Trove_filter = {
@@ -1193,26 +1349,27 @@ export type Trove_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
-  readonly troveId?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_not?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_gt?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_lt?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_gte?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_lte?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
-  readonly troveId_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
-  readonly troveId_contains?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_not_contains?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_starts_with?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_not_starts_with?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_ends_with?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_not_ends_with?: InputMaybe<Scalars['String']['input']>;
-  readonly troveId_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly batch?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_not?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly batch_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly batch_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly batch_?: InputMaybe<InterestBatch_filter>;
   readonly borrower?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_not?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_gt?: InputMaybe<Scalars['Bytes']['input']>;
@@ -1223,46 +1380,6 @@ export type Trove_filter = {
   readonly borrower_not_in?: InputMaybe<ReadonlyArray<Scalars['Bytes']['input']>>;
   readonly borrower_contains?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
-  readonly debt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly debt_not?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly debt_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly debt_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly debt_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly debt_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly debt_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly debt_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly deposit?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly deposit_not?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly deposit_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly deposit_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly deposit_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly deposit_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly deposit_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly deposit_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly stake?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly stake_not?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly stake_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly stake_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly stake_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly stake_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly stake_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly stake_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly interestRate?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly interestRate_not?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly interestRate_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly interestRate_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly interestRate_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly interestRate_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly interestRate_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly interestRate_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly createdAt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly createdAt_not?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly createdAt_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly createdAt_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly createdAt_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly createdAt_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  readonly createdAt_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly createdAt_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
   readonly closedAt?: InputMaybe<Scalars['BigInt']['input']>;
   readonly closedAt_not?: InputMaybe<Scalars['BigInt']['input']>;
   readonly closedAt_gt?: InputMaybe<Scalars['BigInt']['input']>;
@@ -1292,6 +1409,66 @@ export type Trove_filter = {
   readonly collateral_not_ends_with?: InputMaybe<Scalars['String']['input']>;
   readonly collateral_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
   readonly collateral_?: InputMaybe<Collateral_filter>;
+  readonly createdAt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly createdAt_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly createdAt_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly createdAt_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly createdAt_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly createdAt_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly createdAt_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly createdAt_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly debt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly debt_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly debt_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly debt_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly debt_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly debt_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly debt_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly debt_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly deposit?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly deposit_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly deposit_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly deposit_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly deposit_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly deposit_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly deposit_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly deposit_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly interestRate?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly interestRate_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly interestRate_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly interestRate_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly interestRate_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly interestRate_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly interestRate_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly interestRate_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly stake?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly stake_not?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly stake_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly stake_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly stake_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly stake_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  readonly stake_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly stake_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly troveId?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly troveId_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly troveId_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly troveId_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
   /** Filter for the block changed event. */
   readonly _change_block?: InputMaybe<BlockChangedFilter>;
   readonly and?: InputMaybe<ReadonlyArray<InputMaybe<Trove_filter>>>;
@@ -1300,13 +1477,14 @@ export type Trove_filter = {
 
 export type Trove_orderBy =
   | 'id'
-  | 'troveId'
+  | 'batch'
+  | 'batch__id'
+  | 'batch__batchManager'
+  | 'batch__debt'
+  | 'batch__coll'
+  | 'batch__annualInterestRate'
+  | 'batch__annualManagementFee'
   | 'borrower'
-  | 'debt'
-  | 'deposit'
-  | 'stake'
-  | 'interestRate'
-  | 'createdAt'
   | 'closedAt'
   | 'collateral'
   | 'collateral__id'
@@ -1314,7 +1492,13 @@ export type Trove_orderBy =
   | 'collateral__minCollRatio'
   | 'collateral__totalDeposited'
   | 'collateral__totalDebt'
-  | 'collateral__price';
+  | 'collateral__price'
+  | 'createdAt'
+  | 'debt'
+  | 'deposit'
+  | 'interestRate'
+  | 'stake'
+  | 'troveId';
 
 export type _Block_ = {
   /** The hash of the block */
@@ -1390,6 +1574,10 @@ export type _SubgraphErrorPolicy_ =
   stabilityPoolEpochScale: InContextSdkMethod<Query['stabilityPoolEpochScale'], QuerystabilityPoolEpochScaleArgs, MeshContext>,
   /** null **/
   stabilityPoolEpochScales: InContextSdkMethod<Query['stabilityPoolEpochScales'], QuerystabilityPoolEpochScalesArgs, MeshContext>,
+  /** null **/
+  interestBatch: InContextSdkMethod<Query['interestBatch'], QueryinterestBatchArgs, MeshContext>,
+  /** null **/
+  interestBatches: InContextSdkMethod<Query['interestBatches'], QueryinterestBatchesArgs, MeshContext>,
   /** Access to subgraph metadata **/
   _meta: InContextSdkMethod<Query['_meta'], Query_metaArgs, MeshContext>
   };
@@ -1439,6 +1627,10 @@ export type _SubgraphErrorPolicy_ =
   stabilityPoolEpochScale: InContextSdkMethod<Subscription['stabilityPoolEpochScale'], SubscriptionstabilityPoolEpochScaleArgs, MeshContext>,
   /** null **/
   stabilityPoolEpochScales: InContextSdkMethod<Subscription['stabilityPoolEpochScales'], SubscriptionstabilityPoolEpochScalesArgs, MeshContext>,
+  /** null **/
+  interestBatch: InContextSdkMethod<Subscription['interestBatch'], SubscriptioninterestBatchArgs, MeshContext>,
+  /** null **/
+  interestBatches: InContextSdkMethod<Subscription['interestBatches'], SubscriptioninterestBatchesArgs, MeshContext>,
   /** Access to subgraph metadata **/
   _meta: InContextSdkMethod<Subscription['_meta'], Subscription_metaArgs, MeshContext>
   };
