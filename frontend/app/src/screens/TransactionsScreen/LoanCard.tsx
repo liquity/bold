@@ -251,6 +251,25 @@ export function LoanCard({
                         {fmtnum(dn.mul(prevLoan.interestRate, 100))}%
                       </div>
                     )}
+                    {loan.batchManager && (
+                      <div
+                        title={`Interest rate delegate: ${loan.batchManager}`}
+                        className={css({
+                          display: "flex",
+                          alignItems: "center",
+                          height: 16,
+                          padding: "0 6px",
+                          fontSize: 10,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          color: "content",
+                          background: "brandCyan",
+                          borderRadius: 20,
+                        })}
+                      >
+                        delegated
+                      </div>
+                    )}
                   </div>
                 </GridItem>
                 <GridItem label="LTV" title="Loan-to-value ratio">

@@ -1,7 +1,7 @@
 "use client";
 
-import { isAddress } from "@/src/eth-utils";
 import { AccountScreen } from "@/src/screens/AccountScreen/AccountScreen";
+import { isAddress } from "@liquity2/uikit";
 import { notFound, useSearchParams } from "next/navigation";
 
 export default function Page() {

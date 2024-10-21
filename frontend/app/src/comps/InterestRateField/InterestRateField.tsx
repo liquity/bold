@@ -1,37 +1,35 @@
-import type { Delegate } from "@/src/types";
+import type { Address, CollIndex, Delegate } from "@/src/types";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
 import { INTEREST_RATE_DEFAULT, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import content from "@/src/content";
-import {
-  DELEGATES,
-  DELEGATES_FULL,
-  getDebtBeforeRateBucketIndex,
-  IC_STRATEGIES,
-  INTEREST_CHART,
-} from "@/src/demo-mode";
+import { DELEGATES_FULL, getDebtBeforeRateBucketIndex, IC_STRATEGIES, INTEREST_CHART } from "@/src/demo-mode";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRedemptionRisk } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
+import { useInterestBatchDelegate } from "@/src/subgraph-hooks";
 import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
 import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import {
+  AddressField,
+  AnchorTextButton,
   Button,
   Dropdown,
   HFlex,
   IconCopy,
-  IconExternal,
   InfoTooltip,
   InputField,
   lerp,
   Modal,
   norm,
+  shortenAddress,
   Slider,
   StatusDot,
   TextButton,
 } from "@liquity2/uikit";
+import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
 import { useState } from "react";
@@ -52,16 +50,16 @@ const DELEGATE_MODES: Array<{
     type: "manual",
   },
   {
+    label: "Delegated",
+    secondary: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
+    type: "delegate",
+  },
+  {
     label: "Automated (ICP)",
     secondary:
-      "The interest rate is set and updated by an automated strategy running on the decentralized Internet Computer (ICP) network."
-      + " There is a small additional fee for these strategies.",
+      "The interest rate is set and updated by an automated strategy running on the decentralized Internet Computer (ICP).",
     type: "strategy",
   },
-  // {
-  //   label: "Delegated",
-  //   secondary: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
-  // },
 ] as const;
 
 const IC_STRATEGY_MODAL = {
@@ -84,24 +82,27 @@ const DELEGATES_MODAL = {
 };
 
 export function InterestRateField({
+  collIndex,
   debt,
+  delegate,
   interestRate,
+  mode,
   onChange,
+  onDelegateChange,
   onModeChange = noop,
 }: {
+  collIndex: CollIndex;
   debt: Dnum | null;
+  delegate: Address | null;
   interestRate: Dnum | null;
+  mode: DelegateMode;
   onChange: (interestRate: Dnum) => void;
+  onDelegateChange: (delegate: Address | null) => void;
   onModeChange?: (mode: DelegateMode) => void;
 }) {
-  const [delegate, setDelegate] = useState<null | { id: string }>(null);
-  const [delegatePicker, setDelegatePicker] = useState<"strategy" | "delegate" | null>(null);
-
-  const [mode, setMode_] = useState<DelegateMode>("manual");
-  const setMode = (value: DelegateMode) => {
-    setMode_(value);
-    onModeChange(value);
-  };
+  const [delegatePicker, setDelegatePicker] = useState<
+    "strategy" | "delegate" | null
+  >(null);
 
   const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
     defaultValue: interestRate
@@ -121,15 +122,6 @@ export function InterestRateField({
       ? Math.round((dn.toNumber(interestRate) * 100 - INTEREST_RATE_MIN) / INTEREST_RATE_INCREMENT)
       : 0,
   );
-
-  const onSelectDelegate = (id: string) => {
-    const delegate = DELEGATES_FULL.find((s) => s.id === id);
-    if (delegate) {
-      onChange(delegate.interestRate);
-    }
-    setDelegate(delegate ? { id } : null);
-    setDelegatePicker(null);
-  };
 
   return (
     <>
@@ -173,7 +165,9 @@ export function InterestRateField({
           .with("strategy", () => (
             <TextButton
               size="large"
-              label={delegate ? IC_STRATEGIES.find(({ id }) => id === delegate.id)?.name : "Choose strategy"}
+              label={delegate
+                ? IC_STRATEGIES.find(({ address }) => address === delegate)?.name
+                : "Choose strategy"}
               onClick={() => {
                 setDelegatePicker("strategy");
               }}
@@ -182,7 +176,30 @@ export function InterestRateField({
           .with("delegate", () => (
             <TextButton
               size="large"
-              label={delegate ? DELEGATES.find(({ id }) => id === delegate.id)?.name : "Choose delegate"}
+              title={delegate ?? undefined}
+              label={delegate
+                ? (
+                  <div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                    })}
+                  >
+                    <img
+                      src={blo(delegate)}
+                      alt=""
+                      width={24}
+                      height={24}
+                      className={css({
+                        display: "block",
+                        borderRadius: 4,
+                      })}
+                    />
+                    {shortenAddress(delegate, 4).toLowerCase()}
+                  </div>
+                )
+                : "Choose delegate"}
               onClick={() => {
                 setDelegatePicker("delegate");
               }}
@@ -194,12 +211,16 @@ export function InterestRateField({
           end: (
             <div>
               <Dropdown
-                items={DELEGATE_MODES}
+                items={DELEGATE_MODES.map((item) => ({
+                  label: item.label,
+                  secondary: item.secondary,
+                  disabled: item.type === "strategy" ? "Coming soon" : false,
+                }))}
                 menuWidth={300}
                 menuPlacement="end"
                 onSelect={(index) => {
-                  setMode(DELEGATE_MODES[index].type);
-                  setDelegate(null);
+                  onModeChange(DELEGATE_MODES[index].type);
+                  onDelegateChange(null);
                 }}
                 selected={DELEGATE_MODES.findIndex(({ type }) => type === mode)}
                 size="small"
@@ -212,9 +233,7 @@ export function InterestRateField({
           start: (
             <HFlex gap={4}>
               <div>
-                {boldInterestPerYear && mode === "manual"
-                    || (mode === "strategy" && delegate)
-                  // || (mode === 'delegate' && delegate)
+                {boldInterestPerYear && (mode === "manual" || delegate !== null)
                   ? fmtnum(boldInterestPerYear, 2)
                   : "−"} BOLD / year
               </div>
@@ -234,9 +253,7 @@ export function InterestRateField({
                     fontVariantNumeric: "tabular-nums",
                   })}
                 >
-                  {mode === "manual"
-                      || (mode === "strategy" && delegate !== null)
-                    // || (mode === "delegate" && delegate !== null)
+                  {(mode === "manual" || delegate !== null)
                     ? fmtnum(boldRedeemableInFront, "compact")
                     : "−"}
                 </span>
@@ -248,21 +265,15 @@ export function InterestRateField({
         {...fieldValue.inputFieldProps}
         value={
           // no delegate selected yet
-          (
-              mode === "strategy"
-              // || mode === "delegate"
-            ) && delegate === null
+          (mode !== "manual" && delegate === null)
             ? ""
             : fieldValue.value
         }
         valueUnfocused={
-          // no delegate selected yet
-          (
-              mode === "strategy"
-              // || mode === "delegate"
-            ) && delegate === null
+          // delegate mode, but no delegate selected yet
+          (mode !== "manual" && delegate === null)
             ? null
-            : (!fieldValue.isEmpty && fieldValue.parsed && interestRate)
+            : <>{!fieldValue.isEmpty && fieldValue.parsed && interestRate}</>
             ? (
               <span
                 style={{
@@ -277,7 +288,11 @@ export function InterestRateField({
                     fontVariantNumeric: "tabular-nums",
                   }}
                 >
-                  {fmtnum(interestRate, "1z", 100)}
+                  {(mode === "manual" || delegate !== null) && fmtnum(
+                    interestRate,
+                    "1z",
+                    100,
+                  )}
                 </span>
                 <span
                   style={{
@@ -318,10 +333,18 @@ export function InterestRateField({
         visible={delegatePicker === "strategy"}
       >
         <DelegatesModalContent
+          collIndex={collIndex}
           chooseLabel="Choose"
           delegates={IC_STRATEGIES}
           intro={IC_STRATEGY_MODAL.intro}
-          onSelectDelegate={onSelectDelegate}
+          onSelectDelegate={(id) => {
+            setDelegatePicker(null);
+            const delegate = DELEGATES_FULL.find((s) => s.id === id);
+            if (delegate) {
+              onChange(delegate.interestRate);
+            }
+            onDelegateChange(delegate?.address ?? null);
+          }}
         />
       </Modal>
       <Modal
@@ -331,24 +354,159 @@ export function InterestRateField({
         title={DELEGATES_MODAL.title}
         visible={delegatePicker === "delegate"}
       >
-        <DelegatesModalContent
+        <CustomDelegateModalContent
+          collIndex={collIndex}
           chooseLabel="Set delegate"
-          delegates={DELEGATES}
           intro={DELEGATES_MODAL.intro}
-          onSelectDelegate={onSelectDelegate}
+          onSelectDelegate={(delegate) => {
+            setDelegatePicker(null);
+            onChange(delegate.interestRate);
+            onDelegateChange(delegate.address ?? null);
+          }}
         />
       </Modal>
     </>
   );
 }
 
-function DelegatesModalContent({
-  delegates,
-  chooseLabel,
+function CustomDelegateModalContent({
+  collIndex,
   intro,
   onSelectDelegate,
 }: {
-  delegates: Delegate[];
+  collIndex: CollIndex;
+  chooseLabel: string;
+  intro: ReactNode;
+  onSelectDelegate: (delegate: Delegate) => void;
+}) {
+  const [delegateAddress, setDelegateAddress] = useState<null | Address>(null);
+  const [delegateAddressValue, setDelegateAddressValue] = useState("");
+
+  const delegate = useInterestBatchDelegate(collIndex, delegateAddress);
+
+  return (
+    <>
+      <div
+        className={css({
+          fontSize: 16,
+          color: "contentAlt",
+        })}
+      >
+        {intro}
+      </div>
+      <div
+        className={css({
+          paddingTop: 40,
+        })}
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (delegate.data) {
+              onSelectDelegate(delegate.data);
+            }
+          }}
+        >
+          <AddressField
+            onAddressChange={setDelegateAddress}
+            onChange={setDelegateAddressValue}
+            placeholder="Enter delegate address"
+            value={delegateAddressValue}
+          />
+        </form>
+      </div>
+
+      <div
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 8,
+          paddingTop: 32,
+          paddingBottom: 24,
+          minHeight: 312,
+        })}
+      >
+        {delegateAddress
+          ? (
+            <div
+              className={css({
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+                height: "100%",
+              })}
+            >
+              {delegate.status === "pending"
+                ? (
+                  <div
+                    className={css({
+                      color: "contentAlt",
+                      paddingTop: 40,
+                    })}
+                  >
+                    Loading…
+                  </div>
+                )
+                : delegate.status === "error"
+                ? (
+                  <div
+                    className={css({
+                      color: "contentAlt",
+                      paddingTop: 40,
+                    })}
+                  >
+                    Error: {delegate.error?.name}
+                  </div>
+                )
+                : (
+                  delegate.data
+                    ? (
+                      <DelegateBox
+                        delegate={delegate.data}
+                        selectLabel="Choose"
+                        onSelect={onSelectDelegate}
+                      />
+                    )
+                    : (
+                      <div>
+                        The address is not a valid{" "}
+                        <AnchorTextButton
+                          label="batch interest manager"
+                          href="https://github.com/liquity/bold#batch-interest-managers"
+                          external
+                        />.
+                      </div>
+                    )
+                )}
+            </div>
+          )
+          : (
+            <div>
+              Please enter a valid{" "}
+              <AnchorTextButton
+                label="batch interest manager"
+                href="https://github.com/liquity/bold#batch-interest-managers"
+                external
+              />{" "}
+              address.
+            </div>
+          )}
+      </div>
+    </>
+  );
+}
+
+function DelegatesModalContent({
+  collIndex: _collIndex,
+  delegates = [],
+  chooseLabel: _chooseLabel,
+  intro,
+  onSelectDelegate: _onSelectDelegate,
+}: {
+  collIndex: CollIndex;
+  delegates?: Delegate[];
   chooseLabel: string;
   intro: ReactNode;
   onSelectDelegate: (id: Delegate["id"]) => void;
@@ -364,215 +522,26 @@ function DelegatesModalContent({
       >
         {intro}
       </div>
+
       <div
         className={css({
           display: "flex",
           flexDirection: "column",
+          alignItems: "center",
           gap: 8,
           paddingTop: 32,
           paddingBottom: 24,
+          minHeight: 312,
         })}
       >
         {delegates.slice(0, displayedDelegates).map((delegate) => {
-          const delegationRisk = getRedemptionRisk(delegate.interestRate);
           return (
-            <ShadowBox key={delegate.id}>
-              <section
-                key={delegate.name}
-                className={css({
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  padding: "8px 16px",
-                })}
-              >
-                <div
-                  className={css({
-                    display: "flex",
-                    flexDirection: "column",
-                    width: "100%",
-                    paddingBottom: 12,
-                    borderBottom: "1px solid token(colors.borderSoft)",
-                  })}
-                >
-                  <div
-                    className={css({
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      width: "100%",
-                      fontSize: 20,
-                      fontWeight: 500,
-                    })}
-                  >
-                    <h1>
-                      {delegate.name}
-                    </h1>
-                    <div
-                      className={css({
-                        display: "flex",
-                        gap: 6,
-                        alignItems: "center",
-                      })}
-                    >
-                      <MiniChart />
-                      {fmtnum(delegate.interestRate, "1z", 100)}%
-                    </div>
-                  </div>
-                  <div
-                    className={css({
-                      display: "flex",
-                      justifyContent: "space-between",
-                      width: "100%",
-                      fontSize: 14,
-                      color: "content",
-                    })}
-                  >
-                    <div
-                      className={css({
-                        display: "flex",
-                        gap: 8,
-                        alignItems: "center",
-                      })}
-                    >
-                      <div>{delegate.followers} followers</div>
-                      <Bullet />
-                      <div>
-                        {fmtnum(delegate.boldAmount, "compact")} BOLD
-                      </div>
-                    </div>
-                    <div
-                      className={css({
-                        display: "flex",
-                        gap: 8,
-                        alignItems: "center",
-                      })}
-                    >
-                      <StatusDot mode={riskLevelToStatusMode(delegationRisk)} />
-                      {formatRedemptionRisk(delegationRisk)}
-                    </div>
-                  </div>
-                </div>
-                <div
-                  className={css({
-                    display: "flex",
-                    flexDirection: "column",
-                    width: "100%",
-                    paddingTop: 12,
-                    fontSize: 14,
-                    paddingBottom: 12,
-                    borderBottom: "1px solid token(colors.borderSoft)",
-                  })}
-                >
-                  <div
-                    className={css({
-                      paddingBottom: 8,
-                      color: "contentAlt",
-                    })}
-                  >
-                    Last {delegate.lastDays} days
-                  </div>
-                  <div
-                    className={css({
-                      display: "flex",
-                      justifyContent: "space-between",
-                      width: "100%",
-                      fontSize: 14,
-                      color: "content",
-                    })}
-                  >
-                    <div>Redemptions</div>
-                    <div title={`${fmtnum(delegate.redemptions, "full")} BOLD`}>
-                      {fmtnum(delegate.redemptions, "compact")} BOLD
-                    </div>
-                  </div>
-                  <div
-                    className={css({
-                      display: "flex",
-                      justifyContent: "space-between",
-                      width: "100%",
-                      fontSize: 14,
-                      color: "content",
-                    })}
-                  >
-                    <div>Interest rate range</div>
-                    <div>
-                      {fmtnum(delegate.interestRateChange[0], 2, 100)}
-                      <span>-</span>
-                      {fmtnum(delegate.interestRateChange[1], 2, 100)}%
-                    </div>
-                  </div>
-                  {delegate.fee && (
-                    <div
-                      className={css({
-                        display: "flex",
-                        justifyContent: "space-between",
-                        width: "100%",
-                        fontSize: 14,
-                        color: "content",
-                      })}
-                    >
-                      <div>
-                        Fees <abbr title="per annum">p.a.</abbr>
-                      </div>
-                      <div title={`${fmtnum(delegate.fee, 18, 100)}%`}>
-                        {fmtnum(delegate.fee, 4, 100)}%
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div
-                  className={css({
-                    display: "flex",
-                    justifyContent: "space-between",
-                    width: "100%",
-                    paddingTop: 16,
-                    paddingBottom: 8,
-                    fontSize: 14,
-                  })}
-                >
-                  <div
-                    className={css({
-                      display: "flex",
-                      gap: 8,
-                    })}
-                  >
-                    <TextButton
-                      label={
-                        <>
-                          Copy address
-                          <IconCopy size={16} />
-                        </>
-                      }
-                      className={css({
-                        fontSize: 14,
-                      })}
-                    />
-                    <TextButton
-                      label={
-                        <>
-                          Dune
-                          <IconExternal size={16} />
-                        </>
-                      }
-                      className={css({
-                        fontSize: 14,
-                      })}
-                    />
-                  </div>
-                  <div>
-                    <Button
-                      label={chooseLabel}
-                      mode="primary"
-                      size="small"
-                      onClick={() => {
-                        onSelectDelegate(delegate.id);
-                      }}
-                    />
-                  </div>
-                </div>
-              </section>
-            </ShadowBox>
+            <DelegateBox
+              key={delegate.id}
+              delegate={delegate}
+              selectLabel="Choose"
+              onSelect={noop}
+            />
           );
         })}
         {displayedDelegates < delegates.length && (
@@ -619,36 +588,232 @@ function MiniChart({ size = "small" }: { size?: "small" | "medium" }) {
   );
 }
 
-function Bullet() {
-  return (
-    <div
-      className={css({
-        width: 4,
-        height: 4,
-        background: "currentcolor",
-        borderRadius: "50%",
-      })}
-    />
-  );
-}
-
 function ShadowBox({ children }: { children: ReactNode }) {
   return (
     <div
       className={css({
+        width: "100%",
         background: "background",
         borderWidth: "1px 1px 0",
         borderStyle: "solid",
         borderColor: "gray:50",
         boxShadow: `
-        0 2px 2px rgba(0, 0, 0, 0.1),
-        0 4px 10px rgba(18, 27, 68, 0.05),
-        inset 0 -1px 4px rgba(0, 0, 0, 0.05)
-      `,
+          0 2px 2px rgba(0, 0, 0, 0.1),
+          0 4px 10px rgba(18, 27, 68, 0.05),
+          inset 0 -1px 4px rgba(0, 0, 0, 0.05)
+        `,
         borderRadius: 8,
       })}
     >
       {children}
     </div>
+  );
+}
+
+function DelegateBox({
+  delegate,
+  onSelect,
+  selectLabel = "Select",
+}: {
+  delegate: Delegate;
+  onSelect: (delegate: Delegate) => void;
+  selectLabel: string;
+}) {
+  const delegationRisk = getRedemptionRisk(delegate.interestRate);
+  return (
+    <ShadowBox key={delegate.id}>
+      <section
+        key={delegate.name}
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "8px 16px",
+        })}
+      >
+        <div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            width: "100%",
+            paddingBottom: 12,
+            borderBottom: "1px solid token(colors.borderSoft)",
+          })}
+        >
+          <div
+            className={css({
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              width: "100%",
+              fontSize: 20,
+              fontWeight: 500,
+              userSelect: "none",
+            })}
+          >
+            <h1 title={`${delegate.name} (${delegate.address})`}>
+              {delegate.name}
+            </h1>
+            <div
+              className={css({
+                display: "flex",
+                gap: 6,
+                alignItems: "center",
+              })}
+            >
+              <MiniChart />
+              {fmtnum(delegate.interestRate, "1z", 100)}%
+            </div>
+          </div>
+          <div
+            className={css({
+              display: "flex",
+              justifyContent: "space-between",
+              width: "100%",
+              fontSize: 14,
+              color: "content",
+            })}
+          >
+            <div
+              className={css({
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+              })}
+            >
+              <div>{delegate.followers} followers</div>
+              <div
+                className={css({
+                  width: 4,
+                  height: 4,
+                  background: "currentcolor",
+                  borderRadius: "50%",
+                })}
+              />
+              <div>
+                {fmtnum(delegate.boldAmount, "compact")} BOLD
+              </div>
+            </div>
+            <div
+              className={css({
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+              })}
+            >
+              <StatusDot mode={riskLevelToStatusMode(delegationRisk)} />
+              {formatRedemptionRisk(delegationRisk)}
+            </div>
+          </div>
+        </div>
+        <div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            width: "100%",
+            paddingTop: 12,
+            fontSize: 14,
+            paddingBottom: 12,
+            borderBottom: "1px solid token(colors.borderSoft)",
+          })}
+        >
+          <div
+            className={css({
+              paddingBottom: 8,
+              color: "contentAlt",
+            })}
+          >
+            Last {delegate.lastDays} days
+          </div>
+          <div
+            className={css({
+              display: "flex",
+              justifyContent: "space-between",
+              width: "100%",
+              fontSize: 14,
+              color: "content",
+            })}
+          >
+            <div>Redemptions</div>
+            <div title={`${fmtnum(delegate.redemptions, "full")} BOLD`}>
+              {fmtnum(delegate.redemptions, "compact")} BOLD
+            </div>
+          </div>
+          <div
+            className={css({
+              display: "flex",
+              justifyContent: "space-between",
+              width: "100%",
+              fontSize: 14,
+              color: "content",
+            })}
+          >
+            <div>Interest rate range</div>
+            <div>
+              {fmtnum(delegate.interestRateChange[0], 2, 100)}
+              <span>-</span>
+              {fmtnum(delegate.interestRateChange[1], 2, 100)}%
+            </div>
+          </div>
+          {delegate.fee && (
+            <div
+              className={css({
+                display: "flex",
+                justifyContent: "space-between",
+                width: "100%",
+                fontSize: 14,
+                color: "content",
+              })}
+            >
+              <div>
+                Fees <abbr title="per annum">p.a.</abbr>
+              </div>
+              <div title={`${fmtnum(delegate.fee, 18, 100)}%`}>
+                {fmtnum(delegate.fee, 4, 100)}%
+              </div>
+            </div>
+          )}
+        </div>
+        <div
+          className={css({
+            display: "flex",
+            justifyContent: "space-between",
+            width: "100%",
+            paddingTop: 16,
+            paddingBottom: 8,
+            fontSize: 14,
+          })}
+        >
+          <div
+            className={css({
+              display: "flex",
+              gap: 8,
+            })}
+          >
+            <TextButton
+              label={
+                <>
+                  Copy address
+                  <IconCopy size={16} />
+                </>
+              }
+              className={css({
+                fontSize: 14,
+              })}
+            />
+          </div>
+          <div>
+            <Button
+              label={selectLabel}
+              mode="primary"
+              size="small"
+              onClick={() => {
+                onSelect(delegate);
+              }}
+            />
+          </div>
+        </div>
+      </section>
+    </ShadowBox>
   );
 }

@@ -41,6 +41,7 @@ export type MenuSection = {
 
 export type PositionLoan = {
   type: "borrow" | "leverage";
+  batchManager: null | Address;
   borrowed: Dnum;
   collIndex: CollIndex;
   collateral: CollateralSymbol;
@@ -78,6 +79,7 @@ export type PositionStake = {
 export type Position = PositionLoan | PositionEarn | PositionStake;
 
 export type Delegate = {
+  address: Address;
   boldAmount: Dnum;
   fee?: Dnum;
   followers: number;

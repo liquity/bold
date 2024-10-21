@@ -81,7 +81,7 @@ export function Screen({
           {heading.title}
         </h1>
         {heading.subtitle && (
-          <p
+          <div
             className={css({
               maxWidth: 540,
               textAlign: "center",
@@ -89,7 +89,7 @@ export function Screen({
             })}
           >
             {heading.subtitle}
-          </p>
+          </div>
         )}
       </header>
     )

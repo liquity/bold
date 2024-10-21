@@ -133,7 +133,7 @@ export function RedemptionInfo() {
               className={css({
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                gap: 4,
                 color: "accent",
               })}
             >
@@ -143,8 +143,7 @@ export function RedemptionInfo() {
               <IconExternal size={16} />
             </span>
           }
-        >
-        </AnchorTextButton>
+        />
       </div>
     </section>
   );

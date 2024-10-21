@@ -2,23 +2,24 @@
 
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
-import { GasCompensationInfo } from "@/src/comps/GasCompensationInfo/GasCompensationInfo";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { INTEREST_RATE_DEFAULT } from "@/src/constants";
 import content from "@/src/content";
+import { useAllCollateralContracts } from "@/src/contracts";
 import { ACCOUNT_BALANCES } from "@/src/demo-mode";
 import { useInputFieldValue } from "@/src/form-utils";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
+import { isCollIndex } from "@/src/types";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
-  COLLATERALS,
+  COLLATERALS as KNOWN_COLLATERALS,
   Dropdown,
   HFlex,
   IconSuggestion,
@@ -33,20 +34,33 @@ import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const collateralSymbols = COLLATERALS.map(({ symbol }) => symbol);
-
 export function LeverageScreen() {
-  const account = useAccount();
   const router = useRouter();
 
-  // useParams() can return an array, but not with the current
-  // routing setup so we can safely assume it’s a string
-  const collSymbol = String(useParams().collateral ?? "eth").toUpperCase();
+  const account = useAccount();
+  const allCollContracts = useAllCollateralContracts();
+
+  // useParams() can return an array but not with the current
+  // routing setup, so we can safely cast it to a string
+  const collSymbol = String(useParams().collateral ?? allCollContracts[0].symbol).toUpperCase();
   if (!isCollateralSymbol(collSymbol)) {
     throw new Error(`Invalid collateral symbol: ${collSymbol}`);
   }
-  const collateralIndex = collateralSymbols.indexOf(collSymbol);
-  const collateral = COLLATERALS[collateralIndex];
+
+  const collIndex = allCollContracts.findIndex(({ symbol }) => symbol === collSymbol);
+  if (!isCollIndex(collIndex)) {
+    throw new Error(`Unknown collateral symbol: ${collSymbol}`);
+  }
+
+  const collaterals = allCollContracts.map(({ symbol }) => {
+    const collateral = KNOWN_COLLATERALS.find((c) => c.symbol === symbol);
+    if (!collateral) {
+      throw new Error(`Unknown collateral symbol: ${symbol}`);
+    }
+    return collateral;
+  });
+
+  const collateral = collaterals[collIndex];
 
   const collPrice = usePrice(collateral.symbol) ?? dn.from(0, 18);
   const depositPreLeverage = useInputFieldValue((value) => `${dn.format(value)} ${collateral.name}`);
@@ -55,7 +69,7 @@ export function LeverageScreen() {
   const leverageField = useLeverageField({
     depositPreLeverage: depositPreLeverage.parsed,
     collPrice,
-    collToken: COLLATERALS[collateralIndex],
+    collToken: KNOWN_COLLATERALS[collIndex],
   });
   useEffect(() => {
     // reset leverage when collateral changes
@@ -79,7 +93,7 @@ export function LeverageScreen() {
           <HFlex>
             {content.leverageScreen.headline(
               <TokenIcon.Group>
-                {COLLATERALS.map(({ symbol }) => (
+                {KNOWN_COLLATERALS.map(({ symbol }) => (
                   <TokenIcon
                     key={symbol}
                     symbol={symbol}
@@ -105,7 +119,7 @@ export function LeverageScreen() {
             <InputField
               contextual={
                 <Dropdown
-                  items={COLLATERALS.map(({ symbol, name }) => ({
+                  items={KNOWN_COLLATERALS.map(({ symbol, name }) => ({
                     icon: <TokenIcon symbol={symbol} />,
                     label: name,
                     value: account.isConnected ? dn.format(ACCOUNT_BALANCES[symbol]) : "−",
@@ -118,11 +132,11 @@ export function LeverageScreen() {
                       depositPreLeverage.focus();
                     }, 0);
                     router.push(
-                      `/leverage/${COLLATERALS[index].symbol.toLowerCase()}`,
+                      `/leverage/${KNOWN_COLLATERALS[index].symbol.toLowerCase()}`,
                       { scroll: false },
                     );
                   }}
-                  selected={collateralIndex}
+                  selected={collIndex}
                 />
               }
               label={content.leverageScreen.depositField.label}
@@ -196,6 +210,7 @@ export function LeverageScreen() {
             // “Interest rate”
             field={
               <InterestRateField
+                collIndex={collIndex}
                 debt={leverageField.debt}
                 interestRate={interestRate}
                 onChange={setInterestRate}
@@ -221,7 +236,6 @@ export function LeverageScreen() {
         </VFlex>
 
         <RedemptionInfo />
-        <GasCompensationInfo />
 
         <div
           style={{

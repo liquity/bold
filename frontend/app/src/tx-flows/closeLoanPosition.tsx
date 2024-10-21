@@ -97,7 +97,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
         <TransactionDetailsRow
           label="Gas compensation refund"
           value={[
-            <div title={`${fmtnum(loan.data.deposit, "full")} ${collateral.symbol}`}>
+            <div title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}>
               {fmtnum(ETH_GAS_COMPENSATION, 4)} ETH
             </div>,
           ]}

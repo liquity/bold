@@ -1,10 +1,10 @@
 "use client";
 
 import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
+import type { Address } from "@/src/types";
 
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
-import { GasCompensationInfo } from "@/src/comps/GasCompensationInfo/GasCompensationInfo";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
@@ -78,8 +78,10 @@ export function BorrowScreen() {
 
   const deposit = useInputFieldValue((value) => `${fmtnum(value)} ${collateral.name}`);
   const debt = useInputFieldValue((value) => `${fmtnum(value)} BOLD`);
+
   const [interestRate, setInterestRate] = useState(dn.div(dn.from(INTEREST_RATE_DEFAULT, 18), 100));
   const [interestRateMode, setInterestRateMode] = useState<DelegateMode>("manual");
+  const [interestRateDelegate, setInterestRateDelegate] = useState<Address | null>(null);
 
   const collPrice = usePrice(collateral.symbol);
 
@@ -282,9 +284,13 @@ export function BorrowScreen() {
           // “Interest rate”
           field={
             <InterestRateField
+              collIndex={collIndex}
               debt={debt.parsed}
+              delegate={interestRateDelegate}
               interestRate={interestRate}
+              mode={interestRateMode}
               onChange={setInterestRate}
+              onDelegateChange={setInterestRateDelegate}
               onModeChange={setInterestRateMode}
             />
           }
@@ -309,7 +315,6 @@ export function BorrowScreen() {
         />
 
         <RedemptionInfo />
-        <GasCompensationInfo />
 
         <div
           style={{
@@ -344,8 +349,8 @@ export function BorrowScreen() {
                   lowerHint: dnum18(0),
                   annualInterestRate: interestRate,
                   maxUpfrontFee: dnum18(maxUint256),
-                  interestRateDelegate: interestRateMode !== "strategy" ? null : [
-                    "0x0000000000000000000000000000000000000000",
+                  interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate ? null : [
+                    interestRateDelegate,
                     MIN_ANNUAL_INTEREST_RATE,
                     MAX_ANNUAL_INTEREST_RATE,
                   ],

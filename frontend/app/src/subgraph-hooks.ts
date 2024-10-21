@@ -1,4 +1,4 @@
-import type { Address, PositionEarn, PositionLoan, PrefixedTroveId } from "@/src/types";
+import type { Address, CollIndex, Delegate, PositionEarn, PositionLoan, PrefixedTroveId } from "@/src/types";
 
 import { getBuiltGraphSDK } from "@/.graphclient";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
@@ -7,7 +7,9 @@ import { DEMO_MODE } from "@/src/env";
 import { getCollateralFromTroveSymbol } from "@/src/liquity-utils";
 import { isCollIndex, isPositionLoan, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { sleep } from "@/src/utils";
+import { isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
+import * as dn from "dnum";
 
 const REFETCH_INTERVAL = 10_000;
 
@@ -23,6 +25,12 @@ export type GraphStabilityPoolDeposit = NonNullable<
   >["stabilityPoolDeposit"]
 >;
 
+export type GraphInterestBatch = NonNullable<
+  Awaited<
+    ReturnType<typeof graph.InterestBatch>
+  >["interestBatch"]
+>;
+
 type SubgraphHookOptions = {
   refetchInterval?: number;
 };
@@ -34,7 +42,7 @@ function prepareOptions(options?: SubgraphHookOptions) {
   };
 }
 
-export function useTroveCount(account?: Address, collIndex?: number, options?: SubgraphHookOptions) {
+export function useTroveCount(account?: Address, collIndex?: CollIndex, options?: SubgraphHookOptions) {
   const { refetchInterval } = prepareOptions(options);
   return useQuery({
     queryKey: ["TrovesCount", account, collIndex],
@@ -74,6 +82,30 @@ export function useLoansByAccount(account?: Address | null, options?: SubgraphHo
         return troves.map(subgraphTroveToLoan);
       },
     refetchInterval,
+  });
+}
+
+export function useInterestBatchDelegate(
+  collIndex: null | CollIndex,
+  address: null | Address,
+  options?: SubgraphHookOptions,
+) {
+  const id = address && collIndex !== null ? `${collIndex}:${address.toLowerCase()}` : null;
+  const { refetchInterval } = prepareOptions(options);
+  return useQuery({
+    queryKey: ["InterestBatch", id],
+    queryFn: async () => {
+      if (!id) {
+        return null;
+      }
+      const { interestBatch } = await graph.InterestBatch({ id });
+      if (!interestBatch || !isAddress(interestBatch.batchManager)) {
+        return null;
+      }
+      return subgraphBatchToDelegate(interestBatch);
+    },
+    refetchInterval,
+    enabled: id !== null,
   });
 }
 
@@ -257,12 +289,14 @@ function subgraphTroveToLoan(trove: GraphTrove): PositionLoan {
   if (!isCollIndex(collIndex)) {
     throw new Error(`Invalid collateral index: ${collIndex}`);
   }
+
   return {
     type: "borrow",
+    batchManager: isAddress(trove.batch?.batchManager) ? trove.batch.batchManager : null,
     borrowed: dnum18(trove.debt),
     collateral: collSymbol,
     deposit: dnum18(trove.deposit),
-    interestRate: dnum18(trove.interestRate),
+    interestRate: dnum18(trove.batch?.annualInterestRate ?? trove.interestRate),
     troveId: trove.troveId,
     collIndex,
   };
@@ -282,6 +316,24 @@ function subgraphStabilityPoolDepositToEarnPosition(spDeposit: GraphStabilityPoo
       bold: dnum18(0),
       coll: dnum18(0),
     },
+  };
+}
+
+function subgraphBatchToDelegate(batch: GraphInterestBatch): Delegate {
+  if (!isAddress(batch.batchManager)) {
+    throw new Error(`Invalid batch manager: ${batch.batchManager}`);
+  }
+  return {
+    id: batch.batchManager,
+    address: batch.batchManager,
+    name: shortenAddress(batch.batchManager, 4),
+    interestRate: dnum18(batch.annualInterestRate),
+    followers: 0,
+    boldAmount: dnum18(batch.debt),
+    lastDays: 0,
+    redemptions: dnum18(0),
+    interestRateChange: [dn.from(0.015), dn.from(0.05)],
+    fee: dnum18(batch.annualManagementFee),
   };
 }
 

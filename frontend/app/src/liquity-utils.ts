@@ -1,5 +1,5 @@
 import type { GraphStabilityPoolDeposit } from "@/src/subgraph-hooks";
-import type { CollIndex, Dnum, PositionEarn, PositionStake, PrefixedTroveId, TroveId } from "@/src/types";
+import type { CollIndex, Delegate, Dnum, PositionEarn, PositionStake, PrefixedTroveId, TroveId } from "@/src/types";
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
@@ -11,9 +11,14 @@ import {
   useContinuousBoldGains,
   useSpYieldGainParameters,
 } from "@/src/liquity-stability-pool";
-import { useStabilityPool, useStabilityPoolDeposit, useStabilityPoolEpochScale } from "@/src/subgraph-hooks";
+import {
+  useInterestBatch,
+  useStabilityPool,
+  useStabilityPoolDeposit,
+  useStabilityPoolEpochScale,
+} from "@/src/subgraph-hooks";
 import { isCollIndex, isTroveId } from "@/src/types";
-import { COLLATERALS } from "@liquity2/uikit";
+import { COLLATERALS, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { match } from "ts-pattern";

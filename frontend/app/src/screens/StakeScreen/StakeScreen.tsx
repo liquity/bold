@@ -41,8 +41,6 @@ import { useState } from "react";
 import { encodeFunctionData } from "viem";
 import { useEstimateGas, useGasPrice } from "wagmi";
 
-// import { useSimulateContract } from "wagmi";
-
 const TABS = [
   { label: content.stakeScreen.tabs.deposit, id: "deposit" },
   { label: content.stakeScreen.tabs.rewards, id: "rewards" },

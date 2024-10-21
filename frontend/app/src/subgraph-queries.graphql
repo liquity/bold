@@ -18,6 +18,12 @@ query TrovesByAccount($account: Bytes!) {
       minCollRatio
       collIndex
     }
+    batch {
+      id
+      annualInterestRate
+      annualManagementFee
+      batchManager
+    }
   }
 }
 
@@ -47,6 +53,12 @@ query TroveById($id: ID!) {
       }
       minCollRatio
       collIndex
+    }
+    batch {
+      id
+      annualInterestRate
+      annualManagementFee
+      batchManager
     }
   }
 }
@@ -99,5 +111,18 @@ query StabilityPoolEpochScale($id: ID!) {
     id
     B
     S
+  }
+}
+
+query InterestBatch($id: ID!) {
+  interestBatch(id: $id) {
+    collateral {
+      collIndex
+    }
+    batchManager
+    debt
+    coll
+    annualInterestRate
+    annualManagementFee
   }
 }

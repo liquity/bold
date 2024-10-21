@@ -1,3 +1,4 @@
+import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
 import type { PositionLoan } from "@/src/types";
 
 import { ARROW_RIGHT } from "@/src/characters";
@@ -6,6 +7,7 @@ import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningB
 import { Field } from "@/src/comps/Field/Field";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
+import { MAX_ANNUAL_INTEREST_RATE, MIN_ANNUAL_INTEREST_RATE } from "@/src/constants";
 import content from "@/src/content";
 import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
@@ -31,6 +33,7 @@ export function PanelUpdateRate({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
+  const { collIndex } = loan;
   const collateral = TOKENS_BY_SYMBOL[loan.collateral];
   const collPrice = usePrice(collateral.symbol);
 
@@ -42,6 +45,8 @@ export function PanelUpdateRate({
   });
 
   const [interestRate, setInterestRate] = useState(loan.interestRate);
+  const [interestRateMode, setInterestRateMode] = useState<DelegateMode>(loan.batchManager ? "delegate" : "manual");
+  const [interestRateDelegate, setInterestRateDelegate] = useState(loan.batchManager);
 
   const loanDetails = getLoanDetails(
     loan.deposit,
@@ -81,9 +86,14 @@ export function PanelUpdateRate({
         // “Interest rate”
         field={
           <InterestRateField
+            collIndex={collIndex}
             debt={debt.parsed}
+            delegate={interestRateDelegate}
             interestRate={interestRate}
+            mode={interestRateMode}
             onChange={setInterestRate}
+            onDelegateChange={setInterestRateDelegate}
+            onModeChange={setInterestRateMode}
           />
         }
         footer={[
@@ -169,19 +179,24 @@ export function PanelUpdateRate({
               txFlow.start({
                 flowId: "updateLoanInterestRate",
                 backLink: [
-                  `/loan/rate?id=${loan.collIndex}:${loan.troveId}`,
+                  `/loan/rate?id=${collIndex}:${loan.troveId}`,
                   "Back to editing",
                 ],
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The position interest rate has been updated successfully.",
 
-                collIndex: loan.collIndex,
-                interestRate,
-                lowerHint: dnum18(0),
-                maxUpfrontFee: dnum18(maxUint256),
+                collIndex,
                 owner: account.address,
-                prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
+                prefixedTroveId: getPrefixedTroveId(collIndex, loan.troveId),
                 upperHint: dnum18(0),
+                lowerHint: dnum18(0),
+                annualInterestRate: interestRate,
+                maxUpfrontFee: dnum18(maxUint256),
+                interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate ? null : [
+                  interestRateDelegate,
+                  MIN_ANNUAL_INTEREST_RATE,
+                  MAX_ANNUAL_INTEREST_RATE,
+                ],
               });
             }
           }}

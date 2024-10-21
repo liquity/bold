@@ -150,6 +150,7 @@ export function getDebtBeforeRateBucketIndex(index: number) {
 export const DELEGATES: Delegate[] = [
   {
     id: "0x01",
+    address: "0x0000000000000000000000000000000000000001",
     name: "DeFi Saver",
     interestRate: dn.from(0.065, 18),
     followers: 1202,
@@ -163,6 +164,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x02",
+    address: "0x0000000000000000000000000000000000000002",
     name: "Yield Harbor",
     interestRate: dn.from(0.041, 18),
     followers: 700,
@@ -176,6 +178,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x03",
+    address: "0x0000000000000000000000000000000000000003",
     name: "Crypto Nexus",
     interestRate: dn.from(0.031, 18),
     followers: 500,
@@ -189,6 +192,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x04",
+    address: "0x0000000000000000000000000000000000000004",
     name: "Block Ventures",
     interestRate: dn.from(0.021, 18),
     followers: 200,
@@ -202,6 +206,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x05",
+    address: "0x0000000000000000000000000000000000000005",
     name: "Chain Gains",
     interestRate: dn.from(0.011, 18),
     followers: 100,
@@ -215,6 +220,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x06",
+    address: "0x0000000000000000000000000000000000000006",
     name: "TokenTrust",
     interestRate: dn.from(0.001, 18),
     followers: 50,
@@ -228,6 +234,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x07",
+    address: "0x0000000000000000000000000000000000000007",
     name: "Yield Maximizer",
     interestRate: dn.from(0.072, 18),
     followers: 1500,
@@ -241,6 +248,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x08",
+    address: "0x0000000000000000000000000000000000000008",
     name: "Stable Growth",
     interestRate: dn.from(0.055, 18),
     followers: 980,
@@ -254,6 +262,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x09",
+    address: "0x0000000000000000000000000000000000000009",
     name: "Risk Taker",
     interestRate: dn.from(0.089, 18),
     followers: 750,
@@ -267,6 +276,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x0a",
+    address: "0x000000000000000000000000000000000000000a",
     name: "Conservative Gains",
     interestRate: dn.from(0.038, 18),
     followers: 620,
@@ -280,6 +290,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x0b",
+    address: "0x000000000000000000000000000000000000000b",
     name: "Crypto Innovator",
     interestRate: dn.from(0.062, 18),
     followers: 890,
@@ -293,6 +304,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x0c",
+    address: "0x000000000000000000000000000000000000000c",
     name: "DeFi Pioneer",
     interestRate: dn.from(0.075, 18),
     followers: 1100,
@@ -306,6 +318,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x0d",
+    address: "0x000000000000000000000000000000000000000d",
     name: "Steady Returns",
     interestRate: dn.from(0.049, 18),
     followers: 780,
@@ -319,6 +332,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x0e",
+    address: "0x000000000000000000000000000000000000000e",
     name: "Blockchain Believer",
     interestRate: dn.from(0.058, 18),
     followers: 850,
@@ -332,6 +346,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x0f",
+    address: "0x000000000000000000000000000000000000000f",
     name: "Crypto Sage",
     interestRate: dn.from(0.069, 18),
     followers: 1300,
@@ -345,6 +360,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x10",
+    address: "0x0000000000000000000000000000000000000010",
     name: "Bold Strategist",
     interestRate: dn.from(0.082, 18),
     followers: 970,
@@ -361,6 +377,7 @@ export const DELEGATES: Delegate[] = [
 export const IC_STRATEGIES: Delegate[] = [
   {
     id: "0x11",
+    address: "0x0000000000000000000000000000000000000011",
     name: "Conservative",
     interestRate: dn.from(0.065, 18),
     followers: 1202,

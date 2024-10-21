@@ -2,7 +2,7 @@ import type { PrefixedTroveId } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 
-import { isAddress } from "@/src/eth-utils";
+import { isAddress } from "@liquity2/uikit";
 import { isDnum } from "dnum";
 import * as v from "valibot";
 

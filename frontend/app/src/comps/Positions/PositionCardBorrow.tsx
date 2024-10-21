@@ -12,6 +12,7 @@ import Link from "next/link";
 import { CardRow, CardRows, EditSquare } from "./shared";
 
 export function PositionCardBorrow({
+  batchManager,
   borrowed,
   collIndex,
   collateral,
@@ -20,6 +21,7 @@ export function PositionCardBorrow({
   troveId,
 }: Pick<
   PositionLoan,
+  | "batchManager"
   | "borrowed"
   | "collIndex"
   | "collateral"

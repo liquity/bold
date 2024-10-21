@@ -6,12 +6,11 @@ import type { ReactNode } from "react";
 import { ERC20Faucet } from "@/src/abi/ERC20Faucet";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { useCollateralContract, useAllCollateralContracts, useProtocolContract } from "@/src/contracts";
-import { shortenAddress } from "@/src/eth-utils";
+import { useAllCollateralContracts, useCollateralContract, useProtocolContract } from "@/src/contracts";
 import { fmtnum } from "@/src/formatting";
 import { useBalance } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
-import { Button, IconAccount, isCollateralSymbol, TokenIcon, VFlex } from "@liquity2/uikit";
+import { Button, IconAccount, isCollateralSymbol, shortenAddress, TokenIcon, VFlex } from "@liquity2/uikit";
 import { blo } from "blo";
 import { useWriteContract } from "wagmi";
 

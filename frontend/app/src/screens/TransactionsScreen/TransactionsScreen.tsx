@@ -195,87 +195,101 @@ export function TransactionsScreen() {
 export function TransactionDetailsRow({
   label,
   value,
-  valueSize = "normal",
-  secondarySize = "normal",
 }: {
   label: ReactNode;
-  value: ReactNode;
-  valueSize?: "normal" | "small";
-  secondarySize?: "normal" | "large";
+  value: ReactNode | ReactNode[];
 }) {
   return (
-    <HFlex
-      alignItems="flex-start"
-      gap={16}
-      justifyContent="space-between"
+    <div
+      className={css({
+        width: "100%",
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 16,
+      })}
     >
-      {Array.isArray(label)
-        ? (
-          <VFlex
-            alignItems="flex-end"
-            gap={4}
-          >
-            <HFlex
-              style={{
-                fontSize: valueSize === "small" ? 16 : 24,
-              }}
-            >
-              {label[0]}
-            </HFlex>
-            {label.slice(1).map((v, index) => (
+      <div
+        className={css({
+          textAlign: "left",
+        })}
+      >
+        {Array.isArray(label)
+          ? (
+            <VFlex gap={4}>
               <div
-                key={index}
                 className={css({
-                  color: "contentAlt",
+                  fontSize: 16,
                 })}
-                style={{
-                  fontSize: secondarySize === "large" ? 16 : 14,
-                }}
               >
-                {v}
+                {label[0]}
               </div>
-            ))}
-          </VFlex>
-        )
-        : <HFlex gap={8}>{label}</HFlex>}
-      {Array.isArray(value)
-        ? (
-          <VFlex
-            alignItems="flex-end"
-            gap={4}
-          >
+              {label.slice(1).map((secondary, index) => (
+                <div
+                  key={index}
+                  className={css({
+                    color: "contentAlt",
+                    fontSize: 14,
+                  })}
+                >
+                  {secondary}
+                </div>
+              ))}
+            </VFlex>
+          )
+          : (
             <HFlex
-              style={{
-                fontSize: valueSize === "small" ? 16 : 24,
-              }}
+              alignItems="flex-start"
+              justifyContent="flex-start"
+              gap={8}
             >
-              {value[0]}
+              {label}
             </HFlex>
-            {value.slice(1).map((v, index) => (
-              <div
-                key={index}
+          )}
+      </div>
+      <div
+        className={css({
+          textAlign: "right",
+        })}
+      >
+        {Array.isArray(value)
+          ? (
+            <VFlex
+              alignItems="flex-end"
+              gap={4}
+            >
+              <HFlex
+                gap={8}
                 className={css({
-                  color: "contentAlt",
+                  fontSize: 16,
                 })}
-                style={{
-                  fontSize: secondarySize === "large" ? 16 : 14,
-                }}
               >
-                {v}
-              </div>
-            ))}
-          </VFlex>
-        )
-        : (
-          <HFlex
-            className={css({
-              fontSize: 24,
-            })}
-          >
-            {value}
-          </HFlex>
-        )}
-    </HFlex>
+                {value[0]}
+              </HFlex>
+              {value.slice(1).map((secondary, index) => (
+                <div
+                  key={index}
+                  className={css({
+                    color: "contentAlt",
+                    textAlign: "right",
+                    fontSize: 14,
+                  })}
+                >
+                  {secondary}
+                </div>
+              ))}
+            </VFlex>
+          )
+          : (
+            <HFlex
+              className={css({
+                fontSize: 24,
+              })}
+            >
+              {value}
+            </HFlex>
+          )}
+      </div>
+    </div>
   );
 }
 
