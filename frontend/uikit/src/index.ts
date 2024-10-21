@@ -5,11 +5,13 @@ export type { ThemeColorName, ThemeDescriptor } from "./Theme/Theme";
 export type * from "./tokens";
 export type * from "./types";
 
+export * from "./eth-utils";
 export * from "./icons";
 export * from "./math-utils";
 export * from "./react-utils";
 export * from "./tokens";
 
+export { AddressField } from "./AddressField/AddressField";
 export { AnchorButton } from "./Button/AnchorButton";
 export { Button } from "./Button/Button";
 export { Checkbox } from "./Checkbox/Checkbox";
