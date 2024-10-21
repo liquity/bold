@@ -1,9 +1,10 @@
-import type { CSSProperties, HTMLAttributes, ReactElement, ReactNode } from "react";
+import type { HTMLAttributes, ReactElement, ReactNode } from "react";
 
 import { a, useSpring } from "@react-spring/web";
 import { forwardRef, useState } from "react";
 import { css, cx } from "../../styled-system/css";
 import { IconArrowRight } from "../icons";
+import { LoadingSurface } from "../LoadingSurface/LoadingSurface";
 
 type Cell = {
   label: ReactNode;
@@ -16,10 +17,10 @@ export const StrongCard = forwardRef<
   HTMLAnchorElement,
   {
     contextual?: ReactNode;
-    heading: ElementOrString | ElementOrString[];
+    heading?: ElementOrString | ElementOrString[];
     loading?: boolean;
     main?: Cell;
-    secondary: ReactNode;
+    secondary?: ReactNode;
   } & HTMLAttributes<HTMLAnchorElement>
 >(function StrongCard({
   contextual,
@@ -49,15 +50,6 @@ export const StrongCard = forwardRef<
       mass: 1,
       tension: 1800,
       friction: 80,
-    },
-  });
-
-  const loadingGradientSpring = useSpring({
-    from: { progress: 0 },
-    to: { progress: 1 },
-    loop: true,
-    config: {
-      duration: 2_000,
     },
   });
 
@@ -92,36 +84,7 @@ export const StrongCard = forwardRef<
         background: "var(--background)",
       }}
     >
-      {loading && (
-        <a.div
-          className={css({
-            position: "absolute",
-            inset: 0,
-            backgroundColor: "loadingGradient1",
-            backgroundImage: `linear-gradient(
-              var(--loading-angle),
-              token(colors.loadingGradient1) 0%,
-              token(colors.loadingGradient2) var(--loading-midpoint1),
-              token(colors.loadingGradient2) var(--loading-midpoint2),
-              token(colors.loadingGradient1) 100%
-            )`,
-          })}
-          style={{
-            transform: loadingGradientSpring.progress
-              .to([0, 0.5, 1], [1, 2, 1])
-              .to((p) => `scale3d(${p}, ${p}, 1)`),
-            ...{
-              "--loading-angle": loadingGradientSpring.progress.to(
-                (p) => `${p * 360 - 45}deg`,
-              ),
-              "--loading-midpoint1": loadingGradientSpring.progress
-                .to([0, 0.5, 1], ["50%", "20%", "50%"]),
-              "--loading-midpoint2": loadingGradientSpring.progress
-                .to([0, 0.5, 1], ["50%", "80%", "50%"]),
-            } as CSSProperties,
-          }}
-        />
-      )}
+      {loading && <LoadingSurface />}
       <section
         className={css({
           display: "flex",
@@ -148,7 +111,6 @@ export const StrongCard = forwardRef<
           >
             {heading1}
           </h1>
-
           {heading2 && (
             <div
               className={css({

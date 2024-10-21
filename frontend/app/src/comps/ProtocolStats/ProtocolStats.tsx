@@ -1,6 +1,6 @@
 "use client";
 
-import content from "@/src/content";
+import { Logo } from "@/src/comps/Logo/Logo";
 import { BORROW_STATS } from "@/src/demo-mode";
 import { usePrice } from "@/src/services/Prices";
 import { css } from "@/styled-system/css";
@@ -23,44 +23,52 @@ export function ProtocolStats() {
     <div
       className={css({
         display: "flex",
-        justifyContent: "space-between",
         width: "100%",
-        padding: "12px 0 20px",
-        fontSize: 12,
-        borderTop: "1px solid token(colors.tableBorder)",
+        padding: "0 24px",
       })}
     >
-      <div>{content.home.statsBar.label}</div>
-      <HFlex gap={32}>
-        <HFlex gap={8}>
+      <div
+        className={css({
+          display: "flex",
+          justifyContent: "space-between",
+          width: "100%",
+          height: 48,
+          fontSize: 12,
+          borderTop: "1px solid token(colors.tableBorder)",
+        })}
+      >
+        <HFlex gap={8} alignItems="center">
+          <Logo size={16} />
           <span>TVL</span>{" "}
           <span>
             ${dn.format(totalTvl, { compact: true })}
           </span>
         </HFlex>
-        {prices.map(([symbol, price]) => {
-          return (
-            <HFlex
-              key={symbol}
-              gap={16}
-            >
-              <TokenIcon
-                size={16}
-                symbol={symbol}
-              />
-              <HFlex gap={8}>
-                <span>{symbol}</span>
-                <span>
-                  ${price && dn.format(price, {
-                    digits: 2,
-                    trailingZeros: true,
-                  })}
-                </span>
+        <HFlex gap={32}>
+          {prices.map(([symbol, price]) => {
+            return (
+              <HFlex
+                key={symbol}
+                gap={16}
+              >
+                <TokenIcon
+                  size={16}
+                  symbol={symbol}
+                />
+                <HFlex gap={8}>
+                  <span>{symbol}</span>
+                  <span>
+                    ${price && dn.format(price, {
+                      digits: 2,
+                      trailingZeros: true,
+                    })}
+                  </span>
+                </HFlex>
               </HFlex>
-            </HFlex>
-          );
-        })}
-      </HFlex>
+            );
+          })}
+        </HFlex>
+      </div>
     </div>
   );
 }

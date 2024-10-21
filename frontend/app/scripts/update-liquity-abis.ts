@@ -32,6 +32,7 @@ const ABIS = [
   ["SortedTroves"],
   ["StabilityPool"],
   ["TroveManager"],
+  ["TroveNFT"],
   ["WETHZapper"],
 ];
 

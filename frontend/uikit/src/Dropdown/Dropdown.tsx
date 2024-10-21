@@ -1,14 +1,15 @@
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import type { CSSProperties } from "react";
 
 import { autoUpdate, offset, shift, useFloating } from "@floating-ui/react-dom";
 import { a, useTransition } from "@react-spring/web";
-import { useEffect, useRef, useState } from "react";
+import { isValidElement, useEffect, useId, useRef, useState } from "react";
 import { css, cx } from "../../styled-system/css";
 import { IconChevronDown } from "../icons";
 import { Root } from "../Root/Root";
 
 export type DropdownItem = {
+  disabled?: boolean | string;
   icon?: ReactNode;
   label: ReactNode;
   secondary?: ReactNode;
@@ -33,6 +34,7 @@ export function Dropdown({
   buttonDisplay?:
     | "normal"
     | "label-only"
+    | ReactElement
     | ((item: DropdownItem, index: number) => {
       icon?: ReactNode;
       label: ReactNode;
@@ -42,11 +44,14 @@ export function Dropdown({
   menuWidth?: number;
   onSelect: (index: number) => void;
   placeholder?: ReactNode | Exclude<DropdownItem, "value">;
-  selected: number;
+  selected: null | number;
   size?: "small" | "medium";
 }) {
   const groups = getGroups(items);
-  const itemsOnly = groups.reduce((acc, { items }) => acc.concat(items), [] as DropdownItem[]);
+  const itemsOnly = groups.reduce(
+    (acc, { items }) => acc.concat(items),
+    [] as DropdownItem[],
+  );
 
   const { refs: floatingRefs, floatingStyles } = useFloating<HTMLButtonElement>({
     placement: `bottom-${menuPlacement}`,
@@ -67,7 +72,7 @@ export function Dropdown({
     placeholder = { label: placeholder };
   }
 
-  if (selected === undefined) {
+  if (selected === null) {
     selected = placeholder ? -1 : 0;
   }
 
@@ -149,10 +154,16 @@ export function Dropdown({
     throw new Error("Invalid selected index or placeholder not provided");
   }
 
+  const customButton = isValidElement(buttonDisplay) ? buttonDisplay : null;
+
+  const dropdownId = useId();
+
   return (
     <>
       <button
         ref={floatingRefs.setReference}
+        aria-expanded={showMenu}
+        aria-controls={dropdownId}
         type="button"
         onClick={() => {
           if (!preventOpenOnRelease.current) {
@@ -166,77 +177,79 @@ export function Dropdown({
           "group",
           css({
             display: "flex",
-            height: 40,
             outline: 0,
             cursor: "pointer",
           }),
         )}
-        style={{
+        style={customButton ? {} : {
           height: size === "small" ? 32 : 40,
           fontSize: size === "small" ? 16 : 24,
         }}
       >
-        <div
-          className={css({
-            display: "flex",
-            alignItems: "center",
-            padding: "0 10px 0 16px",
-            height: "100%",
-            whiteSpace: "nowrap",
-            borderWidth: "1px 1px 0 1px",
-            borderStyle: "solid",
-            borderColor: "#F5F6F8",
-            boxShadow: `
-              0 2px 2px rgba(0, 0, 0, 0.1),
-              0 4px 10px rgba(18, 27, 68, 0.05),
-              inset 0 -1px 4px rgba(0, 0, 0, 0.05)
-            `,
-            borderRadius: 90,
-            cursor: "pointer",
-
-            "--color-normal": "token(colors.content)",
-            "--color-placeholder": "token(colors.accentContent)",
-            "--background-normal": "token(colors.controlSurface)",
-            "--background-placeholder": "token(colors.accent)",
-
-            _groupActive: {
-              translate: "0 1px",
-              boxShadow: `0 1px 1px rgba(0, 0, 0, 0.1)`,
-            },
-            _groupFocusVisible: {
-              outline: "2px solid token(colors.focused)",
-            },
-          })}
-          style={{
-            gap: size === "small" ? 6 : 8,
-            color: `var(--color-${buttonItem === placeholder ? "placeholder" : "normal"})`,
-            background: `var(--background-${buttonItem === placeholder ? "placeholder" : "normal"})`,
-          } as CSSProperties}
-        >
-          {buttonItem.icon && buttonDisplay !== "label-only" && (
-            <div style={{ marginLeft: -6 }}>
-              {buttonItem.icon}
-            </div>
-          )}
+        {customButton ?? (
           <div
             className={css({
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              padding: "0 10px 0 16px",
+              height: "100%",
+              whiteSpace: "nowrap",
+              borderWidth: "1px 1px 0 1px",
+              borderStyle: "solid",
+              borderColor: "#F5F6F8",
+              boxShadow: `
+              0 2px 2px rgba(0, 0, 0, 0.1),
+              0 4px 10px rgba(18, 27, 68, 0.05),
+              inset 0 -1px 4px rgba(0, 0, 0, 0.05)
+            `,
+              borderRadius: 90,
+              cursor: "pointer",
+
+              "--color-normal": "token(colors.content)",
+              "--color-placeholder": "token(colors.accentContent)",
+              "--background-normal": "token(colors.controlSurface)",
+              "--background-placeholder": "token(colors.accent)",
+
+              _groupActive: {
+                translate: "0 1px",
+                boxShadow: `0 1px 1px rgba(0, 0, 0, 0.1)`,
+              },
+              _groupFocusVisible: {
+                outline: "2px solid token(colors.focused)",
+              },
             })}
+            style={{
+              gap: size === "small" ? 6 : 8,
+              color: `var(--color-${buttonItem === placeholder ? "placeholder" : "normal"})`,
+              background: `var(--background-${buttonItem === placeholder ? "placeholder" : "normal"})`,
+            } as CSSProperties}
           >
-            {buttonItem.label}
+            {buttonItem.icon && buttonDisplay !== "label-only" && (
+              <div style={{ marginLeft: -6 }}>
+                {buttonItem.icon}
+              </div>
+            )}
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              })}
+            >
+              {buttonItem.label}
+            </div>
+            <div>
+              <IconChevronDown size={size === "small" ? 16 : 24} />
+            </div>
           </div>
-          <div>
-            <IconChevronDown size={size === "small" ? 16 : 24} />
-          </div>
-        </div>
+        )}
       </button>
       <Root>
         {menuVisibility((appearStyles, show) => (
           show && (
             <a.div
               ref={floatingRefs.setFloating}
+              id={dropdownId}
               className={css({
                 position: "absolute",
                 top: 0,
@@ -299,6 +312,7 @@ export function Dropdown({
                           key={`${groupIndex}${index}`}
                           tabIndex={index === focused ? 0 : -1}
                           type="button"
+                          disabled={typeof item.disabled === "string" || item.disabled}
                           onMouseOver={() => {
                             setFocused(index);
                           }}
@@ -317,6 +331,9 @@ export function Dropdown({
                             css({
                               padding: 4,
                               cursor: "pointer",
+                              _disabled: {
+                                cursor: "not-allowed",
+                              },
                               _focus: {
                                 outline: 0,
                               },
@@ -341,6 +358,9 @@ export function Dropdown({
                               _groupActive: {
                                 background: "focusedSurfaceActive",
                               },
+                              _groupDisabled: {
+                                opacity: 0.5,
+                              },
                             })}
                           >
                             <div
@@ -358,6 +378,7 @@ export function Dropdown({
                                   display: "flex",
                                   alignItems: "center",
                                   gap: 12,
+                                  width: "100%",
                                 })}
                               >
                                 {item.icon && <div>{item.icon}</div>}
@@ -365,10 +386,20 @@ export function Dropdown({
                                   className={css({
                                     display: "flex",
                                     alignItems: "center",
+                                    justifyContent: "space-between",
                                     gap: 8,
+                                    width: "100%",
                                   })}
                                 >
-                                  {item.label}
+                                  <div>{item.label}</div>
+                                  <div
+                                    className={css({
+                                      fontSize: 11,
+                                      textTransform: "uppercase",
+                                    })}
+                                  >
+                                    {item.disabled}
+                                  </div>
                                 </div>
                               </div>
                               {item.value && <div>{item.value}</div>}
@@ -441,11 +472,23 @@ function useKeyboardNavigation({
   }, [itemsLength, onClose, onFocus, focused, menuVisible]);
 }
 
-function getItem(item: DropdownItem | ReactNode): null | DropdownItem {
+function getItem<
+  DDItem extends Omit<DropdownItem, "disabled"> & { disabled?: string },
+>(
+  item: DropdownItem | ReactNode,
+): null | DDItem {
   if (!item) {
     return null;
   }
-  return typeof item === "object" && "label" in item ? item : { label: item };
+  const item_ = typeof item === "object" && "label" in item
+    ? item
+    : { label: item };
+
+  if (typeof item_.disabled !== "string") {
+    item_.disabled = item_.disabled ? "Disabled" : undefined;
+  }
+
+  return item_ as DDItem;
 }
 
 function isGroup(item: DropdownItem | DropdownGroup): item is DropdownGroup {

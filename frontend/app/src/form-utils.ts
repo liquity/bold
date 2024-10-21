@@ -1,6 +1,6 @@
 import type { Dnum } from "dnum";
 
-import { ADDRESS_ZERO, isAddress } from "@/src/eth-utils";
+import { ADDRESS_ZERO, isAddress } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useMemo, useRef, useState } from "react";
 

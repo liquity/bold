@@ -89,11 +89,11 @@ function getFinalStep(request: Request): FinalStep {
 
 export const updateLoanPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
-  subtitle: "Please review the changes of your borrow position before confirming",
   Summary({ flow }) {
     const collateral = useCollateral(flow.request.collIndex);
     const loan = useLoanById(flow.request.prefixedTroveId);
     const { troveId } = parsePrefixedTroveId(flow.request.prefixedTroveId);
+
     const loadingState = match(loan)
       .returnType<LoadingState>()
       .with({ status: "error" }, () => "error")
@@ -111,6 +111,8 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
 
     const newLoan = !loan.data ? null : {
       troveId,
+      borrower: loan.data.borrower,
+      batchManager: loan.data.batchManager,
       borrowed: newBorrowed,
       collIndex: flow.request.collIndex,
       collateral: collateral.symbol,
@@ -132,6 +134,7 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
         loan={newLoan}
         prevLoan={prevLoan}
         onRetry={() => {}}
+        txPreviewMode
       />
     );
   },

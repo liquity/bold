@@ -121,6 +121,7 @@ export function ActionCard({
         <h1>{title}</h1>
         <p
           className={css({
+            height: 64,
             fontSize: 14,
           })}
           style={{

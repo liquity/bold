@@ -9,9 +9,11 @@ import { TOKENS_BY_SYMBOL } from "../tokens";
 export function TokenIcon({
   size = "medium",
   symbol,
+  title,
 }: {
   size?: "medium" | "large" | "small" | "mini" | number;
   symbol: Token["symbol"];
+  title?: string | null;
 }) {
   const sizeFromGroup = useContext(TokenIconGroupSize);
 
@@ -38,7 +40,7 @@ export function TokenIcon({
         alt={token.name}
         height={size_}
         src={token.icon}
-        title={token.name}
+        title={title === undefined ? token.name : title ?? undefined}
         width={size_}
       />
     </div>

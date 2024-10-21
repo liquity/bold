@@ -5,11 +5,13 @@ export type { ThemeColorName, ThemeDescriptor } from "./Theme/Theme";
 export type * from "./tokens";
 export type * from "./types";
 
+export * from "./eth-utils";
 export * from "./icons";
 export * from "./math-utils";
 export * from "./react-utils";
 export * from "./tokens";
 
+export { AddressField } from "./AddressField/AddressField";
 export { AnchorButton } from "./Button/AnchorButton";
 export { Button } from "./Button/Button";
 export { Checkbox } from "./Checkbox/Checkbox";
@@ -19,6 +21,7 @@ export { VFlex } from "./Flex/VFlex";
 export { FormField } from "./FormField/FormField";
 export { TextInput } from "./Input/TextInput";
 export { InputField } from "./InputField/InputField";
+export { LoadingSurface } from "./LoadingSurface/LoadingSurface";
 export { Modal } from "./Modal/Modal";
 export { PillButton } from "./PillButton/PillButton";
 export { Radio } from "./Radio/Radio";
