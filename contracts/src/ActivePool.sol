@@ -226,7 +226,7 @@ contract ActivePool is IActivePool {
             _mintBatchManagementFeeAndAccountForChange(boldToken, _troveChange, _batchAddress);
         }
 
-        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        // Do the arithmetic in 2 steps here to avoid underflow from the decrease
         uint256 newAggRecordedDebt = aggRecordedDebt; // 1 SLOAD
         newAggRecordedDebt += _mintAggInterest(boldToken, _troveChange.upfrontFee); // adds minted agg. interest + upfront fee
         newAggRecordedDebt += _troveChange.appliedRedistBoldDebtGain;
@@ -237,7 +237,7 @@ contract ActivePool is IActivePool {
         // assert(aggRecordedDebt >= 0) // This should never be negative. If all redistribution gians and all aggregate interest was applied
         // and all Trove debts were repaid, it should become 0.
 
-        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        // Do the arithmetic in 2 steps here to avoid underflow from the decrease
         uint256 newAggWeightedDebtSum = aggWeightedDebtSum; // 1 SLOAD
         newAggWeightedDebtSum += _troveChange.newWeightedRecordedDebt;
         newAggWeightedDebtSum -= _troveChange.oldWeightedRecordedDebt;
@@ -283,13 +283,13 @@ contract ActivePool is IActivePool {
     ) internal {
         aggRecordedDebt += _troveChange.batchAccruedManagementFee;
 
-        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        // Do the arithmetic in 2 steps here to avoid underflow from the decrease
         uint256 newAggBatchManagementFees = aggBatchManagementFees; // 1 SLOAD
         newAggBatchManagementFees += calcPendingAggBatchManagementFee();
         newAggBatchManagementFees -= _troveChange.batchAccruedManagementFee;
         aggBatchManagementFees = newAggBatchManagementFees; // 1 SSTORE
 
-        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        // Do the arithmetic in 2 steps here to avoid underflow from the decrease
         uint256 newAggWeightedBatchManagementFeeSum = aggWeightedBatchManagementFeeSum; // 1 SLOAD
         newAggWeightedBatchManagementFeeSum += _troveChange.newWeightedRecordedBatchManagementFee;
         newAggWeightedBatchManagementFeeSum -= _troveChange.oldWeightedRecordedBatchManagementFee;
