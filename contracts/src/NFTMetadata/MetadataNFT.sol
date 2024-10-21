@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "lib/Solady/src/utils/SSTORE2.sol";
 import "./utils/JSON.sol";

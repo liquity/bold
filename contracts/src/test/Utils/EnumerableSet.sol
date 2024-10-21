@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 using EnumerableSetMethods for EnumerableSet global;
 using EnumerableAddressSetMethods for EnumerableAddressSet global;
