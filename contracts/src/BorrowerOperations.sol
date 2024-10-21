@@ -131,7 +131,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error TroveNotActive();
     error TroveNotZombie();
     error UpfrontFeeTooHigh();
-    error BelowCriticalThreshold();
     error ICRBelowMCR();
     error RepaymentNotMatchingCollWithdrawal();
     error TCRBelowCCR();
