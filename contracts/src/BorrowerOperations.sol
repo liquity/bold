@@ -353,10 +353,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         // --- Effects & interactions ---
 
         // Set add/remove managers
-        // TODO: We can restore the condition for non-zero managers if we end up ipmlementing at least one of:
-        // - wipe them out on closing troves
-        // - do not reuse troveIds
-        // for now it is safer to make sure they are set
         _setAddManager(vars.troveId, _addManager);
         _setRemoveManagerAndReceiver(vars.troveId, _removeManager, _receiver);
 
