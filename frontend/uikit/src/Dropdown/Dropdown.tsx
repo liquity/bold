@@ -9,6 +9,7 @@ import { IconChevronDown } from "../icons";
 import { Root } from "../Root/Root";
 
 export type DropdownItem = {
+  disabled?: boolean | string;
   icon?: ReactNode;
   label: ReactNode;
   secondary?: ReactNode;
@@ -46,7 +47,10 @@ export function Dropdown({
   size?: "small" | "medium";
 }) {
   const groups = getGroups(items);
-  const itemsOnly = groups.reduce((acc, { items }) => acc.concat(items), [] as DropdownItem[]);
+  const itemsOnly = groups.reduce(
+    (acc, { items }) => acc.concat(items),
+    [] as DropdownItem[],
+  );
 
   const { refs: floatingRefs, floatingStyles } = useFloating<HTMLButtonElement>({
     placement: `bottom-${menuPlacement}`,
@@ -299,6 +303,7 @@ export function Dropdown({
                           key={`${groupIndex}${index}`}
                           tabIndex={index === focused ? 0 : -1}
                           type="button"
+                          disabled={typeof item.disabled === "string" || item.disabled}
                           onMouseOver={() => {
                             setFocused(index);
                           }}
@@ -317,6 +322,9 @@ export function Dropdown({
                             css({
                               padding: 4,
                               cursor: "pointer",
+                              _disabled: {
+                                cursor: "not-allowed",
+                              },
                               _focus: {
                                 outline: 0,
                               },
@@ -341,6 +349,9 @@ export function Dropdown({
                               _groupActive: {
                                 background: "focusedSurfaceActive",
                               },
+                              _groupDisabled: {
+                                opacity: 0.5,
+                              },
                             })}
                           >
                             <div
@@ -358,6 +369,7 @@ export function Dropdown({
                                   display: "flex",
                                   alignItems: "center",
                                   gap: 12,
+                                  width: "100%",
                                 })}
                               >
                                 {item.icon && <div>{item.icon}</div>}
@@ -365,10 +377,20 @@ export function Dropdown({
                                   className={css({
                                     display: "flex",
                                     alignItems: "center",
+                                    justifyContent: "space-between",
                                     gap: 8,
+                                    width: "100%",
                                   })}
                                 >
-                                  {item.label}
+                                  <div>{item.label}</div>
+                                  <div
+                                    className={css({
+                                      fontSize: 11,
+                                      textTransform: "uppercase",
+                                    })}
+                                  >
+                                    {item.disabled}
+                                  </div>
                                 </div>
                               </div>
                               {item.value && <div>{item.value}</div>}
@@ -441,11 +463,23 @@ function useKeyboardNavigation({
   }, [itemsLength, onClose, onFocus, focused, menuVisible]);
 }
 
-function getItem(item: DropdownItem | ReactNode): null | DropdownItem {
+function getItem<
+  DDItem extends Omit<DropdownItem, "disabled"> & { disabled?: string },
+>(
+  item: DropdownItem | ReactNode,
+): null | DDItem {
   if (!item) {
     return null;
   }
-  return typeof item === "object" && "label" in item ? item : { label: item };
+  const item_ = typeof item === "object" && "label" in item
+    ? item
+    : { label: item };
+
+  if (typeof item_.disabled !== "string") {
+    item_.disabled = item_.disabled ? "Disabled" : undefined;
+  }
+
+  return item_ as DDItem;
 }
 
 function isGroup(item: DropdownItem | DropdownGroup): item is DropdownGroup {
