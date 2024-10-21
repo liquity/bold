@@ -15,7 +15,7 @@ import "./Interfaces/IFlashLoanReceiver.sol";
 import "./Interfaces/IExchange.sol";
 import "./Interfaces/IZapper.sol";
 
-// import "forge-std/console2.sol";
+
 
 contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
     using SafeERC20 for IERC20;
@@ -219,7 +219,6 @@ contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZappe
             collToken.approve(address(borrowerOperations), _collChange);
         }
 
-        // TODO: version with Permit
         // Pull Bold
         if (!_isDebtIncrease) {
             boldToken.transferFrom(msg.sender, address(this), _boldChange);

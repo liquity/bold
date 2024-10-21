@@ -12,7 +12,7 @@ import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/IInterestRouter.sol";
 import "./Interfaces/IDefaultPool.sol";
 
-// import "forge-std/console2.sol";
+
 
 /*
  * The Active Pool holds the collateral and Bold debt (but not Bold tokens) for all active troves.

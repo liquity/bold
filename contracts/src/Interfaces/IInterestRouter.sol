@@ -3,5 +3,5 @@
 pragma solidity ^0.8.0;
 
 interface IInterestRouter {
-// TODO: functions that the interest router will have
+    // Currently the Interest Router doesn’t need any specific function
 }

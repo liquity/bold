@@ -215,7 +215,6 @@ contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
             WETH.approve(address(borrowerOperations), _collChange);
         }
 
-        // TODO: version with Permit
         // Pull Bold
         if (!_isDebtIncrease) {
             boldToken.transferFrom(msg.sender, address(this), _boldChange);

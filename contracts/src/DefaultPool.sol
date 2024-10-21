@@ -8,7 +8,7 @@ import "./Interfaces/IDefaultPool.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IActivePool.sol";
 
-// import "forge-std/console2.sol";
+
 
 /*
  * The Default Pool holds the Coll and Bold debt (but not Bold tokens) from liquidations that have been redistributed

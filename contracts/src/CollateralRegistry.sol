@@ -11,7 +11,7 @@ import "./Dependencies/LiquityMath.sol";
 
 import "./Interfaces/ICollateralRegistry.sol";
 
-// import "forge-std/console2.sol";
+
 
 contract CollateralRegistry is ICollateralRegistry {
     // mapping from Collateral token address to the corresponding TroveManagers

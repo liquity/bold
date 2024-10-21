@@ -15,7 +15,7 @@ import "./Dependencies/AddRemoveManagers.sol";
 import "./Types/LatestTroveData.sol";
 import "./Types/LatestBatchData.sol";
 
-// import "forge-std/console2.sol";
+
 
 contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperations {
     using SafeERC20 for IERC20;
@@ -308,7 +308,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         LocalVariables_openTrove memory vars;
 
-        // TODO: stack too deep not allowing to reuse troveManager from outer functions
+        // stack too deep not allowing to reuse troveManager from outer functions
         vars.troveManager = troveManager;
         vars.activePool = activePool;
         vars.boldToken = boldToken;
@@ -608,7 +608,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             batchFutureDebt = batch.entireDebtWithoutRedistribution + vars.trove.redistBoldDebtGain
                 + _troveChange.debtIncrease - _troveChange.debtDecrease;
 
-            // TODO: comment
             _troveChange.appliedRedistBoldDebtGain = vars.trove.redistBoldDebtGain;
             _troveChange.appliedRedistCollGain = vars.trove.redistCollGain;
             _troveChange.batchAccruedManagementFee = batch.accruedManagementFee;
