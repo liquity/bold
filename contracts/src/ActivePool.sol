@@ -164,7 +164,7 @@ contract ActivePool is IActivePool {
     function sendColl(address _account, uint256 _amount) external override {
         _requireCallerIsBOorTroveMorSP();
 
-        _accountForSendColl(_account, _amount);
+        _accountForSendColl(_amount);
 
         collToken.safeTransfer(_account, _amount);
     }
@@ -172,12 +172,12 @@ contract ActivePool is IActivePool {
     function sendCollToDefaultPool(uint256 _amount) external override {
         _requireCallerIsTroveManager();
 
-        _accountForSendColl(defaultPoolAddress, _amount);
+        _accountForSendColl(_amount);
 
         IDefaultPool(defaultPoolAddress).receiveColl(_amount);
     }
 
-    function _accountForSendColl(address _account, uint256 _amount) internal {
+    function _accountForSendColl(uint256 _amount) internal {
         uint256 newCollBalance = collBalance - _amount;
         collBalance = newCollBalance;
         emit ActivePoolCollBalanceUpdated(newCollBalance);
