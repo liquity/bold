@@ -42,6 +42,7 @@ export const ACCOUNT_POSITIONS: Position[] = [
     interestRate: dn.from(0.067, 18),
     troveId: "0x01",
     collIndex: 1,
+    batchManager: null,
   },
   {
     type: "leverage",
@@ -51,6 +52,7 @@ export const ACCOUNT_POSITIONS: Position[] = [
     interestRate: dn.from(0.045, 18),
     troveId: "0x02",
     collIndex: 0,
+    batchManager: null,
   },
   {
     type: "earn",

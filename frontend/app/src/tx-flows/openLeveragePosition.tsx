@@ -56,6 +56,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
         loadingState="success"
         loan={{
           troveId: "0x",
+          batchManager: null,
           borrowed: flow.request.boldAmount,
           collIndex: flow.request.collIndex,
           collateral: collateral.symbol,

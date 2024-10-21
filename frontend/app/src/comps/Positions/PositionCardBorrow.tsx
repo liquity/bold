@@ -12,7 +12,7 @@ import Link from "next/link";
 import { CardRow, CardRows, EditSquare } from "./shared";
 
 export function PositionCardBorrow({
-  batchManager,
+  batchManager: _batchManager,
   borrowed,
   collIndex,
   collateral,

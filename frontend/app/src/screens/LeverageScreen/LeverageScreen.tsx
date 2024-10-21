@@ -210,10 +210,14 @@ export function LeverageScreen() {
             // “Interest rate”
             field={
               <InterestRateField
+                mode="manual"
                 collIndex={collIndex}
                 debt={leverageField.debt}
                 interestRate={interestRate}
                 onChange={setInterestRate}
+                onModeChange={() => {}}
+                onDelegateChange={() => {}}
+                delegate={null}
               />
             }
             footer={[
