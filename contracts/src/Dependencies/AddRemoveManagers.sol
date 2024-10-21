@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity ^0.8.18;
+pragma solidity 0.8.18;
 
 import "../Interfaces/IAddRemoveManagers.sol";
 import "../Interfaces/IAddressesRegistry.sol";
