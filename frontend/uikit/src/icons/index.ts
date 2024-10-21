@@ -19,6 +19,7 @@ export { IconEye } from "./IconEye";
 export { IconGas } from "./IconGas";
 export { IconInfo } from "./IconInfo";
 export { IconLeverage } from "./IconLeverage";
+export { IconNft } from "./IconNft";
 export { IconPlus } from "./IconPlus";
 export { IconSearch } from "./IconSearch";
 export { IconSettings } from "./IconSettings";

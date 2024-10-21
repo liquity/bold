@@ -185,6 +185,8 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_STABILITY_POOL`;
     case "troveManager":
       return `${prefix}_TROVE_MANAGER`;
+    case "troveNFT":
+      return `${prefix}_TROVE_NFT`;
     case "wethZapper":
       return `${prefix}_WETH_ZAPPER`;
   }

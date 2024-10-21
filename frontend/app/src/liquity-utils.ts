@@ -3,8 +3,9 @@ import type { CollIndex, Dnum, PositionEarn, PositionStake, PrefixedTroveId, Tro
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
-import { useAllCollateralContracts, useProtocolContract } from "@/src/contracts";
+import { useAllCollateralContracts, useCollateralContract, useProtocolContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
+import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import {
   calculateStabilityPoolApr,
   getCollGainFromSnapshots,
@@ -256,4 +257,9 @@ export function useStakePosition(address: null | Address) {
     },
     allowFailure: false,
   });
+}
+
+export function useTroveNftUrl(collIndex: null | CollIndex, troveId: null | TroveId) {
+  const TroveNft = useCollateralContract(collIndex, "TroveNFT");
+  return TroveNft && troveId && `${CHAIN_BLOCK_EXPLORER?.url}nft/${TroveNft.address}/${BigInt(troveId)}`;
 }

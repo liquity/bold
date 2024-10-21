@@ -4,6 +4,7 @@ import { css, cx } from "@/styled-system/css";
 import { IconArrowBack } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import Link from "next/link";
+import { isValidElement } from "react";
 
 export function Screen({
   back,
@@ -58,7 +59,7 @@ export function Screen({
   const headingElt = typeof heading === "object"
       && heading !== null
       && "title" in heading
-      && !("props" in heading)
+      && !isValidElement(heading)
     ? (
       <header
         className={css({
@@ -93,7 +94,7 @@ export function Screen({
         )}
       </header>
     )
-    : heading as ReactNode;
+    : heading;
 
   return (
     screenTransitions((style, ready) =>

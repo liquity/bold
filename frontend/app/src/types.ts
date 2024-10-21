@@ -43,6 +43,7 @@ export type PositionLoan = {
   type: "borrow" | "leverage";
   batchManager: null | Address;
   borrowed: Dnum;
+  borrower: Address;
   collIndex: CollIndex;
   collateral: CollateralSymbol;
   deposit: Dnum;

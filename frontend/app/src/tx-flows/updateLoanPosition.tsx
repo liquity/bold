@@ -111,6 +111,7 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
 
     const newLoan = !loan.data ? null : {
       troveId,
+      borrower: loan.data.borrower,
       batchManager: loan.data.batchManager,
       borrowed: newBorrowed,
       collIndex: flow.request.collIndex,

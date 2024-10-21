@@ -290,10 +290,15 @@ function subgraphTroveToLoan(trove: GraphTrove): PositionLoan {
     throw new Error(`Invalid collateral index: ${collIndex}`);
   }
 
+  if (!isAddress(trove.borrower)) {
+    throw new Error(`Invalid borrower: ${trove.borrower}`);
+  }
+
   return {
     type: "borrow",
     batchManager: isAddress(trove.batch?.batchManager) ? trove.batch.batchManager : null,
     borrowed: dnum18(trove.debt),
+    borrower: trove.borrower,
     collateral: collSymbol,
     deposit: dnum18(trove.deposit),
     interestRate: dnum18(trove.batch?.annualInterestRate ?? trove.interestRate),

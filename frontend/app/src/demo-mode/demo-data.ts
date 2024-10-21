@@ -33,10 +33,13 @@ export const ACCOUNT_BALANCES = {
   LUSD: dn.from(1_200, 18),
 } as const;
 
+const DEMO_ACCOUNT = `0x${"0".repeat(39)}1` as const;
+
 export const ACCOUNT_POSITIONS: Position[] = [
   {
     type: "borrow",
     borrowed: dn.from(12_789, 18),
+    borrower: DEMO_ACCOUNT,
     collateral: "RETH",
     deposit: dn.from(5.5, 18),
     interestRate: dn.from(0.067, 18),
@@ -47,6 +50,7 @@ export const ACCOUNT_POSITIONS: Position[] = [
   {
     type: "leverage",
     borrowed: dn.from(28_934.23, 18),
+    borrower: DEMO_ACCOUNT,
     collateral: "ETH",
     deposit: dn.from(19.20, 18), // 8 ETH @ 2.4 leverage
     interestRate: dn.from(0.045, 18),

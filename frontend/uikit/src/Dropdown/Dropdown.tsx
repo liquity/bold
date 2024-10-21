@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import type { CSSProperties } from "react";
 
 import { autoUpdate, offset, shift, useFloating } from "@floating-ui/react-dom";
 import { a, useTransition } from "@react-spring/web";
-import { useEffect, useRef, useState } from "react";
+import { isValidElement, useEffect, useId, useRef, useState } from "react";
 import { css, cx } from "../../styled-system/css";
 import { IconChevronDown } from "../icons";
 import { Root } from "../Root/Root";
@@ -34,6 +34,7 @@ export function Dropdown({
   buttonDisplay?:
     | "normal"
     | "label-only"
+    | ReactElement
     | ((item: DropdownItem, index: number) => {
       icon?: ReactNode;
       label: ReactNode;
@@ -43,7 +44,7 @@ export function Dropdown({
   menuWidth?: number;
   onSelect: (index: number) => void;
   placeholder?: ReactNode | Exclude<DropdownItem, "value">;
-  selected: number;
+  selected: null | number;
   size?: "small" | "medium";
 }) {
   const groups = getGroups(items);
@@ -71,7 +72,7 @@ export function Dropdown({
     placeholder = { label: placeholder };
   }
 
-  if (selected === undefined) {
+  if (selected === null) {
     selected = placeholder ? -1 : 0;
   }
 
@@ -153,10 +154,16 @@ export function Dropdown({
     throw new Error("Invalid selected index or placeholder not provided");
   }
 
+  const customButton = isValidElement(buttonDisplay) ? buttonDisplay : null;
+
+  const dropdownId = useId();
+
   return (
     <>
       <button
         ref={floatingRefs.setReference}
+        aria-expanded={showMenu}
+        aria-controls={dropdownId}
         type="button"
         onClick={() => {
           if (!preventOpenOnRelease.current) {
@@ -170,77 +177,79 @@ export function Dropdown({
           "group",
           css({
             display: "flex",
-            height: 40,
             outline: 0,
             cursor: "pointer",
           }),
         )}
-        style={{
+        style={customButton ? {} : {
           height: size === "small" ? 32 : 40,
           fontSize: size === "small" ? 16 : 24,
         }}
       >
-        <div
-          className={css({
-            display: "flex",
-            alignItems: "center",
-            padding: "0 10px 0 16px",
-            height: "100%",
-            whiteSpace: "nowrap",
-            borderWidth: "1px 1px 0 1px",
-            borderStyle: "solid",
-            borderColor: "#F5F6F8",
-            boxShadow: `
-              0 2px 2px rgba(0, 0, 0, 0.1),
-              0 4px 10px rgba(18, 27, 68, 0.05),
-              inset 0 -1px 4px rgba(0, 0, 0, 0.05)
-            `,
-            borderRadius: 90,
-            cursor: "pointer",
-
-            "--color-normal": "token(colors.content)",
-            "--color-placeholder": "token(colors.accentContent)",
-            "--background-normal": "token(colors.controlSurface)",
-            "--background-placeholder": "token(colors.accent)",
-
-            _groupActive: {
-              translate: "0 1px",
-              boxShadow: `0 1px 1px rgba(0, 0, 0, 0.1)`,
-            },
-            _groupFocusVisible: {
-              outline: "2px solid token(colors.focused)",
-            },
-          })}
-          style={{
-            gap: size === "small" ? 6 : 8,
-            color: `var(--color-${buttonItem === placeholder ? "placeholder" : "normal"})`,
-            background: `var(--background-${buttonItem === placeholder ? "placeholder" : "normal"})`,
-          } as CSSProperties}
-        >
-          {buttonItem.icon && buttonDisplay !== "label-only" && (
-            <div style={{ marginLeft: -6 }}>
-              {buttonItem.icon}
-            </div>
-          )}
+        {customButton ?? (
           <div
             className={css({
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              padding: "0 10px 0 16px",
+              height: "100%",
+              whiteSpace: "nowrap",
+              borderWidth: "1px 1px 0 1px",
+              borderStyle: "solid",
+              borderColor: "#F5F6F8",
+              boxShadow: `
+              0 2px 2px rgba(0, 0, 0, 0.1),
+              0 4px 10px rgba(18, 27, 68, 0.05),
+              inset 0 -1px 4px rgba(0, 0, 0, 0.05)
+            `,
+              borderRadius: 90,
+              cursor: "pointer",
+
+              "--color-normal": "token(colors.content)",
+              "--color-placeholder": "token(colors.accentContent)",
+              "--background-normal": "token(colors.controlSurface)",
+              "--background-placeholder": "token(colors.accent)",
+
+              _groupActive: {
+                translate: "0 1px",
+                boxShadow: `0 1px 1px rgba(0, 0, 0, 0.1)`,
+              },
+              _groupFocusVisible: {
+                outline: "2px solid token(colors.focused)",
+              },
             })}
+            style={{
+              gap: size === "small" ? 6 : 8,
+              color: `var(--color-${buttonItem === placeholder ? "placeholder" : "normal"})`,
+              background: `var(--background-${buttonItem === placeholder ? "placeholder" : "normal"})`,
+            } as CSSProperties}
           >
-            {buttonItem.label}
+            {buttonItem.icon && buttonDisplay !== "label-only" && (
+              <div style={{ marginLeft: -6 }}>
+                {buttonItem.icon}
+              </div>
+            )}
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              })}
+            >
+              {buttonItem.label}
+            </div>
+            <div>
+              <IconChevronDown size={size === "small" ? 16 : 24} />
+            </div>
           </div>
-          <div>
-            <IconChevronDown size={size === "small" ? 16 : 24} />
-          </div>
-        </div>
+        )}
       </button>
       <Root>
         {menuVisibility((appearStyles, show) => (
           show && (
             <a.div
               ref={floatingRefs.setFloating}
+              id={dropdownId}
               className={css({
                 position: "absolute",
                 top: 0,

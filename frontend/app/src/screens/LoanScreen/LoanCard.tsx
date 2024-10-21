@@ -5,33 +5,40 @@ import type { LoanLoadingState } from "./LoanScreen";
 import { INFINITY } from "@/src/characters";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { Value } from "@/src/comps/Value/Value";
+import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { formatRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { shortenTroveId } from "@/src/liquity-utils";
+import { shortenTroveId, useTroveNftUrl } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { roundToDecimal } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
+  Dropdown,
   HFlex,
   IconBorrow,
+  IconCopy,
   IconEllipsis,
+  IconExternal,
   IconLeverage,
+  IconNft,
+  shortenAddress,
   StatusDot,
   TokenIcon,
   TOKENS_BY_SYMBOL,
   VFlex,
 } from "@liquity2/uikit";
+import { blo } from "blo";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 
 export function LoanCard({
+  onLeverageModeChange,
   leverageMode,
   loadingState,
   loan,
-  // onLeverageModeChange,
   onRetry,
   troveId,
 }: {
@@ -65,6 +72,8 @@ export function LoanCard({
     dn.from(1, 18),
     collateral.collateralRatio,
   );
+
+  const nftUrl = useTroveNftUrl(loan?.collIndex ?? null, troveId);
 
   const title = leverageMode ? "Leverage loan" : "BOLD loan";
 
@@ -208,8 +217,86 @@ export function LoanCard({
                     titleFull={`${title}: ${troveId}`}
                     inheritColor={false}
                   />
-                  <div>
-                    <IconEllipsis size={24} />
+                  <div
+                    className={css({
+                      position: "absolute",
+                      top: 16,
+                      right: 16,
+                    })}
+                  >
+                    <Dropdown
+                      buttonDisplay={
+                        <div
+                          className={css({
+                            display: "grid",
+                            placeItems: "center",
+                            width: 28,
+                            height: 28,
+                            color: "strongSurfaceContent",
+                            borderRadius: "50%",
+                            _groupActive: {
+                              translate: "0 1px",
+                              boxShadow: `0 1px 1px rgba(0, 0, 0, 0.1)`,
+                            },
+                            _groupFocusVisible: {
+                              outline: "2px solid token(colors.focused)",
+                            },
+                            _groupExpanded: {
+                              color: "strongSurface",
+                              background: "secondaryActive",
+                            },
+                          })}
+                        >
+                          <IconEllipsis size={24} />
+                        </div>
+                      }
+                      items={[
+                        {
+                          icon: <IconLeverage size={16} />,
+                          label: leverageMode ? "View as loan" : "View as leverage",
+                        },
+                        {
+                          icon: <IconCopy size={16} />,
+                          label: "Copy public link",
+                        },
+                        {
+                          icon: (
+                            <img
+                              src={blo(loan.borrower)}
+                              alt=""
+                              width={16}
+                              height={16}
+                              className={css({
+                                display: "block",
+                                borderRadius: 2,
+                              })}
+                            />
+                          ),
+                          label: `Owner ${shortenAddress(loan.borrower, 4)}`,
+                          value: <IconExternal size={16} />,
+                        },
+                        {
+                          icon: <IconNft size={16} />,
+                          label: "Open NFT",
+                          value: <IconExternal size={16} />,
+                        },
+                      ]}
+                      selected={0}
+                      onSelect={(index) => {
+                        if (index === 0) {
+                          onLeverageModeChange(!leverageMode);
+                        }
+                        if (index === 1) {
+                          navigator.clipboard.writeText(window.location.href);
+                        }
+                        if (index === 2) {
+                          window.open(`${CHAIN_BLOCK_EXPLORER?.url}address/${loan.borrower}`);
+                        }
+                        if (index === 3 && nftUrl) {
+                          window.open(nftUrl);
+                        }
+                      }}
+                    />
                     {
                       /*<Button
                       label={leverageMode ? "View as loan" : "View as leverage"}

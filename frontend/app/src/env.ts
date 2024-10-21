@@ -53,6 +53,7 @@ export const EnvSchema = v.pipe(
     COLL_0_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
     COLL_0_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
     COLL_0_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
+    COLL_0_CONTRACT_TROVE_NFT: v.optional(vAddress()),
     COLL_0_CONTRACT_WETH_ZAPPER: v.optional(vAddress()),
     COLL_0_TOKEN_ID: v.optional(CollateralSymbolSchema),
 
@@ -65,6 +66,7 @@ export const EnvSchema = v.pipe(
     COLL_1_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
     COLL_1_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
     COLL_1_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
+    COLL_1_CONTRACT_TROVE_NFT: v.optional(vAddress()),
     COLL_1_CONTRACT_WETH_ZAPPER: v.optional(vAddress()),
     COLL_1_TOKEN_ID: v.optional(CollateralSymbolSchema),
 
@@ -77,6 +79,7 @@ export const EnvSchema = v.pipe(
     COLL_2_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
     COLL_2_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
     COLL_2_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
+    COLL_2_CONTRACT_TROVE_NFT: v.optional(vAddress()),
     COLL_2_CONTRACT_WETH_ZAPPER: v.optional(vAddress()),
     COLL_2_TOKEN_ID: v.optional(CollateralSymbolSchema),
 
@@ -96,6 +99,7 @@ export const EnvSchema = v.pipe(
       "SORTED_TROVES",
       "STABILITY_POOL",
       "TROVE_MANAGER",
+      "TROVE_NFT",
       "WETH_ZAPPER",
     ] as const;
 
@@ -179,6 +183,7 @@ const parsedEnv = v.parse(EnvSchema, {
   COLL_0_CONTRACT_SORTED_TROVES: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_SORTED_TROVES,
   COLL_0_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_STABILITY_POOL,
   COLL_0_CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_TROVE_MANAGER,
+  COLL_0_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_TROVE_NFT,
   COLL_0_CONTRACT_WETH_ZAPPER: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_WETH_ZAPPER,
 
   COLL_1_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_ACTIVE_POOL,
@@ -190,6 +195,7 @@ const parsedEnv = v.parse(EnvSchema, {
   COLL_1_CONTRACT_SORTED_TROVES: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_SORTED_TROVES,
   COLL_1_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_STABILITY_POOL,
   COLL_1_CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_TROVE_MANAGER,
+  COLL_1_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_TROVE_NFT,
   COLL_1_CONTRACT_WETH_ZAPPER: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_WETH_ZAPPER,
 
   COLL_2_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_ACTIVE_POOL,
@@ -201,6 +207,7 @@ const parsedEnv = v.parse(EnvSchema, {
   COLL_2_CONTRACT_SORTED_TROVES: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_SORTED_TROVES,
   COLL_2_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_STABILITY_POOL,
   COLL_2_CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_MANAGER,
+  COLL_2_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_NFT,
   COLL_2_CONTRACT_WETH_ZAPPER: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_WETH_ZAPPER,
 
   DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,

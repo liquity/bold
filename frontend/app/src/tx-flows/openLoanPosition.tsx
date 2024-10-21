@@ -70,6 +70,7 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
         loan={{
           type: "borrow",
           troveId: "0x",
+          borrower: flow.request.owner,
           batchManager: flow.request.interestRateDelegate?.[0] ?? null,
           borrowed: flow.request.boldAmount,
           collIndex: flow.request.collIndex,

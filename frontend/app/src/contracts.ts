@@ -14,6 +14,7 @@ import { PriceFeed } from "@/src/abi/PriceFeed";
 import { SortedTroves } from "@/src/abi/SortedTroves";
 import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
+import { TroveNFT } from "@/src/abi/TroveNFT";
 import { WETH } from "@/src/abi/WETH";
 import { WETHZapper } from "@/src/abi/WETHZapper";
 import {
@@ -48,6 +49,7 @@ const collateralAbis = {
   SortedTroves,
   StabilityPool,
   TroveManager,
+  TroveNFT,
   GasCompZapper: [
     ...GasCompZapper,
     ...BorrowerOperations.filter((f) => f.type === "error"),
@@ -117,6 +119,7 @@ export function useContracts(): Contracts {
           SortedTroves: { address: contracts.SORTED_TROVES, abi: abis.SortedTroves },
           StabilityPool: { address: contracts.STABILITY_POOL, abi: abis.StabilityPool },
           TroveManager: { address: contracts.TROVE_MANAGER, abi: abis.TroveManager },
+          TroveNFT: { address: contracts.TROVE_NFT, abi: abis.TroveNFT },
           WETHZapper: { address: contracts.WETH_ZAPPER, abi: abis.WETHZapper },
         },
       })),
