@@ -730,7 +730,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 newCollBalance = collBalance - _collAmount;
         collBalance = newCollBalance;
         emit StabilityPoolCollBalanceUpdated(newCollBalance);
-        emit EtherSent(msg.sender, _collAmount);
         collToken.safeTransfer(msg.sender, _collAmount);
     }
 

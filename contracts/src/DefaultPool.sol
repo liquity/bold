@@ -31,7 +31,6 @@ contract DefaultPool is IDefaultPool {
     event CollTokenAddressChanged(address _newCollTokenAddress);
     event ActivePoolAddressChanged(address _newActivePoolAddress);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event EtherSent(address _to, uint256 _amount);
     event DefaultPoolBoldDebtUpdated(uint256 _boldDebt);
     event DefaultPoolCollBalanceUpdated(uint256 _collBalance);
 
@@ -70,7 +69,6 @@ contract DefaultPool is IDefaultPool {
         uint256 newCollBalance = collBalance - _amount;
         collBalance = newCollBalance;
         emit DefaultPoolCollBalanceUpdated(newCollBalance);
-        emit EtherSent(activePoolAddress, _amount);
 
         // Send Coll to Active Pool and increase its recorded Coll balance
         IActivePool(activePoolAddress).receiveColl(_amount);
