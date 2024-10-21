@@ -158,7 +158,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     event BoldTokenAddressChanged(address _boldTokenAddress);
 
     event ShutDown(uint256 _tcr);
-    event ShutDownFromOracleFailure(address _oracleAddress);
 
     constructor(IAddressesRegistry _addressesRegistry)
         AddRemoveManagers(_addressesRegistry)
@@ -1165,8 +1164,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         uint256 totalColl = getEntireSystemColl();
         uint256 totalDebt = getEntireSystemDebt();
-        (uint256 price,) = priceFeed.fetchPrice();
+        (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
+        // If the oracle failed, the above call to PriceFeed will have shut this branch down
+        if (newOracleFailureDetected) {return;}
 
+        // Otherwise, proceed with the TCR check:
         uint256 TCR = LiquityMath._computeCR(totalColl, totalDebt, price);
         if (TCR >= SCR) revert TCRNotBelowSCR();
 
@@ -1176,7 +1178,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     // Not technically a "Borrower op", but seems best placed here given current shutdown logic.
-    function shutdownFromOracleFailure(address _failedOracleAddr) external {
+    function shutdownFromOracleFailure() external {
         _requireCallerIsPriceFeed();
 
         // No-op rather than revert here, so that the outer function call which fetches the price does not revert
@@ -1184,8 +1186,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         if (hasBeenShutDown) return;
 
         _applyShutdown();
-
-        emit ShutDownFromOracleFailure(_failedOracleAddr);
     }
 
     function _applyShutdown() internal {
