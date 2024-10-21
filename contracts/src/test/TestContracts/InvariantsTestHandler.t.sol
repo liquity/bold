@@ -665,10 +665,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 uint256 newTCR = _TCR(v.i, int256(v.coll), int256(v.borrowed), v.upfrontFee);
                 assertLtDecimal(newTCR, CCR[v.i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
-            } else if (selector == BorrowerOperations.BelowCriticalThreshold.selector) {
-                uint256 tcr = _TCR(v.i);
-                assertLtDecimal(tcr, CCR[v.i], 18, "Shouldn't have failed as TCR >= CCR");
-                info("TCR: ", tcr.decimal());
             } else {
                 revert(string.concat("Unexpected error: ", v.errorString));
             }
@@ -793,7 +789,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             if (v.oldTCR >= CCR[i]) {
                 assertGeDecimal(v.newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
             } else {
-                assertLeDecimal(v.debtDelta, 0, 18, "Borrowing should have failed as TCR < CCR");
+                if (v.debtDelta > 0) {
+                    assertGtDecimal(v.newTCR, CCR[i], 18, "Borrowing should have failed as new TCR < CCR");
+                }
                 assertGeDecimal(-v.debtDelta, -v.$collDelta, 18, "Repayment < withdrawal when TCR < CCR");
             }
 
@@ -838,12 +836,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 info("New ICR would have been: ", v.newICR.decimal());
             } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
                 v.newTCR = _TCR(i, v.collDelta, v.debtDelta, v.upfrontFee);
-                assertGeDecimal(v.oldTCR, CCR[i], 18, "TCR was already < CCR");
                 assertLtDecimal(v.newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", v.newTCR.decimal());
-            } else if (selector == BorrowerOperations.BorrowingNotPermittedBelowCT.selector) {
-                assertLtDecimal(v.oldTCR, CCR[i], 18, "Shouldn't have failed as TCR >= CCR");
-                assertGtDecimal(v.debtDelta, 0, 18, "Shouldn't have failed as there was no borrowing");
             } else if (selector == BorrowerOperations.RepaymentNotMatchingCollWithdrawal.selector) {
                 assertLtDecimal(v.oldTCR, CCR[i], 18, "Shouldn't have failed as TCR >= CCR");
                 assertLtDecimal(-v.debtDelta, -v.$collDelta, 18, "Shouldn't have failed as repayment >= withdrawal");
@@ -2990,14 +2984,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
             if (selector == BorrowerOperations.UpfrontFeeTooHigh.selector) {
                 return (selector, "BorrowerOperations.UpfrontFeeTooHigh()");
-            }
-
-            if (selector == BorrowerOperations.BelowCriticalThreshold.selector) {
-                return (selector, "BorrowerOperations.BelowCriticalThreshold()");
-            }
-
-            if (selector == BorrowerOperations.BorrowingNotPermittedBelowCT.selector) {
-                return (selector, "BorrowerOperations.BorrowingNotPermittedBelowCT()");
             }
 
             if (selector == BorrowerOperations.ICRBelowMCR.selector) {

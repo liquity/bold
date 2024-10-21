@@ -29,34 +29,51 @@ contract CriticalThresholdTest is DevTestSetup {
         troveManager.liquidate(BTroveId);
     }
 
-    function testNoNewTrovesBelowCT() public {
+    function testNoNewTrovesWithFinalTCRBelowCT() public {
         setUpBelowCT();
 
-        vm.expectRevert(BorrowerOperations.BelowCriticalThreshold.selector);
-        this.openTroveNoHints100pct(B, 100 ether, 10000e18, 1e17); // CR: ~1500%
+        vm.expectRevert(BorrowerOperations.TCRBelowCCR.selector);
+        this.openTroveNoHints100pct(C, 2.3 ether, 3000e18, 1e17); // CR: ~110%
     }
 
-    function testNoIncreaseDebtAloneBelowCT() public {
+    function testNewTrovesWithFinalTCRAboveCT() public {
+        setUpBelowCT();
+
+        this.openTroveNoHints100pct(C, 100 ether, 10000e18, 1e17); // CR: ~1500%
+        uint256 price = priceFeed.getPrice();
+        assertGe(troveManager.getTCR(price), CCR, "TCR should be >= CCR");
+    }
+
+    function testNoIncreaseDebtAloneWithFinalTCRBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.expectRevert(BorrowerOperations.BorrowingNotPermittedBelowCT.selector);
+        vm.expectRevert(BorrowerOperations.TCRBelowCCR.selector);
         this.adjustTrove100pct(A, ATroveId, 0, 1, false, true);
 
-        vm.expectRevert(BorrowerOperations.BorrowingNotPermittedBelowCT.selector);
+        vm.expectRevert(BorrowerOperations.TCRBelowCCR.selector);
         this.withdrawBold100pct(A, ATroveId, 1);
     }
 
-    function testNoIncreaseDebtWithAddCollBelowCT() public {
+    function testNoIncreaseDebtWithAddCollWithFinalTCRBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.expectRevert(BorrowerOperations.BorrowingNotPermittedBelowCT.selector);
-        this.adjustTrove100pct(A, ATroveId, 1e18, 1, true, true);
+        uint256 price = priceFeed.getPrice();
+        vm.expectRevert(BorrowerOperations.TCRBelowCCR.selector);
+        this.adjustTrove100pct(A, ATroveId, 1.1 ether, price, true, true);
+    }
+
+    function testIncreaseDebtWithAddCollWithFinalTCRAboveCT() public {
+        (uint256 ATroveId,,) = setUpBelowCT();
+
+        this.adjustTrove100pct(A, ATroveId, 10e18, 1, true, true);
+        uint256 price = priceFeed.getPrice();
+        assertGe(troveManager.getTCR(price), CCR, "TCR should be >= CCR");
     }
 
     function testNoIncreaseDebtWithWithdrawCollBelowCT() public {
         (uint256 ATroveId,,) = setUpBelowCT();
 
-        vm.expectRevert(BorrowerOperations.BorrowingNotPermittedBelowCT.selector);
+        vm.expectRevert(BorrowerOperations.TCRBelowCCR.selector);
         this.adjustTrove100pct(A, ATroveId, 1, 1, false, true);
     }
 
