@@ -10,8 +10,6 @@ import "../../Interfaces/ILeverageZapper.sol";
 import "../../Interfaces/IFlashLoanReceiver.sol";
 import "../../Interfaces/IFlashLoanProvider.sol";
 
-// import "forge-std/console2.sol";
-
 contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
     using SafeERC20 for IERC20;
 

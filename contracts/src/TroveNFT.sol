@@ -11,8 +11,6 @@ import "./Interfaces/IAddressesRegistry.sol";
 import {IMetadataNFT} from "./NFTMetadata/MetadataNFT.sol";
 import {ITroveManager} from "./Interfaces/ITroveManager.sol";
 
-// import "forge-std/console2.sol";
-
 contract TroveNFT is ERC721, ITroveNFT {
     ITroveManager public immutable troveManager;
     IERC20Metadata internal immutable collToken;

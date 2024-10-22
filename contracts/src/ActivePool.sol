@@ -12,8 +12,6 @@ import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/IInterestRouter.sol";
 import "./Interfaces/IDefaultPool.sol";
 
-// import "forge-std/console2.sol";
-
 /*
  * The Active Pool holds the collateral and Bold debt (but not Bold tokens) for all active troves.
  *
@@ -70,7 +68,6 @@ contract ActivePool is IActivePool {
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event DefaultPoolAddressChanged(address _newDefaultPoolAddress);
     event StabilityPoolAddressChanged(address _newStabilityPoolAddress);
-    event EtherSent(address _to, uint256 _amount);
     event ActivePoolBoldDebtUpdated(uint256 _recordedDebtSum);
     event ActivePoolCollBalanceUpdated(uint256 _collBalance);
 
@@ -165,7 +162,7 @@ contract ActivePool is IActivePool {
     function sendColl(address _account, uint256 _amount) external override {
         _requireCallerIsBOorTroveMorSP();
 
-        _accountForSendColl(_account, _amount);
+        _accountForSendColl(_amount);
 
         collToken.safeTransfer(_account, _amount);
     }
@@ -173,16 +170,15 @@ contract ActivePool is IActivePool {
     function sendCollToDefaultPool(uint256 _amount) external override {
         _requireCallerIsTroveManager();
 
-        _accountForSendColl(defaultPoolAddress, _amount);
+        _accountForSendColl(_amount);
 
         IDefaultPool(defaultPoolAddress).receiveColl(_amount);
     }
 
-    function _accountForSendColl(address _account, uint256 _amount) internal {
+    function _accountForSendColl(uint256 _amount) internal {
         uint256 newCollBalance = collBalance - _amount;
         collBalance = newCollBalance;
         emit ActivePoolCollBalanceUpdated(newCollBalance);
-        emit EtherSent(_account, _amount);
     }
 
     function receiveColl(uint256 _amount) external {

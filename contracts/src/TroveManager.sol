@@ -14,8 +14,6 @@ import "./Interfaces/ICollateralRegistry.sol";
 import "./Interfaces/IWETH.sol";
 import "./Dependencies/LiquityBase.sol";
 
-// import "forge-std/console2.sol";
-
 contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // --- Connected contract declarations ---
 
@@ -955,7 +953,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 totalDebtShares = batch.totalDebtShares;
 
         uint256 stake = trove.stake;
-        //uint256 batchRedistBoldDebtGain = stake * (L_boldDebt - rewardBatchSnapshots[_batchAddress].boldDebt) / DECIMAL_PRECISION;
         _latestTroveData.redistBoldDebtGain =
             stake * (L_boldDebt - rewardSnapshots[_troveId].boldDebt) / DECIMAL_PRECISION;
         _latestTroveData.redistCollGain = stake * (L_coll - rewardSnapshots[_troveId].coll) / DECIMAL_PRECISION;

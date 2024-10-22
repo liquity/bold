@@ -39,8 +39,4 @@ interface IStabilityPoolEvents {
         uint256 _ethGainSinceLastOperation,
         uint256 _ethGainClaimed
     );
-
-    // TODO: Do we still need this, as we’ll likely have the ERC20 transfer event?
-    // This goes for ActivePool, DefaultPool, CollSurplusPool too.
-    event EtherSent(address _to, uint256 _amount);
 }

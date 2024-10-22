@@ -521,9 +521,6 @@ contract SortedTroves is ISortedTroves {
         if (_prevId == BAD_HINT && _nextId == BAD_HINT) {
             // Both original neighbours have been moved or removed.
             // We default to descending the list, starting from the head.
-            //
-            // TODO: should we revert instead, so as not to waste the user's gas?
-            //       We are unlikely to recover.
             return _descendList(_troveManager, _annualInterestRate, ROOT_NODE_ID);
         } else if (_prevId == BAD_HINT) {
             // No `prevId` for hint - ascend list starting from `nextId`

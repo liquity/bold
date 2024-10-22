@@ -579,7 +579,7 @@ contract ShutdownTest is DevTestSetup {
         // Check Trove debt reduced to 0
         assertEq(troveManager.getTroveEntireDebt(troveId), 0, "Trove debt not reduced to 0");
 
-        (,,,,,uint64 lastDebtUpdateTime1,,,,) = troveManager.Troves(troveId);
+        (,,,,, uint64 lastDebtUpdateTime1,,,,) = troveManager.Troves(troveId);
         assertEq(lastDebtUpdateTime1, block.timestamp, "first update time incorrect");
 
         // Urgent-redeem again from the Trove
@@ -589,7 +589,7 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
 
         // Check update time didn't update
-        (,,,,,uint64 lastDebtUpdateTime2,,,,) = troveManager.Troves(troveId);
+        (,,,,, uint64 lastDebtUpdateTime2,,,,) = troveManager.Troves(troveId);
         assertEq(lastDebtUpdateTime2, lastDebtUpdateTime1, "2nd update time incorrect");
     }
 
@@ -613,10 +613,14 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
 
         // Check Trove status is closed
-        assertEq(uint256(troveManager.getTroveStatus(troveId)), uint256(ITroveManager.Status.closedByOwner), "Trove not closed");
+        assertEq(
+            uint256(troveManager.getTroveStatus(troveId)),
+            uint256(ITroveManager.Status.closedByOwner),
+            "Trove not closed"
+        );
 
         // Check update time zero'd
-        (,,,,,uint64 lastDebtUpdateTime1,,,,) = troveManager.Troves(troveId);
+        (,,,,, uint64 lastDebtUpdateTime1,,,,) = troveManager.Troves(troveId);
         assertEq(lastDebtUpdateTime1, 0, "first update time incorrect");
 
         // Urgent-redeem again from the Trove
@@ -626,7 +630,7 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
 
         // Check update time didn't update
-        (,,,,,uint64 lastDebtUpdateTime2,,,,) = troveManager.Troves(troveId);
+        (,,,,, uint64 lastDebtUpdateTime2,,,,) = troveManager.Troves(troveId);
         assertEq(lastDebtUpdateTime2, lastDebtUpdateTime1, "2nd update time incorrect");
     }
 
