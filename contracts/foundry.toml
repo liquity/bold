@@ -3,7 +3,7 @@ src = "src"
 out = "out"
 libs = ["lib"]
 evm_version = 'shanghai'
-ignored_error_codes = [5574] # contract-size
+ignored_error_codes = [3860, 5574] # contract-size
 fs_permissions = [
     { access = "read", path = "./utils/assets/" },
     { access = "read-write", path = "./utils/assets/test_output" },
