@@ -7,8 +7,6 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./BaseZapper.sol";
 import "../Dependencies/Constants.sol";
 
-// import "forge-std/console2.sol";
-
 contract GasCompZapper is BaseZapper {
     using SafeERC20 for IERC20;
 
@@ -193,7 +191,6 @@ contract GasCompZapper is BaseZapper {
             collToken.safeTransferFrom(msg.sender, address(this), _collChange);
         }
 
-        // TODO: version with Permit
         // Pull Bold
         if (!_isDebtIncrease) {
             boldToken.transferFrom(msg.sender, address(this), _boldChange);

@@ -184,7 +184,6 @@ contract WETHZapper is BaseZapper {
             WETH.deposit{value: _collChange}();
         }
 
-        // TODO: version with Permit
         // Pull Bold
         if (!_isDebtIncrease) {
             boldToken.transferFrom(msg.sender, address(this), _boldChange);

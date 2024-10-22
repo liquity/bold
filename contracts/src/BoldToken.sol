@@ -22,7 +22,6 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
 
     // --- Addresses ---
 
-    // TODO: optimize to make them immutable
     address public collateralRegistryAddress;
     mapping(address => bool) troveManagerAddresses;
     mapping(address => bool) stabilityPoolAddresses;

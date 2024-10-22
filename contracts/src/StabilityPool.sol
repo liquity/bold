@@ -12,8 +12,6 @@ import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
 
-// import "forge-std/console2.sol";
-
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
  *
@@ -137,14 +135,13 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     ITroveManager public immutable troveManager;
     IBoldToken public immutable boldToken;
 
-    uint256 internal collBalance; // deposited ether tracker
+    uint256 internal collBalance; // deposited coll tracker
 
     // Tracker for Bold held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
     uint256 internal totalBoldDeposits;
 
     // Total remaining Bold yield gains (from Trove interest mints) held by SP, and not yet paid out to depositors
-    // TODO: from the contract's perspective, this is a write-only variable. It is only ever read in tests, so it would
-    // be better to keep it outside the core contract.
+    // From the contract's perspective, this is a write-only variable.
     uint256 internal yieldGainsOwed;
     // Total remaining Bold yield gains (from Trove interest mints) held by SP, not yet paid out to depositors,
     // and not accounted for because they were received when the total deposits were too small
@@ -731,7 +728,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 newCollBalance = collBalance - _collAmount;
         collBalance = newCollBalance;
         emit StabilityPoolCollBalanceUpdated(newCollBalance);
-        emit EtherSent(msg.sender, _collAmount);
         collToken.safeTransfer(msg.sender, _collAmount);
     }
 

@@ -7,8 +7,6 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./GasCompZapper.sol";
 import "../Dependencies/Constants.sol";
 
-// import "forge-std/console2.sol";
-
 contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
     using SafeERC20 for IERC20;
 

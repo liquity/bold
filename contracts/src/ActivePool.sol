@@ -12,8 +12,6 @@ import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/IInterestRouter.sol";
 import "./Interfaces/IDefaultPool.sol";
 
-// import "forge-std/console2.sol";
-
 /*
  * The Active Pool holds the collateral and Bold debt (but not Bold tokens) for all active troves.
  *
@@ -36,7 +34,7 @@ contract ActivePool is IActivePool {
     IInterestRouter public interestRouter;
     IBoldRewardsReceiver public stabilityPool;
 
-    uint256 internal collBalance; // deposited ether tracker
+    uint256 internal collBalance; // deposited coll tracker
 
     // Aggregate recorded debt tracker. Updated whenever a Trove's debt is touched AND whenever the aggregate pending interest is minted.
     // "D" in the spec.
@@ -70,7 +68,6 @@ contract ActivePool is IActivePool {
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event DefaultPoolAddressChanged(address _newDefaultPoolAddress);
     event StabilityPoolAddressChanged(address _newStabilityPoolAddress);
-    event EtherSent(address _to, uint256 _amount);
     event ActivePoolBoldDebtUpdated(uint256 _recordedDebtSum);
     event ActivePoolCollBalanceUpdated(uint256 _collBalance);
 
@@ -165,7 +162,7 @@ contract ActivePool is IActivePool {
     function sendColl(address _account, uint256 _amount) external override {
         _requireCallerIsBOorTroveMorSP();
 
-        _accountForSendColl(_account, _amount);
+        _accountForSendColl(_amount);
 
         collToken.safeTransfer(_account, _amount);
     }
@@ -173,16 +170,15 @@ contract ActivePool is IActivePool {
     function sendCollToDefaultPool(uint256 _amount) external override {
         _requireCallerIsTroveManager();
 
-        _accountForSendColl(defaultPoolAddress, _amount);
+        _accountForSendColl(_amount);
 
         IDefaultPool(defaultPoolAddress).receiveColl(_amount);
     }
 
-    function _accountForSendColl(address _account, uint256 _amount) internal {
+    function _accountForSendColl(uint256 _amount) internal {
         uint256 newCollBalance = collBalance - _amount;
         collBalance = newCollBalance;
         emit ActivePoolCollBalanceUpdated(newCollBalance);
-        emit EtherSent(_account, _amount);
     }
 
     function receiveColl(uint256 _amount) external {
@@ -226,7 +222,7 @@ contract ActivePool is IActivePool {
             _mintBatchManagementFeeAndAccountForChange(boldToken, _troveChange, _batchAddress);
         }
 
-        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        // Do the arithmetic in 2 steps here to avoid underflow from the decrease
         uint256 newAggRecordedDebt = aggRecordedDebt; // 1 SLOAD
         newAggRecordedDebt += _mintAggInterest(boldToken, _troveChange.upfrontFee); // adds minted agg. interest + upfront fee
         newAggRecordedDebt += _troveChange.appliedRedistBoldDebtGain;
@@ -237,7 +233,7 @@ contract ActivePool is IActivePool {
         // assert(aggRecordedDebt >= 0) // This should never be negative. If all redistribution gians and all aggregate interest was applied
         // and all Trove debts were repaid, it should become 0.
 
-        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        // Do the arithmetic in 2 steps here to avoid underflow from the decrease
         uint256 newAggWeightedDebtSum = aggWeightedDebtSum; // 1 SLOAD
         newAggWeightedDebtSum += _troveChange.newWeightedRecordedDebt;
         newAggWeightedDebtSum -= _troveChange.oldWeightedRecordedDebt;
@@ -283,13 +279,13 @@ contract ActivePool is IActivePool {
     ) internal {
         aggRecordedDebt += _troveChange.batchAccruedManagementFee;
 
-        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        // Do the arithmetic in 2 steps here to avoid underflow from the decrease
         uint256 newAggBatchManagementFees = aggBatchManagementFees; // 1 SLOAD
         newAggBatchManagementFees += calcPendingAggBatchManagementFee();
         newAggBatchManagementFees -= _troveChange.batchAccruedManagementFee;
         aggBatchManagementFees = newAggBatchManagementFees; // 1 SSTORE
 
-        // Do the arithmetic in 2 steps here to avoid overflow from the decrease
+        // Do the arithmetic in 2 steps here to avoid underflow from the decrease
         uint256 newAggWeightedBatchManagementFeeSum = aggWeightedBatchManagementFeeSum; // 1 SLOAD
         newAggWeightedBatchManagementFeeSum += _troveChange.newWeightedRecordedBatchManagementFee;
         newAggWeightedBatchManagementFeeSum -= _troveChange.oldWeightedRecordedBatchManagementFee;
