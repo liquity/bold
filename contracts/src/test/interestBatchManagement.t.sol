@@ -250,7 +250,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
         // Set individual delegate (C)
         vm.startPrank(A);
-        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, 0, 0, 0, 0);
+        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, 0, 0, 0, 0, 0);
         vm.stopPrank();
 
         IBorrowerOperations.InterestIndividualDelegate memory delegate =

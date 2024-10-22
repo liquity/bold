@@ -281,7 +281,7 @@ contract ShutdownTest is DevTestSetup {
 
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);
-        borrowerOperations.setInterestIndividualDelegate(troveId, B, 5e15, 1e18, 0, 0, 0, 0);
+        borrowerOperations.setInterestIndividualDelegate(troveId, B, 5e15, 1e18, 0, 0, 0, 0, 0);
         vm.stopPrank();
     }
 
