@@ -241,7 +241,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         Trove trove;
         bool wasOpen;
         bool wasActive;
-        bool premature;
         uint256 upfrontFee;
         string errorString;
     }
@@ -1982,11 +1981,9 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         v.trove = _troves[i][v.troveId];
         v.wasOpen = _isOpen(i, v.troveId);
         v.wasActive = _isActive(i, v.troveId);
-        v.premature = _timeSinceLastTroveInterestRateAdjustment[i][v.troveId] < INTEREST_RATE_ADJ_COOLDOWN;
 
         if (_batchManagerOf[i][v.troveId] == address(0)) {
             v.upfrontFee = hintHelpers.predictJoinBatchInterestRateUpfrontFee(i, v.troveId, v.newBatchManager);
-            if (v.upfrontFee > 0) assertTrue(v.premature, "Only premature adjustment should incur upfront fee");
         }
 
         info("batch manager: ", vm.getLabel(v.newBatchManager));
@@ -2014,11 +2011,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             assertTrue(v.wasActive, "Should have failed as Trove wasn't active");
             assertEq(_batchManagerOf[i][v.troveId], address(0), "Should have failed as Trove was in a batch");
             assertTrue(_batchManagers[i].has(v.newBatchManager), "Should have failed as batch manager wasn't valid");
-
-            if (v.premature) {
-                assertGeDecimal(newICR, MCR[i], 18, "Should have failed as new ICR < MCR");
-                assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
-            }
+            assertGeDecimal(newICR, MCR[i], 18, "Should have failed as new ICR < MCR");
+            assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
 
             // Effects (Trove)
             v.trove.applyPending();
@@ -2063,12 +2057,10 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 );
             } else if (selector == BorrowerOperations.ICRBelowMCR.selector) {
                 uint256 newICR = _ICR(i, 0, 0, v.upfrontFee, v.t);
-                assertTrue(v.premature, "Shouldn't have failed as adjustment was not premature");
                 assertLtDecimal(newICR, MCR[i], 18, "Shouldn't have failed as new ICR >= MCR");
                 info("New ICR would have been: ", newICR.decimal());
             } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
                 uint256 newTCR = _TCR(i, 0, 0, v.upfrontFee);
-                assertTrue(v.premature, "Shouldn't have failed as adjustment was not premature");
                 assertLtDecimal(newTCR, CCR[i], 18, "Shouldn't have failed as new TCR >= CCR");
                 info("New TCR would have been: ", newTCR.decimal());
             } else {
