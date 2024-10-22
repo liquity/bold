@@ -38,7 +38,7 @@ contract GasCompZapper is BaseZapper {
         // Convert ETH to WETH
         WETH.deposit{value: msg.value}();
 
-        // Pull and approve coll
+        // Pull coll
         collToken.safeTransferFrom(msg.sender, address(this), _params.collAmount);
 
         uint256 troveId;
