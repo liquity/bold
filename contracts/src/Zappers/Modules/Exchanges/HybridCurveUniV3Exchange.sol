@@ -71,16 +71,13 @@ contract HybridCurveUniV3Exchange is LeftoversSweep, IExchange {
         _setHybridExchangeInitialBalances(initialBalances);
 
         // Curve
-        ICurveStableswapNGPool curvePoolCached = curvePool;
         boldToken.transferFrom(msg.sender, address(this), _boldAmount);
-        boldToken.approve(address(curvePoolCached), _boldAmount);
+        boldToken.approve(address(curvePool), _boldAmount);
 
-        uint256 curveUsdcAmount = curvePoolCached.exchange(int128(BOLD_TOKEN_INDEX), int128(USDC_INDEX), _boldAmount, 0);
+        uint256 curveUsdcAmount = curvePool.exchange(int128(BOLD_TOKEN_INDEX), int128(USDC_INDEX), _boldAmount, 0);
 
         // Uniswap
-        ISwapRouter uniV3RouterCached = uniV3Router;
-
-        USDC.approve(address(uniV3RouterCached), curveUsdcAmount);
+        USDC.approve(address(uniV3Router), curveUsdcAmount);
 
         // See: https://docs.uniswap.org/contracts/v3/guides/swaps/multihop-swaps
         bytes memory path;
@@ -99,7 +96,7 @@ contract HybridCurveUniV3Exchange is LeftoversSweep, IExchange {
         });
 
         // Executes the swap.
-        uint256 uniV3CollAmount = uniV3RouterCached.exactInput(params);
+        uint256 uniV3CollAmount = uniV3Router.exactInput(params);
 
         // return leftovers to user
         _returnLeftovers(initialBalances);
@@ -113,10 +110,8 @@ contract HybridCurveUniV3Exchange is LeftoversSweep, IExchange {
         _setHybridExchangeInitialBalances(initialBalances);
 
         // Uniswap
-        ISwapRouter uniV3RouterCached = uniV3Router;
-
         collToken.safeTransferFrom(msg.sender, address(this), _collAmount);
-        collToken.approve(address(uniV3RouterCached), _collAmount);
+        collToken.approve(address(uniV3Router), _collAmount);
 
         // See: https://docs.uniswap.org/contracts/v3/guides/swaps/multihop-swaps
         bytes memory path;
@@ -135,14 +130,13 @@ contract HybridCurveUniV3Exchange is LeftoversSweep, IExchange {
         });
 
         // Executes the swap.
-        uint256 uniV3UsdcAmount = uniV3RouterCached.exactInput(params);
+        uint256 uniV3UsdcAmount = uniV3Router.exactInput(params);
 
         // Curve
-        ICurveStableswapNGPool curvePoolCached = curvePool;
-        USDC.approve(address(curvePoolCached), uniV3UsdcAmount);
+        USDC.approve(address(curvePool), uniV3UsdcAmount);
 
         uint256 boldAmount =
-            curvePoolCached.exchange(int128(USDC_INDEX), int128(BOLD_TOKEN_INDEX), uniV3UsdcAmount, _minBoldAmount);
+            curvePool.exchange(int128(USDC_INDEX), int128(BOLD_TOKEN_INDEX), uniV3UsdcAmount, _minBoldAmount);
         boldToken.transfer(msg.sender, boldAmount);
 
         // return leftovers to user
