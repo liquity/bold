@@ -33,22 +33,31 @@ type CollateralAddresses @entity(immutable: true) {
 
 type InterestRateBracket @entity {
   id: ID! # "collIndex:rateFloored", e.g. "0:44000000000000000"
+  collateral: Collateral!
   rate: BigInt!
   totalDebt: BigInt!
   totalTroves: Int!
 }
 
+enum TroveStatus {
+  active
+  closedByOwner
+  closedByLiquidation
+  zombie
+}
+
 type Trove @entity {
   id: ID! # "collIndex:collId", e.g. 0:0x1731afc858cad2708001a4f71851f9f775729c22f47df7c4360b1e416fd0f2de
-  batch: InterestBatch
   borrower: Bytes!
   closedAt: BigInt
   collateral: Collateral!
   createdAt: BigInt!
   debt: BigInt!
   deposit: BigInt!
+  interestBatch: InterestBatch
   interestRate: BigInt!
   stake: BigInt!
+  status: TroveStatus!
   troveId: String!
 }
 
@@ -97,5 +106,5 @@ type InterestBatch @entity {
   coll: BigInt!
   annualInterestRate: BigInt!
   annualManagementFee: BigInt!
-  troves: [Trove!]! @derivedFrom(field: "batch")
+  troves: [Trove!]! @derivedFrom(field: "interestBatch")
 }
