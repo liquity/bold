@@ -8,8 +8,7 @@ import "../Interfaces/IPriceFeed.sol";
 import "../BorrowerOperations.sol";
 
 abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
-    // Dummy flag raised when the collateral branch gets shut down.
-    // Should be removed after actual shutdown logic is implemented.
+    // Flag raised when the collateral branch gets shut down.
     bool priceFeedDisabled;
 
     // Last good price tracker for the derived USD price

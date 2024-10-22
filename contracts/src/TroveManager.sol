@@ -23,7 +23,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     address internal gasPoolAddress;
     ICollSurplusPool internal collSurplusPool;
     IBoldToken internal boldToken;
-    // A doubly linked list of Troves, sorted by their sorted by their collateral ratios
+    // A doubly linked list of Troves, sorted by their interest rate
     ISortedTroves public sortedTroves;
     ICollateralRegistry internal collateralRegistry;
     // Wrapped ETH for liquidation reserve (gas compensation)
@@ -62,7 +62,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     mapping(uint256 => Trove) public Troves;
 
     // Store the necessary data for an interest batch manager. We treat each batch as a “big trove”.
-    // Each trove has a share of the debt and a share of the coll of the global batch (will in general be different, as CRs are different).
+    // Each trove has a share of the debt of the global batch. Collateral is stored per trove (as CRs are different)
+    // Still the total amount of batch collateral is stored for informational purposes
     struct Batch {
         uint256 debt;
         uint256 coll;
@@ -748,7 +749,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         }
         address lastBatchUpdatedInterest = address(0);
 
-        // Loop through the Troves starting from the one with lowest collateral ratio until _amount of Bold is exchanged for collateral
+        // Loop through the Troves starting from the one with lowest interest rate until _amount of Bold is exchanged for collateral
         if (_maxIterations == 0) _maxIterations = type(uint256).max;
         while (singleRedemption.troveId != 0 && remainingBold > 0 && _maxIterations > 0) {
             _maxIterations--;
@@ -822,7 +823,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         // Get the amount of ETH equal in USD value to the BOLD lot redeemed
         _singleRedemption.collLot = _singleRedemption.boldLot * (DECIMAL_PRECISION + URGENT_REDEMPTION_BONUS) / _price;
-        // As here we can redeem when CR < 100%, we need to cap by collateral too
+        // As here we can redeem when CR < 101% (accounting for 1% bonus), we need to cap by collateral too
         if (_singleRedemption.collLot > _singleRedemption.trove.entireColl) {
             _singleRedemption.collLot = _singleRedemption.trove.entireColl;
             _singleRedemption.boldLot =

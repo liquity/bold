@@ -341,7 +341,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
                 (_batchEntireDebt + vars.entireDebt) * _batchManagementAnnualFee;
         }
 
-        // ICR is based on the composite debt, i.e. the requested Bold amount + Bold gas comp + upfront fee.
+        // ICR is based on the requested Bold amount + upfront fee.
         vars.ICR = LiquityMath._computeCR(_collAmount, vars.entireDebt, vars.price);
         _requireICRisAboveMCR(vars.ICR);
 
@@ -480,10 +480,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         troveManagerCached.setTroveStatusToActive(_troveId);
 
         address batchManager = interestBatchManagerOf[_troveId];
-        uint256 batchAnnualInteresRate;
+        uint256 batchAnnualInterestRate;
         if (batchManager != address(0)) {
             LatestBatchData memory batch = troveManagerCached.getLatestBatchData(batchManager);
-            batchAnnualInteresRate = batch.annualInterestRate;
+            batchAnnualInterestRate = batch.annualInterestRate;
         }
         _reInsertIntoSortedTroves(
             _troveId,
@@ -491,7 +491,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             _upperHint,
             _lowerHint,
             batchManager,
-            batchAnnualInteresRate
+            batchAnnualInterestRate
         );
     }
 
@@ -1116,7 +1116,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         _troveEntireDebt += _troveChange.upfrontFee;
 
-        // ICR is based on the composite debt, i.e. the requested Bold amount + Bold gas comp + upfront fee.
+        // ICR is based on the requested Bold amount + upfront fee.
         uint256 newICR = LiquityMath._computeCR(_troveEntireColl, _troveEntireDebt, price);
         _requireICRisAboveMCR(newICR);
 
