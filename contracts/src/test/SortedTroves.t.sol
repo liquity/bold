@@ -94,7 +94,7 @@ contract MockTroveManager {
         TroveId poppedId = _troveIds[_troveIds.length - 1];
         _troveIds.pop();
 
-        if (poppedId.notEquals(id)) {
+        if (poppedId != id) {
             uint256 removedTroveArrayIndex = _troves[id].arrayIndex;
             _troveIds[removedTroveArrayIndex] = poppedId;
             _troves[poppedId].arrayIndex = removedTroveArrayIndex;
@@ -307,7 +307,7 @@ contract SortedTrovesTest is Test {
     }
 
     function assertNe(TroveId a, TroveId b, string memory err) internal pure {
-        assertTrue(a.notEquals(b), err);
+        assertTrue(a != b, err);
     }
 
     ///
@@ -390,7 +390,7 @@ contract SortedTrovesTest is Test {
         while (curr.isNotEndOfList()) {
             console.log("  ", BatchId.unwrap(currBatch));
 
-            if (currBatch.notEquals(prevBatch)) {
+            if (currBatch != prevBatch) {
                 if (prevBatch.isNotZero()) {
                     assertFalse(seenBatches.has(prevBatch), "Batch already seen");
                     seenBatches.add(prevBatch);

@@ -371,7 +371,7 @@ contract SortedTroves is ISortedTroves {
         (
             nodes[_prevId].nextId == _nextId && nodes[_nextId].prevId == _prevId
             // they aren't part of the same batch
-            && (prevBatchId.notEquals(nodes[_nextId].batchId) || prevBatchId.isZero())
+            && (prevBatchId != nodes[_nextId].batchId || prevBatchId.isZero())
             // `_annualInterestRate` falls between the two nodes' interest rates
             && (_prevId == ROOT_NODE_ID || _troveManager.getTroveAnnualInterestRate(_prevId) >= _annualInterestRate)
                 && (_nextId == ROOT_NODE_ID || _annualInterestRate > _troveManager.getTroveAnnualInterestRate(_nextId))

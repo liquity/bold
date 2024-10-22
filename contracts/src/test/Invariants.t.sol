@@ -368,7 +368,7 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
             BatchId currBatch = sortedTroves.getBatchOf(curr);
 
             while (curr != 0) {
-                if (currBatch.notEquals(prevBatch)) {
+                if (currBatch != prevBatch) {
                     if (prevBatch.isNotZero()) {
                         assertFalse(seenBatches.has(prevBatch), "Batch already seen");
                         assertEq(prev, sortedTroves.getBatchTail(prevBatch), "Wrong batch tail");
