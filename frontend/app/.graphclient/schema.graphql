@@ -433,6 +433,7 @@ enum InterestBatch_orderBy {
 
 type InterestRateBracket {
   id: ID!
+  collateral: Collateral!
   rate: BigInt!
   totalDebt: BigInt!
   totalTroves: Int!
@@ -447,6 +448,27 @@ input InterestRateBracket_filter {
   id_lte: ID
   id_in: [ID!]
   id_not_in: [ID!]
+  collateral: String
+  collateral_not: String
+  collateral_gt: String
+  collateral_lt: String
+  collateral_gte: String
+  collateral_lte: String
+  collateral_in: [String!]
+  collateral_not_in: [String!]
+  collateral_contains: String
+  collateral_contains_nocase: String
+  collateral_not_contains: String
+  collateral_not_contains_nocase: String
+  collateral_starts_with: String
+  collateral_starts_with_nocase: String
+  collateral_not_starts_with: String
+  collateral_not_starts_with_nocase: String
+  collateral_ends_with: String
+  collateral_ends_with_nocase: String
+  collateral_not_ends_with: String
+  collateral_not_ends_with_nocase: String
+  collateral_: Collateral_filter
   rate: BigInt
   rate_not: BigInt
   rate_gt: BigInt
@@ -479,6 +501,13 @@ input InterestRateBracket_filter {
 
 enum InterestRateBracket_orderBy {
   id
+  collateral
+  collateral__id
+  collateral__collIndex
+  collateral__minCollRatio
+  collateral__totalDeposited
+  collateral__totalDebt
+  collateral__price
   rate
   totalDebt
   totalTroves
@@ -1444,16 +1473,24 @@ enum Token_orderBy {
 
 type Trove {
   id: ID!
-  batch: InterestBatch
   borrower: Bytes!
   closedAt: BigInt
   collateral: Collateral!
   createdAt: BigInt!
   debt: BigInt!
   deposit: BigInt!
+  interestBatch: InterestBatch
   interestRate: BigInt!
   stake: BigInt!
+  status: TroveStatus!
   troveId: String!
+}
+
+enum TroveStatus {
+  active
+  closedByOwner
+  closedByLiquidation
+  zombie
 }
 
 input Trove_filter {
@@ -1465,27 +1502,6 @@ input Trove_filter {
   id_lte: ID
   id_in: [ID!]
   id_not_in: [ID!]
-  batch: String
-  batch_not: String
-  batch_gt: String
-  batch_lt: String
-  batch_gte: String
-  batch_lte: String
-  batch_in: [String!]
-  batch_not_in: [String!]
-  batch_contains: String
-  batch_contains_nocase: String
-  batch_not_contains: String
-  batch_not_contains_nocase: String
-  batch_starts_with: String
-  batch_starts_with_nocase: String
-  batch_not_starts_with: String
-  batch_not_starts_with_nocase: String
-  batch_ends_with: String
-  batch_ends_with_nocase: String
-  batch_not_ends_with: String
-  batch_not_ends_with_nocase: String
-  batch_: InterestBatch_filter
   borrower: Bytes
   borrower_not: Bytes
   borrower_gt: Bytes
@@ -1549,6 +1565,27 @@ input Trove_filter {
   deposit_lte: BigInt
   deposit_in: [BigInt!]
   deposit_not_in: [BigInt!]
+  interestBatch: String
+  interestBatch_not: String
+  interestBatch_gt: String
+  interestBatch_lt: String
+  interestBatch_gte: String
+  interestBatch_lte: String
+  interestBatch_in: [String!]
+  interestBatch_not_in: [String!]
+  interestBatch_contains: String
+  interestBatch_contains_nocase: String
+  interestBatch_not_contains: String
+  interestBatch_not_contains_nocase: String
+  interestBatch_starts_with: String
+  interestBatch_starts_with_nocase: String
+  interestBatch_not_starts_with: String
+  interestBatch_not_starts_with_nocase: String
+  interestBatch_ends_with: String
+  interestBatch_ends_with_nocase: String
+  interestBatch_not_ends_with: String
+  interestBatch_not_ends_with_nocase: String
+  interestBatch_: InterestBatch_filter
   interestRate: BigInt
   interestRate_not: BigInt
   interestRate_gt: BigInt
@@ -1565,6 +1602,10 @@ input Trove_filter {
   stake_lte: BigInt
   stake_in: [BigInt!]
   stake_not_in: [BigInt!]
+  status: TroveStatus
+  status_not: TroveStatus
+  status_in: [TroveStatus!]
+  status_not_in: [TroveStatus!]
   troveId: String
   troveId_not: String
   troveId_gt: String
@@ -1593,13 +1634,6 @@ input Trove_filter {
 
 enum Trove_orderBy {
   id
-  batch
-  batch__id
-  batch__batchManager
-  batch__debt
-  batch__coll
-  batch__annualInterestRate
-  batch__annualManagementFee
   borrower
   closedAt
   collateral
@@ -1612,8 +1646,16 @@ enum Trove_orderBy {
   createdAt
   debt
   deposit
+  interestBatch
+  interestBatch__id
+  interestBatch__batchManager
+  interestBatch__debt
+  interestBatch__coll
+  interestBatch__annualInterestRate
+  interestBatch__annualManagementFee
   interestRate
   stake
+  status
   troveId
 }
 

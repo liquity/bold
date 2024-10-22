@@ -452,6 +452,7 @@ export type InterestBatch_orderBy =
 
 export type InterestRateBracket = {
   readonly id: Scalars['ID']['output'];
+  readonly collateral: Collateral;
   readonly rate: Scalars['BigInt']['output'];
   readonly totalDebt: Scalars['BigInt']['output'];
   readonly totalTroves: Scalars['Int']['output'];
@@ -466,6 +467,27 @@ export type InterestRateBracket_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly collateral?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly collateral_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly collateral_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_?: InputMaybe<Collateral_filter>;
   readonly rate?: InputMaybe<Scalars['BigInt']['input']>;
   readonly rate_not?: InputMaybe<Scalars['BigInt']['input']>;
   readonly rate_gt?: InputMaybe<Scalars['BigInt']['input']>;
@@ -498,6 +520,13 @@ export type InterestRateBracket_filter = {
 
 export type InterestRateBracket_orderBy =
   | 'id'
+  | 'collateral'
+  | 'collateral__id'
+  | 'collateral__collIndex'
+  | 'collateral__minCollRatio'
+  | 'collateral__totalDeposited'
+  | 'collateral__totalDebt'
+  | 'collateral__price'
   | 'rate'
   | 'totalDebt'
   | 'totalTroves';
@@ -1328,17 +1357,24 @@ export type Token_orderBy =
 
 export type Trove = {
   readonly id: Scalars['ID']['output'];
-  readonly batch?: Maybe<InterestBatch>;
   readonly borrower: Scalars['Bytes']['output'];
   readonly closedAt?: Maybe<Scalars['BigInt']['output']>;
   readonly collateral: Collateral;
   readonly createdAt: Scalars['BigInt']['output'];
   readonly debt: Scalars['BigInt']['output'];
   readonly deposit: Scalars['BigInt']['output'];
+  readonly interestBatch?: Maybe<InterestBatch>;
   readonly interestRate: Scalars['BigInt']['output'];
   readonly stake: Scalars['BigInt']['output'];
+  readonly status: TroveStatus;
   readonly troveId: Scalars['String']['output'];
 };
+
+export type TroveStatus =
+  | 'active'
+  | 'closedByOwner'
+  | 'closedByLiquidation'
+  | 'zombie';
 
 export type Trove_filter = {
   readonly id?: InputMaybe<Scalars['ID']['input']>;
@@ -1349,27 +1385,6 @@ export type Trove_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
-  readonly batch?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_gt?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_lt?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_gte?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_lte?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
-  readonly batch_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
-  readonly batch_contains?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not_contains?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_starts_with?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not_starts_with?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_ends_with?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not_ends_with?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_?: InputMaybe<InterestBatch_filter>;
   readonly borrower?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_not?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_gt?: InputMaybe<Scalars['Bytes']['input']>;
@@ -1433,6 +1448,27 @@ export type Trove_filter = {
   readonly deposit_lte?: InputMaybe<Scalars['BigInt']['input']>;
   readonly deposit_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
   readonly deposit_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly interestBatch?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly interestBatch_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly interestBatch_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_?: InputMaybe<InterestBatch_filter>;
   readonly interestRate?: InputMaybe<Scalars['BigInt']['input']>;
   readonly interestRate_not?: InputMaybe<Scalars['BigInt']['input']>;
   readonly interestRate_gt?: InputMaybe<Scalars['BigInt']['input']>;
@@ -1449,6 +1485,10 @@ export type Trove_filter = {
   readonly stake_lte?: InputMaybe<Scalars['BigInt']['input']>;
   readonly stake_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
   readonly stake_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly status?: InputMaybe<TroveStatus>;
+  readonly status_not?: InputMaybe<TroveStatus>;
+  readonly status_in?: InputMaybe<ReadonlyArray<TroveStatus>>;
+  readonly status_not_in?: InputMaybe<ReadonlyArray<TroveStatus>>;
   readonly troveId?: InputMaybe<Scalars['String']['input']>;
   readonly troveId_not?: InputMaybe<Scalars['String']['input']>;
   readonly troveId_gt?: InputMaybe<Scalars['String']['input']>;
@@ -1477,13 +1517,6 @@ export type Trove_filter = {
 
 export type Trove_orderBy =
   | 'id'
-  | 'batch'
-  | 'batch__id'
-  | 'batch__batchManager'
-  | 'batch__debt'
-  | 'batch__coll'
-  | 'batch__annualInterestRate'
-  | 'batch__annualManagementFee'
   | 'borrower'
   | 'closedAt'
   | 'collateral'
@@ -1496,8 +1529,16 @@ export type Trove_orderBy =
   | 'createdAt'
   | 'debt'
   | 'deposit'
+  | 'interestBatch'
+  | 'interestBatch__id'
+  | 'interestBatch__batchManager'
+  | 'interestBatch__debt'
+  | 'interestBatch__coll'
+  | 'interestBatch__annualInterestRate'
+  | 'interestBatch__annualManagementFee'
   | 'interestRate'
   | 'stake'
+  | 'status'
   | 'troveId';
 
 export type _Block_ = {

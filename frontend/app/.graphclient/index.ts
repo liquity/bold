@@ -475,6 +475,7 @@ export type InterestBatch_orderBy =
 
 export type InterestRateBracket = {
   readonly id: Scalars['ID']['output'];
+  readonly collateral: Collateral;
   readonly rate: Scalars['BigInt']['output'];
   readonly totalDebt: Scalars['BigInt']['output'];
   readonly totalTroves: Scalars['Int']['output'];
@@ -489,6 +490,27 @@ export type InterestRateBracket_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
+  readonly collateral?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly collateral_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly collateral_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly collateral_?: InputMaybe<Collateral_filter>;
   readonly rate?: InputMaybe<Scalars['BigInt']['input']>;
   readonly rate_not?: InputMaybe<Scalars['BigInt']['input']>;
   readonly rate_gt?: InputMaybe<Scalars['BigInt']['input']>;
@@ -521,6 +543,13 @@ export type InterestRateBracket_filter = {
 
 export type InterestRateBracket_orderBy =
   | 'id'
+  | 'collateral'
+  | 'collateral__id'
+  | 'collateral__collIndex'
+  | 'collateral__minCollRatio'
+  | 'collateral__totalDeposited'
+  | 'collateral__totalDebt'
+  | 'collateral__price'
   | 'rate'
   | 'totalDebt'
   | 'totalTroves';
@@ -1351,17 +1380,24 @@ export type Token_orderBy =
 
 export type Trove = {
   readonly id: Scalars['ID']['output'];
-  readonly batch?: Maybe<InterestBatch>;
   readonly borrower: Scalars['Bytes']['output'];
   readonly closedAt?: Maybe<Scalars['BigInt']['output']>;
   readonly collateral: Collateral;
   readonly createdAt: Scalars['BigInt']['output'];
   readonly debt: Scalars['BigInt']['output'];
   readonly deposit: Scalars['BigInt']['output'];
+  readonly interestBatch?: Maybe<InterestBatch>;
   readonly interestRate: Scalars['BigInt']['output'];
   readonly stake: Scalars['BigInt']['output'];
+  readonly status: TroveStatus;
   readonly troveId: Scalars['String']['output'];
 };
+
+export type TroveStatus =
+  | 'active'
+  | 'closedByOwner'
+  | 'closedByLiquidation'
+  | 'zombie';
 
 export type Trove_filter = {
   readonly id?: InputMaybe<Scalars['ID']['input']>;
@@ -1372,27 +1408,6 @@ export type Trove_filter = {
   readonly id_lte?: InputMaybe<Scalars['ID']['input']>;
   readonly id_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
   readonly id_not_in?: InputMaybe<ReadonlyArray<Scalars['ID']['input']>>;
-  readonly batch?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_gt?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_lt?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_gte?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_lte?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
-  readonly batch_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
-  readonly batch_contains?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not_contains?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_starts_with?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not_starts_with?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_ends_with?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not_ends_with?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  readonly batch_?: InputMaybe<InterestBatch_filter>;
   readonly borrower?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_not?: InputMaybe<Scalars['Bytes']['input']>;
   readonly borrower_gt?: InputMaybe<Scalars['Bytes']['input']>;
@@ -1456,6 +1471,27 @@ export type Trove_filter = {
   readonly deposit_lte?: InputMaybe<Scalars['BigInt']['input']>;
   readonly deposit_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
   readonly deposit_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly interestBatch?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_gt?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_lt?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_gte?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_lte?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly interestBatch_not_in?: InputMaybe<ReadonlyArray<Scalars['String']['input']>>;
+  readonly interestBatch_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not_contains?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly interestBatch_?: InputMaybe<InterestBatch_filter>;
   readonly interestRate?: InputMaybe<Scalars['BigInt']['input']>;
   readonly interestRate_not?: InputMaybe<Scalars['BigInt']['input']>;
   readonly interestRate_gt?: InputMaybe<Scalars['BigInt']['input']>;
@@ -1472,6 +1508,10 @@ export type Trove_filter = {
   readonly stake_lte?: InputMaybe<Scalars['BigInt']['input']>;
   readonly stake_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
   readonly stake_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
+  readonly status?: InputMaybe<TroveStatus>;
+  readonly status_not?: InputMaybe<TroveStatus>;
+  readonly status_in?: InputMaybe<ReadonlyArray<TroveStatus>>;
+  readonly status_not_in?: InputMaybe<ReadonlyArray<TroveStatus>>;
   readonly troveId?: InputMaybe<Scalars['String']['input']>;
   readonly troveId_not?: InputMaybe<Scalars['String']['input']>;
   readonly troveId_gt?: InputMaybe<Scalars['String']['input']>;
@@ -1500,13 +1540,6 @@ export type Trove_filter = {
 
 export type Trove_orderBy =
   | 'id'
-  | 'batch'
-  | 'batch__id'
-  | 'batch__batchManager'
-  | 'batch__debt'
-  | 'batch__coll'
-  | 'batch__annualInterestRate'
-  | 'batch__annualManagementFee'
   | 'borrower'
   | 'closedAt'
   | 'collateral'
@@ -1519,8 +1552,16 @@ export type Trove_orderBy =
   | 'createdAt'
   | 'debt'
   | 'deposit'
+  | 'interestBatch'
+  | 'interestBatch__id'
+  | 'interestBatch__batchManager'
+  | 'interestBatch__debt'
+  | 'interestBatch__coll'
+  | 'interestBatch__annualInterestRate'
+  | 'interestBatch__annualManagementFee'
   | 'interestRate'
   | 'stake'
+  | 'status'
   | 'troveId';
 
 export type _Block_ = {
@@ -1689,6 +1730,7 @@ export type ResolversTypes = ResolversObject<{
   Token_filter: Token_filter;
   Token_orderBy: Token_orderBy;
   Trove: ResolverTypeWrapper<Trove>;
+  TroveStatus: TroveStatus;
   Trove_filter: Trove_filter;
   Trove_orderBy: Trove_orderBy;
   _Block_: ResolverTypeWrapper<_Block_>;
@@ -1817,6 +1859,7 @@ export type InterestBatchResolvers<ContextType = MeshContext, ParentType extends
 
 export type InterestRateBracketResolvers<ContextType = MeshContext, ParentType extends ResolversParentTypes['InterestRateBracket'] = ResolversParentTypes['InterestRateBracket']> = ResolversObject<{
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  collateral?: Resolver<ResolversTypes['Collateral'], ParentType, ContextType>;
   rate?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   totalDebt?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   totalTroves?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
@@ -1923,15 +1966,16 @@ export type TokenResolvers<ContextType = MeshContext, ParentType extends Resolve
 
 export type TroveResolvers<ContextType = MeshContext, ParentType extends ResolversParentTypes['Trove'] = ResolversParentTypes['Trove']> = ResolversObject<{
   id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
-  batch?: Resolver<Maybe<ResolversTypes['InterestBatch']>, ParentType, ContextType>;
   borrower?: Resolver<ResolversTypes['Bytes'], ParentType, ContextType>;
   closedAt?: Resolver<Maybe<ResolversTypes['BigInt']>, ParentType, ContextType>;
   collateral?: Resolver<ResolversTypes['Collateral'], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   debt?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   deposit?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  interestBatch?: Resolver<Maybe<ResolversTypes['InterestBatch']>, ParentType, ContextType>;
   interestRate?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   stake?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes['TroveStatus'], ParentType, ContextType>;
   troveId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
@@ -2026,7 +2070,7 @@ const liquity2Transforms = [];
 const additionalTypeDefs = [] as any[];
 const liquity2Handler = new GraphqlHandler({
               name: "liquity2",
-              config: {"endpoint":"https://api.studio.thegraph.com/query/42403/liquity2/version/latest"},
+              config: {"endpoint":"http://localhost:8000/subgraphs/name/liquity2"},
               baseDir,
               cache,
               pubsub,
@@ -2047,14 +2091,15 @@ const merger = new(BareMerger as any)({
         store: rootStore.child('bareMerger')
       })
 const documentHashMap = {
-        "b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5": TrovesByAccountDocument,
-"b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5": TrovesCountDocument,
-"b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5": TroveByIdDocument,
-"b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5": StabilityPoolDocument,
-"b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5": StabilityPoolDepositsByAccountDocument,
-"b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5": StabilityPoolDepositDocument,
-"b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5": StabilityPoolEpochScaleDocument,
-"b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5": InterestBatchDocument
+        "3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": TrovesByAccountDocument,
+"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": InterestRateBracketsDocument,
+"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": TrovesCountDocument,
+"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": TroveByIdDocument,
+"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": StabilityPoolDocument,
+"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": StabilityPoolDepositsByAccountDocument,
+"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": StabilityPoolDepositDocument,
+"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": StabilityPoolEpochScaleDocument,
+"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": InterestBatchDocument
       }
 additionalEnvelopPlugins.push(usePersistedOperations({
         getPersistedOperation(key) {
@@ -2081,56 +2126,63 @@ additionalEnvelopPlugins.push(usePersistedOperations({
           return printWithCache(TrovesByAccountDocument);
         },
         location: 'TrovesByAccountDocument.graphql',
-        sha256Hash: 'b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5'
+        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
+      },{
+        document: InterestRateBracketsDocument,
+        get rawSDL() {
+          return printWithCache(InterestRateBracketsDocument);
+        },
+        location: 'InterestRateBracketsDocument.graphql',
+        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
       },{
         document: TrovesCountDocument,
         get rawSDL() {
           return printWithCache(TrovesCountDocument);
         },
         location: 'TrovesCountDocument.graphql',
-        sha256Hash: 'b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5'
+        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
       },{
         document: TroveByIdDocument,
         get rawSDL() {
           return printWithCache(TroveByIdDocument);
         },
         location: 'TroveByIdDocument.graphql',
-        sha256Hash: 'b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5'
+        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
       },{
         document: StabilityPoolDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDocument);
         },
         location: 'StabilityPoolDocument.graphql',
-        sha256Hash: 'b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5'
+        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
       },{
         document: StabilityPoolDepositsByAccountDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDepositsByAccountDocument);
         },
         location: 'StabilityPoolDepositsByAccountDocument.graphql',
-        sha256Hash: 'b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5'
+        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
       },{
         document: StabilityPoolDepositDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDepositDocument);
         },
         location: 'StabilityPoolDepositDocument.graphql',
-        sha256Hash: 'b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5'
+        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
       },{
         document: StabilityPoolEpochScaleDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolEpochScaleDocument);
         },
         location: 'StabilityPoolEpochScaleDocument.graphql',
-        sha256Hash: 'b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5'
+        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
       },{
         document: InterestBatchDocument,
         get rawSDL() {
           return printWithCache(InterestBatchDocument);
         },
         location: 'InterestBatchDocument.graphql',
-        sha256Hash: 'b1a1a7e79436bad1b613b6e5887c2ff29b1032d991b678ea06b5b4e4a080a8d5'
+        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
       }
     ];
     },
@@ -2195,8 +2247,15 @@ export type TrovesByAccountQuery = { readonly troves: ReadonlyArray<(
     & { readonly collateral: (
       Pick<Collateral, 'id' | 'minCollRatio' | 'collIndex'>
       & { readonly token: Pick<Token, 'symbol' | 'name'> }
-    ), readonly batch?: Maybe<Pick<InterestBatch, 'id' | 'annualInterestRate' | 'annualManagementFee' | 'batchManager'>> }
+    ), readonly interestBatch?: Maybe<Pick<InterestBatch, 'id' | 'annualInterestRate' | 'annualManagementFee' | 'batchManager'>> }
   )> };
+
+export type InterestRateBracketsQueryVariables = Exact<{
+  collId: Scalars['String']['input'];
+}>;
+
+
+export type InterestRateBracketsQuery = { readonly interestRateBrackets: ReadonlyArray<Pick<InterestRateBracket, 'id' | 'rate' | 'totalDebt'>> };
 
 export type TrovesCountQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -2215,7 +2274,7 @@ export type TroveByIdQuery = { readonly trove?: Maybe<(
     & { readonly collateral: (
       Pick<Collateral, 'id' | 'minCollRatio' | 'collIndex'>
       & { readonly token: Pick<Token, 'symbol' | 'name'> }
-    ), readonly batch?: Maybe<Pick<InterestBatch, 'id' | 'annualInterestRate' | 'annualManagementFee' | 'batchManager'>> }
+    ), readonly interestBatch?: Maybe<Pick<InterestBatch, 'id' | 'annualInterestRate' | 'annualManagementFee' | 'batchManager'>> }
   )> };
 
 export type StabilityPoolQueryVariables = Exact<{
@@ -2284,7 +2343,7 @@ export const TrovesByAccountDocument = gql`
       minCollRatio
       collIndex
     }
-    batch {
+    interestBatch {
       id
       annualInterestRate
       annualManagementFee
@@ -2293,6 +2352,15 @@ export const TrovesByAccountDocument = gql`
   }
 }
     ` as unknown as DocumentNode<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
+export const InterestRateBracketsDocument = gql`
+    query InterestRateBrackets($collId: String!) {
+  interestRateBrackets(where: {collateral: $collId}) {
+    id
+    rate
+    totalDebt
+  }
+}
+    ` as unknown as DocumentNode<InterestRateBracketsQuery, InterestRateBracketsQueryVariables>;
 export const TrovesCountDocument = gql`
     query TrovesCount($id: ID!) {
   borrowerInfo(id: $id) {
@@ -2322,7 +2390,7 @@ export const TroveByIdDocument = gql`
       minCollRatio
       collIndex
     }
-    batch {
+    interestBatch {
       id
       annualInterestRate
       annualManagementFee
@@ -2409,11 +2477,15 @@ export const InterestBatchDocument = gql`
 
 
 
+
 export type Requester<C = {}, E = unknown> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C, E>(requester: Requester<C, E>) {
   return {
     TrovesByAccount(variables: TrovesByAccountQueryVariables, options?: C): Promise<TrovesByAccountQuery> {
       return requester<TrovesByAccountQuery, TrovesByAccountQueryVariables>(TrovesByAccountDocument, variables, options) as Promise<TrovesByAccountQuery>;
+    },
+    InterestRateBrackets(variables: InterestRateBracketsQueryVariables, options?: C): Promise<InterestRateBracketsQuery> {
+      return requester<InterestRateBracketsQuery, InterestRateBracketsQueryVariables>(InterestRateBracketsDocument, variables, options) as Promise<InterestRateBracketsQuery>;
     },
     TrovesCount(variables: TrovesCountQueryVariables, options?: C): Promise<TrovesCountQuery> {
       return requester<TrovesCountQuery, TrovesCountQueryVariables>(TrovesCountDocument, variables, options) as Promise<TrovesCountQuery>;
