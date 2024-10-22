@@ -1362,13 +1362,13 @@ contract ZapperLeverageMainnet is DevTestSetup {
         vm.stopPrank();
     }
 
-    function openTrove(IZapper _zapper, address _account, uint256 _collAmount, uint256 _boldAmount, bool _lst)
+    function openTrove(IZapper _zapper, address _account, uint256 _index, uint256 _collAmount, uint256 _boldAmount, bool _lst)
         internal
         returns (uint256)
     {
         IZapper.OpenTroveParams memory openParams = IZapper.OpenTroveParams({
             owner: _account,
-            ownerIndex: 0,
+            ownerIndex: _index,
             collAmount: _collAmount,
             boldAmount: _boldAmount,
             upperHint: 0,
@@ -1394,10 +1394,10 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 boldAmount = 10000e18;
 
         bool lst = _branch > 0;
-        uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
+        uint256 troveId = openTrove(_zapper, A, 0, collAmount, boldAmount, lst);
 
         // open a 2nd trove so we can close the 1st one
-        openTrove(_zapper, B, 100 ether, 10000e18, lst);
+        openTrove(_zapper, B, 0, 100 ether, 10000e18, lst);
 
         uint256 boldBalanceBefore = boldToken.balanceOf(A);
         uint256 collBalanceBefore = contractsArray[_branch].collToken.balanceOf(A);
@@ -1488,7 +1488,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 boldAmount = 10000e18;
 
         bool lst = _branch > 0;
-        uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
+        uint256 troveId = openTrove(_zapper, A, 0, collAmount, boldAmount, lst);
 
         // B tries to close A’s trove
         uint256 flashLoanAmount =
@@ -1532,7 +1532,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 boldAmount = 10000e18;
 
         bool lst = _branch > 0;
-        uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
+        uint256 troveId = openTrove(_zapper, A, 0, collAmount, boldAmount, lst);
 
         // B tries to close A’s trove calling our flash loan provider module
         uint256 flashLoanAmount =
@@ -1582,7 +1582,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 boldAmount = 10000e18;
 
         bool lst = _branch > 0;
-        uint256 troveId = openTrove(_zapper, A, collAmount, boldAmount, lst);
+        uint256 troveId = openTrove(_zapper, A, 0, collAmount, boldAmount, lst);
 
         // B tries to close A’s trove calling Balancer Vault directly
         uint256 flashLoanAmount =
@@ -1607,6 +1607,37 @@ contract ZapperLeverageMainnet is DevTestSetup {
 
         // Check receiver is back to zero
         assertEq(address(flashLoanProvider.receiver()), address(0), "Receiver should be zero");
+    }
+
+    function testApprovalIsNotReset() external {
+        for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
+            _testApprovalIsNotReset(leverageZapperCurveArray[i], ExchangeType.Curve, i);
+            _testApprovalIsNotReset(leverageZapperUniV3Array[i], ExchangeType.UniV3, i);
+        }
+        for (uint256 i = 0; i < 3; i++) {
+            _testApprovalIsNotReset(leverageZapperHybridArray[i], ExchangeType.HybridCurveUniV3, i);
+        }
+    }
+
+    function _testApprovalIsNotReset(ILeverageZapper _leverageZapper, ExchangeType _exchangeType, uint256 _branch) internal {
+        // Open non leveraged trove
+        openTrove(_leverageZapper, A, uint256(_exchangeType) * 2, 10 ether, 10000e18, _branch > 0);
+
+        // Now try to open leveraged trove, it should still work
+        OpenLeveragedTroveWithIndexParams memory openTroveParams;
+        openTroveParams.leverageZapper = _leverageZapper;
+        openTroveParams.collToken = contractsArray[_branch].collToken;
+        openTroveParams.index = uint256(_exchangeType) * 2 + 1;
+        openTroveParams.collAmount = 10 ether;
+        openTroveParams.leverageRatio = 1.5 ether;
+        openTroveParams.priceFeed = contractsArray[_branch].priceFeed;
+        openTroveParams.exchangeType = _exchangeType;
+        openTroveParams.branch = _branch;
+        openTroveParams.batchManager = address(0);
+        uint256 troveId = openLeveragedTroveWithIndex(openTroveParams);
+
+        assertGt(getTroveEntireColl(contractsArray[_branch].troveManager, troveId), 0);
+        assertGt(getTroveEntireDebt(contractsArray[_branch].troveManager, troveId), 0);
     }
 
     // helper price functions
