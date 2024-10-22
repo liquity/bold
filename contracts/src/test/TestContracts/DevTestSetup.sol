@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "./BaseTest.sol";
 import {TestDeployer} from "./Deployment.t.sol";

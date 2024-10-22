@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import {IBoldToken} from "../Interfaces/IBoldToken.sol";
 import {IStabilityPool} from "../Interfaces/IStabilityPool.sol";
