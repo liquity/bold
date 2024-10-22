@@ -4,39 +4,18 @@ pragma solidity ^0.8.18;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "../Interfaces/IBorrowerOperations.sol";
-import "../Interfaces/IWETH.sol";
 import "./GasCompZapper.sol";
-import "../Dependencies/AddRemoveManagers.sol";
 import "../Dependencies/Constants.sol";
 
 contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
     using SafeERC20 for IERC20;
 
-    IPriceFeed public immutable priceFeed;
-
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
         GasCompZapper(_addressesRegistry, _flashLoanProvider, _exchange)
     {
-        // Cache contracts
-        IBorrowerOperations _borrowerOperations = borrowerOperations;
-
-        priceFeed = _addressesRegistry.priceFeed();
-
-        // Approve WETH to BorrowerOperations
-        WETH.approve(address(_borrowerOperations), type(uint256).max);
-        // Approve coll to BorrowerOperations
-        collToken.approve(address(_borrowerOperations), type(uint256).max);
-
+        // Approval of WETH and Coll to BorrowerOperations is done in parent GasCompZapper
         // Approve Bold to exchange module (Coll is approved in parent GasCompZapper)
         boldToken.approve(address(_exchange), type(uint256).max);
-    }
-
-    struct OpenLeveragedTroveVars {
-        uint256 troveId;
-        IBorrowerOperations borrowerOperations;
-        IERC20 collToken;
-        uint256 boldAmount;
     }
 
     function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable {
@@ -72,16 +51,13 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
     ) external override {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 
-        OpenLeveragedTroveVars memory vars;
-        vars.borrowerOperations = borrowerOperations;
-        vars.collToken = collToken;
-
         uint256 totalCollAmount = _params.collAmount + _effectiveFlashLoanAmount;
         // We compute boldAmount off-chain for efficiency
 
         // Open trove
+        uint256 troveId;
         if (_params.batchManager == address(0)) {
-            vars.troveId = vars.borrowerOperations.openTrove(
+            troveId = borrowerOperations.openTrove(
                 _params.owner,
                 _params.ownerIndex,
                 totalCollAmount,
@@ -114,19 +90,19 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
                     removeManager: address(this), // remove manager
                     receiver: address(this) // receiver for remove manager
                 });
-            vars.troveId =
-                vars.borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
+            troveId =
+                borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
         }
 
         // Set add/remove managers
-        _setAddManager(vars.troveId, _params.addManager);
-        _setRemoveManagerAndReceiver(vars.troveId, _params.removeManager, _params.receiver);
+        _setAddManager(troveId, _params.addManager);
+        _setRemoveManagerAndReceiver(troveId, _params.removeManager, _params.receiver);
 
         // Swap Bold to Coll
         exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount);
 
         // Send coll back to return flash loan
-        vars.collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
+        collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
     }
 
     function leverUpTrove(LeverUpTroveParams calldata _params) external {

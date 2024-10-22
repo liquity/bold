@@ -2,39 +2,20 @@
 
 pragma solidity ^0.8.18;
 
-import "../Interfaces/IBorrowerOperations.sol";
-import "../Interfaces/IWETH.sol";
 import "./WETHZapper.sol";
-import "../Dependencies/AddRemoveManagers.sol";
 import "../Dependencies/Constants.sol";
 import "./Interfaces/ILeverageZapper.sol";
 
 // TODO: unwrap WETH in _returnLeftovers
 
 contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
-    IPriceFeed public immutable priceFeed;
 
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
         WETHZapper(_addressesRegistry, _flashLoanProvider, _exchange)
     {
-        // Cache contracts
-        IBorrowerOperations _borrowerOperations = borrowerOperations;
-
-        priceFeed = _addressesRegistry.priceFeed();
-
-        // Approve coll to BorrowerOperations
-        WETH.approve(address(_borrowerOperations), type(uint256).max);
-
+        // Approval of coll (WETH) to BorrowerOperations is done in parent WETHZapper
         // Approve Bold to exchange module (Coll is approved in parent WETHZapper)
         boldToken.approve(address(_exchange), type(uint256).max);
-    }
-
-    struct OpenLeveragedTroveVars {
-        uint256 troveId;
-        IBorrowerOperations borrowerOperations;
-        IWETH WETH;
-        IBoldToken boldToken;
-        uint256 boldAmount;
     }
 
     function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable {
@@ -67,17 +48,13 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
     ) external override {
         require(msg.sender == address(flashLoanProvider), "LZ: Caller not FlashLoan provider");
 
-        OpenLeveragedTroveVars memory vars;
-        vars.borrowerOperations = borrowerOperations;
-        vars.WETH = WETH;
-        vars.boldToken = boldToken;
-
         uint256 totalCollAmount = _params.collAmount + _effectiveFlashLoanAmount;
         // We compute boldAmount off-chain for efficiency
 
+        uint256 troveId;
         // Open trove
         if (_params.batchManager == address(0)) {
-            vars.troveId = vars.borrowerOperations.openTrove(
+            troveId = borrowerOperations.openTrove(
                 _params.owner,
                 _params.ownerIndex,
                 totalCollAmount,
@@ -110,19 +87,19 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
                     removeManager: address(this), // remove manager
                     receiver: address(this) // receiver for remove manager
                 });
-            vars.troveId =
-                vars.borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
+            troveId =
+                borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
         }
 
         // Set add/remove managers
-        _setAddManager(vars.troveId, _params.addManager);
-        _setRemoveManagerAndReceiver(vars.troveId, _params.removeManager, _params.receiver);
+        _setAddManager(troveId, _params.addManager);
+        _setRemoveManagerAndReceiver(troveId, _params.removeManager, _params.receiver);
 
         // Swap Bold to Coll
         exchange.swapFromBold(_params.boldAmount, _params.flashLoanAmount);
 
         // Send coll back to return flash loan
-        vars.WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
+        WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
         // WETH reverts on failure: https://etherscan.io/token/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2#code
     }
 
