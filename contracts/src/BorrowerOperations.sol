@@ -982,14 +982,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         newBatchTroveChange.newWeightedRecordedDebt =
             (vars.newBatch.entireDebtWithoutRedistribution + vars.trove.entireDebt) * vars.newBatch.annualInterestRate;
 
-        // We may check the old rate to see if it’s different than the new one, but then we should check the
-        // last interest adjustment times to avoid gaming. So we decided to keep it simple and account it always
-        // as a change. It’s probably not so common to join a batch with the exact same interest rate.
-        // Apply upfront fee on premature adjustments
-        if (block.timestamp < vars.trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN) {
-            vars.trove.entireDebt =
-                _applyUpfrontFee(vars.trove.entireColl, vars.trove.entireDebt, newBatchTroveChange, _maxUpfrontFee);
-        }
+        // An upfront fee is always charged upon joining a batch to ensure that borrowers can not game the fee logic
+        // and gain free interest rate updates (e.g. if they also manage the batch they joined)
+        vars.trove.entireDebt =
+            _applyUpfrontFee(vars.trove.entireColl, vars.trove.entireDebt, newBatchTroveChange, _maxUpfrontFee);
 
         // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee
         newBatchTroveChange.newWeightedRecordedDebt =

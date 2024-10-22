@@ -340,12 +340,13 @@ contract BatchManagementFeeTest is DevTestSetup {
         uint256 troveInitialDebt = troveManager.getTroveDebt(troveId);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
         uint256 troveAccruedManagementFee = troveManager.calcTroveAccruedBatchManagementFee(troveId);
+        uint256 upfrontFee = predictJoinBatchInterestRateUpfrontFee(troveId, B);
         assertEq(troveAccruedManagementFee, 0, "Trove accrued fee should be zero");
 
         // Add trove to batch
         setInterestBatchManager(C, troveId, B);
 
-        assertApproxEqAbs(troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest, 1);
+        assertApproxEqAbs(troveManager.getTroveDebt(troveId), troveInitialDebt + troveAccruedInterest + upfrontFee, 1);
     }
 
     function testAddTroveToBatchIncreasesDebtInActivePoolByFee() public {
@@ -359,13 +360,14 @@ contract BatchManagementFeeTest is DevTestSetup {
         uint256 batchAccruedInterest = troveManager.calcBatchAccruedInterest(B);
         uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
         uint256 troveAccruedInterest = troveManager.calcTroveAccruedInterest(troveId);
+        uint256 upfrontFee = predictJoinBatchInterestRateUpfrontFee(troveId, B);
 
         // Add trove to batch
         setInterestBatchManager(C, troveId, B);
 
         assertApproxEqAbs(
             activePool.aggRecordedDebt(),
-            activePoolInitialDebt + batchAccruedInterest + batchAccruedManagementFee + troveAccruedInterest,
+            activePoolInitialDebt + batchAccruedInterest + batchAccruedManagementFee + troveAccruedInterest + upfrontFee,
             10
         );
     }
