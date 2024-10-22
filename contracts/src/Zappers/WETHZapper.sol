@@ -150,7 +150,7 @@ contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
         borrowerOperations.repayBold(_troveId, _boldAmount);
 
         // return leftovers to user
-        _returnLeftovers(WETH, boldToken, initialBalances);
+        _returnLeftovers(initialBalances);
     }
 
     function adjustTroveWithRawETH(
@@ -238,8 +238,8 @@ contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
 
         // return BOLD leftovers to user (trying to repay more than possible)
         uint256 currentBoldBalance = boldToken.balanceOf(address(this));
-        if (currentBoldBalance > _initialBalances.boldBalance) {
-            boldToken.transfer(_initialBalances.receiver, currentBoldBalance - _initialBalances.boldBalance);
+        if (currentBoldBalance > _initialBalances.balances[1]) {
+            boldToken.transfer(_initialBalances.receiver, currentBoldBalance - _initialBalances.balances[1]);
         }
         // There shouldn’t be Collateral leftovers, everything sent should end up in the trove
 
@@ -276,7 +276,9 @@ contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalancesAndReceiver(WETH, boldToken, initialBalances, receiver);
+        initialBalances.tokens[0] = WETH;
+        initialBalances.tokens[1] = boldToken;
+        _setInitialBalancesAndReceiver(initialBalances, receiver);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
@@ -284,7 +286,7 @@ contract WETHZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
         );
 
         // return leftovers to user
-        _returnLeftovers(WETH, boldToken, initialBalances);
+        _returnLeftovers(initialBalances);
     }
 
     function receiveFlashLoanOnCloseTroveFromCollateral(

@@ -158,7 +158,7 @@ contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZappe
         borrowerOperations.repayBold(_troveId, _boldAmount);
 
         // return leftovers to user
-        _returnLeftovers(collToken, boldToken, initialBalances);
+        _returnLeftovers(initialBalances);
     }
 
     function adjustTrove(
@@ -244,7 +244,7 @@ contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZappe
         }
 
         // return leftovers to user
-        _returnLeftovers(collToken, boldToken, _initialBalances);
+        _returnLeftovers(_initialBalances);
     }
 
     function closeTroveToRawETH(uint256 _troveId) external {
@@ -273,7 +273,9 @@ contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZappe
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalancesAndReceiver(collToken, boldToken, initialBalances, receiver);
+        initialBalances.tokens[0] = collToken;
+        initialBalances.tokens[1] = boldToken;
+        _setInitialBalancesAndReceiver(initialBalances, receiver);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
@@ -281,7 +283,7 @@ contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZappe
         );
 
         // return leftovers to user
-        _returnLeftovers(collToken, boldToken, initialBalances);
+        _returnLeftovers(initialBalances);
     }
 
     function receiveFlashLoanOnCloseTroveFromCollateral(

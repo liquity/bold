@@ -8,8 +8,8 @@ import "../Interfaces/IBoldToken.sol";
 
 contract LeftoversSweep {
     struct InitialBalances {
-        uint256 boldBalance;
-        uint256 collBalance;
+        IERC20[4] tokens; // paving the way for completely dynamic routes
+        uint256[4] balances;
         address receiver;
     }
 
@@ -17,30 +17,34 @@ contract LeftoversSweep {
         internal
         view
     {
-        _setInitialBalancesAndReceiver(_collToken, _boldToken, _initialBalances, msg.sender);
+        _initialBalances.tokens[0] = _collToken;
+        _initialBalances.tokens[1] = _boldToken;
+        _setInitialBalancesAndReceiver(_initialBalances, msg.sender);
     }
 
-    function _setInitialBalancesAndReceiver(
-        IERC20 _collToken,
-        IBoldToken _boldToken,
-        InitialBalances memory _initialBalances,
-        address _receiver
-    ) internal view {
-        _initialBalances.boldBalance = _boldToken.balanceOf(address(this));
-        _initialBalances.collBalance = _collToken.balanceOf(address(this));
+    function _setInitialBalances(InitialBalances memory _initialBalances) internal view {
+        _setInitialBalancesAndReceiver(_initialBalances, msg.sender);
+    }
+
+    function _setInitialBalancesAndReceiver(InitialBalances memory _initialBalances, address _receiver) internal view {
+        for (uint256 i = 0; i < _initialBalances.tokens.length; i++) {
+            if (address(_initialBalances.tokens[i]) == address(0)) break;
+
+            _initialBalances.balances[i] = _initialBalances.tokens[i].balanceOf(address(this));
+        }
         _initialBalances.receiver = _receiver;
     }
 
-    function _returnLeftovers(IERC20 _collToken, IBoldToken _boldToken, InitialBalances memory _initialBalances)
-        internal
-    {
-        uint256 currentCollBalance = _collToken.balanceOf(address(this));
-        if (currentCollBalance > _initialBalances.collBalance) {
-            _collToken.transfer(_initialBalances.receiver, currentCollBalance - _initialBalances.collBalance);
-        }
-        uint256 currentBoldBalance = _boldToken.balanceOf(address(this));
-        if (currentBoldBalance > _initialBalances.boldBalance) {
-            _boldToken.transfer(_initialBalances.receiver, currentBoldBalance - _initialBalances.boldBalance);
+    function _returnLeftovers(InitialBalances memory _initialBalances) internal {
+        for (uint256 i = 0; i < _initialBalances.tokens.length; i++) {
+            if (address(_initialBalances.tokens[i]) == address(0)) break;
+
+            uint256 currentBalance = _initialBalances.tokens[i].balanceOf(address(this));
+            if (currentBalance > _initialBalances.balances[i]) {
+                _initialBalances.tokens[i].transfer(
+                    _initialBalances.receiver, currentBalance - _initialBalances.balances[i]
+                );
+            }
         }
     }
 }
