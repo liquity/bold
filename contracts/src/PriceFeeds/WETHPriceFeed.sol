@@ -5,8 +5,6 @@ pragma solidity 0.8.18;
 import "./MainnetPriceFeedBase.sol";
 import "../Interfaces/IWETHPriceFeed.sol";
 
-
-
 contract WETHPriceFeed is MainnetPriceFeedBase, IWETHPriceFeed {
     Oracle public ethUsdOracle;
 

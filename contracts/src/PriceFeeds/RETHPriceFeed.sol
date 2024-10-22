@@ -5,8 +5,6 @@ pragma solidity 0.8.18;
 import "./CompositePriceFeed.sol";
 import "../Dependencies/IRETHToken.sol";
 
-
-
 contract RETHPriceFeed is CompositePriceFeed {
     constructor(
         address _owner,

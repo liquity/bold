@@ -15,8 +15,6 @@ import "./Interfaces/IFlashLoanReceiver.sol";
 import "./Interfaces/IExchange.sol";
 import "./Interfaces/IZapper.sol";
 
-
-
 contract GasCompZapper is LeftoversSweep, BaseZapper, IFlashLoanReceiver, IZapper {
     using SafeERC20 for IERC20;
 

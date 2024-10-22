@@ -7,8 +7,6 @@ import "./Dependencies/LiquityMath.sol";
 import "./Dependencies/Constants.sol";
 import "./Interfaces/IHintHelpers.sol";
 
-
-
 contract HintHelpers is IHintHelpers {
     string public constant NAME = "HintHelpers";
 

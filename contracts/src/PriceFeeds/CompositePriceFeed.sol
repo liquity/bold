@@ -6,8 +6,6 @@ import "../Dependencies/LiquityMath.sol";
 import "./MainnetPriceFeedBase.sol";
 import "../Interfaces/ICompositePriceFeed.sol";
 
-
-
 // Composite PriceFeed: outputs an LST-USD price derived from two external price Oracles: LST-ETH, and ETH-USD.
 // Used where the LST token is non-rebasing (as per rETH, osETH, ETHx, etc).
 contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {

@@ -12,8 +12,6 @@ import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
 
-
-
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
  *

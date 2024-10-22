@@ -12,8 +12,6 @@ import "./UniswapV3/IQuoterV2.sol";
 import "../../Interfaces/IExchange.sol";
 import {DECIMAL_PRECISION} from "../../../Dependencies/Constants.sol";
 
-
-
 contract UniV3Exchange is LeftoversSweep, IExchange {
     using SafeERC20 for IERC20;
 

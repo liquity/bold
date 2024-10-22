@@ -8,8 +8,6 @@ import "./Interfaces/IDefaultPool.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IActivePool.sol";
 
-
-
 /*
  * The Default Pool holds the Coll and Bold debt (but not Bold tokens) from liquidations that have been redistributed
  * to active troves but not yet "applied", i.e. not yet recorded on a recipient active trove's struct.

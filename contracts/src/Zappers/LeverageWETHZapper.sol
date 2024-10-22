@@ -9,8 +9,6 @@ import "../Dependencies/AddRemoveManagers.sol";
 import "../Dependencies/Constants.sol";
 import "./Interfaces/ILeverageZapper.sol";
 
-
-
 // TODO: unwrap WETH in _returnLeftovers
 
 contract LeverageWETHZapper is WETHZapper, ILeverageZapper {

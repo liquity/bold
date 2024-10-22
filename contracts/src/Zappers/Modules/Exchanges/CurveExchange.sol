@@ -8,8 +8,6 @@ import "../../../Interfaces/IBoldToken.sol";
 import "./Curve/ICurvePool.sol";
 import "../../Interfaces/IExchange.sol";
 
-
-
 contract CurveExchange is IExchange {
     using SafeERC20 for IERC20;
 

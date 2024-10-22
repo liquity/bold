@@ -7,8 +7,6 @@ import "../Dependencies/AggregatorV3Interface.sol";
 import "../Interfaces/IPriceFeed.sol";
 import "../BorrowerOperations.sol";
 
-
-
 abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
     // Dummy flag raised when the collateral branch gets shut down.
     // Should be removed after actual shutdown logic is implemented.
