@@ -567,8 +567,7 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         IWETH _weth
     ) internal returns (GasCompZapper gasCompZapper, WETHZapper wethZapper, ILeverageZapper leverageZapper) {
         IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
-        IExchange uniV3Exchange =
-            new UniV3Exchange(_collToken, _boldToken, UNIV3_FEE, uniV3RouterSepolia);
+        IExchange uniV3Exchange = new UniV3Exchange(_collToken, _boldToken, UNIV3_FEE, uniV3RouterSepolia);
 
         bool lst = _collToken != _weth;
         if (lst) {

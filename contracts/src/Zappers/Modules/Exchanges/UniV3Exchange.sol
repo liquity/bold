@@ -19,12 +19,7 @@ contract UniV3Exchange is LeftoversSweep, IExchange {
     uint24 public immutable fee;
     ISwapRouter public immutable uniV3Router;
 
-    constructor(
-        IERC20 _collToken,
-        IBoldToken _boldToken,
-        uint24 _fee,
-        ISwapRouter _uniV3Router
-    ) {
+    constructor(IERC20 _collToken, IBoldToken _boldToken, uint24 _fee, ISwapRouter _uniV3Router) {
         collToken = _collToken;
         boldToken = _boldToken;
         fee = _fee;
