@@ -96,7 +96,6 @@ contract CollateralRegistry is ICollateralRegistry {
     {
         _requireValidMaxFeePercentage(_maxFeePercentage);
         _requireAmountGreaterThanZero(_boldAmount);
-        _requireBoldBalanceCoversRedemption(boldToken, msg.sender, _boldAmount);
 
         RedemptionTotals memory totals;
 
@@ -304,18 +303,5 @@ contract CollateralRegistry is ICollateralRegistry {
 
     function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
         require(_amount > 0, "CollateralRegistry: Amount must be greater than zero");
-    }
-
-    function _requireBoldBalanceCoversRedemption(IBoldToken _boldToken, address _redeemer, uint256 _amount)
-        internal
-        view
-    {
-        uint256 boldBalance = _boldToken.balanceOf(_redeemer);
-        // Confirm redeemer's balance is less than total Bold supply
-        assert(boldBalance <= _boldToken.totalSupply());
-        require(
-            boldBalance >= _amount,
-            "CollateralRegistry: Requested redemption amount must be <= user's Bold token balance"
-        );
     }
 }

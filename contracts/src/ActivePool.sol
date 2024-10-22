@@ -29,10 +29,10 @@ contract ActivePool is IActivePool {
     address public immutable troveManagerAddress;
     address public immutable defaultPoolAddress;
 
-    IBoldToken boldToken;
+    IBoldToken public immutable boldToken;
 
-    IInterestRouter public interestRouter;
-    IBoldRewardsReceiver public stabilityPool;
+    IInterestRouter public immutable interestRouter;
+    IBoldRewardsReceiver public immutable stabilityPool;
 
     uint256 internal collBalance; // deposited coll tracker
 
@@ -219,12 +219,12 @@ contract ActivePool is IActivePool {
 
         // Batch management fees
         if (_batchAddress != address(0)) {
-            _mintBatchManagementFeeAndAccountForChange(boldToken, _troveChange, _batchAddress);
+            _mintBatchManagementFeeAndAccountForChange(_troveChange, _batchAddress);
         }
 
         // Do the arithmetic in 2 steps here to avoid underflow from the decrease
         uint256 newAggRecordedDebt = aggRecordedDebt; // 1 SLOAD
-        newAggRecordedDebt += _mintAggInterest(boldToken, _troveChange.upfrontFee); // adds minted agg. interest + upfront fee
+        newAggRecordedDebt += _mintAggInterest(_troveChange.upfrontFee); // adds minted agg. interest + upfront fee
         newAggRecordedDebt += _troveChange.appliedRedistBoldDebtGain;
         newAggRecordedDebt += _troveChange.debtIncrease;
         newAggRecordedDebt -= _troveChange.debtDecrease;
@@ -242,10 +242,10 @@ contract ActivePool is IActivePool {
 
     function mintAggInterest() external override {
         _requireCallerIsBOorSP();
-        aggRecordedDebt += _mintAggInterest(boldToken, 0);
+        aggRecordedDebt += _mintAggInterest(0);
     }
 
-    function _mintAggInterest(IBoldToken _boldToken, uint256 _upfrontFee) internal returns (uint256 mintedAmount) {
+    function _mintAggInterest(uint256 _upfrontFee) internal returns (uint256 mintedAmount) {
         mintedAmount = calcPendingAggInterest() + _upfrontFee;
 
         // Mint part of the BOLD interest to the SP and part to the router for LPs.
@@ -253,10 +253,10 @@ contract ActivePool is IActivePool {
             uint256 spYield = SP_YIELD_SPLIT * mintedAmount / DECIMAL_PRECISION;
             uint256 remainderToLPs = mintedAmount - spYield;
 
-            _boldToken.mint(address(interestRouter), remainderToLPs);
+            boldToken.mint(address(interestRouter), remainderToLPs);
 
             if (spYield > 0) {
-                _boldToken.mint(address(stabilityPool), spYield);
+                boldToken.mint(address(stabilityPool), spYield);
                 stabilityPool.triggerBoldRewards(spYield);
             }
         }
@@ -268,12 +268,11 @@ contract ActivePool is IActivePool {
         external
         override
     {
-        _requireCallerIsBOorTroveM();
-        _mintBatchManagementFeeAndAccountForChange(boldToken, _troveChange, _batchAddress);
+        _requireCallerIsTroveManager();
+        _mintBatchManagementFeeAndAccountForChange(_troveChange, _batchAddress);
     }
 
     function _mintBatchManagementFeeAndAccountForChange(
-        IBoldToken _boldToken,
         TroveChange memory _troveChange,
         address _batchAddress
     ) internal {
@@ -293,7 +292,7 @@ contract ActivePool is IActivePool {
 
         // mint fee to batch address
         if (_troveChange.batchAccruedManagementFee > 0) {
-            _boldToken.mint(_batchAddress, _troveChange.batchAccruedManagementFee);
+            boldToken.mint(_batchAddress, _troveChange.batchAccruedManagementFee);
         }
 
         lastAggBatchManagementFeesUpdateTime = block.timestamp;

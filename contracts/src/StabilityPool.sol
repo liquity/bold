@@ -9,7 +9,6 @@ import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IStabilityPoolEvents.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
-import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
 
 /*

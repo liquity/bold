@@ -1249,12 +1249,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
     }
 
-    function _requireIsShutDown() internal view {
-        if (!hasBeenShutDown) {
-            revert NotShutDown();
-        }
-    }
-
     function _requireNonZeroAdjustment(TroveChange memory _troveChange) internal pure {
         if (
             _troveChange.collIncrease == 0 && _troveChange.collDecrease == 0 && _troveChange.debtIncrease == 0
