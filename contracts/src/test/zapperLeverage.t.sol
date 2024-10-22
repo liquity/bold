@@ -1258,7 +1258,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         // Not enough liquidity for ETHx
         for (uint256 i = 0; i < 3; i++) {
             _testOnlyOwnerOrManagerCanLeverDownFromBalancerVault(
-                leverageZapperUniV3Array[i], ExchangeType.HybridCurveUniV3, i
+                leverageZapperHybridArray[i], ExchangeType.HybridCurveUniV3, i
             );
         }
     }
@@ -1331,6 +1331,12 @@ contract ZapperLeverageMainnet is DevTestSetup {
     function testCanCloseTroveWithLeverageUniV3() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             _testCanCloseTrove(IZapper(leverageZapperUniV3Array[i]), i);
+        }
+    }
+
+    function testCanCloseTroveWithLeverageHybrid() external {
+        for (uint256 i = 0; i < 3; i++) {
+            _testCanCloseTrove(IZapper(leverageZapperHybridArray[i]), i);
         }
     }
 
@@ -1449,6 +1455,12 @@ contract ZapperLeverageMainnet is DevTestSetup {
         }
     }
 
+    function testOnlyFlashLoanProviderCanCallCloseTroveCallbackWithHybrid() external {
+        for (uint256 i = 0; i < 3; i++) {
+            _testOnlyFlashLoanProviderCanCallCloseTroveCallback(leverageZapperHybridArray[i], i);
+        }
+    }
+
     function _testOnlyFlashLoanProviderCanCallCloseTroveCallback(IZapper _zapper, uint256 _branch) internal {
         IZapper.CloseTroveParams memory params = IZapper.CloseTroveParams({
             troveId: addressToTroveId(A),
@@ -1479,6 +1491,12 @@ contract ZapperLeverageMainnet is DevTestSetup {
     function testOnlyOwnerOrManagerCanCloseTroveWithUniV3FromZapper() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             _testOnlyOwnerOrManagerCanCloseTroveFromZapper(leverageZapperUniV3Array[i], i);
+        }
+    }
+
+    function testOnlyOwnerOrManagerCanCloseTroveWithHybridFromZapper() external {
+        for (uint256 i = 0; i < 3; i++) {
+            _testOnlyOwnerOrManagerCanCloseTroveFromZapper(leverageZapperHybridArray[i], i);
         }
     }
 
@@ -1523,6 +1541,12 @@ contract ZapperLeverageMainnet is DevTestSetup {
     function testOnlyOwnerOrManagerCanCloseTroveWithUniV3FromBalancerFLProvider() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             _testOnlyOwnerOrManagerCanCloseTroveFromBalancerFLProvider(leverageZapperUniV3Array[i], i);
+        }
+    }
+
+    function testOnlyOwnerOrManagerCanCloseTroveWithHybridFromBalancerFLProvider() external {
+        for (uint256 i = 0; i < 3; i++) {
+            _testOnlyOwnerOrManagerCanCloseTroveFromBalancerFLProvider(leverageZapperHybridArray[i], i);
         }
     }
 
@@ -1573,6 +1597,12 @@ contract ZapperLeverageMainnet is DevTestSetup {
     function testOnlyOwnerOrManagerCanCloseTroveWithUniV3FromBalancerVault() external {
         for (uint256 i = 0; i < NUM_COLLATERALS; i++) {
             _testOnlyOwnerOrManagerCanCloseTroveFromBalancerVault(leverageZapperUniV3Array[i], i);
+        }
+    }
+
+    function testOnlyOwnerOrManagerCanCloseTroveWithHybridFromBalancerVault() external {
+        for (uint256 i = 0; i < 3; i++) {
+            _testOnlyOwnerOrManagerCanCloseTroveFromBalancerVault(leverageZapperHybridArray[i], i);
         }
     }
 
