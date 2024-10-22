@@ -10,7 +10,7 @@ import "../BorrowerOperations.sol";
 // import "forge-std/console2.sol";
 
 abstract contract MainnetPriceFeedBase is IPriceFeed, Ownable {
-    // Dummy flag raised when the collateral branch gets shut down.
+    // Flag raised when the collateral branch gets shut down.
     bool priceFeedDisabled;
 
     // Last good price tracker for the derived USD price

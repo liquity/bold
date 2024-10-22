@@ -25,7 +25,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     address internal gasPoolAddress;
     ICollSurplusPool internal collSurplusPool;
     IBoldToken internal boldToken;
-    // A doubly linked list of Troves, sorted by their sorted by their interest rate
+    // A doubly linked list of Troves, sorted by their interest rate
     ISortedTroves public sortedTroves;
     ICollateralRegistry internal collateralRegistry;
     // Wrapped ETH for liquidation reserve (gas compensation)
