@@ -123,6 +123,7 @@ export function vEnvCurrency() {
 export function vPositionStake() {
   return v.object({
     type: v.literal("stake"),
+    owner: vAddress(),
     deposit: vDnum(),
     share: vDnum(),
     totalStaked: vDnum(),

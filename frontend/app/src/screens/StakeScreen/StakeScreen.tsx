@@ -306,6 +306,7 @@ function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
                 lqtyAmount: dn.abs(depositDifference),
                 stakePosition: {
                   type: "stake",
+                  owner: account.address,
                   deposit: updatedDeposit,
                   share: updatedShare,
                   totalStaked: dn.add(

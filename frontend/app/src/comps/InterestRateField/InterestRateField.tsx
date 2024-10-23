@@ -2,7 +2,6 @@ import type { Address, CollIndex, Delegate } from "@/src/types";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
-import { Value } from "@/src/comps/Value/Value";
 import { INTEREST_RATE_DEFAULT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import content from "@/src/content";
 import { DELEGATES_FULL, IC_STRATEGIES } from "@/src/demo-mode";

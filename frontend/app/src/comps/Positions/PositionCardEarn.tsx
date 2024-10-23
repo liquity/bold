@@ -11,13 +11,11 @@ export function PositionCardEarn({
   owner,
   collIndex,
   deposit,
-  rewards,
 }: Pick<
   PositionEarn,
   | "owner"
   | "collIndex"
   | "deposit"
-  | "rewards"
 >) {
   const token = useCollateral(collIndex);
   const earnPool = useEarnPool(collIndex);
