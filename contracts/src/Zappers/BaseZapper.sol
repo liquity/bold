@@ -21,7 +21,9 @@ abstract contract BaseZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanRec
     IFlashLoanProvider public immutable flashLoanProvider;
     IExchange public immutable exchange;
 
-    constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange) AddRemoveManagers(_addressesRegistry) {
+    constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
+        AddRemoveManagers(_addressesRegistry)
+    {
         borrowerOperations = _addressesRegistry.borrowerOperations();
         troveManager = _addressesRegistry.troveManager();
         boldToken = _addressesRegistry.boldToken();

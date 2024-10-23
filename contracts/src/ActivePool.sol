@@ -272,10 +272,9 @@ contract ActivePool is IActivePool {
         _mintBatchManagementFeeAndAccountForChange(_troveChange, _batchAddress);
     }
 
-    function _mintBatchManagementFeeAndAccountForChange(
-        TroveChange memory _troveChange,
-        address _batchAddress
-    ) internal {
+    function _mintBatchManagementFeeAndAccountForChange(TroveChange memory _troveChange, address _batchAddress)
+        internal
+    {
         aggRecordedDebt += _troveChange.batchAccruedManagementFee;
 
         // Do the arithmetic in 2 steps here to avoid underflow from the decrease

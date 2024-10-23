@@ -4,12 +4,7 @@ pragma solidity 0.8.24;
 
 type BatchId is address;
 
-using {
-    equals as ==,
-    notEquals as !=,
-    isZero,
-    isNotZero
-} for BatchId global;
+using {equals as ==, notEquals as !=, isZero, isNotZero} for BatchId global;
 
 function equals(BatchId a, BatchId b) pure returns (bool) {
     return BatchId.unwrap(a) == BatchId.unwrap(b);

@@ -1267,7 +1267,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     function _requireValidDelegateAdustment(
-        uint256 _troveId, 
+        uint256 _troveId,
         uint256 _lastInterestRateAdjTime,
         uint256 _annualInterestRate
     ) internal view {

@@ -6,12 +6,7 @@ import {ROOT_NODE_ID} from "../SortedTroves.sol";
 
 type TroveId is uint256;
 
-using {
-    equals as ==,
-    notEquals as !=,
-    isEndOfList,
-    isNotEndOfList
-} for TroveId global;
+using {equals as ==, notEquals as !=, isEndOfList, isNotEndOfList} for TroveId global;
 
 function equals(TroveId a, TroveId b) pure returns (bool) {
     return TroveId.unwrap(a) == TroveId.unwrap(b);

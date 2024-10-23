@@ -228,7 +228,9 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         uint256 newAnnualInterestRate = 1e14;
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.InterestRateTooLow.selector);
-        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, newAnnualInterestRate, 0, 0, 10000e18, 0);
+        borrowerOperations.setInterestIndividualDelegate(
+            troveId, C, 1e16, 20e16, newAnnualInterestRate, 0, 0, 10000e18, 0
+        );
         vm.stopPrank();
     }
 
@@ -248,7 +250,9 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         uint256 newAnnualInterestRate = 101e16;
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.InterestRateTooHigh.selector);
-        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, newAnnualInterestRate, 0, 0, 10000e18, 0);
+        borrowerOperations.setInterestIndividualDelegate(
+            troveId, C, 1e16, 20e16, newAnnualInterestRate, 0, 0, 10000e18, 0
+        );
         vm.stopPrank();
     }
 
@@ -272,7 +276,9 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         // Switch to individual delegate (C) along with new interest
         uint256 newAnnualInterestRate = 6e16;
         vm.startPrank(A);
-        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 20e16, newAnnualInterestRate, 0, 0, 10000e18, 0);
+        borrowerOperations.setInterestIndividualDelegate(
+            troveId, C, 1e16, 20e16, newAnnualInterestRate, 0, 0, 10000e18, 0
+        );
         vm.stopPrank();
 
         delegate = borrowerOperations.getInterestIndividualDelegateOf(troveId);
@@ -316,11 +322,14 @@ contract InterestIndividualDelegationTest is DevTestSetup {
 
         uint256 minInterestRateChangePeriod = 7 days;
 
-        IBorrowerOperations.InterestIndividualDelegate memory delegate = borrowerOperations.getInterestIndividualDelegateOf(troveId);
+        IBorrowerOperations.InterestIndividualDelegate memory delegate =
+            borrowerOperations.getInterestIndividualDelegateOf(troveId);
         assertEq(delegate.minInterestRateChangePeriod, 0);
 
         vm.startPrank(A);
-        borrowerOperations.setInterestIndividualDelegate(troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod);
+        borrowerOperations.setInterestIndividualDelegate(
+            troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod
+        );
         vm.stopPrank();
 
         // Confirm delegate has a min change period set
@@ -334,7 +343,9 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         uint256 minInterestRateChangePeriod = 7 days;
 
         vm.startPrank(A);
-        borrowerOperations.setInterestIndividualDelegate(troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod);
+        borrowerOperations.setInterestIndividualDelegate(
+            troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod
+        );
         vm.stopPrank();
 
         // insufficient time since last rate adjustment
@@ -351,7 +362,9 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         uint256 minInterestRateChangePeriod = 7 days;
 
         vm.startPrank(A);
-        borrowerOperations.setInterestIndividualDelegate(troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod);
+        borrowerOperations.setInterestIndividualDelegate(
+            troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod
+        );
         vm.warp(block.timestamp + 7 days);
 
         borrowerOperations.adjustTroveInterestRate(troveId, 10e16, 0, 0, 1e24);
@@ -365,13 +378,15 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         borrowerOperations.adjustTroveInterestRate(troveId, 11e16, 0, 0, 1e24);
     }
 
-     function testAfterDelegateAdjustsRateCantAdjustInterestRateUntilMinPeriodHasPassed() public {
+    function testAfterDelegateAdjustsRateCantAdjustInterestRateUntilMinPeriodHasPassed() public {
         uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
 
         uint256 minInterestRateChangePeriod = 7 days;
 
         vm.startPrank(A);
-        borrowerOperations.setInterestIndividualDelegate(troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod);
+        borrowerOperations.setInterestIndividualDelegate(
+            troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod
+        );
         vm.stopPrank();
 
         vm.warp(block.timestamp + 7 days);
@@ -395,7 +410,9 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         uint256 minInterestRateChangePeriod = 7 days;
 
         vm.startPrank(A);
-        borrowerOperations.setInterestIndividualDelegate(troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod);
+        borrowerOperations.setInterestIndividualDelegate(
+            troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod
+        );
         vm.stopPrank();
 
         // min period passes
@@ -415,14 +432,16 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         uint256 minInterestRateChangePeriod = 7 days;
 
         vm.startPrank(A);
-        borrowerOperations.setInterestIndividualDelegate(troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod);
+        borrowerOperations.setInterestIndividualDelegate(
+            troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod
+        );
         vm.warp(block.timestamp + 7 days);
 
         borrowerOperations.adjustTroveInterestRate(troveId, 10e16, 0, 0, 1e24);
         vm.stopPrank();
 
         // min period passes
-        vm.warp(block.timestamp + minInterestRateChangePeriod );
+        vm.warp(block.timestamp + minInterestRateChangePeriod);
 
         vm.startPrank(B);
         borrowerOperations.adjustTroveInterestRate(troveId, 11e16, 0, 0, 1e24);
@@ -432,13 +451,15 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         assertEq(trove.annualInterestRate, 11e16);
     }
 
-     function testAfterDelegateAdjustsRateTheyCanAdjustInterestRateAgainAfterMinPeriodHasPassed() public {
+    function testAfterDelegateAdjustsRateTheyCanAdjustInterestRateAgainAfterMinPeriodHasPassed() public {
         uint256 troveId = openTroveNoHints100pct(A, 100e18, 5000e18, 5e16);
 
         uint256 minInterestRateChangePeriod = 7 days;
 
         vm.startPrank(A);
-        borrowerOperations.setInterestIndividualDelegate(troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod);
+        borrowerOperations.setInterestIndividualDelegate(
+            troveId, B, 1e16, 20e16, 0, 0, 0, 0, minInterestRateChangePeriod
+        );
         vm.stopPrank();
 
         vm.warp(block.timestamp + 7 days);

@@ -1368,10 +1368,14 @@ contract ZapperLeverageMainnet is DevTestSetup {
         vm.stopPrank();
     }
 
-    function openTrove(IZapper _zapper, address _account, uint256 _index, uint256 _collAmount, uint256 _boldAmount, bool _lst)
-        internal
-        returns (uint256)
-    {
+    function openTrove(
+        IZapper _zapper,
+        address _account,
+        uint256 _index,
+        uint256 _collAmount,
+        uint256 _boldAmount,
+        bool _lst
+    ) internal returns (uint256) {
         IZapper.OpenTroveParams memory openParams = IZapper.OpenTroveParams({
             owner: _account,
             ownerIndex: _index,
@@ -1649,7 +1653,9 @@ contract ZapperLeverageMainnet is DevTestSetup {
         }
     }
 
-    function _testApprovalIsNotReset(ILeverageZapper _leverageZapper, ExchangeType _exchangeType, uint256 _branch) internal {
+    function _testApprovalIsNotReset(ILeverageZapper _leverageZapper, ExchangeType _exchangeType, uint256 _branch)
+        internal
+    {
         // Open non leveraged trove
         openTrove(_leverageZapper, A, uint256(_exchangeType) * 2, 10 ether, 10000e18, _branch > 0);
 
