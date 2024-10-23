@@ -2728,11 +2728,14 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         for (uint256 j = 0; j < r.batch.length; ++j) {
             uint256 troveId = _troveIdOf(i, r.batch[j]);
+            if (!_troveIds[i].has(troveId)) continue; // skip non-existent Trove
 
             if (r.redeemedIds.has(troveId)) continue; // skip duplicate entry
             r.redeemedIds.add(troveId);
 
             LatestTroveData memory trove = branches[i].troveManager.getLatestTroveData(troveId);
+            if (trove.entireDebt == 0) continue; // nothing to redeem
+
             uint256 debtRedeemed = Math.min(amount, trove.entireDebt);
             uint256 collRedeemed = debtRedeemed * (DECIMAL_PRECISION + URGENT_REDEMPTION_BONUS) / _price[i];
 
