@@ -27,12 +27,13 @@ export function ScreenCard({
       }
       : {
         cardtransform: `scale3d(${scaleRatio}, ${scaleRatio}, 1)`,
-        containerHeight: (
+        containerHeight: Math.max(
+          finalHeight,
           window.innerHeight
-          - 120 // top bar
-          - 24 * 2 // padding
-          - 48 // bottom bar 1
-          - 40
+            - 120 // top bar
+            - 24 * 2 // padding
+            - 48 // bottom bar 1
+            - 40,
         ),
       },
     config: {
@@ -45,6 +46,7 @@ export function ScreenCard({
   return (
     <a.div
       className={css({
+        flexShrink: 0,
         display: "flex",
         justifyContent: "center",
         flexDirection: "column",

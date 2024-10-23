@@ -30,8 +30,10 @@ import {
   TOKENS_BY_SYMBOL,
   VFlex,
 } from "@liquity2/uikit";
+import { a, useTransition } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
+import { useEffect, useState } from "react";
 import { match, P } from "ts-pattern";
 
 export function LoanCard({
@@ -74,8 +76,31 @@ export function LoanCard({
   );
 
   const nftUrl = useTroveNftUrl(loan?.collIndex ?? null, troveId);
-
   const title = leverageMode ? "Leverage loan" : "BOLD loan";
+
+  const [notifyCopy, setNotifyCopy] = useState(false);
+  useEffect(() => {
+    if (!notifyCopy) {
+      return;
+    }
+    const timeout = setTimeout(() => {
+      setNotifyCopy(false);
+    }, 500);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [notifyCopy]);
+
+  const notifyCopyTransition = useTransition(notifyCopy, {
+    from: { opacity: 0, transform: "scale(0.9)" },
+    enter: { opacity: 1, transform: "scale(1)" },
+    leave: { opacity: 0, transform: "scale(1)" },
+    config: {
+      mass: 1,
+      tension: 2000,
+      friction: 80,
+    },
+  });
 
   return (
     <ScreenCard
@@ -224,6 +249,26 @@ export function LoanCard({
                       right: 16,
                     })}
                   >
+                    {notifyCopyTransition((style, show) => (
+                      show && (
+                        <a.div
+                          className={css({
+                            position: "absolute",
+                            top: 0,
+                            bottom: 0,
+                            right: "calc(100% + 16px)",
+                            display: "grid",
+                            placeItems: "center",
+                            fontSize: 12,
+                            textTransform: "uppercase",
+                            whiteSpace: "nowrap",
+                          })}
+                          style={style}
+                        >
+                          Copied
+                        </a.div>
+                      )
+                    ))}
                     <Dropdown
                       buttonDisplay={
                         <div
@@ -252,11 +297,29 @@ export function LoanCard({
                       }
                       items={[
                         {
-                          icon: <IconLeverage size={16} />,
+                          icon: (
+                            <div
+                              className={css({
+                                color: "accent",
+                              })}
+                            >
+                              {leverageMode
+                                ? <IconBorrow size={16} />
+                                : <IconLeverage size={16} />}
+                            </div>
+                          ),
                           label: leverageMode ? "View as loan" : "View as leverage",
                         },
                         {
-                          icon: <IconCopy size={16} />,
+                          icon: (
+                            <div
+                              className={css({
+                                color: "accent",
+                              })}
+                            >
+                              <IconCopy size={16} />
+                            </div>
+                          ),
                           label: "Copy public link",
                         },
                         {
@@ -273,12 +336,36 @@ export function LoanCard({
                             />
                           ),
                           label: `Owner ${shortenAddress(loan.borrower, 4)}`,
-                          value: <IconExternal size={16} />,
+                          value: (
+                            <div
+                              className={css({
+                                color: "contentAlt",
+                              })}
+                            >
+                              <IconExternal size={16} />
+                            </div>
+                          ),
                         },
                         {
-                          icon: <IconNft size={16} />,
+                          icon: (
+                            <div
+                              className={css({
+                                color: "accent",
+                              })}
+                            >
+                              <IconNft size={16} />
+                            </div>
+                          ),
                           label: "Open NFT",
-                          value: <IconExternal size={16} />,
+                          value: (
+                            <div
+                              className={css({
+                                color: "contentAlt",
+                              })}
+                            >
+                              <IconExternal size={16} />
+                            </div>
+                          ),
                         },
                       ]}
                       selected={0}
@@ -288,6 +375,7 @@ export function LoanCard({
                         }
                         if (index === 1) {
                           navigator.clipboard.writeText(window.location.href);
+                          setNotifyCopy(true);
                         }
                         if (index === 2) {
                           window.open(`${CHAIN_BLOCK_EXPLORER?.url}address/${loan.borrower}`);
@@ -297,16 +385,6 @@ export function LoanCard({
                         }
                       }}
                     />
-                    {
-                      /*<Button
-                      label={leverageMode ? "View as loan" : "View as leverage"}
-                      mode="primary"
-                      size="small"
-                      onClick={() => {
-                        onLeverageModeChange(!leverageMode);
-                      }}
-                    />*/
-                    }
                   </div>
                 </h1>
                 <div

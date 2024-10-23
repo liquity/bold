@@ -18,9 +18,12 @@ import {
 } from "@/src/demo-mode";
 import { dnum18, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { DEMO_MODE } from "@/src/env";
+import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRef } from "react";
+import { match } from "ts-pattern";
+import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
 type PriceToken = "LQTY" | "BOLD" | "LUSD" | CollateralSymbol;
@@ -50,10 +53,42 @@ function useWatchCollateralPrice(collateral: CollateralSymbol) {
   });
 }
 
+function useCoinGeckoPrice(supportedSymbol: "LQTY" | "LUSD") {
+  return useQuery({
+    queryKey: ["coinGeckoPrice", supportedSymbol],
+    queryFn: async () => {
+      const id = match(supportedSymbol)
+        .with("LQTY", () => "liquity")
+        .with("LUSD", () => "liquity-usd")
+        .exhaustive();
+
+      const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`, {
+        headers: { accept: "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch price for ${id}`);
+      }
+
+      const result = v.parse(
+        v.object({
+          [id]: v.object({
+            usd: v.number(),
+          }),
+        }),
+        await response.json(),
+      );
+      return result[id].usd;
+    },
+  });
+}
+
 let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void): void {
   const ethPrice = useWatchCollateralPrice("ETH");
   const rethPrice = useWatchCollateralPrice("RETH");
   const stethPrice = useWatchCollateralPrice("STETH");
+  const lqtyPrice = useCoinGeckoPrice("LQTY");
+  const lusdPrice = useCoinGeckoPrice("LUSD");
 
   const prevPrices = useRef<Prices>({
     BOLD: null,
@@ -66,10 +101,9 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
 
   useEffect(() => {
     const newPrices = {
-      // TODO: check BOLD, LUSD and LQTY prices
-      BOLD: dn.from(1, 18),
-      LQTY: dn.from(1, 18),
-      LUSD: dn.from(1, 18),
+      BOLD: dn.from(1, 18), // TODO
+      LQTY: lqtyPrice.data ? dn.from(lqtyPrice.data, 18) : null,
+      LUSD: lusdPrice.data ? dn.from(lusdPrice.data, 18) : null,
 
       ETH: ethPrice.data ? dnum18(ethPrice.data) : null,
       RETH: rethPrice.data ? dnum18(rethPrice.data) : null,
@@ -87,6 +121,8 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
     ethPrice,
     rethPrice,
     stethPrice,
+    lqtyPrice,
+    lusdPrice,
   ]);
 };
 

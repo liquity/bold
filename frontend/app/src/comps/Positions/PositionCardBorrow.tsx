@@ -12,7 +12,7 @@ import Link from "next/link";
 import { CardRow, CardRows, EditSquare } from "./shared";
 
 export function PositionCardBorrow({
-  batchManager: _batchManager,
+  batchManager,
   borrowed,
   collIndex,
   collateral,
@@ -164,6 +164,7 @@ export function PositionCardBorrow({
                 <div
                   className={css({
                     display: "flex",
+                    alignItems: "center",
                     gap: 8,
                     fontSize: 14,
                   })}
@@ -173,7 +174,7 @@ export function PositionCardBorrow({
                       color: "strongSurfaceContentAlt",
                     })}
                   >
-                    Interest rate
+                    {batchManager ? "Int. rate" : "Interest rate"}
                   </div>
                   <div
                     className={css({
@@ -182,12 +183,31 @@ export function PositionCardBorrow({
                   >
                     {dn.format(dn.mul(interestRate, 100), 2)}%
                   </div>
+                  {batchManager && (
+                    <div
+                      title={`Interest rate delegate: ${batchManager}`}
+                      className={css({
+                        display: "grid",
+                        placeItems: "center",
+                        width: 16,
+                        height: 16,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: "content",
+                        background: "brandCyan",
+                        borderRadius: "50%",
+                      })}
+                    >
+                      D
+                    </div>
+                  )}
                 </div>
               }
               end={
                 <div
                   className={css({
-                    display: "flex",
+                    display: "grid",
+                    gridTemplateColumns: "auto auto",
                     alignItems: "center",
                     gap: 8,
                     fontSize: 14,
@@ -195,6 +215,9 @@ export function PositionCardBorrow({
                 >
                   <div
                     className={css({
+                      flexShrink: 1,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
                       color: "strongSurfaceContent",
                     })}
                   >

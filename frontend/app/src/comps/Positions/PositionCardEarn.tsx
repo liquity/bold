@@ -1,25 +1,27 @@
 import type { PositionEarn } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { useCollateral } from "@/src/liquity-utils";
-import { useEarnPool } from "@/src/liquity-utils";
+import { useCollateral, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, StrongCard, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
 import { CardRow, CardRows, EditSquare } from "./shared";
 
 export function PositionCardEarn({
+  owner,
   collIndex,
   deposit,
   rewards,
 }: Pick<
   PositionEarn,
+  | "owner"
   | "collIndex"
   | "deposit"
   | "rewards"
 >) {
   const token = useCollateral(collIndex);
   const earnPool = useEarnPool(collIndex);
+  const earnPosition = useEarnPosition(collIndex, owner ?? null);
 
   return (
     <Link
@@ -119,7 +121,11 @@ export function PositionCardEarn({
                       color: "strongSurfaceContent",
                     })}
                   >
-                    <Amount value={rewards.bold} format={2} />
+                    <Amount
+                      fallback="−"
+                      value={earnPosition.data?.rewards.bold}
+                      format={2}
+                    />
                     <TokenIcon size="mini" symbol="BOLD" />
                   </div>
                   <div
@@ -130,7 +136,11 @@ export function PositionCardEarn({
                       color: "strongSurfaceContent",
                     })}
                   >
-                    <Amount value={rewards.coll} format={2} />
+                    <Amount
+                      fallback="−"
+                      value={earnPosition.data?.rewards.coll}
+                      format={2}
+                    />
                     {token && <TokenIcon size="mini" symbol={token.symbol} />}
                   </div>
                 </div>

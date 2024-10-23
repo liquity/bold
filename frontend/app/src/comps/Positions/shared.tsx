@@ -33,12 +33,14 @@ export function CardRow({
       className={css({
         display: "flex",
         justifyContent: "space-between",
+        alignItems: "center",
         gap: 8,
         color: "strongSurfaceContent",
+        whiteSpace: "nowrap",
       })}
     >
-      {start}
-      {end}
+      <div>{start}</div>
+      <div>{end}</div>
     </div>
   );
 }
