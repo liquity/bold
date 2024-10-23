@@ -2059,7 +2059,7 @@ const liquity2Transforms = [];
 const additionalTypeDefs = [] as any[];
 const liquity2Handler = new GraphqlHandler({
               name: "liquity2",
-              config: {"endpoint":"http://localhost:8000/subgraphs/name/liquity2"},
+              config: {"endpoint":"https://api.studio.thegraph.com/query/42403/liquity2/version/latest"},
               baseDir,
               cache,
               pubsub,
@@ -2080,16 +2080,15 @@ const merger = new(BareMerger as any)({
         store: rootStore.child('bareMerger')
       })
 const documentHashMap = {
-        "1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": TrovesByAccountDocument,
-"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": InterestRateBracketsDocument,
-"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": TrovesCountDocument,
-"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": TroveByIdDocument,
-"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": StabilityPoolDocument,
-"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": StabilityPoolDepositsByAccountDocument,
-"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": StabilityPoolDepositDocument,
-"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": StabilityPoolEpochScaleDocument,
-"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": InterestBatchDocument,
-"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": InterestBatchBracketsDocument
+        "df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": TrovesByAccountDocument,
+"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": TrovesCountDocument,
+"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": TroveByIdDocument,
+"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": StabilityPoolDocument,
+"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": StabilityPoolDepositsByAccountDocument,
+"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": StabilityPoolDepositDocument,
+"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": StabilityPoolEpochScaleDocument,
+"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": InterestBatchDocument,
+"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": InterestRateBracketsDocument
       }
 additionalEnvelopPlugins.push(usePersistedOperations({
         getPersistedOperation(key) {
@@ -2116,70 +2115,63 @@ additionalEnvelopPlugins.push(usePersistedOperations({
           return printWithCache(TrovesByAccountDocument);
         },
         location: 'TrovesByAccountDocument.graphql',
-        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
-      },{
-        document: InterestRateBracketsDocument,
-        get rawSDL() {
-          return printWithCache(InterestRateBracketsDocument);
-        },
-        location: 'InterestRateBracketsDocument.graphql',
-        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
+        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
       },{
         document: TrovesCountDocument,
         get rawSDL() {
           return printWithCache(TrovesCountDocument);
         },
         location: 'TrovesCountDocument.graphql',
-        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
+        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
       },{
         document: TroveByIdDocument,
         get rawSDL() {
           return printWithCache(TroveByIdDocument);
         },
         location: 'TroveByIdDocument.graphql',
-        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
+        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
       },{
         document: StabilityPoolDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDocument);
         },
         location: 'StabilityPoolDocument.graphql',
-        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
+        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
       },{
         document: StabilityPoolDepositsByAccountDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDepositsByAccountDocument);
         },
         location: 'StabilityPoolDepositsByAccountDocument.graphql',
-        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
+        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
       },{
         document: StabilityPoolDepositDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDepositDocument);
         },
         location: 'StabilityPoolDepositDocument.graphql',
-        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
+        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
       },{
         document: StabilityPoolEpochScaleDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolEpochScaleDocument);
         },
         location: 'StabilityPoolEpochScaleDocument.graphql',
-        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
+        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
       },{
         document: InterestBatchDocument,
         get rawSDL() {
           return printWithCache(InterestBatchDocument);
         },
         location: 'InterestBatchDocument.graphql',
-        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
+        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
       },{
-        document: InterestBatchBracketsDocument,
+        document: InterestRateBracketsDocument,
         get rawSDL() {
-          return printWithCache(InterestBatchBracketsDocument);
+          return printWithCache(InterestRateBracketsDocument);
         },
-        location: 'InterestBatchBracketsDocument.graphql',
-        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
+        location: 'InterestRateBracketsDocument.graphql',
+        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
       }
     ];
     },
@@ -2247,13 +2239,6 @@ export type TrovesByAccountQuery = { readonly troves: ReadonlyArray<(
     ), readonly interestBatch?: Maybe<Pick<InterestBatch, 'id' | 'annualInterestRate' | 'annualManagementFee' | 'batchManager'>> }
   )> };
 
-export type InterestRateBracketsQueryVariables = Exact<{
-  collId: Scalars['String']['input'];
-}>;
-
-
-export type InterestRateBracketsQuery = { readonly interestRateBrackets: ReadonlyArray<Pick<InterestRateBracket, 'id' | 'rate' | 'totalDebt'>> };
-
 export type TrovesCountQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -2318,12 +2303,12 @@ export type InterestBatchQuery = { readonly interestBatch?: Maybe<(
     & { readonly collateral: Pick<Collateral, 'collIndex'> }
   )> };
 
-export type InterestBatchBracketsQueryVariables = Exact<{
+export type InterestRateBracketsQueryVariables = Exact<{
   collId: Scalars['String']['input'];
 }>;
 
 
-export type InterestBatchBracketsQuery = { readonly interestRateBrackets: ReadonlyArray<Pick<InterestRateBracket, 'totalDebt' | 'rate'>> };
+export type InterestRateBracketsQuery = { readonly interestRateBrackets: ReadonlyArray<Pick<InterestRateBracket, 'rate' | 'totalDebt'>> };
 
 
 export const TrovesByAccountDocument = gql`
@@ -2356,15 +2341,6 @@ export const TrovesByAccountDocument = gql`
   }
 }
     ` as unknown as DocumentNode<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
-export const InterestRateBracketsDocument = gql`
-    query InterestRateBrackets($collId: String!) {
-  interestRateBrackets(where: {collateral: $collId}) {
-    id
-    rate
-    totalDebt
-  }
-}
-    ` as unknown as DocumentNode<InterestRateBracketsQuery, InterestRateBracketsQueryVariables>;
 export const TrovesCountDocument = gql`
     query TrovesCount($id: ID!) {
   borrowerInfo(id: $id) {
@@ -2472,15 +2448,14 @@ export const InterestBatchDocument = gql`
   }
 }
     ` as unknown as DocumentNode<InterestBatchQuery, InterestBatchQueryVariables>;
-export const InterestBatchBracketsDocument = gql`
-    query InterestBatchBrackets($collId: String!) {
+export const InterestRateBracketsDocument = gql`
+    query InterestRateBrackets($collId: String!) {
   interestRateBrackets(where: {collateral: $collId}, orderBy: rate) {
-    totalDebt
     rate
+    totalDebt
   }
 }
-    ` as unknown as DocumentNode<InterestBatchBracketsQuery, InterestBatchBracketsQueryVariables>;
-
+    ` as unknown as DocumentNode<InterestRateBracketsQuery, InterestRateBracketsQueryVariables>;
 
 
 
@@ -2496,9 +2471,6 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
   return {
     TrovesByAccount(variables: TrovesByAccountQueryVariables, options?: C): Promise<TrovesByAccountQuery> {
       return requester<TrovesByAccountQuery, TrovesByAccountQueryVariables>(TrovesByAccountDocument, variables, options) as Promise<TrovesByAccountQuery>;
-    },
-    InterestRateBrackets(variables: InterestRateBracketsQueryVariables, options?: C): Promise<InterestRateBracketsQuery> {
-      return requester<InterestRateBracketsQuery, InterestRateBracketsQueryVariables>(InterestRateBracketsDocument, variables, options) as Promise<InterestRateBracketsQuery>;
     },
     TrovesCount(variables: TrovesCountQueryVariables, options?: C): Promise<TrovesCountQuery> {
       return requester<TrovesCountQuery, TrovesCountQueryVariables>(TrovesCountDocument, variables, options) as Promise<TrovesCountQuery>;
@@ -2521,8 +2493,8 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     InterestBatch(variables: InterestBatchQueryVariables, options?: C): Promise<InterestBatchQuery> {
       return requester<InterestBatchQuery, InterestBatchQueryVariables>(InterestBatchDocument, variables, options) as Promise<InterestBatchQuery>;
     },
-    InterestBatchBrackets(variables: InterestBatchBracketsQueryVariables, options?: C): Promise<InterestBatchBracketsQuery> {
-      return requester<InterestBatchBracketsQuery, InterestBatchBracketsQueryVariables>(InterestBatchBracketsDocument, variables, options) as Promise<InterestBatchBracketsQuery>;
+    InterestRateBrackets(variables: InterestRateBracketsQueryVariables, options?: C): Promise<InterestRateBracketsQuery> {
+      return requester<InterestRateBracketsQuery, InterestRateBracketsQueryVariables>(InterestRateBracketsDocument, variables, options) as Promise<InterestRateBracketsQuery>;
     }
   };
 }
