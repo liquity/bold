@@ -1282,7 +1282,12 @@ As mentioned in the interest rate [implementation section](#core-debt-invariant)
 
 That is:
 
-`ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest() + DefaultPool.BoldDebt = SUM_i=1_n(TroveManager.getEntireTroveDebt())`
+```
+ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest()
++ ActivePool.aggBatchManagementFees() + ActivePool.calcPendingAggBatchManagementFee()
++ DefaultPool.BoldDebt
+= SUM_i=1_n(TroveManager.getEntireTroveDebt())
+```
 
 For all `n` Troves in the branch.
 
