@@ -2,7 +2,7 @@ import type { GraphStabilityPoolDeposit } from "@/src/subgraph-hooks";
 import type { CollIndex, Dnum, PositionEarn, PositionStake, PrefixedTroveId, TroveId } from "@/src/types";
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
 
-import { DATA_REFRESH_INTERVAL } from "@/src/constants";
+import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import { useAllCollateralContracts, useCollateralContract, useProtocolContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
@@ -12,9 +12,14 @@ import {
   useContinuousBoldGains,
   useSpYieldGainParameters,
 } from "@/src/liquity-stability-pool";
-import { useStabilityPool, useStabilityPoolDeposit, useStabilityPoolEpochScale } from "@/src/subgraph-hooks";
+import {
+  useInterestRateBrackets,
+  useStabilityPool,
+  useStabilityPoolDeposit,
+  useStabilityPoolEpochScale,
+} from "@/src/subgraph-hooks";
 import { isCollIndex, isTroveId } from "@/src/types";
-import { COLLATERALS } from "@liquity2/uikit";
+import { COLLATERALS, isAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { match } from "ts-pattern";
@@ -185,21 +190,18 @@ export function useEarnPosition(
         || !epochScale2.data
       )
       ? null
-      : earnPositionFromGraph(
-        spDeposit.data,
-        {
-          bold: boldGains.data,
-          coll: dnum18(
-            getCollGainFromSnapshots(
-              spDeposit.data.deposit,
-              spDeposit.data.snapshot.P,
-              spDeposit.data.snapshot.S,
-              epochScale1.data.S,
-              epochScale2.data.S,
-            ),
+      : earnPositionFromGraph(spDeposit.data, {
+        bold: boldGains.data,
+        coll: dnum18(
+          getCollGainFromSnapshots(
+            spDeposit.data.deposit,
+            spDeposit.data.snapshot.P,
+            spDeposit.data.snapshot.S,
+            epochScale1.data.S,
+            epochScale2.data.S,
           ),
-        },
-      ),
+        ),
+      }),
   };
 }
 
@@ -211,9 +213,12 @@ function earnPositionFromGraph(
   if (!isCollIndex(collIndex)) {
     throw new Error(`Invalid collateral index: ${collIndex}`);
   }
+  if (!isAddress(spDeposit.depositor)) {
+    throw new Error(`Invalid depositor address: ${spDeposit.depositor}`);
+  }
   return {
     type: "earn",
-    apr: dnum18(0),
+    owner: spDeposit.depositor,
     deposit: dnum18(spDeposit.deposit),
     collIndex,
     rewards,
@@ -246,6 +251,7 @@ export function useStakePosition(address: null | Address) {
         return {
           type: "stake",
           deposit,
+          owner: address ?? "0x",
           totalStaked,
           rewards: {
             eth: dnum18(0),
@@ -262,4 +268,61 @@ export function useStakePosition(address: null | Address) {
 export function useTroveNftUrl(collIndex: null | CollIndex, troveId: null | TroveId) {
   const TroveNft = useCollateralContract(collIndex, "TroveNFT");
   return TroveNft && troveId && `${CHAIN_BLOCK_EXPLORER?.url}nft/${TroveNft.address}/${BigInt(troveId)}`;
+}
+
+const RATE_STEPS = Math.round((INTEREST_RATE_MAX - INTEREST_RATE_MIN) / INTEREST_RATE_INCREMENT) + 1;
+
+export function useInterestRateChartData(collIndex: null | CollIndex) {
+  const brackets = useInterestRateBrackets(collIndex);
+
+  const chartData = useQuery({
+    queryKey: [
+      "useInterestRateChartData",
+      collIndex,
+      brackets.status,
+      brackets.dataUpdatedAt,
+    ],
+    queryFn: () => {
+      if (!brackets.isSuccess) {
+        return [];
+      }
+
+      let totalDebt = dnum18(0);
+      let highestDebt = dnum18(0);
+      const debtByNonEmptyRateBrackets = new Map<number, Dnum>();
+      for (const bracket of brackets.data) {
+        const rate = dn.toNumber(dn.mul(bracket.rate, 100));
+        if (rate >= INTEREST_RATE_MIN && rate <= INTEREST_RATE_MAX) {
+          totalDebt = dn.add(totalDebt, bracket.totalDebt);
+          debtByNonEmptyRateBrackets.set(rate, bracket.totalDebt);
+          if (dn.gt(bracket.totalDebt, highestDebt)) {
+            highestDebt = bracket.totalDebt;
+          }
+        }
+      }
+
+      let runningDebtTotal = dnum18(0);
+      const chartData = Array.from({ length: RATE_STEPS }, (_, i) => {
+        const rate = INTEREST_RATE_MIN + Math.floor(i * INTEREST_RATE_INCREMENT * 10) / 10;
+        const debt = debtByNonEmptyRateBrackets?.get(rate) ?? dnum18(0);
+        const debtInFront = runningDebtTotal;
+        runningDebtTotal = dn.add(runningDebtTotal, debt);
+        return {
+          debt,
+          debtInFront,
+          rate: INTEREST_RATE_MIN + Math.floor(i * INTEREST_RATE_INCREMENT * 10) / 10,
+          size: totalDebt[0] === 0n ? 0 : dn.toNumber(dn.div(debt, highestDebt)),
+        };
+      });
+
+      return chartData;
+    },
+    refetchInterval: DATA_REFRESH_INTERVAL,
+    enabled: brackets.isSuccess,
+  });
+
+  return brackets.isSuccess ? chartData : {
+    ...chartData,
+    data: [],
+  };
 }

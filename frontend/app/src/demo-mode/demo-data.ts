@@ -60,9 +60,9 @@ export const ACCOUNT_POSITIONS: Position[] = [
   },
   {
     type: "earn",
-    apr: dn.from(0.078, 18),
-    deposit: dn.from(5_000, 18),
+    owner: DEMO_ACCOUNT,
     collIndex: 0,
+    deposit: dn.from(5_000, 18),
     rewards: {
       bold: dn.from(789.438, 18),
       coll: dn.from(0.943, 18),
@@ -70,6 +70,7 @@ export const ACCOUNT_POSITIONS: Position[] = [
   },
   {
     type: "stake",
+    owner: DEMO_ACCOUNT,
     deposit: dn.from(3414, 18),
     share: dn.div(dn.from(3414, 18), STAKED_LQTY_TOTAL),
     totalStaked: STAKED_LQTY_TOTAL,

@@ -57,7 +57,7 @@ export function isPositionLoan(position: Position): position is PositionLoan {
 
 export type PositionEarn = {
   type: "earn";
-  apr: Dnum;
+  owner: Address;
   collIndex: CollIndex;
   deposit: Dnum;
   rewards: {
@@ -68,6 +68,7 @@ export type PositionEarn = {
 
 export type PositionStake = {
   type: "stake";
+  owner: Address;
   deposit: Dnum;
   share: Dnum;
   totalStaked: Dnum;

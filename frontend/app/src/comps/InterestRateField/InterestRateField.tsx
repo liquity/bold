@@ -2,12 +2,14 @@ import type { Address, CollIndex, Delegate } from "@/src/types";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
-import { INTEREST_RATE_DEFAULT, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
+import { Value } from "@/src/comps/Value/Value";
+import { INTEREST_RATE_DEFAULT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import content from "@/src/content";
-import { DELEGATES_FULL, getDebtBeforeRateBucketIndex, IC_STRATEGIES, INTEREST_CHART } from "@/src/demo-mode";
+import { DELEGATES_FULL, IC_STRATEGIES } from "@/src/demo-mode";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRedemptionRisk } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
+import { useInterestRateChartData } from "@/src/liquity-utils";
 import { useInterestBatchDelegate } from "@/src/subgraph-hooks";
 import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
 import { noop } from "@/src/utils";
@@ -117,11 +119,11 @@ export function InterestRateField({
 
   const boldInterestPerYear = interestRate && debt && dn.mul(interestRate, debt);
 
-  const boldRedeemableInFront = getDebtBeforeRateBucketIndex(
-    interestRate
-      ? Math.round((dn.toNumber(interestRate) * 100 - INTEREST_RATE_MIN) / INTEREST_RATE_INCREMENT)
-      : 0,
-  );
+  const interestChartData = useInterestRateChartData(collIndex);
+
+  const interestRateNumber = interestRate && dn.toNumber(dn.mul(interestRate, 100));
+  const chartdataPoint = interestChartData.data?.find(({ rate }) => rate === interestRateNumber);
+  const boldRedeemableInFront = chartdataPoint?.debtInFront ?? dn.from(0, 18);
 
   return (
     <>
@@ -142,7 +144,7 @@ export function InterestRateField({
               <Slider
                 gradient={[1 / 3, 2 / 3]}
                 gradientMode="high-to-low"
-                chart={INTEREST_CHART}
+                chart={interestChartData.data?.map(({ size }) => Math.max(0.1, size)) ?? []}
                 onChange={(value) => {
                   fieldValue.setValue(String(
                     Math.round(
@@ -245,8 +247,12 @@ export function InterestRateField({
               <span>{"Redeemable before you: "}</span>
               <span
                 className={css({
-                  color: "content",
+                  "--color-normal": "token(colors.content)",
+                  "--color-negative": "token(colors.negative)",
                 })}
+                style={{
+                  color: dn.gt(boldRedeemableInFront, 0) ? "var(--color-normal)" : "var(--color-negative)",
+                }}
               >
                 <span
                   className={css({
