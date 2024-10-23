@@ -48,6 +48,8 @@ export function Dropdown({
   size?: "small" | "medium";
 }) {
   const groups = getGroups(items);
+
+  // all the items in a flat array
   const itemsOnly = groups.reduce(
     (acc, { items }) => acc.concat(items),
     [] as DropdownItem[],
@@ -103,7 +105,15 @@ export function Dropdown({
     selectedButton?.focus();
   };
 
-  const menuVisibility = useTransition(showMenu, {
+  const groupsRef = useRef<{ groups: null | readonly DropdownGroup[] }>({ groups: null });
+  if (showMenu && !groupsRef.current.groups) {
+    groupsRef.current = { groups };
+  }
+  if (!showMenu && groupsRef.current.groups) {
+    groupsRef.current = { groups: null };
+  }
+
+  const menuVisibility = useTransition(groupsRef.current, {
     config: {
       mass: 1,
       tension: 4000,
@@ -146,17 +156,17 @@ export function Dropdown({
     }, 0);
   }, [focused, showMenu]);
 
-  let buttonItem = getItem(itemsOnly[selected] || placeholder);
+  const dropdownId = useId();
+
+  let buttonItem = getItem(selected === -1 ? placeholder : itemsOnly[selected]);
   if (typeof buttonDisplay === "function" && itemsOnly[selected]) {
     buttonItem = buttonDisplay(itemsOnly[selected], selected);
   }
   if (!buttonItem) {
-    throw new Error("Invalid selected index or placeholder not provided");
+    buttonItem = getItem(itemsOnly[0]);
   }
 
   const customButton = isValidElement(buttonDisplay) ? buttonDisplay : null;
-
-  const dropdownId = useId();
 
   return (
     <>
@@ -186,7 +196,7 @@ export function Dropdown({
           fontSize: size === "small" ? 16 : 24,
         }}
       >
-        {customButton ?? (
+        {customButton ?? (buttonItem && (
           <div
             className={css({
               display: "flex",
@@ -198,10 +208,10 @@ export function Dropdown({
               borderStyle: "solid",
               borderColor: "#F5F6F8",
               boxShadow: `
-              0 2px 2px rgba(0, 0, 0, 0.1),
-              0 4px 10px rgba(18, 27, 68, 0.05),
-              inset 0 -1px 4px rgba(0, 0, 0, 0.05)
-            `,
+                0 2px 2px rgba(0, 0, 0, 0.1),
+                0 4px 10px rgba(18, 27, 68, 0.05),
+                inset 0 -1px 4px rgba(0, 0, 0, 0.05)
+              `,
               borderRadius: 90,
               cursor: "pointer",
 
@@ -242,11 +252,11 @@ export function Dropdown({
               <IconChevronDown size={size === "small" ? 16 : 24} />
             </div>
           </div>
-        )}
+        ))}
       </button>
       <Root>
-        {menuVisibility((appearStyles, show) => (
-          show && (
+        {menuVisibility((appearStyles, { groups }) => (
+          groups && (
             <a.div
               ref={floatingRefs.setFloating}
               id={dropdownId}
@@ -290,7 +300,6 @@ export function Dropdown({
                   >
                     {group.label && (
                       <div
-                        key={groupIndex}
                         className={css({
                           display: "flex",
                           alignItems: "center",
@@ -304,12 +313,12 @@ export function Dropdown({
                         {group.label}
                       </div>
                     )}
-                    {group.items.map((item_) => {
+                    {group.items.map((item_, index_) => {
                       const item = getItem(item_);
                       const index = item ? itemsOnly.indexOf(item) : -1;
                       return item && (
                         <button
-                          key={`${groupIndex}${index}`}
+                          key={`${groupIndex}${index_}`}
                           tabIndex={index === focused ? 0 : -1}
                           type="button"
                           disabled={typeof item.disabled === "string" || item.disabled}
