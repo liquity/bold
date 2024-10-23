@@ -849,6 +849,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         uint256 remainingBold = _boldAmount;
         for (uint256 i = 0; i < _troveIds.length; i++) {
+            if (remainingBold == 0) break;
+
             SingleRedemptionValues memory singleRedemption;
             singleRedemption.troveId = _troveIds[i];
             _getLatestTroveData(singleRedemption.troveId, singleRedemption.trove);
@@ -876,7 +878,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             totalsTroveChange.oldWeightedRecordedDebt += singleRedemption.oldWeightedRecordedDebt;
 
             remainingBold -= singleRedemption.boldLot;
-            if (remainingBold == 0) break;
         }
 
         if (totalsTroveChange.collDecrease < _minCollateral) {
