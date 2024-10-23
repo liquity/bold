@@ -1112,4 +1112,257 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         vm.prank(barb);
         handler.redeemCollateral(0.000000000536305095 ether, 3);
     }
+
+    function testFailureAfterOpenTrove() external {
+        vm.prank(hope);
+        handler.addMeToUrgentRedemptionBatch();
+
+        vm.prank(gabe);
+        handler.addMeToUrgentRedemptionBatch();
+
+        vm.prank(carl);
+        handler.registerBatchManager(0, 0.431872552257758756 ether, 0.568127447742321818 ether, 0.483152245801310793 ether,
+            0.000000000000000001 ether, 2294477);
+
+        vm.prank(gabe);
+        handler.addMeToUrgentRedemptionBatch();
+
+        vm.prank(carl);
+        handler.addMeToLiquidationBatch();
+
+        vm.prank(carl);
+        handler.addMeToUrgentRedemptionBatch();
+
+        vm.prank(barb);
+        handler.addMeToLiquidationBatch();
+
+        vm.prank(eric);
+        handler.addMeToUrgentRedemptionBatch();
+
+        vm.prank(gabe);
+        handler.warp(4_331_204);
+
+        // upper hint: 0
+        // lower hint: 0
+        // upfront fee: 0 ether
+        vm.prank(carl);
+        handler.setBatchManagerAnnualInterestRate(0, 0.552049051138101387 ether, 28456, 80006);
+
+        vm.prank(hope);
+        handler.addMeToUrgentRedemptionBatch();
+
+        // upper hint: 0
+        // lower hint: 96901457272551398371756629449623967166800022529231482892921115547462047227718
+        // upfront fee: 413.46377041025814076 ether
+        vm.prank(adam);
+        handler.openTrove(1, 23_152.39131854950308974 ether, 2.326153904722043944 ether, 0.931185984964591419 ether, 532926578, 3925563);
+
+        // upper hint: adam
+        // lower hint: adam
+        // upfront fee: 50.199724962657677765 ether
+        vm.prank(adam);
+        handler.adjustTroveInterestRate(1, 0.111074139998631492 ether, 14426381, 430964173);
+
+        // initial deposit: 0 ether
+        // compounded deposit: 0 ether
+        // yield gain: 0 ether
+        // coll gain: 0 ether
+        // stashed coll: 0 ether
+        // blocked SP yield: 0 ether
+        vm.prank(fran);
+        handler.provideToSP(2, 9_399.270032748742264941 ether, false);
+
+        // redemption rate: 0.005 ether
+        // redeemed BOLD: 0.000000000000017578 ether
+        // redeemed Troves: [
+        //   [],
+        //   [adam],
+        //   [],
+        //   [],
+        // ]
+        vm.prank(barb);
+        handler.redeemCollateral(0.000000000000017578 ether, 1);
+
+        vm.prank(hope);
+        handler.addMeToLiquidationBatch();
+
+        vm.prank(eric);
+        handler.registerBatchManager(1, 0.0312302731119697 ether, 0.921197221190075948 ether, 0.780975995673551761 ether, 0.669013829170624771 ether, 28924931);
+
+        // initial deposit: 0 ether
+        // compounded deposit: 0 ether
+        // yield gain: 0 ether
+        // coll gain: 0 ether
+        // stashed coll: 0 ether
+        // blocked SP yield: 0 ether
+        vm.prank(hope);
+        handler.provideToSP(0, 0.000000000000004135 ether, false);
+
+        vm.prank(barb);
+        handler.addMeToLiquidationBatch();
+
+        vm.prank(adam);
+        handler.warp(10_928_747);
+
+        // upper hint: 0
+        // lower hint: 87903029871075914254377627908054574944891091886930582284385770809450030037083
+        // upfront fee: 318.11582674575488923 ether
+        vm.prank(adam);
+        handler.openTrove(0, 41_791.621427191618810921 ether, 2.499497758347802213 ether, 0.396908938739888041 ether, 215428, 3);
+
+        // upper hint: 111414077815863400510004064629973595961579173665589224203503662149373724986687
+        // lower hint: adam
+        // upfront fee: 0 ether
+        // function: repayBold()
+        vm.prank(adam);
+        handler.adjustTrove(0, uint8(AdjustedTroveProperties.onlyDebt), 0 ether, false, 37.254634974823384415 ether, false,
+            24, 6, 1);
+
+        vm.prank(dana);
+        handler.warp(11_871_404);
+
+        // redemption rate: 0.005000000000252284 ether
+        // redeemed BOLD: 0.0000000331443374 ether
+        // redeemed Troves: [
+        //   [adam],
+        //   [],
+        //   [],
+        // ]
+        vm.prank(fran);
+        handler.redeemCollateral(0.000000033144337401 ether, 1);
+
+        // upper hint: 0
+        // lower hint: 0
+        // upfront fee: 424.951494200871355916 ether
+        vm.prank(gabe);
+        handler.openTrove(0, 64_071.917835575049621932 ether, 1.916199835441659958 ether, 0.307283197843426066 ether, 64, 653108);
+
+        vm.prank(fran);
+        handler.addMeToUrgentRedemptionBatch();
+
+        vm.prank(gabe);
+        handler.addMeToLiquidationBatch();
+
+        // price: 104.553160866097544393 ether
+        vm.prank(eric);
+        handler.setPrice(1, 1.123246242801080729 ether);
+
+        // upper hint: gabe
+        // lower hint: gabe
+        // upfront fee: 1_158.924497961540652328 ether
+        vm.prank(hope);
+        handler.openTrove(0, 99_999.999999999999999998 ether, 2.804947829860943868 ether, 0.896150233800932014 ether, 102368, 4378610);
+
+        vm.prank(adam);
+        handler.registerBatchManager(0, 0.995000000002371351 ether, 0.999999999525744815 ether, 0.997411761505311043 ether,
+            0.594884283058177706 ether, 7882549);
+
+        vm.prank(dana);
+        handler.addMeToLiquidationBatch();
+
+        vm.prank(fran);
+        handler.registerBatchManager(1, 0.421080127749273895 ether, 0.751179388795819328 ether, 0.751179388795819327 ether,
+            0.00000000018946898 ether, 25976700);
+
+        vm.prank(eric);
+        handler.warp(4_312);
+
+        // redemption rate: 0.005000000000237579 ether
+        // redeemed BOLD: 0.000000000940666785 ether
+        // redeemed Troves: [
+        //   [gabe],
+        //   [adam],
+        //   [],
+        //   [],
+        // ]
+        vm.prank(carl);
+        handler.redeemCollateral(0.000000000940666786 ether, 1);
+
+        vm.prank(dana);
+        handler.warp(3_932);
+
+        // redemption rate: 0.401645750483932776 ether
+        // redeemed BOLD: 133_103.776977038833343813 ether
+        // redeemed Troves: [
+        //   [gabe, adam],
+        //   [adam],
+        //   [],
+        //   [],
+        // ]
+        vm.prank(carl);
+        handler.redeemCollateral(190_029.082906918173375864 ether, 2);
+
+        // redemption rate: 0.282826161286427524 ether
+        // redeemed BOLD: 0.00350191888563381 ether
+        // redeemed Troves: [
+        //   [hope],
+        //   [adam],
+        //   [],
+        //   [],
+        // ]
+        vm.prank(eric);
+        handler.redeemCollateral(0.003501918885633811 ether, 2);
+
+        vm.prank(eric);
+        handler.addMeToLiquidationBatch();
+
+        vm.prank(hope);
+        handler.warp(22_604_900);
+
+        // initial deposit: 0 ether
+        // compounded deposit: 0 ether
+        // yield gain: 0 ether
+        // coll gain: 0 ether
+        // stashed coll: 0 ether
+        // blocked SP yield: 2_002.246166112316497467 ether
+        vm.prank(eric);
+        handler.provideToSP(1, 27_483.057411615024274993 ether, false);
+
+        vm.prank(dana);
+        handler.addMeToLiquidationBatch();
+
+        vm.prank(carl);
+        handler.addMeToLiquidationBatch();
+
+        // price: 174.042563979015511306 ether
+        vm.prank(gabe);
+        handler.setPrice(0, 2.330582531382734733 ether);
+
+        vm.prank(eric);
+        handler.addMeToUrgentRedemptionBatch();
+
+        vm.prank(barb);
+        handler.warp(8_593);
+
+        // initial deposit: 0 ether
+        // compounded deposit: 0 ether
+        // yield gain: 0 ether
+        // coll gain: 0 ether
+        // stashed coll: 0 ether
+        // blocked SP yield: 0 ether
+        vm.prank(barb);
+        handler.provideToSP(2, 0.00000000000000633 ether, true);
+
+        // batch manager: fran
+        // upper hint: 0
+        // lower hint: adam
+        // upfront fee: 194.87549586652602496 ether
+        vm.prank(gabe);
+        handler.openTroveAndJoinInterestBatchManager(1, 17_220.952852924732897894 ether, 1.759077856462483016 ether, 1920492436, 264685232, 97);
+
+        // initial deposit: 0 ether
+        // compounded deposit: 0 ether
+        // yield gain: 0 ether
+        // coll gain: 0 ether
+        // stashed coll: 0 ether
+        // blocked SP yield: 0 ether
+        vm.prank(eric);
+        handler.provideToSP(3, 10_381.452397714616399533 ether, true);
+
+        // upper hint: 49385475612432696175825405307999834975818973025191069306263297858390974640987
+        // lower hint: 36643377650607204120408246820154174508964204943752157845414520085085534367932
+        // upfront fee: 595.774556526792070013 ether
+        vm.prank(adam);
+        handler.openTrove(0, 69_961.250404278136291366 ether, 1.906928679728758451 ether, 0.202837078986538517 ether, 7969375, 999971909);
+    }
 }
