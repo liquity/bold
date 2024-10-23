@@ -12,8 +12,6 @@ import "./Dependencies/LiquityMath.sol";
 import "./Interfaces/ICollateralRegistry.sol";
 
 contract CollateralRegistry is ICollateralRegistry {
-    // mapping from Collateral token address to the corresponding TroveManagers
-    //mapping(address => address) troveManagers;
     // See: https://github.com/ethereum/solidity/issues/12587
     uint256 public immutable totalCollaterals;
 
