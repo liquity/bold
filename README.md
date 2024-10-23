@@ -482,7 +482,12 @@ For a given branch, the system maintains the following invariant:
 
 That is:
 
-`ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest() + DefaultPool.BoldDebt = SUM_i=1_n(TroveManager.getEntireTroveDebt())`
+```
+ActivePool.aggRecordedDebt + ActivePool.calcPendingAggInterest()
++ ActivePool.aggBatchManagementFees() + ActivePool.calcPendingAggBatchManagementFee()
++ DefaultPool.BoldDebt
+= SUM_i=1_n(TroveManager.getEntireTroveDebt())
+```
 
 For all `n` Troves in the branch.
 
