@@ -45,6 +45,10 @@ templates:
       file: ./src/TroveManager.mapping.ts
       entities:
         - Trove
+        - InterestRateBracket
+        - InterestBatch
+        - BorrowerInfo
+        - Collateral
       abis:
         - name: TroveManager
           file: ../contracts/out/TroveManager.sol/TroveManager.json
@@ -54,12 +58,6 @@ templates:
         - event: TroveOperation(indexed
             uint256,uint8,uint256,uint256,uint256,int256,uint256,int256)
           handler: handleTroveOperation
-        - event: TroveUpdated(indexed
-            uint256,uint256,uint256,uint256,uint256,uint256,uint256)
-          handler: handleTroveUpdated
-        - event: BatchedTroveUpdated(indexed
-            uint256,address,uint256,uint256,uint256,uint256,uint256)
-          handler: handleBatchedTroveUpdated
         - event: BatchUpdated(indexed
             address,uint8,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleBatchUpdated

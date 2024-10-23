@@ -436,7 +436,6 @@ type InterestRateBracket {
   collateral: Collateral!
   rate: BigInt!
   totalDebt: BigInt!
-  totalTroves: Int!
 }
 
 input InterestRateBracket_filter {
@@ -485,14 +484,6 @@ input InterestRateBracket_filter {
   totalDebt_lte: BigInt
   totalDebt_in: [BigInt!]
   totalDebt_not_in: [BigInt!]
-  totalTroves: Int
-  totalTroves_not: Int
-  totalTroves_gt: Int
-  totalTroves_lt: Int
-  totalTroves_gte: Int
-  totalTroves_lte: Int
-  totalTroves_in: [Int!]
-  totalTroves_not_in: [Int!]
   """Filter for the block changed event."""
   _change_block: BlockChangedFilter
   and: [InterestRateBracket_filter]
@@ -510,7 +501,6 @@ enum InterestRateBracket_orderBy {
   collateral__price
   rate
   totalDebt
-  totalTroves
 }
 
 """Defines the order direction, either ascending or descending"""

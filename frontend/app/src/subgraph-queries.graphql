@@ -18,7 +18,7 @@ query TrovesByAccount($account: Bytes!) {
       minCollRatio
       collIndex
     }
-    batch {
+    interestBatch {
       id
       annualInterestRate
       annualManagementFee
@@ -54,7 +54,7 @@ query TroveById($id: ID!) {
       minCollRatio
       collIndex
     }
-    batch {
+    interestBatch {
       id
       annualInterestRate
       annualManagementFee
@@ -124,5 +124,12 @@ query InterestBatch($id: ID!) {
     coll
     annualInterestRate
     annualManagementFee
+  }
+}
+
+query InterestRateBrackets($collId: String!) {
+  interestRateBrackets(where: { collateral: $collId }, orderBy: rate) {
+    rate
+    totalDebt
   }
 }

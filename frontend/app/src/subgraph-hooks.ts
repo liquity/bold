@@ -140,7 +140,10 @@ export function useLoanById(id?: null | PrefixedTroveId, options?: SubgraphHookO
   });
 }
 
-export function useStabilityPoolDeposits(account: null | Address, options?: SubgraphHookOptions) {
+export function useStabilityPoolDeposits(
+  account: null | Address,
+  options?: SubgraphHookOptions,
+) {
   const { refetchInterval } = prepareOptions(options);
   return useQuery<GraphStabilityPoolDeposit[]>({
     queryKey: ["StabilityPoolDepositsByAccount", account],
@@ -296,12 +299,12 @@ function subgraphTroveToLoan(trove: GraphTrove): PositionLoan {
 
   return {
     type: "borrow",
-    batchManager: isAddress(trove.batch?.batchManager) ? trove.batch.batchManager : null,
+    batchManager: isAddress(trove.interestBatch?.batchManager) ? trove.interestBatch.batchManager : null,
     borrowed: dnum18(trove.debt),
     borrower: trove.borrower,
     collateral: collSymbol,
     deposit: dnum18(trove.deposit),
-    interestRate: dnum18(trove.batch?.annualInterestRate ?? trove.interestRate),
+    interestRate: dnum18(trove.interestBatch?.annualInterestRate ?? trove.interestRate),
     troveId: trove.troveId,
     collIndex,
   };
@@ -312,11 +315,14 @@ function subgraphStabilityPoolDepositToEarnPosition(spDeposit: GraphStabilityPoo
   if (!isCollIndex(collIndex)) {
     throw new Error(`Invalid collateral index: ${collIndex}`);
   }
+  if (!isAddress(spDeposit.depositor)) {
+    throw new Error(`Invalid depositor address: ${spDeposit.depositor}`);
+  }
   return {
     type: "earn",
-    apr: dnum18(0),
-    deposit: dnum18(spDeposit.deposit),
+    owner: spDeposit.depositor,
     collIndex,
+    deposit: dnum18(spDeposit.deposit),
     rewards: {
       bold: dnum18(0),
       coll: dnum18(0),
@@ -342,7 +348,6 @@ function subgraphBatchToDelegate(batch: GraphInterestBatch): Delegate {
   };
 }
 
-// TODO: remove this function
 export function useEarnPositionsByAccount(account?: null | Address, options?: SubgraphHookOptions) {
   const { refetchInterval } = prepareOptions(options);
   return useQuery({
@@ -355,6 +360,30 @@ export function useEarnPositionsByAccount(account?: null | Address, options?: Su
         }
         const { stabilityPoolDeposits } = await graph.StabilityPoolDepositsByAccount({ account });
         return stabilityPoolDeposits.map(subgraphStabilityPoolDepositToEarnPosition);
+      },
+    refetchInterval,
+  });
+}
+
+export function useInterestRateBrackets(collIndex: null | CollIndex, options?: SubgraphHookOptions) {
+  const { refetchInterval } = prepareOptions(options);
+  return useQuery({
+    queryKey: ["InterestRateBrackets", collIndex],
+    queryFn: DEMO_MODE
+      ? async () => {
+        return [];
+      }
+      : async () => {
+        if (collIndex === null) {
+          return [];
+        }
+        const { interestRateBrackets } = await graph.InterestRateBrackets({ collId: String(collIndex) });
+        return [...interestRateBrackets]
+          .sort((a, b) => (a.rate > b.rate ? 1 : -1))
+          .map((bracket) => ({
+            rate: dnum18(bracket.rate),
+            totalDebt: dnum18(bracket.totalDebt),
+          }));
       },
     refetchInterval,
   });

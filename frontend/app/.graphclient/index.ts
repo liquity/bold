@@ -478,7 +478,6 @@ export type InterestRateBracket = {
   readonly collateral: Collateral;
   readonly rate: Scalars['BigInt']['output'];
   readonly totalDebt: Scalars['BigInt']['output'];
-  readonly totalTroves: Scalars['Int']['output'];
 };
 
 export type InterestRateBracket_filter = {
@@ -527,14 +526,6 @@ export type InterestRateBracket_filter = {
   readonly totalDebt_lte?: InputMaybe<Scalars['BigInt']['input']>;
   readonly totalDebt_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
   readonly totalDebt_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly totalTroves?: InputMaybe<Scalars['Int']['input']>;
-  readonly totalTroves_not?: InputMaybe<Scalars['Int']['input']>;
-  readonly totalTroves_gt?: InputMaybe<Scalars['Int']['input']>;
-  readonly totalTroves_lt?: InputMaybe<Scalars['Int']['input']>;
-  readonly totalTroves_gte?: InputMaybe<Scalars['Int']['input']>;
-  readonly totalTroves_lte?: InputMaybe<Scalars['Int']['input']>;
-  readonly totalTroves_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
-  readonly totalTroves_not_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
   /** Filter for the block changed event. */
   readonly _change_block?: InputMaybe<BlockChangedFilter>;
   readonly and?: InputMaybe<ReadonlyArray<InputMaybe<InterestRateBracket_filter>>>;
@@ -551,8 +542,7 @@ export type InterestRateBracket_orderBy =
   | 'collateral__totalDebt'
   | 'collateral__price'
   | 'rate'
-  | 'totalDebt'
-  | 'totalTroves';
+  | 'totalDebt';
 
 /** Defines the order direction, either ascending or descending */
 export type OrderDirection =
@@ -1862,7 +1852,6 @@ export type InterestRateBracketResolvers<ContextType = MeshContext, ParentType e
   collateral?: Resolver<ResolversTypes['Collateral'], ParentType, ContextType>;
   rate?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   totalDebt?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
-  totalTroves?: Resolver<ResolversTypes['Int'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2091,15 +2080,16 @@ const merger = new(BareMerger as any)({
         store: rootStore.child('bareMerger')
       })
 const documentHashMap = {
-        "3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": TrovesByAccountDocument,
-"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": InterestRateBracketsDocument,
-"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": TrovesCountDocument,
-"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": TroveByIdDocument,
-"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": StabilityPoolDocument,
-"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": StabilityPoolDepositsByAccountDocument,
-"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": StabilityPoolDepositDocument,
-"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": StabilityPoolEpochScaleDocument,
-"3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7": InterestBatchDocument
+        "1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": TrovesByAccountDocument,
+"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": InterestRateBracketsDocument,
+"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": TrovesCountDocument,
+"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": TroveByIdDocument,
+"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": StabilityPoolDocument,
+"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": StabilityPoolDepositsByAccountDocument,
+"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": StabilityPoolDepositDocument,
+"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": StabilityPoolEpochScaleDocument,
+"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": InterestBatchDocument,
+"1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4": InterestBatchBracketsDocument
       }
 additionalEnvelopPlugins.push(usePersistedOperations({
         getPersistedOperation(key) {
@@ -2126,63 +2116,70 @@ additionalEnvelopPlugins.push(usePersistedOperations({
           return printWithCache(TrovesByAccountDocument);
         },
         location: 'TrovesByAccountDocument.graphql',
-        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
+        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
       },{
         document: InterestRateBracketsDocument,
         get rawSDL() {
           return printWithCache(InterestRateBracketsDocument);
         },
         location: 'InterestRateBracketsDocument.graphql',
-        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
+        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
       },{
         document: TrovesCountDocument,
         get rawSDL() {
           return printWithCache(TrovesCountDocument);
         },
         location: 'TrovesCountDocument.graphql',
-        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
+        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
       },{
         document: TroveByIdDocument,
         get rawSDL() {
           return printWithCache(TroveByIdDocument);
         },
         location: 'TroveByIdDocument.graphql',
-        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
+        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
       },{
         document: StabilityPoolDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDocument);
         },
         location: 'StabilityPoolDocument.graphql',
-        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
+        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
       },{
         document: StabilityPoolDepositsByAccountDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDepositsByAccountDocument);
         },
         location: 'StabilityPoolDepositsByAccountDocument.graphql',
-        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
+        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
       },{
         document: StabilityPoolDepositDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDepositDocument);
         },
         location: 'StabilityPoolDepositDocument.graphql',
-        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
+        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
       },{
         document: StabilityPoolEpochScaleDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolEpochScaleDocument);
         },
         location: 'StabilityPoolEpochScaleDocument.graphql',
-        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
+        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
       },{
         document: InterestBatchDocument,
         get rawSDL() {
           return printWithCache(InterestBatchDocument);
         },
         location: 'InterestBatchDocument.graphql',
-        sha256Hash: '3c395faf8bd50019e029ea4c7d8a48dc828c59598746f7276f26e82451d313e7'
+        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
+      },{
+        document: InterestBatchBracketsDocument,
+        get rawSDL() {
+          return printWithCache(InterestBatchBracketsDocument);
+        },
+        location: 'InterestBatchBracketsDocument.graphql',
+        sha256Hash: '1ea4d92627db1cc4e57605c6f7ef53c67f38968c6c3549083698e3b187cad8a4'
       }
     ];
     },
@@ -2320,6 +2317,13 @@ export type InterestBatchQuery = { readonly interestBatch?: Maybe<(
     Pick<InterestBatch, 'batchManager' | 'debt' | 'coll' | 'annualInterestRate' | 'annualManagementFee'>
     & { readonly collateral: Pick<Collateral, 'collIndex'> }
   )> };
+
+export type InterestBatchBracketsQueryVariables = Exact<{
+  collId: Scalars['String']['input'];
+}>;
+
+
+export type InterestBatchBracketsQuery = { readonly interestRateBrackets: ReadonlyArray<Pick<InterestRateBracket, 'totalDebt' | 'rate'>> };
 
 
 export const TrovesByAccountDocument = gql`
@@ -2468,6 +2472,15 @@ export const InterestBatchDocument = gql`
   }
 }
     ` as unknown as DocumentNode<InterestBatchQuery, InterestBatchQueryVariables>;
+export const InterestBatchBracketsDocument = gql`
+    query InterestBatchBrackets($collId: String!) {
+  interestRateBrackets(where: {collateral: $collId}, orderBy: rate) {
+    totalDebt
+    rate
+  }
+}
+    ` as unknown as DocumentNode<InterestBatchBracketsQuery, InterestBatchBracketsQueryVariables>;
+
 
 
 
@@ -2507,6 +2520,9 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     },
     InterestBatch(variables: InterestBatchQueryVariables, options?: C): Promise<InterestBatchQuery> {
       return requester<InterestBatchQuery, InterestBatchQueryVariables>(InterestBatchDocument, variables, options) as Promise<InterestBatchQuery>;
+    },
+    InterestBatchBrackets(variables: InterestBatchBracketsQueryVariables, options?: C): Promise<InterestBatchBracketsQuery> {
+      return requester<InterestBatchBracketsQuery, InterestBatchBracketsQueryVariables>(InterestBatchBracketsDocument, variables, options) as Promise<InterestBatchBracketsQuery>;
     }
   };
 }

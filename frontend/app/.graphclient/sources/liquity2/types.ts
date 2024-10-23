@@ -455,7 +455,6 @@ export type InterestRateBracket = {
   readonly collateral: Collateral;
   readonly rate: Scalars['BigInt']['output'];
   readonly totalDebt: Scalars['BigInt']['output'];
-  readonly totalTroves: Scalars['Int']['output'];
 };
 
 export type InterestRateBracket_filter = {
@@ -504,14 +503,6 @@ export type InterestRateBracket_filter = {
   readonly totalDebt_lte?: InputMaybe<Scalars['BigInt']['input']>;
   readonly totalDebt_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
   readonly totalDebt_not_in?: InputMaybe<ReadonlyArray<Scalars['BigInt']['input']>>;
-  readonly totalTroves?: InputMaybe<Scalars['Int']['input']>;
-  readonly totalTroves_not?: InputMaybe<Scalars['Int']['input']>;
-  readonly totalTroves_gt?: InputMaybe<Scalars['Int']['input']>;
-  readonly totalTroves_lt?: InputMaybe<Scalars['Int']['input']>;
-  readonly totalTroves_gte?: InputMaybe<Scalars['Int']['input']>;
-  readonly totalTroves_lte?: InputMaybe<Scalars['Int']['input']>;
-  readonly totalTroves_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
-  readonly totalTroves_not_in?: InputMaybe<ReadonlyArray<Scalars['Int']['input']>>;
   /** Filter for the block changed event. */
   readonly _change_block?: InputMaybe<BlockChangedFilter>;
   readonly and?: InputMaybe<ReadonlyArray<InputMaybe<InterestRateBracket_filter>>>;
@@ -528,8 +519,7 @@ export type InterestRateBracket_orderBy =
   | 'collateral__totalDebt'
   | 'collateral__price'
   | 'rate'
-  | 'totalDebt'
-  | 'totalTroves';
+  | 'totalDebt';
 
 /** Defines the order direction, either ascending or descending */
 export type OrderDirection =
