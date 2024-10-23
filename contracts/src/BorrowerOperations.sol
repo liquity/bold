@@ -116,7 +116,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     error IsShutDown();
-    error NotShutDown();
     error TCRNotBelowSCR();
     error ZeroAdjustment();
     error NotOwnerNorInterestManager();
