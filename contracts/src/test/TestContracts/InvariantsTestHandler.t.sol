@@ -2929,10 +2929,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
                 return (selector, "BorrowerOperations.IsShutDown()");
             }
 
-            if (selector == BorrowerOperations.NotShutDown.selector) {
-                return (selector, "BorrowerOperations.NotShutDown()");
-            }
-
             if (selector == BorrowerOperations.TCRNotBelowSCR.selector) {
                 return (selector, "BorrowerOperations.TCRNotBelowSCR()");
             }

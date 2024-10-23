@@ -949,9 +949,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         LatestBatchData memory _latestBatchData
     ) internal view {
         Trove memory trove = Troves[_troveId];
-        Batch memory batch = batches[_batchAddress];
         uint256 batchDebtShares = trove.batchDebtShares;
-        uint256 totalDebtShares = batch.totalDebtShares;
+        uint256 totalDebtShares = batches[_batchAddress].totalDebtShares;
 
         uint256 stake = trove.stake;
         _latestTroveData.redistBoldDebtGain =
@@ -1054,7 +1053,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 _debtToRedistribute,
         uint256 _collToRedistribute
     ) internal {
-        if (_debtToRedistribute == 0) return;
+        if (_debtToRedistribute == 0) return; // Otherwise _collToRedistribute > 0 too
 
         /*
         * Add distributed coll and debt rewards-per-unit-staked to the running totals. Division uses a "feedback"
