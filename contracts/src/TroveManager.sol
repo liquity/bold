@@ -761,7 +761,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 nextUserToCheck = sortedTrovesCached.getPrev(singleRedemption.troveId);
             }
 
-            // Skip if ICR < 100%, to make sure that redemptions always improve the CR of hit Troves
+            // Skip if ICR < 100%, to make sure that redemptions don’t decrease the CR of hit Troves
             if (getCurrentICR(singleRedemption.troveId, _price) < _100pct) {
                 singleRedemption.troveId = nextUserToCheck;
                 singleRedemption.isZombieTrove = false;
