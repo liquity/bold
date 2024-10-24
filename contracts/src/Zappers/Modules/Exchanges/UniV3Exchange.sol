@@ -26,7 +26,7 @@ contract UniV3Exchange is LeftoversSweep, IExchange {
         uniV3Router = _uniV3Router;
     }
 
-    function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount) external returns (uint256) {
+    function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount) external {
         ISwapRouter uniV3RouterCached = uniV3Router;
 
         // Set initial balances to make sure there are not lefovers
@@ -47,12 +47,10 @@ contract UniV3Exchange is LeftoversSweep, IExchange {
             sqrtPriceLimitX96: 0 // See: https://ethereum.stackexchange.com/a/156018/9205
         });
 
-        uint256 amountIn = uniV3RouterCached.exactOutputSingle(params);
+        uniV3RouterCached.exactOutputSingle(params);
 
         // return leftovers to user
         _returnLeftovers(initialBalances);
-
-        return amountIn;
     }
 
     function swapToBold(uint256 _collAmount, uint256 _minBoldAmount) external returns (uint256) {
