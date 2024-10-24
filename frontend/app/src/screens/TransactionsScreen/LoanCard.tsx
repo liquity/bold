@@ -692,6 +692,9 @@ function GridItem({
       <div
         className={css({
           color: "strongSurfaceContent",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
         })}
       >
         {children}
