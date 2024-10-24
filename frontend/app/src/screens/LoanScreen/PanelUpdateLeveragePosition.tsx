@@ -1,11 +1,12 @@
 import type { PositionLoan } from "@/src/types";
 
 import { INFINITY } from "@/src/characters";
+import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
-import { InfoBox } from "@/src/comps/InfoBox/InfoBox";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
+import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { Value } from "@/src/comps/Value/Value";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
@@ -313,54 +314,48 @@ export function PanelUpdateLeveragePosition({ loan }: { loan: PositionLoan }) {
             paddingBottom: 32,
           })}
         >
-          <InfoBox gap={8}>
-            <HFlex justifyContent="space-between" gap={16}>
-              <div>Liquidation risk</div>
-              <ValueUpdate
-                before={initialLoanDetails.liquidationRisk && (
-                  <HFlex gap={4} justifyContent="flex-start">
-                    <StatusDot mode={riskLevelToStatusMode(initialLoanDetails.liquidationRisk)} />
+          <UpdateBox
+            updates={[
+              {
+                label: "Liquidation risk",
+                before: initialLoanDetails.liquidationRisk && (
+                  <>
+                    <StatusDot
+                      mode={riskLevelToStatusMode(
+                        initialLoanDetails.liquidationRisk,
+                      )}
+                    />
                     {formatRisk(initialLoanDetails.liquidationRisk)}
-                  </HFlex>
-                )}
-                after={newLoanDetails.liquidationRisk && (
-                  <HFlex gap={4} justifyContent="flex-start">
-                    <StatusDot mode={riskLevelToStatusMode(newLoanDetails.liquidationRisk)} />
+                  </>
+                ),
+                after: newLoanDetails.liquidationRisk && (
+                  <>
+                    <StatusDot
+                      mode={riskLevelToStatusMode(
+                        newLoanDetails.liquidationRisk,
+                      )}
+                    />
                     {formatRisk(newLoanDetails.liquidationRisk)}
-                  </HFlex>
-                )}
-              />
-            </HFlex>
-            <HFlex
-              justifyContent="space-between"
-              gap={16}
-              className={css({
-                fontSize: 14,
-              })}
-            >
-              <div
-                className={css({
-                  color: "contentAlt",
-                })}
-              >
-                <abbr title="Loan-to-value ratio">LTV</abbr>
-              </div>
-              <ValueUpdate
-                fontSize={14}
-                before={initialLoanDetails.ltv && (
+                  </>
+                ),
+              },
+              {
+                label: <abbr title="Loan-to-value ratio">LTV</abbr>,
+                before: initialLoanDetails.ltv && (
                   <Value
                     negative={dn.gt(
                       initialLoanDetails.ltv,
                       initialLoanDetails.maxLtvAllowed,
                     )}
                   >
-                    {fmtnum(dn.mul(initialLoanDetails.ltv, 100))}%
+                    <Amount value={initialLoanDetails.ltv} percentage />
                   </Value>
-                )}
-                after={
+                ),
+                after: (
                   <Value
                     negative={(
-                      newLoanDetails.status === "underwater" || newLoanDetails.status === "liquidatable"
+                      newLoanDetails.status === "underwater"
+                      || newLoanDetails.status === "liquidatable"
                     ) || (
                       newLoanDetails.ltv && dn.gt(
                         newLoanDetails.ltv,
@@ -368,23 +363,23 @@ export function PanelUpdateLeveragePosition({ loan }: { loan: PositionLoan }) {
                       )
                     )}
                   >
-                    {newLoanDetails.status === "underwater" || newLoanDetails.status === "liquidatable"
+                    {newLoanDetails.status === "underwater"
+                        || newLoanDetails.status === "liquidatable"
                       ? "N/A"
-                      : newLoanDetails.ltv && `${fmtnum(dn.mul(newLoanDetails.ltv, 100))}%`}
+                      : <Amount value={newLoanDetails.ltv} percentage />}
                   </Value>
-                }
-              />
-            </HFlex>
-          </InfoBox>
+                ),
+              },
+            ]}
+          />
 
           {newLoanDetails.status === "underwater" || newLoanDetails.status === "liquidatable"
             ? (
               <WarningBox>
                 <div>
-                  Your position is above the maximum <abbr title="Loan-to-value ratio">LTV</abbr> of {fmtnum(
-                    newLoanDetails.maxLtv && dn.mul(newLoanDetails.maxLtv, 100),
-                  )}%. You need to add at least{" "}
-                  {fmtnum(newLoanDetails.depositToZero && dn.mul(newLoanDetails.depositToZero, -1), 4)}
+                  Your position is above the maximum <abbr title="Loan-to-value ratio">LTV</abbr> of{" "}
+                  <Amount value={newLoanDetails.maxLtv} percentage />. You need to add at least{" "}
+                  <Amount value={newLoanDetails.depositToZero && dn.mul(newLoanDetails.depositToZero, -1)} format={4} />
                   {" "}
                   {collateral.name} to prevent liquidation.
                 </div>

@@ -1,21 +1,20 @@
 import type { PositionLoan } from "@/src/types";
 
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { Field } from "@/src/comps/Field/Field";
 import { fmtnum } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
 import { getPrefixedTroveId } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
 import { Button, Dropdown, TokenIcon, TOKENS_BY_SYMBOL, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
-  const router = useRouter();
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
@@ -24,6 +23,8 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
   const [tokenIndex, setTokenIndex] = useState(0);
 
   const collateral = TOKENS_BY_SYMBOL[loan.collateral];
+
+  const boldBalance = useBalance(account.address, "BOLD");
 
   if (!collPrice || !boldPriceUsd) {
     return null;
@@ -47,7 +48,27 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
     ? loan.deposit
     : dn.sub(loan.deposit, amountToRepay);
 
-  const allowSubmit = account.isConnected && tokenIndex === 0;
+  let error: null | { name: string; message: string } = null;
+  if (account.address?.toLowerCase() !== loan.borrower.toLowerCase()) {
+    error = {
+      name: "INVALID_OWNER",
+      message: "The current account is not the owner of the loan.",
+    };
+  } else if (tokenIndex === 0 && (!boldBalance.data || dn.lt(boldBalance.data, amountToRepay))) {
+    error = {
+      name: "INSUFFICIENT_BALANCE",
+      message: "Insufficient BOLD balance to repay the loan.",
+    };
+  }
+
+  const [showError, setShowError] = useState(false);
+  useEffect(() => {
+    if (error === null) {
+      setShowError(false);
+    }
+  }, [error]);
+
+  const allowSubmit = error === null;
 
   return (
     <>
@@ -73,6 +94,7 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
                 <div>{fmtnum(amountToRepay)}</div>
               </div>
               <Dropdown
+                menuPlacement="end"
                 buttonDisplay={() => ({
                   label: (
                     <>
@@ -95,9 +117,10 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
                   icon: <TokenIcon symbol={symbol} />,
                   label: (
                     <>
-                      {collateral.name} {symbol === "BOLD" ? "(account balance)" : "(loan collateral)"}
+                      {TOKENS_BY_SYMBOL[symbol].name} {symbol === "BOLD" ? "(account)" : "(loan collateral)"}
                     </>
                   ),
+                  value: symbol === "BOLD" ? fmtnum(boldBalance.data) : null,
                 }))}
                 menuWidth={300}
                 onSelect={setTokenIndex}
@@ -157,7 +180,15 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
           label="You reclaim"
           footer={[[
             <Field.FooterInfo
-              label={`$${fmtnum(dn.mul(loan.deposit, collPrice), 2)}`}
+              label={`$${
+                fmtnum(
+                  dn.mul(
+                    collToReclaim,
+                    collPrice,
+                  ),
+                  2,
+                )
+              }`}
               value={null}
             />,
             null,
@@ -166,15 +197,19 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
       </VFlex>
       <div
         className={css({
-          padding: 20,
-          textAlign: "center",
-          background: "yellow:200",
+          display: "flex",
+          flexDirection: "column",
+          gap: 32,
+          padding: 16,
+          color: "content",
+          background: "fieldSurface",
+          border: "1px solid token(colors.border)",
           borderRadius: 8,
         })}
       >
-        You are repaying your debt and closing the position. {repayWith === "BOLD"
-          ? `The deposit will be returned to your wallet.`
-          : `To close yor position, a part of your collateral will be sold to pay back the debt. The rest of your collateral will be returned to your wallet.`}
+        {repayWith === "BOLD"
+          ? `You are repaying your debt and closing the position. The deposit will be returned to your wallet.`
+          : `To close your position, a part of your collateral will be sold to pay back the debt. The rest of your collateral will be returned to your wallet.`}
       </div>
       <div
         style={{
@@ -186,6 +221,15 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
         }}
       >
         <ConnectWarningBox />
+
+        {error && showError && (
+          <div>
+            <ErrorBox title={error?.name}>
+              {error?.message}
+            </ErrorBox>
+          </div>
+        )}
+
         <Button
           disabled={!allowSubmit}
           label="Repay & close"
@@ -193,6 +237,10 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
           size="large"
           wide
           onClick={() => {
+            if (error) {
+              setShowError(true);
+              return;
+            }
             if (account.address) {
               txFlow.start({
                 flowId: "closeLoanPosition",
@@ -206,7 +254,6 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
                 collIndex: loan.collIndex,
                 prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
               });
-              router.push("/transactions");
             }
           }}
         />

@@ -3,36 +3,53 @@ import type { ReactNode } from "react";
 import type { LoanLoadingState } from "./LoanScreen";
 
 import { INFINITY } from "@/src/characters";
-import { Spinner } from "@/src/comps/Spinner/Spinner";
+import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { Value } from "@/src/comps/Value/Value";
+import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { formatRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { shortenTroveId } from "@/src/liquity-utils";
+import { shortenTroveId, useTroveNftUrl } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { roundToDecimal } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import { token } from "@/styled-system/tokens";
-import { Button, HFlex, IconBorrow, IconLeverage, StatusDot, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
-import { a, useSpring } from "@react-spring/web";
+import {
+  Button,
+  Dropdown,
+  HFlex,
+  IconBorrow,
+  IconCopy,
+  IconEllipsis,
+  IconExternal,
+  IconLeverage,
+  IconNft,
+  shortenAddress,
+  StatusDot,
+  TokenIcon,
+  TOKENS_BY_SYMBOL,
+  VFlex,
+} from "@liquity2/uikit";
+import { a, useTransition } from "@react-spring/web";
+import { blo } from "blo";
 import * as dn from "dnum";
+import { useEffect, useState } from "react";
 import { match, P } from "ts-pattern";
 
-const LOAN_CARD_HEIGHT = 246;
+type LoanMode = "borrow" | "leverage";
 
 export function LoanCard({
-  leverageMode,
+  onLeverageModeChange,
+  mode,
   loadingState,
   loan,
-  onLeverageModeChange,
   onRetry,
   troveId,
 }: {
-  leverageMode: boolean;
+  mode: LoanMode;
   loadingState: LoanLoadingState;
   loan: PositionLoan | null;
-  onLeverageModeChange: (leverageMode: boolean) => void;
+  onLeverageModeChange: (mode: LoanMode) => void;
   onRetry: () => void;
   troveId: TroveId;
 }) {
@@ -60,361 +77,102 @@ export function LoanCard({
     collateral.collateralRatio,
   );
 
-  return (
-    <LoadingCard
-      leverage={leverageMode}
-      troveId={troveId}
-      loan={loan}
-      loadingState={loadingState}
-      onRetry={onRetry}
-    >
-      {loan
-        && loanDetails
-        && collateral
-        && typeof leverageFactor === "number"
-        && depositPreLeverage
-        && maxLtv
-        && liquidationRisk
-        && (
-          <>
-            <div
-              className={css({
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              })}
-            >
-              <div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  fontSize: 40,
-                  lineHeight: 1,
-                  gap: 12,
-                })}
-              >
-                {leverageMode
-                  ? (
-                    <div
-                      title={`${fmtnum(loan.deposit, "full")} ${collateral}`}
-                      className={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                      })}
-                    >
-                      <div>{fmtnum(loan.deposit)}</div>
-                      <TokenIcon symbol={collateral.symbol} size={32} />
-                      <div
-                        className={css({
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 4,
-                        })}
-                      >
-                        <div>
-                          <Value
-                            negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
-                            title={`Leverage factor: ${
-                              loanDetails.status === "underwater" || leverageFactor === null
-                                ? INFINITY
-                                : `${roundToDecimal(leverageFactor, 3)}x`
-                            }`}
-                            className={css({
-                              fontSize: 16,
-                            })}
-                          >
-                            {loanDetails.status === "underwater" || leverageFactor === null
-                              ? INFINITY
-                              : `${roundToDecimal(leverageFactor, 1)}x`}
-                          </Value>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                  : (
-                    <div
-                      title={`${fmtnum(loan.borrowed)} BOLD`}
-                      className={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                      })}
-                    >
-                      {fmtnum(loan.borrowed)}
-                      <TokenIcon symbol="BOLD" size={32} />
-                    </div>
-                  )}
-              </div>
-              <div>
-                <Button
-                  label={leverageMode ? "View as loan" : "View as leverage"}
-                  mode="primary"
-                  size="small"
-                  onClick={() => {
-                    onLeverageModeChange(!leverageMode);
-                  }}
-                />
-              </div>
-            </div>
-            <div
-              className={css({
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: 12,
-                paddingTop: 32,
-              })}
-            >
-              {leverageMode
-                ? (
-                  <GridItem label="Net value">
-                    <Value
-                      negative={loanDetails.status === "underwater"}
-                      title={`${fmtnum(depositPreLeverage)} ${collateral.name}`}
-                    >
-                      {fmtnum(depositPreLeverage)} {collateral.name}
-                    </Value>
-                  </GridItem>
-                )
-                : (
-                  <GridItem label="Collateral">
-                    <div title={`${fmtnum(loan.deposit, "full")} ${collateral.name}`}>
-                      {fmtnum(loan.deposit)} {collateral.name}
-                    </div>
-                  </GridItem>
-                )}
-              <GridItem label="Liq. price" title="Liquidation price">
-                <Value negative={ltv && dn.gt(ltv, maxLtv)}>
-                  ${fmtnum(loanDetails.liquidationPrice)}
-                </Value>
-              </GridItem>
-              <GridItem label="Interest rate">
-                {fmtnum(loan.interestRate, 2, 100)}%
-              </GridItem>
-              <GridItem label="LTV" title="Loan-to-value ratio">
-                <div
-                  className={css({
-                    "--status-positive": "token(colors.positiveAlt)",
-                    "--status-warning": "token(colors.warning)",
-                    "--status-negative": "token(colors.negative)",
-                  })}
-                  style={{
-                    color: liquidationRisk === "low"
-                      ? "var(--status-positive)"
-                      : liquidationRisk === "medium"
-                      ? "var(--status-warning)"
-                      : "var(--status-negative)",
-                  }}
-                >
-                  {fmtnum(ltv, "2z", 100)}%
-                </div>
-              </GridItem>
-              <GridItem label="Liquidation risk">
-                <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-                  <StatusDot
-                    mode={riskLevelToStatusMode(liquidationRisk)}
-                    size={8}
-                  />
-                  {formatRisk(liquidationRisk)}
-                </HFlex>
-              </GridItem>
-              {redemptionRisk && (
-                <GridItem label="Redemption risk">
-                  <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-                    <StatusDot
-                      mode={riskLevelToStatusMode(redemptionRisk)}
-                      size={8}
-                    />
-                    {formatRisk(redemptionRisk)}
-                  </HFlex>
-                </GridItem>
-              )}
-            </div>
-          </>
-        )}
-    </LoadingCard>
-  );
-}
+  const nftUrl = useTroveNftUrl(loan?.collIndex ?? null, troveId);
+  const title = mode === "leverage" ? "Leverage loan" : "BOLD loan";
 
-function LoadingCard({
-  children,
-  leverage,
-  loadingState,
-  loan,
-  onRetry,
-  troveId,
-}: {
-  children: ReactNode;
-  leverage: boolean;
-  loadingState: LoanLoadingState;
-  loan: PositionLoan | null;
-  onRetry: () => void;
-  troveId: TroveId;
-}) {
-  const title = leverage ? "Leverage loan" : "BOLD loan";
-  const titleFull = loan && `${title}: ${troveId}`;
+  const [notifyCopy, setNotifyCopy] = useState(false);
+  useEffect(() => {
+    if (!notifyCopy) {
+      return;
+    }
+    const timeout = setTimeout(() => {
+      setNotifyCopy(false);
+    }, 500);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [notifyCopy]);
 
-  const spring = useSpring({
-    to: match(loadingState)
-      .with(
-        P.union(
-          "loading",
-          "error",
-          "awaiting-confirmation",
-          "not-found",
-        ),
-        (s) => ({
-          cardtransform: "scale3d(0.95, 0.95, 1)",
-          containerHeight: (
-            window.innerHeight
-            - 120 // top bar
-            - 24 * 2 // padding
-            - 48 // bottom bar 1
-            - 40
-            // - 40 // bottom bar 2
-          ),
-          cardHeight: s === "error" || s === "not-found" ? 180 : 120,
-          cardBackground: token("colors.blue:50"),
-          cardColor: token("colors.blue:950"),
-        }),
-      )
-      .otherwise(() => ({
-        cardtransform: "scale3d(1, 1, 1)",
-        containerHeight: LOAN_CARD_HEIGHT,
-        cardHeight: LOAN_CARD_HEIGHT,
-        cardBackground: token("colors.blue:950"),
-        cardColor: token("colors.white"),
-      })),
+  const notifyCopyTransition = useTransition(notifyCopy, {
+    from: { opacity: 0, transform: "scale(0.9)" },
+    enter: { opacity: 1, transform: "scale(1)" },
+    leave: { opacity: 0, transform: "scale(1)" },
     config: {
       mass: 1,
       tension: 2000,
-      friction: 120,
+      friction: 80,
     },
   });
 
   return (
-    <a.div
-      className={css({
-        display: "flex",
-        justifyContent: "center",
-        flexDirection: "column",
-      })}
-      style={{
-        height: spring.containerHeight,
-      }}
+    <ScreenCard
+      mode={match(loadingState)
+        .returnType<"ready" | "loading" | "error">()
+        .with(P.union("loading", "awaiting-confirmation"), () => "loading")
+        .with(P.union("error", "not-found"), () => "error")
+        .otherwise(() => "ready")}
     >
-      <a.section
-        className={css({
-          overflow: "hidden",
-          width: "100%",
-          padding: "16px 16px 24px",
-          borderRadius: 8,
-          userSelect: "none",
-        })}
-        style={{
-          height: loadingState === "success" ? LOAN_CARD_HEIGHT : spring.cardHeight,
-          color: spring.cardColor,
-          background: spring.cardBackground,
-          transform: spring.cardtransform,
-          willChange: "transform",
-        }}
-      >
-        <h1
-          title={titleFull ?? undefined}
-          className={css({
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            paddingBottom: 12,
-          })}
-          style={{
-            opacity: Number(loadingState === "success"),
-            pointerEvents: loadingState === "success" ? "auto" : "none",
-          }}
-        >
+      {match(loadingState)
+        .with(
+          P.union("loading", "awaiting-confirmation"),
+          () => (
+            <div
+              className={css({
+                display: "grid",
+                placeItems: "center",
+                height: "100%",
+              })}
+            >
+              <div
+                className={css({
+                  position: "absolute",
+                  top: 16,
+                  left: 16,
+                })}
+              >
+                <LoanCardHeading
+                  inheritColor={true}
+                  mode={mode}
+                  title={title}
+                  titleFull={`${title}: ${troveId}`}
+                />
+              </div>
+              <HFlex gap={8}>
+                Fetching loan
+                <span title={`Loan ${troveId}`}>
+                  {shortenTroveId(troveId)}
+                </span>
+              </HFlex>
+            </div>
+          ),
+        )
+        .with("not-found", () => (
           <div
             className={css({
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              color: "strongSurfaceContent",
-              fontSize: 12,
-              textTransform: "uppercase",
-              userSelect: "none",
+              display: "grid",
+              placeItems: "center",
+              height: "100%",
             })}
           >
             <div
               className={css({
-                display: "flex",
-                color: "strongSurfaceContentAlt2",
-              })}
-            >
-              {leverage
-                ? <IconLeverage size={16} />
-                : <IconBorrow size={16} />}
-            </div>
-            {title}
-          </div>
-        </h1>
-        {match(loadingState)
-          .with(P.union("loading", "awaiting-confirmation"), () => (
-            <div
-              className={css({
                 position: "absolute",
-                inset: 0,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: 8,
-                fontSize: 18,
+                top: 16,
+                left: 16,
               })}
             >
-              Fetching loan
-              <span title={`Loan ${troveId}`}>
-                {shortenTroveId(troveId)}…
-              </span>
-              <Spinner size={18} />
-            </div>
-          ))
-          .with("error", () => (
-            <div
-              className={css({
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                flexDirection: "column",
-                gap: 16,
-                fontSize: 18,
-                padding: 16,
-              })}
-            >
-              <div>
-                Error fetching loan{" "}
-                <span title={`Loan ${troveId}`}>
-                  {shortenTroveId(troveId)}
-                </span>.
-              </div>
-              <Button
-                mode="primary"
-                label="Try again"
-                size="small"
-                onClick={onRetry}
+              <LoanCardHeading
+                inheritColor={true}
+                mode={mode}
+                title={title}
+                titleFull={`${title}: ${troveId}`}
               />
             </div>
-          ))
-          .with("not-found", () => (
-            <div
+            <VFlex
+              alignItems="center"
+              justifyContent="center"
+              gap={16}
               className={css({
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                flexDirection: "column",
-                gap: 16,
-                fontSize: 18,
                 padding: 16,
               })}
             >
@@ -426,20 +184,426 @@ function LoadingCard({
                 not found.
               </div>
               <Button
-                mode="primary"
+                mode="negative"
                 label="Try again"
                 size="small"
                 onClick={onRetry}
               />
-            </div>
-          ))
-          .otherwise(() => (
-            <div>
-              {children}
-            </div>
-          ))}
-      </a.section>
-    </a.div>
+            </VFlex>
+          </div>
+        ))
+        .with("error", () => (
+          <HFlex gap={8}>
+            Error fetching loan{" "}
+            <span title={`Loan ${troveId}`}>
+              {shortenTroveId(troveId)}
+            </span>.
+            <Button
+              mode="primary"
+              label="Try again"
+              size="small"
+              onClick={onRetry}
+            />
+          </HFlex>
+        ))
+        .otherwise(() => {
+          return (
+            loan
+            && loanDetails
+            && collateral
+            && typeof leverageFactor === "number"
+            && depositPreLeverage
+            && maxLtv
+            && liquidationRisk
+            && (
+              <section
+                className={css({
+                  position: "relative",
+                  overflow: "hidden",
+                  height: "100%",
+                  width: "100%",
+                  background: "strongSurface",
+                  color: "strongSurfaceContent",
+                  borderRadius: 8,
+                  userSelect: "none",
+                  padding: "16px 16px 24px",
+                })}
+              >
+                <h1
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 4,
+                    paddingBottom: 12,
+                  })}
+                >
+                  <LoanCardHeading
+                    inheritColor={false}
+                    mode={mode}
+                    title={title}
+                    titleFull={`${title}: ${troveId}`}
+                  />
+                  <div
+                    className={css({
+                      position: "absolute",
+                      top: 16,
+                      right: 16,
+                    })}
+                  >
+                    {notifyCopyTransition((style, show) => (
+                      show && (
+                        <a.div
+                          className={css({
+                            position: "absolute",
+                            top: 0,
+                            bottom: 0,
+                            right: "calc(100% + 16px)",
+                            display: "grid",
+                            placeItems: "center",
+                            fontSize: 12,
+                            textTransform: "uppercase",
+                            whiteSpace: "nowrap",
+                          })}
+                          style={style}
+                        >
+                          Copied
+                        </a.div>
+                      )
+                    ))}
+                    <Dropdown
+                      buttonDisplay={
+                        <div
+                          className={css({
+                            display: "grid",
+                            placeItems: "center",
+                            width: 28,
+                            height: 28,
+                            color: "strongSurfaceContent",
+                            borderRadius: "50%",
+                            _groupActive: {
+                              translate: "0 1px",
+                              boxShadow: `0 1px 1px rgba(0, 0, 0, 0.1)`,
+                            },
+                            _groupFocusVisible: {
+                              outline: "2px solid token(colors.focused)",
+                            },
+                            _groupExpanded: {
+                              color: "strongSurface",
+                              background: "secondaryActive",
+                            },
+                          })}
+                        >
+                          <IconEllipsis size={24} />
+                        </div>
+                      }
+                      items={[
+                        {
+                          icon: (
+                            <div
+                              className={css({
+                                color: "accent",
+                              })}
+                            >
+                              {mode === "leverage"
+                                ? <IconBorrow size={16} />
+                                : <IconLeverage size={16} />}
+                            </div>
+                          ),
+                          label: mode === "leverage"
+                            ? "View as loan"
+                            : "View as leverage",
+                        },
+                        {
+                          icon: (
+                            <div
+                              className={css({
+                                color: "accent",
+                              })}
+                            >
+                              <IconCopy size={16} />
+                            </div>
+                          ),
+                          label: "Copy public link",
+                        },
+                        {
+                          icon: (
+                            <img
+                              src={blo(loan.borrower)}
+                              alt=""
+                              width={16}
+                              height={16}
+                              className={css({
+                                display: "block",
+                                borderRadius: 2,
+                              })}
+                            />
+                          ),
+                          label: `Owner ${shortenAddress(loan.borrower, 4)}`,
+                          value: (
+                            <div
+                              className={css({
+                                color: "contentAlt",
+                              })}
+                            >
+                              <IconExternal size={16} />
+                            </div>
+                          ),
+                        },
+                        {
+                          icon: (
+                            <div
+                              className={css({
+                                color: "accent",
+                              })}
+                            >
+                              <IconNft size={16} />
+                            </div>
+                          ),
+                          label: "Open NFT",
+                          value: (
+                            <div
+                              className={css({
+                                color: "contentAlt",
+                              })}
+                            >
+                              <IconExternal size={16} />
+                            </div>
+                          ),
+                        },
+                      ]}
+                      selected={0}
+                      onSelect={(index) => {
+                        if (index === 0) {
+                          onLeverageModeChange(mode === "leverage" ? "borrow" : "leverage");
+                        }
+                        if (index === 1) {
+                          navigator.clipboard.writeText(window.location.href);
+                          setNotifyCopy(true);
+                        }
+                        if (index === 2) {
+                          window.open(`${CHAIN_BLOCK_EXPLORER?.url}address/${loan.borrower}`);
+                        }
+                        if (index === 3 && nftUrl) {
+                          window.open(nftUrl);
+                        }
+                      }}
+                    />
+                  </div>
+                </h1>
+                <div
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  })}
+                >
+                  <div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      fontSize: 40,
+                      lineHeight: 1,
+                      gap: 12,
+                    })}
+                  >
+                    {mode === "leverage"
+                      ? (
+                        <div
+                          title={`${fmtnum(loan.deposit, "full")} ${collateral}`}
+                          className={css({
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                          })}
+                        >
+                          <div>{fmtnum(loan.deposit)}</div>
+                          <TokenIcon symbol={collateral.symbol} size={32} />
+                          <div
+                            className={css({
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 4,
+                            })}
+                          >
+                            <div>
+                              <Value
+                                negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
+                                title={`Leverage factor: ${
+                                  loanDetails.status === "underwater" || leverageFactor === null
+                                    ? INFINITY
+                                    : `${roundToDecimal(leverageFactor, 3)}x`
+                                }`}
+                                className={css({
+                                  fontSize: 16,
+                                })}
+                              >
+                                {loanDetails.status === "underwater" || leverageFactor === null
+                                  ? INFINITY
+                                  : `${roundToDecimal(leverageFactor, 1)}x`}
+                              </Value>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                      : (
+                        <div
+                          title={`${fmtnum(loan.borrowed)} BOLD`}
+                          className={css({
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                          })}
+                        >
+                          {fmtnum(loan.borrowed)}
+                          <TokenIcon symbol="BOLD" size={32} />
+                        </div>
+                      )}
+                  </div>
+                </div>
+                <div
+                  className={css({
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: 12,
+                    paddingTop: 32,
+                  })}
+                >
+                  {mode === "leverage"
+                    ? (
+                      <GridItem label="Net value">
+                        <Value
+                          negative={loanDetails.status === "underwater"}
+                          title={`${fmtnum(depositPreLeverage)} ${collateral.name}`}
+                        >
+                          {fmtnum(depositPreLeverage)} {collateral.name}
+                        </Value>
+                      </GridItem>
+                    )
+                    : (
+                      <GridItem label="Collateral">
+                        <div title={`${fmtnum(loan.deposit, "full")} ${collateral.name}`}>
+                          {fmtnum(loan.deposit)} {collateral.name}
+                        </div>
+                      </GridItem>
+                    )}
+                  <GridItem label="Liq. price" title="Liquidation price">
+                    <Value negative={ltv && dn.gt(ltv, maxLtv)}>
+                      ${fmtnum(loanDetails.liquidationPrice)}
+                    </Value>
+                  </GridItem>
+                  <GridItem label="Interest rate">
+                    {fmtnum(loan.interestRate, 2, 100)}%
+                    {loan.batchManager && (
+                      <div
+                        title={`Interest rate delegate: ${loan.batchManager}`}
+                        className={css({
+                          display: "flex",
+                          alignItems: "center",
+                          height: 16,
+                          padding: "0 6px",
+                          fontSize: 10,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          color: "content",
+                          background: "brandCyan",
+                          borderRadius: 20,
+                        })}
+                      >
+                        delegated
+                      </div>
+                    )}
+                  </GridItem>
+                  <GridItem label="LTV" title="Loan-to-value ratio">
+                    <div
+                      className={css({
+                        "--status-positive": "token(colors.positiveAlt)",
+                        "--status-warning": "token(colors.warning)",
+                        "--status-negative": "token(colors.negative)",
+                      })}
+                      style={{
+                        color: liquidationRisk === "low"
+                          ? "var(--status-positive)"
+                          : liquidationRisk === "medium"
+                          ? "var(--status-warning)"
+                          : "var(--status-negative)",
+                      }}
+                    >
+                      {fmtnum(ltv, "2z", 100)}%
+                    </div>
+                  </GridItem>
+                  <GridItem label="Liquidation risk">
+                    <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+                      <StatusDot
+                        mode={riskLevelToStatusMode(liquidationRisk)}
+                        size={8}
+                      />
+                      {formatRisk(liquidationRisk)}
+                    </HFlex>
+                  </GridItem>
+                  {redemptionRisk && (
+                    <GridItem label="Redemption risk">
+                      <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+                        <StatusDot
+                          mode={riskLevelToStatusMode(redemptionRisk)}
+                          size={8}
+                        />
+                        {formatRisk(redemptionRisk)}
+                      </HFlex>
+                    </GridItem>
+                  )}
+                </div>
+              </section>
+            )
+          );
+        })}
+    </ScreenCard>
+  );
+}
+
+function LoanCardHeading({
+  mode,
+  title,
+  titleFull,
+  inheritColor,
+}: {
+  mode: LoanMode;
+  title: string;
+  titleFull?: string;
+  inheritColor?: boolean;
+}) {
+  return (
+    <div
+      title={titleFull}
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        textTransform: "uppercase",
+        userSelect: "none",
+        fontSize: 12,
+
+        "--color-base": "token(colors.strongSurfaceContent)",
+        "--color-alt": "token(colors.strongSurfaceContentAlt2)",
+      })}
+      style={{
+        color: inheritColor ? "inherit" : "var(--color-base)",
+      }}
+    >
+      <div
+        className={css({
+          display: "flex",
+        })}
+        style={{
+          color: inheritColor ? "inherit" : "var(--color-alt)",
+        }}
+      >
+        {mode === "leverage"
+          ? <IconLeverage size={16} />
+          : <IconBorrow size={16} />}
+      </div>
+      {title}
+    </div>
   );
 }
 
@@ -464,6 +628,10 @@ function GridItem({
       <div
         title={title}
         className={css({
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          whiteSpace: "nowrap",
           color: "strongSurfaceContentAlt",
         })}
       >
@@ -471,6 +639,10 @@ function GridItem({
       </div>
       <div
         className={css({
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          whiteSpace: "nowrap",
           color: "strongSurfaceContent",
         })}
       >

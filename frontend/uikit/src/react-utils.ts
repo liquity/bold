@@ -32,3 +32,22 @@ export function useElementSize<T extends HTMLElement>(
 
   return { size, ref };
 }
+
+export function useRaf(callback: (time: number) => void) {
+  useEffect(() => {
+    let rafId: number;
+    let lastTime = 0;
+
+    const loop = (time: number) => {
+      rafId = requestAnimationFrame(loop);
+      callback(time - lastTime);
+      lastTime = time;
+    };
+
+    rafId = requestAnimationFrame(loop);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+    };
+  }, [callback]);
+}

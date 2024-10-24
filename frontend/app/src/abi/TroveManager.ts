@@ -748,6 +748,7 @@ export const TroveManager = [
     ],
     "anonymous": false,
   },
+  { "type": "error", "name": "BatchSharesRatioTooHigh", "inputs": [] },
   { "type": "error", "name": "CallerNotBorrowerOperations", "inputs": [] },
   { "type": "error", "name": "CallerNotCollateralRegistry", "inputs": [] },
   { "type": "error", "name": "EmptyData", "inputs": [] },

@@ -86,16 +86,6 @@ export const DefaultPool = [{
   "anonymous": false,
 }, {
   "type": "event",
-  "name": "EtherSent",
-  "inputs": [{ "name": "_to", "type": "address", "indexed": false, "internalType": "address" }, {
-    "name": "_amount",
-    "type": "uint256",
-    "indexed": false,
-    "internalType": "uint256",
-  }],
-  "anonymous": false,
-}, {
-  "type": "event",
   "name": "TroveManagerAddressChanged",
   "inputs": [{ "name": "_newTroveManagerAddress", "type": "address", "indexed": false, "internalType": "address" }],
   "anonymous": false,

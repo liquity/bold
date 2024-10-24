@@ -1,4 +1,4 @@
-# Liquity v2 App
+# Liquity V2 App
 
 ## Preview
 

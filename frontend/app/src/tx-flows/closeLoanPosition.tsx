@@ -1,6 +1,7 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
+import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { fmtnum } from "@/src/formatting";
 import { useCollateral } from "@/src/liquity-utils";
 import { parsePrefixedTroveId } from "@/src/liquity-utils";
@@ -41,21 +42,11 @@ type Step = "closeLoanPosition" | "approveBold";
 
 const stepNames: Record<Step, string> = {
   approveBold: "Approve BOLD",
-  closeLoanPosition: "Close Position",
+  closeLoanPosition: "Close loan",
 };
 
 export const closeLoanPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
-  subtitle: (
-    <div
-      style={{
-        textAlign: "center",
-      }}
-    >
-      You are repaying your debt and closing this position.<br />
-      The deposit will be returned to your wallet
-    </div>
-  ),
 
   Summary({ flow }) {
     const loan = useLoanById(flow.request.prefixedTroveId);
@@ -75,6 +66,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
         loan={null}
         prevLoan={loan.data}
         onRetry={() => {}}
+        txPreviewMode
       />
     );
   },
@@ -87,6 +79,14 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
     return loan.data && collateral && (
       <>
         <TransactionDetailsRow
+          label="You reclaim"
+          value={[
+            <div title={`${fmtnum(loan.data.deposit, "full")} ${collateral.symbol}`}>
+              {fmtnum(loan.data.deposit, "2z")} {collateral.symbol}
+            </div>,
+          ]}
+        />
+        <TransactionDetailsRow
           label="You repay with"
           value={[
             <div>
@@ -95,10 +95,10 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
           ]}
         />
         <TransactionDetailsRow
-          label="You reclaim"
+          label="Gas compensation refund"
           value={[
-            <div title={`${fmtnum(loan.data.deposit, "full")} ${collateral.symbol}`}>
-              {fmtnum(loan.data.deposit, "2z")} {collateral.symbol}
+            <div title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}>
+              {fmtnum(ETH_GAS_COMPENSATION, 4)} ETH
             </div>,
           ]}
         />

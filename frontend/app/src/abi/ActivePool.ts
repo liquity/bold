@@ -50,6 +50,13 @@ export const ActivePool = [
   },
   {
     "type": "function",
+    "name": "boldToken",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "contract IBoldToken" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
     "name": "borrowerOperationsAddress",
     "inputs": [],
     "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
@@ -288,17 +295,6 @@ export const ActivePool = [
     "type": "event",
     "name": "DefaultPoolAddressChanged",
     "inputs": [{ "name": "_newDefaultPoolAddress", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "EtherSent",
-    "inputs": [{ "name": "_to", "type": "address", "indexed": false, "internalType": "address" }, {
-      "name": "_amount",
-      "type": "uint256",
-      "indexed": false,
-      "internalType": "uint256",
-    }],
     "anonymous": false,
   },
   {

@@ -5,8 +5,6 @@ import type { Dnum } from "dnum";
 import { INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import * as dn from "dnum";
 
-export const LOAN_SCREEN_MANUAL_LOADING_STATE = false;
-
 export const PRICE_UPDATE_INTERVAL = 15_000;
 export const PRICE_UPDATE_VARIATION = 0.003;
 export const PRICE_UPDATE_MANUAL = false;
@@ -16,6 +14,7 @@ export const ETH_PRICE = dn.from(2_580.293872, 18);
 export const RETH_PRICE = dn.from(2_884.72294, 18);
 export const STETH_PRICE = dn.from(2_579.931, 18);
 export const BOLD_PRICE = dn.from(1.0031, 18);
+export const LUSD_PRICE = dn.from(1.012, 18);
 
 export const STAKED_LQTY_TOTAL = [43_920_716_739_092_664_364_409_174n, 18] as const;
 
@@ -34,30 +33,36 @@ export const ACCOUNT_BALANCES = {
   LUSD: dn.from(1_200, 18),
 } as const;
 
+const DEMO_ACCOUNT = `0x${"0".repeat(39)}1` as const;
+
 export const ACCOUNT_POSITIONS: Position[] = [
   {
     type: "borrow",
     borrowed: dn.from(12_789, 18),
+    borrower: DEMO_ACCOUNT,
     collateral: "RETH",
     deposit: dn.from(5.5, 18),
     interestRate: dn.from(0.067, 18),
     troveId: "0x01",
     collIndex: 1,
+    batchManager: null,
   },
   {
     type: "leverage",
     borrowed: dn.from(28_934.23, 18),
+    borrower: DEMO_ACCOUNT,
     collateral: "ETH",
     deposit: dn.from(19.20, 18), // 8 ETH @ 2.4 leverage
     interestRate: dn.from(0.045, 18),
     troveId: "0x02",
     collIndex: 0,
+    batchManager: null,
   },
   {
     type: "earn",
-    apr: dn.from(0.078, 18),
-    deposit: dn.from(5_000, 18),
+    owner: DEMO_ACCOUNT,
     collIndex: 0,
+    deposit: dn.from(5_000, 18),
     rewards: {
       bold: dn.from(789.438, 18),
       coll: dn.from(0.943, 18),
@@ -65,7 +70,10 @@ export const ACCOUNT_POSITIONS: Position[] = [
   },
   {
     type: "stake",
+    owner: DEMO_ACCOUNT,
     deposit: dn.from(3414, 18),
+    share: dn.div(dn.from(3414, 18), STAKED_LQTY_TOTAL),
+    totalStaked: STAKED_LQTY_TOTAL,
     rewards: {
       lusd: dn.from(789.438, 18),
       eth: dn.from(0.943, 18),
@@ -75,19 +83,16 @@ export const ACCOUNT_POSITIONS: Position[] = [
 
 export const BORROW_STATS = {
   ETH: {
-    borrowRate: dn.from(0.05, 18),
-    tvl: dn.from(75_827_387.87, 18),
-    maxLtv: dn.div(dn.from(1, 18), 1.1),
+    collIndex: 0,
+    totalDeposited: dn.from(30_330.9548, 18),
   },
   RETH: {
-    borrowRate: dn.from(0.04, 18),
-    tvl: dn.from(55_782_193.37, 18),
-    maxLtv: dn.div(dn.from(1, 18), 1.2),
+    collIndex: 1,
+    totalDeposited: dn.from(22_330.9548, 18),
   },
   STETH: {
-    borrowRate: dn.from(0.055, 18),
-    tvl: dn.from(45_037_108.91, 18),
-    maxLtv: dn.div(dn.from(1, 18), 1.2),
+    collIndex: 2,
+    totalDeposited: dn.from(18_030.9548, 18),
   },
 } as const;
 
@@ -149,6 +154,7 @@ export function getDebtBeforeRateBucketIndex(index: number) {
 export const DELEGATES: Delegate[] = [
   {
     id: "0x01",
+    address: "0x0000000000000000000000000000000000000001",
     name: "DeFi Saver",
     interestRate: dn.from(0.065, 18),
     followers: 1202,
@@ -162,6 +168,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x02",
+    address: "0x0000000000000000000000000000000000000002",
     name: "Yield Harbor",
     interestRate: dn.from(0.041, 18),
     followers: 700,
@@ -175,6 +182,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x03",
+    address: "0x0000000000000000000000000000000000000003",
     name: "Crypto Nexus",
     interestRate: dn.from(0.031, 18),
     followers: 500,
@@ -188,6 +196,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x04",
+    address: "0x0000000000000000000000000000000000000004",
     name: "Block Ventures",
     interestRate: dn.from(0.021, 18),
     followers: 200,
@@ -201,6 +210,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x05",
+    address: "0x0000000000000000000000000000000000000005",
     name: "Chain Gains",
     interestRate: dn.from(0.011, 18),
     followers: 100,
@@ -214,6 +224,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x06",
+    address: "0x0000000000000000000000000000000000000006",
     name: "TokenTrust",
     interestRate: dn.from(0.001, 18),
     followers: 50,
@@ -227,6 +238,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x07",
+    address: "0x0000000000000000000000000000000000000007",
     name: "Yield Maximizer",
     interestRate: dn.from(0.072, 18),
     followers: 1500,
@@ -240,6 +252,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x08",
+    address: "0x0000000000000000000000000000000000000008",
     name: "Stable Growth",
     interestRate: dn.from(0.055, 18),
     followers: 980,
@@ -253,6 +266,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x09",
+    address: "0x0000000000000000000000000000000000000009",
     name: "Risk Taker",
     interestRate: dn.from(0.089, 18),
     followers: 750,
@@ -266,6 +280,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x0a",
+    address: "0x000000000000000000000000000000000000000a",
     name: "Conservative Gains",
     interestRate: dn.from(0.038, 18),
     followers: 620,
@@ -279,6 +294,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x0b",
+    address: "0x000000000000000000000000000000000000000b",
     name: "Crypto Innovator",
     interestRate: dn.from(0.062, 18),
     followers: 890,
@@ -292,6 +308,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x0c",
+    address: "0x000000000000000000000000000000000000000c",
     name: "DeFi Pioneer",
     interestRate: dn.from(0.075, 18),
     followers: 1100,
@@ -305,6 +322,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x0d",
+    address: "0x000000000000000000000000000000000000000d",
     name: "Steady Returns",
     interestRate: dn.from(0.049, 18),
     followers: 780,
@@ -318,6 +336,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x0e",
+    address: "0x000000000000000000000000000000000000000e",
     name: "Blockchain Believer",
     interestRate: dn.from(0.058, 18),
     followers: 850,
@@ -331,6 +350,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x0f",
+    address: "0x000000000000000000000000000000000000000f",
     name: "Crypto Sage",
     interestRate: dn.from(0.069, 18),
     followers: 1300,
@@ -344,6 +364,7 @@ export const DELEGATES: Delegate[] = [
   },
   {
     id: "0x10",
+    address: "0x0000000000000000000000000000000000000010",
     name: "Bold Strategist",
     interestRate: dn.from(0.082, 18),
     followers: 970,
@@ -360,6 +381,7 @@ export const DELEGATES: Delegate[] = [
 export const IC_STRATEGIES: Delegate[] = [
   {
     id: "0x11",
+    address: "0x0000000000000000000000000000000000000011",
     name: "Conservative",
     interestRate: dn.from(0.065, 18),
     followers: 1202,

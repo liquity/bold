@@ -1,30 +1,69 @@
 import { fmtnum } from "@/src/formatting";
+import { css } from "@/styled-system/css";
+import { a, useTransition } from "@react-spring/web";
 
 export function Amount({
-  value,
+  fallback = "",
   format,
   percentage = false,
   prefix = "",
   suffix = "",
+  value,
 }: {
-  value: Parameters<typeof fmtnum>[0];
+  fallback?: string;
   format?: Parameters<typeof fmtnum>[1];
   percentage?: boolean;
   prefix?: string;
   suffix?: string;
+  value: Parameters<typeof fmtnum>[0];
 }) {
-  if (!value) {
-    return null;
-  }
+  const scale = percentage ? 100 : 1;
+
   if (percentage && !suffix) {
     suffix = "%";
   }
-  const titleValue = format === "full" ? null : fmtnum(value, "full", percentage ? 100 : 1);
-  const contentValue = fmtnum(value, format, percentage ? 100 : 1);
-  const contentFull = prefix + contentValue + suffix;
-  return contentValue === titleValue || !titleValue ? contentFull : (
-    <span title={`${prefix}${titleValue}${suffix}`}>
-      {contentFull}
-    </span>
-  );
+
+  const showFallback = value === null || value === undefined;
+
+  const content = showFallback ? fallback : prefix + fmtnum(value, format, scale) + suffix;
+  const title = showFallback ? undefined : prefix + fmtnum(value, "full", scale) + suffix;
+
+  const fallbackTransition = useTransition([{ content, title, showFallback }], {
+    keys: (item) => String(item.showFallback),
+    initial: {
+      transform: "scale(1)",
+    },
+    from: {
+      transform: "scale(0.9)",
+    },
+    enter: {
+      transform: "scale(1)",
+    },
+    leave: {
+      display: "none",
+      immediate: true,
+    },
+    config: {
+      mass: 1,
+      tension: 2000,
+      friction: 80,
+    },
+  });
+
+  return fallbackTransition((style, { content, title }) => (
+    <a.div
+      title={title}
+      className={css({
+        display: "inline-flex",
+        width: "fit-content",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        transformOrigin: "50% 50%",
+      })}
+      style={style}
+    >
+      {content}
+    </a.div>
+  ));
 }

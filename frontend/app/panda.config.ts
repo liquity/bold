@@ -1,11 +1,25 @@
 import type { Preset } from "@pandacss/dev";
 
 import { liquityUiKitPreset } from "@liquity2/uikit/panda.config";
-import { defineConfig, defineGlobalStyles } from "@pandacss/dev";
+import { defineConfig, defineGlobalStyles, definePreset } from "@pandacss/dev";
 
 export default defineConfig({
   preflight: true, // CSS reset
-  presets: [liquityUiKitPreset as Preset], // prevents a type error: "Expression produces a union type that is too complex to represent."
+  presets: [
+    liquityUiKitPreset as Preset, // `as Preset` prevents a type error: "Expression produces a union type that is too complex to represent."
+    definePreset({
+      name: "liquity-app",
+      theme: {
+        extend: {
+          breakpoints: {
+            small: "400px",
+            medium: "800px",
+            large: "1140px",
+          },
+        },
+      },
+    }),
+  ],
   exclude: [],
   outdir: "styled-system",
   include: [
