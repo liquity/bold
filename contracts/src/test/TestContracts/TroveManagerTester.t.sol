@@ -11,6 +11,8 @@ import "./Interfaces/ITroveManagerTester.sol";
 for testing the parent's internal functions. */
 
 contract TroveManagerTester is ITroveManagerTester, TroveManager {
+    uint256 constant STALE_TROVE_DURATION = 90 days;
+
     constructor(IAddressesRegistry _addressesRegistry) TroveManager(_addressesRegistry) {}
 
     // Single liquidation function. Closes the trove if its ICR is lower than the minimum collateral ratio.

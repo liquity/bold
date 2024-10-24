@@ -26,6 +26,8 @@ import {StringFormatting} from "../Utils/StringFormatting.sol";
 import "forge-std/console2.sol";
 
 contract BaseTest is TestAccounts, Logging {
+    uint256 constant STALE_TROVE_DURATION = 90 days;
+
     uint256 CCR;
     uint256 MCR;
     uint256 SCR;
