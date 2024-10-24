@@ -184,6 +184,13 @@ export const StabilityPool = [
   },
   {
     "type": "function",
+    "name": "lastBoldLossError_TotalDeposits",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
     "name": "lastCollError_Offset",
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
@@ -318,17 +325,6 @@ export const StabilityPool = [
     "type": "event",
     "name": "EpochUpdated",
     "inputs": [{ "name": "_currentEpoch", "type": "uint128", "indexed": false, "internalType": "uint128" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "EtherSent",
-    "inputs": [{ "name": "_to", "type": "address", "indexed": false, "internalType": "address" }, {
-      "name": "_amount",
-      "type": "uint256",
-      "indexed": false,
-      "internalType": "uint256",
-    }],
     "anonymous": false,
   },
   {

@@ -15,7 +15,6 @@ import { SortedTroves } from "@/src/abi/SortedTroves";
 import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
 import { TroveNFT } from "@/src/abi/TroveNFT";
-import { WETH } from "@/src/abi/WETH";
 import { WETHZapper } from "@/src/abi/WETHZapper";
 import {
   COLLATERAL_CONTRACTS,
@@ -35,7 +34,7 @@ const protocolAbis = {
   CollateralRegistry,
   HintHelpers,
   MultiTroveGetter,
-  WETH,
+  WETH: erc20Abi,
   LqtyToken,
   LqtyStaking,
 } as const;
