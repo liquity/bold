@@ -1,6 +1,6 @@
 "use client";
 
-import { CollateralSymbol } from "@/src/types";
+import { CollateralSymbol, Entries } from "@/src/types";
 import type { Dnum } from "dnum";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 
@@ -41,6 +41,8 @@ const initialPrices: Prices = {
   STETH: null,
 };
 
+const PRICE_REFRESH_INTERVAL = 60_000;
+
 function useWatchCollateralPrice(collateral: CollateralSymbol) {
   const PriceFeed = useCollateralContract(collateral, "PriceFeed");
   return useReadContract({
@@ -48,39 +50,59 @@ function useWatchCollateralPrice(collateral: CollateralSymbol) {
     functionName: "lastGoodPrice",
     query: {
       enabled: PriceFeed !== null,
-      refetchInterval: 10_000,
+      refetchInterval: PRICE_REFRESH_INTERVAL,
     },
   });
 }
 
-function useCoinGeckoPrice(supportedSymbol: "LQTY" | "LUSD") {
-  return useQuery({
-    queryKey: ["coinGeckoPrice", supportedSymbol],
-    queryFn: async () => {
-      const id = match(supportedSymbol)
-        .with("LQTY", () => "liquity")
-        .with("LUSD", () => "liquity-usd")
-        .exhaustive();
+const coinGeckoTokenIds = {
+  LQTY: "liquity",
+  LUSD: "liquity-usd",
+} as const;
 
-      const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${id}&vs_currencies=usd`, {
-        headers: { accept: "application/json" },
-      });
+function useCoinGeckoPrice(supportedSymbol: keyof typeof coinGeckoTokenIds) {
+  const lqtyAndLusdPrices = useQuery({
+    queryKey: ["coinGeckoPrice", Object.keys(coinGeckoTokenIds).join("+")],
+    queryFn: async () => {
+      const ids = Object.values(coinGeckoTokenIds);
+      const symbols = Object.keys(coinGeckoTokenIds);
+
+      const response = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=${ids.join(",")}`,
+        { headers: { accept: "application/json" } },
+      );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch price for ${id}`);
+        throw new Error(`Failed to fetch price for ${ids.join(",")}`);
       }
 
       const result = v.parse(
-        v.object({
-          [id]: v.object({
-            usd: v.number(),
-          }),
-        }),
+        v.object(
+          v.entriesFromList(
+            Object.values(coinGeckoTokenIds),
+            v.object({ "usd": v.number() }),
+          ),
+        ),
         await response.json(),
       );
-      return result[id].usd;
+
+      const prices = {} as Record<typeof supportedSymbol, Dnum | null>;
+
+      for (const [id, value] of Object.entries(result) as Entries<typeof result>) {
+        const idIndex = ids.indexOf(id);
+        const key = symbols[idIndex] as typeof supportedSymbol;
+        prices[key] = value.usd ? dn.from(value.usd, 18) : null;
+      }
+
+      return prices;
     },
+    refetchInterval: PRICE_REFRESH_INTERVAL,
   });
+
+  return {
+    ...lqtyAndLusdPrices,
+    data: lqtyAndLusdPrices.data?.[supportedSymbol] ?? null,
+  };
 }
 
 let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void): void {
