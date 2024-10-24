@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "./CompositePriceFeed.sol";
 import "../Dependencies/IStaderOracle.sol";
-
-// import "forge-std/console2.sol";
 
 contract ETHXPriceFeed is CompositePriceFeed {
     constructor(

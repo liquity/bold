@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "./Interfaces/ISortedTroves.sol";
 import "./Interfaces/IAddressesRegistry.sol";
@@ -371,7 +371,7 @@ contract SortedTroves is ISortedTroves {
         (
             nodes[_prevId].nextId == _nextId && nodes[_nextId].prevId == _prevId
             // they aren't part of the same batch
-            && (prevBatchId.notEquals(nodes[_nextId].batchId) || prevBatchId.isZero())
+            && (prevBatchId != nodes[_nextId].batchId || prevBatchId.isZero())
             // `_annualInterestRate` falls between the two nodes' interest rates
             && (_prevId == ROOT_NODE_ID || _troveManager.getTroveAnnualInterestRate(_prevId) >= _annualInterestRate)
                 && (_nextId == ROOT_NODE_ID || _annualInterestRate > _troveManager.getTroveAnnualInterestRate(_nextId))
@@ -521,9 +521,6 @@ contract SortedTroves is ISortedTroves {
         if (_prevId == BAD_HINT && _nextId == BAD_HINT) {
             // Both original neighbours have been moved or removed.
             // We default to descending the list, starting from the head.
-            //
-            // TODO: should we revert instead, so as not to waste the user's gas?
-            //       We are unlikely to recover.
             return _descendList(_troveManager, _annualInterestRate, ROOT_NODE_ID);
         } else if (_prevId == BAD_HINT) {
             // No `prevId` for hint - ascend list starting from `nextId`

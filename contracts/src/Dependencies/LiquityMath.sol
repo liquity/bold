@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import {DECIMAL_PRECISION} from "./Constants.sol";
 
@@ -35,10 +35,8 @@ library LiquityMath {
     * 
     * Uses the efficient "exponentiation by squaring" algorithm. O(log(n)) complexity. 
     * 
-    * Called by two functions that represent time in units of minutes:
-    * 1) TroveManager._calcDecayedBaseRate
-    * 2) CommunityIssuance._getCumulativeIssuanceFraction 
-    * 
+    * Called by function CollateralRegistry._calcDecayedBaseRate, that represent time in units of minutes
+    *
     * The exponent is capped to avoid reverting due to overflow. The cap 525600000 equals
     * "minutes in 1000 years": 60 * 24 * 365 * 1000
     * 

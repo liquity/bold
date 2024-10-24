@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 address constant ZERO_ADDRESS = address(0);
 
@@ -27,6 +27,13 @@ uint128 constant MAX_ANNUAL_BATCH_MANAGEMENT_FEE = uint128(_100pct);
 uint128 constant MIN_INTEREST_RATE_CHANGE_PERIOD = 1 seconds; // prevents more than one adjustment per block
 
 uint256 constant REDEMPTION_FEE_FLOOR = _1pct / 2; // 0.5%
+
+// For the debt / shares ratio to increase by a factor 1e9
+// at a average annual debt increase (compounded interest + fees) of 10%, it would take more than 217 years (log(1e9)/log(1.1))
+// at a average annual debt increase (compounded interest + fees) of 50%, it would take more than 51 years (log(1e9)/log(1.5))
+// The increase pace could be forced to be higher through an inflation attack,
+// but precisely the fact that we have this max value now prevents the attack
+uint256 constant MAX_BATCH_SHARES_RATIO = 1e9;
 
 // Half-life of 12h. 12h = 720 min
 // (1/2) = d^720 => d = (1/2)^(1/720)

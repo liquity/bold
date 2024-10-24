@@ -101,8 +101,9 @@ interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
     // -- individual delegation --
     struct InterestIndividualDelegate {
         address account;
-        uint128 minInterestRate; // TODO: If we change decimal precision for interest across all codebase, we can switch to uint48 and save 1 storage slot
+        uint128 minInterestRate;
         uint128 maxInterestRate;
+        uint256 minInterestRateChangePeriod;
     }
 
     function getInterestIndividualDelegateOf(uint256 _troveId)
@@ -118,7 +119,8 @@ interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
         uint256 _newAnnualInterestRate,
         uint256 _upperHint,
         uint256 _lowerHint,
-        uint256 _maxUpfrontFee
+        uint256 _maxUpfrontFee,
+        uint256 _minInterestRateChangePeriod
     ) external;
     function removeInterestIndividualDelegate(uint256 _troveId) external;
 

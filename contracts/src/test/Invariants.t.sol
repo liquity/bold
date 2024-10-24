@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
@@ -368,7 +368,7 @@ contract InvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest {
             BatchId currBatch = sortedTroves.getBatchOf(curr);
 
             while (curr != 0) {
-                if (currBatch.notEquals(prevBatch)) {
+                if (currBatch != prevBatch) {
                     if (prevBatch.isNotZero()) {
                         assertFalse(seenBatches.has(prevBatch), "Batch already seen");
                         assertEq(prev, sortedTroves.getBatchTail(prevBatch), "Wrong batch tail");

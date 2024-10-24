@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./Interfaces/IDefaultPool.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IActivePool.sol";
-
-// import "forge-std/console2.sol";
 
 /*
  * The Default Pool holds the Coll and Bold debt (but not Bold tokens) from liquidations that have been redistributed
@@ -31,7 +29,6 @@ contract DefaultPool is IDefaultPool {
     event CollTokenAddressChanged(address _newCollTokenAddress);
     event ActivePoolAddressChanged(address _newActivePoolAddress);
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event EtherSent(address _to, uint256 _amount);
     event DefaultPoolBoldDebtUpdated(uint256 _boldDebt);
     event DefaultPoolCollBalanceUpdated(uint256 _collBalance);
 
@@ -70,7 +67,6 @@ contract DefaultPool is IDefaultPool {
         uint256 newCollBalance = collBalance - _amount;
         collBalance = newCollBalance;
         emit DefaultPoolCollBalanceUpdated(newCollBalance);
-        emit EtherSent(activePoolAddress, _amount);
 
         // Send Coll to Active Pool and increase its recorded Coll balance
         IActivePool(activePoolAddress).receiveColl(_amount);

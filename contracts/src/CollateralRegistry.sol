@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
@@ -11,11 +11,7 @@ import "./Dependencies/LiquityMath.sol";
 
 import "./Interfaces/ICollateralRegistry.sol";
 
-// import "forge-std/console2.sol";
-
 contract CollateralRegistry is ICollateralRegistry {
-    // mapping from Collateral token address to the corresponding TroveManagers
-    //mapping(address => address) troveManagers;
     // See: https://github.com/ethereum/solidity/issues/12587
     uint256 public immutable totalCollaterals;
 
@@ -98,7 +94,6 @@ contract CollateralRegistry is ICollateralRegistry {
     {
         _requireValidMaxFeePercentage(_maxFeePercentage);
         _requireAmountGreaterThanZero(_boldAmount);
-        _requireBoldBalanceCoversRedemption(boldToken, msg.sender, _boldAmount);
 
         RedemptionTotals memory totals;
 
@@ -306,18 +301,5 @@ contract CollateralRegistry is ICollateralRegistry {
 
     function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
         require(_amount > 0, "CollateralRegistry: Amount must be greater than zero");
-    }
-
-    function _requireBoldBalanceCoversRedemption(IBoldToken _boldToken, address _redeemer, uint256 _amount)
-        internal
-        view
-    {
-        uint256 boldBalance = _boldToken.balanceOf(_redeemer);
-        // Confirm redeemer's balance is less than total Bold supply
-        assert(boldBalance <= _boldToken.totalSupply());
-        require(
-            boldBalance >= _amount,
-            "CollateralRegistry: Requested redemption amount must be <= user's Bold token balance"
-        );
     }
 }

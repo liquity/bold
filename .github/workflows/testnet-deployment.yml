@@ -28,6 +28,7 @@ concurrency:
 
 jobs:
   deploy-contracts:
+    if: false # Contracts can no longer be deployed to Erigon dev chain because it doesn't support recent hardforks
     name: Deploy contracts
     runs-on: ubuntu-latest
     steps:

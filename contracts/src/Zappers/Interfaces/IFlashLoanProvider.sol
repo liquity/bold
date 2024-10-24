@@ -9,6 +9,7 @@ import "./IFlashLoanReceiver.sol";
 interface IFlashLoanProvider {
     enum Operation {
         OpenTrove,
+        CloseTrove,
         LeverUpTrove,
         LeverDownTrove
     }

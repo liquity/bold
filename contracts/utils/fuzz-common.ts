@@ -1,8 +1,11 @@
 import { z } from "zod";
 import { path, ProcessOutput } from "zx";
 
-export const reproFile = path.join("src", "test", "fuzz-repro.t.sol");
-export const reproFunction = "test_FuzzRepro";
+export const counterexamplesDir = "counterexamples";
+export const counterexamplesFixedDir = "counterexamples-fixed";
+export const counterexamplesAssumeDir = "counterexamples-assume";
+export const reproDir = path.join("src", "test", "fuzz-repro");
+export const reproFilesGlob = path.join(reproDir, "*");
 
 export const TestListJson = z.record(z.record(z.array(z.string())));
 
@@ -27,17 +30,21 @@ export const TestResultsJson = z.record(z.object({
       z.object({
         status: z.literal("Failure"),
         reason: z.string(),
-        counterexample: z.optional(z.object({
+
+        counterexample: z.nullable(z.object({
           Sequence: CounterexampleSequenceJson,
         })),
       }),
-    ]).and(z.object({
-      labeled_addresses: z.record(z.string()),
-    })),
+    ]).and(
+      z.object({
+        labeled_addresses: z.record(z.string()),
+      }),
+    ),
   ),
 }));
 
 export interface ReproducibleCounterexampleJson {
+  reason: string;
   solPath: string;
   contract: string;
   test: string;

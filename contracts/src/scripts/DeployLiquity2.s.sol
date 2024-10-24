@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import {Script} from "forge-std/Script.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
@@ -30,13 +30,36 @@ import "../test/TestContracts/PriceFeedTestnet.sol";
 import "../test/TestContracts/MetadataDeployment.sol";
 import "../Zappers/WETHZapper.sol";
 import "../Zappers/GasCompZapper.sol";
+import "../Zappers/LeverageLSTZapper.sol";
+import "../Zappers/LeverageWETHZapper.sol";
+import {BalancerFlashLoan} from "../Zappers/Modules/FlashLoans/BalancerFlashLoan.sol";
+import "../Zappers/Modules/Exchanges/CurveExchange.sol";
+import "../Zappers/Modules/Exchanges/UniV3Exchange.sol";
+import "../Zappers/Modules/Exchanges/UniswapV3/ISwapRouter.sol";
+import "../Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
+import "../Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Pool.sol";
+import "../Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Factory.sol";
+import "../Zappers/Modules/Exchanges/UniswapV3/INonfungiblePositionManager.sol";
 import {WETHTester} from "../test/TestContracts/WETHTester.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "forge-std/console.sol";
+import {IRateProvider, IWeightedPool, IWeightedPoolFactory} from "./Interfaces/Balancer/IWeightedPool.sol";
+import {IVault} from "./Interfaces/Balancer/IVault.sol";
 
 contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
     using Strings for *;
     using StringFormatting for *;
+
+    uint24 constant UNIV3_FEE = 0.3e4;
+    ISwapRouter constant uniV3RouterSepolia = ISwapRouter(0x65669fE35312947050C450Bd5d36e6361F85eC12);
+    IQuoterV2 constant uniV3QuoterSepolia = IQuoterV2(0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3);
+    IUniswapV3Factory constant uniswapV3FactorySepolia = IUniswapV3Factory(0x0227628f3F023bb0B980b67D528571c95c6DaC1c);
+    INonfungiblePositionManager constant uniV3PositionManagerSepolia =
+        INonfungiblePositionManager(0x1238536071E1c677A632429e3655c799b22cDA52);
+
+    IVault constant balancerVault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
+    IWeightedPoolFactory constant balancerFactorySepolia =
+        IWeightedPoolFactory(0x7920BFa1b2041911b354747CA7A6cDD2dfC50Cfd);
 
     bytes32 SALT;
     address deployer;
@@ -55,9 +78,10 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         IPriceFeedTestnet priceFeed; // Tester
         GasPool gasPool;
         IInterestRouter interestRouter;
-        IERC20Metadata collToken;
+        ERC20Faucet collToken;
         WETHZapper wethZapper;
         GasCompZapper gasCompZapper;
+        ILeverageZapper leverageZapper;
     }
 
     struct LiquityContractAddresses {
@@ -90,7 +114,7 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
 
     struct DeploymentVarsTestnet {
         uint256 numCollaterals;
-        IERC20Metadata[] collaterals;
+        ERC20Faucet[] collaterals;
         IAddressesRegistry[] addressesRegistries;
         ITroveManager[] troveManagers;
         LiquityContractsTestnet contracts;
@@ -139,6 +163,9 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
                     string.concat('"interestRouter":"', address(c.interestRouter).toHexString(), '",'),
                     string.concat('"wethZapper":"', address(c.wethZapper).toHexString(), '",'),
                     string.concat('"gasCompZapper":"', address(c.gasCompZapper).toHexString(), '",'),
+                    string.concat('"leverageZapper":"', address(c.leverageZapper).toHexString(), '",')
+                ),
+                string.concat(
                     string.concat('"collToken":"', address(c.collToken).toHexString(), '"') // no comma
                 )
             ),
@@ -181,14 +208,54 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             vm.startBroadcast(privateKey);
         }
 
-        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](2);
-
+        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](3);
         troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WETH
-        troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // stETH
+        troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // wstETH
+        troveManagerParamsArray[2] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // rETH
 
         // used for gas compensation and as collateral of the first branch
-        IWETH WETH = new WETHTester({_tapAmount: 100 ether, _tapPeriod: 1 days});
-        DeploymentResult memory deployed = _deployAndConnectContracts(troveManagerParamsArray, WETH);
+        WETHTester WETH = new WETHTester({_tapAmount: 100 ether, _tapPeriod: 1 days});
+
+        string[] memory collNames = new string[](2);
+        string[] memory collSymbols = new string[](2);
+        collNames[0] = "Wrapped liquid staked Ether 2.0";
+        collSymbols[0] = "wstETH";
+        collNames[1] = "Rocket Pool ETH";
+        collSymbols[1] = "rETH";
+
+        DeploymentResult memory deployed =
+            _deployAndConnectContracts(troveManagerParamsArray, WETH, collNames, collSymbols);
+
+        if (block.chainid == 11155111) {
+            // Provide liquidity for zaps if we're on Sepolia
+            ERC20Faucet monkeyBalls = new ERC20Faucet("MonkeyBalls", "MB", 0, type(uint256).max);
+            for (uint256 i = 0; i < deployed.contractsArray.length; ++i) {
+                deployed.contractsArray[i].priceFeed.setPrice(2_000 ether);
+                _provideFlashloanLiquidity(deployed.contractsArray[i].collToken, monkeyBalls);
+                _provideUniV3Liquidity(deployed.boldToken, WETH, deployed.contractsArray[i]);
+            }
+
+            // deployed.contractsArray[1].collToken.mint(deployer, 1 ether);
+            // deployed.contractsArray[1].collToken.approve(address(deployed.contractsArray[1].leverageZapper), 1 ether);
+            // deployed.contractsArray[1].leverageZapper.openLeveragedTroveWithRawETH{value: ETH_GAS_COMPENSATION}(
+            //     ILeverageZapper.OpenLeveragedTroveParams({
+            //         owner: deployer,
+            //         ownerIndex: 1,
+            //         collAmount: 1 ether,
+            //         flashLoanAmount: 1 ether,
+            //         boldAmount: 2_000 ether,
+            //         upperHint: 0,
+            //         lowerHint: 0,
+            //         annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            //         batchManager: address(0),
+            //         maxUpfrontFee: type(uint256).max,
+            //         addManager: address(0),
+            //         removeManager: address(0),
+            //         receiver: address(0)
+            //     })
+            // );
+        }
+
         vm.stopBroadcast();
 
         vm.writeFile("deployment-manifest.json", _getManifestJson(deployed));
@@ -296,10 +363,22 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry));
     }
 
-    function _deployAndConnectContracts(TroveManagerParams[] memory troveManagerParamsArray, IWETH _WETH)
-        internal
-        returns (DeploymentResult memory r)
-    {
+    // Solidity...
+    function _asIERC20Array(ERC20Faucet[] memory erc20faucets) internal pure returns (IERC20Metadata[] memory erc20s) {
+        assembly {
+            erc20s := erc20faucets
+        }
+    }
+
+    function _deployAndConnectContracts(
+        TroveManagerParams[] memory troveManagerParamsArray,
+        WETHTester _WETH,
+        string[] memory _collNames,
+        string[] memory _collSymbols
+    ) internal returns (DeploymentResult memory r) {
+        assert(_collNames.length == troveManagerParamsArray.length - 1);
+        assert(_collSymbols.length == troveManagerParamsArray.length - 1);
+
         DeploymentVarsTestnet memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
         // Deploy Bold
@@ -309,7 +388,7 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         assert(address(r.boldToken) == vars.boldTokenAddress);
 
         r.contractsArray = new LiquityContractsTestnet[](vars.numCollaterals);
-        vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
+        vars.collaterals = new ERC20Faucet[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
@@ -319,8 +398,8 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         // Deploy plain ERC20Faucets for the rest of the branches
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
             vars.collaterals[vars.i] = new ERC20Faucet(
-                string.concat("Staked ETH", string(abi.encode(vars.i))), // _name
-                string.concat("stETH", string(abi.encode(vars.i))), // _symbol
+                _collNames[vars.i - 1], //   _name
+                _collSymbols[vars.i - 1], // _symbol
                 100 ether, //     _tapAmount
                 1 days //         _tapPeriod
             );
@@ -334,7 +413,7 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers);
+        r.collateralRegistry = new CollateralRegistry(r.boldToken, _asIERC20Array(vars.collaterals), vars.troveManagers);
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
 
@@ -376,7 +455,7 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
     }
 
     function _deployAndConnectCollateralContractsTestnet(
-        IERC20Metadata _collToken,
+        ERC20Faucet _collToken,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
         IWETH _weth,
@@ -477,22 +556,207 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         );
 
         // deploy zappers
-        (contracts.gasCompZapper, contracts.wethZapper) =
-            _deployZappers(contracts.addressesRegistry, contracts.collToken, _weth);
+        (contracts.gasCompZapper, contracts.wethZapper, contracts.leverageZapper) =
+            _deployZappers(contracts.addressesRegistry, contracts.collToken, _boldToken, _weth);
     }
 
-    function _deployZappers(IAddressesRegistry _addressesRegistry, IERC20 _collToken, IWETH _weth)
-        internal
-        returns (GasCompZapper gasCompZapper, WETHZapper wethZapper)
-    {
+    function _deployZappers(
+        IAddressesRegistry _addressesRegistry,
+        IERC20 _collToken,
+        IBoldToken _boldToken,
+        IWETH _weth
+    ) internal returns (GasCompZapper gasCompZapper, WETHZapper wethZapper, ILeverageZapper leverageZapper) {
+        IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
+        IExchange uniV3Exchange = new UniV3Exchange(_collToken, _boldToken, UNIV3_FEE, uniV3RouterSepolia);
+
         bool lst = _collToken != _weth;
         if (lst) {
-            gasCompZapper = new GasCompZapper(_addressesRegistry);
+            gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, uniV3Exchange);
+            leverageZapper = new LeverageLSTZapper(_addressesRegistry, flashLoanProvider, uniV3Exchange);
         } else {
-            wethZapper = new WETHZapper(_addressesRegistry);
+            wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, uniV3Exchange);
+            leverageZapper = new LeverageWETHZapper(_addressesRegistry, flashLoanProvider, uniV3Exchange);
+        }
+    }
+
+    function _deployCurveExchange(
+        IERC20 _collToken,
+        IBoldToken _boldToken,
+        IPriceFeed, /*_priceFeed*/
+        bool /*_mainnet*/
+    ) internal returns (IExchange) {
+        return new CurveExchange(_collToken, _boldToken, ICurvePool(address(0)), 1, 0);
+
+        // TODO: unsued for now
+        /*
+        if (!_mainnet) return new CurveExchange(_collToken, _boldToken, ICurvePool(address(0)), 1, 0);
+
+        (uint256 price,) = _priceFeed.fetchPrice();
+
+        // deploy Curve Twocrypto NG pool
+        address[2] memory coins;
+        coins[0] = address(_boldToken);
+        coins[1] = address(_collToken);
+        ICurvePool curvePool = curveFactory.deploy_pool(
+            "LST-Bold pool",
+            "LBLD",
+            coins,
+            0, // implementation id
+            400000, // A
+            145000000000000, // gamma
+            26000000, // mid_fee
+            45000000, // out_fee
+            230000000000000, // fee_gamma
+            2000000000000, // allowed_extra_profit
+            146000000000000, // adjustment_step
+            600, // ma_exp_time
+            price // initial_price
+        );
+
+        IExchange curveExchange = new CurveExchange(_collToken, _boldToken, curvePool, 1, 0);
+
+        return curveExchange;
+        */
+    }
+
+    function _provideFlashloanLiquidity(ERC20Faucet _collToken, ERC20Faucet _monkeyBalls) internal {
+        uint256[] memory amountsIn = new uint256[](2);
+        amountsIn[0] = 1_000_000 ether;
+        amountsIn[1] = 1_000_000 ether;
+
+        _collToken.mint(deployer, amountsIn[0]);
+        _monkeyBalls.mint(deployer, amountsIn[1]);
+
+        IERC20[] memory tokens = new IERC20[](2);
+        (tokens[0], tokens[1]) =
+            address(_collToken) < address(_monkeyBalls) ? (_collToken, _monkeyBalls) : (_monkeyBalls, _collToken);
+
+        uint256[] memory normalizedWeights = new uint256[](2);
+        normalizedWeights[0] = 0.5 ether;
+        normalizedWeights[1] = 0.5 ether;
+
+        IWeightedPool pool = balancerFactorySepolia.create({
+            name: string.concat(_collToken.name(), "-", _monkeyBalls.name()),
+            symbol: string.concat("bpt", _collToken.symbol(), _monkeyBalls.symbol()),
+            tokens: tokens,
+            normalizedWeights: normalizedWeights,
+            rateProviders: new IRateProvider[](2), // all zeroes
+            swapFeePercentage: 0.000001 ether, // 0.0001%, which is the minimum allowed
+            owner: deployer,
+            salt: bytes32("NaCl")
+        });
+
+        _collToken.approve(address(balancerVault), amountsIn[0]);
+        _monkeyBalls.approve(address(balancerVault), amountsIn[1]);
+
+        balancerVault.joinPool(
+            pool.getPoolId(),
+            deployer,
+            deployer,
+            IVault.JoinPoolRequest({
+                assets: tokens,
+                maxAmountsIn: amountsIn,
+                userData: abi.encode(IWeightedPool.JoinKind.INIT, amountsIn),
+                fromInternalBalance: false
+            })
+        );
+    }
+
+    function _mintBold(uint256 _boldAmount, uint256 _price, WETHTester _WETH, LiquityContractsTestnet memory _contracts)
+        internal
+    {
+        uint256 collAmount = _boldAmount * 2 ether / _price; // CR of ~200%
+
+        _contracts.collToken.mint(deployer, collAmount);
+        _WETH.mint(deployer, ETH_GAS_COMPENSATION);
+
+        if (_contracts.collToken == _WETH) {
+            _WETH.approve(address(_contracts.borrowerOperations), collAmount + ETH_GAS_COMPENSATION);
+        } else {
+            _contracts.collToken.approve(address(_contracts.borrowerOperations), collAmount);
+            _WETH.approve(address(_contracts.borrowerOperations), ETH_GAS_COMPENSATION);
         }
 
-        return (gasCompZapper, wethZapper);
+        _contracts.borrowerOperations.openTrove({
+            _owner: deployer,
+            _ownerIndex: 0,
+            _ETHAmount: collAmount,
+            _boldAmount: _boldAmount,
+            _upperHint: 0,
+            _lowerHint: 0,
+            _annualInterestRate: 0.05 ether,
+            _maxUpfrontFee: type(uint256).max,
+            _addManager: address(0),
+            _removeManager: address(0),
+            _receiver: address(0)
+        });
+    }
+
+    function _priceToSqrtPrice(address _boldToken, address _collToken, uint256 _price) public pure returns (uint160) {
+        // inverse price if Bold goes first
+        uint256 price = _boldToken < _collToken ? DECIMAL_PRECISION * DECIMAL_PRECISION / _price : _price;
+        return uint160(Math.sqrt((price << 192) / DECIMAL_PRECISION));
+    }
+
+    function _provideUniV3Liquidity(IBoldToken _boldToken, WETHTester _WETH, LiquityContractsTestnet memory _contracts)
+        internal
+    {
+        (uint256 price,) = _contracts.priceFeed.fetchPrice();
+
+        // tokens and amounts
+        uint256 boldAmount = 1_000_000 ether;
+        uint256 collAmount = boldAmount * DECIMAL_PRECISION / price;
+        address[2] memory tokens;
+        uint256[2] memory amounts;
+
+        if (address(_boldToken) < address(_contracts.collToken)) {
+            tokens[0] = address(_boldToken);
+            tokens[1] = address(_contracts.collToken);
+            amounts[0] = boldAmount;
+            amounts[1] = collAmount;
+        } else {
+            tokens[0] = address(_contracts.collToken);
+            tokens[1] = address(_boldToken);
+            amounts[0] = collAmount;
+            amounts[1] = boldAmount;
+        }
+
+        uniV3PositionManagerSepolia.createAndInitializePoolIfNecessary(
+            tokens[0], // token0,
+            tokens[1], // token1,
+            UNIV3_FEE, // fee,
+            _priceToSqrtPrice(address(_boldToken), address(_contracts.collToken), price) // sqrtPriceX96
+        );
+
+        // mint and approve
+        _contracts.collToken.mint(deployer, collAmount);
+        _mintBold(boldAmount, price, _WETH, _contracts);
+        _contracts.collToken.approve(address(uniV3PositionManagerSepolia), collAmount);
+        _boldToken.approve(address(uniV3PositionManagerSepolia), boldAmount);
+
+        // mint new position
+        address uniV3PoolAddress =
+            uniswapV3FactorySepolia.getPool(address(_boldToken), address(_contracts.collToken), UNIV3_FEE);
+        int24 TICK_SPACING = IUniswapV3Pool(uniV3PoolAddress).tickSpacing();
+        (, int24 tick,,,,,) = IUniswapV3Pool(uniV3PoolAddress).slot0();
+        int24 tickLower = (tick - 6000) / TICK_SPACING * TICK_SPACING;
+        int24 tickUpper = (tick + 6000) / TICK_SPACING * TICK_SPACING;
+
+        INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
+            token0: tokens[0],
+            token1: tokens[1],
+            fee: UNIV3_FEE,
+            tickLower: tickLower,
+            tickUpper: tickUpper,
+            amount0Desired: amounts[0],
+            amount1Desired: amounts[1],
+            amount0Min: 0,
+            amount1Min: 0,
+            recipient: deployer,
+            deadline: block.timestamp + 60 minutes
+        });
+
+        uniV3PositionManagerSepolia.mint(params);
     }
 
     function formatAmount(uint256 amount, uint256 decimals, uint256 digits) internal pure returns (string memory) {

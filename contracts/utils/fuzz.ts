@@ -1,13 +1,19 @@
 import PQueue from "p-queue";
 import { $, chalk, fs, path, sleep } from "zx";
-import { logError, ReproducibleCounterexampleJson, reproFile, TestListJson, TestResultsJson } from "./fuzz-common";
+import {
+  counterexamplesDir,
+  logError,
+  ReproducibleCounterexampleJson,
+  reproFilesGlob,
+  TestListJson,
+  TestResultsJson,
+} from "./fuzz-common";
 
 const debug = !!process.env.DEBUG;
 const concurrency = 24;
 const softStartDelayMs = 1000;
 const testFilter = "^invariant";
 const failuresDir = path.join("cache", "invariant", "failures");
-const counterexamplesDir = "counterexamples";
 
 const dimensions: Record<string, Record<string, string>>[] = [
   {
@@ -58,7 +64,7 @@ const main = async () => {
   const testListJson = TestListJson.parse(
     await $`forge test ${[
       "--no-match-path",
-      reproFile,
+      reproFilesGlob,
       "--match-test",
       testFilter,
       "--list",
@@ -123,6 +129,7 @@ const main = async () => {
           for (const failure of failures) {
             if (failure.counterexample != null) {
               const counterexample: ReproducibleCounterexampleJson = {
+                reason: failure.reason,
                 solPath,
                 contract,
                 test,

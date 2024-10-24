@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "./Dependencies/Ownable.sol";
@@ -22,7 +22,6 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
 
     // --- Addresses ---
 
-    // TODO: optimize to make them immutable
     address public collateralRegistryAddress;
     mapping(address => bool) troveManagerAddresses;
     mapping(address => bool) stabilityPoolAddresses;

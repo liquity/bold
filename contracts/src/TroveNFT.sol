@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -10,8 +10,6 @@ import "./Interfaces/IAddressesRegistry.sol";
 
 import {IMetadataNFT} from "./NFTMetadata/MetadataNFT.sol";
 import {ITroveManager} from "./Interfaces/ITroveManager.sol";
-
-// import "forge-std/console2.sol";
 
 contract TroveNFT is ERC721, ITroveNFT {
     ITroveManager public immutable troveManager;
@@ -33,18 +31,17 @@ contract TroveNFT is ERC721, ITroveNFT {
     }
 
     function tokenURI(uint256 _tokenId) public view override(ERC721, IERC721Metadata) returns (string memory) {
-        (uint256 debt, uint256 coll,, ITroveManager.Status status,,,, uint256 annualInterestRate,,) =
-            troveManager.Troves(_tokenId);
+        LatestTroveData memory latestTroveData = troveManager.getLatestTroveData(_tokenId);
 
         IMetadataNFT.TroveData memory troveData = IMetadataNFT.TroveData({
             _tokenId: _tokenId,
             _owner: ownerOf(_tokenId),
             _collToken: address(collToken),
             _boldToken: address(boldToken),
-            _collAmount: coll,
-            _debtAmount: debt,
-            _interestRate: annualInterestRate,
-            _status: status
+            _collAmount: latestTroveData.entireColl,
+            _debtAmount: latestTroveData.entireDebt,
+            _interestRate: latestTroveData.annualInterestRate,
+            _status: troveManager.getTroveStatus(_tokenId)
         });
 
         return metadataNFT.uri(troveData);

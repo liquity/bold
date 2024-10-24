@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "./TestContracts/DevTestSetup.sol";
 
@@ -177,7 +177,7 @@ contract BasicOps is DevTestSetup {
         // Check A's balance decreased and SP deposit increased (A gained some interest)
         assertGt(boldToken.balanceOf(A), 1800e18, "Wrong bold balance");
         assertLt(boldToken.balanceOf(A), 1801e18, "Wrong bold balance");
-        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 200e18, "Wrong SP deposit");
+        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), 200e18, 1e3, "Wrong SP deposit");
     }
 
     function testSPWithdrawal() public {
@@ -195,7 +195,7 @@ contract BasicOps is DevTestSetup {
 
         // Check A's balance decreased and SP deposit increased
         assertEq(boldToken.balanceOf(A), 1900e18);
-        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 100e18);
+        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), 100e18, 1e2);
 
         // A withdraws their full SP deposit
         makeSPWithdrawalAndClaim(A, 100e18);

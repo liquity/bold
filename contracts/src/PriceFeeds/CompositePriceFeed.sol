@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "../Dependencies/LiquityMath.sol";
 import "./MainnetPriceFeedBase.sol";
 import "../Interfaces/ICompositePriceFeed.sol";
-
-// import "forge-std/console2.sol";
 
 // Composite PriceFeed: outputs an LST-USD price derived from two external price Oracles: LST-ETH, and ETH-USD.
 // Used where the LST token is non-rebasing (as per rETH, osETH, ETHx, etc).

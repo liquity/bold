@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.18;
+pragma solidity 0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -9,10 +9,7 @@ import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IStabilityPoolEvents.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
-import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityBase.sol";
-
-// import "forge-std/console2.sol";
 
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
@@ -137,14 +134,13 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     ITroveManager public immutable troveManager;
     IBoldToken public immutable boldToken;
 
-    uint256 internal collBalance; // deposited ether tracker
+    uint256 internal collBalance; // deposited coll tracker
 
     // Tracker for Bold held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
     uint256 internal totalBoldDeposits;
 
     // Total remaining Bold yield gains (from Trove interest mints) held by SP, and not yet paid out to depositors
-    // TODO: from the contract's perspective, this is a write-only variable. It is only ever read in tests, so it would
-    // be better to keep it outside the core contract.
+    // From the contract's perspective, this is a write-only variable.
     uint256 internal yieldGainsOwed;
     // Total remaining Bold yield gains (from Trove interest mints) held by SP, not yet paid out to depositors,
     // and not accounted for because they were received when the total deposits were too small
@@ -198,6 +194,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     // Error trackers for the error correction in the offset calculation
     uint256 public lastCollError_Offset;
     uint256 public lastBoldLossError_Offset;
+    uint256 public lastBoldLossError_TotalDeposits;
 
     // Error tracker fror the error correction in the BOLD reward calculation
     uint256 public lastYieldError;
@@ -270,16 +267,13 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         _updateDepositAndSnapshots(msg.sender, newDeposit, newStashedColl);
         boldToken.sendToPool(msg.sender, address(this), _topUp);
-        uint256 totalBoldDepositsCached = _updateTotalBoldDeposits(_topUp + keptYieldGain, 0);
+        _updateTotalBoldDeposits(_topUp + keptYieldGain, 0);
         _decreaseYieldGainsOwed(currentYieldGain);
         _sendBoldtoDepositor(msg.sender, yieldGainToSend);
         _sendCollGainToDepositor(collToSend);
 
         // If there were pending yields and with the new deposit we are reaching the threshold, let’s move the yield to owed
-        uint256 yieldGainsPendingCached = yieldGainsPending;
-        if (yieldGainsPendingCached > 0 && totalBoldDepositsCached >= DECIMAL_PRECISION) {
-            _updateYieldRewardsSum(yieldGainsPendingCached, totalBoldDepositsCached);
-        }
+        _updateYieldRewardsSum(0);
     }
 
     function _getYieldToKeepOrSend(uint256 _currentYieldGain, bool _doClaim) internal pure returns (uint256, uint256) {
@@ -332,15 +326,13 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         _updateDepositAndSnapshots(msg.sender, newDeposit, newStashedColl);
         _decreaseYieldGainsOwed(currentYieldGain);
-        uint256 totalBoldDepositsCached = _updateTotalBoldDeposits(keptYieldGain, boldToWithdraw);
+        _updateTotalBoldDeposits(keptYieldGain, boldToWithdraw);
         _sendBoldtoDepositor(msg.sender, boldToWithdraw + yieldGainToSend);
         _sendCollGainToDepositor(collToSend);
 
         // If there were pending yields and with the new deposit we are reaching the threshold, let’s move the yield to owed
-        uint256 yieldGainsPendingCached = yieldGainsPending;
-        if (yieldGainsPendingCached > 0 && totalBoldDepositsCached >= DECIMAL_PRECISION) {
-            _updateYieldRewardsSum(yieldGainsPendingCached, totalBoldDepositsCached);
-        }
+        // (it may happen if the user is not claiming)
+        _updateYieldRewardsSum(0);
     }
 
     function _getNewStashedCollAndCollToSend(address _depositor, uint256 _currentCollGain, bool _doClaim)
@@ -379,50 +371,44 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         _requireCallerIsActivePool();
         assert(_boldYield > 0); // TODO: remove before deploying
 
-        uint256 totalBoldDepositsCached = totalBoldDeposits; // cached to save an SLOAD
+        _updateYieldRewardsSum(_boldYield);
+    }
+
+    function _updateYieldRewardsSum(uint256 _newYield) internal {
+        uint256 accumulatedYieldGains = yieldGainsPending + _newYield;
+        if (accumulatedYieldGains == 0) return;
 
         // When total deposits is very small, B is not updated. In this case, the BOLD issued is hold
         // until the total deposits reach 1 BOLD (remains in the balance of the SP).
+        uint256 totalBoldDepositsCached = totalBoldDeposits; // cached to save an SLOAD
         if (totalBoldDepositsCached < DECIMAL_PRECISION) {
-            yieldGainsPending += _boldYield;
+            yieldGainsPending = accumulatedYieldGains;
             return;
         }
 
-        _updateYieldRewardsSum(yieldGainsPending + _boldYield, totalBoldDepositsCached);
-    }
-
-    function _updateYieldRewardsSum(uint256 _accumulatedYield, uint256 _totalBoldDeposits) internal {
-        assert(_accumulatedYield > 0); // TODO: remove before deploying
-
-        yieldGainsOwed += _accumulatedYield;
+        yieldGainsOwed += accumulatedYieldGains;
         yieldGainsPending = 0;
 
-        uint256 yieldPerUnitStaked = _computeYieldPerUnitStaked(_accumulatedYield, _totalBoldDeposits);
+        /*
+         * Calculate the BOLD-per-unit staked.  Division uses a "feedback" error correction, to keep the
+         * cumulative error low in the running total B:
+         *
+         * 1) Form a numerator which compensates for the floor division error that occurred the last time this
+         * function was called.
+         * 2) Calculate "per-unit-staked" ratio.
+         * 3) Multiply the ratio back by its denominator, to reveal the current floor division error.
+         * 4) Store this error for use in the next correction when this function is called.
+         * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
+         */
+        uint256 yieldNumerator = accumulatedYieldGains * DECIMAL_PRECISION + lastYieldError;
 
-        uint256 marginalYieldGain = yieldPerUnitStaked * P;
+        uint256 yieldPerUnitStaked = yieldNumerator / totalBoldDepositsCached;
+        lastYieldError = yieldNumerator - yieldPerUnitStaked * totalBoldDepositsCached;
+
+        uint256 marginalYieldGain = yieldPerUnitStaked * (P - 1);
         epochToScaleToB[currentEpoch][currentScale] = epochToScaleToB[currentEpoch][currentScale] + marginalYieldGain;
 
         emit B_Updated(epochToScaleToB[currentEpoch][currentScale], currentEpoch, currentScale);
-    }
-
-    function _computeYieldPerUnitStaked(uint256 _yield, uint256 _totalBoldDeposits) internal returns (uint256) {
-        /*
-        * Calculate the BOLD-per-unit staked.  Division uses a "feedback" error correction, to keep the
-        * cumulative error low in the running total B:
-        *
-        * 1) Form a numerator which compensates for the floor division error that occurred the last time this
-        * function was called.
-        * 2) Calculate "per-unit-staked" ratio.
-        * 3) Multiply the ratio back by its denominator, to reveal the current floor division error.
-        * 4) Store this error for use in the next correction when this function is called.
-        * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
-        */
-        uint256 yieldNumerator = _yield * DECIMAL_PRECISION + lastYieldError;
-
-        uint256 yieldPerUnitStaked = yieldNumerator / _totalBoldDeposits;
-        lastYieldError = yieldNumerator - yieldPerUnitStaked * _totalBoldDeposits;
-
-        return yieldPerUnitStaked;
     }
 
     // --- Liquidation functions ---
@@ -437,10 +423,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 totalBold = totalBoldDeposits; // cached to save an SLOAD
         if (totalBold == 0 || _debtToOffset == 0) return;
 
-        (uint256 collGainPerUnitStaked, uint256 boldLossPerUnitStaked) =
-            _computeCollRewardsPerUnitStaked(_collToAdd, _debtToOffset, totalBold);
-
-        _updateCollRewardSumAndProduct(collGainPerUnitStaked, boldLossPerUnitStaked); // updates S and P
+        _updateCollRewardSumAndProduct(_collToAdd, _debtToOffset, totalBold); // updates S and P
 
         _moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
     }
@@ -449,7 +432,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     function _computeCollRewardsPerUnitStaked(uint256 _collToAdd, uint256 _debtToOffset, uint256 _totalBoldDeposits)
         internal
-        returns (uint256 collGainPerUnitStaked, uint256 boldLossPerUnitStaked)
+        returns (uint256 collGainPerUnitStaked, uint256 boldLossPerUnitStaked, uint256 newLastBoldLossErrorOffset)
     {
         /*
         * Compute the Bold and Coll rewards. Uses a "feedback" error correction, to keep
@@ -468,33 +451,39 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         if (_debtToOffset == _totalBoldDeposits) {
             boldLossPerUnitStaked = DECIMAL_PRECISION; // When the Pool depletes to 0, so does each deposit
             lastBoldLossError_Offset = 0;
+            lastBoldLossError_TotalDeposits = _totalBoldDeposits;
         } else {
-            uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION - lastBoldLossError_Offset;
+            uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION;
             /*
             * Add 1 to make error in quotient positive. We want "slightly too much" Bold loss,
             * which ensures the error in any given compoundedBoldDeposit favors the Stability Pool.
             */
             boldLossPerUnitStaked = boldLossNumerator / _totalBoldDeposits + 1;
-            lastBoldLossError_Offset = boldLossPerUnitStaked * _totalBoldDeposits - boldLossNumerator;
+            newLastBoldLossErrorOffset = boldLossPerUnitStaked * _totalBoldDeposits - boldLossNumerator;
         }
 
         collGainPerUnitStaked = collNumerator / _totalBoldDeposits;
         lastCollError_Offset = collNumerator - collGainPerUnitStaked * _totalBoldDeposits;
 
-        return (collGainPerUnitStaked, boldLossPerUnitStaked);
+        return (collGainPerUnitStaked, boldLossPerUnitStaked, newLastBoldLossErrorOffset);
     }
 
     // Update the Stability Pool reward sum S and product P
-    function _updateCollRewardSumAndProduct(uint256 _collGainPerUnitStaked, uint256 _boldLossPerUnitStaked) internal {
+    function _updateCollRewardSumAndProduct(uint256 _collToAdd, uint256 _debtToOffset, uint256 _totalBoldDeposits)
+        internal
+    {
+        (uint256 collGainPerUnitStaked, uint256 boldLossPerUnitStaked, uint256 newLastBoldLossErrorOffset) =
+            _computeCollRewardsPerUnitStaked(_collToAdd, _debtToOffset, _totalBoldDeposits);
+
         uint256 currentP = P;
         uint256 newP;
 
-        assert(_boldLossPerUnitStaked <= DECIMAL_PRECISION);
+        assert(boldLossPerUnitStaked <= DECIMAL_PRECISION);
         /*
         * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool Bold in the liquidation.
         * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - boldLossPerUnitStaked)
         */
-        uint256 newProductFactor = uint256(DECIMAL_PRECISION) - _boldLossPerUnitStaked;
+        uint256 newProductFactor = uint256(DECIMAL_PRECISION) - boldLossPerUnitStaked;
 
         uint128 currentScaleCached = currentScale;
         uint128 currentEpochCached = currentEpoch;
@@ -507,7 +496,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         *
         * Since S corresponds to Coll gain, and P to deposit loss, we update S first.
         */
-        uint256 marginalCollGain = _collGainPerUnitStaked * currentP;
+        uint256 marginalCollGain = collGainPerUnitStaked * (currentP - 1);
         uint256 newS = currentS + marginalCollGain;
         epochToScaleToS[currentEpochCached][currentScaleCached] = newS;
         emit S_Updated(newS, currentEpochCached, currentScaleCached);
@@ -535,8 +524,14 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
             emit ScaleUpdated(currentScale);
             // If there's no scale change and no pool-emptying, just do a standard multiplication
         } else {
-            newP = currentP * newProductFactor / DECIMAL_PRECISION;
+            uint256 errorFactor;
+            if (lastBoldLossError_Offset > 0) {
+                errorFactor = lastBoldLossError_Offset * newProductFactor / lastBoldLossError_TotalDeposits;
+            }
+            newP = (currentP * newProductFactor + errorFactor) / DECIMAL_PRECISION;
         }
+        lastBoldLossError_Offset = newLastBoldLossErrorOffset;
+        lastBoldLossError_TotalDeposits = _totalBoldDeposits;
 
         assert(newP > 0);
         P = newP;
@@ -561,13 +556,11 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         emit StabilityPoolCollBalanceUpdated(newCollBalance);
     }
 
-    function _updateTotalBoldDeposits(uint256 _depositIncrease, uint256 _depositDecrease) internal returns (uint256) {
-        if (_depositIncrease == 0 && _depositDecrease == 0) return totalBoldDeposits;
+    function _updateTotalBoldDeposits(uint256 _depositIncrease, uint256 _depositDecrease) internal {
+        if (_depositIncrease == 0 && _depositDecrease == 0) return;
         uint256 newTotalBoldDeposits = totalBoldDeposits + _depositIncrease - _depositDecrease;
         totalBoldDeposits = newTotalBoldDeposits;
         emit StabilityPoolBoldBalanceUpdated(newTotalBoldDeposits);
-
-        return newTotalBoldDeposits;
     }
 
     function _decreaseYieldGainsOwed(uint256 _amount) internal {
@@ -590,58 +583,11 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         Snapshots memory snapshots = depositSnapshots[_depositor];
 
-        uint256 collGain = _getCollGainFromSnapshots(initialDeposit, snapshots);
-        return collGain;
-    }
-
-    function getDepositorYieldGain(address _depositor) public view override returns (uint256) {
-        uint256 initialDeposit = deposits[_depositor].initialValue;
-
-        if (initialDeposit == 0) return 0;
-
-        Snapshots memory snapshots = depositSnapshots[_depositor];
-
-        uint256 yieldGain = _getYieldGainFromSnapshots(initialDeposit, snapshots);
-        return yieldGain;
-    }
-
-    function getDepositorYieldGainWithPending(address _depositor) external view override returns (uint256) {
-        uint256 initialDeposit = deposits[_depositor].initialValue;
-
-        if (initialDeposit == 0) return 0;
-
-        Snapshots memory snapshots = depositSnapshots[_depositor];
-
-        uint256 pendingSPYield = activePool.calcPendingSPYield() + yieldGainsPending;
-        uint256 firstPortionPending;
-        uint256 secondPortionPending;
-
-        if (pendingSPYield > 0 && snapshots.epoch == currentEpoch && totalBoldDeposits >= DECIMAL_PRECISION) {
-            uint256 yieldNumerator = pendingSPYield * DECIMAL_PRECISION + lastYieldError;
-            uint256 yieldPerUnitStaked = yieldNumerator / totalBoldDeposits;
-            uint256 marginalYieldGain = yieldPerUnitStaked * P;
-
-            if (currentScale == snapshots.scale) firstPortionPending = marginalYieldGain;
-            else if (currentScale == snapshots.scale + 1) secondPortionPending = marginalYieldGain;
-        }
-
-        uint256 firstPortion = epochToScaleToB[snapshots.epoch][snapshots.scale] + firstPortionPending - snapshots.B;
-        uint256 secondPortion =
-            (epochToScaleToB[snapshots.epoch][snapshots.scale + 1] + secondPortionPending) / SCALE_FACTOR;
-
-        return initialDeposit * (firstPortion + secondPortion) / snapshots.P / DECIMAL_PRECISION;
-    }
-
-    function _getCollGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots)
-        internal
-        view
-        returns (uint256)
-    {
         /*
-        * Grab the sum 'S' from the epoch at which the stake was made. The Coll gain may span up to one scale change.
-        * If it does, the second portion of the Coll gain is scaled by 1e9.
-        * If the gain spans no scale change, the second portion will be 0.
-        */
+         * Grab the sum 'S' from the epoch at which the stake was made. The Coll gain may span up to one scale change.
+         * If it does, the second portion of the Coll gain is scaled by 1e9.
+         * If the gain spans no scale change, the second portion will be 0.
+         */
         uint128 epochSnapshot = snapshots.epoch;
         uint128 scaleSnapshot = snapshots.scale;
         uint256 S_Snapshot = snapshots.S;
@@ -652,19 +598,21 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         uint256 collGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
 
-        return collGain;
+        return LiquityMath._min(collGain, collBalance);
     }
 
-    function _getYieldGainFromSnapshots(uint256 initialDeposit, Snapshots memory snapshots)
-        internal
-        view
-        returns (uint256)
-    {
+    function getDepositorYieldGain(address _depositor) public view override returns (uint256) {
+        uint256 initialDeposit = deposits[_depositor].initialValue;
+
+        if (initialDeposit == 0) return 0;
+
+        Snapshots memory snapshots = depositSnapshots[_depositor];
+
         /*
-        * Grab the sum 'B' from the epoch at which the stake was made. The Bold gain may span up to one scale change.
-        * If it does, the second portion of the Bold gain is scaled by 1e9.
-        * If the gain spans no scale change, the second portion will be 0.
-        */
+         * Grab the sum 'B' from the epoch at which the stake was made. The Bold gain may span up to one scale change.
+         * If it does, the second portion of the Bold gain is scaled by 1e9.
+         * If the gain spans no scale change, the second portion will be 0.
+         */
         uint128 epochSnapshot = snapshots.epoch;
         uint128 scaleSnapshot = snapshots.scale;
         uint256 B_Snapshot = snapshots.B;
@@ -675,7 +623,37 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         uint256 yieldGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
 
-        return yieldGain;
+        return LiquityMath._min(yieldGain, yieldGainsOwed);
+    }
+
+    function getDepositorYieldGainWithPending(address _depositor) external view override returns (uint256) {
+        uint256 initialDeposit = deposits[_depositor].initialValue;
+
+        if (initialDeposit == 0) return 0;
+
+        Snapshots memory snapshots = depositSnapshots[_depositor];
+
+        uint256 pendingSPYield = activePool.calcPendingSPYield() + yieldGainsPending;
+        uint256 newYieldGainsOwed = yieldGainsOwed + (totalBoldDeposits >= DECIMAL_PRECISION ? pendingSPYield : 0);
+        uint256 firstPortionPending;
+        uint256 secondPortionPending;
+
+        if (pendingSPYield > 0 && snapshots.epoch == currentEpoch && totalBoldDeposits >= DECIMAL_PRECISION) {
+            uint256 yieldNumerator = pendingSPYield * DECIMAL_PRECISION + lastYieldError;
+            uint256 yieldPerUnitStaked = yieldNumerator / totalBoldDeposits;
+            uint256 marginalYieldGain = yieldPerUnitStaked * (P - 1);
+
+            if (currentScale == snapshots.scale) firstPortionPending = marginalYieldGain;
+            else if (currentScale == snapshots.scale + 1) secondPortionPending = marginalYieldGain;
+        }
+
+        uint256 firstPortion = epochToScaleToB[snapshots.epoch][snapshots.scale] + firstPortionPending - snapshots.B;
+        uint256 secondPortion =
+            (epochToScaleToB[snapshots.epoch][snapshots.scale + 1] + secondPortionPending) / SCALE_FACTOR;
+
+        uint256 yieldGain = initialDeposit * (firstPortion + secondPortion) / snapshots.P / DECIMAL_PRECISION;
+
+        return LiquityMath._min(yieldGain, newYieldGainsOwed);
     }
 
     // --- Compounded deposit ---
@@ -710,14 +688,18 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 compoundedStake;
         uint128 scaleDiff = currentScale - scaleSnapshot;
 
+        // To make sure rouning errors favour the system, we use P - 1 if P decreased
+        uint256 cachedP = P;
+        uint256 currentPToUse = cachedP != snapshot_P ? cachedP - 1 : cachedP;
+
         /* Compute the compounded stake. If a scale change in P was made during the stake's lifetime,
         * account for it. If more than one scale change was made, then the stake has decreased by a factor of
         * at least 1e-9 -- so return 0.
         */
         if (scaleDiff == 0) {
-            compoundedStake = initialStake * P / snapshot_P;
+            compoundedStake = initialStake * currentPToUse / snapshot_P;
         } else if (scaleDiff == 1) {
-            compoundedStake = initialStake * P / snapshot_P / SCALE_FACTOR;
+            compoundedStake = initialStake * currentPToUse / snapshot_P / SCALE_FACTOR;
         } else {
             // if scaleDiff >= 2
             compoundedStake = 0;
@@ -745,7 +727,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 newCollBalance = collBalance - _collAmount;
         collBalance = newCollBalance;
         emit StabilityPoolCollBalanceUpdated(newCollBalance);
-        emit EtherSent(msg.sender, _collAmount);
         collToken.safeTransfer(msg.sender, _collAmount);
     }
 
