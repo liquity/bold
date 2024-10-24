@@ -52,11 +52,10 @@ export function StakeScreen() {
   const { action = "deposit" } = useParams();
 
   const account = useAccount();
-  const lqtyPrice = usePrice("LQTY");
 
   const stakePosition = useStakePosition(account.address ?? null);
 
-  return !lqtyPrice ? null : (
+  return (
     <Screen
       heading={{
         title: (
@@ -99,16 +98,17 @@ export function StakeScreen() {
           }}
         />
 
-        {action === "deposit" && <PanelUpdateStake lqtyPrice={lqtyPrice} />}
+        {action === "deposit" && <PanelUpdateStake />}
         {action === "rewards" && <PanelClaimRewards />}
       </VFlex>
     </Screen>
   );
 }
 
-function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
+function PanelUpdateStake() {
   const account = useAccount();
   const txFlow = useTransactionFlow();
+  const lqtyPrice = usePrice("LQTY");
 
   const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
   const [value, setValue] = useState("");
@@ -187,7 +187,7 @@ function PanelUpdateStake({ lqtyPrice }: { lqtyPrice: Dnum }) {
             value={value_}
             placeholder="0.00"
             secondary={{
-              start: parsedValue && `$${dn.format(dn.mul(parsedValue, lqtyPrice), 2)}`,
+              start: parsedValue && lqtyPrice ? `$${dn.format(dn.mul(parsedValue, lqtyPrice), 2)}` : null,
               end: mode === "deposit"
                 ? (
                   <TextButton
