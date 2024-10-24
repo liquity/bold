@@ -15,7 +15,7 @@
    - [Batch Delegation](#batch-delegation)
    - [Collateral Branch Shutdown](#collateral-branch-shutdown)
    - [Removal of Recovery Mode](#removal-of-recovery-mode)
-   - [Liquidation Penaltiesliquidation-penalties)
+   - [Liquidation Penalties](#liquidation-penalties)
    - [Gas Compensation](#gas-compensation)
    - [More Flexibility for SP Reward Claiming](#more-flexibility-for-sp-reward-claiming)
 
