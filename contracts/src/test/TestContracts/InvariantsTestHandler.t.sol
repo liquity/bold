@@ -2727,6 +2727,8 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
         r = _urgentRedemption;
 
         for (uint256 j = 0; j < r.batch.length; ++j) {
+            if (amount == 0) break;
+
             uint256 troveId = _troveIdOf(i, r.batch[j]);
             if (!_troveIds[i].has(troveId)) continue; // skip non-existent Trove
 
@@ -2753,7 +2755,6 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
             r.totalDebtRedeemed += debtRedeemed;
 
             amount -= debtRedeemed;
-            if (amount == 0) break; // XXX why at the end?
         }
     }
 
