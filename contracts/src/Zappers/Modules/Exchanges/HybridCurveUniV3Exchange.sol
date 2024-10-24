@@ -66,7 +66,7 @@ contract HybridCurveUniV3Exchange is LeftoversSweep, IExchange {
     }
 
     // Bold -> USDC on Curve; then USDC -> WETH, and optionally WETH -> Coll, on UniV3
-    function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount) external returns (uint256) {
+    function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount) external {
         InitialBalances memory initialBalances;
         _setHybridExchangeInitialBalances(initialBalances);
 
@@ -96,12 +96,10 @@ contract HybridCurveUniV3Exchange is LeftoversSweep, IExchange {
         });
 
         // Executes the swap.
-        uint256 uniV3CollAmount = uniV3Router.exactInput(params);
+        uniV3Router.exactInput(params);
 
         // return leftovers to user
         _returnLeftovers(initialBalances);
-
-        return uniV3CollAmount;
     }
 
     // Optionally Coll -> WETH, and WETH -> USDC on UniV3; then USDC -> Bold on Curve

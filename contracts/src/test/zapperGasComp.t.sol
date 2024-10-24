@@ -354,7 +354,7 @@ contract ZapperGasCompTest is DevTestSetup {
 
         // Adjust (withdraw coll and Bold)
         vm.startPrank(B);
-        gasCompZapper.adjustUnredeemableTrove(troveId, collAmount2, false, boldAmount2, true, 0, 0, boldAmount2);
+        gasCompZapper.adjustZombieTrove(troveId, collAmount2, false, boldAmount2, true, 0, 0, boldAmount2);
         vm.stopPrank();
 
         assertEq(troveManager.getTroveEntireColl(troveId), troveCollBefore - collAmount2, "Trove coll mismatch");

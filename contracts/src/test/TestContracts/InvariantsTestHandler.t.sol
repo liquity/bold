@@ -326,7 +326,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
     ITroveManager.Status constant ACTIVE = ITroveManager.Status.active;
     ITroveManager.Status constant CLOSED_BY_OWNER = ITroveManager.Status.closedByOwner;
     ITroveManager.Status constant CLOSED_BY_LIQ = ITroveManager.Status.closedByLiquidation;
-    ITroveManager.Status constant UNREDEEMABLE = ITroveManager.Status.zombie;
+    ITroveManager.Status constant ZOMBIE = ITroveManager.Status.zombie;
 
     FunctionCaller immutable _functionCaller;
     bool immutable _assumeNoExpectedFailures; // vm.assume() away calls that fail extectedly
@@ -421,7 +421,7 @@ contract InvariantsTestHandler is BaseHandler, BaseMultiCollateralTest {
 
         coll = trove.coll;
         debt = trove.debt;
-        status = _isZombie(i, troveId) ? UNREDEEMABLE : ACTIVE;
+        status = _isZombie(i, troveId) ? ZOMBIE : ACTIVE;
         batchManager = _batchManagerOf[i][troveId];
     }
 
