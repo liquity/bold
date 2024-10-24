@@ -53,7 +53,6 @@ uint256 constant ONE_MINUTE = 1 minutes;
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant UPFRONT_INTEREST_PERIOD = 7 days;
 uint256 constant INTEREST_RATE_ADJ_COOLDOWN = 3 days;
-uint256 constant STALE_TROVE_DURATION = 90 days;
 
 uint256 constant SP_YIELD_SPLIT = 72 * _1pct; // 72%
 
