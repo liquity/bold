@@ -178,6 +178,10 @@ contract troveNFTTest is DevTestSetup {
     function testTroveURI() public {
         string[] memory uris = new string[](NUM_VARIANTS * NUM_COLLATERALS);
 
+        // Let’s redeem so we have some zombies in the result
+        deal(address(boldToken), A, 30000e18);
+        redeem(A, 30000e18);
+
         for (uint256 i = 0; i < NUM_VARIANTS; i++) {
             uris[i] = troveNFTWETH.tokenURI(troveIds[i]);
             uris[i + NUM_VARIANTS] = troveNFTWstETH.tokenURI(troveIds[i]);
@@ -223,9 +227,9 @@ contract troveNFTTest is DevTestSetup {
         assertTrue(LibString.contains(decodedUri, '"value": "Active"'), "Incorrect Status value");
     }
 
-    function test_toLocale() public view {
+    function test_toLocale() public pure {
         string memory result = numUtils.toLocale("123456789");
-        console.log(result);
+        //console.log(result);
         assertEq(result, "123,456,789");
     }
 
