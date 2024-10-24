@@ -10,6 +10,7 @@ import content from "@/src/content";
 import { DemoMode } from "@/src/demo-mode";
 import { Ethereum } from "@/src/services/Ethereum";
 import { Prices } from "@/src/services/Prices";
+import { StoredState } from "@/src/services/StoredState";
 import { TransactionFlow } from "@/src/services/TransactionFlow";
 import { UiKit } from "@liquity2/uikit";
 import { GeistSans } from "geist/font/sans";
@@ -28,19 +29,21 @@ export default function Layout({
     <html lang="en">
       <body className={GeistSans.className}>
         <UiKit>
-          <DemoMode>
-            <Ethereum>
-              <Prices>
-                <TransactionFlow>
-                  <AboutModal>
-                    <AppLayout>
-                      {children}
-                    </AppLayout>
-                  </AboutModal>
-                </TransactionFlow>
-              </Prices>
-            </Ethereum>
-          </DemoMode>
+          <StoredState>
+            <DemoMode>
+              <Ethereum>
+                <Prices>
+                  <TransactionFlow>
+                    <AboutModal>
+                      <AppLayout>
+                        {children}
+                      </AppLayout>
+                    </AboutModal>
+                  </TransactionFlow>
+                </Prices>
+              </Ethereum>
+            </DemoMode>
+          </StoredState>
         </UiKit>
       </body>
     </html>
