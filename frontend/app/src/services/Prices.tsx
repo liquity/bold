@@ -195,6 +195,11 @@ export function Prices({ children }: { children: ReactNode }) {
   );
 }
 
+export function useAllPrices() {
+  const { prices } = useContext(PriceContext);
+  return prices;
+}
+
 export function usePrice(token: PriceToken | null) {
   const { prices } = useContext(PriceContext);
   return token ? prices[token] : null;

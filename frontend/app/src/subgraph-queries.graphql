@@ -1,3 +1,10 @@
+query TotalDeposited {
+  collaterals {
+    collIndex
+    totalDeposited
+  }
+}
+
 query TrovesByAccount($account: Bytes!) {
   troves(where: { borrower: $account, closedAt: null }) {
     id

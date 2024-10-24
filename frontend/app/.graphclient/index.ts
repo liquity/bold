@@ -2080,15 +2080,16 @@ const merger = new(BareMerger as any)({
         store: rootStore.child('bareMerger')
       })
 const documentHashMap = {
-        "df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": TrovesByAccountDocument,
-"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": TrovesCountDocument,
-"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": TroveByIdDocument,
-"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": StabilityPoolDocument,
-"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": StabilityPoolDepositsByAccountDocument,
-"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": StabilityPoolDepositDocument,
-"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": StabilityPoolEpochScaleDocument,
-"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": InterestBatchDocument,
-"df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8": InterestRateBracketsDocument
+        "e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": TotalDepositedDocument,
+"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": TrovesByAccountDocument,
+"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": TrovesCountDocument,
+"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": TroveByIdDocument,
+"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": StabilityPoolDocument,
+"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": StabilityPoolDepositsByAccountDocument,
+"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": StabilityPoolDepositDocument,
+"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": StabilityPoolEpochScaleDocument,
+"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": InterestBatchDocument,
+"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": InterestRateBracketsDocument
       }
 additionalEnvelopPlugins.push(usePersistedOperations({
         getPersistedOperation(key) {
@@ -2110,68 +2111,75 @@ additionalEnvelopPlugins.push(usePersistedOperations({
     get documents() {
       return [
       {
+        document: TotalDepositedDocument,
+        get rawSDL() {
+          return printWithCache(TotalDepositedDocument);
+        },
+        location: 'TotalDepositedDocument.graphql',
+        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
+      },{
         document: TrovesByAccountDocument,
         get rawSDL() {
           return printWithCache(TrovesByAccountDocument);
         },
         location: 'TrovesByAccountDocument.graphql',
-        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
+        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
       },{
         document: TrovesCountDocument,
         get rawSDL() {
           return printWithCache(TrovesCountDocument);
         },
         location: 'TrovesCountDocument.graphql',
-        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
+        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
       },{
         document: TroveByIdDocument,
         get rawSDL() {
           return printWithCache(TroveByIdDocument);
         },
         location: 'TroveByIdDocument.graphql',
-        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
+        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
       },{
         document: StabilityPoolDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDocument);
         },
         location: 'StabilityPoolDocument.graphql',
-        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
+        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
       },{
         document: StabilityPoolDepositsByAccountDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDepositsByAccountDocument);
         },
         location: 'StabilityPoolDepositsByAccountDocument.graphql',
-        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
+        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
       },{
         document: StabilityPoolDepositDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDepositDocument);
         },
         location: 'StabilityPoolDepositDocument.graphql',
-        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
+        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
       },{
         document: StabilityPoolEpochScaleDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolEpochScaleDocument);
         },
         location: 'StabilityPoolEpochScaleDocument.graphql',
-        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
+        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
       },{
         document: InterestBatchDocument,
         get rawSDL() {
           return printWithCache(InterestBatchDocument);
         },
         location: 'InterestBatchDocument.graphql',
-        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
+        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
       },{
         document: InterestRateBracketsDocument,
         get rawSDL() {
           return printWithCache(InterestRateBracketsDocument);
         },
         location: 'InterestRateBracketsDocument.graphql',
-        sha256Hash: 'df0f2e67ead2fa27bcc890e0e8353401947ec61a24e46e41d8107d6f5745e9f8'
+        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
       }
     ];
     },
@@ -2226,6 +2234,11 @@ export function getBuiltGraphSDK<TGlobalContext = any, TOperationContext = any>(
   const sdkRequester$ = getBuiltGraphClient().then(({ sdkRequesterFactory }) => sdkRequesterFactory(globalContext));
   return getSdk<TOperationContext, TGlobalContext>((...args) => sdkRequester$.then(sdkRequester => sdkRequester(...args)));
 }
+export type TotalDepositedQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type TotalDepositedQuery = { readonly collaterals: ReadonlyArray<Pick<Collateral, 'collIndex' | 'totalDeposited'>> };
+
 export type TrovesByAccountQueryVariables = Exact<{
   account: Scalars['Bytes']['input'];
 }>;
@@ -2311,6 +2324,14 @@ export type InterestRateBracketsQueryVariables = Exact<{
 export type InterestRateBracketsQuery = { readonly interestRateBrackets: ReadonlyArray<Pick<InterestRateBracket, 'rate' | 'totalDebt'>> };
 
 
+export const TotalDepositedDocument = gql`
+    query TotalDeposited {
+  collaterals {
+    collIndex
+    totalDeposited
+  }
+}
+    ` as unknown as DocumentNode<TotalDepositedQuery, TotalDepositedQueryVariables>;
 export const TrovesByAccountDocument = gql`
     query TrovesByAccount($account: Bytes!) {
   troves(where: {borrower: $account, closedAt: null}) {
@@ -2466,9 +2487,13 @@ export const InterestRateBracketsDocument = gql`
 
 
 
+
 export type Requester<C = {}, E = unknown> = <R, V>(doc: DocumentNode, vars?: V, options?: C) => Promise<R> | AsyncIterable<R>
 export function getSdk<C, E>(requester: Requester<C, E>) {
   return {
+    TotalDeposited(variables?: TotalDepositedQueryVariables, options?: C): Promise<TotalDepositedQuery> {
+      return requester<TotalDepositedQuery, TotalDepositedQueryVariables>(TotalDepositedDocument, variables, options) as Promise<TotalDepositedQuery>;
+    },
     TrovesByAccount(variables: TrovesByAccountQueryVariables, options?: C): Promise<TrovesByAccountQuery> {
       return requester<TrovesByAccountQuery, TrovesByAccountQueryVariables>(TrovesByAccountDocument, variables, options) as Promise<TrovesByAccountQuery>;
     },

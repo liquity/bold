@@ -6,7 +6,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { useAllCollateralContracts } from "@/src/contracts";
 import { DNUM_1 } from "@/src/dnum-utils";
-import { useCollateral, useCollIndexFromSymbol, useEarnPool } from "@/src/liquity-utils";
+import { useAverageInterestRate, useCollateral, useCollIndexFromSymbol, useEarnPool } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
@@ -61,7 +61,7 @@ function BorrowingRow({
 }) {
   const collIndex = useCollIndexFromSymbol(symbol);
   const collateral = useCollateral(collIndex);
-  const avgInterestRate = dn.from(0, 18);
+  const avgInterestRate = useAverageInterestRate(collIndex);
 
   const maxLtv = collateral?.collateralRatio && dn.gt(collateral.collateralRatio, 0)
     ? dn.div(DNUM_1, collateral.collateralRatio)
@@ -82,10 +82,17 @@ function BorrowingRow({
         </div>
       </td>
       <td>
-        <Amount value={avgInterestRate} percentage />
+        <Amount
+          fallback="…"
+          percentage
+          value={avgInterestRate.data}
+        />
       </td>
       <td>
-        <Amount value={maxLtv} percentage />
+        <Amount
+          value={maxLtv}
+          percentage
+        />
       </td>
       <td>
         <div
@@ -169,10 +176,15 @@ function EarnRewardsRow({
         </div>
       </td>
       <td>
-        <Amount value={earnPool.data?.apr} percentage />
+        <Amount
+          fallback="…"
+          percentage
+          value={earnPool.data?.apr}
+        />
       </td>
       <td>
         <Amount
+          fallback="…"
           format="compact"
           prefix="$"
           value={earnPool.data?.totalDeposited}

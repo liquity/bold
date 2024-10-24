@@ -1,7 +1,7 @@
 import type { Address, CollIndex, Delegate, PositionEarn, PositionLoan, PrefixedTroveId } from "@/src/types";
 
 import { getBuiltGraphSDK } from "@/.graphclient";
-import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
+import { ACCOUNT_POSITIONS, BORROW_STATS } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
 import { DEMO_MODE } from "@/src/env";
 import { getCollateralFromTroveSymbol } from "@/src/liquity-utils";
@@ -63,6 +63,28 @@ export function useTroveCount(account?: Address, collIndex?: CollIndex, options?
         return collIndex === undefined
           ? borrowerInfo?.troves ?? 0
           : borrowerInfo?.trovesByCollateral[collIndex] ?? null;
+      },
+    refetchInterval,
+  });
+}
+
+export function useTotalDeposited(options?: SubgraphHookOptions) {
+  const { refetchInterval } = prepareOptions(options);
+  return useQuery({
+    queryKey: ["TotalDeposited"],
+    queryFn: DEMO_MODE
+      ? () => Object.values(BORROW_STATS)
+      : async () => {
+        const { collaterals } = await graph.TotalDeposited();
+        return collaterals.map(({ collIndex, totalDeposited }) => {
+          if (!isCollIndex(collIndex)) {
+            throw new Error(`Invalid collateral index: ${collIndex}`);
+          }
+          return {
+            collIndex,
+            totalDeposited: dnum18(totalDeposited),
+          };
+        });
       },
     refetchInterval,
   });

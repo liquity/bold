@@ -16,9 +16,9 @@ let OP_OPEN_TROVE = 0;
 let OP_CLOSE_TROVE = 1;
 let OP_ADJUST_TROVE = 2;
 let OP_ADJUST_TROVE_INTEREST_RATE = 3;
-// let OP_APPLY_PENDING_DEBT = 4;
+let OP_APPLY_PENDING_DEBT = 4;
 let OP_LIQUIDATE = 5;
-// let OP_REDEEM_COLLATERAL = 6;
+let OP_REDEEM_COLLATERAL = 6;
 let OP_OPEN_TROVE_AND_JOIN_BATCH = 7;
 let OP_SET_INTEREST_BATCH_MANAGER = 8;
 let OP_REMOVE_FROM_BATCH = 9;
@@ -30,23 +30,21 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
   let troveFullId = collId + ":" + troveId.toHexString();
 
   let operation = event.params._operation;
-  let tmc = TroveManagerContract.bind(event.address);
+  let tm = TroveManagerContract.bind(event.address);
 
   switch (operation) {
     case OP_OPEN_TROVE:
-      updateTrove(tmc, troveId, timestamp);
-      break;
-
     case OP_ADJUST_TROVE:
-      updateTrove(tmc, troveId, timestamp);
-      break;
-
     case OP_ADJUST_TROVE_INTEREST_RATE:
-      updateTrove(tmc, troveId, timestamp);
+    case OP_APPLY_PENDING_DEBT:
+    case OP_REDEEM_COLLATERAL:
+      updateTrove(tm, troveId, timestamp);
       break;
 
     case OP_CLOSE_TROVE:
     case OP_LIQUIDATE:
+      updateTrove(tm, troveId, timestamp);
+
       let trove = Trove.load(troveFullId);
       if (!trove) {
         throw new Error("Trove not found: " + troveFullId);
@@ -60,11 +58,11 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
       break;
 
     case OP_OPEN_TROVE_AND_JOIN_BATCH:
-      updateTrove(tmc, troveId, timestamp);
+      updateTrove(tm, troveId, timestamp);
       enterBatch(
         collId,
         troveId,
-        tmc.Troves(troveId).getInterestBatchManager(),
+        tm.Troves(troveId).getInterestBatchManager(),
       );
       break;
 
@@ -72,7 +70,7 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
       enterBatch(
         collId,
         troveId,
-        tmc.Troves(troveId).getInterestBatchManager(),
+        tm.Troves(troveId).getInterestBatchManager(),
       );
       break;
 

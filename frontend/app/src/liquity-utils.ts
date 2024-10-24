@@ -22,6 +22,7 @@ import { isCollIndex, isTroveId } from "@/src/types";
 import { COLLATERALS, isAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
+import { useMemo } from "react";
 import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { useReadContracts } from "wagmi";
@@ -271,6 +272,36 @@ export function useTroveNftUrl(collIndex: null | CollIndex, troveId: null | Trov
 }
 
 const RATE_STEPS = Math.round((INTEREST_RATE_MAX - INTEREST_RATE_MIN) / INTEREST_RATE_INCREMENT) + 1;
+
+export function useAverageInterestRate(collIndex: null | CollIndex) {
+  const brackets = useInterestRateBrackets(collIndex);
+
+  const data = useMemo(() => {
+    if (!brackets.isSuccess) {
+      return null;
+    }
+
+    let totalDebt = dnum18(0);
+    let totalWeightedRate = dnum18(0);
+
+    for (const bracket of brackets.data) {
+      totalDebt = dn.add(totalDebt, bracket.totalDebt);
+      totalWeightedRate = dn.add(
+        totalWeightedRate,
+        dn.mul(bracket.rate, bracket.totalDebt),
+      );
+    }
+
+    return dn.eq(totalDebt, 0)
+      ? dnum18(0)
+      : dn.div(totalWeightedRate, totalDebt);
+  }, [brackets.isSuccess, brackets.data]);
+
+  return {
+    ...brackets,
+    data,
+  };
+}
 
 export function useInterestRateChartData(collIndex: null | CollIndex) {
   const brackets = useInterestRateBrackets(collIndex);

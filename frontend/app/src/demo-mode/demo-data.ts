@@ -83,19 +83,16 @@ export const ACCOUNT_POSITIONS: Position[] = [
 
 export const BORROW_STATS = {
   ETH: {
-    borrowRate: dn.from(0.05, 18),
-    tvl: dn.from(75_827_387.87, 18),
-    maxLtv: dn.div(dn.from(1, 18), 1.1),
+    collIndex: 0,
+    totalDeposited: dn.from(30_330.9548, 18),
   },
   RETH: {
-    borrowRate: dn.from(0.04, 18),
-    tvl: dn.from(55_782_193.37, 18),
-    maxLtv: dn.div(dn.from(1, 18), 1.2),
+    collIndex: 1,
+    totalDeposited: dn.from(22_330.9548, 18),
   },
   STETH: {
-    borrowRate: dn.from(0.055, 18),
-    tvl: dn.from(45_037_108.91, 18),
-    maxLtv: dn.div(dn.from(1, 18), 1.2),
+    collIndex: 2,
+    totalDeposited: dn.from(18_030.9548, 18),
   },
 } as const;
 
