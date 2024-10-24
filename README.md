@@ -15,7 +15,7 @@
    - [Batch Delegation](#batch-delegation)
    - [Collateral Branch Shutdown](#collateral-branch-shutdown)
    - [Removal of Recovery Mode](#removal-of-recovery-mode)
-   - [Liquidation Penalties](#liquidation-penalties)
+   - [Liquidation Penaltiesliquidation-penalties)
    - [Gas Compensation](#gas-compensation)
    - [More Flexibility for SP Reward Claiming](#more-flexibility-for-sp-reward-claiming)
 
@@ -992,7 +992,7 @@ The batch-level accrued interest and accrued management fees are calculated and 
 
 ### Batch premature adjustment fees
 
-Batch managers incur premature fees in the same manner as individual Troves - i.e. if they adjust before the cooldown period has past since their last adjustment (see [premature adjustment section](#interest-rate-adjustments-redemption-evasion-mitigation).
+Batch managers incur premature fees in the same manner as individual Troves - i.e. if they adjust before the cooldown period has past since their last adjustment (see [premature adjustment section](#premature-adjustment-fees).
 
 When a borrower adds their Trove to a batch, there is a trust assumption: they expect the batch manager to manage interest rates well and not incur excessive adjustment fees.  However, the manager can commit in advance to a maximum update frequency when they register by passing a `_minInterestRateChangePeriod`.
 
@@ -1152,7 +1152,7 @@ However, upward market manipulation could be catastrophic as it would allow exce
 The system mitigates this by taking the minimum of the LST-USD prices derived from market and canonical rates on the RETHPriceFeed. As such, to manipulate the system price upward, an attacker would need to manipulate both the market oracle _and_ the canonical rate which would be much more difficult.
 
 
-However this is not the only LST/oracle risk scenario. There are several to consider - see the [LST oracle risks section](#lst-oracle-risks).
+However this is not the only LST/oracle risk scenario. There are several to consider - see the [LST oracle risks section](#9---lst-oracle-risks).
 
 
 ## Known issues and mitigations
