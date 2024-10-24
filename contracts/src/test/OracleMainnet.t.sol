@@ -1772,14 +1772,77 @@ contract OraclesMainnet is TestAccounts {
         assertEq(contractsArray[1].collToken.balanceOf(A), A_collBefore + expectedCollDelta);
     }
 
-    // TODO:
+      function testRedemptionOfRETHUsesMinCanonicalAndMarketforPrimaryPriceWhenDeviationGreaterThan2pct() public {
+        // Fetch price
+        rethPriceFeed.fetchPrice();
+        uint256 lastGoodPrice1 = rethPriceFeed.lastGoodPrice();
+        assertGt(lastGoodPrice1, 0, "lastGoodPrice 0");
 
-    // Tests:
-    // , should we just block normal redemptions in shutdown mode?
-    // --- redemptions when branch shutdown use same price as nornmal ops ---
+        // Check using primary
+        assertEq(uint8(rethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
 
-    // - redemptions of WETH use lastGoodPrice when price source switched to lastGoodPrice
-    // - redemptions of ...
+        uint256 coll = 100 ether;
+        uint256 debtRequest = 3000e18;
+
+        vm.startPrank(A);
+        uint256 troveId = contractsArray[1].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        // Replace the RETH Oracle's code with the mock oracle's code
+        vm.etch(address(rethOracle), address(mockOracle).code);
+        // Wrap so we can use the mock's price setter to manipulate the reth-eth price
+        ChainlinkOracleMock mock = ChainlinkOracleMock(address(rethOracle));
+        // Set ETH_per_RETH market price to 0.5, and make it fresh
+        mock.setPriceAndStaleness(5e7, false);
+
+        (,int256 price,,,) = rethOracle.latestRoundData();
+        // Confirm that RETH oracle now returns the artificial low price
+        assertEq(price, 5e7, "reth-eth price not 0.5");
+
+        // // Expected price used for primary calc: ETH-USD market price
+        uint256 canonicalRethRate =  rethToken.getExchangeRate();
+        uint256 marketRethPrice = _getLatestAnswerFromOracle(rethOracle);
+        uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
+        assertNotEq(canonicalRethRate, marketRethPrice, "raw price and rate equal");
+
+        // Check market is not within 2pct of canonical
+        uint256 min = (1e18 - 2e16) * canonicalRethRate / 1e18;
+        assertLe(marketRethPrice, min, "market reth-eth price not < min");
+
+        // USD_per_WSTETH = USD_per_STETH(or_per_ETH) * STETH_per_WSTETH
+        uint256 expectedPrice = LiquityMath._min(canonicalRethRate, marketRethPrice) * ethUsdPrice / 1e18;
+        assertGt(expectedPrice, 0, "expected price not 0");
+
+        // Calc expected fee based on price, i.e. the minimum
+        uint256 totalBoldRedeemAmount = 1e18;
+        uint256 totalCorrespondingColl = totalBoldRedeemAmount * DECIMAL_PRECISION / expectedPrice;
+        assertGt(totalCorrespondingColl, 0, "coll not 0");
+
+        uint256 redemptionFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(totalBoldRedeemAmount)
+            * DECIMAL_PRECISION / totalBoldRedeemAmount;
+        assertGt(redemptionFeePct, 0, "fee not 0");
+
+        uint256 totalCollFee = totalCorrespondingColl * redemptionFeePct / DECIMAL_PRECISION;
+
+        uint256 expectedCollDelta = totalCorrespondingColl - totalCollFee;
+        assertGt(expectedCollDelta, 0, "delta not 0");
+
+        uint256 branch1DebtBefore = contractsArray[1].activePool.getBoldDebt();
+        assertGt(branch1DebtBefore, 0);
+        uint256 A_collBefore = contractsArray[1].collToken.balanceOf(A);
+        assertGt(A_collBefore, 0);
+
+        // Redeem
+        redeem(A, totalBoldRedeemAmount);
+
+        // Confirm RETH branch got redeemed from
+        assertEq(contractsArray[1].activePool.getBoldDebt(), branch1DebtBefore - totalBoldRedeemAmount, "active debt != branch - redeemed");
+
+        // Confirm the received amount coll is the expected amount (i.e. used the expected price)
+        assertEq(contractsArray[1].collToken.balanceOf(A), A_collBefore + expectedCollDelta, "A's coll didn't change" );
+    }
 
     // - More basic actions tests (adjust, close, etc)
     // - liq tests (manipulate aggregator stored price)

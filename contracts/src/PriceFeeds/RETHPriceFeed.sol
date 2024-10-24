@@ -63,7 +63,7 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
             rEthUsdPrice = LiquityMath._max(rEthUsdMarketPrice, rEthUsdCanonicalPrice);
         } else {
             // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation.
-            // Assumes a deviation between market <> canonical of >2% represents a legitemate market price difference.
+            // Assumes a deviation between market <> canonical of >2% represents a legitimate market price difference.
             rEthUsdPrice = LiquityMath._min(rEthUsdMarketPrice, rEthUsdCanonicalPrice);
         }
 
@@ -77,7 +77,7 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
         uint256 max = _rEthUsdCanonicalPrice * (DECIMAL_PRECISION + _2_PERCENT) / 1e18;
         uint256 min = _rEthUsdCanonicalPrice * (DECIMAL_PRECISION - _2_PERCENT) / 1e18;
 
-        return _rEthUsdMarketPrice >= min && _rEthUsdCanonicalPrice <= max;
+        return _rEthUsdMarketPrice >= min && _rEthUsdMarketPrice <= max;
     }
 
 
