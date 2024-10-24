@@ -36,18 +36,20 @@ import * as dn from "dnum";
 import { useEffect, useState } from "react";
 import { match, P } from "ts-pattern";
 
+type LoanMode = "borrow" | "leverage";
+
 export function LoanCard({
   onLeverageModeChange,
-  leverageMode,
+  mode,
   loadingState,
   loan,
   onRetry,
   troveId,
 }: {
-  leverageMode: boolean;
+  mode: LoanMode;
   loadingState: LoanLoadingState;
   loan: PositionLoan | null;
-  onLeverageModeChange: (leverageMode: boolean) => void;
+  onLeverageModeChange: (mode: LoanMode) => void;
   onRetry: () => void;
   troveId: TroveId;
 }) {
@@ -76,7 +78,7 @@ export function LoanCard({
   );
 
   const nftUrl = useTroveNftUrl(loan?.collIndex ?? null, troveId);
-  const title = leverageMode ? "Leverage loan" : "BOLD loan";
+  const title = mode === "leverage" ? "Leverage loan" : "BOLD loan";
 
   const [notifyCopy, setNotifyCopy] = useState(false);
   useEffect(() => {
@@ -129,10 +131,10 @@ export function LoanCard({
                 })}
               >
                 <LoanCardHeading
-                  leverageMode={leverageMode}
+                  inheritColor={true}
+                  mode={mode}
                   title={title}
                   titleFull={`${title}: ${troveId}`}
-                  inheritColor={true}
                 />
               </div>
               <HFlex gap={8}>
@@ -160,10 +162,10 @@ export function LoanCard({
               })}
             >
               <LoanCardHeading
-                leverageMode={leverageMode}
+                inheritColor={true}
+                mode={mode}
                 title={title}
                 titleFull={`${title}: ${troveId}`}
-                inheritColor={true}
               />
             </div>
             <VFlex
@@ -237,10 +239,10 @@ export function LoanCard({
                   })}
                 >
                   <LoanCardHeading
-                    leverageMode={leverageMode}
+                    inheritColor={false}
+                    mode={mode}
                     title={title}
                     titleFull={`${title}: ${troveId}`}
-                    inheritColor={false}
                   />
                   <div
                     className={css({
@@ -303,12 +305,14 @@ export function LoanCard({
                                 color: "accent",
                               })}
                             >
-                              {leverageMode
+                              {mode === "leverage"
                                 ? <IconBorrow size={16} />
                                 : <IconLeverage size={16} />}
                             </div>
                           ),
-                          label: leverageMode ? "View as loan" : "View as leverage",
+                          label: mode === "leverage"
+                            ? "View as loan"
+                            : "View as leverage",
                         },
                         {
                           icon: (
@@ -371,7 +375,7 @@ export function LoanCard({
                       selected={0}
                       onSelect={(index) => {
                         if (index === 0) {
-                          onLeverageModeChange(!leverageMode);
+                          onLeverageModeChange(mode === "leverage" ? "borrow" : "leverage");
                         }
                         if (index === 1) {
                           navigator.clipboard.writeText(window.location.href);
@@ -403,7 +407,7 @@ export function LoanCard({
                       gap: 12,
                     })}
                   >
-                    {leverageMode
+                    {mode === "leverage"
                       ? (
                         <div
                           title={`${fmtnum(loan.deposit, "full")} ${collateral}`}
@@ -465,7 +469,7 @@ export function LoanCard({
                     paddingTop: 32,
                   })}
                 >
-                  {leverageMode
+                  {mode === "leverage"
                     ? (
                       <GridItem label="Net value">
                         <Value
@@ -558,12 +562,12 @@ export function LoanCard({
 }
 
 function LoanCardHeading({
-  leverageMode,
+  mode,
   title,
   titleFull,
   inheritColor,
 }: {
-  leverageMode: boolean;
+  mode: LoanMode;
   title: string;
   titleFull?: string;
   inheritColor?: boolean;
@@ -594,7 +598,7 @@ function LoanCardHeading({
           color: inheritColor ? "inherit" : "var(--color-alt)",
         }}
       >
-        {leverageMode
+        {mode === "leverage"
           ? <IconLeverage size={16} />
           : <IconBorrow size={16} />}
       </div>

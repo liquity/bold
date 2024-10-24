@@ -14,11 +14,10 @@ import { a, useSpring, useTransition } from "@react-spring/web";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useRef } from "react";
-import { match } from "ts-pattern";
+import { match, P } from "ts-pattern";
 import { NewPositionCard } from "./NewPositionCard";
-import { PositionCardBorrow } from "./PositionCardBorrow";
 import { PositionCardEarn } from "./PositionCardEarn";
-import { PositionCardLeverage } from "./PositionCardLeverage";
+import { PositionCardLoan } from "./PositionCardLoan";
 import { PositionCardStake } from "./PositionCardStake";
 
 type Mode = "positions" | "loading" | "actions";
@@ -116,9 +115,11 @@ function PositionsGroup({
         positions.map((position, index) => (
           match(position)
             .returnType<[number, ReactNode]>()
-            .with({ type: "borrow" }, (p) => [index, <PositionCardBorrow {...p} />])
+            .with({ type: P.union("borrow", "leverage") }, (p) => [
+              index,
+              <PositionCardLoan {...p} />,
+            ])
             .with({ type: "earn" }, (p) => [index, <PositionCardEarn {...p} />])
-            .with({ type: "leverage" }, (p) => [index, <PositionCardLeverage {...p} />])
             .with({ type: "stake" }, (p) => [index, <PositionCardStake {...p} />])
             .exhaustive()
         )) ?? [],

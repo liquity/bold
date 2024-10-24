@@ -2,13 +2,13 @@
 
 import { Screen } from "@/src/comps/Screen/Screen";
 import { getPrefixedTroveId, parsePrefixedTroveId } from "@/src/liquity-utils";
+import { useStoredState } from "@/src/services/StoredState";
 import { useLoanById } from "@/src/subgraph-hooks";
 import { isPrefixedtroveId } from "@/src/types";
 import { css } from "@/styled-system/css";
 import { Tabs } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
-import { useState } from "react";
 import { match, P } from "ts-pattern";
 import { LoanCard } from "./LoanCard";
 import { PanelClosePosition } from "./PanelClosePosition";
@@ -42,20 +42,18 @@ export function LoanScreen() {
   const action = useSelectedLayoutSegment() ?? "colldebt";
   const searchParams = useSearchParams();
   const paramPrefixedId = searchParams.get("id");
+  const storedState = useStoredState();
 
   if (!isPrefixedtroveId(paramPrefixedId)) {
     notFound();
   }
 
+  const loanMode = storedState.loanModes[paramPrefixedId] ?? "borrow";
+
   const { troveId } = parsePrefixedTroveId(paramPrefixedId);
   const loan = useLoanById(paramPrefixedId);
 
-  // if (loan.isLoadingError || !paramPrefixedId) {
-  //   notFound();
-  // }
-
   const tab = TABS.findIndex(({ id }) => id === action);
-  const [leverageMode, setLeverageMode] = useState(false);
 
   const loadingState = match(loan)
     .returnType<LoanLoadingState>()
@@ -91,10 +89,19 @@ export function LoanScreen() {
       }}
       heading={
         <LoanCard
-          leverageMode={leverageMode}
+          mode={loanMode}
           loadingState={loadingState}
           loan={loan.data ?? null}
-          onLeverageModeChange={setLeverageMode}
+          onLeverageModeChange={() => {
+            storedState.setState(({ loanModes }) => {
+              return {
+                loanModes: {
+                  ...loanModes,
+                  [paramPrefixedId]: loanMode === "borrow" ? "leverage" : "borrow",
+                },
+              };
+            });
+          }}
           onRetry={() => {
             loan.refetch();
           }}
@@ -133,7 +140,7 @@ export function LoanScreen() {
               }}
             />
             {action === "colldebt" && (
-              leverageMode
+              loanMode === "leverage"
                 ? <PanelUpdateLeveragePosition loan={loan.data} />
                 : <PanelUpdateBorrowPosition loan={loan.data} />
             )}
