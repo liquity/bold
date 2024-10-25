@@ -153,7 +153,7 @@ contract GasCompZapper is BaseZapper {
         _adjustTrovePost(_collChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances);
     }
 
-    function adjustUnredeemableTrove(
+    function adjustZombieTrove(
         uint256 _troveId,
         uint256 _collChange,
         bool _isCollIncrease,

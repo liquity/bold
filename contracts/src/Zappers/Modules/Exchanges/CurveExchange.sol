@@ -31,7 +31,7 @@ contract CurveExchange is IExchange {
         BOLD_TOKEN_INDEX = _boldIndex;
     }
 
-    function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount) external returns (uint256) {
+    function swapFromBold(uint256 _boldAmount, uint256 _minCollAmount) external {
         ICurvePool curvePoolCached = curvePool;
         uint256 initialBoldBalance = boldToken.balanceOf(address(this));
         boldToken.transferFrom(msg.sender, address(this), _boldAmount);
@@ -44,8 +44,6 @@ contract CurveExchange is IExchange {
         if (currentBoldBalance > initialBoldBalance) {
             boldToken.transfer(msg.sender, currentBoldBalance - initialBoldBalance);
         }
-
-        return output;
     }
 
     function swapToBold(uint256 _collAmount, uint256 _minBoldAmount) external returns (uint256) {
