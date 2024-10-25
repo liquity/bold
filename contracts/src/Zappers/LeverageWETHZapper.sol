@@ -26,7 +26,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(WETH, boldToken, initialBalances);
+        _setInitialTokensAndBalances(WETH, boldToken, initialBalances);
 
         // Convert ETH to WETH
         WETH.deposit{value: msg.value}();
@@ -108,7 +108,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(WETH, boldToken, initialBalances);
+        _setInitialTokensAndBalances(WETH, boldToken, initialBalances);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
@@ -153,7 +153,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(WETH, boldToken, initialBalances);
+        _setInitialTokensAndBalances(WETH, boldToken, initialBalances);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(

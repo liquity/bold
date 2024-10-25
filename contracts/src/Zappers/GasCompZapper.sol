@@ -125,7 +125,7 @@ contract GasCompZapper is BaseZapper {
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collToken, boldToken, initialBalances);
+        _setInitialTokensAndBalances(collToken, boldToken, initialBalances);
 
         // Pull Bold
         boldToken.transferFrom(msg.sender, address(this), _boldAmount);
@@ -184,7 +184,7 @@ contract GasCompZapper is BaseZapper {
             _checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
 
         // Set initial balances to make sure there are not lefovers
-        _setInitialBalances(collToken, boldToken, _initialBalances);
+        _setInitialTokensAndBalances(collToken, boldToken, _initialBalances);
 
         // Pull coll
         if (_isCollIncrease) {

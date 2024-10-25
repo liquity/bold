@@ -27,7 +27,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collToken, boldToken, initialBalances);
+        _setInitialTokensAndBalances(collToken, boldToken, initialBalances);
 
         // Convert ETH to WETH
         WETH.deposit{value: msg.value}();
@@ -111,7 +111,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collToken, boldToken, initialBalances);
+        _setInitialTokensAndBalances(collToken, boldToken, initialBalances);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
@@ -156,7 +156,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collToken, boldToken, initialBalances);
+        _setInitialTokensAndBalances(collToken, boldToken, initialBalances);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
