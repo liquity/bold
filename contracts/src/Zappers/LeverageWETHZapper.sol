@@ -104,11 +104,11 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
 
     function leverUpTrove(LeverUpTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
-        _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
+        address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialTokensAndBalances(WETH, boldToken, initialBalances);
+        _setInitialTokensBalancesAndReceiver(WETH, boldToken, initialBalances, receiver);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
@@ -149,11 +149,11 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
 
     function leverDownTrove(LeverDownTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
-        _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
+        address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialTokensAndBalances(WETH, boldToken, initialBalances);
+        _setInitialTokensBalancesAndReceiver(WETH, boldToken, initialBalances, receiver);
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
