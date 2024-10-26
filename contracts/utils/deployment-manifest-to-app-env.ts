@@ -48,6 +48,7 @@ const ZDeploymentManifest = z.object({
       gasCompZapper: ZAddress,
       gasPool: ZAddress,
       interestRouter: ZAddress,
+      leverageZapper: ZAddress,
       metadataNFT: ZAddress,
       priceFeed: ZAddress,
       sortedTroves: ZAddress,
@@ -177,6 +178,8 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_DEFAULT_POOL`;
     case "gasCompZapper":
       return `${prefix}_GAS_COMP_ZAPPER`;
+    case "leverageZapper":
+      return `${prefix}_LEVERAGE_ZAPPER`;
     case "priceFeed":
       return `${prefix}_PRICE_FEED`;
     case "sortedTroves":
