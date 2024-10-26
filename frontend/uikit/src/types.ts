@@ -8,7 +8,7 @@ export type TokenSymbol =
   | "LQTY"
   | "RETH"
   | "LUSD"
-  | "STETH";
+  | "WSTETH";
 
 export type Token = {
   icon: string;
