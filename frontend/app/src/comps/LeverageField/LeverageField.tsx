@@ -320,6 +320,6 @@ export function useLeverageField({
 function getLeverageFactorFromRatio(minLeverageFactor: number, maxLeverageFactor: number, ratio: number) {
   return Math.max(
     LEVERAGE_FACTOR_MIN,
-    Math.round(lerp(minLeverageFactor, maxLeverageFactor, ratio)) * 10,
-  ) / 10;
+    Math.round(lerp(minLeverageFactor, maxLeverageFactor, ratio) * 10) / 10,
+  );
 }
