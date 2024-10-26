@@ -20,6 +20,10 @@ export const INTEREST_RATE_MAX = 8;
 export const INTEREST_RATE_DEFAULT = 4;
 export const INTEREST_RATE_INCREMENT = 0.1;
 
+export const ONE_DAY_IN_SECONDS = 24n * 60n * 60n;
+export const ONE_YEAR_IN_SECONDS = 365n * ONE_DAY_IN_SECONDS;
+export const UPFRONT_INTEREST_PERIOD = 7n * ONE_DAY_IN_SECONDS;
+
 export const SP_YIELD_SPLIT = 72n * 10n ** 16n; // 72%
 
 export const DATA_REFRESH_INTERVAL = 10_000; // 10 seconds

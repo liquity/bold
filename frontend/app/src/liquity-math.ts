@@ -184,3 +184,13 @@ export function getLoanDetails(
     status,
   };
 }
+
+// from LiquityBase.sol’s _calcInterest()
+export function calcInterest(weightedDebt: bigint, period: bigint): bigint {
+  return weightedDebt * period / ONE_YEAR_IN_SECONDS / (10n ** 18n);
+}
+
+// from BorrowerOperations.sol’s _calcUpfrontFee()
+export function calcUpfrontFee(debt: bigint, avgInterestRate: bigint): bigint {
+  return calcInterest(debt * avgInterestRate, UPFRONT_INTEREST_PERIOD);
+}

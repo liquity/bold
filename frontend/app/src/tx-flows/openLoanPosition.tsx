@@ -1,9 +1,11 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
+import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { useCollateral } from "@/src/liquity-utils";
+import { calcUpfrontFee } from "@/src/liquity-math";
+import { getCollToken, useAverageInterestRateFromActivePool } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
@@ -11,7 +13,7 @@ import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
 import { ADDRESS_ZERO, COLLATERALS as KNOWN_COLLATERALS, shortenAddress } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { maxUint256, parseEventLogs } from "viem";
+import { parseEventLogs } from "viem";
 import { readContract } from "wagmi/actions";
 
 const FlowIdSchema = v.literal("openLoanPosition");
@@ -55,28 +57,33 @@ export type Request = v.InferOutput<typeof RequestSchema>;
 type Step =
   | "approveLst"
   | "openTroveEth"
-  | "openTroveLst"
-  | "setInterestBatchManager";
+  | "openTroveLst";
 
 export const openLoanPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
 
   Summary({ flow }) {
-    const collateral = useCollateral(flow.request.collIndex);
-    return collateral && (
+    const { request } = flow;
+
+    const avgInterestRate = useAverageInterestRateFromActivePool(request.collIndex);
+    const upfrontFee = avgInterestRate.data
+      ? dnum18(calcUpfrontFee(request.boldAmount[0], avgInterestRate.data))
+      : null;
+    const boldAmountWithFee = upfrontFee && dn.add(request.boldAmount, upfrontFee);
+
+    return (
       <LoanCard
         leverageMode={false}
         loadingState="success"
         loan={{
           type: "borrow",
           troveId: "0x",
-          borrower: flow.request.owner,
-          batchManager: flow.request.interestRateDelegate?.[0] ?? null,
-          borrowed: flow.request.boldAmount,
-          collIndex: flow.request.collIndex,
-          collateral: collateral.symbol,
-          deposit: flow.request.collAmount,
-          interestRate: flow.request.annualInterestRate,
+          borrower: request.owner,
+          batchManager: request.interestRateDelegate?.[0] ?? null,
+          borrowed: boldAmountWithFee ?? dnum18(0),
+          collIndex: request.collIndex,
+          deposit: request.collAmount,
+          interestRate: request.annualInterestRate,
         }}
         onRetry={() => {}}
         txPreviewMode
@@ -86,30 +93,57 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
 
   Details({ flow }) {
     const { request } = flow;
-    const collateral = useCollateral(flow.request.collIndex);
+    const collateral = getCollToken(flow.request.collIndex);
     const collPrice = usePrice(collateral?.symbol ?? null);
-    const boldPrice = usePrice("BOLD");
+
+    const avgInterestRate = useAverageInterestRateFromActivePool(flow.request.collIndex);
+    const upfrontFee = avgInterestRate.data
+      ? dnum18(calcUpfrontFee(request.boldAmount[0], avgInterestRate.data))
+      : null;
+
+    const boldAmountWithFee = upfrontFee && dn.add(request.boldAmount, upfrontFee);
+
     return collateral && (
       <>
         <TransactionDetailsRow
           label="Collateral"
           value={[
             `${fmtnum(request.collAmount)} ${collateral.name}`,
-            collPrice && `$${fmtnum(dn.mul(request.collAmount, collPrice))}`,
+            <Amount
+              fallback="…"
+              prefix="$"
+              value={collPrice && dn.mul(request.collAmount, collPrice)}
+            />,
           ]}
         />
         <TransactionDetailsRow
           label="Loan"
           value={[
-            `${fmtnum(request.boldAmount)} BOLD`,
-            boldPrice && `$${fmtnum(dn.mul(request.boldAmount, boldPrice))}`,
+            <Amount
+              fallback="…"
+              value={boldAmountWithFee}
+              suffix=" BOLD"
+            />,
+            <Amount
+              fallback="…"
+              prefix="Incl. "
+              value={upfrontFee}
+              suffix=" BOLD upfront fee"
+            />,
           ]}
         />
         <TransactionDetailsRow
           label="Interest rate"
           value={[
-            `${fmtnum(request.annualInterestRate, 2, 100)}%`,
-            `${fmtnum(dn.mul(request.boldAmount, request.annualInterestRate))} BOLD per year`,
+            <Amount
+              value={request.annualInterestRate}
+              percentage
+            />,
+            <Amount
+              fallback="…"
+              value={boldAmountWithFee && dn.mul(boldAmountWithFee, request.annualInterestRate)}
+              suffix=" BOLD per year"
+            />,
           ]}
         />
         {request.interestRateDelegate && (
@@ -146,9 +180,7 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
     const collateral = contracts.collaterals[request.collIndex];
 
     if (collateral.symbol === "ETH") {
-      return request.interestRateDelegate
-        ? ["openTroveEth", "setInterestBatchManager"]
-        : ["openTroveEth"];
+      return ["openTroveEth"];
     }
 
     const { GasCompZapper, CollToken } = collateral.contracts;
@@ -181,10 +213,6 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
 
     steps.push("openTroveLst");
 
-    if (request.interestRateDelegate) {
-      steps.push("setInterestBatchManager");
-    }
-
     return steps;
   },
 
@@ -193,9 +221,6 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
     const collateral = KNOWN_COLLATERALS.find((c) => c.symbol === symbol);
     if (stepId === "approveLst") {
       return `Approve ${collateral?.name ?? ""}`;
-    }
-    if (stepId === "setInterestBatchManager") {
-      return `Set interest rate delegate`;
     }
     return `Open loan`;
   },
@@ -219,7 +244,7 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
     return null;
   },
 
-  async writeContractParams(stepId, { contracts, request, steps }) {
+  async writeContractParams(stepId, { contracts, request }) {
     const collateral = contracts.collaterals[request.collIndex];
 
     const { GasCompZapper, CollToken } = collateral.contracts;
@@ -228,13 +253,12 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
     }
 
     if (stepId === "approveLst") {
-      const amount = dn.add(request.collAmount, ETH_GAS_COMPENSATION);
       return {
         ...CollToken,
         functionName: "approve" as const,
         args: [
           GasCompZapper.address,
-          amount[0],
+          request.collAmount[0],
         ],
       };
     }
@@ -247,10 +271,16 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
         args: [{
           owner: request.owner ?? ADDRESS_ZERO,
           ownerIndex: BigInt(request.ownerIndex),
+          collAmount: 0n,
           boldAmount: request.boldAmount[0],
           upperHint: request.upperHint[0],
           lowerHint: request.lowerHint[0],
-          annualInterestRate: request.annualInterestRate[0],
+          annualInterestRate: request.interestRateDelegate
+            ? 0n
+            : request.annualInterestRate[0],
+          batchManager: request.interestRateDelegate
+            ? request.interestRateDelegate[0]
+            : ADDRESS_ZERO,
           maxUpfrontFee: request.maxUpfrontFee[0],
           addManager: ADDRESS_ZERO,
           removeManager: ADDRESS_ZERO,
@@ -272,35 +302,18 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
           boldAmount: request.boldAmount[0],
           upperHint: request.upperHint[0],
           lowerHint: request.lowerHint[0],
-          annualInterestRate: request.annualInterestRate[0],
+          annualInterestRate: request.interestRateDelegate
+            ? 0n
+            : request.annualInterestRate[0],
+          batchManager: request.interestRateDelegate
+            ? request.interestRateDelegate[0]
+            : ADDRESS_ZERO,
           maxUpfrontFee: request.maxUpfrontFee[0],
           addManager: ADDRESS_ZERO,
           removeManager: ADDRESS_ZERO,
           receiver: ADDRESS_ZERO,
         }],
         value: ETH_GAS_COMPENSATION[0],
-      };
-    }
-
-    if (stepId === "setInterestBatchManager") {
-      const troveId = steps?.find((step) => (
-        step.id === "openTroveEth" || step.id === "openTroveLst"
-      ))?.txReceiptData;
-
-      if (!troveId || !request.interestRateDelegate) {
-        throw new Error("Invalid state");
-      }
-
-      return {
-        ...collateral.contracts.BorrowerOperations,
-        functionName: "setInterestBatchManager" as const,
-        args: [
-          BigInt(troveId),
-          request.interestRateDelegate[0],
-          request.interestRateDelegate[1][0],
-          request.interestRateDelegate[2][0],
-          maxUint256,
-        ],
       };
     }
 

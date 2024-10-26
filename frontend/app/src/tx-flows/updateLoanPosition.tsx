@@ -1,9 +1,12 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
+import { Amount } from "@/src/comps/Amount/Amount";
+import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { useCollateral } from "@/src/liquity-utils";
+import { calcUpfrontFee } from "@/src/liquity-math";
 import { parsePrefixedTroveId } from "@/src/liquity-utils";
+import { getCollToken, useAverageInterestRateFromActivePool } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
@@ -89,10 +92,15 @@ function getFinalStep(request: Request): FinalStep {
 
 export const updateLoanPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
+
   Summary({ flow }) {
-    const collateral = useCollateral(flow.request.collIndex);
-    const loan = useLoanById(flow.request.prefixedTroveId);
-    const { troveId } = parsePrefixedTroveId(flow.request.prefixedTroveId);
+    const { request } = flow;
+
+    const collateral = getCollToken(request.collIndex);
+    const loan = useLoanById(request.prefixedTroveId);
+    const { troveId } = parsePrefixedTroveId(request.prefixedTroveId);
+
+    const { debtChangeWithFee } = useUpfrontFee(request);
 
     const loadingState = match(loan)
       .returnType<LoadingState>()
@@ -106,15 +114,18 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
       return null;
     }
 
-    const newDeposit = dn.add(loan.data?.deposit ?? 0n, flow.request.collChange);
-    const newBorrowed = dn.add(loan.data?.borrowed ?? 0n, flow.request.debtChange);
+    const newDeposit = dn.add(loan.data?.deposit ?? 0n, request.collChange);
+    const newBorrowed = debtChangeWithFee && dn.add(
+      loan.data?.borrowed ?? 0n,
+      debtChangeWithFee,
+    );
 
-    const newLoan = !loan.data ? null : {
+    const newLoan = !loan.data || !newBorrowed ? null : {
       troveId,
       borrower: loan.data.borrower,
       batchManager: loan.data.batchManager,
       borrowed: newBorrowed,
-      collIndex: flow.request.collIndex,
+      collIndex: request.collIndex,
       collateral: collateral.symbol,
       deposit: newDeposit,
       interestRate: loan.data.interestRate,
@@ -138,14 +149,16 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
       />
     );
   },
+
   Details({ flow }) {
     const { request } = flow;
-    const collateral = useCollateral(flow.request.collIndex);
+    const collateral = getCollToken(flow.request.collIndex);
     const collPrice = usePrice(collateral?.symbol ?? null);
-    const boldPrice = usePrice("BOLD");
 
     const collChangeUnsigned = dn.abs(request.collChange);
     const debtChangeUnsigned = dn.abs(request.debtChange);
+
+    const { borrowing, debtChangeWithFee, upfrontFee } = useUpfrontFee(request);
 
     return collateral && (
       <>
@@ -164,31 +177,36 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
             >
               {fmtnum(collChangeUnsigned)} {collateral.name}
             </div>,
-            collPrice && (
-              <div title={fmtnum(dn.mul(collChangeUnsigned, collPrice))}>
-                ${fmtnum(dn.mul(collChangeUnsigned, collPrice))}
-              </div>
-            ),
+            <Amount
+              fallback="…"
+              prefix="$"
+              value={collPrice && dn.mul(collChangeUnsigned, collPrice)}
+            />,
           ]}
         />
         <TransactionDetailsRow
-          label={dn.gt(request.debtChange, 0n) ? "You borrow" : "You repay"}
+          label={borrowing ? "You borrow" : "You repay"}
           value={[
             <div
-              title={`${fmtnum(debtChangeUnsigned, "full")} BOLD`}
+              title={`${fmtnum(debtChangeWithFee, "full")} BOLD`}
               style={{
                 color: dn.eq(debtChangeUnsigned, 0n)
                   ? "var(--colors-content-alt2)"
                   : undefined,
               }}
             >
-              {fmtnum(debtChangeUnsigned)} BOLD
+              <Amount
+                fallback="…"
+                value={debtChangeWithFee}
+                suffix=" BOLD"
+              />
             </div>,
-            boldPrice && (
-              <div title={fmtnum(dn.mul(debtChangeUnsigned, boldPrice))}>
-                ${fmtnum(dn.mul(debtChangeUnsigned, boldPrice))}
-              </div>
-            ),
+            <Amount
+              fallback="…"
+              prefix="Incl. "
+              value={upfrontFee}
+              suffix=" BOLD upfront fee"
+            />,
           ]}
         />
       </>
@@ -318,3 +336,26 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
     throw new Error("Not implemented");
   },
 };
+
+function useUpfrontFee(request: Request) {
+  const borrowing = request.debtChange[0] > 0n;
+  const avgInterestRate = useAverageInterestRateFromActivePool(
+    borrowing ? request.collIndex : null,
+  );
+
+  const upfrontFee = borrowing
+    ? avgInterestRate.data
+      ? dnum18(calcUpfrontFee(request.debtChange[0], avgInterestRate.data))
+      : null
+    : dnum18(0);
+
+  const debtChangeWithFee = borrowing
+    ? upfrontFee && dn.add(request.debtChange, borrowing ? upfrontFee : dnum18(0))
+    : request.debtChange;
+
+  return {
+    borrowing,
+    debtChangeWithFee,
+    upfrontFee,
+  };
+}
