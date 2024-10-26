@@ -249,24 +249,14 @@ export function InterestRateField({
               <span>{"Redeemable before you: "}</span>
               <span
                 className={css({
-                  "--color-normal": "token(colors.content)",
-                  "--color-negative": "token(colors.negative)",
+                  fontVariantNumeric: "tabular-nums",
                 })}
-                style={{
-                  color: dn.gt(boldRedeemableInFront, 0) ? "var(--color-normal)" : "var(--color-negative)",
-                }}
               >
-                <span
-                  className={css({
-                    fontVariantNumeric: "tabular-nums",
-                  })}
-                >
-                  {(mode === "manual" || delegate !== null)
-                    ? fmtnum(boldRedeemableInFront, "compact")
-                    : "−"}
-                </span>
-                <span>{" BOLD"}</span>
+                {(mode === "manual" || delegate !== null)
+                  ? fmtnum(boldRedeemableInFront, "compact")
+                  : "−"}
               </span>
+              <span>{" BOLD"}</span>
             </span>
           ),
         }}
