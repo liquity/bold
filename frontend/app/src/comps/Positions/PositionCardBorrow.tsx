@@ -3,10 +3,11 @@ import type { PositionLoan } from "@/src/types";
 import { formatLiquidationRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
+import { shortenTroveId, getCollToken } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, IconBorrow, StatusDot, StrongCard, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import { HFlex, IconBorrow, StatusDot, StrongCard, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 import { CardRow, CardRows, EditSquare } from "./shared";
@@ -15,7 +16,6 @@ export function PositionCardBorrow({
   batchManager,
   borrowed,
   collIndex,
-  collateral,
   deposit,
   interestRate,
   troveId,
@@ -24,26 +24,27 @@ export function PositionCardBorrow({
   | "batchManager"
   | "borrowed"
   | "collIndex"
-  | "collateral"
   | "deposit"
   | "interestRate"
   | "troveId"
 >) {
-  const token = TOKENS_BY_SYMBOL[collateral];
-  const collateralPriceUsd = usePrice(token.symbol);
+  const token = getCollToken(collIndex);
+  const collateralPriceUsd = usePrice(token?.symbol ?? null);
 
   const ltv = collateralPriceUsd && getLtv(deposit, borrowed, collateralPriceUsd);
   const redemptionRisk = getRedemptionRisk(interestRate);
 
-  const maxLtv = dn.from(1 / token.collateralRatio, 18);
-  const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
+  const maxLtv = token && dn.from(1 / token.collateralRatio, 18);
+  const liquidationRisk = ltv && maxLtv && getLiquidationRisk(ltv, maxLtv);
 
-  const title = [
-    `Loan ID: ${troveId}`,
-    `Borrowed: ${fmtnum(borrowed, "full")} BOLD`,
-    `Collateral: ${fmtnum(deposit, "full")} ${token.name}`,
-    `Interest rate: ${fmtnum(interestRate, "full", 100)}%`,
-  ];
+  const title = token
+    ? [
+      `Loan ID: ${shortenTroveId(troveId)}…`,
+      `Borrowed: ${fmtnum(borrowed, "full")} BOLD`,
+      `Collateral: ${fmtnum(deposit, "full")} ${token.name}`,
+      `Interest rate: ${fmtnum(interestRate, "full", 100)}%`,
+    ]
+    : [];
 
   return (
     <Link
@@ -85,7 +86,7 @@ export function PositionCardBorrow({
             </HFlex>
           ),
           // label: "Total debt",
-          label: (
+          label: token && (
             <div
               className={css({
                 display: "flex",

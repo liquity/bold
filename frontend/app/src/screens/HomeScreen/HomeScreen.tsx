@@ -4,9 +4,9 @@ import type { CollateralSymbol } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Positions } from "@/src/comps/Positions/Positions";
-import { useAllCollateralContracts } from "@/src/contracts";
+import { getContracts } from "@/src/contracts";
 import { DNUM_1 } from "@/src/dnum-utils";
-import { useAverageInterestRate, useCollateral, useCollIndexFromSymbol, useEarnPool } from "@/src/liquity-utils";
+import { getCollToken, useAverageInterestRate, useCollIndexFromSymbol, useEarnPool } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
@@ -15,8 +15,11 @@ import Link from "next/link";
 import { HomeTable } from "./HomeTable";
 
 export function HomeScreen() {
-  const collSymbols = useAllCollateralContracts().map((coll) => coll.symbol);
   const account = useAccount();
+
+  const { collaterals } = getContracts();
+  const collSymbols = collaterals.map((coll) => coll.symbol);
+
   return (
     <div
       className={css({
@@ -60,7 +63,7 @@ function BorrowingRow({
   symbol: CollateralSymbol;
 }) {
   const collIndex = useCollIndexFromSymbol(symbol);
-  const collateral = useCollateral(collIndex);
+  const collateral = getCollToken(collIndex);
   const avgInterestRate = useAverageInterestRate(collIndex);
 
   const maxLtv = collateral?.collateralRatio && dn.gt(collateral.collateralRatio, 0)
@@ -158,7 +161,7 @@ function EarnRewardsRow({
   symbol: CollateralSymbol;
 }) {
   const collIndex = useCollIndexFromSymbol(symbol);
-  const collateral = useCollateral(collIndex);
+  const collateral = getCollToken(collIndex);
   const earnPool = useEarnPool(collIndex);
 
   return (

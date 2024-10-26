@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { ERC20Faucet } from "@/src/abi/ERC20Faucet";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { useAllCollateralContracts, useCollateralContract, useProtocolContract } from "@/src/contracts";
+import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
 import { fmtnum } from "@/src/formatting";
 import { useBalance } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
@@ -19,7 +19,7 @@ export function AccountScreen({
 }: {
   address: Address;
 }) {
-  const collSymbols = useAllCollateralContracts().map((coll) => coll.symbol);
+  const collSymbols = getContracts().collaterals.map((coll) => coll.symbol);
   return (
     <Screen>
       <VFlex gap={32}>
@@ -140,8 +140,8 @@ function Balance({
 }) {
   const balance = useBalance(address, tokenSymbol);
 
-  const LqtyToken = useProtocolContract("LqtyToken");
-  const CollToken = useCollateralContract(
+  const LqtyToken = getProtocolContract("LqtyToken");
+  const CollToken = getCollateralContract(
     isCollateralSymbol(tokenSymbol) ? tokenSymbol : null,
     "CollToken",
   );

@@ -6,7 +6,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
-import { useCollateral } from "@/src/liquity-utils";
+import { getCollToken } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -24,7 +24,7 @@ export function PanelClaimRewards({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const collateral = useCollateral(collIndex);
+  const collateral = getCollToken(collIndex);
   const collPriceUsd = usePrice(collateral?.symbol ?? null);
   const boldPriceUsd = usePrice("BOLD");
 

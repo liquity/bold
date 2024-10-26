@@ -15,6 +15,7 @@ import { ACCOUNT_BALANCES } from "@/src/demo-mode";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLiquidationPriceFromLeverage, getLoanDetails } from "@/src/liquity-math";
+import { getCollToken } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
@@ -29,26 +30,34 @@ import {
   Tabs,
   TextButton,
   TokenIcon,
-  TOKENS_BY_SYMBOL,
   VFlex,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-export function PanelUpdateLeveragePosition({ loan }: { loan: PositionLoan }) {
+export function PanelUpdateLeveragePosition({
+  loan,
+}: {
+  loan: PositionLoan;
+}) {
   const router = useRouter();
   const account = useAccount();
 
-  const collateral = TOKENS_BY_SYMBOL[loan.collateral];
-  const collPrice = usePrice(collateral.symbol);
+  const collToken = getCollToken(loan.collIndex);
+
+  if (!collToken) {
+    throw new Error("collToken not found");
+  }
+
+  const collPrice = usePrice(collToken.symbol ?? null);
 
   // loan details before the update
   const initialLoanDetails = getLoanDetails(
     loan.deposit,
     loan.borrowed,
     loan.interestRate,
-    collateral.collateralRatio,
+    collToken?.collateralRatio,
     collPrice,
   );
 
@@ -76,20 +85,20 @@ export function PanelUpdateLeveragePosition({ loan }: { loan: PositionLoan }) {
     newDeposit,
     newDebt,
     initialLoanDetails.interestRate,
-    collateral.collateralRatio,
+    collToken.collateralRatio,
     collPrice,
   );
 
   const liquidationPrice = getLiquidationPriceFromLeverage(
     userLeverageFactor,
     collPrice ?? dn.from(0, 18),
-    collateral.collateralRatio,
+    collToken.collateralRatio,
   );
 
   // leverage factor
   const leverageField = useLeverageField({
     collPrice: collPrice ?? dn.from(0, 18),
-    collToken: collateral,
+    collToken,
     depositPreLeverage: newDepositPreLeverage,
     maxLtvAllowedRatio: 1, // allow up to the max. LTV
   });
@@ -114,7 +123,7 @@ export function PanelUpdateLeveragePosition({ loan }: { loan: PositionLoan }) {
         ? initialLoanDetails.depositPreLeverage
         : null
     )
-    : dn.sub(ACCOUNT_BALANCES[collateral.symbol], ETH_MAX_RESERVE);
+    : dn.sub(ACCOUNT_BALANCES[collToken.symbol], ETH_MAX_RESERVE);
 
   const [agreeToLiquidationRisk, setAgreeToLiquidationRisk] = useState(false);
 
@@ -146,8 +155,8 @@ export function PanelUpdateLeveragePosition({ loan }: { loan: PositionLoan }) {
               contextual={
                 <InputTokenBadge
                   background={false}
-                  icon={<TokenIcon symbol={collateral.symbol} />}
-                  label={collateral.name}
+                  icon={<TokenIcon symbol={collToken.symbol} />}
+                  label={collToken.name}
                 />
               }
               label={{
@@ -179,7 +188,7 @@ export function PanelUpdateLeveragePosition({ loan }: { loan: PositionLoan }) {
                 ),
                 end: depositMax && (
                   <TextButton
-                    label={`Max ${fmtnum(depositMax)} ${collateral.name}`}
+                    label={`Max ${fmtnum(depositMax)} ${collToken.name}`}
                     onClick={() => {
                       depositChange.setValue(dn.toString(depositMax));
                     }}
@@ -206,7 +215,7 @@ export function PanelUpdateLeveragePosition({ loan }: { loan: PositionLoan }) {
                               initialLoanDetails.depositPreLeverage,
                               "full",
                             )
-                          } ${collateral.name}`}
+                          } ${collToken.name}`}
                         >
                           {fmtnum(initialLoanDetails.depositPreLeverage)}
                         </Value>
@@ -218,9 +227,9 @@ export function PanelUpdateLeveragePosition({ loan }: { loan: PositionLoan }) {
                               newDepositPreLeverage,
                               0,
                             )}
-                            title={`${fmtnum(newDepositPreLeverage, "full")} ${collateral.name}`}
+                            title={`${fmtnum(newDepositPreLeverage, "full")} ${collToken.name}`}
                           >
-                            {fmtnum(newDepositPreLeverage)} {collateral.name}
+                            {fmtnum(newDepositPreLeverage)} {collToken.name}
                           </Value>
                           <InfoTooltip heading="Collateral update" />
                         </HFlex>
@@ -255,17 +264,17 @@ export function PanelUpdateLeveragePosition({ loan }: { loan: PositionLoan }) {
                 fontSize={14}
                 before={initialLoanDetails.depositPreLeverage && (
                   <div
-                    title={`${fmtnum(initialLoanDetails.deposit, "full")} ${collateral.name}`}
+                    title={`${fmtnum(initialLoanDetails.deposit, "full")} ${collToken.name}`}
                   >
-                    {fmtnum(initialLoanDetails.deposit)} {collateral.name}
+                    {fmtnum(initialLoanDetails.deposit)} {collToken.name}
                   </div>
                 )}
                 after={newDepositPreLeverage && (
                   <Value
                     negative={newLoanDetails.deposit && dn.lt(newLoanDetails.deposit, 0)}
-                    title={`${fmtnum(newLoanDetails.deposit, "full")} ${collateral.name}`}
+                    title={`${fmtnum(newLoanDetails.deposit, "full")} ${collToken.name}`}
                   >
-                    {fmtnum(newLoanDetails.deposit)} {collateral.name}
+                    {fmtnum(newLoanDetails.deposit)} {collToken.name}
                   </Value>
                 )}
               />,
@@ -381,7 +390,7 @@ export function PanelUpdateLeveragePosition({ loan }: { loan: PositionLoan }) {
                   <Amount value={newLoanDetails.maxLtv} percentage />. You need to add at least{" "}
                   <Amount value={newLoanDetails.depositToZero && dn.mul(newLoanDetails.depositToZero, -1)} format={4} />
                   {" "}
-                  {collateral.name} to prevent liquidation.
+                  {collToken.name} to prevent liquidation.
                 </div>
               </WarningBox>
             )

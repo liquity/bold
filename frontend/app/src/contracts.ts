@@ -7,6 +7,8 @@ import { CollateralRegistry } from "@/src/abi/CollateralRegistry";
 import { DefaultPool } from "@/src/abi/DefaultPool";
 import { GasCompZapper } from "@/src/abi/GasCompZapper";
 import { HintHelpers } from "@/src/abi/HintHelpers";
+import { LeverageLSTZapper } from "@/src/abi/LeverageLSTZapper";
+import { LeverageWETHZapper } from "@/src/abi/LeverageWETHZapper";
 import { LqtyStaking } from "@/src/abi/LqtyStaking";
 import { LqtyToken } from "@/src/abi/LqtyToken";
 import { MultiTroveGetter } from "@/src/abi/MultiTroveGetter";
@@ -26,17 +28,16 @@ import {
   CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
 } from "@/src/env";
-import { useMemo } from "react";
-import { erc20Abi } from "viem";
+import { erc20Abi, zeroAddress } from "viem";
 
 const protocolAbis = {
   BoldToken: erc20Abi,
   CollateralRegistry,
   HintHelpers,
+  LqtyStaking,
+  LqtyToken,
   MultiTroveGetter,
   WETH: erc20Abi,
-  LqtyToken,
-  LqtyStaking,
 } as const;
 
 const collateralAbis = {
@@ -44,6 +45,8 @@ const collateralAbis = {
   BorrowerOperations,
   CollToken: erc20Abi,
   DefaultPool,
+  LeverageLSTZapper,
+  LeverageWETHZapper,
   PriceFeed,
   SortedTroves,
   StabilityPool,
@@ -85,81 +88,78 @@ type CollateralContracts = {
 };
 
 type Collaterals = Array<{
-  symbol: CollateralSymbol;
+  collIndex: CollIndex;
   contracts: CollateralContracts;
+  symbol: CollateralSymbol;
 }>;
 
 export type Contracts = ProtocolContractMap & {
   collaterals: Collaterals;
 };
 
-// Note: even though the contracts related data is coming from the environment,
-// hooks are being used so that we could later change these at runtime.
-export function useContracts(): Contracts {
-  return useMemo(() => {
-    return {
-      BoldToken: { abi: abis.BoldToken, address: CONTRACT_BOLD_TOKEN },
-      CollateralRegistry: { abi: abis.CollateralRegistry, address: CONTRACT_COLLATERAL_REGISTRY },
-      HintHelpers: { abi: abis.HintHelpers, address: CONTRACT_HINT_HELPERS },
-      MultiTroveGetter: { abi: abis.MultiTroveGetter, address: CONTRACT_MULTI_TROVE_GETTER },
-      WETH: { abi: abis.WETH, address: CONTRACT_WETH },
-      LqtyToken: { abi: abis.LqtyToken, address: CONTRACT_LQTY_TOKEN },
-      LqtyStaking: { abi: abis.LqtyStaking, address: CONTRACT_LQTY_STAKING },
+const CONTRACTS: Contracts = {
+  BoldToken: { abi: abis.BoldToken, address: CONTRACT_BOLD_TOKEN },
+  CollateralRegistry: { abi: abis.CollateralRegistry, address: CONTRACT_COLLATERAL_REGISTRY },
+  HintHelpers: { abi: abis.HintHelpers, address: CONTRACT_HINT_HELPERS },
+  MultiTroveGetter: { abi: abis.MultiTroveGetter, address: CONTRACT_MULTI_TROVE_GETTER },
+  WETH: { abi: abis.WETH, address: CONTRACT_WETH },
+  LqtyToken: { abi: abis.LqtyToken, address: CONTRACT_LQTY_TOKEN },
+  LqtyStaking: { abi: abis.LqtyStaking, address: CONTRACT_LQTY_STAKING },
 
-      collaterals: COLLATERAL_CONTRACTS.map(({ symbol, contracts }) => ({
-        symbol,
-        contracts: {
-          ActivePool: { address: contracts.ACTIVE_POOL, abi: abis.ActivePool },
-          BorrowerOperations: { address: contracts.BORROWER_OPERATIONS, abi: abis.BorrowerOperations },
-          CollToken: { address: contracts.COLL_TOKEN, abi: abis.CollToken },
-          DefaultPool: { address: contracts.DEFAULT_POOL, abi: abis.DefaultPool },
-          GasCompZapper: { address: contracts.GAS_COMP_ZAPPER, abi: abis.GasCompZapper },
-          PriceFeed: { address: contracts.PRICE_FEED, abi: abis.PriceFeed },
-          SortedTroves: { address: contracts.SORTED_TROVES, abi: abis.SortedTroves },
-          StabilityPool: { address: contracts.STABILITY_POOL, abi: abis.StabilityPool },
-          TroveManager: { address: contracts.TROVE_MANAGER, abi: abis.TroveManager },
-          TroveNFT: { address: contracts.TROVE_NFT, abi: abis.TroveNFT },
-          WETHZapper: { address: contracts.WETH_ZAPPER, abi: abis.WETHZapper },
-        },
-      })),
-    };
-  }, []);
+  collaterals: COLLATERAL_CONTRACTS.map(({ collIndex, symbol, contracts }) => ({
+    collIndex,
+    symbol,
+    contracts: {
+      ActivePool: { address: contracts.ACTIVE_POOL, abi: abis.ActivePool },
+      BorrowerOperations: { address: contracts.BORROWER_OPERATIONS, abi: abis.BorrowerOperations },
+      CollToken: { address: contracts.COLL_TOKEN, abi: abis.CollToken },
+      DefaultPool: { address: contracts.DEFAULT_POOL, abi: abis.DefaultPool },
+      GasCompZapper: { address: contracts.GAS_COMP_ZAPPER, abi: abis.GasCompZapper },
+      LeverageLSTZapper: {
+        address: symbol === "ETH" ? zeroAddress : contracts.LEVERAGE_ZAPPER,
+        abi: abis.LeverageLSTZapper,
+      },
+      LeverageWETHZapper: {
+        address: symbol === "ETH" ? contracts.LEVERAGE_ZAPPER : zeroAddress,
+        abi: abis.LeverageWETHZapper,
+      },
+      PriceFeed: { address: contracts.PRICE_FEED, abi: abis.PriceFeed },
+      SortedTroves: { address: contracts.SORTED_TROVES, abi: abis.SortedTroves },
+      StabilityPool: { address: contracts.STABILITY_POOL, abi: abis.StabilityPool },
+      TroveManager: { address: contracts.TROVE_MANAGER, abi: abis.TroveManager },
+      TroveNFT: { address: contracts.TROVE_NFT, abi: abis.TroveNFT },
+      WETHZapper: { address: contracts.WETH_ZAPPER, abi: abis.WETHZapper },
+    },
+  })),
+};
+
+export function getContracts(): Contracts {
+  return CONTRACTS;
 }
 
-export function useAllCollateralContracts() {
-  return useContracts().collaterals;
-}
-
-export function useProtocolContract<CN extends ProtocolContractName>(
+export function getProtocolContract<CN extends ProtocolContractName>(
   name: CN,
 ): ProtocolContractMap[CN] {
-  const contracts = useContracts();
-  return contracts[name];
-}
-
-export function useCollateralContracts(
-  collIndexOrSymbol: CollateralSymbol | CollIndex | null,
-): CollateralContracts | null {
-  const { collaterals } = useContracts();
-
-  const symbol = typeof collIndexOrSymbol === "number"
-    ? collaterals[collIndexOrSymbol].symbol
-    : collIndexOrSymbol;
-
-  return symbol && getCollateralContracts(symbol, collaterals);
-}
-
-export function useCollateralContract<CN extends CollateralContractName>(
-  collIndexOrSymbol: CollateralSymbol | CollIndex | null,
-  contractName: CN,
-): Contract<CN> | null {
-  const contracts = useCollateralContracts(collIndexOrSymbol);
-  return contracts?.[contractName] ?? null;
+  return CONTRACTS[name];
 }
 
 export function getCollateralContracts(
-  symbol: CollateralSymbol,
-  collaterals: Collaterals,
+  collIndexOrSymbol: CollateralSymbol | CollIndex | null,
 ): CollateralContracts | null {
-  return collaterals.find((c) => c.symbol === symbol)?.contracts ?? null;
+  if (collIndexOrSymbol === null) {
+    return null;
+  }
+  const { collaterals } = getContracts();
+  const collateral = typeof collIndexOrSymbol === "number"
+    ? collaterals[collIndexOrSymbol]
+    : collaterals.find((c) => c.symbol === collIndexOrSymbol);
+  return collateral?.contracts ?? null;
+}
+
+export function getCollateralContract<CN extends CollateralContractName>(
+  collIndexOrSymbol: CollateralSymbol | CollIndex | null,
+  contractName: CN,
+): Contract<CN> | null {
+  const contracts = getCollateralContracts(collIndexOrSymbol);
+  return contracts?.[contractName] ?? null;
 }

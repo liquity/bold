@@ -2,22 +2,21 @@
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Logo } from "@/src/comps/Logo/Logo";
-import { useAllCollateralContracts } from "@/src/contracts";
-import { useCollateral } from "@/src/liquity-utils";
-import { useAllPrices, usePrice } from "@/src/services/Prices";
+import { getContracts } from "@/src/contracts";
+import { useAllPrices } from "@/src/services/Prices";
 import { useTotalDeposited } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
-import { HFlex, isCollateralSymbol, TokenIcon } from "@liquity2/uikit";
+import { HFlex, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 const DISPLAYED_PRICES = ["LQTY", "BOLD", "ETH"] as const;
 
 export function ProtocolStats() {
   const prices = useAllPrices();
-  const collaterals = useAllCollateralContracts();
   const totalDeposited = useTotalDeposited();
 
-  const tvl = collaterals
+  const tvl = getContracts()
+    .collaterals
     .map((collateral, collIndex) => {
       const price = prices[collateral.symbol];
       const deposited = totalDeposited.data?.[collIndex].totalDeposited;

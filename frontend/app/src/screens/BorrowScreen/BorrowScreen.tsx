@@ -15,7 +15,7 @@ import {
   MIN_ANNUAL_INTEREST_RATE,
 } from "@/src/constants";
 import content from "@/src/content";
-import { useAllCollateralContracts } from "@/src/contracts";
+import { getContracts } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
@@ -52,21 +52,21 @@ export function BorrowScreen() {
 
   const account = useAccount();
   const txFlow = useTransactionFlow();
-  const allCollContracts = useAllCollateralContracts();
+  const contracts = getContracts();
 
   // useParams() can return an array but not with the current
   // routing setup, so we can safely cast it to a string
-  const collSymbol = String(useParams().collateral ?? allCollContracts[0].symbol).toUpperCase();
+  const collSymbol = String(useParams().collateral ?? contracts.collaterals[0].symbol).toUpperCase();
   if (!isCollateralSymbol(collSymbol)) {
     throw new Error(`Invalid collateral symbol: ${collSymbol}`);
   }
 
-  const collIndex = allCollContracts.findIndex(({ symbol }) => symbol === collSymbol);
+  const collIndex = contracts.collaterals.findIndex(({ symbol }) => symbol === collSymbol);
   if (!isCollIndex(collIndex)) {
     throw new Error(`Unknown collateral symbol: ${collSymbol}`);
   }
 
-  const collaterals = allCollContracts.map(({ symbol }) => {
+  const collaterals = contracts.collaterals.map(({ symbol }) => {
     const collateral = KNOWN_COLLATERALS.find((c) => c.symbol === symbol);
     if (!collateral) {
       throw new Error(`Unknown collateral symbol: ${symbol}`);
@@ -134,7 +134,7 @@ export function BorrowScreen() {
           <HFlex>
             {content.borrowScreen.headline(
               <TokenIcon.Group>
-                {allCollContracts.map(({ symbol }) => (
+                {contracts.collaterals.map(({ symbol }) => (
                   <TokenIcon
                     key={symbol}
                     symbol={symbol}

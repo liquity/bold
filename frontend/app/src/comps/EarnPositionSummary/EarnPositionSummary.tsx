@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
-import { useCollateral, useCollIndexFromSymbol, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
+import { getCollToken, useCollIndexFromSymbol, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconArrowRight, IconPlus, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -24,7 +24,7 @@ export function EarnPositionSummary({
   txPreviewMode?: boolean;
 }) {
   const collIndex = useCollIndexFromSymbol(collSymbol);
-  const collateral = useCollateral(collIndex);
+  const collateral = getCollToken(collIndex);
 
   const earnPosition = useEarnPosition(collIndex, address ?? null);
   const earnPool = useEarnPool(collIndex ?? 0);

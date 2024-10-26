@@ -13,14 +13,14 @@ import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { getPrefixedTroveId } from "@/src/liquity-utils";
+import { getCollToken, getPrefixedTroveId } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, InfoTooltip, StatusDot, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import { Button, HFlex, InfoTooltip, StatusDot } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 import { maxUint256 } from "viem";
@@ -33,11 +33,15 @@ export function PanelUpdateRate({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const { collIndex } = loan;
-  const collateral = TOKENS_BY_SYMBOL[loan.collateral];
-  const collPrice = usePrice(collateral.symbol);
+  const collToken = getCollToken(loan.collIndex);
 
-  const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral.symbol}`, {
+  if (!collToken) {
+    return null;
+  }
+
+  const collPrice = usePrice(collToken.symbol);
+
+  const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collToken.symbol}`, {
     defaultValue: dn.toString(loan.deposit),
   });
   const debt = useInputFieldValue((value) => `${dn.format(value)} BOLD`, {
@@ -52,7 +56,7 @@ export function PanelUpdateRate({
     loan.deposit,
     loan.borrowed,
     loan.interestRate,
-    collateral.collateralRatio,
+    collToken.collateralRatio,
     collPrice,
   );
 
@@ -60,7 +64,7 @@ export function PanelUpdateRate({
     deposit.isEmpty ? null : deposit.parsed,
     debt.isEmpty ? null : debt.parsed,
     interestRate,
-    collateral.collateralRatio,
+    collToken.collateralRatio,
     collPrice,
   );
 
@@ -86,7 +90,7 @@ export function PanelUpdateRate({
         // “Interest rate”
         field={
           <InterestRateField
-            collIndex={collIndex}
+            collIndex={loan.collIndex}
             debt={debt.parsed}
             delegate={interestRateDelegate}
             interestRate={interestRate}
@@ -179,15 +183,15 @@ export function PanelUpdateRate({
               txFlow.start({
                 flowId: "updateLoanInterestRate",
                 backLink: [
-                  `/loan/rate?id=${collIndex}:${loan.troveId}`,
+                  `/loan/rate?id=${loan.collIndex}:${loan.troveId}`,
                   "Back to editing",
                 ],
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The position interest rate has been updated successfully.",
 
-                collIndex,
+                collIndex: loan.collIndex,
                 owner: account.address,
-                prefixedTroveId: getPrefixedTroveId(collIndex, loan.troveId),
+                prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
                 upperHint: dnum18(0),
                 lowerHint: dnum18(0),
                 annualInterestRate: interestRate,

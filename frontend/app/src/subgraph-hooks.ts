@@ -1,10 +1,16 @@
-import type { Address, CollIndex, Delegate, PositionEarn, PositionLoan, PrefixedTroveId } from "@/src/types";
+import type {
+  Address,
+  CollIndex,
+  Delegate,
+  PositionEarn,
+  PositionLoan,
+  PrefixedTroveId,
+} from "@/src/types";
 
 import { getBuiltGraphSDK } from "@/.graphclient";
 import { ACCOUNT_POSITIONS, BORROW_STATS } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
 import { DEMO_MODE } from "@/src/env";
-import { getCollateralFromTroveSymbol } from "@/src/liquity-utils";
 import { isCollIndex, isPositionLoan, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { sleep } from "@/src/utils";
 import { isAddress, shortenAddress } from "@liquity2/uikit";
@@ -306,10 +312,7 @@ function subgraphTroveToLoan(trove: GraphTrove): PositionLoan {
   if (!isTroveId(trove.troveId)) {
     throw new Error(`Invalid trove ID: ${trove.id} / ${trove.troveId}`);
   }
-  const collSymbol = getCollateralFromTroveSymbol(trove.collateral.token.symbol);
-  if (!collSymbol) {
-    throw new Error(`Invalid collateral symbol: ${collSymbol}`);
-  }
+
   const collIndex = trove.collateral.collIndex;
   if (!isCollIndex(collIndex)) {
     throw new Error(`Invalid collateral index: ${collIndex}`);
@@ -324,7 +327,6 @@ function subgraphTroveToLoan(trove: GraphTrove): PositionLoan {
     batchManager: isAddress(trove.interestBatch?.batchManager) ? trove.interestBatch.batchManager : null,
     borrowed: dnum18(trove.debt),
     borrower: trove.borrower,
-    collateral: collSymbol,
     deposit: dnum18(trove.deposit),
     interestRate: dnum18(trove.interestBatch?.annualInterestRate ?? trove.interestRate),
     troveId: trove.troveId,

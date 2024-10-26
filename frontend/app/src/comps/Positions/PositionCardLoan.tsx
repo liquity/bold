@@ -11,7 +11,6 @@ export function PositionCardLoan(
     | "batchManager"
     | "borrowed"
     | "collIndex"
-    | "collateral"
     | "deposit"
     | "interestRate"
     | "troveId"

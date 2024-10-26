@@ -2,7 +2,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
-import { useCollateral } from "@/src/liquity-utils";
+import { getCollToken } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
 import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
@@ -44,7 +44,7 @@ export const earnWithdraw: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
 
   Summary({ flow }) {
-    const collateral = useCollateral(flow.request.collIndex);
+    const collateral = getCollToken(flow.request.collIndex);
     const symbol = collateral?.symbol;
     return symbol && (
       <EarnPositionSummary

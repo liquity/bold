@@ -13,7 +13,7 @@ import { dnum18, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { getPrefixedTroveId } from "@/src/liquity-utils";
+import { getPrefixedTroveId, getCollToken } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -46,8 +46,8 @@ export function PanelUpdateBorrowPosition({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const collateral = TOKENS_BY_SYMBOL[loan.collateral];
-  const collPrice = usePrice(collateral.symbol);
+  const collateral = getCollToken(loan.collIndex);
+  const collPrice = usePrice(collateral?.symbol ?? null);
   const boldPriceUsd = usePrice("BOLD") ?? dnum18(0);
 
   // deposit change
@@ -72,7 +72,7 @@ export function PanelUpdateBorrowPosition({
       : dn.add(loan.borrowed, debtChange.parsed)
   );
 
-  const collBalance = useBalance(account.address, collateral.symbol);
+  const collBalance = useBalance(account.address, collateral?.symbol);
   const boldBalance = useBalance(account.address, "BOLD");
 
   const collMax = depositMode === "remove" ? loan.deposit : (
@@ -87,6 +87,10 @@ export function PanelUpdateBorrowPosition({
       loan.borrowed,
     )
     : null;
+
+  if (!collateral || !collPrice) {
+    return null;
+  }
 
   const loanDetails = getLoanDetails(
     loan.deposit,

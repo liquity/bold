@@ -1,5 +1,6 @@
 import type { PositionLoan } from "@/src/types";
 
+import { getContracts } from "@/src/contracts";
 import { formatRedemptionRisk } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
 import { usePrice } from "@/src/services/Prices";
@@ -13,7 +14,6 @@ import { CardRow, CardRows, EditSquare } from "./shared";
 export function PositionCardLeverage({
   borrowed,
   collIndex,
-  collateral,
   deposit,
   interestRate,
   troveId,
@@ -21,13 +21,15 @@ export function PositionCardLeverage({
   PositionLoan,
   | "borrowed"
   | "collIndex"
-  | "collateral"
   | "deposit"
   | "interestRate"
   | "troveId"
 >) {
-  const token = TOKENS_BY_SYMBOL[collateral];
-  const collateralPriceUsd = usePrice(token.symbol);
+  const contracts = getContracts();
+  const { symbol } = contracts.collaterals[collIndex];
+  const token = TOKENS_BY_SYMBOL[symbol];
+
+  const collateralPriceUsd = usePrice(symbol);
 
   if (!collateralPriceUsd) {
     return null;
@@ -71,10 +73,7 @@ export function PositionCardLeverage({
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
               {deposit ? dn.format(deposit, 2) : "−"}
-              <TokenIcon
-                size={24}
-                symbol={token.symbol}
-              />
+              <TokenIcon size={24} symbol={symbol} />
             </HFlex>
           ),
           label: "Net value",

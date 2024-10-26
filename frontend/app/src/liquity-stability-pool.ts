@@ -1,10 +1,10 @@
 import type { Address, CollateralSymbol, CollIndex } from "@/src/types";
 
 import { SP_YIELD_SPLIT } from "@/src/constants";
-import { useCollateralContract } from "@/src/contracts";
+import { getCollateralContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { CHAIN_CONTRACT_MULTICALL } from "@/src/env";
-import { useCollateral } from "@/src/liquity-utils";
+import { getCollToken } from "@/src/liquity-utils";
 import { useStabilityPoolDeposit, useStabilityPoolEpochScale } from "@/src/subgraph-hooks";
 import { useCallback, useMemo } from "react";
 import { useReadContracts } from "wagmi";
@@ -33,7 +33,7 @@ export function getCollGainFromSnapshots(
 }
 
 export function useContinuousBoldGains(account: null | Address, collIndex: null | CollIndex) {
-  const collateral = useCollateral(collIndex);
+  const collateral = getCollToken(collIndex);
   const spYieldGainParams = useSpYieldGainParameters(collateral?.symbol ?? null);
   const deposit = useStabilityPoolDeposit(collIndex, account);
   const epochScale1 = useStabilityPoolEpochScale(
@@ -110,8 +110,8 @@ type DepositParameters = {
 };
 
 export function useSpYieldGainParameters(symbol: CollateralSymbol | null) {
-  const ActivePool = useCollateralContract(symbol, "ActivePool");
-  const StabilityPool = useCollateralContract(symbol, "StabilityPool");
+  const ActivePool = getCollateralContract(symbol, "ActivePool");
+  const StabilityPool = getCollateralContract(symbol, "StabilityPool");
 
   const AP = ActivePool as NonNullable<typeof ActivePool>;
   const SP = StabilityPool as NonNullable<typeof StabilityPool>;

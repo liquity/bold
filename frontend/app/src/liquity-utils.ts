@@ -3,7 +3,7 @@ import type { CollIndex, Dnum, PositionEarn, PositionStake, PrefixedTroveId, Tro
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
-import { useAllCollateralContracts, useCollateralContract, useProtocolContract } from "@/src/contracts";
+import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import {
@@ -25,7 +25,7 @@ import * as dn from "dnum";
 import { useMemo } from "react";
 import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
-import { useReadContracts } from "wagmi";
+import { useReadContract, useReadContracts } from "wagmi";
 
 // As defined in ITroveManager.sol
 export type TroveStatus =
@@ -71,21 +71,6 @@ export function getTroveId(owner: Address, ownerIndex: bigint | number) {
   )));
 }
 
-export function getCollateralFromTroveSymbol(symbol: string): null | CollateralSymbol {
-  symbol = symbol.toUpperCase();
-  if (symbol === "ETH" || symbol === "WETH") {
-    return "ETH";
-  }
-  // this is to handle symbols used for testing, like stETH1, stETH2, etc.
-  if (symbol.startsWith("RETH")) {
-    return "RETH";
-  }
-  if (symbol.startsWith("STETH")) {
-    return "STETH";
-  }
-  return null;
-}
-
 export function parsePrefixedTroveId(value: PrefixedTroveId): {
   collIndex: CollIndex;
   troveId: TroveId;
@@ -102,31 +87,33 @@ export function getPrefixedTroveId(collIndex: CollIndex, troveId: TroveId): Pref
   return `${collIndex}:${troveId}`;
 }
 
-export function useCollateral(collIndex: null | number): null | CollateralToken {
-  const collContracts = useAllCollateralContracts();
+export function getCollToken(collIndex: CollIndex | null): CollateralToken | null {
+  const { collaterals } = getContracts();
   if (collIndex === null) {
     return null;
   }
-  return collContracts.map(({ symbol }) => {
+  const collToken = collaterals.map(({ symbol }) => {
     const collateral = COLLATERALS.find((c) => c.symbol === symbol);
     if (!collateral) {
       throw new Error(`Unknown collateral symbol: ${symbol}`);
     }
     return collateral;
   })[collIndex];
+
+  return collToken;
 }
 
 export function useCollIndexFromSymbol(symbol: CollateralSymbol | null): CollIndex | null {
-  const collContracts = useAllCollateralContracts();
+  const { collaterals } = getContracts();
   if (symbol === null) {
     return null;
   }
-  const collIndex = collContracts.findIndex((coll) => coll.symbol === symbol);
+  const collIndex = collaterals.findIndex((coll) => coll.symbol === symbol);
   return isCollIndex(collIndex) ? collIndex : null;
 }
 
 export function useEarnPool(collIndex: null | CollIndex) {
-  const collateral = useCollateral(collIndex);
+  const collateral = getCollToken(collIndex);
   const pool = useStabilityPool(collIndex ?? undefined);
   const { data: spYieldGainParams } = useSpYieldGainParameters(collateral?.symbol ?? null);
 
@@ -227,7 +214,7 @@ function earnPositionFromGraph(
 }
 
 export function useStakePosition(address: null | Address) {
-  const LqtyStaking = useProtocolContract("LqtyStaking");
+  const LqtyStaking = getProtocolContract("LqtyStaking");
 
   return useReadContracts({
     contracts: [
@@ -267,7 +254,7 @@ export function useStakePosition(address: null | Address) {
 }
 
 export function useTroveNftUrl(collIndex: null | CollIndex, troveId: null | TroveId) {
-  const TroveNft = useCollateralContract(collIndex, "TroveNFT");
+  const TroveNft = getCollateralContract(collIndex, "TroveNFT");
   return TroveNft && troveId && `${CHAIN_BLOCK_EXPLORER?.url}nft/${TroveNft.address}/${BigInt(troveId)}`;
 }
 

@@ -10,7 +10,7 @@ import { Tabs } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
 import { match, P } from "ts-pattern";
-import { LoanCard } from "./LoanCard";
+import { LoanScreenCard } from "./LoanScreenCard";
 import { PanelClosePosition } from "./PanelClosePosition";
 import { PanelUpdateBorrowPosition } from "./PanelUpdateBorrowPosition";
 import { PanelUpdateLeveragePosition } from "./PanelUpdateLeveragePosition";
@@ -88,7 +88,7 @@ export function LoanScreen() {
         label: "Back",
       }}
       heading={
-        <LoanCard
+        <LoanScreenCard
           mode={loanMode}
           loadingState={loadingState}
           loan={loan.data ?? null}

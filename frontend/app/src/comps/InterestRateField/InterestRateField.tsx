@@ -220,7 +220,10 @@ export function InterestRateField({
                 menuWidth={300}
                 menuPlacement="end"
                 onSelect={(index) => {
-                  onModeChange(DELEGATE_MODES[index].type);
+                  const mode = DELEGATE_MODES[index];
+                  if (mode) {
+                    onModeChange(DELEGATE_MODES[index].type);
+                  }
                   onDelegateChange(null);
                 }}
                 selected={DELEGATE_MODES.findIndex(({ type }) => type === mode)}

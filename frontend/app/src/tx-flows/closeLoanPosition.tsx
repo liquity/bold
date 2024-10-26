@@ -3,7 +3,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { fmtnum } from "@/src/formatting";
-import { useCollateral } from "@/src/liquity-utils";
+import { getCollToken } from "@/src/liquity-utils";
 import { parsePrefixedTroveId } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
@@ -73,7 +73,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
 
   Details({ flow }) {
     const { request } = flow;
-    const collateral = useCollateral(request.collIndex);
+    const collateral = getCollToken(request.collIndex);
     const loan = useLoanById(request.prefixedTroveId);
 
     return loan.data && collateral && (

@@ -9,7 +9,7 @@ import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { useCollateral } from "@/src/liquity-utils";
+import { getCollToken } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
@@ -58,7 +58,7 @@ export function PanelUpdateDeposit({
     ? dn.div(updatedDeposit, updatedBoldQty)
     : DNUM_0;
 
-  const collateral = useCollateral(collIndex);
+  const collateral = getCollToken(collIndex);
 
   const allowSubmit = account.isConnected
     && parsedValue

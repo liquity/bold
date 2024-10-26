@@ -23,6 +23,8 @@ const ABIS = [
   ["DefaultPool"],
   ["GasCompZapper"],
   ["GasPool"],
+  ["LeverageLSTZapper"],
+  ["LeverageWETHZapper"],
   ["PriceFeed", "PriceFeedTestNet", "PriceFeedMock"],
   ["SortedTroves"],
   ["StabilityPool"],

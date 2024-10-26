@@ -7,7 +7,7 @@ import type { Address } from "@liquity2/uikit";
 import type { ComponentProps, ReactNode } from "react";
 import type { Chain } from "wagmi/chains";
 
-import { useContracts } from "@/src/contracts";
+import { getContracts } from "@/src/contracts";
 import { ACCOUNT_BALANCES } from "@/src/demo-mode";
 import { useDemoMode } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
@@ -89,7 +89,7 @@ export function useBalance(
   token: Token["symbol"] | undefined,
 ) {
   const demoMode = useDemoMode();
-  const contracts = useContracts();
+  const contracts = getContracts();
 
   const tokenAddress = match(token)
     .when(

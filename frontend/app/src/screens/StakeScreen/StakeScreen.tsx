@@ -11,7 +11,7 @@ import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import content from "@/src/content";
-import { useProtocolContract } from "@/src/contracts";
+import { getProtocolContract } from "@/src/contracts";
 import { useDemoMode } from "@/src/demo-mode";
 import { ACCOUNT_STAKED_LQTY } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
@@ -339,8 +339,7 @@ function PanelClaimRewards() {
   const ethPrice = usePrice("ETH");
 
   const stakePosition = useStakePosition(account.address ?? null);
-
-  const LqtyStaking = useProtocolContract("LqtyStaking");
+  const LqtyStaking = getProtocolContract("LqtyStaking");
 
   const gasEstimate = useEstimateGas({
     account: account.address,

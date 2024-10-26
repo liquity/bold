@@ -1,7 +1,7 @@
 import type { PositionEarn } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { useCollateral, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
+import { getCollToken, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, StrongCard, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
@@ -17,7 +17,7 @@ export function PositionCardEarn({
   | "collIndex"
   | "deposit"
 >) {
-  const token = useCollateral(collIndex);
+  const token = getCollToken(collIndex);
   const earnPool = useEarnPool(collIndex);
   const earnPosition = useEarnPosition(collIndex, owner ?? null);
 

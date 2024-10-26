@@ -49,6 +49,7 @@ export const EnvSchema = v.pipe(
     COLL_0_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
     COLL_0_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
     COLL_0_CONTRACT_GAS_COMP_ZAPPER: v.optional(vAddress()),
+    COLL_0_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
     COLL_0_CONTRACT_PRICE_FEED: v.optional(vAddress()),
     COLL_0_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
     COLL_0_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
@@ -62,6 +63,7 @@ export const EnvSchema = v.pipe(
     COLL_1_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
     COLL_1_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
     COLL_1_CONTRACT_GAS_COMP_ZAPPER: v.optional(vAddress()),
+    COLL_1_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
     COLL_1_CONTRACT_PRICE_FEED: v.optional(vAddress()),
     COLL_1_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
     COLL_1_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
@@ -75,6 +77,7 @@ export const EnvSchema = v.pipe(
     COLL_2_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
     COLL_2_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
     COLL_2_CONTRACT_GAS_COMP_ZAPPER: v.optional(vAddress()),
+    COLL_2_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
     COLL_2_CONTRACT_PRICE_FEED: v.optional(vAddress()),
     COLL_2_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
     COLL_2_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
@@ -95,6 +98,7 @@ export const EnvSchema = v.pipe(
       "COLL_TOKEN",
       "DEFAULT_POOL",
       "GAS_COMP_ZAPPER",
+      "LEVERAGE_ZAPPER",
       "PRICE_FEED",
       "SORTED_TROVES",
       "STABILITY_POOL",
@@ -106,6 +110,7 @@ export const EnvSchema = v.pipe(
     type ContractEnvName = typeof contractsEnvNames[number];
 
     const collateralContracts: Array<{
+      collIndex: CollIndex;
       symbol: v.InferOutput<typeof CollateralSymbolSchema>;
       contracts: Record<ContractEnvName, Address>;
     }> = [];
@@ -130,9 +135,14 @@ export const EnvSchema = v.pipe(
         throw new Error(`Incomplete contracts for collateral ${index}`);
       }
 
+      if (!isCollIndex(index)) {
+        throw new Error(`Invalid collateral index: ${index}`);
+      }
+
       collateralContracts[index] = {
-        symbol: env[`${collEnvName}_TOKEN_ID` as keyof typeof env] as v.InferOutput<typeof CollateralSymbolSchema>,
+        collIndex: index,
         contracts: contracts as Record<ContractEnvName, Address>,
+        symbol: env[`${collEnvName}_TOKEN_ID` as keyof typeof env] as v.InferOutput<typeof CollateralSymbolSchema>,
       };
     }
 
@@ -179,6 +189,7 @@ const parsedEnv = v.parse(EnvSchema, {
   COLL_0_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_COLL_TOKEN,
   COLL_0_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_DEFAULT_POOL,
   COLL_0_CONTRACT_GAS_COMP_ZAPPER: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_GAS_COMP_ZAPPER,
+  COLL_0_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_LEVERAGE_ZAPPER,
   COLL_0_CONTRACT_PRICE_FEED: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_PRICE_FEED,
   COLL_0_CONTRACT_SORTED_TROVES: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_SORTED_TROVES,
   COLL_0_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_STABILITY_POOL,
@@ -191,6 +202,7 @@ const parsedEnv = v.parse(EnvSchema, {
   COLL_1_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_COLL_TOKEN,
   COLL_1_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_DEFAULT_POOL,
   COLL_1_CONTRACT_GAS_COMP_ZAPPER: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_GAS_COMP_ZAPPER,
+  COLL_1_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_LEVERAGE_ZAPPER,
   COLL_1_CONTRACT_PRICE_FEED: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_PRICE_FEED,
   COLL_1_CONTRACT_SORTED_TROVES: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_SORTED_TROVES,
   COLL_1_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_STABILITY_POOL,
@@ -203,6 +215,7 @@ const parsedEnv = v.parse(EnvSchema, {
   COLL_2_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_COLL_TOKEN,
   COLL_2_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_DEFAULT_POOL,
   COLL_2_CONTRACT_GAS_COMP_ZAPPER: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_GAS_COMP_ZAPPER,
+  COLL_2_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_LEVERAGE_ZAPPER,
   COLL_2_CONTRACT_PRICE_FEED: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_PRICE_FEED,
   COLL_2_CONTRACT_SORTED_TROVES: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_SORTED_TROVES,
   COLL_2_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_STABILITY_POOL,

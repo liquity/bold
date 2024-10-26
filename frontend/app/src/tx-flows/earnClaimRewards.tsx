@@ -2,7 +2,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
-import { useCollateral } from "@/src/liquity-utils";
+import { getCollToken } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
 import { vAddress, vCollIndex } from "@/src/valibot-utils";
@@ -38,7 +38,7 @@ export const earnClaimRewards: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
 
   Summary({ flow }) {
-    const collateral = useCollateral(flow.request.collIndex);
+    const collateral = getCollToken(flow.request.collIndex);
     const symbol = collateral?.symbol;
     return symbol && (
       <EarnPositionSummary
@@ -50,7 +50,7 @@ export const earnClaimRewards: FlowDeclaration<Request, Step> = {
   },
 
   Details({ flow }) {
-    const collateral = useCollateral(flow.request.collIndex);
+    const collateral = getCollToken(flow.request.collIndex);
 
     const rewardsBold = dn.from(0, 18);
     const rewardsColl = dn.from(0, 18);

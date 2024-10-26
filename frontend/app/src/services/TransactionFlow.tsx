@@ -27,7 +27,7 @@ import type { GetTransactionReceiptReturnType, WriteContractParameters } from "@
 import type { ComponentType, ReactNode } from "react";
 
 import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
-import { useContracts } from "@/src/contracts";
+import { getContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useAccount, useWagmiConfig } from "@/src/services/Ethereum";
 import { closeLoanPosition } from "@/src/tx-flows/closeLoanPosition";
@@ -269,7 +269,7 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
   const router = useRouter();
   const wagmiConfig = useWagmiConfig();
   const account = useAccount();
-  const contracts = useContracts();
+  const contracts = getContracts();
 
   const [{ flow }, setFlowAndStatus] = useState<{
     flow: null | FlowContext<FlowRequest>;

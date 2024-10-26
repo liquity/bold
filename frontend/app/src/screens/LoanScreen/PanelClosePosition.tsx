@@ -3,6 +3,7 @@ import type { PositionLoan } from "@/src/types";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { Field } from "@/src/comps/Field/Field";
+import { getContracts } from "@/src/contracts";
 import { fmtnum } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
 import { getPrefixedTroveId } from "@/src/liquity-utils";
@@ -18,11 +19,14 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const collPrice = usePrice(loan.collateral);
-  const boldPriceUsd = usePrice("BOLD");
-  const [tokenIndex, setTokenIndex] = useState(0);
+  const contracts = getContracts();
+  const { symbol } = contracts.collaterals[loan.collIndex];
+  const collToken = TOKENS_BY_SYMBOL[symbol];
 
-  const collateral = TOKENS_BY_SYMBOL[loan.collateral];
+  const collPrice = usePrice(symbol);
+  const boldPriceUsd = usePrice("BOLD");
+
+  const [tokenIndex, setTokenIndex] = useState(0);
 
   const boldBalance = useBalance(account.address, "BOLD");
 
@@ -34,11 +38,11 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
     loan.deposit,
     loan.borrowed,
     loan.interestRate,
-    collateral.collateralRatio,
+    collToken.collateralRatio,
     collPrice,
   );
 
-  const repayWith = tokenIndex === 0 ? "BOLD" : collateral.symbol;
+  const repayWith = tokenIndex === 0 ? "BOLD" : symbol;
 
   const amountToRepay = repayWith === "BOLD"
     ? (loanDetails.debt ?? dn.from(0))
@@ -98,22 +102,22 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
                 buttonDisplay={() => ({
                   label: (
                     <>
-                      {TOKENS_BY_SYMBOL[(["BOLD", collateral.symbol] as const)[tokenIndex]].name}
+                      {TOKENS_BY_SYMBOL[(["BOLD", symbol] as const)[tokenIndex]].name}
                       <span
                         className={css({
                           color: "contentAlt",
                           fontWeight: 400,
                         })}
                       >
-                        {TOKENS_BY_SYMBOL[(["BOLD", collateral.symbol] as const)[tokenIndex]].symbol === "BOLD"
+                        {TOKENS_BY_SYMBOL[(["BOLD", symbol] as const)[tokenIndex]].symbol === "BOLD"
                           ? " account"
                           : " loan"}
                       </span>
                     </>
                   ),
-                  icon: <TokenIcon symbol={(["BOLD", collateral.symbol] as const)[tokenIndex]} />,
+                  icon: <TokenIcon symbol={(["BOLD", symbol] as const)[tokenIndex]} />,
                 })}
-                items={(["BOLD", collateral.symbol] as const).map((symbol) => ({
+                items={(["BOLD", symbol] as const).map((symbol) => ({
                   icon: <TokenIcon symbol={symbol} />,
                   label: (
                     <>
@@ -171,8 +175,8 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
                     userSelect: "none",
                   })}
                 >
-                  <TokenIcon symbol={collateral.symbol} />
-                  <div>{collateral.name}</div>
+                  <TokenIcon symbol={symbol} />
+                  <div>{collToken.name}</div>
                 </div>
               </div>
             </div>
