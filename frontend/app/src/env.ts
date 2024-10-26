@@ -1,12 +1,13 @@
-import type { Address } from "@/src/types";
+import type { Address, CollIndex } from "@/src/types";
 
+import { isCollIndex } from "@/src/types";
 import { vAddress, vEnvAddressAndBlock, vEnvCurrency, vEnvFlag, vEnvLink } from "@/src/valibot-utils";
 import * as v from "valibot";
 
 export const CollateralSymbolSchema = v.union([
   v.literal("ETH"),
   v.literal("RETH"),
-  v.literal("STETH"),
+  v.literal("WSTETH"),
 ]);
 
 export const EnvSchema = v.pipe(

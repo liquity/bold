@@ -12,7 +12,7 @@ export const PRICE_UPDATE_MANUAL = false;
 export const LQTY_PRICE = dn.from(0.64832, 18);
 export const ETH_PRICE = dn.from(2_580.293872, 18);
 export const RETH_PRICE = dn.from(2_884.72294, 18);
-export const STETH_PRICE = dn.from(2_579.931, 18);
+export const WSTETH_PRICE = dn.from(2_579.931, 18);
 export const BOLD_PRICE = dn.from(1.0031, 18);
 export const LUSD_PRICE = dn.from(1.012, 18);
 
@@ -29,7 +29,7 @@ export const ACCOUNT_BALANCES = {
   ETH: dn.from(2.429387, 18),
   LQTY: dn.from(2008.217, 18),
   RETH: dn.from(1.3732, 18),
-  STETH: dn.from(17.912, 18),
+  WSTETH: dn.from(17.912, 18),
   LUSD: dn.from(1_200, 18),
 } as const;
 
@@ -40,7 +40,6 @@ export const ACCOUNT_POSITIONS: Position[] = [
     type: "borrow",
     borrowed: dn.from(12_789, 18),
     borrower: DEMO_ACCOUNT,
-    collateral: "RETH",
     deposit: dn.from(5.5, 18),
     interestRate: dn.from(0.067, 18),
     troveId: "0x01",
@@ -51,7 +50,6 @@ export const ACCOUNT_POSITIONS: Position[] = [
     type: "leverage",
     borrowed: dn.from(28_934.23, 18),
     borrower: DEMO_ACCOUNT,
-    collateral: "ETH",
     deposit: dn.from(19.20, 18), // 8 ETH @ 2.4 leverage
     interestRate: dn.from(0.045, 18),
     troveId: "0x02",
@@ -90,7 +88,7 @@ export const BORROW_STATS = {
     collIndex: 1,
     totalDeposited: dn.from(22_330.9548, 18),
   },
-  STETH: {
+  WSTETH: {
     collIndex: 2,
     totalDeposited: dn.from(18_030.9548, 18),
   },
@@ -108,7 +106,7 @@ export const EARN_POOLS: Record<
     apr: dn.from(0.057, 18),
     boldQty: [44_100_000n, 0],
   },
-  STETH: {
+  WSTETH: {
     apr: dn.from(0.054, 18),
     boldQty: [25_700_000n, 0],
   },
