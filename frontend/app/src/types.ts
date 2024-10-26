@@ -45,7 +45,6 @@ export type PositionLoan = {
   borrowed: Dnum;
   borrower: Address;
   collIndex: CollIndex;
-  collateral: CollateralSymbol;
   deposit: Dnum;
   interestRate: Dnum;
   troveId: TroveId;
@@ -91,4 +90,29 @@ export type Delegate = {
   lastDays: number;
   name: string;
   redemptions: Dnum;
+};
+
+export type LoanDetails = {
+  collPrice: Dnum | null;
+  debt: Dnum | null;
+  deposit: Dnum | null;
+  depositPreLeverage: Dnum | null;
+  depositToZero: Dnum | null;
+  depositUsd: Dnum | null;
+  interestRate: Dnum | null;
+  leverageFactor: number | null;
+  liquidationPrice: Dnum | null;
+  liquidationRisk: RiskLevel | null;
+  ltv: Dnum | null;
+  maxDebt: Dnum | null;
+  maxDebtAllowed: Dnum | null;
+  maxLtv: Dnum;
+  maxLtvAllowed: Dnum;
+  redemptionRisk: RiskLevel | null;
+  status:
+    | null
+    | "healthy"
+    | "at-risk" // above the max LTV allowed by the app when opening
+    | "liquidatable" // above the max LTV before liquidation
+    | "underwater"; // above 100% LTV
 };
