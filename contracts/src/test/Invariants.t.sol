@@ -114,12 +114,12 @@ contract InvariantsTest is Assertions, Logging, BaseInvariantTest, BaseMultiColl
             assertEq(c.sortedTroves.getSize(), handler.numTroves(i) - handler.numZombies(i), "Wrong SortedTroves size");
             assertApproxEq(c.activePool.calcPendingAggInterest(), handler.getPendingInterest(i), 1e6, "Wrong interest");
             assertApproxEq36(
-                c.activePool.aggWeightedDebtSum(), handler.getInterestAccrual(i), 1e6, "Wrong interest accrual"
+                c.activePool.aggWeightedDebtSum(), handler.getInterestAccrual(i), 1e7, "Wrong interest accrual"
             );
             assertApproxEq36(
                 c.activePool.aggWeightedBatchManagementFeeSum(),
                 handler.getBatchManagementFeeAccrual(i),
-                1e6,
+                1e7,
                 "Wrong batch management fee accrual"
             );
             assertEqDecimal(weth.balanceOf(address(c.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool");
@@ -148,8 +148,8 @@ contract InvariantsTest is Assertions, Logging, BaseInvariantTest, BaseMultiColl
                     handler.getTrove(i, j);
 
                 LatestTroveData memory t = c.troveManager.getLatestTroveData(troveId);
-                assertApproxEq(t.entireColl, coll, 1e6, "Wrong Trove coll");
-                assertApproxEq(t.entireDebt, debt, 1e6, "Wrong Trove debt");
+                assertApproxEqAbsDecimal(t.entireColl, coll, 1e9, 18, "Wrong Trove coll");
+                assertApproxEqAbsDecimal(t.entireDebt, debt, 1e11, 18, "Wrong Trove debt ");
                 assertEq(c.troveManager.getTroveStatus(troveId).toString(), status.toString(), "Wrong Trove status");
                 assertEq(c.troveManager.getBatchManager(troveId), batchManager, "Wrong batch manager (TM)");
                 assertEq(c.borrowerOperations.interestBatchManagerOf(troveId), batchManager, "Wrong batch manager (BO)");

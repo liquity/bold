@@ -4,11 +4,12 @@ pragma solidity 0.8.24;
 import {IBoldToken} from "../Interfaces/IBoldToken.sol";
 import {IStabilityPool} from "../Interfaces/IStabilityPool.sol";
 import {HintHelpers} from "../HintHelpers.sol";
-import {TestDeployer} from "./TestContracts/Deployment.t.sol";
+import {Assertions} from "./TestContracts/Assertions.sol";
 import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
+import {TestDeployer} from "./TestContracts/Deployment.t.sol";
 import {SPInvariantsTestHandler} from "./TestContracts/SPInvariantsTestHandler.t.sol";
 
-contract SPInvariantsTest is BaseInvariantTest {
+contract SPInvariantsTest is Assertions, BaseInvariantTest {
     IStabilityPool stabilityPool;
     SPInvariantsTestHandler handler;
 
@@ -52,9 +53,9 @@ contract SPInvariantsTest is BaseInvariantTest {
             sumYieldGains += stabilityPool.getDepositorYieldGain(actors[i].account);
         }
 
-        assertApproxEqAbsDecimal(stabilityPoolColl, claimableColl, 0.0001 ether, 18, "SP Coll !~ claimable Coll");
-        assertApproxEqAbsDecimal(stabilityPoolBold, claimableBold, 0.001 ether, 18, "SP BOLD !~ claimable BOLD");
-        assertApproxEqAbsDecimal(yieldGainsOwed, sumYieldGains, 0.001 ether, 18, "SP yieldGainsOwed !~= sum(yieldGain)");
+        assertApproxEq(stabilityPoolColl, claimableColl, 1e11, "SP Coll !~ claimable Coll");
+        assertApproxEq(stabilityPoolBold, claimableBold, 1e11, "SP BOLD !~ claimable BOLD");
+        assertApproxEq(yieldGainsOwed, sumYieldGains, 1e11, "SP yieldGainsOwed !~= sum(yieldGain)");
     }
 
     function test_Issue_NoLossOfFundsAfterAnyTwoLiquidationsFollowingTinyP() external {

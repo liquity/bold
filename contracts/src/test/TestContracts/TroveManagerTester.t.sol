@@ -70,6 +70,14 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         return totalCollateralSnapshot;
     }
 
+    function get_lastCollError_Redistribution() external view returns (uint256) {
+        return lastCollError_Redistribution;
+    }
+
+    function get_lastBoldDebtError_Redistribution() external view returns (uint256) {
+        return lastBoldDebtError_Redistribution;
+    }
+
     function getTroveId(uint256 _index) external view returns (uint256) {
         return TroveIds[_index];
     }

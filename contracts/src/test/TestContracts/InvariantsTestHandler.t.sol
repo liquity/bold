@@ -149,7 +149,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         uint256 maxDebtDec;
         int256 collDelta;
         int256 debtDelta;
-        int256 $collDelta;
+        int256 $collDelta36;
         uint256 upfrontFee;
         string functionName;
         uint256 newICR;
@@ -416,7 +416,14 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         returns (uint256 troveId, uint256 coll, uint256 debt, ITroveManager.Status status, address batchManager)
     {
         troveId = _troveIds[i].get(j);
+        (coll, debt, status, batchManager) = getTroveById(i, troveId);
+    }
 
+    function getTroveById(uint256 i, uint256 troveId)
+        public
+        view
+        returns (uint256 coll, uint256 debt, ITroveManager.Status status, address batchManager)
+    {
         Trove memory trove = _troves[i][troveId];
         trove.applyPending();
 
@@ -734,7 +741,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         v.maxDebtDec = v.t.entireDebt > MIN_DEBT ? v.t.entireDebt - MIN_DEBT : 0;
         v.collDelta = isCollInc ? int256(collChange) : -int256(collChange);
         v.debtDelta = isDebtInc ? int256(debtChange) : -int256(Math.min(debtChange, v.maxDebtDec));
-        v.$collDelta = v.collDelta * int256(_price[i]) / int256(DECIMAL_PRECISION);
+        v.$collDelta36 = v.collDelta * int256(_price[i]);
         v.upfrontFee = hintHelpers.predictAdjustTroveUpfrontFee(i, v.troveId, isDebtInc ? debtChange : 0);
         if (v.upfrontFee > 0) assertGtDecimal(v.debtDelta, 0, 18, "Only debt increase should incur upfront fee");
         v.functionName = _getAdjustmentFunctionName(v.prop, isCollInc, isDebtInc, v.useZombie);
@@ -792,7 +799,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
                 if (v.debtDelta > 0) {
                     assertGtDecimal(v.newTCR, CCR[i], 18, "Borrowing should have failed as new TCR < CCR");
                 }
-                assertGeDecimal(-v.debtDelta, -v.$collDelta, 18, "Repayment < withdrawal when TCR < CCR");
+                assertGeDecimal(-v.debtDelta * 1e18, -v.$collDelta36, 36, "Repayment < withdrawal when TCR < CCR");
             }
 
             // Effects (Trove)
@@ -840,7 +847,9 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
                 info("New TCR would have been: ", v.newTCR.decimal());
             } else if (selector == BorrowerOperations.RepaymentNotMatchingCollWithdrawal.selector) {
                 assertLtDecimal(v.oldTCR, CCR[i], 18, "Shouldn't have failed as TCR >= CCR");
-                assertLtDecimal(-v.debtDelta, -v.$collDelta, 18, "Shouldn't have failed as repayment >= withdrawal");
+                assertLtDecimal(
+                    -v.debtDelta * 1e18, -v.$collDelta36, 36, "Shouldn't have failed as repayment >= withdrawal"
+                );
             } else {
                 revert(string.concat("Unexpected error: ", v.errorString));
             }
@@ -1088,6 +1097,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         info("batch: [", _labelsFrom(l.batch).join(", "), "]");
         info("liquidated: [", _labelsFrom(l.liquidated).join(", "), "]");
         info("SP offset: ", l.t.spOffset.decimal());
+        info("coll redist: ", l.t.collRedist.decimal());
         info("debt redist: ", l.t.debtRedist.decimal());
         logCall("batchLiquidateTroves", i.toString());
 
@@ -1606,9 +1616,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             assertApproxEqAbsDecimal(
                 v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 1e7, 18, "Wrong deposit"
             );
-            assertApproxEqAbsDecimal(
-                v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e11, 18, "Wrong yield gain"
-            );
+            assertApproxEq(v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e7, "Wrong yield gain");
             assertEqDecimal(v.c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
             assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");
 
