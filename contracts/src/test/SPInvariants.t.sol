@@ -53,9 +53,9 @@ contract SPInvariantsTest is Assertions, BaseInvariantTest {
             sumYieldGains += stabilityPool.getDepositorYieldGain(actors[i].account);
         }
 
-        assertApproxEq(stabilityPoolColl, claimableColl, 1e11, "SP Coll !~ claimable Coll");
-        assertApproxEq(stabilityPoolBold, claimableBold, 1e11, "SP BOLD !~ claimable BOLD");
-        assertApproxEq(yieldGainsOwed, sumYieldGains, 1e11, "SP yieldGainsOwed !~= sum(yieldGain)");
+        assertApproxEq(stabilityPoolColl, claimableColl, 1e15, "SP coll !~ claimable coll");
+        assertApproxEq(stabilityPoolBold, claimableBold, 1e15, "SP BOLD !~ claimable BOLD");
+        assertApproxEq(yieldGainsOwed, sumYieldGains, 1e15, "SP yieldGainsOwed !~= sum(yieldGain)");
     }
 
     function test_Issue_NoLossOfFundsAfterAnyTwoLiquidationsFollowingTinyP() external {

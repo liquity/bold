@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {BatchId} from "../Types/BatchId.sol";
 import {LatestBatchData} from "../Types/LatestBatchData.sol";
 import {LatestTroveData} from "../Types/LatestTroveData.sol";
@@ -113,13 +114,18 @@ contract InvariantsTest is Assertions, Logging, BaseInvariantTest, BaseMultiColl
             assertEq(c.troveManager.lastZombieTroveId(), handler.designatedVictimId(i), "Wrong designated victim");
             assertEq(c.sortedTroves.getSize(), handler.numTroves(i) - handler.numZombies(i), "Wrong SortedTroves size");
             assertApproxEq(c.activePool.calcPendingAggInterest(), handler.getPendingInterest(i), 1e6, "Wrong interest");
-            assertApproxEq36(
-                c.activePool.aggWeightedDebtSum(), handler.getInterestAccrual(i), 1e7, "Wrong interest accrual"
+            assertApproxEqAbsDecimal(
+                c.activePool.aggWeightedDebtSum(),
+                handler.getInterestAccrual(i),
+                Math.max(handler.totalDebtRedist(i) * 1e9, 1e20),
+                36,
+                "Wrong interest accrual"
             );
-            assertApproxEq36(
+            assertApproxEqAbsDecimal(
                 c.activePool.aggWeightedBatchManagementFeeSum(),
                 handler.getBatchManagementFeeAccrual(i),
-                1e7,
+                Math.max(handler.totalDebtRedist(i) * 1e9, 1e20),
+                36,
                 "Wrong batch management fee accrual"
             );
             assertEqDecimal(weth.balanceOf(address(c.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool");
@@ -144,12 +150,23 @@ contract InvariantsTest is Assertions, Logging, BaseInvariantTest, BaseMultiColl
             );
 
             for (uint256 j = 0; j < handler.numTroves(i); ++j) {
-                (uint256 troveId, uint256 coll, uint256 debt, ITroveManager.Status status, address batchManager) =
-                    handler.getTrove(i, j);
+                (
+                    uint256 troveId,
+                    uint256 coll,
+                    uint256 debt,
+                    ITroveManager.Status status,
+                    address batchManager,
+                    uint256 totalCollRedist,
+                    uint256 totalDebtRedist
+                ) = handler.getTrove(i, j);
 
                 LatestTroveData memory t = c.troveManager.getLatestTroveData(troveId);
-                assertApproxEqAbsDecimal(t.entireColl, coll, 1e9, 18, "Wrong Trove coll");
-                assertApproxEqAbsDecimal(t.entireDebt, debt, 1e11, 18, "Wrong Trove debt ");
+                assertApproxEqAbsDecimal(
+                    t.entireColl, coll, Math.max(totalCollRedist / 1e7, 1e3), 18, "Wrong Trove coll"
+                );
+                assertApproxEqAbsDecimal(
+                    t.entireDebt, debt, Math.max(totalDebtRedist / 1e7, 1e3), 18, "Wrong Trove debt "
+                );
                 assertEq(c.troveManager.getTroveStatus(troveId).toString(), status.toString(), "Wrong Trove status");
                 assertEq(c.troveManager.getBatchManager(troveId), batchManager, "Wrong batch manager (TM)");
                 assertEq(c.borrowerOperations.interestBatchManagerOf(troveId), batchManager, "Wrong batch manager (BO)");

@@ -10,6 +10,8 @@ struct Trove {
     uint256 debt;
     uint256 interestRate;
     uint256 batchManagementRate;
+    uint256 totalCollRedist;
+    uint256 totalDebtRedist;
     // "Private"
     uint256 _pendingCollRedist;
     uint256 _pendingDebtRedist;
@@ -46,6 +48,9 @@ library TroveMethods {
     function applyPendingRedist(Trove memory trove) internal pure {
         trove.coll += trove._pendingCollRedist;
         trove.debt += trove._pendingDebtRedist;
+
+        trove.totalCollRedist += trove._pendingCollRedist;
+        trove.totalDebtRedist += trove._pendingDebtRedist;
 
         trove._pendingCollRedist = 0;
         trove._pendingDebtRedist = 0;

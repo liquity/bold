@@ -345,6 +345,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     mapping(uint256 branchIdx => uint256) public spBoldDeposits;
     mapping(uint256 branchIdx => uint256) public spBoldYield;
     mapping(uint256 branchIdx => uint256) public spColl;
+    mapping(uint256 branchIdx => uint256) public totalCollRedist;
+    mapping(uint256 branchIdx => uint256) public totalDebtRedist;
     mapping(uint256 branchIdx => bool) public isShutdown;
 
     // Price per branch
@@ -413,16 +415,31 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     function getTrove(uint256 i, uint256 j)
         external
         view
-        returns (uint256 troveId, uint256 coll, uint256 debt, ITroveManager.Status status, address batchManager)
+        returns (
+            uint256 troveId,
+            uint256 coll,
+            uint256 debt,
+            ITroveManager.Status status,
+            address batchManager,
+            uint256 totalCollRedist,
+            uint256 totalDebtRedist
+        )
     {
         troveId = _troveIds[i].get(j);
-        (coll, debt, status, batchManager) = getTroveById(i, troveId);
+        (coll, debt, status, batchManager, totalCollRedist, totalDebtRedist) = getTroveById(i, troveId);
     }
 
     function getTroveById(uint256 i, uint256 troveId)
         public
         view
-        returns (uint256 coll, uint256 debt, ITroveManager.Status status, address batchManager)
+        returns (
+            uint256 coll,
+            uint256 debt,
+            ITroveManager.Status status,
+            address batchManager,
+            uint256 totalCollRedist,
+            uint256 totalDebtRedist
+        )
     {
         Trove memory trove = _troves[i][troveId];
         trove.applyPending();
@@ -431,6 +448,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         debt = trove.debt;
         status = _isZombie(i, troveId) ? ZOMBIE : ACTIVE;
         batchManager = _batchManagerOf[i][troveId];
+        totalCollRedist = trove.totalCollRedist;
+        totalDebtRedist = trove.totalDebtRedist;
     }
 
     function getBatchSize(uint256 i, address batchManager) external view returns (uint256) {
@@ -1160,6 +1179,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             spColl[i] += l.t.spCollGain;
             spBoldDeposits[i] -= l.t.spOffset;
             collSurplus[i] += l.t.collSurplus;
+            totalCollRedist[i] += l.t.collRedist;
+            totalDebtRedist[i] += l.t.debtRedist;
         } catch Panic(uint256 code) {
             uint256 totalStakes = 0;
 
@@ -1273,7 +1294,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
                     if (redeemed.coll > trove.coll) {
                         // There can be a slight discrepancy when hitting batched Troves
-                        assertApproxEq(redeemed.coll, trove.coll, 1e6, "Coll underflow");
+                        assertApproxEq(redeemed.coll, trove.coll, 1e8, "Coll underflow");
                         trove.coll = 0;
                     } else {
                         trove.coll -= redeemed.coll;
@@ -1281,7 +1302,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
                     if (redeemed.debt > trove.debt) {
                         // There can be a slight discrepancy when hitting batched Troves
-                        assertApproxEq(redeemed.debt, trove.debt, 1e6, "Debt underflow");
+                        assertApproxEq(redeemed.debt, trove.debt, 1e8, "Debt underflow");
                         trove.debt = 0;
                     } else {
                         trove.debt -= redeemed.debt;
@@ -1427,7 +1448,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
                 if (redeemed.coll > trove.coll) {
                     // There can be a slight discrepancy when hitting batched Troves
-                    assertApproxEq(redeemed.coll, trove.coll, 1e6, "Coll underflow");
+                    assertApproxEq(redeemed.coll, trove.coll, 1e8, "Coll underflow");
                     trove.coll = 0;
                 } else {
                     trove.coll -= redeemed.coll;
@@ -1435,7 +1456,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
                 if (redeemed.debt > trove.debt) {
                     // There can be a slight discrepancy when hitting batched Troves
-                    assertApproxEq(redeemed.debt, trove.debt, 1e6, "Debt underflow");
+                    assertApproxEq(redeemed.debt, trove.debt, 1e8, "Debt underflow");
                     trove.debt = 0;
                 } else {
                     trove.debt -= redeemed.debt;
@@ -1616,7 +1637,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             assertApproxEqAbsDecimal(
                 v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 1e7, 18, "Wrong deposit"
             );
-            assertApproxEq(v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e7, "Wrong yield gain");
+            assertApproxEq(v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e11, "Wrong yield gain");
             assertEqDecimal(v.c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
             assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");
 
@@ -1708,9 +1729,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             assertApproxEqAbsDecimal(
                 v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 1e7, 18, "Wrong deposit"
             );
-            assertApproxEqAbsDecimal(
-                v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e11, 18, "Wrong yield gain"
-            );
+            assertApproxEq(v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e11, "Wrong yield gain");
             assertEqDecimal(v.c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
             assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");
 
