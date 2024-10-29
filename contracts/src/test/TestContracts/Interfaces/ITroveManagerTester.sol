@@ -21,6 +21,8 @@ interface ITroveManagerTester is ITroveManager {
     function getTotalStakes() external view returns (uint256);
     function getTotalStakesSnapshot() external view returns (uint256);
     function getTotalCollateralSnapshot() external view returns (uint256);
+    function get_lastCollError_Redistribution() external view returns (uint256);
+    function get_lastBoldDebtError_Redistribution() external view returns (uint256);
     function getTroveId(uint256 _index) external view returns (uint256);
 
     function getTCR(uint256 _price) external view returns (uint256);
