@@ -6,6 +6,7 @@ import "./TestContracts/DevTestSetup.sol";
 contract RebasingBatchShares is DevTestSetup {
     bool WITH_INTEREST = true; // Do we need to tick some interest to cause a rounding error?
 
+    // See: https://github.com/GalloDaSballo/bold-review/issues/42
     function testBatchRebaseToSystemInsolvency() public {
         // === EXTRA SETUP === //
         // Open Trove
@@ -233,5 +234,62 @@ contract RebasingBatchShares is DevTestSetup {
         vm.stopPrank();
 
         return troveId;
+    }
+
+    // Rounding on batch decrease
+
+    // See Coinspect audit report
+    function testDeflateDebtLeavingSharesConstant() public {
+        uint256 ITERATIONS = 200;
+
+        // === Generate Bold Balance on A === //
+        priceFeed.setPrice(2000e18);
+        openTroveNoHints100pct(C, 100 ether, 100e21, MAX_ANNUAL_INTEREST_RATE);
+        vm.startPrank(C);
+        boldToken.transfer(A, boldToken.balanceOf(C));
+        vm.stopPrank();
+
+        // B opens trove
+        uint256 BTroveId = openTroveAndJoinBatchManager(B, 100 ether, MIN_DEBT - 2.3 ether, B, MAX_ANNUAL_INTEREST_RATE);
+
+        if (WITH_INTEREST) {
+            vm.warp(block.timestamp + 12);
+        }
+        _addOneDebtAndEnsureItDoesntMintShares(BTroveId, B);
+
+        (uint256 debtBefore,,,,,,, uint256 allBatchDebtSharesBefore) = troveManager.getBatch(B);
+        uint256 sharesBeforeRepay = _getBatchDebtShares(BTroveId);
+        assertEq(sharesBeforeRepay, allBatchDebtSharesBefore, "Shares mismatch before repayment");
+
+        console2.log("batchDebtShares: %s", sharesBeforeRepay);
+        console2.log("debt: %s", debtBefore);
+        console2.log("allBatchDebtSharesBefore: %s", allBatchDebtSharesBefore);
+
+        uint256 debtAfter;
+        uint256 allBatchDebtSharesAfter;
+        uint256 sharesAfterRepay;
+
+        console2.log("\n repay to force rounding");
+        uint256 x;
+        vm.startPrank(B);
+        while (x++ < ITERATIONS) {
+            borrowerOperations.repayBold(BTroveId, 1);
+        }
+        vm.stopPrank();
+
+        (debtAfter,,,,,,, allBatchDebtSharesAfter) = troveManager.getBatch(B);
+        sharesAfterRepay = _getBatchDebtShares(BTroveId);
+        assertEq(sharesAfterRepay, allBatchDebtSharesAfter, "Shares mismatch after repayment");
+        assertEq(sharesAfterRepay, sharesBeforeRepay, "Shares should not have changed");
+        assertLe(debtBefore - debtAfter, ITERATIONS, "Too much debt change");
+
+        console2.log("batchDebtShares: %s", sharesAfterRepay);
+        console2.log("debt: %s", debtAfter);
+        console2.log("allBatchDebtSharesAfter: %s", allBatchDebtSharesAfter);
+
+        console2.log("\ndeltas");
+        console2.log("batchDebtShares: %s", sharesBeforeRepay - sharesAfterRepay);
+        console2.log("debt: %s", debtBefore - debtAfter);
+        console2.log("allBatchDebtSharesBefore: %s", allBatchDebtSharesBefore - allBatchDebtSharesAfter);
     }
 }
