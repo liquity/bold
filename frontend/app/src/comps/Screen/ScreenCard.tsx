@@ -59,7 +59,6 @@ export function ScreenCard({
       <a.div
         className={css({
           position: "relative",
-          overflow: "hidden",
           width: "100%",
           userSelect: "none",
         })}
@@ -70,7 +69,7 @@ export function ScreenCard({
         }}
       >
         {match(mode)
-          .with("ready", () => <div>{children}</div>)
+          .with("ready", () => children)
           .with("loading", () => (
             <div
               className={css({

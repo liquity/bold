@@ -79,6 +79,18 @@ export function LoanScreen() {
     },
   });
 
+  const modeTransition = useTransition(loanMode, {
+    from: { translateY: 0 },
+    enter: { translateY: 0 },
+    leave: { translateY: 0 },
+    config: {
+      mass: 1,
+      tension: 2000,
+      friction: 120,
+    },
+    immediate: true,
+  });
+
   return (
     <Screen
       ready={loadingState === "success"}
@@ -110,42 +122,45 @@ export function LoanScreen() {
     >
       {tabsTransition((style, item) => (
         item === "success" && loan.data && (
-          <a.div
-            className={css({
-              display: "flex",
-              flexDirection: "column",
-              gap: 32,
-            })}
-            style={{
-              opacity: style.opacity,
-            }}
-          >
-            <Tabs
-              items={TABS.map(({ label, id }) => ({
-                label,
-                panelId: `p-${id}`,
-                tabId: `t-${id}`,
-              }))}
-              selected={tab}
-              onSelect={(index) => {
-                if (!loan.data) {
-                  return;
-                }
-                const id = getPrefixedTroveId(loan.data.collIndex, loan.data.troveId);
-                router.push(
-                  `/loan/${TABS[index].id}?id=${id}`,
-                  { scroll: false },
-                );
+          modeTransition((modeStyle) => (
+            <a.div
+              className={css({
+                display: "flex",
+                flexDirection: "column",
+                gap: 32,
+              })}
+              style={{
+                opacity: style.opacity,
+                translateY: modeStyle.translateY,
               }}
-            />
-            {action === "colldebt" && (
-              loanMode === "leverage"
-                ? <PanelUpdateLeveragePosition loan={loan.data} />
-                : <PanelUpdateBorrowPosition loan={loan.data} />
-            )}
-            {action === "rate" && <PanelUpdateRate loan={loan.data} />}
-            {action === "close" && <PanelClosePosition loan={loan.data} />}
-          </a.div>
+            >
+              <Tabs
+                items={TABS.map(({ label, id }) => ({
+                  label,
+                  panelId: `p-${id}`,
+                  tabId: `t-${id}`,
+                }))}
+                selected={tab}
+                onSelect={(index) => {
+                  if (!loan.data) {
+                    return;
+                  }
+                  const id = getPrefixedTroveId(loan.data.collIndex, loan.data.troveId);
+                  router.push(
+                    `/loan/${TABS[index].id}?id=${id}`,
+                    { scroll: false },
+                  );
+                }}
+              />
+              {action === "colldebt" && (
+                loanMode === "leverage"
+                  ? <PanelUpdateLeveragePosition loan={loan.data} />
+                  : <PanelUpdateBorrowPosition loan={loan.data} />
+              )}
+              {action === "rate" && <PanelUpdateRate loan={loan.data} />}
+              {action === "close" && <PanelClosePosition loan={loan.data} />}
+            </a.div>
+          ))
         )
       ))}
     </Screen>
