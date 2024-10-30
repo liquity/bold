@@ -35,7 +35,7 @@ contract RebasingBatchShares is DevTestSetup {
         LatestBatchData memory b4Batch = troveManager.getLatestBatchData(address(B));
 
         // TODO: Open A, Mint 1 extra (forgiven to A)
-        _addOneDebtAndEnsureItDoesntMintShares(ATroveId, A);
+        _addOneDebtAndEnsureItMintsShares(ATroveId, A);
         /// @audit MED impact
 
         LatestBatchData memory afterBatch = troveManager.getLatestBatchData(address(B));
@@ -178,6 +178,7 @@ contract RebasingBatchShares is DevTestSetup {
         closeTrove(A, ATroveId); // Close A (also remove from batch is fine)
 
         LatestTroveData memory troveAfter = troveManager.getLatestTroveData(BTroveId);
+        //assertGt(troveAfter.entireDebt, troveBefore.entireDebt, "we're rebasing");
         assertEq(troveAfter.entireDebt, troveBefore.entireDebt, "rebasing is not working");
         assertEq(troveAfter.entireDebt, 0, "trove B was closed");
     }
@@ -192,18 +193,8 @@ contract RebasingBatchShares is DevTestSetup {
         assertLt(b4BatchDebtShares, afterBatchDebtShares, "Shares should increase");
     }
 
-    function _addDebtAndEnsureItDoesntMintShares(uint256 troveId, address caller, uint256 amt) internal {
-        (,,,,,,,,, uint256 b4BatchDebtShares) = troveManager.Troves(troveId);
-
-        withdrawBold100pct(caller, troveId, amt);
-
-        (,,,,,,,,, uint256 afterBatchDebtShares) = troveManager.Troves(troveId);
-
-        assertEq(b4BatchDebtShares, afterBatchDebtShares, "Same Shares");
-    }
-
-    function _addOneDebtAndEnsureItDoesntMintShares(uint256 troveId, address caller) internal {
-        _addDebtAndEnsureItDoesntMintShares(troveId, caller, 1);
+    function _addOneDebtAndEnsureItMintsShares(uint256 troveId, address caller) internal {
+        _addDebtAndEnsureItMintsShares(troveId, caller, 1);
     }
 
     function _getLatestBatchDebt(address batch) internal view returns (uint256) {
@@ -272,7 +263,7 @@ contract RebasingBatchShares is DevTestSetup {
         if (WITH_INTEREST) {
             vm.warp(block.timestamp + 12);
         }
-        _addOneDebtAndEnsureItDoesntMintShares(BTroveId, B);
+        _addOneDebtAndEnsureItMintsShares(BTroveId, B);
 
         (uint256 debtBefore,,,,,,, uint256 allBatchDebtSharesBefore) = troveManager.getBatch(B);
         uint256 sharesBeforeRepay = _getBatchDebtShares(BTroveId);
