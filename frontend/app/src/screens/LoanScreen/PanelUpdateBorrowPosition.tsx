@@ -13,7 +13,7 @@ import { dnum18, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { getPrefixedTroveId, getCollToken } from "@/src/liquity-utils";
+import { getCollToken, getPrefixedTroveId } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -368,7 +368,7 @@ export function PanelUpdateBorrowPosition({
           onClick={() => {
             if (account.address) {
               txFlow.start({
-                flowId: "updateLoanPosition",
+                flowId: "updateBorrowPosition",
                 backLink: [`/loan?id=${loan.collIndex}:${loan.troveId}`, "Back to editing"],
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The position has been updated successfully.",

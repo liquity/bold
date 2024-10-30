@@ -2,11 +2,9 @@ import type { LoadingState } from "@/src/screens/TransactionsScreen/Transactions
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { calcUpfrontFee } from "@/src/liquity-math";
 import { parsePrefixedTroveId } from "@/src/liquity-utils";
-import { getCollToken, useAverageInterestRateFromActivePool } from "@/src/liquity-utils";
+import { getCollToken, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
@@ -17,7 +15,7 @@ import { match, P } from "ts-pattern";
 import * as v from "valibot";
 import { readContract } from "wagmi/actions";
 
-const FlowIdSchema = v.literal("updateLoanPosition");
+const FlowIdSchema = v.literal("updateLeveragePosition");
 
 const RequestSchema = v.object({
   flowId: FlowIdSchema,
@@ -68,38 +66,39 @@ const stepNames: Record<Step, string> = {
 
 function getFinalStep(request: Request): FinalStep {
   const { collChange, debtChange } = request;
+
+  // both coll and debt change -> adjust trove
   if (!dn.eq(collChange, 0) && !dn.eq(debtChange, 0)) {
     return "adjustTrove";
   }
-  // coll increases => deposit
+  // coll increases -> deposit
   if (dn.gt(collChange, 0)) {
     return "depositColl";
   }
-  // coll decreases => withdraw
+  // coll decreases -> withdraw
   if (dn.lt(collChange, 0)) {
     return "withdrawColl";
   }
-  // debt increases => withdraw BOLD (borrow)
+  // debt increases -> withdraw BOLD (borrow)
   if (dn.gt(debtChange, 0)) {
     return "withdrawBold";
   }
-  // debt decreases => deposit BOLD (repay)
+  // debt decreases -> deposit BOLD (repay)
   if (dn.lt(debtChange, 0)) {
     return "depositBold";
   }
   throw new Error("Invalid request");
 }
 
-export const updateLoanPosition: FlowDeclaration<Request, Step> = {
+export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
 
   Summary({ flow }) {
     const { request } = flow;
+    const { troveId } = parsePrefixedTroveId(request.prefixedTroveId);
 
     const collateral = getCollToken(request.collIndex);
     const loan = useLoanById(request.prefixedTroveId);
-    const { troveId } = parsePrefixedTroveId(request.prefixedTroveId);
-
     const { debtChangeWithFee } = useUpfrontFee(request);
 
     const loadingState = match(loan)
@@ -152,13 +151,13 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
 
   Details({ flow }) {
     const { request } = flow;
-    const collateral = getCollToken(flow.request.collIndex);
+    const collateral = getCollToken(request.collIndex);
     const collPrice = usePrice(collateral?.symbol ?? null);
 
     const collChangeUnsigned = dn.abs(request.collChange);
     const debtChangeUnsigned = dn.abs(request.debtChange);
 
-    const { borrowing, debtChangeWithFee, upfrontFee } = useUpfrontFee(request);
+    const { isBorrowing, debtChangeWithFee, upfrontFee } = useUpfrontFee(request);
 
     return collateral && (
       <>
@@ -185,7 +184,7 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
           ]}
         />
         <TransactionDetailsRow
-          label={borrowing ? "You borrow" : "You repay"}
+          label={isBorrowing ? "You borrow" : "You repay"}
           value={[
             <div
               title={`${fmtnum(debtChangeWithFee, "full")} BOLD`}
@@ -204,7 +203,7 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
             <Amount
               fallback="…"
               prefix="Incl. "
-              value={upfrontFee}
+              value={upfrontFee.data}
               suffix=" BOLD upfront fee"
             />,
           ]}
@@ -229,7 +228,7 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
 
     const Controller = coll.symbol === "ETH"
       ? coll.contracts.WETHZapper
-      : coll.contracts.BorrowerOperations;
+      : coll.contracts.GasCompZapper;
 
     if (!account.address) {
       throw new Error("Account address is required");
@@ -264,11 +263,9 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
   async writeContractParams(stepId, { account, contracts, request }) {
     const { collIndex, collChange, debtChange, maxUpfrontFee } = request;
     const collateral = contracts.collaterals[collIndex];
-    const { BorrowerOperations, WETHZapper } = collateral.contracts;
+    const { WETHZapper, GasCompZapper } = collateral.contracts;
 
-    const Controller = collateral.symbol === "ETH"
-      ? WETHZapper
-      : BorrowerOperations;
+    const Controller = collateral.symbol === "ETH" ? WETHZapper : GasCompZapper;
 
     if (!account.address) {
       throw new Error("Account address is required");
@@ -288,11 +285,17 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
     }
 
     if (stepId === "approveColl") {
-      // TODO
-      throw new Error("Not implemented");
+      return {
+        ...collateral.contracts.CollToken,
+        functionName: "approve",
+        args: [
+          Controller.address,
+          dn.abs(collChange)[0],
+        ],
+      };
     }
 
-    // WETHZapper mode
+    // WETH zapper
     if (collateral.symbol === "ETH") {
       return match(stepId)
         .with("adjustTrove", () => ({
@@ -332,29 +335,56 @@ export const updateLoanPosition: FlowDeclaration<Request, Step> = {
         .exhaustive();
     }
 
-    // Normal mode
-    throw new Error("Not implemented");
+    // GasComp zapper
+    return match(stepId)
+      .with("adjustTrove", () => ({
+        ...GasCompZapper,
+        functionName: "adjustTrove",
+        args: [
+          troveId,
+          dn.abs(collChange)[0],
+          !dn.lt(collChange, 0n),
+          dn.abs(debtChange)[0],
+          !dn.lt(debtChange, 0n),
+          maxUpfrontFee[0],
+        ],
+      }))
+      .with("depositColl", () => ({
+        ...GasCompZapper,
+        functionName: "addColl",
+        args: [troveId, dn.abs(collChange)[0]],
+      }))
+      .with("withdrawColl", () => ({
+        ...GasCompZapper,
+        functionName: "withdrawColl",
+        args: [troveId, dn.abs(collChange)[0]],
+      }))
+      .with("depositBold", () => ({
+        ...GasCompZapper,
+        functionName: "repayBold",
+        args: [troveId, dn.abs(debtChange)[0]],
+      }))
+      .with("withdrawBold", () => ({
+        ...GasCompZapper,
+        functionName: "withdrawBold",
+        args: [troveId, dn.abs(debtChange)[0], maxUpfrontFee[0]],
+      }))
+      .exhaustive();
   },
 };
 
 function useUpfrontFee(request: Request) {
-  const borrowing = request.debtChange[0] > 0n;
-  const avgInterestRate = useAverageInterestRateFromActivePool(
-    borrowing ? request.collIndex : null,
-  );
+  const isBorrowing = request.debtChange[0] > 0n;
+  const { troveId } = parsePrefixedTroveId(request.prefixedTroveId);
 
-  const upfrontFee = borrowing
-    ? avgInterestRate.data
-      ? dnum18(calcUpfrontFee(request.debtChange[0], avgInterestRate.data))
-      : null
-    : dnum18(0);
+  const upfrontFee = usePredictAdjustTroveUpfrontFee(request.collIndex, troveId, request.debtChange);
 
-  const debtChangeWithFee = borrowing
-    ? upfrontFee && dn.add(request.debtChange, borrowing ? upfrontFee : dnum18(0))
+  const debtChangeWithFee = isBorrowing
+    ? upfrontFee.data && dn.add(request.debtChange, upfrontFee.data)
     : request.debtChange;
 
   return {
-    borrowing,
+    isBorrowing,
     debtChangeWithFee,
     upfrontFee,
   };

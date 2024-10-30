@@ -4,8 +4,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { calcUpfrontFee } from "@/src/liquity-math";
-import { getCollToken, useAverageInterestRateFromActivePool } from "@/src/liquity-utils";
+import { getCollToken, usePredictOpenTroveUpfrontFee } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
@@ -16,7 +15,7 @@ import * as v from "valibot";
 import { parseEventLogs } from "viem";
 import { readContract } from "wagmi/actions";
 
-const FlowIdSchema = v.literal("openLoanPosition");
+const FlowIdSchema = v.literal("openBorrowPosition");
 
 const RequestSchema = v.object({
   flowId: FlowIdSchema,
@@ -59,17 +58,18 @@ type Step =
   | "openTroveEth"
   | "openTroveLst";
 
-export const openLoanPosition: FlowDeclaration<Request, Step> = {
+export const openBorrowPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
 
   Summary({ flow }) {
     const { request } = flow;
 
-    const avgInterestRate = useAverageInterestRateFromActivePool(request.collIndex);
-    const upfrontFee = avgInterestRate.data
-      ? dnum18(calcUpfrontFee(request.boldAmount[0], avgInterestRate.data))
-      : null;
-    const boldAmountWithFee = upfrontFee && dn.add(request.boldAmount, upfrontFee);
+    const upfrontFee = usePredictOpenTroveUpfrontFee(
+      request.collIndex,
+      request.boldAmount,
+      request.interestRateDelegate?.[0] ?? request.annualInterestRate,
+    );
+    const boldAmountWithFee = upfrontFee.data && dn.add(request.boldAmount, upfrontFee.data);
 
     return (
       <LoanCard
@@ -96,12 +96,12 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
     const collateral = getCollToken(flow.request.collIndex);
     const collPrice = usePrice(collateral?.symbol ?? null);
 
-    const avgInterestRate = useAverageInterestRateFromActivePool(flow.request.collIndex);
-    const upfrontFee = avgInterestRate.data
-      ? dnum18(calcUpfrontFee(request.boldAmount[0], avgInterestRate.data))
-      : null;
-
-    const boldAmountWithFee = upfrontFee && dn.add(request.boldAmount, upfrontFee);
+    const upfrontFee = usePredictOpenTroveUpfrontFee(
+      request.collIndex,
+      request.boldAmount,
+      request.interestRateDelegate?.[0] ?? request.annualInterestRate,
+    );
+    const boldAmountWithFee = upfrontFee.data && dn.add(request.boldAmount, upfrontFee.data);
 
     return collateral && (
       <>
@@ -127,7 +127,7 @@ export const openLoanPosition: FlowDeclaration<Request, Step> = {
             <Amount
               fallback="…"
               prefix="Incl. "
-              value={upfrontFee}
+              value={upfrontFee.data}
               suffix=" BOLD upfront fee"
             />,
           ]}

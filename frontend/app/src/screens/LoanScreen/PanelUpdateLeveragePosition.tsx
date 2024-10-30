@@ -11,13 +11,13 @@ import { Value } from "@/src/comps/Value/Value";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import { ETH_MAX_RESERVE } from "@/src/constants";
-import { ACCOUNT_BALANCES } from "@/src/demo-mode";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLiquidationPriceFromLeverage, getLoanDetails } from "@/src/liquity-math";
 import { getCollToken } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
+import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
@@ -33,7 +33,6 @@ import {
   VFlex,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 export function PanelUpdateLeveragePosition({
@@ -41,8 +40,8 @@ export function PanelUpdateLeveragePosition({
 }: {
   loan: PositionLoan;
 }) {
-  const router = useRouter();
   const account = useAccount();
+  const txFlow = useTransactionFlow();
 
   const collToken = getCollToken(loan.collIndex);
 
@@ -66,13 +65,28 @@ export function PanelUpdateLeveragePosition({
   const depositChange = useInputFieldValue((value) => dn.format(value));
   const [userLeverageFactor, setUserLeverageFactor] = useState(initialLoanDetails.leverageFactor ?? 1);
 
-  const newDepositPreLeverage = depositChange.parsed
-    ? (depositMode === "remove"
-      ? dn.sub(initialLoanDetails.depositPreLeverage ?? dn.from(0, 18), depositChange.parsed)
-      : dn.add(initialLoanDetails.depositPreLeverage ?? dn.from(0, 18), depositChange.parsed))
+  let newDepositPreLeverage = depositChange.parsed
+    ? (
+      depositMode === "remove"
+        ? dn.sub(
+          initialLoanDetails.depositPreLeverage ?? dn.from(0, 18),
+          depositChange.parsed,
+        )
+        : dn.add(
+          initialLoanDetails.depositPreLeverage ?? dn.from(0, 18),
+          depositChange.parsed,
+        )
+    )
     : initialLoanDetails.depositPreLeverage;
 
-  const newDeposit = dn.mul(newDepositPreLeverage ?? dn.from(0, 18), userLeverageFactor);
+  if (newDepositPreLeverage && dn.lt(newDepositPreLeverage, 0)) {
+    newDepositPreLeverage = dn.from(0, 18);
+  }
+
+  const newDeposit = dn.mul(
+    newDepositPreLeverage ?? dn.from(0, 18),
+    userLeverageFactor,
+  );
 
   const totalPositionValue = dn.mul(newDeposit, collPrice ?? dn.from(0, 18));
 
@@ -103,6 +117,14 @@ export function PanelUpdateLeveragePosition({
     maxLtvAllowedRatio: 1, // allow up to the max. LTV
   });
 
+  const collBalance = useBalance(account.address, collToken.symbol);
+
+  const collMax = depositMode === "remove" ? loan.deposit : (
+    collBalance.data
+      ? dn.sub(collBalance.data, ETH_MAX_RESERVE)
+      : dn.from(0, 18)
+  );
+
   useEffect(() => {
     if (leverageField.leverageFactor !== userLeverageFactor) {
       setUserLeverageFactor(leverageField.leverageFactor);
@@ -116,14 +138,6 @@ export function PanelUpdateLeveragePosition({
       initialLeverageFactorSet.current = true;
     }
   }, [leverageField.updateLeverageFactor, initialLoanDetails.leverageFactor]);
-
-  const depositMax = depositMode === "remove"
-    ? (
-      initialLoanDetails.depositPreLeverage && dn.gt(initialLoanDetails.depositPreLeverage, 0)
-        ? initialLoanDetails.depositPreLeverage
-        : null
-    )
-    : dn.sub(ACCOUNT_BALANCES[collToken.symbol], ETH_MAX_RESERVE);
 
   const [agreeToLiquidationRisk, setAgreeToLiquidationRisk] = useState(false);
 
@@ -170,9 +184,13 @@ export function PanelUpdateLeveragePosition({
                       { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
                       { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
                     ]}
-                    onSelect={(index) => {
+                    onSelect={(index, { origin, event }) => {
                       setDepositMode(index === 1 ? "remove" : "add");
-                      depositChange.setValue("0");
+                      depositChange.setValue("");
+                      if (origin !== "keyboard") {
+                        event.preventDefault();
+                        depositChange.focus();
+                      }
                     }}
                     selected={depositMode === "remove" ? 1 : 0}
                   />
@@ -186,11 +204,11 @@ export function PanelUpdateLeveragePosition({
                     ? "$" + fmtnum(dn.mul(depositChange.parsed, collPrice))
                     : "$0.00"
                 ),
-                end: depositMax && (
+                end: (
                   <TextButton
-                    label={`Max ${fmtnum(depositMax)} ${collToken.name}`}
+                    label={`Max ${fmtnum(collMax, 2)} ${collToken.name}`}
                     onClick={() => {
-                      depositChange.setValue(dn.toString(depositMax));
+                      depositChange.setValue(dn.toString(collMax));
                     }}
                   />
                 ),
@@ -223,10 +241,7 @@ export function PanelUpdateLeveragePosition({
                       after={
                         <HFlex alignItems="center" gap={8}>
                           <Value
-                            negative={newLoanDetails.deposit && dn.lt(
-                              newDepositPreLeverage,
-                              0,
-                            )}
+                            negative={newLoanDetails.deposit && dn.lt(newDepositPreLeverage, 0)}
                             title={`${fmtnum(newDepositPreLeverage, "full")} ${collToken.name}`}
                           >
                             {fmtnum(newDepositPreLeverage)} {collToken.name}

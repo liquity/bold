@@ -335,7 +335,7 @@ export function BorrowScreen() {
             onClick={() => {
               if (deposit.parsed && debt.parsed && account.address) {
                 txFlow.start({
-                  flowId: "openLoanPosition",
+                  flowId: "openBorrowPosition",
                   backLink: ["/borrow", "Back to editing"],
                   successLink: ["/", "Go to the Dashboard"],
                   successMessage: "The position has been created successfully.",

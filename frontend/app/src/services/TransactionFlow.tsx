@@ -15,13 +15,14 @@ import type { Request as CloseLoanPositionRequest } from "@/src/tx-flows/closeLo
 import type { Request as EarnClaimRewardsRequest } from "@/src/tx-flows/earnClaimRewards";
 import type { Request as EarnDepositRequest } from "@/src/tx-flows/earnDeposit";
 import type { Request as EarnWithdrawRequest } from "@/src/tx-flows/earnWithdraw";
+import type { Request as OpenBorrowPositionRequest } from "@/src/tx-flows/openBorrowPosition";
 import type { Request as OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
-import type { Request as OpenLoanPositionRequest } from "@/src/tx-flows/openLoanPosition";
 import type { Request as StakeClaimRewardsRequest } from "@/src/tx-flows/stakeClaimRewards";
 import type { Request as StakeDepositRequest } from "@/src/tx-flows/stakeDeposit";
 import type { Request as UnstakeDepositRequest } from "@/src/tx-flows/unstakeDeposit";
+import type { Request as UpdateBorrowPositionRequest } from "@/src/tx-flows/updateBorrowPosition";
+import type { Request as UpdateLeveragePositionRequest } from "@/src/tx-flows/updateLeveragePosition";
 import type { Request as UpdateLoanInterestRateRequest } from "@/src/tx-flows/updateLoanInterestRate";
-import type { Request as UpdateLoanPositionRequest } from "@/src/tx-flows/updateLoanPosition";
 import type { Address } from "@/src/types";
 import type { GetTransactionReceiptReturnType, WriteContractParameters } from "@wagmi/core";
 import type { ComponentType, ReactNode } from "react";
@@ -34,16 +35,17 @@ import { closeLoanPosition } from "@/src/tx-flows/closeLoanPosition";
 import { earnClaimRewards } from "@/src/tx-flows/earnClaimRewards";
 import { earnDeposit } from "@/src/tx-flows/earnDeposit";
 import { earnWithdraw } from "@/src/tx-flows/earnWithdraw";
+import { openBorrowPosition } from "@/src/tx-flows/openBorrowPosition";
 import { openLeveragePosition } from "@/src/tx-flows/openLeveragePosition";
-import { openLoanPosition } from "@/src/tx-flows/openLoanPosition";
 import { stakeClaimRewards } from "@/src/tx-flows/stakeClaimRewards";
 import { stakeDeposit } from "@/src/tx-flows/stakeDeposit";
 import { unstakeDeposit } from "@/src/tx-flows/unstakeDeposit";
+import { updateBorrowPosition } from "@/src/tx-flows/updateBorrowPosition";
+import { updateLeveragePosition } from "@/src/tx-flows/updateLeveragePosition";
 import { updateLoanInterestRate } from "@/src/tx-flows/updateLoanInterestRate";
-import { updateLoanPosition } from "@/src/tx-flows/updateLoanPosition";
 import { noop } from "@/src/utils";
 import { vAddress, vHash } from "@/src/valibot-utils";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import * as v from "valibot";
@@ -56,13 +58,14 @@ export type FlowRequest =
   | EarnClaimRewardsRequest
   | EarnDepositRequest
   | EarnWithdrawRequest
+  | OpenBorrowPositionRequest
   | OpenLeveragePositionRequest
-  | OpenLoanPositionRequest
   | StakeClaimRewardsRequest
   | StakeDepositRequest
   | UnstakeDepositRequest
-  | UpdateLoanInterestRateRequest
-  | UpdateLoanPositionRequest;
+  | UpdateBorrowPositionRequest
+  | UpdateLeveragePositionRequest
+  | UpdateLoanInterestRateRequest;
 
 const flowDeclarations: {
   [K in FlowIdFromFlowRequest<FlowRequest>]: FlowDeclaration<
@@ -74,13 +77,14 @@ const flowDeclarations: {
   earnClaimRewards,
   earnDeposit,
   earnWithdraw,
+  openBorrowPosition,
   openLeveragePosition,
-  openLoanPosition,
-  stakeDeposit,
   stakeClaimRewards,
+  stakeDeposit,
   unstakeDeposit,
+  updateBorrowPosition,
+  updateLeveragePosition,
   updateLoanInterestRate,
-  updateLoanPosition,
 };
 
 const FlowIdSchema = v.union([
@@ -88,13 +92,14 @@ const FlowIdSchema = v.union([
   v.literal("earnClaimRewards"),
   v.literal("earnDeposit"),
   v.literal("earnWithdraw"),
+  v.literal("openBorrowPosition"),
   v.literal("openLeveragePosition"),
-  v.literal("openLoanPosition"),
-  v.literal("stakeDeposit"),
   v.literal("stakeClaimRewards"),
+  v.literal("stakeDeposit"),
   v.literal("unstakeDeposit"),
+  v.literal("updateBorrowPosition"),
+  v.literal("updateLeveragePosition"),
   v.literal("updateLoanInterestRate"),
-  v.literal("updateLoanPosition"),
 ]);
 
 type ExtractStepId<T> = T extends FlowDeclaration<any, infer S> ? S : never;

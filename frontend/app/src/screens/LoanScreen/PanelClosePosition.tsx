@@ -5,7 +5,6 @@ import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { Field } from "@/src/comps/Field/Field";
 import { getContracts } from "@/src/contracts";
 import { fmtnum } from "@/src/formatting";
-import { getLoanDetails } from "@/src/liquity-math";
 import { getPrefixedTroveId } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
@@ -26,31 +25,22 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
   const collPrice = usePrice(symbol);
   const boldPriceUsd = usePrice("BOLD");
 
-  const [tokenIndex, setTokenIndex] = useState(0);
+  const [repayTokenIndex, setRepayTokenIndex] = useState(0);
+  const repayWith = repayTokenIndex === 0 ? "BOLD" : symbol;
 
   const boldBalance = useBalance(account.address, "BOLD");
 
-  if (!collPrice || !boldPriceUsd) {
-    return null;
-  }
-
-  const loanDetails = getLoanDetails(
-    loan.deposit,
-    loan.borrowed,
-    loan.interestRate,
-    collToken.collateralRatio,
-    collPrice,
+  const amountToRepay = collPrice && (
+    repayWith === "BOLD"
+      ? loan.borrowed
+      : dn.div(loan.borrowed, collPrice)
   );
 
-  const repayWith = tokenIndex === 0 ? "BOLD" : symbol;
-
-  const amountToRepay = repayWith === "BOLD"
-    ? (loanDetails.debt ?? dn.from(0))
-    : (dn.div(loanDetails.debt ?? dn.from(0), collPrice));
-
-  const collToReclaim = repayWith === "BOLD"
-    ? loan.deposit
-    : dn.sub(loan.deposit, amountToRepay);
+  const collToReclaim = amountToRepay && (
+    repayWith === "BOLD"
+      ? loan.deposit
+      : dn.sub(loan.deposit, amountToRepay)
+  );
 
   let error: null | { name: string; message: string } = null;
   if (account.address?.toLowerCase() !== loan.borrower.toLowerCase()) {
@@ -58,7 +48,7 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
       name: "INVALID_OWNER",
       message: "The current account is not the owner of the loan.",
     };
-  } else if (tokenIndex === 0 && (!boldBalance.data || dn.lt(boldBalance.data, amountToRepay))) {
+  } else if (repayTokenIndex === 0 && amountToRepay && (!boldBalance.data || dn.lt(boldBalance.data, amountToRepay))) {
     error = {
       name: "INSUFFICIENT_BALANCE",
       message: "Insufficient BOLD balance to repay the loan.",
@@ -71,6 +61,10 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
       setShowError(false);
     }
   }, [error]);
+
+  if (!collPrice || !boldPriceUsd || !amountToRepay || !collToReclaim) {
+    return null;
+  }
 
   const allowSubmit = error === null;
 
@@ -102,33 +96,37 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
                 buttonDisplay={() => ({
                   label: (
                     <>
-                      {TOKENS_BY_SYMBOL[(["BOLD", symbol] as const)[tokenIndex]].name}
+                      {TOKENS_BY_SYMBOL[(["BOLD", symbol] as const)[repayTokenIndex]].name}
                       <span
                         className={css({
                           color: "contentAlt",
                           fontWeight: 400,
                         })}
                       >
-                        {TOKENS_BY_SYMBOL[(["BOLD", symbol] as const)[tokenIndex]].symbol === "BOLD"
+                        {TOKENS_BY_SYMBOL[(["BOLD", symbol] as const)[repayTokenIndex]].symbol === "BOLD"
                           ? " account"
                           : " loan"}
                       </span>
                     </>
                   ),
-                  icon: <TokenIcon symbol={(["BOLD", symbol] as const)[tokenIndex]} />,
+                  icon: <TokenIcon symbol={(["BOLD", symbol] as const)[repayTokenIndex]} />,
                 })}
                 items={(["BOLD", symbol] as const).map((symbol) => ({
                   icon: <TokenIcon symbol={symbol} />,
                   label: (
-                    <>
+                    <div
+                      className={css({
+                        whiteSpace: "nowrap",
+                      })}
+                    >
                       {TOKENS_BY_SYMBOL[symbol].name} {symbol === "BOLD" ? "(account)" : "(loan collateral)"}
-                    </>
+                    </div>
                   ),
                   value: symbol === "BOLD" ? fmtnum(boldBalance.data) : null,
                 }))}
                 menuWidth={300}
-                onSelect={setTokenIndex}
-                selected={tokenIndex}
+                onSelect={setRepayTokenIndex}
+                selected={repayTokenIndex}
               />
             </div>
           }
@@ -257,6 +255,7 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
 
                 collIndex: loan.collIndex,
                 prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
+                repayWithCollateral: repayWith === symbol,
               });
             }
           }}

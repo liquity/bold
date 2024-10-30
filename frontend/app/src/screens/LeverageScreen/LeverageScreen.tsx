@@ -281,10 +281,6 @@ export function LeverageScreen() {
             wide
             onClick={() => {
               if (depositPreLeverage.parsed && leverageField.debt && account.address) {
-                const flashLoanAmount = dn.mul(
-                  depositPreLeverage.parsed,
-                  dn.sub(leverageField.leverageFactor, 1),
-                );
                 txFlow.start({
                   flowId: "openLeveragePosition",
                   backLink: ["/leverage", "Back to editing"],
@@ -300,7 +296,10 @@ export function LeverageScreen() {
                   lowerHint: dnum18(0),
                   annualInterestRate: interestRate,
                   maxUpfrontFee: dnum18(maxUint256),
-                  flashLoanAmount: flashLoanAmount,
+                  flashLoanAmount: dn.mul(
+                    depositPreLeverage.parsed,
+                    dn.sub(leverageField.leverageFactor, 1),
+                  ),
                 });
               }
             }}

@@ -1,9 +1,10 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
+import { dnum18 } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { fmtnum } from "@/src/formatting";
-import { parsePrefixedTroveId } from "@/src/liquity-utils";
+import { parsePrefixedTroveId, usePredictAdjustInterestRateUpfrontFee } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { useLoanById } from "@/src/subgraph-hooks";
@@ -54,12 +55,19 @@ const RequestSchema = v.object({
 
 export type Request = v.InferOutput<typeof RequestSchema>;
 
-type Step = "adjustInterestRate" | "setInterestBatchManager" | "unsetInterestBatchManager";
+type Step =
+  | "adjustInterestRate"
+  | "setInterestBatchManager"
+  | "unsetInterestBatchManager";
 
 export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
   title: "Review & Confirm",
   Summary({ flow }) {
-    const loan = useLoanById(flow.request.prefixedTroveId);
+    const { request } = flow;
+
+    const troveId = parsePrefixedTroveId(request.prefixedTroveId).troveId;
+
+    const loan = useLoanById(request.prefixedTroveId);
 
     const loadingState = match(loan)
       .returnType<LoadingState>()
@@ -69,14 +77,27 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
       .with({ data: P.nonNullable }, () => "success")
       .otherwise(() => "error");
 
+    const upfrontFee = usePredictAdjustInterestRateUpfrontFee(
+      request.collIndex,
+      troveId,
+      request.interestRateDelegate?.[0] ?? request.annualInterestRate,
+      loan.data?.batchManager !== null,
+    );
+
+    const borrowedWithFee = upfrontFee.data && loan.data?.borrowed && dn.add(
+      loan.data.borrowed,
+      upfrontFee.data,
+    );
+
     return (
       <LoanCard
         leverageMode={false}
         loadingState={loadingState}
         loan={!loan.data ? null : {
           ...loan.data,
-          interestRate: flow.request.annualInterestRate,
-          batchManager: flow.request.interestRateDelegate?.[0] ?? null,
+          borrowed: borrowedWithFee ?? dnum18(0),
+          interestRate: request.annualInterestRate,
+          batchManager: request.interestRateDelegate?.[0] ?? null,
         }}
         prevLoan={loan.data}
         onRetry={() => {}}
