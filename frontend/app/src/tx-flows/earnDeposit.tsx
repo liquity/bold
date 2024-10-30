@@ -1,6 +1,8 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
+import { getCollToken } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
 import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
@@ -40,12 +42,16 @@ const stepNames: Record<Step, string> = {
 
 export const earnDeposit: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
-  subtitle: "Please review your borrow position before confirming",
 
-  Summary() {
-    // const { symbol } = useCollateral(flow.request.collIndex);
-    return (
-      null
+  Summary({ flow }) {
+    const collateral = getCollToken(flow.request.collIndex);
+    const symbol = collateral?.symbol;
+    return symbol && (
+      <EarnPositionSummary
+        address={flow.request.depositor}
+        collSymbol={symbol}
+        txPreviewMode
+      />
     );
   },
 

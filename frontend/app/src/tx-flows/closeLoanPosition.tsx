@@ -1,11 +1,14 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
+import { Amount } from "@/src/comps/Amount/Amount";
+import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { fmtnum } from "@/src/formatting";
-import { useCollateral } from "@/src/liquity-utils";
+import { getCollToken } from "@/src/liquity-utils";
 import { parsePrefixedTroveId } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
+import { usePrice } from "@/src/services/Prices";
 import { useLoanById } from "@/src/subgraph-hooks";
 import { vCollIndex, vPrefixedTroveId } from "@/src/valibot-utils";
 import * as dn from "dnum";
@@ -33,6 +36,7 @@ const RequestSchema = v.object({
 
   collIndex: vCollIndex(),
   prefixedTroveId: vPrefixedTroveId(),
+  repayWithCollateral: v.boolean(),
 });
 
 export type Request = v.InferOutput<typeof RequestSchema>;
@@ -41,21 +45,11 @@ type Step = "closeLoanPosition" | "approveBold";
 
 const stepNames: Record<Step, string> = {
   approveBold: "Approve BOLD",
-  closeLoanPosition: "Close Position",
+  closeLoanPosition: "Close loan",
 };
 
 export const closeLoanPosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
-  subtitle: (
-    <div
-      style={{
-        textAlign: "center",
-      }}
-    >
-      You are repaying your debt and closing this position.<br />
-      The deposit will be returned to your wallet
-    </div>
-  ),
 
   Summary({ flow }) {
     const loan = useLoanById(flow.request.prefixedTroveId);
@@ -75,30 +69,55 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
         loan={null}
         prevLoan={loan.data}
         onRetry={() => {}}
+        txPreviewMode
       />
     );
   },
 
   Details({ flow }) {
     const { request } = flow;
-    const collateral = useCollateral(request.collIndex);
+    const collateral = getCollToken(request.collIndex);
     const loan = useLoanById(request.prefixedTroveId);
 
-    return loan.data && collateral && (
+    const collPrice = usePrice(collateral?.symbol ?? null);
+
+    if (!loan.data || !collPrice || !collateral) {
+      return null;
+    }
+
+    const amountToRepay = request.repayWithCollateral
+      ? (dn.div(loan.data.borrowed ?? dn.from(0), collPrice))
+      : (loan.data.borrowed ?? dn.from(0));
+
+    const collToReclaim = request.repayWithCollateral
+      ? dn.sub(loan.data.deposit, amountToRepay)
+      : loan.data.deposit;
+
+    return (
       <>
         <TransactionDetailsRow
-          label="You repay with"
+          label="You repay"
           value={[
-            <div>
-              {fmtnum(loan.data.borrowed, 4)} BOLD
-            </div>,
+            <Amount
+              value={amountToRepay}
+              suffix={` ${request.repayWithCollateral ? collateral.symbol : "BOLD"}`}
+            />,
           ]}
         />
         <TransactionDetailsRow
           label="You reclaim"
           value={[
-            <div title={`${fmtnum(loan.data.deposit, "full")} ${collateral.symbol}`}>
-              {fmtnum(loan.data.deposit, "2z")} {collateral.symbol}
+            <Amount
+              value={collToReclaim}
+              suffix={` ${collateral.symbol}`}
+            />,
+          ]}
+        />
+        <TransactionDetailsRow
+          label="Gas compensation refund"
+          value={[
+            <div title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}>
+              {fmtnum(ETH_GAS_COMPENSATION, 4)} ETH
             </div>,
           ]}
         />
@@ -130,7 +149,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
       args: [BigInt(troveId)],
     });
 
-    const isBoldApproved = !dn.gt(debt, [
+    const isBoldApproved = request.repayWithCollateral || !dn.gt(debt, [
       await readContract(wagmiConfig, {
         ...contracts.BoldToken,
         functionName: "allowance",

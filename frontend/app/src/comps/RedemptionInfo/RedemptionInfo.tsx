@@ -1,25 +1,23 @@
-import type { ComponentType, SVGProps } from "react";
-
+import content from "@/src/content";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, IconExternal } from "@liquity2/uikit";
 import { a, useInView, useTransition } from "@react-spring/web";
 
-const INFO_ITEMS: Array<[
-  ComponentType<SVGProps<SVGSVGElement>>,
-  string,
-]> = [
-  [BoldIcon, "BOLD is always redeemable for $1 worth of protocol collateral, minus a fee."],
-  [RedemptionIcon, "Redemptions are processed against the lowest interest rate positions first."],
-  [InterestIcon, "Reduce your chance of redemption by raising your position’s interest rate."],
-];
+const { title, subtitle, infoItems, learnMore } = content.redemptionInfo;
+
+const iconComponents = {
+  bold: BoldIcon,
+  redemption: RedemptionIcon,
+  interest: InterestIcon,
+} as const;
 
 export function RedemptionInfo() {
   const [ref, inView] = useInView({ once: true });
 
   const iconsTrail = useTransition(
-    INFO_ITEMS.map((item) => [...item, inView] as const),
+    infoItems.map((item) => ({ ...item, inView })),
     {
-      keys: ([_, text, inView]) => `${text}-${inView}`,
+      keys: ({ text, inView }) => `${text}-${inView}`,
       from: {
         opacity: 0,
         transform: `
@@ -69,7 +67,7 @@ export function RedemptionInfo() {
             fontWeight: 600,
           })}
         >
-          Redemption is not liquidation
+          {title}
         </h1>
         <p
           className={css({
@@ -77,7 +75,7 @@ export function RedemptionInfo() {
             color: "contentAlt",
           })}
         >
-          Your collateral and debt are reduced by the same amount, without penalty.
+          {subtitle}
         </p>
       </header>
 
@@ -95,7 +93,8 @@ export function RedemptionInfo() {
           },
         })}
       >
-        {iconsTrail((props, [Icon, text], _, index) => {
+        {iconsTrail((props, item, _, index) => {
+          const Icon = iconComponents[item.icon];
           return (
             <li key={index}>
               <div
@@ -113,7 +112,7 @@ export function RedemptionInfo() {
                   <Icon />
                 </a.div>
               </div>
-              <div>{text}</div>
+              <div>{item.text}</div>
             </li>
           );
         })}
@@ -121,7 +120,7 @@ export function RedemptionInfo() {
 
       <div>
         <AnchorTextButton
-          href="https://www.liquity.org/"
+          href={learnMore.href}
           rel="noopener noreferrer"
           target="_blank"
           label={
@@ -129,18 +128,17 @@ export function RedemptionInfo() {
               className={css({
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                gap: 4,
                 color: "accent",
               })}
             >
               <span>
-                Learn more about redemptions
+                {learnMore.text}
               </span>
               <IconExternal size={16} />
             </span>
           }
-        >
-        </AnchorTextButton>
+        />
       </div>
     </section>
   );

@@ -41,9 +41,10 @@ export type MenuSection = {
 
 export type PositionLoan = {
   type: "borrow" | "leverage";
+  batchManager: null | Address;
   borrowed: Dnum;
+  borrower: Address;
   collIndex: CollIndex;
-  collateral: CollateralSymbol;
   deposit: Dnum;
   interestRate: Dnum;
   troveId: TroveId;
@@ -55,7 +56,7 @@ export function isPositionLoan(position: Position): position is PositionLoan {
 
 export type PositionEarn = {
   type: "earn";
-  apr: Dnum;
+  owner: Address;
   collIndex: CollIndex;
   deposit: Dnum;
   rewards: {
@@ -66,7 +67,10 @@ export type PositionEarn = {
 
 export type PositionStake = {
   type: "stake";
+  owner: Address;
   deposit: Dnum;
+  share: Dnum;
+  totalStaked: Dnum;
   rewards: {
     lusd: Dnum;
     eth: Dnum;
@@ -76,6 +80,7 @@ export type PositionStake = {
 export type Position = PositionLoan | PositionEarn | PositionStake;
 
 export type Delegate = {
+  address: Address;
   boldAmount: Dnum;
   fee?: Dnum;
   followers: number;
@@ -85,4 +90,29 @@ export type Delegate = {
   lastDays: number;
   name: string;
   redemptions: Dnum;
+};
+
+export type LoanDetails = {
+  collPrice: Dnum | null;
+  debt: Dnum | null;
+  deposit: Dnum | null;
+  depositPreLeverage: Dnum | null;
+  depositToZero: Dnum | null;
+  depositUsd: Dnum | null;
+  interestRate: Dnum | null;
+  leverageFactor: number | null;
+  liquidationPrice: Dnum | null;
+  liquidationRisk: RiskLevel | null;
+  ltv: Dnum | null;
+  maxDebt: Dnum | null;
+  maxDebtAllowed: Dnum | null;
+  maxLtv: Dnum;
+  maxLtvAllowed: Dnum;
+  redemptionRisk: RiskLevel | null;
+  status:
+    | null
+    | "healthy"
+    | "at-risk" // above the max LTV allowed by the app when opening
+    | "liquidatable" // above the max LTV before liquidation
+    | "underwater"; // above 100% LTV
 };

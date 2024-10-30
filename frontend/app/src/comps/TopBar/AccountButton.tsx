@@ -1,9 +1,8 @@
 import content from "@/src/content";
 import { useDemoMode } from "@/src/demo-mode";
-import { shortenAddress } from "@/src/eth-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
-import { Button, IconAccount } from "@liquity2/uikit";
+import { Button, IconAccount, shortenAddress } from "@liquity2/uikit";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { match, P } from "ts-pattern";
 import { MenuItem } from "./MenuItem";
@@ -93,6 +92,7 @@ function ButtonConnected({ button }: { button: ButtonData }) {
         display: "flex",
         height: "100%",
         padding: 0,
+        whiteSpace: "nowrap",
         _active: {
           translate: "0 1px",
         },

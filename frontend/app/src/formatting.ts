@@ -8,6 +8,8 @@ import { match, P } from "ts-pattern";
 const dnFormatOptions = {
   "1z": { digits: 1, trailingZeros: true },
   "2z": { digits: 2, trailingZeros: true },
+  "2diff": { digits: 2, signDisplay: "exceptZero" },
+  "4diff": { digits: 4, signDisplay: "exceptZero" },
   "compact": { compact: true, digits: 2 },
   "full": undefined, // dnum defaults
 } as const;

@@ -6,7 +6,7 @@ import { BorrowerOperations as BorrowerOperationsContract } from "../generated/B
 import { CollateralRegistry as CollateralRegistryContract } from "../generated/BoldToken/CollateralRegistry";
 import { ERC20 as ERC20Contract } from "../generated/BoldToken/ERC20";
 import { TroveManager as TroveManagerContract } from "../generated/BoldToken/TroveManager";
-import { Collateral, CollateralAddresses, Token } from "../generated/schema";
+import { Collateral, CollateralAddresses, StabilityPoolEpochScale, Token } from "../generated/schema";
 import { StabilityPool as StabilityPoolTemplate, TroveManager as TroveManagerTemplate } from "../generated/templates";
 
 function addCollateral(
@@ -31,22 +31,30 @@ function addCollateral(
   token.symbol = tokenContract.symbol();
   token.decimals = tokenContract.decimals();
 
-  let troveManager = TroveManagerContract.bind(troveManagerAddress);
+  let troveManagerContract = TroveManagerContract.bind(troveManagerAddress);
 
   let addresses = new CollateralAddresses(collId);
   addresses.collateral = collId;
-  addresses.borrowerOperations = troveManager.borrowerOperations();
-  addresses.sortedTroves = troveManager.sortedTroves();
-  addresses.stabilityPool = troveManager.stabilityPool();
+  addresses.borrowerOperations = troveManagerContract.borrowerOperations();
+  addresses.sortedTroves = troveManagerContract.sortedTroves();
+  addresses.stabilityPool = troveManagerContract.stabilityPool();
   addresses.token = tokenAddress;
   addresses.troveManager = troveManagerAddress;
-  addresses.troveNft = troveManager.troveNFT();
+  addresses.troveNft = troveManagerContract.troveNFT();
 
-  collateral.minCollRatio = BorrowerOperationsContract.bind(Address.fromBytes(addresses.borrowerOperations)).MCR();
+  collateral.minCollRatio = BorrowerOperationsContract.bind(
+    Address.fromBytes(addresses.borrowerOperations),
+  ).MCR();
+
+  // initial collId + epoch + scale => S
+  let spEpochScale = new StabilityPoolEpochScale(collId + ":0:0");
+  spEpochScale.B = BigInt.fromI32(0);
+  spEpochScale.S = BigInt.fromI32(0);
 
   collateral.save();
-  addresses.save();
   token.save();
+  addresses.save();
+  spEpochScale.save();
 
   let context = new DataSourceContext();
   context.setBytes("address:borrowerOperations", addresses.borrowerOperations);
@@ -56,6 +64,7 @@ function addCollateral(
   context.setBytes("address:troveManager", addresses.troveManager);
   context.setBytes("address:troveNft", addresses.troveNft);
   context.setString("collId", collId);
+  context.setI32("collIndex", collIndex);
   context.setI32("totalCollaterals", totalCollaterals);
 
   TroveManagerTemplate.createWithContext(troveManagerAddress, context);

@@ -5,7 +5,6 @@ import type { RiskLevel } from "@/src/types";
 import { norm } from "@liquity2/uikit";
 import * as dn from "dnum";
 
-export const APP_TITLE = "Liquity v2";
 export const LOCAL_STORAGE_PREFIX = "liquity2:";
 
 export const LEVERAGE_FACTOR_MIN = 1.1;
@@ -13,12 +12,21 @@ export const MAX_LTV_ALLOWED = 0.916; // ratio of the max LTV allowed by the app
 export const ETH_MAX_RESERVE = dn.from(0.1, 18); // leave 0.1 ETH when users click on "max" to deposit from their account
 export const ETH_GAS_COMPENSATION = dn.from(0.0375, 18); // see contracts/src/Dependencies/Constants.sol
 
-export const LQTY_SUPPLY = dn.from(100_000_000, 18);
+export const MIN_ANNUAL_INTEREST_RATE = dn.from(0.005, 18); // 0.5%
+export const MAX_ANNUAL_INTEREST_RATE = dn.from(1, 18); // 100%
 
 export const INTEREST_RATE_MIN = 1;
 export const INTEREST_RATE_MAX = 8;
 export const INTEREST_RATE_DEFAULT = 4;
 export const INTEREST_RATE_INCREMENT = 0.1;
+
+export const ONE_DAY_IN_SECONDS = 24n * 60n * 60n;
+export const ONE_YEAR_IN_SECONDS = 365n * ONE_DAY_IN_SECONDS;
+export const UPFRONT_INTEREST_PERIOD = 7n * ONE_DAY_IN_SECONDS;
+
+export const SP_YIELD_SPLIT = 72n * 10n ** 16n; // 72%
+
+export const DATA_REFRESH_INTERVAL = 10_000; // 10 seconds
 
 // LTV factor suggestions, as ratios of the leverage factor range
 export const LEVERAGE_FACTOR_SUGGESTIONS = [

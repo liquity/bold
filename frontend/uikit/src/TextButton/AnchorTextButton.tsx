@@ -7,13 +7,20 @@ import { useTextButtonStyles } from "./TextButton";
 
 export const AnchorTextButton = forwardRef<
   HTMLAnchorElement,
-  ComponentPropsWithRef<"a"> & TextButtonProps
+  ComponentPropsWithRef<"a"> & TextButtonProps & {
+    external?: boolean;
+  }
 >(function AnchorTextButton({
+  external,
   label,
   size,
   ...props
 }, ref) {
   const textButtonStyles = useTextButtonStyles(size);
+  const externalProps = !external ? {} : {
+    target: "_blank",
+    rel: "noopener noreferrer",
+  };
   return (
     <a
       ref={ref}
@@ -21,6 +28,7 @@ export const AnchorTextButton = forwardRef<
         props.className,
         textButtonStyles.className,
       )}
+      {...externalProps}
       {...props}
     >
       {label}

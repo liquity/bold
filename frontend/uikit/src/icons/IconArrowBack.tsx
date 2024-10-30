@@ -8,12 +8,7 @@ export function IconArrowBack({
 }) {
   return (
     <svg fill="none" viewBox="0 0 24 24" width={size} height={size}>
-      <path
-        fill="currentColor"
-        fillRule="evenodd"
-        d="m7.682 12.2 2.807 2.809L9.5 16 5 11.5 9.498 7l.991.991L7.682 10.8H18v1.402z"
-        clipRule="evenodd"
-      />
+      <path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2Z" />
     </svg>
   );
 }

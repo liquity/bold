@@ -45,6 +45,10 @@ templates:
       file: ./src/TroveManager.mapping.ts
       entities:
         - Trove
+        - InterestRateBracket
+        - InterestBatch
+        - BorrowerInfo
+        - Collateral
       abis:
         - name: TroveManager
           file: ../contracts/out/TroveManager.sol/TroveManager.json
@@ -54,12 +58,13 @@ templates:
         - event: TroveOperation(indexed
             uint256,uint8,uint256,uint256,uint256,int256,uint256,int256)
           handler: handleTroveOperation
-        - event: TroveUpdated(indexed
-            uint256,uint256,uint256,uint256,uint256,uint256,uint256)
-          handler: handleTroveUpdated
+          receipt: true
+        - event: BatchUpdated(indexed
+            address,uint8,uint256,uint256,uint256,uint256,uint256,uint256)
+          handler: handleBatchUpdated
   - name: StabilityPool
     kind: ethereum/contract
-    network: mainnet
+    network: sepolia
     source:
       abi: StabilityPool
     mapping:
@@ -77,3 +82,7 @@ templates:
         - event: DepositUpdated(indexed
             address,uint256,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleDepositUpdated
+        - event: S_Updated(uint256,uint128,uint128)
+          handler: handleSUpdated
+        - event: B_Updated(uint256,uint128,uint128)
+          handler: handleBUpdated

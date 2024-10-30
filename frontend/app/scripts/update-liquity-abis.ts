@@ -1,12 +1,8 @@
-import { $ } from "dax-sh";
-import * as fs from "node:fs/promises";
-import * as path from "path";
 import * as v from "valibot";
+import { $, fs, path } from "zx";
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
-
 const rootDir = path.resolve(`${dirname}/../../..`);
-
 const appDir = `${rootDir}/frontend/app`;
 const contractsDir = `${rootDir}/contracts`;
 const artifactsTmpDir = `${appDir}/liquity-artifacts`;
@@ -19,7 +15,6 @@ const ABIS = [
   ["CollateralRegistry"],
   ["HintHelpers"],
   ["MultiTroveGetter"],
-  ["WETH"],
 
   // Collaterals
   ["ActivePool"],
@@ -28,10 +23,13 @@ const ABIS = [
   ["DefaultPool"],
   ["GasCompZapper"],
   ["GasPool"],
+  ["LeverageLSTZapper"],
+  ["LeverageWETHZapper"],
   ["PriceFeed", "PriceFeedTestNet", "PriceFeedMock"],
   ["SortedTroves"],
   ["StabilityPool"],
   ["TroveManager"],
+  ["TroveNFT"],
   ["WETHZapper"],
 ];
 
@@ -65,7 +63,7 @@ async function getFirstJsonFound(dir: string) {
 async function readJsonFromDir(dir: string, names: string[]) {
   // try to find the file with the names provided
   for (const name of names) {
-    console.log(`👉 Trying to find ${name}.json in ${dir}/${name}.sol/…`);
+    console.log(`Reading ${name}.json in ${dir}/${name}.sol/…`);
     try {
       return JSON.parse(
         await fs.readFile(`${dir}/${name}.sol/${name}.json`, "utf-8"),
@@ -75,7 +73,7 @@ async function readJsonFromDir(dir: string, names: string[]) {
 
   // if not found, try the JSON file in the directory
   try {
-    console.log(`👉 Trying to find any JSON file in ${dir}/${names[0]}.sol/…`);
+    console.log(`Not found. Trying to find any JSON file in ${dir}/${names[0]}.sol/…`);
     return JSON.parse(
       await fs.readFile(await getFirstJsonFound(`${dir}/${names[0]}.sol`), "utf-8"),
     );
@@ -85,10 +83,17 @@ async function readJsonFromDir(dir: string, names: string[]) {
 }
 
 async function main() {
-  console.log("👉 Building Liquity contracts…\n");
+  $.verbose = true;
+
+  console.log("");
+  console.log("1/3 Building Liquity contracts…");
+  console.log("");
+
   await $`forge build --root ${contractsDir} --out ${artifactsTmpDir}`;
 
-  console.log("👉 Building promises…");
+  console.log("");
+  console.log("2/3 Writing ABIs…\n");
+
   await Promise.all(ABIS.map(async (possibleNames) => {
     const abiName = possibleNames[0];
 
@@ -98,12 +103,18 @@ async function main() {
       throw new Error(`Could not find ABI for ${possibleNames.join(", ")}`);
     }
 
+    console.log(`Writing ${abiName}…`);
     return writeAbiFromArtifact(abi, abiName);
   }));
 
-  console.log("👉 Removing temporary artifacts…");
+  console.log("");
+  console.log("3/3 Removing temporary artifacts…");
+  console.log("");
+
   await $`rm -rf ${artifactsTmpDir}`;
-  console.log("\nDone.");
+
+  console.log("");
+  console.log("Done.");
   console.log("");
 }
 

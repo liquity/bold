@@ -1,4 +1,4 @@
-# Liquity v2
+# Liquity V2
 
 ## Table of Contents
 

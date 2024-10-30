@@ -1,23 +1,7 @@
-query TrovesByAccount($account: Bytes!) {
-  troves(where: { borrower: $account, closedAt: null }) {
-    id
-    troveId
-    borrower
-    debt
-    deposit
-    stake
-    interestRate
-    createdAt
-    closedAt
-    collateral {
-      id
-      token {
-        symbol
-        name
-      }
-      minCollRatio
-      collIndex
-    }
+query TotalDeposited {
+  collaterals {
+    collIndex
+    totalDeposited
   }
 }
 
@@ -28,16 +12,10 @@ query TrovesCount($id: ID!) {
   }
 }
 
-query TroveById($id: ID!) {
-  trove(id: $id) {
+query TrovesByAccount($account: Bytes!) {
+  troves(where: { borrower: $account, closedAt: null }) {
     id
-    troveId
     borrower
-    debt
-    deposit
-    stake
-    interestRate
-    createdAt
     closedAt
     collateral {
       id
@@ -48,31 +26,49 @@ query TroveById($id: ID!) {
       minCollRatio
       collIndex
     }
+    createdAt
+    debt
+    deposit
+    interestBatch {
+      id
+      annualInterestRate
+      annualManagementFee
+      batchManager
+    }
+    interestRate
+    stake
+    troveId
+    usedLeverageZapper
   }
 }
 
-query StabilityPoolDepositsByAccount($account: Bytes!) {
-  stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {
+query TroveById($id: ID!) {
+  trove(id: $id) {
     id
-    boldGain
-    collGain
-    deposit
+    borrower
+    closedAt
     collateral {
+      id
+      token {
+        symbol
+        name
+      }
+      minCollRatio
       collIndex
     }
-  }
-}
-
-query StabilityPoolDeposit($id: ID!) {
-  stabilityPoolDeposit(id: $id) {
-    id
-    boldGain
-    collGain
+    createdAt
+    debt
     deposit
-    depositor
-    collateral {
-      collIndex
+    interestBatch {
+      id
+      annualInterestRate
+      annualManagementFee
+      batchManager
     }
+    interestRate
+    stake
+    troveId
+    usedLeverageZapper
   }
 }
 
@@ -80,5 +76,69 @@ query StabilityPool($id: ID!) {
   stabilityPool(id: $id) {
     id
     totalDeposited
+  }
+}
+
+query StabilityPoolDepositsByAccount($account: Bytes!) {
+  stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {
+    id
+    collateral {
+      collIndex
+    }
+    deposit
+    depositor
+    snapshot {
+      B
+      P
+      S
+      epoch
+      scale
+    }
+  }
+}
+
+query StabilityPoolDeposit($id: ID!) {
+  stabilityPoolDeposit(id: $id) {
+    id
+    collateral {
+      collIndex
+    }
+    deposit
+    depositor
+    snapshot {
+      B
+      P
+      S
+      epoch
+      scale
+    }
+  }
+}
+
+query StabilityPoolEpochScale($id: ID!) {
+  stabilityPoolEpochScale(id: $id) {
+    id
+    B
+    S
+  }
+}
+
+query InterestBatch($id: ID!) {
+  interestBatch(id: $id) {
+    collateral {
+      collIndex
+    }
+    batchManager
+    debt
+    coll
+    annualInterestRate
+    annualManagementFee
+  }
+}
+
+query InterestRateBrackets($collId: String!) {
+  interestRateBrackets(where: { collateral: $collId }, orderBy: rate) {
+    rate
+    totalDebt
   }
 }

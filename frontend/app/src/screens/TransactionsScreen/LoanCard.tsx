@@ -4,16 +4,18 @@ import type { LoadingState } from "./TransactionsScreen";
 
 import { INFINITY } from "@/src/characters";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
+import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { Value } from "@/src/comps/Value/Value";
 import { formatRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
+import { getCollToken } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { roundToDecimal } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import { token } from "@/styled-system/tokens";
-import { Button, HFlex, IconBorrow, IconLeverage, StatusDot, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import { Button, HFlex, IconBorrow, IconLeverage, StatusDot, TokenIcon } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
@@ -27,35 +29,38 @@ export function LoanCard({
   loan,
   prevLoan,
   onRetry,
+  txPreviewMode = false,
 }: {
   leverageMode: boolean;
   loadingState: LoadingState;
   loan: PositionLoan | null;
   prevLoan?: PositionLoan | null;
   onRetry: () => void;
+  txPreviewMode?: boolean;
 }) {
-  const collateral = (
-    loan && TOKENS_BY_SYMBOL[loan.collateral]
-  ) || (
-    prevLoan && TOKENS_BY_SYMBOL[prevLoan.collateral]
-  );
-  const collPriceUsd = usePrice(collateral ? collateral.symbol : null);
+  const collToken = getCollToken(loan?.collIndex ?? prevLoan?.collIndex ?? null);
+
+  if (!collToken) {
+    return null;
+  }
+
+  const collPriceUsd = usePrice(collToken.symbol);
 
   const isLoanClosing = prevLoan && !loan;
 
-  const loanDetails = loan && collateral && getLoanDetails(
+  const loanDetails = loan && getLoanDetails(
     loan.deposit,
     loan.borrowed,
     loan.interestRate,
-    collateral.collateralRatio,
+    collToken.collateralRatio,
     collPriceUsd,
   );
 
-  const prevLoanDetails = prevLoan && collateral && getLoanDetails(
+  const prevLoanDetails = prevLoan && getLoanDetails(
     prevLoan.deposit,
     prevLoan.borrowed,
     prevLoan.interestRate,
-    collateral.collateralRatio,
+    collToken.collateralRatio,
     collPriceUsd,
   );
 
@@ -67,10 +72,7 @@ export function LoanCard({
     liquidationRisk,
   } = loanDetails || {};
 
-  const maxLtv = collateral && dn.div(
-    dn.from(1, 18),
-    collateral.collateralRatio,
-  );
+  const maxLtv = dn.div(dn.from(1, 18), collToken.collateralRatio);
 
   return (
     <LoadingCard
@@ -78,6 +80,7 @@ export function LoanCard({
       leverage={leverageMode}
       loadingState={loadingState}
       onRetry={onRetry}
+      txPreviewMode={txPreviewMode}
     >
       {isLoanClosing
         ? (
@@ -99,42 +102,39 @@ export function LoanCard({
                 paddingTop: 32,
               })}
             >
-              {collateral && (
-                <GridItem label="Collateral">
+              <GridItem label="Collateral">
+                <div
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  })}
+                >
                   <div
-                    className={css({
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                    })}
+                    style={{
+                      color: "var(--colors-positive-alt)",
+                    }}
                   >
-                    <div
-                      style={{
-                        color: "var(--colors-positive-alt)",
-                      }}
-                    >
-                      {fmtnum(0)} {collateral.name}
-                    </div>
-                    {prevLoan && (
-                      <div
-                        title={`${fmtnum(prevLoan.deposit, "full")} ${collateral.name}`}
-                        className={css({
-                          color: "contentAlt",
-                          textDecoration: "line-through",
-                        })}
-                      >
-                        {fmtnum(prevLoan.deposit)} {collateral.name}
-                      </div>
-                    )}
+                    {fmtnum(0)} {collToken.name}
                   </div>
-                </GridItem>
-              )}
+                  {prevLoan && (
+                    <div
+                      title={`${fmtnum(prevLoan.deposit, "full")} ${collToken.name}`}
+                      className={css({
+                        color: "contentAlt",
+                        textDecoration: "line-through",
+                      })}
+                    >
+                      {fmtnum(prevLoan.deposit)} {collToken.name}
+                    </div>
+                  )}
+                </div>
+              </GridItem>
             </div>
           </>
         )
         : loan
           && loanDetails
-          && collateral
           && typeof leverageFactor === "number"
           && depositPreLeverage
           && maxLtv
@@ -167,9 +167,9 @@ export function LoanCard({
                     <GridItem label="Net value">
                       <Value
                         negative={loanDetails.status === "underwater"}
-                        title={`${fmtnum(depositPreLeverage)} ${collateral.name}`}
+                        title={`${fmtnum(depositPreLeverage)} ${collToken.name}`}
                       >
-                        {fmtnum(depositPreLeverage)} {collateral.name}
+                        {fmtnum(depositPreLeverage)} {collToken.name}
                       </Value>
                     </GridItem>
                   )
@@ -182,18 +182,18 @@ export function LoanCard({
                           gap: 8,
                         })}
                       >
-                        <div title={`${fmtnum(loan.deposit, "full")} ${collateral.name}`}>
-                          {fmtnum(loan.deposit)} {collateral.name}
+                        <div title={`${fmtnum(loan.deposit, "full")} ${collToken.name}`}>
+                          {fmtnum(loan.deposit)} {collToken.name}
                         </div>
                         {prevLoan && !dn.eq(prevLoan.deposit, loan.deposit) && (
                           <div
-                            title={`${fmtnum(prevLoan.deposit, "full")} ${collateral.name}`}
+                            title={`${fmtnum(prevLoan.deposit, "full")} ${collToken.name}`}
                             className={css({
                               color: "contentAlt",
                               textDecoration: "line-through",
                             })}
                           >
-                            {fmtnum(prevLoan.deposit)} {collateral.name}
+                            {fmtnum(prevLoan.deposit)} {collToken.name}
                           </div>
                         )}
                       </div>
@@ -245,6 +245,25 @@ export function LoanCard({
                         })}
                       >
                         {fmtnum(dn.mul(prevLoan.interestRate, 100))}%
+                      </div>
+                    )}
+                    {loan.batchManager && (
+                      <div
+                        title={`Interest rate delegate: ${loan.batchManager}`}
+                        className={css({
+                          display: "flex",
+                          alignItems: "center",
+                          height: 16,
+                          padding: "0 6px",
+                          fontSize: 10,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          color: "content",
+                          background: "brandCyan",
+                          borderRadius: 20,
+                        })}
+                      >
+                        delegated
                       </div>
                     )}
                   </div>
@@ -413,7 +432,10 @@ function TotalExposure({
   loan: PositionLoan;
   loanDetails: ReturnType<typeof getLoanDetails>;
 }) {
-  const collateral = loan && TOKENS_BY_SYMBOL[loan.collateral];
+  const collToken = getCollToken(loan.collIndex);
+  if (!collToken) {
+    return null;
+  }
   return (
     <div
       className={css({
@@ -432,7 +454,7 @@ function TotalExposure({
         })}
       >
         <div
-          title={`${fmtnum(loan.deposit, "full")} ${collateral}`}
+          title={`${fmtnum(loan.deposit, "full")} ${collToken}`}
           className={css({
             display: "flex",
             alignItems: "center",
@@ -440,7 +462,7 @@ function TotalExposure({
           })}
         >
           <div>{fmtnum(loan.deposit)}</div>
-          <TokenIcon symbol={collateral.symbol} size={32} />
+          <TokenIcon symbol={collToken.symbol} size={32} />
           <div
             className={css({
               display: "flex",
@@ -478,12 +500,14 @@ function LoadingCard({
   leverage,
   loadingState,
   onRetry,
+  txPreviewMode,
 }: {
   children: ReactNode;
   height: number;
   leverage: boolean;
   loadingState: LoadingState;
   onRetry: () => void;
+  txPreviewMode?: boolean;
 }) {
   const title = leverage ? "Leverage loan" : "BOLD loan";
 
@@ -551,6 +575,7 @@ function LoadingCard({
           willChange: "transform",
         }}
       >
+        {txPreviewMode && loadingState === "success" && <TagPreview />}
         <h1
           className={css({
             display: "flex",
@@ -666,6 +691,9 @@ function GridItem({
       <div
         className={css({
           color: "strongSurfaceContent",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
         })}
       >
         {children}

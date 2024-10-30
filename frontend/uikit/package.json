@@ -49,8 +49,9 @@
   "peerDependencies": {
     "@pandacss/dev": "^0.44.0",
     "@react-spring/web": "^9.7.3",
-    "react": "^18",
-    "react-dom": "^18",
+    "blo": "^1.2.0",
+    "react": ">=18.0.0-0",
+    "react-dom": ">=18.0.0-0",
     "ts-pattern": "^5.2.0"
   },
   "dependencies": {
@@ -61,16 +62,16 @@
     "@svgr/core": "^8.1.0",
     "@svgr/plugin-jsx": "^8.1.0",
     "@svgr/plugin-svgo": "^8.1.0",
-    "@types/react": "^18.3.10",
-    "@types/react-dom": "^18.2.22",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
     "@vitejs/plugin-react-swc": "^3.7.1",
-    "dprint": "^0.47.2",
-    "globals": "^15.9.0",
-    "oxlint": "^0.9.9",
+    "dprint": "^0.47.5",
+    "globals": "^15.11.0",
+    "oxlint": "^0.10.3",
     "tsx": "^4.16.5",
     "typescript": "^5.5.4",
-    "vite": "^5.4.8",
-    "vite-plugin-dts": "^4.2.3",
-    "zx": "^8.1.4"
+    "vite": "^5.4.10",
+    "vite-plugin-dts": "^4.3.0",
+    "zx": "^8.1.9"
   }
 }

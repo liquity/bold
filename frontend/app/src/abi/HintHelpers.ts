@@ -28,16 +28,6 @@ export const HintHelpers = [{
   "stateMutability": "view",
 }, {
   "type": "function",
-  "name": "forcePredictJoinBatchInterestRateUpfrontFee",
-  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
-    "name": "_troveId",
-    "type": "uint256",
-    "internalType": "uint256",
-  }, { "name": "_batchAddress", "type": "address", "internalType": "address" }],
-  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
   "name": "getApproxHint",
   "inputs": [
     { "name": "_collIndex", "type": "uint256", "internalType": "uint256" },

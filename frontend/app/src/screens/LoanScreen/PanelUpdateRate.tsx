@@ -1,35 +1,47 @@
+import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
 import type { PositionLoan } from "@/src/types";
 
+import { ARROW_RIGHT } from "@/src/characters";
+import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
-import { InfoBox } from "@/src/comps/InfoBox/InfoBox";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
-import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
+import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
+import { MAX_ANNUAL_INTEREST_RATE, MIN_ANNUAL_INTEREST_RATE } from "@/src/constants";
+import content from "@/src/content";
 import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
-import { fmtnum, formatRisk } from "@/src/formatting";
+import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { getPrefixedTroveId } from "@/src/liquity-utils";
+import { getCollToken, getPrefixedTroveId } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
+import { infoTooltipProps } from "@/src/uikit-utils";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, InfoTooltip, StatusDot, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import { Button, HFlex, InfoTooltip, StatusDot } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { maxUint256 } from "viem";
 
-export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
-  const router = useRouter();
+export function PanelUpdateRate({
+  loan,
+}: {
+  loan: PositionLoan;
+}) {
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const collateral = TOKENS_BY_SYMBOL[loan.collateral];
-  const collPrice = usePrice(collateral.symbol);
+  const collToken = getCollToken(loan.collIndex);
 
-  const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collateral.symbol}`, {
+  if (!collToken) {
+    return null;
+  }
+
+  const collPrice = usePrice(collToken.symbol);
+
+  const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collToken.symbol}`, {
     defaultValue: dn.toString(loan.deposit),
   });
   const debt = useInputFieldValue((value) => `${dn.format(value)} BOLD`, {
@@ -37,12 +49,14 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
   });
 
   const [interestRate, setInterestRate] = useState(loan.interestRate);
+  const [interestRateMode, setInterestRateMode] = useState<DelegateMode>(loan.batchManager ? "delegate" : "manual");
+  const [interestRateDelegate, setInterestRateDelegate] = useState(loan.batchManager);
 
   const loanDetails = getLoanDetails(
     loan.deposit,
     loan.borrowed,
-    dn.div(loan.interestRate, 100),
-    collateral.collateralRatio,
+    loan.interestRate,
+    collToken.collateralRatio,
     collPrice,
   );
 
@@ -50,13 +64,17 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
     deposit.isEmpty ? null : deposit.parsed,
     debt.isEmpty ? null : debt.parsed,
     interestRate,
-    collateral.collateralRatio,
+    collToken.collateralRatio,
     collPrice,
   );
 
   const boldInterestPerYear = interestRate
     && debt.parsed
     && dn.mul(debt.parsed, interestRate);
+
+  const boldInterestPerYearPrev = loan.interestRate
+    && loan.borrowed
+    && dn.mul(loan.borrowed, loan.interestRate);
 
   const allowSubmit = account.isConnected
     && deposit.parsed
@@ -72,11 +90,40 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
         // “Interest rate”
         field={
           <InterestRateField
+            collIndex={loan.collIndex}
             debt={debt.parsed}
+            delegate={interestRateDelegate}
             interestRate={interestRate}
+            mode={interestRateMode}
             onChange={setInterestRate}
+            onDelegateChange={setInterestRateDelegate}
+            onModeChange={setInterestRateMode}
           />
         }
+        footer={[
+          [
+            null,
+            <Field.FooterInfo
+              label={
+                <HFlex alignItems="center" gap={8}>
+                  <Amount
+                    value={loanDetails.interestRate}
+                    percentage
+                  />
+                  <div>{ARROW_RIGHT}</div>
+                </HFlex>
+              }
+              value={
+                <HFlex alignItems="center" gap={8}>
+                  <Amount
+                    value={newLoanDetails.interestRate}
+                    percentage
+                  />
+                </HFlex>
+              }
+            />,
+          ],
+        ]}
       />
 
       <div
@@ -84,53 +131,35 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
           padding: "8px 0",
         })}
       >
-        <InfoBox>
-          <HFlex justifyContent="space-between" gap={16}>
-            <div>Redemption risk</div>
-            <ValueUpdate
-              before={loanDetails.redemptionRisk && (
-                <HFlex gap={4} justifyContent="flex-start">
+        <UpdateBox
+          updates={[
+            {
+              label: "Redemption risk",
+              before: loanDetails.redemptionRisk && (
+                <>
                   <StatusDot mode={riskLevelToStatusMode(loanDetails.redemptionRisk)} />
                   {formatRisk(loanDetails.redemptionRisk)}
-                </HFlex>
-              )}
-              after={newLoanDetails.redemptionRisk && (
-                <HFlex gap={4} justifyContent="flex-start">
+                </>
+              ),
+              after: newLoanDetails.redemptionRisk && (
+                <>
                   <StatusDot mode={riskLevelToStatusMode(newLoanDetails.redemptionRisk)} />
                   {formatRisk(newLoanDetails.redemptionRisk)}
-                </HFlex>
-              )}
-            />
-          </HFlex>
-          <HFlex justifyContent="space-between" gap={16}>
-            <HFlex gap={4}>
-              <div>Interest rate / day</div>
-              <InfoTooltip heading="Interest rate / day" />
-            </HFlex>
-            {boldInterestPerYear && (
-              <HFlex
-                gap={8}
-                className={css({
-                  fontVariantNumeric: "tabular-nums",
-                })}
-              >
-                ~{fmtnum(dn.div(boldInterestPerYear, 365))} BOLD
-              </HFlex>
-            )}
-          </HFlex>
-          <HFlex
-            justifyContent="space-between"
-            gap={16}
-            className={css({
-              marginTop: -12,
-              fontSize: 14,
-              color: "contentAlt",
-            })}
-          >
-            <div>Annual interest rate is charged daily on the debt</div>
-            <div>per day</div>
-          </HFlex>
-        </InfoBox>
+                </>
+              ),
+            },
+            {
+              label: (
+                <>
+                  <div>BOLD interest per year</div>
+                  <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
+                </>
+              ),
+              before: <Amount value={boldInterestPerYearPrev} suffix="BOLD" />,
+              after: <Amount value={boldInterestPerYear} suffix="BOLD" />,
+            },
+          ]}
+        />
       </div>
 
       <div
@@ -161,14 +190,18 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoan }) {
                 successMessage: "The position interest rate has been updated successfully.",
 
                 collIndex: loan.collIndex,
-                interestRate,
-                lowerHint: dnum18(0),
-                maxUpfrontFee: dnum18(maxUint256),
                 owner: account.address,
                 prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
                 upperHint: dnum18(0),
+                lowerHint: dnum18(0),
+                annualInterestRate: interestRate,
+                maxUpfrontFee: dnum18(maxUint256),
+                interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate ? null : [
+                  interestRateDelegate,
+                  MIN_ANNUAL_INTEREST_RATE,
+                  MAX_ANNUAL_INTEREST_RATE,
+                ],
               });
-              router.push("/transactions");
             }
           }}
         />

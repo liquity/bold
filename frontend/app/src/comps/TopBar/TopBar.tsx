@@ -7,7 +7,6 @@ import content from "@/src/content";
 import { css } from "@/styled-system/css";
 import { IconBorrow, IconDashboard, IconEarn, IconLeverage, IconStake } from "@liquity2/uikit";
 import Link from "next/link";
-import { LAYOUT_WIDTH } from "../AppLayout/AppLayout";
 import { AccountButton } from "./AccountButton";
 import { Menu } from "./Menu";
 
@@ -34,10 +33,11 @@ export function TopBar() {
           zIndex: 1,
           display: "flex",
           justifyContent: "space-between",
-          width: LAYOUT_WIDTH,
+          gap: 16,
+          maxWidth: 1280,
           height: "100%",
           margin: "0 auto",
-          padding: "16px 0",
+          padding: "16px 24px",
           fontSize: 16,
           fontWeight: 500,
           background: "background",
@@ -60,8 +60,21 @@ export function TopBar() {
             },
           })}
         >
-          <Logo />
-          {content.appName}
+          <div
+            className={css({
+              flexShrink: 0,
+            })}
+          >
+            <Logo />
+          </div>
+          <div
+            className={css({
+              flexShrink: 0,
+              whiteSpace: "nowrap",
+            })}
+          >
+            {content.appName}
+          </div>
         </Link>
         <Menu menuItems={menuItems} />
         <AccountButton />

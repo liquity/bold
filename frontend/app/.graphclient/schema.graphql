@@ -324,11 +324,118 @@ enum Collateral_orderBy {
 """
 scalar Int8
 
+type InterestBatch {
+  id: ID!
+  collateral: Collateral!
+  batchManager: Bytes!
+  debt: BigInt!
+  coll: BigInt!
+  annualInterestRate: BigInt!
+  annualManagementFee: BigInt!
+  troves(skip: Int = 0, first: Int = 100, orderBy: Trove_orderBy, orderDirection: OrderDirection, where: Trove_filter): [Trove!]!
+}
+
+input InterestBatch_filter {
+  id: ID
+  id_not: ID
+  id_gt: ID
+  id_lt: ID
+  id_gte: ID
+  id_lte: ID
+  id_in: [ID!]
+  id_not_in: [ID!]
+  collateral: String
+  collateral_not: String
+  collateral_gt: String
+  collateral_lt: String
+  collateral_gte: String
+  collateral_lte: String
+  collateral_in: [String!]
+  collateral_not_in: [String!]
+  collateral_contains: String
+  collateral_contains_nocase: String
+  collateral_not_contains: String
+  collateral_not_contains_nocase: String
+  collateral_starts_with: String
+  collateral_starts_with_nocase: String
+  collateral_not_starts_with: String
+  collateral_not_starts_with_nocase: String
+  collateral_ends_with: String
+  collateral_ends_with_nocase: String
+  collateral_not_ends_with: String
+  collateral_not_ends_with_nocase: String
+  collateral_: Collateral_filter
+  batchManager: Bytes
+  batchManager_not: Bytes
+  batchManager_gt: Bytes
+  batchManager_lt: Bytes
+  batchManager_gte: Bytes
+  batchManager_lte: Bytes
+  batchManager_in: [Bytes!]
+  batchManager_not_in: [Bytes!]
+  batchManager_contains: Bytes
+  batchManager_not_contains: Bytes
+  debt: BigInt
+  debt_not: BigInt
+  debt_gt: BigInt
+  debt_lt: BigInt
+  debt_gte: BigInt
+  debt_lte: BigInt
+  debt_in: [BigInt!]
+  debt_not_in: [BigInt!]
+  coll: BigInt
+  coll_not: BigInt
+  coll_gt: BigInt
+  coll_lt: BigInt
+  coll_gte: BigInt
+  coll_lte: BigInt
+  coll_in: [BigInt!]
+  coll_not_in: [BigInt!]
+  annualInterestRate: BigInt
+  annualInterestRate_not: BigInt
+  annualInterestRate_gt: BigInt
+  annualInterestRate_lt: BigInt
+  annualInterestRate_gte: BigInt
+  annualInterestRate_lte: BigInt
+  annualInterestRate_in: [BigInt!]
+  annualInterestRate_not_in: [BigInt!]
+  annualManagementFee: BigInt
+  annualManagementFee_not: BigInt
+  annualManagementFee_gt: BigInt
+  annualManagementFee_lt: BigInt
+  annualManagementFee_gte: BigInt
+  annualManagementFee_lte: BigInt
+  annualManagementFee_in: [BigInt!]
+  annualManagementFee_not_in: [BigInt!]
+  troves_: Trove_filter
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [InterestBatch_filter]
+  or: [InterestBatch_filter]
+}
+
+enum InterestBatch_orderBy {
+  id
+  collateral
+  collateral__id
+  collateral__collIndex
+  collateral__minCollRatio
+  collateral__totalDeposited
+  collateral__totalDebt
+  collateral__price
+  batchManager
+  debt
+  coll
+  annualInterestRate
+  annualManagementFee
+  troves
+}
+
 type InterestRateBracket {
   id: ID!
+  collateral: Collateral!
   rate: BigInt!
   totalDebt: BigInt!
-  totalTroves: Int!
 }
 
 input InterestRateBracket_filter {
@@ -340,6 +447,27 @@ input InterestRateBracket_filter {
   id_lte: ID
   id_in: [ID!]
   id_not_in: [ID!]
+  collateral: String
+  collateral_not: String
+  collateral_gt: String
+  collateral_lt: String
+  collateral_gte: String
+  collateral_lte: String
+  collateral_in: [String!]
+  collateral_not_in: [String!]
+  collateral_contains: String
+  collateral_contains_nocase: String
+  collateral_not_contains: String
+  collateral_not_contains_nocase: String
+  collateral_starts_with: String
+  collateral_starts_with_nocase: String
+  collateral_not_starts_with: String
+  collateral_not_starts_with_nocase: String
+  collateral_ends_with: String
+  collateral_ends_with_nocase: String
+  collateral_not_ends_with: String
+  collateral_not_ends_with_nocase: String
+  collateral_: Collateral_filter
   rate: BigInt
   rate_not: BigInt
   rate_gt: BigInt
@@ -356,14 +484,6 @@ input InterestRateBracket_filter {
   totalDebt_lte: BigInt
   totalDebt_in: [BigInt!]
   totalDebt_not_in: [BigInt!]
-  totalTroves: Int
-  totalTroves_not: Int
-  totalTroves_gt: Int
-  totalTroves_lt: Int
-  totalTroves_gte: Int
-  totalTroves_lte: Int
-  totalTroves_in: [Int!]
-  totalTroves_not_in: [Int!]
   """Filter for the block changed event."""
   _change_block: BlockChangedFilter
   and: [InterestRateBracket_filter]
@@ -372,9 +492,15 @@ input InterestRateBracket_filter {
 
 enum InterestRateBracket_orderBy {
   id
+  collateral
+  collateral__id
+  collateral__collIndex
+  collateral__minCollRatio
+  collateral__totalDeposited
+  collateral__totalDebt
+  collateral__price
   rate
   totalDebt
-  totalTroves
 }
 
 """Defines the order direction, either ascending or descending"""
@@ -592,6 +718,84 @@ type Query {
     """
     subgraphError: _SubgraphErrorPolicy_! = deny
   ): [StabilityPoolDeposit!]!
+  stabilityPoolDepositSnapshot(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): StabilityPoolDepositSnapshot
+  stabilityPoolDepositSnapshots(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: StabilityPoolDepositSnapshot_orderBy
+    orderDirection: OrderDirection
+    where: StabilityPoolDepositSnapshot_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [StabilityPoolDepositSnapshot!]!
+  stabilityPoolEpochScale(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): StabilityPoolEpochScale
+  stabilityPoolEpochScales(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: StabilityPoolEpochScale_orderBy
+    orderDirection: OrderDirection
+    where: StabilityPoolEpochScale_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [StabilityPoolEpochScale!]!
+  interestBatch(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): InterestBatch
+  interestBatches(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: InterestBatch_orderBy
+    orderDirection: OrderDirection
+    where: InterestBatch_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [InterestBatch!]!
   """Access to subgraph metadata"""
   _meta(block: Block_height): _Meta_
 }
@@ -603,11 +807,89 @@ type StabilityPool {
 
 type StabilityPoolDeposit {
   id: ID!
-  boldGain: BigInt!
-  collGain: BigInt!
   collateral: Collateral!
   deposit: BigInt!
   depositor: Bytes!
+  snapshot: StabilityPoolDepositSnapshot!
+}
+
+type StabilityPoolDepositSnapshot {
+  id: ID!
+  B: BigInt!
+  P: BigInt!
+  S: BigInt!
+  epoch: BigInt!
+  scale: BigInt!
+  deposit: StabilityPoolDeposit!
+}
+
+input StabilityPoolDepositSnapshot_filter {
+  id: ID
+  id_not: ID
+  id_gt: ID
+  id_lt: ID
+  id_gte: ID
+  id_lte: ID
+  id_in: [ID!]
+  id_not_in: [ID!]
+  B: BigInt
+  B_not: BigInt
+  B_gt: BigInt
+  B_lt: BigInt
+  B_gte: BigInt
+  B_lte: BigInt
+  B_in: [BigInt!]
+  B_not_in: [BigInt!]
+  P: BigInt
+  P_not: BigInt
+  P_gt: BigInt
+  P_lt: BigInt
+  P_gte: BigInt
+  P_lte: BigInt
+  P_in: [BigInt!]
+  P_not_in: [BigInt!]
+  S: BigInt
+  S_not: BigInt
+  S_gt: BigInt
+  S_lt: BigInt
+  S_gte: BigInt
+  S_lte: BigInt
+  S_in: [BigInt!]
+  S_not_in: [BigInt!]
+  epoch: BigInt
+  epoch_not: BigInt
+  epoch_gt: BigInt
+  epoch_lt: BigInt
+  epoch_gte: BigInt
+  epoch_lte: BigInt
+  epoch_in: [BigInt!]
+  epoch_not_in: [BigInt!]
+  scale: BigInt
+  scale_not: BigInt
+  scale_gt: BigInt
+  scale_lt: BigInt
+  scale_gte: BigInt
+  scale_lte: BigInt
+  scale_in: [BigInt!]
+  scale_not_in: [BigInt!]
+  deposit_: StabilityPoolDeposit_filter
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [StabilityPoolDepositSnapshot_filter]
+  or: [StabilityPoolDepositSnapshot_filter]
+}
+
+enum StabilityPoolDepositSnapshot_orderBy {
+  id
+  B
+  P
+  S
+  epoch
+  scale
+  deposit
+  deposit__id
+  deposit__deposit
+  deposit__depositor
 }
 
 input StabilityPoolDeposit_filter {
@@ -619,22 +901,6 @@ input StabilityPoolDeposit_filter {
   id_lte: ID
   id_in: [ID!]
   id_not_in: [ID!]
-  boldGain: BigInt
-  boldGain_not: BigInt
-  boldGain_gt: BigInt
-  boldGain_lt: BigInt
-  boldGain_gte: BigInt
-  boldGain_lte: BigInt
-  boldGain_in: [BigInt!]
-  boldGain_not_in: [BigInt!]
-  collGain: BigInt
-  collGain_not: BigInt
-  collGain_gt: BigInt
-  collGain_lt: BigInt
-  collGain_gte: BigInt
-  collGain_lte: BigInt
-  collGain_in: [BigInt!]
-  collGain_not_in: [BigInt!]
   collateral: String
   collateral_not: String
   collateral_gt: String
@@ -674,6 +940,27 @@ input StabilityPoolDeposit_filter {
   depositor_not_in: [Bytes!]
   depositor_contains: Bytes
   depositor_not_contains: Bytes
+  snapshot: String
+  snapshot_not: String
+  snapshot_gt: String
+  snapshot_lt: String
+  snapshot_gte: String
+  snapshot_lte: String
+  snapshot_in: [String!]
+  snapshot_not_in: [String!]
+  snapshot_contains: String
+  snapshot_contains_nocase: String
+  snapshot_not_contains: String
+  snapshot_not_contains_nocase: String
+  snapshot_starts_with: String
+  snapshot_starts_with_nocase: String
+  snapshot_not_starts_with: String
+  snapshot_not_starts_with_nocase: String
+  snapshot_ends_with: String
+  snapshot_ends_with_nocase: String
+  snapshot_not_ends_with: String
+  snapshot_not_ends_with_nocase: String
+  snapshot_: StabilityPoolDepositSnapshot_filter
   """Filter for the block changed event."""
   _change_block: BlockChangedFilter
   and: [StabilityPoolDeposit_filter]
@@ -682,8 +969,6 @@ input StabilityPoolDeposit_filter {
 
 enum StabilityPoolDeposit_orderBy {
   id
-  boldGain
-  collGain
   collateral
   collateral__id
   collateral__collIndex
@@ -693,6 +978,56 @@ enum StabilityPoolDeposit_orderBy {
   collateral__price
   deposit
   depositor
+  snapshot
+  snapshot__id
+  snapshot__B
+  snapshot__P
+  snapshot__S
+  snapshot__epoch
+  snapshot__scale
+}
+
+type StabilityPoolEpochScale {
+  id: ID!
+  S: BigInt!
+  B: BigInt!
+}
+
+input StabilityPoolEpochScale_filter {
+  id: ID
+  id_not: ID
+  id_gt: ID
+  id_lt: ID
+  id_gte: ID
+  id_lte: ID
+  id_in: [ID!]
+  id_not_in: [ID!]
+  S: BigInt
+  S_not: BigInt
+  S_gt: BigInt
+  S_lt: BigInt
+  S_gte: BigInt
+  S_lte: BigInt
+  S_in: [BigInt!]
+  S_not_in: [BigInt!]
+  B: BigInt
+  B_not: BigInt
+  B_gt: BigInt
+  B_lt: BigInt
+  B_gte: BigInt
+  B_lte: BigInt
+  B_in: [BigInt!]
+  B_not_in: [BigInt!]
+  """Filter for the block changed event."""
+  _change_block: BlockChangedFilter
+  and: [StabilityPoolEpochScale_filter]
+  or: [StabilityPoolEpochScale_filter]
+}
+
+enum StabilityPoolEpochScale_orderBy {
+  id
+  S
+  B
 }
 
 input StabilityPool_filter {
@@ -932,6 +1267,84 @@ type Subscription {
     """
     subgraphError: _SubgraphErrorPolicy_! = deny
   ): [StabilityPoolDeposit!]!
+  stabilityPoolDepositSnapshot(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): StabilityPoolDepositSnapshot
+  stabilityPoolDepositSnapshots(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: StabilityPoolDepositSnapshot_orderBy
+    orderDirection: OrderDirection
+    where: StabilityPoolDepositSnapshot_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [StabilityPoolDepositSnapshot!]!
+  stabilityPoolEpochScale(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): StabilityPoolEpochScale
+  stabilityPoolEpochScales(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: StabilityPoolEpochScale_orderBy
+    orderDirection: OrderDirection
+    where: StabilityPoolEpochScale_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [StabilityPoolEpochScale!]!
+  interestBatch(
+    id: ID!
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): InterestBatch
+  interestBatches(
+    skip: Int = 0
+    first: Int = 100
+    orderBy: InterestBatch_orderBy
+    orderDirection: OrderDirection
+    where: InterestBatch_filter
+    """
+    The block at which the query should be executed. Can either be a `{ hash: Bytes }` value containing a block hash, a `{ number: Int }` containing the block number, or a `{ number_gte: Int }` containing the minimum block number. In the case of `number_gte`, the query will be executed on the latest block only if the subgraph has progressed to or past the minimum block number. Defaults to the latest block when omitted.
+    """
+    block: Block_height
+    """
+    Set to `allow` to receive data even if the subgraph has skipped over errors while syncing.
+    """
+    subgraphError: _SubgraphErrorPolicy_! = deny
+  ): [InterestBatch!]!
   """Access to subgraph metadata"""
   _meta(block: Block_height): _Meta_
 }
@@ -1050,15 +1463,25 @@ enum Token_orderBy {
 
 type Trove {
   id: ID!
-  troveId: String!
   borrower: Bytes!
-  debt: BigInt!
-  deposit: BigInt!
-  stake: BigInt!
-  interestRate: BigInt!
-  createdAt: BigInt!
   closedAt: BigInt
   collateral: Collateral!
+  createdAt: BigInt!
+  debt: BigInt!
+  deposit: BigInt!
+  interestBatch: InterestBatch
+  interestRate: BigInt!
+  stake: BigInt!
+  status: TroveStatus!
+  troveId: String!
+  usedLeverageZapper: Boolean!
+}
+
+enum TroveStatus {
+  active
+  closedByOwner
+  closedByLiquidation
+  zombie
 }
 
 input Trove_filter {
@@ -1070,26 +1493,6 @@ input Trove_filter {
   id_lte: ID
   id_in: [ID!]
   id_not_in: [ID!]
-  troveId: String
-  troveId_not: String
-  troveId_gt: String
-  troveId_lt: String
-  troveId_gte: String
-  troveId_lte: String
-  troveId_in: [String!]
-  troveId_not_in: [String!]
-  troveId_contains: String
-  troveId_contains_nocase: String
-  troveId_not_contains: String
-  troveId_not_contains_nocase: String
-  troveId_starts_with: String
-  troveId_starts_with_nocase: String
-  troveId_not_starts_with: String
-  troveId_not_starts_with_nocase: String
-  troveId_ends_with: String
-  troveId_ends_with_nocase: String
-  troveId_not_ends_with: String
-  troveId_not_ends_with_nocase: String
   borrower: Bytes
   borrower_not: Bytes
   borrower_gt: Bytes
@@ -1100,46 +1503,6 @@ input Trove_filter {
   borrower_not_in: [Bytes!]
   borrower_contains: Bytes
   borrower_not_contains: Bytes
-  debt: BigInt
-  debt_not: BigInt
-  debt_gt: BigInt
-  debt_lt: BigInt
-  debt_gte: BigInt
-  debt_lte: BigInt
-  debt_in: [BigInt!]
-  debt_not_in: [BigInt!]
-  deposit: BigInt
-  deposit_not: BigInt
-  deposit_gt: BigInt
-  deposit_lt: BigInt
-  deposit_gte: BigInt
-  deposit_lte: BigInt
-  deposit_in: [BigInt!]
-  deposit_not_in: [BigInt!]
-  stake: BigInt
-  stake_not: BigInt
-  stake_gt: BigInt
-  stake_lt: BigInt
-  stake_gte: BigInt
-  stake_lte: BigInt
-  stake_in: [BigInt!]
-  stake_not_in: [BigInt!]
-  interestRate: BigInt
-  interestRate_not: BigInt
-  interestRate_gt: BigInt
-  interestRate_lt: BigInt
-  interestRate_gte: BigInt
-  interestRate_lte: BigInt
-  interestRate_in: [BigInt!]
-  interestRate_not_in: [BigInt!]
-  createdAt: BigInt
-  createdAt_not: BigInt
-  createdAt_gt: BigInt
-  createdAt_lt: BigInt
-  createdAt_gte: BigInt
-  createdAt_lte: BigInt
-  createdAt_in: [BigInt!]
-  createdAt_not_in: [BigInt!]
   closedAt: BigInt
   closedAt_not: BigInt
   closedAt_gt: BigInt
@@ -1169,6 +1532,95 @@ input Trove_filter {
   collateral_not_ends_with: String
   collateral_not_ends_with_nocase: String
   collateral_: Collateral_filter
+  createdAt: BigInt
+  createdAt_not: BigInt
+  createdAt_gt: BigInt
+  createdAt_lt: BigInt
+  createdAt_gte: BigInt
+  createdAt_lte: BigInt
+  createdAt_in: [BigInt!]
+  createdAt_not_in: [BigInt!]
+  debt: BigInt
+  debt_not: BigInt
+  debt_gt: BigInt
+  debt_lt: BigInt
+  debt_gte: BigInt
+  debt_lte: BigInt
+  debt_in: [BigInt!]
+  debt_not_in: [BigInt!]
+  deposit: BigInt
+  deposit_not: BigInt
+  deposit_gt: BigInt
+  deposit_lt: BigInt
+  deposit_gte: BigInt
+  deposit_lte: BigInt
+  deposit_in: [BigInt!]
+  deposit_not_in: [BigInt!]
+  interestBatch: String
+  interestBatch_not: String
+  interestBatch_gt: String
+  interestBatch_lt: String
+  interestBatch_gte: String
+  interestBatch_lte: String
+  interestBatch_in: [String!]
+  interestBatch_not_in: [String!]
+  interestBatch_contains: String
+  interestBatch_contains_nocase: String
+  interestBatch_not_contains: String
+  interestBatch_not_contains_nocase: String
+  interestBatch_starts_with: String
+  interestBatch_starts_with_nocase: String
+  interestBatch_not_starts_with: String
+  interestBatch_not_starts_with_nocase: String
+  interestBatch_ends_with: String
+  interestBatch_ends_with_nocase: String
+  interestBatch_not_ends_with: String
+  interestBatch_not_ends_with_nocase: String
+  interestBatch_: InterestBatch_filter
+  interestRate: BigInt
+  interestRate_not: BigInt
+  interestRate_gt: BigInt
+  interestRate_lt: BigInt
+  interestRate_gte: BigInt
+  interestRate_lte: BigInt
+  interestRate_in: [BigInt!]
+  interestRate_not_in: [BigInt!]
+  stake: BigInt
+  stake_not: BigInt
+  stake_gt: BigInt
+  stake_lt: BigInt
+  stake_gte: BigInt
+  stake_lte: BigInt
+  stake_in: [BigInt!]
+  stake_not_in: [BigInt!]
+  status: TroveStatus
+  status_not: TroveStatus
+  status_in: [TroveStatus!]
+  status_not_in: [TroveStatus!]
+  troveId: String
+  troveId_not: String
+  troveId_gt: String
+  troveId_lt: String
+  troveId_gte: String
+  troveId_lte: String
+  troveId_in: [String!]
+  troveId_not_in: [String!]
+  troveId_contains: String
+  troveId_contains_nocase: String
+  troveId_not_contains: String
+  troveId_not_contains_nocase: String
+  troveId_starts_with: String
+  troveId_starts_with_nocase: String
+  troveId_not_starts_with: String
+  troveId_not_starts_with_nocase: String
+  troveId_ends_with: String
+  troveId_ends_with_nocase: String
+  troveId_not_ends_with: String
+  troveId_not_ends_with_nocase: String
+  usedLeverageZapper: Boolean
+  usedLeverageZapper_not: Boolean
+  usedLeverageZapper_in: [Boolean!]
+  usedLeverageZapper_not_in: [Boolean!]
   """Filter for the block changed event."""
   _change_block: BlockChangedFilter
   and: [Trove_filter]
@@ -1177,13 +1629,7 @@ input Trove_filter {
 
 enum Trove_orderBy {
   id
-  troveId
   borrower
-  debt
-  deposit
-  stake
-  interestRate
-  createdAt
   closedAt
   collateral
   collateral__id
@@ -1192,6 +1638,21 @@ enum Trove_orderBy {
   collateral__totalDeposited
   collateral__totalDebt
   collateral__price
+  createdAt
+  debt
+  deposit
+  interestBatch
+  interestBatch__id
+  interestBatch__batchManager
+  interestBatch__debt
+  interestBatch__coll
+  interestBatch__annualInterestRate
+  interestBatch__annualManagementFee
+  interestRate
+  stake
+  status
+  troveId
+  usedLeverageZapper
 }
 
 type _Block_ {

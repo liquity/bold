@@ -1,53 +1,72 @@
 import type { PositionLoan } from "@/src/types";
 
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { Field } from "@/src/comps/Field/Field";
+import { getContracts } from "@/src/contracts";
 import { fmtnum } from "@/src/formatting";
-import { getLoanDetails } from "@/src/liquity-math";
 import { getPrefixedTroveId } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
 import { Button, Dropdown, TokenIcon, TOKENS_BY_SYMBOL, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
-  const router = useRouter();
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const collPrice = usePrice(loan.collateral);
+  const contracts = getContracts();
+  const { symbol } = contracts.collaterals[loan.collIndex];
+  const collToken = TOKENS_BY_SYMBOL[symbol];
+
+  const collPrice = usePrice(symbol);
   const boldPriceUsd = usePrice("BOLD");
-  const [tokenIndex, setTokenIndex] = useState(0);
 
-  const collateral = TOKENS_BY_SYMBOL[loan.collateral];
+  const [repayTokenIndex, setRepayTokenIndex] = useState(0);
+  const repayWith = repayTokenIndex === 0 ? "BOLD" : symbol;
 
-  if (!collPrice || !boldPriceUsd) {
+  const boldBalance = useBalance(account.address, "BOLD");
+
+  const amountToRepay = collPrice && (
+    repayWith === "BOLD"
+      ? loan.borrowed
+      : dn.div(loan.borrowed, collPrice)
+  );
+
+  const collToReclaim = amountToRepay && (
+    repayWith === "BOLD"
+      ? loan.deposit
+      : dn.sub(loan.deposit, amountToRepay)
+  );
+
+  let error: null | { name: string; message: string } = null;
+  if (account.address?.toLowerCase() !== loan.borrower.toLowerCase()) {
+    error = {
+      name: "INVALID_OWNER",
+      message: "The current account is not the owner of the loan.",
+    };
+  } else if (repayTokenIndex === 0 && amountToRepay && (!boldBalance.data || dn.lt(boldBalance.data, amountToRepay))) {
+    error = {
+      name: "INSUFFICIENT_BALANCE",
+      message: "Insufficient BOLD balance to repay the loan.",
+    };
+  }
+
+  const [showError, setShowError] = useState(false);
+  useEffect(() => {
+    if (error === null) {
+      setShowError(false);
+    }
+  }, [error]);
+
+  if (!collPrice || !boldPriceUsd || !amountToRepay || !collToReclaim) {
     return null;
   }
 
-  const loanDetails = getLoanDetails(
-    loan.deposit,
-    loan.borrowed,
-    loan.interestRate,
-    collateral.collateralRatio,
-    collPrice,
-  );
-
-  const repayWith = tokenIndex === 0 ? "BOLD" : collateral.symbol;
-
-  const amountToRepay = repayWith === "BOLD"
-    ? (loanDetails.debt ?? dn.from(0))
-    : (dn.div(loanDetails.debt ?? dn.from(0), collPrice));
-
-  const collToReclaim = repayWith === "BOLD"
-    ? loan.deposit
-    : dn.sub(loan.deposit, amountToRepay);
-
-  const allowSubmit = account.isConnected && tokenIndex === 0;
+  const allowSubmit = error === null;
 
   return (
     <>
@@ -73,35 +92,41 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
                 <div>{fmtnum(amountToRepay)}</div>
               </div>
               <Dropdown
+                menuPlacement="end"
                 buttonDisplay={() => ({
                   label: (
                     <>
-                      {TOKENS_BY_SYMBOL[(["BOLD", collateral.symbol] as const)[tokenIndex]].name}
+                      {TOKENS_BY_SYMBOL[(["BOLD", symbol] as const)[repayTokenIndex]].name}
                       <span
                         className={css({
                           color: "contentAlt",
                           fontWeight: 400,
                         })}
                       >
-                        {TOKENS_BY_SYMBOL[(["BOLD", collateral.symbol] as const)[tokenIndex]].symbol === "BOLD"
+                        {TOKENS_BY_SYMBOL[(["BOLD", symbol] as const)[repayTokenIndex]].symbol === "BOLD"
                           ? " account"
                           : " loan"}
                       </span>
                     </>
                   ),
-                  icon: <TokenIcon symbol={(["BOLD", collateral.symbol] as const)[tokenIndex]} />,
+                  icon: <TokenIcon symbol={(["BOLD", symbol] as const)[repayTokenIndex]} />,
                 })}
-                items={(["BOLD", collateral.symbol] as const).map((symbol) => ({
+                items={(["BOLD", symbol] as const).map((symbol) => ({
                   icon: <TokenIcon symbol={symbol} />,
                   label: (
-                    <>
-                      {collateral.name} {symbol === "BOLD" ? "(account balance)" : "(loan collateral)"}
-                    </>
+                    <div
+                      className={css({
+                        whiteSpace: "nowrap",
+                      })}
+                    >
+                      {TOKENS_BY_SYMBOL[symbol].name} {symbol === "BOLD" ? "(account)" : "(loan collateral)"}
+                    </div>
                   ),
+                  value: symbol === "BOLD" ? fmtnum(boldBalance.data) : null,
                 }))}
                 menuWidth={300}
-                onSelect={setTokenIndex}
-                selected={tokenIndex}
+                onSelect={setRepayTokenIndex}
+                selected={repayTokenIndex}
               />
             </div>
           }
@@ -148,8 +173,8 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
                     userSelect: "none",
                   })}
                 >
-                  <TokenIcon symbol={collateral.symbol} />
-                  <div>{collateral.name}</div>
+                  <TokenIcon symbol={symbol} />
+                  <div>{collToken.name}</div>
                 </div>
               </div>
             </div>
@@ -157,7 +182,15 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
           label="You reclaim"
           footer={[[
             <Field.FooterInfo
-              label={`$${fmtnum(dn.mul(loan.deposit, collPrice), 2)}`}
+              label={`$${
+                fmtnum(
+                  dn.mul(
+                    collToReclaim,
+                    collPrice,
+                  ),
+                  2,
+                )
+              }`}
               value={null}
             />,
             null,
@@ -166,15 +199,19 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
       </VFlex>
       <div
         className={css({
-          padding: 20,
-          textAlign: "center",
-          background: "yellow:200",
+          display: "flex",
+          flexDirection: "column",
+          gap: 32,
+          padding: 16,
+          color: "content",
+          background: "fieldSurface",
+          border: "1px solid token(colors.border)",
           borderRadius: 8,
         })}
       >
-        You are repaying your debt and closing the position. {repayWith === "BOLD"
-          ? `The deposit will be returned to your wallet.`
-          : `To close yor position, a part of your collateral will be sold to pay back the debt. The rest of your collateral will be returned to your wallet.`}
+        {repayWith === "BOLD"
+          ? `You are repaying your debt and closing the position. The deposit will be returned to your wallet.`
+          : `To close your position, a part of your collateral will be sold to pay back the debt. The rest of your collateral will be returned to your wallet.`}
       </div>
       <div
         style={{
@@ -186,6 +223,15 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
         }}
       >
         <ConnectWarningBox />
+
+        {error && showError && (
+          <div>
+            <ErrorBox title={error?.name}>
+              {error?.message}
+            </ErrorBox>
+          </div>
+        )}
+
         <Button
           disabled={!allowSubmit}
           label="Repay & close"
@@ -193,6 +239,10 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
           size="large"
           wide
           onClick={() => {
+            if (error) {
+              setShowError(true);
+              return;
+            }
             if (account.address) {
               txFlow.start({
                 flowId: "closeLoanPosition",
@@ -205,8 +255,8 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
 
                 collIndex: loan.collIndex,
                 prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
+                repayWithCollateral: repayWith === symbol,
               });
-              router.push("/transactions");
             }
           }}
         />

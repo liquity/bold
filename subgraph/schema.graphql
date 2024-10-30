@@ -1,5 +1,5 @@
 type Collateral @entity {
-  id: ID!
+  id: ID! # "collIndex", e.g. "0"
   collIndex: Int!
   token: Token!
   minCollRatio: BigInt!
@@ -13,7 +13,7 @@ type Collateral @entity {
 }
 
 type Token @entity(immutable: true) {
-  id: ID!
+  id: ID! # "collIndex", e.g. "0"
   collateral: Collateral!
   name: String!
   symbol: String!
@@ -21,7 +21,7 @@ type Token @entity(immutable: true) {
 }
 
 type CollateralAddresses @entity(immutable: true) {
-  id: ID!
+  id: ID! # "collIndex", e.g. "0"
   borrowerOperations: Bytes!
   collateral: Collateral!
   sortedTroves: Bytes!
@@ -32,41 +32,80 @@ type CollateralAddresses @entity(immutable: true) {
 }
 
 type InterestRateBracket @entity {
-  id: ID!
+  id: ID! # "collIndex:rateFloored", e.g. "0:44000000000000000"
+  collateral: Collateral!
   rate: BigInt!
   totalDebt: BigInt!
-  totalTroves: Int!
+}
+
+enum TroveStatus {
+  active
+  closedByOwner
+  closedByLiquidation
+  zombie
 }
 
 type Trove @entity {
-  id: ID!
-  troveId: String!
+  id: ID! # "collIndex:collId", e.g. 0:0x1731afc858cad2708001a4f71851f9f775729c22f47df7c4360b1e416fd0f2de
   borrower: Bytes!
-  debt: BigInt!
-  deposit: BigInt!
-  stake: BigInt!
-  interestRate: BigInt!
-  createdAt: BigInt!
   closedAt: BigInt
   collateral: Collateral!
+  createdAt: BigInt!
+  debt: BigInt!
+  deposit: BigInt!
+  interestBatch: InterestBatch
+  interestRate: BigInt!
+  stake: BigInt!
+  status: TroveStatus!
+  troveId: String!
+  usedLeverageZapper: Boolean!
+  updatedAt: BigInt!
 }
 
 type BorrowerInfo @entity {
-  id: ID!
+  id: ID! # "borrowerAddress", e.g. "0x0000000000000000000000000000000000000000"
   troves: Int!
   trovesByCollateral: [Int!]!
 }
 
 type StabilityPool @entity {
-  id: ID!
+  id: ID! # "collIndex", e.g. "0"
   totalDeposited: BigInt!
 }
 
 type StabilityPoolDeposit @entity {
-  id: ID!
-  boldGain: BigInt!
-  collGain: BigInt!
+  id: ID! # "collIndex:depositor", e.g. "0:0x0000000000000000000000000000000000000000"
   collateral: Collateral!
   deposit: BigInt!
   depositor: Bytes!
+  snapshot: StabilityPoolDepositSnapshot!
+}
+
+type StabilityPoolDepositSnapshot @entity {
+  id: ID! # "collIndex:depositor", e.g. "0:0x0000000000000000000000000000000000000000"
+  B: BigInt!
+  P: BigInt!
+  S: BigInt!
+  epoch: BigInt!
+  scale: BigInt!
+  deposit: StabilityPoolDeposit! @derivedFrom(field: "snapshot")
+}
+
+# Data (S and B snapshots) related to a given epoch + scale combination.
+# It corresponds to the epochToScaleToS and epochToScaleToB mappings in StabilityPool.sol.
+type StabilityPoolEpochScale @entity {
+  id: ID! # "collIndex:epoch:scale", e.g. "0:0:0"
+  S: BigInt!
+  B: BigInt!
+}
+
+type InterestBatch @entity {
+  id: ID! # "collIndex:batchManager", e.g. "0:0x0000000000000000000000000000000000000000"
+  collateral: Collateral!
+  batchManager: Bytes!
+  debt: BigInt!
+  coll: BigInt!
+  annualInterestRate: BigInt!
+  annualManagementFee: BigInt!
+  troves: [Trove!]! @derivedFrom(field: "interestBatch")
 }
