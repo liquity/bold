@@ -59,6 +59,31 @@ export default {
     ],
   },
 
+  // Redemption info box
+  redemptionInfo: {
+    title: "Redemptions in a nutshell",
+    subtitle:
+      "Redemptions are different from liquidations. If a loan is (partially) redeemed, the collateral and debt are reduced proportionally. There is no penalty for redemptions.",
+    infoItems: [
+      {
+        icon: "bold",
+        text: "If BOLD goes below $1, redemptions help restore the peg.",
+      },
+      {
+        icon: "redemption",
+        text: "Redemptions first affect loans with the lowest interest rate.",
+      },
+      {
+        icon: "interest",
+        text: "Raising the interest rate reduces the redemption risk.",
+      },
+    ],
+    learnMore: {
+      text: "Learn more about redemptions",
+      href: "https://github.com/liquity/bold#bold-redemptions",
+    },
+  },
+
   // Home screen
   home: {
     openPositionTitle: "Open your first position",
@@ -313,7 +338,7 @@ export default {
       ],
     },
   },
-};
+} as const;
 
 function Link({
   href,

@@ -1,29 +1,23 @@
-import type { ComponentType, SVGProps } from "react";
-
+import content from "@/src/content";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, IconExternal } from "@liquity2/uikit";
 import { a, useInView, useTransition } from "@react-spring/web";
 
-const TITLE = "Redemptions in a nutshell";
-const SUBTITLE =
-  "Redemptions are different from liquidations. If a loan is (partially) redeemed, the collateral and debt are reduced proportionally. There is no penalty for redemptions.";
+const { title, subtitle, infoItems, learnMore } = content.redemptionInfo;
 
-const INFO_ITEMS: Array<[
-  ComponentType<SVGProps<SVGSVGElement>>,
-  string,
-]> = [
-  [BoldIcon, "If BOLD goes below $1, redemptions help restore the peg."],
-  [RedemptionIcon, "Redemptions first affect loans with the lowest interest rate."],
-  [InterestIcon, "Raising the interest rate reduces the redemption risk."],
-];
+const iconComponents = {
+  bold: BoldIcon,
+  redemption: RedemptionIcon,
+  interest: InterestIcon,
+} as const;
 
 export function RedemptionInfo() {
   const [ref, inView] = useInView({ once: true });
 
   const iconsTrail = useTransition(
-    INFO_ITEMS.map((item) => [...item, inView] as const),
+    infoItems.map((item) => ({ ...item, inView })),
     {
-      keys: ([_, text, inView]) => `${text}-${inView}`,
+      keys: ({ text, inView }) => `${text}-${inView}`,
       from: {
         opacity: 0,
         transform: `
@@ -73,7 +67,7 @@ export function RedemptionInfo() {
             fontWeight: 600,
           })}
         >
-          {TITLE}
+          {title}
         </h1>
         <p
           className={css({
@@ -81,7 +75,7 @@ export function RedemptionInfo() {
             color: "contentAlt",
           })}
         >
-          {SUBTITLE}
+          {subtitle}
         </p>
       </header>
 
@@ -99,7 +93,8 @@ export function RedemptionInfo() {
           },
         })}
       >
-        {iconsTrail((props, [Icon, text], _, index) => {
+        {iconsTrail((props, item, _, index) => {
+          const Icon = iconComponents[item.icon];
           return (
             <li key={index}>
               <div
@@ -117,7 +112,7 @@ export function RedemptionInfo() {
                   <Icon />
                 </a.div>
               </div>
-              <div>{text}</div>
+              <div>{item.text}</div>
             </li>
           );
         })}
@@ -125,7 +120,7 @@ export function RedemptionInfo() {
 
       <div>
         <AnchorTextButton
-          href="https://github.com/liquity/bold#bold-redemptions"
+          href={learnMore.href}
           rel="noopener noreferrer"
           target="_blank"
           label={
@@ -138,7 +133,7 @@ export function RedemptionInfo() {
               })}
             >
               <span>
-                Learn more about redemptions
+                {learnMore.text}
               </span>
               <IconExternal size={16} />
             </span>
