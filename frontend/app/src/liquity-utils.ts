@@ -215,18 +215,15 @@ function earnPositionFromGraph(
 
 export function useStakePosition(address: null | Address) {
   const LqtyStaking = getProtocolContract("LqtyStaking");
-
   return useReadContracts({
     contracts: [
       {
-        abi: LqtyStaking.abi,
-        address: LqtyStaking.address,
+        ...LqtyStaking,
         functionName: "stakes",
         args: [address ?? "0x"],
       },
       {
-        abi: LqtyStaking.abi,
-        address: LqtyStaking.address,
+        ...LqtyStaking,
         functionName: "totalLQTYStaked",
       },
     ],
@@ -306,15 +303,15 @@ const EMPTY_TROVE_CHANGE = {
 } as const;
 
 export function useAverageInterestRateFromActivePool(collIndex: null | CollIndex) {
-  const activePool = getCollateralContract(collIndex, "ActivePool");
+  const ActivePool = getCollateralContract(collIndex, "ActivePool");
   const result = useReadContract(
-    !activePool ? {} : {
-      address: activePool.address,
-      abi: activePool.abi,
+    !ActivePool ? {} : {
+      address: ActivePool.address,
+      abi: ActivePool.abi,
       functionName: "getNewApproxAvgInterestRateFromTroveChange",
       args: [EMPTY_TROVE_CHANGE],
       query: {
-        enabled: Boolean(activePool),
+        enabled: ActivePool !== null,
         refetchInterval: DATA_REFRESH_INTERVAL,
       },
     },
@@ -375,4 +372,79 @@ export function useInterestRateChartData(collIndex: null | CollIndex) {
     ...chartData,
     data: [],
   };
+}
+
+export function usePredictOpenTroveUpfrontFee(
+  collIndex: CollIndex,
+  borrowedAmount: Dnum,
+  interestRateOrBatch: Address | Dnum,
+) {
+  const batch = isAddress(interestRateOrBatch);
+
+  return useReadContract({
+    ...getProtocolContract("HintHelpers"),
+    functionName: batch
+      ? "predictOpenTroveAndJoinBatchUpfrontFee"
+      : "predictOpenTroveUpfrontFee",
+    args: batch
+      ? [BigInt(collIndex), borrowedAmount[0], interestRateOrBatch]
+      : [BigInt(collIndex), borrowedAmount[0], interestRateOrBatch[0]],
+    query: {
+      refetchInterval: DATA_REFRESH_INTERVAL,
+      select: dnum18,
+    },
+  });
+}
+
+export function usePredictAdjustTroveUpfrontFee(
+  collIndex: CollIndex,
+  troveId: TroveId,
+  debtIncrease: Dnum,
+) {
+  return useReadContract({
+    ...getProtocolContract("HintHelpers"),
+    functionName: "predictAdjustTroveUpfrontFee",
+    args: [
+      BigInt(collIndex),
+      BigInt(troveId),
+      debtIncrease[0],
+    ],
+    query: {
+      refetchInterval: DATA_REFRESH_INTERVAL,
+      select: dnum18,
+    },
+  });
+}
+
+// predicts the upfront fee for:
+// - adjusting the interest rate of a trove (non-batch => non-batch)
+// - joining a batch with a new interest rate (non-batch => batch or batch => batch)
+// - removing a trove from a batch (batch => non-batch)
+export function usePredictAdjustInterestRateUpfrontFee(
+  collIndex: CollIndex,
+  troveId: TroveId,
+  newInterestRateOrBatch: Address | Dnum,
+  fromBatch: boolean,
+) {
+  const functionName = isAddress(newInterestRateOrBatch)
+    ? "predictJoinBatchInterestRateUpfrontFee"
+    : fromBatch
+    ? "predictRemoveFromBatchUpfrontFee"
+    : "predictAdjustInterestRateUpfrontFee";
+
+  return useReadContract({
+    ...getProtocolContract("HintHelpers"),
+    functionName,
+    args: [
+      BigInt(collIndex),
+      BigInt(troveId),
+      typeof newInterestRateOrBatch === "string"
+        ? newInterestRateOrBatch
+        : newInterestRateOrBatch[0],
+    ],
+    query: {
+      refetchInterval: DATA_REFRESH_INTERVAL,
+      select: dnum18,
+    },
+  });
 }
