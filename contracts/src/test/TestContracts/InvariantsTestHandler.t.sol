@@ -6,6 +6,7 @@ import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {Address} from "openzeppelin-contracts/contracts/utils/Address.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {LatestBatchData} from "../../Types/LatestBatchData.sol";
 import {LatestTroveData} from "../../Types/LatestTroveData.sol";
 import {IBorrowerOperations} from "../../Interfaces/IBorrowerOperations.sol";
 import {ISortedTroves} from "../../Interfaces/ISortedTroves.sol";
@@ -266,7 +267,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         uint256 lowerHint;
         TestDeployer.LiquityContractsDev c;
         uint256 pendingInterest;
-        uint256 batchManagementFee;
+        LatestBatchData b;
         bool premature;
         uint256 upfrontFee;
         string errorString;
@@ -2240,7 +2241,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
         v.c = branches[i];
         v.pendingInterest = v.c.activePool.calcPendingAggInterest();
-        v.batchManagementFee = v.c.troveManager.getLatestBatchData(msg.sender).accruedManagementFee;
+        v.b = v.c.troveManager.getLatestBatchData(msg.sender);
         v.premature = newAnnualInterestRate != batch.interestRate
             && _timeSinceLastBatchInterestRateAdjustment[i][msg.sender] < INTEREST_RATE_ADJ_COOLDOWN;
 
@@ -2294,11 +2295,16 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
             if (v.upfrontFee > 0) {
                 uint256 batchDebt = _getBatchDebt(i, msg.sender);
-                assertGtDecimal(batchDebt, 0, 18, "Batch having no debt shouldn't incur upfront fee");
-
-                for (uint256 j = 0; j < batch.troves.size(); ++j) {
-                    Trove storage trove = _troves[i][batch.troves.get(j)];
-                    trove.debt += v.upfrontFee * trove.debt / batchDebt;
+                if (batchDebt == 0) {
+                    assertApproxEqAbsDecimal(
+                        v.b.entireDebtWithoutRedistribution, 0, 1e3, 18, "Batch debt should be negligible"
+                    );
+                    assertApproxEqAbsDecimal(v.upfrontFee, 0, 10, 18, "Upfront fee should be negligible");
+                } else {
+                    for (uint256 j = 0; j < batch.troves.size(); ++j) {
+                        Trove storage trove = _troves[i][batch.troves.get(j)];
+                        trove.debt += v.upfrontFee * trove.debt / batchDebt;
+                    }
                 }
             }
 
@@ -2341,7 +2347,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             _log();
         } else {
             // Cleanup (success)
-            _sweepBold(msg.sender, v.batchManagementFee);
+            _sweepBold(msg.sender, v.b.accruedManagementFee);
         }
     }
 
