@@ -255,8 +255,12 @@ Deploying Liquity contracts with the following settings:
     ...collateralContracts.flatMap((contracts) => Object.keys(contracts).map((name) => name.length)),
   );
 
-  const formatContracts = (contracts: Array<string[]>) =>
-    contracts.map(([name, address]) => `  ${name.padEnd(longestContractName)}  ${address}`).join("\n");
+  const formatContracts = (contracts: Array<string[]>) => (
+    contracts.map(([name, address]) => {
+      name = name[0].toUpperCase() + name.slice(1);
+      return `  ${name.padEnd(longestContractName)}  ${address}`;
+    }).join("\n")
+  );
 
   echo("Protocol contracts:");
   echo("");
