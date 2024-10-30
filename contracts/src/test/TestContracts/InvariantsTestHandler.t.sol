@@ -293,6 +293,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         uint256 troveId;
         uint256 coll;
         uint256 debt;
+        bool becomesZombie;
     }
 
     struct RedemptionTransientState {
@@ -412,6 +413,10 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         return _zombieTroveIds[i].size();
     }
 
+    function troveIdOf(uint256 i, address owner) external view returns (uint256) {
+        return _troveIdOf(i, owner);
+    }
+
     function getTrove(uint256 i, uint256 j)
         external
         view
@@ -421,12 +426,12 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             uint256 debt,
             ITroveManager.Status status,
             address batchManager,
-            uint256 totalCollRedist,
-            uint256 totalDebtRedist
+            uint256 totalCollRedist_,
+            uint256 totalDebtRedist_
         )
     {
         troveId = _troveIds[i].get(j);
-        (coll, debt, status, batchManager, totalCollRedist, totalDebtRedist) = getTroveById(i, troveId);
+        (coll, debt, status, batchManager, totalCollRedist_, totalDebtRedist_) = getTroveById(i, troveId);
     }
 
     function getTroveById(uint256 i, uint256 troveId)
@@ -437,8 +442,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             uint256 debt,
             ITroveManager.Status status,
             address batchManager,
-            uint256 totalCollRedist,
-            uint256 totalDebtRedist
+            uint256 totalCollRedist_,
+            uint256 totalDebtRedist_
         )
     {
         Trove memory trove = _troves[i][troveId];
@@ -448,8 +453,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         debt = trove.debt;
         status = _isZombie(i, troveId) ? ZOMBIE : ACTIVE;
         batchManager = _batchManagerOf[i][troveId];
-        totalCollRedist = trove.totalCollRedist;
-        totalDebtRedist = trove.totalDebtRedist;
+        totalCollRedist_ = trove.totalCollRedist;
+        totalDebtRedist_ = trove.totalDebtRedist;
     }
 
     function getBatchSize(uint256 i, address batchManager) external view returns (uint256) {
@@ -1310,9 +1315,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
                     _troves[j][redeemed.troveId] = trove;
 
-                    if (branches[j].troveManager.getTroveEntireDebt(redeemed.troveId) < MIN_DEBT) {
-                        _zombieTroveIds[j].add(redeemed.troveId);
-                    }
+                    if (redeemed.becomesZombie) _zombieTroveIds[j].add(redeemed.troveId);
                 }
 
                 designatedVictimId[j] = r[j].newDesignatedVictimId;
@@ -2671,18 +2674,20 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         if (_ICR(i, trove) < _100pct) return 0;
 
         debtRedeemed = Math.min(remainingAmount, trove.entireDebt);
+        uint256 newDebt = trove.entireDebt - debtRedeemed;
         uint256 collRedeemedPlusFee = debtRedeemed * DECIMAL_PRECISION / _price[i];
         uint256 fee = collRedeemedPlusFee * feePct / _100pct;
         uint256 collRedeemed = collRedeemedPlusFee - fee;
 
         mapping(uint256 branchIdx => RedemptionTransientState) storage r = _redemption;
-        r[i].redeemed.push(Redeemed({troveId: troveId, coll: collRedeemed, debt: debtRedeemed}));
+        r[i].redeemed.push(
+            Redeemed({troveId: troveId, coll: collRedeemed, debt: debtRedeemed, becomesZombie: newDebt < MIN_DEBT})
+        );
         r[i].totalCollRedeemed += collRedeemed;
 
         address batchManager = _batchManagerOf[i][troveId];
         if (batchManager != address(0)) r[i].batchManagers.add(batchManager);
 
-        uint256 newDebt = trove.entireDebt - debtRedeemed;
         if (troveId == designatedVictimId[i] && newDebt == 0) r[i].newDesignatedVictimId = 0;
         if (0 < newDebt && newDebt < MIN_DEBT) r[i].newDesignatedVictimId = troveId;
     }
@@ -2774,7 +2779,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
                 debtRedeemed = trove.entireColl * _price[i] / (DECIMAL_PRECISION + URGENT_REDEMPTION_BONUS);
             }
 
-            r.redeemed.push(Redeemed({troveId: troveId, coll: collRedeemed, debt: debtRedeemed}));
+            r.redeemed.push(Redeemed({troveId: troveId, coll: collRedeemed, debt: debtRedeemed, becomesZombie: false}));
 
             address batchManager = _batchManagerOf[i][troveId];
             if (batchManager != address(0)) r.batchManagers.add(batchManager);
