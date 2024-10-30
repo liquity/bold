@@ -458,6 +458,8 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
 
   const totalSteps = flow?.steps?.length ?? 0;
 
+  const queryClient = useQueryClient();
+
   // handle transaction receipt
   useEffect(() => {
     if (txReceipt.status !== "pending") {
@@ -492,12 +494,14 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
         ) ?? null,
         txStatus: "confirmed",
       });
+      queryClient.invalidateQueries();
       return;
     }
   }, [
     contractWrite,
     currentStepIndex,
     declaration,
+    queryClient,
     totalSteps,
     txReceipt,
     updateStep,
