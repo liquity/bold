@@ -49,7 +49,7 @@ contract HintHelpers is IHintHelpers {
             uint256 arrayIndex = latestRandomSeed % arrayLength;
             uint256 currentId = troveManager.getTroveFromTroveIdsArray(arrayIndex);
 
-            // Skip this Trove if it's unredeeamable and not in the sorted list
+            // Skip this Trove if it's zombie and not in the sorted list
             if (!sortedTroves.contains(currentId)) continue;
 
             uint256 currentInterestRate = troveManager.getTroveAnnualInterestRate(currentId);

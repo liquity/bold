@@ -11,6 +11,8 @@ import "./Interfaces/ITroveManagerTester.sol";
 for testing the parent's internal functions. */
 
 contract TroveManagerTester is ITroveManagerTester, TroveManager {
+    uint256 constant STALE_TROVE_DURATION = 90 days;
+
     constructor(IAddressesRegistry _addressesRegistry) TroveManager(_addressesRegistry) {}
 
     // Single liquidation function. Closes the trove if its ICR is lower than the minimum collateral ratio.
@@ -66,6 +68,14 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
 
     function getTotalCollateralSnapshot() external view returns (uint256) {
         return totalCollateralSnapshot;
+    }
+
+    function get_lastCollError_Redistribution() external view returns (uint256) {
+        return lastCollError_Redistribution;
+    }
+
+    function get_lastBoldDebtError_Redistribution() external view returns (uint256) {
+        return lastBoldDebtError_Redistribution;
     }
 
     function getTroveId(uint256 _index) external view returns (uint256) {
