@@ -1358,6 +1358,7 @@ export type Trove = {
   readonly stake: Scalars['BigInt']['output'];
   readonly status: TroveStatus;
   readonly troveId: Scalars['String']['output'];
+  readonly usedLeverageZapper: Scalars['Boolean']['output'];
 };
 
 export type TroveStatus =
@@ -1499,6 +1500,10 @@ export type Trove_filter = {
   readonly troveId_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
   readonly troveId_not_ends_with?: InputMaybe<Scalars['String']['input']>;
   readonly troveId_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly usedLeverageZapper?: InputMaybe<Scalars['Boolean']['input']>;
+  readonly usedLeverageZapper_not?: InputMaybe<Scalars['Boolean']['input']>;
+  readonly usedLeverageZapper_in?: InputMaybe<ReadonlyArray<Scalars['Boolean']['input']>>;
+  readonly usedLeverageZapper_not_in?: InputMaybe<ReadonlyArray<Scalars['Boolean']['input']>>;
   /** Filter for the block changed event. */
   readonly _change_block?: InputMaybe<BlockChangedFilter>;
   readonly and?: InputMaybe<ReadonlyArray<InputMaybe<Trove_filter>>>;
@@ -1529,7 +1534,8 @@ export type Trove_orderBy =
   | 'interestRate'
   | 'stake'
   | 'status'
-  | 'troveId';
+  | 'troveId'
+  | 'usedLeverageZapper';
 
 export type _Block_ = {
   /** The hash of the block */

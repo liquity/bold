@@ -1381,6 +1381,7 @@ export type Trove = {
   readonly stake: Scalars['BigInt']['output'];
   readonly status: TroveStatus;
   readonly troveId: Scalars['String']['output'];
+  readonly usedLeverageZapper: Scalars['Boolean']['output'];
 };
 
 export type TroveStatus =
@@ -1522,6 +1523,10 @@ export type Trove_filter = {
   readonly troveId_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
   readonly troveId_not_ends_with?: InputMaybe<Scalars['String']['input']>;
   readonly troveId_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  readonly usedLeverageZapper?: InputMaybe<Scalars['Boolean']['input']>;
+  readonly usedLeverageZapper_not?: InputMaybe<Scalars['Boolean']['input']>;
+  readonly usedLeverageZapper_in?: InputMaybe<ReadonlyArray<Scalars['Boolean']['input']>>;
+  readonly usedLeverageZapper_not_in?: InputMaybe<ReadonlyArray<Scalars['Boolean']['input']>>;
   /** Filter for the block changed event. */
   readonly _change_block?: InputMaybe<BlockChangedFilter>;
   readonly and?: InputMaybe<ReadonlyArray<InputMaybe<Trove_filter>>>;
@@ -1552,7 +1557,8 @@ export type Trove_orderBy =
   | 'interestRate'
   | 'stake'
   | 'status'
-  | 'troveId';
+  | 'troveId'
+  | 'usedLeverageZapper';
 
 export type _Block_ = {
   /** The hash of the block */
@@ -1966,6 +1972,7 @@ export type TroveResolvers<ContextType = MeshContext, ParentType extends Resolve
   stake?: Resolver<ResolversTypes['BigInt'], ParentType, ContextType>;
   status?: Resolver<ResolversTypes['TroveStatus'], ParentType, ContextType>;
   troveId?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
+  usedLeverageZapper?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 }>;
 
@@ -2080,16 +2087,16 @@ const merger = new(BareMerger as any)({
         store: rootStore.child('bareMerger')
       })
 const documentHashMap = {
-        "e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": TotalDepositedDocument,
-"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": TrovesByAccountDocument,
-"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": TrovesCountDocument,
-"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": TroveByIdDocument,
-"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": StabilityPoolDocument,
-"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": StabilityPoolDepositsByAccountDocument,
-"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": StabilityPoolDepositDocument,
-"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": StabilityPoolEpochScaleDocument,
-"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": InterestBatchDocument,
-"e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac": InterestRateBracketsDocument
+        "c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6": TotalDepositedDocument,
+"c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6": TrovesCountDocument,
+"c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6": TrovesByAccountDocument,
+"c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6": TroveByIdDocument,
+"c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6": StabilityPoolDocument,
+"c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6": StabilityPoolDepositsByAccountDocument,
+"c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6": StabilityPoolDepositDocument,
+"c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6": StabilityPoolEpochScaleDocument,
+"c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6": InterestBatchDocument,
+"c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6": InterestRateBracketsDocument
       }
 additionalEnvelopPlugins.push(usePersistedOperations({
         getPersistedOperation(key) {
@@ -2116,70 +2123,70 @@ additionalEnvelopPlugins.push(usePersistedOperations({
           return printWithCache(TotalDepositedDocument);
         },
         location: 'TotalDepositedDocument.graphql',
-        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
-      },{
-        document: TrovesByAccountDocument,
-        get rawSDL() {
-          return printWithCache(TrovesByAccountDocument);
-        },
-        location: 'TrovesByAccountDocument.graphql',
-        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
+        sha256Hash: 'c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6'
       },{
         document: TrovesCountDocument,
         get rawSDL() {
           return printWithCache(TrovesCountDocument);
         },
         location: 'TrovesCountDocument.graphql',
-        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
+        sha256Hash: 'c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6'
+      },{
+        document: TrovesByAccountDocument,
+        get rawSDL() {
+          return printWithCache(TrovesByAccountDocument);
+        },
+        location: 'TrovesByAccountDocument.graphql',
+        sha256Hash: 'c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6'
       },{
         document: TroveByIdDocument,
         get rawSDL() {
           return printWithCache(TroveByIdDocument);
         },
         location: 'TroveByIdDocument.graphql',
-        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
+        sha256Hash: 'c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6'
       },{
         document: StabilityPoolDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDocument);
         },
         location: 'StabilityPoolDocument.graphql',
-        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
+        sha256Hash: 'c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6'
       },{
         document: StabilityPoolDepositsByAccountDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDepositsByAccountDocument);
         },
         location: 'StabilityPoolDepositsByAccountDocument.graphql',
-        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
+        sha256Hash: 'c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6'
       },{
         document: StabilityPoolDepositDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolDepositDocument);
         },
         location: 'StabilityPoolDepositDocument.graphql',
-        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
+        sha256Hash: 'c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6'
       },{
         document: StabilityPoolEpochScaleDocument,
         get rawSDL() {
           return printWithCache(StabilityPoolEpochScaleDocument);
         },
         location: 'StabilityPoolEpochScaleDocument.graphql',
-        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
+        sha256Hash: 'c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6'
       },{
         document: InterestBatchDocument,
         get rawSDL() {
           return printWithCache(InterestBatchDocument);
         },
         location: 'InterestBatchDocument.graphql',
-        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
+        sha256Hash: 'c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6'
       },{
         document: InterestRateBracketsDocument,
         get rawSDL() {
           return printWithCache(InterestRateBracketsDocument);
         },
         location: 'InterestRateBracketsDocument.graphql',
-        sha256Hash: 'e15d7ee1be0ad1e31965caee079f4ec8fa46098897ccce9b844aab3929bc47ac'
+        sha256Hash: 'c8937bf8ffa8a12b480372131ac181f98a911fb179676e6c1fc9b2174a76e0a6'
       }
     ];
     },
@@ -2239,19 +2246,6 @@ export type TotalDepositedQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type TotalDepositedQuery = { readonly collaterals: ReadonlyArray<Pick<Collateral, 'collIndex' | 'totalDeposited'>> };
 
-export type TrovesByAccountQueryVariables = Exact<{
-  account: Scalars['Bytes']['input'];
-}>;
-
-
-export type TrovesByAccountQuery = { readonly troves: ReadonlyArray<(
-    Pick<Trove, 'id' | 'troveId' | 'borrower' | 'debt' | 'deposit' | 'stake' | 'interestRate' | 'createdAt' | 'closedAt'>
-    & { readonly collateral: (
-      Pick<Collateral, 'id' | 'minCollRatio' | 'collIndex'>
-      & { readonly token: Pick<Token, 'symbol' | 'name'> }
-    ), readonly interestBatch?: Maybe<Pick<InterestBatch, 'id' | 'annualInterestRate' | 'annualManagementFee' | 'batchManager'>> }
-  )> };
-
 export type TrovesCountQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -2259,13 +2253,26 @@ export type TrovesCountQueryVariables = Exact<{
 
 export type TrovesCountQuery = { readonly borrowerInfo?: Maybe<Pick<BorrowerInfo, 'troves' | 'trovesByCollateral'>> };
 
+export type TrovesByAccountQueryVariables = Exact<{
+  account: Scalars['Bytes']['input'];
+}>;
+
+
+export type TrovesByAccountQuery = { readonly troves: ReadonlyArray<(
+    Pick<Trove, 'id' | 'borrower' | 'closedAt' | 'createdAt' | 'debt' | 'deposit' | 'interestRate' | 'stake' | 'troveId' | 'usedLeverageZapper'>
+    & { readonly collateral: (
+      Pick<Collateral, 'id' | 'minCollRatio' | 'collIndex'>
+      & { readonly token: Pick<Token, 'symbol' | 'name'> }
+    ), readonly interestBatch?: Maybe<Pick<InterestBatch, 'id' | 'annualInterestRate' | 'annualManagementFee' | 'batchManager'>> }
+  )> };
+
 export type TroveByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
 export type TroveByIdQuery = { readonly trove?: Maybe<(
-    Pick<Trove, 'id' | 'troveId' | 'borrower' | 'debt' | 'deposit' | 'stake' | 'interestRate' | 'createdAt' | 'closedAt'>
+    Pick<Trove, 'id' | 'borrower' | 'closedAt' | 'createdAt' | 'debt' | 'deposit' | 'interestRate' | 'stake' | 'troveId' | 'usedLeverageZapper'>
     & { readonly collateral: (
       Pick<Collateral, 'id' | 'minCollRatio' | 'collIndex'>
       & { readonly token: Pick<Token, 'symbol' | 'name'> }
@@ -2332,36 +2339,6 @@ export const TotalDepositedDocument = gql`
   }
 }
     ` as unknown as DocumentNode<TotalDepositedQuery, TotalDepositedQueryVariables>;
-export const TrovesByAccountDocument = gql`
-    query TrovesByAccount($account: Bytes!) {
-  troves(where: {borrower: $account, closedAt: null}) {
-    id
-    troveId
-    borrower
-    debt
-    deposit
-    stake
-    interestRate
-    createdAt
-    closedAt
-    collateral {
-      id
-      token {
-        symbol
-        name
-      }
-      minCollRatio
-      collIndex
-    }
-    interestBatch {
-      id
-      annualInterestRate
-      annualManagementFee
-      batchManager
-    }
-  }
-}
-    ` as unknown as DocumentNode<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
 export const TrovesCountDocument = gql`
     query TrovesCount($id: ID!) {
   borrowerInfo(id: $id) {
@@ -2370,17 +2347,11 @@ export const TrovesCountDocument = gql`
   }
 }
     ` as unknown as DocumentNode<TrovesCountQuery, TrovesCountQueryVariables>;
-export const TroveByIdDocument = gql`
-    query TroveById($id: ID!) {
-  trove(id: $id) {
+export const TrovesByAccountDocument = gql`
+    query TrovesByAccount($account: Bytes!) {
+  troves(where: {borrower: $account, closedAt: null}) {
     id
-    troveId
     borrower
-    debt
-    deposit
-    stake
-    interestRate
-    createdAt
     closedAt
     collateral {
       id
@@ -2391,12 +2362,50 @@ export const TroveByIdDocument = gql`
       minCollRatio
       collIndex
     }
+    createdAt
+    debt
+    deposit
     interestBatch {
       id
       annualInterestRate
       annualManagementFee
       batchManager
     }
+    interestRate
+    stake
+    troveId
+    usedLeverageZapper
+  }
+}
+    ` as unknown as DocumentNode<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
+export const TroveByIdDocument = gql`
+    query TroveById($id: ID!) {
+  trove(id: $id) {
+    id
+    borrower
+    closedAt
+    collateral {
+      id
+      token {
+        symbol
+        name
+      }
+      minCollRatio
+      collIndex
+    }
+    createdAt
+    debt
+    deposit
+    interestBatch {
+      id
+      annualInterestRate
+      annualManagementFee
+      batchManager
+    }
+    interestRate
+    stake
+    troveId
+    usedLeverageZapper
   }
 }
     ` as unknown as DocumentNode<TroveByIdQuery, TroveByIdQueryVariables>;
@@ -2494,11 +2503,11 @@ export function getSdk<C, E>(requester: Requester<C, E>) {
     TotalDeposited(variables?: TotalDepositedQueryVariables, options?: C): Promise<TotalDepositedQuery> {
       return requester<TotalDepositedQuery, TotalDepositedQueryVariables>(TotalDepositedDocument, variables, options) as Promise<TotalDepositedQuery>;
     },
-    TrovesByAccount(variables: TrovesByAccountQueryVariables, options?: C): Promise<TrovesByAccountQuery> {
-      return requester<TrovesByAccountQuery, TrovesByAccountQueryVariables>(TrovesByAccountDocument, variables, options) as Promise<TrovesByAccountQuery>;
-    },
     TrovesCount(variables: TrovesCountQueryVariables, options?: C): Promise<TrovesCountQuery> {
       return requester<TrovesCountQuery, TrovesCountQueryVariables>(TrovesCountDocument, variables, options) as Promise<TrovesCountQuery>;
+    },
+    TrovesByAccount(variables: TrovesByAccountQueryVariables, options?: C): Promise<TrovesByAccountQuery> {
+      return requester<TrovesByAccountQuery, TrovesByAccountQueryVariables>(TrovesByAccountDocument, variables, options) as Promise<TrovesByAccountQuery>;
     },
     TroveById(variables: TroveByIdQueryVariables, options?: C): Promise<TroveByIdQuery> {
       return requester<TroveByIdQuery, TroveByIdQueryVariables>(TroveByIdDocument, variables, options) as Promise<TroveByIdQuery>;

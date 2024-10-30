@@ -5,35 +5,6 @@ query TotalDeposited {
   }
 }
 
-query TrovesByAccount($account: Bytes!) {
-  troves(where: { borrower: $account, closedAt: null }) {
-    id
-    troveId
-    borrower
-    debt
-    deposit
-    stake
-    interestRate
-    createdAt
-    closedAt
-    collateral {
-      id
-      token {
-        symbol
-        name
-      }
-      minCollRatio
-      collIndex
-    }
-    interestBatch {
-      id
-      annualInterestRate
-      annualManagementFee
-      batchManager
-    }
-  }
-}
-
 query TrovesCount($id: ID!) {
   borrowerInfo(id: $id) {
     troves
@@ -41,16 +12,10 @@ query TrovesCount($id: ID!) {
   }
 }
 
-query TroveById($id: ID!) {
-  trove(id: $id) {
+query TrovesByAccount($account: Bytes!) {
+  troves(where: { borrower: $account, closedAt: null }) {
     id
-    troveId
     borrower
-    debt
-    deposit
-    stake
-    interestRate
-    createdAt
     closedAt
     collateral {
       id
@@ -61,12 +26,49 @@ query TroveById($id: ID!) {
       minCollRatio
       collIndex
     }
+    createdAt
+    debt
+    deposit
     interestBatch {
       id
       annualInterestRate
       annualManagementFee
       batchManager
     }
+    interestRate
+    stake
+    troveId
+    usedLeverageZapper
+  }
+}
+
+query TroveById($id: ID!) {
+  trove(id: $id) {
+    id
+    borrower
+    closedAt
+    collateral {
+      id
+      token {
+        symbol
+        name
+      }
+      minCollRatio
+      collIndex
+    }
+    createdAt
+    debt
+    deposit
+    interestBatch {
+      id
+      annualInterestRate
+      annualManagementFee
+      batchManager
+    }
+    interestRate
+    stake
+    troveId
+    usedLeverageZapper
   }
 }
 

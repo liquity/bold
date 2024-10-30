@@ -1474,6 +1474,7 @@ type Trove {
   stake: BigInt!
   status: TroveStatus!
   troveId: String!
+  usedLeverageZapper: Boolean!
 }
 
 enum TroveStatus {
@@ -1616,6 +1617,10 @@ input Trove_filter {
   troveId_ends_with_nocase: String
   troveId_not_ends_with: String
   troveId_not_ends_with_nocase: String
+  usedLeverageZapper: Boolean
+  usedLeverageZapper_not: Boolean
+  usedLeverageZapper_in: [Boolean!]
+  usedLeverageZapper_not_in: [Boolean!]
   """Filter for the block changed event."""
   _change_block: BlockChangedFilter
   and: [Trove_filter]
@@ -1647,6 +1652,7 @@ enum Trove_orderBy {
   stake
   status
   troveId
+  usedLeverageZapper
 }
 
 type _Block_ {

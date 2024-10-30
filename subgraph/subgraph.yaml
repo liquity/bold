@@ -58,6 +58,7 @@ templates:
         - event: TroveOperation(indexed
             uint256,uint8,uint256,uint256,uint256,int256,uint256,int256)
           handler: handleTroveOperation
+          receipt: true
         - event: BatchUpdated(indexed
             address,uint8,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleBatchUpdated

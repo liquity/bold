@@ -58,6 +58,8 @@ type Trove @entity {
   stake: BigInt!
   status: TroveStatus!
   troveId: String!
+  usedLeverageZapper: Boolean!
+  updatedAt: BigInt!
 }
 
 type BorrowerInfo @entity {

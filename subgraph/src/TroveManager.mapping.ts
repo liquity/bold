@@ -1,13 +1,12 @@
-import { Address, BigInt, dataSource, log } from "@graphprotocol/graph-ts";
+import { Address, BigInt, ByteArray, crypto, dataSource, ethereum, log } from "@graphprotocol/graph-ts";
 import { BorrowerInfo, Collateral, InterestBatch, InterestRateBracket, Trove } from "../generated/schema";
 import {
-  BatchedTroveUpdated as BatchedTroveUpdatedEvent,
   BatchUpdated as BatchUpdatedEvent,
   TroveManager as TroveManagerContract,
   TroveOperation as TroveOperationEvent,
-  TroveUpdated as TroveUpdatedEvent,
 } from "../generated/templates/TroveManager/TroveManager";
 import { TroveNFT as TroveNFTContract } from "../generated/templates/TroveManager/TroveNFT";
+import { leverageZappers } from "../leverage-zappers";
 
 // see Operation enum in
 // contracts/src/Interfaces/ITroveEvents.sol
@@ -23,14 +22,36 @@ let OP_OPEN_TROVE_AND_JOIN_BATCH = 7;
 let OP_SET_INTEREST_BATCH_MANAGER = 8;
 let OP_REMOVE_FROM_BATCH = 9;
 
+// let FLASH_LOAN_TOPIC_HASH = crypto.keccak256(
+//   ByteArray.fromUTF8("FlashLoan(address,address,uint256,uint256)"),
+// ).toHexString();
+
 export function handleTroveOperation(event: TroveOperationEvent): void {
   let timestamp = event.block.timestamp;
   let troveId = event.params._troveId;
   let collId = dataSource.context().getString("collId");
+  let collIndex = dataSource.context().getI32("collIndex");
   let troveFullId = collId + ":" + troveId.toHexString();
 
   let operation = event.params._operation;
   let tm = TroveManagerContract.bind(event.address);
+
+  let to = event.transaction.to;
+  let leverageZapper = Address.fromString(leverageZappers[collIndex]);
+  let toLeverageZapper = to ? leverageZapper.equals(to) : false;
+
+  // let hasFlashLoan = false;
+  // let receipt = event.receipt;
+  // if (receipt) {
+  //   for (let i = 0; i < receipt.logs.length; i++) {
+  //     const currentLog = receipt.logs[i];
+  //     const topicHash = currentLog.topics[0].toHexString();
+  //     if (topicHash == FLASH_LOAN_TOPIC_HASH) {
+  //       hasFlashLoan = true;
+  //       break;
+  //     }
+  //   }
+  // }
 
   switch (operation) {
     case OP_OPEN_TROVE:
@@ -38,27 +59,11 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
     case OP_ADJUST_TROVE_INTEREST_RATE:
     case OP_APPLY_PENDING_DEBT:
     case OP_REDEEM_COLLATERAL:
-      updateTrove(tm, troveId, timestamp);
-      break;
-
-    case OP_CLOSE_TROVE:
-    case OP_LIQUIDATE:
-      updateTrove(tm, troveId, timestamp);
-
-      let trove = Trove.load(troveFullId);
-      if (!trove) {
-        throw new Error("Trove not found: " + troveFullId);
-      }
-      if (trove.interestBatch !== null) {
-        leaveBatch(collId, troveId, BigInt.fromI32(0));
-      }
-      trove.closedAt = timestamp;
-      trove.status = operation === OP_LIQUIDATE ? "closedByLiquidation" : "closedByOwner";
-      trove.save();
+      updateTrove(tm, troveId, timestamp, toLeverageZapper);
       break;
 
     case OP_OPEN_TROVE_AND_JOIN_BATCH:
-      updateTrove(tm, troveId, timestamp);
+      updateTrove(tm, troveId, timestamp, toLeverageZapper);
       enterBatch(
         collId,
         troveId,
@@ -76,6 +81,22 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
 
     case OP_REMOVE_FROM_BATCH:
       leaveBatch(collId, troveId, event.params._annualInterestRate);
+      break;
+
+    case OP_CLOSE_TROVE:
+    case OP_LIQUIDATE:
+      updateTrove(tm, troveId, timestamp, toLeverageZapper);
+
+      let trove = Trove.load(troveFullId);
+      if (!trove) {
+        throw new Error("Trove not found: " + troveFullId);
+      }
+      if (trove.interestBatch !== null) {
+        leaveBatch(collId, troveId, BigInt.fromI32(0));
+      }
+      trove.closedAt = timestamp;
+      trove.status = operation === OP_LIQUIDATE ? "closedByLiquidation" : "closedByOwner";
+      trove.save();
       break;
   }
 }
@@ -213,8 +234,10 @@ function updateTrove(
   troveManagerContract: TroveManagerContract,
   troveId: BigInt,
   timestamp: BigInt,
+  usedLeverageZapper: boolean,
 ): void {
   let collId = dataSource.context().getString("collId");
+
   let collateral = Collateral.load(collId);
   if (!collateral) {
     throw new Error("Non-existent collateral: " + collId);
@@ -239,14 +262,14 @@ function updateTrove(
 
   // create trove if needed
   if (!trove) {
-    let borrowerAddress = TroveNFTContract.bind(Address.fromBytes(
+    let borrower = TroveNFTContract.bind(Address.fromBytes(
       dataSource.context().getBytes("address:troveNft"),
     )).ownerOf(troveId);
 
     // create borrower info if needed
-    let borrowerInfo = BorrowerInfo.load(borrowerAddress.toHexString());
+    let borrowerInfo = BorrowerInfo.load(borrower.toHexString());
     if (!borrowerInfo) {
-      borrowerInfo = new BorrowerInfo(borrowerAddress.toHexString());
+      borrowerInfo = new BorrowerInfo(borrower.toHexString());
       borrowerInfo.troves = 0;
 
       let totalCollaterals = dataSource.context().getI32("totalCollaterals");
@@ -262,17 +285,19 @@ function updateTrove(
 
     // create trove
     trove = new Trove(troveFullId);
+    trove.borrower = borrower;
     trove.collateral = collId;
-    trove.troveId = troveId.toHexString();
     trove.createdAt = timestamp;
-    trove.borrower = borrowerAddress;
-    trove.status = "active";
-
-    trove.interestRate = trove.interestBatch === null ? newInterestRate : BigInt.fromI32(0);
-    trove.deposit = newDeposit;
     trove.debt = newDebt;
+    trove.deposit = newDeposit;
+    trove.interestRate = trove.interestBatch === null
+      ? newInterestRate
+      : BigInt.fromI32(0);
     trove.stake = newStake;
-
+    trove.status = "active";
+    trove.troveId = troveId.toHexString();
+    trove.updatedAt = timestamp;
+    trove.usedLeverageZapper = usedLeverageZapper;
     trove.save();
   }
 
@@ -287,10 +312,14 @@ function updateTrove(
     );
   }
 
-  trove.deposit = newDeposit;
   trove.debt = newDebt;
+  trove.deposit = newDeposit;
+  trove.interestRate = trove.interestBatch === null
+    ? newInterestRate
+    : BigInt.fromI32(0);
   trove.stake = newStake;
-  trove.interestRate = trove.interestBatch === null ? newInterestRate : BigInt.fromI32(0);
+  trove.updatedAt = timestamp;
+  trove.usedLeverageZapper = usedLeverageZapper;
   trove.save();
 }
 

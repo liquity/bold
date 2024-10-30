@@ -1,11 +1,4 @@
-import type {
-  Address,
-  CollIndex,
-  Delegate,
-  PositionEarn,
-  PositionLoan,
-  PrefixedTroveId,
-} from "@/src/types";
+import type { Address, CollIndex, Delegate, PositionEarn, PositionLoan, PrefixedTroveId } from "@/src/types";
 
 import { getBuiltGraphSDK } from "@/.graphclient";
 import { ACCOUNT_POSITIONS, BORROW_STATS } from "@/src/demo-mode";
@@ -147,7 +140,6 @@ export function useLoanById(id?: null | PrefixedTroveId, options?: SubgraphHookO
           return null;
         }
         await sleep(500);
-
         for (const pos of ACCOUNT_POSITIONS) {
           if (isPositionLoan(pos) && `${pos.collIndex}:${pos.troveId}` === id) {
             return pos;
@@ -159,8 +151,6 @@ export function useLoanById(id?: null | PrefixedTroveId, options?: SubgraphHookO
         if (!isPrefixedtroveId(id)) {
           return null;
         }
-        await sleep(500);
-
         const { trove } = await graph.TroveById({ id });
         return trove ? subgraphTroveToLoan(trove) : null;
       },
@@ -323,7 +313,7 @@ function subgraphTroveToLoan(trove: GraphTrove): PositionLoan {
   }
 
   return {
-    type: "borrow",
+    type: trove.usedLeverageZapper ? "leverage" : "borrow",
     batchManager: isAddress(trove.interestBatch?.batchManager) ? trove.interestBatch.batchManager : null,
     borrowed: dnum18(trove.debt),
     borrower: trove.borrower,

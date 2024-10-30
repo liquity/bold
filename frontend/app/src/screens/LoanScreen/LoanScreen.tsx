@@ -48,10 +48,9 @@ export function LoanScreen() {
     notFound();
   }
 
-  const loanMode = storedState.loanModes[paramPrefixedId] ?? "borrow";
-
-  const { troveId } = parsePrefixedTroveId(paramPrefixedId);
   const loan = useLoanById(paramPrefixedId);
+  const loanMode = storedState.loanModes[paramPrefixedId] ?? loan.data?.type ?? "borrow";
+  const { troveId } = parsePrefixedTroveId(paramPrefixedId);
 
   const tab = TABS.findIndex(({ id }) => id === action);
 

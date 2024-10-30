@@ -64,6 +64,7 @@ function addCollateral(
   context.setBytes("address:troveManager", addresses.troveManager);
   context.setBytes("address:troveNft", addresses.troveNft);
   context.setString("collId", collId);
+  context.setI32("collIndex", collIndex);
   context.setI32("totalCollaterals", totalCollaterals);
 
   TroveManagerTemplate.createWithContext(troveManagerAddress, context);
