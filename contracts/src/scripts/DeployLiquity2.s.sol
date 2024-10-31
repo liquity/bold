@@ -173,6 +173,22 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         );
     }
 
+    function _getDeploymentConstants() internal pure returns (string memory) {
+        return string.concat(
+            "{",
+            string.concat(
+                string.concat('"ETH_GAS_COMPENSATION":"', ETH_GAS_COMPENSATION.toString(), '",'),
+                string.concat('"INTEREST_RATE_ADJ_COOLDOWN":"', INTEREST_RATE_ADJ_COOLDOWN.toString(), '",'),
+                string.concat('"MAX_ANNUAL_INTEREST_RATE":"', MAX_ANNUAL_INTEREST_RATE.toString(), '",'),
+                string.concat('"MIN_ANNUAL_INTEREST_RATE":"', MIN_ANNUAL_INTEREST_RATE.toString(), '",'),
+                string.concat('"MIN_DEBT":"', MIN_DEBT.toString(), '",'),
+                string.concat('"SP_YIELD_SPLIT":"', SP_YIELD_SPLIT.toString(), '",'),
+                string.concat('"UPFRONT_INTEREST_PERIOD":"', UPFRONT_INTEREST_PERIOD.toString(), '"') // no comma
+            ),
+            "}"
+        );
+    }
+
     function _getManifestJson(DeploymentResult memory deployed) internal pure returns (string memory) {
         string[] memory branches = new string[](deployed.contractsArray.length);
 
@@ -184,6 +200,7 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         return string.concat(
             "{",
             string.concat(
+                string.concat('"constants":', _getDeploymentConstants(), ","),
                 string.concat('"collateralRegistry":"', address(deployed.collateralRegistry).toHexString(), '",'),
                 string.concat('"boldToken":"', address(deployed.boldToken).toHexString(), '",'),
                 string.concat('"hintHelpers":"', address(deployed.hintHelpers).toHexString(), '",'),
