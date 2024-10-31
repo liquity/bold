@@ -82,7 +82,7 @@ contract HybridCurveUniV3Exchange is LeftoversSweep, IExchange {
         // See: https://docs.uniswap.org/contracts/v3/guides/swaps/multihop-swaps
         bytes memory path;
         if (address(WETH) == address(collToken)) {
-            path = abi.encodePacked(USDC, feeWethColl, WETH);
+            path = abi.encodePacked(USDC, feeUsdcWeth, WETH);
         } else {
             path = abi.encodePacked(USDC, feeUsdcWeth, WETH, feeWethColl, collToken);
         }
