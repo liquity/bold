@@ -193,7 +193,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     // Error trackers for the error correction in the offset calculation
     uint256 public lastCollError_Offset;
-    uint256 public lastBoldLossError_Offset;
+    uint256 public lastBoldLossErrorByP_Offset;
     uint256 public lastBoldLossError_TotalDeposits;
 
     // Error tracker fror the error correction in the BOLD reward calculation
@@ -450,8 +450,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         assert(_debtToOffset <= _totalBoldDeposits);
         if (_debtToOffset == _totalBoldDeposits) {
             boldLossPerUnitStaked = DECIMAL_PRECISION; // When the Pool depletes to 0, so does each deposit
-            lastBoldLossError_Offset = 0;
-            lastBoldLossError_TotalDeposits = _totalBoldDeposits;
+            newLastBoldLossErrorOffset = 0;
         } else {
             uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION;
             /*
@@ -525,12 +524,12 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
             // If there's no scale change and no pool-emptying, just do a standard multiplication
         } else {
             uint256 errorFactor;
-            if (lastBoldLossError_Offset > 0) {
-                errorFactor = lastBoldLossError_Offset * newProductFactor / lastBoldLossError_TotalDeposits;
+            if (lastBoldLossErrorByP_Offset > 0) {
+                errorFactor = lastBoldLossErrorByP_Offset * newProductFactor / lastBoldLossError_TotalDeposits / DECIMAL_PRECISION;
             }
             newP = (currentP * newProductFactor + errorFactor) / DECIMAL_PRECISION;
         }
-        lastBoldLossError_Offset = newLastBoldLossErrorOffset;
+        lastBoldLossErrorByP_Offset = currentP * newLastBoldLossErrorOffset;
         lastBoldLossError_TotalDeposits = _totalBoldDeposits;
 
         assert(newP > 0);
