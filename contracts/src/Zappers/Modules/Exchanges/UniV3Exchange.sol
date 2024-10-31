@@ -31,7 +31,7 @@ contract UniV3Exchange is LeftoversSweep, IExchange {
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collToken, boldToken, initialBalances);
+        _setInitialTokensAndBalances(collToken, boldToken, initialBalances);
 
         boldToken.transferFrom(msg.sender, address(this), _boldAmount);
         boldToken.approve(address(uniV3RouterCached), _boldAmount);
@@ -58,7 +58,7 @@ contract UniV3Exchange is LeftoversSweep, IExchange {
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(collToken, boldToken, initialBalances);
+        _setInitialTokensAndBalances(collToken, boldToken, initialBalances);
 
         collToken.safeTransferFrom(msg.sender, address(this), _collAmount);
         collToken.approve(address(uniV3RouterCached), _collAmount);

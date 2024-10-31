@@ -112,7 +112,7 @@ contract WETHZapper is BaseZapper {
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
-        _setInitialBalances(WETH, boldToken, initialBalances);
+        _setInitialTokensAndBalances(WETH, boldToken, initialBalances);
 
         // Pull Bold
         boldToken.transferFrom(msg.sender, address(this), _boldAmount);
@@ -177,7 +177,7 @@ contract WETHZapper is BaseZapper {
             payable(_checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease));
 
         // Set initial balances to make sure there are not lefovers
-        _setInitialBalances(WETH, boldToken, _initialBalances);
+        _setInitialTokensAndBalances(WETH, boldToken, _initialBalances);
 
         // ETH -> WETH
         if (_isCollIncrease) {
