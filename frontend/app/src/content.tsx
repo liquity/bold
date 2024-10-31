@@ -24,14 +24,14 @@ export default {
   generalInfotooltips: {
     loanLiquidationRisk: [
       "Liquidation risk",
-      "If the LTV of a loan falls below the max LTV, it becomes undercollateralized and be liquidated. In that case, the borrower's debt is paid off but they lose most of their collateral. In order to avoid liquidation, one can increase the deposit or reduce the debt.",
+      "If the LTV of a loan goes above the max LTV, it becomes undercollateralized and will be liquidated. In that case, the borrower's debt is paid off but they lose most of their collateral. In order to avoid liquidation, one can increase the collateral or reduce the debt.",
     ],
     loanRedemptionRisk: [
       "Redemption risk",
       <>
         If the price of BOLD is lower than $1,{" "}
-        <Link href="https://github.com/liquity/bold#bold-redemptions">redemptions are enabled</Link>{" "}
-        and help bring the value of BOLD back to $1. Redemptions first affect loans with the lowest interest rate.
+        <Link href="https://github.com/liquity/bold#bold-redemptions">redemptions</Link>{" "}
+        are possible. Redemptions first affect loans with the lowest interest rate.
         Raising the interest rate reduces the redemption risk.
       </>,
     ],
@@ -41,7 +41,7 @@ export default {
     ],
     loanMaxLtv: [
       "Maximum Loan-To-Value (LTV) Ratio",
-      "The maximum ratio between the USD value of a loan (in BOLD) and the connected collateral. As long as a loan remains under the maximum LTV, a loan won't get liquidated. Keep in mind that the LTV will fluctuate as the prices of underlying assets changes.",
+      "The maximum ratio between the USD value of a loan (in BOLD) and the collateral backing it. The LTV will fluctuate as the price of the collateral changes. To decrease the LTV add more colateral or reduce debt.",
     ],
     loanLiquidationPrice: [
       "Liquidation price",
