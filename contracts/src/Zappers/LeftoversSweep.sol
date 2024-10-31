@@ -26,7 +26,7 @@ contract LeftoversSweep {
     {
         _initialBalances.tokens[0] = _collToken;
         _initialBalances.tokens[1] = _boldToken;
-        _setInitialBalancesAndReceiver(_initialBalances, msg.sender);
+        _setInitialBalancesAndReceiver(_initialBalances, _receiver);
     }
 
     function _setInitialBalances(InitialBalances memory _initialBalances) internal view {
