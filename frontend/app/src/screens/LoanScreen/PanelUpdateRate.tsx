@@ -100,9 +100,8 @@ export function PanelUpdateRate({
             onModeChange={setInterestRateMode}
           />
         }
-        footer={[
-          [
-            null,
+        footer={{
+          end: (
             <Field.FooterInfo
               label={
                 <HFlex alignItems="center" gap={8}>
@@ -121,9 +120,9 @@ export function PanelUpdateRate({
                   />
                 </HFlex>
               }
-            />,
-          ],
-        ]}
+            />
+          ),
+        }}
       />
 
       <div

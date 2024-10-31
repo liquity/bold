@@ -33,6 +33,7 @@ import {
 import { a, useTransition } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { match, P } from "ts-pattern";
 
@@ -536,11 +537,11 @@ function LoanCard({
                     },
                     {
                       icon: (
-                        <img
-                          src={blo(loan.borrower)}
+                        <Image
                           alt=""
                           width={16}
                           height={16}
+                          src={blo(loan.borrower)}
                           className={css({
                             display: "block",
                             borderRadius: 2,

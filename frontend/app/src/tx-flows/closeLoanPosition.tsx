@@ -99,6 +99,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
           label="You repay"
           value={[
             <Amount
+              key="start"
               value={amountToRepay}
               suffix={` ${request.repayWithCollateral ? collateral.symbol : "BOLD"}`}
             />,
@@ -108,6 +109,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
           label="You reclaim"
           value={[
             <Amount
+              key="start"
               value={collToReclaim}
               suffix={` ${collateral.symbol}`}
             />,
@@ -116,7 +118,10 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
         <TransactionDetailsRow
           label="Gas compensation refund"
           value={[
-            <div title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}>
+            <div
+              key="start"
+              title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}
+            >
               {fmtnum(ETH_GAS_COMPENSATION, 4)} ETH
             </div>,
           ]}

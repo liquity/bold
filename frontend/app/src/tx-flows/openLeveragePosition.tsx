@@ -108,7 +108,10 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
         <TransactionDetailsRow
           label="Refundable gas deposit"
           value={[
-            <div title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}>
+            <div
+              key="start"
+              title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}
+            >
               {fmtnum(ETH_GAS_COMPENSATION, 4)} ETH
             </div>,
             "Only used in case of liquidation",

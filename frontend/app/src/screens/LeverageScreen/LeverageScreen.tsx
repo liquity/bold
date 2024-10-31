@@ -183,49 +183,57 @@ export function LeverageScreen() {
               {...depositPreLeverage.inputFieldProps}
             />
           }
-          footer={[[
-            <Field.FooterInfoCollPrice
-              collName={collToken.name}
-              collPriceUsd={collPrice}
-            />,
-            <Field.FooterInfoMaxLtv
-              maxLtv={dn.div(dn.from(1, 18), collToken.collateralRatio)}
-            />,
-          ]]}
+          footer={{
+            start: (
+              <Field.FooterInfoCollPrice
+                collName={collToken.name}
+                collPriceUsd={collPrice}
+              />
+            ),
+            end: (
+              <Field.FooterInfoMaxLtv
+                maxLtv={dn.div(dn.from(1, 18), collToken.collateralRatio)}
+              />
+            ),
+          }}
         />
 
         <Field
           field={<LeverageField {...leverageField} />}
-          footer={[[
-            <>
-              <Field.FooterInfoLiquidationRisk
-                riskLevel={leverageField.liquidationRisk}
-              />
-              <Field.FooterInfoLoanToValue
-                ltvRatio={leverageField.ltv}
-                maxLtvRatio={leverageField.maxLtv}
-              />
-            </>,
-            <HFlex>
-              <span
-                className={css({
-                  color: "contentAlt",
-                })}
-              >
-                Exposure
-              </span>
-              <span
-                className={css({
-                  fontVariantNumeric: "tabular-nums",
-                })}
-              >
-                {(leverageField.deposit && dn.gt(leverageField.deposit, 0))
-                  ? `${fmtnum(leverageField.deposit, "2z")} ${collToken.name}`
-                  : "−"}
-              </span>
-              <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.exposure)} />
-            </HFlex>,
-          ]]}
+          footer={{
+            start: (
+              <>
+                <Field.FooterInfoLiquidationRisk
+                  riskLevel={leverageField.liquidationRisk}
+                />
+                <Field.FooterInfoLoanToValue
+                  ltvRatio={leverageField.ltv}
+                  maxLtvRatio={leverageField.maxLtv}
+                />
+              </>
+            ),
+            end: (
+              <HFlex>
+                <span
+                  className={css({
+                    color: "contentAlt",
+                  })}
+                >
+                  Exposure
+                </span>
+                <span
+                  className={css({
+                    fontVariantNumeric: "tabular-nums",
+                  })}
+                >
+                  {(leverageField.deposit && dn.gt(leverageField.deposit, 0))
+                    ? `${fmtnum(leverageField.deposit, "2z")} ${collToken.name}`
+                    : "−"}
+                </span>
+                <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.exposure)} />
+              </HFlex>
+            ),
+          }}
         />
 
         <VFlex gap={0}>
@@ -242,9 +250,13 @@ export function LeverageScreen() {
                 onModeChange={setInterestRateMode}
               />
             }
-            footer={[
-              [
-                <Field.FooterInfoRedemptionRisk riskLevel={redemptionRisk} />,
+            footer={{
+              start: (
+                <Field.FooterInfoRedemptionRisk
+                  riskLevel={redemptionRisk}
+                />
+              ),
+              end: (
                 <span
                   className={css({
                     display: "flex",
@@ -255,9 +267,9 @@ export function LeverageScreen() {
                 >
                   <IconSuggestion size={16} />
                   <span>You can adjust interest rate later</span>
-                </span>,
-              ],
-            ]}
+                </span>
+              ),
+            }}
           />
         </VFlex>
 

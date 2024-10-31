@@ -66,15 +66,31 @@ export const earnClaimRewards: FlowDeclaration<Request, Step> = {
         <TransactionDetailsRow
           label="Claiming BOLD rewards"
           value={[
-            <Amount value={rewardsBold} suffix=" BOLD" />,
-            <Amount value={rewardsBoldUsd} prefix="$" />,
+            <Amount
+              key="start"
+              value={rewardsBold}
+              suffix=" BOLD"
+            />,
+            <Amount
+              key="end"
+              value={rewardsBoldUsd}
+              prefix="$"
+            />,
           ]}
         />
         <TransactionDetailsRow
           label={`Claiming ${collateral?.name} rewards`}
           value={[
-            <Amount value={rewardsColl} suffix={` ${collateral?.symbol}`} />,
-            <Amount value={rewardsCollUsd} prefix="$" />,
+            <Amount
+              key="start"
+              value={rewardsColl}
+              suffix={` ${collateral?.symbol}`}
+            />,
+            <Amount
+              key="end"
+              value={rewardsCollUsd}
+              prefix="$"
+            />,
           ]}
         />
       </>

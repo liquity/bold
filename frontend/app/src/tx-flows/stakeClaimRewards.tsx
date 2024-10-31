@@ -65,15 +65,33 @@ export const stakeClaimRewards: FlowDeclaration<Request, Step> = {
         <TransactionDetailsRow
           label="Claiming LUSD rewards"
           value={[
-            <Amount value={rewards.lusd} suffix=" LUSD" />,
-            <Amount value={rewardsLusdInUsd} prefix="$" fallback="−" />,
+            <Amount
+              key="start"
+              value={rewards.lusd}
+              suffix=" LUSD"
+            />,
+            <Amount
+              key="end"
+              value={rewardsLusdInUsd}
+              prefix="$"
+              fallback="−"
+            />,
           ]}
         />
         <TransactionDetailsRow
           label="Claiming ETH rewards"
           value={[
-            <Amount value={rewards.eth} suffix=" ETH" />,
-            <Amount value={rewardsEthInUsd} prefix="$" fallback="−" />,
+            <Amount
+              key="start"
+              value={rewards.eth}
+              suffix=" ETH"
+            />,
+            <Amount
+              key="end"
+              value={rewardsEthInUsd}
+              prefix="$"
+              fallback="−"
+            />,
           ]}
         />
       </>

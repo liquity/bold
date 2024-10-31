@@ -167,6 +167,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
             : "You withdraw"}
           value={[
             <div
+              key="start"
               title={`${fmtnum(collChangeUnsigned, "full")} ${collateral.name}`}
               style={{
                 color: dn.eq(collChangeUnsigned, 0n)
@@ -177,6 +178,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
               {fmtnum(collChangeUnsigned)} {collateral.name}
             </div>,
             <Amount
+              key="end"
               fallback="…"
               prefix="$"
               value={collPrice && dn.mul(collChangeUnsigned, collPrice)}
@@ -187,6 +189,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
           label={isBorrowing ? "You borrow" : "You repay"}
           value={[
             <div
+              key="start"
               title={`${fmtnum(debtChangeWithFee, "full")} BOLD`}
               style={{
                 color: dn.eq(debtChangeUnsigned, 0n)
@@ -201,6 +204,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
               />
             </div>,
             <Amount
+              key="end"
               fallback="…"
               prefix="Incl. "
               value={upfrontFee.data}

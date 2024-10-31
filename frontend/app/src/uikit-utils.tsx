@@ -16,7 +16,7 @@ export function riskLevelToStatusMode(level?: RiskLevel | null): StatusMode {
 // InfoTooltip props from a heading & children tuple.
 // This is used to provide tooltip props from the content.tsx file in a concise way.
 export function infoTooltipProps(
-  data: ReactNode[],
+  data: readonly ReactNode[],
 ): {
   heading?: ReactNode;
   children: ReactNode;

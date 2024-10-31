@@ -12,6 +12,7 @@ import { useBalance } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
 import { Button, IconAccount, isCollateralSymbol, shortenAddress, TokenIcon, VFlex } from "@liquity2/uikit";
 import { blo } from "blo";
+import Image from "next/image";
 import { useWriteContract } from "wagmi";
 
 export function AccountScreen({
@@ -71,9 +72,11 @@ export function AccountScreen({
             })}
           >
             {shortenAddress(address, 3)}
-            <img
-              src={blo(address)}
+            <Image
               alt=""
+              width={32}
+              height={32}
+              src={blo(address)}
               className={css({
                 width: 32,
                 height: "auto",

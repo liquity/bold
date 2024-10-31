@@ -130,13 +130,14 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
               />
             </div>
           }
-          footer={[[
-            <Field.FooterInfo
-              label={`$${fmtnum(dn.mul(loan.borrowed, boldPriceUsd), 2)}`}
-              value={null}
-            />,
-            null,
-          ]]}
+          footer={{
+            start: (
+              <Field.FooterInfo
+                label={`$${fmtnum(dn.mul(loan.borrowed, boldPriceUsd), 2)}`}
+                value={null}
+              />
+            ),
+          }}
           label="You repay with"
         />
         <Field
@@ -180,21 +181,22 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
             </div>
           }
           label="You reclaim"
-          footer={[[
-            <Field.FooterInfo
-              label={`$${
-                fmtnum(
-                  dn.mul(
-                    collToReclaim,
-                    collPrice,
-                  ),
-                  2,
-                )
-              }`}
-              value={null}
-            />,
-            null,
-          ]]}
+          footer={{
+            start: (
+              <Field.FooterInfo
+                label={`$${
+                  fmtnum(
+                    dn.mul(
+                      collToReclaim,
+                      collPrice,
+                    ),
+                    2,
+                  )
+                }`}
+                value={null}
+              />
+            ),
+          }}
         />
       </VFlex>
       <div

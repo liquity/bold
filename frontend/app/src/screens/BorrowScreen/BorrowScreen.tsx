@@ -203,15 +203,19 @@ export function BorrowScreen() {
               {...deposit.inputFieldProps}
             />
           }
-          footer={[
-            [
+          footer={{
+            start: (
               <Field.FooterInfoCollPrice
                 collPriceUsd={collPrice}
                 collName={collateral.name}
-              />,
-              <Field.FooterInfoMaxLtv maxLtv={loanDetails.maxLtv} />,
-            ],
-          ]}
+              />
+            ),
+            end: (
+              <Field.FooterInfoMaxLtv
+                maxLtv={loanDetails.maxLtv}
+              />
+            ),
+          }}
         />
 
         <Field
@@ -262,21 +266,26 @@ export function BorrowScreen() {
             />
           }
           footer={[
-            [
-              <Field.FooterInfoLiquidationRisk
-                riskLevel={loanDetails.liquidationRisk}
-              />,
-              <Field.FooterInfoLiquidationPrice
-                liquidationPrice={loanDetails.liquidationPrice}
-              />,
-            ],
-            [
-              null,
-              <Field.FooterInfoLoanToValue
-                ltvRatio={loanDetails.ltv}
-                maxLtvRatio={loanDetails.maxLtv}
-              />,
-            ],
+            {
+              start: (
+                <Field.FooterInfoLiquidationRisk
+                  riskLevel={loanDetails.liquidationRisk}
+                />
+              ),
+              end: (
+                <Field.FooterInfoLiquidationPrice
+                  liquidationPrice={loanDetails.liquidationPrice}
+                />
+              ),
+            },
+            {
+              end: (
+                <Field.FooterInfoLoanToValue
+                  ltvRatio={loanDetails.ltv}
+                  maxLtvRatio={loanDetails.maxLtv}
+                />
+              ),
+            },
           ]}
         />
 
@@ -294,9 +303,13 @@ export function BorrowScreen() {
               onModeChange={setInterestRateMode}
             />
           }
-          footer={[
-            [
-              <Field.FooterInfoRedemptionRisk riskLevel={loanDetails.redemptionRisk} />,
+          footer={{
+            start: (
+              <Field.FooterInfoRedemptionRisk
+                riskLevel={loanDetails.redemptionRisk}
+              />
+            ),
+            end: (
               <span
                 className={css({
                   display: "flex",
@@ -309,9 +322,9 @@ export function BorrowScreen() {
                 <IconSuggestion size={16} />
                 <>The interest rate can be adjusted</>
                 <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateAdjustment)} />
-              </span>,
-            ],
-          ]}
+              </span>
+            ),
+          }}
         />
 
         <RedemptionInfo />

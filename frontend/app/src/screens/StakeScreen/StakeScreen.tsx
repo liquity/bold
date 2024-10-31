@@ -210,21 +210,23 @@ function PanelUpdateStake() {
             }}
           />
         }
-        footerStart={
-          <Field.FooterInfo
-            label="New voting power"
-            value={
-              <HFlex>
-                <div>
-                  <Amount value={updatedShare} percentage suffix="%" />
-                </div>
-                <InfoTooltip>
-                  Voting power is the percentage of the total staked LQTY that you own.
-                </InfoTooltip>
-              </HFlex>
-            }
-          />
-        }
+        footer={{
+          start: (
+            <Field.FooterInfo
+              label="New voting power"
+              value={
+                <HFlex>
+                  <div>
+                    <Amount value={updatedShare} percentage suffix="%" />
+                  </div>
+                  <InfoTooltip>
+                    Voting power is the percentage of the total staked LQTY that you own.
+                  </InfoTooltip>
+                </HFlex>
+              }
+            />
+          ),
+        }}
       />
       <div
         style={{

@@ -13,6 +13,7 @@ import { css } from "@/styled-system/css";
 import { ADDRESS_ZERO, AnchorTextButton, shortenAddress } from "@liquity2/uikit";
 import { blo } from "blo";
 import * as dn from "dnum";
+import Image from "next/image";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
@@ -117,6 +118,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
           label="Interest rate delegate"
           value={[
             <AnchorTextButton
+              key="start"
               label={
                 <div
                   title={request.interestRateDelegate[0]}
@@ -126,11 +128,11 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
                     gap: 4,
                   })}
                 >
-                  <img
-                    src={blo(request.interestRateDelegate[0])}
+                  <Image
                     alt=""
                     width={16}
                     height={16}
+                    src={blo(request.interestRateDelegate[0])}
                     className={css({
                       display: "block",
                       borderRadius: 4,
@@ -142,7 +144,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
               href={`${CHAIN_BLOCK_EXPLORER?.url}address/${request.interestRateDelegate[0]}`}
               external
             />,
-            <div>
+            <div key="end">
               {fmtnum(request.annualInterestRate, "full", 100)}% (~{fmtnum(boldPerYear, 4)} BOLD per year)
             </div>,
           ]}
@@ -152,10 +154,13 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
         <TransactionDetailsRow
           label="Interest rate"
           value={[
-            <div>
+            <div key="start">
               {fmtnum(request.annualInterestRate, "full", 100)}%
             </div>,
-            <div title={`${fmtnum(boldPerYear, "full")} BOLD per year`}>
+            <div
+              key="end"
+              title={`${fmtnum(boldPerYear, "full")} BOLD per year`}
+            >
               ~{fmtnum(boldPerYear, 4)} BOLD per year
             </div>,
           ]}

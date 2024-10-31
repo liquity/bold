@@ -51,7 +51,7 @@ export function EarnPoolScreen() {
     },
   });
 
-  if (!collIndex === null || !isCollSymbolOk) {
+  if (collIndex === null || !isCollSymbolOk) {
     return null;
   }
 

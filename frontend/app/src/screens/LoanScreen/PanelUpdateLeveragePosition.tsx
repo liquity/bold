@@ -215,9 +215,9 @@ export function PanelUpdateLeveragePosition({
               }}
             />
           }
-          footer={[[
-            <Field.FooterInfo label="Deposit after" />,
-            initialLoanDetails.depositPreLeverage && newDepositPreLeverage && (
+          footer={{
+            start: <Field.FooterInfo label="Deposit after" />,
+            end: initialLoanDetails.depositPreLeverage && newDepositPreLeverage && (
               <Field.FooterInfo
                 value={
                   <HFlex alignItems="center" gap={8}>
@@ -255,79 +255,87 @@ export function PanelUpdateLeveragePosition({
                 }
               />
             ),
-          ]]}
+          }}
         />
 
         <Field
           field={<LeverageField {...leverageField} />}
           footer={[
-            [
-              <Field.FooterInfo label="ETH liquidation price" />,
-              <ValueUpdate
-                fontSize={14}
-                before={initialLoanDetails.liquidationPrice && (
-                  `$${fmtnum(initialLoanDetails.liquidationPrice)}`
-                )}
-                after={liquidationPrice && newLoanDetails.deposit && dn.gt(newLoanDetails.deposit, 0)
-                  ? `$${fmtnum(liquidationPrice)}`
-                  : "N/A"}
-              />,
-            ],
-            [
-              <Field.FooterInfo label="ETH exposure" />,
-              <ValueUpdate
-                fontSize={14}
-                before={initialLoanDetails.depositPreLeverage && (
-                  <div
-                    title={`${fmtnum(initialLoanDetails.deposit, "full")} ${collToken.name}`}
-                  >
-                    {fmtnum(initialLoanDetails.deposit)} {collToken.name}
-                  </div>
-                )}
-                after={newDepositPreLeverage && (
-                  <Value
-                    negative={newLoanDetails.deposit && dn.lt(newLoanDetails.deposit, 0)}
-                    title={`${fmtnum(newLoanDetails.deposit, "full")} ${collToken.name}`}
-                  >
-                    {fmtnum(newLoanDetails.deposit)} {collToken.name}
-                  </Value>
-                )}
-              />,
-            ],
-            [
-              <Field.FooterInfo label="Leverage" />,
-              <ValueUpdate
-                fontSize={14}
-                before={
-                  <Value negative={initialLoanDetails.status === "underwater"}>
-                    {initialLoanDetails.status === "underwater" ? INFINITY : (
-                      `${fmtnum(initialLoanDetails.leverageFactor, 4)}x`
-                    )}
-                  </Value>
-                }
-                after={
-                  <>
-                    {fmtnum(userLeverageFactor, "1z")}x
-                  </>
-                }
-              />,
-            ],
-            [
-              <Field.FooterInfo label="Implied total debt" />,
-              <ValueUpdate
-                fontSize={14}
-                before={initialLoanDetails.debt && (
-                  `${fmtnum(initialLoanDetails.debt)} BOLD`
-                )}
-                after={newLoanDetails.debt && dn.gt(newLoanDetails.debt, 0)
-                  ? (
-                    `${fmtnum(newLoanDetails.debt)} BOLD`
-                  )
-                  : (
-                    `N/A`
+            {
+              start: <Field.FooterInfo label="ETH liquidation price" />,
+              end: (
+                <ValueUpdate
+                  fontSize={14}
+                  before={initialLoanDetails.liquidationPrice && (
+                    `$${fmtnum(initialLoanDetails.liquidationPrice)}`
                   )}
-              />,
-            ],
+                  after={liquidationPrice && newLoanDetails.deposit && dn.gt(newLoanDetails.deposit, 0)
+                    ? `$${fmtnum(liquidationPrice)}`
+                    : "N/A"}
+                />
+              ),
+            },
+            {
+              start: <Field.FooterInfo label="ETH exposure" />,
+              end: (
+                <ValueUpdate
+                  fontSize={14}
+                  before={initialLoanDetails.depositPreLeverage && (
+                    <div
+                      title={`${fmtnum(initialLoanDetails.deposit, "full")} ${collToken.name}`}
+                    >
+                      {fmtnum(initialLoanDetails.deposit)} {collToken.name}
+                    </div>
+                  )}
+                  after={newDepositPreLeverage && (
+                    <Value
+                      negative={newLoanDetails.deposit && dn.lt(newLoanDetails.deposit, 0)}
+                      title={`${fmtnum(newLoanDetails.deposit, "full")} ${collToken.name}`}
+                    >
+                      {fmtnum(newLoanDetails.deposit)} {collToken.name}
+                    </Value>
+                  )}
+                />
+              ),
+            },
+            {
+              start: <Field.FooterInfo label="Leverage" />,
+              end: (
+                <ValueUpdate
+                  fontSize={14}
+                  before={
+                    <Value negative={initialLoanDetails.status === "underwater"}>
+                      {initialLoanDetails.status === "underwater" ? INFINITY : (
+                        `${fmtnum(initialLoanDetails.leverageFactor, 4)}x`
+                      )}
+                    </Value>
+                  }
+                  after={
+                    <>
+                      {fmtnum(userLeverageFactor, "1z")}x
+                    </>
+                  }
+                />
+              ),
+            },
+            {
+              start: <Field.FooterInfo label="Implied total debt" />,
+              end: (
+                <ValueUpdate
+                  fontSize={14}
+                  before={initialLoanDetails.debt && (
+                    `${fmtnum(initialLoanDetails.debt)} BOLD`
+                  )}
+                  after={newLoanDetails.debt && dn.gt(newLoanDetails.debt, 0)
+                    ? (
+                      `${fmtnum(newLoanDetails.debt)} BOLD`
+                    )
+                    : (
+                      `N/A`
+                    )}
+                />
+              ),
+            },
           ]}
         />
 
