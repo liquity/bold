@@ -71,10 +71,12 @@ export const stakeDeposit: FlowDeclaration<Request, Step> = {
           label="You deposit"
           value={[
             <Amount
+              key="start"
               suffix=" LQTY"
               value={request.lqtyAmount}
             />,
             <Amount
+              key="end"
               prefix="$"
               value={lqtyPrice && dn.mul(request.lqtyAmount, lqtyPrice)}
             />,
@@ -83,15 +85,31 @@ export const stakeDeposit: FlowDeclaration<Request, Step> = {
         <TransactionDetailsRow
           label="Claiming LUSD rewards"
           value={[
-            <Amount value={rewards.lusd} suffix=" LUSD" />,
-            <Amount value={rewardsLusdInUsd} prefix="$" />,
+            <Amount
+              key="start"
+              value={rewards.lusd}
+              suffix=" LUSD"
+            />,
+            <Amount
+              key="end"
+              value={rewardsLusdInUsd}
+              prefix="$"
+            />,
           ]}
         />
         <TransactionDetailsRow
           label="Claiming ETH rewards"
           value={[
-            <Amount value={rewards.eth} suffix=" ETH" />,
-            <Amount value={rewardsEthInUsd} prefix="$" />,
+            <Amount
+              key="start"
+              value={rewards.eth}
+              suffix=" ETH"
+            />,
+            <Amount
+              key="end"
+              value={rewardsEthInUsd}
+              prefix="$"
+            />,
           ]}
         />
       </>

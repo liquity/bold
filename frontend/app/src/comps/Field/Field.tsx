@@ -9,21 +9,22 @@ import { css } from "@/styled-system/css";
 import { HFlex, InfoTooltip, StatusDot } from "@liquity2/uikit";
 import * as dn from "dnum";
 
+type FooterRow = {
+  start?: ReactNode;
+  end?: ReactNode;
+};
+
 export function Field({
   field,
   footer,
-  footerEnd,
-  footerStart,
   label,
 }: {
   field: ReactNode;
-  footer?: Array<[start: ReactNode | null, end: ReactNode | null]>;
-  footerStart?: ReactNode;
-  footerEnd?: ReactNode;
+  footer?: FooterRow | FooterRow[];
   label?: ReactNode;
 }) {
-  if ((footerEnd || footerStart) && !footer) {
-    footer = [[footerStart, footerEnd]];
+  if (footer && !Array.isArray(footer)) {
+    footer = [footer];
   }
   return (
     <div
@@ -61,7 +62,7 @@ export function Field({
             gap: 8,
           })}
         >
-          {footer.map(([start, end], index) => (
+          {footer.map(({ start, end }, index) => (
             <div
               key={index}
               className={css({

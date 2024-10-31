@@ -110,6 +110,7 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
           value={[
             `${fmtnum(request.collAmount)} ${collateral.name}`,
             <Amount
+              key="end"
               fallback="…"
               prefix="$"
               value={collPrice && dn.mul(request.collAmount, collPrice)}
@@ -120,11 +121,13 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
           label="Loan"
           value={[
             <Amount
+              key="start"
               fallback="…"
               value={boldAmountWithFee}
               suffix=" BOLD"
             />,
             <Amount
+              key="end"
               fallback="…"
               prefix="Incl. "
               value={upfrontFee.data}
@@ -136,10 +139,12 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
           label="Interest rate"
           value={[
             <Amount
+              key="start"
               value={request.annualInterestRate}
               percentage
             />,
             <Amount
+              key="end"
               fallback="…"
               value={boldAmountWithFee && dn.mul(boldAmountWithFee, request.annualInterestRate)}
               suffix=" BOLD per year"
@@ -151,6 +156,7 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
             label="Interest rate delegate"
             value={[
               <span
+                key="start"
                 title={request.interestRateDelegate[0]}
               >
                 {shortenAddress(request.interestRateDelegate[0], 4)}
@@ -161,7 +167,10 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
         <TransactionDetailsRow
           label="Refundable gas deposit"
           value={[
-            <div title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}>
+            <div
+              key="start"
+              title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}
+            >
               {fmtnum(ETH_GAS_COMPENSATION, 4)} ETH
             </div>,
             "Only used in case of liquidation",

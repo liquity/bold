@@ -25,6 +25,7 @@ export function PositionCardStake({
       <StrongCard
         heading={[
           <div
+            key="start"
             className={css({
               display: "flex",
               alignItems: "center",

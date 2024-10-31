@@ -202,10 +202,10 @@ export function TransactionDetailsRow({
   return (
     <div
       className={css({
-        width: "100%",
         display: "grid",
         gridTemplateColumns: "1fr 1fr",
         gap: 16,
+        width: "100%",
       })}
     >
       <div

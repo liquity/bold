@@ -187,11 +187,11 @@ export function InterestRateField({
                       gap: 8,
                     })}
                   >
-                    <img
-                      src={blo(delegate)}
+                    <Image
                       alt=""
                       width={24}
                       height={24}
+                      src={blo(delegate)}
                       className={css({
                         display: "block",
                         borderRadius: 4,

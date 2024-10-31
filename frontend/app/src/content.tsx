@@ -1,6 +1,8 @@
+/* eslint-disable react/jsx-key */
+/* eslint-disable import/no-anonymous-default-export */
+
 import type { ReactNode as N } from "react";
 
-// eslint-disable-next-line import/no-anonymous-default-export
 export default {
   // Used in the top bar and other places
   appName: "Liquity V2",

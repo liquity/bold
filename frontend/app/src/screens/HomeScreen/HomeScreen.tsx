@@ -43,14 +43,24 @@ export function HomeScreen() {
           subtitle="You can adjust your loans, including your interest rate, at any time"
           icon={<IconBorrow />}
           columns={["Collateral", "Avg rate, p.a.", "Max LTV", null] as const}
-          rows={collSymbols.map((symbol) => <BorrowingRow symbol={symbol} />)}
+          rows={collSymbols.map((symbol) => (
+            <BorrowingRow
+              key={symbol}
+              symbol={symbol}
+            />
+          ))}
         />
         <HomeTable
           title="Earn rewards with BOLD"
           subtitle="Earn BOLD & (staked) ETH rewards by putting your BOLD in a stability pool"
           icon={<IconEarn />}
           columns={["Pool", "Current APR", "Pool size", null] as const}
-          rows={collSymbols.map((symbol) => <EarnRewardsRow symbol={symbol} />)}
+          rows={collSymbols.map((symbol) => (
+            <EarnRewardsRow
+              key={symbol}
+              symbol={symbol}
+            />
+          ))}
         />
       </div>
     </div>

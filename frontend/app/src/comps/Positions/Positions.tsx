@@ -108,7 +108,7 @@ function PositionsGroup({
       let cards: Array<[number, ReactNode]> = [];
 
       if (showNewPositionCard) {
-        cards.push([positions.length ?? -1, <NewPositionCard />]);
+        cards.push([positions.length ?? -1, <NewPositionCard key="new" />]);
       }
 
       cards = cards.concat(
@@ -117,10 +117,16 @@ function PositionsGroup({
             .returnType<[number, ReactNode]>()
             .with({ type: P.union("borrow", "leverage") }, (p) => [
               index,
-              <PositionCardLoan {...p} />,
+              <PositionCardLoan key={index} {...p} />,
             ])
-            .with({ type: "earn" }, (p) => [index, <PositionCardEarn {...p} />])
-            .with({ type: "stake" }, (p) => [index, <PositionCardStake {...p} />])
+            .with({ type: "earn" }, (p) => [
+              index,
+              <PositionCardEarn key={index} {...p} />,
+            ])
+            .with({ type: "stake" }, (p) => [
+              index,
+              <PositionCardStake key={index} {...p} />,
+            ])
             .exhaustive()
         )) ?? [],
       );
@@ -128,15 +134,15 @@ function PositionsGroup({
       return cards;
     })
     .with("loading", () => [
-      [0, <StrongCard loading />],
-      [1, <StrongCard loading />],
-      [2, <StrongCard loading />],
+      [0, <StrongCard key="0" loading />],
+      [1, <StrongCard key="1" loading />],
+      [2, <StrongCard key="2" loading />],
     ])
     .with("actions", () => [
-      [0, <ActionCard type="borrow" />],
-      [1, <ActionCard type="leverage" />],
-      [2, <ActionCard type="earn" />],
-      [3, <ActionCard type="stake" />],
+      [0, <ActionCard key="0" type="borrow" />],
+      [1, <ActionCard key="1" type="leverage" />],
+      [2, <ActionCard key="2" type="earn" />],
+      [3, <ActionCard key="3" type="stake" />],
     ])
     .exhaustive();
 

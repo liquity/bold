@@ -172,9 +172,8 @@ export function PanelUpdateBorrowPosition({
               }}
             />
           }
-          footer={[[
-            null,
-            loanDetails.deposit && newLoanDetails.deposit && (
+          footer={{
+            end: loanDetails.deposit && newLoanDetails.deposit && (
               <Field.FooterInfo
                 label={
                   <HFlex alignItems="center" gap={8}>
@@ -234,7 +233,7 @@ export function PanelUpdateBorrowPosition({
                 }
               />
             ),
-          ]]}
+          }}
         />
 
         <Field
@@ -288,27 +287,24 @@ export function PanelUpdateBorrowPosition({
               }}
             />
           }
-          footer={[
-            [
-              null,
-              loanDetails.debt && newLoanDetails.debt && (
-                <Field.FooterInfo
-                  label={
-                    <HFlex alignItems="center" gap={8}>
-                      <Amount value={loanDetails.debt} />
-                      <div>{ARROW_RIGHT}</div>
-                    </HFlex>
-                  }
-                  value={
-                    <HFlex alignItems="center" gap={8}>
-                      <Amount value={newLoanDetails.debt} suffix=" BOLD" />
-                      <InfoTooltip heading="Debt update" />
-                    </HFlex>
-                  }
-                />
-              ),
-            ],
-          ]}
+          footer={{
+            end: loanDetails.debt && newLoanDetails.debt && (
+              <Field.FooterInfo
+                label={
+                  <HFlex alignItems="center" gap={8}>
+                    <Amount value={loanDetails.debt} />
+                    <div>{ARROW_RIGHT}</div>
+                  </HFlex>
+                }
+                value={
+                  <HFlex alignItems="center" gap={8}>
+                    <Amount value={newLoanDetails.debt} suffix=" BOLD" />
+                    <InfoTooltip heading="Debt update" />
+                  </HFlex>
+                }
+              />
+            ),
+          }}
         />
 
         <div

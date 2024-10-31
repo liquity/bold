@@ -50,6 +50,7 @@ export function PositionCardLeverage({
       <StrongCard
         heading={[
           <div
+            key="start"
             className={css({
               display: "flex",
               alignItems: "center",

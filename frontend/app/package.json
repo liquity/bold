@@ -9,7 +9,7 @@
     "coverage": "vitest run --coverage ./src",
     "dev": "rm -rf ./.next && next dev",
     "fmt": "dprint fmt **/*.{ts,tsx,js,json,html,md}",
-    "lint": "pnpm oxlint ./src --import-plugin --nextjs-plugin --react-perf-plugin --jsx-a11y-plugin --allow pedantic",
+    "lint": "pnpm oxlint ./src --import-plugin --nextjs-plugin --react-perf-plugin --allow pedantic",
     "panda-codegen": "panda codegen --silent",
     "subgraph-codegen": "pnpm graphclient build",
     "test": "vitest",
