@@ -14,3 +14,7 @@ export const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 export function isAddress(address: unknown): address is Address {
   return typeof address === "string" && ADDRESS_RE.test(address);
 }
+
+export function addressesEqual(a: Address, b: Address) {
+  return a.toLowerCase() === b.toLowerCase();
+}
