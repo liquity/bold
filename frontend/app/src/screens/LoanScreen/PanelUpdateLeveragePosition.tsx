@@ -11,10 +11,11 @@ import { Value } from "@/src/comps/Value/Value";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import { ETH_MAX_RESERVE } from "@/src/constants";
+import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLiquidationPriceFromLeverage, getLoanDetails } from "@/src/liquity-math";
-import { getCollToken } from "@/src/liquity-utils";
+import { getCollToken, getPrefixedTroveId } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -34,6 +35,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useEffect, useRef, useState } from "react";
+import { maxUint256 } from "viem";
 
 export function PanelUpdateLeveragePosition({
   loan,
@@ -63,36 +65,38 @@ export function PanelUpdateLeveragePosition({
   // deposit change
   const [depositMode, setDepositMode] = useState<"add" | "remove">("add");
   const depositChange = useInputFieldValue((value) => dn.format(value));
-  const [userLeverageFactor, setUserLeverageFactor] = useState(initialLoanDetails.leverageFactor ?? 1);
+  const [userLeverageFactor, setUserLeverageFactor] = useState(
+    initialLoanDetails.leverageFactor ?? 1,
+  );
 
   let newDepositPreLeverage = depositChange.parsed
     ? (
       depositMode === "remove"
         ? dn.sub(
-          initialLoanDetails.depositPreLeverage ?? dn.from(0, 18),
+          initialLoanDetails.depositPreLeverage ?? dnum18(0),
           depositChange.parsed,
         )
         : dn.add(
-          initialLoanDetails.depositPreLeverage ?? dn.from(0, 18),
+          initialLoanDetails.depositPreLeverage ?? dnum18(0),
           depositChange.parsed,
         )
     )
     : initialLoanDetails.depositPreLeverage;
 
   if (newDepositPreLeverage && dn.lt(newDepositPreLeverage, 0)) {
-    newDepositPreLeverage = dn.from(0, 18);
+    newDepositPreLeverage = dnum18(0);
   }
 
   const newDeposit = dn.mul(
-    newDepositPreLeverage ?? dn.from(0, 18),
+    newDepositPreLeverage ?? dnum18(0),
     userLeverageFactor,
   );
 
-  const totalPositionValue = dn.mul(newDeposit, collPrice ?? dn.from(0, 18));
+  const totalPositionValue = dn.mul(newDeposit, collPrice ?? dnum18(0));
 
   const newDebt = dn.sub(
     totalPositionValue,
-    dn.mul(newDepositPreLeverage ?? dn.from(0, 18), collPrice ?? dn.from(0, 18)),
+    dn.mul(newDepositPreLeverage ?? dnum18(0), collPrice ?? dnum18(0)),
   );
 
   const newLoanDetails = getLoanDetails(
@@ -105,13 +109,13 @@ export function PanelUpdateLeveragePosition({
 
   const liquidationPrice = getLiquidationPriceFromLeverage(
     userLeverageFactor,
-    collPrice ?? dn.from(0, 18),
+    collPrice ?? dnum18(0),
     collToken.collateralRatio,
   );
 
   // leverage factor
   const leverageField = useLeverageField({
-    collPrice: collPrice ?? dn.from(0, 18),
+    collPrice: collPrice ?? dnum18(0),
     collToken,
     depositPreLeverage: newDepositPreLeverage,
     maxLtvAllowedRatio: 1, // allow up to the max. LTV
@@ -122,7 +126,7 @@ export function PanelUpdateLeveragePosition({
   const collMax = depositMode === "remove" ? loan.deposit : (
     collBalance.data
       ? dn.sub(collBalance.data, ETH_MAX_RESERVE)
-      : dn.from(0, 18)
+      : dnum18(0)
   );
 
   useEffect(() => {
@@ -145,19 +149,43 @@ export function PanelUpdateLeveragePosition({
     setAgreeToLiquidationRisk(false);
   }, [newLoanDetails.status]);
 
-  const allowSubmit = account.isConnected
-      && newLoanDetails.status !== "at-risk" || agreeToLiquidationRisk
-      && newLoanDetails.status !== "underwater" && newLoanDetails.status !== "liquidatable"
-      && (
-        // either the deposit or the leverage factor has changed
-        !dn.eq(
-          initialLoanDetails.deposit ?? dn.from(0, 18),
-          newLoanDetails.deposit ?? dn.from(0, 18),
-        ) || (
-          initialLoanDetails.leverageFactor !== newLoanDetails.leverageFactor
+  const collChange = newDeposit
+      && initialLoanDetails.deposit
+      && !dn.eq(newDeposit, initialLoanDetails.deposit)
+    ? dn.sub(newDeposit, initialLoanDetails.deposit)
+    : dnum18(0);
+
+  const debtChange = newDebt
+      && initialLoanDetails.debt
+      && !dn.eq(newDebt, initialLoanDetails.debt)
+    ? dn.sub(newDebt, initialLoanDetails.debt)
+    : dnum18(0);
+
+  const flashLoanAmount = initialLoanDetails.leverageFactor === null
+    ? dnum18(0)
+    : (
+      userLeverageFactor > initialLoanDetails.leverageFactor
+        ? dn.mul(collChange, userLeverageFactor - 1)
+        : dn.mul(
+          dn.abs(collChange),
+          initialLoanDetails.leverageFactor - userLeverageFactor,
         )
+    );
+
+  const allowSubmit = account.isConnected
+    && dn.gt(flashLoanAmount, 0)
+    && (newLoanDetails.status !== "at-risk" || agreeToLiquidationRisk)
+    && newLoanDetails.status !== "underwater"
+    && newLoanDetails.status !== "liquidatable"
+    && (
+      // either the deposit or the leverage factor has changed
+      !dn.eq(
+        initialLoanDetails.deposit ?? dnum18(0),
+        newLoanDetails.deposit ?? dnum18(0),
+      ) || (
+        initialLoanDetails.leverageFactor !== newLoanDetails.leverageFactor
       )
-      && false;
+    );
 
   return (
     <>
@@ -464,7 +492,25 @@ export function PanelUpdateLeveragePosition({
           size="large"
           wide
           onClick={() => {
-            router.push("/transactions/update-loan");
+            if (account.address) {
+              txFlow.start({
+                flowId: "updateLeveragePosition",
+                backLink: [
+                  `/loan?id=${loan.collIndex}:${loan.troveId}`,
+                  "Back to editing",
+                ],
+                successLink: ["/", "Go to the dashboard"],
+                successMessage: "The position has been updated successfully.",
+
+                collIndex: loan.collIndex,
+                prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
+                owner: account.address,
+                collChange,
+                debtChange,
+                flashLoanAmount,
+                maxUpfrontFee: dnum18(maxUint256),
+              });
+            }
           }}
         />
       </div>
