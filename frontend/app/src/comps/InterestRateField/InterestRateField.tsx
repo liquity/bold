@@ -215,7 +215,8 @@ export function InterestRateField({
                 items={DELEGATE_MODES.map((item) => ({
                   label: item.label,
                   secondary: item.secondary,
-                  disabled: item.type === "strategy" ? "Coming soon" : false,
+                  disabled: item.type === "strategy",
+                  disabledReason: "Coming soon",
                 }))}
                 menuWidth={300}
                 menuPlacement="end"
