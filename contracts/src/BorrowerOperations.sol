@@ -653,6 +653,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             _troveManager.onAdjustTroveInsideBatch(
                 _troveId,
                 vars.newColl,
+                vars.newDebt,
                 _troveChange,
                 batchManager,
                 batch.entireCollWithoutRedistribution,
