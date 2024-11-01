@@ -1535,6 +1535,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         v.batchManager = _batchManagerOf[i][v.troveId];
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
+        vm.assume(v.t.entireDebt > 0); // skip troves if there’s no pending debt
         v.trove = _troves[i][v.troveId];
         v.wasOpen = _isOpen(i, v.troveId);
 

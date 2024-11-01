@@ -741,6 +741,35 @@ contract InterestRateBasic is DevTestSetup {
         assertEq(troveData.entireDebt, initialEntireDebt + accruedInterest + entireDebtC);
     }
 
+    function testApplyTroveInterestPermissionlessRevertsIfTroveHasZeroDebt() public {
+        priceFeed.setPrice(2000e18);
+        uint256 troveDebtRequest = 2000e18;
+        uint256 interestRate = 25e16;
+
+        uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, interestRate);
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(ATroveId);
+        uint256 redeemAmount = troveData.entireDebt;
+
+        // Fully redeem A
+        deal(address(boldToken), E, redeemAmount);
+        redeem(E, redeemAmount);
+        troveData = troveManager.getLatestTroveData(ATroveId);
+        assertEq(troveData.entireDebt, 0, "Trove A should be fully redeemed");
+
+        // Fast-forward time such that trove is Stale
+        vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
+        // Confirm Trove is stale
+        assertTrue(troveManager.troveIsStale(ATroveId));
+
+        assertLt(troveManager.getTroveLastDebtUpdateTime(ATroveId), block.timestamp);
+
+        // B tries to apply A's pending interest
+        vm.startPrank(B);
+        vm.expectRevert(BorrowerOperations.TroveWithZeroDebt.selector);
+        borrowerOperations.applyPendingDebt(ATroveId);
+        vm.stopPrank();
+    }
+
     // --- redemptions ---
 
     function testRedemptionSetsTroveLastDebtUpdateTimeToNow() public {

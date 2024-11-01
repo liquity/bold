@@ -128,6 +128,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error TroveNotOpen();
     error TroveNotActive();
     error TroveNotZombie();
+    error TroveWithZeroDebt();
     error UpfrontFeeTooHigh();
     error ICRBelowMCR();
     error RepaymentNotMatchingCollWithdrawal();
@@ -744,6 +745,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireTroveIsOpen(troveManagerCached, _troveId);
 
         LatestTroveData memory trove = troveManagerCached.getLatestTroveData(_troveId);
+        _requireNonZeroDebt(trove.entireDebt);
+
         TroveChange memory change;
         change.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
         change.appliedRedistCollGain = trove.redistCollGain;
@@ -1330,6 +1333,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function _checkTroveIsZombie(ITroveManager _troveManager, uint256 _troveId) internal view returns (bool) {
         ITroveManager.Status status = _troveManager.getTroveStatus(_troveId);
         return status == ITroveManager.Status.zombie;
+    }
+
+    function _requireNonZeroDebt(uint256 _troveDebt) internal pure {
+        if (_troveDebt == 0) {
+            revert TroveWithZeroDebt();
+        }
     }
 
     function _requireUserAcceptsUpfrontFee(uint256 _fee, uint256 _maxFee) internal pure {
