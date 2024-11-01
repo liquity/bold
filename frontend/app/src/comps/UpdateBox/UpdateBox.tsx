@@ -23,6 +23,7 @@ export function UpdateBox({
         gap: 16,
         padding: 16,
         fontSize: 16,
+        color: "content",
         background: "infoSurface",
         border: "1px solid token(colors.infoSurfaceBorder)",
         borderRadius: 8,

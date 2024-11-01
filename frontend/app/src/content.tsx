@@ -86,6 +86,20 @@ export default {
     },
   },
 
+  closeLoan: {
+    repayWithBoldMessage: (
+      <>
+        You are repaying your debt and closing the position. The deposit will be returned to your wallet.
+      </>
+    ),
+    repayWithCollateralMessage: (
+      <>
+        To close your position, a part of your collateral will be sold to pay back the debt. The rest of your collateral
+        will be returned to your wallet.
+      </>
+    ),
+  },
+
   // Home screen
   home: {
     openPositionTitle: "Open your first position",
