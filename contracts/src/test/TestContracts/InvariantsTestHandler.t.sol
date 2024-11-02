@@ -1535,7 +1535,6 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         v.batchManager = _batchManagerOf[i][v.troveId];
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
-        vm.assume(v.t.entireDebt > 0); // skip troves if there’s no pending debt
         v.trove = _troves[i][v.troveId];
         v.wasOpen = _isOpen(i, v.troveId);
 
@@ -1546,6 +1545,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         try v.c.borrowerOperations.applyPendingDebt(v.troveId, v.lowerHint, v.upperHint) {
             // Preconditions
             assertTrue(v.wasOpen, "Should have failed as Trove wasn't open");
+            assertGtDecimal(v.t.entireDebt, 0, 18, "Should have failed as debt was zero");
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
 
             // Effects (Trove)
@@ -1569,6 +1569,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             // Justify failures
             if (selector == BorrowerOperations.TroveNotOpen.selector) {
                 assertFalse(v.wasOpen, "Shouldn't have failed as Trove was open");
+            } else if (selector == BorrowerOperations.TroveWithZeroDebt.selector) {
+                assertEqDecimal(v.t.entireDebt, 0, 18, "Shouldn't have failed as debt was non-zero");
             } else if (selector == BorrowerOperations.IsShutDown.selector) {
                 assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
             } else {
@@ -3012,6 +3014,10 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
             if (selector == BorrowerOperations.TroveNotZombie.selector) {
                 return (selector, "BorrowerOperations.TroveNotZombie()");
+            }
+
+            if (selector == BorrowerOperations.TroveWithZeroDebt.selector) {
+                return (selector, "BorrowerOperations.TroveWithZeroDebt()");
             }
 
             if (selector == BorrowerOperations.UpfrontFeeTooHigh.selector) {
