@@ -12,6 +12,10 @@ uint256 constant _1pct = DECIMAL_PRECISION / 100;
 // Amount of ETH to be locked in gas pool on opening troves
 uint256 constant ETH_GAS_COMPENSATION = 0.0375 ether;
 
+// Liquidation
+uint256 constant MIN_LIQUIDATION_PENALTY_SP = 5e16; // 5%
+uint256 constant MAX_LIQUIDATION_PENALTY_REDISTRIBUTION = 20e16; // 20%
+
 // Fraction of collateral awarded to liquidator
 uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 0.5%
 uint256 constant COLL_GAS_COMPENSATION_CAP = 2 ether; // Max coll gas compensation capped at 2 ETH
@@ -35,7 +39,7 @@ uint256 constant REDEMPTION_FEE_FLOOR = _1pct / 2; // 0.5%
 // but precisely the fact that we have this max value now prevents the attack
 uint256 constant MAX_BATCH_SHARES_RATIO = 1e9;
 
-// Half-life of 6h. 6h = 3600 min
+// Half-life of 6h. 6h = 360 min
 // (1/2) = d^360 => d = (1/2)^(1/360)
 uint256 constant REDEMPTION_MINUTE_DECAY_FACTOR = 998076443575628800;
 

@@ -3,6 +3,7 @@
 pragma solidity 0.8.24;
 
 import "./Dependencies/Ownable.sol";
+import {MIN_LIQUIDATION_PENALTY_SP, MAX_LIQUIDATION_PENALTY_REDISTRIBUTION} from "./Dependencies/Constants.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 
 contract AddressesRegistry is Ownable, IAddressesRegistry {
@@ -76,9 +77,9 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         if (_ccr <= 1e18 || _ccr >= 2e18) revert InvalidCCR();
         if (_mcr <= 1e18 || _mcr >= 2e18) revert InvalidMCR();
         if (_scr <= 1e18 || _scr >= 2e18) revert InvalidSCR();
-        if (_liquidationPenaltySP < 5e16) revert SPPenaltyTooLow();
+        if (_liquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) revert SPPenaltyTooLow();
         if (_liquidationPenaltySP > _liquidationPenaltyRedistribution) revert SPPenaltyGtRedist();
-        if (_liquidationPenaltyRedistribution > 10e16) revert RedistPenaltyTooHigh();
+        if (_liquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION) revert RedistPenaltyTooHigh();
 
         CCR = _ccr;
         SCR = _scr;
