@@ -1801,9 +1801,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 batches[_batchAddress].totalDebtShares = currentBatchDebtShares + batchDebtSharesDelta;
             } else if (debtDecrease > 0) {
                 // Subtract debt
-                // We make sure that if final trove debt is zero, shares are too (avoinding rounding issues)
+                // We make sure that if final trove debt is zero, shares are too (avoiding rounding issues)
                 // This can only happen from redemptions, as otherwise we would be using _removeTroveSharesFromBatch
-                // In redemptions we don’t do that because we don’t want to kick the trove out of the batch
+                // In redemptions we don’t do that because we don’t want to kick the trove out of the batch (it’d be bad UX)
                 if (_newTroveDebt == 0) {
                     batches[_batchAddress].debt = _batchDebt - debtDecrease;
                     batches[_batchAddress].totalDebtShares = currentBatchDebtShares - Troves[_troveId].batchDebtShares;
