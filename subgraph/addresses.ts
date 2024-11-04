@@ -3,3 +3,8 @@ export let leverageZappers = [
   "0x75e7f939aec5ca455e4e32cd4b6567b70323bd4a",
   "0x78b88fc6043810c4d3f0e6af84310620f91cf721",
 ];
+
+export let governanceDeploymentBlock = 6959313;
+export let governanceDeploymentInitiatives = [
+  "0x510f6888fd475A7b81C3652696eb807374d65400", // UniV4Donations
+];
