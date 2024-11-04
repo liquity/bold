@@ -69,8 +69,9 @@ export function TokenIconGroup<
       }}
     >
       <TokenIconGroupSize.Provider value={size}>
-        {Children.map(children, (child) => (
+        {Children.map(children, (child, index) => (
           <div
+            key={index}
             className={css({
               marginLeft: -4,
               _firstOfType: {
