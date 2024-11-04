@@ -454,7 +454,7 @@ function TotalExposure({
         })}
       >
         <div
-          title={`${fmtnum(loan.deposit, "full")} ${collToken}`}
+          title={`${fmtnum(loan.deposit, "full")} ${collToken.name}`}
           className={css({
             display: "flex",
             alignItems: "center",
@@ -673,7 +673,6 @@ function GridItem({
 }) {
   return (
     <div
-      title={title}
       className={css({
         display: "flex",
         flexDirection: "column",
@@ -682,6 +681,7 @@ function GridItem({
       })}
     >
       <div
+        title={title}
         className={css({
           color: "strongSurfaceContentAlt",
         })}

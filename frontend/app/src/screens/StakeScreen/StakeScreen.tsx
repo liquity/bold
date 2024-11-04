@@ -40,11 +40,12 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { encodeFunctionData } from "viem";
 import { useEstimateGas, useGasPrice } from "wagmi";
+import { PanelVoting } from "./PanelVoting";
 
 const TABS = [
   { label: content.stakeScreen.tabs.deposit, id: "deposit" },
   { label: content.stakeScreen.tabs.rewards, id: "rewards" },
-  // { label: content.stakeScreen.tabs.voting, id: "voting" },
+  { label: content.stakeScreen.tabs.voting, id: "voting" },
 ];
 
 export function StakeScreen() {
@@ -100,6 +101,7 @@ export function StakeScreen() {
 
         {action === "deposit" && <PanelUpdateStake />}
         {action === "rewards" && <PanelClaimRewards />}
+        {action === "voting" && <PanelVoting />}
       </VFlex>
     </Screen>
   );
@@ -229,14 +231,14 @@ function PanelUpdateStake() {
         }}
       />
       <div
-        style={{
+        className={css({
           display: "flex",
           justifyContent: "center",
           flexDirection: "column",
           gap: 24,
           width: "100%",
           paddingTop: 16,
-        }}
+        })}
       >
         {hasDeposit && (
           <HFlex justifyContent="space-between">

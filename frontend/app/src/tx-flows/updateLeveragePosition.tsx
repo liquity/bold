@@ -13,7 +13,6 @@ import { vAddress, vCollIndex, vDnum, vPrefixedTroveId } from "@/src/valibot-uti
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
-import { readContract } from "wagmi/actions";
 
 const FlowIdSchema = v.literal("updateLeveragePosition");
 
