@@ -6,8 +6,12 @@ import "./CompositePriceFeed.sol";
 import "../Interfaces/IWSTETH.sol";
 import "../Interfaces/IWSTETHPriceFeed.sol";
 
+// import "forge-std/console2.sol";
+
 contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
     Oracle public stEthUsdOracle;
+
+    uint256 constant public STETH_USD_DEVIATION_THRESHOLD = 1e16;  // 1%
 
     constructor(
         address _owner,
@@ -48,8 +52,8 @@ contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
         // Otherwise, use the primary price calculation:
         uint256 wstEthUsdPrice;
 
-        if (_isRedemption) { 
-            // If it's a redemption, take the max of (STETH-USD, ETH-USD) and convert to WSTETH-USD
+        if (_isRedemption && _withinDeviationThreshold(stEthUsdPrice, ethUsdPrice, STETH_USD_DEVIATION_THRESHOLD)) { 
+            // If it's a redemption and within 1%, take the max of (STETH-USD, ETH-USD) to mitigate unwanted redemption arb and convert to WSTETH-USD
             wstEthUsdPrice = LiquityMath._max(stEthUsdPrice, ethUsdPrice) * stEthPerWstEth / 1e18;
         } else {
             // Otherwise, just calculate WSTETH-USD price: USD_per_WSTETH = USD_per_STETH * STETH_per_WSTETH

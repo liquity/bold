@@ -105,6 +105,17 @@ contract CompositePriceFeed is MainnetPriceFeedBase {
         return bestPrice;
     }
 
+    function _withinDeviationThreshold(uint256 _priceToCheck, uint256 _referencePrice, uint256 _deviationThreshold) internal pure returns (bool) {
+        // Calculate the price deviation of the oracle market price relative to the canonical price
+        uint256 max = _referencePrice * (DECIMAL_PRECISION + _deviationThreshold) / 1e18;
+        uint256 min = _referencePrice * (DECIMAL_PRECISION - _deviationThreshold) / 1e18;
+
+        console2.log(_priceToCheck, "_priceToCheck");
+        console2.log(_referencePrice, "_referencePrice");
+        console2.log(_priceToCheck >= min && _priceToCheck <= max, "is within threshold");
+        return _priceToCheck >= min && _priceToCheck <= max;
+    }
+
     // An individual Pricefeed instance implements _fetchPricePrimary according to the data sources it uses. Returns:
     // - The price
     // - A bool indicating whether a new oracle failure or exchange rate failure was detected in the call
