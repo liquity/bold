@@ -76,6 +76,7 @@ export const colors = {
   // desert
   "desert:50": "#FAF9F7",
   "desert:100": "#EFECE5",
+  "desert:950": "#2C231E",
 
   // White
   "white": "#FFFFFF",
@@ -120,6 +121,7 @@ export const lightTheme = {
     hint: "brown:50",
     infoSurface: "desert:50",
     infoSurfaceBorder: "desert:100",
+    infoSurfaceContent: "desert:950",
     dimmed: "gray:400",
     fieldBorder: "gray:100",
     fieldBorderFocused: "gray:300",

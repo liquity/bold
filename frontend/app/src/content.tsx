@@ -346,6 +346,15 @@ export default {
       ),
       action: "Next: Summary",
     },
+    votingPanel: {
+      title: "Allocate your voting power",
+      intro: (
+        <>
+          Direct incentives from Liquity V2 protocol revenues towards liquidity providers for BOLD. Upvote from Thursday
+          to Tuesday. Downvote all week. <Link href="https://github.com/liquity/V2-gov">Learn more</Link>
+        </>
+      ),
+    },
     infoTooltips: {
       alsoClaimRewardsDeposit: [
         <>
