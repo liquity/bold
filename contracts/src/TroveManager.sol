@@ -577,6 +577,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 _singleRedemption.troveId,
                 _singleRedemption.batchAddress,
                 troveChange,
+                newDebt,
                 _singleRedemption.batch.entireCollWithoutRedistribution,
                 _singleRedemption.batch.entireDebtWithoutRedistribution,
                 false // _checkBatchSharesRatio
@@ -1263,7 +1264,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // Push the trove's id to the Trove list
         TroveIds.push(_troveId);
 
-        _updateBatchShares(_troveId, _batchAddress, _troveChange, _batchColl, _batchDebt, true);
+        assert(_troveChange.debtIncrease > 0); // TODO: remove before deployment
+        _updateBatchShares(_troveId, _batchAddress, _troveChange, _troveChange.debtIncrease, _batchColl, _batchDebt, true);
 
         uint256 newTotalStakes = totalStakes + newStake;
         totalStakes = newTotalStakes;
@@ -1502,6 +1504,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     function onAdjustTroveInsideBatch(
         uint256 _troveId,
         uint256 _newTroveColl, // entire, with redistribution and trove change
+        uint256 _newTroveDebt, // entire, with redistribution and trove change
         TroveChange memory _troveChange,
         address _batchAddress,
         uint256 _newBatchColl, // without trove change
@@ -1515,7 +1518,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 newStake = _updateStakeAndTotalStakes(_troveId, _newTroveColl);
 
         // Batch
-        _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt, true);
+        assert(_newTroveDebt > 0); // TODO: remove before deployment
+        _updateBatchShares(_troveId, _batchAddress, _troveChange, _newTroveDebt, _newBatchColl, _newBatchDebt, true);
 
         _movePendingTroveRewardsToActivePool(
             defaultPool, _troveChange.appliedRedistBoldDebtGain, _troveChange.appliedRedistCollGain
@@ -1570,7 +1574,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         Troves[_troveId].coll = _newTroveColl;
 
         if (_batchAddress != address(0)) {
-            _updateBatchShares(_troveId, _batchAddress, _troveChange, _newBatchColl, _newBatchDebt, true);
+            assert(_newTroveDebt > 0); // TODO: remove before deployment
+            _updateBatchShares(_troveId, _batchAddress, _troveChange, _newTroveDebt, _newBatchColl, _newBatchDebt, true);
 
             emit BatchUpdated({
                 _interestBatchManager: _batchAddress,
@@ -1710,8 +1715,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         _troveChange.collIncrease = _params.troveColl - _troveChange.appliedRedistCollGain;
         _troveChange.debtIncrease = _params.troveDebt - _troveChange.appliedRedistBoldDebtGain - _troveChange.upfrontFee;
+        assert(_params.troveDebt > 0); // TODO: remove before deployment
         _updateBatchShares(
-            _params.troveId, _params.newBatchAddress, _troveChange, _params.newBatchColl, _params.newBatchDebt, true
+            _params.troveId, _params.newBatchAddress, _troveChange, _params.troveDebt, _params.newBatchColl, _params.newBatchDebt, true
         );
 
         _movePendingTroveRewardsToActivePool(
@@ -1758,6 +1764,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 _troveId,
         address _batchAddress,
         TroveChange memory _troveChange,
+        uint256 _newTroveDebt, // entire, with interest, batch fee and redistribution
         uint256 _batchColl, // without trove change
         uint256 _batchDebt, // entire (with interest, batch fee), but without trove change, nor upfront fee nor redist
         bool _checkBatchSharesRatio // whether we do the check on the resulting ratio inside the func call
@@ -1794,11 +1801,20 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 batches[_batchAddress].totalDebtShares = currentBatchDebtShares + batchDebtSharesDelta;
             } else if (debtDecrease > 0) {
                 // Subtract debt
-                batchDebtSharesDelta = currentBatchDebtShares * debtDecrease / _batchDebt;
+                // We make sure that if final trove debt is zero, shares are too (avoiding rounding issues)
+                // This can only happen from redemptions, as otherwise we would be using _removeTroveSharesFromBatch
+                // In redemptions we don’t do that because we don’t want to kick the trove out of the batch (it’d be bad UX)
+                if (_newTroveDebt == 0) {
+                    batches[_batchAddress].debt = _batchDebt - debtDecrease;
+                    batches[_batchAddress].totalDebtShares = currentBatchDebtShares - Troves[_troveId].batchDebtShares;
+                    Troves[_troveId].batchDebtShares = 0;
+                } else {
+                    batchDebtSharesDelta = currentBatchDebtShares * debtDecrease / _batchDebt;
 
-                Troves[_troveId].batchDebtShares -= batchDebtSharesDelta;
-                batches[_batchAddress].debt = _batchDebt - debtDecrease;
-                batches[_batchAddress].totalDebtShares = currentBatchDebtShares - batchDebtSharesDelta;
+                    Troves[_troveId].batchDebtShares -= batchDebtSharesDelta;
+                    batches[_batchAddress].debt = _batchDebt - debtDecrease;
+                    batches[_batchAddress].totalDebtShares = currentBatchDebtShares - batchDebtSharesDelta;
+                }
             }
         }
         // Update debt checkpoint
