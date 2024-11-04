@@ -7,6 +7,7 @@ contract RebasingBatchShares is DevTestSetup {
     bool WITH_INTEREST = true; // Do we need to tick some interest to cause a rounding error?
 
     // See: https://github.com/GalloDaSballo/bold-review/issues/42
+    // This test is kept for historical purposes, doesn’t make much sense now in the current state
     function testBatchRebaseToSystemInsolvency() public {
         // === EXTRA SETUP === //
         // Open Trove
@@ -54,18 +55,21 @@ contract RebasingBatchShares is DevTestSetup {
         vm.stopPrank();
 
         uint256 sharesAfterRedeem = _getBatchDebtShares(BTroveId);
-        assertEq(sharesAfterRedeem, 1, "Must be down to 1, rebased");
+        //assertEq(sharesAfterRedeem, 1, "Must be down to 1, rebased");
+        assertEq(sharesAfterRedeem, 0, "Must be 0, as it was fully redeemed");
 
         // Let's have B get 1 share, 2 debt | Now it will be 1 | 1 because A is socializing that share
         LatestTroveData memory bAfterRedeem = troveManager.getLatestTroveData(BTroveId);
-        assertEq(bAfterRedeem.entireDebt, 1, "Must be 1, Should be 2 for exploit"); // NOTE: it's one because of the division on total shares
+        //assertEq(bAfterRedeem.entireDebt, 1, "Must be 1, Should be 2 for exploit"); // NOTE: it's one because of the division on total shares
+        assertEq(bAfterRedeem.entireDebt, 0, "Must be 0, as it was fully redeemed");
 
         // Close A (also remove from batch is fine)
         closeTrove(A, ATroveId);
 
         // Now B has rebased the Batch to 1 Share, 2 Debt
         LatestTroveData memory afterClose = troveManager.getLatestTroveData(BTroveId);
-        assertEq(afterClose.entireDebt, 2, "Becomes 2"); // Note the debt becomes 2 here because of the round down on what A needs to repay
+        //assertEq(afterClose.entireDebt, 2, "Becomes 2"); // Note the debt becomes 2 here because of the round down on what A needs to repay
+        assertEq(afterClose.entireDebt, 0, "Still 0, as it had zero shares"); // Note the debt becomes 2 here because of the round down on what A needs to repay
 
         // === 2: Rebase to 100+ === //
         // We need to rebase to above 100
@@ -99,9 +103,11 @@ contract RebasingBatchShares is DevTestSetup {
 
         // === 4: Free Loans === //
         // uint256 debtB4 = borrowerOperations.getEntireSystemDebt();
-        // We shouldn’t be able to open a new Trove now
-        uint256 anotherATroveId = openTroveExpectRevert(A, x + 1, 100 ether, MIN_DEBT, B);
-        assertEq(anotherATroveId, 0);
+        // We should be able to open a new Trove now
+        //uint256 anotherATroveId = openTroveExpectRevert(A, x + 1, 100 ether, MIN_DEBT, B);
+        //assertEq(anotherATroveId, 0);
+        uint256 anotherATroveId = openTroveAndJoinBatchManagerWithIndex(A, x + 1, 100 ether, MIN_DEBT, B, MAX_ANNUAL_INTEREST_RATE);
+        assertGt(anotherATroveId, 0);
 
         /*
         LatestTroveData memory anotherATrove = troveManager.getLatestTroveData(anotherATroveId);
@@ -143,7 +149,7 @@ contract RebasingBatchShares is DevTestSetup {
         uint256 batchShares = _getTotalBatchDebtShares(batch);
         console2.log("Batch Shares:         ", batchShares);
         // Log ratio
-        uint256 batchSharesRatio = batchDebt / batchShares;
+        uint256 batchSharesRatio = batchShares > 0 ? batchDebt / batchShares : 0;
         console2.log("debt / shares ratio:  ", batchSharesRatio);
         console2.log("Ratio too high?       ", batchSharesRatio > MAX_BATCH_SHARES_RATIO);
 
@@ -153,7 +159,7 @@ contract RebasingBatchShares is DevTestSetup {
         console2.log("Trove Debt:           ", troveData.entireDebt);
         uint256 troveBatchShares = _getBatchDebtShares(troveId);
         console2.log("Trove Shares:         ", troveBatchShares);
-        uint256 troveSharesRatio = troveData.entireDebt / troveBatchShares;
+        uint256 troveSharesRatio = troveBatchShares > 0 ? troveData.entireDebt / troveBatchShares : 0;
         console2.log("Trove ratio:          ", troveSharesRatio);
         console2.log("Ratio too high?       ", troveSharesRatio > MAX_BATCH_SHARES_RATIO);
         */
@@ -166,13 +172,24 @@ contract RebasingBatchShares is DevTestSetup {
         uint256 ATroveId =
             openTroveAndJoinBatchManagerWithIndex(A, iteration + 1, 100 ether, MIN_DEBT, B, MAX_ANNUAL_INTEREST_RATE);
 
-        // Add debt that wont' be credited (fibonacci)
-        _addDebtAndEnsureItDoesntMintShares(ATroveId, A, amt); // TODO: Needs to be made to scale
+        // Add debt
+        _addDebtAndEnsureItMintsShares(ATroveId, A, amt);
 
         closeTrove(A, ATroveId); // Close A (also remove from batch is fine)
 
         LatestTroveData memory troveAfter = troveManager.getLatestTroveData(BTroveId);
-        assertGt(troveAfter.entireDebt, troveBefore.entireDebt, "we're rebasing");
+        assertEq(troveAfter.entireDebt, troveBefore.entireDebt, "rebasing is not working");
+        assertEq(troveAfter.entireDebt, 0, "trove B was closed");
+    }
+
+    function _addDebtAndEnsureItMintsShares(uint256 troveId, address caller, uint256 amt) internal {
+        (,,,,,,,,, uint256 b4BatchDebtShares) = troveManager.Troves(troveId);
+
+        withdrawBold100pct(caller, troveId, amt);
+
+        (,,,,,,,,, uint256 afterBatchDebtShares) = troveManager.Troves(troveId);
+
+        assertLt(b4BatchDebtShares, afterBatchDebtShares, "Shares should increase");
     }
 
     function _addDebtAndEnsureItDoesntMintShares(uint256 troveId, address caller, uint256 amt) internal {

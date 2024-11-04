@@ -107,6 +107,7 @@ interface ITroveManager is ILiquityBase {
     function onAdjustTroveInsideBatch(
         uint256 _troveId,
         uint256 _newTroveColl,
+        uint256 _newTroveDebt,
         TroveChange memory _troveChange,
         address _batchAddress,
         uint256 _newBatchColl,

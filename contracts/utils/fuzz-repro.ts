@@ -38,6 +38,7 @@ const mv = async (oldPath: string, newDir: string) => {
   const newPath = oldPath.replace(counterexamplesDirPrefix, newDir);
   await $`mkdir -p ${path.dirname(newPath)}`;
   await $`mv ${oldPath} ${newPath}`;
+  return newPath;
 };
 
 const reproFile = (
@@ -145,11 +146,11 @@ const main = async () => {
 
         for (const { result, counterexample } of results) {
           if (result.status === "Success") {
-            console.log(`${chalk.green("SUCC")} ${counterexample.inputFile}`);
-            await mv(counterexample.inputFile, counterexamplesFixedDir);
+            const newPath = await mv(counterexample.inputFile, counterexamplesFixedDir);
+            console.log(`${chalk.green("SUCC")} ${newPath}`);
           } else if (result.reason === "FOUNDRY::ASSUME") {
-            console.log(`${chalk.yellow("ASSU")} ${counterexample.inputFile}`);
-            await mv(counterexample.inputFile, counterexamplesAssumeDir);
+            const newPath = await mv(counterexample.inputFile, counterexamplesAssumeDir);
+            console.log(`${chalk.yellow("ASSU")} ${newPath}`);
           } else {
             console.log(`${chalk.red("FAIL")} ${counterexample.inputFile}`);
             console.log(`       ${chalk.bold(result.reason)}`);

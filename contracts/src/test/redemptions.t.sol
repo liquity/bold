@@ -897,8 +897,11 @@ contract Redemptions is DevTestSetup {
         assertTrue(troveManager.checkTroveIsZombie(troveIDs.B));
         assertFalse(sortedTroves.contains(troveIDs.B));
 
-        // E applies interest on A and B's Troves
-        applyPendingDebt(E, troveIDs.A);
+        // E applies interest on A and B's Troves, only B works, as A has zero debt
+        vm.startPrank(E);
+        vm.expectRevert(BorrowerOperations.TroveWithZeroDebt.selector);
+        borrowerOperations.applyPendingDebt(troveIDs.A);
+        vm.stopPrank();
         applyPendingDebt(E, troveIDs.B);
 
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
@@ -927,8 +930,11 @@ contract Redemptions is DevTestSetup {
         assertTrue(troveManager.checkTroveIsZombie(troveIDs.B));
         assertFalse(sortedTroves.contains(troveIDs.B));
 
-        // E applies interest on A and B's Troves
-        applyPendingDebt(E, troveIDs.A);
+        // E applies interest on A and B's Troves, only B works, as A has zero debt
+        vm.startPrank(E);
+        vm.expectRevert(BorrowerOperations.TroveWithZeroDebt.selector);
+        borrowerOperations.applyPendingDebt(troveIDs.A);
+        vm.stopPrank();
         applyPendingDebt(E, troveIDs.B);
 
         assertEq(troveManager.calcTroveAccruedInterest(troveIDs.A), 0);
