@@ -1,4 +1,4 @@
-import type { Address } from "@liquity2/uikit";
+import type { Address } from "./types";
 
 export const ADDRESS_ZERO: Address = `0x${"0".repeat(40)}`;
 
