@@ -30,7 +30,7 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
 
     Oracle public rEthEthOracle;
 
-    uint256 constant public _2_PERCENT = 2e16;
+    uint256 constant public RETH_ETH_DEVIATION_THRESHOLD = 2e16;  // 2%
 
     function _fetchPricePrimary(bool _isRedemption) internal override returns (uint256, bool) {
         assert(priceSource == PriceSource.primary);
@@ -59,7 +59,7 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
         uint256 rEthUsdPrice;
 
         // If it's a redemption and canonical is within 2% of market, use the max to mitigate unwanted redemption oracle arb
-        if (_isRedemption && _within2pct(rEthUsdMarketPrice, rEthUsdCanonicalPrice)) { 
+        if (_isRedemption && _withinDeviationThreshold(rEthUsdMarketPrice, rEthUsdCanonicalPrice, RETH_ETH_DEVIATION_THRESHOLD)) { 
             rEthUsdPrice = LiquityMath._max(rEthUsdMarketPrice, rEthUsdCanonicalPrice);
         } else {
             // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation.
@@ -71,15 +71,6 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
 
         return (rEthUsdPrice, false);
     }
-
-    function _within2pct(uint256 _rEthUsdMarketPrice, uint256 _rEthUsdCanonicalPrice) internal pure returns (bool) {
-        // Calculate the price deviation of the oracle market price relative to the canonical price
-        uint256 max = _rEthUsdCanonicalPrice * (DECIMAL_PRECISION + _2_PERCENT) / 1e18;
-        uint256 min = _rEthUsdCanonicalPrice * (DECIMAL_PRECISION - _2_PERCENT) / 1e18;
-
-        return _rEthUsdMarketPrice >= min && _rEthUsdMarketPrice <= max;
-    }
-
 
     function _getCanonicalRate() internal view override returns (uint256, bool) {
         try IRETHToken(rateProviderAddress).getExchangeRate() returns (uint256 ethPerReth) {

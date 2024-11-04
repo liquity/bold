@@ -1696,7 +1696,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(contractsArray[0].collToken.balanceOf(A), A_collBefore + expectedCollDelta);
     }
 
-    function testRedemptionOfWSTETHUsesMaxETHUSDMarketandWSTETHUSDMarketForPrimaryPrice() public {
+    function testRedemptionOfWSTETHUsesMaxETHUSDMarketandWSTETHUSDMarketForPrimaryPriceWhenWithin1pct() public {
         // Fetch price
         wstethPriceFeed.fetchPrice();
         uint256 lastGoodPrice1 = wstethPriceFeed.lastGoodPrice();
@@ -1717,6 +1717,11 @@ contract OraclesMainnet is TestAccounts {
         uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
         uint256 stethUsdPrice = _getLatestAnswerFromOracle(stethOracle);
         assertNotEq(ethUsdPrice, stethUsdPrice, "raw prices equal");
+         // Check STETH-USD is within 1ct of ETH-USD
+        uint256 max = (1e18 + 1e16) * ethUsdPrice / 1e18;
+        uint256 min = (1e18 - 1e16) * ethUsdPrice / 1e18;
+        assertGe(stethUsdPrice, min);
+        assertLe(stethUsdPrice, max);
         
         // USD_per_WSTETH = USD_per_STETH(or_per_ETH) * STETH_per_WSTETH
         uint256 expectedPrice = LiquityMath._max(ethUsdPrice, stethUsdPrice) * wstETH.stEthPerToken() / 1e18;
@@ -1749,6 +1754,85 @@ contract OraclesMainnet is TestAccounts {
 
         // Confirm the received amount coll is the expected amount (i.e. used the expected price)
         assertEq(contractsArray[2].collToken.balanceOf(A), A_collBefore + expectedCollDelta);
+    }
+
+    function testRedemptionOfWSTETHUsesMinETHUSDMarketandWSTETHUSDMarketForPrimaryPriceWhenNotWithin1pct() public {
+        // Fetch price
+        console.log("test::first wsteth pricefeed call");
+        wstethPriceFeed.fetchPrice();
+        uint256 lastGoodPrice1 = wstethPriceFeed.lastGoodPrice();
+        assertGt(lastGoodPrice1, 0, "lastGoodPrice 0");
+
+        // Check using primary
+        assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.primary));
+
+        uint256 coll = 100 ether;
+        uint256 debtRequest = 3000e18;
+
+        vm.startPrank(A);
+        uint256 troveId = contractsArray[2].borrowerOperations.openTrove(
+            A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
+        );
+
+        // Get the raw ETH-USD price (at 8 decimals) for comparison
+        (,int256 rawEthUsdPrice,,,) = ethOracle.latestRoundData();
+        assertGt(rawEthUsdPrice, 0, "eth-usd price not 0");
+
+        // Replace the STETH-USD Oracle's code with the mock oracle's code
+        etchStaleMockToStethOracle(address(mockOracle).code);
+        ChainlinkOracleMock mock = ChainlinkOracleMock(address(stethOracle));
+        // Reduce STETH-USD price to 90% of ETH-USD price. Use 8 decimal precision on the oracle.
+        mock.setPrice(int256(rawEthUsdPrice * 90e6 / 1e8));
+        // Make it fresh
+        mock.setUpdatedAt(block.timestamp);
+        // STETH-USD price has 8 decimals
+        mock.setDecimals(8);
+
+        assertEq(contractsArray[2].troveManager.shutdownTime(), 0, "is shutdown");
+
+        uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
+        uint256 stethUsdPrice = _getLatestAnswerFromOracle(stethOracle);
+        console.log(stethUsdPrice, "test stehUsdPrice after replacement");
+        console.log(ethUsdPrice, "test ethUsdPrice after replacement");
+        console.log(ethUsdPrice * 90e16 / 1e18, "test ethUsdPrice * 90e16 / 1e18");
+
+        // Confirm that STETH-USD is lower than ETH-USD
+        assertLt(stethUsdPrice, ethUsdPrice, "steth-usd not < eth-usd");
+
+        // USD_per_STETH = USD_per_STETH * STETH_per_WSTETH
+        // Use STETH-USD as expected price since it is out of range of ETH-USD
+        uint256 expectedPrice = stethUsdPrice * wstETH.stEthPerToken() / 1e18;
+        assertGt(expectedPrice, 0, "expected price not 0");
+
+        // Calc expected fee based on price
+        uint256 totalBoldRedeemAmount = 100e18;
+        uint256 totalCorrespondingColl = totalBoldRedeemAmount * DECIMAL_PRECISION / expectedPrice;
+        assertGt(totalCorrespondingColl, 0, "coll not 0");
+
+        uint256 redemptionFeePct = collateralRegistry.getEffectiveRedemptionFeeInBold(totalBoldRedeemAmount)
+            * DECIMAL_PRECISION / totalBoldRedeemAmount;
+        assertGt(redemptionFeePct, 0, "fee not 0");
+
+        uint256 totalCollFee = totalCorrespondingColl * redemptionFeePct / DECIMAL_PRECISION;
+
+        uint256 expectedCollDelta = totalCorrespondingColl - totalCollFee;
+        assertGt(expectedCollDelta, 0, "delta not 0");
+
+        uint256 branch2DebtBefore = contractsArray[2].activePool.getBoldDebt();
+        assertGt(branch2DebtBefore, 0);
+        uint256 A_collBefore = contractsArray[2].collToken.balanceOf(A);
+        assertGt(A_collBefore, 0);
+
+        // Redeem
+        redeem(A, totalBoldRedeemAmount);
+
+        assertEq(contractsArray[2].troveManager.shutdownTime(), 0, "is shutdown");
+
+        // Confirm WSTETH branch got redeemed from
+        assertEq(contractsArray[2].activePool.getBoldDebt(), branch2DebtBefore - totalBoldRedeemAmount, "remaining branch debt wrong");
+
+        // Confirm the received amount coll is the expected amount (i.e. used the expected price)
+        assertEq(contractsArray[2].collToken.balanceOf(A), A_collBefore + expectedCollDelta, "remaining branch coll wrong");
     }
 
     function testRedemptionOfRETHUsesMaxCanonicalAndMarketforPrimaryPriceWhenWithin2pct() public {
