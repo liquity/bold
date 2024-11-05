@@ -73,12 +73,19 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
     }
 
     function _getCanonicalRate() internal view override returns (uint256, bool) {
+        uint256 gasBefore = gasleft();
+
         try IRETHToken(rateProviderAddress).getExchangeRate() returns (uint256 ethPerReth) {
             // If rate is 0, return true
             if (ethPerReth == 0) return (0, true);
 
             return (ethPerReth, false);
         } catch {
+            // Require that enough gas was provided to prevent an OOG revert in the external call  
+            // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used 
+            // in the check itself.
+            if (gasleft() <= gasBefore / 64) {revert InsufficientGasForExternalCall();}
+
             // If call to exchange rate reverts, return true
             return (0, true);
         }  
