@@ -37,6 +37,7 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
         bool success;
     }
 
+    error InsufficientGasForExternalCall();
     event ShutDownFromOracleFailure(address _failedOracleAddr);
 
     Oracle public ethUsdOracle;
@@ -90,7 +91,9 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
         view
         returns (ChainlinkResponse memory chainlinkResponse)
     {
-        // Secondly, try to get latest price data:
+        uint256 gasBefore = gasleft();
+
+        // Try to get latest price data:
         try _aggregator.latestRoundData() returns (
             uint80 roundId, int256 answer, uint256, /* startedAt */ uint256 updatedAt, uint80 /* answeredInRound */
         ) {
@@ -102,6 +105,11 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
 
             return chainlinkResponse;
         } catch {
+            // Require that enough gas was provided to prevent an OOG revert in the call to Chainlink 
+            // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used 
+            // in the check itself.
+            if (gasleft() <= gasBefore / 64) {revert InsufficientGasForExternalCall();}
+
             // If call to Chainlink aggregator reverts, return a zero response with success = false
             return chainlinkResponse;
         }

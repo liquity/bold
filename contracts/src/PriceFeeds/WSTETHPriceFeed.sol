@@ -66,14 +66,22 @@ contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
     }
 
     function _getCanonicalRate() internal view override returns (uint256, bool) {
+        uint256 gasBefore = gasleft();
+
         try IWSTETH(rateProviderAddress).stEthPerToken() returns (uint256 stEthPerWstEth) {
             // If rate is 0, return true
             if (stEthPerWstEth == 0) return (0, true);
 
             return (stEthPerWstEth, false);
         } catch {
-            // If call to exchange rate reverts, return true
+            // Require that enough gas was provided to prevent an OOG revert in the external call  
+            // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used 
+            // in the check itself.
+            if (gasleft() <= gasBefore / 64) {revert InsufficientGasForExternalCall();}
+
+            // If call to exchange rate reverted for another reason, return true
             return (0, true);
         }  
+        
     } 
 }

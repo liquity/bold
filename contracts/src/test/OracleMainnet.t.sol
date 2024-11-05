@@ -2,6 +2,11 @@
 
 pragma solidity 0.8.24;
 
+import "../PriceFeeds/WSTETHPriceFeed.sol";
+import "../PriceFeeds/MainnetPriceFeedBase.sol";
+import "../PriceFeeds/RETHPriceFeed.sol";
+import "../PriceFeeds/WETHPriceFeed.sol";
+
 import "./TestContracts/Accounts.sol";
 import "./TestContracts/ChainlinkOracleMock.sol";
 import "./TestContracts/RETHTokenMock.sol";
@@ -1971,6 +1976,24 @@ contract OraclesMainnet is TestAccounts {
         // Confirm the received amount coll is the expected amount (i.e. used the expected price)
         assertEq(contractsArray[1].collToken.balanceOf(A), A_collBefore + expectedCollDelta, "A's coll didn't change" );
     }
+
+    // --- Low gas reverts ---
+
+// --- Call these functions with 10k gas - i.e. enough to run out of gas in the Chainlink calls ---
+function testRevertLowGasWSTETH() public {
+    vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
+    address(wstethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
+}
+
+function testRevertLowGasRETH() public {
+    vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
+    address(rethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
+}
+
+function testRevertLowGasWETH() public {
+    vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
+    address(wethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
+}
 
     // - More basic actions tests (adjust, close, etc)
     // - liq tests (manipulate aggregator stored price)

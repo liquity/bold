@@ -110,9 +110,6 @@ contract CompositePriceFeed is MainnetPriceFeedBase {
         uint256 max = _referencePrice * (DECIMAL_PRECISION + _deviationThreshold) / 1e18;
         uint256 min = _referencePrice * (DECIMAL_PRECISION - _deviationThreshold) / 1e18;
 
-        console2.log(_priceToCheck, "_priceToCheck");
-        console2.log(_referencePrice, "_referencePrice");
-        console2.log(_priceToCheck >= min && _priceToCheck <= max, "is within threshold");
         return _priceToCheck >= min && _priceToCheck <= max;
     }
 
