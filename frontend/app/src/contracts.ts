@@ -6,6 +6,7 @@ import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
 import { CollateralRegistry } from "@/src/abi/CollateralRegistry";
 import { DefaultPool } from "@/src/abi/DefaultPool";
 import { GasCompZapper } from "@/src/abi/GasCompZapper";
+import { Governance } from "@/src/abi/Governance";
 import { HintHelpers } from "@/src/abi/HintHelpers";
 import { LeverageLSTZapper } from "@/src/abi/LeverageLSTZapper";
 import { LeverageWETHZapper } from "@/src/abi/LeverageWETHZapper";
@@ -33,6 +34,7 @@ import { erc20Abi, zeroAddress } from "viem";
 const protocolAbis = {
   BoldToken: erc20Abi,
   CollateralRegistry,
+  Governance,
   HintHelpers,
   LqtyStaking,
   LqtyToken,
@@ -100,11 +102,12 @@ export type Contracts = ProtocolContractMap & {
 const CONTRACTS: Contracts = {
   BoldToken: { abi: abis.BoldToken, address: CONTRACT_BOLD_TOKEN },
   CollateralRegistry: { abi: abis.CollateralRegistry, address: CONTRACT_COLLATERAL_REGISTRY },
+  Governance: { abi: abis.Governance, address: zeroAddress },
   HintHelpers: { abi: abis.HintHelpers, address: CONTRACT_HINT_HELPERS },
+  LqtyStaking: { abi: abis.LqtyStaking, address: CONTRACT_LQTY_STAKING },
+  LqtyToken: { abi: abis.LqtyToken, address: CONTRACT_LQTY_TOKEN },
   MultiTroveGetter: { abi: abis.MultiTroveGetter, address: CONTRACT_MULTI_TROVE_GETTER },
   WETH: { abi: abis.WETH, address: CONTRACT_WETH },
-  LqtyToken: { abi: abis.LqtyToken, address: CONTRACT_LQTY_TOKEN },
-  LqtyStaking: { abi: abis.LqtyStaking, address: CONTRACT_LQTY_STAKING },
 
   collaterals: COLLATERAL_CONTRACTS.map(({ collIndex, symbol, contracts }) => ({
     collIndex,

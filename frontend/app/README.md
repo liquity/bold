@@ -40,6 +40,7 @@ Run the development server:
 ```sh
 cd bold/frontend/app
 pnpm build-uikit # only needed once
+pnpm panda-codegen # only needed once
 pnpm dev
 ```
 
@@ -55,6 +56,7 @@ pnpm build                  # build the static app in out/
 pnpm fmt                    # format the code
 pnpm lint                   # lint the code
 pnpm test                   # run the tests
+pnpm panda-codegen          # update the code generated from the Panda CSS config
 pnpm update-liquity-abis    # build the contracts and update the ABIs
 ```
 

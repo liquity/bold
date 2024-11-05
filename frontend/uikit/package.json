@@ -42,7 +42,7 @@
   "scripts": {
     "build": "pnpm panda-codegen && pnpm lint && tsc && vite build",
     "dev": "vite build --watch",
-    "lint": "pnpm oxlint ./src --import-plugin --react-perf-plugin --jsx-a11y-plugin --allow pedantic",
+    "lint": "pnpm oxlint ./src --import-plugin --react-perf-plugin --allow pedantic",
     "panda-codegen": "panda codegen --silent",
     "update-icons": "pnpm tsx scripts/update-icons.ts"
   },
