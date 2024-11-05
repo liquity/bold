@@ -9,7 +9,7 @@ import "./MainnetPriceFeedBase.sol";
 
 // The CompositePriceFeed is used for feeds that incorporate both a market price oracle (e.g. STETH-USD, or RETH-ETH)
 // and an LST canonical rate (e.g. WSTETH:STETH, or RETH:ETH).
-contract CompositePriceFeed is MainnetPriceFeedBase {
+abstract contract CompositePriceFeed is MainnetPriceFeedBase {
     address public rateProviderAddress;
 
     constructor(
