@@ -7,13 +7,11 @@ import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningB
 import { Field } from "@/src/comps/Field/Field";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
-import { MAX_ANNUAL_INTEREST_RATE, MIN_ANNUAL_INTEREST_RATE } from "@/src/constants";
 import content from "@/src/content";
-import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { getCollToken, getPrefixedTroveId } from "@/src/liquity-utils";
+import { getCollToken } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -23,7 +21,6 @@ import { css } from "@/styled-system/css";
 import { Button, HFlex, InfoTooltip, StatusDot } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
-import { maxUint256 } from "viem";
 
 export function PanelUpdateRate({
   loan,
@@ -188,18 +185,12 @@ export function PanelUpdateRate({
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The position interest rate has been updated successfully.",
 
-                collIndex: loan.collIndex,
-                owner: account.address,
-                prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
-                upperHint: dnum18(0),
-                lowerHint: dnum18(0),
-                annualInterestRate: interestRate,
-                maxUpfrontFee: dnum18(maxUint256),
-                interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate ? null : [
-                  interestRateDelegate,
-                  MIN_ANNUAL_INTEREST_RATE,
-                  MAX_ANNUAL_INTEREST_RATE,
-                ],
+                prevLoanPosition: { ...loan },
+                loanPosition: {
+                  ...loan,
+                  batchManager: interestRateMode === "delegate" ? interestRateDelegate : null,
+                  interestRate,
+                },
               });
             }
           }}
