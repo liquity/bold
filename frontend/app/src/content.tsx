@@ -29,10 +29,7 @@ export default {
     loanRedemptionRisk: [
       "Redemption risk",
       <>
-        If the price of BOLD is lower than $1,{" "}
-        <Link href="https://github.com/liquity/bold#bold-redemptions">redemptions</Link>{" "}
-        are possible. Redemptions first affect loans with the lowest interest rate.
-        Raising the interest rate reduces the redemption risk.
+        "Users paying the lowest interest rate can get redeemed, if the price of BOLD falls below $1. By raising your interest rate, you reduce this risk.",
       </>,
     ],
     loanLtv: [
@@ -65,11 +62,11 @@ export default {
   redemptionInfo: {
     title: "Redemptions in a nutshell",
     subtitle:
-      "Redemptions are different from liquidations. If a loan is (partially) redeemed, the collateral and debt are reduced proportionally. There is no penalty for redemptions.",
+      "Redemptions help maintain BOLD's peg in a decentralized way. If a user is redeemed, their collateral and debt are reduced equally, resulting in no net loss.",
     infoItems: [
       {
         icon: "bold",
-        text: "If BOLD goes below $1, redemptions help restore the peg.",
+        text: "Redemptions occur when BOLD drops below $1.",
       },
       {
         icon: "redemption",
@@ -77,7 +74,7 @@ export default {
       },
       {
         icon: "interest",
-        text: "Raising the interest rate reduces the redemption risk.",
+        text: "Raising the interest rate reduces your redemption risk.",
       },
     ],
     learnMore: {
