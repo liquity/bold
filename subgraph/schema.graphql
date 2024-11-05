@@ -109,3 +109,41 @@ type InterestBatch @entity {
   annualManagementFee: BigInt!
   troves: [Trove!]! @derivedFrom(field: "interestBatch")
 }
+
+type GovernanceUser @entity {
+  id: ID! # "userAddress", e.g. "0x0000000000000000000000000000000000000000"
+  allocatedLQTY: BigInt!
+  averageStakingTimestamp: BigInt!
+  allocations: [GovernanceAllocation!]! @derivedFrom(field: "user")
+}
+
+# Allocation of a user to a given initiative.
+type GovernanceAllocation @entity {
+  id: ID! # "initiativeAddress:userAddress", e.g. "0x0000000000000000000000000000000000000000:0x0000000000000000000000000000000000000000"
+  user: GovernanceUser!
+  initiative: GovernanceInitiative!
+  voteLQTY: BigInt!
+  vetoLQTY: BigInt!
+  atEpoch: Int!
+}
+
+type GovernanceInitiative @entity {
+  id: ID! # "initiativeAddress", e.g. "0x0000000000000000000000000000000000000000"
+  lastClaimEpoch: Int
+  lastVoteSnapshotEpoch: Int
+  lastVoteSnapshotVotes: BigInt
+  registeredAt: BigInt!
+  registeredAtEpoch: Int!
+  registrant: Bytes!
+  totalBoldClaimed: BigInt!
+  totalVetos: BigInt!
+  totalVotes: BigInt!
+  unregisteredAt: BigInt
+  unregisteredAtEpoch: Int
+}
+
+type GovernanceStats @entity {
+  id: ID!
+  totalLQTYStaked: BigInt!
+  totalInitiatives: Int!
+}

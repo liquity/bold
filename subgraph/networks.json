@@ -1,19 +1,30 @@
 {
   "local": {
     "BoldToken": {
-      "address": "0x21a6370b245c05fade18c601f5efa23e1a3c9833"
+      "address": "0x324331e016663950856622e1d1a062cfe4df3006"
+    },
+    "Governance": {
+      "address": "0x79fdb65c20e75f8961d54f6714d2fcc4c30d1073"
     }
   },
   "mainnet": {
     "BoldToken": {
       "address": "0x0000000000000000000000000000000000000000",
       "startBlock": 0
+    },
+    "Governance": {
+      "address": "0x0000000000000000000000000000000000000000",
+      "startBlock": 0
     }
   },
   "sepolia": {
     "BoldToken": {
-      "address": "0x21a6370b245c05fade18c601f5efa23e1a3c9833",
-      "startBlock": 6684588
+      "address": "0x31764dcd10fff1514db117e3db84b48b30db5b43",
+      "startBlock": 6889790
+    },
+    "Governance": {
+      "address": "0x79fdb65c20e75f8961d54f6714d2fcc4c30d1073",
+      "startBlock": 6959313
     }
   }
 }

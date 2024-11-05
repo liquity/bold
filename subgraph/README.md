@@ -25,3 +25,9 @@ cd subgraph
 # subgraph.yaml file (after confirmation).
 ./deploy-subgraph local --version v1 --create
 ```
+
+## Contracts addresses
+
+The addresses and networks of the `subgraph.yaml` file are generated from the `networks.json` file.
+
+Addresses of the zapper and initial initiatives should be updated in the `addresses.ts` file.

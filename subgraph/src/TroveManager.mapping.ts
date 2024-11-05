@@ -1,4 +1,5 @@
-import { Address, BigInt, ByteArray, crypto, dataSource, ethereum, log } from "@graphprotocol/graph-ts";
+import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts";
+import { leverageZappers } from "../addresses";
 import { BorrowerInfo, Collateral, InterestBatch, InterestRateBracket, Trove } from "../generated/schema";
 import {
   BatchUpdated as BatchUpdatedEvent,
@@ -6,7 +7,6 @@ import {
   TroveOperation as TroveOperationEvent,
 } from "../generated/templates/TroveManager/TroveManager";
 import { TroveNFT as TroveNFTContract } from "../generated/templates/TroveManager/TroveNFT";
-import { leverageZappers } from "../leverage-zappers";
 
 // see Operation enum in
 // contracts/src/Interfaces/ITroveEvents.sol
