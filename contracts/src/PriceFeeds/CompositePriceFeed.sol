@@ -5,20 +5,11 @@ pragma solidity 0.8.24;
 import "../Dependencies/LiquityMath.sol";
 import "./MainnetPriceFeedBase.sol";
 
-<<<<<<< HEAD
-// Composite PriceFeed: outputs an LST-USD price derived from two external price Oracles: LST-ETH, and ETH-USD.
-// Used where the LST token is non-rebasing (as per rETH, osETH, ETHx, etc).
-contract CompositePriceFeed is MainnetPriceFeedBase, ICompositePriceFeed {
-    Oracle public lstEthOracle;
-    Oracle public ethUsdOracle;
-
-=======
 // import "forge-std/console2.sol";
 
 // The CompositePriceFeed is used for feeds that incorporate both a market price oracle (e.g. STETH-USD, or RETH-ETH)
 // and an LST canonical rate (e.g. WSTETH:STETH, or RETH:ETH).
-contract CompositePriceFeed is MainnetPriceFeedBase {
->>>>>>> 81a1a2aa (Add ETH-USD fallback logic and remove OSETH and ETHX contracts)
+abstract contract CompositePriceFeed is MainnetPriceFeedBase {
     address public rateProviderAddress;
 
     constructor(
