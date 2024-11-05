@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import {Script} from "forge-std/Script.sol";
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {IERC20Metadata} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
@@ -46,7 +45,9 @@ import "forge-std/console.sol";
 import {IRateProvider, IWeightedPool, IWeightedPoolFactory} from "./Interfaces/Balancer/IWeightedPool.sol";
 import {IVault} from "./Interfaces/Balancer/IVault.sol";
 
-contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
+import {DeployGovernance} from "./DeployGovernance.s.sol";
+
+contract DeployLiquity2Script is DeployGovernance, StdCheats, MetadataDeployment {
     using Strings for *;
     using StringFormatting for *;
 
@@ -136,79 +137,9 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
         LiquityContractsTestnet[] contractsArray;
         ICollateralRegistry collateralRegistry;
         IBoldToken boldToken;
+        IERC20 usdc;
         HintHelpers hintHelpers;
         MultiTroveGetter multiTroveGetter;
-    }
-
-    function _getBranchContractsJson(LiquityContractsTestnet memory c) internal pure returns (string memory) {
-        return string.concat(
-            "{",
-            string.concat(
-                // Avoid stack too deep by chunking concats
-                string.concat(
-                    string.concat('"addressesRegistry":"', address(c.addressesRegistry).toHexString(), '",'),
-                    string.concat('"activePool":"', address(c.activePool).toHexString(), '",'),
-                    string.concat('"borrowerOperations":"', address(c.borrowerOperations).toHexString(), '",'),
-                    string.concat('"collSurplusPool":"', address(c.collSurplusPool).toHexString(), '",'),
-                    string.concat('"defaultPool":"', address(c.defaultPool).toHexString(), '",'),
-                    string.concat('"sortedTroves":"', address(c.sortedTroves).toHexString(), '",'),
-                    string.concat('"stabilityPool":"', address(c.stabilityPool).toHexString(), '",'),
-                    string.concat('"troveManager":"', address(c.troveManager).toHexString(), '",')
-                ),
-                string.concat(
-                    string.concat('"troveNFT":"', address(c.troveNFT).toHexString(), '",'),
-                    string.concat('"metadataNFT":"', address(c.metadataNFT).toHexString(), '",'),
-                    string.concat('"priceFeed":"', address(c.priceFeed).toHexString(), '",'),
-                    string.concat('"gasPool":"', address(c.gasPool).toHexString(), '",'),
-                    string.concat('"interestRouter":"', address(c.interestRouter).toHexString(), '",'),
-                    string.concat('"wethZapper":"', address(c.wethZapper).toHexString(), '",'),
-                    string.concat('"gasCompZapper":"', address(c.gasCompZapper).toHexString(), '",'),
-                    string.concat('"leverageZapper":"', address(c.leverageZapper).toHexString(), '",')
-                ),
-                string.concat(
-                    string.concat('"collToken":"', address(c.collToken).toHexString(), '"') // no comma
-                )
-            ),
-            "}"
-        );
-    }
-
-    function _getDeploymentConstants() internal pure returns (string memory) {
-        return string.concat(
-            "{",
-            string.concat(
-                string.concat('"ETH_GAS_COMPENSATION":"', ETH_GAS_COMPENSATION.toString(), '",'),
-                string.concat('"INTEREST_RATE_ADJ_COOLDOWN":"', INTEREST_RATE_ADJ_COOLDOWN.toString(), '",'),
-                string.concat('"MAX_ANNUAL_INTEREST_RATE":"', MAX_ANNUAL_INTEREST_RATE.toString(), '",'),
-                string.concat('"MIN_ANNUAL_INTEREST_RATE":"', MIN_ANNUAL_INTEREST_RATE.toString(), '",'),
-                string.concat('"MIN_DEBT":"', MIN_DEBT.toString(), '",'),
-                string.concat('"SP_YIELD_SPLIT":"', SP_YIELD_SPLIT.toString(), '",'),
-                string.concat('"UPFRONT_INTEREST_PERIOD":"', UPFRONT_INTEREST_PERIOD.toString(), '"') // no comma
-            ),
-            "}"
-        );
-    }
-
-    function _getManifestJson(DeploymentResult memory deployed) internal pure returns (string memory) {
-        string[] memory branches = new string[](deployed.contractsArray.length);
-
-        // Poor man's .map()
-        for (uint256 i = 0; i < branches.length; ++i) {
-            branches[i] = _getBranchContractsJson(deployed.contractsArray[i]);
-        }
-
-        return string.concat(
-            "{",
-            string.concat(
-                string.concat('"constants":', _getDeploymentConstants(), ","),
-                string.concat('"collateralRegistry":"', address(deployed.collateralRegistry).toHexString(), '",'),
-                string.concat('"boldToken":"', address(deployed.boldToken).toHexString(), '",'),
-                string.concat('"hintHelpers":"', address(deployed.hintHelpers).toHexString(), '",'),
-                string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",'),
-                string.concat('"branches":[', branches.join(","), "]") // no comma
-            ),
-            "}"
-        );
     }
 
     function run() external {
@@ -272,6 +203,10 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             //     })
             // );
         }
+
+        deployed.usdc = new ERC20Faucet("USDC", "USDC", 0, type(uint256).max);
+
+        deployGovernance(deployer, SALT, deployed.boldToken, deployed.usdc);
 
         vm.stopBroadcast();
 
@@ -793,5 +728,76 @@ contract DeployLiquity2Script is Script, StdCheats, MetadataDeployment {
             fractional = string.concat("0", fractional);
         }
         return string.concat(whole, ".", fractional);
+    }
+
+    function _getBranchContractsJson(LiquityContractsTestnet memory c) internal pure returns (string memory) {
+        return string.concat(
+            "{",
+            string.concat(
+                // Avoid stack too deep by chunking concats
+                string.concat(
+                    string.concat('"addressesRegistry":"', address(c.addressesRegistry).toHexString(), '",'),
+                    string.concat('"activePool":"', address(c.activePool).toHexString(), '",'),
+                    string.concat('"borrowerOperations":"', address(c.borrowerOperations).toHexString(), '",'),
+                    string.concat('"collSurplusPool":"', address(c.collSurplusPool).toHexString(), '",'),
+                    string.concat('"defaultPool":"', address(c.defaultPool).toHexString(), '",'),
+                    string.concat('"sortedTroves":"', address(c.sortedTroves).toHexString(), '",'),
+                    string.concat('"stabilityPool":"', address(c.stabilityPool).toHexString(), '",'),
+                    string.concat('"troveManager":"', address(c.troveManager).toHexString(), '",')
+                ),
+                string.concat(
+                    string.concat('"troveNFT":"', address(c.troveNFT).toHexString(), '",'),
+                    string.concat('"metadataNFT":"', address(c.metadataNFT).toHexString(), '",'),
+                    string.concat('"priceFeed":"', address(c.priceFeed).toHexString(), '",'),
+                    string.concat('"gasPool":"', address(c.gasPool).toHexString(), '",'),
+                    string.concat('"interestRouter":"', address(c.interestRouter).toHexString(), '",'),
+                    string.concat('"wethZapper":"', address(c.wethZapper).toHexString(), '",'),
+                    string.concat('"gasCompZapper":"', address(c.gasCompZapper).toHexString(), '",'),
+                    string.concat('"leverageZapper":"', address(c.leverageZapper).toHexString(), '",')
+                ),
+                string.concat(
+                    string.concat('"collToken":"', address(c.collToken).toHexString(), '"') // no comma
+                )
+            ),
+            "}"
+        );
+    }
+
+    function _getDeploymentConstants() internal pure returns (string memory) {
+        return string.concat(
+            "{",
+            string.concat(
+                string.concat('"ETH_GAS_COMPENSATION":"', ETH_GAS_COMPENSATION.toString(), '",'),
+                string.concat('"INTEREST_RATE_ADJ_COOLDOWN":"', INTEREST_RATE_ADJ_COOLDOWN.toString(), '",'),
+                string.concat('"MAX_ANNUAL_INTEREST_RATE":"', MAX_ANNUAL_INTEREST_RATE.toString(), '",'),
+                string.concat('"MIN_ANNUAL_INTEREST_RATE":"', MIN_ANNUAL_INTEREST_RATE.toString(), '",'),
+                string.concat('"MIN_DEBT":"', MIN_DEBT.toString(), '",'),
+                string.concat('"SP_YIELD_SPLIT":"', SP_YIELD_SPLIT.toString(), '",'),
+                string.concat('"UPFRONT_INTEREST_PERIOD":"', UPFRONT_INTEREST_PERIOD.toString(), '"') // no comma
+            ),
+            "}"
+        );
+    }
+
+    function _getManifestJson(DeploymentResult memory deployed) internal pure returns (string memory) {
+        string[] memory branches = new string[](deployed.contractsArray.length);
+
+        // Poor man's .map()
+        for (uint256 i = 0; i < branches.length; ++i) {
+            branches[i] = _getBranchContractsJson(deployed.contractsArray[i]);
+        }
+
+        return string.concat(
+            "{",
+            string.concat(
+                string.concat('"constants":', _getDeploymentConstants(), ","),
+                string.concat('"collateralRegistry":"', address(deployed.collateralRegistry).toHexString(), '",'),
+                string.concat('"boldToken":"', address(deployed.boldToken).toHexString(), '",'),
+                string.concat('"hintHelpers":"', address(deployed.hintHelpers).toHexString(), '",'),
+                string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",'),
+                string.concat('"branches":[', branches.join(","), "]") // no comma
+            ),
+            "}"
+        );
     }
 }
