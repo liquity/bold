@@ -1,5 +1,5 @@
 import { Address, BigInt, ethereum } from "@graphprotocol/graph-ts";
-import { governanceDeploymentBlock, governanceDeploymentInitiatives } from "../addresses";
+import { governanceDeploymentInitiatives } from "../addresses";
 import {
   AllocateLQTY as AllocateLQTYEvent,
   ClaimForInitiative as ClaimForInitiativeEvent,
@@ -12,29 +12,40 @@ import {
 } from "../generated/Governance/Governance";
 import { GovernanceAllocation, GovernanceInitiative, GovernanceStats, GovernanceUser } from "../generated/schema";
 
-export function handleBlock(block: ethereum.Block): void {
+function initialize(block: ethereum.Block): void {
   // Initial governance initiatives passed to the constructor (no event emitted)
-  if (block.number.equals(BigInt.fromI32(governanceDeploymentBlock))) {
-    for (let i = 0; i < governanceDeploymentInitiatives.length; i++) {
-      let initiative = new GovernanceInitiative(governanceDeploymentInitiatives[i]);
-      initiative.registrant = Address.zero();
-      initiative.registeredAt = block.timestamp;
-      initiative.registeredAtEpoch = 1;
-      initiative.totalVotes = BigInt.fromI32(0);
-      initiative.totalVetos = BigInt.fromI32(0);
-      initiative.totalBoldClaimed = BigInt.fromI32(0);
-      initiative.save();
-    }
+  for (let i = 0; i < governanceDeploymentInitiatives.length; i++) {
+    let initiative = new GovernanceInitiative(governanceDeploymentInitiatives[i]);
+    initiative.registeredAt = block.timestamp;
+    initiative.registeredAtEpoch = 1;
+    initiative.registrant = Address.zero();
+    initiative.totalBoldClaimed = BigInt.fromI32(0);
+    initiative.totalVetos = BigInt.fromI32(0);
+    initiative.totalVotes = BigInt.fromI32(0);
+    initiative.save();
+  }
+
+  // Create initial stats
+  let stats = new GovernanceStats("stats");
+  stats.totalLQTYStaked = BigInt.fromI32(0);
+  stats.totalInitiatives = 0;
+  stats.save();
+}
+
+export function handleBlock(block: ethereum.Block): void {
+  if (GovernanceStats.load("stats") === null) {
+    initialize(block);
   }
 }
 
 export function handleRegisterInitiative(event: RegisterInitiativeEvent): void {
   let initiative = new GovernanceInitiative(event.params.initiative.toHex());
-  initiative.registrant = event.params.registrant;
   initiative.registeredAt = event.block.timestamp;
   initiative.registeredAtEpoch = event.params.atEpoch;
-  initiative.totalVotes = BigInt.fromI32(0);
+  initiative.registrant = event.params.registrant;
+  initiative.totalBoldClaimed = BigInt.fromI32(0);
   initiative.totalVetos = BigInt.fromI32(0);
+  initiative.totalVotes = BigInt.fromI32(0);
   initiative.save();
 }
 
@@ -69,7 +80,7 @@ export function handleDepositLQTY(event: DepositLQTYEvent): void {
   user.averageStakingTimestamp = userState.getAverageStakingTimestamp();
   user.save();
 
-  let stats = getOrCreateStats();
+  let stats = getStats();
   stats.totalLQTYStaked = stats.totalLQTYStaked.plus(event.params.depositedLQTY);
   stats.save();
 }
@@ -87,7 +98,7 @@ export function handleWithdrawLQTY(event: WithdrawLQTYEvent): void {
   user.averageStakingTimestamp = userState.getAverageStakingTimestamp();
   user.save();
 
-  let stats = getOrCreateStats();
+  let stats = getStats();
   stats.totalLQTYStaked = stats.totalLQTYStaked.minus(event.params.withdrawnLQTY);
   stats.save();
 }
@@ -130,15 +141,12 @@ export function handleAllocateLQTY(event: AllocateLQTYEvent): void {
   initiative.save();
 }
 
-function getOrCreateStats(): GovernanceStats {
-  let state = GovernanceStats.load("global");
-  if (state === null) {
-    state = new GovernanceStats("global");
-    state.totalLQTYStaked = BigInt.fromI32(0);
-    state.totalInitiatives = 0;
-    state.save();
+function getStats(): GovernanceStats {
+  let stats = GovernanceStats.load("stats");
+  if (stats === null) {
+    throw new Error("Stats entity not found");
   }
-  return state;
+  return stats;
 }
 
 export function handleClaimForInitiative(event: ClaimForInitiativeEvent): void {
