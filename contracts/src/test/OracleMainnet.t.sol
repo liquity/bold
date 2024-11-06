@@ -724,7 +724,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
-        (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
+        (, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
 
         assertTrue(oracleFailedWhileBranchLive);
 
@@ -795,7 +795,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
-        (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
+        (, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
 
         assertTrue(oracleFailedWhileBranchLive);
 
@@ -881,7 +881,6 @@ contract OraclesMainnet is TestAccounts {
         uint256 exchangeRate = rethToken.getExchangeRate();
         assertGt(ethUsdPrice, 0);
         assertGt(exchangeRate, 0);
-        uint256 priceIfDidntFail = ethUsdPrice * exchangeRate / 1e18;
         
         // Make the exchange rate return 0
         vm.etch(address(rethToken), address(mockRethToken).code);
@@ -1039,7 +1038,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
-        (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
+        rethPriceFeed.fetchPrice();
 
         // Check using lastGoodPrice
         assertEq(uint8(rethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.lastGoodPrice));
@@ -1112,7 +1111,7 @@ contract OraclesMainnet is TestAccounts {
         assertGt(mockPrice, 0, "mockPrice 0");
 
         // Fetch price again
-        (uint256 price2, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+        (, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
 
         // Check ncall failed
         assertTrue(oracleFailedWhileBranchLive);
@@ -1230,7 +1229,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price
-        (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+        (, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
 
         // Check that the primary calc oracle did fail
         assertTrue(oracleFailedWhileBranchLive);
@@ -1310,13 +1309,6 @@ contract OraclesMainnet is TestAccounts {
         );
 
         uint256 lastGoodPrice = wstethPriceFeed.lastGoodPrice();
-
-        // Calc expected price if didnt fail,  i.e. ETH-USD x canonical
-        uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
-        uint256 exchangeRate = wstETH.stEthPerToken();
-        assertGt(ethUsdPrice, 0);
-        assertGt(exchangeRate, 0);
-        uint256 priceIfDidntFail = ethUsdPrice * exchangeRate / 1e18;
         
         // Make the exchange rate return 0
         vm.etch(address(wstETH), address(mockWstethToken).code);
@@ -1512,7 +1504,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
-        (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+        wstethPriceFeed.fetchPrice();
 
         // Check using lastGoodPrice
         assertEq(uint8(wstethPriceFeed.priceSource()), uint8(IMainnetPriceFeed.PriceSource.lastGoodPrice));
@@ -1533,7 +1525,7 @@ contract OraclesMainnet is TestAccounts {
         uint256 debtRequest = 3000e18;
 
         vm.startPrank(A);
-        uint256 troveId = contractsArray[0].borrowerOperations.openTrove(
+        contractsArray[0].borrowerOperations.openTrove(
             A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
         );
 
@@ -1543,7 +1535,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
-        (uint256 price, bool oracleFailedWhileBranchLive) = wethPriceFeed.fetchPrice();
+        (, bool oracleFailedWhileBranchLive) = wethPriceFeed.fetchPrice();
         assertTrue(oracleFailedWhileBranchLive);
         // Confirm branch shutdown
         assertEq(contractsArray[0].troveManager.shutdownTime(), block.timestamp);
@@ -1577,7 +1569,7 @@ contract OraclesMainnet is TestAccounts {
         uint256 debtRequest = 3000e18;
 
         vm.startPrank(A);
-        uint256 troveId = contractsArray[1].borrowerOperations.openTrove(
+        contractsArray[1].borrowerOperations.openTrove(
             A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
         );
 
@@ -1587,7 +1579,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
-        (uint256 price, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
+        (, bool oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
         assertTrue(oracleFailedWhileBranchLive);
         // Confirm RETH branch shutdown
         assertEq(contractsArray[1].troveManager.shutdownTime(), block.timestamp);
@@ -1621,7 +1613,7 @@ contract OraclesMainnet is TestAccounts {
         uint256 debtRequest = 3000e18;
 
         vm.startPrank(A);
-        uint256 troveId = contractsArray[2].borrowerOperations.openTrove(
+        contractsArray[2].borrowerOperations.openTrove(
             A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
         );
 
@@ -1631,7 +1623,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(updatedAt, block.timestamp - 7 days);
 
         // Fetch price again
-        (uint256 price, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
+        (, bool oracleFailedWhileBranchLive) = wstethPriceFeed.fetchPrice();
         assertTrue(oracleFailedWhileBranchLive);
         // Confirm RETH branch shutdown
         assertEq(contractsArray[2].troveManager.shutdownTime(), block.timestamp);
@@ -1665,7 +1657,7 @@ contract OraclesMainnet is TestAccounts {
         uint256 debtRequest = 3000e18;
 
         vm.startPrank(A);
-        uint256 troveId = contractsArray[0].borrowerOperations.openTrove(
+        contractsArray[0].borrowerOperations.openTrove(
             A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
         );
 
@@ -1714,7 +1706,7 @@ contract OraclesMainnet is TestAccounts {
         uint256 debtRequest = 3000e18;
 
         vm.startPrank(A);
-        uint256 troveId = contractsArray[2].borrowerOperations.openTrove(
+        contractsArray[2].borrowerOperations.openTrove(
             A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
         );
 
@@ -1775,7 +1767,7 @@ contract OraclesMainnet is TestAccounts {
         uint256 debtRequest = 3000e18;
 
         vm.startPrank(A);
-        uint256 troveId = contractsArray[2].borrowerOperations.openTrove(
+        contractsArray[2].borrowerOperations.openTrove(
             A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
         );
 
@@ -1853,7 +1845,7 @@ contract OraclesMainnet is TestAccounts {
         uint256 debtRequest = 3000e18;
 
         vm.startPrank(A);
-        uint256 troveId = contractsArray[1].borrowerOperations.openTrove(
+        contractsArray[1].borrowerOperations.openTrove(
             A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
         );
 
@@ -1915,7 +1907,7 @@ contract OraclesMainnet is TestAccounts {
         uint256 debtRequest = 3000e18;
 
         vm.startPrank(A);
-        uint256 troveId = contractsArray[1].borrowerOperations.openTrove(
+        contractsArray[1].borrowerOperations.openTrove(
             A, 0, coll, debtRequest, 0, 0, 5e16, debtRequest, address(0), address(0), address(0)
         );
         vm.stopPrank();
@@ -1982,17 +1974,23 @@ contract OraclesMainnet is TestAccounts {
 // --- Call these functions with 10k gas - i.e. enough to run out of gas in the Chainlink calls ---
 function testRevertLowGasWSTETH() public {
     vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
-    address(wstethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
+    // just catch return val to suppress warning
+    (bool success, ) = address(wstethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
+    assertFalse(success);
 }
 
 function testRevertLowGasRETH() public {
     vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
-    address(rethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
+    // just catch return val to suppress warning
+    (bool success, ) = address(rethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
+    assertFalse(success);
 }
 
 function testRevertLowGasWETH() public {
     vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
-    address(wethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
+    // just catch return val to suppress warning
+    (bool success, ) = address(wethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
+    assertFalse(success);
 }
 
     // - More basic actions tests (adjust, close, etc)

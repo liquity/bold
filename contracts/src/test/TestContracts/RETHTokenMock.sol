@@ -6,7 +6,7 @@ import "../../Interfaces/IRETHToken.sol";
 
 contract RETHTokenMock is IRETHToken {
 
-    function getExchangeRate() external view returns (uint256) {
+    function getExchangeRate() external pure returns (uint256) {
         return 0;
     }
 }
