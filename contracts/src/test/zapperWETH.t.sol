@@ -355,7 +355,6 @@ contract ZapperWETHTest is DevTestSetup {
         assertEq(B.balance, ethBalanceBeforeB - ethAmount2, "B ETH bal mismatch");
     }
 
-    // TODO: more adjustment combinations
     function testCanAdjustZombieTroveWithdrawCollAndBold() external {
         uint256 ethAmount1 = 10 ether;
         uint256 ethAmount2 = 1 ether;
@@ -406,6 +405,56 @@ contract ZapperWETHTest is DevTestSetup {
         assertEq(A.balance, ethBalanceBeforeA + ethAmount2, "A ETH bal mismatch");
         assertEq(boldToken.balanceOf(B), 0, "B BOLD bal mismatch");
         assertEq(B.balance, ethBalanceBeforeB, "B ETH bal mismatch");
+    }
+
+    function testCanAdjustZombieTroveAddCollAndWithdrawBold() external {
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 0, // not needed
+            boldAmount: 10000e18,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = wethZapper.openTroveWithRawETH{value: 10 ether + ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        // Add a remove manager for the zapper
+        vm.startPrank(A);
+        wethZapper.setRemoveManagerWithReceiver(troveId, B, A);
+        vm.stopPrank();
+
+        uint256 ethAmount2 = 1 ether;
+        uint256 boldAmount2 = 1000e18;
+
+        // Redeem to make trove zombie
+        vm.startPrank(A);
+        collateralRegistry.redeemCollateral(10000e18 - boldAmount2, 10, 1e18);
+        vm.stopPrank();
+
+        uint256 troveCollBefore = troveManager.getTroveEntireColl(troveId);
+        uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
+        uint256 ethBalanceBeforeA = A.balance;
+        uint256 ethBalanceBeforeB = B.balance;
+
+        // Adjust (add coll and withdraw Bold)
+        vm.startPrank(B);
+        wethZapper.adjustZombieTroveWithRawETH{value: ethAmount2}(troveId, ethAmount2, true, boldAmount2, true, 0, 0, boldAmount2);
+        vm.stopPrank();
+
+        assertEq(troveManager.getTroveEntireColl(troveId), troveCollBefore + ethAmount2, "Trove coll mismatch");
+        assertApproxEqAbs(troveManager.getTroveEntireDebt(troveId), 2 * boldAmount2, 2e18, "Trove  debt mismatch");
+        assertEq(boldToken.balanceOf(A), boldBalanceBeforeA + boldAmount2, "A BOLD bal mismatch");
+        assertEq(A.balance, ethBalanceBeforeA, "A ETH bal mismatch");
+        assertEq(boldToken.balanceOf(B), 0, "B BOLD bal mismatch");
+        assertEq(B.balance, ethBalanceBeforeB - ethAmount2, "B ETH bal mismatch");
     }
 
     function testCanCloseTrove() external {
