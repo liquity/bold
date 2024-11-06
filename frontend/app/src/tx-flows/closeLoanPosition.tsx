@@ -139,7 +139,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
     const coll = contracts.collaterals[collIndex];
 
     const Controller = coll.symbol === "ETH"
-      ? coll.contracts.WETHZapper
+      ? coll.contracts.LeverageWETHZapper
       : coll.contracts.BorrowerOperations;
 
     if (!account.address) {
@@ -185,7 +185,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
       });
 
       const Controller = coll.symbol === "ETH"
-        ? coll.contracts.WETHZapper
+        ? coll.contracts.LeverageWETHZapper
         : coll.contracts.BorrowerOperations;
 
       return {
@@ -195,10 +195,10 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
       };
     }
 
-    // WETHZapper mode
+    // LeverageWETHZapper mode
     if (coll.symbol === "ETH" && stepId === "closeLoanPosition") {
       return {
-        ...coll.contracts.WETHZapper,
+        ...coll.contracts.LeverageWETHZapper,
         functionName: "closeTroveToRawETH" as const,
         args: [troveId],
       };

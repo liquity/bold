@@ -231,8 +231,8 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
     const coll = contracts.collaterals[collIndex];
 
     const Controller = coll.symbol === "ETH"
-      ? coll.contracts.WETHZapper
-      : coll.contracts.GasCompZapper;
+      ? coll.contracts.LeverageWETHZapper
+      : coll.contracts.LeverageLSTZapper;
 
     if (!account.address) {
       throw new Error("Account address is required");
@@ -247,7 +247,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
       18,
     ]);
 
-    // Collateral token needs to be approved if collChange > 0 and collToken != "ETH" (no WETHZapper)
+    // Collateral token needs to be approved if collChange > 0 and collToken != "ETH" (no LeverageWETHZapper)
     const isCollApproved = coll.symbol === "ETH" || !dn.gt(request.collChange, 0) || !dn.gt(request.collChange, [
       await readContract(wagmiConfig, {
         ...coll.contracts.CollToken,
@@ -267,9 +267,9 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
   async writeContractParams(stepId, { account, contracts, request }) {
     const { collIndex, collChange, debtChange, maxUpfrontFee } = request;
     const collateral = contracts.collaterals[collIndex];
-    const { WETHZapper, GasCompZapper } = collateral.contracts;
+    const { LeverageWETHZapper, LeverageLSTZapper } = collateral.contracts;
 
-    const Controller = collateral.symbol === "ETH" ? WETHZapper : GasCompZapper;
+    const Controller = collateral.symbol === "ETH" ? LeverageWETHZapper : LeverageLSTZapper;
 
     if (!account.address) {
       throw new Error("Account address is required");
@@ -303,7 +303,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
     if (collateral.symbol === "ETH") {
       return match(stepId)
         .with("adjustTrove", () => ({
-          ...WETHZapper,
+          ...LeverageWETHZapper,
           functionName: "adjustTroveWithRawETH",
           args: [
             troveId,
@@ -316,23 +316,23 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
           value: collChange[0],
         }))
         .with("depositColl", () => ({
-          ...WETHZapper,
+          ...LeverageWETHZapper,
           functionName: "addCollWithRawETH",
           args: [troveId],
           value: collChange[0],
         }))
         .with("withdrawColl", () => ({
-          ...WETHZapper,
+          ...LeverageWETHZapper,
           functionName: "withdrawCollToRawETH",
           args: [troveId, dn.abs(collChange)[0]],
         }))
         .with("depositBold", () => ({
-          ...WETHZapper,
+          ...LeverageWETHZapper,
           functionName: "repayBold",
           args: [troveId, dn.abs(debtChange)[0]],
         }))
         .with("withdrawBold", () => ({
-          ...WETHZapper,
+          ...LeverageWETHZapper,
           functionName: "withdrawBold",
           args: [troveId, debtChange[0], maxUpfrontFee[0]],
         }))
@@ -342,7 +342,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
     // GasComp zapper
     return match(stepId)
       .with("adjustTrove", () => ({
-        ...GasCompZapper,
+        ...LeverageLSTZapper,
         functionName: "adjustTrove",
         args: [
           troveId,
@@ -354,22 +354,22 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
         ],
       }))
       .with("depositColl", () => ({
-        ...GasCompZapper,
+        ...LeverageLSTZapper,
         functionName: "addColl",
         args: [troveId, dn.abs(collChange)[0]],
       }))
       .with("withdrawColl", () => ({
-        ...GasCompZapper,
+        ...LeverageLSTZapper,
         functionName: "withdrawColl",
         args: [troveId, dn.abs(collChange)[0]],
       }))
       .with("depositBold", () => ({
-        ...GasCompZapper,
+        ...LeverageLSTZapper,
         functionName: "repayBold",
         args: [troveId, dn.abs(debtChange)[0]],
       }))
       .with("withdrawBold", () => ({
-        ...GasCompZapper,
+        ...LeverageLSTZapper,
         functionName: "withdrawBold",
         args: [troveId, dn.abs(debtChange)[0], maxUpfrontFee[0]],
       }))

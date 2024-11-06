@@ -192,9 +192,9 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
       return ["openTroveEth"];
     }
 
-    const { GasCompZapper, CollToken } = collateral.contracts;
+    const { LeverageLSTZapper, CollToken } = collateral.contracts;
 
-    if (!GasCompZapper || !CollToken) {
+    if (!LeverageLSTZapper || !CollToken) {
       throw new Error(`Collateral ${collateral.symbol} not supported`);
     }
 
@@ -204,7 +204,7 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
         functionName: "allowance",
         args: [
           account.address ?? ADDRESS_ZERO,
-          GasCompZapper.address,
+          LeverageLSTZapper.address,
         ],
       }),
     );
@@ -256,8 +256,8 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
   async writeContractParams(stepId, { contracts, request }) {
     const collateral = contracts.collaterals[request.collIndex];
 
-    const { GasCompZapper, CollToken } = collateral.contracts;
-    if (!GasCompZapper || !CollToken) {
+    const { LeverageLSTZapper, CollToken } = collateral.contracts;
+    if (!LeverageLSTZapper || !CollToken) {
       throw new Error(`Collateral ${collateral.symbol} not supported`);
     }
 
@@ -266,16 +266,16 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
         ...CollToken,
         functionName: "approve" as const,
         args: [
-          GasCompZapper.address,
+          LeverageLSTZapper.address,
           request.collAmount[0],
         ],
       };
     }
 
-    // WETHZapper (WETH) mode
+    // LeverageWETHZapper mode
     if (stepId === "openTroveEth") {
       return {
-        ...collateral.contracts.WETHZapper,
+        ...collateral.contracts.LeverageWETHZapper,
         functionName: "openTroveWithRawETH" as const,
         args: [{
           owner: request.owner ?? ADDRESS_ZERO,
@@ -299,10 +299,10 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
       };
     }
 
-    // GasCompZapper (LST) mode
+    // LeverageLSTZapper mode
     if (stepId === "openTroveLst") {
       return {
-        ...collateral.contracts.GasCompZapper,
+        ...collateral.contracts.LeverageLSTZapper,
         functionName: "openTroveWithRawETH" as const,
         args: [{
           owner: request.owner ?? ADDRESS_ZERO,

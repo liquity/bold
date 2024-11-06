@@ -21,7 +21,6 @@ const ABIS = [
   ["BorrowerOperations"],
   ["CollSurplusPool"],
   ["DefaultPool"],
-  ["GasCompZapper"],
   ["GasPool"],
   ["LeverageLSTZapper"],
   ["LeverageWETHZapper"],
@@ -30,7 +29,6 @@ const ABIS = [
   ["StabilityPool"],
   ["TroveManager"],
   ["TroveNFT"],
-  ["WETHZapper"],
 ];
 
 const ArtifactSchema = v.object({

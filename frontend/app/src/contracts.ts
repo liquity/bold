@@ -5,7 +5,6 @@ import { ActivePool } from "@/src/abi/ActivePool";
 import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
 import { CollateralRegistry } from "@/src/abi/CollateralRegistry";
 import { DefaultPool } from "@/src/abi/DefaultPool";
-import { GasCompZapper } from "@/src/abi/GasCompZapper";
 import { Governance } from "@/src/abi/Governance";
 import { HintHelpers } from "@/src/abi/HintHelpers";
 import { LeverageLSTZapper } from "@/src/abi/LeverageLSTZapper";
@@ -18,7 +17,6 @@ import { SortedTroves } from "@/src/abi/SortedTroves";
 import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
 import { TroveNFT } from "@/src/abi/TroveNFT";
-import { WETHZapper } from "@/src/abi/WETHZapper";
 import {
   COLLATERAL_CONTRACTS,
   CONTRACT_BOLD_TOKEN,
@@ -42,26 +40,26 @@ const protocolAbis = {
   WETH: erc20Abi,
 } as const;
 
+const BorrowerOperationsErrorsAbi = BorrowerOperations.filter((f) => f.type === "error");
+
 const collateralAbis = {
   ActivePool,
   BorrowerOperations,
   CollToken: erc20Abi,
   DefaultPool,
-  LeverageLSTZapper,
-  LeverageWETHZapper,
+  LeverageLSTZapper: [
+    ...LeverageLSTZapper,
+    ...BorrowerOperationsErrorsAbi,
+  ],
+  LeverageWETHZapper: [
+    ...LeverageWETHZapper,
+    ...BorrowerOperationsErrorsAbi,
+  ],
   PriceFeed,
   SortedTroves,
   StabilityPool,
   TroveManager,
   TroveNFT,
-  GasCompZapper: [
-    ...GasCompZapper,
-    ...BorrowerOperations.filter((f) => f.type === "error"),
-  ],
-  WETHZapper: [
-    ...WETHZapper,
-    ...BorrowerOperations.filter((f) => f.type === "error"),
-  ],
 } as const;
 
 const abis = {
@@ -117,7 +115,6 @@ const CONTRACTS: Contracts = {
       BorrowerOperations: { address: contracts.BORROWER_OPERATIONS, abi: abis.BorrowerOperations },
       CollToken: { address: contracts.COLL_TOKEN, abi: abis.CollToken },
       DefaultPool: { address: contracts.DEFAULT_POOL, abi: abis.DefaultPool },
-      GasCompZapper: { address: contracts.GAS_COMP_ZAPPER, abi: abis.GasCompZapper },
       LeverageLSTZapper: {
         address: symbol === "ETH" ? zeroAddress : contracts.LEVERAGE_ZAPPER,
         abi: abis.LeverageLSTZapper,
@@ -131,7 +128,6 @@ const CONTRACTS: Contracts = {
       StabilityPool: { address: contracts.STABILITY_POOL, abi: abis.StabilityPool },
       TroveManager: { address: contracts.TROVE_MANAGER, abi: abis.TroveManager },
       TroveNFT: { address: contracts.TROVE_NFT, abi: abis.TroveNFT },
-      WETHZapper: { address: contracts.WETH_ZAPPER, abi: abis.WETHZapper },
     },
   })),
 };
