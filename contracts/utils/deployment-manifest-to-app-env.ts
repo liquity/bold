@@ -45,7 +45,6 @@ const ZDeploymentManifest = z.object({
       collSurplusPool: ZAddress,
       collToken: ZAddress,
       defaultPool: ZAddress,
-      gasCompZapper: ZAddress,
       gasPool: ZAddress,
       interestRouter: ZAddress,
       leverageZapper: ZAddress,
@@ -55,7 +54,6 @@ const ZDeploymentManifest = z.object({
       stabilityPool: ZAddress,
       troveManager: ZAddress,
       troveNFT: ZAddress,
-      wethZapper: ZAddress,
     }),
   ),
 });
@@ -130,9 +128,10 @@ function deployedContractsToAppEnvVariables(manifest: DeploymentManifest) {
     NEXT_PUBLIC_CONTRACT_WETH: manifest.branches[0].collToken,
   };
 
+  const { branches, ...protocol } = manifest;
+
   // protocol contracts
-  const protocolEntries = Object.entries(manifest).filter(([k]) => k !== "branches");
-  for (const [contractName, address] of protocolEntries) {
+  for (const [contractName, address] of Object.entries(protocol)) {
     const envVarName = contractNameToAppEnvVariable(contractName, "CONTRACT");
     if (envVarName) {
       appEnvVariables[envVarName] = address;
@@ -140,7 +139,7 @@ function deployedContractsToAppEnvVariables(manifest: DeploymentManifest) {
   }
 
   // collateral contracts
-  for (const [index, contract] of Object.entries(manifest.branches)) {
+  for (const [index, contract] of Object.entries(branches)) {
     for (const [contractName, address] of Object.entries(contract)) {
       const envVarName = contractNameToAppEnvVariable(contractName, `COLL_${index}_CONTRACT`);
       if (envVarName) {
@@ -176,8 +175,6 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_COLL_TOKEN`;
     case "defaultPool":
       return `${prefix}_DEFAULT_POOL`;
-    case "gasCompZapper":
-      return `${prefix}_GAS_COMP_ZAPPER`;
     case "leverageZapper":
       return `${prefix}_LEVERAGE_ZAPPER`;
     case "priceFeed":
@@ -190,8 +187,6 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_TROVE_MANAGER`;
     case "troveNFT":
       return `${prefix}_TROVE_NFT`;
-    case "wethZapper":
-      return `${prefix}_WETH_ZAPPER`;
   }
   return null;
 }
