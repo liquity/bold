@@ -7,6 +7,7 @@ import { dnum18 } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { fmtnum } from "@/src/formatting";
 import { usePredictAdjustInterestRateUpfrontFee } from "@/src/liquity-utils";
+import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { vPositionLoan } from "@/src/valibot-utils";
@@ -93,16 +94,16 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
     const loan = request.loanPosition;
     const prevLoanPosition = request.prevLoanPosition;
 
-    const boldPerYear = dn.mul(loan.borrowed, loan.interestRate);
+    const yearlyBoldInterest = dn.mul(loan.borrowed, loan.interestRate);
 
     return loan.batchManager
       ? (
         <TransactionDetailsRow
           label="Interest rate delegate"
           value={[
-            <AccountPreview key="start" address={loan.batchManager} />,
+            <AccountButton key="start" address={loan.batchManager} />,
             <div key="end">
-              {fmtnum(loan.interestRate, "full", 100)}% (~{fmtnum(boldPerYear, 4)} BOLD per year)
+              {fmtnum(loan.interestRate, "full", 100)}% (~{fmtnum(yearlyBoldInterest, 4)} BOLD per year)
             </div>,
           ]}
         />
@@ -117,9 +118,9 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
               </div>,
               <div
                 key="end"
-                title={`${fmtnum(boldPerYear, "full")} BOLD per year`}
+                title={`${fmtnum(yearlyBoldInterest, "full")} BOLD per year`}
               >
-                ~{fmtnum(boldPerYear, 4)} BOLD per year
+                ~{fmtnum(yearlyBoldInterest, 4)} BOLD per year
               </div>,
             ]}
           />
@@ -133,7 +134,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
                     textDecoration: "line-through",
                   })}
                 >
-                  <AccountPreview address={prevLoanPosition.batchManager} />
+                  <AccountButton address={prevLoanPosition.batchManager} />
                 </div>,
                 <div
                   key="end"
@@ -232,39 +233,3 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
     return null;
   },
 };
-
-function AccountPreview({
-  address,
-}: {
-  address: Address;
-}) {
-  return (
-    <AnchorTextButton
-      key="start"
-      label={
-        <div
-          title={address}
-          className={css({
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-          })}
-        >
-          <Image
-            alt=""
-            width={16}
-            height={16}
-            src={blo(address)}
-            className={css({
-              display: "block",
-              borderRadius: 4,
-            })}
-          />
-          {shortenAddress(address, 4).toLowerCase()}
-        </div>
-      }
-      href={`${CHAIN_BLOCK_EXPLORER?.url}address/${address}`}
-      external
-    />
-  );
-}
