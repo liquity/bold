@@ -149,7 +149,7 @@ contract WETHZapper is BaseZapper {
         uint256 _upperHint,
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
-    ) external {
+    ) external payable {
         InitialBalances memory initialBalances;
         address payable receiver =
             _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, initialBalances);
