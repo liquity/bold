@@ -1,15 +1,12 @@
-# dependencies
 /node_modules
-
-# testing
 /coverage
 
 # next.js
 /.next/
 /out/
 
-# production
-/build
+# vercel
+.vercel
 
 # misc
 .DS_Store
@@ -17,9 +14,6 @@
 
 # local env files
 .env*.local
-
-# vercel
-.vercel
 
 # typescript
 *.tsbuildinfo
@@ -29,5 +23,6 @@ next-env.d.ts
 /styled-system/
 /styled-system-static/
 
-# cosmos
-/cosmos.imports.ts
+
+# graphclient
+/.graphclient/
