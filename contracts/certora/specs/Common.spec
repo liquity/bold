@@ -13,6 +13,10 @@ function getBatchManager(uint256 troveId) returns address {
     return troveManager.Troves[troveId].interestBatchManager;
 }
 
+function getBatchManagerStake(uint256 troveId) returns uint256 {
+    return troveManager.Troves[troveId].stake;
+}
+
 function getTroveBatchDebtShares(uint256 troveId) returns uint256 {
     return troveManager.Troves[troveId].batchDebtShares;
 }

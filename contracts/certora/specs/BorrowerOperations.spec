@@ -35,6 +35,8 @@ methods {
     function _.fetchPrice() external => NONDET;
     // Depepnds on 2 state variables totalStakesSnapshot / totalCollateralSnapshot
     function TroveManager._computeNewStake(uint _coll) internal returns (uint) => NONDET;
+
+    function LiquityBase._calcInterest(uint256 _weightedDebt, uint256 _period) internal returns (uint256) => AssumeZeroInterest();
 }
 
 //-----------------------------------------------------------------------------
@@ -48,6 +50,10 @@ methods {
 ghost uint256 upfrontFee;
 function CVLCalcUpfrontFee(uint256 debt, uint256 avgInterestRate) returns uint256 {
     return upfrontFee;
+}
+
+function AssumeZeroInterest() returns uint256 {
+    return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -505,7 +511,16 @@ ghost uint256 share_debt_scalar;
 function num_shares_num_debt_assumption(
     TroveManager.LatestBatchData batchData,
     address batchAddress) returns bool {
-    return (share_debt_scalar >= 1) &&
+    return (share_debt_scalar == 1 ||
+        share_debt_scalar == 2 ||
+        share_debt_scalar == 3 ||
+        share_debt_scalar == 4 ||
+        share_debt_scalar == 5 ||
+        share_debt_scalar == 6 ||
+        share_debt_scalar == 7 ||
+        share_debt_scalar == 8 ||
+        share_debt_scalar == 9 ||
+        share_debt_scalar  10) &&
         getBatchTotalShares(batchAddress) ==
         share_debt_scalar * batchData.recordedDebt;
 }
@@ -528,7 +543,6 @@ rule withdraw_debt_change {
     require getBatchManager(troveId) == batchAddress;
     // assume the two locations where batch managers are stored aggree
     require batch_manager_storage_locations_agree(troveId);
-
 
     // Assume rewardSnapshots is updated (this will always happen on opening a 
     // Trove, for example). TroveManager._updateTroveRewardSnapshots is called 
