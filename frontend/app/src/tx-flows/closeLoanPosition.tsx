@@ -143,9 +143,9 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
     const { collIndex, prefixedTroveId } = request;
     const coll = contracts.collaterals[collIndex];
 
-    const Controller = coll.symbol === "ETH"
+    const Zapper = coll.symbol === "ETH"
       ? coll.contracts.LeverageWETHZapper
-      : coll.contracts.BorrowerOperations;
+      : coll.contracts.LeverageLSTZapper;
 
     if (!account.address) {
       throw new Error("Account address is required");
@@ -163,7 +163,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
       await readContract(wagmiConfig, {
         ...contracts.BoldToken,
         functionName: "allowance",
-        args: [account.address, Controller.address],
+        args: [account.address, Zapper.address],
       }) ?? 0n,
       18,
     ]);
@@ -193,14 +193,14 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
         args: [BigInt(troveId)],
       });
 
-      const Controller = coll.symbol === "ETH"
+      const Zapper = coll.symbol === "ETH"
         ? coll.contracts.LeverageWETHZapper
-        : coll.contracts.BorrowerOperations;
+        : coll.contracts.LeverageLSTZapper;
 
       return {
         ...contracts.BoldToken,
         functionName: "approve",
-        args: [Controller.address, dn.mul([debt, 18], 1.1)[0]], // TODO: calculate the amount to approve in a more precise way
+        args: [Zapper.address, dn.mul([debt, 18], 1.1)[0]], // TODO: calculate the amount to approve in a more precise way
       };
     }
 
@@ -212,8 +212,8 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
           args: [troveId],
         }
         : {
-          ...coll.contracts.BorrowerOperations,
-          functionName: "closeTrove" as const,
+          ...coll.contracts.LeverageLSTZapper,
+          functionName: "closeTroveToRawETH" as const,
           args: [troveId],
         };
     }
