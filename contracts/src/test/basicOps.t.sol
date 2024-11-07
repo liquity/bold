@@ -106,9 +106,9 @@ contract BasicOps is DevTestSetup {
             B, 0, 5e18, 4_000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
         );
         uint256 debt_1 = troveManager.getTroveDebt(B_Id);
-        assertGt(debt_1, 0);
+        assertGt(debt_1, 0, "Debt cannot be zero");
         uint256 coll_1 = troveManager.getTroveColl(B_Id);
-        assertGt(coll_1, 0);
+        assertGt(coll_1, 0, "Coll cannot be zero");
         vm.stopPrank();
 
         // B is now first in line to get redeemed, as they both have the same interest rate,
@@ -116,15 +116,18 @@ contract BasicOps is DevTestSetup {
 
         uint256 redemptionAmount = 1000e18; // 1k BOLD
 
+        // Wait some time so that redemption rate is not 100%
+        vm.warp(block.timestamp + 7 days);
+
         // A redeems 1k BOLD
         vm.startPrank(A);
         collateralRegistry.redeemCollateral(redemptionAmount, 10, 1e18);
 
         // Check B's coll and debt reduced
         uint256 debt_2 = troveManager.getTroveDebt(B_Id);
-        assertLt(debt_2, debt_1);
+        assertLt(debt_2, debt_1, "Debt mismatch after");
         uint256 coll_2 = troveManager.getTroveColl(B_Id);
-        assertLt(coll_2, coll_1);
+        assertLt(coll_2, coll_1, "Coll mismatch after");
     }
 
     function testLiquidation() public {

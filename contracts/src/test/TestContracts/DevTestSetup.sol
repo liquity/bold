@@ -245,6 +245,9 @@ contract DevTestSetup is BaseTest {
     }
 
     function _redeemAndCreateZombieTrovesAAndB(ABCDEF memory _troveIDs) internal {
+        // Wait some time to make sure redemption rate low
+        vm.warp(block.timestamp + 30 days);
+
         // Redeem enough to leave A with 0 debt and B with debt < MIN_DEBT
         uint256 redeemFromA = troveManager.getTroveEntireDebt(_troveIDs.A);
         uint256 redeemFromB = troveManager.getTroveEntireDebt(_troveIDs.B) - MIN_DEBT / 2;
