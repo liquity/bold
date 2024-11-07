@@ -1,16 +1,9 @@
 import type { GraphStabilityPoolDeposit } from "@/src/subgraph-hooks";
 import type { CollIndex, Dnum, PositionEarn, PositionStake, PrefixedTroveId, TroveId } from "@/src/types";
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
-import type { Config as WagmiConfig } from "wagmi";
 
-import {
-  CLOSE_FROM_COLLATERAL_SLIPPAGE,
-  DATA_REFRESH_INTERVAL,
-  INTEREST_RATE_INCREMENT,
-  INTEREST_RATE_MAX,
-  INTEREST_RATE_MIN,
-} from "@/src/constants";
-import { getCollateralContract, getCollateralContracts, getContracts, getProtocolContract } from "@/src/contracts";
+import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
+import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import {
@@ -33,7 +26,6 @@ import { useMemo } from "react";
 import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { useReadContract, useReadContracts } from "wagmi";
-import { readContracts } from "wagmi/actions";
 
 // As defined in ITroveManager.sol
 export type TroveStatus =
@@ -455,49 +447,4 @@ export function usePredictAdjustInterestRateUpfrontFee(
       select: dnum18,
     },
   });
-}
-
-// from _getCloseFlashLoanAmount() in contracts/src/test/zapperLeverage.t.sol
-export async function getCloseFlashLoanAmount(
-  collIndex: CollIndex,
-  troveId: TroveId,
-  wagmiConfig: WagmiConfig,
-): Promise<bigint | null> {
-  const collContracts = getCollateralContracts(collIndex);
-
-  if (!collContracts) {
-    throw new Error("Invalid collateral index: " + collIndex);
-  }
-
-  const { PriceFeed, TroveManager } = collContracts;
-
-  const [priceResult, latestTroveDataResult] = await readContracts(wagmiConfig, {
-    contracts: [
-      {
-        abi: PriceFeed.abi,
-        address: PriceFeed.address,
-        functionName: "fetchPrice",
-      },
-      {
-        abi: TroveManager.abi,
-        address: TroveManager.address,
-        functionName: "getLatestTroveData",
-        args: [BigInt(troveId)],
-      },
-    ],
-  });
-
-  const [price] = priceResult.result ?? [];
-  const latestTroveData = latestTroveDataResult.result;
-
-  if (!price || !latestTroveData) {
-    return null;
-  }
-
-  return (
-    latestTroveData.entireDebt * 10n ** 18n
-    / price
-    * BigInt(100 + CLOSE_FROM_COLLATERAL_SLIPPAGE * 100)
-    / 100n
-  );
 }
