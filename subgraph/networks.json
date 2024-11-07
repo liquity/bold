@@ -1,7 +1,7 @@
 {
   "local": {
     "BoldToken": {
-      "address": "0x324331e016663950856622e1d1a062cfe4df3006"
+      "address": "0x0e18b884ec3095f7c27bbbeb0a266a5674bcaffd"
     },
     "Governance": {
       "address": "0x79fdb65c20e75f8961d54f6714d2fcc4c30d1073"
@@ -19,8 +19,8 @@
   },
   "sepolia": {
     "BoldToken": {
-      "address": "0x31764dcd10fff1514db117e3db84b48b30db5b43",
-      "startBlock": 6889790
+      "address": "0x0e18b884ec3095f7c27bbbeb0a266a5674bcaffd",
+      "startBlock": 7018765
     },
     "Governance": {
       "address": "0x79fdb65c20e75f8961d54f6714d2fcc4c30d1073",
