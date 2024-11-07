@@ -25,7 +25,7 @@ abstract contract CompositePriceFeed is MainnetPriceFeedBase {
     // Returns:
     // - The price, using the current price calculation
     // - A bool that is true if:
-    // --- a) the system was not shut down prior to this call, and 
+    // --- a) the system was not shut down prior to this call, and
     // --- b) an oracle or exchange rate contract failed during this call.
     function fetchPrice() public returns (uint256, bool) {
         // If branch is live and the primary oracle setup has been working, try to use it
@@ -66,7 +66,7 @@ abstract contract CompositePriceFeed is MainnetPriceFeedBase {
             } else {
                 return (_fetchPriceETHUSDxCanonical(ethUsdPrice), false);
             }
-        }   
+        }
 
         // Otherwise when branch is shut down and already using the lastGoodPrice, continue with it
         assert(priceSource == PriceSource.lastGoodPrice);
@@ -80,7 +80,7 @@ abstract contract CompositePriceFeed is MainnetPriceFeedBase {
         // Get the underlying_per_LST canonical rate directly from the LST contract
         (uint256 lstRate, bool exchangeRateIsDown) = _getCanonicalRate();
 
-        // If the exchange rate contract is down, switch to (and return) lastGoodPrice. 
+        // If the exchange rate contract is down, switch to (and return) lastGoodPrice.
         if (exchangeRateIsDown) {
             priceSource = PriceSource.lastGoodPrice;
             return lastGoodPrice;
@@ -96,7 +96,11 @@ abstract contract CompositePriceFeed is MainnetPriceFeedBase {
         return bestPrice;
     }
 
-    function _withinDeviationThreshold(uint256 _priceToCheck, uint256 _referencePrice, uint256 _deviationThreshold) internal pure returns (bool) {
+    function _withinDeviationThreshold(uint256 _priceToCheck, uint256 _referencePrice, uint256 _deviationThreshold)
+        internal
+        pure
+        returns (bool)
+    {
         // Calculate the price deviation of the oracle market price relative to the canonical price
         uint256 max = _referencePrice * (DECIMAL_PRECISION + _deviationThreshold) / 1e18;
         uint256 min = _referencePrice * (DECIMAL_PRECISION - _deviationThreshold) / 1e18;
@@ -111,5 +115,5 @@ abstract contract CompositePriceFeed is MainnetPriceFeedBase {
 
     // Returns the LST exchange rate and a bool indicating whether the exchange rate failed to return a valid rate.
     // Implementation depends on the specific LST.
-    function _getCanonicalRate() internal view virtual returns (uint256, bool) {} 
+    function _getCanonicalRate() internal view virtual returns (uint256, bool) {}
 }

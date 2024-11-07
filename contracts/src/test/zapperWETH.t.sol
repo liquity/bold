@@ -446,7 +446,9 @@ contract ZapperWETHTest is DevTestSetup {
 
         // Adjust (add coll and withdraw Bold)
         vm.startPrank(B);
-        wethZapper.adjustZombieTroveWithRawETH{value: ethAmount2}(troveId, ethAmount2, true, boldAmount2, true, 0, 0, boldAmount2);
+        wethZapper.adjustZombieTroveWithRawETH{value: ethAmount2}(
+            troveId, ethAmount2, true, boldAmount2, true, 0, 0, boldAmount2
+        );
         vm.stopPrank();
 
         assertEq(troveManager.getTroveEntireColl(troveId), troveCollBefore + ethAmount2, "Trove coll mismatch");

@@ -31,7 +31,7 @@ contract PriceFeedTestnet is IPriceFeedTestnet {
         return (_price, false);
     }
 
-     function fetchRedemptionPrice() external override returns (uint256, bool) {
+    function fetchRedemptionPrice() external override returns (uint256, bool) {
         // Fire an event just like the mainnet version would.
         // This lets the subgraph rely on events to get the latest price even when developing locally.
         emit LastGoodPriceUpdated(_price);

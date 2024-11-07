@@ -11,7 +11,7 @@ import "../Interfaces/IWSTETHPriceFeed.sol";
 contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
     Oracle public stEthUsdOracle;
 
-    uint256 constant public STETH_USD_DEVIATION_THRESHOLD = 1e16;  // 1%
+    uint256 public constant STETH_USD_DEVIATION_THRESHOLD = 1e16; // 1%
 
     constructor(
         address _owner,
@@ -52,7 +52,7 @@ contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
         // Otherwise, use the primary price calculation:
         uint256 wstEthUsdPrice;
 
-        if (_isRedemption && _withinDeviationThreshold(stEthUsdPrice, ethUsdPrice, STETH_USD_DEVIATION_THRESHOLD)) { 
+        if (_isRedemption && _withinDeviationThreshold(stEthUsdPrice, ethUsdPrice, STETH_USD_DEVIATION_THRESHOLD)) {
             // If it's a redemption and within 1%, take the max of (STETH-USD, ETH-USD) to mitigate unwanted redemption arb and convert to WSTETH-USD
             wstEthUsdPrice = LiquityMath._max(stEthUsdPrice, ethUsdPrice) * stEthPerWstEth / 1e18;
         } else {
@@ -74,14 +74,13 @@ contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
 
             return (stEthPerWstEth, false);
         } catch {
-            // Require that enough gas was provided to prevent an OOG revert in the external call  
-            // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used 
+            // Require that enough gas was provided to prevent an OOG revert in the external call
+            // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
             // in the check itself.
-            if (gasleft() <= gasBefore / 64) {revert InsufficientGasForExternalCall();}
+            if (gasleft() <= gasBefore / 64) revert InsufficientGasForExternalCall();
 
             // If call to exchange rate reverted for another reason, return true
             return (0, true);
-        }  
-        
-    } 
+        }
+    }
 }

@@ -511,7 +511,11 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
             uint256 lastBoldLossErrorByP_Offset_Cached = lastBoldLossErrorByP_Offset;
             uint256 lastBoldLossError_TotalDeposits_Cached = lastBoldLossError_TotalDeposits;
             newP = _getNewPByScale(
-                currentP, newProductFactor, lastBoldLossErrorByP_Offset_Cached, lastBoldLossError_TotalDeposits_Cached, 1
+                currentP,
+                newProductFactor,
+                lastBoldLossErrorByP_Offset_Cached,
+                lastBoldLossError_TotalDeposits_Cached,
+                1
             );
 
             // If multiplying P by a non-zero product factor would reduce P below the scale boundary, increment the scale
@@ -559,7 +563,8 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     ) internal pure returns (uint256) {
         uint256 errorFactor;
         if (_lastBoldLossErrorByP_Offset > 0) {
-            errorFactor = _lastBoldLossErrorByP_Offset * _newProductFactor * _scale / _lastBoldLossError_TotalDeposits / DECIMAL_PRECISION;
+            errorFactor = _lastBoldLossErrorByP_Offset * _newProductFactor * _scale / _lastBoldLossError_TotalDeposits
+                / DECIMAL_PRECISION;
         }
         return (_currentP * _newProductFactor * _scale + errorFactor) / DECIMAL_PRECISION;
     }

@@ -106,7 +106,8 @@ contract RebasingBatchShares is DevTestSetup {
         // We should be able to open a new Trove now
         //uint256 anotherATroveId = openTroveExpectRevert(A, x + 1, 100 ether, MIN_DEBT, B);
         //assertEq(anotherATroveId, 0);
-        uint256 anotherATroveId = openTroveAndJoinBatchManagerWithIndex(A, x + 1, 100 ether, MIN_DEBT, B, MAX_ANNUAL_INTEREST_RATE);
+        uint256 anotherATroveId =
+            openTroveAndJoinBatchManagerWithIndex(A, x + 1, 100 ether, MIN_DEBT, B, MAX_ANNUAL_INTEREST_RATE);
         assertGt(anotherATroveId, 0);
 
         /*

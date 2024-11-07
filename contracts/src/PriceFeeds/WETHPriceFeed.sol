@@ -34,13 +34,14 @@ contract WETHPriceFeed is MainnetPriceFeedBase {
     // - The price
     // - A bool indicating whether a new oracle failure was detected in the call
     function _fetchPricePrimary(bool _isRedemption) internal virtual returns (uint256, bool) {}
+
     function _fetchPricePrimary() internal returns (uint256, bool) {
         assert(priceSource == PriceSource.primary);
         (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
 
         // If the ETH-USD Chainlink response was invalid in this transaction, return the last good ETH-USD price calculated
         if (ethUsdOracleDown) return (_shutDownAndSwitchToLastGoodPrice(address(ethUsdOracle.aggregator)), true);
-       
+
         lastGoodPrice = ethUsdPrice;
         return (ethUsdPrice, false);
     }

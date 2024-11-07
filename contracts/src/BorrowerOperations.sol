@@ -1164,7 +1164,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 totalDebt = getEntireSystemDebt();
         (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
         // If the oracle failed, the above call to PriceFeed will have shut this branch down
-        if (newOracleFailureDetected) {return;}
+        if (newOracleFailureDetected) return;
 
         // Otherwise, proceed with the TCR check:
         uint256 TCR = LiquityMath._computeCR(totalColl, totalDebt, price);

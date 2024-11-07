@@ -30,7 +30,7 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
 
     Oracle public rEthEthOracle;
 
-    uint256 constant public RETH_ETH_DEVIATION_THRESHOLD = 2e16;  // 2%
+    uint256 public constant RETH_ETH_DEVIATION_THRESHOLD = 2e16; // 2%
 
     function _fetchPricePrimary(bool _isRedemption) internal override returns (uint256, bool) {
         assert(priceSource == PriceSource.primary);
@@ -59,7 +59,10 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
         uint256 rEthUsdPrice;
 
         // If it's a redemption and canonical is within 2% of market, use the max to mitigate unwanted redemption oracle arb
-        if (_isRedemption && _withinDeviationThreshold(rEthUsdMarketPrice, rEthUsdCanonicalPrice, RETH_ETH_DEVIATION_THRESHOLD)) { 
+        if (
+            _isRedemption
+                && _withinDeviationThreshold(rEthUsdMarketPrice, rEthUsdCanonicalPrice, RETH_ETH_DEVIATION_THRESHOLD)
+        ) {
             rEthUsdPrice = LiquityMath._max(rEthUsdMarketPrice, rEthUsdCanonicalPrice);
         } else {
             // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation.
@@ -81,13 +84,13 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
 
             return (ethPerReth, false);
         } catch {
-            // Require that enough gas was provided to prevent an OOG revert in the external call  
-            // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used 
+            // Require that enough gas was provided to prevent an OOG revert in the external call
+            // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
             // in the check itself.
-            if (gasleft() <= gasBefore / 64) {revert InsufficientGasForExternalCall();}
+            if (gasleft() <= gasBefore / 64) revert InsufficientGasForExternalCall();
 
             // If call to exchange rate reverts, return true
             return (0, true);
-        }  
-    } 
+        }
+    }
 }

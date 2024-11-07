@@ -10,7 +10,6 @@ import "../BorrowerOperations.sol";
 // import "forge-std/console2.sol";
 
 abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
-    
     // Determines where the PriceFeed sources data from. Possible states:
     // - primary: Uses the primary price calcuation, which depends on the specific feed
     // - ETHUSDxCanonical: Uses Chainlink's ETH-USD multiplied by the LST' canonical rate
@@ -34,6 +33,7 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
     }
 
     error InsufficientGasForExternalCall();
+
     event ShutDownFromOracleFailure(address _failedOracleAddr);
 
     Oracle public ethUsdOracle;
@@ -56,7 +56,6 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
         _renounceOwnership();
     }
 
-
     function _getOracleAnswer(Oracle memory _oracle) internal view returns (uint256, bool) {
         ChainlinkResponse memory chainlinkResponse = _getCurrentChainlinkResponse(_oracle.aggregator);
 
@@ -75,7 +74,7 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
     function _shutDownAndSwitchToLastGoodPrice(address _failedOracleAddr) internal returns (uint256) {
         // Shut down the branch
         borrowerOperations.shutdownFromOracleFailure();
-       
+
         priceSource = PriceSource.lastGoodPrice;
 
         emit ShutDownFromOracleFailure(_failedOracleAddr);
@@ -101,10 +100,10 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
 
             return chainlinkResponse;
         } catch {
-            // Require that enough gas was provided to prevent an OOG revert in the call to Chainlink 
-            // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used 
+            // Require that enough gas was provided to prevent an OOG revert in the call to Chainlink
+            // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
             // in the check itself.
-            if (gasleft() <= gasBefore / 64) {revert InsufficientGasForExternalCall();}
+            if (gasleft() <= gasBefore / 64) revert InsufficientGasForExternalCall();
 
             // If call to Chainlink aggregator reverts, return a zero response with success = false
             return chainlinkResponse;

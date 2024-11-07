@@ -1266,7 +1266,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         TroveIds.push(_troveId);
 
         assert(_troveChange.debtIncrease > 0); // TODO: remove before deployment
-        _updateBatchShares(_troveId, _batchAddress, _troveChange, _troveChange.debtIncrease, _batchColl, _batchDebt, true);
+        _updateBatchShares(
+            _troveId, _batchAddress, _troveChange, _troveChange.debtIncrease, _batchColl, _batchDebt, true
+        );
 
         uint256 newTotalStakes = totalStakes + newStake;
         totalStakes = newTotalStakes;
@@ -1718,7 +1720,13 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         _troveChange.debtIncrease = _params.troveDebt - _troveChange.appliedRedistBoldDebtGain - _troveChange.upfrontFee;
         assert(_params.troveDebt > 0); // TODO: remove before deployment
         _updateBatchShares(
-            _params.troveId, _params.newBatchAddress, _troveChange, _params.troveDebt, _params.newBatchColl, _params.newBatchDebt, true
+            _params.troveId,
+            _params.newBatchAddress,
+            _troveChange,
+            _params.troveDebt,
+            _params.newBatchColl,
+            _params.newBatchDebt,
+            true
         );
 
         _movePendingTroveRewardsToActivePool(
@@ -1770,7 +1778,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 _batchDebt, // entire (with interest, batch fee), but without trove change, nor upfront fee nor redist
         bool _checkBatchSharesRatio // whether we do the check on the resulting ratio inside the func call
     ) internal {
-        // Debt        
+        // Debt
         uint256 currentBatchDebtShares = batches[_batchAddress].totalDebtShares;
         uint256 batchDebtSharesDelta;
         uint256 debtIncrease =

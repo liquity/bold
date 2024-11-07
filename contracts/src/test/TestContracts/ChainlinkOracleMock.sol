@@ -9,7 +9,7 @@ import "../../Dependencies/AggregatorV3Interface.sol";
 // As such, we use bools for staleness and decimals to save us having to set some contract state each time after etching.
 contract ChainlinkOracleMock is AggregatorV3Interface {
     uint8 decimal;
-    
+
     int256 price;
 
     uint256 lastUpdateTime;
@@ -37,7 +37,7 @@ contract ChainlinkOracleMock is AggregatorV3Interface {
     function setPrice(int256 _price) external {
         price = _price;
     }
-    
+
     function setUpdatedAt(uint256 _updatedAt) external {
         lastUpdateTime = _updatedAt;
     }
