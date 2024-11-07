@@ -39,8 +39,7 @@ Run the development server:
 
 ```sh
 cd bold/frontend/app
-pnpm build-uikit # only needed once
-pnpm panda-codegen # only needed once
+pnpm build-deps # only needed once
 pnpm dev
 ```
 
@@ -51,12 +50,15 @@ See also `contracts/hardhatAccountsList2k.js` to import the accounts into MetaMa
 ## Scripts
 
 ```sh
-pnpm dev                    # run the development server
 pnpm build                  # build the static app in out/
+pnpm build-deps             # build all the dependencies needed by the app
+pnpm build-graphclient      # update the code generated from the GraphQL queries
+pnpm build-panda            # update the code generated from the Panda CSS config
+pnpm build-uikit            # builds the UI kit in ../uikit
+pnpm dev                    # run the development server
 pnpm fmt                    # format the code
 pnpm lint                   # lint the code
 pnpm test                   # run the tests
-pnpm panda-codegen          # update the code generated from the Panda CSS config
 pnpm update-liquity-abis    # build the contracts and update the ABIs
 ```
 

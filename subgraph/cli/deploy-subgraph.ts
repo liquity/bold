@@ -79,7 +79,7 @@ export async function main() {
   }
 
   if (networkPreset === "sepolia") {
-    options.name ??= "liquity2";
+    options.name ??= "liquity2-sepolia";
     options.network ??= "sepolia";
   }
 

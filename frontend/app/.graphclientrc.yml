@@ -4,7 +4,8 @@ sources:
       graphql:
         # endpoint: http://localhost:8000/subgraphs/name/liquity2/liquity2
         # endpoint: http://localhost:8000/subgraphs/name/liquity2
-        endpoint: https://api.studio.thegraph.com/query/42403/liquity2/version/latest
+        # endpoint: https://api.studio.thegraph.com/query/42403/liquity2/version/latest
+        endpoint: https://api.studio.thegraph.com/query/42403/liquity2-sepolia/version/latest
 
 codegen:
   strictScalars: true
