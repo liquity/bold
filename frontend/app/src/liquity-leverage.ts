@@ -48,13 +48,15 @@ export async function getLeverUpTroveParams(
     args: [BigInt(troveId), price],
   });
 
+  const currentLR = leverageRatioToCollateralRatio(currentCR);
+
   const leverageRatio = BigInt(leverageFactor * 1000) * DECIMAL_PRECISION / 1000n;
-  if (leverageRatio <= currentCR) {
-    throw new Error("Leverage ratio should increase");
+  if (leverageRatio <= currentLR) {
+    throw new Error(`Leverage ratio should increase: ${leverageRatio} <= ${currentLR}`);
   }
 
   const currentCollAmount = troveData.entireColl;
-  const flashLoanAmount = currentCollAmount * leverageRatio / currentCR - currentCollAmount;
+  const flashLoanAmount = currentCollAmount * leverageRatio / currentLR - currentCollAmount;
   const expectedBoldAmount = flashLoanAmount * price / DECIMAL_PRECISION;
   const maxNetDebtIncrease = expectedBoldAmount * 105n / 100n; // 5% slippage
 
@@ -105,13 +107,15 @@ export async function getLeverDownTroveParams(
     args: [BigInt(troveId), price],
   });
 
+  const currentLR = leverageRatioToCollateralRatio(currentCR);
+
   const leverageRatio = BigInt(leverageFactor * 1000) * DECIMAL_PRECISION / 1000n;
-  if (leverageRatio >= currentCR) {
-    throw new Error("Leverage ratio should decrease");
+  if (leverageRatio >= currentLR) {
+    throw new Error(`Leverage ratio should decrease: ${leverageRatio} >= ${currentLR}`);
   }
 
   const currentCollAmount = troveData.entireColl;
-  const flashLoanAmount = currentCollAmount - (currentCollAmount * leverageRatio / currentCR);
+  const flashLoanAmount = currentCollAmount - (currentCollAmount * leverageRatio / currentLR);
   const expectedBoldAmount = flashLoanAmount * price / DECIMAL_PRECISION;
   const minBoldDebt = expectedBoldAmount * 95n / 100n; // 5% slippage
 
@@ -199,4 +203,8 @@ export async function getCloseFlashLoanAmount(
     * BigInt(100 + CLOSE_FROM_COLLATERAL_SLIPPAGE * 100)
     / 100n
   );
+}
+
+function leverageRatioToCollateralRatio(inputRatio: bigint) {
+  return inputRatio * DECIMAL_PRECISION / (inputRatio - DECIMAL_PRECISION);
 }
