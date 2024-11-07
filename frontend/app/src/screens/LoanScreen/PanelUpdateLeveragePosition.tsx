@@ -15,7 +15,7 @@ import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLiquidationPriceFromLeverage, getLoanDetails } from "@/src/liquity-math";
-import { getCollToken, getPrefixedTroveId } from "@/src/liquity-utils";
+import { getCollToken } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -35,7 +35,6 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useEffect, useRef, useState } from "react";
-import { maxUint256 } from "viem";
 
 export function PanelUpdateLeveragePosition({
   loan,
@@ -123,7 +122,7 @@ export function PanelUpdateLeveragePosition({
 
   const collBalance = useBalance(account.address, collToken.symbol);
 
-  const collMax = depositMode === "remove" ? loan.deposit : (
+  const collMax = depositMode === "remove" ? initialLoanDetails.depositPreLeverage : (
     collBalance.data
       ? dn.sub(collBalance.data, ETH_MAX_RESERVE)
       : dnum18(0)
@@ -149,31 +148,7 @@ export function PanelUpdateLeveragePosition({
     setAgreeToLiquidationRisk(false);
   }, [newLoanDetails.status]);
 
-  const collChange = newDeposit
-      && initialLoanDetails.deposit
-      && !dn.eq(newDeposit, initialLoanDetails.deposit)
-    ? dn.sub(newDeposit, initialLoanDetails.deposit)
-    : dnum18(0);
-
-  const debtChange = newDebt
-      && initialLoanDetails.debt
-      && !dn.eq(newDebt, initialLoanDetails.debt)
-    ? dn.sub(newDebt, initialLoanDetails.debt)
-    : dnum18(0);
-
-  const flashLoanAmount = initialLoanDetails.leverageFactor === null
-    ? dnum18(0)
-    : (
-      userLeverageFactor > initialLoanDetails.leverageFactor
-        ? dn.mul(collChange, userLeverageFactor - 1)
-        : dn.mul(
-          dn.abs(collChange),
-          initialLoanDetails.leverageFactor - userLeverageFactor,
-        )
-    );
-
   const allowSubmit = account.isConnected
-    && dn.gt(flashLoanAmount, 0)
     && (newLoanDetails.status !== "at-risk" || agreeToLiquidationRisk)
     && newLoanDetails.status !== "underwater"
     && newLoanDetails.status !== "liquidatable"
@@ -236,7 +211,9 @@ export function PanelUpdateLeveragePosition({
                   <TextButton
                     label={`Max ${fmtnum(collMax, 2)} ${collToken.name}`}
                     onClick={() => {
-                      depositChange.setValue(dn.toString(collMax));
+                      if (collMax) {
+                        depositChange.setValue(dn.toString(collMax));
+                      }
                     }}
                   />
                 ),
@@ -502,13 +479,23 @@ export function PanelUpdateLeveragePosition({
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The position has been updated successfully.",
 
-                collIndex: loan.collIndex,
-                prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
-                owner: account.address,
-                collChange,
-                debtChange,
-                flashLoanAmount,
-                maxUpfrontFee: dnum18(maxUint256),
+                depositChange: (!depositChange.parsed || dn.eq(depositChange.parsed, 0))
+                  ? null
+                  : dn.mul(depositChange.parsed, depositMode === "remove" ? -1 : 1),
+
+                leverageFactorChange: (
+                    !initialLoanDetails.leverageFactor
+                    || userLeverageFactor === initialLoanDetails.leverageFactor
+                  )
+                  ? null
+                  : [initialLoanDetails.leverageFactor, userLeverageFactor],
+
+                prevLoan: { ...loan },
+                loan: {
+                  ...loan,
+                  deposit: newDeposit,
+                  borrowed: newDebt,
+                },
               });
             }
           }}

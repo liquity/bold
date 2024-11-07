@@ -12,7 +12,6 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import { INTEREST_RATE_DEFAULT } from "@/src/constants";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
-import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
@@ -39,7 +38,6 @@ import {
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { maxUint256 } from "viem";
 
 export function LeverageScreen() {
   const router = useRouter();

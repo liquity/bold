@@ -1,10 +1,8 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
-import type { Address } from "@/src/types";
 
 import { MAX_ANNUAL_INTEREST_RATE, MIN_ANNUAL_INTEREST_RATE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { fmtnum } from "@/src/formatting";
 import { usePredictAdjustInterestRateUpfrontFee } from "@/src/liquity-utils";
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
@@ -12,10 +10,8 @@ import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { vPositionLoan } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
-import { ADDRESS_ZERO, AnchorTextButton, shortenAddress } from "@liquity2/uikit";
-import { blo } from "blo";
+import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
-import Image from "next/image";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
 import { maxUint256 } from "viem";

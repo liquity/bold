@@ -143,9 +143,10 @@ export function LoanCard({
             <>
               {leverageMode
                 ? (
-                  <TotalExposure
+                  <LeveragedExposure
                     loan={loan}
                     loanDetails={loanDetails}
+                    prevLoanDetails={prevLoanDetails ?? null}
                   />
                 )
                 : (
@@ -165,12 +166,33 @@ export function LoanCard({
                 {leverageMode
                   ? (
                     <GridItem label="Net value">
-                      <Value
-                        negative={loanDetails.status === "underwater"}
-                        title={`${fmtnum(depositPreLeverage)} ${collToken.name}`}
+                      <div
+                        className={css({
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        })}
                       >
-                        {fmtnum(depositPreLeverage)} {collToken.name}
-                      </Value>
+                        <Value
+                          negative={loanDetails.status === "underwater"}
+                          title={`${fmtnum(depositPreLeverage, "full")} ${collToken.name}`}
+                        >
+                          {fmtnum(depositPreLeverage)} {collToken.name}
+                        </Value>
+                        {prevLoanDetails?.depositPreLeverage
+                          && !dn.eq(prevLoanDetails.depositPreLeverage, depositPreLeverage)
+                          && (
+                            <div
+                              title={`${fmtnum(prevLoanDetails.depositPreLeverage, "full")} ${collToken.name}`}
+                              className={css({
+                                color: "contentAlt",
+                                textDecoration: "line-through",
+                              })}
+                            >
+                              {fmtnum(prevLoanDetails.depositPreLeverage)} {collToken.name}
+                            </div>
+                          )}
+                      </div>
                     </GridItem>
                   )
                   : (
@@ -425,12 +447,14 @@ function TotalDebt({
   );
 }
 
-function TotalExposure({
+function LeveragedExposure({
   loan,
   loanDetails,
+  prevLoanDetails,
 }: {
   loan: PositionLoan;
   loanDetails: ReturnType<typeof getLoanDetails>;
+  prevLoanDetails: null | ReturnType<typeof getLoanDetails>;
 }) {
   const collToken = getCollToken(loan.collIndex);
   if (!collToken) {
@@ -466,27 +490,38 @@ function TotalExposure({
           <div
             className={css({
               display: "flex",
-              flexDirection: "column",
-              gap: 4,
+              alignItems: "center",
+              gap: 8,
+              fontSize: 16,
             })}
           >
-            <div>
-              <Value
-                negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
-                title={`Leverage factor: ${
-                  loanDetails.status === "underwater" || loanDetails.leverageFactor === null
-                    ? INFINITY
-                    : `${roundToDecimal(loanDetails.leverageFactor, 3)}x`
-                }`}
+            <Value
+              negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
+              title={`Leverage factor: ${
+                loanDetails.status === "underwater" || loanDetails.leverageFactor === null
+                  ? INFINITY
+                  : `${roundToDecimal(loanDetails.leverageFactor, 3)}x`
+              }`}
+              className={css({
+                fontSize: 16,
+              })}
+            >
+              {loanDetails.status === "underwater" || loanDetails.leverageFactor === null
+                ? INFINITY
+                : `${roundToDecimal(loanDetails.leverageFactor, 1)}x`}
+            </Value>
+            {prevLoanDetails && prevLoanDetails.leverageFactor !== loanDetails.leverageFactor && (
+              <div
                 className={css({
-                  fontSize: 16,
+                  color: "contentAlt",
+                  textDecoration: "line-through",
                 })}
               >
-                {loanDetails.status === "underwater" || loanDetails.leverageFactor === null
+                {prevLoanDetails.leverageFactor === null
                   ? INFINITY
-                  : `${roundToDecimal(loanDetails.leverageFactor, 1)}x`}
-              </Value>
-            </div>
+                  : `${roundToDecimal(prevLoanDetails.leverageFactor, 1)}x`}
+              </div>
+            )}
           </div>
         </div>
       </div>

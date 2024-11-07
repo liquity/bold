@@ -1,8 +1,9 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ETH_GAS_COMPENSATION } from "@/src/constants";
+import { ETH_GAS_COMPENSATION, MAX_UPFRONT_FEE } from "@/src/constants";
 import { fmtnum } from "@/src/formatting";
+import { getOpenLeveragedTroveParams } from "@/src/liquity-leverage";
 import { getCollToken, usePredictOpenTroveUpfrontFee } from "@/src/liquity-utils";
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
@@ -13,7 +14,7 @@ import { vPositionLoan } from "@/src/valibot-utils";
 import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { maxUint256, parseEventLogs } from "viem";
+import { parseEventLogs } from "viem";
 
 const FlowIdSchema = v.literal("openLeveragePosition");
 
@@ -175,62 +176,66 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     return null;
   },
 
-  async writeContractParams(stepId, { contracts, request }) {
+  async writeContractParams(stepId, { contracts, request, wagmiConfig }) {
     const loan = request.loanPosition;
     const collateral = contracts.collaterals[loan.collIndex];
-
-    const initialDeposit = dn.div(
-      loan.deposit,
-      request.leverageFactor,
-    );
-    const floashLoanAmount = dn.mul(
-      initialDeposit,
-      dn.sub(request.leverageFactor, 1),
-    );
+    const initialDeposit = dn.div(loan.deposit, request.leverageFactor);
 
     // LeverageWETHZapper
     if (collateral.symbol === "ETH" && stepId === "openLeveragedTrove") {
+      const params = await getOpenLeveragedTroveParams(
+        loan.collIndex,
+        initialDeposit[0],
+        request.leverageFactor,
+        wagmiConfig,
+      );
       return {
         ...collateral.contracts.LeverageWETHZapper,
         functionName: "openLeveragedTroveWithRawETH" as const,
         args: [{
           owner: loan.borrower,
           ownerIndex: BigInt(request.ownerIndex),
-          collAmount: loan.deposit[0],
-          boldAmount: loan.borrowed[0],
+          collAmount: initialDeposit[0],
+          flashLoanAmount: params.flashLoanAmount,
+          boldAmount: params.effectiveBoldAmount,
           upperHint: 0n,
           lowerHint: 0n,
           annualInterestRate: loan.interestRate[0],
-          batchManager: ADDRESS_ZERO,
-          maxUpfrontFee: maxUint256,
+          batchManager: loan.batchManager ?? ADDRESS_ZERO,
+          maxUpfrontFee: MAX_UPFRONT_FEE,
           addManager: ADDRESS_ZERO,
           removeManager: ADDRESS_ZERO,
           receiver: ADDRESS_ZERO,
-          flashLoanAmount: floashLoanAmount[0],
         }],
-        value: loan.deposit[0] + ETH_GAS_COMPENSATION[0],
+        value: initialDeposit[0] + ETH_GAS_COMPENSATION[0],
       };
     }
 
     // LeverageLSTZapper
     if (stepId === "openLeveragedTrove") {
+      const params = await getOpenLeveragedTroveParams(
+        loan.collIndex,
+        initialDeposit[0],
+        request.leverageFactor,
+        wagmiConfig,
+      );
       return {
         ...collateral.contracts.LeverageLSTZapper,
         functionName: "openLeveragedTroveWithRawETH" as const,
         args: [{
           owner: loan.borrower,
           ownerIndex: BigInt(request.ownerIndex),
-          collAmount: loan.deposit[0],
-          boldAmount: loan.borrowed[0],
+          collAmount: initialDeposit[0],
+          flashLoanAmount: params.flashLoanAmount,
+          boldAmount: params.effectiveBoldAmount,
           upperHint: 0n,
           lowerHint: 0n,
           annualInterestRate: loan.interestRate[0],
-          batchManager: ADDRESS_ZERO,
-          maxUpfrontFee: maxUint256,
+          batchManager: loan.batchManager ?? ADDRESS_ZERO,
+          maxUpfrontFee: MAX_UPFRONT_FEE,
           addManager: ADDRESS_ZERO,
           removeManager: ADDRESS_ZERO,
           receiver: ADDRESS_ZERO,
-          flashLoanAmount: floashLoanAmount[0],
         }],
         value: ETH_GAS_COMPENSATION[0],
       };
@@ -239,20 +244,3 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     throw new Error("Not implemented");
   },
 };
-
-function useUpfrontFee(request: Request) {
-  const isBorrowing = request.debtChange[0] > 0n;
-  const { troveId } = parsePrefixedTroveId(request.prefixedTroveId);
-
-  const upfrontFee = usePredictAdjustTroveUpfrontFee(request.collIndex, troveId, request.debtChange);
-
-  const debtChangeWithFee = isBorrowing
-    ? upfrontFee.data && dn.add(request.debtChange, upfrontFee.data)
-    : request.debtChange;
-
-  return {
-    isBorrowing,
-    debtChangeWithFee,
-    upfrontFee,
-  };
-}
