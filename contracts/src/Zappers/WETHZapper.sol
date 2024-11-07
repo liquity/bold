@@ -238,10 +238,14 @@ contract WETHZapper is BaseZapper {
         require(success, "WZ: Sending ETH failed");
     }
 
-    function closeTroveFromCollateral(CloseTroveParams memory _params) external override {
-        address owner = troveNFT.ownerOf(_params.troveId);
-        address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner));
-        _params.receiver = receiver;
+    function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external override {
+        address owner = troveNFT.ownerOf(_troveId);
+        address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        CloseTroveParams memory params = CloseTroveParams({
+            troveId: _troveId,
+            flashLoanAmount: _flashLoanAmount,
+            receiver: receiver
+            });
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
@@ -251,7 +255,7 @@ contract WETHZapper is BaseZapper {
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.CloseTrove, abi.encode(_params)
+            WETH, _flashLoanAmount, IFlashLoanProvider.Operation.CloseTrove, abi.encode(params)
         );
 
         // return leftovers to user
