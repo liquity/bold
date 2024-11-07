@@ -12,7 +12,6 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import { INTEREST_RATE_DEFAULT } from "@/src/constants";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
-import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
@@ -39,7 +38,6 @@ import {
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { maxUint256 } from "viem";
 
 export function LeverageScreen() {
   const router = useRouter();
@@ -100,7 +98,10 @@ export function LeverageScreen() {
   }
 
   const redemptionRisk = getRedemptionRisk(interestRate);
-  const depositUsd = depositPreLeverage.parsed && dn.mul(depositPreLeverage.parsed, collPrice);
+  const depositUsd = depositPreLeverage.parsed && dn.mul(
+    depositPreLeverage.parsed,
+    collPrice,
+  );
 
   const allowSubmit = account.isConnected
     && depositPreLeverage.parsed
@@ -299,19 +300,21 @@ export function LeverageScreen() {
                   successLink: ["/", "Go to the Dashboard"],
                   successMessage: "The leveraged position has been created successfully.",
 
-                  collIndex,
-                  owner: account.address,
                   ownerIndex: troveCount.data ?? 0,
-                  collAmount: depositPreLeverage.parsed,
-                  boldAmount: leverageField.debt,
-                  upperHint: dnum18(0),
-                  lowerHint: dnum18(0),
-                  annualInterestRate: interestRate,
-                  maxUpfrontFee: dnum18(maxUint256),
-                  flashLoanAmount: dn.mul(
-                    depositPreLeverage.parsed,
-                    dn.sub(leverageField.leverageFactor, 1),
-                  ),
+                  leverageFactor: leverageField.leverageFactor,
+                  loanPosition: {
+                    type: "leverage",
+                    batchManager: interestRateDelegate,
+                    borrowed: leverageField.debt,
+                    borrower: account.address,
+                    collIndex,
+                    deposit: dn.mul(
+                      depositPreLeverage.parsed,
+                      leverageField.leverageFactor,
+                    ),
+                    interestRate: interestRate,
+                    troveId: "0x1",
+                  },
                 });
               }
             }}

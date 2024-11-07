@@ -611,7 +611,9 @@ const FlowContextStorage = {
         };
       }
       // eslint-disable-next-line no-unused-vars
-    } catch (_) {}
+    } catch (err) {
+      console.error(err);
+    }
     return null;
   },
   clear() {
