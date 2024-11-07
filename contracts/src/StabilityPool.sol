@@ -193,7 +193,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     // Error trackers for the error correction in the offset calculation
     uint256 public lastCollError_Offset;
-    uint256 public lastBoldLossError_Offset;
+    uint256 public lastBoldLossErrorByP_Offset;
     uint256 public lastBoldLossError_TotalDeposits;
 
     // Error tracker fror the error correction in the BOLD reward calculation
@@ -450,8 +450,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         assert(_debtToOffset <= _totalBoldDeposits);
         if (_debtToOffset == _totalBoldDeposits) {
             boldLossPerUnitStaked = DECIMAL_PRECISION; // When the Pool depletes to 0, so does each deposit
-            lastBoldLossError_Offset = 0;
-            lastBoldLossError_TotalDeposits = _totalBoldDeposits;
+            newLastBoldLossErrorOffset = 0;
         } else {
             uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION;
             /*
@@ -508,35 +507,61 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
             currentScale = 0;
             emit ScaleUpdated(currentScale);
             newP = DECIMAL_PRECISION;
+        } else {
+            uint256 lastBoldLossErrorByP_Offset_Cached = lastBoldLossErrorByP_Offset;
+            uint256 lastBoldLossError_TotalDeposits_Cached = lastBoldLossError_TotalDeposits;
+            newP = _getNewPByScale(
+                currentP, newProductFactor, lastBoldLossErrorByP_Offset_Cached, lastBoldLossError_TotalDeposits_Cached, 1
+            );
 
             // If multiplying P by a non-zero product factor would reduce P below the scale boundary, increment the scale
-        } else if (currentP * newProductFactor / DECIMAL_PRECISION < SCALE_FACTOR) {
-            newP = currentP * newProductFactor * SCALE_FACTOR / DECIMAL_PRECISION;
-            currentScale = currentScaleCached + 1;
-
-            // Increment the scale again if it's still below the boundary. This ensures the invariant P >= 1e9 holds and addresses this issue
-            // from Liquity v1: https://github.com/liquity/dev/security/advisories/GHSA-m9f3-hrx8-x2g3
             if (newP < SCALE_FACTOR) {
-                newP *= SCALE_FACTOR;
-                currentScale = currentScaleCached + 2;
-            }
+                newP = _getNewPByScale(
+                    currentP,
+                    newProductFactor,
+                    lastBoldLossErrorByP_Offset_Cached,
+                    lastBoldLossError_TotalDeposits_Cached,
+                    SCALE_FACTOR
+                );
+                currentScale = currentScaleCached + 1;
 
+                // Increment the scale again if it's still below the boundary. This ensures the invariant P >= 1e9 holds and
+                // addresses this issue from Liquity v1: https://github.com/liquity/dev/security/advisories/GHSA-m9f3-hrx8-x2g3
+                if (newP < SCALE_FACTOR) {
+                    newP = _getNewPByScale(
+                        currentP,
+                        newProductFactor,
+                        lastBoldLossErrorByP_Offset_Cached,
+                        lastBoldLossError_TotalDeposits_Cached,
+                        SCALE_FACTOR * SCALE_FACTOR
+                    );
+                    currentScale = currentScaleCached + 2;
+                }
+            }
             emit ScaleUpdated(currentScale);
             // If there's no scale change and no pool-emptying, just do a standard multiplication
-        } else {
-            uint256 errorFactor;
-            if (lastBoldLossError_Offset > 0) {
-                errorFactor = lastBoldLossError_Offset * newProductFactor / lastBoldLossError_TotalDeposits;
-            }
-            newP = (currentP * newProductFactor + errorFactor) / DECIMAL_PRECISION;
         }
-        lastBoldLossError_Offset = newLastBoldLossErrorOffset;
+        lastBoldLossErrorByP_Offset = currentP * newLastBoldLossErrorOffset;
         lastBoldLossError_TotalDeposits = _totalBoldDeposits;
 
         assert(newP > 0);
         P = newP;
 
         emit P_Updated(newP);
+    }
+
+    function _getNewPByScale(
+        uint256 _currentP,
+        uint256 _newProductFactor,
+        uint256 _lastBoldLossErrorByP_Offset,
+        uint256 _lastBoldLossError_TotalDeposits,
+        uint256 _scale
+    ) internal pure returns (uint256) {
+        uint256 errorFactor;
+        if (_lastBoldLossErrorByP_Offset > 0) {
+            errorFactor = _lastBoldLossErrorByP_Offset * _newProductFactor * _scale / _lastBoldLossError_TotalDeposits / DECIMAL_PRECISION;
+        }
+        return (_currentP * _newProductFactor * _scale + errorFactor) / DECIMAL_PRECISION;
     }
 
     function _moveOffsetCollAndDebt(uint256 _collToAdd, uint256 _debtToOffset) internal {
