@@ -2,6 +2,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION, MAX_UPFRONT_FEE } from "@/src/constants";
+import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { getOpenLeveragedTroveParams } from "@/src/liquity-leverage";
 import { getCollToken, usePredictOpenTroveUpfrontFee } from "@/src/liquity-utils";
@@ -15,6 +16,7 @@ import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { parseEventLogs } from "viem";
+import { readContract } from "wagmi/actions";
 
 const FlowIdSchema = v.literal("openLeveragePosition");
 
@@ -40,11 +42,9 @@ const RequestSchema = v.object({
 
 export type Request = v.InferOutput<typeof RequestSchema>;
 
-type Step = "openLeveragedTrove";
-
-const stepNames: Record<Step, string> = {
-  openLeveragedTrove: "Open Leveraged Position",
-};
+type Step =
+  | "approveLst"
+  | "openLeveragedTrove";
 
 export const openLeveragePosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
@@ -148,12 +148,57 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     );
   },
 
-  async getSteps() {
-    return ["openLeveragedTrove"];
+  async getSteps({
+    account,
+    contracts,
+    request,
+    wagmiConfig,
+  }) {
+    const loan = request.loanPosition;
+    const collateral = contracts.collaterals[loan.collIndex];
+
+    if (collateral.symbol === "ETH") {
+      return ["openLeveragedTrove"];
+    }
+
+    const { LeverageLSTZapper, CollToken } = collateral.contracts;
+
+    const allowance = dnum18(
+      await readContract(wagmiConfig, {
+        ...CollToken,
+        functionName: "allowance",
+        args: [
+          account.address ?? ADDRESS_ZERO,
+          LeverageLSTZapper.address,
+        ],
+      }),
+    );
+
+    const initialDeposit = dn.div(loan.deposit, request.leverageFactor);
+
+    const isApproved = dn.gte(allowance, initialDeposit);
+
+    const steps: Step[] = [];
+
+    if (!isApproved) {
+      steps.push("approveLst");
+    }
+
+    steps.push("openLeveragedTrove");
+
+    return steps;
   },
 
-  getStepName(stepId) {
-    return stepNames[stepId];
+  getStepName(stepId, { request }) {
+    const loan = request.loanPosition;
+    const collateral = getCollToken(loan.collIndex);
+    if (!collateral) {
+      throw new Error("Invalid collateral index: " + loan.collIndex);
+    }
+    if (stepId === "approveLst") {
+      return `Approve ${collateral.name ?? ""}`;
+    }
+    return "Open Leveraged Position";
   },
 
   parseRequest(request) {
@@ -181,6 +226,20 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     const collateral = contracts.collaterals[loan.collIndex];
     const initialDeposit = dn.div(loan.deposit, request.leverageFactor);
 
+    const { LeverageLSTZapper, CollToken, LeverageWETHZapper } = collateral.contracts;
+
+    // Approve LST
+    if (stepId === "approveLst") {
+      return {
+        ...CollToken,
+        functionName: "approve" as const,
+        args: [
+          LeverageLSTZapper.address,
+          initialDeposit[0],
+        ],
+      };
+    }
+
     // LeverageWETHZapper
     if (collateral.symbol === "ETH" && stepId === "openLeveragedTrove") {
       const params = await getOpenLeveragedTroveParams(
@@ -190,7 +249,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
         wagmiConfig,
       );
       return {
-        ...collateral.contracts.LeverageWETHZapper,
+        ...LeverageWETHZapper,
         functionName: "openLeveragedTroveWithRawETH" as const,
         args: [{
           owner: loan.borrower,
@@ -220,7 +279,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
         wagmiConfig,
       );
       return {
-        ...collateral.contracts.LeverageLSTZapper,
+        ...LeverageLSTZapper,
         functionName: "openLeveragedTroveWithRawETH" as const,
         args: [{
           owner: loan.borrower,
