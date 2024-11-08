@@ -257,8 +257,7 @@ export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The loan position has been closed successfully.",
 
-                collIndex: loan.collIndex,
-                prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
+                loan: { ...loan },
                 repayWithCollateral: repayToken.symbol !== "BOLD",
               });
             }
