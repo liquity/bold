@@ -15,8 +15,8 @@ export const ETH_GAS_COMPENSATION = dn.from(0.0375, 18); // see contracts/src/De
 export const MIN_ANNUAL_INTEREST_RATE = dn.from(0.005, 18); // 0.5%
 export const MAX_ANNUAL_INTEREST_RATE = dn.from(1, 18); // 100%
 
-export const INTEREST_RATE_MIN = 1;
-export const INTEREST_RATE_MAX = 8;
+export const INTEREST_RATE_MIN = 0.5;
+export const INTEREST_RATE_MAX = 25;
 export const INTEREST_RATE_DEFAULT = 4;
 export const INTEREST_RATE_INCREMENT = 0.1;
 
@@ -26,7 +26,7 @@ export const UPFRONT_INTEREST_PERIOD = 7n * ONE_DAY_IN_SECONDS;
 
 export const SP_YIELD_SPLIT = 72n * 10n ** 16n; // 72%
 
-export const DATA_REFRESH_INTERVAL = 10_000; // 10 seconds
+export const DATA_REFRESH_INTERVAL = 30_000; // 30 seconds
 
 export const CLOSE_FROM_COLLATERAL_SLIPPAGE = 0.05; // 5%
 export const MAX_UPFRONT_FEE = 1000n * 10n ** 18n;
