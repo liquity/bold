@@ -75,7 +75,8 @@ export function PanelVoting() {
     }));
   };
 
-  const allowSubmit = dn.lt(remainingVotingPower, 1);
+  // const allowSubmit = dn.lt(remainingVotingPower, 1);
+  const allowSubmit = false;
 
   return (
     <section
@@ -324,9 +325,10 @@ export function PanelVoting() {
 
       <VFlex gap={48}>
         <ConnectWarningBox />
+
         <Button
           disabled={!allowSubmit}
-          label="Cast votes"
+          label="Coming soon: cast votes"
           mode="primary"
           size="large"
           wide
