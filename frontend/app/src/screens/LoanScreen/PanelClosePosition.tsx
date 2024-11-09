@@ -6,7 +6,6 @@ import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
 import { fmtnum } from "@/src/formatting";
-import { getPrefixedTroveId } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";

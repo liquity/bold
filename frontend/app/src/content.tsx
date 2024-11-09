@@ -29,7 +29,8 @@ export default {
     loanRedemptionRisk: [
       "Redemption risk",
       <>
-        "Users paying the lowest interest rate can get redeemed, if the price of BOLD falls below $1. By raising your interest rate, you reduce this risk.",
+        "Users paying the lowest interest rate can get redeemed, if the price of BOLD falls below $1. By raising your
+        interest rate, you reduce this risk.",
       </>,
     ],
     loanLtv: [
@@ -80,6 +81,43 @@ export default {
     learnMore: {
       text: "Learn more about redemptions",
       href: "https://github.com/liquity/bold#bold-redemptions",
+    },
+  },
+
+  interestRateField: {
+    delegateModes: {
+      manual: {
+        label: "Manual",
+        secondary: "The interest rate is set manually and can be updated at any time.",
+      },
+      delegate: {
+        label: "Delegated",
+        secondary: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
+      },
+      strategy: {
+        label: "Automated (ICP)",
+        secondary:
+          "The interest rate is set and updated by an automated strategy running on the decentralized Internet Computer (ICP).",
+      },
+    },
+
+    icStrategyModal: {
+      title: (
+        <>
+          Automated Strategies (<abbr title="Internet Computer">ICP</abbr>)
+        </>
+      ),
+      intro: (
+        <>
+          These strategies are run on the Internet Computer (ICP). They are automated and decentralized. More strategies
+          will be added over time.
+        </>
+      ),
+    },
+
+    delegatesModal: {
+      title: "Set a delegate",
+      intro: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
     },
   },
 
