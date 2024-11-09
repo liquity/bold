@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { INTEREST_RATE_DEFAULT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import content from "@/src/content";
-import { DELEGATES_FULL, IC_STRATEGIES } from "@/src/demo-mode";
+import { IC_STRATEGIES } from "@/src/demo-mode";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRedemptionRisk } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
@@ -33,54 +33,18 @@ import {
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { match } from "ts-pattern";
 
 import icLogo from "./ic-logo.svg";
 
 export type DelegateMode = "manual" | "strategy" | "delegate";
 
-const DELEGATE_MODES: Array<{
-  label: string;
-  secondary: string;
-  type: DelegateMode;
-}> = [
-  {
-    label: "Manual",
-    secondary: "The interest rate is set manually and can be updated at any time.",
-    type: "manual",
-  },
-  {
-    label: "Delegated",
-    secondary: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
-    type: "delegate",
-  },
-  {
-    label: "Automated (ICP)",
-    secondary:
-      "The interest rate is set and updated by an automated strategy running on the decentralized Internet Computer (ICP).",
-    type: "strategy",
-  },
-] as const;
-
-const IC_STRATEGY_MODAL = {
-  title: (
-    <>
-      Automated Strategies (<abbr title="Internet Computer">ICP</abbr>)
-    </>
-  ),
-  intro: (
-    <>
-      These strategies are run on the Internet Computer (ICP). They are automated and decentralized. More strategies
-      will be added over time.
-    </>
-  ),
-};
-
-const DELEGATES_MODAL = {
-  title: "Set a delegate",
-  intro: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
-};
+const DELEGATE_MODES: DelegateMode[] = [
+  "manual",
+  "delegate",
+  "strategy",
+];
 
 export function InterestRateField({
   collIndex,
@@ -123,6 +87,12 @@ export function InterestRateField({
   const interestRateNumber = interestRate && dn.toNumber(dn.mul(interestRate, 100));
   const chartdataPoint = interestChartData.data?.find(({ rate }) => rate === interestRateNumber);
   const boldRedeemableInFront = chartdataPoint?.debtInFront ?? dn.from(0, 18);
+
+  const handleDelegateSelect = (delegate: Delegate) => {
+    setDelegatePicker(null);
+    onChange(delegate.interestRate);
+    onDelegateChange(delegate.address ?? null);
+  };
 
   return (
     <>
@@ -212,22 +182,25 @@ export function InterestRateField({
           end: (
             <div>
               <Dropdown
-                items={DELEGATE_MODES.map((item) => ({
-                  label: item.label,
-                  secondary: item.secondary,
-                  disabled: item.type === "strategy",
-                  disabledReason: "Coming soon",
-                }))}
+                items={DELEGATE_MODES.map((mode) => {
+                  const modeContent = content.interestRateField.delegateModes[mode];
+                  return ({
+                    label: modeContent.label,
+                    secondary: modeContent.secondary,
+                    disabled: mode === "strategy",
+                    disabledReason: "Coming soon",
+                  });
+                })}
                 menuWidth={300}
                 menuPlacement="end"
                 onSelect={(index) => {
                   const mode = DELEGATE_MODES[index];
                   if (mode) {
-                    onModeChange(DELEGATE_MODES[index].type);
+                    onModeChange(mode);
                   }
                   onDelegateChange(null);
                 }}
-                selected={DELEGATE_MODES.findIndex(({ type }) => type === mode)}
+                selected={DELEGATE_MODES.findIndex((mode_) => mode_ === mode)}
                 size="small"
               />
             </div>
@@ -319,7 +292,7 @@ export function InterestRateField({
             })}
           >
             <div>
-              {IC_STRATEGY_MODAL.title}
+              {content.interestRateField.icStrategyModal.title}
             </div>
             <Image
               alt=""
@@ -335,33 +308,22 @@ export function InterestRateField({
           collIndex={collIndex}
           chooseLabel="Choose"
           delegates={IC_STRATEGIES}
-          intro={IC_STRATEGY_MODAL.intro}
-          onSelectDelegate={(id) => {
-            setDelegatePicker(null);
-            const delegate = DELEGATES_FULL.find((s) => s.id === id);
-            if (delegate) {
-              onChange(delegate.interestRate);
-            }
-            onDelegateChange(delegate?.address ?? null);
-          }}
+          intro={content.interestRateField.icStrategyModal.intro}
+          onSelectDelegate={handleDelegateSelect}
         />
       </Modal>
       <Modal
         onClose={() => {
           setDelegatePicker(null);
         }}
-        title={DELEGATES_MODAL.title}
+        title={content.interestRateField.delegatesModal.title}
         visible={delegatePicker === "delegate"}
       >
         <CustomDelegateModalContent
           collIndex={collIndex}
           chooseLabel="Set delegate"
-          intro={DELEGATES_MODAL.intro}
-          onSelectDelegate={(delegate) => {
-            setDelegatePicker(null);
-            onChange(delegate.interestRate);
-            onDelegateChange(delegate.address ?? null);
-          }}
+          intro={content.interestRateField.delegatesModal.intro}
+          onSelectDelegate={handleDelegateSelect}
         />
       </Modal>
     </>
@@ -508,7 +470,7 @@ function DelegatesModalContent({
   delegates?: Delegate[];
   chooseLabel: string;
   intro: ReactNode;
-  onSelectDelegate: (id: Delegate["id"]) => void;
+  onSelectDelegate: (delegate: Delegate) => void;
 }) {
   const [displayedDelegates, setDisplayedDelegates] = useState(5);
   return (
@@ -561,7 +523,11 @@ function DelegatesModalContent({
   );
 }
 
-function MiniChart({ size = "small" }: { size?: "small" | "medium" }) {
+const MiniChart = memo(function MiniChart({
+  size = "small",
+}: {
+  size?: "small" | "medium";
+}) {
   return (
     size === "medium"
       ? (
@@ -585,7 +551,7 @@ function MiniChart({ size = "small" }: { size?: "small" | "medium" }) {
         </svg>
       )
   );
-}
+});
 
 function ShadowBox({ children }: { children: ReactNode }) {
   return (
