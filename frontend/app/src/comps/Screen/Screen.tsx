@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { css, cx } from "@/styled-system/css";
 import { IconArrowBack } from "@liquity2/uikit";
-import { a, useTransition } from "@react-spring/web";
+import { a, useSpring, useTransition } from "@react-spring/web";
 import Link from "next/link";
 import { isValidElement } from "react";
 
@@ -33,10 +33,10 @@ export function Screen({
 }) {
   const backTransition = useTransition(ready && back, {
     keys: (back) => JSON.stringify(back),
-    initial: { progress: 0, transform: "translate3d(0, 0, 0)" },
-    from: { progress: 0, transform: "translate3d(0, 16px, 0)" },
-    enter: { progress: 1, transform: "translate3d(0, 0, 0)" },
-    leave: { progress: 0, transform: "translate3d(0, 0, 0)" },
+    initial: { opacity: 0, transform: "translateY(0px)" },
+    from: { opacity: 0, transform: "translateY(16px)" },
+    enter: { opacity: 1, transform: "translateY(0px)" },
+    leave: { opacity: 0, transform: "translateY(0px)", immediate: true },
     config: {
       mass: 1,
       tension: 1800,
@@ -44,15 +44,48 @@ export function Screen({
     },
   });
 
-  const screenTransitions = useTransition(true, {
-    initial: { progress: 0, transform: "scale3d(0.95, 0.95, 1) translate3d(0, 8px, 0)" },
-    from: { progress: 0, transform: "scale3d(0.95, 0.95, 1) translate3d(0, 8px, 0)" },
-    enter: { progress: 1, transform: "scale3d(1, 1, 1) translate3d(0, 0, 0)" },
-    leave: { display: "none", immediate: true },
+  const screenSpring = useSpring({
+    from: {
+      opacity: 0,
+      transform: `
+        scale3d(1.03, 1.03, 1)
+        translate3d(0, 40px, 0)
+      `,
+    },
+    to: {
+      opacity: 1,
+      transform: `
+        scale3d(1, 1, 1)
+        translate3d(0, 0px, 0)
+      `,
+    },
+    delay: 100,
+    config: {
+      mass: 1,
+      tension: 1600,
+      friction: 120,
+    },
+  });
+
+  const headingSpring = useSpring({
+    from: {
+      opacity: 0,
+      transform: `
+        scale3d(1.03, 1.03, 1)
+        translate3d(0, 16px, 0)
+      `,
+    },
+    to: {
+      opacity: 1,
+      transform: `
+        scale3d(1, 1, 1)
+        translate3d(0, 0px, 0)
+      `,
+    },
     config: {
       mass: 2,
-      tension: 1100,
-      friction: 100,
+      tension: 2400,
+      friction: 120,
     },
   });
 
@@ -97,82 +130,75 @@ export function Screen({
     : heading;
 
   return (
-    screenTransitions((style, ready) =>
-      ready && (
-        <a.div
-          className={cx(
-            css({
-              flexGrow: 1,
-              display: "flex",
-              gap: 48,
-              flexDirection: "column",
-              alignItems: "center",
-              width: "100%",
-              padding: 24,
-              transformOrigin: "50% 0",
-            }),
-            className,
-          )}
-          style={{
-            ...style,
-            opacity: style.progress.to([0, 0.5, 1], [0, 1, 1]),
-            paddingTop,
-          }}
-        >
-          {backTransition((style, back) => (
-            back && (
-              <a.div
-                className={css({
-                  position: {
-                    base: "static",
-                    large: "absolute",
-                  },
-                  left: 100,
-                })}
-                style={{
-                  width,
-                  transform: style.transform,
-                  opacity: style.progress.to([0, 0.5, 1], [0, 1, 1]),
-                }}
-              >
-                <BackButton
-                  href={back.href}
-                  label={back.label}
-                />
-              </a.div>
-            )
-          ))}
-          {headingElt && (
-            <a.div
-              className={css({
-                display: "flex",
-                flexDirection: "column",
-                width: "100%",
-                alignItems: "center",
-              })}
-              style={{
-                paddingBottom: style.progress.to([0, 1], [24, 0]),
-              }}
-            >
-              {headingElt}
-            </a.div>
-          )}
-          <div
+    <div
+      className={cx(
+        css({
+          flexGrow: 1,
+          display: "flex",
+          gap: 48,
+          flexDirection: "column",
+          alignItems: "center",
+          width: "100%",
+          padding: 24,
+          transformOrigin: "50% 0",
+        }),
+        className,
+      )}
+      style={{
+        paddingTop,
+      }}
+    >
+      {backTransition((style, back) => (
+        back && (
+          <a.div
             className={css({
-              display: "flex",
-              flexDirection: "column",
-              position: "relative",
+              position: {
+                base: "static",
+                large: "absolute",
+              },
+              left: 100,
             })}
             style={{
-              gap,
               width,
+              transform: style.transform,
+              opacity: style.opacity.to([0, 0.5, 1], [0, 1, 1]),
             }}
           >
-            {children}
-          </div>
+            <BackButton
+              href={back.href}
+              label={back.label}
+            />
+          </a.div>
+        )
+      ))}
+      {headingElt && (
+        <a.div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            width: "100%",
+            alignItems: "center",
+          })}
+          style={headingSpring}
+        >
+          {headingElt}
         </a.div>
-      )
-    )
+      )}
+      <a.div
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+        })}
+        style={{
+          gap,
+          width,
+          ...screenSpring,
+        }}
+      >
+        {children}
+      </a.div>
+    </div>
   );
 }
 
