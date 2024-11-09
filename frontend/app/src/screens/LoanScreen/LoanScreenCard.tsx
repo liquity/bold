@@ -174,7 +174,7 @@ export function LoanScreenCard({
             Error fetching loan{" "}
             <span title={`Loan ${troveId}`}>
               {shortenTroveId(troveId)}
-            </span>.
+            </span>
             <Button
               mode="primary"
               label="Try again"
