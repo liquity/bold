@@ -116,9 +116,7 @@ export function useEarnPool(collIndex: null | CollIndex) {
   const collateral = getCollToken(collIndex);
   const pool = useStabilityPool(collIndex ?? undefined);
   const { data: spYieldGainParams } = useSpYieldGainParameters(collateral?.symbol ?? null);
-
   const apr = spYieldGainParams && calculateStabilityPoolApr(spYieldGainParams);
-
   return {
     ...pool,
     data: {

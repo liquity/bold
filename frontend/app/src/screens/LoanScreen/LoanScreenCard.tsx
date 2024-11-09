@@ -183,28 +183,31 @@ export function LoanScreenCard({
             />
           </HFlex>
         ))
-        .otherwise(() => (
-          loan && loanDetails && collateral
-          && typeof leverageFactor === "number"
-          && depositPreLeverage && maxLtv && liquidationRisk
-          && (
-            <LoanCard
-              collateral={collateral}
-              depositPreLeverage={depositPreLeverage}
-              leverageFactor={leverageFactor}
-              liquidationRisk={liquidationRisk}
-              loan={loan}
-              loanDetails={loanDetails}
-              ltv={ltv ?? null}
-              maxLtv={maxLtv}
-              mode={mode}
-              nftUrl={nftUrl}
-              onLeverageModeChange={onLeverageModeChange}
-              redemptionRisk={redemptionRisk ?? null}
-              troveId={troveId}
-            />
-          )
-        ))}
+        .otherwise(() => {
+          return loan
+            && loanDetails
+            && typeof leverageFactor === "number"
+            && depositPreLeverage
+            && maxLtv
+            && liquidationRisk
+            && (
+              <LoanCard
+                collateral={collateral}
+                depositPreLeverage={depositPreLeverage}
+                leverageFactor={leverageFactor}
+                liquidationRisk={liquidationRisk}
+                loan={loan}
+                loanDetails={loanDetails}
+                ltv={ltv ?? null}
+                maxLtv={maxLtv}
+                mode={mode}
+                nftUrl={nftUrl}
+                onLeverageModeChange={onLeverageModeChange}
+                redemptionRisk={redemptionRisk ?? null}
+                troveId={troveId}
+              />
+            );
+        })}
     </ScreenCard>
   );
 }
