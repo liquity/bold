@@ -74,9 +74,8 @@ export function TransactionsScreen() {
         href: flow.request.backLink[0],
         label: "Back",
       }}
+      heading={<fd.Summary flow={flow} />}
     >
-      <fd.Summary flow={flow} />
-
       <header
         className={css({
           display: "flex",
