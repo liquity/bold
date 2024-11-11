@@ -185,8 +185,8 @@ export function PanelUpdateRate({
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The position interest rate has been updated successfully.",
 
-                prevLoanPosition: { ...loan },
-                loanPosition: {
+                prevLoan: { ...loan },
+                loan: {
                   ...loan,
                   batchManager: interestRateMode === "delegate" ? interestRateDelegate : null,
                   interestRate,

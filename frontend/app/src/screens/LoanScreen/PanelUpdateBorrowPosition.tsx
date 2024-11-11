@@ -369,7 +369,7 @@ export function PanelUpdateBorrowPosition({
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The position has been updated successfully.",
 
-                prevLoan: loan,
+                prevLoan: { ...loan },
                 loan: {
                   ...loan,
                   deposit: newDeposit ?? loan.deposit,
