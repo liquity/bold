@@ -1,4 +1,4 @@
-import type { Address, Position } from "@/src/types";
+import type { Address, Position, PositionLoanUncommitted } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
@@ -83,7 +83,7 @@ function PositionsGroup({
   columns?: number;
   mode: Mode;
   onTitleClick?: () => void;
-  positions: Position[];
+  positions: Exclude<Position, PositionLoanUncommitted>[];
   title: (mode: Mode) => ReactNode;
   showNewPositionCard: boolean;
 }) {

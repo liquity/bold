@@ -1,4 +1,4 @@
-import type { Delegate, Position } from "@/src/types";
+import type { Delegate, Position, PositionLoanUncommitted } from "@/src/types";
 import type { CollateralToken } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 
@@ -40,7 +40,7 @@ function getTime() {
   return lastTime += 24 * 60 * 60 * 1000;
 }
 
-export const ACCOUNT_POSITIONS: Position[] = [
+export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
   {
     type: "borrow",
     borrowed: dn.from(12_789, 18),
