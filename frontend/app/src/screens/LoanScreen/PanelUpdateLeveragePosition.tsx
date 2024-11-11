@@ -1,4 +1,4 @@
-import type { PositionLoan } from "@/src/types";
+import type { PositionLoanCommitted } from "@/src/types";
 
 import { INFINITY } from "@/src/characters";
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -39,7 +39,7 @@ import { useEffect, useRef, useState } from "react";
 export function PanelUpdateLeveragePosition({
   loan,
 }: {
-  loan: PositionLoan;
+  loan: PositionLoanCommitted;
 }) {
   const account = useAccount();
   const txFlow = useTransactionFlow();

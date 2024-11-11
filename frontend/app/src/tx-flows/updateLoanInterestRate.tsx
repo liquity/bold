@@ -8,7 +8,7 @@ import { usePredictAdjustInterestRateUpfrontFee } from "@/src/liquity-utils";
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
-import { vPositionLoan } from "@/src/valibot-utils";
+import { vPositionLoanCommited } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -35,8 +35,8 @@ const RequestSchema = v.object({
   ]),
   successMessage: v.string(),
 
-  prevLoanPosition: vPositionLoan(),
-  loanPosition: vPositionLoan(),
+  prevLoanPosition: vPositionLoanCommited(),
+  loanPosition: vPositionLoanCommited(),
 });
 
 export type Request = v.InferOutput<typeof RequestSchema>;

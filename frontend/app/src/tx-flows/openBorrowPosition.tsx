@@ -77,7 +77,7 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
         loadingState="success"
         loan={{
           type: "borrow",
-          troveId: "0x",
+          troveId: null,
           borrower: request.owner,
           batchManager: request.interestRateDelegate?.[0] ?? null,
           borrowed: boldAmountWithFee ?? dnum18(0),

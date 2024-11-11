@@ -1,5 +1,6 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
+import type { PositionLoanCommitted } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { fmtnum } from "@/src/formatting";
@@ -119,16 +120,17 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
       debtChangeWithFee,
     );
 
-    const newLoan = !loan.data || !newBorrowed ? null : {
-      troveId,
-      borrower: loan.data.borrower,
+    const newLoan: null | PositionLoanCommitted = !loan.data || !newBorrowed ? null : {
+      type: "borrow" as const,
       batchManager: loan.data.batchManager,
       borrowed: newBorrowed,
+      borrower: loan.data.borrower,
       collIndex: request.collIndex,
-      collateral: collateral.symbol,
+      createdAt: loan.data.createdAt,
       deposit: newDeposit,
       interestRate: loan.data.interestRate,
-      type: "borrow" as const,
+      troveId,
+      updatedAt: loan.data.updatedAt,
     };
 
     const prevLoan = !newLoan || !loan.data ? null : {

@@ -37,7 +37,7 @@ const RequestSchema = v.object({
 
   ownerIndex: v.number(),
   leverageFactor: v.number(),
-  loanPosition: vPositionLoan(),
+  loan: vPositionLoanUncommited(),
 });
 
 export type Request = v.InferOutput<typeof RequestSchema>;
@@ -50,7 +50,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
   Summary({ flow }) {
     const { request } = flow;
-    const loan = request.loanPosition;
+    const { loan } = request;
 
     const collateral = getCollToken(loan.collIndex);
 
@@ -70,7 +70,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
   },
   Details({ flow }) {
     const { request } = flow;
-    const loan = request.loanPosition;
+    const { loan } = request;
 
     const collateral = getCollToken(loan.collIndex);
     const collPrice = usePrice(collateral?.symbol ?? null);
@@ -154,7 +154,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     request,
     wagmiConfig,
   }) {
-    const loan = request.loanPosition;
+    const { loan } = request;
     const collateral = contracts.collaterals[loan.collIndex];
 
     if (collateral.symbol === "ETH") {
@@ -190,7 +190,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
   },
 
   getStepName(stepId, { request }) {
-    const loan = request.loanPosition;
+    const { loan } = request;
     const collateral = getCollToken(loan.collIndex);
     if (!collateral) {
       throw new Error("Invalid collateral index: " + loan.collIndex);
@@ -206,7 +206,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
   },
 
   parseReceipt(stepId, receipt, { request, contracts }): string | null {
-    const loan = request.loanPosition;
+    const { loan } = request;
     const collateral = contracts.collaterals[loan.collIndex];
     if (stepId === "openLeveragedTrove") {
       const [troveOperation] = parseEventLogs({
@@ -222,7 +222,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
   },
 
   async writeContractParams(stepId, { contracts, request, wagmiConfig }) {
-    const loan = request.loanPosition;
+    const { loan } = request;
     const collateral = contracts.collaterals[loan.collIndex];
     const initialDeposit = dn.div(loan.deposit, request.leverageFactor);
 

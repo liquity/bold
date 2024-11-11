@@ -9,7 +9,7 @@ import { getCollToken, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-uti
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
-import { vDnum, vPositionLoan } from "@/src/valibot-utils";
+import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
@@ -43,8 +43,8 @@ const RequestSchema = v.object({
     ]),
   ]),
 
-  prevLoan: vPositionLoan(),
-  loan: vPositionLoan(),
+  prevLoan: vPositionLoanCommited(),
+  loan: vPositionLoanCommited(),
 });
 
 export type Request = v.InferOutput<typeof RequestSchema>;

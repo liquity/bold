@@ -1,6 +1,6 @@
 "use client";
 
-import type { PositionLoan } from "@/src/types";
+import type { PositionLoanCommitted } from "@/src/types";
 
 import { ARROW_RIGHT } from "@/src/characters";
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -41,7 +41,7 @@ type ValueUpdateMode = "add" | "remove";
 export function PanelUpdateBorrowPosition({
   loan,
 }: {
-  loan: PositionLoan;
+  loan: PositionLoanCommitted;
 }) {
   const account = useAccount();
   const txFlow = useTransactionFlow();
