@@ -17,6 +17,11 @@ contract Redemptions is DevTestSetup {
         uint256 C;
     }
 
+    function testCannotRedeemZero() public {
+        vm.expectRevert("CollateralRegistry: Amount must be greater than zero");
+        collateralRegistry.redeemCollateral(0, 10, 1e18);
+    }
+
     function testRedemptionIsInOrderOfInterestRate() public {
         (uint256 coll,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 

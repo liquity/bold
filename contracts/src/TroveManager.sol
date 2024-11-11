@@ -163,6 +163,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     error CallerNotCollateralRegistry();
     error OnlyOneTroveLeft();
     error NotShutDown();
+    error ZeroAmount();
     error NotEnoughBoldBalance();
     error MinCollNotReached(uint256 _coll);
     error BatchSharesRatioTooHigh();
@@ -841,6 +842,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     function urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral) external {
         _requireIsShutDown();
+        _requireAmountGreaterThanZero(_boldAmount);
         _requireBoldBalanceCoversRedemption(boldToken, msg.sender, _boldAmount);
 
         IActivePool activePoolCached = activePool;
@@ -1160,6 +1162,12 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     function _requireIsShutDown() internal view {
         if (shutdownTime == 0) {
             revert NotShutDown();
+        }
+    }
+
+    function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
+        if (_amount == 0) {
+            revert ZeroAmount();
         }
     }
 

@@ -368,6 +368,13 @@ contract ShutdownTest is DevTestSetup {
         vm.stopPrank();
     }
 
+    function testCannotUrgentRedeemZero() public {
+        uint256 troveId = prepareAndShutdownFirstBranch();
+
+        vm.expectRevert(TroveManager.ZeroAmount.selector);
+        troveManager.urgentRedemption(0, uintToArray(troveId), 0);
+    }
+
     function testUrgentRedeemRevertsIfMinNotReached() public {
         uint256 troveId = prepareAndShutdownFirstBranch();
 
