@@ -19,8 +19,6 @@ import { readContract } from "wagmi/actions";
 
 const FlowIdSchema = v.literal("openBorrowPosition");
 
-const graph = getBuiltGraphSDK();
-
 const RequestSchema = v.object({
   flowId: FlowIdSchema,
   backLink: v.union([
@@ -346,6 +344,8 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
       request.collIndex,
       lastStep.txReceiptData,
     );
+
+    const graph = getBuiltGraphSDK();
 
     while (true) {
       const { trove } = await graph.TroveById({ id: prefixedTroveId });
