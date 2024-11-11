@@ -142,18 +142,42 @@ export function vPositionStake() {
   });
 }
 
+const VPositionLoanBase = v.object({
+  type: v.union([
+    v.literal("borrow"),
+    v.literal("leverage"),
+  ]),
+  batchManager: v.union([v.null(), vAddress()]),
+  borrowed: vDnum(),
+  borrower: vAddress(),
+  collIndex: vCollIndex(),
+  deposit: vDnum(),
+  interestRate: vDnum(),
+});
+
+export function vPositionLoanCommited() {
+  return v.intersect([
+    VPositionLoanBase,
+    v.object({
+      troveId: vTroveId(),
+      updatedAt: v.number(),
+      createdAt: v.number(),
+    }),
+  ]);
+}
+
+export function vPositionLoanUncommited() {
+  return v.intersect([
+    VPositionLoanBase,
+    v.object({
+      troveId: v.null(),
+    }),
+  ]);
+}
+
 export function vPositionLoan() {
-  return v.object({
-    type: v.union([
-      v.literal("borrow"),
-      v.literal("leverage"),
-    ]),
-    batchManager: v.union([v.null(), vAddress()]),
-    borrowed: vDnum(),
-    borrower: vAddress(),
-    collIndex: vCollIndex(),
-    deposit: vDnum(),
-    interestRate: vDnum(),
-    troveId: vTroveId(),
-  });
+  return v.intersect([
+    vPositionLoanCommited(),
+    vPositionLoanUncommited(),
+  ]);
 }

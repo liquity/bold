@@ -39,7 +39,7 @@ export type MenuSection = {
   label: ReactNode;
 };
 
-export type PositionLoan = {
+export type PositionLoanBase = {
   type: "borrow" | "leverage";
   batchManager: null | Address;
   borrowed: Dnum;
@@ -47,11 +47,32 @@ export type PositionLoan = {
   collIndex: CollIndex;
   deposit: Dnum;
   interestRate: Dnum;
-  troveId: TroveId;
 };
+
+export type PositionLoanCommitted = PositionLoanBase & {
+  troveId: TroveId;
+  updatedAt: number;
+  createdAt: number;
+};
+
+export type PositionLoanUncommitted = PositionLoanBase & {
+  troveId: null;
+};
+
+export type PositionLoan = PositionLoanCommitted | PositionLoanUncommitted;
 
 export function isPositionLoan(position: Position): position is PositionLoan {
   return position.type === "borrow" || position.type === "leverage";
+}
+export function isPositionLoanCommitted(
+  position: Position,
+): position is PositionLoanCommitted {
+  return isPositionLoan(position) && position.troveId !== null;
+}
+export function isPositionLoanUncommitted(
+  position: Position,
+): position is PositionLoanUncommitted {
+  return isPositionLoan(position) && position.troveId === null;
 }
 
 export type PositionEarn = {
