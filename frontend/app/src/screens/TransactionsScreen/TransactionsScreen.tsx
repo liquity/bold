@@ -197,7 +197,17 @@ export function TransactionsScreen() {
                   to be confirmed…
                 </>
               ))
-              .with("post-check", () => "Waiting for the transaction to be indexed…")
+              .with("post-check", () => (
+                <>
+                  Waiting for the{" "}
+                  <AnchorTextButton
+                    label="transaction"
+                    href={`${CHAIN_BLOCK_EXPLORER?.url}tx/${currentStep.txHash}`}
+                    external
+                  />{"  "}
+                  transaction to be indexed…
+                </>
+              ))
               .with("confirmed", () => (
                 <>
                   The{" "}
