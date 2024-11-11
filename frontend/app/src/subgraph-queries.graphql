@@ -13,7 +13,11 @@ query TrovesCount($id: ID!) {
 }
 
 query TrovesByAccount($account: Bytes!) {
-  troves(where: { borrower: $account, closedAt: null }) {
+  troves(
+    where: { borrower: $account, closedAt: null }
+    orderBy: updatedAt
+    orderDirection: desc
+  ) {
     id
     borrower
     closedAt
@@ -27,6 +31,7 @@ query TrovesByAccount($account: Bytes!) {
       collIndex
     }
     createdAt
+    updatedAt
     debt
     deposit
     interestBatch {
@@ -57,6 +62,7 @@ query TroveById($id: ID!) {
       collIndex
     }
     createdAt
+    updatedAt
     debt
     deposit
     interestBatch {
