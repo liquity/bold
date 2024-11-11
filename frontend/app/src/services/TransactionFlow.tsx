@@ -326,7 +326,9 @@ export function TransactionFlow({ children }: { children: ReactNode }) {
   const start: TransactionFlowReactContext["start"] = useCallback((request) => {
     if (account.address) {
       startFlow(request, account.address);
-      router.push("/transactions");
+      setTimeout(() => {
+        router.push("/transactions");
+      }, 0);
     }
   }, [account]);
 
@@ -467,8 +469,7 @@ export function useFlowManager(account: Address | null) {
   const queryClient = useQueryClient();
   useEffect(() => {
     if (isFlowComplete) {
-      console.log("Flow is complete, invalidating queries");
-      queryClient.invalidateQueries();
+      queryClient.resetQueries();
     }
   }, [isFlowComplete, queryClient]);
 
@@ -500,7 +501,6 @@ function useTransactionExecution({
 }) {
   const account = useAccount();
   const contracts = getContracts();
-  const queryClient = useQueryClient();
   const wagmiConfig = useWagmiConfig();
 
   // step status updates
