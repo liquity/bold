@@ -1,17 +1,19 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
+import { getBuiltGraphSDK } from "@/.graphclient";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION, MAX_UPFRONT_FEE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { getOpenLeveragedTroveParams } from "@/src/liquity-leverage";
-import { getCollToken, usePredictOpenTroveUpfrontFee } from "@/src/liquity-utils";
+import { getCollToken, getPrefixedTroveId, usePredictOpenTroveUpfrontFee } from "@/src/liquity-utils";
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
+import { isTroveId } from "@/src/types";
 import { noop } from "@/src/utils";
-import { vPositionLoan } from "@/src/valibot-utils";
+import { vPositionLoanUncommited } from "@/src/valibot-utils";
 import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
@@ -19,6 +21,8 @@ import { parseEventLogs } from "viem";
 import { readContract } from "wagmi/actions";
 
 const FlowIdSchema = v.literal("openLeveragePosition");
+
+const graph = getBuiltGraphSDK();
 
 const RequestSchema = v.object({
   flowId: FlowIdSchema,
@@ -301,5 +305,21 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     }
 
     throw new Error("Not implemented");
+  },
+
+  async postFlowCheck({ request, steps }) {
+    const lastStep = steps?.at(-1);
+
+    if (lastStep?.txStatus !== "post-check" || !isTroveId(lastStep.txReceiptData)) {
+      return;
+    }
+
+    const prefixedTroveId = getPrefixedTroveId(request.loan.collIndex, lastStep.txReceiptData);
+    while (true) {
+      const { trove } = await graph.TroveById({ id: prefixedTroveId });
+      if (trove !== null) {
+        return;
+      }
+    }
   },
 };

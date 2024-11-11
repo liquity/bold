@@ -1,20 +1,23 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
+import { getBuiltGraphSDK } from "@/.graphclient";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { fmtnum } from "@/src/formatting";
 import { getCloseFlashLoanAmount } from "@/src/liquity-leverage";
-import { getCollToken } from "@/src/liquity-utils";
+import { getCollToken, getPrefixedTroveId } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
-import { vPositionLoan } from "@/src/valibot-utils";
+import { vPositionLoanCommited } from "@/src/valibot-utils";
 import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { readContract } from "wagmi/actions";
 
 const FlowIdSchema = v.literal("closeLoanPosition");
+
+const graph = getBuiltGraphSDK();
 
 const RequestSchema = v.object({
   flowId: FlowIdSchema,
@@ -32,7 +35,7 @@ const RequestSchema = v.object({
   ]),
   successMessage: v.string(),
 
-  loan: vPositionLoan(),
+  loan: vPositionLoanCommited(),
   repayWithCollateral: v.boolean(),
 });
 
@@ -236,5 +239,16 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
     }
 
     throw new Error("Invalid stepId: " + stepId);
+  },
+
+  async postFlowCheck({ request }) {
+    const prefixedTroveId = getPrefixedTroveId(
+      request.loan.collIndex,
+      request.loan.troveId,
+    );
+    while (true) {
+      const { trove } = await graph.TroveById({ id: prefixedTroveId });
+      if (trove?.closedAt !== undefined) return;
+    }
   },
 };
