@@ -1,16 +1,15 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
-import type { PositionLoanCommitted } from "@/src/types";
 
+import { getBuiltGraphSDK } from "@/.graphclient";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { fmtnum } from "@/src/formatting";
-import { parsePrefixedTroveId } from "@/src/liquity-utils";
-import { getCollToken, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
+import { getCollToken, getPrefixedTroveId, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
-import { useLoanById } from "@/src/subgraph-hooks";
-import { vAddress, vCollIndex, vDnum, vPrefixedTroveId } from "@/src/valibot-utils";
+import { isTroveId } from "@/src/types";
+import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
@@ -32,13 +31,9 @@ const RequestSchema = v.object({
     v.string(), // label
   ]),
   successMessage: v.string(),
-
-  debtChange: vDnum(),
-  collChange: vDnum(),
-  collIndex: vCollIndex(),
   maxUpfrontFee: vDnum(),
-  owner: vAddress(),
-  prefixedTroveId: vPrefixedTroveId(),
+  prevLoan: vPositionLoanCommited(),
+  loan: vPositionLoanCommited(),
 });
 
 export type Request = v.InferOutput<typeof RequestSchema>;
@@ -65,8 +60,17 @@ const stepNames: Record<Step, string> = {
   withdrawColl: "Update Position",
 };
 
+function getDebtChange(loan: Request["loan"], prevLoan: Request["prevLoan"]) {
+  return dn.sub(loan.borrowed, prevLoan.borrowed);
+}
+
+function getCollChange(loan: Request["loan"], prevLoan: Request["prevLoan"]) {
+  return dn.sub(loan.deposit, prevLoan.deposit);
+}
+
 function getFinalStep(request: Request): FinalStep {
-  const { collChange, debtChange } = request;
+  const collChange = getCollChange(request.loan, request.prevLoan);
+  const debtChange = getDebtChange(request.loan, request.prevLoan);
 
   // both coll and debt change -> adjust trove
   if (!dn.eq(collChange, 0) && !dn.eq(debtChange, 0)) {
@@ -96,13 +100,16 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
 
   Summary({ flow }) {
     const { request } = flow;
-    const { troveId } = parsePrefixedTroveId(request.prefixedTroveId);
+    const { loan, prevLoan } = request;
 
-    const collateral = getCollToken(request.collIndex);
-    const loan = useLoanById(request.prefixedTroveId);
-    const { debtChangeWithFee } = useUpfrontFee(request);
+    const collateral = getCollToken(loan.collIndex);
+    if (!collateral) {
+      throw new Error(`Invalid collateral index: ${loan.collIndex}`);
+    }
 
-    const loadingState = match(loan)
+    const upfrontFeeData = useUpfrontFeeData(loan, prevLoan);
+
+    const loadingState = match(upfrontFeeData)
       .returnType<LoadingState>()
       .with({ status: "error" }, () => "error")
       .with({ status: "pending" }, () => "loading")
@@ -110,40 +117,16 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
       .with({ data: P.nonNullable }, () => "success")
       .otherwise(() => "error");
 
-    if (!collateral) {
-      return null;
-    }
-
-    const newDeposit = dn.add(loan.data?.deposit ?? 0n, request.collChange);
-    const newBorrowed = debtChangeWithFee && dn.add(
-      loan.data?.borrowed ?? 0n,
-      debtChangeWithFee,
+    const borrowedWithFee = dn.add(
+      loan.borrowed,
+      upfrontFeeData.data?.upfrontFee ?? dn.from(0, 18),
     );
-
-    const newLoan: null | PositionLoanCommitted = !loan.data || !newBorrowed ? null : {
-      type: "borrow" as const,
-      batchManager: loan.data.batchManager,
-      borrowed: newBorrowed,
-      borrower: loan.data.borrower,
-      collIndex: request.collIndex,
-      createdAt: loan.data.createdAt,
-      deposit: newDeposit,
-      interestRate: loan.data.interestRate,
-      troveId,
-      updatedAt: loan.data.updatedAt,
-    };
-
-    const prevLoan = !newLoan || !loan.data ? null : {
-      ...newLoan,
-      borrowed: loan.data.borrowed,
-      deposit: loan.data.deposit,
-    };
 
     return (
       <LoanCard
         leverageMode={false}
         loadingState={loadingState}
-        loan={newLoan}
+        loan={{ ...loan, borrowed: borrowedWithFee }}
         prevLoan={prevLoan}
         onRetry={() => {}}
         txPreviewMode
@@ -153,37 +136,45 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
 
   Details({ flow }) {
     const { request } = flow;
-    const collateral = getCollToken(request.collIndex);
+    const { loan, prevLoan } = request;
+
+    const collChange = getCollChange(loan, prevLoan);
+
+    const collateral = getCollToken(loan.collIndex);
+    if (!collateral) {
+      throw new Error(`Invalid collateral index: ${loan.collIndex}`);
+    }
+
+    const isBorrowing = dn.gt(loan.borrowed, prevLoan.borrowed);
     const collPrice = usePrice(collateral?.symbol ?? null);
+    const upfrontFeeData = useUpfrontFeeData(loan, prevLoan);
 
-    const collChangeUnsigned = dn.abs(request.collChange);
-    const debtChangeUnsigned = dn.abs(request.debtChange);
-
-    const { isBorrowing, debtChangeWithFee, upfrontFee } = useUpfrontFee(request);
+    const debtChangeWithFee = upfrontFeeData.data && dn.add(
+      loan.borrowed,
+      upfrontFeeData.data.upfrontFee,
+    );
 
     return collateral && (
       <>
         <TransactionDetailsRow
-          label={dn.gt(request.collChange, 0n)
-            ? "You deposit"
-            : "You withdraw"}
+          label={dn.gt(collChange, 0) ? "You deposit" : "You withdraw"}
           value={[
             <div
               key="start"
-              title={`${fmtnum(collChangeUnsigned, "full")} ${collateral.name}`}
+              title={`${fmtnum(dn.abs(collChange), "full")} ${collateral.name}`}
               style={{
-                color: dn.eq(collChangeUnsigned, 0n)
+                color: dn.eq(collChange, 0n)
                   ? "var(--colors-content-alt2)"
                   : undefined,
               }}
             >
-              {fmtnum(collChangeUnsigned)} {collateral.name}
+              {fmtnum(dn.abs(collChange))} {collateral.name}
             </div>,
             <Amount
               key="end"
               fallback="…"
               prefix="$"
-              value={collPrice && dn.mul(collChangeUnsigned, collPrice)}
+              value={collPrice && dn.mul(dn.abs(collChange), collPrice)}
             />,
           ]}
         />
@@ -194,7 +185,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
               key="start"
               title={`${fmtnum(debtChangeWithFee, "full")} BOLD`}
               style={{
-                color: dn.eq(debtChangeUnsigned, 0n)
+                color: debtChangeWithFee && dn.eq(debtChangeWithFee, 0n)
                   ? "var(--colors-content-alt2)"
                   : undefined,
               }}
@@ -209,7 +200,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
               key="end"
               fallback="…"
               prefix="Incl. "
-              value={upfrontFee.data}
+              value={upfrontFeeData.data?.upfrontFee}
               suffix=" BOLD upfront fee"
             />,
           ]}
@@ -223,14 +214,16 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
   },
 
   getStepName(stepId, { contracts, request }) {
+    const { loan } = request;
     const name = stepNames[stepId];
-    const coll = contracts.collaterals[request.collIndex];
+    const coll = contracts.collaterals[loan.collIndex];
     return name.replace(/\{collSymbol\}/g, coll.symbol);
   },
 
   async getSteps({ account, contracts, request, wagmiConfig }) {
-    const { collIndex, debtChange } = request;
-    const coll = contracts.collaterals[collIndex];
+    const debtChange = getDebtChange(request.loan, request.prevLoan);
+    const collChange = getCollChange(request.loan, request.prevLoan);
+    const coll = contracts.collaterals[request.loan.collIndex];
 
     const Controller = coll.symbol === "ETH"
       ? coll.contracts.LeverageWETHZapper
@@ -250,7 +243,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
     ]);
 
     // Collateral token needs to be approved if collChange > 0 and collToken != "ETH" (no LeverageWETHZapper)
-    const isCollApproved = coll.symbol === "ETH" || !dn.gt(request.collChange, 0) || !dn.gt(request.collChange, [
+    const isCollApproved = coll.symbol === "ETH" || !dn.gt(collChange, 0) || !dn.gt(collChange, [
       await readContract(wagmiConfig, {
         ...coll.contracts.CollToken,
         functionName: "allowance",
@@ -267,7 +260,11 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
   },
 
   async writeContractParams(stepId, { account, contracts, request }) {
-    const { collIndex, collChange, debtChange, maxUpfrontFee } = request;
+    const { loan, prevLoan, maxUpfrontFee } = request;
+    const collChange = getCollChange(loan, prevLoan);
+    const debtChange = getDebtChange(loan, prevLoan);
+    const { collIndex, troveId } = loan;
+
     const collateral = contracts.collaterals[collIndex];
     const { LeverageWETHZapper, LeverageLSTZapper } = collateral.contracts;
 
@@ -276,8 +273,6 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
     if (!account.address) {
       throw new Error("Account address is required");
     }
-
-    const { troveId } = parsePrefixedTroveId(request.prefixedTroveId);
 
     if (stepId === "approveBold") {
       return {
@@ -377,21 +372,50 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
       }))
       .exhaustive();
   },
+  async postFlowCheck({ request, steps }) {
+    const lastStep = steps?.at(-1);
+    if (lastStep?.txStatus !== "post-check" || !isTroveId(lastStep.txReceiptData)) {
+      return;
+    }
+
+    const lastUpdate = request.loan.updatedAt;
+
+    const prefixedTroveId = getPrefixedTroveId(
+      request.loan.collIndex,
+      lastStep.txReceiptData,
+    );
+
+    const graph = getBuiltGraphSDK();
+
+    while (true) {
+      const { trove } = await graph.TroveById({ id: prefixedTroveId });
+
+      // trove found and updated: check done
+      if (trove && Number(trove.updatedAt) * 1000 !== lastUpdate) {
+        break;
+      }
+    }
+  },
 };
 
-function useUpfrontFee(request: Request) {
-  const isBorrowing = request.debtChange[0] > 0n;
-  const { troveId } = parsePrefixedTroveId(request.prefixedTroveId);
+function useUpfrontFeeData(loan: Request["loan"], prevLoan: Request["prevLoan"]) {
+  const debtChange = dn.sub(loan.borrowed, prevLoan.borrowed);
+  const isBorrowing = dn.gt(debtChange, 0);
 
-  const upfrontFee = usePredictAdjustTroveUpfrontFee(request.collIndex, troveId, request.debtChange);
-
-  const debtChangeWithFee = isBorrowing
-    ? upfrontFee.data && dn.add(request.debtChange, upfrontFee.data)
-    : request.debtChange;
+  const upfrontFee = usePredictAdjustTroveUpfrontFee(
+    loan.collIndex,
+    loan.troveId,
+    isBorrowing ? debtChange : [0n, 18],
+  );
 
   return {
-    isBorrowing,
-    debtChangeWithFee,
-    upfrontFee,
+    ...upfrontFee,
+    data: !upfrontFee.data ? null : {
+      isBorrowing,
+      debtChangeWithFee: isBorrowing
+        ? dn.add(debtChange, upfrontFee.data)
+        : debtChange,
+      upfrontFee: upfrontFee.data,
+    },
   };
 }
