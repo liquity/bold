@@ -46,7 +46,7 @@ import { updateLoanInterestRate } from "@/src/tx-flows/updateLoanInterestRate";
 import { noop } from "@/src/utils";
 import { vAddress, vHash } from "@/src/valibot-utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as v from "valibot";
 import { useTransactionReceipt, useWriteContract } from "wagmi";
@@ -466,12 +466,7 @@ export function useFlowManager(account: Address | null) {
 
   const isFlowComplete = useMemo(() => flow?.steps?.at(-1)?.txStatus === "confirmed", [flow]);
 
-  const queryClient = useQueryClient();
-  useEffect(() => {
-    if (isFlowComplete) {
-      queryClient.resetQueries();
-    }
-  }, [isFlowComplete, queryClient]);
+  useResetQueriesOnPathChange(isFlowComplete);
 
   return {
     currentStep,
@@ -670,6 +665,27 @@ function useTransactionExecution({
     signAndSend,
     isProcessing: txReceipt.status === "pending",
   };
+}
+
+function useResetQueriesOnPathChange(condition: boolean) {
+  const invalidateOnPathChange = useRef(false);
+  const pathName = usePathname();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    // when the condition changes, set a flag to invalidate
+    if (pathName === "/transactions" && condition) {
+      console.log("SETTING INVALIDATE ON PATH CHANGE");
+      invalidateOnPathChange.current = true;
+      return;
+    }
+    // when the path changes, invalidate if the flag is set
+    if (pathName !== "/transactions" && invalidateOnPathChange.current) {
+      console.log("CLEARING INVALIDATE ON PATH CHANGE");
+      queryClient.resetQueries();
+      invalidateOnPathChange.current = false;
+    }
+  }, [condition, pathName, queryClient]);
 }
 
 const FlowContextStorage = {
