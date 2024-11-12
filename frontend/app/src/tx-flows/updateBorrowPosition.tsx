@@ -139,22 +139,20 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
     const { loan, prevLoan } = request;
 
     const collChange = getCollChange(loan, prevLoan);
+    const debtChange = dn.sub(loan.borrowed, prevLoan.borrowed);
 
     const collateral = getCollToken(loan.collIndex);
     if (!collateral) {
       throw new Error(`Invalid collateral index: ${loan.collIndex}`);
     }
 
-    const isBorrowing = dn.gt(loan.borrowed, prevLoan.borrowed);
     const collPrice = usePrice(collateral?.symbol ?? null);
     const upfrontFeeData = useUpfrontFeeData(loan, prevLoan);
 
-    const debtChangeWithFee = upfrontFeeData.data && dn.add(
-      loan.borrowed,
-      upfrontFeeData.data.upfrontFee,
-    );
+    const debtChangeWithFee = upfrontFeeData.data?.debtChangeWithFee;
+    const isBorrowing = upfrontFeeData.data?.isBorrowing;
 
-    return collateral && (
+    return (
       <>
         <TransactionDetailsRow
           label={dn.gt(collChange, 0) ? "You deposit" : "You withdraw"}
@@ -183,7 +181,6 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
           value={[
             <div
               key="start"
-              title={`${fmtnum(debtChangeWithFee, "full")} BOLD`}
               style={{
                 color: debtChangeWithFee && dn.eq(debtChangeWithFee, 0n)
                   ? "var(--colors-content-alt2)"
@@ -192,17 +189,21 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
             >
               <Amount
                 fallback="…"
-                value={debtChangeWithFee}
+                value={debtChangeWithFee && dn.abs(debtChangeWithFee)}
                 suffix=" BOLD"
               />
             </div>,
-            <Amount
-              key="end"
-              fallback="…"
-              prefix="Incl. "
-              value={upfrontFeeData.data?.upfrontFee}
-              suffix=" BOLD upfront fee"
-            />,
+            upfrontFeeData.data?.upfrontFee
+            && dn.gt(upfrontFeeData.data?.upfrontFee, 0n)
+            && (
+              <Amount
+                key="end"
+                fallback="…"
+                prefix="Incl. "
+                value={upfrontFeeData.data?.upfrontFee}
+                suffix=" BOLD upfront fee"
+              />
+            ),
           ]}
         />
       </>
