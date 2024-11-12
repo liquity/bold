@@ -8,10 +8,11 @@ import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import "../../LeftoversSweep.sol";
 import "../../../Interfaces/IBoldToken.sol";
 import "./UniswapV3/ISwapRouter.sol";
+import "./UniswapV3/UniPriceConverter.sol";
 import "../../Interfaces/IExchange.sol";
 import {DECIMAL_PRECISION} from "../../../Dependencies/Constants.sol";
 
-contract UniV3Exchange is LeftoversSweep, IExchange {
+contract UniV3Exchange is LeftoversSweep, UniPriceConverter, IExchange {
     using SafeERC20 for IERC20;
 
     IERC20 public immutable collToken;
@@ -85,7 +86,7 @@ contract UniV3Exchange is LeftoversSweep, IExchange {
     function priceToSqrtPrice(IBoldToken _boldToken, IERC20 _collToken, uint256 _price) public pure returns (uint160) {
         // inverse price if Bold goes first
         uint256 price = _zeroForOne(_boldToken, _collToken) ? DECIMAL_PRECISION * DECIMAL_PRECISION / _price : _price;
-        return uint160(Math.sqrt((price << 192) / DECIMAL_PRECISION));
+        return priceToSqrtPriceX96(price);
     }
 
     // See: https://github.com/Uniswap/v3-periphery/blob/main/contracts/lens/QuoterV2.sol#L207C9-L207C60

@@ -2,7 +2,7 @@
 src = "src"
 out = "out"
 libs = ["lib"]
-evm_version = 'shanghai'
+evm_version = 'cancun'
 ignored_error_codes = [3860, 5574] # contract-size
 fs_permissions = [
     { access = "read", path = "./utils/assets/" },

@@ -14,7 +14,6 @@ import "../Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
 import "../Zappers/Modules/Exchanges/HybridCurveUniV3Exchange.sol";
 import "../Zappers/Interfaces/IFlashLoanProvider.sol";
 import "../Zappers/Modules/FlashLoans/Balancer/vault/IVault.sol";
-import "./Utils/UniPriceConverter.sol";
 
 import "../Zappers/Modules/Exchanges/Curve/ICurveStableswapNGFactory.sol";
 
