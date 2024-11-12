@@ -2,6 +2,7 @@
 pragma solidity 0.8.24;
 
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import {Script} from "forge-std/Script.sol";
 
@@ -25,6 +26,8 @@ import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
 import "forge-std/console2.sol";
 
 contract DeployGovernance is Script, Deployers {
+    using Strings for *;
+
     // Environment Constants
     ERC20Faucet private lqty;
     IERC20 private boldToken;
@@ -64,7 +67,7 @@ contract DeployGovernance is Script, Deployers {
     ICurveStableswapNG private curvePool;
     ILiquidityGauge private gauge;
 
-    function deployGovernance(address _deployer, bytes32 _salt, IERC20 _boldToken, IERC20 _usdc) internal {
+    function deployGovernance(address _deployer, bytes32 _salt, IERC20 _boldToken, IERC20 _usdc) internal returns (string memory) {
         deployEnvironment(_boldToken, _usdc);
 
         (address governanceAddress, IGovernance.Configuration memory governanceConfiguration) =
@@ -92,6 +95,8 @@ contract DeployGovernance is Script, Deployers {
         //deployCurveV2GaugeRewards(governance);
 
         governance.registerInitialInitiatives(initialInitiatives);
+
+        return _getManifestJson();
     }
 
     function computeGovernanceAddress(address _deployer, bytes32 _salt) internal view returns (address) {
@@ -205,5 +210,40 @@ contract DeployGovernance is Script, Deployers {
             new CurveV2GaugeRewards(address(_governance), address(boldToken), address(lqty), address(gauge), DURATION);
 
         initialInitiatives.push(address(curveV2GaugeRewards));
+    }
+
+    function _getGovernanceDeploymentConstants() internal pure returns (string memory) {
+        return string.concat(
+            "{",
+            string.concat(
+                string.concat('"REGISTRATION_FEE":"', uint256(REGISTRATION_FEE).toString(), '",'),
+                string.concat('"REGISTRATION_THRESHOLD_FACTOR":"', uint256(REGISTRATION_THRESHOLD_FACTOR).toString(), '",'),
+                string.concat('"UNREGISTRATION_THRESHOLD_FACTOR":"', uint256(UNREGISTRATION_THRESHOLD_FACTOR).toString(), '",'),
+                string.concat('"REGISTRATION_WARM_UP_PERIOD":"', uint256(REGISTRATION_WARM_UP_PERIOD).toString(), '",'),
+                string.concat('"UNREGISTRATION_AFTER_EPOCHS":"', uint256(UNREGISTRATION_AFTER_EPOCHS).toString(), '",'),
+                string.concat('"VOTING_THRESHOLD_FACTOR":"', uint256(VOTING_THRESHOLD_FACTOR).toString(), '",'),
+                string.concat('"MIN_CLAIM":"', uint256(MIN_CLAIM).toString(), '",'),
+                string.concat('"MIN_ACCRUAL":"', uint256(MIN_ACCRUAL).toString(), '",'),
+                string.concat('"EPOCH_DURATION":"', uint256(EPOCH_DURATION).toString(), '",'),
+                string.concat('"EPOCH_VOTING_CUTOFF":"', uint256(EPOCH_VOTING_CUTOFF).toString(), '" ') // no comma
+            ),
+            "}"
+        );
+    }
+
+    function _getManifestJson() internal view returns (string memory) {
+        return string.concat(
+            "{",
+            string.concat(
+                //string.concat('"constants":', _getGovernanceDeploymentConstants(), ","),
+                string.concat('"governance":"', address(governance).toHexString(), '",'),
+                string.concat('"uniV4DonationsInitiative":"', address(uniV4Donations).toHexString(), '",'),
+                string.concat('"curveV2GaugeRewardsInitiative":"', address(curveV2GaugeRewards).toHexString(), '",'),
+                string.concat('"curvePool":"', address(curvePool).toHexString(), '",'),
+                string.concat('"gauge":"', address(gauge).toHexString(), '",'),
+                string.concat('"LQTYToken":"', address(lqty).toHexString(), '" ') // no comma
+            ),
+            "}"
+        );
     }
 }
