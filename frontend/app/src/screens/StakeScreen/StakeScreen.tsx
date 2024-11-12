@@ -45,7 +45,7 @@ import { PanelVoting } from "./PanelVoting";
 const TABS = [
   { label: content.stakeScreen.tabs.deposit, id: "deposit" },
   { label: content.stakeScreen.tabs.rewards, id: "rewards" },
-  { label: content.stakeScreen.tabs.voting, id: "voting" },
+  // { label: content.stakeScreen.tabs.voting, id: "voting" },
 ];
 
 export function StakeScreen() {
