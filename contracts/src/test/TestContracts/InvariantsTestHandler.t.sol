@@ -1443,6 +1443,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         try c.troveManager.urgentRedemption(amount, _troveIdsFrom(i, r.batch), r.totalCollRedeemed) {
             // Preconditions
             assertTrue(isShutdown[i], "Should have failed as branch hadn't been shut down");
+            assertGtDecimal(amount, 0, 18, "Should have failed as amount was zero");
 
             // Effects (Troves)
             for (uint256 j = 0; j < r.redeemed.length; ++j) {
@@ -1483,6 +1484,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             // Justify failures
             if (selector == TroveManager.NotShutDown.selector) {
                 assertFalse(isShutdown[i], "Shouldn't have failed as branch had been shut down");
+            } else if (selector == TroveManager.ZeroAmount.selector) {
+                assertEqDecimal(amount, 0, 18, "Shouldn't have failed as amount was greater than zero");
             } else if (selector == TroveManager.MinCollNotReached.selector) {
                 // There can be a slight discrepancy when hitting batched Troves
                 uint256 collReceived = uint256(bytes32(revertData.slice(4)));
@@ -3114,6 +3117,10 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
             if (selector == TroveManager.NotShutDown.selector) {
                 return (selector, "TroveManager.NotShutDown()");
+            }
+
+            if (selector == TroveManager.ZeroAmount.selector) {
+                return (selector, "TroveManager.ZeroAmount()");
             }
         }
 
