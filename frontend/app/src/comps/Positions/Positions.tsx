@@ -1,4 +1,4 @@
-import type { Address, Position } from "@/src/types";
+import type { Address, Position, PositionLoanUncommitted } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
@@ -7,11 +7,9 @@ import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
 import { useStakePosition } from "@/src/liquity-utils";
 import { useEarnPositionsByAccount, useLoansByAccount } from "@/src/subgraph-hooks";
-import { sleep } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import { StrongCard } from "@liquity2/uikit";
 import { a, useSpring, useTransition } from "@react-spring/web";
-import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useRef } from "react";
 import { match, P } from "ts-pattern";
@@ -41,36 +39,25 @@ export function Positions({
   const earnPositions = useEarnPositionsByAccount(address);
   const stakePosition = useStakePosition(address);
 
-  const positions = useQuery({
-    enabled: Boolean(
-      address
-        && !loans.isPending
-        && !earnPositions.isPending
-        && !stakePosition.isPending,
-    ),
-    queryKey: ["CombinedPositions", address],
-    queryFn: async () => {
-      await sleep(300);
-      if (DEMO_MODE) {
-        return ACCOUNT_POSITIONS;
-      }
-      return [
-        ...loans.data ?? [],
-        ...earnPositions.data ?? [],
-        ...stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : [],
-      ];
-    },
-  });
-
-  const positionsPending = Boolean(
+  const isPositionsPending = Boolean(
     address && (
-      loans.isPending || earnPositions.isPending || positions.isPending
+      loans.isPending
+      || earnPositions.isPending
+      || stakePosition.isPending
     ),
   );
 
-  let mode: Mode = address && positions.data && positions.data.length > 0
+  const positions = isPositionsPending ? [] : (
+    DEMO_MODE ? ACCOUNT_POSITIONS : [
+      ...loans.data ?? [],
+      ...earnPositions.data ?? [],
+      ...stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : [],
+    ]
+  );
+
+  let mode: Mode = address && positions && positions.length > 0
     ? "positions"
-    : positionsPending
+    : isPositionsPending
     ? "loading"
     : "actions";
 
@@ -78,7 +65,7 @@ export function Positions({
     <PositionsGroup
       columns={columns}
       mode={mode}
-      positions={positions.data ?? []}
+      positions={positions ?? []}
       showNewPositionCard={showNewPositionCard}
       title={title}
     />
@@ -96,7 +83,7 @@ function PositionsGroup({
   columns?: number;
   mode: Mode;
   onTitleClick?: () => void;
-  positions: Position[];
+  positions: Exclude<Position, PositionLoanUncommitted>[];
   title: (mode: Mode) => ReactNode;
   showNewPositionCard: boolean;
 }) {

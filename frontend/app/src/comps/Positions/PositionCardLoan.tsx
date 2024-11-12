@@ -1,4 +1,4 @@
-import type { PositionLoan } from "@/src/types";
+import type { PositionLoanCommitted } from "@/src/types";
 
 import { getPrefixedTroveId } from "@/src/liquity-utils";
 import { useStoredState } from "@/src/services/StoredState";
@@ -7,7 +7,7 @@ import { PositionCardLeverage } from "./PositionCardLeverage";
 
 export function PositionCardLoan(
   props: Pick<
-    PositionLoan,
+    PositionLoanCommitted,
     | "type"
     | "batchManager"
     | "borrowed"
@@ -18,6 +18,12 @@ export function PositionCardLoan(
   >,
 ) {
   const storedState = useStoredState();
+
+  // only works for existing troves
+  if (!props.troveId) {
+    return null;
+  }
+
   const prefixedTroveId = getPrefixedTroveId(props.collIndex, props.troveId);
   const loanMode = storedState.loanModes[prefixedTroveId] ?? props.type;
   return loanMode === "leverage"

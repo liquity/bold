@@ -302,7 +302,7 @@ export function LeverageScreen() {
 
                   ownerIndex: troveCount.data ?? 0,
                   leverageFactor: leverageField.leverageFactor,
-                  loanPosition: {
+                  loan: {
                     type: "leverage",
                     batchManager: interestRateDelegate,
                     borrowed: leverageField.debt,
@@ -313,7 +313,7 @@ export function LeverageScreen() {
                       leverageField.leverageFactor,
                     ),
                     interestRate: interestRate,
-                    troveId: "0x1",
+                    troveId: null,
                   },
                 });
               }

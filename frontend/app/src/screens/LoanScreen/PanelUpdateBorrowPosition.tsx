@@ -1,6 +1,6 @@
 "use client";
 
-import type { PositionLoan } from "@/src/types";
+import type { PositionLoanCommitted } from "@/src/types";
 
 import { ARROW_RIGHT } from "@/src/characters";
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -13,7 +13,7 @@ import { dnum18, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { getCollToken, getPrefixedTroveId } from "@/src/liquity-utils";
+import { getCollToken } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -41,7 +41,7 @@ type ValueUpdateMode = "add" | "remove";
 export function PanelUpdateBorrowPosition({
   loan,
 }: {
-  loan: PositionLoan;
+  loan: PositionLoanCommitted;
 }) {
   const account = useAccount();
   const txFlow = useTransactionFlow();
@@ -369,11 +369,12 @@ export function PanelUpdateBorrowPosition({
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The position has been updated successfully.",
 
-                collIndex: loan.collIndex,
-                prefixedTroveId: getPrefixedTroveId(loan.collIndex, loan.troveId),
-                owner: account.address,
-                collChange: dn.sub(newDeposit ?? dnum18(0), loan.deposit),
-                debtChange: dn.sub(newDebt ?? dnum18(0), loan.borrowed),
+                prevLoan: { ...loan },
+                loan: {
+                  ...loan,
+                  deposit: newDeposit ?? loan.deposit,
+                  borrowed: newDebt ?? loan.borrowed,
+                },
                 maxUpfrontFee: dnum18(maxUint256),
               });
             }

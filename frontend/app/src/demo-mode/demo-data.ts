@@ -1,4 +1,4 @@
-import type { Delegate, Position } from "@/src/types";
+import type { Delegate, Position, PositionLoanUncommitted } from "@/src/types";
 import type { CollateralToken } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 
@@ -35,7 +35,12 @@ export const ACCOUNT_BALANCES = {
 
 const DEMO_ACCOUNT = `0x${"0".repeat(39)}1` as const;
 
-export const ACCOUNT_POSITIONS: Position[] = [
+let lastTime = new Date("2024-01-01T00:00:00Z").getTime();
+function getTime() {
+  return lastTime += 24 * 60 * 60 * 1000;
+}
+
+export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
   {
     type: "borrow",
     borrowed: dn.from(12_789, 18),
@@ -45,6 +50,8 @@ export const ACCOUNT_POSITIONS: Position[] = [
     troveId: "0x01",
     collIndex: 1,
     batchManager: null,
+    createdAt: getTime(),
+    updatedAt: getTime(),
   },
   {
     type: "leverage",
@@ -55,6 +62,8 @@ export const ACCOUNT_POSITIONS: Position[] = [
     troveId: "0x02",
     collIndex: 0,
     batchManager: null,
+    createdAt: getTime(),
+    updatedAt: getTime(),
   },
   {
     type: "earn",

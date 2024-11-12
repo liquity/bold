@@ -1,4 +1,4 @@
-import type { PositionLoan } from "@/src/types";
+import type { PositionLoanCommitted } from "@/src/types";
 
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
@@ -14,7 +14,11 @@ import { addressesEqual, Button, Dropdown, TokenIcon, TOKENS_BY_SYMBOL, VFlex } 
 import * as dn from "dnum";
 import { useState } from "react";
 
-export function PanelClosePosition({ loan }: { loan: PositionLoan }) {
+export function PanelClosePosition({
+  loan,
+}: {
+  loan: PositionLoanCommitted;
+}) {
   const account = useAccount();
   const txFlow = useTransactionFlow();
 

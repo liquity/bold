@@ -1,4 +1,4 @@
-import type { PositionLoan } from "@/src/types";
+import type { PositionLoanCommitted } from "@/src/types";
 
 import { getContracts } from "@/src/contracts";
 import { formatRedemptionRisk } from "@/src/formatting";
@@ -18,7 +18,7 @@ export function PositionCardLeverage({
   interestRate,
   troveId,
 }: Pick<
-  PositionLoan,
+  PositionLoanCommitted,
   | "borrowed"
   | "collIndex"
   | "deposit"

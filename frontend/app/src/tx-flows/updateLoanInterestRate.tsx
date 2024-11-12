@@ -1,14 +1,16 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
+import { getBuiltGraphSDK } from "@/.graphclient";
 import { MAX_ANNUAL_INTEREST_RATE, MIN_ANNUAL_INTEREST_RATE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { usePredictAdjustInterestRateUpfrontFee } from "@/src/liquity-utils";
+import { getPrefixedTroveId, usePredictAdjustInterestRateUpfrontFee } from "@/src/liquity-utils";
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
-import { vPositionLoan } from "@/src/valibot-utils";
+import { isTroveId } from "@/src/types";
+import { vPositionLoanCommited } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -35,8 +37,8 @@ const RequestSchema = v.object({
   ]),
   successMessage: v.string(),
 
-  prevLoanPosition: vPositionLoan(),
-  loanPosition: vPositionLoan(),
+  prevLoan: vPositionLoanCommited(),
+  loan: vPositionLoanCommited(),
 });
 
 export type Request = v.InferOutput<typeof RequestSchema>;
@@ -50,8 +52,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
   title: "Review & Confirm",
   Summary({ flow }) {
     const { request } = flow;
-    const loan = request.loanPosition;
-    const prevLoan = request.prevLoanPosition;
+    const { loan, prevLoan } = request;
 
     const upfrontFee = usePredictAdjustInterestRateUpfrontFee(
       loan.collIndex,
@@ -87,8 +88,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
   },
   Details({ flow }) {
     const { request } = flow;
-    const loan = request.loanPosition;
-    const prevLoanPosition = request.prevLoanPosition;
+    const { loan, prevLoan } = request;
 
     const yearlyBoldInterest = dn.mul(loan.borrowed, loan.interestRate);
 
@@ -120,7 +120,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
               </div>,
             ]}
           />
-          {prevLoanPosition.batchManager && (
+          {prevLoan.batchManager && (
             <TransactionDetailsRow
               label="Remove interest rate delegate"
               value={[
@@ -130,7 +130,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
                     textDecoration: "line-through",
                   })}
                 >
-                  <AccountButton address={prevLoanPosition.batchManager} />
+                  <AccountButton address={prevLoan.batchManager} />
                 </div>,
                 <div
                   key="end"
@@ -138,8 +138,8 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
                     textDecoration: "line-through",
                   })}
                 >
-                  {fmtnum(prevLoanPosition.interestRate, "full", 100)}% (~{fmtnum(
-                    dn.mul(prevLoanPosition.borrowed, prevLoanPosition.interestRate),
+                  {fmtnum(prevLoan.interestRate, "full", 100)}% (~{fmtnum(
+                    dn.mul(prevLoan.borrowed, prevLoan.interestRate),
                     4,
                   )} BOLD per year)
                 </div>,
@@ -150,8 +150,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
       );
   },
   async getSteps({ request, contracts, wagmiConfig }) {
-    const loan = request.loanPosition;
-
+    const loan = request.loan;
     const collateral = contracts.collaterals[loan.collIndex];
 
     if (loan.batchManager) {
@@ -180,8 +179,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
   },
 
   async writeContractParams(stepId, { contracts, request }) {
-    const loan = request.loanPosition;
-
+    const { loan } = request;
     const { BorrowerOperations } = contracts.collaterals[loan.collIndex].contracts;
 
     if (stepId === "adjustInterestRate") {
@@ -227,5 +225,30 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
     }
 
     return null;
+  },
+  async postFlowCheck({ request, steps }) {
+    const lastStep = steps?.at(-1);
+    if (lastStep?.txStatus !== "post-check" || !isTroveId(lastStep.txReceiptData)) {
+      return;
+    }
+
+    const { loan } = request;
+    const lastUpdate = loan.updatedAt;
+
+    const prefixedTroveId = getPrefixedTroveId(
+      loan.collIndex,
+      lastStep.txReceiptData,
+    );
+
+    const graph = getBuiltGraphSDK();
+
+    while (true) {
+      const { trove } = await graph.TroveById({ id: prefixedTroveId });
+
+      // trove found and updated: check done
+      if (trove && Number(trove.updatedAt) * 1000 !== lastUpdate) {
+        break;
+      }
+    }
   },
 };

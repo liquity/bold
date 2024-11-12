@@ -1,9 +1,9 @@
-import type { PositionLoan } from "@/src/types";
+import type { PositionLoanCommitted } from "@/src/types";
 
 import { formatLiquidationRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
-import { shortenTroveId, getCollToken } from "@/src/liquity-utils";
+import { getCollToken, shortenTroveId } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -20,7 +20,7 @@ export function PositionCardBorrow({
   interestRate,
   troveId,
 }: Pick<
-  PositionLoan,
+  PositionLoanCommitted,
   | "batchManager"
   | "borrowed"
   | "collIndex"

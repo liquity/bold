@@ -1,15 +1,17 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
+import { getBuiltGraphSDK } from "@/.graphclient";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { MAX_UPFRONT_FEE } from "@/src/constants";
 import { fmtnum } from "@/src/formatting";
 import { getLeverDownTroveParams, getLeverUpTroveParams } from "@/src/liquity-leverage";
-import { getCollToken, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
+import { getCollToken, getPrefixedTroveId, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
-import { vDnum, vPositionLoan } from "@/src/valibot-utils";
+import { isTroveId } from "@/src/types";
+import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
@@ -43,8 +45,8 @@ const RequestSchema = v.object({
     ]),
   ]),
 
-  prevLoan: vPositionLoan(),
-  loan: vPositionLoan(),
+  prevLoan: vPositionLoanCommited(),
+  loan: vPositionLoanCommited(),
 });
 
 export type Request = v.InferOutput<typeof RequestSchema>;
@@ -84,11 +86,16 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
       .with({ data: P.nonNullable }, () => "success")
       .otherwise(() => "error");
 
+    const borrowedWithFee = dn.add(
+      loan.borrowed,
+      upfrontFeeData.data?.upfrontFee ?? dn.from(0, 18),
+    );
+
     return (
       <LoanCard
         leverageMode={true}
         loadingState={loadingState}
-        loan={loan}
+        loan={{ ...loan, borrowed: borrowedWithFee }}
         prevLoan={prevLoan}
         onRetry={() => {
           upfrontFeeData.refetch();
@@ -291,6 +298,31 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
     }
 
     throw new Error("Invalid step");
+  },
+
+  async postFlowCheck({ request, steps }) {
+    const lastStep = steps?.at(-1);
+    if (lastStep?.txStatus !== "post-check" || !isTroveId(lastStep.txReceiptData)) {
+      return;
+    }
+
+    const lastUpdate = request.loan.updatedAt;
+
+    const prefixedTroveId = getPrefixedTroveId(
+      request.loan.collIndex,
+      lastStep.txReceiptData,
+    );
+
+    const graph = getBuiltGraphSDK();
+
+    while (true) {
+      const { trove } = await graph.TroveById({ id: prefixedTroveId });
+
+      // trove found and updated: check done
+      if (trove && Number(trove.updatedAt) * 1000 !== lastUpdate) {
+        break;
+      }
+    }
   },
 };
 
