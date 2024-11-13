@@ -516,11 +516,8 @@ function num_shares_num_debt_assumption(
         share_debt_scalar == 3 ||
         share_debt_scalar == 4 ||
         share_debt_scalar == 5 ||
-        share_debt_scalar == 6 ||
-        share_debt_scalar == 7 ||
-        share_debt_scalar == 8 ||
-        share_debt_scalar == 9 ||
-        share_debt_scalar  10) &&
+        share_debt_scalar ==  (1000000000 - 5) ||
+        share_debt_scalar  == 1000000000) &&
         getBatchTotalShares(batchAddress) ==
         share_debt_scalar * batchData.recordedDebt;
 }
