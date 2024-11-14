@@ -31,6 +31,7 @@ export const EnvSchema = v.pipe(
     CHAIN_CONTRACT_ENS_RESOLVER: v.optional(vEnvAddressAndBlock()),
     CHAIN_CONTRACT_MULTICALL: vAddress(),
     COMMIT_HASH: v.string(),
+    SUBGRAPH_URL: v.string(),
 
     DELEGATE_AUTO: vAddress(),
 
@@ -159,6 +160,7 @@ const parsedEnv = v.parse(EnvSchema, {
   CHAIN_CONTRACT_ENS_RESOLVER: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_ENS_RESOLVER,
   CHAIN_CONTRACT_MULTICALL: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL,
   COMMIT_HASH: process.env.COMMIT_HASH, // set in next.config.js
+  SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
 
   DELEGATE_AUTO: process.env.NEXT_PUBLIC_DELEGATE_AUTO,
 
@@ -226,6 +228,7 @@ export const {
   CHAIN_RPC_URL,
   COLLATERAL_CONTRACTS,
   COMMIT_HASH,
+  SUBGRAPH_URL,
   CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
   CONTRACT_GOVERNANCE,

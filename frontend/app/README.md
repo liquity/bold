@@ -52,7 +52,7 @@ See also `contracts/hardhatAccountsList2k.js` to import the accounts into MetaMa
 ```sh
 pnpm build                  # build the static app in out/
 pnpm build-deps             # build all the dependencies needed by the app
-pnpm build-graphclient      # update the code generated from the GraphQL queries
+pnpm build-graphql          # update the code generated from the GraphQL queries
 pnpm build-panda            # update the code generated from the Panda CSS config
 pnpm build-uikit            # builds the UI kit in ../uikit
 pnpm dev                    # run the development server

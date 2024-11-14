@@ -1,6 +1,5 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
-import { getBuiltGraphSDK } from "@/.graphclient";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION, MAX_UPFRONT_FEE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
@@ -11,6 +10,7 @@ import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
+import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
 import { isTroveId } from "@/src/types";
 import { noop } from "@/src/utils";
 import { vPositionLoanUncommited } from "@/src/valibot-utils";
@@ -21,8 +21,6 @@ import { parseEventLogs } from "viem";
 import { readContract } from "wagmi/actions";
 
 const FlowIdSchema = v.literal("openLeveragePosition");
-
-const graph = getBuiltGraphSDK();
 
 const RequestSchema = v.object({
   flowId: FlowIdSchema,
@@ -316,10 +314,8 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
 
     const prefixedTroveId = getPrefixedTroveId(request.loan.collIndex, lastStep.txReceiptData);
     while (true) {
-      const { trove } = await graph.TroveById({ id: prefixedTroveId });
-      if (trove !== null) {
-        return;
-      }
+      const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
+      if (trove !== null) return;
     }
   },
 };

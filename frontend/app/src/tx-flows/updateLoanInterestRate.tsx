@@ -1,7 +1,6 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
-import { getBuiltGraphSDK } from "@/.graphclient";
 import { MAX_ANNUAL_INTEREST_RATE, MIN_ANNUAL_INTEREST_RATE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
@@ -9,6 +8,7 @@ import { getPrefixedTroveId, usePredictAdjustInterestRateUpfrontFee } from "@/sr
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
+import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
 import { isTroveId } from "@/src/types";
 import { vPositionLoanCommited } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
@@ -240,10 +240,8 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
       lastStep.txReceiptData,
     );
 
-    const graph = getBuiltGraphSDK();
-
     while (true) {
-      const { trove } = await graph.TroveById({ id: prefixedTroveId });
+      const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
 
       // trove found and updated: check done
       if (trove && Number(trove.updatedAt) * 1000 !== lastUpdate) {
