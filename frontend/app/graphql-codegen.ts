@@ -42,12 +42,6 @@ const config: CodegenConfig = {
         },
       },
     },
-    "src/components/types/gql/graphql.ts": {
-      plugins: [
-        "typescript",
-        "typescript-operations",
-      ],
-    },
   },
 };
 
