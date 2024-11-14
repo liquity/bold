@@ -139,7 +139,6 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
     const { loan, prevLoan } = request;
 
     const collChange = getCollChange(loan, prevLoan);
-    const debtChange = dn.sub(loan.borrowed, prevLoan.borrowed);
 
     const collateral = getCollToken(loan.collIndex);
     if (!collateral) {
