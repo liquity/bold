@@ -589,7 +589,7 @@ function LoadingCard({
         display: "flex",
         justifyContent: "center",
         flexDirection: "column",
-        width: 534,
+        width: "100%",
       })}
       style={{
         height: spring.containerHeight,
