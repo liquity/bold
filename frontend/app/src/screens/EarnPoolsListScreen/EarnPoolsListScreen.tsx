@@ -12,10 +12,7 @@ import { css } from "@/styled-system/css";
 import { TokenIcon } from "@liquity2/uikit";
 
 export function EarnPoolsListScreen() {
-  const account = useAccount();
-
   const { collaterals } = getContracts();
-
   return (
     <Screen
       heading={{

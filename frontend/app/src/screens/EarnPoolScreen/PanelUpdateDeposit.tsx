@@ -230,7 +230,7 @@ export function PanelUpdateDeposit({
           size="large"
           wide
           onClick={() => {
-            if (!account.address || !collateral) {
+            if (!account.address || !collateral || (mode === "remove" && !position)) {
               return;
             }
 
@@ -244,21 +244,39 @@ export function PanelUpdateDeposit({
                 rewards: { bold: DNUM_0, coll: DNUM_0 },
               };
 
-            txFlow.start({
-              flowId: mode === "remove" ? "earnWithdraw" : "earnDeposit",
-              backLink: [
-                `/earn/${collateral.name.toLowerCase()}`,
-                "Back to editing",
-              ],
-              successLink: ["/", "Go to the Dashboard"],
-              successMessage: mode === "remove"
-                ? "The withdrawal has been processed successfully."
-                : "The deposit has been processed successfully.",
-              prevEarnPosition: position,
-              earnPosition: newPosition,
-              claim: claimRewards,
-              collIndex,
-            });
+            if (mode === "remove" && position) {
+              txFlow.start({
+                flowId: "earnWithdraw",
+                backLink: [
+                  `/earn/${collateral.name.toLowerCase()}`,
+                  "Back to editing",
+                ],
+                successLink: ["/", "Go to the Dashboard"],
+                successMessage: "The withdrawal has been processed successfully.",
+                claim: claimRewards,
+                collIndex,
+                prevEarnPosition: position,
+                earnPosition: newPosition,
+              });
+              return;
+            }
+
+            if (mode === "add") {
+              txFlow.start({
+                flowId: "earnDeposit",
+                backLink: [
+                  `/earn/${collateral.name.toLowerCase()}`,
+                  "Back to editing",
+                ],
+                successLink: ["/", "Go to the Dashboard"],
+                successMessage: "The deposit has been processed successfully.",
+                claim: claimRewards,
+                collIndex,
+                prevEarnPosition: position ?? null,
+                earnPosition: newPosition,
+              });
+              return;
+            }
           }}
         />
       </div>

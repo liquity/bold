@@ -5,7 +5,7 @@ import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositio
 import { getCollToken } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
-import { vAddress, vCollIndex, vPositionEarn } from "@/src/valibot-utils";
+import { vPositionEarn } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 
