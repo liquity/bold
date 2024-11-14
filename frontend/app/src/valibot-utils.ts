@@ -181,3 +181,16 @@ export function vPositionLoan() {
     vPositionLoanUncommited(),
   ]);
 }
+
+export function vPositionEarn() {
+  return v.object({
+    type: v.literal("earn"),
+    owner: vAddress(),
+    collIndex: vCollIndex(),
+    deposit: vDnum(),
+    rewards: v.object({
+      bold: vDnum(),
+      coll: vDnum(),
+    }),
+  });
+}

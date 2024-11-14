@@ -74,8 +74,8 @@ export function EarnPoolScreen() {
           {loadingState === "success"
             ? (
               <EarnPositionSummary
-                address={account.address}
-                collSymbol={collateralSymbol}
+                earnPosition={earnPosition.data}
+                collIndex={collIndex}
               />
             )
             : (

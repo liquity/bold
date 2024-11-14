@@ -92,20 +92,19 @@ export function PanelClaimRewards({
         size="large"
         wide
         onClick={() => {
-          if (collateral && account.address && collIndex !== null) {
-            txFlow.start({
-              flowId: "earnClaimRewards",
-              backLink: [
-                `/earn/${collateral.name.toLowerCase()}`,
-                "Back to earn position",
-              ],
-              successLink: ["/", "Go to the Dashboard"],
-              successMessage: "The rewards have been claimed successfully.",
-
-              depositor: account.address,
-              collIndex,
-            });
+          if (!collateral || !account.address || !position) {
+            return;
           }
+          txFlow.start({
+            flowId: "earnClaimRewards",
+            backLink: [
+              `/earn/${collateral.name.toLowerCase()}`,
+              "Back to earn position",
+            ],
+            successLink: ["/", "Go to the Dashboard"],
+            successMessage: "The rewards have been claimed successfully.",
+            earnPosition: position,
+          });
         }}
       />
     </VFlex>

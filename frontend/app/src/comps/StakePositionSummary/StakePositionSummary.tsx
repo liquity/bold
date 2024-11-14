@@ -26,6 +26,7 @@ export function StakePositionSummary({
         position: "relative",
         display: "flex",
         flexDirection: "column",
+        width: "100%",
         padding: 16,
         borderRadius: 8,
         userSelect: "none",

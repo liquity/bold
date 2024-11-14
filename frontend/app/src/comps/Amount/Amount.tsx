@@ -60,6 +60,7 @@ export function Amount({
         overflow: "hidden",
         textOverflow: "ellipsis",
         transformOrigin: "50% 50%",
+        textDecoration: "inherit",
       })}
       style={style}
     >
