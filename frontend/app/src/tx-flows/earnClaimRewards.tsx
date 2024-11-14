@@ -5,7 +5,7 @@ import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositio
 import { getCollToken } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
-import { vAddress, vCollIndex } from "@/src/valibot-utils";
+import { vAddress, vCollIndex, vPositionEarn } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 
@@ -25,9 +25,7 @@ const RequestSchema = v.object({
     v.string(), // label
   ]),
   successMessage: v.string(),
-
-  collIndex: vCollIndex(),
-  depositor: vAddress(),
+  earnPosition: vPositionEarn(),
 });
 
 export type Request = v.InferOutput<typeof RequestSchema>;
@@ -38,26 +36,29 @@ export const earnClaimRewards: FlowDeclaration<Request, Step> = {
   title: "Review & Send Transaction",
 
   Summary({ flow }) {
-    const collateral = getCollToken(flow.request.collIndex);
-    const symbol = collateral?.symbol;
-    return symbol && (
+    const { request } = flow;
+    return (
       <EarnPositionSummary
-        address={flow.request.depositor}
-        collSymbol={symbol}
+        collIndex={request.earnPosition.collIndex}
+        earnPosition={request.earnPosition}
         txPreviewMode
       />
     );
   },
 
   Details({ flow }) {
-    const collateral = getCollToken(flow.request.collIndex);
+    const { request } = flow;
+    const collateral = getCollToken(request.earnPosition.collIndex);
 
-    const rewardsBold = dn.from(0, 18);
-    const rewardsColl = dn.from(0, 18);
+    if (!collateral) {
+      return null;
+    }
 
     const boldPrice = usePrice("BOLD");
-    const collPrice = usePrice(collateral?.symbol ?? null);
+    const collPrice = usePrice(collateral.symbol);
 
+    const rewardsBold = request.earnPosition.rewards.bold;
+    const rewardsColl = request.earnPosition.rewards.coll;
     const rewardsBoldUsd = boldPrice && dn.mul(rewardsBold, boldPrice);
     const rewardsCollUsd = collPrice && dn.mul(rewardsColl, collPrice);
 
@@ -79,12 +80,12 @@ export const earnClaimRewards: FlowDeclaration<Request, Step> = {
           ]}
         />
         <TransactionDetailsRow
-          label={`Claiming ${collateral?.name} rewards`}
+          label={`Claiming ${collateral.name} rewards`}
           value={[
             <Amount
               key="start"
               value={rewardsColl}
-              suffix={` ${collateral?.symbol}`}
+              suffix={` ${collateral.symbol}`}
             />,
             <Amount
               key="end"
@@ -110,7 +111,7 @@ export const earnClaimRewards: FlowDeclaration<Request, Step> = {
   },
 
   async writeContractParams(_stepId, { contracts, request }) {
-    const collateral = contracts.collaterals[request.collIndex];
+    const collateral = contracts.collaterals[request.earnPosition.collIndex];
     return {
       ...collateral.contracts.StabilityPool,
       functionName: "withdrawFromSP",
