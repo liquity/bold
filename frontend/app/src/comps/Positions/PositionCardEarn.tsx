@@ -41,7 +41,7 @@ export function PositionCardEarn({
             <div
               className={css({
                 display: "flex",
-                color: "strongSurfaceContentAlt2",
+                color: "brandLightBlue",
               })}
             >
               <IconEarn size={16} />
