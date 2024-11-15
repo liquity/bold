@@ -127,12 +127,17 @@ export function Screen({
         )}
       </header>
     )
-    : heading;
+    : (
+      <div style={{ width }}>
+        {heading}
+      </div>
+    );
 
   return (
     <div
       className={cx(
         css({
+          position: "relative",
           flexGrow: 1,
           display: "flex",
           gap: 48,
@@ -156,10 +161,10 @@ export function Screen({
                 base: "static",
                 large: "absolute",
               },
-              left: 100,
+              left: 0,
+              zIndex: 1,
             })}
             style={{
-              width,
               transform: style.transform,
               opacity: style.opacity.to([0, 0.5, 1], [0, 1, 1]),
             }}

@@ -205,7 +205,7 @@ export function TransactionsScreen() {
                     href={`${CHAIN_BLOCK_EXPLORER?.url}tx/${currentStep.txHash}`}
                     external
                   />{"  "}
-                  transaction to be indexed…
+                  to be indexed…
                 </>
               ))
               .with("confirmed", () => (

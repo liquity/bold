@@ -9,7 +9,7 @@ import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateFie
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { INTEREST_RATE_DEFAULT } from "@/src/constants";
+import { ETH_MAX_RESERVE, INTEREST_RATE_DEFAULT } from "@/src/constants";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
 import { useInputFieldValue } from "@/src/form-utils";
@@ -103,6 +103,8 @@ export function LeverageScreen() {
     collPrice,
   );
 
+  const maxAmount = collBalance.data && dn.sub(collBalance.data, ETH_MAX_RESERVE);
+
   const allowSubmit = account.isConnected
     && depositPreLeverage.parsed
     && dn.gt(depositPreLeverage.parsed, 0)
@@ -170,13 +172,11 @@ export function LeverageScreen() {
               placeholder="0.00"
               secondary={{
                 start: depositUsd && `$${fmtnum(depositUsd, "2z")}`,
-                end: account.isConnected && (
+                end: maxAmount && (
                   <TextButton
-                    label={`Max ${fmtnum(collBalance.data ?? 0)} ${collToken.name}`}
+                    label={`Max ${fmtnum(maxAmount)} ${collToken.name}`}
                     onClick={() => {
-                      depositPreLeverage.setValue(
-                        fmtnum(collBalance.data ?? 0).replace(",", ""),
-                      );
+                      depositPreLeverage.setValue(dn.toString(maxAmount));
                     }}
                   />
                 ),
