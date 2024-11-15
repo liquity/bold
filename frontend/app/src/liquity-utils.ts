@@ -1,4 +1,4 @@
-import type { GraphStabilityPoolDeposit } from "@/src/subgraph-hooks";
+import type { StabilityPoolDepositQuery } from "@/src/graphql/graphql";
 import type { CollIndex, Dnum, PositionEarn, PositionStake, PrefixedTroveId, TroveId } from "@/src/types";
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
 
@@ -192,7 +192,7 @@ export function useEarnPosition(
 }
 
 function earnPositionFromGraph(
-  spDeposit: GraphStabilityPoolDeposit,
+  spDeposit: NonNullable<StabilityPoolDepositQuery["stabilityPoolDeposit"]>,
   rewards: { bold: Dnum; coll: Dnum },
 ): PositionEarn {
   const collIndex = spDeposit.collateral.collIndex;

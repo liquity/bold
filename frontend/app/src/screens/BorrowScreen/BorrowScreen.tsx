@@ -24,7 +24,7 @@ import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { useTroveCount } from "@/src/subgraph-hooks";
+import { useTrovesCount } from "@/src/subgraph-hooks";
 import { isCollIndex } from "@/src/types";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -94,7 +94,7 @@ export function BorrowScreen() {
 
   const collBalance = balances[collateral.symbol];
 
-  const troveCount = useTroveCount(account.address, collIndex);
+  const troveCount = useTrovesCount(account.address ?? null, collIndex);
 
   if (!collPrice) {
     return null;

@@ -18,7 +18,7 @@ import { getRedemptionRisk } from "@/src/liquity-math";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { useTroveCount } from "@/src/subgraph-hooks";
+import { useTrovesCount } from "@/src/subgraph-hooks";
 import { isCollIndex } from "@/src/types";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -74,7 +74,7 @@ export function LeverageScreen() {
   ] as const)));
 
   const collBalance = balances[collToken.symbol];
-  const troveCount = useTroveCount(account.address, collIndex);
+  const troveCount = useTrovesCount(account.address ?? null, collIndex);
 
   const collPrice = usePrice(collToken.symbol);
   const depositPreLeverage = useInputFieldValue((value) => `${fmtnum(value)} ${collToken.name}`);
