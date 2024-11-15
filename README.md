@@ -291,8 +291,11 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
         uint256 _upperHint,
         uint256 _lowerHint,
         uint256 _annualInterestRate,
-        uint256 _maxUpfrontFee
-    )`: creates a Trove for the caller that is not part of a batch. Transfers `_collAmount` from the caller to the system, mints `_boldAmount` of BOLD to their address. Mints the Trove NFT to their address. The `ETH_GAS_COMPENSATION` of 0.0375 WETH is transferred from the caller to the GasPool. Opening a Trove must result in the Trove’s ICR > MCR, and also the system’s TCR > CCR. An `upfrontFee` is charged, based on the system’s _average_ interest rate, the BOLD debt drawn and the `UPFRONT_INTEREST_PERIOD`. The borrower chooses a `_maxUpfrontFee` that he/she is willing to accept in case of a fee slippage, i.e. when the system’s average interest rate increases and in turn increases the fee they’d pay.
+        uint256 _maxUpfrontFee,
+        address _addManager,
+        address _removeManager,
+        address _receiver
+    )`: creates a Trove for the caller that is not part of a batch. Transfers `_collAmount` from the caller to the system, mints `_boldAmount` of BOLD to their address. Mints the Trove NFT to their address. The `ETH_GAS_COMPENSATION` of 0.0375 WETH is transferred from the caller to the GasPool. Opening a Trove must result in the Trove’s ICR > MCR, and also the system’s TCR > CCR. An `upfrontFee` is charged, based on the system’s _average_ interest rate, the BOLD debt drawn and the `UPFRONT_INTEREST_PERIOD`. The borrower chooses a `_maxUpfrontFee` that he/she is willing to accept in case of a fee slippage, i.e. when the system’s average interest rate increases and in turn increases the fee they’d pay. The optional `_addManager` permits that address to improve the collateral ratio of the Trove - i.e. to add collateral or to repay debt. The optional `_removeManager` is permitted to reduce the collateral ratio of the Trove, that is to remove collateral or draw new debt, and also to close it. The `_receiver` is the address the `_removeManager` can send funds to.
 
 
 - `openTroveAndJoinInterestBatchManager(
@@ -326,7 +329,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
     )`:  enables a borrower to simultaneously change both their collateral and debt, subject to the resulting `ICR >= MCR` and the adjustment [CCR constraints](#critical-collateral-ratio-ccr-restrictions). If the adjustment incorporates a `debtIncrease`, then an `upfrontFee` is charged as per `withdrawBold`.
 
 
-- `adjustUnredeemableTrove(
+- `adjustZombieTrove(
         uint256 _troveId,
         uint256 _collChange,
         bool _isCollIncrease,
@@ -365,8 +368,9 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
         uint256 _newAnnualInterestRate,
         uint256 _upperHint,
         uint256 _lowerHint,
-        uint256 _maxUpfrontFee
-    )`: the Trove owner sets an individual delegate who will have permission to update the interest rate for that Trove in range `[ _minInterestRate,  _maxInterestRate]`.  Removes the Trove from a batch if it was in one. 
+        uint256 _maxUpfrontFee,
+        uint256 _minInterestRateChangePeriod
+    )`: the Trove owner sets an individual delegate who will have permission to update the interest rate for that Trove in range `[ _minInterestRate,  _maxInterestRate]`.  Removes the Trove from a batch if it was in one. The `_minInterestRateChangePeriod` determines the minimum period that must pass between the delegates's interest rate adjustments.
 
 - `removeInterestIndividualDelegate(uint256 _troveId):` the Trove owner revokes individual delegate’s permission to change the given Trove’s interest rate. 
 
@@ -406,9 +410,6 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
     )`: revokes the batch manager’s permission to manage the caller’s Trove. Sets a new owner-chosen annual interest rate, and removes it from the batch. Since this action very likely changes the Trove’s interest rate, it’s subject to a premature adjustment fee as per regular adjustments.
 
 ### TroveManager
-
-- `liquidate(uint256 _troveId)`: attempts to liquidate the specified Trove. Executes successfully if the Trove meets the conditions for liquidation, i.e. ICR < MCR. Permissionless.
-
 
 - `batchLiquidateTroves(uint256[] calldata _troveArray)`: Accepts a custom list of Troves IDs as an argument. Steps through the provided list and attempts to liquidate every Trove, until it reaches the end or it runs out of gas. A Trove is liquidated only if it meets the conditions for liquidation, i.e. ICR < MCR. Troves with ICR >= MCR are skipped in the loop. Permissionless.
 
