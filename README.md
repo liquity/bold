@@ -625,6 +625,26 @@ Gas cost of steps 1-2 will be free, and step 5 will be O(1).
 
 Hints allow cheaper Trove operations for the user, at the expense of a slightly longer time to completion, due to the need to await the result of the two read calls in steps 1 and 2 - which may be sent as JSON-RPC requests to a node provider such as Infura, unless the frontend operator is running a full Ethereum node.
 
+### Example openTrove transaction with hints
+```
+  const BOLDAmount = toBN(toWei('2500')) // borrower wants to withdraw 2500 BOLD
+  const colll = toBN(toWei('5')) // borrower wants to lock 5 collateral tokens
+  const interestRate = toBn(toWei(‘7’) // Borrower wants a 7% annual interest rate
+  
+  // Get an approximate address hint from the deployed HintHelper contract. Use (15 * number of troves) trials 
+  // to get an approx. hint that is close to the right position.
+  let numTroves = await sortedTroves.getSize()
+  let numTrials = numTroves.mul(toBN('15'))
+  let { 0: approxHint } = await hintHelpers.getApproxHint(interestRate, numTrials, 42)  // random seed of 42
+
+  // Use the approximate hint to get the exact upper and lower hints from the deployed SortedTroves contract
+  let { 0: upperHint, 1: lowerHint } = await sortedTroves.findInsertPosition(interestRate, approxHint, approxHint)
+
+  // Finally, call openTrove with the exact upperHint and lowerHint
+  const maxFee = '5'.concat('0'.repeat(16)) // Slippage protection: 5%
+  await borrowerOperations.openTrove({otherParams}, upperHint, upperHint)
+```
+
 
 ## BOLD Redemptions
 
