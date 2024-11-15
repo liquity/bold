@@ -36,7 +36,7 @@ export function PositionCardStake({
             <div
               className={css({
                 display: "flex",
-                color: "strongSurfaceContentAlt2",
+                color: "brandGolden",
               })}
             >
               <IconStake size={16} />
