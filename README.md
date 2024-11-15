@@ -591,6 +591,40 @@ No upfront fee is charged, unless the interest rate is changed in the same trans
 ##### Switching batches
 As the function to switch batches is just a wrapper that calls the functions for leaving and joining a batch, this means that switching batches always incurs in upfront fee now (unless user doesn’t use the wrapper and waits for 1 week between leaving and joining).
 
+## Supplying Hints to Trove operations
+
+Troves in Liquity are recorded in a sorted doubly linked list, sorted by their annual interest, from high to low.
+
+All interest rate adjustments need to either insert or reinsert the Trove to the SortedTroves list. To reduce the computational complexity (and gas cost) of the insertion to the linked list, two ‘hints’ may be provided.
+
+A hint is the address of a Trove with a position in the sorted list close to the correct insert position.
+
+All Trove operations take two ‘hint’ arguments: a `_lowerHint` referring to the nextId and an `_upperHin`t referring to the prevId of the two adjacent nodes in the linked list that are (or would become) the neighbors of the given Trove. Taking both direct neighbors as hints has the advantage of being much more resilient to situations where a neighbor gets moved or removed before the caller's transaction is processed: the transaction would only fail if both neighboring Troves are affected during the pendency of the transaction.
+
+The better the ‘hint’ is, the shorter the list traversal, and the cheaper the gas cost of the function call. `SortedList.findInsertPosition(uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId)` that is called by the Trove operation firsts check if prevId is still existent and valid (larger interest rate than the provided `_annualInterestRate`) and then descends the list starting from `_prevId`. If the check fails, the function further checks if `_nextId` is still existent and valid (smaller interest rate than the provided `_annualInterestRate`) and then ascends list starting from `_nextId`.
+
+The `HintHelpers.getApproxHint(...)` function can be used to generate a useful hint pointing to a Trove relatively close to the target position, which can then be passed as an argument to the desired Trove operation or to SortedTroves.findInsertPosition(...) to get its two direct neighbors as ‘exact‘ hints (based on the current state of the system).
+
+`getApproxHint(uint256 _collIndex, uint256 _interestRate, uint256 _numTrials, uint256 _inputRandomSeed)` randomly selects`_ numTrials` amount of Troves for a given branch, and returns the one with the closest position in the list to where a Trove with an annual _interestRate should be inserted. It can be shown mathematically that for `numTrials = k * sqrt(n)`, the function's gas cost is with very high probability worst case O(sqrt(n)) if k >= 10. For scalability reasons, the function also takes a random seed `_inputRandomSeed` to make sure that calls with different seeds may lead to different results, allowing for better approximations through multiple consecutive runs.
+
+#### Trove operation without a hint
+
+1. User performs Trove operation in their browser
+2. Call the Trove operation with _lowerHint = _upperHint = userAddress
+
+Gas cost will be worst case O(n), where n is the size of the SortedTroves list.
+
+#### Trove operation with hints
+
+1. User performs Trove operation in their browser
+2. Front end calls HintHelpers.getApproxHint(...), passing it the annual interest rate Returns an address close to the correct insert position
+3. Call SortedTroves.findInsertPosition(uint256 _annualInterestRate, address _prevId, address _nextId), passing it the same approximate hint via both _prevId and _nextId and the new _annualInterestRate.
+4. Pass the ‘exact‘ hint in the form of the two direct neighbors, i.e. `_nextId` as `_lowerHint` and `_prevId` as `_upperHint`, to the Trove operation function call. (Note that the hint may become slightly inexact due to pending transactions that are processed first, though this is gracefully handled by the system that can ascend or descend the list as needed to find the right position.)
+
+Gas cost of steps 1-2 will be free, and step 5 will be O(1).
+
+Hints allow cheaper Trove operations for the user, at the expense of a slightly longer time to completion, due to the need to await the result of the two read calls in steps 1 and 2 - which may be sent as JSON-RPC requests to a node provider such as Infura, unless the frontend operator is running a full Ethereum node.
+
 
 ## BOLD Redemptions
 
