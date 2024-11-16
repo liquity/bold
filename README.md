@@ -2,32 +2,9 @@
 
 ## Table of Contents
 1. [Significant Changes in Liquity v2](#significant-changes-in-liquity-v2)
-   - [Multi-collateral System](#multi-collateral-system)
-   - [Collateral Choices](#collateral-choices)
-   - [User-set Interest Rates](#user-set-interest-rates)
-   - [Yield from Interest Paid to SP and LPs](#yield-from-interest-paid-to-sp-and-lps)
-   - [Redemption Routing](#redemption-routing)
-   - [Redemption Ordering](#redemption-ordering)
-   - [Unredeemable Troves](#unredeemable-troves)
-   - [Troves Represented by NFTs](#troves-represented-by-nfts)
-   - [Individual Delegation](#individual-delegation)
-   - [Batch Delegation](#batch-delegation)
-   - [Collateral Branch Shutdown](#collateral-branch-shutdown)
-   - [Removal of Recovery Mode](#removal-of-recovery-mode)
-   - [Liquidation Penalties](#liquidation-penalties)
-   - [Gas Compensation](#gas-compensation)
-   - [More Flexibility for SP Reward Claiming](#more-flexibility-for-sp-reward-claiming)
 
 2. [What Remains the Same in v2 from v1](#what-remains-the-same-in-v2-from-v1)
-   - [Core Redemption Mechanism](#core-redemption-mechanism)
-   - [Redemption Fee Mechanics](#redemption-fee-mechanics)
-   - [Ordered Troves](#ordered-troves)
-   - [Liquidation Mechanisms](#liquidation-mechanisms)
-   - [Similar Smart Contract Architecture](#similar-smart-contract-architecture)
-   - [Stability Pool Algorithm](#stability-pool-algorithm)
-   - [Individual Overcollateralization](#individual-overcollateralization)
-   - [Aggregate Overcollateralization](#aggregate-overcollateralization)
-
+  
 3. [Liquity v2 Overview](#liquity-v2-overview)
 
 4. [Multicollateral Architecture Overview](#multicollateral-architecture-overview)
