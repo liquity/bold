@@ -1,7 +1,7 @@
 # Liquity V2
 
 ## Table of Contents
-## Table of Contents
+
 - [Significant changes in Liquity v2](#significant-changes-in-liquity-v2)
   - [Multi-collateral system](#multi-collateral-system)
   - [Collateral choices](#collateral-choices)
