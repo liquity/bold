@@ -117,7 +117,10 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
     const collPrice = usePrice(collateral?.symbol ?? null);
     const upfrontFeeData = useUpfrontFeeData(loan, prevLoan);
 
-    return upfrontFeeData.data && (
+    const debtChangeWithFee = upfrontFeeData.data?.debtChangeWithFee;
+    const isBorrowing = upfrontFeeData.data?.isBorrowing;
+
+    return (
       <>
         {depositChange !== null && (
           <TransactionDetailsRow
@@ -144,7 +147,7 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
         )}
         {leverageFactorChange && (
           <TransactionDetailsRow
-            label={upfrontFeeData.data.isBorrowing ? "Leverage increase" : "Leverage decrease"}
+            label={isBorrowing ? "Leverage increase" : "Leverage decrease"}
             value={[
               <div key="start">
                 {fmtnum(leverageFactorChange[1] - leverageFactorChange[0], {
@@ -159,15 +162,17 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
           />
         )}
         <TransactionDetailsRow
-          label={upfrontFeeData.data.isBorrowing ? "Additional debt" : "Debt reduction"}
+          label={isBorrowing ? "Additional debt" : "Debt reduction"}
           value={[
             <Amount
               key="start"
               fallback="…"
-              value={upfrontFeeData.data.debtChangeWithFee}
+              value={debtChangeWithFee}
               suffix=" BOLD"
             />,
-            dn.gt(upfrontFeeData.data.upfrontFee, 0) && (
+            upfrontFeeData.data?.upfrontFee
+            && dn.gt(upfrontFeeData.data.upfrontFee, 0)
+            && (
               <Amount
                 key="end"
                 fallback="…"
