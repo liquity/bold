@@ -219,9 +219,8 @@ export function Radio({
                   ...({
                     "--ringColor": style.ringColor,
                   } as CSSProperties),
-                  ...({
-                    opacity: style.tickProgress.to([0, 1], [1, 0]),
-                  }),
+
+                  opacity: style.tickProgress.to([0, 1], [1, 0]),
                 }}
               >
                 <div
