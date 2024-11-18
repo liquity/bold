@@ -47,8 +47,8 @@ contract DeployGovernance is Script, Deployers {
     uint128 private constant VOTING_THRESHOLD_FACTOR = 0.03e18;
     uint88 private constant MIN_CLAIM = 500e18;
     uint88 private constant MIN_ACCRUAL = 1000e18;
-    uint32 private constant EPOCH_DURATION = 3 days; //604800;
-    uint32 private constant EPOCH_VOTING_CUTOFF = 2 days; //518400;
+    uint32 private constant EPOCH_DURATION = 6 days;
+    uint32 private constant EPOCH_VOTING_CUTOFF = 1 days;
 
     // UniV4Donations Constants
     uint256 private immutable VESTING_EPOCH_START = block.timestamp;
