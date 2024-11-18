@@ -14,10 +14,11 @@ import {
   INTEREST_RATE_DEFAULT,
   MAX_ANNUAL_INTEREST_RATE,
   MIN_ANNUAL_INTEREST_RATE,
+  MIN_DEBT,
 } from "@/src/constants";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
-import { dnum18 } from "@/src/dnum-utils";
+import { dnum18, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
@@ -112,15 +113,43 @@ export function BorrowScreen() {
       && loanDetails.depositUsd
       && loanDetails.deposit
       && dn.gt(loanDetails.deposit, 0)
-    ? DEBT_SUGGESTIONS.map((ratio) => {
-      const debt = loanDetails.maxDebt && dn.mul(loanDetails.maxDebt, ratio);
-      const ltv = debt && loanDetails.deposit && getLtv(loanDetails.deposit, debt, collPrice);
+    ? DEBT_SUGGESTIONS.map((ratio, index) => {
+      let debt = loanDetails.maxDebt && dn.mul(loanDetails.maxDebt, ratio);
+
+      // debt < MIN_DEBT
+      if (debt && dn.lt(debt, MIN_DEBT)) {
+        if (index === 0) {
+          // if it’s the first suggestion, set it to MIN_DEBT
+          debt = MIN_DEBT;
+        } else {
+          // otherwise don’t show it
+          return null;
+        }
+      }
+
+      const ltv = debt && loanDetails.deposit && getLtv(
+        loanDetails.deposit,
+        debt,
+        collPrice,
+      );
+
+      // don’t show if ltv > MAX_LTV_ALLOWED
+      if (ltv && dn.gt(ltv, loanDetails.maxLtv)) {
+        return null;
+      }
+
       const risk = ltv && getLiquidationRisk(ltv, loanDetails.maxLtv);
+
       return { debt, ltv, risk };
     })
     : null;
 
-  const maxAmount = collBalance.data && dn.sub(collBalance.data, ETH_MAX_RESERVE);
+  const maxAmount = collBalance.data && dnumMax(
+    dn.sub(collBalance.data, collSymbol === "ETH" ? ETH_MAX_RESERVE : 0), // Only keep a reserve for ETH, not LSTs
+    dnum18(0),
+  );
+
+  const isBelowMinDebt = debt.parsed && !debt.isEmpty && dn.lt(debt.parsed, MIN_DEBT);
 
   const allowSubmit = account.isConnected
     && deposit.parsed
@@ -192,7 +221,7 @@ export function BorrowScreen() {
                     ? fmtnum(dn.mul(collPrice, deposit.parsed), "2z")
                     : "0.00"
                 }`,
-                end: maxAmount && (
+                end: maxAmount && dn.gt(maxAmount, 0) && (
                   <TextButton
                     label={`Max ${fmtnum(maxAmount)} ${collateral.name}`}
                     onClick={() => {
@@ -229,6 +258,9 @@ export function BorrowScreen() {
                   label="BOLD"
                 />
               }
+              error={!debt.isFocused && isBelowMinDebt
+                ? `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`
+                : undefined}
               label="Loan"
               placeholder="0.00"
               secondary={{
@@ -239,27 +271,22 @@ export function BorrowScreen() {
                 }`,
                 end: debtSuggestions && (
                   <HFlex gap={6}>
-                    {debtSuggestions.map((s) => (
-                      s.debt && s.risk && (
-                        <PillButton
-                          key={dn.toString(s.debt)}
-                          label={`$${fmtnum(s.debt, { compact: true, digits: 0 })}`}
-                          onClick={() => {
-                            if (s.debt) {
-                              debt.setValue(dn.toString(s.debt, 0));
-                            }
-                          }}
-                          warnLevel={s.risk}
-                        />
-                      )
-                    ))}
-                    {debtSuggestions.length > 0 && (
-                      <InfoTooltip
-                        {...infoTooltipProps(
-                          content.borrowScreen.infoTooltips.interestRateSuggestions,
-                        )}
-                      />
-                    )}
+                    {debtSuggestions.map((s) => {
+                      return s && (
+                        s.debt && s.risk && (
+                          <PillButton
+                            key={dn.toString(s.debt)}
+                            label={`$${fmtnum(s.debt, { compact: true, digits: 0 })}`}
+                            onClick={() => {
+                              if (s.debt) {
+                                debt.setValue(dn.toString(s.debt, 0));
+                              }
+                            }}
+                            warnLevel={s.risk}
+                          />
+                        )
+                      );
+                    })}
                   </HFlex>
                 ),
               }}

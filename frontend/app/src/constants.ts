@@ -30,6 +30,7 @@ export const DATA_REFRESH_INTERVAL = 30_000;
 
 export const CLOSE_FROM_COLLATERAL_SLIPPAGE = 0.05; // 5%
 export const MAX_UPFRONT_FEE = 1000n * 10n ** 18n;
+export const MIN_DEBT = dn.from(2000, 18);
 
 // LTV factor suggestions, as ratios of the leverage factor range
 export const LEVERAGE_FACTOR_SUGGESTIONS = [
