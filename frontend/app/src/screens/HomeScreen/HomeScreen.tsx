@@ -6,7 +6,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { getContracts } from "@/src/contracts";
 import { DNUM_1 } from "@/src/dnum-utils";
-import { getCollToken, useAverageInterestRate, useCollIndexFromSymbol, useEarnPool } from "@/src/liquity-utils";
+import { getCollIndexFromSymbol, getCollToken, useAverageInterestRate, useEarnPool } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
@@ -72,7 +72,7 @@ function BorrowingRow({
 }: {
   symbol: CollateralSymbol;
 }) {
-  const collIndex = useCollIndexFromSymbol(symbol);
+  const collIndex = getCollIndexFromSymbol(symbol);
   const collateral = getCollToken(collIndex);
   const avgInterestRate = useAverageInterestRate(collIndex);
 
@@ -170,7 +170,7 @@ function EarnRewardsRow({
 }: {
   symbol: CollateralSymbol;
 }) {
-  const collIndex = useCollIndexFromSymbol(symbol);
+  const collIndex = getCollIndexFromSymbol(symbol);
   const collateral = getCollToken(collIndex);
   const earnPool = useEarnPool(collIndex);
 
