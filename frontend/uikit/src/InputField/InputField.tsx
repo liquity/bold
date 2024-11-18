@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { a, useSpring } from "@react-spring/web";
+import { a, useSpring, useTransition } from "@react-spring/web";
 import { useState } from "react";
 import { forwardRef, useId, useRef } from "react";
 import { css, cx } from "../../styled-system/css";
@@ -17,6 +17,7 @@ const InputField = forwardRef<HTMLInputElement, {
   contextual?: ReactNode;
   difference?: ReactNode;
   disabled?: boolean;
+  error?: null | ReactNode;
   label?:
     | ReactNode
     | { end: ReactNode; start?: ReactNode }
@@ -40,6 +41,7 @@ const InputField = forwardRef<HTMLInputElement, {
   contextual,
   difference,
   disabled = false,
+  error,
   label,
   labelHeight = 12,
   labelSpacing = 12,
@@ -123,186 +125,217 @@ const InputField = forwardRef<HTMLInputElement, {
 
   const showValueUnfocused = valueUnfocused && !focused;
 
+  const errorTransition = useTransition(error, {
+    keys: (error) => String(Boolean(error)),
+    from: { opacity: 0, marginTop: -40 },
+    enter: { opacity: 1, marginTop: 0 },
+    leave: { opacity: 0, marginTop: -40 },
+    config: diffSpringConfig,
+  });
+
   return (
     <div
       className={css({
-        position: "relative",
         display: "flex",
         flexDirection: "column",
         width: "100%",
-        background: "fieldSurface",
-        border: "1px solid token(colors.fieldBorder)",
-        borderRadius: 8,
-        padding: 16,
       })}
     >
       <div
         className={css({
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          fontSize: 16,
-          fontWeight: 500,
-          color: "contentAlt",
-        })}
-        style={{
-          height: labelHeight + labelSpacing,
-          paddingBottom: labelSpacing,
-        }}
-      >
-        {label_.start ? <label htmlFor={id}>{label_.start}</label> : <div />}
-        {label_.end && <div>{label_.end}</div>}
-      </div>
-      <div
-        ref={valueMeasurement}
-        className={css({
-          position: "absolute",
-          fontSize: 28,
-          fontWeight: 500,
-          letterSpacing: -1,
-          whiteSpace: "nowrap",
-          visibility: "hidden",
-          pointerEvents: "none",
-        })}
-      >
-        {value}
-      </div>
-      {difference && (
-        <a.button
-          onClick={onDifferenceClick}
-          className={css({
-            position: "absolute",
-            top: (136 - 2) / 2 - 10,
-            left: 0,
-            display: "flex",
-            gap: 10,
-            alignItems: "center",
-            justifyContent: "center",
-            height: 20,
-            padding: "0 8px",
-            whiteSpace: "nowrap",
-            background: "strongSurface",
-            color: "strongSurfaceContent",
-            cursor: "pointer",
-            borderRadius: 10,
-            outline: 0,
-            _active: {
-              translate: "0 1px",
-            },
-            _focusVisible: {
-              outline: "2px solid token(colors.focused)",
-            },
-          })}
-          style={{
-            ...differenceSpring,
-            pointerEvents: difference ? "auto" : "none",
-          }}
-        >
-          {difference}
-          <IconCross size={12} />
-        </a.button>
-      )}
-      <div
-        className={css({
           position: "relative",
-          zIndex: 1,
+          zIndex: 2,
           display: "flex",
-          height: 40,
+          flexDirection: "column",
+          width: "100%",
+          background: "fieldSurface",
+          border: "1px solid token(colors.fieldBorder)",
+          borderRadius: 8,
+          padding: 16,
         })}
       >
-        <input
-          ref={ref}
-          id={id}
-          disabled={disabled}
-          onBlur={() => {
-            setFocused(false);
-            onBlur?.();
-          }}
-          onChange={(event) => {
-            onChange?.(event.target.value);
-          }}
-          onFocus={() => {
-            setFocused(true);
-            onFocus?.();
-          }}
-          placeholder={showValueUnfocused ? "" : placeholder}
-          type="text"
-          value={showValueUnfocused ? "" : value}
-          className={cx(
-            "peer",
-            css({
-              display: "block",
-              padding: 0,
-              width: "100%",
-              height: "100%",
-              fontSize: 28,
-              fontWeight: 500,
-              letterSpacing: -1,
-              color: "content",
-              background: "transparent",
-              border: 0,
-              _placeholder: {
-                color: "dimmed",
-              },
-              _focusVisible: {
-                outline: 0,
-              },
-            }),
-          )}
-        />
-        {showValueUnfocused && (
-          <div
-            className={css({
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              alignItems: "center",
-              height: "100%",
-              fontSize: 28,
-              fontWeight: 500,
-              letterSpacing: -1,
-              color: "content",
-              pointerEvents: "none",
-            })}
-          >
-            {valueUnfocused}
-          </div>
-        )}
-        {contextual && (
-          <div
-            className={css({
-              position: "absolute",
-              zIndex: 2,
-              inset: `50% 0 auto auto`,
-              transform: "translateY(-50%)",
-            })}
-          >
-            {contextual}
-          </div>
-        )}
-      </div>
-      {(secondary_.start || secondary_.end) && (
         <div
           className={css({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            gap: 16,
             fontSize: 16,
             fontWeight: 500,
             color: "contentAlt",
-            pointerEvents: "none",
-            "& > div": {
-              pointerEvents: "auto",
-            },
           })}
           style={{
-            height: secondaryHeight + secondarySpacing,
-            paddingTop: secondarySpacing,
+            height: labelHeight + labelSpacing,
+            paddingBottom: labelSpacing,
           }}
         >
-          {secondary_.start
-            ? (
+          {label_.start ? <label htmlFor={id}>{label_.start}</label> : <div />}
+          {label_.end && <div>{label_.end}</div>}
+        </div>
+        <div
+          ref={valueMeasurement}
+          className={css({
+            position: "absolute",
+            fontSize: 28,
+            fontWeight: 500,
+            letterSpacing: -1,
+            whiteSpace: "nowrap",
+            visibility: "hidden",
+            pointerEvents: "none",
+          })}
+        >
+          {value}
+        </div>
+        {difference && (
+          <a.button
+            onClick={onDifferenceClick}
+            className={css({
+              position: "absolute",
+              top: (136 - 2) / 2 - 10,
+              left: 0,
+              display: "flex",
+              gap: 10,
+              alignItems: "center",
+              justifyContent: "center",
+              height: 20,
+              padding: "0 8px",
+              whiteSpace: "nowrap",
+              background: "strongSurface",
+              color: "strongSurfaceContent",
+              cursor: "pointer",
+              borderRadius: 10,
+              outline: 0,
+              _active: {
+                translate: "0 1px",
+              },
+              _focusVisible: {
+                outline: "2px solid token(colors.focused)",
+              },
+            })}
+            style={{
+              ...differenceSpring,
+              pointerEvents: difference ? "auto" : "none",
+            }}
+          >
+            {difference}
+            <IconCross size={12} />
+          </a.button>
+        )}
+        <div
+          className={css({
+            position: "relative",
+            zIndex: 2,
+            display: "flex",
+            height: 40,
+          })}
+        >
+          <input
+            ref={ref}
+            id={id}
+            disabled={disabled}
+            onBlur={() => {
+              setFocused(false);
+              onBlur?.();
+            }}
+            onChange={(event) => {
+              onChange?.(event.target.value);
+            }}
+            onFocus={() => {
+              setFocused(true);
+              onFocus?.();
+            }}
+            placeholder={showValueUnfocused ? "" : placeholder}
+            type="text"
+            value={showValueUnfocused ? "" : value}
+            className={cx(
+              "peer",
+              css({
+                display: "block",
+                padding: 0,
+                width: "100%",
+                height: "100%",
+                fontSize: 28,
+                fontWeight: 500,
+                letterSpacing: -1,
+                color: "content",
+                background: "transparent",
+                border: 0,
+                _placeholder: {
+                  color: "dimmed",
+                },
+                _focusVisible: {
+                  outline: 0,
+                },
+              }),
+            )}
+          />
+          {showValueUnfocused && (
+            <div
+              className={css({
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                height: "100%",
+                fontSize: 28,
+                fontWeight: 500,
+                letterSpacing: -1,
+                color: "content",
+                pointerEvents: "none",
+              })}
+            >
+              {valueUnfocused}
+            </div>
+          )}
+          {contextual && (
+            <div
+              className={css({
+                position: "absolute",
+                zIndex: 2,
+                inset: `50% 0 auto auto`,
+                transform: "translateY(-50%)",
+              })}
+            >
+              {contextual}
+            </div>
+          )}
+        </div>
+        {(secondary_.start || secondary_.end) && (
+          <div
+            className={css({
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 16,
+              fontSize: 16,
+              fontWeight: 500,
+              color: "contentAlt",
+              pointerEvents: "none",
+              "& > div": {
+                pointerEvents: "auto",
+              },
+            })}
+            style={{
+              height: secondaryHeight + secondarySpacing,
+              paddingTop: secondarySpacing,
+            }}
+          >
+            {secondary_.start
+              ? (
+                <div
+                  className={css({
+                    flexGrow: 0,
+                    flexShrink: 1,
+                    display: "flex",
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                    maxWidth: "50%",
+                  })}
+                >
+                  {secondary_.start}
+                </div>
+              )
+              : <div />}
+            {secondary_.end && (
               <div
                 className={css({
                   flexGrow: 0,
@@ -310,41 +343,61 @@ const InputField = forwardRef<HTMLInputElement, {
                   display: "flex",
                   whiteSpace: "nowrap",
                   textOverflow: "ellipsis",
-                  maxWidth: "50%",
                 })}
               >
-                {secondary_.start}
+                {secondary_.end}
               </div>
-            )
-            : <div />}
-          {secondary_.end && (
-            <div
-              className={css({
-                flexGrow: 0,
-                flexShrink: 1,
-                display: "flex",
-                whiteSpace: "nowrap",
-                textOverflow: "ellipsis",
-              })}
+            )}
+          </div>
+        )}
+        <div
+          className={css({
+            display: "none",
+            position: "absolute",
+            inset: -1,
+            border: "2px solid token(colors.fieldBorderFocused)",
+            borderRadius: 8,
+            pointerEvents: "none",
+          })}
+          style={{
+            display: focused ? "block" : "none",
+          }}
+        />
+      </div>
+      {errorTransition((style, error) => (
+        <div
+          className={css({
+            position: "relative",
+            zIndex: 1,
+            marginTop: -8,
+          })}
+        >
+          <a.div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              padding: "8px 16px 0",
+              height: 48,
+              fontSize: 14,
+              color: "negativeSurfaceContent",
+              background: "negativeSurface",
+              border: "1px solid token(colors.negativeSurfaceBorder)",
+              borderRadius: "0 0 8px 8px",
+            })}
+            style={{
+              marginTop: style.marginTop,
+            }}
+          >
+            <a.div
+              style={{
+                opacity: style.opacity.to([0, 0.8, 1], [0, 0, 1]),
+              }}
             >
-              {secondary_.end}
-            </div>
-          )}
+              {error}
+            </a.div>
+          </a.div>
         </div>
-      )}
-      <div
-        className={css({
-          display: "none",
-          position: "absolute",
-          inset: -1,
-          border: "2px solid token(colors.fieldBorderFocused)",
-          borderRadius: 8,
-          pointerEvents: "none",
-        })}
-        style={{
-          display: focused ? "block" : "none",
-        }}
-      />
+      ))}
     </div>
   );
 });
