@@ -50,7 +50,7 @@ export function useTrovesCount(
     }
     const { borrowerInfo } = await graphQuery(
       TrovesCountQuery,
-      { id: borrower },
+      { id: borrower.toLowerCase() },
     );
     return collIndex === undefined
       ? borrowerInfo?.troves ?? 0
@@ -105,7 +105,10 @@ export function useLoansByAccount(
 ) {
   let queryFn = async () => {
     if (!account) return null;
-    const { troves } = await graphQuery(TrovesByAccountQuery, { account });
+    const { troves } = await graphQuery(
+      TrovesByAccountQuery,
+      { account: account.toLowerCase() },
+    );
     return troves.map(subgraphTroveToLoan);
   };
 
@@ -190,13 +193,13 @@ export function useStabilityPoolDeposits(
     if (!account) return [];
     const { stabilityPoolDeposits } = await graphQuery(
       StabilityPoolDepositsByAccountQuery,
-      { account },
+      { account: account.toLowerCase() },
     );
     return stabilityPoolDeposits.map((deposit) => ({
       id: `${deposit.collateral.collIndex}:${account}`.toLowerCase(),
       collateral: deposit.collateral,
       deposit: BigInt(deposit.deposit),
-      depositor: account,
+      depositor: account.toLowerCase(),
       snapshot: {
         B: BigInt(deposit.snapshot.B),
         P: BigInt(deposit.snapshot.P),
@@ -216,7 +219,7 @@ export function useStabilityPoolDeposits(
           id: `${position.collIndex}:${account}`.toLowerCase(),
           collateral: { collIndex: position.collIndex },
           deposit: position.deposit[0],
-          depositor: account,
+          depositor: account.toLowerCase(),
           snapshot: { B: 0n, P: 0n, S: 0n, epoch: 0n, scale: 0n },
         }));
     };
@@ -245,7 +248,7 @@ export function useStabilityPoolDeposit(
       id: `${collIndex}:${account}`.toLowerCase(),
       collateral: { collIndex },
       deposit: BigInt(stabilityPoolDeposit.deposit),
-      depositor: account,
+      depositor: account.toLowerCase(),
       snapshot: {
         B: BigInt(stabilityPoolDeposit.snapshot.B),
         P: BigInt(stabilityPoolDeposit.snapshot.P),
@@ -268,7 +271,7 @@ export function useStabilityPoolDeposit(
         id: `${collIndex}:${account}`.toLowerCase(),
         collateral: { collIndex },
         deposit: position.deposit[0],
-        depositor: account,
+        depositor: account.toLowerCase(),
         snapshot: { B: 0n, P: 0n, S: 0n, epoch: 0n, scale: 0n },
       };
     };
@@ -351,7 +354,7 @@ export function useEarnPositionsByAccount(
     if (!account) return null;
     const { stabilityPoolDeposits } = await graphQuery(
       StabilityPoolDepositsByAccountQuery,
-      { account },
+      { account: account.toLowerCase() },
     );
     return stabilityPoolDeposits.map(subgraphStabilityPoolDepositToEarnPosition);
   };
