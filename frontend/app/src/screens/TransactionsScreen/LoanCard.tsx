@@ -258,17 +258,9 @@ export function LoanCard({
                       gap: 8,
                     })}
                   >
-                    {fmtnum(dn.mul(loan.interestRate, 100))}%
-                    {prevLoan && !dn.eq(prevLoan.interestRate, loan.interestRate) && (
-                      <div
-                        className={css({
-                          color: "contentAlt",
-                          textDecoration: "line-through",
-                        })}
-                      >
-                        {fmtnum(dn.mul(prevLoan.interestRate, 100))}%
-                      </div>
-                    )}
+                    <div>
+                      {fmtnum(dn.mul(loan.interestRate, 100))}%
+                    </div>
                     {loan.batchManager && (
                       <div
                         title={`Interest rate delegate: ${loan.batchManager}`}
@@ -286,6 +278,16 @@ export function LoanCard({
                         })}
                       >
                         delegated
+                      </div>
+                    )}
+                    {prevLoan && !dn.eq(prevLoan.interestRate, loan.interestRate) && (
+                      <div
+                        className={css({
+                          color: "contentAlt",
+                          textDecoration: "line-through",
+                        })}
+                      >
+                        {fmtnum(dn.mul(prevLoan.interestRate, 100))}%
                       </div>
                     )}
                   </div>
