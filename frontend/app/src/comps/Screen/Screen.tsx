@@ -69,21 +69,21 @@ export function Screen({
 
   const headingSpring = useSpring({
     from: {
-      opacity: 0,
+      opacity: 1,
       transform: `
-        scale3d(1.03, 1.03, 1)
-        translate3d(0, 16px, 0)
+        scale(1.08)
+        translate(0, 16px)
       `,
     },
     to: {
       opacity: 1,
       transform: `
-        scale3d(1, 1, 1)
-        translate3d(0, 0px, 0)
+        scale(1)
+        translate(0, 0px)
       `,
     },
     config: {
-      mass: 2,
+      mass: 1,
       tension: 2400,
       friction: 120,
     },
