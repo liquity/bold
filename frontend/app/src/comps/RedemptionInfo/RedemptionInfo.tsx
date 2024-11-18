@@ -2,6 +2,7 @@ import content from "@/src/content";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, IconExternal } from "@liquity2/uikit";
 import { a, useInView, useTransition } from "@react-spring/web";
+import { memo } from "react";
 
 const { title, subtitle, infoItems, learnMore } = content.redemptionInfo;
 
@@ -11,7 +12,7 @@ const iconComponents = {
   interest: InterestIcon,
 } as const;
 
-export function RedemptionInfo() {
+export const RedemptionInfo = memo(function RedemptionInfo() {
   const [ref, inView] = useInView({ once: true });
 
   const iconsTrail = useTransition(
@@ -142,7 +143,7 @@ export function RedemptionInfo() {
       </div>
     </section>
   );
-}
+});
 
 function BoldIcon() {
   return (
